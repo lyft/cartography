@@ -1,0 +1,15 @@
+{
+  "statements": [
+    {
+      "query": "MATCH (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(:S3Bucket)<-[:APPLIES_TO]-(n:S3Acl) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (a:S3Acl) WHERE NOT (a)-[:APPLIES_TO]->(:S3Bucket) WITH a LIMIT {LIMIT_SIZE} DETACH DELETE (a) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    }
+  ],
+  "name": "cleanup S3Acl"
+}

@@ -1,0 +1,30 @@
+{
+  "statements": [
+  {
+   "query": "MATCH (n) where EXISTS(n.exposed_internet) AND labels(n) IN ['AutoScalingGroup', 'EC2Instance', 'LoadBalancer'] WITH n LIMIT {LIMIT_SIZE} REMOVE n.exposed_internet, n.exposed_internet_type return COUNT(*) as TotalCompleted",
+    "iterative": true,
+    "iterationsize": 1000
+  },
+  {
+   "query": "MATCH (n:Service) where EXISTS(n.exposed_internet) REMOVE n.exposed_internet, n.exposed_internet_type",
+    "iterative": false
+  },
+  {
+    "query": "MATCH (:IpRange{id: '0.0.0.0/0'})-[:MEMBER_OF_IP_RULE]->(:IpPermissionInbound)-[:MEMBER_OF_EC2_SECURITY_GROUP]->(group:EC2SecurityGroup)<-[:MEMBER_OF_EC2_SECURITY_GROUP|NETWORK_INTERFACE*..2]-(instance:EC2Instance)\nWITH instance\nWHERE (NOT EXISTS(instance.exposed_internet_type)) OR (NOT 'direct' IN instance.exposed_internet_type)\nSET instance.exposed_internet = true, instance.exposed_internet_type = coalesce(instance.exposed_internet_type , []) + 'direct';",
+    "iterative": false
+  },
+  {
+    "query": "MATCH (elb:LoadBalancer{scheme: 'internet-facing'}) SET elb.exposed_internet = true",
+    "iterative": false
+  },
+  {
+    "query": "MATCH (elb:LoadBalancer{exposed_internet: true})-[:EXPOSE]->(e:EC2Instance)\nWITH e\nWHERE (NOT EXISTS(e.exposed_internet_type)) OR (NOT 'elb' IN e.exposed_internet_type)\nSET e.exposed_internet = true, e.exposed_internet_type = coalesce(e.exposed_internet_type, []) + 'elb'",
+    "iterative": false
+  },
+  {
+    "query": "MATCH (instance:EC2Instance{exposed_internet: true})-[:MEMBER_AUTO_SCALE_GROUP]->(asg:AutoScalingGroup)\nWITH distinct instance.exposed_internet_type as types, asg\nUNWIND types as type\nWITH type, asg\nWHERE NOT EXISTS(asg.exposed_internet_type) OR (NOT type IN asg.exposed_internet_type)\nSET asg.exposed_internet = true, asg.exposed_internet_type = coalesce(asg.exposed_internet_type, []) + type;",
+    "iterative": false
+  }
+],
+  "name": "AWS asset internet exposure"
+}
