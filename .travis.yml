@@ -5,6 +5,8 @@ python:
 install:
 - pip install -e .
 - pip install -r test-requirements.txt
+script:
+- make test
 deploy:
   provider: pypi
   user: lyftpypi
