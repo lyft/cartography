@@ -1,7 +1,9 @@
 sudo: false
 language: python
 python:
- - "3.6"
+- "3.6"
 install:
- - pip install -e .
- - pip install -r test-requirements.txt
+- pip install -e .
+- pip install -r test-requirements.txt
+script:
+- make test
