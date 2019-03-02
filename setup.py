@@ -1,15 +1,15 @@
 from setuptools import setup, find_packages
 
-__version__ = '0.1.0'
+__version__ = '0.1.1'
 
 
 setup(
     name='cartography',
     version=__version__,
-    description='Explore transitive risks across your technical infrastructure.',
+    description='Explore assets and their relationships across your technical infrastructure.',
     url='https://www.github.com/lyft/cartography',
     maintainer='Lyft',
-    maintainer_email='securitv@lyft.com',
+    maintainer_email='security@lyft.com',
     license='apache2',
     packages=find_packages(exclude=['tests*']),
     package_data={
