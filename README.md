@@ -8,6 +8,8 @@ Service owners can generate asset reports, Red Teamers can discover attack paths
 
 Cartography is not the only [security](https://github.com/dowjones/hammer) [graph](https://github.com/BloodHoundAD/BloodHound) [tool](https://github.com/Netflix/security_monkey) [out](https://github.com/duo-labs/cloudmapper) there, but it differentiates itself by being fully-featured yet generic and extensible enough to help make anyone better understand their risk exposure, regardless of what platforms they use.  Rather than being focused on one core scenario or attack vector like the other linked tools, Cartography focuses on flexibility and exploration.
 
+You can learn more about the story behind Cartography in our [presentation at BSidesSF 2018](https://www.youtube.com/watch?v=8TV9TSNh7pA).
+
 
 ## Installation
 
