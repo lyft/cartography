@@ -895,6 +895,12 @@ Representation of an AWS Relational Database Service [DBInstance](https://docs.a
 	```
 	(AWSAccount)-[RESOURCE]->(RDSInstance)
 	```
+	
+- Some RDS instances are Read Replicas.
+
+    ```
+    (replica:RDSInstance)-[IS_READ_REPLICA_OF]->(source:RDSInstance)
+    ```
 
 
 ## S3Acl
