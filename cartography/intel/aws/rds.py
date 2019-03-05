@@ -61,10 +61,9 @@ def load_rds_instances(neo4j_session, data, region, current_aws_account_id, aws_
     for rds in data.get('DBInstances', []):
         instance_create_time = str(rds['InstanceCreateTime']) if 'InstanceCreateTime' in rds else None
         latest_restorable_time = str(rds['LatestRestorableTime']) if 'LatestRestorableTime' in rds else None
-        ep = rds.get("Endpoint", None)
-        endpoint_address = ep.get('Address') if ep else None
-        endpoint_hostedzoneid = ep.get('HostedZoneId') if ep else None
-        endpoint_port = ep.get('Port') if ep else None
+
+        ep = _validate_rds_endpoint(rds)
+
         neo4j_session.run(
             ingest_rds_instance,
             DBInstanceArn=rds['DBInstanceArn'],
@@ -92,13 +91,24 @@ def load_rds_instances(neo4j_session, data, region, current_aws_account_id, aws_
             PreferredBackupWindow=rds.get('PreferredBackupWindow', None),
             LatestRestorableTime=latest_restorable_time,
             PreferredMaintenanceWindow=rds.get('PreferredMaintenanceWindow', None),
-            EndpointAddress = endpoint_address,
-            EndpointHostedZoneId = endpoint_hostedzoneid,
-            EndpointPort = endpoint_port,
+            EndpointAddress = ep.get('Address', None),
+            EndpointHostedZoneId = ep.get('HostedZoneId', None),
+            EndpointPort = ep.get('Port', None),
             Region=region,
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag
         )
+
+
+def _validate_rds_endpoint(rds):
+    """
+    Get Endpoint from RDS data structure.  Log to debug if an Endpoint field does not exist.
+    """
+
+    ep = rds.get('Endpoint', dict())
+    if not ep:
+        logger.debug(f"RDS instance does not have an Endpoint field.  Here is the offending object: {rds}")
+    return ep
 
 
 def cleanup_rds_instances(neo4j_session, common_job_parameters):
