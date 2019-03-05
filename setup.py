@@ -26,8 +26,10 @@ setup(
     dependency_links=[],
     install_requires=[
         "boto3>=1.7.0",
+        "botocore>1.12.0",
         "dnspython>=1.15.0",
-        "neo4j-driver>=1.5.0",
+        "neo4j-driver>=1.7.0",
+        "neobolt>=1.7.0",
         "policyuniverse>=1.1.0.0",
         "python-dateutil>=2.7.0",
     ],
