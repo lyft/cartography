@@ -119,9 +119,11 @@ def _attach_read_replicas(neo4j_session, read_replicas, aws_update_tag):
     SET r.lastupdated = {aws_update_tag}
     """
     for replica in read_replicas:
-        if replica['ReadReplicaSourceDBInstanceIdentifier'] is None:
-            logger.debug(f"Expected RDSInstance {replica.db_instance_identifier} to be a read replica but its "
-                          "ReadReplicaSourceDBInstanceIdentifier field is None.  Here is the object: {replica}")
+        if not replica.get('ReadReplicaSourceDBInstanceIdentifier'):
+            logger.debug(f"Expected RDSInstance to be a read replica but its ReadReplicaSourceDBInstanceIdentifier "
+                         f"field is None.  Here is the object: {replica}")
+        elif not replica.get('DBInstanceArn'):
+            logger.debug(f"Expected RDSInstance to have a DBInstanceArn but it doesn't.  Here is the object: {replica}")
         else:
             neo4j_session.run(
                 attach_replica_to_source,
