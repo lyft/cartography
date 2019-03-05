@@ -112,8 +112,8 @@ def _attach_read_replicas(neo4j_session, read_replicas, aws_update_tag):
     Attach read replicas to their source instances
     """
     attach_replica_to_source = """
-    MATCH (replica:RDSInstance{id:{ReplicaArn}}), 
-    (source:RDSInstance{db_instance_identifier:{SourceInstanceIdentifier}}) 
+    MATCH (replica:RDSInstance{id:{ReplicaArn}}),
+    (source:RDSInstance{db_instance_identifier:{SourceInstanceIdentifier}})
     MERGE (replica)-[r:IS_READ_REPLICA_OF]->(source)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {aws_update_tag}
