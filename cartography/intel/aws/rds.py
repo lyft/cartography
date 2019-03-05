@@ -104,7 +104,7 @@ def _validate_rds_endpoint(rds):
     """
     Get Endpoint from RDS data structure.  Log to debug if an Endpoint field does not exist.
     """
-    ep = rds.get('Endpoint', dict())
+    ep = rds.get('Endpoint', {})
     if not ep:
         logger.debug(f"RDS instance does not have an Endpoint field.  Here is the offending object: {rds}")
     return ep
