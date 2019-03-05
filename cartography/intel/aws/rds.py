@@ -66,6 +66,10 @@ def load_rds_instances(neo4j_session, data, region, current_aws_account_id, aws_
 
         ep = _validate_rds_endpoint(rds)
 
+        # Keep track of instances that are read replicas so we can attach them to their source instances later
+        if rds.get("ReadReplicaSourceDBInstanceIdentifier"):
+            read_replicas.append(rds)
+
         neo4j_session.run(
             ingest_rds_instance,
             DBInstanceArn=rds['DBInstanceArn'],
@@ -105,7 +109,7 @@ def load_rds_instances(neo4j_session, data, region, current_aws_account_id, aws_
 
 def _attach_read_replicas(neo4j_session, read_replicas, aws_update_tag):
     """
-    Attach read replicas to their source DB instances
+    Attach read replicas to their source instances
     """
     attach_replica_to_source = """
     MATCH (replica:RDSInstance{id:{ReplicaArn}}), 
@@ -116,8 +120,8 @@ def _attach_read_replicas(neo4j_session, read_replicas, aws_update_tag):
     """
     for replica in read_replicas:
         if replica['ReadReplicaSourceDBInstanceIdentifier'] is None:
-            logger.warning("Expected RDSInstance %s to be a read replica but its ReadReplicaSourceDBInstanceIdentifier "
-                           "field is None", replica.db_instance_identifier)
+            logger.debug(f"Expected RDSInstance {replica.db_instance_identifier} to be a read replica but its "
+                          "ReadReplicaSourceDBInstanceIdentifier field is None.  Here is the object: {replica}")
         else:
             neo4j_session.run(
                 attach_replica_to_source,
