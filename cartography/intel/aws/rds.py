@@ -97,9 +97,9 @@ def load_rds_instances(neo4j_session, data, region, current_aws_account_id, aws_
             PreferredBackupWindow=rds.get('PreferredBackupWindow', None),
             LatestRestorableTime=latest_restorable_time,
             PreferredMaintenanceWindow=rds.get('PreferredMaintenanceWindow', None),
-            EndpointAddress = ep.get('Address', None),
-            EndpointHostedZoneId = ep.get('HostedZoneId', None),
-            EndpointPort = ep.get('Port', None),
+            EndpointAddress=ep.get('Address', None),
+            EndpointHostedZoneId=ep.get('HostedZoneId', None),
+            EndpointPort=ep.get('Port', None),
             Region=region,
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag
