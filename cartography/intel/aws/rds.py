@@ -58,6 +58,8 @@ def load_rds_instances(neo4j_session, data, region, current_aws_account_id, aws_
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {aws_update_tag}
     """
+    read_replicas = []
+
     for rds in data.get('DBInstances', []):
         instance_create_time = str(rds['InstanceCreateTime']) if 'InstanceCreateTime' in rds else None
         latest_restorable_time = str(rds['LatestRestorableTime']) if 'LatestRestorableTime' in rds else None
@@ -65,6 +67,10 @@ def load_rds_instances(neo4j_session, data, region, current_aws_account_id, aws_
         endpoint_address = ep.get('Address') if ep else None
         endpoint_hostedzoneid = ep.get('HostedZoneId') if ep else None
         endpoint_port = ep.get('Port') if ep else None
+
+        # Keep track of instances that are read replicas so we can connect them to their source instances later
+        if rds.get("ReadReplicaSourceDBInstanceIdentifier", None):
+            read_replicas.append(rds)
         neo4j_session.run(
             ingest_rds_instance,
             DBInstanceArn=rds['DBInstanceArn'],
@@ -99,6 +105,31 @@ def load_rds_instances(neo4j_session, data, region, current_aws_account_id, aws_
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag
         )
+    _attach_read_replicas(neo4j_session, read_replicas, aws_update_tag)
+
+
+def _attach_read_replicas(neo4j_session, read_replicas, aws_update_tag):
+    """
+    Attach read replicas to their source DB instances
+    """
+    attach_replica_to_source = """
+    MATCH (replica:RDSInstance{id:{ReplicaArn}}), 
+    (source:RDSInstance{db_instance_identifier:{SourceInstanceIdentifier}}) 
+    MERGE (replica)-[r:IS_READ_REPLICA_OF]->(source)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {aws_update_tag}
+    """
+    for replica in read_replicas:
+        if replica['ReadReplicaSourceDBInstanceIdentifier'] is None:
+            logger.warning("Expected RDSInstance %s to be a read replica but its ReadReplicaSourceDBInstanceIdentifier "
+                           "field is None", replica.db_instance_identifier)
+        else:
+            neo4j_session.run(
+                attach_replica_to_source,
+                ReplicaArn=replica['DBInstanceArn'],
+                SourceInstanceIdentifier=replica['ReadReplicaSourceDBInstanceIdentifier'],
+                aws_update_tag=aws_update_tag
+            )
 
 
 def cleanup_rds_instances(neo4j_session, common_job_parameters):
