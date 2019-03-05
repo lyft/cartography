@@ -48,7 +48,10 @@ def load_rds_instances(neo4j_session, data, region, current_aws_account_id, aws_
     rds.preferred_backup_window = {PreferredBackupWindow},
     rds.latest_restorable_time = {LatestRestorableTime},
     rds.preferred_maintenance_window = {PreferredMaintenanceWindow},
-    rds.backup_retention_period = {BackupRetentionPeriod}
+    rds.backup_retention_period = {BackupRetentionPeriod},
+    rds.endpoint_address = {EndpointAddress},
+    rds.endpoint_hostedzoneid = {EndpointHostedZoneId},
+    rds.endpoint_port = {EndpointPort}
     WITH rds
     MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
     MERGE (aa)-[r:RESOURCE]->(rds)
@@ -58,6 +61,10 @@ def load_rds_instances(neo4j_session, data, region, current_aws_account_id, aws_
     for rds in data.get('DBInstances', []):
         instance_create_time = str(rds['InstanceCreateTime']) if 'InstanceCreateTime' in rds else None
         latest_restorable_time = str(rds['LatestRestorableTime']) if 'LatestRestorableTime' in rds else None
+        ep = rds.get("Endpoint", None)
+        endpoint_address = ep.get('Address') if ep else None
+        endpoint_hostedzoneid = ep.get('HostedZoneId') if ep else None
+        endpoint_port = ep.get('Port') if ep else None
         neo4j_session.run(
             ingest_rds_instance,
             DBInstanceArn=rds['DBInstanceArn'],
@@ -85,6 +92,9 @@ def load_rds_instances(neo4j_session, data, region, current_aws_account_id, aws_
             PreferredBackupWindow=rds.get('PreferredBackupWindow', None),
             LatestRestorableTime=latest_restorable_time,
             PreferredMaintenanceWindow=rds.get('PreferredMaintenanceWindow', None),
+            EndpointAddress = endpoint_address,
+            EndpointHostedZoneId = endpoint_hostedzoneid,
+            EndpointPort = endpoint_port,
             Region=region,
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag
