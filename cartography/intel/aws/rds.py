@@ -105,7 +105,80 @@ def load_rds_instances(neo4j_session, data, region, current_aws_account_id, aws_
             aws_update_tag=aws_update_tag
         )
         _attach_ec2_security_groups(neo4j_session, rds, aws_update_tag)
+        _attach_ec2_subnet_groups(neo4j_session, rds, aws_update_tag)
     _attach_read_replicas(neo4j_session, read_replicas, aws_update_tag)
+
+
+def _attach_ec2_subnet_groups(neo4j_session, instance, aws_update_tag):
+    """
+    Attach RDS instance to its EC2 subnets
+    """
+    attach_rds_to_subnet_group = """
+    MERGE(sng:DBSubnetGroup{id:{DBSubnetGroupName}})
+    ON CREATE SET sng.firstseen = timestamp()
+    SET sng.vpc_id = {VpcId},
+    sng.description = {DBSubnetGroupDescription},
+    sng.status = {DBSubnetGroupStatus}
+    WITH sng
+    MATCH(rds:RDSInstance{id:{DBInstanceArn}})
+    MERGE(rds)-[r:PART_OF_DB_SUBNET_GROUP]->(sng)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {aws_update_tag}
+    """
+    if not instance.get('DBInstanceArn'):
+        logger.debug("Expected RDSInstance to have a DBInstanceArn but it doesn't.  Here is the object: %s", instance)
+    elif not instance.get('DBSubnetGroup'):
+        logger.debug("Expected RDSInstance to have a DBSubnetGroup but it doesn't.  Here is the object: %s", instance)
+    else:
+        db_sng = instance.get('DBSubnetGroup')
+        neo4j_session.run(
+            attach_rds_to_subnet_group,
+            DBSubnetGroupName=db_sng.get('DBSubnetGroupName'),
+            VpcId=db_sng.get("VpcId", None),
+            DBSubnetGroupDescription=db_sng.get('DBSubnetGroupDescription', None),
+            DBSubnetGroupStatus=db_sng.get('SubnetGroupStatus', None),
+            DBInstanceArn=instance.get('DBInstanceArn'),
+            aws_update_tag=aws_update_tag
+        )
+        _attach_ec2_subnets_to_subnetgroup(neo4j_session, db_sng, aws_update_tag)
+
+
+def _attach_ec2_subnets_to_subnetgroup(neo4j_session, db_subnet_group, aws_update_tag):
+    """
+    Attach EC2Subnets to the DB Subnet Group.
+
+    From https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_VPC.WorkingWithRDSInstanceinaVPC.html:
+    `Each DB subnet group should have subnets in at least two Availability Zones in a given region. When creating a DB
+    instance in a VPC, you must select a DB subnet group. Amazon RDS uses that DB subnet group and your preferred
+    Availability Zone to select a subnet and an IP address within that subnet to associate with your DB instance.`
+    """
+    attach_subnets_to_sng = """
+    MATCH(subnet:EC2Subnet{subnetid:{SubnetIdentifier}}),
+    (sng:DBSubnetGroup{id:{DBSubnetGroupName}})
+    MERGE(sng)-[r:RESOURCE]->(subnet)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {aws_update_tag},
+    subnet.availability_zone = {SubnetAvailabilityZone}
+    """
+    # TODO: Note: RDS data has subnet availability zone data, but I don't think that this is the right place to
+    # TODO: update it.  We should update the availability zone data in the EC2 ingestion part.
+    if not db_subnet_group.get('DBSubnetGroupName'):
+        logger.debug("Expected DBSubnetGroup to have a DBSubnetGroupName but it doesn't.  Here is the object: %s",
+                     db_subnet_group)
+    else:
+        for sn in db_subnet_group.get('Subnets', []):
+            subnet_id = sn.get('SubnetIdentifier', None)
+            if not subnet_id:
+                logger.debug("Expected Subnet to have a SubnetIdentifier but it doesn't. Here is the object: %s",
+                             db_subnet_group)
+            else:
+                neo4j_session.run(
+                    attach_subnets_to_sng,
+                    SubnetIdentifier=subnet_id,
+                    DBSubnetGroupName=db_subnet_group.get('DBSubnetGroupName'),
+                    aws_update_tag=aws_update_tag,
+                    SubnetAvailabilityZone=sn.get('SubnetAvailabilityZone', {}).get('Name', None)
+                )
 
 
 def _attach_ec2_security_groups(neo4j_session, instance, aws_update_tag):
