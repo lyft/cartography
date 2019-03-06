@@ -544,7 +544,7 @@ Representation of an AWS EC2 [Security Group](https://docs.aws.amazon.com/AWSEC2
 
 ### Relationships
 
-- EC2 Instances, Network Interfaces, Load Balancers, Elastic Search Domains, IP Rules, and IP Permission Inbound nodes can be members of EC2 Security Groups.
+- EC2 Instances, Network Interfaces, Load Balancers, Elastic Search Domains, IP Rules, IP Permission Inbound nodes, and RDS Instances can be members of EC2 Security Groups.
 
 	```
 	(EC2Instance,
@@ -552,7 +552,8 @@ Representation of an AWS EC2 [Security Group](https://docs.aws.amazon.com/AWSEC2
 	 LoadBalancer,
 	 ESDomain,
 	 IpRule,
-	 IpPermissionInbound)-[MEMBER_OF_EC2_SECURITY_GROUP]->(EC2SecurityGroup)
+	 IpPermissionInbound,
+	 RDSInstance)-[MEMBER_OF_EC2_SECURITY_GROUP]->(EC2SecurityGroup)
 	```
 	
 - Load balancers can define inbound [Source Security Groups](https://docs.aws.amazon.com/elasticloadbalancing/latest/classic/elb-security-groups.html).
@@ -902,6 +903,11 @@ Representation of an AWS Relational Database Service [DBInstance](https://docs.a
     (replica:RDSInstance)-[IS_READ_REPLICA_OF]->(source:RDSInstance)
     ```
 
+- RDS Instances can be members of EC2 Security Groups.
+
+    ```
+    (RDSInstance)-[m:MEMBER_OF_EC2_SECURITY_GROUP]->(EC2SecurityGroup)
+    ```
 
 ## S3Acl
 
