@@ -120,10 +120,11 @@ def _attach_read_replicas(neo4j_session, read_replicas, aws_update_tag):
     """
     for replica in read_replicas:
         if not replica.get('ReadReplicaSourceDBInstanceIdentifier'):
-            logger.debug(f"Expected RDSInstance to be a read replica but its ReadReplicaSourceDBInstanceIdentifier "
-                         f"field is None.  Here is the object: {replica}")
+            logger.debug("Expected RDSInstance to be a read replica but its ReadReplicaSourceDBInstanceIdentifier "
+                         "field is None.  Here is the object: %s", replica)
         elif not replica.get('DBInstanceArn'):
-            logger.debug(f"Expected RDSInstance to have a DBInstanceArn but it doesn't.  Here is the object: {replica}")
+            logger.debug("Expected RDSInstance to have a DBInstanceArn but it doesn't."
+                         "Here is the object: %s", replica)
         else:
             neo4j_session.run(
                 attach_replica_to_source,
@@ -139,7 +140,7 @@ def _validate_rds_endpoint(rds):
     """
     ep = rds.get('Endpoint', {})
     if not ep:
-        logger.debug(f"RDS instance does not have an Endpoint field.  Here is the offending object: {rds}")
+        logger.debug("RDS instance does not have an Endpoint field.  Here is the offending object: %s", rds)
     return ep
 
 
