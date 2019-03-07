@@ -51,7 +51,8 @@ def load_rds_instances(neo4j_session, data, region, current_aws_account_id, aws_
     rds.backup_retention_period = {BackupRetentionPeriod},
     rds.endpoint_address = {EndpointAddress},
     rds.endpoint_hostedzoneid = {EndpointHostedZoneId},
-    rds.endpoint_port = {EndpointPort}
+    rds.endpoint_port = {EndpointPort},
+    rds.lastupdated = {aws_update_tag}
     WITH rds
     MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
     MERGE (aa)-[r:RESOURCE]->(rds)
@@ -144,10 +145,11 @@ def _attach_read_replicas(neo4j_session, read_replicas, aws_update_tag):
     """
     for replica in read_replicas:
         if not replica.get('ReadReplicaSourceDBInstanceIdentifier'):
-            logger.debug(f"Expected RDSInstance to be a read replica but its ReadReplicaSourceDBInstanceIdentifier "
-                         f"field is None.  Here is the object: {replica}")
+            logger.debug("Expected RDSInstance to be a read replica but its ReadReplicaSourceDBInstanceIdentifier "
+                         "field is None.  Here is the object: %r", replica)
         elif not replica.get('DBInstanceArn'):
-            logger.debug(f"Expected RDSInstance to have a DBInstanceArn but it doesn't.  Here is the object: {replica}")
+            logger.debug("Expected RDSInstance to have a DBInstanceArn but it doesn't."
+                         "Here is the object: %r", replica)
         else:
             neo4j_session.run(
                 attach_replica_to_source,
@@ -163,7 +165,7 @@ def _validate_rds_endpoint(rds):
     """
     ep = rds.get('Endpoint', {})
     if not ep:
-        logger.debug(f"RDS instance does not have an Endpoint field.  Here is the offending object: {rds}")
+        logger.debug("RDS instance does not have an Endpoint field.  Here is the object: %r", rds)
     return ep
 
 
