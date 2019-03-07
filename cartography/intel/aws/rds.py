@@ -51,7 +51,8 @@ def load_rds_instances(neo4j_session, data, region, current_aws_account_id, aws_
     rds.backup_retention_period = {BackupRetentionPeriod},
     rds.endpoint_address = {EndpointAddress},
     rds.endpoint_hostedzoneid = {EndpointHostedZoneId},
-    rds.endpoint_port = {EndpointPort}
+    rds.endpoint_port = {EndpointPort},
+    rds.lastupdated = {aws_update_tag}
     WITH rds
     MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
     MERGE (aa)-[r:RESOURCE]->(rds)
