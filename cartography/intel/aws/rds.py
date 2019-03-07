@@ -121,7 +121,7 @@ def _attach_ec2_security_groups(neo4j_session, instance, aws_update_tag):
     SET m.lastupdated = {aws_update_tag}
     """
     if not instance.get('DBInstanceArn'):
-        logger.debug(f"Expected RDSInstance to have a DBInstanceArn but it doesn't.  Here is the object: {instance}")
+        logger.debug("Expected RDSInstance to have a DBInstanceArn but it doesn't.  Here is the object: %r", instance)
     else:
         for group in instance.get('VpcSecurityGroups', []):
             neo4j_session.run(
