@@ -119,7 +119,8 @@ def _attach_ec2_subnet_groups(neo4j_session, instance, aws_update_tag):
     ON CREATE SET sng.firstseen = timestamp()
     SET sng.vpc_id = {VpcId},
     sng.description = {DBSubnetGroupDescription},
-    sng.status = {DBSubnetGroupStatus}
+    sng.status = {DBSubnetGroupStatus},
+    sng.lastupdated = {aws_update_tag}
     WITH sng
     MATCH(rds:RDSInstance{id:{DBInstanceArn}})
     MERGE(rds)-[r:PART_OF_DB_SUBNET_GROUP]->(sng)
@@ -127,9 +128,9 @@ def _attach_ec2_subnet_groups(neo4j_session, instance, aws_update_tag):
     SET r.lastupdated = {aws_update_tag}
     """
     if not instance.get('DBInstanceArn'):
-        logger.debug("Expected RDSInstance to have a DBInstanceArn but it doesn't.  Here is the object: %s", instance)
+        logger.debug("Expected RDSInstance to have a DBInstanceArn but it doesn't.  Here is the object: %r", instance)
     elif not instance.get('DBSubnetGroup'):
-        logger.debug("Expected RDSInstance to have a DBSubnetGroup but it doesn't.  Here is the object: %s", instance)
+        logger.debug("Expected RDSInstance to have a DBSubnetGroup but it doesn't.  Here is the object: %r", instance)
     else:
         db_sng = instance.get('DBSubnetGroup')
         neo4j_session.run(
@@ -164,13 +165,13 @@ def _attach_ec2_subnets_to_subnetgroup(neo4j_session, db_subnet_group, aws_updat
     # TODO: Note: RDS data has subnet availability zone data, but I don't think that this is the right place to
     # TODO: update it.  We should update the availability zone data in the EC2 ingestion part.
     if not db_subnet_group.get('DBSubnetGroupName'):
-        logger.debug("Expected DBSubnetGroup to have a DBSubnetGroupName but it doesn't.  Here is the object: %s",
+        logger.debug("Expected DBSubnetGroup to have a DBSubnetGroupName but it doesn't.  Here is the object: %r",
                      db_subnet_group)
     else:
         for sn in db_subnet_group.get('Subnets', []):
             subnet_id = sn.get('SubnetIdentifier', None)
             if not subnet_id:
-                logger.debug("Expected Subnet to have a SubnetIdentifier but it doesn't. Here is the object: %s",
+                logger.debug("Expected Subnet to have a SubnetIdentifier but it doesn't. Here is the object: %r",
                              db_subnet_group)
             else:
                 neo4j_session.run(
@@ -242,9 +243,9 @@ def _validate_rds_endpoint(rds):
     return ep
 
 
-def cleanup_rds_instances(neo4j_session, common_job_parameters):
+def cleanup_rds_instances_and_db_subnet_groups(neo4j_session, common_job_parameters):
     """
-    Remove RDS graph nodes that were created from other ingestion runs
+    Remove RDS graph nodes and DBSubnetGroups that were created from other ingestion runs
     """
     run_cleanup_job('aws_import_rds_instances_cleanup.json', neo4j_session, common_job_parameters)
 
@@ -258,4 +259,4 @@ def sync_rds_instances(neo4j_session, boto3_session, regions, current_aws_accoun
         logger.info("Syncing RDS for region '%s' in account '%s'.", region, current_aws_account_id)
         data = get_rds_instance_data(boto3_session, region)
         load_rds_instances(neo4j_session, data, region, current_aws_account_id, aws_update_tag)
-    cleanup_rds_instances(neo4j_session, common_job_parameters)
+        cleanup_rds_instances_and_db_subnet_groups(neo4j_session, common_job_parameters)

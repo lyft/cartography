@@ -1,8 +1,15 @@
 {
-  "statements": [{
-    "query": "MATCH (n:RDSInstance)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
-    "iterative": true,
-    "iterationsize": 100
-  }],
+  "statements": [
+    {
+      "query": "MATCH (sng:DBSubnetGroup)<-[:PART_OF_DB_SUBNET_GROUP]-(:RDSInstance)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE sng.lastupdated <> {UPDATE_TAG} WITH sng LIMIT {LIMIT_SIZE} DETACH DELETE (sng) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (n:RDSInstance)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    }
+  ],
   "name": "cleanup RDSInstance"
 }
