@@ -1,6 +1,8 @@
 # Cartography Schema
 
 ## ℹ️ Quick notes on notation
+- **Bolded words** in the schema tables indicate that this field is indexed, so your queries will run faster if you use these fields.
+
 - This isn't proper Neo4j syntax, but for the purpose of this document we will use this notation:
 
 	```
