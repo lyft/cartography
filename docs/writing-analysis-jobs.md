@@ -33,38 +33,38 @@ We can take the ideas above and use Cypher's declarative syntax to "sketch" out 
 
 1. _The EC2 instance is a member of a Security Group that has an IP Rule applied to it that allows inbound traffic from the 0.0.0.0/0 subnet._
 
-	In Cypher, this is 
+    In Cypher, this is 
 
-	```
-	MATCH 
-	(:IpRange{id: '0.0.0.0/0'})-[:MEMBER_OF_IP_RULE]->(:IpPermissionInbound)
-	-[:MEMBER_OF_EC2_SECURITY_GROUP]->(group:EC2SecurityGroup)
-	<-[:MEMBER_OF_EC2_SECURITY_GROUP]-(instance:EC2Instance)
-	
-	SET instance.exposed_internet = true, 
-	    instance.exposed_internet_type = coalesce(instance.exposed_internet_type , []) + 'direct';
-	```
-	In the `SET` clause we add `exposed_internet = True` to the instance.  We also add a field for `exposed_internet_type` to denote what type of internet exposure has occurred here.  You can read the [documentation for `coalesce`](https://neo4j.com/docs/cypher-manual/current/functions/scalar/#functions-coalesce), but in English this last part says "mark `exposed_internet_type` as `direct` unless this field was already previously defined on this instance.
-	
+    ```
+    MATCH 
+    (:IpRange{id: '0.0.0.0/0'})-[:MEMBER_OF_IP_RULE]->(:IpPermissionInbound)
+    -[:MEMBER_OF_EC2_SECURITY_GROUP]->(group:EC2SecurityGroup)
+    <-[:MEMBER_OF_EC2_SECURITY_GROUP]-(instance:EC2Instance)
+    
+    SET instance.exposed_internet = true, 
+        instance.exposed_internet_type = coalesce(instance.exposed_internet_type , []) + 'direct';
+    ```
+    In the `SET` clause we add `exposed_internet = True` to the instance.  We also add a field for `exposed_internet_type` to denote what type of internet exposure has occurred here.  You can read the [documentation for `coalesce`](https://neo4j.com/docs/cypher-manual/current/functions/scalar/#functions-coalesce), but in English this last part says "mark `exposed_internet_type` as `direct` unless this field was already previously defined on this instance.
+    
 
 2. _The EC2 instance has a network interface that is connected to a Security Group that has an IP Rule applied to it that allows inbound traffic from the 0.0.0.0/0 subnet._
 
-	This is the same as the previous query except for the final line:
+    This is the same as the previous query except for the final line:
 
-	```
-	MATCH 
-	(:IpRange{id: '0.0.0.0/0'})-[:MEMBER_OF_IP_RULE]->(:IpPermissionInbound)
-	-[:MEMBER_OF_EC2_SECURITY_GROUP]->(group:EC2SecurityGroup)
-	<-[:NETWORK_INTERFACE*..2]-(instance:EC2Instance)
+    ```
+    MATCH 
+    (:IpRange{id: '0.0.0.0/0'})-[:MEMBER_OF_IP_RULE]->(:IpPermissionInbound)
+    -[:MEMBER_OF_EC2_SECURITY_GROUP]->(group:EC2SecurityGroup)
+    <-[:NETWORK_INTERFACE*..2]-(instance:EC2Instance)
 
-	SET instance.exposed_internet = true, 
-	    instance.exposed_internet_type = coalesce(instance.exposed_internet_type , []) + 'direct';
-	```
-	
-	The `*..2` operator means "within 2 hops".  We use this here as a shortcut because there are a few more relationships between NetworkInterfaces and EC2SecurityGroups that we can skip over.
-	
+    SET instance.exposed_internet = true, 
+        instance.exposed_internet_type = coalesce(instance.exposed_internet_type , []) + 'direct';
+    ```
+    
+    The `*..2` operator means "within 2 hops".  We use this here as a shortcut because there are a few more relationships between NetworkInterfaces and EC2SecurityGroups that we can skip over.
+    
 Finally, notice that (1) and (2) are similar enough that we can actually merge them like this:
-	
+    
 ```
 MATCH 
 (:IpRange{id: '0.0.0.0/0'})-[:MEMBER_OF_IP_RULE]->(:IpPermissionInbound)
@@ -72,12 +72,12 @@ MATCH
 <-[:MEMBER_OF_EC2_SECURITY_GROUP|NETWORK_INTERFACE*..2]-(instance:EC2Instance)
 
 SET instance.exposed_internet = true, 
-	 instance.exposed_internet_type = coalesce(instance.exposed_internet_type , []) + 'direct';
+    instance.exposed_internet_type = coalesce(instance.exposed_internet_type , []) + 'direct';
 ```
-	
+    
 Kinda neat, right?
 
-	
+    
 ### The skeleton of an Analysis Job
 Now that we know what we want to do on a sync, how should we structure the Analysis Job?  Here is the basic skeleton that we recommend.  
 
@@ -90,28 +90,28 @@ In general, the first statement(s) should be a "clean-up phase" that removes cus
 {
   "name": "AWS asset internet exposure",
   "statements": [
-	  {
-	    "__comment": "This is a clean-up statement to remove custom attributes",
-	    "query": "MATCH (n) 
-	    			WHERE EXISTS(n.exposed_internet) 
-					      AND labels(n) IN ['AutoScalingGroup', 'EC2Instance', 'LoadBalancer'] 
-					WITH n LIMIT {LIMIT_SIZE} 
-					REMOVE n.exposed_internet, n.exposed_internet_type 
-					RETURN COUNT(*) as TotalCompleted",
-	    "iterative": true,
-	    "iterationsize": 1000
-	  },
-	  {
-	    "__comment__": "This is our analysis logic as described in the section above",
-	    "query": MATCH (:IpRange{id: '0.0.0.0/0'})-[:MEMBER_OF_IP_RULE]->(:IpPermissionInbound)
-					-[:MEMBER_OF_EC2_SECURITY_GROUP]->(group:EC2SecurityGroup)
-					<-[:MEMBER_OF_EC2_SECURITY_GROUP|NETWORK_INTERFACE*..2]-(instance:EC2Instance)
+      {
+        "__comment": "This is a clean-up statement to remove custom attributes",
+        "query": "MATCH (n) 
+                  WHERE EXISTS(n.exposed_internet) 
+                        AND labels(n) IN ['AutoScalingGroup', 'EC2Instance', 'LoadBalancer'] 
+                  WITH n LIMIT {LIMIT_SIZE} 
+                  REMOVE n.exposed_internet, n.exposed_internet_type 
+                  RETURN COUNT(*) as TotalCompleted",
+        "iterative": true,
+        "iterationsize": 1000
+      },
+      {
+        "__comment__": "This is our analysis logic as described in the section above",
+        "query": MATCH (:IpRange{id: '0.0.0.0/0'})-[:MEMBER_OF_IP_RULE]->(:IpPermissionInbound)
+                 -[:MEMBER_OF_EC2_SECURITY_GROUP]->(group:EC2SecurityGroup)
+                 <-[:MEMBER_OF_EC2_SECURITY_GROUP|NETWORK_INTERFACE*..2]-(instance:EC2Instance)
 
-					SET instance.exposed_internet = true, 
-						 instance.exposed_internet_type = coalesce(instance.exposed_internet_type , []) + 'direct';,
-	    "iterative": true,
-	    "iterationsize": 100
-	  }
+                 SET instance.exposed_internet = true, 
+                     instance.exposed_internet_type = coalesce(instance.exposed_internet_type , []) + 'direct';,
+        "iterative": true,
+        "iterationsize": 100
+      }
   ]  
 }
 ```
