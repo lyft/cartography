@@ -105,7 +105,31 @@ def load_rds_instances(neo4j_session, data, region, current_aws_account_id, aws_
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag
         )
+        _attach_ec2_security_groups(neo4j_session, rds, aws_update_tag)
     _attach_read_replicas(neo4j_session, read_replicas, aws_update_tag)
+
+
+def _attach_ec2_security_groups(neo4j_session, instance, aws_update_tag):
+    """
+    Attach an RDS instance to its EC2SecurityGroups
+    """
+    attach_rds_to_group = """
+    MATCH (rds:RDSInstance{id:{RdsArn}}),
+    (sg:EC2SecurityGroup{id:{GroupId}})
+    MERGE (rds)-[m:MEMBER_OF_EC2_SECURITY_GROUP]->(sg)
+    ON CREATE SET m.firstseen = timestamp()
+    SET m.lastupdated = {aws_update_tag}
+    """
+    if not instance.get('DBInstanceArn'):
+        logger.debug("Expected RDSInstance to have a DBInstanceArn but it doesn't.  Here is the object: %r", instance)
+    else:
+        for group in instance.get('VpcSecurityGroups', []):
+            neo4j_session.run(
+                attach_rds_to_group,
+                RdsArn=instance.get('DBInstanceArn'),
+                GroupId=group.get('VpcSecurityGroupId'),
+                aws_update_tag=aws_update_tag
+            )
 
 
 def _attach_read_replicas(neo4j_session, read_replicas, aws_update_tag):
