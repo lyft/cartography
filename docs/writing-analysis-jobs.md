@@ -7,7 +7,7 @@ In a nutshell, Analysis Jobs let you add your own customizations to Cartography 
 There are 3 stages to a cartography sync.  First we create database indexes, next we ingest AWS assets, and finally we can run Analysis Jobs on the database (see [cartography.sync.build\_default\_sync()](https://github.com/lyft/cartography/blob/master/cartography/sync.py)).  This tutorial focuses on Analysis Jobs.
 
 ### How to run
-Each Analysis Job is a JSON file with a list of Neo4j statements which get run in order.  To run Analysis Jobs, in your call to `cartography`, set the `--analysis-job-directory` parameter to the folder path of your jobs.  Although the order of statements within a single job is preserved, different jobs will run in a different order each time.
+Each Analysis Job is a JSON file with a list of Neo4j statements which get run in order.  To run Analysis Jobs, in your call to `cartography`, set the `--analysis-job-directory` parameter to the folder path of your jobs.  Although the order of statements within a single job is preserved, we don't guarantee the order in which jobs are executed.
 
 
 ## Example job: which of my EC2 instances is accessible to any host on the internet?
@@ -44,8 +44,8 @@ We can take the ideas above and use Cypher's declarative syntax to "sketch" out 
     SET instance.exposed_internet = true, 
         instance.exposed_internet_type = coalesce(instance.exposed_internet_type , []) + 'direct';
     ```
-    In the `SET` clause we add `exposed_internet = True` to the instance.  We also add a field for `exposed_internet_type` to denote what type of internet exposure has occurred here.  You can read the [documentation for `coalesce`](https://neo4j.com/docs/cypher-manual/current/functions/scalar/#functions-coalesce), but in English this last part says "mark `exposed_internet_type` as `direct` unless this field was already previously defined on this instance.
-    
+    In the `SET` clause we add `exposed_internet = True` to the instance.  We also add a field for `exposed_internet_type` to denote what type of internet exposure has occurred here.  You can read the [documentation for `coalesce`](https://neo4j.com/docs/cypher-manual/current/functions/scalar/#functions-coalesce), but in English this last part says "add `direct` to the list of ways this instance is exposed to the internet".
+
 
 2. _The EC2 instance has a network interface that is connected to a Security Group that has an IP Rule applied to it that allows inbound traffic from the 0.0.0.0/0 subnet._
 
