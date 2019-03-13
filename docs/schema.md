@@ -13,7 +13,7 @@
 
 	```
 	(NodeTypeA)-[RELATIONSHIP_R]->(NodeTypeB)
-	(NodeTypeA)-[RELATIONSHIP_R]wx->(NodeTypeC)
+	(NodeTypeA)-[RELATIONSHIP_R]->(NodeTypeC)
 	(NodeTypeA)-[RELATIONSHIP_R]->(NodeTypeD)
 	(NodeTypeA)-[RELATIONSHIP_R]->(NodeTypeE)
 	```
