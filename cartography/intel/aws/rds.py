@@ -106,18 +106,19 @@ def load_rds_instances(neo4j_session, data, region, current_aws_account_id, aws_
             aws_update_tag=aws_update_tag
         )
         _attach_ec2_security_groups(neo4j_session, rds, aws_update_tag)
-        _attach_ec2_subnet_groups(neo4j_session, rds, aws_update_tag)
+        _attach_ec2_subnet_groups(neo4j_session, rds, region, current_aws_account_id, aws_update_tag)
     _attach_read_replicas(neo4j_session, read_replicas, aws_update_tag)
 
 
-def _attach_ec2_subnet_groups(neo4j_session, instance, aws_update_tag):
+def _attach_ec2_subnet_groups(neo4j_session, instance, region, current_aws_account_id, aws_update_tag):
     """
     Attach RDS instance to its EC2 subnets
     """
     attach_rds_to_subnet_group = """
-    MERGE(sng:DBSubnetGroup{id:{DBSubnetGroupName}})
+    MERGE(sng:DBSubnetGroup{id:{sng_arn}})
     ON CREATE SET sng.firstseen = timestamp()
-    SET sng.vpc_id = {VpcId},
+    SET sng.name = {DBSubnetGroupName},
+    sng.vpc_id = {VpcId},
     sng.description = {DBSubnetGroupDescription},
     sng.status = {DBSubnetGroupStatus},
     sng.lastupdated = {aws_update_tag}
@@ -133,8 +134,10 @@ def _attach_ec2_subnet_groups(neo4j_session, instance, aws_update_tag):
         logger.debug("Expected RDSInstance to have a DBSubnetGroup but it doesn't.  Here is the object: %r", instance)
     else:
         db_sng = instance.get('DBSubnetGroup')
+        arn = "arn:aws:rds:{0}:{1}:subgrp:{2}".format(region, current_aws_account_id, db_sng.get('DBSubnetGroupName'))
         neo4j_session.run(
             attach_rds_to_subnet_group,
+            sng_arn=arn,
             DBSubnetGroupName=db_sng.get('DBSubnetGroupName'),
             VpcId=db_sng.get("VpcId", None),
             DBSubnetGroupDescription=db_sng.get('DBSubnetGroupDescription', None),
@@ -142,10 +145,10 @@ def _attach_ec2_subnet_groups(neo4j_session, instance, aws_update_tag):
             DBInstanceArn=instance.get('DBInstanceArn'),
             aws_update_tag=aws_update_tag
         )
-        _attach_ec2_subnets_to_subnetgroup(neo4j_session, db_sng, aws_update_tag)
+        _attach_ec2_subnets_to_subnetgroup(neo4j_session, db_sng, region, current_aws_account_id, aws_update_tag)
 
 
-def _attach_ec2_subnets_to_subnetgroup(neo4j_session, db_subnet_group, aws_update_tag):
+def _attach_ec2_subnets_to_subnetgroup(neo4j_session, db_subnet_group, region, current_aws_account_id, aws_update_tag):
     """
     Attach EC2Subnets to the DB Subnet Group.
 
@@ -156,7 +159,7 @@ def _attach_ec2_subnets_to_subnetgroup(neo4j_session, db_subnet_group, aws_updat
     """
     attach_subnets_to_sng = """
     MATCH(subnet:EC2Subnet{subnetid:{SubnetIdentifier}}),
-    (sng:DBSubnetGroup{id:{DBSubnetGroupName}})
+    (sng:DBSubnetGroup{id:{sng_arn}})
     MERGE(sng)-[r:RESOURCE]->(subnet)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {aws_update_tag},
@@ -174,10 +177,12 @@ def _attach_ec2_subnets_to_subnetgroup(neo4j_session, db_subnet_group, aws_updat
                 logger.debug("Expected Subnet to have a SubnetIdentifier but it doesn't. Here is the object: %r",
                              db_subnet_group)
             else:
+                arn = "arn:aws:rds:{0}:{1}:subgrp:{2}".format(region, current_aws_account_id,
+                                                              db_subnet_group.get('DBSubnetGroupName'))
                 neo4j_session.run(
                     attach_subnets_to_sng,
                     SubnetIdentifier=subnet_id,
-                    DBSubnetGroupName=db_subnet_group.get('DBSubnetGroupName'),
+                    sng_arn=arn,
                     aws_update_tag=aws_update_tag,
                     SubnetAvailabilityZone=sn.get('SubnetAvailabilityZone', {}).get('Name', None)
                 )
