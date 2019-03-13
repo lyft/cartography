@@ -189,7 +189,7 @@ def _attach_ec2_security_groups(neo4j_session, instance, aws_update_tag):
     """
     attach_rds_to_group = """
     MATCH (rds:RDSInstance{id:{RdsArn}}),
-    (sg:EC2SecurityGroup{groupid:{GroupId}})
+    (sg:EC2SecurityGroup{id:{GroupId}})
     MERGE (rds)-[m:MEMBER_OF_EC2_SECURITY_GROUP]->(sg)
     ON CREATE SET m.firstseen = timestamp()
     SET m.lastupdated = {aws_update_tag}
