@@ -63,7 +63,12 @@ def get_role_list_data(session):
 def get_account_access_key_data(session, username):
     client = session.client('iam')
     # NOTE we can get away without using a paginator here because users are limited to two access keys
-    return client.list_access_keys(UserName=username)
+    keys = []
+    try:
+        keys.append(client.list_access_keys(UserName=username))
+    except Exception:
+        logger.debug("Could not get access keys for user %s.  Returning empty list and moving on.", username)
+    return keys
 
 
 def load_users(session, users, current_aws_account_id, aws_update_tag):
