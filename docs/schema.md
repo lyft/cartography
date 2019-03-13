@@ -298,7 +298,8 @@ Representation of an RDS [DB Subnet Group](https://docs.aws.amazon.com/AmazonRDS
 | Field | Description |
 |-------|-------------|
 |firstseen| Timestamp of when a sync job first discovered this node |
-|id| The name of DBSubnetGroup 
+|id| The ARN of the DBSubnetGroup|
+|name | The name of DBSubnetGroup | 
 |lastupdated| Timestamp of the last time the node was updated|
 |description| Description of the DB Subnet Group|
 |status| The status of the group |
@@ -309,7 +310,7 @@ Representation of an RDS [DB Subnet Group](https://docs.aws.amazon.com/AmazonRDS
 
 - RDS Instances are part of DB Subnet Groups
     ```
-    (RDSInstance)-[:PART_OF_DB_SUBNET_GROUP]->(DBSubnetGroup)
+    (RDSInstance)-[:MEMBER_OF_DB_SUBNET_GROUP]->(DBSubnetGroup)
     ```
 
 - DB Subnet Groups consist of EC2 Subnets
@@ -956,7 +957,7 @@ Representation of an AWS Relational Database Service [DBInstance](https://docs.a
 - RDS Instances are connected to DB Subnet Groups.
 
     ```
-    (RDSInstance)-[:PART_OF_DB_SUBNET_GROUP]->(DBSubnetGroup)
+    (RDSInstance)-[:MEMBER_OF_DB_SUBNET_GROUP]->(DBSubnetGroup)
     ```
 
 ## S3Acl

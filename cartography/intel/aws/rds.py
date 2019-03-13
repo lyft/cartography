@@ -124,7 +124,7 @@ def _attach_ec2_subnet_groups(neo4j_session, instance, region, current_aws_accou
     sng.lastupdated = {aws_update_tag}
     WITH sng
     MATCH(rds:RDSInstance{id:{DBInstanceArn}})
-    MERGE(rds)-[r:PART_OF_DB_SUBNET_GROUP]->(sng)
+    MERGE(rds)-[r:MEMBER_OF_DB_SUBNET_GROUP]->(sng)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {aws_update_tag}
     """
