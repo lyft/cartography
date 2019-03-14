@@ -15,3 +15,5 @@ deploy:
   on:
     distributions: sdist bdist_wheel
     repo: lyft/cartography
+    all_branches: true
+    condition: $TRAVIS_BRANCH =~ ^master|dev$
