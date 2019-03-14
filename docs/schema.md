@@ -260,15 +260,15 @@ Representation of an AWS [IAM Role](https://docs.aws.amazon.com/IAM/latest/APIRe
 
 - Some AWS Groups, Users, and Principals can assume AWS Roles.
 
-```
-(AWSGroup, AWSUser, AWSPrincipal)-[STS_ASSUMEROLE_ALLOW]->(AWSRole)
-```
+    ```
+    (AWSGroup, AWSUser, AWSPrincipal)-[STS_ASSUMEROLE_ALLOW]->(AWSRole)
+    ```
 
 - AWS Roles are defined in AWS Accounts.
 
-```
-(AWSAccount)-[AWS_ROLE]->(AWSRole)
-```
+    ```
+    (AWSAccount)-[AWS_ROLE]->(AWSRole)
+    ```
 
 
 ## AccountAccessKey
@@ -289,6 +289,34 @@ Representation of an AWS [Access Key](https://docs.aws.amazon.com/IAM/latest/API
 	```
 	(AWSUser, AWSPrincipal)-[AWS_ACCESS_KEY]->(AccountAccessKey)
 	```
+
+
+## DBSubnetGroup
+
+Representation of an RDS [DB Subnet Group](https://docs.aws.amazon.com/AmazonRDS/latest/APIReference/API_DBSubnetGroup.html).  For more information on how RDS instances interact with these, please see [this article](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_VPC.WorkingWithRDSInstanceinaVPC.html).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job first discovered this node |
+|id| The ARN of the DBSubnetGroup|
+|name | The name of DBSubnetGroup | 
+|lastupdated| Timestamp of the last time the node was updated|
+|description| Description of the DB Subnet Group|
+|status| The status of the group |
+|vpc_id| The ID of the VPC (Virtual Private Cloud) that this DB Subnet Group is associated with.|
+|value| The IP address that the DNSRecord points to|
+
+### Relationships
+
+- RDS Instances are part of DB Subnet Groups
+    ```
+    (RDSInstance)-[:MEMBER_OF_DB_SUBNET_GROUP]->(DBSubnetGroup)
+    ```
+
+- DB Subnet Groups consist of EC2 Subnets
+    ```
+    (DBSubnetGroup)-[:RESOURCE]->(EC2Subnet)
+    ```
 
 
 ## DNSRecord
@@ -586,6 +614,7 @@ Representation of an AWS EC2 [Subnet](https://docs.aws.amazon.com/AWSEC2/latest/
 | **subnetid** | The ID of the subnet|
 | **id** | same as subnetid |
 | region| The AWS region the subnet is installed on|
+|availability_zone| (If available) the AZ this subnet is installed on |
 
 
 ### Relationships
@@ -607,6 +636,12 @@ Representation of an AWS EC2 [Subnet](https://docs.aws.amazon.com/AWSEC2/latest/
 	```
 	(LoadBalancer)-[SUBNET]->(EC2Subnet)
 	```
+	
+- DB Subnet Groups consist of EC2 Subnets
+    ```
+    (DBSubnetGroup)-[:RESOURCE]->(EC2Subnet)
+    ```
+
 
 
 ## ESDomain
@@ -918,6 +953,12 @@ Representation of an AWS Relational Database Service [DBInstance](https://docs.a
 
     ```
     (RDSInstance)-[m:MEMBER_OF_EC2_SECURITY_GROUP]->(EC2SecurityGroup)
+    ```
+
+- RDS Instances are connected to DB Subnet Groups.
+
+    ```
+    (RDSInstance)-[:MEMBER_OF_DB_SUBNET_GROUP]->(DBSubnetGroup)
     ```
 
 ## S3Acl

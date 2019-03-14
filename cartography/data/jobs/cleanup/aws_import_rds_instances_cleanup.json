@@ -1,6 +1,24 @@
 {
   "statements": [
     {
+      "query": "MATCH (sng:DBSubnetGroup)<-[:MEMBER_OF_DB_SUBNET_GROUP]-(:RDSInstance)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE sng.lastupdated <> {UPDATE_TAG} WITH sng LIMIT {LIMIT_SIZE} DETACH DELETE (sng) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100,
+      "__comment__": "Delete DBSubnetGroups that no longer exist and DETACH them from their RDS instances."
+    },
+    {
+      "query": "MATCH (:DBSubnetGroup)<-[r:MEMBER_OF_DB_SUBNET_GROUP]-(:RDSInstance)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100,
+      "__comment__": "Delete the link between orphaned DB Subnet Groups and their RDS Instances."
+    },
+    {
+      "query": "MATCH (:EC2Subnet)<-[r:RESOURCE]-(:DBSubnetGroup)<-[:MEMBER_OF_DB_SUBNET_GROUP]-(:RDSInstance)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100,
+      "__comment__": "Delete the link between orphaned DB Subnet Groups and their EC2 Subnets."
+    },
+    {
       "query": "MATCH (n:RDSInstance)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
       "iterative": true,
       "iterationsize": 100,
