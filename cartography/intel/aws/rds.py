@@ -74,33 +74,33 @@ def load_rds_instances(neo4j_session, data, region, current_aws_account_id, aws_
         neo4j_session.run(
             ingest_rds_instance,
             DBInstanceArn=rds['DBInstanceArn'],
-            DBInstanceIdentifier=rds.get('DBInstanceIdentifier', None),
-            DBInstanceClass=rds.get('DBInstanceClass', None),
-            Engine=rds.get('Engine', None),
-            MasterUsername=rds.get('MasterUsername', None),
-            DBName=rds.get('DBName', None),
+            DBInstanceIdentifier=rds['DBInstanceIdentifier'],
+            DBInstanceClass=rds.get('DBInstanceClass'),
+            Engine=rds.get('Engine'),
+            MasterUsername=rds.get('MasterUsername'),
+            DBName=rds.get('DBName'),
             InstanceCreateTime=instance_create_time,
-            AvailabilityZone=rds.get('AvailabilityZone', None),
-            MultiAZ=rds.get('MultiAZ', None),
-            EngineVersion=rds.get('EngineVersion', None),
-            PubliclyAccessible=rds.get('PubliclyAccessible', None),
-            DBClusterIdentifier=rds.get('DBClusterIdentifier', None),
-            StorageEncrypted=rds.get('StorageEncrypted', None),
-            KmsKeyId=rds.get('KmsKeyId', None),
-            DbiResourceId=rds.get('DbiResourceId', None),
-            CACertificateIdentifier=rds.get('CACertificateIdentifier', None),
-            EnhancedMonitoringResourceArn=rds.get('EnhancedMonitoringResourceArn', None),
-            MonitoringRoleArn=rds.get('MonitoringRoleArn', None),
-            PerformanceInsightsEnabled=rds.get('PerformanceInsightsEnabled', None),
-            PerformanceInsightsKMSKeyId=rds.get('PerformanceInsightsKMSKeyId', None),
-            DeletionProtection=rds.get('DeletionProtection', None),
-            BackupRetentionPeriod=rds.get('BackupRetentionPeriod', None),
-            PreferredBackupWindow=rds.get('PreferredBackupWindow', None),
+            AvailabilityZone=rds.get('AvailabilityZone'),
+            MultiAZ=rds.get('MultiAZ'),
+            EngineVersion=rds.get('EngineVersion'),
+            PubliclyAccessible=rds.get('PubliclyAccessible'),
+            DBClusterIdentifier=rds.get('DBClusterIdentifier'),
+            StorageEncrypted=rds.get('StorageEncrypted'),
+            KmsKeyId=rds.get('KmsKeyId'),
+            DbiResourceId=rds.get('DbiResourceId'),
+            CACertificateIdentifier=rds.get('CACertificateIdentifier'),
+            EnhancedMonitoringResourceArn=rds.get('EnhancedMonitoringResourceArn'),
+            MonitoringRoleArn=rds.get('MonitoringRoleArn'),
+            PerformanceInsightsEnabled=rds.get('PerformanceInsightsEnabled'),
+            PerformanceInsightsKMSKeyId=rds.get('PerformanceInsightsKMSKeyId'),
+            DeletionProtection=rds.get('DeletionProtection'),
+            BackupRetentionPeriod=rds.get('BackupRetentionPeriod'),
+            PreferredBackupWindow=rds.get('PreferredBackupWindow'),
             LatestRestorableTime=latest_restorable_time,
-            PreferredMaintenanceWindow=rds.get('PreferredMaintenanceWindow', None),
-            EndpointAddress=ep.get('Address', None),
-            EndpointHostedZoneId=ep.get('HostedZoneId', None),
-            EndpointPort=ep.get('Port', None),
+            PreferredMaintenanceWindow=rds.get('PreferredMaintenanceWindow'),
+            EndpointAddress=ep.get('Address'),
+            EndpointHostedZoneId=ep.get('HostedZoneId'),
+            EndpointPort=ep.get('Port'),
             Region=region,
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag
@@ -128,24 +128,19 @@ def _attach_ec2_subnet_groups(neo4j_session, instance, region, current_aws_accou
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {aws_update_tag}
     """
-    if not instance.get('DBInstanceArn'):
-        logger.debug("Expected RDSInstance to have a DBInstanceArn but it doesn't.  Here is the object: %r", instance)
-    elif not instance.get('DBSubnetGroup'):
-        logger.debug("Expected RDSInstance to have a DBSubnetGroup but it doesn't.  Here is the object: %r", instance)
-    else:
-        db_sng = instance.get('DBSubnetGroup')
-        arn = _get_db_subnet_group_arn(region, current_aws_account_id, db_sng.get('DBSubnetGroupName'))
-        neo4j_session.run(
-            attach_rds_to_subnet_group,
-            sng_arn=arn,
-            DBSubnetGroupName=db_sng.get('DBSubnetGroupName'),
-            VpcId=db_sng.get("VpcId", None),
-            DBSubnetGroupDescription=db_sng.get('DBSubnetGroupDescription', None),
-            DBSubnetGroupStatus=db_sng.get('SubnetGroupStatus', None),
-            DBInstanceArn=instance.get('DBInstanceArn'),
-            aws_update_tag=aws_update_tag
-        )
-        _attach_ec2_subnets_to_subnetgroup(neo4j_session, db_sng, region, current_aws_account_id, aws_update_tag)
+    db_sng = instance['DBSubnetGroup']
+    arn = _get_db_subnet_group_arn(region, current_aws_account_id, db_sng['DBSubnetGroupName'])
+    neo4j_session.run(
+        attach_rds_to_subnet_group,
+        sng_arn=arn,
+        DBSubnetGroupName=db_sng['DBSubnetGroupName'],
+        VpcId=db_sng.get("VpcId"),
+        DBSubnetGroupDescription=db_sng.get('DBSubnetGroupDescription'),
+        DBSubnetGroupStatus=db_sng.get('SubnetGroupStatus'),
+        DBInstanceArn=instance['DBInstanceArn'],
+        aws_update_tag=aws_update_tag
+    )
+    _attach_ec2_subnets_to_subnetgroup(neo4j_session, db_sng, region, current_aws_account_id, aws_update_tag)
 
 
 def _attach_ec2_subnets_to_subnetgroup(neo4j_session, db_subnet_group, region, current_aws_account_id, aws_update_tag):
@@ -167,26 +162,16 @@ def _attach_ec2_subnets_to_subnetgroup(neo4j_session, db_subnet_group, region, c
     subnet.availability_zone = {SubnetAvailabilityZone},
     subnet.lastupdated = {aws_update_tag}
     """
-    # TODO: Note: RDS data has subnet availability zone data, but I don't think that this is the right place to
-    # TODO: update it.  We should update the availability zone data in the EC2 ingestion part.
-    if not db_subnet_group.get('DBSubnetGroupName'):
-        logger.debug("Expected DBSubnetGroup to have a DBSubnetGroupName but it doesn't.  Here is the object: %r",
-                     db_subnet_group)
-    else:
-        for sn in db_subnet_group.get('Subnets', []):
-            subnet_id = sn.get('SubnetIdentifier', None)
-            if not subnet_id:
-                logger.debug("Expected Subnet to have a SubnetIdentifier but it doesn't. Here is the object: %r",
-                             db_subnet_group)
-            else:
-                arn = _get_db_subnet_group_arn(region, current_aws_account_id, db_subnet_group.get('DBSubnetGroupName'))
-                neo4j_session.run(
-                    attach_subnets_to_sng,
-                    SubnetIdentifier=subnet_id,
-                    sng_arn=arn,
-                    aws_update_tag=aws_update_tag,
-                    SubnetAvailabilityZone=sn.get('SubnetAvailabilityZone', {}).get('Name', None)
-                )
+    for sn in db_subnet_group.get('Subnets', []):
+        subnet_id = sn.get('SubnetIdentifier')
+        arn = _get_db_subnet_group_arn(region, current_aws_account_id, db_subnet_group['DBSubnetGroupName'])
+        neo4j_session.run(
+            attach_subnets_to_sng,
+            SubnetIdentifier=subnet_id,
+            sng_arn=arn,
+            aws_update_tag=aws_update_tag,
+            SubnetAvailabilityZone=sn.get('SubnetAvailabilityZone', {}).get('Name')
+        )
 
 
 def _attach_ec2_security_groups(neo4j_session, instance, aws_update_tag):
@@ -200,16 +185,13 @@ def _attach_ec2_security_groups(neo4j_session, instance, aws_update_tag):
     ON CREATE SET m.firstseen = timestamp()
     SET m.lastupdated = {aws_update_tag}
     """
-    if not instance.get('DBInstanceArn'):
-        logger.debug("Expected RDSInstance to have a DBInstanceArn but it doesn't.  Here is the object: %r", instance)
-    else:
-        for group in instance.get('VpcSecurityGroups', []):
-            neo4j_session.run(
-                attach_rds_to_group,
-                RdsArn=instance.get('DBInstanceArn'),
-                GroupId=group.get('VpcSecurityGroupId'),
-                aws_update_tag=aws_update_tag
-            )
+    for group in instance.get('VpcSecurityGroups', []):
+        neo4j_session.run(
+            attach_rds_to_group,
+            RdsArn=instance['DBInstanceArn'],
+            GroupId=group['VpcSecurityGroupId'],
+            aws_update_tag=aws_update_tag
+        )
 
 
 def _attach_read_replicas(neo4j_session, read_replicas, aws_update_tag):
@@ -224,19 +206,12 @@ def _attach_read_replicas(neo4j_session, read_replicas, aws_update_tag):
     SET r.lastupdated = {aws_update_tag}
     """
     for replica in read_replicas:
-        if not replica.get('ReadReplicaSourceDBInstanceIdentifier'):
-            logger.debug("Expected RDSInstance to be a read replica but its ReadReplicaSourceDBInstanceIdentifier "
-                         "field is None.  Here is the object: %r", replica)
-        elif not replica.get('DBInstanceArn'):
-            logger.debug("Expected RDSInstance to have a DBInstanceArn but it doesn't."
-                         "Here is the object: %r", replica)
-        else:
-            neo4j_session.run(
-                attach_replica_to_source,
-                ReplicaArn=replica['DBInstanceArn'],
-                SourceInstanceIdentifier=replica['ReadReplicaSourceDBInstanceIdentifier'],
-                aws_update_tag=aws_update_tag
-            )
+        neo4j_session.run(
+            attach_replica_to_source,
+            ReplicaArn=replica['DBInstanceArn'],
+            SourceInstanceIdentifier=replica['ReadReplicaSourceDBInstanceIdentifier'],
+            aws_update_tag=aws_update_tag
+        )
 
 
 def _validate_rds_endpoint(rds):
@@ -254,8 +229,10 @@ def _get_db_subnet_group_arn(region, current_aws_account_id, db_subnet_group_nam
     Return an ARN for the DB subnet group name by concatenating the account name and region.
     This is done to avoid another AWS API call since the describe_db_instances boto call does not return the DB subnet
     group ARN.
+    Form is arn:aws:rds:{region}:{account-id}:subgrp:{subnet-group-name}
+    as per https://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html
     """
-    return f"arn:aws:{region}:{current_aws_account_id}:{db_subnet_group_name}"
+    return f"arn:aws:rds:{region}:{current_aws_account_id}:subgrp:{db_subnet_group_name}"
 
 
 def cleanup_rds_instances_and_db_subnet_groups(neo4j_session, common_job_parameters):
@@ -274,4 +251,4 @@ def sync_rds_instances(neo4j_session, boto3_session, regions, current_aws_accoun
         logger.info("Syncing RDS for region '%s' in account '%s'.", region, current_aws_account_id)
         data = get_rds_instance_data(boto3_session, region)
         load_rds_instances(neo4j_session, data, region, current_aws_account_id, aws_update_tag)
-        cleanup_rds_instances_and_db_subnet_groups(neo4j_session, common_job_parameters)
+    cleanup_rds_instances_and_db_subnet_groups(neo4j_session, common_job_parameters)
