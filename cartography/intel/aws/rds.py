@@ -134,7 +134,7 @@ def _attach_ec2_subnet_groups(neo4j_session, instance, region, current_aws_accou
         logger.debug("Expected RDSInstance to have a DBSubnetGroup but it doesn't.  Here is the object: %r", instance)
     else:
         db_sng = instance.get('DBSubnetGroup')
-        arn = "arn:aws:rds:{0}:{1}:subgrp:{2}".format(region, current_aws_account_id, db_sng.get('DBSubnetGroupName'))
+        arn = _get_db_subnet_group_arn(region, current_aws_account_id, db_sng.get('DBSubnetGroupName'))
         neo4j_session.run(
             attach_rds_to_subnet_group,
             sng_arn=arn,
@@ -158,12 +158,14 @@ def _attach_ec2_subnets_to_subnetgroup(neo4j_session, db_subnet_group, region, c
     Availability Zone to select a subnet and an IP address within that subnet to associate with your DB instance.`
     """
     attach_subnets_to_sng = """
-    MATCH(subnet:EC2Subnet{subnetid:{SubnetIdentifier}}),
-    (sng:DBSubnetGroup{id:{sng_arn}})
+    MATCH(sng:DBSubnetGroup{id:{sng_arn}})
+    MERGE(subnet:EC2Subnet{subnetid:{SubnetIdentifier}})
+    ON CREATE SET subnet.firstseen = timestamp()
     MERGE(sng)-[r:RESOURCE]->(subnet)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {aws_update_tag},
-    subnet.availability_zone = {SubnetAvailabilityZone}
+    subnet.availability_zone = {SubnetAvailabilityZone},
+    subnet.lastupdated = {aws_update_tag}
     """
     # TODO: Note: RDS data has subnet availability zone data, but I don't think that this is the right place to
     # TODO: update it.  We should update the availability zone data in the EC2 ingestion part.
@@ -177,8 +179,7 @@ def _attach_ec2_subnets_to_subnetgroup(neo4j_session, db_subnet_group, region, c
                 logger.debug("Expected Subnet to have a SubnetIdentifier but it doesn't. Here is the object: %r",
                              db_subnet_group)
             else:
-                arn = "arn:aws:rds:{0}:{1}:subgrp:{2}".format(region, current_aws_account_id,
-                                                              db_subnet_group.get('DBSubnetGroupName'))
+                arn = _get_db_subnet_group_arn(region, current_aws_account_id, db_subnet_group.get('DBSubnetGroupName'))
                 neo4j_session.run(
                     attach_subnets_to_sng,
                     SubnetIdentifier=subnet_id,
@@ -193,8 +194,8 @@ def _attach_ec2_security_groups(neo4j_session, instance, aws_update_tag):
     Attach an RDS instance to its EC2SecurityGroups
     """
     attach_rds_to_group = """
-    MATCH (rds:RDSInstance{id:{RdsArn}}),
-    (sg:EC2SecurityGroup{id:{GroupId}})
+    MATCH (rds:RDSInstance{id:{RdsArn}})
+    MERGE (sg:EC2SecurityGroup{id:{GroupId}})
     MERGE (rds)-[m:MEMBER_OF_EC2_SECURITY_GROUP]->(sg)
     ON CREATE SET m.firstseen = timestamp()
     SET m.lastupdated = {aws_update_tag}
@@ -246,6 +247,15 @@ def _validate_rds_endpoint(rds):
     if not ep:
         logger.debug("RDS instance does not have an Endpoint field.  Here is the object: %r", rds)
     return ep
+
+
+def _get_db_subnet_group_arn(region, current_aws_account_id, db_subnet_group_name):
+    """
+    Return an ARN for the DB subnet group name by concatenating the account name and region.
+    This is done to avoid another AWS API call since the describe_db_instances boto call does not return the DB subnet
+    group ARN.
+    """
+    return f"arn:aws:{region}:{current_aws_account_id}:{db_subnet_group_name}"
 
 
 def cleanup_rds_instances_and_db_subnet_groups(neo4j_session, common_job_parameters):

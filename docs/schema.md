@@ -614,6 +614,7 @@ Representation of an AWS EC2 [Subnet](https://docs.aws.amazon.com/AWSEC2/latest/
 | **subnetid** | The ID of the subnet|
 | **id** | same as subnetid |
 | region| The AWS region the subnet is installed on|
+|availability_zone| (If available) the AZ this subnet is installed on |
 
 
 ### Relationships
