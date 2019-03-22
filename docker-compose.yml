@@ -1,0 +1,27 @@
+version: '3'
+services:
+  neo4j:
+    image: neo4j:3.3
+    healthcheck:
+      test: curl -i http://127.0.0.1:7474 2>&1 | grep -c -e '200 OK'
+    ports:
+      - "7687:7687" # host:container
+      - "7474:7474"
+    volumes:
+      - $HOME/neo4j/data:/data
+
+  cartography:
+    environment:
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN}
+      - USERNAME=neo4j
+      - NEO4J_PASS=neo4j
+    container_name: cartography
+    image: cartography
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - neo4j
+    command: sh -c 'cartography --neo4j-uri bolt://neo4j:7687 --neo4j-user $$USERNAME --neo4j-password-env-var NEO4J_PASS'
