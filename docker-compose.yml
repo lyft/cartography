@@ -24,4 +24,4 @@ services:
       dockerfile: Dockerfile
     depends_on:
       - neo4j
-    command: sh -c 'cartography --neo4j-uri bolt://neo4j:7687 --neo4j-user $$USERNAME --neo4j-password-env-var NEO4J_PASS'
+    command: "sh -c /home/app/run_cartography.sh"
