@@ -1,0 +1,21 @@
+version: '3.7'
+
+services:
+  neo4j:
+    image: neo4j:3.3.9
+    expose:
+      - 7687
+      - 7474
+    ports:
+      - 7474:7474
+      - 7687:7687
+    environment:
+      NEO4J_AUTH: none
+    volumes:
+      - ./neo4j/data:/data
+  cartography:
+    build: .
+    depends_on:
+      - neo4j
+    volumes:
+      - ${HOME}/.aws:/root/.aws
