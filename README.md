@@ -54,6 +54,28 @@ Time to set up the server that will run Cartography.  Cartography _should_ work 
 		
 		The sync will pull data from your AWS accounts and ingest data to Neo4j!  This process might take a long time if your account has a lot of assets.
 
+### Installation using docker compose
+
+1. **Prepare your AWS account(s).**
+
+  - Just repeat the instructions in the step 2 of the normal installation section.
+
+  - Save your credentials to the ${HOME}/.aws folder, as the docker-compose configuration expects it there
+
+2. **Install docker and docker-compose.**
+
+  - Follow the instructions in the [docker page](https://docs.docker.com/install/) and the [docker-compose page](https://docs.docker.com/compose/install/)
+
+3. **Run docker-compose**
+
+  - Download the `docker` folder in this repository
+
+  - Inside it, run `docker-compose build`
+
+  - Run `docker-compose up` to spin up the Neo4J database and perform the cartography sync
+
+  - Run `docker-compose down` to shut it down
+
 
 ## Usage Tutorial
 
