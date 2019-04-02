@@ -128,19 +128,20 @@ def _attach_ec2_subnet_groups(neo4j_session, instance, region, current_aws_accou
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {aws_update_tag}
     """
-    db_sng = instance['DBSubnetGroup']
-    arn = _get_db_subnet_group_arn(region, current_aws_account_id, db_sng['DBSubnetGroupName'])
-    neo4j_session.run(
-        attach_rds_to_subnet_group,
-        sng_arn=arn,
-        DBSubnetGroupName=db_sng['DBSubnetGroupName'],
-        VpcId=db_sng.get("VpcId"),
-        DBSubnetGroupDescription=db_sng.get('DBSubnetGroupDescription'),
-        DBSubnetGroupStatus=db_sng.get('SubnetGroupStatus'),
-        DBInstanceArn=instance['DBInstanceArn'],
-        aws_update_tag=aws_update_tag
-    )
-    _attach_ec2_subnets_to_subnetgroup(neo4j_session, db_sng, region, current_aws_account_id, aws_update_tag)
+    if 'DBSubnetGroup' in instance:
+        db_sng = instance['DBSubnetGroup']
+        arn = _get_db_subnet_group_arn(region, current_aws_account_id, db_sng['DBSubnetGroupName'])
+        neo4j_session.run(
+            attach_rds_to_subnet_group,
+            sng_arn=arn,
+            DBSubnetGroupName=db_sng['DBSubnetGroupName'],
+            VpcId=db_sng.get("VpcId"),
+            DBSubnetGroupDescription=db_sng.get('DBSubnetGroupDescription'),
+            DBSubnetGroupStatus=db_sng.get('SubnetGroupStatus'),
+            DBInstanceArn=instance['DBInstanceArn'],
+            aws_update_tag=aws_update_tag
+        )
+        _attach_ec2_subnets_to_subnetgroup(neo4j_session, db_sng, region, current_aws_account_id, aws_update_tag)
 
 
 def _attach_ec2_subnets_to_subnetgroup(neo4j_session, db_subnet_group, region, current_aws_account_id, aws_update_tag):
