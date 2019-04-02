@@ -275,29 +275,30 @@ def load_group_policies(session, group_policies, aws_update_tag):
     for group_name, policies in group_policies.items():
         for policy_name, policy_data in policies.items():
             for statement in policy_data["PolicyDocument"]["Statement"]:
-                action = statement["Action"]
+                if "Action" in statement:
+                    action = statement["Action"]
 
-                # TODO improve this
-                if action == "sts:AssumeRole":
-                    if statement["Effect"] == "Allow":
-                        roles_arn = statement["Resource"]
+                    # TODO improve this
+                    if action == "sts:AssumeRole":
+                        if statement["Effect"] == "Allow":
+                            roles_arn = statement["Resource"]
 
-                        if type(roles_arn) == str:
-                            session.run(
-                                ingest_policies_assume_role,
-                                GroupName=group_name,
-                                RoleArn=roles_arn,
-                                aws_update_tag=aws_update_tag
-                            )
-                        else:
-                            # TODO the code below probably contains a bug -- why is role_arn not used in the loop?
-                            for role_arn in roles_arn:
+                            if type(roles_arn) == str:
                                 session.run(
                                     ingest_policies_assume_role,
                                     GroupName=group_name,
                                     RoleArn=roles_arn,
                                     aws_update_tag=aws_update_tag
                                 )
+                            else:
+                                # TODO the code below probably contains a bug -- why is role_arn not used in the loop?
+                                for role_arn in roles_arn:
+                                    session.run(
+                                        ingest_policies_assume_role,
+                                        GroupName=group_name,
+                                        RoleArn=roles_arn,
+                                        aws_update_tag=aws_update_tag
+                                    )
 
 
 def load_user_access_keys(session, user_access_keys, aws_update_tag):
