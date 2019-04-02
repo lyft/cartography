@@ -88,7 +88,7 @@ def run_with_config(sync, config):
         neo4j_auth = (config.neo4j_user, config.neo4j_password)
 
     retry_times = 5
-    sleep_time = 5 # seconds
+    sleep_time = 5  # seconds
     for i in range(retry_times):
         try:
             neo4j_driver = GraphDatabase.driver(
@@ -99,7 +99,8 @@ def run_with_config(sync, config):
             logger.debug("Error occurred during Neo4j connect.", exc_info=True)
             logger.error(
                 (
-                    "Unable to connect to Neo4j using the provided URI '%s', an error occurred: '%s'. Make sure the Neo4j "
+                    "Unable to connect to Neo4j using the provided URI '%s', \
+                    an error occurred: '%s'. Make sure the Neo4j "
                     "server is running and accessible from your network."
                 ),
                 config.neo4j_uri,
@@ -119,9 +120,9 @@ def run_with_config(sync, config):
             else:
                 logger.error(
                     (
-                        "Unable to auth to Neo4j, an error occurred: '%s'. cartography attempted to connect to Neo4j with "
-                        "a username and password. Check your Neo4j server settings to see if the username and password "
-                        "provided to cartography are valid credentials."
+                        "Unable to auth to Neo4j, an error occurred: '%s'. cartography attempted to connect \
+                        to Neo4j with a username and password. Check your Neo4j server settings to see if \
+                        the username and password provided to cartography are valid credentials."
                     ),
                     e
                 )
