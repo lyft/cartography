@@ -10,4 +10,4 @@ ENV NEO4J_HOST=neo4j
 
 ADD https://raw.githubusercontent.com/eficode/wait-for/master/wait-for .
 
-CMD sh wait-for ${NEO4J_HOST}:7474 -- cartography --neo4j-uri bolt://${NEO4J_HOST}:7687 --aws-sync-all-profiles
+CMD sh wait-for ${NEO4J_HOST}:7474 -- cartography --neo4j-uri bolt://${NEO4J_HOST}:7687
