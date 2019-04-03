@@ -284,7 +284,7 @@ def load_ec2_security_group_rule(session, group, rule_type, aws_update_tag):
 
     ingest_range = """
     MERGE (range:IpRange{id: {RangeId}})
-    ON CREATE SET range.firtseen = timestamp(), range.range = {RangeId}
+    ON CREATE SET range.firstseen = timestamp(), range.range = {RangeId}
     SET range.lastupdated = {aws_update_tag}
     WITH range
     MATCH (rule:IpRule{ruleid: {RuleId}})
