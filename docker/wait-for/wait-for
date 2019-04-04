@@ -1,5 +1,5 @@
 #!/bin/sh
-# Downloaded from https://raw.githubusercontent.com/eficode/wait-for/master/wait-for
+# Downloaded from https://github.com/eficode/wait-for
 
 TIMEOUT=15
 QUIET=0
