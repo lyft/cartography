@@ -9,44 +9,44 @@ logger = logging.getLogger(__name__)
 
 
 def _sync_one_account(session, boto3_session, account_id, regions, sync_tag, common_job_parameters):
-    # IAM
-    # TODO move this to IAM module
-    logger.info("Syncing IAM for account '%s'.", account_id)
-    iam.sync_users(session, boto3_session, account_id, sync_tag, common_job_parameters)
-    iam.sync_groups(session, boto3_session, account_id, sync_tag, common_job_parameters)
-    iam.sync_policies(session, boto3_session, account_id, sync_tag, common_job_parameters)
-    iam.sync_roles(session, boto3_session, account_id, sync_tag, common_job_parameters)
-    iam.sync_group_memberships(session, boto3_session, account_id, sync_tag, common_job_parameters)
-    iam.sync_group_policies(session, boto3_session, account_id, sync_tag, common_job_parameters)
-    iam.sync_user_access_keys(session, boto3_session, account_id, sync_tag, common_job_parameters)
-
-    # S3
-    s3.sync(session, boto3_session, account_id, sync_tag, common_job_parameters)
-
-    # Dynamo
-    dynamodb.sync_dynamodb_tables(session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-
-    # EC2
-    # TODO move this to EC2 module
-    logger.info("Syncing EC2 for account '%s'.", account_id)
-    ec2.sync_ec2_security_groupinfo(session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-    ec2.sync_ec2_instances(session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-    ec2.sync_ec2_auto_scaling_groups(session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-    ec2.sync_load_balancers(session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
+    # # IAM
+    # # TODO move this to IAM module
+    # logger.info("Syncing IAM for account '%s'.", account_id)
+    # iam.sync_users(session, boto3_session, account_id, sync_tag, common_job_parameters)
+    # iam.sync_groups(session, boto3_session, account_id, sync_tag, common_job_parameters)
+    # iam.sync_policies(session, boto3_session, account_id, sync_tag, common_job_parameters)
+    # iam.sync_roles(session, boto3_session, account_id, sync_tag, common_job_parameters)
+    # iam.sync_group_memberships(session, boto3_session, account_id, sync_tag, common_job_parameters)
+    # iam.sync_group_policies(session, boto3_session, account_id, sync_tag, common_job_parameters)
+    # iam.sync_user_access_keys(session, boto3_session, account_id, sync_tag, common_job_parameters)
+    #
+    # # S3
+    # s3.sync(session, boto3_session, account_id, sync_tag, common_job_parameters)
+    #
+    # # Dynamo
+    # dynamodb.sync_dynamodb_tables(session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
+    #
+    # # EC2
+    # # TODO move this to EC2 module
+    # logger.info("Syncing EC2 for account '%s'.", account_id)
+    # ec2.sync_ec2_security_groupinfo(session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
+    # ec2.sync_ec2_instances(session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
+    # ec2.sync_ec2_auto_scaling_groups(session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
+    # ec2.sync_load_balancers(session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     ec2.sync_vpc_(session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-
-    # RDS
-    rds.sync_rds_instances(session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-
-    # NOTE each of the below will generate DNS records
-    # Route53
-    route53.sync_route53(session, boto3_session, account_id, sync_tag)
-
-    # Elasticsearch
-    elasticsearch.sync(session, boto3_session, account_id, sync_tag)
-
-    # NOTE clean up all DNS records, regardless of which job created them
-    run_cleanup_job('aws_account_dns_cleanup.json', session, common_job_parameters)
+    #
+    # # RDS
+    # rds.sync_rds_instances(session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
+    #
+    # # NOTE each of the below will generate DNS records
+    # # Route53
+    # route53.sync_route53(session, boto3_session, account_id, sync_tag)
+    #
+    # # Elasticsearch
+    # elasticsearch.sync(session, boto3_session, account_id, sync_tag)
+    #
+    # # NOTE clean up all DNS records, regardless of which job created them
+    # run_cleanup_job('aws_account_dns_cleanup.json', session, common_job_parameters)
 
 
 def _sync_multiple_accounts(session, accounts, regions, sync_tag, common_job_parameters):
