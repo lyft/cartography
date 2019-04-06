@@ -610,7 +610,7 @@ def sync_load_balancers(session, boto3_session, regions, current_aws_account_id,
 
 def get_ec2_vpcs(session):
     client = session.client('ec2', config=_get_botocore_config())
-    paginator = client.get_paginator('describe-vpcs')
+    paginator = client.get_paginator('describe_vpcs')
     vpc_list = []
     for page in paginator.paginate():
         vpc_list.extend(page['Vpcs'])
