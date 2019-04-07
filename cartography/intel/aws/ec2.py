@@ -815,52 +815,92 @@ def load_ec2_vpc_peering(session, data, aws_update_tag):
 
     # We assume the accept data is already in the graph since we run after all AWS account in scope
     # We don't assume the receiver data is in the graph as it can be a foreign AWS account
+    # ingest_peering = """
+    # UNWIND {PeeringList} as peering_data
+    # MATCH (accepter_block:CidrBlock{id: peering_data.AccepterVpcInfo.VpcId + '|' + peering_data.AccepterVpcInfo.CidrBlock})
+    # WITH accepter_block, peering_data
+    # MERGE (requestor_account:AWSAccount{id: peering_data.RequesterVpcInfo.OwnerId})
+    # ON CREATE SET requestor_account.firstseen = timestamp()
+    # SET requestor_account.lastupdated = {aws_update_tag}
+    # WITH accepter_block, peering_data, requestor_account
+    # MERGE (requestor_vpc:AWSVpc{id: peering_data.RequesterVpcInfo.VpcId})
+    # ON CREATE SET requestor_vpc.firstseen = timestamp()
+    # SET requestor_vpc.lastupdated = {aws_update_tag}
+    # WITH accepter_block, peering_data, requestor_account, requestor_vpc
+    # MERGE (requestor_account)-[resource:RESOURCE]->(requestor_vpc)
+    # ON CREATE SET resource.firstseen = timestamp()
+    # SET resource.lastupdated = {aws_update_tag}
+    # WITH accepter_block, peering_data, requestor_vpc
+    # MERGE (requestor_block:CidrBlock{id: peering_data.RequesterVpcInfo + '|' + peering_data.RequesterVpcInfo.CidrBlock})
+    # ON CREATE SET requestor_block.firstseen = timestamp()
+    # SET requestor_block.lastupdated = {aws_update_tag}
+    # WITH accepter_block, peering_data, requestor_vpc, requestor_block
+    # MERGE (requestor_vpc)-[r:BLOCK_ASSOCIATION]->(requestor_block)
+    # ON CREATE SET r.firstseen = timestamp()
+    # SET r.lastupdated = {aws_update_tag}
+    # WITH accepter_block, requestor_block, peering_data
+    # MERGE (accepter_block)-[r2:VPC_PEERING]-(requestor_block)
+    # ON CREATE SET r2.firstseen = timestamp()
+    # SET r2.status_code = peering_data.Status.Code,
+    # r2.status_message = peering_data.Status.Message,
+    # r2.connection_id = peering_data.VpcPeeringConnectionId,
+    # r2.expiration_time = peering_data.ExpirationTime,
+    # r2.lastupdated = {aws_update_tag}
+    # """
+
     ingest_peering = """
-    UNWIND {PeeringList} as peering_data
-    MATCH (accepter_block:CidrBlock{id: peering_data.AccepterVpcInfo.VpcId + '|' + peering_data.AccepterVpcInfo.CidrBlock})
-    WITH accepter_block, peering_data
-    MERGE (requestor_account:AWSAccount{id: peering_data.RequesterVpcInfo.OwnerId})
+    MATCH (accepter_block:CidrBlock{id: {AccepterVpcId} + '|' + {AccepterCidrBlock}})
+    WITH accepter_block
+    MERGE (requestor_account:AWSAccount{id: {RequesterOwnerId}})
     ON CREATE SET requestor_account.firstseen = timestamp()
     SET requestor_account.lastupdated = {aws_update_tag}
-    WITH accepter_block, peering_data, requestor_account
-    MERGE (requestor_vpc:AWSVpc{id: peering_data.RequesterVpcInfo.VpcId})
+    WITH accepter_block, requestor_account
+    MERGE (requestor_vpc:AWSVpc{id: {RequestorVpcId}})
     ON CREATE SET requestor_vpc.firstseen = timestamp()
     SET requestor_vpc.lastupdated = {aws_update_tag}
-    WITH accepter_block, peering_data, requestor_account, requestor_vpc
+    WITH accepter_block, requestor_account, requestor_vpc
     MERGE (requestor_account)-[resource:RESOURCE]->(requestor_vpc)
     ON CREATE SET resource.firstseen = timestamp()
     SET resource.lastupdated = {aws_update_tag}
-    WITH accepter_block, peering_data, requestor_vpc
-    MERGE (requestor_block:CidrBlock{id: peering_data.RequesterVpcInfo + '|' + peering_data.RequesterVpcInfo.CidrBlock})
+    WITH accepter_block, requestor_vpc
+    MERGE (requestor_block:CidrBlock{id: {RequestorVpcId} + '|' + {RequestorVpcCidrBlock}})
     ON CREATE SET requestor_block.firstseen = timestamp()
     SET requestor_block.lastupdated = {aws_update_tag}
-    WITH accepter_block, peering_data, requestor_vpc, requestor_block
+    WITH accepter_block, requestor_vpc, requestor_block
     MERGE (requestor_vpc)-[r:BLOCK_ASSOCIATION]->(requestor_block)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {aws_update_tag}
-    WITH accepter_block, requestor_block, peering_data
+    WITH accepter_block, requestor_block
     MERGE (accepter_block)-[r2:VPC_PEERING]-(requestor_block)
     ON CREATE SET r2.firstseen = timestamp()
-    SET r2.status_code = peering_data.Status.Code,
-    r2.status_message = peering_data.Status.Message,
-    r2.connection_id = peering_data.VpcPeeringConnectionId,
-    r2.expiration_time = peering_data.ExpirationTime,
+    SET r2.status_code = {StatusCode},
+    r2.status_message = {StatusMessage},
+    r2.connection_id = {ConnectionId},
+    r2.expiration_time = {ExpirationTime},
     r2.lastupdated = {aws_update_tag}
     """
 
-    # for peering in data['VpcPeeringConnections']:
-    #     #TODO REMOVE
-    #     print(json.dumps(peering))
-    #
-    #     session.run(
-    #         ingest_peering,
-    #         PeeringList=peering,
-    #         aws_update_tag=aws_update_tag)
-    print(json.dumps(data))
-    session.run(
-        ingest_peering,
-        PeeringList=data.get('VpcPeeringConnections', []),
-        aws_update_tag=aws_update_tag)
+    for peering in data['VpcPeeringConnections']:
+        #TODO REMOVE
+        print(json.dumps(peering))
+
+        session.run(
+            ingest_peering,
+            AccepterVpcId=peering["AccepterVpcInfo"]["VpcId"],
+            AccepterCidrBlock=peering["AccepterVpcInfo"]["CidrBlock"],
+            RequesterOwnerId=peering["RequesterVpcInfo"]["OwnerId"],
+            RequestorVpcId=peering["RequesterVpcInfo"]["VpcId"],
+            RequestorVpcCidrBlock=peering["RequesterVpcInfo"]["CidrBlock"],
+            StatusCode=peering["Status"]["Code"],
+            StatusMessage=peering["Status"]["Message"],
+            ConnectionId=peering["VpcPeeringConnectionId"],
+            ExpirationTime=peering.get("ExpirationTime", ""),
+            aws_update_tag=aws_update_tag)
+    # print(json.dumps(data))
+    # session.run(
+    #     ingest_peering,
+    #     PeeringList=data.get('VpcPeeringConnections', []),
+    #     aws_update_tag=aws_update_tag)
 
 
 def cleanup_ec2_vpc_peering(session, common_job_parameters):
