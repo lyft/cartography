@@ -85,10 +85,11 @@ def start_aws_ingestion(session, config):
         )
         return
 
-    if config.aws_sync_all_profiles:
-        aws_accounts = organizations.get_aws_accounts_from_botocore_config(default_boto3_session)
-    else:
-        aws_accounts = organizations.get_aws_account_default(default_boto3_session)
+    # if config.aws_sync_all_profiles:
+    #     aws_accounts = organizations.get_aws_accounts_from_botocore_config(default_boto3_session)
+    # else:
+    #     aws_accounts = organizations.get_aws_account_default(default_boto3_session)
+    aws_accounts = organizations.get_aws_accounts_from_botocore_config(default_boto3_session)
 
     if not aws_accounts:
         logger.warning(
