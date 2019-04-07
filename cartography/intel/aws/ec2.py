@@ -861,7 +861,7 @@ def load_ec2_vpc_peering(session, data, aws_update_tag):
 
 
 def cleanup_ec2_vpc_peering(session, common_job_parameters):
-    run_cleanup_job('aws_import_vpc_cleanup.json', session, common_job_parameters)
+    run_cleanup_job('aws_import_vpc_peering_cleanup.json', session, common_job_parameters)
 
 
 def sync_vpc_peering(session, boto3_session, aws_update_tag, common_job_parameters):
