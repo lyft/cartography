@@ -33,7 +33,7 @@ def _sync_one_account(session, boto3_session, account_id, regions, sync_tag, com
     # ec2.sync_ec2_instances(session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     # ec2.sync_ec2_auto_scaling_groups(session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     # ec2.sync_load_balancers(session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-    ###ec2.sync_vpc(session, boto3_session, account_id, sync_tag, common_job_parameters)
+    ec2.sync_vpc(session, boto3_session, account_id, sync_tag, common_job_parameters)
     #
     # # RDS
     # rds.sync_rds_instances(session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
