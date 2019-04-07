@@ -686,7 +686,6 @@ def load_ec2_vpcs(session, data, current_aws_account_id, aws_update_tag):
                                     vpc_id=vpc_id,
                                     type="ipv4",
                                     data=vpc.get("CidrBlockAssociationSet", []),
-                                    current_aws_account_id=current_aws_account_id,
                                     aws_update_tag=aws_update_tag)
 
         ingest_cidr_association_set(session,
