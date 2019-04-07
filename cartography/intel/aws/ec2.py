@@ -700,7 +700,7 @@ def ingest_cidr_association_set(session, vpc_id, type, data, aws_update_tag):
     MATCH (vpc:AWSVpc{id: {VpcId}})
     WITH vpc
     UNWIND {CidrBlock} as block_data
-        MERGE (new_block:#BLOCK_TYPE#{id: block_data.AssociationId + '|' + block_data.#BLOCK_CIDR#})
+        MERGE (new_block:#BLOCK_TYPE#{id: {VpcId} + '|' + block_data.#BLOCK_CIDR#})
         ON CREATE SET new_block.firstseen = timestamp()
         SET new_block.association_id = block_data.AssociationId,
         new_block.cidr_block = block_data.#BLOCK_CIDR#,
@@ -741,9 +741,132 @@ def cleanup_ec2_vpcs(session, common_job_parameters):
     run_cleanup_job('aws_import_vpc_cleanup.json', session, common_job_parameters)
 
 
-def sync_vpc_(session, boto3_session, current_aws_account_id, aws_update_tag, common_job_parameters):
+def sync_vpc(session, boto3_session, current_aws_account_id, aws_update_tag, common_job_parameters):
     logger.debug("Syncing EC2 Vpc in account '%s'.", current_aws_account_id)
     data = get_ec2_vpcs(boto3_session)
     load_ec2_vpcs(session, data, current_aws_account_id, aws_update_tag)
 
     cleanup_ec2_vpcs(session, common_job_parameters)
+
+
+def get_ec2_vpc_peering(session):
+    client = session.client('ec2', config=_get_botocore_config())
+    # return client.de
+    paginator = client.get_paginator('describe_vpc_peering_connections')
+    peering_list = []
+    for page in paginator.paginate():
+        peering_list.extend(page['VpcPeeringConnections'])
+
+    return {'VpcPeeringConnections': peering_list}
+
+def load_ec2_vpc_peering(session, data, aws_update_tag):
+    # https://docs.aws.amazon.com/cli/latest/reference/ec2/describe-vpc-peering-connections.html
+    # {
+    #     "VpcPeeringConnections": [
+    #         {
+    #             "Status": {
+    #                 "Message": "Active",
+    #                 "Code": "active"
+    #             },
+    #             "Tags": [
+    #                 {
+    #                     "Value": "Peering-1",
+    #                     "Key": "Name"
+    #                 }
+    #             ],
+    #             "AccepterVpcInfo": {
+    #                 "OwnerId": "111122223333",
+    #                 "VpcId": "vpc-1a2b3c4d",
+    #                 "CidrBlock": "10.0.1.0/28"
+    #             },
+    #             "VpcPeeringConnectionId": "pcx-11122233",
+    #             "RequesterVpcInfo": {
+    #                 "PeeringOptions": {
+    #                     "AllowEgressFromLocalVpcToRemoteClassicLink": false,
+    #                     "AllowEgressFromLocalClassicLinkToRemoteVpc": false
+    #                 },
+    #                 "OwnerId": "444455556666",
+    #                 "VpcId": "vpc-123abc45",
+    #                 "CidrBlock": "192.168.0.0/16"
+    #             }
+    #         },
+    #         {
+    #             "Status": {
+    #                 "Message": "Pending Acceptance by 444455556666",
+    #                 "Code": "pending-acceptance"
+    #             },
+    #             "Tags": [],
+    #             "RequesterVpcInfo": {
+    #                 "PeeringOptions": {
+    #                     "AllowEgressFromLocalVpcToRemoteClassicLink": false,
+    #                     "AllowEgressFromLocalClassicLinkToRemoteVpc": false
+    #                 },
+    #                 "OwnerId": "444455556666",
+    #                 "VpcId": "vpc-11aa22bb",
+    #                 "CidrBlock": "10.0.0.0/28"
+    #             },
+    #             "VpcPeeringConnectionId": "pcx-abababab",
+    #             "ExpirationTime": "2014-04-03T09:12:43.000Z",
+    #             "AccepterVpcInfo": {
+    #                 "OwnerId": "444455556666",
+    #                 "VpcId": "vpc-33cc44dd"
+    #             }
+    #         }
+    #     ]
+    # }
+
+    # We assume the accept data is already in the graph since we run after all AWS account in scope
+    # We don't assume the receiver data is in the graph as it can be a foreign AWS account
+    ingest_peering = """
+    UNWIND {PeeringList} as peering_data
+    MATCH (accepter_block:CidrBlock{id: peering_data.AccepterVpcInfo.VpcId + '|' + peering_data.AccepterVpcInfo.CidrBlock})
+    WITH accepter_block, peering_data
+    MERGE (requestor_account:AWSAccount{id: peering_data.RequesterVpcInfo.OwnerId})
+    ON CREATE SET requestor_account.firstseen = timestamp()
+    SET requestor_account.lastupdated = {aws_update_tag}
+    WITH accepter_block, peering_data, requestor_account
+    MERGE (requestor_vpc:AWSVpc{id: peering_data.RequesterVpcInfo.VpcId})
+    ON CREATE SET requestor_vpc.firstseen = timestamp()
+    SET requestor_vpc.lastupdated = {aws_update_tag}
+    WITH accepter_block, peering_data, requestor_account, requestor_vpc
+    MERGE (requestor_account)-[resource:RESOURCE]->(requestor_vpc)
+    ON CREATE SET resource.firstseen = timestamp()
+    SET resource.lastupdated = {aws_update_tag}
+    WITH accepter_block, peering_data, requestor_vpc
+    MERGE (requestor_block:CidrBlock{id: peering_data.RequesterVpcInfo + '|' + peering_data.RequesterVpcInfo.CidrBlock})
+    ON CREATE SET requestor_block.firstseen = timestamp()
+    SET requestor_block.lastupdated = {aws_update_tag}
+    WITH accepter_block, peering_data, requestor_vpc, requestor_block
+    MERGE (requestor_vpc)-[r:BLOCK_ASSOCIATION]->(requestor_block)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {aws_update_tag}
+    WITH accepter_block, requestor_block, peering_data
+    MERGE (accepter_block)-[r2:VPC_PEERING]-(requestor_block)
+    ON CREATE SET r2.firstseen = timestamp()
+    SET r2.status_code = peering_data.Status.Code,
+    r2.status_message = peering_data.Status.Message,
+    r2.connection_id = peering_data.VpcPeeringConnectionId,
+    r2.expiration_time = peering_data.ExpirationTime,
+    r2.lastupdated = {aws_update_tag}
+    """
+
+    for peering in data['VpcPeeringConnections']:
+        #TODO REMOVE
+        print(json.dumps(peering))
+
+        session.run(
+            ingest_peering,
+            PeeringList=peering,
+            aws_update_tag=aws_update_tag)
+
+
+def cleanup_ec2_vpc_peering(session, common_job_parameters):
+    run_cleanup_job('aws_import_vpc_cleanup.json', session, common_job_parameters)
+
+
+def sync_vpc_peering(session, boto3_session, aws_update_tag, common_job_parameters):
+    logger.debug("Syncing EC2 Vpc peering")
+    data = get_ec2_vpc_peering(boto3_session)
+    load_ec2_vpc_peering(session, data, aws_update_tag)
+
+    cleanup_ec2_vpc_peering(session, common_job_parameters)
