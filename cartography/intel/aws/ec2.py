@@ -703,7 +703,7 @@ def ingest_cidr_association_set(session, vpc_id, type, data, current_aws_account
     WITH vpc
     UNWIND {CidrBlock} as block_data
         MERGE (new_block:#BLOCK_TYPE#{id: block_data.AssociationId + '|' + block_data.#BLOCK_CIDR#})
-        ON CREATE SET new_block.firstseen = timestamp(),
+        ON CREATE SET new_block.firstseen = timestamp()
         SET new_block.association_id = block_data.AssociationId
         new_block.cidr_block = block_data.#BLOCK_CIDR#,
         new_block.block_state = block_data.#STATE_NAME#.State,
