@@ -668,8 +668,6 @@ def load_ec2_vpcs(session, data, current_aws_account_id, aws_update_tag):
 
     for vpc in data['Vpcs']:
         vpc_id = vpc["VpcId"]  # fail if not present
-        print("Vpcid ~~~~ {0}".format(vpc_id))
-        print(json.dumps(vpc))
 
         session.run(
             ingest_vpc,
@@ -865,8 +863,11 @@ def cleanup_ec2_vpc_peering(session, common_job_parameters):
 
 
 def sync_vpc_peering(session, boto3_session, aws_update_tag, common_job_parameters):
+    print("PEeeeeering")
     logger.debug("Syncing EC2 Vpc peering")
     data = get_ec2_vpc_peering(boto3_session)
+
+    print(json.dumps(data))
     load_ec2_vpc_peering(session, data, aws_update_tag)
 
     cleanup_ec2_vpc_peering(session, common_job_parameters)
