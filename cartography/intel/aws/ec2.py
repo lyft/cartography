@@ -848,14 +848,19 @@ def load_ec2_vpc_peering(session, data, aws_update_tag):
     r2.lastupdated = {aws_update_tag}
     """
 
-    for peering in data['VpcPeeringConnections']:
-        #TODO REMOVE
-        print(json.dumps(peering))
-
-        session.run(
-            ingest_peering,
-            PeeringList=peering,
-            aws_update_tag=aws_update_tag)
+    # for peering in data['VpcPeeringConnections']:
+    #     #TODO REMOVE
+    #     print(json.dumps(peering))
+    #
+    #     session.run(
+    #         ingest_peering,
+    #         PeeringList=peering,
+    #         aws_update_tag=aws_update_tag)
+    print(json.dumps(data))
+    session.run(
+        ingest_peering,
+        PeeringList=data.get('VpcPeeringConnections', []),
+        aws_update_tag=aws_update_tag)
 
 
 def cleanup_ec2_vpc_peering(session, common_job_parameters):
@@ -866,8 +871,6 @@ def sync_vpc_peering(session, boto3_session, aws_update_tag, common_job_paramete
     print("PEeeeeering")
     logger.debug("Syncing EC2 Vpc peering")
     data = get_ec2_vpc_peering(boto3_session)
-
-    print(json.dumps(data))
     load_ec2_vpc_peering(session, data, aws_update_tag)
 
     cleanup_ec2_vpc_peering(session, common_job_parameters)
