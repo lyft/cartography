@@ -656,8 +656,8 @@ def load_ec2_vpcs(session, data, current_aws_account_id, aws_update_tag):
     SET new_vpc.instance_tenancy = {InstanceTenancy},
     new_vpc.state = {State},
     new_vpc.is_default = {IsDefault},
-    new_vpc.primary_cidr_block = {PrimaryCIDRBlock}
-    new_vpc.dhcp_options_id = {DhcpOptionsId}
+    new_vpc.primary_cidr_block = {PrimaryCIDRBlock},
+    new_vpc.dhcp_options_id = {DhcpOptionsId},
     new_vpc.lastupdated = {aws_update_tag}
     WITH new_vpc
     MATCH (awsAccount:AWSAccount{id: {AWS_ACCOUNT_ID}})
