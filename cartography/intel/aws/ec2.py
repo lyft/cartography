@@ -667,6 +667,7 @@ def load_ec2_vpcs(session, data, current_aws_account_id, aws_update_tag):
 
     for vpc in data['Vpcs']:
         vpc_id = vpc["VpcId"],  # fail if not present
+        print("Vpcid {0}".format(vpc_id))
         session.run(
             ingest_vpc,
             VpcId=vpc_id,
