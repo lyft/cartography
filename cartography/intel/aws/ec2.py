@@ -751,11 +751,11 @@ def sync_vpc(session, boto3_session, current_aws_account_id, aws_update_tag, com
 
 def get_ec2_vpc_peering(session):
     client = session.client('ec2', config=_get_botocore_config())
-    # return client.de
-    paginator = client.get_paginator('describe_vpc_peering_connections')
-    peering_list = []
-    for page in paginator.paginate():
-        peering_list.extend(page['VpcPeeringConnections'])
+    return client.describe_vpc_peering_connections()
+    # paginator = client.get_paginator('describe_vpc_peering_connections')
+    # peering_list = []
+    # for page in paginator.paginate():
+    #     peering_list.extend(page['VpcPeeringConnections'])
 
     return {'VpcPeeringConnections': peering_list}
 
