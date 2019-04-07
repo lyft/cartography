@@ -711,7 +711,7 @@ def ingest_cidr_association_set(session, vpc_id, type, data, current_aws_account
         new_block.lastupdated = {aws_update_tag}
         WITH vpc, new_block
         MERGE (vpc)-[r:BLOCK_ASSOCIATION]->(new_block)
-        ON CREATE SET r.firstseen = timestamp(),
+        ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = timestamp()"""
 
 
