@@ -693,11 +693,10 @@ def load_ec2_vpcs(session, data, current_aws_account_id, aws_update_tag):
                                     vpc_id=vpc_id,
                                     type="ipv6",
                                     data=vpc.get("Ipv6CidrBlockAssociationSet", []),
-                                    current_aws_account_id=current_aws_account_id,
                                     aws_update_tag=aws_update_tag)
 
 
-def ingest_cidr_association_set(session, vpc_id, type, data, current_aws_account_id, aws_update_tag):
+def ingest_cidr_association_set(session, vpc_id, type, data, aws_update_tag):
     ingest_cidr = """
     MATCH (vpc:AWSVpc{id: {VpcId}})
     WITH vpc
@@ -712,7 +711,7 @@ def ingest_cidr_association_set(session, vpc_id, type, data, current_aws_account
         WITH vpc, new_block
         MERGE (vpc)-[r:BLOCK_ASSOCIATION]->(new_block)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = timestamp()"""
+        SET r.lastupdated = {aws_update_tag}"""
 
 
     BLOCK_CIDR = "CidrBlock"
@@ -734,7 +733,8 @@ def ingest_cidr_association_set(session, vpc_id, type, data, current_aws_account
     session.run(
         final_ingest,
         VpcId=vpc_id,
-        CidrBlock=data
+        CidrBlock=data,
+        aws_update_tag=aws_update_tag
     )
 
 
