@@ -201,16 +201,18 @@ def _attach_read_replicas(neo4j_session, read_replicas, aws_update_tag):
     """
     attach_replica_to_source = """
     MATCH (replica:RDSInstance{id:{ReplicaArn}})
-    MERGE (source:RDSInstance{id:{SourceInstanceIdentifier}})
+    MERGE (source:RDSInstance{id:{SourceArn}})
     MERGE (replica)-[r:IS_READ_REPLICA_OF]->(source)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {aws_update_tag}
     """
     for replica in read_replicas:
+        # NOTE: AWS actually returns ARNs in this field, not DBInstanceIdentifiers
+        source_arn = replica['ReadReplicaSourceDBInstanceIdentifier']
         neo4j_session.run(
             attach_replica_to_source,
             ReplicaArn=replica['DBInstanceArn'],
-            SourceInstanceIdentifier=replica['ReadReplicaSourceDBInstanceIdentifier'],
+            SourceArn=source_arn,
             aws_update_tag=aws_update_tag
         )
 
