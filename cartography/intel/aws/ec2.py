@@ -715,7 +715,7 @@ def ingest_cidr_association_set(session, vpc_id, type, data, aws_update_tag):
     STATE_NAME = "CidrBlockState"
 
     # base label type. We add the AWS ipv4 or 6 depending on block type
-    BLOCK_TYPE = "CidrBlock"
+    BLOCK_TYPE = "AWSCidrBlock"
 
     if type == "ipv6":
         BLOCK_TYPE = BLOCK_TYPE + ":AWSIpv6CidrBlock"
