@@ -852,7 +852,7 @@ def load_ec2_vpc_peering(session, data, aws_update_tag):
     MATCH (accepter_block:CidrBlock{id: {AccepterVpcId} + '|' + {AccepterCidrBlock}})
     WITH accepter_block
     MERGE (requestor_account:AWSAccount{id: {RequesterOwnerId}})
-    ON CREATE SET requestor_account.firstseen = timestamp()
+    ON CREATE SET requestor_account.firstseen = timestamp(), foreign=true
     SET requestor_account.lastupdated = {aws_update_tag}
     WITH accepter_block, requestor_account
     MERGE (requestor_vpc:AWSVpc{id: {RequestorVpcId}})
@@ -864,14 +864,14 @@ def load_ec2_vpc_peering(session, data, aws_update_tag):
     SET resource.lastupdated = {aws_update_tag}
     WITH accepter_block, requestor_vpc
     MERGE (requestor_block:CidrBlock{id: {RequestorVpcId} + '|' + {RequestorVpcCidrBlock}})
-    ON CREATE SET requestor_block.firstseen = timestamp()
+    ON CREATE SET requestor_block.firstseen = timestamp(), requestor_block.cidr_block = {RequestorVpcCidrBlock}
     SET requestor_block.lastupdated = {aws_update_tag}
     WITH accepter_block, requestor_vpc, requestor_block
     MERGE (requestor_vpc)-[r:BLOCK_ASSOCIATION]->(requestor_block)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {aws_update_tag}
     WITH accepter_block, requestor_block
-    MERGE (accepter_block)-[r2:VPC_PEERING]-(requestor_block)
+    MERGE (accepter_block)<-[r2:VPC_PEERING]->(requestor_block)
     ON CREATE SET r2.firstseen = timestamp()
     SET r2.status_code = {StatusCode},
     r2.status_message = {StatusMessage},
