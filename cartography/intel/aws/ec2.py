@@ -711,7 +711,7 @@ def ingest_cidr_association_set(session, vpc_id, type, data, aws_update_tag):
         SET r.lastupdated = {aws_update_tag}"""
 
 
-    BLOCK_CIDR = "AWSCidrBlock"
+    BLOCK_CIDR = "CidrBlock"
     STATE_NAME = "CidrBlockState"
 
     # base label type. We add the AWS ipv4 or 6 depending on block type
