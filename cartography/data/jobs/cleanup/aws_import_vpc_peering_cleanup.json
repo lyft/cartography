@@ -20,15 +20,14 @@
     "iterationsize": 100
   },
   {
-    "query": "MATCH (:AWSAccount{foreign: true}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+    "query": "MATCH (:AWSVpc)-[r:VPC_PEERING]-(:AWSVpc) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
     "iterative": true,
     "iterationsize": 100
   },
   {
-    "query": "MATCH (:AWSVpc)-[r:VPC_PEERING]-(:AWSVpc) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+    "query": "MATCH (n:AWSAccount{foreign: true}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
     "iterative": true,
     "iterationsize": 100
-  }
-  ],
+  }],
   "name": "cleanup AWS VPC information"
 }
