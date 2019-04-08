@@ -852,7 +852,7 @@ def load_ec2_vpc_peering(session, data, aws_update_tag):
     MATCH (accepter_block:CidrBlock{id: {AccepterVpcId} + '|' + {AccepterCidrBlock}})
     WITH accepter_block
     MERGE (requestor_account:AWSAccount{id: {RequesterOwnerId}})
-    ON CREATE SET requestor_account.firstseen = timestamp(), foreign=true
+    ON CREATE SET requestor_account.firstseen = timestamp(), requestor_account.foreign = true
     SET requestor_account.lastupdated = {aws_update_tag}
     WITH accepter_block, requestor_account
     MERGE (requestor_vpc:AWSVpc{id: {RequestorVpcId}})
