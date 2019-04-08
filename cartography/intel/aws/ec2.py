@@ -240,6 +240,11 @@ def load_ec2_security_groupinfo(session, data, region, current_aws_account_id, a
     MERGE (aa)-[r:RESOURCE]->(group)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {aws_update_tag}
+    WITH group
+    MATCH (vpc:AWSVpc{id: {VpcId}})
+    MERGE (vpc)-[rg:MEMBER_OF_EC2_SECURITY_GROUP]->(group)
+    MERGE (aa)-[rg:RESOURCE]->(group)
+    ON CREATE SET rg.firstseen = timestamp()
     """
 
     for group in data["SecurityGroups"]:
@@ -250,6 +255,7 @@ def load_ec2_security_groupinfo(session, data, region, current_aws_account_id, a
             GroupId=group_id,
             GroupName=group.get("GroupName", ""),
             Description=group.get("Description", ""),
+            VpcId=group.get("VpcId", ""),
             Region=region,
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag
@@ -581,7 +587,7 @@ def sync_ec2_security_groupinfo(session, boto3_session, regions, current_aws_acc
         logger.debug("Syncing EC2 security groups for region '%s' in account '%s'.", region, current_aws_account_id)
         data = get_ec2_security_group_data(boto3_session, region)
         load_ec2_security_groupinfo(session, data, region, current_aws_account_id, aws_update_tag)
-    cleanup_ec2_security_groupinfo(session, common_job_parameters)
+    # cleanup_ec2_security_groupinfo(session, common_job_parameters)
 
 
 def sync_ec2_instances(session, boto3_session, regions, current_aws_account_id, aws_update_tag, common_job_parameters):
@@ -611,13 +617,8 @@ def sync_load_balancers(session, boto3_session, regions, current_aws_account_id,
 
 def get_ec2_vpcs(session):
     client = session.client('ec2', config=_get_botocore_config())
+    # paginator not supported by boto
     return client.describe_vpcs()
-    # paginator = client.get_paginator('describe_vpcs')
-    # vpc_list = []
-    # for page in paginator.paginate():
-    #     vpc_list.extend(page['Vpcs'])
-    #
-    # return {'Vpcs': vpc_list}
 
 
 def load_ec2_vpcs(session, data, current_aws_account_id, aws_update_tag):
@@ -749,13 +750,9 @@ def sync_vpc(session, boto3_session, current_aws_account_id, aws_update_tag, com
 
 def get_ec2_vpc_peering(session):
     client = session.client('ec2', config=_get_botocore_config())
+    # paginator not supported by boto
     return client.describe_vpc_peering_connections()
-    # paginator = client.get_paginator('describe_vpc_peering_connections')
-    # peering_list = []
-    # for page in paginator.paginate():
-    #     peering_list.extend(page['VpcPeeringConnections'])
 
-    return {'VpcPeeringConnections': peering_list}
 
 def load_ec2_vpc_peering(session, data, aws_update_tag):
     # https://docs.aws.amazon.com/cli/latest/reference/ec2/describe-vpc-peering-connections.html
