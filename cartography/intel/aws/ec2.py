@@ -243,7 +243,6 @@ def load_ec2_security_groupinfo(session, data, region, current_aws_account_id, a
     WITH group
     MATCH (vpc:AWSVpc{id: {VpcId}})
     MERGE (vpc)-[rg:MEMBER_OF_EC2_SECURITY_GROUP]->(group)
-    MERGE (aa)-[rg:RESOURCE]->(group)
     ON CREATE SET rg.firstseen = timestamp()
     """
 
