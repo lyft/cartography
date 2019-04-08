@@ -586,7 +586,7 @@ def sync_ec2_security_groupinfo(session, boto3_session, regions, current_aws_acc
         logger.debug("Syncing EC2 security groups for region '%s' in account '%s'.", region, current_aws_account_id)
         data = get_ec2_security_group_data(boto3_session, region)
         load_ec2_security_groupinfo(session, data, region, current_aws_account_id, aws_update_tag)
-    # cleanup_ec2_security_groupinfo(session, common_job_parameters)
+    cleanup_ec2_security_groupinfo(session, common_job_parameters)
 
 
 def sync_ec2_instances(session, boto3_session, regions, current_aws_account_id, aws_update_tag, common_job_parameters):
@@ -664,7 +664,6 @@ def load_ec2_vpcs(session, data, current_aws_account_id, aws_update_tag):
     MERGE (awsAccount)-[r:RESOURCE]->(new_vpc)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {aws_update_tag}"""
-
 
     for vpc in data['Vpcs']:
         vpc_id = vpc["VpcId"]  # fail if not present
