@@ -711,18 +711,18 @@ def ingest_cidr_association_set(session, vpc_id, type, data, aws_update_tag):
         SET r.lastupdated = {aws_update_tag}"""
 
 
-    BLOCK_CIDR = "CidrBlock"
+    BLOCK_CIDR = "AWSCidrBlock"
     STATE_NAME = "CidrBlockState"
 
     # base label type. We add the AWS ipv4 or 6 depending on block type
     BLOCK_TYPE = "CidrBlock"
 
     if type == "ipv6":
-        BLOCK_TYPE = BLOCK_TYPE + ":AwsIpv6CidrBlock"
+        BLOCK_TYPE = BLOCK_TYPE + ":AWSIpv6CidrBlock"
         BLOCK_CIDR = "Ipv6" + BLOCK_CIDR
         STATE_NAME = "Ipv6" + STATE_NAME
     else:
-        BLOCK_TYPE = BLOCK_TYPE + ":AwsIpv4CidrBlock"
+        BLOCK_TYPE = BLOCK_TYPE + ":AWSIpv4CidrBlock"
 
     final_ingest = ingest_cidr.replace("#BLOCK_TYPE#", BLOCK_TYPE)\
                               .replace("#BLOCK_CIDR#", BLOCK_CIDR)\
@@ -815,41 +815,9 @@ def load_ec2_vpc_peering(session, data, aws_update_tag):
 
     # We assume the accept data is already in the graph since we run after all AWS account in scope
     # We don't assume the receiver data is in the graph as it can be a foreign AWS account
-    # ingest_peering = """
-    # UNWIND {PeeringList} as peering_data
-    # MATCH (accepter_block:CidrBlock{id: peering_data.AccepterVpcInfo.VpcId + '|' + peering_data.AccepterVpcInfo.CidrBlock})
-    # WITH accepter_block, peering_data
-    # MERGE (requestor_account:AWSAccount{id: peering_data.RequesterVpcInfo.OwnerId})
-    # ON CREATE SET requestor_account.firstseen = timestamp()
-    # SET requestor_account.lastupdated = {aws_update_tag}
-    # WITH accepter_block, peering_data, requestor_account
-    # MERGE (requestor_vpc:AWSVpc{id: peering_data.RequesterVpcInfo.VpcId})
-    # ON CREATE SET requestor_vpc.firstseen = timestamp()
-    # SET requestor_vpc.lastupdated = {aws_update_tag}
-    # WITH accepter_block, peering_data, requestor_account, requestor_vpc
-    # MERGE (requestor_account)-[resource:RESOURCE]->(requestor_vpc)
-    # ON CREATE SET resource.firstseen = timestamp()
-    # SET resource.lastupdated = {aws_update_tag}
-    # WITH accepter_block, peering_data, requestor_vpc
-    # MERGE (requestor_block:CidrBlock{id: peering_data.RequesterVpcInfo + '|' + peering_data.RequesterVpcInfo.CidrBlock})
-    # ON CREATE SET requestor_block.firstseen = timestamp()
-    # SET requestor_block.lastupdated = {aws_update_tag}
-    # WITH accepter_block, peering_data, requestor_vpc, requestor_block
-    # MERGE (requestor_vpc)-[r:BLOCK_ASSOCIATION]->(requestor_block)
-    # ON CREATE SET r.firstseen = timestamp()
-    # SET r.lastupdated = {aws_update_tag}
-    # WITH accepter_block, requestor_block, peering_data
-    # MERGE (accepter_block)-[r2:VPC_PEERING]-(requestor_block)
-    # ON CREATE SET r2.firstseen = timestamp()
-    # SET r2.status_code = peering_data.Status.Code,
-    # r2.status_message = peering_data.Status.Message,
-    # r2.connection_id = peering_data.VpcPeeringConnectionId,
-    # r2.expiration_time = peering_data.ExpirationTime,
-    # r2.lastupdated = {aws_update_tag}
-    # """
-
+    # IPV6 peering is not supported, we default to AWSIpv4CidrBlock
     ingest_peering = """
-    MATCH (accepter_block:CidrBlock{id: {AccepterVpcId} + '|' + {AccepterCidrBlock}})
+    MATCH (accepter_block:AWSIpv4CidrBlock{id: {AccepterVpcId} + '|' + {AccepterCidrBlock}})
     WITH accepter_block
     MERGE (requestor_account:AWSAccount{id: {RequesterOwnerId}})
     ON CREATE SET requestor_account.firstseen = timestamp(), requestor_account.foreign = true
@@ -863,7 +831,7 @@ def load_ec2_vpc_peering(session, data, aws_update_tag):
     ON CREATE SET resource.firstseen = timestamp()
     SET resource.lastupdated = {aws_update_tag}
     WITH accepter_block, requestor_vpc
-    MERGE (requestor_block:CidrBlock{id: {RequestorVpcId} + '|' + {RequestorVpcCidrBlock}})
+    MERGE (requestor_block:AWSCidrBlock:AWSIpv4CidrBlock{id: {RequestorVpcId} + '|' + {RequestorVpcCidrBlock}})
     ON CREATE SET requestor_block.firstseen = timestamp(), requestor_block.cidr_block = {RequestorVpcCidrBlock}
     SET requestor_block.lastupdated = {aws_update_tag}
     WITH accepter_block, requestor_vpc, requestor_block
@@ -881,9 +849,6 @@ def load_ec2_vpc_peering(session, data, aws_update_tag):
     """
 
     for peering in data['VpcPeeringConnections']:
-        #TODO REMOVE
-        print(json.dumps(peering))
-
         session.run(
             ingest_peering,
             AccepterVpcId=peering["AccepterVpcInfo"]["VpcId"],
@@ -896,11 +861,6 @@ def load_ec2_vpc_peering(session, data, aws_update_tag):
             ConnectionId=peering["VpcPeeringConnectionId"],
             ExpirationTime=peering.get("ExpirationTime", ""),
             aws_update_tag=aws_update_tag)
-    # print(json.dumps(data))
-    # session.run(
-    #     ingest_peering,
-    #     PeeringList=data.get('VpcPeeringConnections', []),
-    #     aws_update_tag=aws_update_tag)
 
 
 def cleanup_ec2_vpc_peering(session, common_job_parameters):
@@ -908,7 +868,6 @@ def cleanup_ec2_vpc_peering(session, common_job_parameters):
 
 
 def sync_vpc_peering(session, boto3_session, aws_update_tag, common_job_parameters):
-    print("PEeeeeering")
     logger.debug("Syncing EC2 Vpc peering")
     data = get_ec2_vpc_peering(boto3_session)
     load_ec2_vpc_peering(session, data, aws_update_tag)
