@@ -278,9 +278,10 @@ def load_group_policies(session, group_policies, aws_update_tag):
                 if "Action" in statement:
                     action = statement["Action"]
 
-                    # TODO actions may contain wildcards, e.g. sts:*
+                    # TODO actions may contain wildcards, e.g. sts:* -- this can be solved by using policyuniverse to
+                    # TODO expand the policy before checking if the sts:AssumeRole action is allowed
                     if action == "sts:AssumeRole":
-                        # TODO blanket allows may be modified by subsequent denies...
+                        # TODO blanket allows may be modified by subsequent denies... -- does policyuniverse handle?
                         if statement["Effect"] == "Allow":
                             role_arns = statement["Resource"]
 
@@ -288,7 +289,8 @@ def load_group_policies(session, group_policies, aws_update_tag):
                                 role_arns = [role_arns]
 
                             for role_arn in role_arns:
-                                # TODO resource ARNs may contain wildcards, e.g. arn:aws:iam::*:role/admin
+                                # TODO resource ARNs may contain wildcards, e.g. arn:aws:iam::*:role/admin --
+                                # TODO policyuniverse can't expand resource wildcards so further thought is needed here
                                 session.run(
                                     ingest_policies_assume_role,
                                     GroupName=group_name,
