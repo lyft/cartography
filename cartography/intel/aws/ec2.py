@@ -1,7 +1,6 @@
 import botocore.config
 import logging
 import time
-import json
 
 from cartography.util import run_cleanup_job
 
@@ -254,7 +253,7 @@ def load_ec2_security_groupinfo(session, data, region, current_aws_account_id, a
             GroupId=group_id,
             GroupName=group.get("GroupName", ""),
             Description=group.get("Description", ""),
-            VpcId=group.get("VpcId", ""),
+            VpcId=group.get("VpcId", None),
             Region=region,
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag
@@ -671,11 +670,11 @@ def load_ec2_vpcs(session, data, current_aws_account_id, aws_update_tag):
         session.run(
             ingest_vpc,
             VpcId=vpc_id,
-            InstanceTenancy=vpc.get("InstanceTenancy", ""),
-            State=vpc.get("State", ""),
-            IsDefault=vpc.get("IsDefault", ""),
-            PrimaryCIDRBlock=vpc.get("CidrBlock", ""),
-            DhcpOptionsId=vpc.get("DhcpOptionsId", ""),
+            InstanceTenancy=vpc.get("InstanceTenancy", None),
+            State=vpc.get("State", None),
+            IsDefault=vpc.get("IsDefault", None),
+            PrimaryCIDRBlock=vpc.get("CidrBlock", None),
+            DhcpOptionsId=vpc.get("DhcpOptionsId", None),
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag)
 
@@ -819,7 +818,7 @@ def load_ec2_vpc_peering(session, data, aws_update_tag):
     SET requestor_account.lastupdated = {aws_update_tag}
     WITH accepter_block, requestor_account
     MERGE (requestor_vpc:AWSVpc{id: {RequestorVpcId}})
-    ON CREATE SET requestor_vpc.firstseen = timestamp()
+    ON CREATE SET requestor_vpc.firstseen = timestamp(), requestor_vpc.vpcid = {RequestorVpcId}
     SET requestor_vpc.lastupdated = {aws_update_tag}
     WITH accepter_block, requestor_account, requestor_vpc
     MERGE (requestor_account)-[resource:RESOURCE]->(requestor_vpc)
@@ -854,7 +853,7 @@ def load_ec2_vpc_peering(session, data, aws_update_tag):
             StatusCode=peering["Status"]["Code"],
             StatusMessage=peering["Status"]["Message"],
             ConnectionId=peering["VpcPeeringConnectionId"],
-            ExpirationTime=peering.get("ExpirationTime", ""),
+            ExpirationTime=peering.get("ExpirationTime", None),
             aws_update_tag=aws_update_tag)
 
 
