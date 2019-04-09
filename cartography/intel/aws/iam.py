@@ -278,27 +278,23 @@ def load_group_policies(session, group_policies, aws_update_tag):
                 if "Action" in statement:
                     action = statement["Action"]
 
-                    # TODO improve this
+                    # TODO actions may contain wildcards, e.g. sts:*
                     if action == "sts:AssumeRole":
+                        # TODO blanket allows may be modified by subsequent denies...
                         if statement["Effect"] == "Allow":
-                            roles_arn = statement["Resource"]
+                            role_arns = statement["Resource"]
 
-                            if type(roles_arn) == str:
+                            if isinstance(role_arns, str):
+                                role_arns = [role_arns]
+
+                            for role_arn in role_arns:
+                                # TODO resource ARNs may contain wildcards, e.g. arn:aws:iam::*:role/admin
                                 session.run(
                                     ingest_policies_assume_role,
                                     GroupName=group_name,
-                                    RoleArn=roles_arn,
+                                    RoleArn=role_arn,
                                     aws_update_tag=aws_update_tag
                                 )
-                            else:
-                                # TODO the code below probably contains a bug -- why is role_arn not used in the loop?
-                                for role_arn in roles_arn:
-                                    session.run(
-                                        ingest_policies_assume_role,
-                                        GroupName=group_name,
-                                        RoleArn=roles_arn,
-                                        aws_update_tag=aws_update_tag
-                                    )
 
 
 def load_user_access_keys(session, user_access_keys, aws_update_tag):
