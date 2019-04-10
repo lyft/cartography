@@ -680,18 +680,18 @@ def load_ec2_vpcs(session, data, current_aws_account_id, aws_update_tag):
 
         ingest_cidr_association_set(session,
                                     vpc_id=vpc_id,
-                                    type="ipv4",
-                                    data=vpc.get("CidrBlockAssociationSet", []),
+                                    block_type="ipv4",
+                                    vpc_data=vpc,
                                     aws_update_tag=aws_update_tag)
 
         ingest_cidr_association_set(session,
                                     vpc_id=vpc_id,
-                                    type="ipv6",
-                                    data=vpc.get("Ipv6CidrBlockAssociationSet", []),
+                                    block_type="ipv6",
+                                    vpc_data=vpc,
                                     aws_update_tag=aws_update_tag)
 
 
-def ingest_cidr_association_set(session, vpc_id, type, data, aws_update_tag):
+def ingest_cidr_association_set(session, vpc_id, vpc_data, block_type, aws_update_tag):
     ingest_cidr = """
     MATCH (vpc:AWSVpc{id: {VpcId}})
     WITH vpc
@@ -715,16 +715,19 @@ def ingest_cidr_association_set(session, vpc_id, type, data, aws_update_tag):
     # base label type. We add the AWS ipv4 or 6 depending on block type
     BLOCK_TYPE = "AWSCidrBlock"
 
-    if type == "ipv6":
+    if block_type == "ipv6":
         BLOCK_TYPE = BLOCK_TYPE + ":AWSIpv6CidrBlock"
         BLOCK_CIDR = "Ipv6" + BLOCK_CIDR
         STATE_NAME = "Ipv6" + STATE_NAME
+        data = vpc_data.get("Ipv6CidrBlockAssociationSet", [])
     else:
         BLOCK_TYPE = BLOCK_TYPE + ":AWSIpv4CidrBlock"
+        data = vpc_data.get("CidrBlockAssociationSet", [])
 
     final_ingest = ingest_cidr.replace("#BLOCK_TYPE#", BLOCK_TYPE)\
                               .replace("#BLOCK_CIDR#", BLOCK_CIDR)\
                               .replace("#STATE_NAME#", STATE_NAME)
+
     session.run(
         final_ingest,
         VpcId=vpc_id,
