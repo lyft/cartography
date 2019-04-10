@@ -207,8 +207,12 @@ def _attach_read_replicas(neo4j_session, read_replicas, aws_update_tag):
     SET r.lastupdated = {aws_update_tag}
     """
     for replica in read_replicas:
-        # NOTE: AWS actually returns ARNs in this field, not DBInstanceIdentifiers
+        # NOTE: AWS returns DBInstanceIdentifier for intra-region replicas
+        # but returns ARN for inter-region replicas
         source_arn = replica['ReadReplicaSourceDBInstanceIdentifier']
+        if not source_arn.startswith("arn:"):
+          arn_prefix = ":".join(replica['DBInstanceArn'].split(":")[:-1])
+          source_arn = arn_prefix + ":" + source_arn
         neo4j_session.run(
             attach_replica_to_source,
             ReplicaArn=replica['DBInstanceArn'],
