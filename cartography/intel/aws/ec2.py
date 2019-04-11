@@ -739,6 +739,20 @@ def sync_load_balancers(session, boto3_session, regions, current_aws_account_id,
     cleanup_load_balancers(session, common_job_parameters)
 
 
+def sync_vpc(session, boto3_session, current_aws_account_id, aws_update_tag, common_job_parameters):
+    logger.debug("Syncing EC2 VPC in account '%s'.", current_aws_account_id)
+    data = get_ec2_vpcs(boto3_session)
+    load_ec2_vpcs(session, data, current_aws_account_id, aws_update_tag)
+    cleanup_ec2_vpcs(session, common_job_parameters)
+
+
+def sync_vpc_peering(session, boto3_session, current_aws_account_id, aws_update_tag, common_job_parameters):
+    logger.debug("Syncing EC2 VPC peering in account '%s'.", current_aws_account_id)
+    data = get_ec2_vpc_peering(boto3_session)
+    load_ec2_vpc_peering(session, data, current_aws_account_id, aws_update_tag)
+    cleanup_ec2_vpc_peering(session, common_job_parameters)
+
+
 def load_ec2_vpcs(session, data, current_aws_account_id, aws_update_tag):
     # https://github.com/lyft/cartography/graphs/traffic
     # {
@@ -833,7 +847,7 @@ def _get_cidr_association_statement(block_type):
 
     # base label type. We add the AWS ipv4 or 6 depending on block type
     BLOCK_TYPE = "AWSCidrBlock"
-    
+
     if block_type == "ipv6":
         BLOCK_CIDR = "Ipv6" + BLOCK_CIDR
         STATE_NAME = "Ipv6" + STATE_NAME
