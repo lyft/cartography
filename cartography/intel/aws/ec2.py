@@ -59,6 +59,18 @@ def get_loadbalancer_data(session, region):
     return {'LoadBalancerDescriptions': elbs}
 
 
+def get_ec2_vpc_peering(session):
+    client = session.client('ec2', config=_get_botocore_config())
+    # paginator not supported by boto
+    return client.describe_vpc_peering_connections()
+
+
+def get_ec2_vpcs(session):
+    client = session.client('ec2', config=_get_botocore_config())
+    # paginator not supported by boto
+    return client.describe_vpcs()
+
+
 def load_ec2_instances(session, data, region, current_aws_account_id, aws_update_tag):
     ingest_reservation = """
     MERGE (reservation:EC2Reservation{reservationid: {ReservationId}})
@@ -555,205 +567,6 @@ def load_load_balancer_listeners(session, load_balancer_id, listener_data, aws_u
     )
 
 
-def cleanup_ec2_security_groupinfo(session, common_job_parameters):
-    run_cleanup_job(
-        'aws_import_ec2_security_groupinfo_cleanup.json',
-        session,
-        common_job_parameters
-    )
-
-
-def cleanup_ec2_instances(session, common_job_parameters):
-    run_cleanup_job('aws_import_ec2_instances_cleanup.json', session, common_job_parameters)
-
-
-def cleanup_ec2_auto_scaling_groups(session, common_job_parameters):
-    run_cleanup_job(
-        'aws_ingest_ec2_auto_scaling_groups_cleanup.json',
-        session,
-        common_job_parameters
-    )
-
-
-def cleanup_load_balancers(session, common_job_parameters):
-    run_cleanup_job('aws_ingest_load_balancers_cleanup.json', session, common_job_parameters)
-
-
-def sync_ec2_security_groupinfo(session, boto3_session, regions, current_aws_account_id, aws_update_tag,
-                                common_job_parameters):
-    for region in regions:
-        logger.debug("Syncing EC2 security groups for region '%s' in account '%s'.", region, current_aws_account_id)
-        data = get_ec2_security_group_data(boto3_session, region)
-        load_ec2_security_groupinfo(session, data, region, current_aws_account_id, aws_update_tag)
-    cleanup_ec2_security_groupinfo(session, common_job_parameters)
-
-
-def sync_ec2_instances(session, boto3_session, regions, current_aws_account_id, aws_update_tag, common_job_parameters):
-    for region in regions:
-        logger.debug("Syncing EC2 instances for region '%s' in account '%s'.", region, current_aws_account_id)
-        data = get_ec2_instances(boto3_session, region)
-        load_ec2_instances(session, data, region, current_aws_account_id, aws_update_tag)
-    cleanup_ec2_instances(session, common_job_parameters)
-
-
-def sync_ec2_auto_scaling_groups(session, boto3_session, regions, current_aws_account_id, aws_update_tag,
-                                 common_job_parameters):
-    for region in regions:
-        logger.debug("Syncing auto scaling groups for region '%s' in account '%s'.", region, current_aws_account_id)
-        data = get_ec2_auto_scaling_groups(boto3_session, region)
-        load_ec2_auto_scaling_groups(session, data, region, current_aws_account_id, aws_update_tag)
-    cleanup_ec2_auto_scaling_groups(session, common_job_parameters)
-
-
-def sync_load_balancers(session, boto3_session, regions, current_aws_account_id, aws_update_tag, common_job_parameters):
-    for region in regions:
-        logger.debug("Syncing EC2 load balancers for region '%s' in account '%s'.", region, current_aws_account_id)
-        data = get_loadbalancer_data(boto3_session, region)
-        load_load_balancers(session, data, region, current_aws_account_id, aws_update_tag)
-    cleanup_load_balancers(session, common_job_parameters)
-
-
-def get_ec2_vpcs(session):
-    client = session.client('ec2', config=_get_botocore_config())
-    # paginator not supported by boto
-    return client.describe_vpcs()
-
-
-def load_ec2_vpcs(session, data, current_aws_account_id, aws_update_tag):
-    # https://github.com/lyft/cartography/graphs/traffic
-    # {
-    #     "Vpcs": [
-    #         {
-    #             "VpcId": "vpc-a01106c2",
-    #             "InstanceTenancy": "default",
-    #             "Tags": [
-    #                 {
-    #                     "Value": "MyVPC",
-    #                     "Key": "Name"
-    #                 }
-    #             ],
-    #             "CidrBlockAssociations": [
-    #                 {
-    #                     "AssociationId": "vpc-cidr-assoc-a26a41ca",
-    #                     "CidrBlock": "10.0.0.0/16",
-    #                     "CidrBlockState": {
-    #                         "State": "associated"
-    #                     }
-    #                 }
-    #             ],
-    #             "State": "available",
-    #             "DhcpOptionsId": "dopt-7a8b9c2d",
-    #             "CidrBlock": "10.0.0.0/16",
-    #             "IsDefault": false
-    #         }
-    #     ]
-    # }
-
-    ingest_vpc = """
-    MERGE (new_vpc:AWSVpc{id: {VpcId}})
-    ON CREATE SET new_vpc.firstseen = timestamp(), new_vpc.vpcid ={VpcId}
-    SET new_vpc.instance_tenancy = {InstanceTenancy},
-    new_vpc.state = {State},
-    new_vpc.is_default = {IsDefault},
-    new_vpc.primary_cidr_block = {PrimaryCIDRBlock},
-    new_vpc.dhcp_options_id = {DhcpOptionsId},
-    new_vpc.lastupdated = {aws_update_tag}
-    WITH new_vpc
-    MATCH (awsAccount:AWSAccount{id: {AWS_ACCOUNT_ID}})
-    MERGE (awsAccount)-[r:RESOURCE]->(new_vpc)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}"""
-
-    for vpc in data['Vpcs']:
-        vpc_id = vpc["VpcId"]  # fail if not present
-
-        session.run(
-            ingest_vpc,
-            VpcId=vpc_id,
-            InstanceTenancy=vpc.get("InstanceTenancy", None),
-            State=vpc.get("State", None),
-            IsDefault=vpc.get("IsDefault", None),
-            PrimaryCIDRBlock=vpc.get("CidrBlock", None),
-            DhcpOptionsId=vpc.get("DhcpOptionsId", None),
-            AWS_ACCOUNT_ID=current_aws_account_id,
-            aws_update_tag=aws_update_tag)
-
-        ingest_cidr_association_set(session,
-                                    vpc_id=vpc_id,
-                                    block_type="ipv4",
-                                    vpc_data=vpc,
-                                    aws_update_tag=aws_update_tag)
-
-        ingest_cidr_association_set(session,
-                                    vpc_id=vpc_id,
-                                    block_type="ipv6",
-                                    vpc_data=vpc,
-                                    aws_update_tag=aws_update_tag)
-
-
-def ingest_cidr_association_set(session, vpc_id, vpc_data, block_type, aws_update_tag):
-    ingest_cidr = """
-    MATCH (vpc:AWSVpc{id: {VpcId}})
-    WITH vpc
-    UNWIND {CidrBlock} as block_data
-        MERGE (new_block:#BLOCK_TYPE#{id: {VpcId} + '|' + block_data.#BLOCK_CIDR#})
-        ON CREATE SET new_block.firstseen = timestamp()
-        SET new_block.association_id = block_data.AssociationId,
-        new_block.cidr_block = block_data.#BLOCK_CIDR#,
-        new_block.block_state = block_data.#STATE_NAME#.State,
-        new_block.block_state_message = block_data.#STATE_NAME#.StatusMessage,
-        new_block.lastupdated = {aws_update_tag}
-        WITH vpc, new_block
-        MERGE (vpc)-[r:BLOCK_ASSOCIATION]->(new_block)
-        ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {aws_update_tag}"""
-
-
-    BLOCK_CIDR = "CidrBlock"
-    STATE_NAME = "CidrBlockState"
-
-    # base label type. We add the AWS ipv4 or 6 depending on block type
-    BLOCK_TYPE = "AWSCidrBlock"
-
-    if block_type == "ipv6":
-        BLOCK_TYPE = BLOCK_TYPE + ":AWSIpv6CidrBlock"
-        BLOCK_CIDR = "Ipv6" + BLOCK_CIDR
-        STATE_NAME = "Ipv6" + STATE_NAME
-        data = vpc_data.get("Ipv6CidrBlockAssociationSet", [])
-    else:
-        BLOCK_TYPE = BLOCK_TYPE + ":AWSIpv4CidrBlock"
-        data = vpc_data.get("CidrBlockAssociationSet", [])
-
-    final_ingest = ingest_cidr.replace("#BLOCK_TYPE#", BLOCK_TYPE)\
-                              .replace("#BLOCK_CIDR#", BLOCK_CIDR)\
-                              .replace("#STATE_NAME#", STATE_NAME)
-
-    session.run(
-        final_ingest,
-        VpcId=vpc_id,
-        CidrBlock=data,
-        aws_update_tag=aws_update_tag
-    )
-
-
-def cleanup_ec2_vpcs(session, common_job_parameters):
-    run_cleanup_job('aws_import_vpc_cleanup.json', session, common_job_parameters)
-
-
-def sync_vpc(session, boto3_session, current_aws_account_id, aws_update_tag, common_job_parameters):
-    logger.debug("Syncing EC2 Vpc in account '%s'.", current_aws_account_id)
-    data = get_ec2_vpcs(boto3_session)
-    load_ec2_vpcs(session, data, current_aws_account_id, aws_update_tag)
-
-    cleanup_ec2_vpcs(session, common_job_parameters)
-
-
-def get_ec2_vpc_peering(session):
-    client = session.client('ec2', config=_get_botocore_config())
-    # paginator not supported by boto
-    return client.describe_vpc_peering_connections()
-
-
 def load_ec2_vpc_peering(session, data, aws_update_tag):
     # https://docs.aws.amazon.com/cli/latest/reference/ec2/describe-vpc-peering-connections.html
     # {
@@ -860,13 +673,193 @@ def load_ec2_vpc_peering(session, data, aws_update_tag):
             aws_update_tag=aws_update_tag)
 
 
+def cleanup_ec2_security_groupinfo(session, common_job_parameters):
+    run_cleanup_job(
+        'aws_import_ec2_security_groupinfo_cleanup.json',
+        session,
+        common_job_parameters
+    )
+
+
+def cleanup_ec2_instances(session, common_job_parameters):
+    run_cleanup_job('aws_import_ec2_instances_cleanup.json', session, common_job_parameters)
+
+
+def cleanup_ec2_auto_scaling_groups(session, common_job_parameters):
+    run_cleanup_job(
+        'aws_ingest_ec2_auto_scaling_groups_cleanup.json',
+        session,
+        common_job_parameters
+    )
+
+
+def cleanup_load_balancers(session, common_job_parameters):
+    run_cleanup_job('aws_ingest_load_balancers_cleanup.json', session, common_job_parameters)
+
+
+def cleanup_ec2_vpcs(session, common_job_parameters):
+    run_cleanup_job('aws_import_vpc_cleanup.json', session, common_job_parameters)
+
+
 def cleanup_ec2_vpc_peering(session, common_job_parameters):
     run_cleanup_job('aws_import_vpc_peering_cleanup.json', session, common_job_parameters)
 
 
-def sync_vpc_peering(session, boto3_session, aws_update_tag, common_job_parameters):
-    logger.debug("Syncing EC2 Vpc peering")
-    data = get_ec2_vpc_peering(boto3_session)
-    load_ec2_vpc_peering(session, data, aws_update_tag)
+def sync_ec2_security_groupinfo(session, boto3_session, regions, current_aws_account_id, aws_update_tag,
+                                common_job_parameters):
+    for region in regions:
+        logger.debug("Syncing EC2 security groups for region '%s' in account '%s'.", region, current_aws_account_id)
+        data = get_ec2_security_group_data(boto3_session, region)
+        load_ec2_security_groupinfo(session, data, region, current_aws_account_id, aws_update_tag)
+    cleanup_ec2_security_groupinfo(session, common_job_parameters)
 
-    cleanup_ec2_vpc_peering(session, common_job_parameters)
+
+def sync_ec2_instances(session, boto3_session, regions, current_aws_account_id, aws_update_tag, common_job_parameters):
+    for region in regions:
+        logger.debug("Syncing EC2 instances for region '%s' in account '%s'.", region, current_aws_account_id)
+        data = get_ec2_instances(boto3_session, region)
+        load_ec2_instances(session, data, region, current_aws_account_id, aws_update_tag)
+    cleanup_ec2_instances(session, common_job_parameters)
+
+
+def sync_ec2_auto_scaling_groups(session, boto3_session, regions, current_aws_account_id, aws_update_tag,
+                                 common_job_parameters):
+    for region in regions:
+        logger.debug("Syncing auto scaling groups for region '%s' in account '%s'.", region, current_aws_account_id)
+        data = get_ec2_auto_scaling_groups(boto3_session, region)
+        load_ec2_auto_scaling_groups(session, data, region, current_aws_account_id, aws_update_tag)
+    cleanup_ec2_auto_scaling_groups(session, common_job_parameters)
+
+
+def sync_load_balancers(session, boto3_session, regions, current_aws_account_id, aws_update_tag, common_job_parameters):
+    for region in regions:
+        logger.debug("Syncing EC2 load balancers for region '%s' in account '%s'.", region, current_aws_account_id)
+        data = get_loadbalancer_data(boto3_session, region)
+        load_load_balancers(session, data, region, current_aws_account_id, aws_update_tag)
+    cleanup_load_balancers(session, common_job_parameters)
+
+
+def load_ec2_vpcs(session, data, current_aws_account_id, aws_update_tag):
+    # https://github.com/lyft/cartography/graphs/traffic
+    # {
+    #     "Vpcs": [
+    #         {
+    #             "VpcId": "vpc-a01106c2",
+    #             "InstanceTenancy": "default",
+    #             "Tags": [
+    #                 {
+    #                     "Value": "MyVPC",
+    #                     "Key": "Name"
+    #                 }
+    #             ],
+    #             "CidrBlockAssociations": [
+    #                 {
+    #                     "AssociationId": "vpc-cidr-assoc-a26a41ca",
+    #                     "CidrBlock": "10.0.0.0/16",
+    #                     "CidrBlockState": {
+    #                         "State": "associated"
+    #                     }
+    #                 }
+    #             ],
+    #             "State": "available",
+    #             "DhcpOptionsId": "dopt-7a8b9c2d",
+    #             "CidrBlock": "10.0.0.0/16",
+    #             "IsDefault": false
+    #         }
+    #     ]
+    # }
+
+    ingest_vpc = """
+    MERGE (new_vpc:AWSVpc{id: {VpcId}})
+    ON CREATE SET new_vpc.firstseen = timestamp(), new_vpc.vpcid ={VpcId}
+    SET new_vpc.instance_tenancy = {InstanceTenancy},
+    new_vpc.state = {State},
+    new_vpc.is_default = {IsDefault},
+    new_vpc.primary_cidr_block = {PrimaryCIDRBlock},
+    new_vpc.dhcp_options_id = {DhcpOptionsId},
+    new_vpc.lastupdated = {aws_update_tag}
+    WITH new_vpc
+    MATCH (awsAccount:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MERGE (awsAccount)-[r:RESOURCE]->(new_vpc)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {aws_update_tag}"""
+
+    for vpc in data['Vpcs']:
+        vpc_id = vpc["VpcId"]  # fail if not present
+
+        session.run(
+            ingest_vpc,
+            VpcId=vpc_id,
+            InstanceTenancy=vpc.get("InstanceTenancy", None),
+            State=vpc.get("State", None),
+            IsDefault=vpc.get("IsDefault", None),
+            PrimaryCIDRBlock=vpc.get("CidrBlock", None),
+            DhcpOptionsId=vpc.get("DhcpOptionsId", None),
+            AWS_ACCOUNT_ID=current_aws_account_id,
+            aws_update_tag=aws_update_tag)
+
+        load_cidr_association_set(session,
+                                  vpc_id=vpc_id,
+                                  block_type="ipv4",
+                                  vpc_data=vpc,
+                                  aws_update_tag=aws_update_tag)
+
+        load_cidr_association_set(session,
+                                  vpc_id=vpc_id,
+                                  block_type="ipv6",
+                                  vpc_data=vpc,
+                                  aws_update_tag=aws_update_tag)
+
+
+def _get_cidr_association_statement(block_type):
+    ingest_cidr = """
+    MATCH (vpc:AWSVpc{id: {VpcId}})
+    WITH vpc
+    UNWIND {CidrBlock} as block_data
+        MERGE (new_block:#BLOCK_TYPE#{id: {VpcId} + '|' + block_data.#BLOCK_CIDR#})
+        ON CREATE SET new_block.firstseen = timestamp()
+        SET new_block.association_id = block_data.AssociationId,
+        new_block.cidr_block = block_data.#BLOCK_CIDR#,
+        new_block.block_state = block_data.#STATE_NAME#.State,
+        new_block.block_state_message = block_data.#STATE_NAME#.StatusMessage,
+        new_block.lastupdated = {aws_update_tag}
+        WITH vpc, new_block
+        MERGE (vpc)-[r:BLOCK_ASSOCIATION]->(new_block)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {aws_update_tag}"""
+
+    BLOCK_CIDR = "CidrBlock"
+    STATE_NAME = "CidrBlockState"
+
+    # base label type. We add the AWS ipv4 or 6 depending on block type
+    BLOCK_TYPE = "AWSCidrBlock"
+    
+    if block_type == "ipv6":
+        BLOCK_CIDR = "Ipv6" + BLOCK_CIDR
+        STATE_NAME = "Ipv6" + STATE_NAME
+        BLOCK_TYPE = BLOCK_TYPE + ":AWSIpv6CidrBlock"
+    elif block_type == "ipv4":
+        BLOCK_TYPE = BLOCK_TYPE + ":AWSIpv4CidrBlock"
+    else:
+        raise ValueError("Unsupported block type specified - {0}".format(block_type))
+
+    return ingest_cidr.replace("#BLOCK_CIDR#", BLOCK_CIDR)\
+                      .replace("#STATE_NAME#", STATE_NAME)\
+                      .replace("#BLOCK_TYPE#", BLOCK_TYPE)
+
+
+def load_cidr_association_set(session, vpc_id, vpc_data, block_type, aws_update_tag):
+
+    ingest_statement = _get_cidr_association_statement(block_type)
+
+    if block_type == "ipv6":
+        data = vpc_data.get("Ipv6CidrBlockAssociationSet", [])
+    else:
+        data = vpc_data.get("CidrBlockAssociationSet", [])
+
+    session.run(
+        ingest_statement,
+        VpcId=vpc_id,
+        CidrBlock=data,
+        aws_update_tag=aws_update_tag
+    )
