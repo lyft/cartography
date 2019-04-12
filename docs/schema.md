@@ -107,7 +107,8 @@ Representation of an AWS Account.
 ## AWSCidrBlock
 ### AWSIpv4CidrBlock
 ### AWSIpv6CidrBlock
-Representation of an AWS CidrBlock used in VPC configuration. The `AWSCidrBlock` defines the base label
+Representation of an [AWS CidrBlock used in VPC configuration](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_VpcCidrBlockAssociation.html).
+The `AWSCidrBlock` defines the base label
 type for `AWSIpv4CidrBlock` and `AWSIpv6CidrBlock`
 
 | Field | Description |
@@ -300,8 +301,9 @@ Representation of an AWS [IAM Role](https://docs.aws.amazon.com/IAM/latest/APIRe
     ```
 
 ## AWSVpc
-Representation of an AWS VPC configuration
+Representation of an [AWS CidrBlock used in VPC configuration](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_VpcCidrBlockAssociation.html).
 More information on https://docs.aws.amazon.com/cli/latest/reference/ec2/describe-vpcs.html
+
 | Field | Description |
 |-------|-------------|
 |firstseen| Timestamp of when a sync job discovered this node|
