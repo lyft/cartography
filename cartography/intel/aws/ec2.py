@@ -749,7 +749,7 @@ def sync_vpc(session, boto3_session, current_aws_account_id, aws_update_tag, com
 def sync_vpc_peering(session, boto3_session, current_aws_account_id, aws_update_tag, common_job_parameters):
     logger.debug("Syncing EC2 VPC peering in account '%s'.", current_aws_account_id)
     data = get_ec2_vpc_peering(boto3_session)
-    load_ec2_vpc_peering(session, data, current_aws_account_id, aws_update_tag)
+    load_ec2_vpc_peering(session, data, aws_update_tag)
     cleanup_ec2_vpc_peering(session, common_job_parameters)
 
 
