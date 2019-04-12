@@ -662,18 +662,20 @@ def load_ec2_vpc_peering(session, data, aws_update_tag):
     for peering in data['VpcPeeringConnections']:
         print(peering)
         print("--------------------------------------------------------")
-        session.run(
-            ingest_peering,
-            AccepterVpcId=peering["AccepterVpcInfo"]["VpcId"],
-            AccepterCidrBlock=peering["AccepterVpcInfo"]["CidrBlock"],
-            RequesterOwnerId=peering["RequesterVpcInfo"]["OwnerId"],
-            RequestorVpcId=peering["RequesterVpcInfo"]["VpcId"],
-            RequestorVpcCidrBlock=peering["RequesterVpcInfo"]["CidrBlock"],
-            StatusCode=peering["Status"]["Code"],
-            StatusMessage=peering["Status"]["Message"],
-            ConnectionId=peering["VpcPeeringConnectionId"],
-            ExpirationTime=peering.get("ExpirationTime", None),
-            aws_update_tag=aws_update_tag)
+
+        if peering["Status"]["Code"] == "active":
+            session.run(
+                ingest_peering,
+                AccepterVpcId=peering["AccepterVpcInfo"]["VpcId"],
+                AccepterCidrBlock=peering["AccepterVpcInfo"]["CidrBlock"],
+                RequesterOwnerId=peering["RequesterVpcInfo"]["OwnerId"],
+                RequestorVpcId=peering["RequesterVpcInfo"]["VpcId"],
+                RequestorVpcCidrBlock=peering["RequesterVpcInfo"]["CidrBlock"],
+                StatusCode=peering["Status"]["Code"],
+                StatusMessage=peering["Status"]["Message"],
+                ConnectionId=peering["VpcPeeringConnectionId"],
+                ExpirationTime=peering.get("ExpirationTime", None),
+                aws_update_tag=aws_update_tag)
 
 
 def cleanup_ec2_security_groupinfo(session, common_job_parameters):
