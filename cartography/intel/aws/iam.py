@@ -60,6 +60,20 @@ def get_role_list_data(session):
     return {'Roles': roles}
 
 
+def get_role_policies(session, role_name):
+    client = session.client('iam')
+    paginator = client.get_paginator('list_role_policies')
+    policy_names = []
+    for page in paginator.paginate(RoleName=role_name):
+        policy_names.extend(page['PolicyNames'])
+    return {'PolicyNames': policy_names}
+
+
+def get_role_policy_info(session, role_name, policy_name):
+    client = session.client('iam')
+    return client.get_role_policy(RoleName=role_name, PolicyName=policy_name)
+
+
 def get_account_access_key_data(session, username):
     client = session.client('iam')
     # NOTE we can get away without using a paginator here because users are limited to two access keys
