@@ -671,6 +671,7 @@ def load_ec2_vpc_peering(session, data, aws_update_tag):
     r.lastupdated = {aws_update_tag}
     """
     for peering in data['VpcPeeringConnections']:
+        print("status {0}".format(peering["Status"]["Code"]))
         if peering["Status"]["Code"] == "active":
             session.run(
                 ingest_peering,
@@ -686,9 +687,7 @@ def load_ec2_vpc_peering(session, data, aws_update_tag):
                 aws_update_tag=aws_update_tag)
 
             for accepter_block in peering["AccepterVpcInfo"].get("CidrBlockSet", []):
-                print("Accepter {0}".format(accepter_block["CidrBlock"]))
                 for requestor_block in peering["RequesterVpcInfo"].get("CidrBlockSet", []):
-                    print("Requestor {0}".format(requestor_block["CidrBlock"]))
                     session.run(
                         ingest_peering_block,
                         AccepterVpcId=peering["AccepterVpcInfo"]["VpcId"],
