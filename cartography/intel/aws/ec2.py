@@ -695,6 +695,10 @@ def load_ec2_vpc_peering(session, data, aws_update_tag):
                         AccepterCidrBlock=accepter_block["CidrBlock"],
                         RequestorVpcId=peering["RequesterVpcInfo"]["VpcId"],
                         RequestorVpcCidrBlock=requestor_block["CidrBlock"],
+                        StatusCode=peering["Status"]["Code"],
+                        StatusMessage=peering["Status"]["Message"],
+                        ConnectionId=peering["VpcPeeringConnectionId"],
+                        ExpirationTime=peering.get("ExpirationTime", None),
                         aws_update_tag=aws_update_tag)
 
 
