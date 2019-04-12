@@ -1,0 +1,23 @@
+{
+  "statements": [{
+    "query": "MATCH (n:CidrBlock)<-[:BLOCK_ASSOCIATION]-(:AWSVpc)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+    "iterative": true,
+    "iterationsize": 100
+  },
+  {
+    "query": "MATCH (:CidrBlock)<-[r:BLOCK_ASSOCIATION]-(:AWSVpc)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+    "iterative": true,
+    "iterationsize": 100
+  },
+  {
+    "query": "MATCH (n:AWSVpc)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+    "iterative": true,
+    "iterationsize": 100
+  },
+  {
+    "query": "MATCH (:AWSVpc)<-[r:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+    "iterative": true,
+    "iterationsize": 100
+  }],
+  "name": "cleanup AWS VPC information"
+}
