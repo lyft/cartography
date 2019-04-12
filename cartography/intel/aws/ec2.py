@@ -659,10 +659,18 @@ def load_ec2_vpc_peering(session, data, aws_update_tag):
     r2.lastupdated = {aws_update_tag}
     """
 
+    ingest_peering_block = """
+    MATCH (accepter_block:AWSIpv4CidrBlock{id: {AccepterVpcId} + '|' + {AccepterCidrBlock}}),
+    (requestor_block:AWSCidrBlock:AWSIpv4CidrBlock{id: {RequestorVpcId} + '|' + {RequestorVpcCidrBlock}})
+    MERGE (accepter_block)<-[r:VPC_PEERING]->(requestor_block)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.status_code = {StatusCode},
+    r.status_message = {StatusMessage},
+    r.connection_id = {ConnectionId},
+    r.expiration_time = {ExpirationTime},
+    r.lastupdated = {aws_update_tag}
+    """
     for peering in data['VpcPeeringConnections']:
-        print(peering)
-        print("--------------------------------------------------------")
-
         if peering["Status"]["Code"] == "active":
             session.run(
                 ingest_peering,
@@ -677,85 +685,17 @@ def load_ec2_vpc_peering(session, data, aws_update_tag):
                 ExpirationTime=peering.get("ExpirationTime", None),
                 aws_update_tag=aws_update_tag)
 
-
-def cleanup_ec2_security_groupinfo(session, common_job_parameters):
-    run_cleanup_job(
-        'aws_import_ec2_security_groupinfo_cleanup.json',
-        session,
-        common_job_parameters
-    )
-
-
-def cleanup_ec2_instances(session, common_job_parameters):
-    run_cleanup_job('aws_import_ec2_instances_cleanup.json', session, common_job_parameters)
-
-
-def cleanup_ec2_auto_scaling_groups(session, common_job_parameters):
-    run_cleanup_job(
-        'aws_ingest_ec2_auto_scaling_groups_cleanup.json',
-        session,
-        common_job_parameters
-    )
-
-
-def cleanup_load_balancers(session, common_job_parameters):
-    run_cleanup_job('aws_ingest_load_balancers_cleanup.json', session, common_job_parameters)
-
-
-def cleanup_ec2_vpcs(session, common_job_parameters):
-    run_cleanup_job('aws_import_vpc_cleanup.json', session, common_job_parameters)
-
-
-def cleanup_ec2_vpc_peering(session, common_job_parameters):
-    run_cleanup_job('aws_import_vpc_peering_cleanup.json', session, common_job_parameters)
-
-
-def sync_ec2_security_groupinfo(session, boto3_session, regions, current_aws_account_id, aws_update_tag,
-                                common_job_parameters):
-    for region in regions:
-        logger.debug("Syncing EC2 security groups for region '%s' in account '%s'.", region, current_aws_account_id)
-        data = get_ec2_security_group_data(boto3_session, region)
-        load_ec2_security_groupinfo(session, data, region, current_aws_account_id, aws_update_tag)
-    cleanup_ec2_security_groupinfo(session, common_job_parameters)
-
-
-def sync_ec2_instances(session, boto3_session, regions, current_aws_account_id, aws_update_tag, common_job_parameters):
-    for region in regions:
-        logger.debug("Syncing EC2 instances for region '%s' in account '%s'.", region, current_aws_account_id)
-        data = get_ec2_instances(boto3_session, region)
-        load_ec2_instances(session, data, region, current_aws_account_id, aws_update_tag)
-    cleanup_ec2_instances(session, common_job_parameters)
-
-
-def sync_ec2_auto_scaling_groups(session, boto3_session, regions, current_aws_account_id, aws_update_tag,
-                                 common_job_parameters):
-    for region in regions:
-        logger.debug("Syncing auto scaling groups for region '%s' in account '%s'.", region, current_aws_account_id)
-        data = get_ec2_auto_scaling_groups(boto3_session, region)
-        load_ec2_auto_scaling_groups(session, data, region, current_aws_account_id, aws_update_tag)
-    cleanup_ec2_auto_scaling_groups(session, common_job_parameters)
-
-
-def sync_load_balancers(session, boto3_session, regions, current_aws_account_id, aws_update_tag, common_job_parameters):
-    for region in regions:
-        logger.debug("Syncing EC2 load balancers for region '%s' in account '%s'.", region, current_aws_account_id)
-        data = get_loadbalancer_data(boto3_session, region)
-        load_load_balancers(session, data, region, current_aws_account_id, aws_update_tag)
-    cleanup_load_balancers(session, common_job_parameters)
-
-
-def sync_vpc(session, boto3_session, current_aws_account_id, aws_update_tag, common_job_parameters):
-    logger.debug("Syncing EC2 VPC in account '%s'.", current_aws_account_id)
-    data = get_ec2_vpcs(boto3_session)
-    load_ec2_vpcs(session, data, current_aws_account_id, aws_update_tag)
-    cleanup_ec2_vpcs(session, common_job_parameters)
-
-
-def sync_vpc_peering(session, boto3_session, current_aws_account_id, aws_update_tag, common_job_parameters):
-    logger.debug("Syncing EC2 VPC peering in account '%s'.", current_aws_account_id)
-    data = get_ec2_vpc_peering(boto3_session)
-    load_ec2_vpc_peering(session, data, aws_update_tag)
-    cleanup_ec2_vpc_peering(session, common_job_parameters)
+            for accepter_block in peering["AccepterVpcInfo"].get("CidrBlockSet", []):
+                print("Accepter {0}".format(accepter_block["CidrBlock"]))
+                for requestor_block in peering["RequesterVpcInfo"].get("CidrBlockSet", []):
+                    print("Requestor {0}".format(requestor_block["CidrBlock"]))
+                    session.run(
+                        ingest_peering_block,
+                        AccepterVpcId=peering["AccepterVpcInfo"]["VpcId"],
+                        AccepterCidrBlock=accepter_block["CidrBlock"],
+                        RequestorVpcId=peering["RequesterVpcInfo"]["VpcId"],
+                        RequestorVpcCidrBlock=requestor_block["CidrBlock"],
+                        aws_update_tag=aws_update_tag)
 
 
 def load_ec2_vpcs(session, data, current_aws_account_id, aws_update_tag):
@@ -882,3 +822,84 @@ def load_cidr_association_set(session, vpc_id, vpc_data, block_type, aws_update_
         CidrBlock=data,
         aws_update_tag=aws_update_tag
     )
+
+
+def cleanup_ec2_security_groupinfo(session, common_job_parameters):
+    run_cleanup_job(
+        'aws_import_ec2_security_groupinfo_cleanup.json',
+        session,
+        common_job_parameters
+    )
+
+
+def cleanup_ec2_instances(session, common_job_parameters):
+    run_cleanup_job('aws_import_ec2_instances_cleanup.json', session, common_job_parameters)
+
+
+def cleanup_ec2_auto_scaling_groups(session, common_job_parameters):
+    run_cleanup_job(
+        'aws_ingest_ec2_auto_scaling_groups_cleanup.json',
+        session,
+        common_job_parameters
+    )
+
+
+def cleanup_load_balancers(session, common_job_parameters):
+    run_cleanup_job('aws_ingest_load_balancers_cleanup.json', session, common_job_parameters)
+
+
+def cleanup_ec2_vpcs(session, common_job_parameters):
+    run_cleanup_job('aws_import_vpc_cleanup.json', session, common_job_parameters)
+
+
+def cleanup_ec2_vpc_peering(session, common_job_parameters):
+    run_cleanup_job('aws_import_vpc_peering_cleanup.json', session, common_job_parameters)
+
+
+def sync_ec2_security_groupinfo(session, boto3_session, regions, current_aws_account_id, aws_update_tag,
+                                common_job_parameters):
+    for region in regions:
+        logger.debug("Syncing EC2 security groups for region '%s' in account '%s'.", region, current_aws_account_id)
+        data = get_ec2_security_group_data(boto3_session, region)
+        load_ec2_security_groupinfo(session, data, region, current_aws_account_id, aws_update_tag)
+    cleanup_ec2_security_groupinfo(session, common_job_parameters)
+
+
+def sync_ec2_instances(session, boto3_session, regions, current_aws_account_id, aws_update_tag, common_job_parameters):
+    for region in regions:
+        logger.debug("Syncing EC2 instances for region '%s' in account '%s'.", region, current_aws_account_id)
+        data = get_ec2_instances(boto3_session, region)
+        load_ec2_instances(session, data, region, current_aws_account_id, aws_update_tag)
+    cleanup_ec2_instances(session, common_job_parameters)
+
+
+def sync_ec2_auto_scaling_groups(session, boto3_session, regions, current_aws_account_id, aws_update_tag,
+                                 common_job_parameters):
+    for region in regions:
+        logger.debug("Syncing auto scaling groups for region '%s' in account '%s'.", region, current_aws_account_id)
+        data = get_ec2_auto_scaling_groups(boto3_session, region)
+        load_ec2_auto_scaling_groups(session, data, region, current_aws_account_id, aws_update_tag)
+    cleanup_ec2_auto_scaling_groups(session, common_job_parameters)
+
+
+def sync_load_balancers(session, boto3_session, regions, current_aws_account_id, aws_update_tag, common_job_parameters):
+    for region in regions:
+        logger.debug("Syncing EC2 load balancers for region '%s' in account '%s'.", region, current_aws_account_id)
+        data = get_loadbalancer_data(boto3_session, region)
+        load_load_balancers(session, data, region, current_aws_account_id, aws_update_tag)
+    cleanup_load_balancers(session, common_job_parameters)
+
+
+def sync_vpc(session, boto3_session, current_aws_account_id, aws_update_tag, common_job_parameters):
+    logger.debug("Syncing EC2 VPC in account '%s'.", current_aws_account_id)
+    data = get_ec2_vpcs(boto3_session)
+    load_ec2_vpcs(session, data, current_aws_account_id, aws_update_tag)
+    cleanup_ec2_vpcs(session, common_job_parameters)
+
+
+def sync_vpc_peering(session, boto3_session, current_aws_account_id, aws_update_tag, common_job_parameters):
+    logger.debug("Syncing EC2 VPC peering in account '%s'.", current_aws_account_id)
+    data = get_ec2_vpc_peering(boto3_session)
+    load_ec2_vpc_peering(session, data, aws_update_tag)
+    cleanup_ec2_vpc_peering(session, common_job_parameters)
+
