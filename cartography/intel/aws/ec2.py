@@ -660,11 +660,10 @@ def load_ec2_vpc_peering(session, data, aws_update_tag):
     """
 
     for peering in data['VpcPeeringConnections']:
-        print(json.dumps(peering))
         session.run(
             ingest_peering,
             AccepterVpcId=peering["AccepterVpcInfo"]["VpcId"],
-            AccepterCidrBlock=peering["AccepterVpcInfo"]["CidrBlock"],
+            AccepterCidrBlock=peering["AccepterVpcInfo"].get("CidrBlock", ""),
             RequesterOwnerId=peering["RequesterVpcInfo"]["OwnerId"],
             RequestorVpcId=peering["RequesterVpcInfo"]["VpcId"],
             RequestorVpcCidrBlock=peering["RequesterVpcInfo"]["CidrBlock"],
