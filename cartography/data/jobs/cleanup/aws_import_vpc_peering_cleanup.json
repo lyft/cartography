@@ -1,0 +1,33 @@
+{
+  "statements": [{
+    "query": "MATCH (n:AWSCidrBlock)<-[:BLOCK_ASSOCIATION]-(:AWSVpc)<-[:RESOURCE]-(:AWSAccount{foreign: true}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+    "iterative": true,
+    "iterationsize": 100
+  },
+  {
+    "query": "MATCH (:AWSCidrBlock)<-[r:BLOCK_ASSOCIATION]-(:AWSVpc)<-[:RESOURCE]-(:AWSAccount{foreign: true}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+    "iterative": true,
+    "iterationsize": 100
+  },
+  {
+    "query": "MATCH (n:AWSVpc)<-[:RESOURCE]-(:AWSAccount{foreign: true}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+    "iterative": true,
+    "iterationsize": 100
+  },
+  {
+    "query": "MATCH (:AWSVpc)<-[r:RESOURCE]-(:AWSAccount{foreign: true}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+    "iterative": true,
+    "iterationsize": 100
+  },
+  {
+    "query": "MATCH (:AWSVpc)-[r:VPC_PEERING]-(:AWSVpc) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+    "iterative": true,
+    "iterationsize": 100
+  },
+  {
+    "query": "MATCH (n:AWSAccount{foreign: true}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+    "iterative": true,
+    "iterationsize": 100
+  }],
+  "name": "cleanup AWS VPC information"
+}
