@@ -1,6 +1,7 @@
 import botocore.config
 import logging
 import time
+import json
 
 from cartography.util import run_cleanup_job
 
@@ -659,6 +660,7 @@ def load_ec2_vpc_peering(session, data, aws_update_tag):
     """
 
     for peering in data['VpcPeeringConnections']:
+        print(json.dumps(peering))
         session.run(
             ingest_peering,
             AccepterVpcId=peering["AccepterVpcInfo"]["VpcId"],
