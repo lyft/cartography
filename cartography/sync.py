@@ -138,7 +138,7 @@ def build_default_sync():
     """
     sync = Sync()
     sync.add_stages([
-        # ('create-indexes', cartography.intel.create_indexes.run),
+        ('create-indexes', cartography.intel.create_indexes.run),
         ('aws', cartography.intel.aws.start_aws_ingestion),
         ('analysis', cartography.intel.analysis.run),
     ])

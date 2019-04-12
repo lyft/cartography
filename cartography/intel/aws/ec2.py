@@ -671,7 +671,6 @@ def load_ec2_vpc_peering(session, data, aws_update_tag):
     r.lastupdated = {aws_update_tag}
     """
     for peering in data['VpcPeeringConnections']:
-        print("status {0}".format(peering["Status"]["Code"]))
         if peering["Status"]["Code"] == "active":
             session.run(
                 ingest_peering,
