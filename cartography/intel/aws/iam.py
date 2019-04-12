@@ -320,6 +320,32 @@ def load_group_policies(session, group_policies, aws_update_tag):
                 )
 
 
+def load_role_policies(session, role_policies, aws_update_tag):
+    ingest_policies_assume_role = """
+    MATCH (assumer:AWSRole{name: {RoleName}})
+    WITH assumer
+    MERGE (role:AWSRole{arn: {RoleArn}})
+    ON CREATE SET role.firstseen = timestamp()
+    SET role.lastupdated = {aws_update_tag}
+    WITH role, assumer
+    MERGE (assumer)-[r:STS_ASSUMEROLE_ALLOW]->(role)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {aws_update_tag}
+    """
+
+    for role_name, policies in role_policies.items():
+        for policy_name, policy_data in policies.items():
+            for role_arn in _find_roles_assumable_in_policy(policy_data):
+                # TODO resource ARNs may contain wildcards, e.g. arn:aws:iam::*:role/admin --
+                # TODO policyuniverse can't expand resource wildcards so further thought is needed here
+                session.run(
+                    ingest_policies_assume_role,
+                    RoleName=role_name,
+                    RoleArn=role_arn,
+                    aws_update_tag=aws_update_tag
+                )
+
+
 def load_user_access_keys(session, user_access_keys, aws_update_tag):
     # TODO change the node label to reflect that this is a user access key, not an account access key
     ingest_account_key = """
