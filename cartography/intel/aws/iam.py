@@ -401,6 +401,24 @@ def sync_group_policies(neo4j_session, boto3_session, current_aws_account_id, aw
     )
 
 
+def sync_role_policies(neo4j_session, boto3_session, current_aws_account_id, aws_update_tag, common_job_parameters):
+    logger.debug("Syncing IAM role policies for account '%s'.", current_aws_account_id)
+    query = "MATCH (role:AWSRole)<-[:RESOURCE]-(AWSAccount{id: {AWS_ACCOUNT_ID}}) return role.name as name;"
+    result = neo4j_session.run(query, AWS_ACCOUNT_ID=current_aws_account_id)
+    roles = [r['name'] for r in result]
+    roles_policies = {}
+    for role_name in roles:
+        roles_policies[role_name] = {}
+        for policy_name in get_role_policies(boto3_session, role_name)['PolicyNames']:
+            roles_policies[role_name][policy_name] = get_role_policy_info(boto3_session, role_name, policy_name)
+    load_role_policies(neo4j_session, roles_policies, aws_update_tag)
+    run_cleanup_job(
+        'aws_import_roles_policy_cleanup.json',
+        neo4j_session,
+        common_job_parameters
+    )
+
+
 def sync_user_access_keys(neo4j_session, boto3_session, current_aws_account_id, aws_update_tag, common_job_parameters):
     logger.debug("Syncing IAM user access keys for account '%s'.", current_aws_account_id)
     query = "MATCH (user:AWSUser)<-[:RESOURCE]-(AWSAccount{id: {AWS_ACCOUNT_ID}}) return user.name as name"

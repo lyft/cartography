@@ -18,6 +18,7 @@ def _sync_one_account(session, boto3_session, account_id, regions, sync_tag, com
     iam.sync_roles(session, boto3_session, account_id, sync_tag, common_job_parameters)
     iam.sync_group_memberships(session, boto3_session, account_id, sync_tag, common_job_parameters)
     iam.sync_group_policies(session, boto3_session, account_id, sync_tag, common_job_parameters)
+    iam.sync_role_policies(session, boto3_session, account_id, sync_tag, common_job_parameters)
     iam.sync_user_access_keys(session, boto3_session, account_id, sync_tag, common_job_parameters)
 
     # S3
