@@ -1,7 +1,6 @@
 import botocore.config
 import logging
 import time
-import json
 
 from cartography.util import run_cleanup_job
 
@@ -904,4 +903,3 @@ def sync_vpc_peering(session, boto3_session, current_aws_account_id, aws_update_
     data = get_ec2_vpc_peering(boto3_session)
     load_ec2_vpc_peering(session, data, aws_update_tag)
     cleanup_ec2_vpc_peering(session, common_job_parameters)
-
