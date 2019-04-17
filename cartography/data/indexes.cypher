@@ -41,3 +41,7 @@ CREATE INDEX ON :RDSInstance(db_instance_identifier);
 CREATE INDEX ON :S3Bucket(name);
 CREATE INDEX ON :User(arn);
 CREATE INDEX ON :S3Acl(id);
+CREATE INDEX ON :AWSVpc(id);
+CREATE INDEX ON :AWSCidrBlock(id);
+CREATE INDEX ON :AWSIpv4CidrBlock(id);
+CREATE INDEX ON :AWSIpv6CidrBlock(id);
