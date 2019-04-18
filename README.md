@@ -153,11 +153,15 @@ All contributors and participants agree to abide by its terms.
 
 ### Contributing code
 
+#### How to test your code contributions
+
+See [these docs](docs/testing.md).
+
 #### Sign the Contributor License Agreement (CLA)
 
 We require a CLA for code contributions, so before we can accept a pull request
 we need to have a signed CLA. Please [visit our CLA service](https://oss.lyft.com/cla)
-follow the instructions to sign the CLA.
+and follow the instructions to sign the CLA.
 
 #### File issues in Github
 
