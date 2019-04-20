@@ -30,11 +30,15 @@
 ## Table of contents
 
 - [AWSAccount](#awsaccount)
+- [AWSCidrBlock](#awscidrblock)
 - [AWSGroup](#awsgroup)
+- [AWSIpv4CidrBlock](#awsipv4cidrblock)
+- [AWSIpv6CidrBlock](#awsipv6cidrblock)
 - [AWSPolicy](#awspolicy)
 - [AWSPrincipal](#awsprincipal)
 - [AWSPrincipal::AWSUser](#awsprincipalawsuser)
 - [AWSRole](#awsrole)
+- [AWSVpc](#awsvpc)
 - [AccountAccessKey](#accountaccesskey)
 - [DNSRecord](#dnsrecord)
 - [DNSRecord::AWSDNSRecord](#dnsrecordawsdnsrecord)
@@ -84,7 +88,8 @@ Representation of an AWS Account.
                               EC2Reservation,
                               EC2SecurityGroup,
                               ESDomain,
-                              LoadBalancer)
+                              LoadBalancer,
+                              AWSVpc)
 	```
 
 - An `AWSPolicy` node is defined for an `AWSAccount`.
@@ -99,6 +104,44 @@ Representation of an AWS Account.
 	(AWSAccount)-[AWS_ROLE]->(AWSRole)
 	```
 
+## AWSCidrBlock
+### AWSIpv4CidrBlock
+### AWSIpv6CidrBlock
+Representation of an [AWS CidrBlock used in VPC configuration](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_VpcCidrBlockAssociation.html).
+The `AWSCidrBlock` defines the base label
+type for `AWSIpv4CidrBlock` and `AWSIpv6CidrBlock`
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|cidr_block| The CIDR block|
+|block_state| The state of the block|
+|association_id| the association id if the block is associated to a VPC
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| Unique identifier defined with the VPC association and the cidr_block
+
+### Relationships
+- `AWSVpc` association
+  ```
+  (AWSVpc)-[BLOCK_ASSOCIATION]->(AWSCidrBlock)
+  ```
+- VPC peering where two `AWSCidrBlock` have peering between them
+  ```
+  (AWSCidrBlock)<-[VPC_PEERING]-(AWSCidrBlock)
+  ```
+  Example of high level view of peering (without security group permissions)
+  ```
+  MATCH p=(:AWSAccount)-[:RESOURCE|BLOCK_ASSOCIATION*..]->(:AWSCidrBlock)<-[r:VPC_PEERING]->(:AWSCidrBlock)<-[:RESOURCE|BLOCK_ASSOCIATION*..]-(:AWSAccount)
+  RETURN p
+  ```
+  
+  Exploring detailed inbound peering rules
+  ```
+  MATCH (outbound_account:AWSAccount)-[:RESOURCE|BLOCK_ASSOCIATION*..]->(:AWSCidrBlock)<-[r:VPC_PEERING]->(inbound_block:AWSCidrBlock)<-[:BLOCK_ASSOCIATION]-(inbound_vpc:AWSVpc)<-[:RESOURCE]-(inbound_account:AWSAccount)
+  WITH inbound_vpc, inbound_block, outbound_account, inbound_account
+  MATCH (inbound_range:IpRange{id: inbound_block.cidr_block})-[:MEMBER_OF_IP_RULE]->(inbound_rule:IpPermissionInbound)-[:MEMBER_OF_EC2_SECURITY_GROUP]->(inbound_group:EC2SecurityGroup)<-[:MEMBER_OF_EC2_SECURITY_GROUP]-(inbound_vpc)
+  RETURN outbound_account.name, inbound_account.name, inbound_range.range, inbound_rule.fromport, inbound_rule.toport, inbound_rule.protocol, inbound_group.name, inbound_vpc.id
+  ```
 
 ## AWSGroup
 
@@ -270,7 +313,33 @@ Representation of an AWS [IAM Role](https://docs.aws.amazon.com/IAM/latest/APIRe
     (AWSAccount)-[AWS_ROLE]->(AWSRole)
     ```
 
+## AWSVpc
+Representation of an [AWS CidrBlock used in VPC configuration](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_VpcCidrBlockAssociation.html).
+More information on https://docs.aws.amazon.com/cli/latest/reference/ec2/describe-vpcs.html
 
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|vpcid| The VPC unique identifier|
+|primary_cidr_block|The primary IPv4 CIDR block for the VPC.|
+|instance_tenancy| The allowed tenancy of instances launched into the VPC.|
+|state| The current state of the VPC.|
+|**id**| Unique identifier defined VPC node (vpcid)
+
+### Relationships
+- `AWSAccount` resource
+  ```
+  (AWSAccount)-[RESOURCE]->(AWSVpc)
+  ```
+- `AWSVpc` and `AWSCidrBlock` association
+  ```
+  (AWSVpc)-[BLOCK_ASSOCIATION]->(AWSCidrBlock)
+  ```
+- `AWSVpc` and `EC2SecurityGroup` membership association
+  ```
+  (AWSVpc)<-[MEMBER_OF_EC2_SECURITY_GROUP]-(EC2SecurityGroup)
+  ```
+	
 ## AccountAccessKey
 
 Representation of an AWS [Access Key](https://docs.aws.amazon.com/IAM/latest/APIReference/API_AccessKey.html).
@@ -587,7 +656,8 @@ Representation of an AWS EC2 [Security Group](https://docs.aws.amazon.com/AWSEC2
 	 ESDomain,
 	 IpRule,
 	 IpPermissionInbound,
-	 RDSInstance)-[MEMBER_OF_EC2_SECURITY_GROUP]->(EC2SecurityGroup)
+	 RDSInstance,
+	 AWSVpc)-[MEMBER_OF_EC2_SECURITY_GROUP]->(EC2SecurityGroup)
 	```
 	
 - Load balancers can define inbound [Source Security Groups](https://docs.aws.amazon.com/elasticloadbalancing/latest/classic/elb-security-groups.html).

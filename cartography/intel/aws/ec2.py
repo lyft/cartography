@@ -59,6 +59,18 @@ def get_loadbalancer_data(session, region):
     return {'LoadBalancerDescriptions': elbs}
 
 
+def get_ec2_vpc_peering(session):
+    client = session.client('ec2', config=_get_botocore_config())
+    # paginator not supported by boto
+    return client.describe_vpc_peering_connections()
+
+
+def get_ec2_vpcs(session):
+    client = session.client('ec2', config=_get_botocore_config())
+    # paginator not supported by boto
+    return client.describe_vpcs()
+
+
 def load_ec2_instances(session, data, region, current_aws_account_id, aws_update_tag):
     ingest_reservation = """
     MERGE (reservation:EC2Reservation{reservationid: {ReservationId}})
@@ -239,6 +251,10 @@ def load_ec2_security_groupinfo(session, data, region, current_aws_account_id, a
     MERGE (aa)-[r:RESOURCE]->(group)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {aws_update_tag}
+    WITH group
+    MATCH (vpc:AWSVpc{id: {VpcId}})
+    MERGE (vpc)-[rg:MEMBER_OF_EC2_SECURITY_GROUP]->(group)
+    ON CREATE SET rg.firstseen = timestamp()
     """
 
     for group in data["SecurityGroups"]:
@@ -249,6 +265,7 @@ def load_ec2_security_groupinfo(session, data, region, current_aws_account_id, a
             GroupId=group_id,
             GroupName=group.get("GroupName", ""),
             Description=group.get("Description", ""),
+            VpcId=group.get("VpcId", None),
             Region=region,
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag
@@ -550,6 +567,264 @@ def load_load_balancer_listeners(session, load_balancer_id, listener_data, aws_u
     )
 
 
+def load_ec2_vpc_peering(session, data, aws_update_tag):
+    # https://docs.aws.amazon.com/cli/latest/reference/ec2/describe-vpc-peering-connections.html
+    # {
+    #     "VpcPeeringConnections": [
+    #         {
+    #             "Status": {
+    #                 "Message": "Active",
+    #                 "Code": "active"
+    #             },
+    #             "Tags": [
+    #                 {
+    #                     "Value": "Peering-1",
+    #                     "Key": "Name"
+    #                 }
+    #             ],
+    #             "AccepterVpcInfo": {
+    #                 "OwnerId": "111122223333",
+    #                 "VpcId": "vpc-1a2b3c4d",
+    #                 "CidrBlock": "10.0.1.0/28"
+    #             },
+    #             "VpcPeeringConnectionId": "pcx-11122233",
+    #             "RequesterVpcInfo": {
+    #                 "PeeringOptions": {
+    #                     "AllowEgressFromLocalVpcToRemoteClassicLink": false,
+    #                     "AllowEgressFromLocalClassicLinkToRemoteVpc": false
+    #                 },
+    #                 "OwnerId": "444455556666",
+    #                 "VpcId": "vpc-123abc45",
+    #                 "CidrBlock": "192.168.0.0/16"
+    #             }
+    #         },
+    #         {
+    #             "Status": {
+    #                 "Message": "Pending Acceptance by 444455556666",
+    #                 "Code": "pending-acceptance"
+    #             },
+    #             "Tags": [],
+    #             "RequesterVpcInfo": {
+    #                 "PeeringOptions": {
+    #                     "AllowEgressFromLocalVpcToRemoteClassicLink": false,
+    #                     "AllowEgressFromLocalClassicLinkToRemoteVpc": false
+    #                 },
+    #                 "OwnerId": "444455556666",
+    #                 "VpcId": "vpc-11aa22bb",
+    #                 "CidrBlock": "10.0.0.0/28"
+    #             },
+    #             "VpcPeeringConnectionId": "pcx-abababab",
+    #             "ExpirationTime": "2014-04-03T09:12:43.000Z",
+    #             "AccepterVpcInfo": {
+    #                 "OwnerId": "444455556666",
+    #                 "VpcId": "vpc-33cc44dd"
+    #             }
+    #         }
+    #     ]
+    # }
+
+    # We assume the accept data is already in the graph since we run after all AWS account in scope
+    # We don't assume the requestor data is in the graph as it can be a foreign AWS account
+    # IPV6 peering is not supported, we default to AWSIpv4CidrBlock
+    ingest_peering = """
+    MATCH (accepter_block:AWSIpv4CidrBlock{id: {AccepterVpcId} + '|' + {AccepterCidrBlock}})
+    WITH accepter_block
+    MERGE (requestor_account:AWSAccount{id: {RequesterOwnerId}})
+    ON CREATE SET requestor_account.firstseen = timestamp(), requestor_account.foreign = true
+    SET requestor_account.lastupdated = {aws_update_tag}
+    WITH accepter_block, requestor_account
+    MERGE (requestor_vpc:AWSVpc{id: {RequestorVpcId}})
+    ON CREATE SET requestor_vpc.firstseen = timestamp(), requestor_vpc.vpcid = {RequestorVpcId}
+    SET requestor_vpc.lastupdated = {aws_update_tag}
+    WITH accepter_block, requestor_account, requestor_vpc
+    MERGE (requestor_account)-[resource:RESOURCE]->(requestor_vpc)
+    ON CREATE SET resource.firstseen = timestamp()
+    SET resource.lastupdated = {aws_update_tag}
+    WITH accepter_block, requestor_vpc
+    MERGE (requestor_block:AWSCidrBlock:AWSIpv4CidrBlock{id: {RequestorVpcId} + '|' + {RequestorVpcCidrBlock}})
+    ON CREATE SET requestor_block.firstseen = timestamp(), requestor_block.cidr_block = {RequestorVpcCidrBlock}
+    SET requestor_block.lastupdated = {aws_update_tag}
+    WITH accepter_block, requestor_vpc, requestor_block
+    MERGE (requestor_vpc)-[r:BLOCK_ASSOCIATION]->(requestor_block)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {aws_update_tag}
+    WITH accepter_block, requestor_block
+    MERGE (accepter_block)<-[r2:VPC_PEERING]->(requestor_block)
+    ON CREATE SET r2.firstseen = timestamp()
+    SET r2.status_code = {StatusCode},
+    r2.status_message = {StatusMessage},
+    r2.connection_id = {ConnectionId},
+    r2.expiration_time = {ExpirationTime},
+    r2.lastupdated = {aws_update_tag}
+    """
+
+    ingest_peering_block = """
+    MATCH (accepter_block:AWSIpv4CidrBlock{id: {AccepterVpcId} + '|' + {AccepterCidrBlock}}),
+    (requestor_block:AWSCidrBlock:AWSIpv4CidrBlock{id: {RequestorVpcId} + '|' + {RequestorVpcCidrBlock}})
+    MERGE (accepter_block)<-[r:VPC_PEERING]->(requestor_block)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.status_code = {StatusCode},
+    r.status_message = {StatusMessage},
+    r.connection_id = {ConnectionId},
+    r.expiration_time = {ExpirationTime},
+    r.lastupdated = {aws_update_tag}
+    """
+    for peering in data['VpcPeeringConnections']:
+        if peering["Status"]["Code"] == "active":
+            session.run(
+                ingest_peering,
+                AccepterVpcId=peering["AccepterVpcInfo"]["VpcId"],
+                AccepterCidrBlock=peering["AccepterVpcInfo"]["CidrBlock"],
+                RequesterOwnerId=peering["RequesterVpcInfo"]["OwnerId"],
+                RequestorVpcId=peering["RequesterVpcInfo"]["VpcId"],
+                RequestorVpcCidrBlock=peering["RequesterVpcInfo"]["CidrBlock"],
+                StatusCode=peering["Status"]["Code"],
+                StatusMessage=peering["Status"]["Message"],
+                ConnectionId=peering["VpcPeeringConnectionId"],
+                ExpirationTime=peering.get("ExpirationTime", None),
+                aws_update_tag=aws_update_tag)
+
+            for accepter_block in peering["AccepterVpcInfo"].get("CidrBlockSet", []):
+                for requestor_block in peering["RequesterVpcInfo"].get("CidrBlockSet", []):
+                    session.run(
+                        ingest_peering_block,
+                        AccepterVpcId=peering["AccepterVpcInfo"]["VpcId"],
+                        AccepterCidrBlock=accepter_block["CidrBlock"],
+                        RequestorVpcId=peering["RequesterVpcInfo"]["VpcId"],
+                        RequestorVpcCidrBlock=requestor_block["CidrBlock"],
+                        StatusCode=peering["Status"]["Code"],
+                        StatusMessage=peering["Status"]["Message"],
+                        ConnectionId=peering["VpcPeeringConnectionId"],
+                        ExpirationTime=peering.get("ExpirationTime", None),
+                        aws_update_tag=aws_update_tag)
+
+
+def load_ec2_vpcs(session, data, current_aws_account_id, aws_update_tag):
+    # https://github.com/lyft/cartography/graphs/traffic
+    # {
+    #     "Vpcs": [
+    #         {
+    #             "VpcId": "vpc-a01106c2",
+    #             "InstanceTenancy": "default",
+    #             "Tags": [
+    #                 {
+    #                     "Value": "MyVPC",
+    #                     "Key": "Name"
+    #                 }
+    #             ],
+    #             "CidrBlockAssociations": [
+    #                 {
+    #                     "AssociationId": "vpc-cidr-assoc-a26a41ca",
+    #                     "CidrBlock": "10.0.0.0/16",
+    #                     "CidrBlockState": {
+    #                         "State": "associated"
+    #                     }
+    #                 }
+    #             ],
+    #             "State": "available",
+    #             "DhcpOptionsId": "dopt-7a8b9c2d",
+    #             "CidrBlock": "10.0.0.0/16",
+    #             "IsDefault": false
+    #         }
+    #     ]
+    # }
+
+    ingest_vpc = """
+    MERGE (new_vpc:AWSVpc{id: {VpcId}})
+    ON CREATE SET new_vpc.firstseen = timestamp(), new_vpc.vpcid ={VpcId}
+    SET new_vpc.instance_tenancy = {InstanceTenancy},
+    new_vpc.state = {State},
+    new_vpc.is_default = {IsDefault},
+    new_vpc.primary_cidr_block = {PrimaryCIDRBlock},
+    new_vpc.dhcp_options_id = {DhcpOptionsId},
+    new_vpc.lastupdated = {aws_update_tag}
+    WITH new_vpc
+    MATCH (awsAccount:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MERGE (awsAccount)-[r:RESOURCE]->(new_vpc)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {aws_update_tag}"""
+
+    for vpc in data['Vpcs']:
+        vpc_id = vpc["VpcId"]  # fail if not present
+
+        session.run(
+            ingest_vpc,
+            VpcId=vpc_id,
+            InstanceTenancy=vpc.get("InstanceTenancy", None),
+            State=vpc.get("State", None),
+            IsDefault=vpc.get("IsDefault", None),
+            PrimaryCIDRBlock=vpc.get("CidrBlock", None),
+            DhcpOptionsId=vpc.get("DhcpOptionsId", None),
+            AWS_ACCOUNT_ID=current_aws_account_id,
+            aws_update_tag=aws_update_tag)
+
+        load_cidr_association_set(session,
+                                  vpc_id=vpc_id,
+                                  block_type="ipv4",
+                                  vpc_data=vpc,
+                                  aws_update_tag=aws_update_tag)
+
+        load_cidr_association_set(session,
+                                  vpc_id=vpc_id,
+                                  block_type="ipv6",
+                                  vpc_data=vpc,
+                                  aws_update_tag=aws_update_tag)
+
+
+def _get_cidr_association_statement(block_type):
+    ingest_cidr = """
+    MATCH (vpc:AWSVpc{id: {VpcId}})
+    WITH vpc
+    UNWIND {CidrBlock} as block_data
+        MERGE (new_block:#BLOCK_TYPE#{id: {VpcId} + '|' + block_data.#BLOCK_CIDR#})
+        ON CREATE SET new_block.firstseen = timestamp()
+        SET new_block.association_id = block_data.AssociationId,
+        new_block.cidr_block = block_data.#BLOCK_CIDR#,
+        new_block.block_state = block_data.#STATE_NAME#.State,
+        new_block.block_state_message = block_data.#STATE_NAME#.StatusMessage,
+        new_block.lastupdated = {aws_update_tag}
+        WITH vpc, new_block
+        MERGE (vpc)-[r:BLOCK_ASSOCIATION]->(new_block)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {aws_update_tag}"""
+
+    BLOCK_CIDR = "CidrBlock"
+    STATE_NAME = "CidrBlockState"
+
+    # base label type. We add the AWS ipv4 or 6 depending on block type
+    BLOCK_TYPE = "AWSCidrBlock"
+
+    if block_type == "ipv6":
+        BLOCK_CIDR = "Ipv6" + BLOCK_CIDR
+        STATE_NAME = "Ipv6" + STATE_NAME
+        BLOCK_TYPE = BLOCK_TYPE + ":AWSIpv6CidrBlock"
+    elif block_type == "ipv4":
+        BLOCK_TYPE = BLOCK_TYPE + ":AWSIpv4CidrBlock"
+    else:
+        raise ValueError("Unsupported block type specified - {0}".format(block_type))
+
+    return ingest_cidr.replace("#BLOCK_CIDR#", BLOCK_CIDR)\
+                      .replace("#STATE_NAME#", STATE_NAME)\
+                      .replace("#BLOCK_TYPE#", BLOCK_TYPE)
+
+
+def load_cidr_association_set(session, vpc_id, vpc_data, block_type, aws_update_tag):
+
+    ingest_statement = _get_cidr_association_statement(block_type)
+
+    if block_type == "ipv6":
+        data = vpc_data.get("Ipv6CidrBlockAssociationSet", [])
+    else:
+        data = vpc_data.get("CidrBlockAssociationSet", [])
+
+    session.run(
+        ingest_statement,
+        VpcId=vpc_id,
+        CidrBlock=data,
+        aws_update_tag=aws_update_tag
+    )
+
+
 def cleanup_ec2_security_groupinfo(session, common_job_parameters):
     run_cleanup_job(
         'aws_import_ec2_security_groupinfo_cleanup.json',
@@ -572,6 +847,14 @@ def cleanup_ec2_auto_scaling_groups(session, common_job_parameters):
 
 def cleanup_load_balancers(session, common_job_parameters):
     run_cleanup_job('aws_ingest_load_balancers_cleanup.json', session, common_job_parameters)
+
+
+def cleanup_ec2_vpcs(session, common_job_parameters):
+    run_cleanup_job('aws_import_vpc_cleanup.json', session, common_job_parameters)
+
+
+def cleanup_ec2_vpc_peering(session, common_job_parameters):
+    run_cleanup_job('aws_import_vpc_peering_cleanup.json', session, common_job_parameters)
 
 
 def sync_ec2_security_groupinfo(session, boto3_session, regions, current_aws_account_id, aws_update_tag,
@@ -606,3 +889,17 @@ def sync_load_balancers(session, boto3_session, regions, current_aws_account_id,
         data = get_loadbalancer_data(boto3_session, region)
         load_load_balancers(session, data, region, current_aws_account_id, aws_update_tag)
     cleanup_load_balancers(session, common_job_parameters)
+
+
+def sync_vpc(session, boto3_session, current_aws_account_id, aws_update_tag, common_job_parameters):
+    logger.debug("Syncing EC2 VPC in account '%s'.", current_aws_account_id)
+    data = get_ec2_vpcs(boto3_session)
+    load_ec2_vpcs(session, data, current_aws_account_id, aws_update_tag)
+    cleanup_ec2_vpcs(session, common_job_parameters)
+
+
+def sync_vpc_peering(session, boto3_session, current_aws_account_id, aws_update_tag, common_job_parameters):
+    logger.debug("Syncing EC2 VPC peering in account '%s'.", current_aws_account_id)
+    data = get_ec2_vpc_peering(boto3_session)
+    load_ec2_vpc_peering(session, data, aws_update_tag)
+    cleanup_ec2_vpc_peering(session, common_job_parameters)
