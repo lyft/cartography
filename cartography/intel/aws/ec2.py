@@ -626,6 +626,8 @@ def load_ec2_vpc_peering(session, data, aws_update_tag):
     # We assume the accept data is already in the graph since we run after all AWS account in scope
     # We don't assume the requestor data is in the graph as it can be a foreign AWS account
     # IPV6 peering is not supported, we default to AWSIpv4CidrBlock
+    #
+    # We skip the region field here as we may not know which one it's related to in case of foreign VPC
     ingest_peering = """
     MATCH (accepter_block:AWSIpv4CidrBlock{id: {AccepterVpcId} + '|' + {AccepterCidrBlock}})
     WITH accepter_block
