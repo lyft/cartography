@@ -324,6 +324,7 @@ More information on https://docs.aws.amazon.com/cli/latest/reference/ec2/describ
 |primary_cidr_block|The primary IPv4 CIDR block for the VPC.|
 |instance_tenancy| The allowed tenancy of instances launched into the VPC.|
 |state| The current state of the VPC.|
+|region| (optional) the region of this VPC.  This field is only available on VPCs in your account.  It is not available on VPCs that are external to your account and linked via a VPC peering relationship.
 |**id**| Unique identifier defined VPC node (vpcid)
 
 ### Relationships
