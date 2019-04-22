@@ -29,12 +29,12 @@ def _sync_one_account(session, boto3_session, account_id, regions, sync_tag, com
     # EC2
     # TODO move this to EC2 module
     logger.info("Syncing EC2 for account '%s'.", account_id)
-    ec2.sync_vpc(session, boto3_session, account_id, sync_tag, common_job_parameters)
+    ec2.sync_vpc(session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     ec2.sync_ec2_security_groupinfo(session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     ec2.sync_ec2_instances(session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     ec2.sync_ec2_auto_scaling_groups(session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     ec2.sync_load_balancers(session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-    ec2.sync_vpc_peering(session, boto3_session, sync_tag, account_id, common_job_parameters)
+    ec2.sync_vpc_peering(session, boto3_session, regions, sync_tag, account_id, common_job_parameters)
 
     # RDS
     rds.sync_rds_instances(session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
