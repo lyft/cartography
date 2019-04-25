@@ -282,6 +282,7 @@ def _find_roles_assumable_in_policy(policy_data):
 
         # TODO actions may contain wildcards, e.g. sts:* -- this can be solved by using policyuniverse to
         # TODO expand the policy before checking if the sts:AssumeRole action is allowed
+        # TODO action may be a list of strings, much like resource -- we should check for this and handle it
         if action == "sts:AssumeRole":
             # TODO blanket allows may be modified by subsequent denies... -- does policyuniverse handle?
             if statement["Effect"] == "Allow":
