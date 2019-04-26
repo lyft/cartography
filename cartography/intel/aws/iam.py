@@ -60,6 +60,20 @@ def get_role_list_data(session):
     return {'Roles': roles}
 
 
+def get_role_policies(session, role_name):
+    client = session.client('iam')
+    paginator = client.get_paginator('list_role_policies')
+    policy_names = []
+    for page in paginator.paginate(RoleName=role_name):
+        policy_names.extend(page['PolicyNames'])
+    return {'PolicyNames': policy_names}
+
+
+def get_role_policy_info(session, role_name, policy_name):
+    client = session.client('iam')
+    return client.get_role_policy(RoleName=role_name, PolicyName=policy_name)
+
+
 def get_account_access_key_data(session, username):
     client = session.client('iam')
     # NOTE we can get away without using a paginator here because users are limited to two access keys
@@ -259,6 +273,32 @@ def load_group_memberships(session, group_memberships, aws_update_tag):
             )
 
 
+def _find_roles_assumable_in_policy(policy_data):
+    ret = []
+    for statement in policy_data["PolicyDocument"]["Statement"]:
+        if isinstance(statement, str):
+            continue
+        actions = statement.get('Action')
+        if not actions:
+            continue
+        if isinstance(actions, str):
+            actions = [actions]
+
+        for action in actions:
+            # TODO actions may contain wildcards, e.g. sts:* -- this can be solved by using policyuniverse to
+            # TODO expand the policy before checking if the sts:AssumeRole action is allowed
+            if action == "sts:AssumeRole":
+                # TODO blanket allows may be modified by subsequent denies... -- does policyuniverse handle?
+                if statement["Effect"] == "Allow":
+                    role_arns = statement["Resource"]
+
+                    if isinstance(role_arns, str):
+                        role_arns = [role_arns]
+
+                    ret.extend(role_arns)
+    return ret
+
+
 def load_group_policies(session, group_policies, aws_update_tag):
     ingest_policies_assume_role = """
     MATCH (group:AWSGroup{name: {GroupName}})
@@ -274,30 +314,41 @@ def load_group_policies(session, group_policies, aws_update_tag):
 
     for group_name, policies in group_policies.items():
         for policy_name, policy_data in policies.items():
-            for statement in policy_data["PolicyDocument"]["Statement"]:
-                action = statement.get('Action')
-                if not action:
-                    continue
+            for role_arn in _find_roles_assumable_in_policy(policy_data):
+                # TODO resource ARNs may contain wildcards, e.g. arn:aws:iam::*:role/admin --
+                # TODO policyuniverse can't expand resource wildcards so further thought is needed here
+                session.run(
+                    ingest_policies_assume_role,
+                    GroupName=group_name,
+                    RoleArn=role_arn,
+                    aws_update_tag=aws_update_tag
+                )
 
-                # TODO actions may contain wildcards, e.g. sts:* -- this can be solved by using policyuniverse to
-                # TODO expand the policy before checking if the sts:AssumeRole action is allowed
-                if action == "sts:AssumeRole":
-                    # TODO blanket allows may be modified by subsequent denies... -- does policyuniverse handle?
-                    if statement["Effect"] == "Allow":
-                        role_arns = statement["Resource"]
 
-                        if isinstance(role_arns, str):
-                            role_arns = [role_arns]
+def load_role_policies(session, role_policies, aws_update_tag):
+    ingest_policies_assume_role = """
+    MATCH (assumer:AWSRole{name: {RoleName}})
+    WITH assumer
+    MERGE (role:AWSRole{arn: {RoleArn}})
+    ON CREATE SET role.firstseen = timestamp()
+    SET role.lastupdated = {aws_update_tag}
+    WITH role, assumer
+    MERGE (assumer)-[r:STS_ASSUMEROLE_ALLOW]->(role)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {aws_update_tag}
+    """
 
-                        for role_arn in role_arns:
-                            # TODO resource ARNs may contain wildcards, e.g. arn:aws:iam::*:role/admin --
-                            # TODO policyuniverse can't expand resource wildcards so further thought is needed here
-                            session.run(
-                                ingest_policies_assume_role,
-                                GroupName=group_name,
-                                RoleArn=role_arn,
-                                aws_update_tag=aws_update_tag
-                            )
+    for role_name, policies in role_policies.items():
+        for policy_name, policy_data in policies.items():
+            for role_arn in _find_roles_assumable_in_policy(policy_data):
+                # TODO resource ARNs may contain wildcards, e.g. arn:aws:iam::*:role/admin --
+                # TODO policyuniverse can't expand resource wildcards so further thought is needed here
+                session.run(
+                    ingest_policies_assume_role,
+                    RoleName=role_name,
+                    RoleArn=role_arn,
+                    aws_update_tag=aws_update_tag
+                )
 
 
 def load_user_access_keys(session, user_access_keys, aws_update_tag):
@@ -382,6 +433,24 @@ def sync_group_policies(neo4j_session, boto3_session, current_aws_account_id, aw
     load_group_policies(neo4j_session, groups_policies, aws_update_tag)
     run_cleanup_job(
         'aws_import_groups_policy_cleanup.json',
+        neo4j_session,
+        common_job_parameters
+    )
+
+
+def sync_role_policies(neo4j_session, boto3_session, current_aws_account_id, aws_update_tag, common_job_parameters):
+    logger.debug("Syncing IAM role policies for account '%s'.", current_aws_account_id)
+    query = "MATCH (role:AWSRole)<-[:AWS_ROLE]-(AWSAccount{id: {AWS_ACCOUNT_ID}}) return role.name as name;"
+    result = neo4j_session.run(query, AWS_ACCOUNT_ID=current_aws_account_id)
+    roles = [r['name'] for r in result]
+    roles_policies = {}
+    for role_name in roles:
+        roles_policies[role_name] = {}
+        for policy_name in get_role_policies(boto3_session, role_name)['PolicyNames']:
+            roles_policies[role_name][policy_name] = get_role_policy_info(boto3_session, role_name, policy_name)
+    load_role_policies(neo4j_session, roles_policies, aws_update_tag)
+    run_cleanup_job(
+        'aws_import_roles_policy_cleanup.json',
         neo4j_session,
         common_job_parameters
     )
