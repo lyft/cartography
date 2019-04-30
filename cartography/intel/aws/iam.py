@@ -440,7 +440,11 @@ def sync_group_policies(neo4j_session, boto3_session, current_aws_account_id, aw
 
 def sync_role_policies(neo4j_session, boto3_session, current_aws_account_id, aws_update_tag, common_job_parameters):
     logger.debug("Syncing IAM role policies for account '%s'.", current_aws_account_id)
-    query = "MATCH (role:AWSRole)<-[:AWS_ROLE]-(AWSAccount{id: {AWS_ACCOUNT_ID}}) return role.name as name;"
+    query = """
+    MATCH (role:AWSRole)<-[:AWS_ROLE]-(AWSAccount{id: {AWS_ACCOUNT_ID}})
+    WHERE NOT empty(role.name)
+    RETURN role.name AS name;
+    """
     result = neo4j_session.run(query, AWS_ACCOUNT_ID=current_aws_account_id)
     roles = [r['name'] for r in result]
     roles_policies = {}
