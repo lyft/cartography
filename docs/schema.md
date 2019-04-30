@@ -307,6 +307,12 @@ Representation of an AWS [IAM Role](https://docs.aws.amazon.com/IAM/latest/APIRe
     (AWSGroup, AWSUser, AWSPrincipal)-[STS_ASSUMEROLE_ALLOW]->(AWSRole)
     ```
 
+- Some AWS Roles can assume other AWS Roles.
+
+    ```
+    (AWSRole)-[STS_ASSUMEROLE_ALLOW]->(AWSRole)
+    ```
+
 - AWS Roles are defined in AWS Accounts.
 
     ```
