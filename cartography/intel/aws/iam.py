@@ -442,7 +442,7 @@ def sync_role_policies(neo4j_session, boto3_session, current_aws_account_id, aws
     logger.debug("Syncing IAM role policies for account '%s'.", current_aws_account_id)
     query = """
     MATCH (role:AWSRole)<-[:AWS_ROLE]-(AWSAccount{id: {AWS_ACCOUNT_ID}})
-    WHERE NOT empty(role.name)
+    WHERE exists(role.name)
     RETURN role.name AS name;
     """
     result = neo4j_session.run(query, AWS_ACCOUNT_ID=current_aws_account_id)
