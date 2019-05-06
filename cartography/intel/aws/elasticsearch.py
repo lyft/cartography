@@ -1,3 +1,4 @@
+import botocore.config
 import logging
 from cartography.intel.dns import ingest_dns_record_by_fqdn
 from cartography.util import run_cleanup_job
