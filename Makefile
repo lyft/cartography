@@ -4,7 +4,7 @@ test_lint:
 	flake8
 
 test_unit:
-	pytest tests/unit
+	pytest --cov=cartography tests/unit
 
 test_integration:
-	pytest tests/integration
+	pytest --cov=cartography tests/integration
