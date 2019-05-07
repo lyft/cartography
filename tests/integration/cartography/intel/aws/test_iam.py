@@ -18,11 +18,11 @@ def neo4j_session():
         session.run("MATCH (n) DETACH DELETE n;")
 
 
-def test_load_roles(session):
+def test_load_roles(neo4j_session):
     data = tests.data.aws.iam.LIST_ROLES['Roles']
 
     cartography.intel.aws.iam.load_roles(
-        session,
+        neo4j_session,
         data,
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG
