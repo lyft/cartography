@@ -1,6 +1,3 @@
-import neo4j
-import pytest
-
 import cartography.intel.aws.iam
 import tests.data.aws.iam
 
