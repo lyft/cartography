@@ -4,4 +4,4 @@ test_lint:
 	flake8
 
 test_unit:
-	pytest tests/unit
+	pytest --cov=cartography tests/unit
