@@ -4,7 +4,7 @@ test_lint:
 	flake8
 
 test_unit:
-	pytest --cov=cartography tests/unit
+	pytest --cov-report term-missing --cov=cartography tests/unit
 
 test_integration:
-	pytest --cov=cartography tests/integration
+	pytest --cov-report term-missing --cov=cartography tests/integration
