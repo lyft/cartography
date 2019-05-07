@@ -1,7 +1,7 @@
-from neo4j.v1 import GraphDatabase
+import neo4j
 
 
 def test_neo4j_connection():
-    driver = GraphDatabase.driver("bolt://localhost:7687")
+    driver = neo4j.GraphDatabase.driver("bolt://localhost:7687")
     with driver.session() as session:
         session.run("CALL db.schema();")
