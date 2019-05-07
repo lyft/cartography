@@ -1,4 +1,4 @@
-from oauth2client.client import GoogleCredentials
+from oauth2client.client import GoogleCredentials, ApplicationDefaultCredentialsError
 import logging
 
 from cartography.intel.gcp import crm
@@ -17,7 +17,7 @@ def start_gcp_ingestion(session, config):
         # See https://oauth2client.readthedocs.io/en/latest/source/
         #             oauth2client.client.html#oauth2client.client.OAuth2Credentials
         credentials = GoogleCredentials.get_application_default()
-    except Exception as e:
+    except ApplicationDefaultCredentialsError as e:
         logger.debug("Error occurred calling GoogleCredentials.get_application_default().", exc_info=True)
         logger.error(
             (
