@@ -167,7 +167,7 @@ def load_policies(session, policies, current_aws_account_id, aws_update_tag):
 
 def load_roles(session, roles, current_aws_account_id, aws_update_tag):
     ingest_role = """
-    MEGE (rnode:AWSRole{arn: {Arn}})
+    MERGE (rnode:AWSRole{arn: {Arn}})
     ON CREATE SET rnode.roleid = {RoleId}, rnode.firstseen = timestamp(), rnode.createdate = {CreateDate}
     ON MATCH SET rnode.name = {RoleName}, rnode.path = {Path}
     SET rnode.lastupdated = {aws_update_tag}
