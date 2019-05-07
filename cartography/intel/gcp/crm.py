@@ -9,6 +9,12 @@ from cartography.util import run_cleanup_job
 logger = logging.getLogger(__name__)
 
 
+def _get_resource_object(credentials):
+    # cache_discovery=False to suppress extra warnings.
+    # See https://github.com/googleapis/google-api-python-client/issues/299#issuecomment-268915510 and related issues
+    return googleapiclient.discovery.build('cloudresourcemanager', 'v1', credentials=credentials, cache_discovery=False)
+
+
 def get_gcp_organizations(resource):
     """
     :param resource: The Resource object created by `googleapiclient.discovery.build()`. See
@@ -45,10 +51,8 @@ def cleanup_gcp_organizations(session, common_job_parameters):
 
 def sync_gcp_organizations(session, credentials, gcp_update_tag, common_job_parameters):
     logger.debug("Syncing GCP organizations")
-    # See https://github.com/googleapis/google-api-python-client/issues/299#issuecomment-268915510 and related issues
-    # on why we set cache_discovery=False to suppress scary-looking warnings.
-    crm = googleapiclient.discovery.build('cloudresourcemanager', 'v1', credentials=credentials,
-                                          cache_discovery=False)
+    crm = _get_resource_object(credentials)
+
     data = get_gcp_organizations(crm)
     load_gcp_organizations(session, data, gcp_update_tag)
     cleanup_gcp_organizations(session, common_job_parameters)
