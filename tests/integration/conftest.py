@@ -8,4 +8,3 @@ def neo4j_session():
     with driver.session() as session:
         yield session
         session.run("MATCH (n) DETACH DELETE n;")
-
