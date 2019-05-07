@@ -2,8 +2,6 @@ from oauth2client.client import GoogleCredentials, ApplicationDefaultCredentials
 import logging
 
 from cartography.intel.gcp import crm
-# TODO: use these for analysis job
-# from cartography.util import run_analysis_job, run_cleanup_job
 
 logger = logging.getLogger(__name__)
 
@@ -29,13 +27,4 @@ def start_gcp_ingestion(session, config):
             e
         )
         return
-    crm.sync_organizations(session, credentials, config.update_tag, common_job_parameters)
-
-    """
-    # TODO - add internet exposure
-    run_analysis_job(
-        'gcp_compute_asset_exposure.json',
-        session,
-        common_job_parameters
-    )
-    """
+    crm.sync_gcp_organizations(session, credentials, config.update_tag, common_job_parameters)

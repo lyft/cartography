@@ -9,11 +9,14 @@ from cartography.util import run_cleanup_job
 logger = logging.getLogger(__name__)
 
 
-def get_gcp_organizations(credentials):
-    # See https://github.com/googleapis/google-api-python-client/issues/299#issuecomment-268915510 and related issues
-    # on why we set cache_discovery=False to suppress scary-looking warnings.
-    crm = googleapiclient.discovery.build('cloudresourcemanager', 'v1', credentials=credentials, cache_discovery=False)
-    req = crm.organizations().search(body={})
+def get_gcp_organizations(resource):
+    """
+    :param resource: The Resource object created by `googleapiclient.discovery.build()`. See
+    https://googleapis.github.io/google-api-python-client/docs/epy/googleapiclient.discovery-module.html#build and
+    https://googleapis.github.io/google-api-python-client/docs/epy/googleapiclient.discovery.Resource-class.html.
+    :return: List of GCP Organizations
+    """
+    req = resource.organizations().search(body={})
     res = req.execute()
     return res['organizations']
 
@@ -40,8 +43,12 @@ def cleanup_gcp_organizations(session, common_job_parameters):
     run_cleanup_job('gcp_organization_cleanup.json', session, common_job_parameters)
 
 
-def sync_organizations(session, credentials, gcp_update_tag, common_job_parameters):
+def sync_gcp_organizations(session, credentials, gcp_update_tag, common_job_parameters):
     logger.debug("Syncing GCP organizations")
-    data = get_gcp_organizations(credentials)
+    # See https://github.com/googleapis/google-api-python-client/issues/299#issuecomment-268915510 and related issues
+    # on why we set cache_discovery=False to suppress scary-looking warnings.
+    crm = googleapiclient.discovery.build('cloudresourcemanager', 'v1', credentials=credentials,
+                                          cache_discovery=False)
+    data = get_gcp_organizations(crm)
     load_gcp_organizations(session, data, gcp_update_tag)
     cleanup_gcp_organizations(session, common_job_parameters)
