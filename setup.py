@@ -32,6 +32,8 @@ setup(
         "neobolt>=1.7.0",
         "policyuniverse>=1.1.0.0",
         "python-dateutil>=2.7.0",
+        "google-api-python-client>=1.7.8",
+        "oauth2client>=4.1.3"
     ],
     extras_require={
         ':python_version<"3.7"': [
