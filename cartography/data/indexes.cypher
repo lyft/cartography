@@ -45,3 +45,4 @@ CREATE INDEX ON :AWSVpc(id);
 CREATE INDEX ON :AWSCidrBlock(id);
 CREATE INDEX ON :AWSIpv4CidrBlock(id);
 CREATE INDEX ON :AWSIpv6CidrBlock(id);
+CREATE INDEX ON :GCPOrganization(id);

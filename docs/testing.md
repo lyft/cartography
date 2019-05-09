@@ -11,7 +11,7 @@
     
 3. **Install from source**
 
-    Run `cd cartography` and then `pip install .` (yes, actually type the period into the command line) to install Cartography from source.  
+    Run `cd cartography` and then `pip install -e .` (yes, actually type the period into the command line) to install Cartography from source.  
  
     ℹ️You may find it beneficial to use Python [virtualenvs](https://packaging.python.org/guides/installing-using-pip-and-virtualenv/) (or the  [virutalenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/command_ref.html#managing-environments)) so that packages installed via `pip` are easier to manage.
 
