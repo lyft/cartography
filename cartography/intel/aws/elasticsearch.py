@@ -1,3 +1,4 @@
+import botocore.config
 import logging
 from cartography.intel.dns import ingest_dns_record_by_fqdn
 from cartography.util import run_cleanup_job
@@ -26,6 +27,15 @@ es_regions = [
     'sa-east-1',
     # 'us-gov-west-1', -- intentionally ignored, need specific token
 ]
+
+
+# TODO memoize this
+def _get_botocore_config():
+    return botocore.config.Config(
+        retries={
+            'max_attempts': 8,
+        }
+    )
 
 
 def _get_es_domains(client):
@@ -199,7 +209,7 @@ def cleanup(session, update_tag, aws_account_id):
 def sync(neo4j_session, boto3_session, aws_account_id, update_tag):
     for region in es_regions:
         logger.info("Syncing Elasticsearch Service for region '%s' in account '%s'.", region, aws_account_id)
-        client = boto3_session.client('es', region_name=region)
+        client = boto3_session.client('es', region_name=region, config=_get_botocore_config())
         data = _get_es_domains(client)
         _load_es_domains(neo4j_session, data, aws_account_id, update_tag)
 
