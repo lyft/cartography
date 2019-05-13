@@ -61,6 +61,7 @@
 - [S3Acl](#s3acl)
 - [S3Bucket](#s3bucket)
 
+# Amazon Web Services
 
 ## AWSAccount
 
@@ -1089,3 +1090,18 @@ Representation of an AWS S3 [Bucket](https://docs.aws.amazon.com/AmazonS3/latest
 	```
 	(S3Acl)-[APPLIES_TO]->(S3Bucket)
 	```
+
+# Google Cloud Platform
+
+## GCPOrganization
+
+Representation of a GCP [Organization](https://cloud.google.com/resource-manager/reference/rest/v1/organizations) object.
+
+
+| Field | Description |
+|-------|--------------| 
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated | 
+| id | The name of the GCP Organization, e.g. "organizations/1234" |
+| displayname | The "friendly name", e.g. "My Company"
+| lifecyclestate | The organization's current lifecycle state. Assigned by the server.  See the [official docs](https://cloud.google.com/resource-manager/reference/rest/v1/organizations#LifecycleState). 
