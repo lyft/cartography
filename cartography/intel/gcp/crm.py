@@ -40,6 +40,12 @@ def get_gcp_folders(resource):
     return res['folders']
 
 
+def get_gcp_projects(resource):
+    req = resource.projects().list()
+    res = req.execute()
+    return res['projects']
+
+
 def load_gcp_organizations(neo4j_session, data, gcp_update_tag):
     query = """
     MERGE (org:GCPOrganization{id:{OrgName}})
@@ -87,13 +93,50 @@ def load_gcp_folders(neo4j_session, data, gcp_update_tag):
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = {gcp_update_tag}
         """
-
         neo4j_session.run(
             query,
             ParentId=folder['parent'],
             FolderName=folder['name'],
             DisplayName=folder.get('displayName', None),
             LifecycleState=folder.get('lifecycleState', None),
+            gcp_update_tag=gcp_update_tag
+        )
+
+
+def load_gcp_projects(neo4j_session, data, gcp_update_tag):
+    """
+    {'createTime': '2019-05-14T22:58:03.315Z',
+    'lifecycleState': 'ACTIVE',
+    'name': 'Lab Compiler',
+    'parent': {'id': '1061069017127', 'type': 'folder'},
+    'projectId': 'sys-11617012100817884022582786' }
+    """
+    for project in data:
+        if project['parent']['type'] == "organization":
+            query = "MATCH (parent:GCPOrganization{id:{ParentId}})"
+            parentid = f"organizations/{project['parent']['id']}"
+        elif project['parent']['type'] == "folder":
+            query = """
+            MERGE (parent:GCPFolder{id:{ParentId}})
+            ON CREATE SET parent.firstseen = timestamp()
+            """
+            parentid = f"folders/{project['parent']['id']}"
+        query += """
+        MERGE (project:GCPProject{id:{ProjectId}})
+        ON CREATE SET project.firstseen = timestamp()
+        SET project.displayname = {DisplayName},
+        project.lifecyclestate = {LifecycleState}
+        WITH parent, project
+        MERGE (project)-[r:PARENT]->(parent)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {gcp_update_tag}
+        """
+        neo4j_session.run(
+            query,
+            ParentId=parentid,
+            ProjectId=project['projectId'],
+            DisplayName=project.get('name', None),
+            LifecycleState=project.get('lifecycleState', None),
             gcp_update_tag=gcp_update_tag
         )
 
@@ -129,3 +172,13 @@ def sync_gcp_folders(session, credentials, gcp_update_tag, common_job_parameters
 
     folders = get_gcp_folders(crmv2)
     load_gcp_folders(session, folders, gcp_update_tag)
+    cleanup_gcp_folders(session, common_job_parameters)
+
+
+def sync_gcp_projects(session, credentials, gcp_update_tag, common_job_parameters):
+    logger.debug("Syncing GCP projects")
+    crm = _get_resource_object(credentials)
+
+    projects = get_gcp_projects(crm)
+    load_gcp_projects(session, projects, gcp_update_tag)
+    cleanup_gcp_projects(session, common_job_parameters)
