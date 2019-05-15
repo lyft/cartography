@@ -1,49 +1,98 @@
 # Google Compute Resource Manager
 # https://cloud.google.com/resource-manager/docs/cloud-platform-resource-hierarchy
+from googleapiclient.discovery import HttpError
+import json
 
-import googleapiclient.discovery
 import logging
 
 from cartography.util import run_cleanup_job
 
 logger = logging.getLogger(__name__)
 
-
-def _get_resource_object(credentials):
-    # cache_discovery=False to suppress extra warnings.
-    # See https://github.com/googleapis/google-api-python-client/issues/299#issuecomment-268915510 and related issues
-    return googleapiclient.discovery.build('cloudresourcemanager', 'v1', credentials=credentials, cache_discovery=False)
-
-
-def _get_v2_resource_object(credentials):
-    """
-    v2 CRM client is required for querying folders
-    """
-    return googleapiclient.discovery.build('cloudresourcemanager', 'v2', credentials=credentials, cache_discovery=False)
-
-
-def get_gcp_organizations(resource):
+def get_gcp_organizations(crm_v1):
     """
     :param resource: The Resource object created by `googleapiclient.discovery.build()`. See
     https://googleapis.github.io/google-api-python-client/docs/epy/googleapiclient.discovery-module.html#build and
     https://googleapis.github.io/google-api-python-client/docs/epy/googleapiclient.discovery.Resource-class.html.
     :return: List of GCP Organizations
     """
-    req = resource.organizations().search(body={})
+    req = crm_v1.organizations().search(body={})
     res = req.execute()
     return res['organizations']
 
 
-def get_gcp_folders(resource):
-    req = resource.folders().search(body={})
+def get_gcp_folders(crm_v2):
+    req = crm_v2.folders().search(body={})
     res = req.execute()
     return res['folders']
 
 
-def get_gcp_projects(resource):
-    req = resource.projects().list()
+def get_gcp_projects(crm_v1):
+    req = crm_v1.projects().list()
     res = req.execute()
     return res['projects']
+
+
+def get_zones_in_project(project_id, compute, max_results=None):
+    try:
+        req = compute.zones().list(project=project_id, maxResults=max_results)
+        res = req.execute()
+        return res['items']
+    except HttpError as e:
+        reason = json.loads(e.content)['error']['errors'][0]['reason']
+        if reason == 'accessNotConfigured':
+            # TODO expose this on the GCPProject node itself
+            logger.debug(
+                (
+                    "Google Compute Engine API access is not configured for project %s. "
+                    "Full details: %s"
+                ),
+                project_id,
+                e
+            )
+            return None
+        elif reason == 'notFound':
+            logger.debug(
+                (
+                    "Project %s returned a 404 not found error for some reason. "
+                    "Full details: %s"
+                ),
+                project_id,
+                e
+            )
+            return None
+        else:
+            logger.error(json.loads(e.content)['error']['errors'][0]['reason'])
+            raise e
+
+
+def get_gce_instances_in_project(project_id, compute):
+    """
+    Return list of all GCE instances in a given project regardless of zone
+    :param project_id: The project id
+    :param compute: The compute resource object
+    :return: List of all GCE instances in given project regardless of zone
+    """
+    zones = get_zones_in_project(project_id, compute)
+    if not zones:
+        return []
+    instances = []
+    for zone in zones:
+        req = compute.instances().list(project=project_id, zone=zone['name'])
+        res = req.execute()
+        zone_instances = res.get('items', [])
+        for instance in zone_instances:
+            instance['project_id'] = project_id
+            instance['zone_name'] = zone['name']
+            instances.append(instance)
+    return instances
+
+
+def _verify_compute_api_is_enabled_for_project(project_id, compute):
+    if get_zones_in_project(project_id, compute, max_results=1) == None:
+        return False
+    else:
+        return True
 
 
 def load_gcp_organizations(neo4j_session, data, gcp_update_tag):
@@ -141,6 +190,33 @@ def load_gcp_projects(neo4j_session, data, gcp_update_tag):
         )
 
 
+def load_gce_instances(neo4j_session, data, gcp_update_tag):
+    query = """
+    MATCH (p:GCPProject{id:{ProjectId}})
+    MERGE (i:GCEInstance{id:{InstanceId}})
+    ON CREATE SET i.firstseen = timestamp()
+    SET i.displayname = {DisplayName},
+    i.machinetype = {MachineType},
+    i.hostname = {Hostname},
+    i.zone_name = {ZoneName}
+    WITH i, p
+    MERGE (p)-[r:RESOURCE]->(i)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}
+    """
+    for instance in data:
+        neo4j_session.run(
+            query,
+            ProjectId=instance['project_id'],
+            InstanceId=instance['id'],
+            DisplayName=instance.get('name', None),
+            MachineType=instance.get('machineType', None),
+            Hostname=instance.get('hostname', None),
+            ZoneName=instance['zone_name'],
+            gcp_update_tag=gcp_update_tag
+        )
+
+
 def cleanup_gcp_organizations(session, common_job_parameters):
     run_cleanup_job('gcp_organization_cleanup.json', session, common_job_parameters)
 
@@ -157,28 +233,45 @@ def cleanup_gcp_projects(session, common_job_parameters):
     pass
 
 
-def sync_gcp_organizations(session, credentials, gcp_update_tag, common_job_parameters):
-    logger.debug("Syncing GCP organizations")
-    crm = _get_resource_object(credentials)
+def cleanup_gce_instances(session, common_job_parameters):
+    #TODO
+    pass
 
-    data = get_gcp_organizations(crm)
+
+def sync_gcp_organizations(session, resources, gcp_update_tag, common_job_parameters):
+    logger.debug("Syncing GCP organizations")
+    crm_v1 = resources['crm_v1']
+
+    data = get_gcp_organizations(crm_v1)
     load_gcp_organizations(session, data, gcp_update_tag)
     cleanup_gcp_organizations(session, common_job_parameters)
 
 
-def sync_gcp_folders(session, credentials, gcp_update_tag, common_job_parameters):
+def sync_gcp_folders(session, resources, gcp_update_tag, common_job_parameters):
     logger.debug("Syncing GCP folders")
-    crmv2 = _get_v2_resource_object(credentials)
+    crm_v2 = resources['crm_v2']
 
-    folders = get_gcp_folders(crmv2)
+    folders = get_gcp_folders(crm_v2)
     load_gcp_folders(session, folders, gcp_update_tag)
     cleanup_gcp_folders(session, common_job_parameters)
 
 
-def sync_gcp_projects(session, credentials, gcp_update_tag, common_job_parameters):
+def sync_gcp_projects(session, resources, gcp_update_tag, common_job_parameters):
     logger.debug("Syncing GCP projects")
-    crm = _get_resource_object(credentials)
+    crm_v1 = resources['crm_v1']
 
-    projects = get_gcp_projects(crm)
+    projects = get_gcp_projects(crm_v1)
     load_gcp_projects(session, projects, gcp_update_tag)
     cleanup_gcp_projects(session, common_job_parameters)
+
+
+def sync_gce_instances(session, resources, gcp_update_tag, common_job_parameters):
+    crm_v1 = resources['crm_v1']
+    compute = resources['compute']
+    # Note: It could be possible that by the time this function is called there are a different number of GCP projects
+    # than in `sync_gcp_projects()`
+    projects = get_gcp_projects(crm_v1)
+    for project in projects:
+        instances = get_gce_instances_in_project(project['projectId'], compute)
+        load_gce_instances(session, instances, gcp_update_tag)
+        cleanup_gce_instances(session, common_job_parameters)
