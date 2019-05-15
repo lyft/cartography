@@ -28,3 +28,4 @@ def start_gcp_ingestion(session, config):
         )
         return
     crm.sync_gcp_organizations(session, credentials, config.update_tag, common_job_parameters)
+    crm.sync_gcp_folders(session, credentials, config.update_tag, common_job_parameters)
