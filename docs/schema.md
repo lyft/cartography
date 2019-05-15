@@ -1146,7 +1146,12 @@ Representation of a GCP [Organization](https://cloud.google.com/resource-manager
     ```
     (GCPFolder)<-[PARENT]-(GCPProject)
     ```
-
+    
+ - GCPFolders can be parents of other GCPFolders.
+ 
+    ```
+    (GCPFolder)-[PARENT]->(GCPFolder)
+    ```
  
  ## GCPProject
  

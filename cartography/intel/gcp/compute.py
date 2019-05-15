@@ -59,7 +59,7 @@ def get_gcp_instances_in_project(project_id, compute):
     """
     zones = get_zones_in_project(project_id, compute)
     if not zones:
-        # If the Compute Engine API is not enabled for a project, there are no zones and therefore no  instances.
+        # If the Compute Engine API is not enabled for a project, there are no zones and therefore no instances.
         return []
     instances = []
     for zone in zones:
