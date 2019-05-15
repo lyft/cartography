@@ -48,4 +48,4 @@ CREATE INDEX ON :AWSIpv6CidrBlock(id);
 CREATE INDEX ON :GCPOrganization(id);
 CREATE INDEX ON :GCPFolder(id);
 CREATE INDEX ON :GCPProject(id);
-CREATE INDEX ON :GCEInstance(id);
+CREATE INDEX ON :GCPInstance(id);

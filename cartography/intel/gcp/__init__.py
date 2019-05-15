@@ -2,7 +2,7 @@ from oauth2client.client import GoogleCredentials, ApplicationDefaultCredentials
 import googleapiclient.discovery
 import logging
 
-from cartography.intel.gcp import crm
+from cartography.intel.gcp import crm, compute
 
 logger = logging.getLogger(__name__)
 
@@ -55,4 +55,4 @@ def start_gcp_ingestion(session, config):
     crm.sync_gcp_organizations(session, resources, config.update_tag, common_job_parameters)
     crm.sync_gcp_folders(session, resources, config.update_tag, common_job_parameters)
     crm.sync_gcp_projects(session, resources, config.update_tag, common_job_parameters)
-    crm.sync_gce_instances(session, resources, config.update_tag, common_job_parameters)
+    compute.sync_gcp_instances(session, resources, config.update_tag, common_job_parameters)
