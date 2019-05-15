@@ -25,9 +25,9 @@ def _get_compute_resource(credentials):
 
 
 def _initialize_resources(credentials):
-    return { 'crm_v1': _get_crm_resource_v1(credentials),
-             'crm_v2': _get_crm_resource_v2(credentials),
-             'compute': _get_compute_resource(credentials) }
+    return {'crm_v1': _get_crm_resource_v1(credentials),
+            'crm_v2': _get_crm_resource_v2(credentials),
+            'compute': _get_compute_resource(credentials)}
 
 
 def start_gcp_ingestion(session, config):

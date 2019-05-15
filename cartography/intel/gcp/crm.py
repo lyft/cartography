@@ -6,6 +6,7 @@ from cartography.util import run_cleanup_job
 
 logger = logging.getLogger(__name__)
 
+
 def get_gcp_organizations(crm_v1):
     """
     :param resource: The Resource object created by `googleapiclient.discovery.build()`. See
