@@ -1,10 +1,9 @@
+import cartography.util
 import sys
 if sys.version_info >= (3, 7):
     from importlib.resources import listdir
 else:
     from importlib_resources import listdir
-
-import cartography.util
 
 
 def test_analysis_jobs_actually_execute(neo4j_session):
