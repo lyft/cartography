@@ -2,6 +2,8 @@ sudo: false
 language: python
 python:
 - '3.6'
+services:
+- neo4j
 install:
 - pip install -e .
 - pip install -r test-requirements.txt
