@@ -8,9 +8,13 @@ else:
 
 def test_analysis_jobs_actually_execute(neo4j_session):
     for job_name in contents('cartography.data.jobs.analysis'):
+        if not job_name.endswith('.json'):
+            continue
         cartography.util.run_analysis_job(job_name, neo4j_session, {})
 
 
 def test_cleanup_jobs_actually_execute(neo4j_session):
     for job_name in contents('cartography.data.jobs.cleanup'):
+        if not job_name.endswith('json'):
+            continue
         cartography.util.run_cleanup_job(job_name, neo4j_session, {})
