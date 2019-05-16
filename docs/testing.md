@@ -35,7 +35,7 @@ After completing the section above, you are now able to manually test intel modu
 
 1. **Install test requirements**
 
-    `pip install -r test-requirements.txt.
+    `pip install -r test-requirements.txt`
 2. **Run tests using `make`**
 
     - `make test_lint` can be used to run flake8 linting against the codebase.
