@@ -1,4 +1,5 @@
 import json
+import pytest
 import sys
 if sys.version_info >= (3, 7):
     from importlib.resources import contents, read_text
@@ -11,7 +12,10 @@ def test_analysis_jobs_actually_execute():
         if not job_name.endswith('.json'):
             continue
         blob = read_text('cartography.data.jobs.analysis', job_name)
-        json.loads(blob)
+        try:
+            json.loads(blob)
+        except Exception as e:
+            pytest.fail("json.loads failed for analysis job '{}' with exception: {}".format(job_name, e))
 
 
 def test_cleanup_jobs_actually_execute():
@@ -19,4 +23,7 @@ def test_cleanup_jobs_actually_execute():
         if not job_name.endswith('json'):
             continue
         blob = read_text('cartography.data.jobs.cleanup', job_name)
-        json.loads(blob)
+        try:
+            json.loads(blob)
+        except Exception as e:
+            pytest.fail("json.loads failed for cleanup job '{}' with exception: {}".format(job_name, e))
