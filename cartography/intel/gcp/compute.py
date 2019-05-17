@@ -100,6 +100,41 @@ def load_gcp_instances(neo4j_session, data, gcp_update_tag):
         )
 
 
+def _attach_gce_nics(neo4j_session, instance, gcp_update_tag):
+    """
+    #Attach GCE instance to its network interface
+    """
+    query = """
+    MATCH (i:GCPInstance{id:{InstanceId}})
+    MERGE (vpc:GcpVpc{id:{NetworkId}})
+    ON CREATE SET vpc.firstseen = timestamp()
+    SET vpc.lastupdated = {gcp_update_tag}
+    
+    MERGE (subnet:GCPSubnet{id:{SubnetId}})
+    ON CREATE SET subnet.firstseen = timestamp()
+    SET subnet.lastupdated = {gcp_update_tag}
+    
+    MERGE (nic:GCPNetworkInterface{id:{NicId}})
+    ON CREATE SET nic.firstseen = timestamp()
+    SET nic.private_ip = {NetworkIP},
+    nic.access_config = {AccessConfig},
+    nic.public_ip = {AccessConfigNatIp},
+    nic.public_ptr_domain_name = {AccessConfigPublicPtrDomainName}
+    
+    MERGE (i)<-[r:RESOURCE]-(nic)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag
+    
+    MERGE (nic)-[:]->
+    """
+    for nic in instance.get('networkInterfaces', []):
+        neo4j_session.run(
+            query,
+            InstanceId=instance['id'],
+
+        )
+
+
 def cleanup_gcp_instances(session, common_job_parameters):
     run_cleanup_job('gcp_compute_instance_cleanup.json', session, common_job_parameters)
 
