@@ -1,10 +1,12 @@
 from oauth2client.client import GoogleCredentials, ApplicationDefaultCredentialsError
 import googleapiclient.discovery
 import logging
+from collections import namedtuple
 
 from cartography.intel.gcp import crm, compute
 
 logger = logging.getLogger(__name__)
+Resources = namedtuple('Resources', 'crm_v1 crm_v2 compute')
 
 
 def _get_crm_resource_v1(credentials):
@@ -25,9 +27,21 @@ def _get_compute_resource(credentials):
 
 
 def _initialize_resources(credentials):
-    return {'crm_v1': _get_crm_resource_v1(credentials),
-            'crm_v2': _get_crm_resource_v2(credentials),
-            'compute': _get_compute_resource(credentials)}
+    return Resources(crm_v1=_get_crm_resource_v1(credentials),
+                     crm_v2=_get_crm_resource_v2(credentials),
+                     compute=_get_compute_resource(credentials))
+
+
+def _sync_single_project(session, resources, project_id, gcp_update_tag, common_job_parameters):
+    compute.sync_gcp_instances(session, resources.compute, project_id, gcp_update_tag, common_job_parameters)
+
+
+def _sync_multiple_projects(session, resources, projects, gcp_update_tag, common_job_parameters):
+    crm.sync_gcp_projects(session, projects, gcp_update_tag, common_job_parameters)
+
+    for project in projects:
+        project_id = project['projectId']
+        _sync_single_project(session, resources, project_id, gcp_update_tag, common_job_parameters)
 
 
 def start_gcp_ingestion(session, config):
@@ -52,7 +66,11 @@ def start_gcp_ingestion(session, config):
         )
         return
     resources = _initialize_resources(credentials)
-    crm.sync_gcp_organizations(session, resources, config.update_tag, common_job_parameters)
-    crm.sync_gcp_folders(session, resources, config.update_tag, common_job_parameters)
-    crm.sync_gcp_projects(session, resources, config.update_tag, common_job_parameters)
-    compute.sync_gcp_instances(session, resources, config.update_tag, common_job_parameters)
+
+    # If we don't have perms to pull Orgs or Folders from GCP, we will skip safely
+    crm.sync_gcp_organizations(session, resources.crm_v1, config.update_tag, common_job_parameters)
+    crm.sync_gcp_folders(session, resources.crm_v2, config.update_tag, common_job_parameters)
+
+    projects = crm.get_gcp_projects(resources.crm_v1)
+
+    _sync_multiple_projects(session, resources, projects, config.update_tag, common_job_parameters)

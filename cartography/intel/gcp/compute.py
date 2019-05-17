@@ -5,7 +5,6 @@ import json
 import logging
 
 from cartography.util import run_cleanup_job
-from cartography.intel.gcp.crm import get_gcp_projects
 
 logger = logging.getLogger(__name__)
 
@@ -104,15 +103,7 @@ def cleanup_gcp_instances(session, common_job_parameters):
     run_cleanup_job('gcp_compute_instance_cleanup.json', session, common_job_parameters)
 
 
-def sync_gcp_instances(session, resources, gcp_update_tag, common_job_parameters):
-    crm_v1 = resources['crm_v1']
-    compute = resources['compute']
-
-    # Note: `crm.sync_gcp_projects()` calls `crm.get_gcp_projects()` before `compute.sync_gcp_instances()` does.
-    # We could run into an issue where the return values are different here.
-    # Still, we do need project_ids in order to pull instance data.
-    projects = get_gcp_projects(crm_v1)
-    for project in projects:
-        instances = get_gcp_instances_in_project(project['projectId'], compute)
-        load_gcp_instances(session, instances, gcp_update_tag)
-        cleanup_gcp_instances(session, common_job_parameters)
+def sync_gcp_instances(session, compute, project_id, gcp_update_tag, common_job_parameters):
+    instances = get_gcp_instances_in_project(project_id, compute)
+    load_gcp_instances(session, instances, gcp_update_tag)
+    cleanup_gcp_instances(session, common_job_parameters)

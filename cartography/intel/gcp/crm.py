@@ -16,19 +16,19 @@ def get_gcp_organizations(crm_v1):
     """
     req = crm_v1.organizations().search(body={})
     res = req.execute()
-    return res['organizations']
+    return res.get('organizations', [])
 
 
 def get_gcp_folders(crm_v2):
     req = crm_v2.folders().search(body={})
     res = req.execute()
-    return res['folders']
+    return res.get('folders', [])
 
 
 def get_gcp_projects(crm_v1):
     req = crm_v1.projects().list()
     res = req.execute()
-    return res['projects']
+    return res.get('projects', [])
 
 
 def load_gcp_organizations(neo4j_session, data, gcp_update_tag):
@@ -140,28 +140,21 @@ def cleanup_gcp_projects(session, common_job_parameters):
     run_cleanup_job('gcp_crm_project_cleanup.json', session, common_job_parameters)
 
 
-def sync_gcp_organizations(session, resources, gcp_update_tag, common_job_parameters):
+def sync_gcp_organizations(session, crm_v1, gcp_update_tag, common_job_parameters):
     logger.debug("Syncing GCP organizations")
-    crm_v1 = resources['crm_v1']
-
     data = get_gcp_organizations(crm_v1)
     load_gcp_organizations(session, data, gcp_update_tag)
     cleanup_gcp_organizations(session, common_job_parameters)
 
 
-def sync_gcp_folders(session, resources, gcp_update_tag, common_job_parameters):
+def sync_gcp_folders(session, crm_v2, gcp_update_tag, common_job_parameters):
     logger.debug("Syncing GCP folders")
-    crm_v2 = resources['crm_v2']
-
     folders = get_gcp_folders(crm_v2)
     load_gcp_folders(session, folders, gcp_update_tag)
     cleanup_gcp_folders(session, common_job_parameters)
 
 
-def sync_gcp_projects(session, resources, gcp_update_tag, common_job_parameters):
+def sync_gcp_projects(session, projects, gcp_update_tag, common_job_parameters):
     logger.debug("Syncing GCP projects")
-    crm_v1 = resources['crm_v1']
-
-    projects = get_gcp_projects(crm_v1)
     load_gcp_projects(session, projects, gcp_update_tag)
     cleanup_gcp_projects(session, common_job_parameters)
