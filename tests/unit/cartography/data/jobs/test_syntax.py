@@ -7,7 +7,7 @@ else:
     from importlib_resources import contents, read_text
 
 
-def test_analysis_jobs_actually_execute():
+def test_analysis_jobs_are_valid_json():
     for job_name in contents('cartography.data.jobs.analysis'):
         if not job_name.endswith('.json'):
             continue
@@ -18,7 +18,7 @@ def test_analysis_jobs_actually_execute():
             pytest.fail("json.loads failed for analysis job '{}' with exception: {}".format(job_name, e))
 
 
-def test_cleanup_jobs_actually_execute():
+def test_cleanup_jobs_are_valid_json():
     for job_name in contents('cartography.data.jobs.cleanup'):
         if not job_name.endswith('json'):
             continue
