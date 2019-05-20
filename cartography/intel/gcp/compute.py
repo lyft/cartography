@@ -38,7 +38,8 @@ def get_zones_in_project(project_id, compute, max_results=None):
     "WARNING:googleapiclient.http:Encountered 403 Forbidden with reason "accessNotConfigured"
     INFO:googleapiclient.discovery:URL being requested:
     GET https://www.googleapis.com/compute/v1/projects/<project_name>/zones?alt=json"
-    :param project_id: The project id
+    :param project_id: The project ID number to sync.  See  the `projectId` field in
+    https://cloud.google.com/resource-manager/reference/rest/v1/projects
     :param compute: The compute resource object created by googleapiclient.discovery.build()
     :param max_results: Optional cap on number of results returned by this function. Default = None, which means no cap.
     :return: List of a project's zone objects if Compute API is turned on, else None.
@@ -78,7 +79,8 @@ def get_zones_in_project(project_id, compute, max_results=None):
 def get_gcp_instances_in_project(project_id, compute):
     """
     Return list of all GCP instances in a given project regardless of zone.
-    :param project_id: The project id
+    :param project_id: The project ID number to sync.  See  the `projectId` field in
+    https://cloud.google.com/resource-manager/reference/rest/v1/projects
     :param compute: The compute resource object created by googleapiclient.discovery.build()
     :return: List of all GCP instances in given project regardless of zone.
     """
@@ -100,6 +102,14 @@ def get_gcp_instances_in_project(project_id, compute):
 
 
 def load_gcp_instances(neo4j_session, data, gcp_update_tag):
+    """
+    Ingest GCP instance objects to Neo4j
+    :param neo4j_session: The Neo4j session object
+    :param data: List of GCP instances to ingest. Basically the output of
+    https://cloud.google.com/compute/docs/reference/rest/v1/instances/list
+    :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
+    :return: Nothing
+    """
     query = """
     MATCH (p:GCPProject{id:{ProjectId}})
     MERGE (i:GCPInstance{id:{InstanceId}})
@@ -126,10 +136,26 @@ def load_gcp_instances(neo4j_session, data, gcp_update_tag):
 
 
 def cleanup_gcp_instances(session, common_job_parameters):
+    """
+    Delete out-of-date GCP instance nodes and relationships
+    :param session: The Neo4j session
+    :param common_job_parameters: dict of other job parameters to pass to Neo4j
+    :return: Nothing
+    """
     run_cleanup_job('gcp_compute_instance_cleanup.json', session, common_job_parameters)
 
 
 def sync_gcp_instances(session, compute, project_id, gcp_update_tag, common_job_parameters):
+    """
+    Sync Get GCP instances using the Compute resource object, ingest to Neo4j, and clean up old data.
+    :param session: The Neo4j session object
+    :param compute: The GCP Compute resource object
+    :param project_id: The project ID number to sync.  See  the `projectId` field in
+    https://cloud.google.com/resource-manager/reference/rest/v1/projects
+    :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
+    :param common_job_parameters: dict of other job parameters to pass to Neo4j
+    :return: Nothing
+    """
     instances = get_gcp_instances_in_project(project_id, compute)
     load_gcp_instances(session, instances, gcp_update_tag)
     cleanup_gcp_instances(session, common_job_parameters)
