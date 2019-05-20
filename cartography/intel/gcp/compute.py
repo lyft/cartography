@@ -77,7 +77,7 @@ def get_zones_in_project(project_id, compute, max_results=None):
             return None
         elif reason == 'cartography.ExceptionNotParsable':
             logger.error("Cartography encountered an error message when listing zones for project %s and could not "
-                           "parse the error.".format(project_id))
+                         "parse the error.".format(project_id))
             raise e
         else:
             logger.error("Could not use Compute Engine API on project %s; Reason: %s".format(project_id, reason))
