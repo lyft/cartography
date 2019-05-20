@@ -120,7 +120,7 @@ def load_gcp_instances(neo4j_session, data, gcp_update_tag):
     """
     query = """
     MATCH (p:GCPProject{id:{ProjectId}})
-    MERGE (i:GCPInstance{id:{InstanceId}})
+    MERGE (i:Instance:GCPInstance{id:{InstanceId}})
     ON CREATE SET i.firstseen = timestamp()
     SET i.instanceid = {InstanceId},
     i.displayname = {DisplayName},

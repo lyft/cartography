@@ -36,7 +36,7 @@ def get_gcp_projects(crm_v1):
     Return list of GCP projects that the crm_v1 resource object has permissions to access.
     :param crm_v1: The Compute Resource Manager v1 resource object created by `googleapiclient.discovery.build()`.
     See https://googleapis.github.io/google-api-python-client/docs/epy/googleapiclient.discovery-module.html#build.
-    :return: List of GCP projects. See https://cloud.google.com/resource-manager/reference/rest/v2/folders/list.
+    :return: List of GCP projects. See https://cloud.google.com/resource-manager/reference/rest/v2/projects/list.
     """
     req = crm_v1.projects().list()
     res = req.execute()
@@ -117,13 +117,6 @@ def load_gcp_projects(neo4j_session, data, gcp_update_tag):
     :param data: List of GCP projects; output from crm.get_gcp_projects()
     :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
     :return: Nothing
-    """
-    """
-    {'createTime': '2019-05-14T22:58:03.315Z',
-    'lifecycleState': 'ACTIVE',
-    'name': 'Friendly name',
-    'parent': {'id': '12345', 'type': 'folder'},
-    'projectId': 'sys-54321' }
     """
     for project in data:
         if project['parent']['type'] == "organization":
