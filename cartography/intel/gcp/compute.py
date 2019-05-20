@@ -12,19 +12,24 @@ logger = logging.getLogger(__name__)
 def _get_error_reason(http_error):
     """
     Helper function to get an error reason out of the googeapiclient's HttpError object
+    This function copies the structure of
+    https://github.com/googleapis/google-api-python-client/blob/master/googleapiclient/errors.py#L46.
+    At the moment this is the best way we know of to extract the HTTP failure reason.
+    Additionally, see https://github.com/googleapis/google-api-python-client/issues/662.
     :param http_error: The googleapi HttpError object
     :return: The error reason as a string
     """
     try:
         data = json.loads(http_error.content.decode('utf-8'))
         if isinstance(data, dict):
-            reason = data['error']['reason']
+            first_error = data
         elif isinstance(data, list) and len(data) > 0:
             first_error = data[0]
-            reason = first_error['error']['reason']
+        reason = first_error['error']['errors'][0]['reason']
     except (ValueError, KeyError, TypeError):
-        logger.warning("Could not parse HttpError object, returning `unknown` as reason")
-        reason = "unknown"
+        logger.error("Could not parse HttpError object, returning `cartography.ExceptionNotParsable` as reason."
+                     "Data: %r".format(data))
+        reason = "cartography.ExceptionNotParsable"
     return reason
 
 
@@ -70,6 +75,10 @@ def get_zones_in_project(project_id, compute, max_results=None):
                 e
             )
             return None
+        elif reason == 'cartography.ExceptionNotParsable':
+            logger.error("Cartography encountered an error message when listing zones for project %s and could not "
+                           "parse the error.".format(project_id))
+            raise e
         else:
             logger.error("Could not use Compute Engine API on project %s; Reason: %s".format(project_id, reason))
             raise e
