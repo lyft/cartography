@@ -9,10 +9,35 @@ from cartography.util import run_cleanup_job
 logger = logging.getLogger(__name__)
 
 
+def _get_error_reason(http_error):
+    """
+    Helper function to get an error reason out of the googeapiclient's HttpError object
+    :param http_error: The googleapi HttpError object
+    :return: The error reason as a string
+    """
+    try:
+        data = json.loads(http_error.content.decode('utf-8'))
+        if isinstance(data, dict):
+            reason = data['error']['reason']
+        elif isinstance(data, list) and len(data) > 0:
+            first_error = data[0]
+            reason = first_error['error']['reason']
+    except (ValueError, KeyError, TypeError):
+        logger.warning("Could not parse HttpError object, returning `unknown` as reason");
+        reason = "unknown"
+    return reason
+
+
 def get_zones_in_project(project_id, compute, max_results=None):
     """
     Return the zones where the Compute Engine API is enabled for the given project_id.
-    If the API is not enabled, return None.
+    See https://cloud.google.com/compute/docs/reference/rest/v1/zones and
+    https://cloud.google.com/compute/docs/reference/rest/v1/zones/list.
+
+    If the API is not enabled, return None. The message logged in this case looks like this:
+    "WARNING:googleapiclient.http:Encountered 403 Forbidden with reason "accessNotConfigured"
+    INFO:googleapiclient.discovery:URL being requested:
+    GET https://www.googleapis.com/compute/v1/projects/<project_name>/zones?alt=json"
     :param project_id: The project id
     :param compute: The compute resource object created by googleapiclient.discovery.build()
     :param max_results: Optional cap on number of results returned by this function. Default = None, which means no cap.
@@ -23,30 +48,31 @@ def get_zones_in_project(project_id, compute, max_results=None):
         res = req.execute()
         return res['items']
     except HttpError as e:
-        reason = json.loads(e.content)['error']['errors'][0]['reason']
-        if reason == 'accessNotConfigured':
-            logger.debug(
-                (
-                    "Google Compute Engine API access is not configured for project %s. "
-                    "Full details: %s"
-                ),
-                project_id,
-                e
-            )
-            return None
-        elif reason == 'notFound':
-            logger.debug(
-                (
-                    "Project %s returned a 404 not found error. "
-                    "Full details: %s"
-                ),
-                project_id,
-                e
-            )
-            return None
-        else:
-            logger.error("Could not use Compute Engine API on project %s; Reason: %s".format(project_id, reason))
-            raise e
+            reason = _get_error_reason(e)
+            if reason == 'accessNotConfigured':
+                logger.debug(
+                    (
+                        "Google Compute Engine API access is not configured for project %s. "
+                        "Full details: %s"
+                    ),
+                    project_id,
+                    e
+                )
+                return None
+            elif reason == 'notFound':
+                logger.debug(
+                    (
+                        "Project %s returned a 404 not found error. "
+                        "Full details: %s"
+                    ),
+                    project_id,
+                    e
+                )
+                return None
+            else:
+                logger.error("Could not use Compute Engine API on project %s; Reason: %s".format(project_id, reason))
+                raise e
+
 
 
 def get_gcp_instances_in_project(project_id, compute):
