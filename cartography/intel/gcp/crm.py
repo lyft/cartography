@@ -35,7 +35,8 @@ def load_gcp_organizations(neo4j_session, data, gcp_update_tag):
     query = """
     MERGE (org:GCPOrganization{id:{OrgName}})
     ON CREATE SET org.firstseen = timestamp()
-    SET org.displayname = {DisplayName},
+    SET org.orgname = {OrgName},
+    org.displayname = {DisplayName},
     org.lifecyclestate = {LifecycleState},
     org.lastupdated = {gcp_update_tag}
     """
@@ -71,11 +72,12 @@ def load_gcp_folders(neo4j_session, data, gcp_update_tag):
         query += """
         MERGE (folder:GCPFolder{id:{FolderName}})
         ON CREATE SET folder.firstseen = timestamp()
-        SET folder.displayname = {DisplayName},
+        SET folder.foldername = {FolderName}, 
+        folder.displayname = {DisplayName},
         folder.lifecyclestate = {LifecycleState},
         folder.lastupdated = {gcp_update_tag}
         WITH parent, folder
-        MERGE (folder)-[r:PARENT]->(parent)
+        MERGE (parent)-[r:RESOURCE]->(folder)
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = {gcp_update_tag}
         """
@@ -110,11 +112,12 @@ def load_gcp_projects(neo4j_session, data, gcp_update_tag):
         query += """
         MERGE (project:GCPProject{id:{ProjectId}})
         ON CREATE SET project.firstseen = timestamp()
-        SET project.displayname = {DisplayName},
+        SET project.projectid = {ProjectId}, 
+        project.displayname = {DisplayName},
         project.lifecyclestate = {LifecycleState},
         project.lastupdated = {gcp_update_tag}
         WITH parent, project
-        MERGE (project)-[r:PARENT]->(parent)
+        MERGE (parent)-[r:RESOURCE]->(project)
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = {gcp_update_tag}
         """
