@@ -72,7 +72,7 @@ def load_gcp_folders(neo4j_session, data, gcp_update_tag):
         query += """
         MERGE (folder:GCPFolder{id:{FolderName}})
         ON CREATE SET folder.firstseen = timestamp()
-        SET folder.foldername = {FolderName}, 
+        SET folder.foldername = {FolderName},
         folder.displayname = {DisplayName},
         folder.lifecyclestate = {LifecycleState},
         folder.lastupdated = {gcp_update_tag}
@@ -112,7 +112,7 @@ def load_gcp_projects(neo4j_session, data, gcp_update_tag):
         query += """
         MERGE (project:GCPProject{id:{ProjectId}})
         ON CREATE SET project.firstseen = timestamp()
-        SET project.projectid = {ProjectId}, 
+        SET project.projectid = {ProjectId},
         project.displayname = {DisplayName},
         project.lifecyclestate = {LifecycleState},
         project.lastupdated = {gcp_update_tag}

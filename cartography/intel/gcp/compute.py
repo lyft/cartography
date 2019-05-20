@@ -23,7 +23,7 @@ def _get_error_reason(http_error):
             first_error = data[0]
             reason = first_error['error']['reason']
     except (ValueError, KeyError, TypeError):
-        logger.warning("Could not parse HttpError object, returning `unknown` as reason");
+        logger.warning("Could not parse HttpError object, returning `unknown` as reason")
         reason = "unknown"
     return reason
 
@@ -49,31 +49,30 @@ def get_zones_in_project(project_id, compute, max_results=None):
         res = req.execute()
         return res['items']
     except HttpError as e:
-            reason = _get_error_reason(e)
-            if reason == 'accessNotConfigured':
-                logger.debug(
-                    (
-                        "Google Compute Engine API access is not configured for project %s. "
-                        "Full details: %s"
-                    ),
-                    project_id,
-                    e
-                )
-                return None
-            elif reason == 'notFound':
-                logger.debug(
-                    (
-                        "Project %s returned a 404 not found error. "
-                        "Full details: %s"
-                    ),
-                    project_id,
-                    e
-                )
-                return None
-            else:
-                logger.error("Could not use Compute Engine API on project %s; Reason: %s".format(project_id, reason))
-                raise e
-
+        reason = _get_error_reason(e)
+        if reason == 'accessNotConfigured':
+            logger.debug(
+                (
+                    "Google Compute Engine API access is not configured for project %s. "
+                    "Full details: %s"
+                ),
+                project_id,
+                e
+            )
+            return None
+        elif reason == 'notFound':
+            logger.debug(
+                (
+                    "Project %s returned a 404 not found error. "
+                    "Full details: %s"
+                ),
+                project_id,
+                e
+            )
+            return None
+        else:
+            logger.error("Could not use Compute Engine API on project %s; Reason: %s".format(project_id, reason))
+            raise e
 
 
 def get_gcp_instances_in_project(project_id, compute):
@@ -114,7 +113,7 @@ def load_gcp_instances(neo4j_session, data, gcp_update_tag):
     MATCH (p:GCPProject{id:{ProjectId}})
     MERGE (i:GCPInstance{id:{InstanceId}})
     ON CREATE SET i.firstseen = timestamp()
-    SET i.instanceid = {InstanceId}, 
+    SET i.instanceid = {InstanceId},
     i.displayname = {DisplayName},
     i.hostname = {Hostname},
     i.zone_name = {ZoneName},
