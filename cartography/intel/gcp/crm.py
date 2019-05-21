@@ -9,33 +9,53 @@ logger = logging.getLogger(__name__)
 
 def get_gcp_organizations(crm_v1):
     """
-    :param resource: The Resource object created by `googleapiclient.discovery.build()`. See
-    https://googleapis.github.io/google-api-python-client/docs/epy/googleapiclient.discovery-module.html#build and
-    https://googleapis.github.io/google-api-python-client/docs/epy/googleapiclient.discovery.Resource-class.html.
-    :return: List of GCP Organizations
+    Return list of GCP organizations that the crm_v1 resource object has permissions to access.
+    :param crm_v1: The Compute Resource Manager v1 resource object created by `googleapiclient.discovery.build()`.
+    See https://googleapis.github.io/google-api-python-client/docs/epy/googleapiclient.discovery-module.html#build.
+    :return: List of GCP Organizations. See https://cloud.google.com/resource-manager/reference/rest/v1/organizations.
     """
     req = crm_v1.organizations().search(body={})
     res = req.execute()
-    return res['organizations']
+    return res.get('organizations', [])
 
 
 def get_gcp_folders(crm_v2):
+    """
+    Return list of GCP folders that the crm_v2 resource object has permissions to access.
+    :param crm_v2: The Compute Resource Manager v2 resource object created by `googleapiclient.discovery.build()`.
+    See https://googleapis.github.io/google-api-python-client/docs/epy/googleapiclient.discovery-module.html#build.
+    :return: List of GCP folders. See https://cloud.google.com/resource-manager/reference/rest/v2/folders/list.
+    """
     req = crm_v2.folders().search(body={})
     res = req.execute()
-    return res['folders']
+    return res.get('folders', [])
 
 
 def get_gcp_projects(crm_v1):
+    """
+    Return list of GCP projects that the crm_v1 resource object has permissions to access.
+    :param crm_v1: The Compute Resource Manager v1 resource object created by `googleapiclient.discovery.build()`.
+    See https://googleapis.github.io/google-api-python-client/docs/epy/googleapiclient.discovery-module.html#build.
+    :return: List of GCP projects. See https://cloud.google.com/resource-manager/reference/rest/v2/projects/list.
+    """
     req = crm_v1.projects().list()
     res = req.execute()
-    return res['projects']
+    return res.get('projects', [])
 
 
 def load_gcp_organizations(neo4j_session, data, gcp_update_tag):
+    """
+    Ingest the GCP organizations to Neo4j
+    :param neo4j_session: The Neo4j session
+    :param data: List of organizations; output from crm.get_gcp_organizations()
+    :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
+    :return: Nothing
+    """
     query = """
     MERGE (org:GCPOrganization{id:{OrgName}})
     ON CREATE SET org.firstseen = timestamp()
-    SET org.displayname = {DisplayName},
+    SET org.orgname = {OrgName},
+    org.displayname = {DisplayName},
     org.lifecyclestate = {LifecycleState},
     org.lastupdated = {gcp_update_tag}
     """
@@ -51,11 +71,11 @@ def load_gcp_organizations(neo4j_session, data, gcp_update_tag):
 
 def load_gcp_folders(neo4j_session, data, gcp_update_tag):
     """
-    {'createTime': '2019-05-14T20:08:46.125Z',
-    'displayName': '<my folder name>',
-    'lifecycleState': 'ACTIVE',
-    'name': 'folders/<Folder ID>',
-    'parent': 'organizations/<Org ID>'},
+    Ingest the GCP folders to Neo4j
+    :param neo4j_session: The Neo4j session
+    :param data: List of folders; output from crm.get_gcp_folders()
+    :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
+    :return: Nothing
     """
     for folder in data:
         # Get the correct parent type.
@@ -71,11 +91,12 @@ def load_gcp_folders(neo4j_session, data, gcp_update_tag):
         query += """
         MERGE (folder:GCPFolder{id:{FolderName}})
         ON CREATE SET folder.firstseen = timestamp()
-        SET folder.displayname = {DisplayName},
+        SET folder.foldername = {FolderName},
+        folder.displayname = {DisplayName},
         folder.lifecyclestate = {LifecycleState},
         folder.lastupdated = {gcp_update_tag}
         WITH parent, folder
-        MERGE (folder)-[r:PARENT]->(parent)
+        MERGE (parent)-[r:RESOURCE]->(folder)
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = {gcp_update_tag}
         """
@@ -91,11 +112,11 @@ def load_gcp_folders(neo4j_session, data, gcp_update_tag):
 
 def load_gcp_projects(neo4j_session, data, gcp_update_tag):
     """
-    {'createTime': '2019-05-14T22:58:03.315Z',
-    'lifecycleState': 'ACTIVE',
-    'name': 'Friendly name',
-    'parent': {'id': '12345', 'type': 'folder'},
-    'projectId': 'sys-54321' }
+    Ingest the GCP projects to Neo4j
+    :param neo4j_session: The Neo4j session
+    :param data: List of GCP projects; output from crm.get_gcp_projects()
+    :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
+    :return: Nothing
     """
     for project in data:
         if project['parent']['type'] == "organization":
@@ -110,11 +131,12 @@ def load_gcp_projects(neo4j_session, data, gcp_update_tag):
         query += """
         MERGE (project:GCPProject{id:{ProjectId}})
         ON CREATE SET project.firstseen = timestamp()
-        SET project.displayname = {DisplayName},
+        SET project.projectid = {ProjectId},
+        project.displayname = {DisplayName},
         project.lifecyclestate = {LifecycleState},
         project.lastupdated = {gcp_update_tag}
         WITH parent, project
-        MERGE (project)-[r:PARENT]->(parent)
+        MERGE (parent)-[r:RESOURCE]->(project)
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = {gcp_update_tag}
         """
@@ -129,39 +151,76 @@ def load_gcp_projects(neo4j_session, data, gcp_update_tag):
 
 
 def cleanup_gcp_organizations(session, common_job_parameters):
+    """
+    Remove stale GCP organizations and their relationships
+    :param session: The Neo4j session
+    :param common_job_parameters: Parameters to carry to the cleanup job
+    :return: Nothing
+    """
     run_cleanup_job('gcp_crm_organization_cleanup.json', session, common_job_parameters)
 
 
 def cleanup_gcp_folders(session, common_job_parameters):
+    """
+    Remove stale GCP folders and their relationships
+    :param session: The Neo4j session
+    :param common_job_parameters: Parameters to carry to the cleanup job
+    :return: Nothing
+    """
     run_cleanup_job('gcp_crm_folder_cleanup.json', session, common_job_parameters)
 
 
 def cleanup_gcp_projects(session, common_job_parameters):
+    """
+    Remove stale GCP projects and their relationships
+    :param session: The Neo4j session
+    :param common_job_parameters: Parameters to carry to the cleanup job
+    :return: Nothing
+    """
     run_cleanup_job('gcp_crm_project_cleanup.json', session, common_job_parameters)
 
 
-def sync_gcp_organizations(session, resources, gcp_update_tag, common_job_parameters):
+def sync_gcp_organizations(session, crm_v1, gcp_update_tag, common_job_parameters):
+    """
+    Get GCP organization data using the CRM v1 resource object, load the data to Neo4j, and clean up stale nodes.
+    :param session: The Neo4j session
+    :param crm_v1: The Compute Resource Manager v1 resource object created by `googleapiclient.discovery.build()`.
+    See https://googleapis.github.io/google-api-python-client/docs/epy/googleapiclient.discovery-module.html#build.
+    :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
+    :param common_job_parameters: Parameters to carry to the Neo4j jobs
+    :return: Nothing
+    """
     logger.debug("Syncing GCP organizations")
-    crm_v1 = resources['crm_v1']
-
     data = get_gcp_organizations(crm_v1)
     load_gcp_organizations(session, data, gcp_update_tag)
     cleanup_gcp_organizations(session, common_job_parameters)
 
 
-def sync_gcp_folders(session, resources, gcp_update_tag, common_job_parameters):
+def sync_gcp_folders(session, crm_v2, gcp_update_tag, common_job_parameters):
+    """
+    Get GCP folder data using the CRM v2 resource object, load the data to Neo4j, and clean up stale nodes.
+    :param session: The Neo4j session
+    :param crm_v2: The Compute Resource Manager v2 resource object created by `googleapiclient.discovery.build()`.
+    See https://googleapis.github.io/google-api-python-client/docs/epy/googleapiclient.discovery-module.html#build.
+    :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
+    :param common_job_parameters: Parameters to carry to the Neo4j jobs
+    :return: Nothing
+    """
     logger.debug("Syncing GCP folders")
-    crm_v2 = resources['crm_v2']
-
     folders = get_gcp_folders(crm_v2)
     load_gcp_folders(session, folders, gcp_update_tag)
     cleanup_gcp_folders(session, common_job_parameters)
 
 
-def sync_gcp_projects(session, resources, gcp_update_tag, common_job_parameters):
+def sync_gcp_projects(session, projects, gcp_update_tag, common_job_parameters):
+    """
+    Load a given list of GCP project data to Neo4j and clean up stale nodes.
+    :param session: The Neo4j session
+    :param projects: List of GCP projects; output from crm.get_gcp_projects()
+    :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
+    :param common_job_parameters: Parameters to carry to the Neo4j jobs
+    :return: Nothing
+    """
     logger.debug("Syncing GCP projects")
-    crm_v1 = resources['crm_v1']
-
-    projects = get_gcp_projects(crm_v1)
     load_gcp_projects(session, projects, gcp_update_tag)
     cleanup_gcp_projects(session, common_job_parameters)

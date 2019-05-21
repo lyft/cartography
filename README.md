@@ -189,7 +189,7 @@ Our only method of accepting code changes is through Github pull requests.
 ## Reference
 
 ### Schema
-Detailed view of [our schema and all data types](docs/schema.md) 😁.
+Detailed view of [our schema and all data types](docs/schema/index.md) 😁.
 
 
 ### Sample queries

@@ -5,16 +5,46 @@ import json
 import logging
 
 from cartography.util import run_cleanup_job
-from cartography.intel.gcp.crm import get_gcp_projects
 
 logger = logging.getLogger(__name__)
+
+
+def _get_error_reason(http_error):
+    """
+    Helper function to get an error reason out of the googeapiclient's HttpError object
+    This function copies the structure of
+    https://github.com/googleapis/google-api-python-client/blob/master/googleapiclient/errors.py#L46.
+    At the moment this is the best way we know of to extract the HTTP failure reason.
+    Additionally, see https://github.com/googleapis/google-api-python-client/issues/662.
+    :param http_error: The googleapi HttpError object
+    :return: The error reason as a string
+    """
+    try:
+        data = json.loads(http_error.content.decode('utf-8'))
+        if isinstance(data, dict):
+            first_error = data
+        elif isinstance(data, list) and len(data) > 0:
+            first_error = data[0]
+        reason = first_error['error']['errors'][0]['reason']
+    except (ValueError, KeyError, TypeError):
+        logger.error("Could not parse HttpError object, returning `cartography.ExceptionNotParsable` as reason."
+                     "Data: %r".format(data))
+        reason = "cartography.ExceptionNotParsable"
+    return reason
 
 
 def get_zones_in_project(project_id, compute, max_results=None):
     """
     Return the zones where the Compute Engine API is enabled for the given project_id.
-    If the API is not enabled, return None.
-    :param project_id: The project id
+    See https://cloud.google.com/compute/docs/reference/rest/v1/zones and
+    https://cloud.google.com/compute/docs/reference/rest/v1/zones/list.
+
+    If the API is not enabled, return None. The message logged in this case looks like this:
+    "WARNING:googleapiclient.http:Encountered 403 Forbidden with reason "accessNotConfigured"
+    INFO:googleapiclient.discovery:URL being requested:
+    GET https://www.googleapis.com/compute/v1/projects/<project_name>/zones?alt=json"
+    :param project_id: The project ID number to sync.  See  the `projectId` field in
+    https://cloud.google.com/resource-manager/reference/rest/v1/projects
     :param compute: The compute resource object created by googleapiclient.discovery.build()
     :param max_results: Optional cap on number of results returned by this function. Default = None, which means no cap.
     :return: List of a project's zone objects if Compute API is turned on, else None.
@@ -24,7 +54,7 @@ def get_zones_in_project(project_id, compute, max_results=None):
         res = req.execute()
         return res['items']
     except HttpError as e:
-        reason = json.loads(e.content)['error']['errors'][0]['reason']
+        reason = _get_error_reason(e)
         if reason == 'accessNotConfigured':
             logger.debug(
                 (
@@ -45,6 +75,10 @@ def get_zones_in_project(project_id, compute, max_results=None):
                 e
             )
             return None
+        elif reason == 'cartography.ExceptionNotParsable':
+            logger.error("Cartography encountered an error message when listing zones for project %s and could not "
+                         "parse the error.".format(project_id))
+            raise e
         else:
             logger.error("Could not use Compute Engine API on project %s; Reason: %s".format(project_id, reason))
             raise e
@@ -53,7 +87,8 @@ def get_zones_in_project(project_id, compute, max_results=None):
 def get_gcp_instances_in_project(project_id, compute):
     """
     Return list of all GCP instances in a given project regardless of zone.
-    :param project_id: The project id
+    :param project_id: The project ID number to sync.  See  the `projectId` field in
+    https://cloud.google.com/resource-manager/reference/rest/v1/projects
     :param compute: The compute resource object created by googleapiclient.discovery.build()
     :return: List of all GCP instances in given project regardless of zone.
     """
@@ -75,11 +110,20 @@ def get_gcp_instances_in_project(project_id, compute):
 
 
 def load_gcp_instances(neo4j_session, data, gcp_update_tag):
+    """
+    Ingest GCP instance objects to Neo4j
+    :param neo4j_session: The Neo4j session object
+    :param data: List of GCP instances to ingest. Basically the output of
+    https://cloud.google.com/compute/docs/reference/rest/v1/instances/list
+    :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
+    :return: Nothing
+    """
     query = """
     MATCH (p:GCPProject{id:{ProjectId}})
-    MERGE (i:GCPInstance{id:{InstanceId}})
+    MERGE (i:Instance:GCPInstance{id:{InstanceId}})
     ON CREATE SET i.firstseen = timestamp()
-    SET i.displayname = {DisplayName},
+    SET i.instanceid = {InstanceId},
+    i.displayname = {DisplayName},
     i.hostname = {Hostname},
     i.zone_name = {ZoneName},
     i.lastupdated = {gcp_update_tag}
@@ -136,18 +180,26 @@ def _attach_gce_nics(neo4j_session, instance, gcp_update_tag):
 
 
 def cleanup_gcp_instances(session, common_job_parameters):
+    """
+    Delete out-of-date GCP instance nodes and relationships
+    :param session: The Neo4j session
+    :param common_job_parameters: dict of other job parameters to pass to Neo4j
+    :return: Nothing
+    """
     run_cleanup_job('gcp_compute_instance_cleanup.json', session, common_job_parameters)
 
 
-def sync_gcp_instances(session, resources, gcp_update_tag, common_job_parameters):
-    crm_v1 = resources['crm_v1']
-    compute = resources['compute']
-
-    # Note: `crm.sync_gcp_projects()` calls `crm.get_gcp_projects()` before `compute.sync_gcp_instances()` does.
-    # We could run into an issue where the return values are different here.
-    # Still, we do need project_ids in order to pull instance data.
-    projects = get_gcp_projects(crm_v1)
-    for project in projects:
-        instances = get_gcp_instances_in_project(project['projectId'], compute)
-        load_gcp_instances(session, instances, gcp_update_tag)
-        cleanup_gcp_instances(session, common_job_parameters)
+def sync_gcp_instances(session, compute, project_id, gcp_update_tag, common_job_parameters):
+    """
+    Sync Get GCP instances using the Compute resource object, ingest to Neo4j, and clean up old data.
+    :param session: The Neo4j session object
+    :param compute: The GCP Compute resource object
+    :param project_id: The project ID number to sync.  See  the `projectId` field in
+    https://cloud.google.com/resource-manager/reference/rest/v1/projects
+    :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
+    :param common_job_parameters: dict of other job parameters to pass to Neo4j
+    :return: Nothing
+    """
+    instances = get_gcp_instances_in_project(project_id, compute)
+    load_gcp_instances(session, instances, gcp_update_tag)
+    cleanup_gcp_instances(session, common_job_parameters)
