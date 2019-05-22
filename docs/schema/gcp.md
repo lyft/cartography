@@ -36,7 +36,7 @@ Representation of a GCP [Organization](https://cloud.google.com/resource-manager
 
  ## GCPFolder
  
- Representation of a GCP [Folder](https://cloud.google.com/resource-manager/reference/rest/v2/folders/list).  An additional helpful reference is the [Google Compute Platform resource hierarchy](https://cloud.google.com/resource-manager/docs/cloud-platform-resource-hierarchy).
+ Representation of a GCP [Folder](https://cloud.google.com/resource-manager/reference/rest/v2/folders).  An additional helpful reference is the [Google Compute Platform resource hierarchy](https://cloud.google.com/resource-manager/docs/cloud-platform-resource-hierarchy).
 
 | Field | Description |
 |-------|--------------| 
@@ -69,7 +69,7 @@ Representation of a GCP [Organization](https://cloud.google.com/resource-manager
  
  ## GCPProject
  
- Representation of a GCP [Project](https://cloud.google.com/resource-manager/reference/rest/v1/projects/list).  An additional helpful reference is the [Google Compute Platform resource hierarchy](https://cloud.google.com/resource-manager/docs/cloud-platform-resource-hierarchy).
+ Representation of a GCP [Project](https://cloud.google.com/resource-manager/reference/rest/v1/projects).  An additional helpful reference is the [Google Compute Platform resource hierarchy](https://cloud.google.com/resource-manager/docs/cloud-platform-resource-hierarchy).
 
 | Field | Description |
 |-------|--------------| 
@@ -95,7 +95,7 @@ Representation of a GCP [Organization](https://cloud.google.com/resource-manager
     
  ## GCPInstance
  
- Representation of a GCP [Instance](https://cloud.google.com/compute/docs/reference/rest/v1/instances/list).  Additonal references can be found in the [official documentation]( https://cloud.google.com/compute/docs/concepts).
+ Representation of a GCP [Instance](https://cloud.google.com/compute/docs/reference/rest/v1/instances).  Additional references can be found in the [official documentation]( https://cloud.google.com/compute/docs/concepts).
  
  | Field | Description |
 |-------|--------------| 

@@ -133,18 +133,19 @@ def load_gcp_projects(neo4j_session, data, gcp_update_tag):
     :return: Nothing
     """
     for project in data:
-        if project['parent']['type'] == "organization":
-            query = """
-            MERGE (parent:GCPOrganization{id:{ParentId}})
-            ON CREATE SET parent.firstseen = timestamp()
-            """
-            parentid = f"organizations/{project['parent']['id']}"
-        elif project['parent']['type'] == "folder":
-            query = """
-            MERGE (parent:GCPFolder{id:{ParentId}})
-            ON CREATE SET parent.firstseen = timestamp()
-            """
-            parentid = f"folders/{project['parent']['id']}"
+        if project.get('parent', None):
+            if project['parent']['type'] == "organization":
+                query = """
+                MERGE (parent:GCPOrganization{id:{ParentId}})
+                ON CREATE SET parent.firstseen = timestamp()
+                """
+                parentid = f"organizations/{project['parent']['id']}"
+            elif project['parent']['type'] == "folder":
+                query = """
+                MERGE (parent:GCPFolder{id:{ParentId}})
+                ON CREATE SET parent.firstseen = timestamp()
+                """
+                parentid = f"folders/{project['parent']['id']}"
         query += """
         MERGE (project:GCPProject{id:{ProjectId}})
         ON CREATE SET project.firstseen = timestamp()
