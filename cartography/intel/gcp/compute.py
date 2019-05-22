@@ -13,7 +13,8 @@ def _get_error_reason(http_error):
     """
     Helper function to get an error reason out of the googleapiclient's HttpError object
     This function copies the structure of
-    https://github.com/googleapis/google-api-python-client/blob/master/googleapiclient/errors.py#L46.
+    https://github.com/googleapis/google-api-python-client/blob/1d2e240a74d2bc0074dffbc57cf7d62b8146cb82/
+                                  googleapiclient/http.py#L111
     At the moment this is the best way we know of to extract the HTTP failure reason.
     Additionally, see https://github.com/googleapis/google-api-python-client/issues/662.
     :param http_error: The googleapi HttpError object
@@ -22,11 +23,10 @@ def _get_error_reason(http_error):
     try:
         data = json.loads(http_error.content.decode('utf-8'))
         if isinstance(data, dict):
-            first_error = data
-        elif isinstance(data, list) and len(data) > 0:
-            first_error = data[0]
-        reason = first_error['error']['errors'][0]['reason']
-    except (ValueError, KeyError, TypeError):
+            reason = data['error']['errors'][0]['reason']
+        else:
+            reason = data[0]['error']['errors']['reason']
+    except (UnicodeDecodeError, ValueError, KeyError, TypeError):
         logger.error("Could not parse HttpError object, returning `cartography.ExceptionNotParsable` as reason."
                      "Data: %r".format(data))
         reason = "cartography.ExceptionNotParsable"
