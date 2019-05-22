@@ -20,8 +20,9 @@ def get_gcp_organizations(crm_v1):
         res = req.execute()
         return res.get('organizations', [])
     except Exception as e:
-        logger.warning("Exception occurred in crm.get_gcp_organizations(), returning empty list. Details: %r".format(e))
+        logger.warning("Exception occurred in crm.get_gcp_organizations(), returning empty list. Details: %r", e)
         return []
+
 
 def get_gcp_folders(crm_v2):
     """
@@ -36,7 +37,7 @@ def get_gcp_folders(crm_v2):
         res = req.execute()
         return res.get('folders', [])
     except Exception as e:
-        logger.warning("Exception occurred in crm.get_gcp_folders(), returning empty list. Details: %r".format(e))
+        logger.warning("Exception occurred in crm.get_gcp_folders(), returning empty list. Details: %r", e)
         return []
 
 
@@ -53,7 +54,7 @@ def get_gcp_projects(crm_v1):
         res = req.execute()
         return res.get('projects', [])
     except Exception as e:
-        logger.warning("Exception occurred in crm.get_gcp_projects(), returning empty list. Details: %r".format(e))
+        logger.warning("Exception occurred in crm.get_gcp_projects(), returning empty list. Details: %r", e)
         return []
 
 

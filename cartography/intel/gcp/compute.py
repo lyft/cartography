@@ -26,10 +26,9 @@ def _get_error_reason(http_error):
             reason = data['error']['errors'][0]['reason']
         else:
             reason = data[0]['error']['errors']['reason']
-    except (UnicodeDecodeError, ValueError, KeyError, TypeError):
-        logger.error("Could not parse HttpError object, returning `cartography.ExceptionNotParsable` as reason."
-                     "Data: %r".format(data))
-        reason = "cartography.ExceptionNotParsable"
+    except Exception:
+        # Failed to parse the error. Let's fail the whole sync.
+        raise
     return reason
 
 
@@ -75,13 +74,19 @@ def get_zones_in_project(project_id, compute, max_results=None):
                 e
             )
             return None
-        elif reason == 'cartography.ExceptionNotParsable':
-            logger.error("Cartography encountered an error message when listing zones for project %s and could not "
-                         "parse the error.".format(project_id))
-            raise e
+        elif reason == 'forbidden':
+            # Write some additional advice and then re-raise
+            logger.error(
+                (
+                    "Encountered a 403-Forbidden error trying to list zones on project %s - Please ensure that the "
+                    "identity that your GOOGLE_APPLICATION_CREDENTIALS point to has the securityReviewer role defined "
+                    "on this project."
+                ),
+                project_id
+            )
+            raise
         else:
-            logger.error("Could not use Compute Engine API on project %s; Reason: %s".format(project_id, reason))
-            raise e
+            raise
 
 
 def get_gcp_instances_in_project(project_id, compute):
