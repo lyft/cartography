@@ -26,9 +26,8 @@ def _get_error_reason(http_error):
             reason = data['error']['errors'][0]['reason']
         else:
             reason = data[0]['error']['errors']['reason']
-    except Exception:
-        # Failed to parse the error. Let's fail the whole sync.
-        raise
+    except (UnicodeDecodeError, ValueError, KeyError):
+        return ''
     return reason
 
 
@@ -37,11 +36,7 @@ def get_zones_in_project(project_id, compute, max_results=None):
     Return the zones where the Compute Engine API is enabled for the given project_id.
     See https://cloud.google.com/compute/docs/reference/rest/v1/zones and
     https://cloud.google.com/compute/docs/reference/rest/v1/zones/list.
-
-    If the API is not enabled, return None. The message logged in this case looks like this:
-    "WARNING:googleapiclient.http:Encountered 403 Forbidden with reason "accessNotConfigured"
-    INFO:googleapiclient.discovery:URL being requested:
-    GET https://www.googleapis.com/compute/v1/projects/<project_name>/zones?alt=json"
+    If the API is not enabled or if the project returns a 404-not-found, return None.
     :param project_id: The project ID number to sync.  See  the `projectId` field in
     https://cloud.google.com/resource-manager/reference/rest/v1/projects
     :param compute: The compute resource object created by googleapiclient.discovery.build()
@@ -74,17 +69,6 @@ def get_zones_in_project(project_id, compute, max_results=None):
                 e
             )
             return None
-        elif reason == 'forbidden':
-            # Write some additional advice and then re-raise
-            logger.error(
-                (
-                    "Encountered a 403-Forbidden error trying to list zones on project %s - Please ensure that the "
-                    "identity that your GOOGLE_APPLICATION_CREDENTIALS point to has the securityReviewer role defined "
-                    "on this project."
-                ),
-                project_id
-            )
-            raise
         else:
             raise
 
@@ -173,3 +157,19 @@ def sync_gcp_instances(session, compute, project_id, gcp_update_tag, common_job_
     instances = get_gcp_instances_in_project(project_id, compute)
     load_gcp_instances(session, instances, gcp_update_tag)
     cleanup_gcp_instances(session, common_job_parameters)
+
+
+def sync(session, compute, project_id, gcp_update_tag, common_job_parameters):
+    """
+    Sync all objects that we need the GCP Compute resource object for.
+    :param session: The Neo4j session object
+    :param compute: The GCP Compute resource object
+    :param project_id: The project ID number to sync.
+    :param project_id: The project ID number to sync.  See  the `projectId` field in
+    https://cloud.google.com/resource-manager/reference/rest/v1/projects
+    :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
+    :param common_job_parameters: dict of other job parameters to pass to Neo4j
+    :return: Nothing
+    """
+    logger.info("Syncing Compute objects for project %s.", project_id)
+    sync_gcp_instances(session, compute, project_id, gcp_update_tag, common_job_parameters)
