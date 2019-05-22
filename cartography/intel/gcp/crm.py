@@ -10,37 +10,52 @@ logger = logging.getLogger(__name__)
 def get_gcp_organizations(crm_v1):
     """
     Return list of GCP organizations that the crm_v1 resource object has permissions to access.
+    Returns empty list if we are unable to enumerate organizations for any reason.
     :param crm_v1: The Compute Resource Manager v1 resource object created by `googleapiclient.discovery.build()`.
     See https://googleapis.github.io/google-api-python-client/docs/epy/googleapiclient.discovery-module.html#build.
     :return: List of GCP Organizations. See https://cloud.google.com/resource-manager/reference/rest/v1/organizations.
     """
-    req = crm_v1.organizations().search(body={})
-    res = req.execute()
-    return res.get('organizations', [])
+    try:
+        req = crm_v1.organizations().search(body={})
+        res = req.execute()
+        return res.get('organizations', [])
+    except Exception as e:
+        logger.warning("Exception occurred in crm.get_gcp_organizations(), returning empty list. Details: %r", e)
+        return []
 
 
 def get_gcp_folders(crm_v2):
     """
     Return list of GCP folders that the crm_v2 resource object has permissions to access.
+    Returns empty list if we are unable to enumerate folders for any reason.
     :param crm_v2: The Compute Resource Manager v2 resource object created by `googleapiclient.discovery.build()`.
     See https://googleapis.github.io/google-api-python-client/docs/epy/googleapiclient.discovery-module.html#build.
     :return: List of GCP folders. See https://cloud.google.com/resource-manager/reference/rest/v2/folders/list.
     """
-    req = crm_v2.folders().search(body={})
-    res = req.execute()
-    return res.get('folders', [])
+    try:
+        req = crm_v2.folders().search(body={})
+        res = req.execute()
+        return res.get('folders', [])
+    except Exception as e:
+        logger.warning("Exception occurred in crm.get_gcp_folders(), returning empty list. Details: %r", e)
+        return []
 
 
 def get_gcp_projects(crm_v1):
     """
     Return list of GCP projects that the crm_v1 resource object has permissions to access.
+    Returns empty list if we are unable to enumerate projects for any reason.
     :param crm_v1: The Compute Resource Manager v1 resource object created by `googleapiclient.discovery.build()`.
     See https://googleapis.github.io/google-api-python-client/docs/epy/googleapiclient.discovery-module.html#build.
     :return: List of GCP projects. See https://cloud.google.com/resource-manager/reference/rest/v2/projects/list.
     """
-    req = crm_v1.projects().list()
-    res = req.execute()
-    return res.get('projects', [])
+    try:
+        req = crm_v1.projects().list()
+        res = req.execute()
+        return res.get('projects', [])
+    except Exception as e:
+        logger.warning("Exception occurred in crm.get_gcp_projects(), returning empty list. Details: %r", e)
+        return []
 
 
 def load_gcp_organizations(neo4j_session, data, gcp_update_tag):
@@ -119,15 +134,19 @@ def load_gcp_projects(neo4j_session, data, gcp_update_tag):
     :return: Nothing
     """
     for project in data:
-        if project['parent']['type'] == "organization":
-            query = "MATCH (parent:GCPOrganization{id:{ParentId}})"
-            parentid = f"organizations/{project['parent']['id']}"
-        elif project['parent']['type'] == "folder":
-            query = """
-            MERGE (parent:GCPFolder{id:{ParentId}})
-            ON CREATE SET parent.firstseen = timestamp()
-            """
-            parentid = f"folders/{project['parent']['id']}"
+        if project.get('parent', None):
+            if project['parent']['type'] == "organization":
+                query = """
+                MERGE (parent:GCPOrganization{id:{ParentId}})
+                ON CREATE SET parent.firstseen = timestamp()
+                """
+                parentid = f"organizations/{project['parent']['id']}"
+            elif project['parent']['type'] == "folder":
+                query = """
+                MERGE (parent:GCPFolder{id:{ParentId}})
+                ON CREATE SET parent.firstseen = timestamp()
+                """
+                parentid = f"folders/{project['parent']['id']}"
         query += """
         MERGE (project:GCPProject{id:{ProjectId}})
         ON CREATE SET project.firstseen = timestamp()

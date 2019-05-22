@@ -47,9 +47,11 @@ def _initialize_resources(credentials):
     :param credentials: The GoogleCredentials object
     :return: namedtuple of all resource objects
     """
-    return Resources(crm_v1=_get_crm_resource_v1(credentials),
-                     crm_v2=_get_crm_resource_v2(credentials),
-                     compute=_get_compute_resource(credentials))
+    return Resources(
+        crm_v1=_get_crm_resource_v1(credentials),
+        crm_v2=_get_crm_resource_v2(credentials),
+        compute=_get_compute_resource(credentials)
+    )
 
 
 def _sync_single_project(session, resources, project_id, gcp_update_tag, common_job_parameters):
@@ -63,7 +65,7 @@ def _sync_single_project(session, resources, project_id, gcp_update_tag, common_
     :param common_job_parameters: Other parameters sent to Neo4j
     :return: Nothing
     """
-    compute.sync_gcp_instances(session, resources.compute, project_id, gcp_update_tag, common_job_parameters)
+    compute.sync(session, resources.compute, project_id, gcp_update_tag, common_job_parameters)
 
 
 def _sync_multiple_projects(session, resources, projects, gcp_update_tag, common_job_parameters):
@@ -79,10 +81,12 @@ def _sync_multiple_projects(session, resources, projects, gcp_update_tag, common
     :param common_job_parameters: Other parameters sent to Neo4j
     :return: Nothing
     """
+    logger.debug("Syncing %d GCP projects.", len(projects))
     crm.sync_gcp_projects(session, projects, gcp_update_tag, common_job_parameters)
 
     for project in projects:
         project_id = project['projectId']
+        logger.info("Syncing GCP project %s.", project_id)
         _sync_single_project(session, resources, project_id, gcp_update_tag, common_job_parameters)
 
 
