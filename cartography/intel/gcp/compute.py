@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 def _get_error_reason(http_error):
     """
-    Helper function to get an error reason out of the googeapiclient's HttpError object
+    Helper function to get an error reason out of the googleapiclient's HttpError object
     This function copies the structure of
     https://github.com/googleapis/google-api-python-client/blob/master/googleapiclient/errors.py#L46.
     At the moment this is the best way we know of to extract the HTTP failure reason.

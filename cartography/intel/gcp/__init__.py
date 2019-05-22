@@ -47,9 +47,11 @@ def _initialize_resources(credentials):
     :param credentials: The GoogleCredentials object
     :return: namedtuple of all resource objects
     """
-    return Resources(crm_v1=_get_crm_resource_v1(credentials),
-                     crm_v2=_get_crm_resource_v2(credentials),
-                     compute=_get_compute_resource(credentials))
+    return Resources(
+        crm_v1=_get_crm_resource_v1(credentials),
+        crm_v2=_get_crm_resource_v2(credentials),
+        compute=_get_compute_resource(credentials)
+    )
 
 
 def _sync_single_project(session, resources, project_id, gcp_update_tag, common_job_parameters):
