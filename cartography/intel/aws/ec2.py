@@ -85,7 +85,7 @@ def load_ec2_instances(session, data, region, current_aws_account_id, aws_update
     """
 
     ingest_instance = """
-    MERGE (instance:EC2Instance{instanceid: {InstanceId}})
+    MERGE (instance:Instance:EC2Instance{instanceid: {InstanceId}})
     ON CREATE SET instance.firstseen = timestamp()
     SET instance.publicdnsname = {PublicDnsName}, instance.privateipaddress = {PrivateIpAddress},
     instance.imageid = {ImageId}, instance.instancetype = {InstanceType}, instance.monitoringstate = {MonitoringState},
@@ -374,7 +374,7 @@ def load_ec2_auto_scaling_groups(session, data, region, current_aws_account_id, 
     """
 
     ingest_instance = """
-    MERGE (instance:EC2Instance{instanceid: {InstanceId}})
+    MERGE (instance:Instance:EC2Instance{instanceid: {InstanceId}})
     ON CREATE SET instance.firstseen = timestamp()
     SET instance.lastupdated = {aws_update_tag}, instance.region={Region}
     WITH instance
