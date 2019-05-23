@@ -33,4 +33,14 @@ After completing the section above, you are now able to manually test intel modu
 
 ### Automated testing
 
-1. TBD 🤭
+1. **Install test requirements**
+
+    `pip install -r test-requirements.txt`
+2. **Run tests using `make`**
+
+    - `make test_lint` can be used to run flake8 linting against the codebase.
+    - `make test_unit` can be used to run the (currently non-existent) unit test suite.
+    - `make test_integration` can be used to run the integration test suite.
+    - `make test` can be used to run all of the above.
+
+    Note that the integration tests expect Neo4j to be running locally, listening on default ports, with auth disabled.
