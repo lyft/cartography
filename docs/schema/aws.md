@@ -1,31 +1,4 @@
-# Cartography Schema
-
-## ℹ️ Quick notes on notation
-- **Bolded words** in the schema tables indicate that this field is indexed, so your queries will run faster if you use these fields.
-
-- This isn't proper Neo4j syntax, but for the purpose of this document we will use this notation:
-
-	```
-	(NodeTypeA)-[RELATIONSHIP_R]->(NodeTypeB, NodeTypeC, NodeTypeD, NodeTypeE)
-	```
-
-	to mean a shortened version of this:
-
-	```
-	(NodeTypeA)-[RELATIONSHIP_R]->(NodeTypeB)
-	(NodeTypeA)-[RELATIONSHIP_R]->(NodeTypeC)
-	(NodeTypeA)-[RELATIONSHIP_R]->(NodeTypeD)
-	(NodeTypeA)-[RELATIONSHIP_R]->(NodeTypeE)
-	```
-
-
-	In words, this means that `NodeTypeA` has `RELATIONSHIP_R` pointing to `NodeTypeB`, and `NodeTypeA` has `RELATIONSHIP_R` pointing to `NodeTypeC`.
-
-- In these docs, more specific nodes will be decorated with `GenericNode::SpecificNode` notation.  For example, if we have a `Car` node and a `RaceCar` node, we will refer to the `RaceCar` as `Car::RaceCar`.
-
-## Complete Schema Diagram
-
-![Cartography complete open-source schema](images/cartography-schema-complete-open-source.png)
+# Cartography - Amazon Web Services Schema
 
 ## Table of contents
 
@@ -61,7 +34,6 @@
 - [S3Acl](#s3acl)
 - [S3Bucket](#s3bucket)
 
-# Amazon Web Services
 
 ## AWSAccount
 
@@ -1090,18 +1062,3 @@ Representation of an AWS S3 [Bucket](https://docs.aws.amazon.com/AmazonS3/latest
 	```
 	(S3Acl)-[APPLIES_TO]->(S3Bucket)
 	```
-
-# Google Cloud Platform
-
-## GCPOrganization
-
-Representation of a GCP [Organization](https://cloud.google.com/resource-manager/reference/rest/v1/organizations) object.
-
-
-| Field | Description |
-|-------|--------------| 
-| firstseen| Timestamp of when a sync job first discovered this node  |
-| lastupdated |  Timestamp of the last time the node was updated | 
-| id | The name of the GCP Organization, e.g. "organizations/1234" |
-| displayname | The "friendly name", e.g. "My Company"
-| lifecyclestate | The organization's current lifecycle state. Assigned by the server.  See the [official docs](https://cloud.google.com/resource-manager/reference/rest/v1/organizations#LifecycleState). 
