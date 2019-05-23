@@ -1,6 +1,7 @@
 # Google Compute Resource Manager
 # https://cloud.google.com/resource-manager/docs/cloud-platform-resource-hierarchy
 import logging
+from googleapiclient.discovery import HttpError
 
 from cartography.util import run_cleanup_job
 
@@ -19,8 +20,8 @@ def get_gcp_organizations(crm_v1):
         req = crm_v1.organizations().search(body={})
         res = req.execute()
         return res.get('organizations', [])
-    except Exception as e:
-        logger.warning("Exception occurred in crm.get_gcp_organizations(), returning empty list. Details: %r", e)
+    except HttpError as e:
+        logger.warning("HttpError occurred in crm.get_gcp_organizations(), returning empty list. Details: %r", e)
         return []
 
 
@@ -36,8 +37,8 @@ def get_gcp_folders(crm_v2):
         req = crm_v2.folders().search(body={})
         res = req.execute()
         return res.get('folders', [])
-    except Exception as e:
-        logger.warning("Exception occurred in crm.get_gcp_folders(), returning empty list. Details: %r", e)
+    except HttpError as e:
+        logger.warning("HttpError occurred in crm.get_gcp_folders(), returning empty list. Details: %r", e)
         return []
 
 
@@ -53,8 +54,8 @@ def get_gcp_projects(crm_v1):
         req = crm_v1.projects().list()
         res = req.execute()
         return res.get('projects', [])
-    except Exception as e:
-        logger.warning("Exception occurred in crm.get_gcp_projects(), returning empty list. Details: %r", e)
+    except HttpError as e:
+        logger.warning("HttpError occurred in crm.get_gcp_projects(), returning empty list. Details: %r", e)
         return []
 
 
