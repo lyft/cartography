@@ -136,6 +136,11 @@ def load_gcp_instances(neo4j_session, data, gcp_update_tag):
 def _attach_gce_nics(neo4j_session, instance, gcp_update_tag):
     """
     #Attach GCE instance to its network interface
+
+    nic selflink = https://www.googleapis.com/compute/v1/projects/{project}/global/networks/{networkname}
+    subnetwork   = https://www.googleapis.com/compute/v1/projects/{project}/regions/{region}/subnetworks/{subnetname}
+        --> but you only use (project, region) to query for it
+
     """
     query = """
     MATCH (i:GCPInstance{id:{InstanceId}})
