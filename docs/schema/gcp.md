@@ -101,10 +101,12 @@ Representation of a GCP [Organization](https://cloud.google.com/resource-manager
 |-------|--------------| 
 | firstseen| Timestamp of when a sync job first discovered this node  |
 | lastupdated |  Timestamp of the last time the node was updated | 
-| id | The server-defined unique identifier of the instance, usually all numbers
-| displayname | The friendly name of the instance, e.g. "my-instance"
-| hostname | If present, the hostname of the instance
-| zone_name | The zone that the instance is installed on
+| id | The partial resource URI representing this instance. Has the form `projects/{project_name}/zones/{zone_name}/instances/{instance_name}`. |
+| partial_uri | Same as `id` above. |
+| self_link | The full resource URI representing this instance. Has the form `https://www.googleapis.com/compute/v1/{partial_uri}` |
+| instancename | The name of the instance, e.g. "my-instance" |
+| zone_name | The zone that the instance is installed on |
+| hostname | If present, the hostname of the instance |
 
 ### Relationships
 
