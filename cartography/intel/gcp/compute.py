@@ -91,11 +91,25 @@ def get_gcp_instances_in_project(project_id, compute):
         res = req.execute()
         zone_instances = res.get('items', [])
         for instance in zone_instances:
-            # Include project_id and zone_name on the `instance` dict so we can load it more easily
-            instance['project_id'] = project_id
-            instance['zone_name'] = zone['name']
+            transform_gcp_instance(instance, project_id, zone['name'])
             instances.append(instance)
     return instances
+
+
+def transform_gcp_instance(instance, project_id, zone_name):
+    """
+    Add additional fields to the instance object to make it easier to process in `load_gcp_instances()`
+    :param instance: The GCP instance dict
+    :param project_id: The project name that this instance belongs to
+    :param zone_name: The zone name that this instance belongs to
+    :return: The modified instance object
+    """
+    instance['project_id'] = project_id
+    instance['zone_name'] = zone_name
+    # Follow the format of a partial URI as shown here:
+    # https://cloud.google.com/apis/design/resource_names#relative_resource_name
+    instance['partial_uri'] = f"projects/{project_id}/zones/{zone_name}/instances/{instance['name']}"
+    return instance
 
 
 def load_gcp_instances(neo4j_session, data, gcp_update_tag):
@@ -109,10 +123,11 @@ def load_gcp_instances(neo4j_session, data, gcp_update_tag):
     """
     query = """
     MATCH (p:GCPProject{id:{ProjectId}})
-    MERGE (i:Instance:GCPInstance{id:{InstanceId}})
+    MERGE (i:Instance:GCPInstance{id:{PartialUri}})
     ON CREATE SET i.firstseen = timestamp()
-    SET i.instanceid = {InstanceId},
-    i.displayname = {DisplayName},
+    SET i.partial_uri = {PartialUri},
+    i.self_link = {SelfLink},
+    i.instancename = {InstanceName},
     i.hostname = {Hostname},
     i.zone_name = {ZoneName},
     i.lastupdated = {gcp_update_tag}
@@ -125,10 +140,11 @@ def load_gcp_instances(neo4j_session, data, gcp_update_tag):
         neo4j_session.run(
             query,
             ProjectId=instance['project_id'],
-            InstanceId=instance['id'],
-            DisplayName=instance.get('name', None),
-            Hostname=instance.get('hostname', None),
+            PartialUri=instance['partial_uri'],
+            SelfLink=instance['selfLink'],
+            InstanceName=instance['name'],
             ZoneName=instance['zone_name'],
+            Hostname=instance.get('hostname', None),
             gcp_update_tag=gcp_update_tag
         )
 
