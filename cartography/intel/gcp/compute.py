@@ -106,9 +106,9 @@ def transform_gcp_instance(instance, project_id, zone_name):
     """
     instance['project_id'] = project_id
     instance['zone_name'] = zone_name
-    # Follow the format of a partial URL as shown here:
+    # Follow the format of a partial URI as shown here:
     # https://cloud.google.com/apis/design/resource_names#relative_resource_name
-    instance['partial_url'] = f"projects/{project_id}/zones/{zone_name}/instances/{instance['name']}"
+    instance['partial_uri'] = f"projects/{project_id}/zones/{zone_name}/instances/{instance['name']}"
     return instance
 
 
@@ -123,9 +123,9 @@ def load_gcp_instances(neo4j_session, data, gcp_update_tag):
     """
     query = """
     MATCH (p:GCPProject{id:{ProjectId}})
-    MERGE (i:Instance:GCPInstance{id:{PartialUrl}})
+    MERGE (i:Instance:GCPInstance{id:{PartialUri}})
     ON CREATE SET i.firstseen = timestamp()
-    SET i.partial_url = {PartialUrl},
+    SET i.partial_uri = {PartialUri},
     i.self_link = {SelfLink},
     i.instancename = {InstanceName},
     i.hostname = {Hostname},
@@ -140,9 +140,9 @@ def load_gcp_instances(neo4j_session, data, gcp_update_tag):
         neo4j_session.run(
             query,
             ProjectId=instance['project_id'],
-            PartialUrl=instance['partial_url'],
+            PartialUri=instance['partial_uri'],
             SelfLink=instance['selfLink'],
-            InstanceName = instance['name'],
+            InstanceName=instance['name'],
             ZoneName=instance['zone_name'],
             Hostname=instance.get('hostname', None),
             gcp_update_tag=gcp_update_tag
