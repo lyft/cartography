@@ -49,5 +49,3 @@ After completing the section above, you are now able to manually test intel modu
     - `make test_unit` can be used to run the (currently non-existent) unit test suite.
     - `make test_integration` can be used to run the integration test suite.
     - `make test` can be used to run all of the above.
-
-    
