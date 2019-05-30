@@ -377,7 +377,7 @@ def _attach_gcp_nic_access_configs(neo4j_session, nic_id, nic, gcp_update_tag):
     SET ac.type={Type},
     ac.name = {Name},
     ac.public_ip = {NatIP},
-    ac.public_ptr = {SetPublicPtr},
+    ac.set_public_ptr = {SetPublicPtr},
     ac.public_ptr_domain_name = {PublicPtrDomainName},
     ac.network_tier = {NetworkTier},
     ac.lastupdated = {gcp_update_tag}

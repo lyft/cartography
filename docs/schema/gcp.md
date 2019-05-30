@@ -148,8 +148,8 @@ Representation of a GCP [VPC](https://cloud.google.com/compute/docs/reference/re
 | self_link | The full resource URI representing this VPC. Has the form `https://www.googleapis.com/compute/v1/{partial_uri}` |
 | name | The name of the VPC |
 | project_id | The project ID that this VPC belongs to |
-| auto_create_subnetworks | TODO |
-| routing_confg_routing_mode | The routing mode TODO |
+| auto_create_subnetworks | When set to true, the VPC network is created in "auto" mode. When set to false, the VPC network is created in "custom" mode.  An auto mode VPC network starts with one subnet per region. Each subnet has a predetermined range as described in [Auto mode VPC network IP ranges](https://cloud.google.com/vpc/docs/vpc#ip-ranges). |
+| routing_confg_routing_mode | The network-wide routing mode to use. If set to REGIONAL, this network's Cloud Routers will only advertise routes with subnets of this network in the same region as the router. If set to GLOBAL, this network's Cloud Routers will advertise routes with all subnets of this network, across regions. |
 | description | A description for the VPC |
 
 ### Relationships
@@ -217,12 +217,12 @@ Representation of the AccessConfig object on a GCP Instance's [network interface
 | lastupdated |  Timestamp of the last time the node was updated | 
 | id | A partial resource URI representing this AccessConfig.  Note: GCP does not define a partial resource URI for AccessConfigs, so we create one so we can uniquely identify GCP network interface access configs.  Has the form `projects/{project_name}/zones/{zone_name}/instances/{instance_name}/networkinterfaces/{network interface name}/accessconfigs/{access config type}`.
 | partial_uri | Same as `id` |
-| type | |
-| name | |
-| public_ip | The NAT IP |
-| public_ptr | |
-| public_ptr_domain_name | |
-| network_tier | |
+| type | The type of configuration. GCP docs say: "The default and only option is ONE_TO_ONE_NAT." |
+| name | The name of this access configuration. The default and recommended name is External NAT, but you can use any arbitrary string, such as My external IP or Network Access. |
+| public_ip | The external IP associated with this instance |
+| set_public_ptr | Specifies whether a public DNS 'PTR' record should be created to map the external IP address of the instance to a DNS domain name. |
+| public_ptr_domain_name | The DNS domain name for the public PTR record. You can set this field only if the setPublicPtr field is enabled. |
+| network_tier | This signifies the networking tier used for configuring this access configuration and can only take the following values: PREMIUM, STANDARD. |
 
 ### Relationships
 
