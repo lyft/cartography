@@ -10,15 +10,6 @@ def get_dynamodb_tables(session, region):
     paginator = client.get_paginator('list_tables')
     dynamodb_tables = []
     for page in paginator.paginate():
-        dynamodb_tables.extend(page['TableNames'])
-    return {'TableNames': dynamodb_tables}
-
-
-def get_dynamodb_tables_(session, region):
-    client = session.client('dynamodb', region_name=region)
-    paginator = client.get_paginator('list_tables')
-    dynamodb_tables = []
-    for page in paginator.paginate():
         for table in (client.describe_table(item) for item in page):
             table_properties = {
                 "TableName": table['Table']['TableNames'],
@@ -39,7 +30,7 @@ def get_dynamodb_tables_(session, region):
     return {'Tables': dynamodb_tables}
 
 
-def load_dynamodb_tables_(session, data, region, current_aws_account_id, aws_update_tag):
+def load_dynamodb_tables(session, data, region, current_aws_account_id, aws_update_tag):
     ingest_table = """
     MERGE (table:DynamoDBTable{id: {Arn}})
     ON CREATE SET table.first seen = timestamp(), table.arn = {Arn}, table.name = {TableName},
@@ -97,31 +88,6 @@ def load_gsi(session, data, region, current_aws_account_id, aws_update_tag, tabl
             Table=table['TableName'],
             ProvisionedThroughputReadCapacityUnits=gsi['ProvisionedThroughputReadCapacityUnits'],
             ProvisionedThroughputWriteCapacityUnits=gsi['ProvisionedThroughputWriteCapacityUnits'],
-        )
-
-
-def load_dynamodb_tables(session, data, region, current_aws_account_id, aws_update_tag):
-    ingest_table = """
-    MERGE (table:DynamoDBTable{id: {Arn}})
-    ON CREATE SET table.first seen = timestamp(), table.arn = {Arn}, table.name = {TableName},
-    table.region = {Region}
-    SET table.lastupdated = {aws_update_tag}
-    WITH table
-    MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
-    MERGE (owner)-[r:RESOURCE]->(table)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
-    """
-
-    for table_name in data["TableNames"]:
-        arn = "arn:aws:dynamodb:{0}:{1}:table/{2}".format(region, current_aws_account_id, table_name)
-        session.run(
-            ingest_table,
-            Arn=arn,
-            TableName=table_name,
-            Region=region,
-            AWS_ACCOUNT_ID=current_aws_account_id,
-            aws_update_tag=aws_update_tag
         )
 
 
