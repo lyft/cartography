@@ -97,16 +97,16 @@ def get_gcp_instances_in_project(project_id, zones, compute):
     return instances
 
 
-# def get_gcp_subnets(projectid, region, compute):
-#     """
-#     Return list of all subnets in the given projectid and region
-#     :param projectid: THe projectid
-#     :param region: The region to pull subnets from
-#     :param compute: The compute resource object created by googleapiclient.discovery.build()
-#     :return: List of all GCP subnets in the given project and region
-#     """
-#     req = compute.subnetworks.get().list(project=projectid, region=region)
-#     return req.execute()
+def get_gcp_subnets(projectid, region, compute):
+    """
+    Return list of all subnets in the given projectid and region
+    :param projectid: THe projectid
+    :param region: The region to pull subnets from
+    :param compute: The compute resource object created by googleapiclient.discovery.build()
+    :return: List of all GCP subnets in the given project and region
+    """
+    req = compute.subnetworks().list(project=projectid, region=region)
+    return req.execute()
 
 
 def get_gcp_vpcs(projectid, compute):
@@ -161,33 +161,35 @@ def transform_gcp_vpcs(vpc_res):
     return vpc_list
 
 
-#
-# def transform_gcp_subnets(subnet_res):
-#     """
-#     Add additional fields to the subnet object to make it easier to process in `load_gcp_subnets()`.
-#     :param subnet_res: The response object returned from compute.subnetworks.list()
-#     :return: A transformed subnet_res
-#     """
-#     # The `id` in the response object has the form `projects/{project}/regions/{region}/subnetworks`.
-#     # We can include this in each subnet object in the list to form the partial_uri later on.
-#     prefix = subnet_res['id']
-#     subnet_list = []
-#     for s in subnet_res.get('items', []):
-#         subnet = {}
-#
-#         # Has the form `projects/{project}/regions/{region}/subnetworks/{subnet_name}`
-#         partial_uri = f"{prefix}/{s['name']}"
-#
-#         subnet['id'] = partial_uri
-#         subnet['partial_uri'] = partial_uri
-#         subnet['name'] = s['name']
-#         subnet['region'] = s['region'].split('/')[-1]
-#         subnet['gateway_address'] = s.get('gatewayAddress', None)
-#         subnet['ip_cidr_range'] = s.get('ipCidrRange', None)
-#         subnet['self_link'] = s['selfLink']
-#
-#         subnet_list.append(subnet)
-#     return subnet_list
+def transform_gcp_subnets(subnet_res):
+    """
+    Add additional fields to the subnet object to make it easier to process in `load_gcp_subnets()`.
+    :param subnet_res: The response object returned from compute.subnetworks.list()
+    :return: A transformed subnet_res
+    """
+    # The `id` in the response object has the form `projects/{project}/regions/{region}/subnetworks`.
+    # We can include this in each subnet object in the list to form the partial_uri later on.
+    prefix = subnet_res['id']
+    projectid = prefix.split('/')[1]
+    subnet_list = []
+    for s in subnet_res.get('items', []):
+        subnet = {}
+
+        # Has the form `projects/{project}/regions/{region}/subnetworks/{subnet_name}`
+        partial_uri = f"{prefix}/{s['name']}"
+
+        subnet['id'] = partial_uri
+        subnet['partial_uri'] = partial_uri
+        subnet['name'] = s['name']
+        subnet['vpc_self_link'] = s['network']
+        subnet['project_id'] = projectid
+        subnet['region'] = s['region'].split('/')[-1]
+        subnet['gateway_address'] = s.get('gatewayAddress', None)
+        subnet['ip_cidr_range'] = s.get('ipCidrRange', None)
+        subnet['self_link'] = s['selfLink']
+
+        subnet_list.append(subnet)
+    return subnet_list
 
 
 def load_gcp_instances(neo4j_session, data, gcp_update_tag):
@@ -245,7 +247,8 @@ def load_gcp_vpcs(neo4j_session, vpcs, gcp_update_tag):
     vpc.project_id = {ProjectId},
     vpc.auto_create_subnetworks = {AutoCreateSubnetworks},
     vpc.routing_config_routing_mode = {RoutingMode},
-    vpc.description = {Description}
+    vpc.description = {Description},
+    vpc.lastupdated = {gcp_update_tag}
     MERGE (p)-[r:RESOURCE]->(vpc)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {gcp_update_tag}
@@ -261,6 +264,46 @@ def load_gcp_vpcs(neo4j_session, vpcs, gcp_update_tag):
             AutoCreateSubnetworks=vpc['auto_create_subnetworks'],
             RoutingMode=vpc['routing_config_routing_mode'],
             Description=vpc['description'],
+            gcp_update_tag=gcp_update_tag
+        )
+
+
+def load_gcp_subnets(neo4j_session, subnets, gcp_update_tag):
+    """
+    Ingest GCP subnet data to Neo4j
+    :param neo4j_session: The Neo4j session
+    :param subnets: List of the subnets
+    :param gcp_update_tag: The timestamp to set these Neo4j nodes with
+    :return: Nothing
+    """
+    query = """
+    MERGE(vpc:GCPVpc{self_link:{VpcSelfLink}})
+    ON CREATE SET vpc.firstseen = timestamp()
+    MERGE(subnet:GCPSubnet{id:{PartialUri}})
+    ON CREATE SET subnet.firstseen = timestamp()
+    SET subnet.partial_uri = {PartialUri},
+    subnet.self_link = {SubnetSelfLink},
+    subnet.project_id = {ProjectId},
+    subnet.name = {SubnetName},
+    subnet.region = {Region},
+    subnet.gateway_address = {GatewayAddress},
+    subnet.ip_cidr_range = {IpCidrRange},
+    subnet.lastupdated = {gcp_update_tag}
+    MERGE (vpc)-[r:RESOURCE]->(subnet)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}
+    """
+    for s in subnets:
+        neo4j_session.run(
+            query,
+            VpcSelfLink=s['vpc_self_link'],
+            PartialUri=s['partial_uri'],
+            SubnetSelfLink=s['self_link'],
+            ProjectId=s['project_id'],
+            SubnetName=s['name'],
+            Region=s['region'],
+            GatewayAddress=s['gateway_address'],
+            IpCidrRange=s['ip_cidr_range'],
             gcp_update_tag=gcp_update_tag
         )
 
@@ -365,6 +408,15 @@ def cleanup_gcp_vpcs(session, common_job_parameters):
     run_cleanup_job('gcp_compute_vpc_cleanup.json', session, common_job_parameters)
 
 
+def cleanup_gcp_subnets(session, common_job_parameters):
+    """
+    Delete out-of-date GCP VPC subnet nodes and relationships
+    :param session: The Neo4j session
+    :param common_job_parameters: dict of other job parameters to pass to Neo4j
+    :return: Nothing
+    """
+    run_cleanup_job('gcp_compute_vpc_subnet_cleanup.json', session, common_job_parameters)
+
 
 def sync_gcp_instances(session, compute, project_id, zones, gcp_update_tag, common_job_parameters):
     """
@@ -400,12 +452,12 @@ def sync_gcp_vpcs(session, compute, project_id, gcp_update_tag, common_job_param
     cleanup_gcp_vpcs(session, common_job_parameters)
 
 
-# def sync_gcp_subnets(session, compute, project_id, regions, gcp_update_tag, common_job_parameters):
-#     for r in regions:
-#         subnet_res = get_gcp_subnets(project_id, r, compute)
-#         transform_gcp_subnets(subnet_res)
-#         load_gcp_subnets()
-#         cleanup_gcp_subnets()
+def sync_gcp_subnets(session, compute, project_id, regions, gcp_update_tag, common_job_parameters):
+    for r in regions:
+        subnet_res = get_gcp_subnets(project_id, r, compute)
+        subnets = transform_gcp_subnets(subnet_res)
+        load_gcp_subnets(session, subnets, gcp_update_tag)
+        cleanup_gcp_subnets(session, common_job_parameters)
 
 
 def _zones_to_regions(zones):
@@ -417,7 +469,7 @@ def _zones_to_regions(zones):
     regions = set()
     for z in zones:
         # Chop off the last 2 chars to turn the zone to a region
-        r = z[:-2]
+        r = z['name'][:-2]
         regions.add(r)
     return list(regions)
 
@@ -438,6 +490,7 @@ def sync(session, compute, project_id, gcp_update_tag, common_job_parameters):
     zones = get_zones_in_project(project_id, compute)
     # Only pull additional assets for this project if the Compute API is enabled
     if zones:
-        # regions = _zones_to_regions(zones)
+        regions = _zones_to_regions(zones)
         sync_gcp_vpcs(session, compute, project_id, gcp_update_tag, common_job_parameters)
+        sync_gcp_subnets(session, compute, project_id, regions, gcp_update_tag, common_job_parameters)
         sync_gcp_instances(session, compute, project_id, zones, gcp_update_tag, common_job_parameters)
