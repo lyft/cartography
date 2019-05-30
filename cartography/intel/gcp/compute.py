@@ -143,6 +143,8 @@ def transform_gcp_vpcs(vpc_res):
     :return: List of VPCs ready for ingestion to Neo4j
     """
     vpc_list = []
+
+    # prefix has the form `projects/{project ID}/global/networks`
     prefix = vpc_res['id']
     projectid = prefix.split('/')[1]
     for v in vpc_res.get('items', []):
@@ -241,9 +243,9 @@ def load_gcp_vpcs(neo4j_session, vpcs, gcp_update_tag):
     query = """
     MATCH(p:GCPProject{id:{ProjectId}})
     MERGE(vpc:GCPVpc{id:{PartialUri}})
-    ON CREATE SET vpc.firstseen = timestamp()
-    SET vpc.partial_uri = {PartialUri},
-    vpc.self_link = {SelfLink},
+    ON CREATE SET vpc.firstseen = timestamp(),
+    vpc.partial_uri = {PartialUri}
+    SET vpc.self_link = {SelfLink},
     vpc.name = {VpcName},
     vpc.project_id = {ProjectId},
     vpc.auto_create_subnetworks = {AutoCreateSubnetworks},
@@ -278,13 +280,14 @@ def load_gcp_subnets(neo4j_session, subnets, gcp_update_tag):
     :return: Nothing
     """
     query = """
-    MERGE(vpc:GCPVpc{self_link:{VpcSelfLink}})
-    ON CREATE SET vpc.firstseen = timestamp()
+    MERGE(vpc:GCPVpc{id:{VpcPartialUri}})
+    ON CREATE SET vpc.firstseen = timestamp(),
+    vpc.partial_uri = {VpcPartialUri}
 
     MERGE(subnet:GCPSubnet{id:{PartialUri}})
-    ON CREATE SET subnet.firstseen = timestamp()
-    SET subnet.partial_uri = {PartialUri},
-    subnet.self_link = {SubnetSelfLink},
+    ON CREATE SET subnet.firstseen = timestamp(),
+    subnet.partial_uri = {PartialUri}
+    SET subnet.self_link = {SubnetSelfLink},
     subnet.project_id = {ProjectId},
     subnet.name = {SubnetName},
     subnet.region = {Region},
@@ -297,8 +300,12 @@ def load_gcp_subnets(neo4j_session, subnets, gcp_update_tag):
     SET r.lastupdated = {gcp_update_tag}
     """
     for s in subnets:
+        # self_link = `https://www.googleapis.com/compute/v1/projects/{project}/global/networks/{network name}`
+        # vpc_id = `projects/{project}/global/networks/{network name}`
+        vpc_id = s['vpc_self_link'].split('compute/v1/')[1]
         neo4j_session.run(
             query,
+            VpcPartialUri=vpc_id,
             VpcSelfLink=s['vpc_self_link'],
             PartialUri=s['partial_uri'],
             SubnetSelfLink=s['self_link'],
@@ -322,7 +329,8 @@ def _attach_gcp_nics(neo4j_session, instance, gcp_update_tag):
     query = """
     MATCH (i:GCPInstance{id:{InstanceId}})
     MERGE (nic:GCPNetworkInterface:NetworkInterface{id:{NicId}})
-    ON CREATE SET nic.firstseen = timestamp()
+    ON CREATE SET nic.firstseen = timestamp(),
+    nic.nic_id = {NicId}
     SET nic.private_ip = {NetworkIP},
     nic.name = {NicName},
     nic.lastupdated = {gcp_update_tag}
@@ -339,7 +347,7 @@ def _attach_gcp_nics(neo4j_session, instance, gcp_update_tag):
     SET p.lastupdated = {gcp_update_tag}
     """
     for nic in instance.get('networkInterfaces', []):
-        # Make an ID for GCPNetworkInterface nodes because GCP doesn't have this but we need to uniquely identify them
+        # Make an ID for GCPNetworkInterface nodes because GCP doesn't define one but we need to uniquely identify them
         nic_id = f"{instance['partial_uri']}/networkinterfaces/{nic['name']}"
         neo4j_session.run(
             query,
@@ -364,7 +372,8 @@ def _attach_gcp_nic_access_configs(neo4j_session, nic_id, nic, gcp_update_tag):
     query = """
     MATCH (nic{id:{NicId}})
     MERGE (ac:GCPNicAccessConfig{id:{AccessConfigId}})
-    ON CREATE SET ac.firstseen = timestamp()
+    ON CREATE SET ac.firstseen = timestamp(),
+    ac.access_config_id = {AccessConfigId}
     SET ac.type={Type},
     ac.name = {Name},
     ac.public_ip = {NatIP},
@@ -378,7 +387,7 @@ def _attach_gcp_nic_access_configs(neo4j_session, nic_id, nic, gcp_update_tag):
     SET r.lastupdated = {gcp_update_tag}
     """
     for ac in nic.get('accessConfigs', []):
-        # Make an ID for GCPNicAccessConfig nodes because GCP doesn't have this but we need to uniquely identify them
+        # Make an ID for GCPNicAccessConfig nodes because GCP doesn't define one but we need to uniquely identify them
         access_config_id = f"{nic_id}/accessconfigs/{ac['type']}"
         neo4j_session.run(
             query,
