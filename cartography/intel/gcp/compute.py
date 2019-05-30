@@ -227,6 +227,7 @@ def load_gcp_instances(neo4j_session, data, gcp_update_tag):
             Hostname=instance.get('hostname', None),
             gcp_update_tag=gcp_update_tag
         )
+        _attach_gcp_nics(neo4j_session, instance, gcp_update_tag)
 
 
 def load_gcp_vpcs(neo4j_session, vpcs, gcp_update_tag):
@@ -249,11 +250,11 @@ def load_gcp_vpcs(neo4j_session, vpcs, gcp_update_tag):
     vpc.routing_config_routing_mode = {RoutingMode},
     vpc.description = {Description},
     vpc.lastupdated = {gcp_update_tag}
+
     MERGE (p)-[r:RESOURCE]->(vpc)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {gcp_update_tag}
     """
-
     for vpc in vpcs:
         neo4j_session.run(
             query,
@@ -279,6 +280,7 @@ def load_gcp_subnets(neo4j_session, subnets, gcp_update_tag):
     query = """
     MERGE(vpc:GCPVpc{self_link:{VpcSelfLink}})
     ON CREATE SET vpc.firstseen = timestamp()
+
     MERGE(subnet:GCPSubnet{id:{PartialUri}})
     ON CREATE SET subnet.firstseen = timestamp()
     SET subnet.partial_uri = {PartialUri},
@@ -289,6 +291,7 @@ def load_gcp_subnets(neo4j_session, subnets, gcp_update_tag):
     subnet.gateway_address = {GatewayAddress},
     subnet.ip_cidr_range = {IpCidrRange},
     subnet.lastupdated = {gcp_update_tag}
+
     MERGE (vpc)-[r:RESOURCE]->(subnet)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {gcp_update_tag}
@@ -308,84 +311,87 @@ def load_gcp_subnets(neo4j_session, subnets, gcp_update_tag):
         )
 
 
-# def _attach_gce_nics(neo4j_session, instance, gcp_update_tag):
-#     """
-#     #Attach GCE instance to its network interface
-#
-#     nic selflink = https://www.googleapis.com/compute/v1/projects/{project}/global/networks/{networkname}
-#     subnetwork   = https://www.googleapis.com/compute/v1/projects/{project}/regions/{region}/subnetworks/{subnetname}
-#         --> but you only use (project, region) to query for it
-#
-#     """
-#     query = """
-#     MATCH (i:GCPInstance{id:{InstanceId}})
-#
-#     MERGE (nic:GCPNetworkInterface{id:{NicId}})
-#     ON CREATE SET nic.firstseen = timestamp()
-#     SET nic.private_ip = {NetworkIP},
-#     nic.access_config = {AccessConfig},
-#     nic.public_ip = {AccessConfigNatIp},
-#     nic.public_ptr_domain_name = {AccessConfigPublicPtrDomainName}
-#
-#     MERGE (i)<-[r:RESOURCE]-(nic)
-#     ON CREATE SET r.firstseen = timestamp()
-#     SET r.lastupdated = {gcp_update_tag
-#
-#     MERGE (nic)-[:]->
-#     """
-#     for nic in instance.get('networkInterfaces', []):
-#         neo4j_session.run(
-#             query,
-#             InstanceId=instance['id'],
-#
-#         )
+def _attach_gcp_nics(neo4j_session, instance, gcp_update_tag):
+    """
+    Attach GCP Network Interfaces to GCP Instances and GCP Subnets.
+    :param neo4j_session: The Neo4j session
+    :param instance: The GCP instance
+    :param gcp_update_tag: Timestamp to set the nodes
+    :return: Nothing
+    """
+    query = """
+    MATCH (i:GCPInstance{id:{InstanceId}})
+    MERGE (nic:GCPNetworkInterface:NetworkInterface{id:{NicId}})
+    ON CREATE SET nic.firstseen = timestamp()
+    SET nic.private_ip = {NetworkIP},
+    nic.name = {NicName},
+    nic.lastupdated = {gcp_update_tag}
+
+    MERGE (i)-[r:NETWORK_INTERFACE]->(nic)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}
+
+    MERGE (subnet:GCPSubnet{self_link:{SubnetSelfLink}})
+    ON CREATE SET subnet.firstseen = timestamp()
+
+    MERGE (nic)-[p:PART_OF_SUBNET]->(subnet)
+    ON CREATE SET p.firstseen = timestamp()
+    SET p.lastupdated = {gcp_update_tag}
+    """
+    for nic in instance.get('networkInterfaces', []):
+        # Make an ID for GCPNetworkInterface nodes because GCP doesn't have this but we need to uniquely identify them
+        nic_id = f"{instance['partial_uri']}/networkinterfaces/{nic['name']}"
+        neo4j_session.run(
+            query,
+            InstanceId=instance['partial_uri'],
+            NicId=nic_id,
+            NetworkIP=nic['networkIP'],
+            NicName=nic['name'],
+            gcp_update_tag=gcp_update_tag,
+            SubnetSelfLink=nic['subnetwork']
+        )
+        _attach_gcp_nic_access_configs(neo4j_session, nic_id, nic, gcp_update_tag)
 
 
-# def _attach_gce_vpcs(neo4j_session, instance, gcp_update_tag):
-#     query = """
-#     MERGE (vpc:GcpVpc{id:{NetworkId}})
-#
-#     ON CREATE SET vpc.firstseen = timestamp()
-#
-#     SET vpc.lastupdated = {gcp_update_tag},
-#     vpc.name = {NetworkName},
-#     vpc.self_link = {NetworkSelfLink}
-#
-#     MERGE (subnet:GCPSubnet{id:{SubnetId}})
-#     ON CREATE SET subnet.firstseen = timestamp()
-#     SET subnet.lastupdated = {gcp_update_tag}
-#     """
-#     pass
+def _attach_gcp_nic_access_configs(neo4j_session, nic_id, nic, gcp_update_tag):
+    """
+    Attach an access configuration to the GCP NIC.
+    :param neo4j_session: The Neo4j session
+    :param instance: The GCP instance
+    :param gcp_update_tag: The timestamp to set updated nodes to
+    :return: Nothing
+    """
+    query = """
+    MATCH (nic{id:{NicId}})
+    MERGE (ac:GCPNicAccessConfig{id:{AccessConfigId}})
+    ON CREATE SET ac.firstseen = timestamp()
+    SET ac.type={Type},
+    ac.name = {Name},
+    ac.public_ip = {NatIP},
+    ac.public_ptr = {SetPublicPtr},
+    ac.public_ptr_domain_name = {PublicPtrDomainName},
+    ac.network_tier = {NetworkTier},
+    ac.lastupdated = {gcp_update_tag}
 
-
-# def _attach_gce_subnet_to_vpcs(neo4j_session, instance, subnet, gcp_update_tag):
-#     """
-#     Connect subnets to VPCs
-#     :param neo4j_session:
-#     :param instance:
-#     :param subnet:
-#     :param gcp_update_tag:
-#     :return:
-#     """
-#     query = """
-#     """
-#     pass
-
-
-# def load_gcp_subnets(neo4j_session, subnet, gcp_update_tag):
-#     """
-#     Ingest GCP subnet data to Neo4j
-#     :param neo4j_session: The Neo4j session
-#     :param subnet: The subnet object
-#     :param gcp_update_tag: The timestamp value that we set our new Neo4j nodes with
-#     :return: Nothing
-#     """
-#     query = """
-#     MERGE (subnet:GCPSubnet{id:{PartialUri}})
-#     ON CREATE SET subnet.firstseen = timestamp()
-#     SET subnet.lastupdated = {gcp_update_tag},
-#     subnet
-#     """
+    MERGE (nic)-[r:RESOURCE]->(ac)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}
+    """
+    for ac in nic.get('accessConfigs', []):
+        # Make an ID for GCPNicAccessConfig nodes because GCP doesn't have this but we need to uniquely identify them
+        access_config_id = f"{nic_id}/accessconfigs/{ac['type']}"
+        neo4j_session.run(
+            query,
+            NicId=nic_id,
+            AccessConfigId=access_config_id,
+            Type=ac['type'],
+            Name=ac['name'],
+            NatIP=ac.get('natIP', None),
+            SetPublicPtr=ac.get('setPublicPtr', None),
+            PublicPtrDomainName=ac.get('publicPtrDomainName', None),
+            NetworkTier=ac.get('networkTier', None),
+            gcp_update_tag=gcp_update_tag
+        )
 
 
 def cleanup_gcp_instances(session, common_job_parameters):
