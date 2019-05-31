@@ -185,10 +185,12 @@ def transform_gcp_subnets(subnet_res):
         subnet['name'] = s['name']
         subnet['vpc_self_link'] = s['network']
         subnet['project_id'] = projectid
+        # Region looks like "https://www.googleapis.com/compute/v1/projects/{project}/regions/{region name}"
         subnet['region'] = s['region'].split('/')[-1]
         subnet['gateway_address'] = s.get('gatewayAddress', None)
         subnet['ip_cidr_range'] = s.get('ipCidrRange', None)
         subnet['self_link'] = s['selfLink']
+        subnet['private_ip_google_access'] = s.get('privateIpGoogleAccess', None)
 
         subnet_list.append(subnet)
     return subnet_list
@@ -241,7 +243,7 @@ def load_gcp_vpcs(neo4j_session, vpcs, gcp_update_tag):
     :return: Nothing
     """
     query = """
-    MATCH(p:GCPProject{id:{ProjectId}})
+    MERGE(p:GCPProject{id:{ProjectId}})
     MERGE(vpc:GCPVpc{id:{PartialUri}})
     ON CREATE SET vpc.firstseen = timestamp(),
     vpc.partial_uri = {PartialUri}
@@ -504,7 +506,9 @@ def sync(session, compute, project_id, gcp_update_tag, common_job_parameters):
     logger.info("Syncing Compute objects for project %s.", project_id)
     zones = get_zones_in_project(project_id, compute)
     # Only pull additional assets for this project if the Compute API is enabled
-    if zones:
+    if zones is None:
+        return
+    else:
         regions = _zones_to_regions(zones)
         sync_gcp_vpcs(session, compute, project_id, gcp_update_tag, common_job_parameters)
         sync_gcp_subnets(session, compute, project_id, regions, gcp_update_tag, common_job_parameters)

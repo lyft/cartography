@@ -248,6 +248,7 @@ Representation of a GCP [Subnetwork](https://cloud.google.com/compute/docs/refer
 | region | The region of this Subnet |
 | gateway_address | Gateway IP address of this Subnet |
 | ip_cidr_range | The CIDR range covered by this Subnet | 
+| private_ip_google_access | Whether the VMs in this subnet can access Google services without assigned external IP addresses. This field can be both set at resource creation time and updated using setPrivateIpGoogleAccess. |
 
 ### Relationships
 
