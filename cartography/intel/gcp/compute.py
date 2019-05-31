@@ -3,10 +3,12 @@
 from googleapiclient.discovery import HttpError
 import json
 import logging
+from collections import namedtuple
 
 from cartography.util import run_cleanup_job
 
 logger = logging.getLogger(__name__)
+InstanceUriPrefix = namedtuple('InstanceUriPrefix', 'zone_name project_id')
 
 
 def _get_error_reason(http_error):
@@ -73,28 +75,23 @@ def get_zones_in_project(project_id, compute, max_results=None):
             raise
 
 
-def get_gcp_instances_in_project(project_id, zones, compute):
+def get_gcp_instance_responses(project_id, zones, compute):
     """
-    Return list of all GCP instances in a given project regardless of zone.
-    :param project_id: The project ID number to sync.  See  the `projectId` field in
-    https://cloud.google.com/resource-manager/reference/rest/v1/projects
-    :param zones: The list of all zone names that are enabled for this project; this is the output of
-    `get_zones_in_project()`
-    :param compute: The compute resource object created by googleapiclient.discovery.build()
-    :return: List of all GCP instances in given project regardless of zone.
+    Return list of GCP instance response objects for a given project and list of zones
+    :param project_id: The project ID
+    :param zones: The list of zones to query for instances
+    :param compute: The compute resource object
+    :return: A list of response objects of the form {id: str, items: []} where each item in `items` is a GCP instance
     """
     if not zones:
         # If the Compute Engine API is not enabled for a project, there are no zones and therefore no instances.
         return []
-    instances = []
+    response_objects = []
     for zone in zones:
         req = compute.instances().list(project=project_id, zone=zone['name'])
         res = req.execute()
-        zone_instances = res.get('items', [])
-        for instance in zone_instances:
-            transform_gcp_instance(instance, project_id, zone['name'])
-            instances.append(instance)
-    return instances
+        response_objects.append(res)
+    return response_objects
 
 
 def get_gcp_subnets(projectid, region, compute):
@@ -103,7 +100,7 @@ def get_gcp_subnets(projectid, region, compute):
     :param projectid: THe projectid
     :param region: The region to pull subnets from
     :param compute: The compute resource object created by googleapiclient.discovery.build()
-    :return: List of all GCP subnets in the given project and region
+    :return: Response object containing data on all GCP subnets for a given project
     """
     req = compute.subnetworks().list(project=projectid, region=region)
     return req.execute()
@@ -120,20 +117,40 @@ def get_gcp_vpcs(projectid, compute):
     return req.execute()
 
 
-def transform_gcp_instance(instance, project_id, zone_name):
+def transform_gcp_instances(response_objects):
     """
-    Add additional fields to the instance object to make it easier to process in `load_gcp_instances()`
-    :param instance: The GCP instance dict
-    :param project_id: The project name that this instance belongs to
-    :param zone_name: The zone name that this instance belongs to
-    :return: The modified instance object
+    Process the GCP instance response objects and return a flattened list of GCP instances with all the necessary fields
+    we need to load it into Neo4j
+    :param response_objects: The return data from get_gcp_instance_responses()
+    :return: A list of GCP instances
     """
-    instance['project_id'] = project_id
-    instance['zone_name'] = zone_name
-    # Follow the format of a partial URI as shown here:
-    # https://cloud.google.com/apis/design/resource_names#relative_resource_name
-    instance['partial_uri'] = f"projects/{project_id}/zones/{zone_name}/instances/{instance['name']}"
-    return instance
+    instance_list = []
+    for res in response_objects:
+        prefix = res['id']
+        prefix_fields = _parse_instance_uri_prefix(prefix)
+
+        for item in res.get('items', []):
+            instance = item.copy()
+            instance['partial_uri'] = f"{prefix}/{item['name']}"
+            instance['project_id'] = prefix_fields.project_id
+            instance['zone_name'] = prefix_fields.zone_name
+
+            instance_list.append(instance)
+    return instance_list
+
+
+def _parse_instance_uri_prefix(prefix):
+    """
+    Helper function to parse a GCP prefix string of the form `projects/{project}/zones/{zone}/instances`
+    :param prefix: String of the form `projects/{project}/zones/{zone}/instances`
+    :return: namedtuple with fields project_id and zone_name
+    """
+    split_list = prefix.split('/')
+
+    return InstanceUriPrefix(
+        project_id=split_list[1],
+        zone_name=split_list[3]
+    )
 
 
 def transform_gcp_vpcs(vpc_res):
@@ -206,7 +223,7 @@ def load_gcp_instances(neo4j_session, data, gcp_update_tag):
     :return: Nothing
     """
     query = """
-    MATCH (p:GCPProject{id:{ProjectId}})
+    MERGE (p:GCPProject{id:{ProjectId}})
     MERGE (i:Instance:GCPInstance{id:{PartialUri}})
     ON CREATE SET i.firstseen = timestamp()
     SET i.partial_uri = {PartialUri},
@@ -214,6 +231,7 @@ def load_gcp_instances(neo4j_session, data, gcp_update_tag):
     i.instancename = {InstanceName},
     i.hostname = {Hostname},
     i.zone_name = {ZoneName},
+    i.project_id = {ProjectId},
     i.lastupdated = {gcp_update_tag}
     WITH i, p
     MERGE (p)-[r:RESOURCE]->(i)
@@ -448,8 +466,10 @@ def sync_gcp_instances(session, compute, project_id, zones, gcp_update_tag, comm
     :param common_job_parameters: dict of other job parameters to pass to Neo4j
     :return: Nothing
     """
-    instances = get_gcp_instances_in_project(project_id, zones, compute)
-    load_gcp_instances(session, instances, gcp_update_tag)
+    instance_responses = get_gcp_instance_responses(project_id, zones, compute)
+    instance_list = transform_gcp_instances(instance_responses)
+    # instances = get_gcp_instances_in_project(project_id, zones, compute)
+    load_gcp_instances(session, instance_list, gcp_update_tag)
     cleanup_gcp_instances(session, common_job_parameters)
 
 

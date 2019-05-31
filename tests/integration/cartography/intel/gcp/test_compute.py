@@ -27,3 +27,33 @@ def test_load_vpcs(neo4j_session):
         (expected_vpc_id, expected_vpc_id, True)
     ])
     assert actual_nodes == expected_nodes
+
+
+def test_load_vpcs_and_instances_nics_subnets_accessconfigs(neo4j_session):
+    """
+    Ensure we can load VPC nodes and a GCP instance and correctly connect it to the VPC through network interfaces,
+    access configs, and subnets.
+    :param neo4j_session: The neo4j session
+    :return: Nothing
+    """
+    # Load the VPC data
+    vpc_res = tests.data.gcp.compute.VPC_RESPONSE
+    vpc_list = cartography.intel.gcp.compute.transform_gcp_vpcs(vpc_res)
+    cartography.intel.gcp.compute.load_gcp_vpcs(neo4j_session, vpc_list, TEST_UPDATE_TAG)
+
+    # Load the instance data
+    instance_responses = [tests.data.gcp.compute.GCP_LIST_INSTANCES_RESPONSE]
+    instance_list = cartography.intel.gcp.compute.transform_gcp_instances(instance_responses)
+
+    # Now load in the instance->NIC, accessconfig, subnet data
+    cartography.intel.gcp.compute.load_gcp_instances(neo4j_session, instance_list, TEST_UPDATE_TAG)
+
+    # Ensure the instances exist
+    instance_query = """MATCH(i:GCPInstance) RETURN i.id, i.zone_name, i.project_id, i.hostname"""
+    nodes = neo4j_session.run(instance_query)
+    actual_nodes = set([(n['i.id'], n['i.zone_name'], n['i.project_id'], n['i.hostname']) for n in nodes])
+    expected_nodes = set([
+        ('projects/project-abc/zones/europe-west2-b/instances/instance-1-test', 'europe-west2-b', 'project-abc', None),
+        ('projects/project-abc/zones/europe-west2-b/instances/instance-1', 'europe-west2-b', 'project-abc', None)
+    ])
+    assert actual_nodes == expected_nodes
