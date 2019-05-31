@@ -129,9 +129,8 @@ def transform_gcp_instances(response_objects):
         prefix = res['id']
         prefix_fields = _parse_instance_uri_prefix(prefix)
 
-        for item in res.get('items', []):
-            instance = item.copy()
-            instance['partial_uri'] = f"{prefix}/{item['name']}"
+        for instance in res.get('items', []):
+            instance['partial_uri'] = f"{prefix}/{instance['name']}"
             instance['project_id'] = prefix_fields.project_id
             instance['zone_name'] = prefix_fields.zone_name
 
