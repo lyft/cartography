@@ -11,24 +11,28 @@ def get_dynamodb_tables(session, region):
     dynamodb_tables = []
     for page in paginator.paginate():
         for table in (client.describe_table(item) for item in page):
-            table_properties = {
-                "TableArn": table['Table']['TableArn'],
-                "TableName": table['Table']['TableName'],
-                "Rows": table['Table']['ItemCount'],
-                "GSIs": [],
-                "Size": table['Table']['TableSizeBytes'],
-                "ProvisionedThroughputReadCapacityUnits": table['Table']['ProvisionedThroughput']['ReadCapacityUnits'],
-                "ProvisionedThroughputWriteCapacityUnits": table['Table']['ProvisionedThroughput']['WriteCapacityUnits']
-            }
-            for gsi in table['Table']['GlobalSecondaryIndexes']:
-                table_properties['GSIs'].append({
-                    "IndexArn": gsi['IndexArn'],
-                    "GSIName": gsi['IndexName'],
-                    "ProvisionedThroughputReadCapacityUnits": gsi['ProvisionedThroughput']['ReadCapacityUnits'],
-                    "ProvisionedThroughputWriteCapacityUnits": gsi['ProvisionedThroughput']['WriteCapacityUnits'],
-                })
-            dynamodb_tables.append(table_properties)
+            dynamodb_tables.append(transform_dynamo_db_tables(table))
     return {'Tables': dynamodb_tables}
+
+
+def transform_dynamo_db_tables(table):
+    table_properties = {
+        "TableArn": table['Table']['TableArn'],
+        "TableName": table['Table']['TableName'],
+        "Rows": table['Table']['ItemCount'],
+        "GSIs": [],
+        "Size": table['Table']['TableSizeBytes'],
+        "ProvisionedThroughputReadCapacityUnits": table['Table']['ProvisionedThroughput']['ReadCapacityUnits'],
+        "ProvisionedThroughputWriteCapacityUnits": table['Table']['ProvisionedThroughput']['WriteCapacityUnits']
+    }
+    for gsi in table['Table']['GlobalSecondaryIndexes']:
+        table_properties['GSIs'].append({
+            "IndexArn": gsi['IndexArn'],
+            "GSIName": gsi['IndexName'],
+            "ProvisionedThroughputReadCapacityUnits": gsi['ProvisionedThroughput']['ReadCapacityUnits'],
+            "ProvisionedThroughputWriteCapacityUnits": gsi['ProvisionedThroughput']['WriteCapacityUnits']
+        })
+    return table_properties
 
 
 def load_dynamodb_tables(session, data, region, current_aws_account_id, aws_update_tag):
@@ -36,9 +40,9 @@ def load_dynamodb_tables(session, data, region, current_aws_account_id, aws_upda
     MERGE (table:DynamoDBTable{id: {Arn}})
     ON CREATE SET table.firstseen = timestamp(), table.arn = {Arn}, table.name = {TableName},
     table.region = {Region}
-    SET table.lastupdated = {aws_update_tag}, table.rows = {Rows}, table.gsis = {GSIs}, table.size = {Size},
-    table.provisioned_throughput_read_capacity_units = ProvisionedThroughputReadCapacityUnits,
-    table.provisioned_throughput_write_capacity_units = ProvisionedThroughputWriteCapacityUnits
+    SET table.lastupdated = {aws_update_tag}, table.rows = {Rows}, table.size = {Size},
+    table.provisioned_throughput_read_capacity_units = {ProvisionedThroughputReadCapacityUnits},
+    table.provisioned_throughput_write_capacity_units = {ProvisionedThroughputWriteCapacityUnits}
     WITH table
     MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
     MERGE (owner)-[r:RESOURCE]->(table)
@@ -58,7 +62,7 @@ def load_dynamodb_tables(session, data, region, current_aws_account_id, aws_upda
             Rows=table['Rows'],
             Size=table['Size'],
             ProvisionedThroughputReadCapacityUnits=table['ProvisionedThroughputReadCapacityUnits'],
-            ProvisionedThroughputWriteCapacityUnits=table['ProvisionedThroughputWriteCapacityUnits'],
+            ProvisionedThroughputWriteCapacityUnits=table['ProvisionedThroughputWriteCapacityUnits']
         )
         load_gsi(session, data, region, current_aws_account_id, aws_update_tag, table)
 
@@ -66,16 +70,16 @@ def load_dynamodb_tables(session, data, region, current_aws_account_id, aws_upda
 def load_gsi(session, data, region, current_aws_account_id, aws_update_tag, table):
     ingest_gsi = """
     MERGE (gsi:DynamoDBTableGSI{id: {Arn}})
-    ON CREATE SET gsi.firstseen = timestamp(), gsi.arn = {Arn}, gsi.name = {GSIName}
-    gsi.region = {Region},
+    ON CREATE SET gsi.firstseen = timestamp(), gsi.arn = {Arn}, gsi.name = {GSIName},
+    gsi.region = {Region}
     SET gsi.lastupdated = {aws_update_tag},
-    gsi.provisioned_throughput_read_capacity_units = ProvisionedThroughputReadCapacityUnits,
-    gsi.provisioned_throughput_write_capacity_units = ProvisionedThroughputWriteCapacityUnits,
+    gsi.provisioned_throughput_read_capacity_units = {ProvisionedThroughputReadCapacityUnits},
+    gsi.provisioned_throughput_write_capacity_units = {ProvisionedThroughputWriteCapacityUnits}
     WITH gsi
-    MATCH (table:DynamoDBTable{name: {TableName})
-    MERGE (table)-[g:GSI]->(gsi)
-    ON CREATE SET g.firstseen = timestamp()
-    SET g.lastupdated = {aws_update_tag}
+    MATCH (table:DynamoDBTable{arn: {TableArn}})
+    MERGE (table)-[r:GSI]->(gsi)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {aws_update_tag}
     """
 
     for gsi in table["GSIs"]:
@@ -86,9 +90,9 @@ def load_gsi(session, data, region, current_aws_account_id, aws_update_tag, tabl
             Region=region,
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag,
-            Table=table['TableName'],
+            TableArn=table['TableArn'],
             ProvisionedThroughputReadCapacityUnits=gsi['ProvisionedThroughputReadCapacityUnits'],
-            ProvisionedThroughputWriteCapacityUnits=gsi['ProvisionedThroughputWriteCapacityUnits'],
+            ProvisionedThroughputWriteCapacityUnits=gsi['ProvisionedThroughputWriteCapacityUnits']
         )
 
 
