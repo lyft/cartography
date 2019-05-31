@@ -12,7 +12,8 @@ def get_dynamodb_tables(session, region):
     for page in paginator.paginate():
         for table in (client.describe_table(item) for item in page):
             table_properties = {
-                "TableName": table['Table']['TableNames'],
+                "TableArn": table['Table']['TableArn'],
+                "TableName": table['Table']['TableName'],
                 "Rows": table['Table']['ItemCount'],
                 "GSIs": [],
                 "Size": table['Table']['TableSizeBytes'],
@@ -21,7 +22,7 @@ def get_dynamodb_tables(session, region):
             }
             for gsi in table['Table']['GlobalSecondaryIndexes']:
                 table_properties['GSIs'].append({
-                    "Arn": gsi['IndexArn'],
+                    "IndexArn": gsi['IndexArn'],
                     "GSIName": gsi['IndexName'],
                     "ProvisionedThroughputReadCapacityUnits": gsi['ProvisionedThroughput']['ReadCapacityUnits'],
                     "ProvisionedThroughputWriteCapacityUnits": gsi['ProvisionedThroughput']['WriteCapacityUnits'],
@@ -33,8 +34,8 @@ def get_dynamodb_tables(session, region):
 def load_dynamodb_tables(session, data, region, current_aws_account_id, aws_update_tag):
     ingest_table = """
     MERGE (table:DynamoDBTable{id: {Arn}})
-    ON CREATE SET table.first seen = timestamp(), table.arn = {Arn}, table.name = {TableName},
-    table.region = {Region},
+    ON CREATE SET table.firstseen = timestamp(), table.arn = {Arn}, table.name = {TableName},
+    table.region = {Region}
     SET table.lastupdated = {aws_update_tag}, table.rows = {Rows}, table.gsis = {GSIs}, table.size = {Size},
     table.provisioned_throughput_read_capacity_units = ProvisionedThroughputReadCapacityUnits,
     table.provisioned_throughput_write_capacity_units = ProvisionedThroughputWriteCapacityUnits
@@ -46,10 +47,10 @@ def load_dynamodb_tables(session, data, region, current_aws_account_id, aws_upda
     """
 
     for table in data["Tables"]:
-        arn = "arn:aws:dynamodb:{0}:{1}:table/{2}".format(region, current_aws_account_id, table['TableName'])
+        # arn = "arn:aws:dynamodb:{0}:{1}:table/{2}".format(region, current_aws_account_id, table['TableName'])
         session.run(
             ingest_table,
-            Arn=arn,
+            Arn=table['TableArn'],
             TableName=table['TableName'],
             Region=region,
             AWS_ACCOUNT_ID=current_aws_account_id,
@@ -65,9 +66,9 @@ def load_dynamodb_tables(session, data, region, current_aws_account_id, aws_upda
 def load_gsi(session, data, region, current_aws_account_id, aws_update_tag, table):
     ingest_gsi = """
     MERGE (gsi:DynamoDBTableGSI{id: {Arn}})
-    ON CREATE SET gsi.first seen = timestampe(), gsi.arn = {Arn}, gsi.name = {GSIName},
+    ON CREATE SET gsi.firstseen = timestamp(), gsi.arn = {Arn}, gsi.name = {GSIName}
     gsi.region = {Region},
-    SET gsi.lastupdate = {aws_update_tag},
+    SET gsi.lastupdated = {aws_update_tag},
     gsi.provisioned_throughput_read_capacity_units = ProvisionedThroughputReadCapacityUnits,
     gsi.provisioned_throughput_write_capacity_units = ProvisionedThroughputWriteCapacityUnits,
     WITH gsi
