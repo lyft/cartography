@@ -313,6 +313,7 @@ def load_gcp_subnets(neo4j_session, subnets, gcp_update_tag):
     subnet.region = {Region},
     subnet.gateway_address = {GatewayAddress},
     subnet.ip_cidr_range = {IpCidrRange},
+    subnet.private_ip_google_access = {PrivateIpGoogleAccess},
     subnet.lastupdated = {gcp_update_tag}
 
     MERGE (vpc)-[r:RESOURCE]->(subnet)
@@ -334,6 +335,7 @@ def load_gcp_subnets(neo4j_session, subnets, gcp_update_tag):
             Region=s['region'],
             GatewayAddress=s['gateway_address'],
             IpCidrRange=s['ip_cidr_range'],
+            PrivateIpGoogleAccess=s['private_ip_google_access'],
             gcp_update_tag=gcp_update_tag
         )
 

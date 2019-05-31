@@ -7,7 +7,6 @@ else:
     from importlib_resources import contents
 
 
-@pytest.mark.skip(reason="I have Neo4j 3.3.9")
 def test_analysis_jobs_cypher_syntax(neo4j_session):
     for job_name in contents('cartography.data.jobs.analysis'):
         if not job_name.endswith('.json'):
@@ -18,7 +17,6 @@ def test_analysis_jobs_cypher_syntax(neo4j_session):
             pytest.fail("run_analysis_job failed for analysis job '{}' with exception: {}".format(job_name, e))
 
 
-@pytest.mark.skip(reason="I have neo4j 3.3.9")
 def test_cleanup_jobs_cypher_syntax(neo4j_session):
     for job_name in contents('cartography.data.jobs.cleanup'):
         if not job_name.endswith('json'):
