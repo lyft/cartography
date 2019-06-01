@@ -195,11 +195,17 @@ def transform_gcp_subnets(subnet_res):
 
         # Has the form `projects/{project}/regions/{region}/subnetworks/{subnet_name}`
         partial_uri = f"{prefix}/{s['name']}"
-
         subnet['id'] = partial_uri
         subnet['partial_uri'] = partial_uri
-        subnet['name'] = s['name']
+
+        # Let's maintain an on-node reference to the VPC that this subnet belongs to.
         subnet['vpc_self_link'] = s['network']
+
+        # subnet['network'] is `https://www.googleapis.com/compute/v1/projects/{project}/global/networks/{network}` -->
+        # It is more convenient to store the partial URI `projects/{project}/global/networks/{network}`:
+        subnet['vpc_partial_uri'] = s['network'].split('compute/v1/')[1]
+
+        subnet['name'] = s['name']
         subnet['project_id'] = projectid
         # Region looks like "https://www.googleapis.com/compute/v1/projects/{project}/regions/{region name}"
         subnet['region'] = s['region'].split('/')[-1]
@@ -313,6 +319,7 @@ def load_gcp_subnets(neo4j_session, subnets, gcp_update_tag):
     subnet.gateway_address = {GatewayAddress},
     subnet.ip_cidr_range = {IpCidrRange},
     subnet.private_ip_google_access = {PrivateIpGoogleAccess},
+    subnet.vpc_partial_uri = {VpcPartialUri},
     subnet.lastupdated = {gcp_update_tag}
 
     MERGE (vpc)-[r:RESOURCE]->(subnet)
@@ -320,12 +327,9 @@ def load_gcp_subnets(neo4j_session, subnets, gcp_update_tag):
     SET r.lastupdated = {gcp_update_tag}
     """
     for s in subnets:
-        # self_link = `https://www.googleapis.com/compute/v1/projects/{project}/global/networks/{network name}`
-        # vpc_id = `projects/{project}/global/networks/{network name}`
-        vpc_id = s['vpc_self_link'].split('compute/v1/')[1]
         neo4j_session.run(
             query,
-            VpcPartialUri=vpc_id,
+            VpcPartialUri=s['vpc_partial_uri'],
             VpcSelfLink=s['vpc_self_link'],
             PartialUri=s['partial_uri'],
             SubnetSelfLink=s['self_link'],

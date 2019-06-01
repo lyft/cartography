@@ -63,7 +63,8 @@ def test_transform_and_load_subnets(neo4j_session):
 
     query = """
     MATCH(subnet:GCPSubnet)
-    RETURN subnet.id, subnet.region, subnet.gateway_address, subnet.ip_cidr_range, subnet.private_ip_google_access
+    RETURN subnet.id, subnet.region, subnet.gateway_address, subnet.ip_cidr_range, subnet.private_ip_google_access,
+    subnet.vpc_partial_uri
     """
     nodes = neo4j_session.run(query)
     actual_nodes = set([(
@@ -71,7 +72,8 @@ def test_transform_and_load_subnets(neo4j_session):
         n['subnet.region'],
         n['subnet.gateway_address'],
         n['subnet.ip_cidr_range'],
-        n['subnet.private_ip_google_access']
+        n['subnet.private_ip_google_access'],
+        n['subnet.vpc_partial_uri']
     ) for n in nodes])
 
     expected_nodes = set([
@@ -79,7 +81,8 @@ def test_transform_and_load_subnets(neo4j_session):
          'europe-west2',
          '10.0.0.1',
          '10.0.0.0/20',
-         False)
+         False,
+         'projects/project-abc/global/networks/default')
     ])
     assert actual_nodes == expected_nodes
 
