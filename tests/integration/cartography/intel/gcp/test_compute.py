@@ -100,7 +100,8 @@ def test_transform_and_load_gcp_instances_and_nics(neo4j_session):
 
     nic_query = """
     MATCH(i:GCPInstance)-[r:NETWORK_INTERFACE]->(nic:GCPNetworkInterface)
-    RETURN i.id, i.zone_name, i.project_id, i.hostname, r.lastupdated, nic.nic_id, nic.private_ip
+    OPTIONAL MATCH (i)-[:HAS_TAG]->(t:GCPTag)
+    RETURN i.id, i.zone_name, i.project_id, i.hostname, t.value, r.lastupdated, nic.nic_id, nic.private_ip
     """
     objects = neo4j_session.run(nic_query)
     actual_nodes = set([(
@@ -109,6 +110,7 @@ def test_transform_and_load_gcp_instances_and_nics(neo4j_session):
         o['i.project_id'],
         o['nic.nic_id'],
         o['nic.private_ip'],
+        o['t.value'],
         o['r.lastupdated']
     ) for o in objects])
 
@@ -118,14 +120,18 @@ def test_transform_and_load_gcp_instances_and_nics(neo4j_session):
          'project-abc',
          'projects/project-abc/zones/europe-west2-b/instances/instance-1-test/networkinterfaces/nic0',
          '10.0.0.3',
+         None,
          TEST_UPDATE_TAG),
         (instance_id2,
          'europe-west2-b',
          'project-abc',
          'projects/project-abc/zones/europe-west2-b/instances/instance-1/networkinterfaces/nic0',
          '10.0.0.2',
+         'test',
          TEST_UPDATE_TAG)
     ])
+    print(actual_nodes)
+    print(expected_nodes)
     assert actual_nodes == expected_nodes
 
 
@@ -221,4 +227,28 @@ def test_nic_to_subnets(neo4j_session):
     )])
     print(actual_nodes)
     print(expected_nodes)
+    assert actual_nodes == expected_nodes
+
+
+def test_instance_to_vpc(neo4j_session):
+    _ensure_local_neo4j_has_test_vpc_data(neo4j_session)
+    _ensure_local_neo4j_has_test_subnet_data(neo4j_session)
+    _ensure_local_neo4j_has_test_instance_data(neo4j_session)
+    instance_id1 = 'projects/project-abc/zones/europe-west2-b/instances/instance-1-test'
+    query = """
+    MATCH (i:GCPInstance{id:{InstanceId}})-[r:MEMBER_OF_GCP_VPC]->(v:GCPVpc)
+    RETURN i.id, v.id
+    """
+    nodes = neo4j_session.run(
+        query,
+        InstanceId=instance_id1
+    )
+    actual_nodes = set([(
+        n['i.id'],
+        n['v.id']
+    ) for n in nodes])
+    expected_nodes = set([(
+        instance_id1,
+        'projects/project-abc/global/networks/default'
+    )])
     assert actual_nodes == expected_nodes

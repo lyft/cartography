@@ -6,6 +6,7 @@
 - [GCPFolder](#gcpfolder)
 - [GCPProject](#gcpproject)
 - [GCPInstance](#gcpinstance)
+- [GCP Tags](#gcptagtag)
 - [GCPNetworkInterface](#gcpnetworkinterface)
 - [GCPVpc](#gcpvpc) 
 - [GCPNicAccessConfig](#gcpnicaccessconfig)
@@ -133,7 +134,36 @@ Representation of a GCP [Organization](https://cloud.google.com/resource-manager
     ```
     (GCPInstance)-[NETWORK_INTERFACE]->(GCPNetworkInterface)
     ```
+
+- GCP Instances may be members of one or more GCP VPCs.
+
+    ```
+    (GCPInstance)-[:MEMBER_OF_GCP_VPC]->(GCPVpc)
+    ```
+    
+    Also note that this relationship is a shortcut for:
+    
+    ```
+    (GCPInstance)-[:NETWORK_INTERFACE]->(:GCPNetworkInterface)-[:PART_OF_SUBNET]->(GCPSubnet)<-[:RESOURCE]-(GCPVpc)
+    ```
+    
+- GCP Instances may have GCP Tags defined on them for use in [network firewall routing](https://cloud.google.com/blog/products/gcp/labelling-and-grouping-your-google-cloud-platform-resources).
+
+    ```
+    (GCPInstance)-[:HAS_TAG]->(GCPTag)
+    ```
  
+#GCPTag:Tag
+
+Representation of a Tag defined on a GCP Instance.  Tags are defined on GCP instances for use in [network firewall routing](https://cloud.google.com/blog/products/gcp/labelling-and-grouping-your-google-cloud-platform-resources).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated | 
+| id | GCP doesn't define a resource URI for Tags so we define this as `{instance resource URI}/tags/{tag value}`
+| tag_id | same as `id` |
+| value | The actual value of the tag |
     
 ## GCPVpc
 
@@ -172,6 +202,17 @@ Representation of a GCP [VPC](https://cloud.google.com/compute/docs/reference/re
     (GCPVpc)-[RESOURCE]->(GCPSubnet)
     ```
 
+- GCP Instances may be members of one or more GCP VPCs.
+
+    ```
+    (GCPInstance)-[:MEMBER_OF_GCP_VPC]->(GCPVpc)
+    ```
+    
+    Also note that this relationship is a shortcut for:
+    
+    ```
+    (GCPInstance)-[:NETWORK_INTERFACE]->(:GCPNetworkInterface)-[:PART_OF_SUBNET]->(GCPSubnet)<-[:RESOURCE]-(GCPVpc)
+    ```
     
 ## GCPNetworkInterface
 
@@ -182,7 +223,7 @@ Representation of a GCP Instance's [network interface](https://cloud.google.com/
 | firstseen| Timestamp of when a sync job first discovered this node  |
 | lastupdated |  Timestamp of the last time the node was updated | 
 | id | A partial resource URI representing this network interface.  Note: GCP does not define a partial resource URI for network interfaces, so we create one so we can uniquely identify GCP network interfaces.  Has the form `projects/{project_name}/zones/{zone_name}/instances/{instance_name}/networkinterfaces/{network interface name}`.
-| partial_uri | Same as `id` |
+| nic_id | Same as `id` |
 | name | The name of the network interface |
 | private_ip | The private IP address of this network interface.  This IP is valid on the network interface's VPC. |
 

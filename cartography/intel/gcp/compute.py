@@ -254,7 +254,9 @@ def load_gcp_instances(neo4j_session, data, gcp_update_tag):
             Hostname=instance.get('hostname', None),
             gcp_update_tag=gcp_update_tag
         )
+        _attach_instance_tags(neo4j_session, instance, gcp_update_tag)
         _attach_gcp_nics(neo4j_session, instance, gcp_update_tag)
+        _attach_gcp_vpc(neo4j_session, instance['partial_uri'], gcp_update_tag)
 
 
 def load_gcp_vpcs(neo4j_session, vpcs, gcp_update_tag):
@@ -343,9 +345,33 @@ def load_gcp_subnets(neo4j_session, subnets, gcp_update_tag):
         )
 
 
+def _attach_instance_tags(neo4j_session, instance, gcp_update_tag):
+    query = """
+    MATCH (i:GCPInstance{id:{InstanceId}})
+
+    MERGE (t:GCPTag:Tag{id:{TagId}})
+    ON CREATE SET t.tag_id = {TagId},
+    t.value = {TagValue}
+
+    MERGE (i)-[h:HAS_TAG]->(t)
+    ON CREATE SET h.firstseen = timestamp()
+    SET h.lastupdated = {gcp_update_tag}
+    """
+    for tag in instance.get('tags', {}).get('items', []):
+        tag_id = f"{instance['partial_uri']}/tags/{tag}"
+        neo4j_session.run(
+            query,
+            InstanceId=instance['partial_uri'],
+            TagId=tag_id,
+            TagValue=tag,
+            gcp_update_tag=gcp_update_tag
+        )
+
+
 def _attach_gcp_nics(neo4j_session, instance, gcp_update_tag):
     """
     Attach GCP Network Interfaces to GCP Instances and GCP Subnets.
+    Then, attach GCP Instances directly to VPCs.
     :param neo4j_session: The Neo4j session
     :param instance: The GCP instance
     :param gcp_update_tag: Timestamp to set the nodes
@@ -426,6 +452,27 @@ def _attach_gcp_nic_access_configs(neo4j_session, nic_id, nic, gcp_update_tag):
             NetworkTier=ac.get('networkTier', None),
             gcp_update_tag=gcp_update_tag
         )
+
+
+def _attach_gcp_vpc(neo4j_session, instance_id, gcp_update_tag):
+    """
+    Attach a GCP instance directly to a VPC
+    :param neo4j_session: neo4j_session
+    :param instance: The GCP instance object
+    :param gcp_update_tag:
+    :return:
+    """
+    query = """
+    MATCH(i:GCPInstance{id:{InstanceId}})-[:NETWORK_INTERFACE]->(nic:GCPNetworkInterface)-[p:PART_OF_SUBNET]->(sn:GCPSubnet)<-[r:RESOURCE]-(vpc:GCPVpc)
+    MERGE (i)-[m:MEMBER_OF_GCP_VPC]->(vpc)
+    ON CREATE SET m.firstseen = timestamp()
+    SET m.lastupdated = {gcp_update_tag}
+    """
+    neo4j_session.run(
+        query,
+        InstanceId=instance_id,
+        gcp_update_tag=gcp_update_tag
+    )
 
 
 def cleanup_gcp_instances(session, common_job_parameters):
