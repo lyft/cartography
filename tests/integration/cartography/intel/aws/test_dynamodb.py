@@ -16,3 +16,18 @@ def test_load_dynamodb(neo4j_session):
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG
     )
+    expected_rows = 1000000
+    expected_nodes = set([
+        ("arn:aws:dynamodb:us-east-1:000000000000:table/example-table", expected_rows),
+        ("arn:aws:dynamodb:us-east-1:000000000000:table/sample-table", expected_rows),
+        ("arn:aws:dynamodb:us-east-1:000000000000:table/model-table", expected_rows),
+        ("arn:aws:dynamodb:us-east-1:000000000000:table/basic-table", expected_rows)
+    ])
+
+    nodes = neo4j_session.run(
+        """
+        MATCH (d:DynamoDBTable) return d.arn, d.rows
+        """
+    )
+    actual_nodes = set([(n['d.arn'], n['d.rows']) for n in nodes])
+    assert actual_nodes == expected_nodes

@@ -86,7 +86,7 @@ LIST_DYNAMODB_TABLES = {
                 ],
                 "ItemCount": 1000000,
                 "CreationDateTime": datetime.datetime(2019, 1, 1, 0, 0, 1),
-                "LatestStreamArn": "arn:aws:dynamodb:us-east-1:table/sample-table/stream/0000-00-00000:00:00.000"
+                "LatestStreamArn": "arn:aws:dynamodb:us-east-1:table/example-table/stream/0000-00-00000:00:00.000"
             }
         },
         {
@@ -250,7 +250,27 @@ LIST_DYNAMODB_TABLES = {
                 "LatestStreamLabel": "0000-00-00000:00:00.000",
                 "ItemCount": 1000000,
                 "CreationDateTime": datetime.datetime(2019, 1, 1, 0, 0, 1),
-                "LatestStreamArn": "arn:aws:dynamodb:us-east-1:table/sample-table/stream/0000-00-00000:00:00.000"
+                "LatestStreamArn": "arn:aws:dynamodb:us-east-1:table/model-table/stream/0000-00-00000:00:00.000"
+            }
+        },
+        {
+            "Table": {
+                "TableArn": "arn:aws:dynamodb:us-east-1:000000000000:table/basic-table",
+                "ProvisionedThroughput": {
+                    "NumberOfDecreasesToday": 10,
+                    "WriteCapacityUnits": 10,
+                    "LastIncreaseDateTime": datetime.datetime(2019, 1, 1, 0, 0, 1),
+                    "ReadCapacityUnits": 10,
+                    "LastDecreaseDateTime": datetime.datetime(2019, 1, 1, 0, 0, 1)
+                },
+                "TableSizeBytes": 100000000,
+                "TableName": "basic-table",
+                "TableStatus": "ACTIVE",
+                "TableId": "00000000-0000-0000-0000-000000000000",
+                "LatestStreamLabel": "0000-00-00000:00:00.000",
+                "ItemCount": 1000000,
+                "CreationDateTime": datetime.datetime(2019, 1, 1, 0, 0, 1),
+                "LatestStreamArn": "arn:aws:dynamodb:us-east-1:table/basic-table/stream/0000-00-00000:00:00.000"
             }
         }
     ]
