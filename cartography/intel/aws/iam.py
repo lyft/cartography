@@ -205,42 +205,26 @@ def load_roles(session, roles, current_aws_account_id, aws_update_tag):
 
         for statement in role["AssumeRolePolicyDocument"]["Statement"]:
             principal = statement["Principal"]
-            if principal.get('AWS'):
+            if 'AWS' in principal:
                 awsspndata = principal['AWS']
-                # TODO simplify this
-                if isinstance(awsspndata, list):
-                    for awsspn in awsspndata:
-                        session.run(
-                            ingestcode,
-                            SpnArn=awsspn,
-                            SpnType="AWS",
-                            RoleArn=role["Arn"],
-                            aws_update_tag=aws_update_tag
-                        )
-                else:
+                if not isinstance(awsspndata, list):
+                    awsspndata = [awsspndata]
+                for awsspn in awsspndata:
                     session.run(
                         ingestcode,
-                        SpnArn=awsspndata,
+                        SpnArn=awsspn,
                         SpnType="AWS",
                         RoleArn=role["Arn"],
                         aws_update_tag=aws_update_tag
                     )
-
-            if principal.get('Service'):
+            if 'Service' in principal:
                 service = principal['Service']
-                if isinstance(service, list):
-                    for servicespn in service:
-                        session.run(
-                            ingestcode,
-                            SpnArn=servicespn,
-                            SpnType="Service",
-                            RoleArn=role["Arn"],
-                            aws_update_tag=aws_update_tag
-                        )
-                else:
+                if not isinstance(service, list):
+                    service = [service]
+                for servicespn in service:
                     session.run(
                         ingestcode,
-                        SpnArn=service,
+                        SpnArn=servicespn,
                         SpnType="Service",
                         RoleArn=role["Arn"],
                         aws_update_tag=aws_update_tag
