@@ -34,14 +34,14 @@ def load_dynamodb_tables(session, data, region, current_aws_account_id, aws_upda
         session.run(
             ingest_table,
             Arn=table['Table']['TableArn'],
-            TableName=table['Table']['TableName'],
             Region=region,
-            AWS_ACCOUNT_ID=current_aws_account_id,
-            aws_update_tag=aws_update_tag,
-            Rows=table['Table']['ItemCount'],
-            Size=table['Table']['TableSizeBytes'],
             ProvisionedThroughputReadCapacityUnits=table['Table']['ProvisionedThroughput']['ReadCapacityUnits'],
-            ProvisionedThroughputWriteCapacityUnits=table['Table']['ProvisionedThroughput']['WriteCapacityUnits']
+            ProvisionedThroughputWriteCapacityUnits=table['Table']['ProvisionedThroughput']['WriteCapacityUnits'],
+            Size=table['Table']['TableSizeBytes'],
+            TableName=table['Table']['TableName'],
+            Rows=table['Table']['ItemCount'],
+            AWS_ACCOUNT_ID=current_aws_account_id,
+            aws_update_tag=aws_update_tag
         )
         load_gsi(session, region, current_aws_account_id, aws_update_tag, table)
 
@@ -64,14 +64,14 @@ def load_gsi(session, region, current_aws_account_id, aws_update_tag, table):
     for gsi in table['Table']['GlobalSecondaryIndexes']:
         session.run(
             ingest_gsi,
-            Arn=gsi['IndexArn'],
-            GSIName=gsi['IndexName'],
-            Region=region,
-            AWS_ACCOUNT_ID=current_aws_account_id,
-            aws_update_tag=aws_update_tag,
             TableArn=table['Table']['TableArn'],
+            Arn=gsi['IndexArn'],
+            Region=region,
             ProvisionedThroughputReadCapacityUnits=gsi['ProvisionedThroughput']['ReadCapacityUnits'],
-            ProvisionedThroughputWriteCapacityUnits=gsi['ProvisionedThroughput']['WriteCapacityUnits']
+            ProvisionedThroughputWriteCapacityUnits=gsi['ProvisionedThroughput']['WriteCapacityUnits'],
+            GSIName=gsi['IndexName'],
+            AWS_ACCOUNT_ID=current_aws_account_id,
+            aws_update_tag=aws_update_tag
         )
 
 
