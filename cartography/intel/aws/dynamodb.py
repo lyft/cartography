@@ -10,29 +10,9 @@ def get_dynamodb_tables(session, region):
     paginator = client.get_paginator('list_tables')
     dynamodb_tables = []
     for page in paginator.paginate():
-        for table in (client.describe_table(item) for item in page):
-            dynamodb_tables.append(transform_dynamo_db_tables(table))
+        for table in page:
+            dynamodb_tables.append(client.describe_table(table))
     return {'Tables': dynamodb_tables}
-
-
-def transform_dynamo_db_tables(table):
-    table_properties = {
-        "TableArn": table['Table']['TableArn'],
-        "TableName": table['Table']['TableName'],
-        "Rows": table['Table']['ItemCount'],
-        "GSIs": [],
-        "Size": table['Table']['TableSizeBytes'],
-        "ProvisionedThroughputReadCapacityUnits": table['Table']['ProvisionedThroughput']['ReadCapacityUnits'],
-        "ProvisionedThroughputWriteCapacityUnits": table['Table']['ProvisionedThroughput']['WriteCapacityUnits']
-    }
-    for gsi in table['Table']['GlobalSecondaryIndexes']:
-        table_properties['GSIs'].append({
-            "IndexArn": gsi['IndexArn'],
-            "GSIName": gsi['IndexName'],
-            "ProvisionedThroughputReadCapacityUnits": gsi['ProvisionedThroughput']['ReadCapacityUnits'],
-            "ProvisionedThroughputWriteCapacityUnits": gsi['ProvisionedThroughput']['WriteCapacityUnits']
-        })
-    return table_properties
 
 
 def load_dynamodb_tables(session, data, region, current_aws_account_id, aws_update_tag):
@@ -51,23 +31,22 @@ def load_dynamodb_tables(session, data, region, current_aws_account_id, aws_upda
     """
 
     for table in data["Tables"]:
-        # arn = "arn:aws:dynamodb:{0}:{1}:table/{2}".format(region, current_aws_account_id, table['TableName'])
         session.run(
             ingest_table,
-            Arn=table['TableArn'],
-            TableName=table['TableName'],
+            Arn=table['Table']['TableArn'],
+            TableName=table['Table']['TableName'],
             Region=region,
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag,
-            Rows=table['Rows'],
-            Size=table['Size'],
-            ProvisionedThroughputReadCapacityUnits=table['ProvisionedThroughputReadCapacityUnits'],
-            ProvisionedThroughputWriteCapacityUnits=table['ProvisionedThroughputWriteCapacityUnits']
+            Rows=table['Table']['ItemCount'],
+            Size=table['Table']['TableSizeBytes'],
+            ProvisionedThroughputReadCapacityUnits=table['Table']['ProvisionedThroughput']['ReadCapacityUnits'],
+            ProvisionedThroughputWriteCapacityUnits=table['Table']['ProvisionedThroughput']['WriteCapacityUnits']
         )
-        load_gsi(session, data, region, current_aws_account_id, aws_update_tag, table)
+        load_gsi(session, region, current_aws_account_id, aws_update_tag, table)
 
 
-def load_gsi(session, data, region, current_aws_account_id, aws_update_tag, table):
+def load_gsi(session, region, current_aws_account_id, aws_update_tag, table):
     ingest_gsi = """
     MERGE (gsi:DynamoDBTableGSI{id: {Arn}})
     ON CREATE SET gsi.firstseen = timestamp(), gsi.arn = {Arn}, gsi.name = {GSIName},
@@ -82,17 +61,17 @@ def load_gsi(session, data, region, current_aws_account_id, aws_update_tag, tabl
     SET r.lastupdated = {aws_update_tag}
     """
 
-    for gsi in table["GSIs"]:
+    for gsi in table['Table']['GlobalSecondaryIndexes']:
         session.run(
             ingest_gsi,
             Arn=gsi['IndexArn'],
-            GSIName=gsi['GSIName'],
+            GSIName=gsi['IndexName'],
             Region=region,
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag,
-            TableArn=table['TableArn'],
-            ProvisionedThroughputReadCapacityUnits=gsi['ProvisionedThroughputReadCapacityUnits'],
-            ProvisionedThroughputWriteCapacityUnits=gsi['ProvisionedThroughputWriteCapacityUnits']
+            TableArn=table['Table']['TableArn'],
+            ProvisionedThroughputReadCapacityUnits=gsi['ProvisionedThroughput']['ReadCapacityUnits'],
+            ProvisionedThroughputWriteCapacityUnits=gsi['ProvisionedThroughput']['WriteCapacityUnits']
         )
 
 
