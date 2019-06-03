@@ -184,7 +184,7 @@ def load_roles(session, roles, current_aws_account_id, aws_update_tag):
     SET spnnode.lastupdated = {aws_update_tag}, spnnode.type = {SpnType}
     WITH spnnode
     MATCH (role:AWSRole{arn: {RoleArn}})
-    MERGE (spnnode)-[r:#Access#]->(role)
+    MERGE (role)-[r:TRUSTS_AWS_PRINCIPAL]->(spnnode)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {aws_update_tag}
     """
@@ -205,11 +205,6 @@ def load_roles(session, roles, current_aws_account_id, aws_update_tag):
 
         for statement in role["AssumeRolePolicyDocument"]["Statement"]:
             principal = statement["Principal"]
-            # TODO improve this
-            access = statement["Action"].replace(":", "_").upper() + "_" + statement["Effect"].upper()
-            # NOTE Cypher query syntax is incompatible with Python string formatting, so we have to do this awkward
-            # NOTE manual formatting instead.
-            ingestcode = ingest_policy_statement.replace("#Access#", access)
             if principal.get('AWS'):
                 awsspndata = principal['AWS']
                 # TODO simplify this
