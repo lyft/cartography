@@ -206,29 +206,19 @@ def load_roles(session, roles, current_aws_account_id, aws_update_tag):
         for statement in role["AssumeRolePolicyDocument"]["Statement"]:
             principal = statement["Principal"]
             if 'AWS' in principal:
-                awsspndata = principal['AWS']
-                if not isinstance(awsspndata, list):
-                    awsspndata = [awsspndata]
-                for awsspn in awsspndata:
-                    session.run(
-                        ingest_policy_statement,
-                        SpnArn=awsspn,
-                        SpnType="AWS",
-                        RoleArn=role["Arn"],
-                        aws_update_tag=aws_update_tag
-                    )
-            if 'Service' in principal:
-                service = principal['Service']
-                if not isinstance(service, list):
-                    service = [service]
-                for servicespn in service:
-                    session.run(
-                        ingest_policy_statement,
-                        SpnArn=servicespn,
-                        SpnType="Service",
-                        RoleArn=role["Arn"],
-                        aws_update_tag=aws_update_tag
-                    )
+                principal_type, principal_values = 'AWS', principal['AWS']
+            elif 'Service' in principal:
+                principal_type, principal_values = 'Service', principal['Service']
+            if not isinstance(principal_values, list):
+                principal_values = [principal_values]
+            for principal_value in principal_values:
+                session.run(
+                    ingest_policy_statement,
+                    SpnArn=prinicpal_value,
+                    SpnType=principal_type,
+                    RoleArn=role['Arn'],
+                    aws_update_tag=aws_update_tag
+                )
 
 
 def load_group_memberships(session, group_memberships, aws_update_tag):
