@@ -1,10 +1,11 @@
+import datetime
 
 
 LIST_DYNAMODB_TABLES = {
     "Tables": [
         {
             "Table": {
-                "TableArn": "arn:aws:dynamodb::000000000000:table/example-table",
+                "TableArn": "arn:aws:dynamodb:us-east-1:000000000000:table/example-table",
                 "AttributeDefinitions": [
                     {
                         "AttributeName": "sample_1",
@@ -37,7 +38,7 @@ LIST_DYNAMODB_TABLES = {
                                 "AttributeName": "sample_schema"
                             }
                         ],
-                        "IndexArn": "arn:aws:dynamodb::table/example-table/index/sample_1-index",
+                        "IndexArn": "arn:aws:dynamodb:us-east-1:table/example-table/index/sample_1-index",
                         "ItemCount": 1000000
                     },
                     {
@@ -57,16 +58,16 @@ LIST_DYNAMODB_TABLES = {
                                 "AttributeName": "sample_schema"
                             }
                         ],
-                        "IndexArn": "arn:aws:dynamodb::table/example-table/index/sample_2-index",
+                        "IndexArn": "arn:aws:dynamodb:us-east-1:table/example-table/index/sample_2-index",
                         "ItemCount": 1000000
                     }
                 ],
                 "ProvisionedThroughput": {
                     "NumberOfDecreasesToday": 10,
                     "WriteCapacityUnits": 10,
-                    "LastIncreaseDateTime": 1000000000.000,
+                    "LastIncreaseDateTime": datetime.datetime(2019, 1, 1, 0, 0, 1),
                     "ReadCapacityUnits": 10,
-                    "LastDecreaseDateTime": 1000000000.000
+                    "LastDecreaseDateTime": datetime.datetime(2019, 1, 1, 0, 0, 1)
                 },
                 "TableSizeBytes": 100000000,
                 "TableName": "example-table",
@@ -84,13 +85,13 @@ LIST_DYNAMODB_TABLES = {
                     }
                 ],
                 "ItemCount": 1000000,
-                "CreationDateTime": 1000000000.000,
-                "LatestStreamArn": "arn:aws:dynamodb::table/sample-table/stream/0000-00-00000:00:00.000"
+                "CreationDateTime": datetime.datetime(2019, 1, 1, 0, 0, 1),
+                "LatestStreamArn": "arn:aws:dynamodb:us-east-1:table/sample-table/stream/0000-00-00000:00:00.000"
             }
         },
         {
             "Table": {
-                "TableArn": "arn:aws:dynamodb::000000000000:table/sample-table",
+                "TableArn": "arn:aws:dynamodb:us-east-1:000000000000:table/sample-table",
                 "GlobalSecondaryIndexes": [
                     {
                         "IndexSizeBytes": 11111111,
@@ -109,7 +110,7 @@ LIST_DYNAMODB_TABLES = {
                                 "AttributeName": "sample_schema"
                             }
                         ],
-                        "IndexArn": "arn:aws:dynamodb::table/sample-table/index/sample_1-index",
+                        "IndexArn": "arn:aws:dynamodb:us-east-1:table/sample-table/index/sample_1-index",
                         "ItemCount": 1000000
                     },
                     {
@@ -129,7 +130,7 @@ LIST_DYNAMODB_TABLES = {
                                 "AttributeName": "sample_schema"
                             }
                         ],
-                        "IndexArn": "arn:aws:dynamodb::table/sample-table/index/sample_2-index",
+                        "IndexArn": "arn:aws:dynamodb:us-east-1:table/sample-table/index/sample_2-index",
                         "ItemCount": 1000000
                     },
                     {
@@ -149,16 +150,16 @@ LIST_DYNAMODB_TABLES = {
                                 "AttributeName": "sample_schema"
                             }
                         ],
-                        "IndexArn": "arn:aws:dynamodb::table/sample-table/index/sample_3-index",
+                        "IndexArn": "arn:aws:dynamodb:us-east-1:table/sample-table/index/sample_3-index",
                         "ItemCount": 1000000
                     }
                 ],
                 "ProvisionedThroughput": {
                     "NumberOfDecreasesToday": 10,
                     "WriteCapacityUnits": 10,
-                    "LastIncreaseDateTime": 1000000000.000,
+                    "LastIncreaseDateTime": datetime.datetime(2019, 1, 1, 0, 0, 1),
                     "ReadCapacityUnits": 10,
-                    "LastDecreaseDateTime": 1000000000.000
+                    "LastDecreaseDateTime": datetime.datetime(2019, 1, 1, 0, 0, 1)
                 },
                 "TableSizeBytes": 100000000,
                 "TableName": "sample-table",
@@ -166,12 +167,13 @@ LIST_DYNAMODB_TABLES = {
                 "TableId": "00000000-0000-0000-0000-000000000000",
                 "LatestStreamLabel": "0000-00-00000:00:00.000",
                 "ItemCount": 1000000,
-                "LatestStreamArn": "arn:aws:dynamodb::table/sample-table/stream/0000-00-00000:00:00.000"
+                "CreationDateTime": datetime.datetime(2019, 1, 1, 0, 0, 1),
+                "LatestStreamArn": "arn:aws:dynamodb:us-east-1:table/sample-table/stream/0000-00-00000:00:00.000"
             }
         },
         {
             "Table": {
-                "TableArn": "arn:aws:dynamodb::000000000000:table/model-table",
+                "TableArn": "arn:aws:dynamodb:us-east-1:000000000000:table/model-table",
                 "GlobalSecondaryIndexes": [
                     {
                         "IndexSizeBytes": 11111111,
@@ -190,7 +192,7 @@ LIST_DYNAMODB_TABLES = {
                                 "AttributeName": "sample_schema"
                             }
                         ],
-                        "IndexArn": "arn:aws:dynamodb::table/model-table/index/sample_1-index",
+                        "IndexArn": "arn:aws:dynamodb:us-east-1:table/model-table/index/sample_1-index",
                         "ItemCount": 1000000
                     },
                     {
@@ -210,7 +212,7 @@ LIST_DYNAMODB_TABLES = {
                                 "AttributeName": "sample_schema"
                             }
                         ],
-                        "IndexArn": "arn:aws:dynamodb::table/model-table/index/sample_2-index",
+                        "IndexArn": "arn:aws:dynamodb:us-east-1:table/model-table/index/sample_2-index",
                         "ItemCount": 1000000
                     },
                     {
@@ -230,16 +232,16 @@ LIST_DYNAMODB_TABLES = {
                                 "AttributeName": "sample_schema"
                             }
                         ],
-                        "IndexArn": "arn:aws:dynamodb::table/model-table/index/sample_3-index",
+                        "IndexArn": "arn:aws:dynamodb:us-east-1:table/model-table/index/sample_3-index",
                         "ItemCount": 1000000
                     }
                 ],
                 "ProvisionedThroughput": {
                     "NumberOfDecreasesToday": 10,
                     "WriteCapacityUnits": 10,
-                    "LastIncreaseDateTime": 1000000000.000,
+                    "LastIncreaseDateTime": datetime.datetime(2019, 1, 1, 0, 0, 1),
                     "ReadCapacityUnits": 10,
-                    "LastDecreaseDateTime": 1000000000.000
+                    "LastDecreaseDateTime": datetime.datetime(2019, 1, 1, 0, 0, 1)
                 },
                 "TableSizeBytes": 100000000,
                 "TableName": "model-table",
@@ -247,7 +249,8 @@ LIST_DYNAMODB_TABLES = {
                 "TableId": "00000000-0000-0000-0000-000000000000",
                 "LatestStreamLabel": "0000-00-00000:00:00.000",
                 "ItemCount": 1000000,
-                "LatestStreamArn": "arn:aws:dynamodb::table/sample-table/stream/0000-00-00000:00:00.000"
+                "CreationDateTime": datetime.datetime(2019, 1, 1, 0, 0, 1),
+                "LatestStreamArn": "arn:aws:dynamodb:us-east-1:table/sample-table/stream/0000-00-00000:00:00.000"
             }
         }
     ]

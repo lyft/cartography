@@ -43,12 +43,12 @@ def load_dynamodb_tables(session, data, region, current_aws_account_id, aws_upda
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag
         )
-        load_gsi(session, region, current_aws_account_id, aws_update_tag, table)
+        load_gsi(session, table, region, current_aws_account_id, aws_update_tag)
 
 
-def load_gsi(session, region, current_aws_account_id, aws_update_tag, table):
+def load_gsi(session, table, region, current_aws_account_id, aws_update_tag):
     ingest_gsi = """
-    MERGE (gsi:DynamoDBTableGSI{id: {Arn}})
+    MERGE (gsi:DynamoDBGlobalSecondaryIndex{id: {Arn}})
     ON CREATE SET gsi.firstseen = timestamp(), gsi.arn = {Arn}, gsi.name = {GSIName},
     gsi.region = {Region}
     SET gsi.lastupdated = {aws_update_tag},
@@ -56,12 +56,12 @@ def load_gsi(session, region, current_aws_account_id, aws_update_tag, table):
     gsi.provisioned_throughput_write_capacity_units = {ProvisionedThroughputWriteCapacityUnits}
     WITH gsi
     MATCH (table:DynamoDBTable{arn: {TableArn}})
-    MERGE (table)-[r:GSI]->(gsi)
+    MERGE (table)-[r:GLOBAL_SECONDARY_INDEX]->(gsi)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {aws_update_tag}
     """
 
-    for gsi in table['Table']['GlobalSecondaryIndexes']:
+    for gsi in table['Table'].get('GlobalSecondaryIndexes', []):
         session.run(
             ingest_gsi,
             TableArn=table['Table']['TableArn'],
