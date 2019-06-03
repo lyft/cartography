@@ -214,7 +214,7 @@ def load_roles(session, roles, current_aws_account_id, aws_update_tag):
             for principal_value in principal_values:
                 session.run(
                     ingest_policy_statement,
-                    SpnArn=prinicpal_value,
+                    SpnArn=principal_value,
                     SpnType=principal_type,
                     RoleArn=role['Arn'],
                     aws_update_tag=aws_update_tag
