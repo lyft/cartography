@@ -211,7 +211,7 @@ def load_roles(session, roles, current_aws_account_id, aws_update_tag):
                     awsspndata = [awsspndata]
                 for awsspn in awsspndata:
                     session.run(
-                        ingestcode,
+                        ingest_policy_statement,
                         SpnArn=awsspn,
                         SpnType="AWS",
                         RoleArn=role["Arn"],
@@ -223,7 +223,7 @@ def load_roles(session, roles, current_aws_account_id, aws_update_tag):
                     service = [service]
                 for servicespn in service:
                     session.run(
-                        ingestcode,
+                        ingest_policy_statement,
                         SpnArn=servicespn,
                         SpnType="Service",
                         RoleArn=role["Arn"],
