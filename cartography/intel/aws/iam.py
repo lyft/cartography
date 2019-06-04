@@ -83,7 +83,7 @@ def get_account_access_key_data(session, username):
 def load_users(session, users, current_aws_account_id, aws_update_tag):
     ingest_user = """
     MERGE (unode:AWSUser{arn: {ARN}})
-    ON CREATE SET unode :AWSPrincipal, unode.userid = {USERID}, unode.firstseen = timestamp(),
+    ON CREATE SET unode:AWSPrincipal, unode.userid = {USERID}, unode.firstseen = timestamp(),
     unode.createdate = {CREATE_DATE}
     SET unode.name = {USERNAME}, unode.path = {PATH}, unode.passwordlastused = {PASSWORD_LASTUSED},
     unode.lastupdated = {aws_update_tag}
@@ -168,7 +168,8 @@ def load_policies(session, policies, current_aws_account_id, aws_update_tag):
 def load_roles(session, roles, current_aws_account_id, aws_update_tag):
     ingest_role = """
     MERGE (rnode:AWSRole{arn: {Arn}})
-    ON CREATE SET rnode.roleid = {RoleId}, rnode.firstseen = timestamp(), rnode.createdate = {CreateDate}
+    ON CREATE SET rnode:AWSPrincipal, rnode.roleid = {RoleId}, rnode.firstseen = timestamp(),
+    rnode.createdate = {CreateDate}
     ON MATCH SET rnode.name = {RoleName}, rnode.path = {Path}
     SET rnode.lastupdated = {aws_update_tag}
     WITH rnode
