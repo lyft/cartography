@@ -88,12 +88,18 @@ def load_aws_accounts(neo4j_session, aws_accounts, aws_update_tag, common_job_pa
     MERGE (aa:AWSAccount{id: {ACCOUNT_ID}})
     ON CREATE SET aa.firstseen = timestamp()
     SET aa.lastupdated = {aws_update_tag}, aa.name = {ACCOUNT_NAME}
+    WITH aa
+    MERGE (aa)-[:RESOURCE]->(root:AWSPrincipal{arn: {RootArn})
+    ON CREATE SET root.firstseen = timestamp()
+    SET root.lastupdated = {aws_update_tag}, root.type = 'AWS';
     """
     for account_name, account_id in aws_accounts.items():
+        root_arn = 'arn:aws:iam::{}:root'.format(account_id)
         neo4j_session.run(
             query,
             ACCOUNT_ID=account_id,
             ACCOUNT_NAME=account_name,
+            RootArn=root_arn,
             aws_update_tag=aws_update_tag
         )
 
