@@ -200,17 +200,17 @@ Representation of an [AWSPrincipal](https://docs.aws.amazon.com/IAM/latest/APIRe
 	(AWSPrincipal)-[MEMBER_AWS_GROUP]->(AWSGroup)
 	```
 	
-- AWS Principals can assume AWS Roles.
-
-	```
-	(AWSPrincipal)-[STS_ASSUMEROLE_ALLOW]->(AWSRole)
-	```
-	
 - This AccountAccessKey is used to authenticate to this AWSPrincipal.
 
 	```
 	(AWSPrincipal)-[AWS_ACCESS_KEY]->(AccountAccessKey)
 	```
+
+- AWS Roles can trust AWS Principals.
+
+    ```
+    (AWSRole)-[TRUSTS_AWS_PRINCIPAL]->(AWSPrincipal)
+    ```
 
 - AWS Accounts contain AWS Principals.
 
@@ -277,13 +277,19 @@ Representation of an AWS [IAM Role](https://docs.aws.amazon.com/IAM/latest/APIRe
 - Some AWS Groups, Users, and Principals can assume AWS Roles.
 
     ```
-    (AWSGroup, AWSUser, AWSPrincipal)-[STS_ASSUMEROLE_ALLOW]->(AWSRole)
+    (AWSGroup, AWSUser)-[STS_ASSUMEROLE_ALLOW]->(AWSRole)
     ```
 
 - Some AWS Roles can assume other AWS Roles.
 
     ```
     (AWSRole)-[STS_ASSUMEROLE_ALLOW]->(AWSRole)
+    ```
+
+- Some AWS Roles trust AWS Principals.
+
+    ```
+    (AWSRole)-[TRUSTS_AWS_PRINCIPAL]->(AWSPrincipal)
     ```
 
 - AWS Roles are defined in AWS Accounts.
