@@ -64,7 +64,7 @@ def test_load_roles_creates_trust_relationships(neo4j_session):
     # Get TRUSTS_AWS_PRINCIPAL relationships from Neo4j.
     result = neo4j_session.run(
         """
-        MATCH (n1:AWSRole)-[:TRUSTS_AWS_PRINCIPAL]-(n2:AWSPrincipal) RETURN n1.arn, n2.arn;
+        MATCH (n1:AWSRole)-[:TRUSTS_AWS_PRINCIPAL]->(n2:AWSPrincipal) RETURN n1.arn, n2.arn;
         """
     )
 
