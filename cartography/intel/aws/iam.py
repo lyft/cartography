@@ -348,6 +348,18 @@ def load_user_access_keys(session, user_access_keys, aws_update_tag):
                 )
 
 
+def evaluate_trust_policies(neo4j_session):
+    query = """
+    MATCH (origin:AWSAccount)-[:RESOURCE|AWS_ROLE]->()-[r:STS_ASSUMEROLE_ALLOW]->(role:AWSRole)<-[:AWS_ROLE]-(account:AWSAccount)
+    WHERE account <> origin AND NOT exists(
+        (role)-[:TRUSTS_AWS_PRINCIPAL]->(:AWSPrincipal{arn: 'arn:aws:iam::' + origin.id + ':root'})
+    )
+    WITH r
+    DELETE r;
+    """
+    neo4j_session.run(query)
+
+
 def sync_users(neo4j_session, boto3_session, current_aws_account_id, aws_update_tag, common_job_parameters):
     logger.debug("Syncing IAM users for account '%s'.", current_aws_account_id)
     data = get_user_list_data(boto3_session)

@@ -64,6 +64,8 @@ def _sync_multiple_accounts(session, accounts, regions, sync_tag, common_job_par
 
     del common_job_parameters["AWS_ID"]
 
+    iam.evaluate_trust_policies(session)
+
     # There may be orphan DNS entries that point outside of known AWS zones. This job cleans
     # up those entries after all AWS accounts have been synced.
     run_cleanup_job('aws_post_ingestion_dns_cleanup.json', session, common_job_parameters)
