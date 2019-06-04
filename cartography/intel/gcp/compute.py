@@ -117,6 +117,17 @@ def get_gcp_vpcs(projectid, compute):
     return req.execute()
 
 
+def get_gcp_firewall_ingress_rules(project_id, compute):
+    """
+    Get ingress Firewall data for a given project
+    :param project_id: The project ID to get firewalls for
+    :param compute: The compute resource object created by googleapiclient.discovery.build()
+    :return: Firewall response object
+    """
+    req = compute.firewalls().list(project=project_id, filters='(direction="INGRESS")')
+    return req.execute()
+
+
 def transform_gcp_instances(response_objects):
     """
     Process the GCP instance response objects and return a flattened list of GCP instances with all the necessary fields
@@ -150,6 +161,16 @@ def _parse_instance_uri_prefix(prefix):
         project_id=split_list[1],
         zone_name=split_list[3]
     )
+
+
+def _parse_vpc_full_uri_to_partial_uri(vpc_full_uri):
+    """
+    Convert VPC URI of the form `https://www.googleapis.com/compute/v1/projects/{project}/global/networks/{network}` to
+    partial URI `projects/{project}/global/networks/{network}`
+    :param vpc_full_uri: The VPC full URI
+    :return: The `projects/{project}/global/networks/{network}` component
+    """
+    return vpc_full_uri.split('compute/v1/')[1]
 
 
 def transform_gcp_vpcs(vpc_res):
@@ -200,10 +221,7 @@ def transform_gcp_subnets(subnet_res):
 
         # Let's maintain an on-node reference to the VPC that this subnet belongs to.
         subnet['vpc_self_link'] = s['network']
-
-        # subnet['network'] is `https://www.googleapis.com/compute/v1/projects/{project}/global/networks/{network}` -->
-        # It is more convenient to store the partial URI `projects/{project}/global/networks/{network}`:
-        subnet['vpc_partial_uri'] = s['network'].split('compute/v1/')[1]
+        subnet['vpc_partial_uri'] = _parse_vpc_full_uri_to_partial_uri(s['network'])
 
         subnet['name'] = s['name']
         subnet['project_id'] = projectid
@@ -216,6 +234,77 @@ def transform_gcp_subnets(subnet_res):
 
         subnet_list.append(subnet)
     return subnet_list
+
+
+def transform_gcp_firewall(fw_response):
+    """
+
+    :param fw_response:
+    :return:
+    """
+    fw_list = []
+    prefix = fw_response['id']
+    for fw in fw_response.get('items', []):
+        fw_partial_uri = f"{prefix}/{fw['name']}"
+        fw['id'] = fw_partial_uri
+        fw['vpc_partial_uri'] = _parse_vpc_full_uri_to_partial_uri(fw['network'])
+
+        fw['transformed_allow_list'] = []
+
+        for allow_rule in fw.get('allowed', []):
+            # allow_rule['ruleid'] = f"{fw_partial_uri}/"
+            protocol = allow_rule['IPProtocol']
+
+            # If the protocol covered is TCP or UDP
+            if protocol == 'tcp' or protocol == 'udp':
+
+                # If ports are specified then create rules for each port and range
+                if 'ports' in allow_rule:
+                    for port in allow_rule['ports']:
+                        rule = _parse_port_to_rule(port, protocol, fw_partial_uri)
+                        fw['transformed_allow_list'].append(rule)
+                    # We're done processing this allow_rule so move on to the next.
+                    continue
+                # "If ports are not specified then the rule applies to every port"
+                else:
+                    fromport = 0
+                    toport = 65535
+            # The protocol is  ICMP, ESP, AH, IPIP, SCTP, or proto numbers and ports don't apply
+            else:
+                fromport = None
+                toport = None
+            ruleid = f"{fw_partial_uri}/IpPermissions/{fromport}{toport}{protocol}"
+            new_rule = {'ruleid': ruleid, 'fromport': fromport, 'toport': toport, 'protocol': protocol}
+            fw['transformed_allow_list'].append(new_rule)
+
+        fw_list.append(fw)
+    return fw_list
+
+
+def _parse_port_to_rule(port, protocol, fw_partial_uri):
+    """
+    Returns a transformed dict for a GCP TCP/UDP firewall rule where port numbers are specified.
+    :param port: A string representing a single port or a range of ports.  Example inputs include '22' or '12345-12349'
+    :param protocol: The protocol
+    :param fw_partial_uri: The partial URI of the firewall
+    :return: A dict containing fromport, toport, a ruleid, and protocol
+    """
+    # `port` can be a range like '12345-12349' or a single port like '22'
+    port_split = port.split('-')
+
+    # Port range
+    if len(port_split) == 2:
+        fromport = int(port_split[0])
+        toport = int(port_split[1])
+    # Single port
+    else:
+        fromport = toport = int(port_split[0])
+    return {
+        'ruleid': f"{fw_partial_uri}/IpPermissions/{fromport}{toport}{protocol}",
+        'fromport': fromport,
+        'toport': toport,
+        'protocol': protocol
+    }
 
 
 def load_gcp_instances(neo4j_session, data, gcp_update_tag):
@@ -460,7 +549,7 @@ def _attach_gcp_vpc(neo4j_session, instance_id, gcp_update_tag):
     :param neo4j_session: neo4j_session
     :param instance: The GCP instance object
     :param gcp_update_tag:
-    :return:
+    :return: Nothing
     """
     query = """
     MATCH(i:GCPInstance{id:{InstanceId}})-[:NETWORK_INTERFACE]->(nic:GCPNetworkInterface)-[p:PART_OF_SUBNET]->(sn:GCPSubnet)<-[r:RESOURCE]-(vpc:GCPVpc)
@@ -473,6 +562,129 @@ def _attach_gcp_vpc(neo4j_session, instance_id, gcp_update_tag):
         InstanceId=instance_id,
         gcp_update_tag=gcp_update_tag
     )
+
+
+def load_gcp_ingress_firewalls(neo4j_session, fw_list, gcp_update_tag):
+    """
+    Load the firewall list to Neo4j
+    :param fw_list: The transformed list of firewalls
+    :return: Nothing
+    """
+    query = """
+    MERGE (fw:GCPFirewall{id:{FwPartialUri}})
+    ON CREATE SET fw.firstseen = timestamp(),
+    fw.partial_uri = {FwPartialUri}
+    SET fw.direction = {Direction},
+    fw.disabled = {Disabled},
+    fw.name = {Name},
+    fw.priority = {Priority},
+    fw.self_link = {SelfLink},
+    fw.lastupdated = {gcp_update_tag}
+
+    MERGE (vpc:GCPVpc{id:{VpcPartialUri}})
+    ON CREATE SET vpc.firstseen = timestamp(),
+    vpc.partial_uri = {VpcPartialUri}
+    SET vpc.lastupdated = {gcp_update_tag}
+
+    MERGE (vpc)-[r:RESOURCE]->(fw)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}
+    """
+    for fw in fw_list:
+        neo4j_session.run(
+            query,
+            FwPartialUri=fw['id'],
+            Direction=fw['direction'],
+            Disabled=fw['disabled'],
+            Name=fw['name'],
+            Priority=fw['priority'],
+            SelfLink=fw['selfLink'],
+            VpcPartialUri=fw['vpc_partial_uri'],
+            gcp_update_tag=gcp_update_tag
+        )
+        _attach_allow_rules(neo4j_session, fw, gcp_update_tag)
+        _attach_target_tags(neo4j_session, fw, gcp_update_tag)
+
+
+def _attach_allow_rules(neo4j_session, fw, gcp_update_tag):
+    """
+    Attach the allow_rules to the Firewall object
+    :param neo4j_session: The Neo4j session
+    :param fw: The Firewall object
+    :param gcp_update_tag: The timestamp
+    :return: Nothing
+    """
+    query = """
+    MATCH (fw:GCPFirewall{id:{FwPartialUri}})
+
+    MERGE(rule:IpRule:IpPermissionInbound{ruleid:{RuleId}})
+    ON CREATE SET rule.firstseen = timestamp(),
+    rule.ruleid = {RuleId}
+    SET rule.protocol = {Protocol},
+    rule.fromport = {FromPort},
+    rule.toport = {ToPort},
+    rule.lastupdated = {gcp_update_tag}
+
+    MERGE(rng:IpRange{id:{Range}})
+    ON CREATE SET rng.firstseen = timestamp(),
+    rng.range = {Range}
+    SET rng.lastupdated = {gcp_update_tag}
+
+    MERGE (rng)-[m:MEMBER_OF_IP_RULE]->(rule)
+    ON CREATE SET m.firstseen = timestamp()
+    SET m.lastupdated = {gcp_update_tag}
+
+    MERGE (fw)-[r:RESOURCE]->(rule)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}
+    """
+    for rule in fw['transformed_allow_list']:
+        # It is possible for sourceRanges to not be specified for this rule
+        # If sourceRanges is not specified then the rule must specify sourceTags.
+        # Since an IP range cannot have a tag applied to it, it is ok if we don't ingest this rule.
+        for ip_range in fw.get('sourceRanges', []):
+            neo4j_session.run(
+                query,
+                FwPartialUri=fw['id'],
+                RuleId=rule['ruleid'],
+                Protocol=rule['protocol'],
+                FromPort=rule.get('fromport'),
+                ToPort=rule.get('toport'),
+                Range=ip_range,
+                gcp_update_tag=gcp_update_tag
+            )
+
+
+def _attach_target_tags(neo4j_session, fw, gcp_update_tag):
+    """
+    Attach target tags to the firewall object
+    :param neo4j_session: The neo4j session
+    :param fw: The firewall object
+    :param gcp_update_tag: The timestamp
+    :return: Nothing
+    """
+    query = """
+    MATCH (fw:GCPFirewall{id:{FwPartialUri}})
+
+    MERGE(t:GCPTag:Tag{id:{TagId}})
+    ON CREATE SET t.firstseen = timestamp(),
+    t.tag_id = {TagId},
+    t.value = {TagValue}
+    SET t.lastupdated = {gcp_update_tag}
+
+    MERGE (fw)-[h:HAS_TARGET_TAG]->(t)
+    ON CREATE SET h.firstseen = timestamp()
+    SET h.lastupdated = {gcp_update_tag}
+    """
+    for tag in fw.get('targetTags', []):
+        tag_id = f"{fw['id']}/target_tags/{tag}"
+        neo4j_session.run(
+            query,
+            FwPartialUri=fw['id'],
+            TagId=tag_id,
+            TagValue=tag,
+            gcp_update_tag=gcp_update_tag
+        )
 
 
 def cleanup_gcp_instances(session, common_job_parameters):
@@ -520,7 +732,6 @@ def sync_gcp_instances(session, compute, project_id, zones, gcp_update_tag, comm
     """
     instance_responses = get_gcp_instance_responses(project_id, zones, compute)
     instance_list = transform_gcp_instances(instance_responses)
-    # instances = get_gcp_instances_in_project(project_id, zones, compute)
     load_gcp_instances(session, instance_list, gcp_update_tag)
     cleanup_gcp_instances(session, common_job_parameters)
 
@@ -547,6 +758,21 @@ def sync_gcp_subnets(session, compute, project_id, regions, gcp_update_tag, comm
         subnets = transform_gcp_subnets(subnet_res)
         load_gcp_subnets(session, subnets, gcp_update_tag)
         cleanup_gcp_subnets(session, common_job_parameters)
+
+
+def sync_gcp_firewall_rules(session, compute, project_id, common_job_parameters):
+    """
+    Sync GCP firewalls
+    :param session: The Neo4j session
+    :param compute: The Compute resource object
+    :param project_id: The project ID that the firewalls are in
+    :param common_job_parameters: dict of other job params to pass to Neo4j
+    :return: Nothing
+    """
+    fw_response = get_gcp_firewall_ingress_rules(project_id, compute)
+    fw_list = transform_gcp_firewall(fw_response)
+    load_gcp_ingress_firewalls(fw_list)
+    # cleanup_gcp_firewall_rules(session, common_job_parameters)
 
 
 def _zones_to_regions(zones):
@@ -583,5 +809,6 @@ def sync(session, compute, project_id, gcp_update_tag, common_job_parameters):
     else:
         regions = _zones_to_regions(zones)
         sync_gcp_vpcs(session, compute, project_id, gcp_update_tag, common_job_parameters)
+        sync_gcp_firewall_rules(session, compute, project_id, common_job_parameters)
         sync_gcp_subnets(session, compute, project_id, regions, gcp_update_tag, common_job_parameters)
         sync_gcp_instances(session, compute, project_id, zones, gcp_update_tag, common_job_parameters)

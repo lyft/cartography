@@ -135,6 +135,56 @@ def test_transform_and_load_gcp_instances_and_nics(neo4j_session):
     assert actual_nodes == expected_nodes
 
 
+def test_transform_and_load_firewalls(neo4j_session):
+    """
+    Ensure we can correctly transform and load GCP firewalls
+    :param neo4j_session:
+    :return:
+    """
+    fw_list = cartography.intel.gcp.compute.transform_gcp_firewall(tests.data.gcp.compute.LIST_FIREWALLS_RESPONSE)
+    from pprint import pprint
+    pprint(fw_list)
+    cartography.intel.gcp.compute.load_gcp_ingress_firewalls(neo4j_session, fw_list, TEST_UPDATE_TAG)
+
+    query = """
+    MATCH (vpc:GCPVpc)-[r:RESOURCE]->(fw:GCPFirewall)
+    return vpc.id, fw.id
+    """
+
+    nodes = neo4j_session.run(query)
+    actual_nodes = set([(
+        (
+            n['vpc.id'],
+            n['fw.id']
+        )
+    ) for n in nodes])
+    expected_nodes = set([
+        (
+            'projects/project-abc/global/networks/default',
+            'projects/project-abc/global/firewalls/default-allow-icmp'
+        ),
+        (
+            'projects/project-abc/global/networks/default',
+            'projects/project-abc/global/firewalls/default-allow-internal'
+        ),
+        (
+            'projects/project-abc/global/networks/default',
+            'projects/project-abc/global/firewalls/default-allow-rdp'
+        ),
+        (
+            'projects/project-abc/global/networks/default',
+            'projects/project-abc/global/firewalls/default-allow-ssh'
+        ),
+        (
+            'projects/project-abc/global/networks/default',
+            'projects/project-abc/global/firewalls/custom-port-incoming'
+        )
+    ])
+    print(actual_nodes)
+    print(expected_nodes)
+    assert actual_nodes == expected_nodes
+
+
 def test_vpc_to_subnets(neo4j_session):
     """
     Ensure that subnets are connected to VPCs.
