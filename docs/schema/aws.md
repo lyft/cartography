@@ -260,7 +260,7 @@ Representation of an [AWSUser](https://docs.aws.amazon.com/IAM/latest/APIReferen
 
 ## AWSPrincipal::AWSRole
 
-Representation of an AWS [IAM Role](https://docs.aws.amazon.com/IAM/latest/APIReference/API_Role.html).
+Representation of an AWS [IAM Role](https://docs.aws.amazon.com/IAM/latest/APIReference/API_Role.html). An AWS Role is a type of AWS Principal.
 
 | Field | Description |
 |-------|-------------|
