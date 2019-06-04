@@ -124,7 +124,7 @@ def get_gcp_firewall_ingress_rules(project_id, compute):
     :param compute: The compute resource object created by googleapiclient.discovery.build()
     :return: Firewall response object
     """
-    req = compute.firewalls().list(project=project_id, filters='(direction="INGRESS")')
+    req = compute.firewalls().list(project=project_id, filter='(direction="INGRESS")')
     return req.execute()
 
 
@@ -760,7 +760,7 @@ def sync_gcp_subnets(session, compute, project_id, regions, gcp_update_tag, comm
         cleanup_gcp_subnets(session, common_job_parameters)
 
 
-def sync_gcp_firewall_rules(session, compute, project_id, common_job_parameters):
+def sync_gcp_firewall_rules(session, compute, project_id, gcp_update_tag, common_job_parameters):
     """
     Sync GCP firewalls
     :param session: The Neo4j session
@@ -771,7 +771,7 @@ def sync_gcp_firewall_rules(session, compute, project_id, common_job_parameters)
     """
     fw_response = get_gcp_firewall_ingress_rules(project_id, compute)
     fw_list = transform_gcp_firewall(fw_response)
-    load_gcp_ingress_firewalls(fw_list)
+    load_gcp_ingress_firewalls(session, fw_list, gcp_update_tag)
     # cleanup_gcp_firewall_rules(session, common_job_parameters)
 
 
@@ -809,6 +809,6 @@ def sync(session, compute, project_id, gcp_update_tag, common_job_parameters):
     else:
         regions = _zones_to_regions(zones)
         sync_gcp_vpcs(session, compute, project_id, gcp_update_tag, common_job_parameters)
-        sync_gcp_firewall_rules(session, compute, project_id, common_job_parameters)
+        sync_gcp_firewall_rules(session, compute, project_id, gcp_update_tag, common_job_parameters)
         sync_gcp_subnets(session, compute, project_id, regions, gcp_update_tag, common_job_parameters)
         sync_gcp_instances(session, compute, project_id, zones, gcp_update_tag, common_job_parameters)
