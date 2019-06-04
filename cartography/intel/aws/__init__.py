@@ -20,6 +20,7 @@ def _sync_one_account(session, boto3_session, account_id, regions, sync_tag, com
     iam.sync_group_policies(session, boto3_session, account_id, sync_tag, common_job_parameters)
     iam.sync_role_policies(session, boto3_session, account_id, sync_tag, common_job_parameters)
     iam.sync_user_access_keys(session, boto3_session, account_id, sync_tag, common_job_parameters)
+    run_cleanup_job('aws_import_principals_cleanup.json', session, common_job_parameters)
 
     # S3
     s3.sync(session, boto3_session, account_id, sync_tag, common_job_parameters)
@@ -64,6 +65,9 @@ def _sync_multiple_accounts(session, accounts, regions, sync_tag, common_job_par
 
     del common_job_parameters["AWS_ID"]
 
+    # There may be orphan Principals which point outside of known AWS accounts. This job cleans
+    # up those nodes after all AWS accounts have been synced.
+    run_cleanup_job('aws_post_ingestion_principals_cleanup.json', session, common_job_parameters)
     # There may be orphan DNS entries that point outside of known AWS zones. This job cleans
     # up those entries after all AWS accounts have been synced.
     run_cleanup_job('aws_post_ingestion_dns_cleanup.json', session, common_job_parameters)
