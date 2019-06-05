@@ -285,6 +285,9 @@ def load_gcp_vpcs(neo4j_session, vpcs, gcp_update_tag):
     """
     query = """
     MERGE(p:GCPProject{id:{ProjectId}})
+    ON CREATE SET p.firstseen = timestamp()
+    SET p.lastupdated = {gcp_update_tag}
+
     MERGE(vpc:GCPVpc{id:{PartialUri}})
     ON CREATE SET vpc.firstseen = timestamp(),
     vpc.partial_uri = {PartialUri}
