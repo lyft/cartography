@@ -1,5 +1,5 @@
 import cartography.intel.gcp.compute
-from tests.data.gcp.compute import VPC_RESPONSE, VPC_SUBNET_RESPONSE
+from tests.data.gcp.compute import VPC_RESPONSE, VPC_SUBNET_RESPONSE, LIST_FIREWALLS_RESPONSE
 
 
 def test_transform_gcp_vpcs():
@@ -28,3 +28,23 @@ def test_transform_gcp_subnets():
     assert subnet['partial_uri'] == 'projects/project-abc/regions/europe-west2/subnetworks/default'
     assert subnet['region'] == 'europe-west2'
     assert not subnet['private_ip_google_access']
+
+
+def test_transform_gcp_firewall():
+    fw_list = cartography.intel.gcp.compute.transform_gcp_firewall(LIST_FIREWALLS_RESPONSE)
+
+    # Default-allow-internal
+    sample_fw = fw_list[1]
+    assert len(sample_fw['transformed_deny_list']) == 0
+
+    sample_udp_all_rule = sample_fw['transformed_allow_list'][1]
+
+    assert sample_udp_all_rule['protocol'] == 'udp'
+    assert sample_udp_all_rule['fromport'] == 0
+    assert sample_udp_all_rule['toport'] == 65535
+
+    sample_fw_icmp_rule = sample_fw['transformed_allow_list'][2]
+    assert sample_fw_icmp_rule['protocol'] == 'icmp'
+    assert sample_fw_icmp_rule['fromport'] is None
+    assert sample_fw_icmp_rule['toport'] is None
+    assert sample_fw_icmp_rule['protocol'] == 'icmp'

@@ -485,3 +485,155 @@ LIST_FIREWALLS_RESPONSE = {
     'kind': 'compute#firewallList',
     'selfLink': 'https://www.googleapis.com/compute/v1/projects/project-abc/global/firewalls'
 }
+
+TRANSFORMED_FW_LIST = [{
+    'allowed': [{
+        'IPProtocol': 'icmp'
+    }],
+    'creationTimestamp': '2018-05-10T17:33:45.769-07:00',
+    'description': 'Allow ICMP from anywhere',
+    'direction': 'INGRESS',
+    'disabled': False,
+    'id': 'projects/project-abc/global/firewalls/default-allow-icmp',
+    'kind': 'compute#firewall',
+    'logConfig': {
+        'enable': False
+    },
+    'name': 'default-allow-icmp',
+    'network': 'https://www.googleapis.com/compute/v1/projects/project-abc/global/networks/default',
+    'priority': 65534,
+    'selfLink': 'https://www.googleapis.com/compute/v1/projects/project-abc/global/firewalls/default-allow-icmp',
+    'sourceRanges': ['0.0.0.0/0'],
+    'transformed_allow_list': [{
+        'fromport': None,
+        'protocol': 'icmp',
+        'ruleid': 'projects/project-abc/global/firewalls/default-allow-icmp/allow/icmp',
+        'toport': None
+    }],
+    'transformed_deny_list': [],
+    'vpc_partial_uri': 'projects/project-abc/global/networks/default'
+}, {
+    'allowed': [{
+        'IPProtocol': 'tcp',
+        'ports': ['0-65535']
+    }, {
+        'IPProtocol': 'udp',
+        'ports': ['0-65535']
+    }, {
+        'IPProtocol': 'icmp'
+    }],
+    'creationTimestamp': '2018-05-10T17:33:45.754-07:00',
+    'description': 'Allow internal traffic on the default network',
+    'direction': 'INGRESS',
+    'disabled': False,
+    'id': 'projects/project-abc/global/firewalls/default-allow-internal',
+    'kind': 'compute#firewall',
+    'logConfig': {
+        'enable': False
+    },
+    'name': 'default-allow-internal',
+    'network': 'https://www.googleapis.com/compute/v1/projects/project-abc/global/networks/default',
+    'priority': 65534,
+    'selfLink': 'https://www.googleapis.com/compute/v1/projects/project-abc/global/firewalls/default-allow-internal',
+    'sourceRanges': ['10.128.0.0/9'],
+    'transformed_allow_list': [{
+        'fromport': 0,
+        'protocol': 'tcp',
+        'ruleid': 'projects/project-abc/global/firewalls/default-allow-internal/allow/0to65535tcp',
+        'toport': 65535
+    }, {
+        'fromport': 0,
+        'protocol': 'udp',
+        'ruleid': 'projects/project-abc/global/firewalls/default-allow-internal/allow/0to65535udp',
+        'toport': 65535
+    }, {
+        'fromport': None,
+        'protocol': 'icmp',
+        'ruleid': 'projects/project-abc/global/firewalls/default-allow-internal/allow/icmp',
+        'toport': None
+    }],
+    'transformed_deny_list': [],
+    'vpc_partial_uri': 'projects/project-abc/global/networks/default'
+}, {
+    'allowed': [{
+        'IPProtocol': 'tcp',
+        'ports': ['3389']
+    }],
+    'creationTimestamp': '2018-05-10T17:33:45.764-07:00',
+    'description': 'Allow RDP from anywhere',
+    'direction': 'INGRESS',
+    'disabled': False,
+    'id': 'projects/project-abc/global/firewalls/default-allow-rdp',
+    'kind': 'compute#firewall',
+    'logConfig': {
+        'enable': False
+    },
+    'name': 'default-allow-rdp',
+    'network': 'https://www.googleapis.com/compute/v1/projects/project-abc/global/networks/default',
+    'priority': 65534,
+    'selfLink': 'https://www.googleapis.com/compute/v1/projects/project-abc/global/firewalls/default-allow-rdp',
+    'sourceRanges': ['0.0.0.0/0'],
+    'transformed_allow_list': [{
+        'fromport': 3389,
+        'protocol': 'tcp',
+        'ruleid': 'projects/project-abc/global/firewalls/default-allow-rdp/allow/3389tcp',
+        'toport': 3389
+    }],
+    'transformed_deny_list': [],
+    'vpc_partial_uri': 'projects/project-abc/global/networks/default'
+}, {
+    'allowed': [{
+        'IPProtocol': 'tcp',
+        'ports': ['22']
+    }],
+    'creationTimestamp': '2018-05-10T17:33:45.759-07:00',
+    'description': 'Allow SSH from anywhere',
+    'direction': 'INGRESS',
+    'disabled': False,
+    'id': 'projects/project-abc/global/firewalls/default-allow-ssh',
+    'kind': 'compute#firewall',
+    'logConfig': {
+        'enable': False
+    },
+    'name': 'default-allow-ssh',
+    'network': 'https://www.googleapis.com/compute/v1/projects/project-abc/global/networks/default',
+    'priority': 65534,
+    'selfLink': 'https://www.googleapis.com/compute/v1/projects/project-abc/global/firewalls/default-allow-ssh',
+    'sourceRanges': ['0.0.0.0/0'],
+    'transformed_allow_list': [{
+        'fromport': 22,
+        'protocol': 'tcp',
+        'ruleid': 'projects/project-abc/global/firewalls/default-allow-ssh/allow/22tcp',
+        'toport': 22
+    }],
+    'transformed_deny_list': [],
+    'vpc_partial_uri': 'projects/project-abc/global/networks/default'
+}, {
+    'allowed': [{
+        'IPProtocol': 'tcp',
+        'ports': ['9000-9001']
+    }],
+    'creationTimestamp': '2019-02-08T10:03:14.422-08:00',
+    'description': '',
+    'direction': 'INGRESS',
+    'disabled': False,
+    'id': 'projects/project-abc/global/firewalls/custom-port-incoming',
+    'kind': 'compute#firewall',
+    'logConfig': {
+        'enable': True
+    },
+    'name': 'custom-port-incoming',
+    'network': 'https://www.googleapis.com/compute/v1/projects/project-abc/global/networks/default',
+    'priority': 1000,
+    'selfLink': 'https://www.googleapis.com/compute/v1/projects/project-abc/global/firewalls/custom-port-incoming',
+    'sourceRanges': ['0.0.0.0/0'],
+    'targetTags': ['test'],
+    'transformed_allow_list': [{
+        'fromport': 9000,
+        'protocol': 'tcp',
+        'ruleid': 'projects/project-abc/global/firewalls/custom-port-incoming/allow/9000to9001tcp',
+        'toport': 9001
+    }],
+    'transformed_deny_list': [],
+    'vpc_partial_uri': 'projects/project-abc/global/networks/default'
+}]

@@ -250,57 +250,121 @@ def transform_gcp_firewall(fw_response):
         fw['vpc_partial_uri'] = _parse_vpc_full_uri_to_partial_uri(fw['network'])
 
         fw['transformed_allow_list'] = []
+        fw['transformed_deny_list'] = []
 
         for allow_rule in fw.get('allowed', []):
-            # allow_rule['ruleid'] = f"{fw_partial_uri}/"
-            protocol = allow_rule['IPProtocol']
+            transformed_allow_rules = _transform_fw_entry(allow_rule, fw_partial_uri, is_allow_rule=True)
+            fw['transformed_allow_list'].extend(transformed_allow_rules)
 
-            # If the protocol covered is TCP or UDP
-            if protocol == 'tcp' or protocol == 'udp':
-
-                # If ports are specified then create rules for each port and range
-                if 'ports' in allow_rule:
-                    for port in allow_rule['ports']:
-                        rule = _parse_port_to_rule(port, protocol, fw_partial_uri)
-                        fw['transformed_allow_list'].append(rule)
-                    # We're done processing this allow_rule so move on to the next.
-                    continue
-                # "If ports are not specified then the rule applies to every port"
-                else:
-                    fromport = 0
-                    toport = 65535
-            # The protocol is  ICMP, ESP, AH, IPIP, SCTP, or proto numbers and ports don't apply
-            else:
-                fromport = None
-                toport = None
-            ruleid = f"{fw_partial_uri}/IpPermissions/{fromport}{toport}{protocol}"
-            new_rule = {'ruleid': ruleid, 'fromport': fromport, 'toport': toport, 'protocol': protocol}
-            fw['transformed_allow_list'].append(new_rule)
+        for deny_rule in fw.get('denied', []):
+            transformed_deny_rules = _transform_fw_entry(deny_rule, fw_partial_uri, is_allow_rule=False)
+            fw['transformed_deny_list'].extend(transformed_deny_rules)
 
         fw_list.append(fw)
     return fw_list
 
 
-def _parse_port_to_rule(port, protocol, fw_partial_uri):
+def _transform_fw_entry(rule, fw_partial_uri, is_allow_rule):
     """
-    Returns a transformed dict for a GCP TCP/UDP firewall rule where port numbers are specified.
+    Takes a rule entry from a GCP firewall object's allow or deny list and converts it to a list of one or more
+    dicts representing a firewall rule for each port and port range.  This format is easier to load into Neo4j.
+
+    Example 1 - single port range:
+    Input: `{'IPProtocol': 'tcp', 'ports': ['0-65535']}, fw_id, is_allow_rule=True`
+    Output: `[ {fromport: 0, toport: 65535, protocol: tcp, ruleid: fw_id/allow/0to65535tcp} ]`
+
+    Example 2 - multiple ports with a range
+    Input: `{'IPProtocol': 'tcp', 'ports': ['80', '443', '12345-12349']}, fw_id, is_allow_rule=False`
+    Output: `[ {fromport: 80, toport: 80, protocol: tcp, ruleid: fw_id/deny/80tcp,
+               {fromport: 443, toport: 443, protocol: tcp, ruleid: fw_id/deny/443tcp,
+               {fromport: 12345, toport: 12349, protocol: tcp, ruleid: fw_id/deny/12345to12349tcp ]`
+
+    Example 3 - ICMP (no ports)
+    Input: `{'IPProtocol': 'icmp'}, fw_id, is_allow_rule=True`
+    Output: `[ {fromport: None, toport: None, protocol: icmp, ruleid: fw_id/allow/icmp} ]`
+
+    :param rule: A rule entry object
+    :param fw_partial_uri: The parent GCPFirewall's unique identifier
+    :param is_allow_rule: Whether the rule is an `allow` rule.  If false it is a `deny` rule.
+    :return: A list of one or more transformed rules
+    """
+    result = []
+    # rule['ruleid'] = f"{fw_partial_uri}/"
+    protocol = rule['IPProtocol']
+
+    # If the protocol covered is TCP or UDP then we need to handle ports
+    if protocol == 'tcp' or protocol == 'udp':
+
+        # If ports are specified then create rules for each port and range
+        if 'ports' in rule:
+            for port in rule['ports']:
+                rule = _parse_port_string_to_rule(port, protocol, fw_partial_uri, is_allow_rule)
+                result.append(rule)
+            return result
+
+        # If ports are not specified then the rule applies to every port
+        else:
+            rule = _parse_port_string_to_rule('0-65535', protocol, fw_partial_uri, is_allow_rule)
+            result.append(rule)
+            return result
+
+    # The protocol is  ICMP, ESP, AH, IPIP, SCTP, or proto numbers and ports don't apply
+    else:
+        rule = _parse_port_string_to_rule(None, protocol, fw_partial_uri, is_allow_rule)
+        result.append(rule)
+        return result
+
+
+def _parse_port_string_to_rule(port, protocol, fw_partial_uri, is_allow_rule):
+    """
+    Takes a string argument representing a GCP firewall rule port or port range and returns a dict that is easier to
+    load into Neo4j.
+
+    Example 1 - single port range:
+    Input: `'0-65535', 'tcp', fw_id, is_allow_rule=True`
+    Output: `{fromport: 0, toport: 65535, protocol: tcp, ruleid: fw_id/allow/0to65535tcp}`
+
+    Example 2 - single port
+    Input: `'80', fw_id, is_allow_rule=False`
+    Output: `{fromport: 80, toport: 80, protocol: tcp, ruleid: fw_id/deny/80tcp}`
+
+    Example 3 - ICMP (no ports)
+    Input: `None, fw_id, is_allow_rule=True`
+    Output: `{fromport: None, toport: None, protocol: icmp, ruleid: fw_id/allow/icmp}`
+
     :param port: A string representing a single port or a range of ports.  Example inputs include '22' or '12345-12349'
     :param protocol: The protocol
     :param fw_partial_uri: The partial URI of the firewall
+    :param is_allow_rule: Whether the rule is an `allow` rule.  If false it is a `deny` rule.
     :return: A dict containing fromport, toport, a ruleid, and protocol
     """
     # `port` can be a range like '12345-12349' or a single port like '22'
-    port_split = port.split('-')
 
-    # Port range
-    if len(port_split) == 2:
-        fromport = int(port_split[0])
-        toport = int(port_split[1])
-    # Single port
+    if port is None:
+        # Keep the port range as the empty string
+        port_range_str = ''
+        fromport = None
+        toport = None
     else:
-        fromport = toport = int(port_split[0])
+        # Case 1 - port range: '12345-12349'.split('-') => ['12345','12349'].
+        # Case 2 - single port: '22'.split('-') => ['22'].
+        port_split = port.split('-')
+
+        # Port range
+        if len(port_split) == 2:
+            port_range_str = f"{port_split[0]}to{port_split[1]}"
+            fromport = int(port_split[0])
+            toport = int(port_split[1])
+        # Single port
+        else:
+            port_range_str = f"{port_split[0]}"
+            fromport = int(port_split[0])
+            toport = int(port_split[0])
+
+    rule_type = 'allow' if is_allow_rule else 'deny'
+
     return {
-        'ruleid': f"{fw_partial_uri}/IpPermissions/{fromport}{toport}{protocol}",
+        'ruleid': f"{fw_partial_uri}/{rule_type}/{port_range_str}{protocol}",
         'fromport': fromport,
         'toport': toport,
         'protocol': protocol
@@ -602,11 +666,11 @@ def load_gcp_ingress_firewalls(neo4j_session, fw_list, gcp_update_tag):
             VpcPartialUri=fw['vpc_partial_uri'],
             gcp_update_tag=gcp_update_tag
         )
-        _attach_allow_rules(neo4j_session, fw, gcp_update_tag)
+        _attach_firewall_rules(neo4j_session, fw, gcp_update_tag)
         _attach_target_tags(neo4j_session, fw, gcp_update_tag)
 
 
-def _attach_allow_rules(neo4j_session, fw, gcp_update_tag):
+def _attach_firewall_rules(neo4j_session, fw, gcp_update_tag):
     """
     Attach the allow_rules to the Firewall object
     :param neo4j_session: The Neo4j session
@@ -617,7 +681,7 @@ def _attach_allow_rules(neo4j_session, fw, gcp_update_tag):
     query = """
     MATCH (fw:GCPFirewall{id:{FwPartialUri}})
 
-    MERGE(rule:IpRule:IpPermissionInbound{ruleid:{RuleId}})
+    MERGE(rule:IpRule:IpPermissionInbound{id:{RuleId}})
     ON CREATE SET rule.firstseen = timestamp(),
     rule.ruleid = {RuleId}
     SET rule.protocol = {Protocol},
@@ -633,26 +697,35 @@ def _attach_allow_rules(neo4j_session, fw, gcp_update_tag):
     MERGE (rng)-[m:MEMBER_OF_IP_RULE]->(rule)
     ON CREATE SET m.firstseen = timestamp()
     SET m.lastupdated = {gcp_update_tag}
-
-    MERGE (fw)-[r:RESOURCE]->(rule)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
     """
-    for rule in fw['transformed_allow_list']:
-        # It is possible for sourceRanges to not be specified for this rule
-        # If sourceRanges is not specified then the rule must specify sourceTags.
-        # Since an IP range cannot have a tag applied to it, it is ok if we don't ingest this rule.
-        for ip_range in fw.get('sourceRanges', []):
-            neo4j_session.run(
-                query,
-                FwPartialUri=fw['id'],
-                RuleId=rule['ruleid'],
-                Protocol=rule['protocol'],
-                FromPort=rule.get('fromport'),
-                ToPort=rule.get('toport'),
-                Range=ip_range,
-                gcp_update_tag=gcp_update_tag
-            )
+    for list_type in 'transformed_allow_list', 'transformed_deny_list':
+        if list_type == 'transformed_allow_list':
+            query += """
+            MERGE (fw)<-[r:ALLOWED_BY]-(rule)
+            ON CREATE SET r.firstseen = timestamp()
+            SET r.lastupdated = {gcp_update_tag}
+            """
+        else:
+            query += """
+            MERGE (fw)<-[r:DENIED_BY]-(rule)
+            ON CREATE SET r.firstseen = timestamp()
+            SET r.lastupdated = {gcp_update_tag}
+            """
+        for rule in fw[list_type]:
+            # It is possible for sourceRanges to not be specified for this rule
+            # If sourceRanges is not specified then the rule must specify sourceTags.
+            # Since an IP range cannot have a tag applied to it, it is ok if we don't ingest this rule.
+            for ip_range in fw.get('sourceRanges', []):
+                neo4j_session.run(
+                    query,
+                    FwPartialUri=fw['id'],
+                    RuleId=rule['ruleid'],
+                    Protocol=rule['protocol'],
+                    FromPort=rule.get('fromport'),
+                    ToPort=rule.get('toport'),
+                    Range=ip_range,
+                    gcp_update_tag=gcp_update_tag
+                )
 
 
 def _attach_target_tags(neo4j_session, fw, gcp_update_tag):
