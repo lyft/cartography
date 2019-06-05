@@ -199,7 +199,7 @@ def test_nic_to_subnets(neo4j_session):
     _ensure_local_neo4j_has_test_instance_data(neo4j_session)
     subnet_query = """
     MATCH (nic:GCPNetworkInterface{id:{NicId}})-[:PART_OF_SUBNET]->(subnet:GCPSubnet)
-    return nic.nic_id, nic.private_ip, subnet.id,  subnet.gateway_address, subnet.ip_cidr_range
+    return nic.nic_id, nic.private_ip, subnet.id, subnet.gateway_address, subnet.ip_cidr_range
     """
     nodes = neo4j_session.run(
         subnet_query,
