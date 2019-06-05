@@ -238,9 +238,10 @@ def transform_gcp_subnets(subnet_res):
 
 def transform_gcp_firewall(fw_response):
     """
-
-    :param fw_response:
-    :return:
+    Adjust the firewall response objects into a format that is easy to write to Neo4j.
+    Also see _transform_fw_entry and _parse_port_string_to_rule().
+    :param fw_response: Firewall response object from the GCP API
+    :return: List of transformed firewall rule objects.
     """
     fw_list = []
     prefix = fw_response['id']
@@ -499,6 +500,13 @@ def load_gcp_subnets(neo4j_session, subnets, gcp_update_tag):
 
 
 def _attach_instance_tags(neo4j_session, instance, gcp_update_tag):
+    """
+    Attach tags to GCP instance
+    :param neo4j_session: The session
+    :param instance: The instance object
+    :param gcp_update_tag: The timestamp
+    :return: Nothing
+    """
     query = """
     MATCH (i:GCPInstance{id:{InstanceId}})
 
@@ -681,7 +689,7 @@ def _attach_firewall_rules(neo4j_session, fw, gcp_update_tag):
     query = """
     MATCH (fw:GCPFirewall{id:{FwPartialUri}})
 
-    MERGE(rule:IpRule:IpPermissionInbound{id:{RuleId}})
+    MERGE(rule:IpRule:IpPermissionInbound:GCPIpRule{id:{RuleId}})
     ON CREATE SET rule.firstseen = timestamp(),
     rule.ruleid = {RuleId}
     SET rule.protocol = {Protocol},

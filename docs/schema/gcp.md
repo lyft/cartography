@@ -155,7 +155,7 @@ Representation of a GCP [Organization](https://cloud.google.com/resource-manager
  
 #GCPTag:Tag
 
-Representation of a Tag defined on a GCP Instance.  Tags are defined on GCP instances for use in [network firewall routing](https://cloud.google.com/blog/products/gcp/labelling-and-grouping-your-google-cloud-platform-resources).
+Representation of a Tag defined on a GCP Instance or GCP Firewall.  Tags are defined on GCP instances for use in [network firewall routing](https://cloud.google.com/blog/products/gcp/labelling-and-grouping-your-google-cloud-platform-resources).
 
 | Field | Description |
 |-------|-------------|
@@ -164,6 +164,19 @@ Representation of a Tag defined on a GCP Instance.  Tags are defined on GCP inst
 | id | GCP doesn't define a resource URI for Tags so we define this as `{instance resource URI}/tags/{tag value}`
 | tag_id | same as `id` |
 | value | The actual value of the tag |
+
+### Relationships 
+
+- GCP Instances can be labeled with tags.
+    ```
+    (GCPInstance)-[:HAS_TAG]->(GCPTag)
+    ```
+
+- GCP Firewalls can be labeled with tags to direct traffic to or deny traffic to labeled GCPInstances
+    ```
+    (GCPFirewall)-[:HAS_TARGET_TAG]->(GCPTag)
+    ```
+
     
 ## GCPVpc
 
@@ -305,3 +318,95 @@ Representation of a GCP [Subnetwork](https://cloud.google.com/compute/docs/refer
     ```
     (GCPNetworkInterface)-[PART_OF_SUBNET]->(GCPSubnet)
     ```
+
+
+## GCPFirewall
+
+Representation of a GCP [Firewall](https://cloud.google.com/compute/docs/reference/rest/v1/firewalls/list).
+
+| Field | Description |
+|-------|--------------| 
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated | 
+| id | A partial resource URI representing this Firewall.
+| partial_uri | Same as `id` |
+| direction | Either 'INGRESS' for inbound or 'EGRESS' for outbound
+| disabled | Whether this firewall object is disabled
+| priority | The priority of this firewall rule from 1 (apply this first)-65535 (apply this last)
+| self_link | The full resource URI to this firewall |
+
+
+### Relationships
+
+- Firewalls belong to VPCs
+
+    ```
+    (GCPVpc)-[RESOURCE]->(GCPFirewall)
+    ```
+
+- Firewalls define rules that allow traffic
+
+    ```
+    (GcpIpRule)-[IS_ALLOWED_BY]->(GCPFirewall)
+    ```
+
+- Firewalls define rules that deny traffic
+
+    ```
+    (GcpIpRule)-[IS_DENIED_BY]->(GCPFirewall)
+    ```
+    
+- GCP Firewalls can be labeled with tags to direct traffic to or deny traffic to labeled GCPInstances
+    ```
+    (GCPFirewall)-[:HAS_TARGET_TAG]->(GCPTag)
+    ```
+
+
+## IpRule::IpPermissionInbound::GCPIpRule
+
+An IpPermissionInbound node is a specific type of IpRule.  It represents a generic inbound IP-based rules.  The creation of this node is currently derived from ingesting AWS [EC2 Security Group](#ec2securitygroup) rules.
+
+| Field | Description |
+|-------|-------------|
+| **ruleid** | `{firewall_partial_uri}/{rule_type}/{port_range}{protocol}` |
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated | 
+| protocol | The protocol this rule applies to |
+| fromport | Lowest port in the range defined by this rule|
+| toport | Highest port in the range defined by this rule|
+
+### Relationships
+
+- GCP Firewall rules are defined on IpRange objects.
+
+	```
+	(GCPIpRule, IpRule, IpPermissionInbound)<-[MEMBER_OF_IP_RULE)-(:IpRange)
+	```
+	
+- Firewalls define rules that allow traffic
+
+    ```
+    (GcpIpRule)-[IS_ALLOWED_BY]->(GCPFirewall)
+    ```
+
+- Firewalls define rules that deny traffic
+
+    ```
+    (GcpIpRule)-[IS_DENIED_BY]->(GCPFirewall)
+    ```
+
+## IpRange
+
+Representation of an IP range or subnet.
+
+| Field | Description |
+|-------|--------------| 
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated | 
+| id | CIDR notation for the IP range. E.g. "0.0.0.0/0" for the whole internet.
+
+- GCP Firewall rules are defined on IpRange objects.
+
+	```
+	(GCPIpRule, IpRule, IpPermissionInbound)<-[MEMBER_OF_IP_RULE)-(:IpRange)
+	```
