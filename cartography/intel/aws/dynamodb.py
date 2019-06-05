@@ -10,8 +10,8 @@ def get_dynamodb_tables(session, region):
     paginator = client.get_paginator('list_tables')
     dynamodb_tables = []
     for page in paginator.paginate():
-        for table in page:
-            dynamodb_tables.append(client.describe_table(table))
+        for table_name in page['TableNames']:
+            dynamodb_tables.append(client.describe_table(table_name))
     return {'Tables': dynamodb_tables}
 
 
