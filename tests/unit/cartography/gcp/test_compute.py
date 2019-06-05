@@ -30,6 +30,19 @@ def test_transform_gcp_subnets():
     assert not subnet['private_ip_google_access']
 
 
+def test_parse_compute_full_uri_to_partial_uri():
+    subnet_uri = 'https://www.googleapis.com/compute/v1/projects/project-abc/regions/europe-west2/subnetworks/default'
+    inst_uri = 'https://www.googleapis.com/compute/v1/projects/project-abc/zones/europe-west2-b/disks/instance-1'
+    vpc_uri = 'https://www.googleapis.com/compute/v1/projects/project-abc/global/networks/default'
+
+    assert cartography.intel.gcp.compute._parse_compute_full_uri_to_partial_uri(subnet_uri) == \
+        'projects/project-abc/regions/europe-west2/subnetworks/default'
+    assert cartography.intel.gcp.compute._parse_compute_full_uri_to_partial_uri(inst_uri) == \
+        'projects/project-abc/zones/europe-west2-b/disks/instance-1'
+    assert cartography.intel.gcp.compute._parse_compute_full_uri_to_partial_uri(vpc_uri) == \
+        'projects/project-abc/global/networks/default'
+
+
 def test_transform_gcp_firewall():
     fw_list = cartography.intel.gcp.compute.transform_gcp_firewall(LIST_FIREWALLS_RESPONSE)
 

@@ -145,6 +145,10 @@ def transform_gcp_instances(response_objects):
             instance['project_id'] = prefix_fields.project_id
             instance['zone_name'] = prefix_fields.zone_name
 
+            for nic in instance.get('networkInterfaces', []):
+                if 'subnetwork' in nic:
+                    nic['subnet_partial_uri'] = _parse_compute_full_uri_to_partial_uri(nic['subnetwork'])
+
             instance_list.append(instance)
     return instance_list
 
@@ -163,14 +167,17 @@ def _parse_instance_uri_prefix(prefix):
     )
 
 
-def _parse_vpc_full_uri_to_partial_uri(vpc_full_uri):
+def _parse_compute_full_uri_to_partial_uri(full_uri, version='v1'):
     """
-    Convert VPC URI of the form `https://www.googleapis.com/compute/v1/projects/{project}/global/networks/{network}` to
-    partial URI `projects/{project}/global/networks/{network}`
-    :param vpc_full_uri: The VPC full URI
-    :return: The `projects/{project}/global/networks/{network}` component
+    Take a GCP Compute object's self_link of the form
+    `https://www.googleapis.com/compute/{version}/projects/{project}/{location specifier}/{subtype}/{resource name}`
+    and converts it to its partial URI `{project}/{location specifier}/{subtype}/{resource name}`.
+    This is designed for GCP compute_objects that have compute/{version specifier}/ in their `self_link`s.
+    :param network_full_uri: The full URI
+    :param version: The version number; default to v1 since at the time of this writing v1 is the only Compute API.
+    :return: Partial URI `{project}/{location specifier}/{subtype}/{resource name}`
     """
-    return vpc_full_uri.split('compute/v1/')[1]
+    return full_uri.split(f'compute/{version}/')[1]
 
 
 def transform_gcp_vpcs(vpc_res):
@@ -221,7 +228,7 @@ def transform_gcp_subnets(subnet_res):
 
         # Let's maintain an on-node reference to the VPC that this subnet belongs to.
         subnet['vpc_self_link'] = s['network']
-        subnet['vpc_partial_uri'] = _parse_vpc_full_uri_to_partial_uri(s['network'])
+        subnet['vpc_partial_uri'] = _parse_compute_full_uri_to_partial_uri(s['network'])
 
         subnet['name'] = s['name']
         subnet['project_id'] = projectid
@@ -248,7 +255,7 @@ def transform_gcp_firewall(fw_response):
     for fw in fw_response.get('items', []):
         fw_partial_uri = f"{prefix}/{fw['name']}"
         fw['id'] = fw_partial_uri
-        fw['vpc_partial_uri'] = _parse_vpc_full_uri_to_partial_uri(fw['network'])
+        fw['vpc_partial_uri'] = _parse_compute_full_uri_to_partial_uri(fw['network'])
 
         fw['transformed_allow_list'] = []
         fw['transformed_deny_list'] = []
@@ -383,16 +390,20 @@ def load_gcp_instances(neo4j_session, data, gcp_update_tag):
     """
     query = """
     MERGE (p:GCPProject{id:{ProjectId}})
+    ON CREATE SET p.firstseen = timestamp()
+    SET p.lastupdated = {gcp_update_tag}
+
     MERGE (i:Instance:GCPInstance{id:{PartialUri}})
-    ON CREATE SET i.firstseen = timestamp()
-    SET i.partial_uri = {PartialUri},
-    i.self_link = {SelfLink},
+    ON CREATE SET i.firstseen = timestamp(),
+    i.partial_uri = {PartialUri}
+    SET i.self_link = {SelfLink},
     i.instancename = {InstanceName},
     i.hostname = {Hostname},
     i.zone_name = {ZoneName},
     i.project_id = {ProjectId},
     i.lastupdated = {gcp_update_tag}
     WITH i, p
+
     MERGE (p)-[r:RESOURCE]->(i)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {gcp_update_tag}
@@ -423,6 +434,9 @@ def load_gcp_vpcs(neo4j_session, vpcs, gcp_update_tag):
     """
     query = """
     MERGE(p:GCPProject{id:{ProjectId}})
+    ON CREATE SET p.firstseen = timestamp()
+    SET p.lastupdated = {gcp_update_tag}
+
     MERGE(vpc:GCPVpc{id:{PartialUri}})
     ON CREATE SET vpc.firstseen = timestamp(),
     vpc.partial_uri = {PartialUri}
@@ -550,26 +564,40 @@ def _attach_gcp_nics(neo4j_session, instance, gcp_update_tag):
     MERGE (i)-[r:NETWORK_INTERFACE]->(nic)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {gcp_update_tag}
-
-    MERGE (subnet:GCPSubnet{self_link:{SubnetSelfLink}})
-    ON CREATE SET subnet.firstseen = timestamp()
-
-    MERGE (nic)-[p:PART_OF_SUBNET]->(subnet)
-    ON CREATE SET p.firstseen = timestamp()
-    SET p.lastupdated = {gcp_update_tag}
     """
     for nic in instance.get('networkInterfaces', []):
         # Make an ID for GCPNetworkInterface nodes because GCP doesn't define one but we need to uniquely identify them
         nic_id = f"{instance['partial_uri']}/networkinterfaces/{nic['name']}"
-        neo4j_session.run(
-            query,
-            InstanceId=instance['partial_uri'],
-            NicId=nic_id,
-            NetworkIP=nic['networkIP'],
-            NicName=nic['name'],
-            gcp_update_tag=gcp_update_tag,
-            SubnetSelfLink=nic['subnetwork']
-        )
+
+        if 'subnetwork' in nic:
+            query += """
+            MERGE (subnet:GCPSubnet{id:{SubnetPartialUri}})
+            ON CREATE SET subnet.firstseen = timestamp(),
+            subnet.partial_uri = {SubnetPartialUri}
+            SET subnet.lastupdated = {gcp_update_tag}
+
+            MERGE (nic)-[p:PART_OF_SUBNET]->(subnet)
+            ON CREATE SET p.firstseen = timestamp()
+            SET p.lastupdated = {gcp_update_tag}
+            """
+            neo4j_session.run(
+                query,
+                InstanceId=instance['partial_uri'],
+                NicId=nic_id,
+                NetworkIP=nic['networkIP'],
+                NicName=nic['name'],
+                gcp_update_tag=gcp_update_tag,
+                SubnetPartialUri=nic['subnet_partial_uri']
+            )
+        else:
+            neo4j_session.run(
+                query,
+                InstanceId=instance['partial_uri'],
+                NicId=nic_id,
+                NetworkIP=nic['networkIP'],
+                NicName=nic['name'],
+                gcp_update_tag=gcp_update_tag
+            )
         _attach_gcp_nic_access_configs(neo4j_session, nic_id, nic, gcp_update_tag)
 
 
