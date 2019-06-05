@@ -1,4 +1,5 @@
 import logging
+import policyuniverse.statement
 
 from cartography.util import run_cleanup_job
 
@@ -246,26 +247,9 @@ def load_group_memberships(session, group_memberships, aws_update_tag):
 def _find_roles_assumable_in_policy(policy_data):
     ret = []
     for statement in policy_data["PolicyDocument"]["Statement"]:
-        if isinstance(statement, str):
-            continue
-        actions = statement.get('Action')
-        if not actions:
-            continue
-        if isinstance(actions, str):
-            actions = [actions]
-
-        for action in actions:
-            # TODO actions may contain wildcards, e.g. sts:* -- this can be solved by using policyuniverse to
-            # TODO expand the policy before checking if the sts:AssumeRole action is allowed
-            if action == "sts:AssumeRole":
-                # TODO blanket allows may be modified by subsequent denies... -- does policyuniverse handle?
-                if statement["Effect"] == "Allow":
-                    role_arns = statement["Resource"]
-
-                    if isinstance(role_arns, str):
-                        role_arns = [role_arns]
-
-                    ret.extend(role_arns)
+        o = policyuniverse.statement.Statement(statement)
+        if o.effect == 'Allow' and 'sts:assumerole' in o.actions_expanded:
+            ret.extend(list(o.resources))
     return ret
 
 
