@@ -62,6 +62,11 @@ def test__find_roles_assumable_in_policy():
             }],
             ["arn:aws:iam::000000000000:role/EXAMPLE-role-0"]
         ),
+        Case(
+            'must skip statements which are strings only',
+            ["not a structured statement"],
+            []
+        )
     )
 
     for case in cases:
