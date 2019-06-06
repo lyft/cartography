@@ -64,8 +64,15 @@ def test__find_roles_assumable_in_policy():
         ),
         Case(
             'must skip statements which are strings only',
-            ["not a structured statement"],
-            []
+            [
+                "not a structured statement",
+                {
+                    "Action": "sts:AssumeRole",
+                    "Resource": "arn:aws:iam::000000000000:role/example-role-0",
+                    "Effect": "Allow",
+                },
+            ],
+            ["arn:aws:iam::000000000000:role/example-role-0"]
         )
     )
 
