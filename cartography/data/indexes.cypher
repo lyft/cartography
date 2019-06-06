@@ -50,3 +50,7 @@ CREATE INDEX ON :GCPOrganization(id);
 CREATE INDEX ON :GCPFolder(id);
 CREATE INDEX ON :GCPProject(id);
 CREATE INDEX ON :GCPInstance(id);
+CREATE INDEX ON :GCPVpc(id);
+CREATE INDEX ON :GCPSubnet(id);
+CREATE INDEX ON :GCPNetworkInterface(id);
+CREATE INDEX ON :GCPNicAccessConfig(id);
