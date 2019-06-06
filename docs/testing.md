@@ -43,9 +43,12 @@ After completing the section above, you are now able to manually test intel modu
 
     `export "NEO4J_URL=<your_neo4j_instance_url:your_neo4j_instance_port>"`
     
-3. **Run tests using `make`**
+3. **Run tests using `make`**️
 
     - `make test_lint` can be used to run flake8 linting against the codebase.
     - `make test_unit` can be used to run the (currently non-existent) unit test suite.
+    
+    ⚠️ Important!  The below commands will **DELETE ALL NODES** on your local Neo4j instance as part of our testing procedure.  Only run any of the below commands if you are ok with this. ⚠️
+    
     - `make test_integration` can be used to run the integration test suite.
     - `make test` can be used to run all of the above.
