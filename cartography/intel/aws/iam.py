@@ -246,7 +246,10 @@ def load_group_memberships(session, group_memberships, aws_update_tag):
 
 def _find_roles_assumable_in_policy(policy_data):
     ret = []
-    for statement in policy_data["PolicyDocument"]["Statement"]:
+    statements = policy_data["PolicyDocument"]["Statement"]
+    if isinstance(statements, dict):
+        statements = [statements]
+    for statement in statements:
         parsed_statement = policyuniverse.statement.Statement(statement)
         if parsed_statement.effect == 'Allow' and 'sts:assumerole' in parsed_statement.actions_expanded:
             ret.extend(list(parsed_statement.resources))
