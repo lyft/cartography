@@ -146,8 +146,8 @@ def transform_gcp_instances(response_objects):
             instance['zone_name'] = prefix_fields.zone_name
 
             for nic in instance.get('networkInterfaces', []):
-                if 'subnetwork' in nic:
-                    nic['subnet_partial_uri'] = _parse_compute_full_uri_to_partial_uri(nic['subnetwork'])
+                nic['subnet_partial_uri'] = _parse_compute_full_uri_to_partial_uri(nic['subnetwork'])
+                nic['vpc_partial_uri'] = _parse_compute_full_uri_to_partial_uri(nic['network'])
 
             instance_list.append(instance)
     return instance_list
@@ -178,6 +178,15 @@ def _parse_compute_full_uri_to_partial_uri(full_uri, version='v1'):
     :return: Partial URI `{project}/{location specifier}/{subtype}/{resource name}`
     """
     return full_uri.split(f'compute/{version}/')[1]
+
+
+def _create_gcp_network_tag_id(vpc_partial_uri, tag):
+    """
+    Generate an ID for a GCP network tag
+    :param vpc_partial_uri: The VPC that this tag applies to
+    :return: An ID for the GCP network tag
+    """
+    return f"{vpc_partial_uri}/tags/{tag}"
 
 
 def transform_gcp_vpcs(vpc_res):
@@ -515,7 +524,7 @@ def load_gcp_subnets(neo4j_session, subnets, gcp_update_tag):
 
 def _attach_instance_tags(neo4j_session, instance, gcp_update_tag):
     """
-    Attach tags to GCP instance
+    Attach tags to GCP instance and to the VPCs that they are defined in.
     :param neo4j_session: The session
     :param instance: The instance object
     :param gcp_update_tag: The timestamp
@@ -524,23 +533,34 @@ def _attach_instance_tags(neo4j_session, instance, gcp_update_tag):
     query = """
     MATCH (i:GCPInstance{id:{InstanceId}})
 
-    MERGE (t:GCPTag:Tag{id:{TagId}})
+    MERGE (t:GCPNetworkTag{id:{TagId}})
     ON CREATE SET t.tag_id = {TagId},
-    t.value = {TagValue}
+    t.value = {TagValue},
+    t.firstseen = timestamp()
+    SET t.lastupdated = {gcp_update_tag}
 
-    MERGE (i)-[h:HAS_TAG]->(t)
+    MERGE (i)-[h:TAGGED]->(t)
     ON CREATE SET h.firstseen = timestamp()
     SET h.lastupdated = {gcp_update_tag}
+
+    WITH t
+    MATCH (vpc:GCPVpc{id:{VpcPartialUri}})
+
+    MERGE (vpc)<-[d:DEFINED_IN]-(t)
+    ON CREATE SET d.firstseen = timestamp()
+    SET d.lastupdated = {gcp_update_tag}
     """
     for tag in instance.get('tags', {}).get('items', []):
-        tag_id = f"{instance['partial_uri']}/tags/{tag}"
-        neo4j_session.run(
-            query,
-            InstanceId=instance['partial_uri'],
-            TagId=tag_id,
-            TagValue=tag,
-            gcp_update_tag=gcp_update_tag
-        )
+        for nic in instance.get('networkInterfaces', []):
+            tag_id = _create_gcp_network_tag_id(nic['vpc_partial_uri'], tag)
+            neo4j_session.run(
+                query,
+                InstanceId=instance['partial_uri'],
+                TagId=tag_id,
+                TagValue=tag,
+                VpcPartialUri=nic['vpc_partial_uri'],
+                gcp_update_tag=gcp_update_tag
+            )
 
 
 def _attach_gcp_nics(neo4j_session, instance, gcp_update_tag):
@@ -564,40 +584,28 @@ def _attach_gcp_nics(neo4j_session, instance, gcp_update_tag):
     MERGE (i)-[r:NETWORK_INTERFACE]->(nic)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {gcp_update_tag}
+
+    MERGE (subnet:GCPSubnet{id:{SubnetPartialUri}})
+    ON CREATE SET subnet.firstseen = timestamp(),
+    subnet.partial_uri = {SubnetPartialUri}
+    SET subnet.lastupdated = {gcp_update_tag}
+
+    MERGE (nic)-[p:PART_OF_SUBNET]->(subnet)
+    ON CREATE SET p.firstseen = timestamp()
+    SET p.lastupdated = {gcp_update_tag}
     """
     for nic in instance.get('networkInterfaces', []):
         # Make an ID for GCPNetworkInterface nodes because GCP doesn't define one but we need to uniquely identify them
         nic_id = f"{instance['partial_uri']}/networkinterfaces/{nic['name']}"
-
-        if 'subnetwork' in nic:
-            query += """
-            MERGE (subnet:GCPSubnet{id:{SubnetPartialUri}})
-            ON CREATE SET subnet.firstseen = timestamp(),
-            subnet.partial_uri = {SubnetPartialUri}
-            SET subnet.lastupdated = {gcp_update_tag}
-
-            MERGE (nic)-[p:PART_OF_SUBNET]->(subnet)
-            ON CREATE SET p.firstseen = timestamp()
-            SET p.lastupdated = {gcp_update_tag}
-            """
-            neo4j_session.run(
-                query,
-                InstanceId=instance['partial_uri'],
-                NicId=nic_id,
-                NetworkIP=nic['networkIP'],
-                NicName=nic['name'],
-                gcp_update_tag=gcp_update_tag,
-                SubnetPartialUri=nic['subnet_partial_uri']
-            )
-        else:
-            neo4j_session.run(
-                query,
-                InstanceId=instance['partial_uri'],
-                NicId=nic_id,
-                NetworkIP=nic['networkIP'],
-                NicName=nic['name'],
-                gcp_update_tag=gcp_update_tag
-            )
+        neo4j_session.run(
+            query,
+            InstanceId=instance['partial_uri'],
+            NicId=nic_id,
+            NetworkIP=nic['networkIP'],
+            NicName=nic['name'],
+            gcp_update_tag=gcp_update_tag,
+            SubnetPartialUri=nic['subnet_partial_uri']
+        )
         _attach_gcp_nic_access_configs(neo4j_session, nic_id, nic, gcp_update_tag)
 
 
@@ -775,18 +783,18 @@ def _attach_target_tags(neo4j_session, fw, gcp_update_tag):
     query = """
     MATCH (fw:GCPFirewall{id:{FwPartialUri}})
 
-    MERGE(t:GCPTag:Tag{id:{TagId}})
+    MERGE(t:GCPNetworkTag{id:{TagId}})
     ON CREATE SET t.firstseen = timestamp(),
     t.tag_id = {TagId},
     t.value = {TagValue}
     SET t.lastupdated = {gcp_update_tag}
 
-    MERGE (fw)-[h:HAS_TARGET_TAG]->(t)
+    MERGE (fw)-[h:TARGET_TAG]->(t)
     ON CREATE SET h.firstseen = timestamp()
     SET h.lastupdated = {gcp_update_tag}
     """
     for tag in fw.get('targetTags', []):
-        tag_id = f"{fw['id']}/target_tags/{tag}"
+        tag_id = _create_gcp_network_tag_id(fw['vpc_partial_uri'], tag)
         neo4j_session.run(
             query,
             FwPartialUri=fw['id'],
@@ -824,6 +832,16 @@ def cleanup_gcp_subnets(session, common_job_parameters):
     :return: Nothing
     """
     run_cleanup_job('gcp_compute_vpc_subnet_cleanup.json', session, common_job_parameters)
+
+
+def cleanup_gcp_firewall_rules(session, common_job_parameters):
+    """
+    Delete out of date GCP firewalls and their relationships
+    :param session: The Neo4j session
+    :param common_job_parameters: dict of other job parameters to pass to Neo4j
+    :return: Nothing
+    """
+    run_cleanup_job('gcp_compute_firewall_cleanup.json', session, common_job_parameters)
 
 
 def sync_gcp_instances(session, compute, project_id, zones, gcp_update_tag, common_job_parameters):
@@ -881,7 +899,7 @@ def sync_gcp_firewall_rules(session, compute, project_id, gcp_update_tag, common
     fw_response = get_gcp_firewall_ingress_rules(project_id, compute)
     fw_list = transform_gcp_firewall(fw_response)
     load_gcp_ingress_firewalls(session, fw_list, gcp_update_tag)
-    # cleanup_gcp_firewall_rules(session, common_job_parameters)
+    cleanup_gcp_firewall_rules(session, common_job_parameters)
 
 
 def _zones_to_regions(zones):

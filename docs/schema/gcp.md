@@ -6,7 +6,7 @@
 - [GCPFolder](#gcpfolder)
 - [GCPProject](#gcpproject)
 - [GCPInstance](#gcpinstance)
-- [GCP Tags](#gcptagtag)
+- [GCP Network Tags](#gcpnetworktag)
 - [GCPNetworkInterface](#gcpnetworkinterface)
 - [GCPVpc](#gcpvpc) 
 - [GCPNicAccessConfig](#gcpnicaccessconfig)
@@ -150,10 +150,10 @@ Representation of a GCP [Organization](https://cloud.google.com/resource-manager
 - GCP Instances may have GCP Tags defined on them for use in [network firewall routing](https://cloud.google.com/blog/products/gcp/labelling-and-grouping-your-google-cloud-platform-resources).
 
     ```
-    (GCPInstance)-[:HAS_TAG]->(GCPTag)
+    (GCPInstance)-[:TAGGED]->(GCPNetworkTag)
     ```
  
-#GCPTag:Tag
+#GCPNetworkTag
 
 Representation of a Tag defined on a GCP Instance or GCP Firewall.  Tags are defined on GCP instances for use in [network firewall routing](https://cloud.google.com/blog/products/gcp/labelling-and-grouping-your-google-cloud-platform-resources).
 
@@ -169,14 +169,19 @@ Representation of a Tag defined on a GCP Instance or GCP Firewall.  Tags are def
 
 - GCP Instances can be labeled with tags.
     ```
-    (GCPInstance)-[:HAS_TAG]->(GCPTag)
+    (GCPInstance)-[:TAGGED]->(GCPNetworkTag)
     ```
 
 - GCP Firewalls can be labeled with tags to direct traffic to or deny traffic to labeled GCPInstances
     ```
-    (GCPFirewall)-[:HAS_TARGET_TAG]->(GCPTag)
+    (GCPFirewall)-[:TARGET_TAG]->(GCPNetworkTag)
     ```
 
+- GCPNetworkTags are defined on a VPC and only have effect on assets in that VPC
+
+    ```
+    (GCPVpc)-[DEFINED]->(GCPNetworkTag)
+    ```
     
 ## GCPVpc
 
@@ -213,6 +218,12 @@ Representation of a GCP [VPC](https://cloud.google.com/compute/docs/reference/re
 
     ```
     (GCPVpc)-[RESOURCE]->(GCPSubnet)
+    ```
+
+- GCPNetworkTags are defined on a VPC and only have effect on assets in that VPC
+
+    ```
+    (GCPVpc)-[DEFINED]->(GCPNetworkTag)
     ```
 
 - GCP Instances may be members of one or more GCP VPCs.
@@ -358,7 +369,7 @@ Representation of a GCP [Firewall](https://cloud.google.com/compute/docs/referen
     
 - GCP Firewalls can be labeled with tags to direct traffic to or deny traffic to labeled GCPInstances
     ```
-    (GCPFirewall)-[:HAS_TARGET_TAG]->(GCPTag)
+    (GCPFirewall)-[:HAS_TARGET_TAG]->(GCPNetworkTag)
     ```
 
 

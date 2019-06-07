@@ -108,7 +108,7 @@ def test_transform_and_load_gcp_instances_and_nics(neo4j_session):
 
     nic_query = """
     MATCH(i:GCPInstance)-[r:NETWORK_INTERFACE]->(nic:GCPNetworkInterface)
-    OPTIONAL MATCH (i)-[:HAS_TAG]->(t:GCPTag)
+    OPTIONAL MATCH (i)-[:TAGGED]->(t:GCPNetworkTag)
     RETURN i.id, i.zone_name, i.project_id, i.hostname, t.value, r.lastupdated, nic.nic_id, nic.private_ip
     """
     objects = neo4j_session.run(nic_query)
@@ -138,6 +138,8 @@ def test_transform_and_load_gcp_instances_and_nics(neo4j_session):
          'test',
          TEST_UPDATE_TAG)
     ])
+    print(actual_nodes)
+    print(expected_nodes)
     assert actual_nodes == expected_nodes
 
 

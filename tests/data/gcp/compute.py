@@ -274,6 +274,7 @@ TRANSFORMED_GCP_INSTANCES = [{
         'kind': 'compute#networkInterface',
         'name': 'nic0',
         'network': 'https://www.googleapis.com/compute/v1/projects/project-abc/global/networks/default',
+        'vpc_partial_uri': 'projects/project-abc/global/networks/default',
         'networkIP': '10.0.0.2',
         'subnetwork': 'https://www.googleapis.com/compute/v1/projects/project-abc/regions/europe-west2/subnetworks/default',
         'subnet_partial_uri': 'projects/project-abc/regions/europe-west2/subnetworks/default'
@@ -349,6 +350,7 @@ TRANSFORMED_GCP_INSTANCES = [{
         'kind': 'compute#networkInterface',
         'name': 'nic0',
         'network': 'https://www.googleapis.com/compute/v1/projects/project-abc/global/networks/default',
+        'vpc_partial_uri': 'projects/project-abc/global/networks/default',
         'networkIP': '10.0.0.3',
         'subnetwork': 'https://www.googleapis.com/compute/v1/projects/project-abc/regions/europe-west2/subnetworks/default',
         'subnet_partial_uri': 'projects/project-abc/regions/europe-west2/subnetworks/default'

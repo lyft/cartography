@@ -53,4 +53,4 @@ CREATE INDEX ON :GCPVpc(id);
 CREATE INDEX ON :GCPSubnet(id);
 CREATE INDEX ON :GCPNetworkInterface(id);
 CREATE INDEX ON :GCPNicAccessConfig(id);
-CREATE INDEX ON :GCPTag(id);
+CREATE INDEX ON :GCPNetworkTag(id);
