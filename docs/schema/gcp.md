@@ -153,7 +153,7 @@ Representation of a GCP [Organization](https://cloud.google.com/resource-manager
     (GCPInstance)-[:TAGGED]->(GCPNetworkTag)
     ```
  
-#GCPNetworkTag
+## GCPNetworkTag
 
 Representation of a Tag defined on a GCP Instance or GCP Firewall.  Tags are defined on GCP instances for use in [network firewall routing](https://cloud.google.com/blog/products/gcp/labelling-and-grouping-your-google-cloud-platform-resources).
 
