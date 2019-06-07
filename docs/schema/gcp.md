@@ -180,7 +180,7 @@ Representation of a Tag defined on a GCP Instance or GCP Firewall.  Tags are def
 - GCPNetworkTags are defined on a VPC and only have effect on assets in that VPC
 
     ```
-    (GCPVpc)-[DEFINED]->(GCPNetworkTag)
+    (GCPVpc)-[DEFINED_IN]->(GCPNetworkTag)
     ```
     
 ## GCPVpc
@@ -223,7 +223,7 @@ Representation of a GCP [VPC](https://cloud.google.com/compute/docs/reference/re
 - GCPNetworkTags are defined on a VPC and only have effect on assets in that VPC
 
     ```
-    (GCPVpc)-[DEFINED]->(GCPNetworkTag)
+    (GCPVpc)-[DEFINED_IN]->(GCPNetworkTag)
     ```
 
 - GCP Instances may be members of one or more GCP VPCs.
