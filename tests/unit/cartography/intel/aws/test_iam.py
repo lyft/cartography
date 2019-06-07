@@ -36,6 +36,15 @@ def test__find_roles_assumable_in_policy():
             ]
         ),
         Case(
+            'must handle policies containing a single statement',
+            {
+                "Action": "sts:AssumeRole",
+                "Resource": "arn:aws:iam::000000000000:role/example-role-0",
+                "Effect": "Allow",
+            },
+            ["arn:aws:iam::000000000000:role/example-role-0"]
+        ),
+        Case(
             'must handle statements containing lists of actions',
             [{
                 "Action": ["sts:AssumeRole", "s3:GetObject"],
@@ -61,7 +70,7 @@ def test__find_roles_assumable_in_policy():
                 "Effect": "Allow",
             }],
             ["arn:aws:iam::000000000000:role/EXAMPLE-role-0"]
-        ),
+        )
     )
 
     for case in cases:
