@@ -358,18 +358,18 @@ Representation of a GCP [Firewall](https://cloud.google.com/compute/docs/referen
 - Firewalls define rules that allow traffic
 
     ```
-    (GcpIpRule)-[IS_ALLOWED_BY]->(GCPFirewall)
+    (GcpIpRule)-[ALLOWED_BY]->(GCPFirewall)
     ```
 
 - Firewalls define rules that deny traffic
 
     ```
-    (GcpIpRule)-[IS_DENIED_BY]->(GCPFirewall)
+    (GcpIpRule)-[DENIED_BY]->(GCPFirewall)
     ```
     
 - GCP Firewalls can be labeled with tags to direct traffic to or deny traffic to labeled GCPInstances
     ```
-    (GCPFirewall)-[:HAS_TARGET_TAG]->(GCPNetworkTag)
+    (GCPFirewall)-[:TARGET_TAG]->(GCPNetworkTag)
     ```
 
 
@@ -397,13 +397,13 @@ An IpPermissionInbound node is a specific type of IpRule.  It represents a gener
 - Firewalls define rules that allow traffic
 
     ```
-    (GcpIpRule)-[IS_ALLOWED_BY]->(GCPFirewall)
+    (GcpIpRule)-[ALLOWED_BY]->(GCPFirewall)
     ```
 
 - Firewalls define rules that deny traffic
 
     ```
-    (GcpIpRule)-[IS_DENIED_BY]->(GCPFirewall)
+    (GcpIpRule)-[DENIED_BY]->(GCPFirewall)
     ```
 
 ## IpRange
