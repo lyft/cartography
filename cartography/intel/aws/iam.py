@@ -429,3 +429,16 @@ def sync_user_access_keys(neo4j_session, boto3_session, current_aws_account_id, 
         neo4j_session,
         common_job_parameters
     )
+
+
+def sync(neo4j_session, boto3_session, account_id, update_tag, common_job_parameters):
+    logger.info("Syncing IAM for account '%s'.", account_id)
+    sync_users(neo4j_session, boto3_session, account_id, update_tag, common_job_parameters)
+    sync_groups(neo4j_session, boto3_session, account_id, update_tag, common_job_parameters)
+    sync_policies(neo4j_session, boto3_session, account_id, update_tag, common_job_parameters)
+    sync_roles(neo4j_session, boto3_session, account_id, update_tag, common_job_parameters)
+    sync_group_memberships(neo4j_session, boto3_session, account_id, update_tag, common_job_parameters)
+    sync_group_policies(neo4j_session, boto3_session, account_id, update_tag, common_job_parameters)
+    sync_role_policies(neo4j_session, boto3_session, account_id, update_tag, common_job_parameters)
+    sync_user_access_keys(neo4j_session, boto3_session, account_id, update_tag, common_job_parameters)
+    run_cleanup_job('aws_import_principals_cleanup.json', neo4j_session, common_job_parameters)
