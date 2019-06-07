@@ -89,7 +89,7 @@ def load_aws_accounts(neo4j_session, aws_accounts, aws_update_tag, common_job_pa
     ON CREATE SET aa.firstseen = timestamp()
     SET aa.lastupdated = {aws_update_tag}, aa.name = {ACCOUNT_NAME}
     WITH aa
-    MERGE (root:AWSPrincipal{arn: {RootArn})
+    MERGE (root:AWSPrincipal{arn: {RootArn}})
     ON CREATE SET root.firstseen = timestamp(), root.type = 'AWS'
     SET root.lastupdated = {aws_update_tag}
     WITH aa, root
