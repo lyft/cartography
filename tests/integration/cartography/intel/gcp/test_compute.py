@@ -242,6 +242,7 @@ def test_nics_to_access_configs(neo4j_session):
     ac_id2 = f"{nic_id2}/accessconfigs/ONE_TO_ONE_NAT"
 
     actual_nodes = set([(n['nic.nic_id'], n['ac.access_config_id'], n['ac.public_ip']) for n in nodes])
+    print(actual_nodes)
     expected_nodes = set([
         (nic_id1, ac_id1, '1.3.4.5'),
         (nic_id2, ac_id2, '1.2.3.4')

@@ -10,8 +10,9 @@ def get_dynamodb_tables(session, region):
     paginator = client.get_paginator('list_tables')
     dynamodb_tables = []
     for page in paginator.paginate():
-        dynamodb_tables.extend(page['TableNames'])
-    return {'TableNames': dynamodb_tables}
+        for table_name in page['TableNames']:
+            dynamodb_tables.append(client.describe_table(TableName=table_name))
+    return {'Tables': dynamodb_tables}
 
 
 def load_dynamodb_tables(session, data, region, current_aws_account_id, aws_update_tag):
@@ -19,7 +20,9 @@ def load_dynamodb_tables(session, data, region, current_aws_account_id, aws_upda
     MERGE (table:DynamoDBTable{id: {Arn}})
     ON CREATE SET table.firstseen = timestamp(), table.arn = {Arn}, table.name = {TableName},
     table.region = {Region}
-    SET table.lastupdated = {aws_update_tag}
+    SET table.lastupdated = {aws_update_tag}, table.rows = {Rows}, table.size = {Size},
+    table.provisioned_throughput_read_capacity_units = {ProvisionedThroughputReadCapacityUnits},
+    table.provisioned_throughput_write_capacity_units = {ProvisionedThroughputWriteCapacityUnits}
     WITH table
     MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
     MERGE (owner)-[r:RESOURCE]->(table)
@@ -27,13 +30,46 @@ def load_dynamodb_tables(session, data, region, current_aws_account_id, aws_upda
     SET r.lastupdated = {aws_update_tag}
     """
 
-    for table_name in data["TableNames"]:
-        arn = "arn:aws:dynamodb:{0}:{1}:table/{2}".format(region, current_aws_account_id, table_name)
+    for table in data["Tables"]:
         session.run(
             ingest_table,
-            Arn=arn,
-            TableName=table_name,
+            Arn=table['Table']['TableArn'],
             Region=region,
+            ProvisionedThroughputReadCapacityUnits=table['Table']['ProvisionedThroughput']['ReadCapacityUnits'],
+            ProvisionedThroughputWriteCapacityUnits=table['Table']['ProvisionedThroughput']['WriteCapacityUnits'],
+            Size=table['Table']['TableSizeBytes'],
+            TableName=table['Table']['TableName'],
+            Rows=table['Table']['ItemCount'],
+            AWS_ACCOUNT_ID=current_aws_account_id,
+            aws_update_tag=aws_update_tag
+        )
+        load_gsi(session, table, region, current_aws_account_id, aws_update_tag)
+
+
+def load_gsi(session, table, region, current_aws_account_id, aws_update_tag):
+    ingest_gsi = """
+    MERGE (gsi:DynamoDBGlobalSecondaryIndex{id: {Arn}})
+    ON CREATE SET gsi.firstseen = timestamp(), gsi.arn = {Arn}, gsi.name = {GSIName},
+    gsi.region = {Region}
+    SET gsi.lastupdated = {aws_update_tag},
+    gsi.provisioned_throughput_read_capacity_units = {ProvisionedThroughputReadCapacityUnits},
+    gsi.provisioned_throughput_write_capacity_units = {ProvisionedThroughputWriteCapacityUnits}
+    WITH gsi
+    MATCH (table:DynamoDBTable{arn: {TableArn}})
+    MERGE (table)-[r:GLOBAL_SECONDARY_INDEX]->(gsi)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {aws_update_tag}
+    """
+
+    for gsi in table['Table'].get('GlobalSecondaryIndexes', []):
+        session.run(
+            ingest_gsi,
+            TableArn=table['Table']['TableArn'],
+            Arn=gsi['IndexArn'],
+            Region=region,
+            ProvisionedThroughputReadCapacityUnits=gsi['ProvisionedThroughput']['ReadCapacityUnits'],
+            ProvisionedThroughputWriteCapacityUnits=gsi['ProvisionedThroughput']['WriteCapacityUnits'],
+            GSIName=gsi['IndexName'],
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag
         )
