@@ -1,3 +1,4 @@
+import fnmatch
 import logging
 import policyuniverse.statement
 
@@ -345,6 +346,50 @@ def evaluate_trust_policies(neo4j_session):
     DELETE r;
     """
     neo4j_session.run(query)
+
+
+def expand_role_wildcards(neo4j_session, update_tag):
+    wildcard_role_query = """
+    MATCH (role:AWSRole)
+    WHERE role.arn CONTAINS '*'
+    RETURN role.arn;
+    """
+
+    absolute_role_query = """
+    MATCH (role:AWSRole)
+    WHERE NOT role.arn CONTAINS '*'
+    RETURN role.arn;
+    """
+
+    query = """
+    MATCH (origin:AWSAccount)-[:AWS_ROLE]->(assumer:AWSRole)-[:STS_ASSUMEROLE_ALLOW]->(wildcard:AWSRole{arn: {WildcardArn}})
+    WITH origin, assumer, wildcard
+    MATCH (absolute:AWSRole{arn: {AbsoluteArn}})
+    WHERE exists( (absolute)-[:TRUSTS_AWS_PRINCIPAL]->(:AWSPrincipal{arn: 'arn:aws:iam::' + origin.id + ':root"}) )
+    WITH assumer, absolute
+    MERGE (assumer)-[r:STS_ASSUMEROLE_ALLOW]->(absolute)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {UpdateTag};
+    """
+
+    wildcard_roles = set([r['role.arn'] for r in neo4j_session.run(wildcard_role_query)])
+    absolute_roles = set([r['role.arn'] for r in neo4j_session.run(absolute_role_query)])
+
+    findings = {}
+    for wildcard_role in wildcard_roles:
+        findings[wildcard_role] = set()
+        for absolute_role in absolute_roles:
+            if fnmatch.fnmatch(absolute_role, wildcard_role):
+                findings[wildcard_role].add(absolute_role)
+
+    for wildcard_role in findings:
+        for absolute_role in findings[wildcard_role]:
+            neo4j_session.run(
+                query,
+                WildcardArn=wildcard_role,
+                AbsoluteArn=absolute_role,
+                UpdateTag=update_tag
+            )
 
 
 def sync_users(neo4j_session, boto3_session, current_aws_account_id, aws_update_tag, common_job_parameters):
