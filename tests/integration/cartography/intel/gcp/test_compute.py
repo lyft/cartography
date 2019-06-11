@@ -138,8 +138,6 @@ def test_transform_and_load_gcp_instances_and_nics(neo4j_session):
          'test',
          TEST_UPDATE_TAG)
     ])
-    print(actual_nodes)
-    print(expected_nodes)
     assert actual_nodes == expected_nodes
 
 
@@ -242,7 +240,6 @@ def test_nics_to_access_configs(neo4j_session):
     ac_id2 = f"{nic_id2}/accessconfigs/ONE_TO_ONE_NAT"
 
     actual_nodes = set([(n['nic.nic_id'], n['ac.access_config_id'], n['ac.public_ip']) for n in nodes])
-    print(actual_nodes)
     expected_nodes = set([
         (nic_id1, ac_id1, '1.3.4.5'),
         (nic_id2, ac_id2, '1.2.3.4')
@@ -278,8 +275,6 @@ def test_nic_to_subnets(neo4j_session):
         '10.0.0.1',
         '10.0.0.0/20'
     )])
-    # print(actual_nodes)
-    # print(expected_nodes)
     assert actual_nodes == expected_nodes
 
 
@@ -328,6 +323,4 @@ def test_vpc_to_firewall_to_iprule_to_iprange(neo4j_session):
         'projects/project-abc/global/firewalls/default-allow-ssh',
         'projects/project-abc/global/networks/default'
     )])
-    print(actual_nodes)
-    print(expected_nodes)
     assert actual_nodes == expected_nodes

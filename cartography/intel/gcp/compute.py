@@ -660,7 +660,8 @@ def _attach_gcp_vpc(neo4j_session, instance_id, gcp_update_tag):
     :return: Nothing
     """
     query = """
-    MATCH(i:GCPInstance{id:{InstanceId}})-[:NETWORK_INTERFACE]->(nic:GCPNetworkInterface)-[p:PART_OF_SUBNET]->(sn:GCPSubnet)<-[r:RESOURCE]-(vpc:GCPVpc)
+    MATCH (i:GCPInstance{id:{InstanceId}})-[:NETWORK_INTERFACE]->(nic:GCPNetworkInterface)
+          -[p:PART_OF_SUBNET]->(sn:GCPSubnet)<-[r:RESOURCE]-(vpc:GCPVpc)
     MERGE (i)-[m:MEMBER_OF_GCP_VPC]->(vpc)
     ON CREATE SET m.firstseen = timestamp()
     SET m.lastupdated = {gcp_update_tag}
@@ -725,7 +726,7 @@ def _attach_firewall_rules(neo4j_session, fw, gcp_update_tag):
     query = """
     MATCH (fw:GCPFirewall{id:{FwPartialUri}})
 
-    MERGE(rule:IpRule:IpPermissionInbound:GCPIpRule{id:{RuleId}})
+    MERGE (rule:IpRule:IpPermissionInbound:GCPIpRule{id:{RuleId}})
     ON CREATE SET rule.firstseen = timestamp(),
     rule.ruleid = {RuleId}
     SET rule.protocol = {Protocol},
@@ -733,7 +734,7 @@ def _attach_firewall_rules(neo4j_session, fw, gcp_update_tag):
     rule.toport = {ToPort},
     rule.lastupdated = {gcp_update_tag}
 
-    MERGE(rng:IpRange{id:{Range}})
+    MERGE (rng:IpRange{id:{Range}})
     ON CREATE SET rng.firstseen = timestamp(),
     rng.range = {Range}
     SET rng.lastupdated = {gcp_update_tag}
@@ -783,7 +784,7 @@ def _attach_target_tags(neo4j_session, fw, gcp_update_tag):
     query = """
     MATCH (fw:GCPFirewall{id:{FwPartialUri}})
 
-    MERGE(t:GCPNetworkTag{id:{TagId}})
+    MERGE (t:GCPNetworkTag{id:{TagId}})
     ON CREATE SET t.firstseen = timestamp(),
     t.tag_id = {TagId},
     t.value = {TagValue}
