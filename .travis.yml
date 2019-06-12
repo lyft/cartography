@@ -1,3 +1,11 @@
+dist: xenial
+addons:
+  apt:
+    sources:
+      - sourceline: 'deb https://debian.neo4j.org/repo stable'
+        key_url: 'https://debian.neo4j.org/neotechnology.gpg.key'
+    packages:
+      neo4j
 sudo: false
 language: python
 python:
