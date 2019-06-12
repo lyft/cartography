@@ -13,8 +13,8 @@ python:
 services:
 - neo4j
 before_install:
-- sed -i 's/dbms.security.auth_enabled=true/dbms.security.auth_enabled=false/g' /etc/neo4j/neo4j.conf
-- systemctl restart neo4j
+- sudo sed -i 's/dbms.security.auth_enabled=true/dbms.security.auth_enabled=false/g' /etc/neo4j/neo4j.conf
+- sudo systemctl restart neo4j
 install:
 - pip install -e .
 - pip install -r test-requirements.txt
