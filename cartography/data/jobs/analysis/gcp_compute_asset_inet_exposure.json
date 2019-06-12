@@ -12,9 +12,9 @@
     "__comment__": "Connect GCP ingress firewall rules to the instances that they apply to via target tags"
   },
   {
-   "query": "MATCH (fw:GCPFirewall{direction: 'INGRESS'})\nWHERE NOT (fw)-[:TARGET_TAG]->(:GCPNetworkTag)\nmatch (inst:GCPInstance)-[mem:MEMBER_OF_GCP_VPC]->(vpc:GCPVpc)-[res:RESOURCE]->(fw)\nMERGE (fw)-[a:FIREWALL_INGRESS]->(inst)\nON CREATE SET a.firstseen = timestamp()\nSET a.lastupdated = {UPDATE_TAG}\nRETURN count(*) as TotalCompleted",
+   "query": "MATCH (fw:GCPFirewall{direction: 'INGRESS', has_target_service_accounts: False})\nWHERE NOT (fw)-[:TARGET_TAG]->(:GCPNetworkTag)\nmatch (inst:GCPInstance)-[mem:MEMBER_OF_GCP_VPC]->(vpc:GCPVpc)-[res:RESOURCE]->(fw)\nMERGE (fw)-[a:FIREWALL_INGRESS]->(inst)\nON CREATE SET a.firstseen = timestamp()\nSET a.lastupdated = {UPDATE_TAG}\nRETURN count(*) as TotalCompleted",
     "iterative": false,
-    "__comment__": "Connect GCP ingress firewall rules that don't specify target tags to the instances that they apply to via sharing the same VPC"
+    "__comment__": "Connect GCP ingress firewall rules that don't specify target tags and don't specify target service accounts to the instances that they apply to via sharing the same VPC"
   },
   {
     "query": "MATCH (fw:GCPFirewall)-[a:FIREWALL_INGRESS]->(inst:GCPInstance)\nWHERE a.lastupdated <> {UPDATE_TAG}\nDELETE (a)\nRETURN count(*) as TotalCompleted",

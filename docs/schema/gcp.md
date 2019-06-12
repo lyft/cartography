@@ -11,6 +11,7 @@
 - [GCPVpc](#gcpvpc) 
 - [GCPNicAccessConfig](#gcpnicaccessconfig)
 - [GCPSubnet](#gcpsubnet)
+- [GCPFirewall](#gcpfirewall)
 
 
 ## GCPOrganization
@@ -165,7 +166,7 @@ Representation of a GCP [Organization](https://cloud.google.com/resource-manager
     
     as well as
     ```
-    MATCH (fw:GCPFirewall{direction: 'INGRESS'})
+    MATCH (fw:GCPFirewall{direction: 'INGRESS', has_target_service_accounts: False}})
     WHERE NOT (fw)-[TARGET_TAG]->(GCPNetworkTag)
     MATCH (GCPInstance)-[MEMBER_OF_GCP_VPC]->(GCPVpc)-[RESOURCE]->(fw)
     ```
@@ -362,7 +363,7 @@ Representation of a GCP [Firewall](https://cloud.google.com/compute/docs/referen
 | disabled | Whether this firewall object is disabled
 | priority | The priority of this firewall rule from 1 (apply this first)-65535 (apply this last)
 | self_link | The full resource URI to this firewall |
-
+| has_target_service_accounts | Set to True if this Firewall has target service accounts defined. This field is currently a placeholder for future functionality to add GCP IAM objects to Cartography. If True, this firewall rule will only apply to GCP instances that use the specified target service account. |
 
 ### Relationships
 
@@ -401,7 +402,7 @@ Representation of a GCP [Firewall](https://cloud.google.com/compute/docs/referen
     
     as well as
     ```
-    MATCH (fw:GCPFirewall{direction: 'INGRESS'})
+    MATCH (fw:GCPFirewall{direction: 'INGRESS', has_target_service_accounts: False}})
     WHERE NOT (fw)-[TARGET_TAG]->(GCPNetworkTag)
     MATCH (GCPInstance)-[MEMBER_OF_GCP_VPC]->(GCPVpc)-[RESOURCE]->(fw)
     ```
