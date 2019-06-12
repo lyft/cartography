@@ -12,7 +12,7 @@
     "__comment__": "Connect GCP ingress firewall rules to the instances that they apply to via target tags"
   },
   {
-   "query": "MATCH (fw:GCPFirewall{direction: 'INGRESS', has_target_service_accounts: False})\nWHERE NOT (fw)-[:TARGET_TAG]->(:GCPNetworkTag)\nmatch (inst:GCPInstance)-[mem:MEMBER_OF_GCP_VPC]->(vpc:GCPVpc)-[res:RESOURCE]->(fw)\nMERGE (fw)-[a:FIREWALL_INGRESS]->(inst)\nON CREATE SET a.firstseen = timestamp()\nSET a.lastupdated = {UPDATE_TAG}\nRETURN count(*) as TotalCompleted",
+    "query": "MATCH (fw:GCPFirewall{direction: 'INGRESS', has_target_service_accounts: False})\nWHERE NOT (fw)-[:TARGET_TAG]->(:GCPNetworkTag)\nmatch (inst:GCPInstance)-[mem:MEMBER_OF_GCP_VPC]->(vpc:GCPVpc)-[res:RESOURCE]->(fw)\nMERGE (fw)-[a:FIREWALL_INGRESS]->(inst)\nON CREATE SET a.firstseen = timestamp()\nSET a.lastupdated = {UPDATE_TAG}\nRETURN count(*) as TotalCompleted",
     "iterative": false,
     "__comment__": "Connect GCP ingress firewall rules that don't specify target tags and don't specify target service accounts to the instances that they apply to via sharing the same VPC"
   },
@@ -20,6 +20,16 @@
     "query": "MATCH (fw:GCPFirewall)-[a:FIREWALL_INGRESS]->(inst:GCPInstance)\nWHERE a.lastupdated <> {UPDATE_TAG}\nDELETE (a)\nRETURN count(*) as TotalCompleted",
     "iterative": false,
     "__comment__": "Delete stale firewall ingress relationships"
+  },
+  {
+    "query": "MATCH (n:GCPInstance)<-[ingress:FIREWALL_INGRESS]-(fw:GCPFirewall)<-[a:ALLOWED_BY]-(allow_rule:GCPIpRule{protocol:'tcp'})\nOPTIONAL MATCH (n)<-[ingress]-(GCPFirewall)<-[a:DENIED_BY]-(deny_rule:GCPIpRule{protocol:'tcp'})\nWHERE deny_rule.priority <= allow_rule.priority\nAND (NOT allow_rule.fromport IN RANGE(deny_rule.fromport, deny_rule.toport) \n\tOR NOT allow_rule.toport IN RANGE(deny_rule.fromport, deny_rule.toport))\nSET n.exposed_internet = True,\n\tn.exposed_internet_type='direct'\nRETURN count(*) as TotalCompleted",
+    "iterative": false,
+    "__comment__": "Mark a GCP instance with exposed_internet = True and exposed_internet_type = 'direct' if there is an 'allow' TCP IPRule attached to one of the instance's ingress firewalls with the following conditions:  The 'allow' IPRule allows traffic from one or more TCP ports, and the 'allow' IPRule is not superceded by a 'deny' IPRule (in GCP, a firewall rule of priority 1 gets applied ahead of a firewall rule of priority 100, and 'deny' rules of the same priority are applied ahead of 'allow' rules)"
+  },
+  {
+    "query": "MATCH (n:GCPInstance)<-[ingress:FIREWALL_INGRESS]-(fw:GCPFirewall)<-[a:ALLOWED_BY]-(allow_rule:GCPIpRule{protocol:'udp'})\nOPTIONAL MATCH (n)<-[ingress]-(GCPFirewall)<-[a:DENIED_BY]-(deny_rule:GCPIpRule{protocol:'udp'})\nWHERE deny_rule.priority <= allow_rule.priority\nAND (NOT allow_rule.fromport IN RANGE(deny_rule.fromport, deny_rule.toport)\n\tOR NOT allow_rule.toport IN RANGE(deny_rule.fromport, deny_rule.toport))\nSET n.exposed_internet = True,\n\tn.exposed_internet_type='direct'\nRETURN count(*) as TotalCompleted",
+    "iterative": false,
+    "__comment__": "Mark a GCP instance with exposed_internet = True and exposed_internet_type = 'direct' if there is an 'allow' UDP IpRule attached to one of the instance's ingress firewalls with the following conditions:  The 'allow' IpRule allows traffic from one or more TCP ports, and the 'allow' IpRule is not superceded by a 'deny' IpRule (in GCP, a firewall rule of priority 1 gets applied ahead of a firewall rule of priority 100, and 'deny' rules of the same priority are applied ahead of 'allow' rules)"
   }
 ],
   "name": "GCP asset internet exposure"
