@@ -152,6 +152,23 @@ Representation of a GCP [Organization](https://cloud.google.com/resource-manager
     ```
     (GCPInstance)-[:TAGGED]->(GCPNetworkTag)
     ```
+
+- GCP Firewalls allow ingress to GCP instances.  
+    ```
+    (GCPFirewall)-[:FIREWALL_INGRESS]->(GCPInstance)
+    ```
+
+    Note that this relationship is a shortcut for:
+    ```
+    (vpc:GCPVpc)<-[MEMBER_OF_GCP_VPC]-(GCPInstance)-[TAGGED]->(GCPNetworkTag)-[TARGET_TAG]-(GCPFirewall{direction: 'INGRESS'})<-[RESOURCE]-(vpc)
+    ```
+    
+    as well as
+    ```
+    MATCH (fw:GCPFirewall{direction: 'INGRESS'})
+    WHERE NOT (fw)-[TARGET_TAG]->(GCPNetworkTag)
+    MATCH (GCPInstance)-[MEMBER_OF_GCP_VPC]->(GCPVpc)-[RESOURCE]->(fw)
+    ```
  
 ## GCPNetworkTag
 
@@ -370,6 +387,23 @@ Representation of a GCP [Firewall](https://cloud.google.com/compute/docs/referen
 - GCP Firewalls can be labeled with tags to direct traffic to or deny traffic to labeled GCPInstances
     ```
     (GCPFirewall)-[:TARGET_TAG]->(GCPNetworkTag)
+    ```
+
+- GCP Firewalls allow ingress to GCP instances.  
+    ```
+    (GCPFirewall)-[:FIREWALL_INGRESS]->(GCPInstance)
+    ```
+
+    Note that this relationship is a shortcut for:
+    ```
+    (vpc:GCPVpc)<-[MEMBER_OF_GCP_VPC]-(GCPInstance)-[TAGGED]->(GCPNetworkTag)-[TARGET_TAG]-(GCPFirewall{direction: 'INGRESS'})<-[RESOURCE]-(vpc)
+    ```
+    
+    as well as
+    ```
+    MATCH (fw:GCPFirewall{direction: 'INGRESS'})
+    WHERE NOT (fw)-[TARGET_TAG]->(GCPNetworkTag)
+    MATCH (GCPInstance)-[MEMBER_OF_GCP_VPC]->(GCPVpc)-[RESOURCE]->(fw)
     ```
 
 
