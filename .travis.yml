@@ -12,16 +12,13 @@ python:
 - '3.6'
 services:
 - neo4j
-before_install:
+before_install:  # disable auth for neo4j and restart it...
 - sudo sed -i 's/#dbms.security.auth_enabled=false/dbms.security.auth_enabled=false/g' /etc/neo4j/neo4j.conf
-- cat /etc/neo4j/neo4j.conf
 - sudo systemctl restart neo4j
 install:
 - pip install -e .
 - pip install -r test-requirements.txt
 script:
-- systemctl status neo4j
-- curl localhost:7474
 - make test
 deploy:
   provider: pypi
