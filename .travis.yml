@@ -17,6 +17,7 @@ install:
 - pip install -r test-requirements.txt
 script:
 - systemctl status neo4j
+- curl localhost:7474
 - make test
 deploy:
   provider: pypi
