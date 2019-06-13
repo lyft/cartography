@@ -1,0 +1,12 @@
+{
+  "name": "Test-Expectations",
+  "validation_query": "MATCH (d) RETURN d.baseline",
+  "detector_type": 1,
+  "expectations": [
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6"]
+}
