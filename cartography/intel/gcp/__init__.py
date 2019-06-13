@@ -4,6 +4,7 @@ import logging
 from collections import namedtuple
 
 from cartography.intel.gcp import crm, compute
+from cartography.util import run_analysis_job
 
 logger = logging.getLogger(__name__)
 Resources = namedtuple('Resources', 'crm_v1 crm_v2 compute')
@@ -128,3 +129,9 @@ def start_gcp_ingestion(session, config):
     projects = crm.get_gcp_projects(resources.crm_v1)
 
     _sync_multiple_projects(session, resources, projects, config.update_tag, common_job_parameters)
+
+    run_analysis_job(
+        'gcp_compute_asset_inet_exposure.json',
+        session,
+        common_job_parameters
+    )
