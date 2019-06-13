@@ -5,7 +5,7 @@
 #
 import json
 from driftdetect.driftdetectortype import DriftDetectorType
-from marshmallow import Schema, fields, post_load
+from marshmallow import Schema, fields, post_load, ValidationError
 
 
 def _build_drift_insight(graph_result):
@@ -25,7 +25,7 @@ def _build_drift_insight(graph_result):
 
 class DriftDetector(object):
     """
-    Class that represent a job to run against the intel graph. This is a series of
+    Class that represent a job to run against the graph. This is a series of
     GraphStatement that will run sequentially
     """
 
@@ -40,11 +40,11 @@ class DriftDetector(object):
         self.expectations = expectations
         self.detector_type = detector_type
 
-    def run(self, session):
+    def run_(self, session):
         """
         Performs Detection
         :type neo4j Session
-        :param session: Intel graph session
+        :param session: graph session
         :return: Drift detected as Iterator
         """
         results = session.run(self.validation_query)
@@ -54,6 +54,20 @@ class DriftDetector(object):
 
             if baseline_tag not in self.expectations:
                 yield _build_drift_insight(r)
+
+    def run(self, session):
+        """
+        Performs Detection
+        :type neo4j session
+        :param session: graph session
+        :return:
+        """
+        results = session.run(self.validation_query)
+
+        for record in results:
+            values = [value for value in record.values()]
+            if values not in self.expectations:
+                yield _build_drift_insight(record)
 
     @classmethod
     def from_json_file(cls, file_path):
@@ -69,15 +83,16 @@ class DriftDetector(object):
                 schema = DriftDetectorSchema()
                 detector = schema.load(data)
                 return detector
-        except Exception:
-            raise
+        except ValidationError as err:
+            err.messages
+            err.valid_data
 
 
 class DriftDetectorSchema(Schema):
     name = fields.Str()
     validation_query = fields.Str()
     detector_type = fields.Int()
-    expectations = fields.List(fields.Str())
+    expectations = fields.List(fields.List(fields.Str()))
 
     @post_load
     def make_driftdetector(self, data):

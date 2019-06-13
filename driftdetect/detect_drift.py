@@ -13,7 +13,7 @@ def perform_baseline_drift_detection(session, expect_folder):
     """
     Perform baseline drift detection based on the detectors defined in the expect_folder
     :type neo4j Session
-    :param driver: Intel graph db driver
+    :param driver: graph db driver
     :param expect_folder: Folder where the detectors are defined
     :return: None
     """
@@ -39,7 +39,7 @@ def _get_detectors(expect_folder):
     for root, _, filenames in os.walk(expect_folder):
         for filename in filenames:
             file_path = os.path.join(root, filename)
-            detectors.append(DriftDetector.from_json_file(file_path).data)
+            detectors.append(DriftDetector.from_json_file(file_path))
 
     return detectors
 
