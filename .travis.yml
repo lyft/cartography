@@ -1,10 +1,20 @@
-dist: trusty
-sudo: false
+dist: xenial
+addons:
+  apt:
+    sources:
+      - sourceline: 'deb https://debian.neo4j.org/repo stable/'
+        key_url: 'https://debian.neo4j.org/neotechnology.gpg.key'
+    packages:
+      neo4j=3.2.*
+sudo: true
 language: python
 python:
 - '3.6'
 services:
 - neo4j
+before_install:  # disable auth for neo4j and restart it...
+- sudo sed -i 's/#dbms.security.auth_enabled=false/dbms.security.auth_enabled=false/g' /etc/neo4j/neo4j.conf
+- sudo systemctl restart neo4j
 install:
 - pip install -e .
 - pip install -r test-requirements.txt
