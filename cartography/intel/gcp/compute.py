@@ -268,6 +268,9 @@ def transform_gcp_firewall(fw_response):
 
         fw['transformed_allow_list'] = []
         fw['transformed_deny_list'] = []
+        # Mark whether this FW is defined on a target service account.
+        # In future we will need to ingest GCP IAM objects but for now we simply mark the presence of svc accounts here.
+        fw['has_target_service_accounts'] = True if 'targetServiceAccounts' in fw else False
 
         for allow_rule in fw.get('allowed', []):
             transformed_allow_rules = _transform_fw_entry(allow_rule, fw_partial_uri, is_allow_rule=True)
@@ -688,6 +691,7 @@ def load_gcp_ingress_firewalls(neo4j_session, fw_list, gcp_update_tag):
     fw.name = {Name},
     fw.priority = {Priority},
     fw.self_link = {SelfLink},
+    fw.has_target_service_accounts = {HasTargetServiceAccounts},
     fw.lastupdated = {gcp_update_tag}
 
     MERGE (vpc:GCPVpc{id:{VpcPartialUri}})
@@ -709,6 +713,7 @@ def load_gcp_ingress_firewalls(neo4j_session, fw_list, gcp_update_tag):
             Priority=fw['priority'],
             SelfLink=fw['selfLink'],
             VpcPartialUri=fw['vpc_partial_uri'],
+            HasTargetServiceAccounts=fw['has_target_service_accounts'],
             gcp_update_tag=gcp_update_tag
         )
         _attach_firewall_rules(neo4j_session, fw, gcp_update_tag)

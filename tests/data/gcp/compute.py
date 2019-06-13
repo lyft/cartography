@@ -515,7 +515,8 @@ TRANSFORMED_FW_LIST = [{
         'toport': None
     }],
     'transformed_deny_list': [],
-    'vpc_partial_uri': 'projects/project-abc/global/networks/default'
+    'vpc_partial_uri': 'projects/project-abc/global/networks/default',
+    'has_target_service_accounts' : False
 }, {
     'allowed': [{
         'IPProtocol': 'tcp',
@@ -557,7 +558,8 @@ TRANSFORMED_FW_LIST = [{
         'toport': None
     }],
     'transformed_deny_list': [],
-    'vpc_partial_uri': 'projects/project-abc/global/networks/default'
+    'vpc_partial_uri': 'projects/project-abc/global/networks/default',
+    'has_target_service_accounts' : False
 }, {
     'allowed': [{
         'IPProtocol': 'tcp',
@@ -584,7 +586,8 @@ TRANSFORMED_FW_LIST = [{
         'toport': 3389
     }],
     'transformed_deny_list': [],
-    'vpc_partial_uri': 'projects/project-abc/global/networks/default'
+    'vpc_partial_uri': 'projects/project-abc/global/networks/default',
+    'has_target_service_accounts' : False
 }, {
     'allowed': [{
         'IPProtocol': 'tcp',
@@ -611,7 +614,8 @@ TRANSFORMED_FW_LIST = [{
         'toport': 22
     }],
     'transformed_deny_list': [],
-    'vpc_partial_uri': 'projects/project-abc/global/networks/default'
+    'vpc_partial_uri': 'projects/project-abc/global/networks/default',
+    'has_target_service_accounts' : False
 }, {
     'allowed': [{
         'IPProtocol': 'tcp',
@@ -639,5 +643,6 @@ TRANSFORMED_FW_LIST = [{
         'toport': 9001
     }],
     'transformed_deny_list': [],
-    'vpc_partial_uri': 'projects/project-abc/global/networks/default'
+    'vpc_partial_uri': 'projects/project-abc/global/networks/default',
+    'has_target_service_accounts' : False
 }]
