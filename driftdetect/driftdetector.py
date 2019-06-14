@@ -1,8 +1,3 @@
-#
-# Assumption drift detection based on baseline and intel service graph data
-#
-# Author: Sacha Faust (sfaust@lyft.com)
-#
 import json
 from driftdetect.driftdetectortype import DriftDetectorType
 from marshmallow import Schema, fields, post_load, ValidationError

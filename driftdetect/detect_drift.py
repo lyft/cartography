@@ -1,8 +1,3 @@
-#
-# Assumption drift detection based on baseline and intel service graph data
-#
-# Author: Sacha Faust (sfaust@lyft.com)
-#
 import os
 import os.path
 from driftdetect.driftdetector import DriftDetector

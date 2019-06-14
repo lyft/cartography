@@ -110,7 +110,13 @@ def test_perform_baseline_drift_detection():
     mock_boltstatementresult_1.__iter__.side_effect = results_1.__iter__
     mock_boltstatementresult_2.__getitem__.side_effect = results_2.__getitem__
     mock_boltstatementresult_2.__iter__.side_effect = results_2.__iter__
-    mock_session.run.side_effect = [mock_boltstatementresult_2, mock_boltstatementresult_1]
+
+    def mock_session_side_effect(*args, **kwargs):
+        if args[0] == "MATCH (d) RETURN d.test":
+            return mock_boltstatementresult_1
+        else:
+            return mock_boltstatementresult_2
+    mock_session.run.side_effect = mock_session_side_effect
     pairs = []
     for drift_info, detector in perform_baseline_drift_detection(mock_session, expect_folder="tests/data/detectors"):
         pairs.append((drift_info, detector))
@@ -123,6 +129,6 @@ def test_json_loader():
     filepath = "tests/data/detectors/test_expectations.json"
     detector = DriftDetector.from_json_file(filepath)
     assert detector.name == "Test-Expectations"
-    assert detector.validation_query == "MATCH (d) RETURN d.baseline"
+    assert detector.validation_query == "MATCH (d) RETURN d.test"
     assert str(detector.detector_type) == "DriftDetectorType.EXPOSURE"
     assert detector.expectations == [['1'], ['2'], ['3'], ['4'], ['5'], ['6']]

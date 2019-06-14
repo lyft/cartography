@@ -1,6 +1,6 @@
 {
   "name": "Test-Multiple-Expectations",
-  "validation_query": "MATCH (d) RETURN d.baseline",
+  "validation_query": "MATCH (d) RETURN d.tests",
   "detector_type": 1,
   "expectations": [
     ["1","8"],
