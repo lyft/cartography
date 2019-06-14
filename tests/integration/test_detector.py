@@ -1,5 +1,5 @@
 from driftdetect.driftdetector import DriftDetector
-from driftdetect.detect_drift import perform_baseline_drift_detection
+from driftdetect.detect_drift import get_drift_from_detectors
 from unittest.mock import MagicMock
 
 
@@ -76,11 +76,38 @@ def test_detector_multiple_expectations():
     for it in detector.run(mock_session):
         drifts.append(it)
     mock_session.run.assert_called_with(detector.validation_query)
-    assert drifts
-    assert drifts[0] == {key_1: "7", key_2: "14"}
+    assert {key_1: "7", key_2: "14"} in drifts
 
 
-def test_perform_baseline_drift_detection():
+def test_drift_from_multiple_properties():
+    mock_session = MagicMock()
+    mock_boltstatementresult = MagicMock()
+    key_1 = "key_1"
+    key_2 = "key_2"
+    key_3 = "key_3"
+    results = [
+        {key_1: "1", key_2: "8", key_3: ["15", "22", "29"]},
+        {key_1: "2", key_2: "9", key_3: ["16", "23", "30"]},
+        {key_1: "3", key_2: "10", key_3: ["17", "24", "31"]},
+        {key_1: "4", key_2: "11", key_3: ["18", "25", "32"]},
+        {key_1: "5", key_2: "12", key_3: ["19", "26", "33"]},
+        {key_1: "6", key_2: "13", key_3: ["20", "27", "34"]},
+        {key_1: "7", key_2: "14", key_3: ["21", "28", "35"]}
+    ]
+    mock_boltstatementresult.__getitem__.side_effect = results.__getitem__
+    mock_boltstatementresult.__iter__.side_effect = results.__iter__
+    mock_session.run.return_value = mock_boltstatementresult
+    detector = DriftDetector.from_json_file("tests/data/detectors/test_multiple_properties.json")
+    drifts = []
+    for it in detector.run(mock_session):
+        drifts.append(it)
+    mock_session.run.assert_called_with(detector.validation_query)
+    print(drifts)
+    assert {key_1: "7", key_2: "14", key_3: ["21", "28", "35"]} in drifts
+    assert {key_1: "3", key_2: "10", key_3: ["17", "24", "31"]} not in drifts
+
+
+def test_get_drift_from_detectors():
     key = "baseline_tag"
     key_1 = "baseline_tag"
     key_2 = "other_tag"
@@ -118,12 +145,16 @@ def test_perform_baseline_drift_detection():
             return mock_boltstatementresult_2
 
     mock_session.run.side_effect = mock_session_side_effect
+    detectors = []
+    detectors.append(DriftDetector.from_json_file("tests/data/detectors/test_expectations.json"))
+    detectors.append(DriftDetector.from_json_file("tests/data/detectors/test_multiple_expectations.json"))
     drifts = []
-    for drift_info, detector in perform_baseline_drift_detection(mock_session, expect_folder="tests/data/detectors"):
+    for drift_info, detector in get_drift_from_detectors(mock_session, detectors):
         drifts.append(drift_info)
 
     assert {key_1: "7", key_2: "14"} in drifts
     assert {key: "7"} in drifts
+    assert {key_1: "3", key_2: "10"} not in drifts
 
 
 def test_json_loader():

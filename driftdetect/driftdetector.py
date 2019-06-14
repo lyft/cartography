@@ -1,6 +1,10 @@
 import json
+import logging
 from driftdetect.driftdetectortype import DriftDetectorType
 from marshmallow import Schema, fields, post_load, ValidationError
+
+
+logger = logging.getLogger(__name__)
 
 
 def _build_drift_insight(graph_result):
@@ -57,13 +61,20 @@ class DriftDetector(object):
         :param session: graph session
         :return:
         """
+
         results = session.run(self.validation_query)
+        logger.debug("Running validation for {0}".format(self.name))
 
         for record in results:
             values = []
-            for value in record.values():
-                values.append(",".join(str(value)))
-            values = [value for value in record.values()]
+            for field in record.values():
+                if isinstance(field, list):
+                    print("field: ", field)
+                    s = "|".join(field)
+                    values.append(s)
+                else:
+                    values.append(field)
+            print(values)
             if values not in self.expectations:
                 yield _build_drift_insight(record)
 
@@ -77,13 +88,16 @@ class DriftDetector(object):
         """
         try:
             with open(file_path) as j_file:
+                logger.debug("Creating from json file {0}".format(file_path))
                 data = json.load(j_file)
                 schema = DriftDetectorSchema()
                 detector = schema.load(data)
                 return detector
         except ValidationError as err:
             err.messages
-            err.valid_data
+            msg = "Unable to create DriftDetector from file {0} for {1}".format(file_path, err.mes)
+            logger.error(msg, exc_info=True)
+            raise
 
 
 class DriftDetectorSchema(Schema):

@@ -1,7 +1,11 @@
 import os
 import os.path
+import logging
 from driftdetect.driftdetector import DriftDetector
 from neo4j.v1 import GraphDatabase
+
+
+logger = logging.getLogger(__name__)
 
 
 def perform_baseline_drift_detection(session, expect_folder):
@@ -51,6 +55,7 @@ def _get_detectors(expect_folder):
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.DEBUG)
     graph_driver = GraphDatabase.driver("bolt://localhost:7687")
     with graph_driver.session() as session:
         perform_baseline_drift_detection(
