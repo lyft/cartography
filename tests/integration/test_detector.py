@@ -116,13 +116,14 @@ def test_perform_baseline_drift_detection():
             return mock_boltstatementresult_1
         else:
             return mock_boltstatementresult_2
+
     mock_session.run.side_effect = mock_session_side_effect
-    pairs = []
+    drifts = []
     for drift_info, detector in perform_baseline_drift_detection(mock_session, expect_folder="tests/data/detectors"):
-        pairs.append((drift_info, detector))
-    print([x[0] for x in pairs])
-    assert pairs[0][0] == {key_1: "7", key_2: "14"}
-    assert pairs[1][0] == {key: "7"}
+        drifts.append(drift_info)
+
+    assert {key_1: "7", key_2: "14"} in drifts
+    assert {key: "7"} in drifts
 
 
 def test_json_loader():

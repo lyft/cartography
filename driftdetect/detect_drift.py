@@ -12,8 +12,19 @@ def perform_baseline_drift_detection(session, expect_folder):
     :param expect_folder: Folder where the detectors are defined
     :return: None
     """
-
     detector_list = _get_detectors(expect_folder)
+    return get_drift_from_detectors(session, detector_list)
+
+
+def get_drift_from_detectors(session, detector_list):
+    """
+        Perform baseline drift detection based on the detectors defined in the expect_folder
+        :type neo4j Session
+        :param driver: graph db driver
+        :param detector_list: list of detectors
+        :return: None
+        """
+
     drift_info_detector_pairs = []
     for detector in detector_list:
         for drift_info in detector.run(session):
