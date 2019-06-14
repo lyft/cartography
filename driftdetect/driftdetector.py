@@ -65,6 +65,9 @@ class DriftDetector(object):
         results = session.run(self.validation_query)
 
         for record in results:
+            values = []
+            for value in record.values():
+                values.append(",".join(str(value)))
             values = [value for value in record.values()]
             if values not in self.expectations:
                 yield _build_drift_insight(record)

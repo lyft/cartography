@@ -32,7 +32,7 @@ def _get_detectors(expect_folder):
     Get detectors from the folder
     :type string
     :param expect_folder: folder where the detectors re defined
-    :return: List od DriftDetector
+    :return: List of DriftDetector
     """
 
     detectors = []
