@@ -11,6 +11,7 @@
 - [GCPVpc](#gcpvpc) 
 - [GCPNicAccessConfig](#gcpnicaccessconfig)
 - [GCPSubnet](#gcpsubnet)
+- [GCPFirewall](#gcpfirewall)
 
 
 ## GCPOrganization
@@ -120,6 +121,7 @@ Representation of a GCP [Organization](https://cloud.google.com/resource-manager
 | instancename | The name of the instance, e.g. "my-instance" |
 | zone_name | The zone that the instance is installed on |
 | hostname | If present, the hostname of the instance |
+| internet_exposed | Set to True  with `exposed_internet_type = 'direct'` if there is an 'allow' IPRule attached to one of the instance's ingress firewalls with the following conditions:  The 'allow' IpRule allows traffic from one or more TCP ports, and the 'allow' IpRule is not superceded by a 'deny' IPRule (in GCP, a firewall rule of priority 1 gets applied ahead of a firewall rule of priority 100, and 'deny' rules of the same priority are applied ahead of 'allow' rules) |
 
 ### Relationships
 
@@ -151,6 +153,23 @@ Representation of a GCP [Organization](https://cloud.google.com/resource-manager
 
     ```
     (GCPInstance)-[:TAGGED]->(GCPNetworkTag)
+    ```
+
+- GCP Firewalls allow ingress to GCP instances.  
+    ```
+    (GCPFirewall)-[:FIREWALL_INGRESS]->(GCPInstance)
+    ```
+
+    Note that this relationship is a shortcut for:
+    ```
+    (vpc:GCPVpc)<-[MEMBER_OF_GCP_VPC]-(GCPInstance)-[TAGGED]->(GCPNetworkTag)-[TARGET_TAG]-(GCPFirewall{direction: 'INGRESS'})<-[RESOURCE]-(vpc)
+    ```
+    
+    as well as
+    ```
+    MATCH (fw:GCPFirewall{direction: 'INGRESS', has_target_service_accounts: False}})
+    WHERE NOT (fw)-[TARGET_TAG]->(GCPNetworkTag)
+    MATCH (GCPInstance)-[MEMBER_OF_GCP_VPC]->(GCPVpc)-[RESOURCE]->(fw)
     ```
  
 ## GCPNetworkTag
@@ -345,7 +364,7 @@ Representation of a GCP [Firewall](https://cloud.google.com/compute/docs/referen
 | disabled | Whether this firewall object is disabled
 | priority | The priority of this firewall rule from 1 (apply this first)-65535 (apply this last)
 | self_link | The full resource URI to this firewall |
-
+| has_target_service_accounts | Set to True if this Firewall has target service accounts defined. This field is currently a placeholder for future functionality to add GCP IAM objects to Cartography. If True, this firewall rule will only apply to GCP instances that use the specified target service account. |
 
 ### Relationships
 
@@ -370,6 +389,23 @@ Representation of a GCP [Firewall](https://cloud.google.com/compute/docs/referen
 - GCP Firewalls can be labeled with tags to direct traffic to or deny traffic to labeled GCPInstances
     ```
     (GCPFirewall)-[:TARGET_TAG]->(GCPNetworkTag)
+    ```
+
+- GCP Firewalls allow ingress to GCP instances.  
+    ```
+    (GCPFirewall)-[:FIREWALL_INGRESS]->(GCPInstance)
+    ```
+
+    Note that this relationship is a shortcut for:
+    ```
+    (vpc:GCPVpc)<-[MEMBER_OF_GCP_VPC]-(GCPInstance)-[TAGGED]->(GCPNetworkTag)-[TARGET_TAG]-(GCPFirewall{direction: 'INGRESS'})<-[RESOURCE]-(vpc)
+    ```
+    
+    as well as
+    ```
+    MATCH (fw:GCPFirewall{direction: 'INGRESS', has_target_service_accounts: False}})
+    WHERE NOT (fw)-[TARGET_TAG]->(GCPNetworkTag)
+    MATCH (GCPInstance)-[MEMBER_OF_GCP_VPC]->(GCPVpc)-[RESOURCE]->(fw)
     ```
 
 
