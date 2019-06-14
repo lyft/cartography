@@ -152,36 +152,42 @@ def test_transform_and_load_firewalls(neo4j_session):
 
     query = """
     MATCH (vpc:GCPVpc)-[r:RESOURCE]->(fw:GCPFirewall)
-    return vpc.id, fw.id
+    return vpc.id, fw.id, fw.has_target_service_accounts
     """
 
     nodes = neo4j_session.run(query)
     actual_nodes = set([(
         (
             n['vpc.id'],
-            n['fw.id']
+            n['fw.id'],
+            n['fw.has_target_service_accounts']
         )
     ) for n in nodes])
     expected_nodes = set([
         (
             'projects/project-abc/global/networks/default',
-            'projects/project-abc/global/firewalls/default-allow-icmp'
+            'projects/project-abc/global/firewalls/default-allow-icmp',
+            False
         ),
         (
             'projects/project-abc/global/networks/default',
-            'projects/project-abc/global/firewalls/default-allow-internal'
+            'projects/project-abc/global/firewalls/default-allow-internal',
+            False
         ),
         (
             'projects/project-abc/global/networks/default',
-            'projects/project-abc/global/firewalls/default-allow-rdp'
+            'projects/project-abc/global/firewalls/default-allow-rdp',
+            False
         ),
         (
             'projects/project-abc/global/networks/default',
-            'projects/project-abc/global/firewalls/default-allow-ssh'
+            'projects/project-abc/global/firewalls/default-allow-ssh',
+            False
         ),
         (
             'projects/project-abc/global/networks/default',
-            'projects/project-abc/global/firewalls/custom-port-incoming'
+            'projects/project-abc/global/firewalls/custom-port-incoming',
+            False
         )
     ])
     assert actual_nodes == expected_nodes
