@@ -34,7 +34,7 @@ setup(
         "python-dateutil>=2.7.0",
         "google-api-python-client>=1.7.8",
         "oauth2client>=4.1.3",
-        "marshmallow>=3.0.0rc6"
+        "marshmallow>=3.0.0rc7"
     ],
     extras_require={
         ':python_version<"3.7"': [

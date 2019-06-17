@@ -68,7 +68,7 @@ class DriftDetectorSchema(Schema):
     expectations = fields.List(fields.List(fields.Str()))
 
     @post_load
-    def make_driftdetector(self, data):
+    def make_driftdetector(self, data, **kwargs):
         return DriftDetector(data['name'],
                              data['validation_query'],
                              data['expectations'],
