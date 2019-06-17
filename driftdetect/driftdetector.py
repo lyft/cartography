@@ -1,6 +1,6 @@
 import json
 import logging
-from marshmallow import Schema, fields, post_load, ValidationError
+from marshmallow import Schema, fields, post_load
 from enum import IntEnum
 
 
@@ -12,11 +12,6 @@ class DriftDetectorType(IntEnum):
 
 
 class DriftDetector(object):
-    """
-    Class that represent a job to run against the graph. This is a series of
-    GraphStatement that will run sequentially
-    """
-
     def __init__(self,
                  name,
                  validation_query,
@@ -58,17 +53,12 @@ class DriftDetector(object):
         :param file_path:
         :return: DriftDetector
         """
-        try:
-            with open(file_path) as j_file:
-                logger.debug("Creating from json file {0}".format(file_path))
-                data = json.load(j_file)
-                schema = DriftDetectorSchema()
-                detector = schema.load(data)
-                return detector
-        except ValidationError as err:
-            msg = "Unable to create DriftDetector from file {0} for {1}".format(file_path, err.messages)
-            logger.error(msg, exc_info=True)
-            raise
+        logger.debug("Creating from json file {0}".format(file_path))
+        with open(file_path) as j_file:
+            data = json.load(j_file)
+        schema = DriftDetectorSchema()
+        detector = schema.load(data)
+        return detector
 
 
 class DriftDetectorSchema(Schema):
