@@ -1,25 +1,14 @@
 import json
 import logging
-from driftdetect.driftdetectortype import DriftDetectorType
 from marshmallow import Schema, fields, post_load, ValidationError
+from enum import IntEnum
 
 
 logger = logging.getLogger(__name__)
 
 
-def _build_drift_insight(graph_result):
-    """
-    Build drift insight
-    :type BoltStatementResult
-    :param graph_result: Graph data returned by the validation_query
-    :return: Dictionary representing the addition data we have on the drift
-    """
-
-    data = {}
-    for k in graph_result.keys():
-        data[k] = graph_result[k]
-
-    return data
+class DriftDetectorType(IntEnum):
+    EXPOSURE = 1
 
 
 class DriftDetector(object):
@@ -39,21 +28,6 @@ class DriftDetector(object):
         self.expectations = expectations
         self.detector_type = detector_type
 
-    def run_(self, session):
-        """
-        Performs Detection
-        :type neo4j Session
-        :param session: graph session
-        :return: Drift detected as Iterator
-        """
-        results = session.run(self.validation_query)
-
-        for r in results:
-            baseline_tag = r["baseline_tag"]
-
-            if baseline_tag not in self.expectations:
-                yield _build_drift_insight(r)
-
     def run(self, session):
         """
         Performs Detection
@@ -69,12 +43,10 @@ class DriftDetector(object):
             values = []
             for field in record.values():
                 if isinstance(field, list):
-                    print("field: ", field)
                     s = "|".join(field)
                     values.append(s)
                 else:
                     values.append(field)
-            print(values)
             if values not in self.expectations:
                 yield _build_drift_insight(record)
 
@@ -94,8 +66,7 @@ class DriftDetector(object):
                 detector = schema.load(data)
                 return detector
         except ValidationError as err:
-            err.messages
-            msg = "Unable to create DriftDetector from file {0} for {1}".format(file_path, err.mes)
+            msg = "Unable to create DriftDetector from file {0} for {1}".format(file_path, err.messages)
             logger.error(msg, exc_info=True)
             raise
 
@@ -112,3 +83,18 @@ class DriftDetectorSchema(Schema):
                              data['validation_query'],
                              data['expectations'],
                              DriftDetectorType(data['detector_type']))
+
+
+def _build_drift_insight(graph_result):
+    """
+    Build drift insight
+    :type BoltStatementResult
+    :param graph_result: Graph data returned by the validation_query
+    :return: Dictionary representing the addition data we have on the drift
+    """
+
+    data = {}
+    for k in graph_result.keys():
+        data[k] = graph_result[k]
+
+    return data

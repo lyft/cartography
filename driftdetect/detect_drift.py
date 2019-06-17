@@ -2,7 +2,6 @@ import os
 import os.path
 import logging
 from driftdetect.driftdetector import DriftDetector
-from neo4j.v1 import GraphDatabase
 
 
 logger = logging.getLogger(__name__)
@@ -22,12 +21,12 @@ def perform_baseline_drift_detection(session, expect_folder):
 
 def get_drift_from_detectors(session, detector_list):
     """
-        Perform baseline drift detection based on the detectors defined in the expect_folder
-        :type neo4j Session
-        :param driver: graph db driver
-        :param detector_list: list of detectors
-        :return: None
-        """
+    Perform baseline drift detection based on the detectors defined in the expect_folder
+    :type neo4j Session
+    :param driver: graph db driver
+    :param detector_list: list of detectors
+    :return: None
+    """
 
     drift_info_detector_pairs = []
     for detector in detector_list:
@@ -52,13 +51,3 @@ def _get_detectors(expect_folder):
             detectors.append(DriftDetector.from_json_file(file_path))
 
     return detectors
-
-
-if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG)
-    graph_driver = GraphDatabase.driver("bolt://localhost:7687")
-    with graph_driver.session() as session:
-        perform_baseline_drift_detection(
-            session=session,
-            expect_folder="driftdetect/detectors"
-        )
