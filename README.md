@@ -8,30 +8,39 @@ Service owners can generate asset reports, Red Teamers can discover attack paths
 
 Cartography is not the only [security](https://github.com/dowjones/hammer) [graph](https://github.com/BloodHoundAD/BloodHound) [tool](https://github.com/Netflix/security_monkey) [out](https://github.com/vysecurity/ANGRYPUPPY) [there](https://github.com/duo-labs/cloudmapper), but it differentiates itself by being fully-featured yet generic and [extensible](docs/writing-analysis-jobs.md) enough to help make anyone better understand their risk exposure, regardless of what platforms they use.  Rather than being focused on one core scenario or attack vector like the other linked tools, Cartography focuses on flexibility and exploration.
 
-You can learn more about the story behind Cartography in our [presentation at BSidesSF 2018](https://www.youtube.com/watch?v=8TV9TSNh7pA).
+You can learn more about the story behind Cartography in our [presentation at BSidesSF 2019](https://www.youtube.com/watch?v=ZukUmZSKSek).
 
 
 ## Installation
 
-Time to set up the server that will run Cartography.  Cartography _should_ work on both Linux and Windows servers, but bear in mind we've only tested it in Linux so far.
+Time to set up the server that will run Cartography.  Cartography _should_ work on both Linux and Windows servers, but bear in mind we've only tested it in Linux so far.  Cartography requires Python 3.4 or greater.
 
 1. **Get and install the Neo4j graph database** on your server.
 
-	1. Go to the [Neo4j download page](https://neo4j.com/download-center/#releases), click "Community Server" and download Neo4j Community Edition 3.3.9.
+	1. Go to the [Neo4j download page](https://neo4j.com/download-center/#releases), click "Community Server" and download Neo4j Community Edition 3.2.*.
 
-			⚠️ At this time we only support version 3.3.*. ⚠️
+			⚠️ At this time we run our automated tests on Neo4j version 3.2.*.  3.3.* will work but it will currently fail the [test syntax test](https://github.com/lyft/cartography/blob/8f3f4b739e0033a7849c35cfa8edd3b0067be509/tests/integration/cartography/data/jobs/test_syntax.py) ⚠️
 			
 	2. [Install](https://neo4j.com/docs/operations-manual/current/installation/) Neo4j on the server you will run Cartography on.
 
 
-2. **Prepare your AWS account(s)** 
+2. If you're an AWS user, **prepare your AWS account(s)** 
 
 	- **If you only have a single AWS account**
 		
 		1. Set up an AWS identity (user, group, or role) for Cartography to use.  Ensure that this identity has the built-in AWS [SecurityAudit policy](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_job-functions.html#jf_security-auditor) (arn:aws:iam::aws:policy/SecurityAudit) attached.  This policy grants access to read security config metadata.
 		2. Set up AWS credentials to this identity on your server, using a `config` and 	`credential` file.  For details, see AWS' [official guide](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html).
   
- 	- **If you want to pull from multiple AWS accounts**, see [here](#multiple-aws-account-setup). 
+ 	- **If you want to pull from multiple AWS accounts**, see [here](#multiple-aws-account-setup).
+
+
+3. If you're a GCP user, **prepare your GCP credential(s)**
+
+    1. Create an identity - either a User Account or a Service Account - for Cartography to run as
+    2. Ensure that this identity has the [securityReviewer](https://cloud.google.com/iam/docs/understanding-roles) role attached to it.
+    3. Ensure that the machine you are running Cartography on can authenticate to this identity.  
+        - **Method 1**: You can do this by setting your `GOOGLE_APPLICATION_CREDENTIALS` environment variable to point to a json file containing your credentials.  As per SecurityCommonSense™️, please ensure that only the user account that runs Cartography has read-access to this sensitive file.
+        - **Method 2**: If you are running Cartography on a GCE instance or other GCP service, you can make use of the credential management provided by the default service accounts on these services.  See the [official docs](https://cloud.google.com/docs/authentication/production) on Application Default Credentials for more details.
 
 	
 5. **Get and run Cartography** 
@@ -52,7 +61,7 @@ Time to set up the server that will run Cartography.  Cartography _should_ work 
 			AWS_CONFIG_FILE=/path/to/your/aws/config cartography --neo4j-uri <uri for your neo4j instance; usually bolt://localhost:7687> --aws-sync-all-profiles
 			```
 		
-		The sync will pull data from your AWS accounts and ingest data to Neo4j!  This process might take a long time if your account has a lot of assets.
+		The sync will pull data from your configured accounts and ingest data to Neo4j!  This process might take a long time if your account has a lot of assets.
 
 
 ## Usage Tutorial
@@ -153,11 +162,15 @@ All contributors and participants agree to abide by its terms.
 
 ### Contributing code
 
+#### How to test your code contributions
+
+See [these docs](docs/testing.md).
+
 #### Sign the Contributor License Agreement (CLA)
 
 We require a CLA for code contributions, so before we can accept a pull request
 we need to have a signed CLA. Please [visit our CLA service](https://oss.lyft.com/cla)
-follow the instructions to sign the CLA.
+and follow the instructions to sign the CLA.
 
 #### File issues in Github
 
@@ -176,7 +189,7 @@ Our only method of accepting code changes is through Github pull requests.
 ## Reference
 
 ### Schema
-Detailed view of [our schema and all data types](docs/schema.md) 😁.
+Detailed view of [our schema and all data types](docs/schema/index.md) 😁.
 
 
 ### Sample queries

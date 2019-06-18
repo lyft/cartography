@@ -1,40 +1,17 @@
-# Cartography Schema
-
-## ℹ️ Quick notes on notation
-- **Bolded words** in the schema tables indicate that this field is indexed, so your queries will run faster if you use these fields.
-
-- This isn't proper Neo4j syntax, but for the purpose of this document we will use this notation:
-
-	```
-	(NodeTypeA)-[RELATIONSHIP_R]->(NodeTypeB, NodeTypeC, NodeTypeD, NodeTypeE)
-	```
-
-	to mean a shortened version of this:
-
-	```
-	(NodeTypeA)-[RELATIONSHIP_R]->(NodeTypeB)
-	(NodeTypeA)-[RELATIONSHIP_R]->(NodeTypeC)
-	(NodeTypeA)-[RELATIONSHIP_R]->(NodeTypeD)
-	(NodeTypeA)-[RELATIONSHIP_R]->(NodeTypeE)
-	```
-
-
-	In words, this means that `NodeTypeA` has `RELATIONSHIP_R` pointing to `NodeTypeB`, and `NodeTypeA` has `RELATIONSHIP_R` pointing to `NodeTypeC`.
-
-- In these docs, more specific nodes will be decorated with `GenericNode::SpecificNode` notation.  For example, if we have a `Car` node and a `RaceCar` node, we will refer to the `RaceCar` as `Car::RaceCar`.
-
-## Complete Schema Diagram
-
-![Cartography complete open-source schema](images/cartography-schema-complete-open-source.png)
+# Cartography - Amazon Web Services Schema
 
 ## Table of contents
 
 - [AWSAccount](#awsaccount)
+- [AWSCidrBlock](#awscidrblock)
 - [AWSGroup](#awsgroup)
+- [AWSIpv4CidrBlock](#awsipv4cidrblock)
+- [AWSIpv6CidrBlock](#awsipv6cidrblock)
 - [AWSPolicy](#awspolicy)
 - [AWSPrincipal](#awsprincipal)
 - [AWSPrincipal::AWSUser](#awsprincipalawsuser)
 - [AWSRole](#awsrole)
+- [AWSVpc](#awsvpc)
 - [AccountAccessKey](#accountaccesskey)
 - [DNSRecord](#dnsrecord)
 - [DNSRecord::AWSDNSRecord](#dnsrecordawsdnsrecord)
@@ -84,7 +61,8 @@ Representation of an AWS Account.
                               EC2Reservation,
                               EC2SecurityGroup,
                               ESDomain,
-                              LoadBalancer)
+                              LoadBalancer,
+                              AWSVpc)
 	```
 
 - An `AWSPolicy` node is defined for an `AWSAccount`.
@@ -99,6 +77,44 @@ Representation of an AWS Account.
 	(AWSAccount)-[AWS_ROLE]->(AWSRole)
 	```
 
+## AWSCidrBlock
+### AWSIpv4CidrBlock
+### AWSIpv6CidrBlock
+Representation of an [AWS CidrBlock used in VPC configuration](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_VpcCidrBlockAssociation.html).
+The `AWSCidrBlock` defines the base label
+type for `AWSIpv4CidrBlock` and `AWSIpv6CidrBlock`
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|cidr_block| The CIDR block|
+|block_state| The state of the block|
+|association_id| the association id if the block is associated to a VPC
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| Unique identifier defined with the VPC association and the cidr_block
+
+### Relationships
+- `AWSVpc` association
+  ```
+  (AWSVpc)-[BLOCK_ASSOCIATION]->(AWSCidrBlock)
+  ```
+- VPC peering where two `AWSCidrBlock` have peering between them
+  ```
+  (AWSCidrBlock)<-[VPC_PEERING]-(AWSCidrBlock)
+  ```
+  Example of high level view of peering (without security group permissions)
+  ```
+  MATCH p=(:AWSAccount)-[:RESOURCE|BLOCK_ASSOCIATION*..]->(:AWSCidrBlock)<-[r:VPC_PEERING]->(:AWSCidrBlock)<-[:RESOURCE|BLOCK_ASSOCIATION*..]-(:AWSAccount)
+  RETURN p
+  ```
+  
+  Exploring detailed inbound peering rules
+  ```
+  MATCH (outbound_account:AWSAccount)-[:RESOURCE|BLOCK_ASSOCIATION*..]->(:AWSCidrBlock)<-[r:VPC_PEERING]->(inbound_block:AWSCidrBlock)<-[:BLOCK_ASSOCIATION]-(inbound_vpc:AWSVpc)<-[:RESOURCE]-(inbound_account:AWSAccount)
+  WITH inbound_vpc, inbound_block, outbound_account, inbound_account
+  MATCH (inbound_range:IpRange{id: inbound_block.cidr_block})-[:MEMBER_OF_IP_RULE]->(inbound_rule:IpPermissionInbound)-[:MEMBER_OF_EC2_SECURITY_GROUP]->(inbound_group:EC2SecurityGroup)<-[:MEMBER_OF_EC2_SECURITY_GROUP]-(inbound_vpc)
+  RETURN outbound_account.name, inbound_account.name, inbound_range.range, inbound_rule.fromport, inbound_rule.toport, inbound_rule.protocol, inbound_group.name, inbound_vpc.id
+  ```
 
 ## AWSGroup
 
@@ -184,17 +200,17 @@ Representation of an [AWSPrincipal](https://docs.aws.amazon.com/IAM/latest/APIRe
 	(AWSPrincipal)-[MEMBER_AWS_GROUP]->(AWSGroup)
 	```
 	
-- AWS Principals can assume AWS Roles.
-
-	```
-	(AWSPrincipal)-[STS_ASSUMEROLE_ALLOW]->(AWSRole)
-	```
-	
 - This AccountAccessKey is used to authenticate to this AWSPrincipal.
 
 	```
 	(AWSPrincipal)-[AWS_ACCESS_KEY]->(AccountAccessKey)
 	```
+
+- AWS Roles can trust AWS Principals.
+
+    ```
+    (AWSRole)-[TRUSTS_AWS_PRINCIPAL]->(AWSPrincipal)
+    ```
 
 - AWS Accounts contain AWS Principals.
 
@@ -242,9 +258,9 @@ Representation of an [AWSUser](https://docs.aws.amazon.com/IAM/latest/APIReferen
 	```
 
 
-## AWSRole
+## AWSPrincipal::AWSRole
 
-Representation of an AWS [IAM Role](https://docs.aws.amazon.com/IAM/latest/APIReference/API_Role.html).
+Representation of an AWS [IAM Role](https://docs.aws.amazon.com/IAM/latest/APIReference/API_Role.html). An AWS Role is a type of AWS Principal.
 
 | Field | Description |
 |-------|-------------|
@@ -261,7 +277,19 @@ Representation of an AWS [IAM Role](https://docs.aws.amazon.com/IAM/latest/APIRe
 - Some AWS Groups, Users, and Principals can assume AWS Roles.
 
     ```
-    (AWSGroup, AWSUser, AWSPrincipal)-[STS_ASSUMEROLE_ALLOW]->(AWSRole)
+    (AWSGroup, AWSUser)-[STS_ASSUMEROLE_ALLOW]->(AWSRole)
+    ```
+
+- Some AWS Roles can assume other AWS Roles.
+
+    ```
+    (AWSRole)-[STS_ASSUMEROLE_ALLOW]->(AWSRole)
+    ```
+
+- Some AWS Roles trust AWS Principals.
+
+    ```
+    (AWSRole)-[TRUSTS_AWS_PRINCIPAL]->(AWSPrincipal)
     ```
 
 - AWS Roles are defined in AWS Accounts.
@@ -270,7 +298,34 @@ Representation of an AWS [IAM Role](https://docs.aws.amazon.com/IAM/latest/APIRe
     (AWSAccount)-[AWS_ROLE]->(AWSRole)
     ```
 
+## AWSVpc
+Representation of an [AWS CidrBlock used in VPC configuration](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_VpcCidrBlockAssociation.html).
+More information on https://docs.aws.amazon.com/cli/latest/reference/ec2/describe-vpcs.html
 
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|vpcid| The VPC unique identifier|
+|primary_cidr_block|The primary IPv4 CIDR block for the VPC.|
+|instance_tenancy| The allowed tenancy of instances launched into the VPC.|
+|state| The current state of the VPC.|
+|region| (optional) the region of this VPC.  This field is only available on VPCs in your account.  It is not available on VPCs that are external to your account and linked via a VPC peering relationship.
+|**id**| Unique identifier defined VPC node (vpcid)
+
+### Relationships
+- `AWSAccount` resource
+  ```
+  (AWSAccount)-[RESOURCE]->(AWSVpc)
+  ```
+- `AWSVpc` and `AWSCidrBlock` association
+  ```
+  (AWSVpc)-[BLOCK_ASSOCIATION]->(AWSCidrBlock)
+  ```
+- `AWSVpc` and `EC2SecurityGroup` membership association
+  ```
+  (AWSVpc)<-[MEMBER_OF_EC2_SECURITY_GROUP]-(EC2SecurityGroup)
+  ```
+	
 ## AccountAccessKey
 
 Representation of an AWS [Access Key](https://docs.aws.amazon.com/IAM/latest/APIReference/API_AccessKey.html).
@@ -587,7 +642,8 @@ Representation of an AWS EC2 [Security Group](https://docs.aws.amazon.com/AWSEC2
 	 ESDomain,
 	 IpRule,
 	 IpPermissionInbound,
-	 RDSInstance)-[MEMBER_OF_EC2_SECURITY_GROUP]->(EC2SecurityGroup)
+	 RDSInstance,
+	 AWSVpc)-[MEMBER_OF_EC2_SECURITY_GROUP]->(EC2SecurityGroup)
 	```
 	
 - Load balancers can define inbound [Source Security Groups](https://docs.aws.amazon.com/elasticloadbalancing/latest/classic/elb-security-groups.html).
