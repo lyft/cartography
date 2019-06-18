@@ -35,7 +35,8 @@ def test_run(neo4j_session):
         ["4", "11", ["18", "25", "32"]],
         ["5", "12", ["19", "26", "33"]],
         ["6", "13", ["20", "27", "34"]],
-        ["7", "14", ["21", "28", "35"]]
+        ["7", "14", ["21", "28", "35"]],
+        ["36", "37", ["38", "39", "40"]]
     ]
     ingest_nodes = """
     MERGE (person:Person{test: {test}})
@@ -54,7 +55,7 @@ def test_run(neo4j_session):
         )
     cli = CLI(prog="driftdetect")
 
-    #Test that run does not work with no directory specified
+    # Test that run does not work with no directory specified
 
     config = cli.configure([
         "--neo4j-uri",
@@ -73,3 +74,4 @@ def test_run(neo4j_session):
     assert {"d.test": "7"} in drift_info
     assert {"d.test": "7", "d.test2": "14"} in drift_info
     assert {"d.test": "7", "d.test2": "14", "d.test3": ["21", "28", "35"]} in drift_info
+    assert {"d.test": "36", "d.test2": "37", "d.test3": ["38", "39", "40"]} in drift_info

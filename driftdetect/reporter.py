@@ -8,6 +8,7 @@ class Reporter:
         :return: None
         """
         for drift_info, detector in drift_info_detector_pairs:
-            print(detector.name, str(detector.detector_type))
-            for key, value in drift_info.items():
-                print(key, value)
+            print("Detector Name:", detector.name)
+            print("Detector Type:", str(detector.detector_type))
+            print("Drift Information:", drift_info)
+            print()
