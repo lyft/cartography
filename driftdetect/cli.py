@@ -3,6 +3,7 @@ import getpass
 import logging
 import os
 import sys
+import pathlib
 from neo4j.v1 import GraphDatabase
 import neobolt.exceptions
 
@@ -75,7 +76,6 @@ class CLI(object):
             ),
         )
         parser.add_argument(
-            '-d',
             '--drift-detector-directory',
             type=str,
             default=None,
@@ -87,13 +87,13 @@ class CLI(object):
         )
         return parser
 
-    def configurate(self, argv):
+    def configure(self, argv):
         """
-                Entrypoint for the command line interface.
+        Entrypoint for the command line interface.
 
-                :type argv: string
-                :param argv: The parameters supplied to the command line program.
-                """
+        :type argv: string
+        :param argv: The parameters supplied to the command line program.
+        """
         # TODO support parameter lookup in environment variables if not present on command line
         config = self.parser.parse_args(argv)
         if config.verbose:
@@ -122,14 +122,17 @@ class CLI(object):
         return config
 
     def main(self, argv):
-        config = self.configurate(argv)
+        config = self.configure(argv)
         try:
-            run(config)
+            drift_info_detector_pairs = run(config)
+            Reporter.report_drift(drift_info_detector_pairs)
         except KeyboardInterrupt:
             return 130
 
 
 def run(config):
+    if not valid_directory(config):
+        return
     neo4j_auth = None
     if config.neo4j_user or config.neo4j_password:
         neo4j_auth = (config.neo4j_user, config.neo4j_password)
@@ -173,7 +176,28 @@ def run(config):
 
     with neo4j_driver.session() as session:
         drift_info_detector_pairs = perform_baseline_drift_detection(session, config.drift_detector_directory)
-        return Reporter.report_drift(drift_info_detector_pairs)
+        return drift_info_detector_pairs
+
+
+def valid_directory(config):
+    drift_detector_directory_path = config.drift_detector_directory
+    if not drift_detector_directory_path:
+        logger.info("Skipping drift-detection because no job path was provided.")
+        return False
+    drift_detector_directory = pathlib.Path(drift_detector_directory_path)
+    if not drift_detector_directory.exists():
+        logger.warning(
+            "Skipping drift-detection because the provided job path '%s' does not exist.",
+            drift_detector_directory
+        )
+        return False
+    if not drift_detector_directory.is_dir():
+        logger.warning(
+            "Skipping drift-detection because the provided job path '%s' is not a directory.",
+            drift_detector_directory
+        )
+        return False
+    return True
 
 
 def main(argv=None):
