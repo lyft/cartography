@@ -4,6 +4,10 @@ from unittest.mock import MagicMock
 
 
 def test_detector_no_drift():
+    """
+    Test that a detector that detects no drift returns none.
+    :return:
+    """
     mock_session = MagicMock()
     mock_boltstatementresult = MagicMock()
     key = "key"
@@ -28,6 +32,10 @@ def test_detector_no_drift():
 
 
 def test_detector_picks_up_drift():
+    """
+    Test that a detector that detects drift.
+    :return:
+    """
     key = "baseline_tag"
     mock_session = MagicMock()
     mock_boltstatementresult = MagicMock()
@@ -54,6 +62,10 @@ def test_detector_picks_up_drift():
 
 
 def test_detector_multiple_expectations():
+    """
+    Test that multiple fields runs properly.
+    :return:
+    """
     key_1 = "baseline_tag"
     key_2 = "other_tag"
     mock_session = MagicMock()
@@ -80,6 +92,10 @@ def test_detector_multiple_expectations():
 
 
 def test_drift_from_multiple_properties():
+    """
+    Tests fields with multiple properties handles correctly.
+    :return:
+    """
     mock_session = MagicMock()
     mock_boltstatementresult = MagicMock()
     key_1 = "key_1"
@@ -108,6 +124,10 @@ def test_drift_from_multiple_properties():
 
 
 def test_get_drift_from_detectors():
+    """
+    Tests full run through of drift detection.
+    :return:
+    """
     key = "baseline_tag"
     key_1 = "baseline_tag"
     key_2 = "other_tag"
@@ -158,6 +178,10 @@ def test_get_drift_from_detectors():
 
 
 def test_json_loader():
+    """
+    Tests loading schema passes
+    :return:
+    """
     filepath = "tests/data/detectors/test_expectations.json"
     detector = DriftDetector.from_json_file(filepath)
     assert detector.name == "Test-Expectations"

@@ -23,6 +23,11 @@ def test_configurate():
 
 
 def test_run(neo4j_session):
+    """
+    Test that a full run through with the CLI works
+    :param neo4j_session:
+    :return:
+    """
     data = [
         ["1", "8", ["15", "22", "29"]],
         ["2", "9", ["16", "23", "30"]],
@@ -48,6 +53,15 @@ def test_run(neo4j_session):
             test3=test3
         )
     cli = CLI(prog="driftdetect")
+
+    #Test that run does not work with no directory specified
+
+    config = cli.configure([
+        "--neo4j-uri",
+        settings.get("NEO4J_URL")
+    ])
+    assert not run(config)
+
     config = cli.configure([
         "--neo4j-uri",
         settings.get("NEO4J_URL"),
