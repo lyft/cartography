@@ -1,9 +1,9 @@
 import os
 import os.path
 import logging
-from driftdetect.driftdetector import load_detector_from_json_file, write_detector_to_json_file
 from marshmallow import ValidationError
 
+from driftdetect.driftdetector import load_detector_from_json_file, write_detector_to_json_file
 
 logger = logging.getLogger(__name__)
 
@@ -34,3 +34,19 @@ def perform_drift_detection(session, expect_folder, update):
                 msg = "Unable to create DriftDetector from file {0} for \n{1}".format(file_path, err.messages)
                 logger.error(msg, exc_info=True)
     return drift_info_detector_pairs
+
+
+def update_detectors(session, expect_folder, filename):
+    """
+    Update Detectors. Goes through all detector directories, searches for the template, then runs the query
+    :param session:
+    :param expect_folder:
+    :param time: filename
+    :return:
+    """
+    for root, directories, _ in os.walk(expect_folder):
+        for dir in directories:
+            file_path = os.path.join(root, dir, "template.json")
+            detector = load_detector_from_json_file(file_path)
+            detector.update(session)
+            write_detector_to_json_file(detector, os.path.join(root, dir, ".".join(filename)))

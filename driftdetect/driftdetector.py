@@ -48,6 +48,30 @@ class DriftDetector(object):
                     self.expectations.append(values)
                 yield _build_drift_insight(record)
 
+    def update(self, session):
+        """
+
+        :param session:
+        :return:
+        """
+
+        results = session.run(self.validation_query)
+        logger.debug("Updating results for {0}".format(self.name))
+
+        new_expectations = []
+
+        for record in results:
+            values = []
+            for field in record.values():
+                if isinstance(field, list):
+                    s = "|".join(field)
+                    values.append(s)
+                else:
+                    values.append(field)
+            new_expectations.append(values)
+
+        self.expectations = new_expectations
+
 
 class DriftDetectorSchema(Schema):
     name = fields.Str()

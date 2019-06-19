@@ -1,0 +1,6 @@
+{
+  "name": "test_detector",
+  "validation_query": "match (d) return d",
+  "detector_type": 1,
+  "expectations": []
+}
