@@ -15,11 +15,13 @@ class DriftDetector(object):
     def __init__(self,
                  name,
                  validation_query,
+                 properties,
                  expectations,
                  detector_type):
 
         self.name = name
         self.validation_query = validation_query
+        self.properties = properties
         self.expectations = expectations
         self.detector_type = detector_type
 
@@ -76,6 +78,7 @@ class DriftDetector(object):
 class DriftDetectorSchema(Schema):
     name = fields.Str()
     validation_query = fields.Str()
+    properties = fields.List(fields.Str())
     detector_type = fields.Int()
     expectations = fields.List(fields.List(fields.Str()))
 
@@ -83,6 +86,7 @@ class DriftDetectorSchema(Schema):
     def make_driftdetector(self, data, **kwargs):
         return DriftDetector(data['name'],
                              data['validation_query'],
+                             data['properties'],
                              data['expectations'],
                              DriftDetectorType(data['detector_type']))
 
