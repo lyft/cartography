@@ -1,6 +1,6 @@
 import time
 
-from driftdetect.detect_drift import update_detectors
+from cartography.driftdetect.detect_drift import update_detectors
 
 
 def test_update_detectors(neo4j_session):

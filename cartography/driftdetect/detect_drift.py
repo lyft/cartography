@@ -11,9 +11,9 @@ def perform_drift_detection(session, expect_folder, update):
     """
     Perform Drift Detection
     :param session: neo4j_session
-    :param expect_folder: detector directory
+    :param expect_folder: detector directory (string)
     :param update: boolean
-    :return:
+    :return: list of drift_info (dictionary), DriftDetector tuples
     """
     drift_info_detector_pairs = []
     for root, _, filenames in os.walk(expect_folder):
@@ -49,3 +49,15 @@ def update_detectors(session, expect_folder, filename):
             detector = load_detector_from_json_file(file_path)
             detector.update(session)
             write_detector_to_json_file(detector, os.path.join(root, dir, ".".join(filename)))
+
+
+def compare_detectors(start_detector, end_detector):
+    """
+    Compares drift between two detectors
+    :param start_detector: DriftDetector
+    :param end_detector: DriftDetector
+    :return: tuple of additions and subtractions between the end and start detector
+    """
+    new_results = [result for result in end_detector.expectations if result not in start_detector.expectations]
+    missing_results = [result for result in start_detector.expectations if result not in end_detector.expectations]
+    return new_results, missing_results
