@@ -1,5 +1,5 @@
 from driftdetect.driftdetector import load_detector_from_json_file
-from driftdetect.detect_drift import get_drift_from_detectors
+from driftdetect.detect_drift import perform_drift_detection
 from unittest.mock import MagicMock
 
 
@@ -131,9 +131,6 @@ def test_get_drift_from_detectors():
     key = "baseline_tag"
     key_1 = "baseline_tag"
     key_2 = "other_tag"
-    mock_session = MagicMock()
-    mock_boltstatementresult_1 = MagicMock()
-    mock_boltstatementresult_2 = MagicMock()
     results_1 = [
         {key: "1"},
         {key: "2"},
@@ -152,24 +149,38 @@ def test_get_drift_from_detectors():
         {key_1: "6", key_2: "13"},
         {key_1: "7", key_2: "14"}
     ]
+    results_3 = [
+        {key: "1", key_1: "8", key_2: "15|22|29"},
+        {key: "2", key_1: "9", key_2: "16|23|30"},
+        {key: "3", key_1: "10", key_2: "17|24|31"},
+        {key: "4", key_1: "11", key_2: "18|25|32"},
+        {key: "5", key_1: "12", key_2: "19|26|33"},
+        {key: "6", key_1: "13", key_2: "20|27|34"}
+    ]
 
+    mock_session = MagicMock()
+    mock_boltstatementresult_1 = MagicMock()
+    mock_boltstatementresult_2 = MagicMock()
+    mock_boltstatementresult_3 = MagicMock()
     mock_boltstatementresult_1.__getitem__.side_effect = results_1.__getitem__
     mock_boltstatementresult_1.__iter__.side_effect = results_1.__iter__
     mock_boltstatementresult_2.__getitem__.side_effect = results_2.__getitem__
     mock_boltstatementresult_2.__iter__.side_effect = results_2.__iter__
+    mock_boltstatementresult_3.__getitem__.side_effect = results_3.__getitem__
+    mock_boltstatementresult_3.__iter__.side_effect = results_3.__iter__
 
     def mock_session_side_effect(*args, **kwargs):
         if args[0] == "MATCH (d) RETURN d.test":
             return mock_boltstatementresult_1
-        else:
+        elif args[0] == "MATCH (d) RETURN d.test,d.test2":
             return mock_boltstatementresult_2
+        else:
+            return mock_boltstatementresult_3
 
     mock_session.run.side_effect = mock_session_side_effect
-    detectors = []
-    detectors.append(load_detector_from_json_file("tests/data/detectors/test_expectations.json"))
-    detectors.append(load_detector_from_json_file("tests/data/detectors/test_multiple_expectations.json"))
+
     drifts = []
-    for drift_info, detector in get_drift_from_detectors(mock_session, detectors, False):
+    for drift_info, detector in perform_drift_detection(mock_session, "tests/data/detectors", False):
         drifts.append(drift_info)
 
     assert {key_1: "7", key_2: "14"} in drifts

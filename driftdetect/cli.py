@@ -7,7 +7,7 @@ import pathlib
 from neo4j.v1 import GraphDatabase
 import neobolt.exceptions
 
-from driftdetect.detect_drift import perform_baseline_drift_detection
+from driftdetect.detect_drift import perform_drift_detection
 from driftdetect.reporter import report_drift
 
 
@@ -181,7 +181,7 @@ def run(config):
         return
 
     with neo4j_driver.session() as session:
-        drift_info_detector_pairs = perform_baseline_drift_detection(
+        drift_info_detector_pairs = perform_drift_detection(
             session,
             config.drift_detector_directory,
             config.update
