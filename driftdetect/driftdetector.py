@@ -23,11 +23,12 @@ class DriftDetector(object):
         self.expectations = expectations
         self.detector_type = detector_type
 
-    def run(self, session):
+    def run(self, session, update):
         """
         Performs Detection
         :type neo4j session
         :param session: graph session
+        :param update: boolean
         :return:
         """
 
@@ -43,6 +44,8 @@ class DriftDetector(object):
                 else:
                     values.append(field)
             if values not in self.expectations:
+                if update:
+                    self.expectations.append(values)
                 yield _build_drift_insight(record)
 
 

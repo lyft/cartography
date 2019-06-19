@@ -8,30 +8,33 @@ from marshmallow import ValidationError
 logger = logging.getLogger(__name__)
 
 
-def perform_baseline_drift_detection(session, expect_folder):
+def perform_baseline_drift_detection(session, expect_folder, update):
     """
     Perform baseline drift detection based on the detectors defined in the expect_folder
     :type neo4j Session
-    :param driver: graph db driver
+    :param session: graph db driver
     :param expect_folder: Folder where the detectors are defined
+    :param update: boolean
     :return: None
     """
     detector_list = _get_detectors(expect_folder)
-    return get_drift_from_detectors(session, detector_list)
+    drift_info_detector_pairs = get_drift_from_detectors(session, detector_list, update)
+    return drift_info_detector_pairs
 
 
-def get_drift_from_detectors(session, detector_list):
+def get_drift_from_detectors(session, detector_list, update):
     """
     Perform baseline drift detection based on the detectors defined in the expect_folder
     :type neo4j Session
-    :param driver: graph db driver
+    :param session: graph db driver
     :param detector_list: list of detectors
+    :param update: boolean
     :return: None
     """
 
     drift_info_detector_pairs = []
     for detector in detector_list:
-        for drift_info in detector.run(session):
+        for drift_info in detector.run(session, update):
             drift_info_detector_pairs.append((drift_info, detector))
 
     return drift_info_detector_pairs

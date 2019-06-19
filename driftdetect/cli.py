@@ -76,10 +76,10 @@ class CLI(object):
             ),
         )
         parser.add_argument(
-            '--save-detectors',
-            type=str,
-            default=None,
-            help='Save and override results of running query.',
+            '-u',
+            '--update',
+            action='store_true',
+            help='Save and updates the results of running the detector query.',
         )
         parser.add_argument(
             '--drift-detector-directory',
@@ -181,7 +181,11 @@ def run(config):
         return
 
     with neo4j_driver.session() as session:
-        drift_info_detector_pairs = perform_baseline_drift_detection(session, config.drift_detector_directory)
+        drift_info_detector_pairs = perform_baseline_drift_detection(
+            session,
+            config.drift_detector_directory,
+            config.update
+        )
         return drift_info_detector_pairs
 
 

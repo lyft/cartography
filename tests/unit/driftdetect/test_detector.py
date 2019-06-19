@@ -25,7 +25,7 @@ def test_detector_no_drift():
     mock_session.run.return_value = mock_boltstatementresult
     detector = load_detector_from_json_file("tests/data/detectors/test_expectations.json")
     drifts = []
-    for it in detector.run(mock_session):
+    for it in detector.run(mock_session, False):
         drifts.append(it)
     mock_session.run.assert_called_with(detector.validation_query)
     assert not drifts
@@ -54,7 +54,7 @@ def test_detector_picks_up_drift():
     mock_session.run.return_value = mock_boltstatementresult
     detector = load_detector_from_json_file("tests/data/detectors/test_expectations.json")
     drifts = []
-    for it in detector.run(mock_session):
+    for it in detector.run(mock_session, False):
         drifts.append(it)
     mock_session.run.assert_called_with(detector.validation_query)
     assert drifts
@@ -85,7 +85,7 @@ def test_detector_multiple_expectations():
     mock_session.run.return_value = mock_boltstatementresult
     detector = load_detector_from_json_file("tests/data/detectors/test_multiple_expectations.json")
     drifts = []
-    for it in detector.run(mock_session):
+    for it in detector.run(mock_session, False):
         drifts.append(it)
     mock_session.run.assert_called_with(detector.validation_query)
     assert {key_1: "7", key_2: "14"} in drifts
@@ -115,7 +115,7 @@ def test_drift_from_multiple_properties():
     mock_session.run.return_value = mock_boltstatementresult
     detector = load_detector_from_json_file("tests/data/detectors/test_multiple_properties.json")
     drifts = []
-    for it in detector.run(mock_session):
+    for it in detector.run(mock_session, False):
         drifts.append(it)
     mock_session.run.assert_called_with(detector.validation_query)
     print(drifts)
@@ -169,7 +169,7 @@ def test_get_drift_from_detectors():
     detectors.append(load_detector_from_json_file("tests/data/detectors/test_expectations.json"))
     detectors.append(load_detector_from_json_file("tests/data/detectors/test_multiple_expectations.json"))
     drifts = []
-    for drift_info, detector in get_drift_from_detectors(mock_session, detectors):
+    for drift_info, detector in get_drift_from_detectors(mock_session, detectors, False):
         drifts.append(drift_info)
 
     assert {key_1: "7", key_2: "14"} in drifts

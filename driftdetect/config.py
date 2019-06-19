@@ -24,8 +24,10 @@ class Config(object):
                  drift_detector_directory,
                  neo4j_uri,
                  neo4j_user=None,
-                 neo4j_password=None):
+                 neo4j_password=None,
+                 update=False):
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user
         self.neo4j_password = neo4j_password
         self.drift_detector_directory = drift_detector_directory
+        self.update = update
