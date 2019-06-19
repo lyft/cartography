@@ -1,5 +1,5 @@
-from driftdetect.cli import valid_directory
-from driftdetect.config import Config
+from cartography.driftdetect.cli import valid_directory
+from cartography.driftdetect.config import Config
 
 
 def test_valid_directory():

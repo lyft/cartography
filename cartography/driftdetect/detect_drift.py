@@ -1,7 +1,7 @@
 import os
 import os.path
 import logging
-from driftdetect.driftdetector import load_detector_from_json_file, write_detector_to_json_file
+from cartography.driftdetect.driftdetector import load_detector_from_json_file, write_detector_to_json_file
 from marshmallow import ValidationError
 
 
