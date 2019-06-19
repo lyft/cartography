@@ -7,8 +7,8 @@ import pathlib
 from neo4j.v1 import GraphDatabase
 import neobolt.exceptions
 
-from driftdetect.detect_drift import perform_drift_detection
-from driftdetect.reporter import report_drift
+from cartography.driftdetect.detect_drift import perform_drift_detection
+from cartography.driftdetect.reporter import report_drift
 
 
 logger = logging.getLogger(__name__)

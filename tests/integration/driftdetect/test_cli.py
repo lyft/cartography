@@ -1,9 +1,9 @@
-from driftdetect.cli import CLI, run
+from cartography.driftdetect.cli import CLI, run
 from unittest.mock import patch
 from tests.integration import settings
 
 
-@patch('driftdetect.cli.run')
+@patch('cartography.driftdetect.cli.run')
 def test_cli_main(mock_run):
     cli = CLI(prog="driftdetect")
     cli.main(["--neo4j-uri", settings.get("NEO4J_URL"), "--drift-detector-directory", "tests/data/detectors"])
