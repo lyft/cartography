@@ -49,18 +49,18 @@ class DriftDetector(object):
                 yield _build_drift_insight(record)
 
 
-def write_detector_to_json_file(detector, file_path):
-    """
-    Saves detector to json file
-    :param detector: Detector to be saved
-    :param file_path: file_path to store detector
-    :return: None
-    """
-    logger.debug("Saving to json file {0}".format(file_path))
-    schema = DriftDetectorSchema()
-    data = schema.dump(detector)
-    with open(file_path, 'w') as j_file:
-        json.dump(data, j_file, indent=4)
+class DriftDetectorSchema(Schema):
+    name = fields.Str()
+    validation_query = fields.Str()
+    detector_type = fields.Int()
+    expectations = fields.List(fields.List(fields.Str()))
+
+    @post_load
+    def make_driftdetector(self, data, **kwargs):
+        return DriftDetector(data['name'],
+                             data['validation_query'],
+                             data['expectations'],
+                             DriftDetectorType(data['detector_type']))
 
 
 def load_detector_from_json_file(file_path):
@@ -78,18 +78,18 @@ def load_detector_from_json_file(file_path):
     return detector
 
 
-class DriftDetectorSchema(Schema):
-    name = fields.Str()
-    validation_query = fields.Str()
-    detector_type = fields.Int()
-    expectations = fields.List(fields.List(fields.Str()))
-
-    @post_load
-    def make_driftdetector(self, data, **kwargs):
-        return DriftDetector(data['name'],
-                             data['validation_query'],
-                             data['expectations'],
-                             DriftDetectorType(data['detector_type']))
+def write_detector_to_json_file(detector, file_path):
+    """
+    Saves detector to json file
+    :param detector: Detector to be saved
+    :param file_path: file_path to store detector
+    :return: None
+    """
+    logger.debug("Saving to json file {0}".format(file_path))
+    schema = DriftDetectorSchema()
+    data = schema.dump(detector)
+    with open(file_path, 'w') as j_file:
+        json.dump(data, j_file, indent=4)
 
 
 def _build_drift_insight(graph_result):
