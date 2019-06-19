@@ -45,20 +45,34 @@ class DriftDetector(object):
             if values not in self.expectations:
                 yield _build_drift_insight(record)
 
-    @classmethod
-    def from_json_file(cls, file_path):
-        """
-        Creates Detector from Json File
-        :type string
-        :param file_path:
-        :return: DriftDetector
-        """
-        logger.debug("Creating from json file {0}".format(file_path))
-        with open(file_path) as j_file:
-            data = json.load(j_file)
-        schema = DriftDetectorSchema()
-        detector = schema.load(data)
-        return detector
+
+def write_detector_to_json_file(detector, file_path):
+    """
+    Saves detector to json file
+    :param detector: Detector to be saved
+    :param file_path: file_path to store detector
+    :return: None
+    """
+    logger.debug("Saving to json file {0}".format(file_path))
+    schema = DriftDetectorSchema()
+    data = schema.dump(detector)
+    with open(file_path, 'w') as j_file:
+        json.dump(data, j_file, indent=4)
+
+
+def load_detector_from_json_file(file_path):
+    """
+    Creates Detector from Json File
+    :type string
+    :param file_path:
+    :return: DriftDetector
+    """
+    logger.debug("Creating from json file {0}".format(file_path))
+    with open(file_path) as j_file:
+        data = json.load(j_file)
+    schema = DriftDetectorSchema()
+    detector = schema.load(data)
+    return detector
 
 
 class DriftDetectorSchema(Schema):

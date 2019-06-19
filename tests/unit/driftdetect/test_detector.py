@@ -1,4 +1,4 @@
-from driftdetect.driftdetector import DriftDetector
+from driftdetect.driftdetector import load_detector_from_json_file
 from driftdetect.detect_drift import get_drift_from_detectors
 from unittest.mock import MagicMock
 
@@ -23,7 +23,7 @@ def test_detector_no_drift():
     mock_boltstatementresult.__getitem__.side_effect = results.__getitem__
     mock_boltstatementresult.__iter__.side_effect = results.__iter__
     mock_session.run.return_value = mock_boltstatementresult
-    detector = DriftDetector.from_json_file("tests/data/detectors/test_expectations.json")
+    detector = load_detector_from_json_file("tests/data/detectors/test_expectations.json")
     drifts = []
     for it in detector.run(mock_session):
         drifts.append(it)
@@ -52,7 +52,7 @@ def test_detector_picks_up_drift():
     mock_boltstatementresult.__getitem__.side_effect = results.__getitem__
     mock_boltstatementresult.__iter__.side_effect = results.__iter__
     mock_session.run.return_value = mock_boltstatementresult
-    detector = DriftDetector.from_json_file("tests/data/detectors/test_expectations.json")
+    detector = load_detector_from_json_file("tests/data/detectors/test_expectations.json")
     drifts = []
     for it in detector.run(mock_session):
         drifts.append(it)
@@ -83,7 +83,7 @@ def test_detector_multiple_expectations():
     mock_boltstatementresult.__getitem__.side_effect = results.__getitem__
     mock_boltstatementresult.__iter__.side_effect = results.__iter__
     mock_session.run.return_value = mock_boltstatementresult
-    detector = DriftDetector.from_json_file("tests/data/detectors/test_multiple_expectations.json")
+    detector = load_detector_from_json_file("tests/data/detectors/test_multiple_expectations.json")
     drifts = []
     for it in detector.run(mock_session):
         drifts.append(it)
@@ -113,7 +113,7 @@ def test_drift_from_multiple_properties():
     mock_boltstatementresult.__getitem__.side_effect = results.__getitem__
     mock_boltstatementresult.__iter__.side_effect = results.__iter__
     mock_session.run.return_value = mock_boltstatementresult
-    detector = DriftDetector.from_json_file("tests/data/detectors/test_multiple_properties.json")
+    detector = load_detector_from_json_file("tests/data/detectors/test_multiple_properties.json")
     drifts = []
     for it in detector.run(mock_session):
         drifts.append(it)
@@ -166,8 +166,8 @@ def test_get_drift_from_detectors():
 
     mock_session.run.side_effect = mock_session_side_effect
     detectors = []
-    detectors.append(DriftDetector.from_json_file("tests/data/detectors/test_expectations.json"))
-    detectors.append(DriftDetector.from_json_file("tests/data/detectors/test_multiple_expectations.json"))
+    detectors.append(load_detector_from_json_file("tests/data/detectors/test_expectations.json"))
+    detectors.append(load_detector_from_json_file("tests/data/detectors/test_multiple_expectations.json"))
     drifts = []
     for drift_info, detector in get_drift_from_detectors(mock_session, detectors):
         drifts.append(drift_info)
@@ -183,7 +183,7 @@ def test_json_loader():
     :return:
     """
     filepath = "tests/data/detectors/test_expectations.json"
-    detector = DriftDetector.from_json_file(filepath)
+    detector = load_detector_from_json_file(filepath)
     assert detector.name == "Test-Expectations"
     assert detector.validation_query == "MATCH (d) RETURN d.test"
     assert str(detector.detector_type) == "DriftDetectorType.EXPOSURE"

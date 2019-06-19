@@ -8,7 +8,7 @@ from neo4j.v1 import GraphDatabase
 import neobolt.exceptions
 
 from driftdetect.detect_drift import perform_baseline_drift_detection
-from driftdetect.reporter import Reporter
+from driftdetect.reporter import report_drift
 
 
 logger = logging.getLogger(__name__)
@@ -76,6 +76,12 @@ class CLI(object):
             ),
         )
         parser.add_argument(
+            '--save-detectors',
+            type=str,
+            default=None,
+            help='Save and override results of running query.',
+        )
+        parser.add_argument(
             '--drift-detector-directory',
             type=str,
             default=None,
@@ -125,7 +131,7 @@ class CLI(object):
         config = self.configure(argv)
         try:
             drift_info_detector_pairs = run(config)
-            Reporter.report_drift(drift_info_detector_pairs)
+            report_drift(drift_info_detector_pairs)
         except KeyboardInterrupt:
             return 130
 

@@ -1,7 +1,7 @@
 import os
 import os.path
 import logging
-from driftdetect.driftdetector import DriftDetector
+from driftdetect.driftdetector import load_detector_from_json_file
 from marshmallow import ValidationError
 
 
@@ -50,7 +50,7 @@ def _get_detectors(expect_folder):
         for filename in filenames:
             file_path = os.path.join(root, filename)
             try:
-                detectors.append(DriftDetector.from_json_file(file_path))
+                detectors.append(load_detector_from_json_file(file_path))
             except ValidationError as err:
                 msg = "Unable to create DriftDetector from file {0} for {1}".format(file_path, err.messages)
                 logger.error(msg, exc_info=True)
