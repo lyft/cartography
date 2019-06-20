@@ -1,6 +1,7 @@
-from cartography.driftdetect.driftdetector import load_detector_from_json_file
-from cartography.driftdetect.detect_drift import perform_drift_detection
 from unittest.mock import MagicMock
+
+from cartography.driftdetect.driftdetector import load_detector_from_json_file
+from cartography.driftdetect.detect_drift import perform_drift_detection, detector_differences, compare_detectors
 
 
 def test_detector_no_drift():
@@ -10,7 +11,7 @@ def test_detector_no_drift():
     """
     mock_session = MagicMock()
     mock_boltstatementresult = MagicMock()
-    key = "key"
+    key = "d.test"
     results = [
         {key: "1"},
         {key: "2"},
@@ -36,7 +37,7 @@ def test_detector_picks_up_drift():
     Test that a detector that detects drift.
     :return:
     """
-    key = "baseline_tag"
+    key = "d.test"
     mock_session = MagicMock()
     mock_boltstatementresult = MagicMock()
     results = [
@@ -66,8 +67,8 @@ def test_detector_multiple_expectations():
     Test that multiple fields runs properly.
     :return:
     """
-    key_1 = "baseline_tag"
-    key_2 = "other_tag"
+    key_1 = "d.test"
+    key_2 = "d.test2"
     mock_session = MagicMock()
     mock_boltstatementresult = MagicMock()
     results = [
@@ -93,14 +94,14 @@ def test_detector_multiple_expectations():
 
 def test_drift_from_multiple_properties():
     """
-    Tests fields with multiple properties handles correctly.
+    Test fields with multiple properties handles correctly.
     :return:
     """
     mock_session = MagicMock()
     mock_boltstatementresult = MagicMock()
-    key_1 = "key_1"
-    key_2 = "key_2"
-    key_3 = "key_3"
+    key_1 = "d.test"
+    key_2 = "d.test2"
+    key_3 = "d.test3"
     results = [
         {key_1: "1", key_2: "8", key_3: ["15", "22", "29"]},
         {key_1: "2", key_2: "9", key_3: ["16", "23", "30"]},
@@ -125,12 +126,13 @@ def test_drift_from_multiple_properties():
 
 def test_get_drift_from_detectors():
     """
-    Tests full run through of drift detection.
+    Test full run through of drift detection.
     :return:
     """
-    key = "baseline_tag"
-    key_1 = "baseline_tag"
-    key_2 = "other_tag"
+
+    key = "d.test"
+    key_1 = "d.test2"
+    key_2 = "d.test3"
     results_1 = [
         {key: "1"},
         {key: "2"},
@@ -190,12 +192,43 @@ def test_get_drift_from_detectors():
 
 def test_json_loader():
     """
-    Tests loading schema passes
+    Test loading schema passes
     :return:
     """
+
     filepath = "tests/data/detectors/test_expectations.json"
     detector = load_detector_from_json_file(filepath)
     assert detector.name == "Test-Expectations"
     assert detector.validation_query == "MATCH (d) RETURN d.test"
     assert str(detector.detector_type) == "DriftDetectorType.EXPOSURE"
     assert detector.expectations == [['1'], ['2'], ['3'], ['4'], ['5'], ['6']]
+
+
+def test_detector_differences():
+    """
+    Test that detector_differences picks up new drift
+    :return:
+    """
+
+    filepath = "tests/data/detectors/test_expectations.json"
+    detector_1 = load_detector_from_json_file(filepath)
+    detector_2 = load_detector_from_json_file(filepath)
+    detector_2.expectations.append(["7"])
+    drift_info_detector_pairs = detector_differences(detector_1, detector_2)
+    assert ({'d.test': "7"}, detector_2) in drift_info_detector_pairs
+
+
+def test_compare_detectors():
+    """
+    Test that differences between two detectors is recorded
+    :return:
+    """
+
+    filepath = "tests/data/detectors/test_expectations.json"
+    detector_1 = load_detector_from_json_file(filepath)
+    detector_2 = load_detector_from_json_file(filepath)
+    detector_1.expectations.append(["7"])
+    detector_2.expectations.append(["8"])
+    new, missing = compare_detectors(detector_1, detector_2)
+    assert ({'d.test': "7"}, detector_1) in missing
+    assert ({'d.test': "8"}, detector_2) in new

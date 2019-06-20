@@ -37,7 +37,7 @@ def perform_drift_detection(session, expect_folder, update):
 
 def update_detectors(session, expect_folder, filename):
     """
-    Update Detectors. Goes through all detector directories, searches for the template, then runs the query
+    Walks through all detector directories, runs the query, and saves the detector using the detector template.
     :param session:
     :param expect_folder:
     :param time: filename
@@ -56,8 +56,30 @@ def compare_detectors(start_detector, end_detector):
     Compares drift between two detectors
     :param start_detector: DriftDetector
     :param end_detector: DriftDetector
-    :return: tuple of additions and subtractions between the end and start detector
+    :return: tuple of additions and subtractions between the end and start detector in the form of drift_info_detector
+    pairs
     """
-    new_results = [result for result in end_detector.expectations if result not in start_detector.expectations]
-    missing_results = [result for result in start_detector.expectations if result not in end_detector.expectations]
+    new_results = detector_differences(start_detector, end_detector)
+    missing_results = detector_differences(end_detector, start_detector)
     return new_results, missing_results
+
+
+def detector_differences(start_detector, end_detector):
+    """
+    Compares drift between two detectors
+    :param start_detector: DriftDetector
+    :param end_detector: DriftDetector
+    :return: list of tuples of differences between detectors in the form (dictionary, DriftDetector object)
+    """
+    new_results = []
+    for result in end_detector.expectations:
+        if result not in start_detector.expectations:
+            drift_info = {}
+            for i in range(len(end_detector.properties)):
+                field = result[i].split("|")
+                if len(field) > 1:
+                    drift_info[end_detector.properties[i]] = field
+                else:
+                    drift_info[end_detector.properties[i]] = result[i]
+            new_results.append((drift_info, end_detector))
+    return new_results
