@@ -11,7 +11,7 @@ class DriftDetectorType(IntEnum):
     EXPOSURE = 1
 
 
-class DriftDetector(object):
+class DriftState(object):
     def __init__(self,
                  name,
                  validation_query,
@@ -75,7 +75,7 @@ class DriftDetector(object):
         self.expectations = new_expectations
 
 
-class DriftDetectorSchema(Schema):
+class DriftStateSchema(Schema):
     name = fields.Str()
     validation_query = fields.Str()
     properties = fields.List(fields.Str())
@@ -83,12 +83,12 @@ class DriftDetectorSchema(Schema):
     expectations = fields.List(fields.List(fields.Str()))
 
     @post_load
-    def make_driftdetector(self, data, **kwargs):
-        return DriftDetector(data['name'],
-                             data['validation_query'],
-                             data['properties'],
-                             data['expectations'],
-                             DriftDetectorType(data['detector_type']))
+    def make_driftstate(self, data, **kwargs):
+        return DriftState(data['name'],
+                          data['validation_query'],
+                          data['properties'],
+                          data['expectations'],
+                          DriftDetectorType(data['detector_type']))
 
 
 def load_detector_from_json_file(file_path):
@@ -101,12 +101,12 @@ def load_detector_from_json_file(file_path):
     logger.debug("Creating from json file {0}".format(file_path))
     with open(file_path) as j_file:
         data = json.load(j_file)
-    schema = DriftDetectorSchema()
+    schema = DriftStateSchema()
     detector = schema.load(data)
     return detector
 
 
-def write_detector_to_json_file(detector, file_path):
+def write_state_to_json_file(detector, file_path):
     """
     Saves detector to json file
     :param detector: Detector to be saved
@@ -114,7 +114,7 @@ def write_detector_to_json_file(detector, file_path):
     :return: None
     """
     logger.debug("Saving to json file {0}".format(file_path))
-    schema = DriftDetectorSchema()
+    schema = DriftStateSchema()
     data = schema.dump(detector)
     with open(file_path, 'w') as j_file:
         json.dump(data, j_file, indent=4)

@@ -4,12 +4,26 @@
 Drift-Detection is a separate module from cartography which allows you to automate the detection of changes in expectations of your infrastructure after cartography has been run. 
 
 ### How to run
-Queries and their expected results are stored in the form of detectors. Each detector is stored in a JSON file which contains the name of the detector, its specific validation query, the query properties, its type, and the expected results of running its query. Expected results will be stored as lists, and properties of results with multiple fields will have their fields concatenated.
+Queries and their expected results are stored in the form of drift state objects which contain a name, query, type, list of properties, and list of values. When running drift-detection, you should specify a drift detection directory as an input.
+
+In the specified directory, each query should have a designated subdirectory with a drift state template named "template.json", containing its name, validation query, query properties, detector type, and a blank results field. 
+After running an update, results will be stored as lists, and properties of results with multiple fields will have their fields concatenated in the created json files.
+
 ```
 {
-  "name": "Sample Detector",
-  "validation_query": "MATCH (n) RETURN n.property_1, n.property_2",
-  "properties": ["n.property_1", "n.property_2"],
+  "name": "Sample Template",
+  "validation_query": "MATCH (n) RETURN n.property_1, n.property_2, n.property_3",
+  "properties": ["n.property_1", "n.property_2", "n.property_3"],
+  "detector_type": 1,
+  "expectations": []
+}
+```
+
+```
+{
+  "name": "Sample File After Update",
+  "validation_query": "MATCH (n) RETURN n.property_1, n.property_2, n.property_3",
+  "properties": ["n.property_1", "n.property_2", "n.property_3"],
   "detector_type": 1,
   "expectations": [
     ["detector_1.property_1", "detector_1.property_2", "detector_1.concatenated_property_3|detector_1.concatenated_property_3|detector_1.concatenated_property_3", ...],
@@ -19,7 +33,7 @@ Queries and their expected results are stored in the form of detectors. Each det
 }
 ```
 
-Once all detector files have been created and stored in a directory, drift detection can be run with the following command:
+Once all query files have been created and stored in a directory, drift detection can be run with the following command:
 
 `driftdetect --neo4j-uri <your neo4j uri> --drift-detector-directory <your directory containing all detector files>`
 
