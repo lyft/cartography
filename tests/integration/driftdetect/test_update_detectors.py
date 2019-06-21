@@ -1,6 +1,6 @@
 import datetime
 
-from cartography.driftdetect.driftstate import load_detector_from_json_file
+from cartography.driftdetect.driftstate import load_state_from_json_file
 from cartography.driftdetect.detect_drift import update_detectors
 
 
@@ -32,16 +32,16 @@ def test_update_detectors(neo4j_session):
         )
     root = "tests/data/test_update_detectors/test_detector/"
 
-    file_1 = str(datetime.datetime(2019, 1, 1, 0, 0, 2))
-    file_2 = str(datetime.datetime(2019, 1, 1, 0, 0, 1))
+    file_1 = str(datetime.datetime(2019, 1, 1, 0, 0, 2)) + ".json"
+    file_2 = str(datetime.datetime(2019, 1, 1, 0, 0, 1)) + ".json"
 
-    update_detectors(neo4j_session, "tests/data/test_update_detectors", [file_1] + ["json"])
+    update_detectors(neo4j_session, "tests/data/test_update_detectors", file_1)
 
-    filename_1 = root + file_1 + ".json"
-    filename_2 = root + file_2 + ".json"
+    filename_1 = root + file_1
+    filename_2 = root + file_2
 
-    detector_1 = load_detector_from_json_file(filename_1)
-    detector_2 = load_detector_from_json_file(filename_2)
+    detector_1 = load_state_from_json_file(filename_1)
+    detector_2 = load_state_from_json_file(filename_2)
 
     assert detector_1.name == detector_2.name
     assert detector_1.detector_type == detector_2.detector_type

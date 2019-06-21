@@ -4,10 +4,12 @@ import logging
 import os
 import sys
 import pathlib
+import time
 from neo4j.v1 import GraphDatabase
 import neobolt.exceptions
+from marshmallow import ValidationError
 
-from cartography.driftdetect.detect_drift import perform_drift_detection
+from cartography.driftdetect.detect_drift import update_detectors, compare_states, load_state_from_json_file
 from cartography.driftdetect.reporter import report_drift
 
 
@@ -76,13 +78,27 @@ class CLI(object):
             ),
         )
         parser.add_argument(
-            '-u',
-            '--update',
-            action='store_true',
-            help='Save and updates the results of running the detector query.',
+            '--drift-detection-directory',
+            type=str,
+            default=None,
+            help=(
+                'A path to a directory containing drift-states to build. Drift-detection will discover all JSON'
+                'files in the given directory (and its subdirectories) and construct detectors from'
+                'them. Drift-detection does not guarantee the order in which the detector jobs are executed.'
+            ),
         )
         parser.add_argument(
-            '--drift-detector-directory',
+            '--start-state',
+            type=str,
+            default=None,
+            help=(
+                'A path to a directory containing drift-detectors to build. Drift-detection will discover all JSON'
+                'files in the given directory (and its subdirectories) and construct detectors from'
+                'them. Drift-detection does not guarantee the order in which the detector jobs are executed.'
+            ),
+        )
+        parser.add_argument(
+            '--end-state',
             type=str,
             default=None,
             help=(
@@ -129,14 +145,32 @@ class CLI(object):
 
     def main(self, argv):
         config = self.configure(argv)
-        try:
-            drift_info_detector_pairs = run(config)
-            report_drift(drift_info_detector_pairs)
-        except KeyboardInterrupt:
-            return 130
+        if (config.neo4j_uri and config.drift_detection_directory) and not (config.start_state or config.end_state):
+            try:
+                run_update(config)
+            except KeyboardInterrupt:
+                return 130
+        elif (config.start_state and config.end_state) and not (config.neo4j_uri and config.drift_detection_directory):
+            try:
+                start_state = load_state_from_json_file(config.start_state)
+                end_state = load_state_from_json_file(config.end_state)
+                assert start_state.validation_query == end_state.validation_query
+                new_results, missing_results = compare_states(start_state, end_state)
+                report_drift(new_results, new=True)
+                report_drift(missing_results, new=False)
+            except ValidationError as err:
+                msg = "Unable to create DriftDetector from files {0},{1} for \n{2}".format(config.start_state,
+                                                                                           config.end_state,
+                                                                                           err.messages)
+                logger.error(msg, exc_info=True)
+            except AssertionError:
+                msg = "Drift States do not belong to the same Query Directory"
+                logger.error(msg, exc_info=True)
+        else:
+            pass
 
 
-def run(config):
+def run_update(config):
     if not valid_directory(config):
         return
     neo4j_auth = None
@@ -181,30 +215,26 @@ def run(config):
         return
 
     with neo4j_driver.session() as session:
-        drift_info_detector_pairs = perform_drift_detection(
-            session,
-            config.drift_detector_directory,
-            config.update
-        )
-        return drift_info_detector_pairs
+        filename = '.'.join([str(i) for i in time.gmtime()] + [".json"])
+        update_detectors(session, config.drift_detection_directory, filename)
 
 
 def valid_directory(config):
-    drift_detector_directory_path = config.drift_detector_directory
-    if not drift_detector_directory_path:
+    drift_detection_directory_path = config.drift_detection_directory
+    if not drift_detection_directory_path:
         logger.info("Skipping drift-detection because no job path was provided.")
         return False
-    drift_detector_directory = pathlib.Path(drift_detector_directory_path)
-    if not drift_detector_directory.exists():
+    drift_detection_directory = pathlib.Path(drift_detection_directory_path)
+    if not drift_detection_directory.exists():
         logger.warning(
             "Skipping drift-detection because the provided job path '%s' does not exist.",
-            drift_detector_directory
+            drift_detection_directory
         )
         return False
-    if not drift_detector_directory.is_dir():
+    if not drift_detection_directory.is_dir():
         logger.warning(
             "Skipping drift-detection because the provided job path '%s' is not a directory.",
-            drift_detector_directory
+            drift_detection_directory
         )
         return False
     return True

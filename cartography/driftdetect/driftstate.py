@@ -91,7 +91,7 @@ class DriftStateSchema(Schema):
                           DriftDetectorType(data['detector_type']))
 
 
-def load_detector_from_json_file(file_path):
+def load_state_from_json_file(file_path):
     """
     Creates Detector from Json File
     :type string

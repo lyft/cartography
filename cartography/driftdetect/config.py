@@ -12,22 +12,23 @@ class Config(object):
     :param neo4j_user: User name for a Neo4j graph database service. Optional.
     :type neo4j_password: string
     :param neo4j_password: Password for a Neo4j graph database service. Optional.
-    :type update_tag: int
-    :param update_tag: Update tag for a cartography sync run. Optional.
-    :type aws_sync_all_profiles: bool
-    :param aws_sync_all_profiles: If True, AWS sync will run for all non-default profiles in the AWS_CONFIG_FILE. If
-        False (default), AWS sync will run using the default credentials only. Optional.
-    :type analysis_job_directory: str
-    :param analysis_job_directory: Path to a directory tree containing analysis jobs to run. Optional.
+    :type drift_detection_directory:
+    :param drift_detection_directory:
+    :type start_state:
+    :param start_state:
+    :type end_state:
+    :param end_state:
     """
     def __init__(self,
-                 drift_detector_directory,
-                 neo4j_uri,
+                 drift_detection_directory=None,
+                 neo4j_uri=None,
                  neo4j_user=None,
                  neo4j_password=None,
-                 update=False):
+                 start_state=None,
+                 end_state=None):
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user
         self.neo4j_password = neo4j_password
-        self.drift_detector_directory = drift_detector_directory
-        self.update = update
+        self.drift_detection_directory = drift_detection_directory
+        self.start_state = start_state
+        self.end_state = end_state

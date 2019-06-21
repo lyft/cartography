@@ -1,12 +1,14 @@
-from cartography.driftdetect.cli import CLI, run
 from unittest.mock import patch
 from tests.integration import settings
 
+from cartography.driftdetect.cli import CLI
+from cartography.driftdetect.detect_drift import update_detectors
 
-@patch('cartography.driftdetect.cli.run')
+
+@patch('cartography.driftdetect.cli.run_update')
 def test_cli_main(mock_run):
     cli = CLI(prog="driftdetect")
-    cli.main(["--neo4j-uri", settings.get("NEO4J_URL"), "--drift-detector-directory", "tests/data/detectors"])
+    cli.main(["--neo4j-uri", settings.get("NEO4J_URL"), "--drift-detection-directory", "tests/data/detectors"])
     mock_run.assert_called_once()
 
 
@@ -15,10 +17,10 @@ def test_configurate():
     config = cli.configure([
         "--neo4j-uri",
         settings.get("NEO4J_URL"),
-        "--drift-detector-directory",
+        "--drift-detection-directory",
         "tests/data/detectors"
     ])
-    assert config.drift_detector_directory == "tests/data/detectors"
+    assert config.drift_detection_directory == "tests/data/detectors"
     assert config.neo4j_uri == settings.get("NEO4J_URL")
 
 
@@ -57,21 +59,18 @@ def test_run(neo4j_session):
 
     # Test that run does not work with no directory specified
 
-    config = cli.configure([
-        "--neo4j-uri",
-        settings.get("NEO4J_URL")
-    ])
-    assert not run(config)
-
-    config = cli.configure([
+    cli.main([
         "--neo4j-uri",
         settings.get("NEO4J_URL"),
-        "--drift-detector-directory",
-        "tests/data/detectors"
+        "--drift-detection-directory",
+        "tests/data/test_cli_detectors"
     ])
-    drift_pairs = run(config)
-    drift_info = [pair[0] for pair in drift_pairs]
-    assert {"d.test": "7"} in drift_info
-    assert {"d.test": "7", "d.test2": "14"} in drift_info
-    assert {"d.test": "7", "d.test2": "14", "d.test3": ["21", "28", "35"]} in drift_info
-    assert {"d.test": "36", "d.test2": "37", "d.test3": ["38", "39", "40"]} in drift_info
+    update_detectors(neo4j_session, "tests/data/test_cli_detectors", "2.json")
+
+    cli.main([
+        "--start-state",
+        "tests/data/test_cli_detectors/detector/1.json",
+        "--end-state",
+        "tests/data/test_cli_detectors/detector/2.json"
+    ])
+    assert False
