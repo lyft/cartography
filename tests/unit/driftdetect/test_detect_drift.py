@@ -1,4 +1,4 @@
-from cartography.driftdetect.cli import valid_directory
+from cartography.driftdetect.detect_drift import valid_directory
 from cartography.driftdetect.config import Config
 
 

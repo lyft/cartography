@@ -1,6 +1,8 @@
-from cartography.driftdetect.cli import CLI, run
 from unittest.mock import patch
 from tests.integration import settings
+
+from cartography.driftdetect.detect_drift import run
+from cartography.driftdetect.cli import CLI
 
 
 @patch('cartography.driftdetect.cli.run')

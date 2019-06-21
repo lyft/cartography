@@ -26,10 +26,11 @@ class DriftDetector(object):
     def run(self, session, update):
         """
         Performs Detection
-        :type neo4j session
-        :param session: graph session
-        :param update: boolean
-        :return:
+        :type session: neo4j session
+        :param session: Graph session to pull infrastructure information from
+        :type update: boolean
+        :param update: Decides whether or not to update the graph
+        :return: iterable of dictionaries of drift information
         """
 
         results = session.run(self.validation_query)
@@ -66,8 +67,8 @@ class DriftDetectorSchema(Schema):
 def load_detector_from_json_file(file_path):
     """
     Creates Detector from Json File
-    :type string
-    :param file_path:
+    :type file_path: string
+    :param file_path: path to json file that detector is created from
     :return: DriftDetector
     """
     logger.debug("Creating from json file {0}".format(file_path))
@@ -81,7 +82,9 @@ def load_detector_from_json_file(file_path):
 def write_detector_to_json_file(detector, file_path):
     """
     Saves detector to json file
+    :type detector: DriftDetector
     :param detector: Detector to be saved
+    :type file_path: string
     :param file_path: file_path to store detector
     :return: None
     """
@@ -95,7 +98,7 @@ def write_detector_to_json_file(detector, file_path):
 def _build_drift_insight(graph_result):
     """
     Build drift insight
-    :type BoltStatementResult
+    :type graph_result: BoltStatementResult
     :param graph_result: Graph data returned by the validation_query
     :return: Dictionary representing the addition data we have on the drift
     """

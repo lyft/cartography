@@ -44,7 +44,7 @@ setup(
     entry_points={
         'console_scripts': [
             'cartography = cartography.cli:main',
-            'driftdetect = driftdetect.cli.main'
+            'cartography-detectdrift = cartography.driftdetect.cli.main'
         ]
     },
     classifiers=[
