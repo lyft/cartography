@@ -45,7 +45,7 @@ Time to set up the server that will run Cartography.  Cartography _should_ work 
 	
 5. **Get and run Cartography** 
 
-	1. Run `pip install cartography` to install our code.
+	1. Run `pip3 install cartography` to install our code.
 
 	2. Finally, to sync your data:
 
