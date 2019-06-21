@@ -1,4 +1,3 @@
-
 def report_drift(drift_info_detector_pairs, new=True):
     """
     Report drift

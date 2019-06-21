@@ -1,7 +1,7 @@
 import datetime
 
 from cartography.driftdetect.driftstate import load_state_from_json_file
-from cartography.driftdetect.detect_drift import update_detectors
+from cartography.driftdetect.update_drift import update_detectors
 
 
 def test_update_detectors(neo4j_session):

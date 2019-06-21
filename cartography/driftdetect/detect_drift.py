@@ -1,26 +1,16 @@
-import os
-import os.path
 import logging
-from cartography.driftdetect.driftstate import load_state_from_json_file, write_state_to_json_file
 
+from cartography.driftdetect.driftstate import load_state_from_json_file
 
 logger = logging.getLogger(__name__)
 
 
-def update_detectors(session, expect_folder, filename):
-    """
-    Walks through all detector directories, runs the query, and saves the detector using the detector template.
-    :param session:
-    :param expect_folder:
-    :param time: filename
-    :return:
-    """
-    for root, directories, _ in os.walk(expect_folder):
-        for directory in directories:
-            file_path = os.path.join(root, directory, "template.json")
-            detector = load_state_from_json_file(file_path)
-            detector.update(session)
-            write_state_to_json_file(detector, os.path.join(root, directory, filename))
+def perform_drift_detection(start_state_path, end_state_path):
+    start_state = load_state_from_json_file(start_state_path)
+    end_state = load_state_from_json_file(end_state_path)
+    assert start_state.validation_query == end_state.validation_query
+    new_results, missing_results = compare_states(start_state, end_state)
+    return new_results, missing_results
 
 
 def compare_states(start_state, end_state):
