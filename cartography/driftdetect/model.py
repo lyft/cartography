@@ -39,7 +39,9 @@ class DriftDetector(object):
         for record in results:
             values = []
             for field in record.values():
-                if isinstance(field, list):
+                if not field:
+                    values.append("")
+                elif isinstance(field, list):
                     s = "|".join(field)
                     values.append(s)
                 else:
