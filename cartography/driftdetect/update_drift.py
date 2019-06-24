@@ -6,7 +6,7 @@ import logging
 from neo4j.v1 import GraphDatabase
 import neobolt.exceptions
 
-from cartography.driftdetect.driftstate import load_state_from_json_file, write_state_to_json_file
+from cartography.driftdetect.model import load_state_from_json_file, write_state_to_json_file
 
 logger = logging.getLogger(__name__)
 

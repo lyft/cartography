@@ -1,6 +1,6 @@
 import logging
 
-from cartography.driftdetect.driftstate import load_state_from_json_file
+from cartography.driftdetect.model import load_state_from_json_file
 
 logger = logging.getLogger(__name__)
 

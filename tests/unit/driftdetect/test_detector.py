@@ -1,6 +1,6 @@
 from unittest.mock import MagicMock
 
-from cartography.driftdetect.driftstate import load_state_from_json_file
+from cartography.driftdetect.model import load_state_from_json_file
 from cartography.driftdetect.detect_drift import state_differences, compare_states
 
 

@@ -1,6 +1,6 @@
 import datetime
 
-from cartography.driftdetect.driftstate import load_state_from_json_file
+from cartography.driftdetect.model import load_state_from_json_file
 from cartography.driftdetect.update_drift import update_detectors
 
 
