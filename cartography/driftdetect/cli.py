@@ -127,7 +127,8 @@ class CLI(object):
         config = self.configure(argv)
         try:
             drift_info_detector_pairs = run(config)
-            report_drift(drift_info_detector_pairs)
+            if drift_info_detector_pairs:
+                report_drift(drift_info_detector_pairs)
         except KeyboardInterrupt:
             return 130
 
