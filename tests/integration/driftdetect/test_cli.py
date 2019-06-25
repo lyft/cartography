@@ -3,9 +3,6 @@ from unittest.mock import patch
 from tests.integration import settings
 from cartography.driftdetect.cli import CLI
 
-from cartography.driftdetect.detect_drift import run
-from cartography.driftdetect.cli import CLI
-
 
 @patch('cartography.driftdetect.cli.run_update')
 def test_cli_main(mock_run):
