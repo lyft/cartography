@@ -109,18 +109,18 @@ def valid_directory(config):
     """
     drift_detector_directory_path = config.drift_detector_directory
     if not drift_detector_directory_path:
-        logger.info("Skipping drift-detection because no job path was provided.")
+        logger.info("Cannot perform drift-detection because no job path was provided.")
         return False
     drift_detector_directory = pathlib.Path(drift_detector_directory_path)
     if not drift_detector_directory.exists():
         logger.warning(
-            "Skipping drift-detection because the provided job path '%s' does not exist.",
+            "Cannot perform drift-detection because the provided job path '%s' does not exist.",
             drift_detector_directory
         )
         return False
     if not drift_detector_directory.is_dir():
         logger.warning(
-            "Skipping drift-detection because the provided job path '%s' is not a directory.",
+            "Cannot perform drift-detection because the provided job path '%s' is not a directory.",
             drift_detector_directory
         )
         return False
