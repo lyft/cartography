@@ -3,7 +3,7 @@ class Config(object):
     A common interface for drift-detection configuration.
 
     All fields defined on this class must be present on a configuration object. Fields documented as required must
-    contain valid values. Fields documented as optional may contain None, in which case cartography will choose a
+    contain valid values. Fields documented as optional may contain None, in which case drift-detection will choose a
     sensible default value for that piece of configuration.
 
     :type neo4j_uri: string

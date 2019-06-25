@@ -45,3 +45,4 @@ def state_differences(start_state, end_state):
                     drift_info[end_state.properties[i]] = result[i]
             new_results.append((drift_info, end_state))
     return new_results
+

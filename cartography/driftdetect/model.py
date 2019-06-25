@@ -28,10 +28,11 @@ class DriftState(object):
     def run(self, session, update):
         """
         Performs Detection
-        :type neo4j session
-        :param session: graph session
-        :param update: boolean
-        :return:
+        :type session: neo4j session
+        :param session: Graph session to pull infrastructure information from
+        :type update: boolean
+        :param update: Decides whether or not to update the graph
+        :return: iterable of dictionaries of drift information
         """
 
         results = session.run(self.validation_query)
@@ -40,7 +41,9 @@ class DriftState(object):
         for record in results:
             values = []
             for field in record.values():
-                if isinstance(field, list):
+                if not field:
+                    values.append("")
+                elif isinstance(field, list):
                     s = "|".join(field)
                     values.append(s)
                 else:
@@ -94,8 +97,8 @@ class DriftStateSchema(Schema):
 def load_state_from_json_file(file_path):
     """
     Creates Detector from Json File
-    :type string
-    :param file_path:
+    :type file_path: string
+    :param file_path: path to json file that detector is created from
     :return: DriftDetector
     """
     logger.debug("Creating from json file {0}".format(file_path))
@@ -109,7 +112,9 @@ def load_state_from_json_file(file_path):
 def write_state_to_json_file(detector, file_path):
     """
     Saves detector to json file
+    :type detector: DriftDetector
     :param detector: Detector to be saved
+    :type file_path: string
     :param file_path: file_path to store detector
     :return: None
     """
@@ -123,7 +128,7 @@ def write_state_to_json_file(detector, file_path):
 def _build_drift_insight(graph_result):
     """
     Build drift insight
-    :type BoltStatementResult
+    :type graph_result: BoltStatementResult
     :param graph_result: Graph data returned by the validation_query
     :return: Dictionary representing the addition data we have on the drift
     """
