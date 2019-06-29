@@ -1,31 +1,4 @@
-# Cartography Schema
-
-## ℹ️ Quick notes on notation
-- **Bolded words** in the schema tables indicate that this field is indexed, so your queries will run faster if you use these fields.
-
-- This isn't proper Neo4j syntax, but for the purpose of this document we will use this notation:
-
-	```
-	(NodeTypeA)-[RELATIONSHIP_R]->(NodeTypeB, NodeTypeC, NodeTypeD, NodeTypeE)
-	```
-
-	to mean a shortened version of this:
-
-	```
-	(NodeTypeA)-[RELATIONSHIP_R]->(NodeTypeB)
-	(NodeTypeA)-[RELATIONSHIP_R]->(NodeTypeC)
-	(NodeTypeA)-[RELATIONSHIP_R]->(NodeTypeD)
-	(NodeTypeA)-[RELATIONSHIP_R]->(NodeTypeE)
-	```
-
-
-	In words, this means that `NodeTypeA` has `RELATIONSHIP_R` pointing to `NodeTypeB`, and `NodeTypeA` has `RELATIONSHIP_R` pointing to `NodeTypeC`.
-
-- In these docs, more specific nodes will be decorated with `GenericNode::SpecificNode` notation.  For example, if we have a `Car` node and a `RaceCar` node, we will refer to the `RaceCar` as `Car::RaceCar`.
-
-## Complete Schema Diagram
-
-![Cartography complete open-source schema](images/cartography-schema-complete-open-source.png)
+# Cartography - Amazon Web Services Schema
 
 ## Table of contents
 
@@ -227,17 +200,17 @@ Representation of an [AWSPrincipal](https://docs.aws.amazon.com/IAM/latest/APIRe
 	(AWSPrincipal)-[MEMBER_AWS_GROUP]->(AWSGroup)
 	```
 	
-- AWS Principals can assume AWS Roles.
-
-	```
-	(AWSPrincipal)-[STS_ASSUMEROLE_ALLOW]->(AWSRole)
-	```
-	
 - This AccountAccessKey is used to authenticate to this AWSPrincipal.
 
 	```
 	(AWSPrincipal)-[AWS_ACCESS_KEY]->(AccountAccessKey)
 	```
+
+- AWS Roles can trust AWS Principals.
+
+    ```
+    (AWSRole)-[TRUSTS_AWS_PRINCIPAL]->(AWSPrincipal)
+    ```
 
 - AWS Accounts contain AWS Principals.
 
@@ -285,9 +258,9 @@ Representation of an [AWSUser](https://docs.aws.amazon.com/IAM/latest/APIReferen
 	```
 
 
-## AWSRole
+## AWSPrincipal::AWSRole
 
-Representation of an AWS [IAM Role](https://docs.aws.amazon.com/IAM/latest/APIReference/API_Role.html).
+Representation of an AWS [IAM Role](https://docs.aws.amazon.com/IAM/latest/APIReference/API_Role.html). An AWS Role is a type of AWS Principal.
 
 | Field | Description |
 |-------|-------------|
@@ -304,7 +277,19 @@ Representation of an AWS [IAM Role](https://docs.aws.amazon.com/IAM/latest/APIRe
 - Some AWS Groups, Users, and Principals can assume AWS Roles.
 
     ```
-    (AWSGroup, AWSUser, AWSPrincipal)-[STS_ASSUMEROLE_ALLOW]->(AWSRole)
+    (AWSGroup, AWSUser)-[STS_ASSUMEROLE_ALLOW]->(AWSRole)
+    ```
+
+- Some AWS Roles can assume other AWS Roles.
+
+    ```
+    (AWSRole)-[STS_ASSUMEROLE_ALLOW]->(AWSRole)
+    ```
+
+- Some AWS Roles trust AWS Principals.
+
+    ```
+    (AWSRole)-[TRUSTS_AWS_PRINCIPAL]->(AWSPrincipal)
     ```
 
 - AWS Roles are defined in AWS Accounts.
@@ -324,6 +309,7 @@ More information on https://docs.aws.amazon.com/cli/latest/reference/ec2/describ
 |primary_cidr_block|The primary IPv4 CIDR block for the VPC.|
 |instance_tenancy| The allowed tenancy of instances launched into the VPC.|
 |state| The current state of the VPC.|
+|region| (optional) the region of this VPC.  This field is only available on VPCs in your account.  It is not available on VPCs that are external to your account and linked via a VPC peering relationship.
 |**id**| Unique identifier defined VPC node (vpcid)
 
 ### Relationships

@@ -11,7 +11,7 @@
     
 3. **Install from source**
 
-    Run `cd cartography` and then `pip install .` (yes, actually type the period into the command line) to install Cartography from source.  
+    Run `cd cartography` and then `pip install -e .` (yes, actually type the period into the command line) to install Cartography from source.  
  
     ℹ️You may find it beneficial to use Python [virtualenvs](https://packaging.python.org/guides/installing-using-pip-and-virtualenv/) (or the  [virutalenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/command_ref.html#managing-environments)) so that packages installed via `pip` are easier to manage.
 
@@ -33,4 +33,22 @@ After completing the section above, you are now able to manually test intel modu
 
 ### Automated testing
 
-1. TBD 🤭
+1. **Install test requirements**
+
+    `pip install -r test-requirements.txt`
+   
+2. **(OPTIONAL) Setup environment variables for integration tests**
+
+    The integration tests expect Neo4j to be running locally, listening on default ports, with auth disabled. To run the integration tests on a specific Neo4j instance, add the following environment variable:
+
+    `export "NEO4J_URL=<your_neo4j_instance_url:your_neo4j_instance_port>"`
+    
+3. **Run tests using `make`**️
+
+    - `make test_lint` can be used to run flake8 linting against the codebase.
+    - `make test_unit` can be used to run the (currently non-existent) unit test suite.
+    
+    ⚠️ Important!  The below commands will **DELETE ALL NODES** on your local Neo4j instance as part of our testing procedure.  Only run any of the below commands if you are ok with this. ⚠️
+    
+    - `make test_integration` can be used to run the integration test suite.
+    - `make test` can be used to run all of the above.

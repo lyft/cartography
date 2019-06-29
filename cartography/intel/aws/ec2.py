@@ -59,14 +59,14 @@ def get_loadbalancer_data(session, region):
     return {'LoadBalancerDescriptions': elbs}
 
 
-def get_ec2_vpc_peering(session):
-    client = session.client('ec2', config=_get_botocore_config())
+def get_ec2_vpc_peering(session, region):
+    client = session.client('ec2', region_name=region, config=_get_botocore_config())
     # paginator not supported by boto
     return client.describe_vpc_peering_connections()
 
 
-def get_ec2_vpcs(session):
-    client = session.client('ec2', config=_get_botocore_config())
+def get_ec2_vpcs(session, region):
+    client = session.client('ec2', region_name=region, config=_get_botocore_config())
     # paginator not supported by boto
     return client.describe_vpcs()
 
@@ -85,7 +85,7 @@ def load_ec2_instances(session, data, region, current_aws_account_id, aws_update
     """
 
     ingest_instance = """
-    MERGE (instance:EC2Instance{instanceid: {InstanceId}})
+    MERGE (instance:Instance:EC2Instance{instanceid: {InstanceId}})
     ON CREATE SET instance.firstseen = timestamp()
     SET instance.publicdnsname = {PublicDnsName}, instance.privateipaddress = {PrivateIpAddress},
     instance.imageid = {ImageId}, instance.instancetype = {InstanceType}, instance.monitoringstate = {MonitoringState},
@@ -374,7 +374,7 @@ def load_ec2_auto_scaling_groups(session, data, region, current_aws_account_id, 
     """
 
     ingest_instance = """
-    MERGE (instance:EC2Instance{instanceid: {InstanceId}})
+    MERGE (instance:Instance:EC2Instance{instanceid: {InstanceId}})
     ON CREATE SET instance.firstseen = timestamp()
     SET instance.lastupdated = {aws_update_tag}, instance.region={Region}
     WITH instance
@@ -626,6 +626,8 @@ def load_ec2_vpc_peering(session, data, aws_update_tag):
     # We assume the accept data is already in the graph since we run after all AWS account in scope
     # We don't assume the requestor data is in the graph as it can be a foreign AWS account
     # IPV6 peering is not supported, we default to AWSIpv4CidrBlock
+    #
+    # We skip the region field here as we may not know which one it's related to in case of foreign VPC
     ingest_peering = """
     MATCH (accepter_block:AWSIpv4CidrBlock{id: {AccepterVpcId} + '|' + {AccepterCidrBlock}})
     WITH accepter_block
@@ -699,8 +701,8 @@ def load_ec2_vpc_peering(session, data, aws_update_tag):
                         aws_update_tag=aws_update_tag)
 
 
-def load_ec2_vpcs(session, data, current_aws_account_id, aws_update_tag):
-    # https://github.com/lyft/cartography/graphs/traffic
+def load_ec2_vpcs(session, data, region, current_aws_account_id, aws_update_tag):
+    # https://docs.aws.amazon.com/cli/latest/reference/ec2/describe-vpcs.html
     # {
     #     "Vpcs": [
     #         {
@@ -737,6 +739,7 @@ def load_ec2_vpcs(session, data, current_aws_account_id, aws_update_tag):
     new_vpc.is_default = {IsDefault},
     new_vpc.primary_cidr_block = {PrimaryCIDRBlock},
     new_vpc.dhcp_options_id = {DhcpOptionsId},
+    new_vpc.region = {Region},
     new_vpc.lastupdated = {aws_update_tag}
     WITH new_vpc
     MATCH (awsAccount:AWSAccount{id: {AWS_ACCOUNT_ID}})
@@ -755,6 +758,7 @@ def load_ec2_vpcs(session, data, current_aws_account_id, aws_update_tag):
             IsDefault=vpc.get("IsDefault", None),
             PrimaryCIDRBlock=vpc.get("CidrBlock", None),
             DhcpOptionsId=vpc.get("DhcpOptionsId", None),
+            Region=region,
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag)
 
@@ -891,15 +895,17 @@ def sync_load_balancers(session, boto3_session, regions, current_aws_account_id,
     cleanup_load_balancers(session, common_job_parameters)
 
 
-def sync_vpc(session, boto3_session, current_aws_account_id, aws_update_tag, common_job_parameters):
-    logger.debug("Syncing EC2 VPC in account '%s'.", current_aws_account_id)
-    data = get_ec2_vpcs(boto3_session)
-    load_ec2_vpcs(session, data, current_aws_account_id, aws_update_tag)
+def sync_vpc(session, boto3_session, regions, current_aws_account_id, aws_update_tag, common_job_parameters):
+    for region in regions:
+        logger.debug("Syncing EC2 VPC for region '%s' in account '%s'.", region, current_aws_account_id)
+        data = get_ec2_vpcs(boto3_session, region)
+        load_ec2_vpcs(session, data, region, current_aws_account_id, aws_update_tag)
     cleanup_ec2_vpcs(session, common_job_parameters)
 
 
-def sync_vpc_peering(session, boto3_session, current_aws_account_id, aws_update_tag, common_job_parameters):
-    logger.debug("Syncing EC2 VPC peering in account '%s'.", current_aws_account_id)
-    data = get_ec2_vpc_peering(boto3_session)
-    load_ec2_vpc_peering(session, data, aws_update_tag)
+def sync_vpc_peering(session, boto3_session, regions, current_aws_account_id, aws_update_tag, common_job_parameters):
+    for region in regions:
+        logger.debug("Syncing EC2 VPC peering for region '%s' in account '%s'.", region, current_aws_account_id)
+        data = get_ec2_vpc_peering(boto3_session, region)
+        load_ec2_vpc_peering(session, data, aws_update_tag)
     cleanup_ec2_vpc_peering(session, common_job_parameters)

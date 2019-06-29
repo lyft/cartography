@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-__version__ = '0.3.0rc1'
+__version__ = '0.7.0'
 
 
 setup(
@@ -32,6 +32,9 @@ setup(
         "neobolt>=1.7.0",
         "policyuniverse>=1.1.0.0",
         "python-dateutil>=2.7.0",
+        "google-api-python-client>=1.7.8",
+        "oauth2client>=4.1.3",
+        "marshmallow>=3.0.0rc7"
     ],
     extras_require={
         ':python_version<"3.7"': [
@@ -41,6 +44,7 @@ setup(
     entry_points={
         'console_scripts': [
             'cartography = cartography.cli:main',
+            'cartography-detectdrift = cartography.driftdetect.cli:main'
         ]
     },
     classifiers=[

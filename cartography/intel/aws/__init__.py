@@ -10,15 +10,7 @@ logger = logging.getLogger(__name__)
 
 def _sync_one_account(session, boto3_session, account_id, regions, sync_tag, common_job_parameters):
     # IAM
-    # TODO move this to IAM module
-    logger.info("Syncing IAM for account '%s'.", account_id)
-    iam.sync_users(session, boto3_session, account_id, sync_tag, common_job_parameters)
-    iam.sync_groups(session, boto3_session, account_id, sync_tag, common_job_parameters)
-    iam.sync_policies(session, boto3_session, account_id, sync_tag, common_job_parameters)
-    iam.sync_roles(session, boto3_session, account_id, sync_tag, common_job_parameters)
-    iam.sync_group_memberships(session, boto3_session, account_id, sync_tag, common_job_parameters)
-    iam.sync_group_policies(session, boto3_session, account_id, sync_tag, common_job_parameters)
-    iam.sync_user_access_keys(session, boto3_session, account_id, sync_tag, common_job_parameters)
+    iam.sync(session, boto3_session, account_id, sync_tag, common_job_parameters)
 
     # S3
     s3.sync(session, boto3_session, account_id, sync_tag, common_job_parameters)
@@ -29,12 +21,12 @@ def _sync_one_account(session, boto3_session, account_id, regions, sync_tag, com
     # EC2
     # TODO move this to EC2 module
     logger.info("Syncing EC2 for account '%s'.", account_id)
-    ec2.sync_vpc(session, boto3_session, account_id, sync_tag, common_job_parameters)
+    ec2.sync_vpc(session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     ec2.sync_ec2_security_groupinfo(session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     ec2.sync_ec2_instances(session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     ec2.sync_ec2_auto_scaling_groups(session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     ec2.sync_load_balancers(session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-    ec2.sync_vpc_peering(session, boto3_session, sync_tag, account_id, common_job_parameters)
+    ec2.sync_vpc_peering(session, boto3_session, regions, sync_tag, account_id, common_job_parameters)
 
     # RDS
     rds.sync_rds_instances(session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
@@ -63,6 +55,9 @@ def _sync_multiple_accounts(session, accounts, regions, sync_tag, common_job_par
 
     del common_job_parameters["AWS_ID"]
 
+    # There may be orphan Principals which point outside of known AWS accounts. This job cleans
+    # up those nodes after all AWS accounts have been synced.
+    run_cleanup_job('aws_post_ingestion_principals_cleanup.json', session, common_job_parameters)
     # There may be orphan DNS entries that point outside of known AWS zones. This job cleans
     # up those entries after all AWS accounts have been synced.
     run_cleanup_job('aws_post_ingestion_dns_cleanup.json', session, common_job_parameters)
