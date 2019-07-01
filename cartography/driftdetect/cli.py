@@ -102,6 +102,16 @@ class CLI(object):
             )
         )
         parser_get_drift.add_argument(
+            '--drift-detection-directory',
+            type=str,
+            default=None,
+            help=(
+                'A path to a directory containing drift-states to build. Drift-detection will discover all JSON'
+                'files in the given directory (and its subdirectories) and construct detectors from'
+                'them. Drift-detection does not guarantee the order in which the detector jobs are executed.'
+            ),
+        )
+        parser_get_drift.add_argument(
             '--start-state',
             type=str,
             default=None,
@@ -159,13 +169,13 @@ class CLI(object):
                 report_drift(new_results)
                 report_drift(missing_results)
             except ValidationError as err:
-                msg = "Unable to create DriftDetector from files {0},{1} for \n{2}".format(
+                msg = "Unable to create DriftState from files {0},{1} for \n{2}".format(
                     config.start_state,
                     config.end_state,
                     err.messages)
                 logger.exception(msg)
             except AssertionError:
-                msg = "Drift States do not belong to the same Query Directory"
+                msg = "DriftStates do not belong to the same Query Directory"
                 logger.exception(msg)
             except KeyboardInterrupt:
                 return 130

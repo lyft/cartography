@@ -32,8 +32,11 @@ def test_configurate():
 def test_cli_get_drift(mock_report_drift):
     start_state = "tests/data/test_cli_detectors/detector/1.json"
     end_state = "tests/data/test_cli_detectors/detector/2.json"
+    directory = "tests/data/test_cli_detectors/detector"
     cli = CLI(prog="carogtaphy-detectdrift")
     cli.main(["get-drift",
+              "--drift-detection-directory",
+              directory,
               "--start-state",
               start_state,
               "--end-state",

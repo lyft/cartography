@@ -13,7 +13,8 @@ def test_valid_directory():
 def test_perform_drift_detection():
     start_state = "tests/data/test_cli_detectors/detector/1.json"
     end_state = "tests/data/test_cli_detectors/detector/2.json"
-    new_results, missing_results = perform_drift_detection(start_state, end_state)
+    directory = "tests/data/test_cli_detectors/detector"
+    new_results, missing_results = perform_drift_detection(directory, start_state, end_state)
     new_results = [drift_info_detector_pair[0] for drift_info_detector_pair in new_results]
     missing_results = [drift_info_detector_pair[0] for drift_info_detector_pair in missing_results]
     assert {'d.test': '36', 'd.test2': '37', 'd.test3': ['38', '39', '40']} in new_results

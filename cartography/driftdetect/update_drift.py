@@ -77,21 +77,21 @@ def run_update(config):
 
 
 def valid_directory(config):
-    drift_detector_directory_path = config.drift_detector_directory
-    if not drift_detector_directory_path:
+    drift_detection_directory_path = config.drift_detection_directory
+    if not drift_detection_directory_path:
         logger.info("Cannot perform drift-detection because no job path was provided.")
         return False
-    drift_detector_directory = pathlib.Path(drift_detector_directory_path)
-    if not drift_detector_directory.exists():
+    drift_detection_directory = pathlib.Path(drift_detection_directory_path)
+    if not drift_detection_directory.exists():
         logger.warning(
             "Cannot perform drift-detection because the provided job path '%s' does not exist.",
-            drift_detector_directory
+            drift_detection_directory
         )
         return False
-    if not drift_detector_directory.is_dir():
+    if not drift_detection_directory.is_dir():
         logger.warning(
             "Cannot perform drift-detection because the provided job path '%s' is not a directory.",
-            drift_detector_directory
+            drift_detection_directory
         )
         return False
     return True

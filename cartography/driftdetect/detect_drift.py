@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 def perform_drift_detection(drift_detection_directory, start_state_path, end_state_path):
-    report_info = load_report_info_from_json_file(os.join(drift_detection_directory, "report_info.json"))
+    report_info = load_report_info_from_json_file(os.path.join(drift_detection_directory, "report_info.json"))
     start_state = load_state_from_json_file(report_info.shortcuts.get(start_state_path, start_state_path))
     end_state = load_state_from_json_file(report_info.shortcuts.get(end_state_path, end_state_path))
     assert start_state.name == end_state.name
