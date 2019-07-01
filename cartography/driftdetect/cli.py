@@ -153,7 +153,9 @@ class CLI(object):
                 return 130
         elif config.command == 'get-drift':
             try:
-                new_results, missing_results = perform_drift_detection(config.start_state, config.end_state)
+                new_results, missing_results = perform_drift_detection(config.drift_detection_directory,
+                                                                       config.start_state,
+                                                                       config.end_state)
                 report_drift(new_results)
                 report_drift(missing_results)
             except ValidationError as err:

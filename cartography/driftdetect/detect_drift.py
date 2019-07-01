@@ -1,13 +1,17 @@
 import logging
+import os
 
 from cartography.driftdetect.model import load_state_from_json_file
+from cartography.driftdetect.report_info import load_report_info_from_json_file
 
 logger = logging.getLogger(__name__)
 
 
-def perform_drift_detection(start_state_path, end_state_path):
-    start_state = load_state_from_json_file(start_state_path)
-    end_state = load_state_from_json_file(end_state_path)
+def perform_drift_detection(drift_detection_directory, start_state_path, end_state_path):
+    report_info = load_report_info_from_json_file(os.join(drift_detection_directory, "report_info.json"))
+    start_state = load_state_from_json_file(report_info.shortcuts.get(start_state_path, start_state_path))
+    end_state = load_state_from_json_file(report_info.shortcuts.get(end_state_path, end_state_path))
+    assert start_state.name == end_state.name
     assert start_state.validation_query == end_state.validation_query
     new_results, missing_results = compare_states(start_state, end_state)
     return new_results, missing_results
