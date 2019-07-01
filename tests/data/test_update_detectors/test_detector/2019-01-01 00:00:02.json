@@ -1,5 +1,4 @@
 {
-    "detector_type": 1,
     "expectations": [
         [
             "1",
@@ -47,6 +46,6 @@
         "d.test2",
         "d.test3"
     ],
-    "validation_query": "match (d) return d.test,d.test2,d.test3",
-    "name": "test_detector"
+    "name": "test_detector",
+    "validation_query": "match (d) return d.test,d.test2,d.test3"
 }

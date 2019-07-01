@@ -134,7 +134,6 @@ def test_json_loader():
     detector = load_state_from_json_file(filepath)
     assert detector.name == "Test-Expectations"
     assert detector.validation_query == "MATCH (d) RETURN d.test"
-    assert str(detector.detector_type) == "DriftDetectorType.EXPOSURE"
     assert detector.expectations == [['1'], ['2'], ['3'], ['4'], ['5'], ['6']]
 
 

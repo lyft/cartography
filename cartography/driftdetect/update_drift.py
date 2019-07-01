@@ -11,7 +11,7 @@ from cartography.driftdetect.model import load_state_from_json_file, write_state
 logger = logging.getLogger(__name__)
 
 
-def update_detectors(session, expect_folder, filename):
+def update_queries(session, expect_folder, filename):
     """
     Walks through all detector directories, runs the query, and saves the detector using the detector template.
     :param session:
@@ -22,9 +22,9 @@ def update_detectors(session, expect_folder, filename):
     for root, directories, _ in os.walk(expect_folder):
         for directory in directories:
             file_path = os.path.join(root, directory, "template.json")
-            detector = load_state_from_json_file(file_path)
-            detector.update(session)
-            write_state_to_json_file(detector, os.path.join(root, directory, filename))
+            state = load_state_from_json_file(file_path)
+            state.update(session)
+            write_state_to_json_file(state, os.path.join(root, directory, filename))
 
 
 def run_update(config):
@@ -73,7 +73,7 @@ def run_update(config):
 
     with neo4j_driver.session() as session:
         filename = '.'.join([str(i) for i in time.gmtime()] + [".json"])
-        update_detectors(session, config.drift_detection_directory, filename)
+        update_queries(session, config.drift_detection_directory, filename)
 
 
 def valid_directory(config):

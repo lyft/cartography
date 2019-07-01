@@ -1,14 +1,8 @@
 import json
 import logging
 from marshmallow import Schema, fields, post_load
-from enum import IntEnum
-
 
 logger = logging.getLogger(__name__)
-
-
-class DriftDetectorType(IntEnum):
-    EXPOSURE = 1
 
 
 class DriftState(object):
@@ -16,14 +10,12 @@ class DriftState(object):
                  name,
                  validation_query,
                  properties,
-                 expectations,
-                 detector_type):
+                 expectations):
 
         self.name = name
         self.validation_query = validation_query
         self.properties = properties
         self.expectations = expectations
-        self.detector_type = detector_type
 
     def run(self, session, update):
         """
@@ -82,7 +74,6 @@ class DriftStateSchema(Schema):
     name = fields.Str()
     validation_query = fields.Str()
     properties = fields.List(fields.Str())
-    detector_type = fields.Int()
     expectations = fields.List(fields.List(fields.Str()))
 
     @post_load
@@ -90,8 +81,7 @@ class DriftStateSchema(Schema):
         return DriftState(data['name'],
                           data['validation_query'],
                           data['properties'],
-                          data['expectations'],
-                          DriftDetectorType(data['detector_type']))
+                          data['expectations'])
 
 
 def load_state_from_json_file(file_path):

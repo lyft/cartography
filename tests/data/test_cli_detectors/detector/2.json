@@ -37,7 +37,6 @@
         ]
     ],
     "name": "Test-Multiple-Properties",
-    "detector_type": 1,
     "validation_query": "MATCH (d) RETURN d.test,d.test2,d.test3",
     "properties": [
         "d.test",
