@@ -25,10 +25,16 @@ class Config(object):
                  neo4j_user=None,
                  neo4j_password=None,
                  start_state=None,
-                 end_state=None):
+                 end_state=None,
+                 query_directory=None,
+                 shortcut=None,
+                 file=None):
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user
         self.neo4j_password = neo4j_password
         self.drift_detection_directory = drift_detection_directory
         self.start_state = start_state
         self.end_state = end_state
+        self.query_directory = query_directory
+        self.shortcut = shortcut
+        self.file = file

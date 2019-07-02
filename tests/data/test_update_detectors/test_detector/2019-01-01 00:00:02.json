@@ -1,11 +1,11 @@
 {
-    "validation_query": "match (d) return d.test,d.test2,d.test3",
     "name": "test_detector",
     "properties": [
         "d.test",
         "d.test2",
         "d.test3"
     ],
+    "validation_query": "match (d) return d.test,d.test2,d.test3",
     "expectations": [
         [
             "1",

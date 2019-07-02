@@ -11,24 +11,8 @@ from cartography.driftdetect.model import load_state_from_json_file, write_state
 logger = logging.getLogger(__name__)
 
 
-def update_queries(session, expect_folder, filename):
-    """
-    Walks through all detector directories, runs the query, and saves the detector using the detector template.
-    :param session:
-    :param expect_folder:
-    :param filename:
-    :return:
-    """
-    for root, directories, _ in os.walk(expect_folder):
-        for directory in directories:
-            file_path = os.path.join(root, directory, "template.json")
-            state = load_state_from_json_file(file_path)
-            state.update(session)
-            write_state_to_json_file(state, os.path.join(root, directory, filename))
-
-
 def run_update(config):
-    if not valid_directory(config):
+    if not valid_directory(config.drift_detection_directory):
         return
     neo4j_auth = None
     if config.neo4j_user or config.neo4j_password:
@@ -76,8 +60,23 @@ def run_update(config):
         update_queries(session, config.drift_detection_directory, filename)
 
 
-def valid_directory(config):
-    drift_detection_directory_path = config.drift_detection_directory
+def update_queries(session, expect_folder, filename):
+    """
+    Walks through all detector directories, runs the query, and saves the detector using the detector template.
+    :param session:
+    :param expect_folder:
+    :param filename:
+    :return:
+    """
+    for root, directories, _ in os.walk(expect_folder):
+        for directory in directories:
+            file_path = os.path.join(root, directory, "template.json")
+            state = load_state_from_json_file(file_path)
+            state.update(session)
+            write_state_to_json_file(state, os.path.join(root, directory, filename))
+
+
+def valid_directory(drift_detection_directory_path):
     if not drift_detection_directory_path:
         logger.info("Cannot perform drift-detection because no job path was provided.")
         return False

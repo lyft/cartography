@@ -6,8 +6,9 @@ import sys
 from marshmallow import ValidationError
 
 from cartography.driftdetect.detect_drift import perform_drift_detection
-from cartography.driftdetect.update_drift import run_update
+from cartography.driftdetect.update_drift import run_update, valid_directory
 from cartography.driftdetect.reporter import report_drift
+from cartography.driftdetect.report_info import add_shortcut
 
 
 logger = logging.getLogger(__name__)
@@ -102,13 +103,12 @@ class CLI(object):
             )
         )
         parser_get_drift.add_argument(
-            '--drift-detection-directory',
+            '--query-directory',
             type=str,
             default=None,
             help=(
-                'A path to a directory containing drift-states to build. Drift-detection will discover all JSON'
-                'files in the given directory (and its subdirectories) and construct detectors from'
-                'them. Drift-detection does not guarantee the order in which the detector jobs are executed.'
+                'A path to a directory containing drift-states for a specific query. Drift-detection will read in the'
+                'report_info file and specified drift-states from the directory to report the differences between files'
             ),
         )
         parser_get_drift.add_argument(
@@ -116,9 +116,7 @@ class CLI(object):
             type=str,
             default=None,
             help=(
-                'A path to a directory containing drift-detectors to build. Drift-detection will discover all JSON'
-                'files in the given directory (and its subdirectories) and construct detectors from'
-                'them. Drift-detection does not guarantee the order in which the detector jobs are executed.'
+                'The filename of the earlier state chronologically to be compared to.'
             ),
         )
         parser_get_drift.add_argument(
@@ -126,10 +124,38 @@ class CLI(object):
             type=str,
             default=None,
             help=(
-                'A path to a directory containing drift-detectors to build. Drift-detection will discover all JSON'
-                'files in the given directory (and its subdirectories) and construct detectors from'
-                'them. Drift-detection does not guarantee the order in which the detector jobs are executed.'
+                'The filename of the later state chronologically to be compared to.'
             ),
+        )
+        parser_add_shortcut = subparsers.add_parser(
+            name='add-shortcut',
+            help=(
+                'adds shortcut to a specific '
+            )
+        )
+        parser_add_shortcut.add_argument(
+            '--query-directory',
+            type=str,
+            default=None,
+            help=(
+                'A path to a directory containing drift-states for a specific query'
+            )
+        )
+        parser_add_shortcut.add_argument(
+            '--shortcut',
+            type=str,
+            default=None,
+            help=(
+                'The desired name to replace the filename'
+            )
+        )
+        parser_add_shortcut.add_argument(
+            '--file',
+            type=str,
+            default=None,
+            help=(
+                'The desired name of the file to be replace.'
+            )
         )
         return parser
 
@@ -163,11 +189,12 @@ class CLI(object):
                 return 130
         elif config.command == 'get-drift':
             try:
-                new_results, missing_results = perform_drift_detection(config.drift_detection_directory,
-                                                                       config.start_state,
-                                                                       config.end_state)
-                report_drift(new_results)
-                report_drift(missing_results)
+                if valid_directory(config.query_directory):
+                    new_results, missing_results = perform_drift_detection(config.query_directory,
+                                                                           config.start_state,
+                                                                           config.end_state)
+                    report_drift(new_results)
+                    report_drift(missing_results)
             except ValidationError as err:
                 msg = "Unable to create DriftState from files {0},{1} for \n{2}".format(
                     config.start_state,
@@ -179,6 +206,9 @@ class CLI(object):
                 logger.exception(msg)
             except KeyboardInterrupt:
                 return 130
+        elif config.command == 'add-shortcut':
+            if valid_directory(config.query_directory):
+                add_shortcut(config.query_directory, config.shortcut, config.file)
         else:
             msg = "No command detected"
             logger.exception(msg)

@@ -1,3 +1,4 @@
+import os
 import json
 import logging
 from marshmallow import Schema, fields, post_load
@@ -58,3 +59,10 @@ def write_report_info_to_json_file(misc, file_path):
     data = schema.dump(misc)
     with open(file_path, 'w') as j_file:
         json.dump(data, j_file, indent=4)
+
+
+def add_shortcut(directory, shortcut, file):
+    report_info_path = os.path.join(directory, "report_info.json")
+    misc = load_report_info_from_json_file(report_info_path)
+    misc.shortcuts[shortcut] = file
+    write_report_info_to_json_file(misc, report_info_path)
