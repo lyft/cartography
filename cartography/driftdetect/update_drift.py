@@ -12,6 +12,13 @@ logger = logging.getLogger(__name__)
 
 
 def run_update(config):
+    """
+    Handles neo4j errors and then updates detectors.
+
+    :type config: Config Object
+    :param config: Config Object from CLI
+    :return:
+    """
     if not valid_directory(config.drift_detection_directory):
         return
     neo4j_auth = None
@@ -63,9 +70,13 @@ def run_update(config):
 def update_queries(session, expect_folder, filename):
     """
     Walks through all detector directories, runs the query, and saves the detector using the detector template.
-    :param session:
-    :param expect_folder:
-    :param filename:
+
+    :type session: neo4j session
+    :param session: The specified neo4j session.
+    :type expect_folder: string
+    :param expect_folder: Path to the drift-detection directory
+    :type filename: string
+    :param filename: Name for the new update.
     :return:
     """
     for root, directories, _ in os.walk(expect_folder):
@@ -76,11 +87,18 @@ def update_queries(session, expect_folder, filename):
             write_state_to_json_file(state, os.path.join(root, directory, filename))
 
 
-def valid_directory(drift_detection_directory_path):
-    if not drift_detection_directory_path:
+def valid_directory(directory):
+    """
+    Error handling for validating directory.
+
+    :type directory: string
+    :param directory: Path to directory. 
+    :return: 
+    """
+    if not directory:
         logger.info("Cannot perform drift-detection because no job path was provided.")
         return False
-    drift_detection_directory = pathlib.Path(drift_detection_directory_path)
+    drift_detection_directory = pathlib.Path(directory)
     if not drift_detection_directory.exists():
         logger.warning(
             "Cannot perform drift-detection because the provided job path '%s' does not exist.",

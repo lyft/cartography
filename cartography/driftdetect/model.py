@@ -6,6 +6,18 @@ logger = logging.getLogger(__name__)
 
 
 class DriftState(object):
+    """
+    The default object which stores query information.
+
+    :type name: String
+    :param name: Name of the query.
+    :type validation_query: String
+    :param validation_query: Actual Cypher query being run.
+    :type properties: List of Strings
+    :param properties: List of keys in order that the cypher query will return.
+    :type expectations: List of List of Strings
+    :param expectations: List of all results of running the validation query
+    """
     def __init__(self,
                  name,
                  validation_query,
@@ -19,12 +31,15 @@ class DriftState(object):
 
     def run(self, session, update):
         """
-        Performs Detection
+        Connects to a neo4j session, runs the validation query, saves the results to the detector, and finally returns
+        the new information found.
+
         :type session: neo4j session
-        :param session: Graph session to pull infrastructure information from
+        :param session: Graph session to pull infrastructure information from.
         :type update: boolean
-        :param update: Decides whether or not to update the graph
-        :return: iterable of dictionaries of drift information
+        :param update: Decides whether or not to update the graph.
+        :rtype: List of Dictionaries
+        :return: iterable of dictionaries of drift information.
         """
 
         results = session.run(self.validation_query)
@@ -47,9 +62,11 @@ class DriftState(object):
 
     def update(self, session):
         """
+        Connects to a neo4j session, runs the validation query, then saves the results to the detector.
 
-        :param session:
-        :return:
+        :type session: neo4j session
+        :param session: Graph session to pull infrastructure information from.
+        :return: None
         """
 
         results = session.run(self.validation_query)
@@ -71,6 +88,9 @@ class DriftState(object):
 
 
 class DriftStateSchema(Schema):
+    """
+    Schema for saving DriftStates
+    """
     name = fields.Str()
     validation_query = fields.Str()
     properties = fields.List(fields.Str())
@@ -118,8 +138,11 @@ def write_state_to_json_file(detector, file_path):
 def _build_drift_insight(graph_result):
     """
     Build drift insight
+
     :type graph_result: BoltStatementResult
     :param graph_result: Graph data returned by the validation_query
+
+    :rtype: Dictionary
     :return: Dictionary representing the addition data we have on the drift
     """
 

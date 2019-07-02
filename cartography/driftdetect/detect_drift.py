@@ -8,6 +8,17 @@ logger = logging.getLogger(__name__)
 
 
 def perform_drift_detection(query_directory, start_state_file, end_state_file):
+    """
+    Performs Drift Detection.
+
+    :type query_directory: String
+    :param query_directory: Path to the query directory.
+    :type start_state_file: String
+    :param start_state_file: The filename of the earlier state chronologically to be compared to.
+    :type end_state_file: String
+    :param end_state_file: The filename of the later state chronologically to be compared to.
+    :return:
+    """
     report_info = load_report_info_from_json_file(os.path.join(query_directory, "report_info.json"))
     start_state = load_state_from_json_file(os.path.join(query_directory, report_info.shortcuts.get(start_state_file,
                                                                                                     start_state_file)))
@@ -21,9 +32,12 @@ def perform_drift_detection(query_directory, start_state_file, end_state_file):
 
 def compare_states(start_state, end_state):
     """
-    Compares drift between two detectors
-    :param start_state: DriftDetector
-    :param end_state: DriftDetector
+    Compares drift between two detectors.
+
+    :type start_state: DriftState
+    :param start_state: The earlier state chronologically to be compared to.
+    :type end_state: DriftState
+    :param end_state: The later state chronologically to be compared to.
     :return: tuple of additions and subtractions between the end and start detector in the form of drift_info_detector
     pairs
     """
@@ -34,9 +48,12 @@ def compare_states(start_state, end_state):
 
 def state_differences(start_state, end_state):
     """
-    Compares drift between two detectors
-    :param start_state: DriftDetector
-    :param end_state: DriftDetector
+    Compares drift between two detectors.
+
+    :type start_state: DriftState
+    :param start_state: The earlier state chronologically to be compared to.
+    :type end_state: DriftState
+    :param end_state: The later state chronologically to be compared to.
     :return: list of tuples of differences between detectors in the form (dictionary, DriftDetector object)
     """
     new_results = []

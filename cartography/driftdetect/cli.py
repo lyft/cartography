@@ -138,7 +138,7 @@ class CLI(object):
             type=str,
             default=None,
             help=(
-                'A path to a directory containing drift-states for a specific query'
+                'A path to a directory containing drift-states for a specific query.'
             )
         )
         parser_add_shortcut.add_argument(
@@ -146,7 +146,7 @@ class CLI(object):
             type=str,
             default=None,
             help=(
-                'The desired name to replace the filename'
+                'The desired name to replace the filename.'
             )
         )
         parser_add_shortcut.add_argument(
@@ -161,7 +161,7 @@ class CLI(object):
 
     def configure(self, argv):
         """
-        Entrypoint for the command line interface.
+        Configures logging options for Drift-Detection
 
         :type argv: string
         :param argv: The parameters supplied to the command line program.
@@ -181,6 +181,12 @@ class CLI(object):
             return config
 
     def main(self, argv):
+        """
+        Entrypoint for the command line interface.
+
+        :type argv: string
+        :param argv: The parameters supplied to the command line program.
+        """
         config = self.configure(argv)
         if config.command == 'update':
             try:
@@ -202,19 +208,31 @@ class CLI(object):
                     err.messages)
                 logger.exception(msg)
             except AssertionError:
-                msg = "DriftStates do not belong to the same Query Directory"
+                msg = "DriftStates do not belong to the same Query Directory."
                 logger.exception(msg)
             except KeyboardInterrupt:
                 return 130
         elif config.command == 'add-shortcut':
             if valid_directory(config.query_directory):
-                add_shortcut(config.query_directory, config.shortcut, config.file)
+                try:
+                    add_shortcut(config.query_directory, config.shortcut, config.file)
+                except AssertionError:
+                    msg = "Could not load report_info file."
+                    logger.exception(msg)
         else:
             msg = "No command detected"
             logger.exception(msg)
 
 
 def configure_update(config):
+    """
+    Extra configuration options for neo4j interaction.
+
+    :type config: Config Object
+    :param config:
+    :rtype: Config Object
+    :return: The config object.
+    """
     if config.neo4j_user:
         config.neo4j_password = None
         if config.neo4j_password_prompt:
@@ -235,6 +253,12 @@ def configure_update(config):
 
 
 def main(argv=None):
+    """
+    Entrypoint for the default cartography command line interface.
+
+    :rtype: int
+    :return: The return code.
+    """
     logging.basicConfig(level=logging.INFO)
     logging.getLogger('neo4j.bolt').setLevel(logging.WARNING)
     argv = argv if argv is not None else sys.argv[1:]

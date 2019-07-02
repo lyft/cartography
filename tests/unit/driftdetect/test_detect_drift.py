@@ -1,16 +1,22 @@
 from cartography.driftdetect.update_drift import valid_directory
-from cartography.driftdetect.config import Config
+from cartography.driftdetect.config import UpdateConfig
 from cartography.driftdetect.detect_drift import perform_drift_detection
 
 
 def test_valid_directory():
-    config = Config("tests", "localhost")
+    """
+    Tests valid directory function.
+    """
+    config = UpdateConfig("tests", "localhost")
     assert valid_directory(config.drift_detection_directory)
     config.drift_detection_directory = "temp"
     assert not valid_directory(config.drift_detection_directory)
 
 
 def test_perform_drift_detection():
+    """
+    Tests that drift detection works.
+    """
     start_state = "1.json"
     end_state = "2.json"
     directory = "tests/data/test_cli_detectors/detector"

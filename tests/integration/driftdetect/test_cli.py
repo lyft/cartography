@@ -7,6 +7,9 @@ from cartography.driftdetect.report_info import load_report_info_from_json_file,
 
 @patch('cartography.driftdetect.cli.run_update')
 def test_cli_main(mock_run):
+    """
+    Tests that CLI runs update.
+    """
     cli = CLI(prog="cartography-detectdrift")
     cli.main(["update",
               "--neo4j-uri",
@@ -17,6 +20,9 @@ def test_cli_main(mock_run):
 
 
 def test_configurate():
+    """
+    Tests that the configure method correctly parses args.
+    """
     cli = CLI(prog="cartography-detectdrift")
     config = cli.configure([
         "update",
@@ -31,6 +37,9 @@ def test_configurate():
 
 @patch('cartography.driftdetect.cli.report_drift')
 def test_cli_get_drift(mock_report_drift):
+    """
+    Tests that get_drift is called.
+    """
     start_state = "1.json"
     end_state = "2.json"
     directory = "tests/data/test_cli_detectors/detector"
@@ -47,6 +56,9 @@ def test_cli_get_drift(mock_report_drift):
 
 @patch('cartography.driftdetect.cli.report_drift')
 def test_cli_shortcuts(mock_report_drift):
+    """
+    Tests that the CLI can parse shortcuts.
+    """
     start_state = "1.json"
     end_state = "most_recent_file"
     directory = "tests/data/test_cli_detectors/detector"
@@ -61,6 +73,9 @@ def test_cli_shortcuts(mock_report_drift):
 
 
 def test_add_shortcuts():
+    """
+    Tests that the CLI can add shortcuts.
+    """
     cli = CLI(prog="cartography-detectdrift")
     directory = "tests/data/test_cli_detectors/detector"
     shortcut = "test_shortcut"
