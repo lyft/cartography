@@ -8,9 +8,11 @@ def report_drift(drift_info_detector_pairs, new=True):
     """
 
     if new:
-        print("New Drift Information")
+        print("New Drift Information:")
+        print()
     else:
-        print("Missing Drift Information")
+        print("Missing Drift Information:")
+        print()
 
     for drift_info, detector in drift_info_detector_pairs:
         print("Detector Name:", detector.name)

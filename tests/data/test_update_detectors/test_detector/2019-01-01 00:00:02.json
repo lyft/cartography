@@ -46,6 +46,6 @@
             "38|39|40"
         ]
     ],
-    "validation_query": "match (d) return d.test,d.test2,d.test3",
-    "name": "test_detector"
+    "name": "test_detector",
+    "validation_query": "match (d) return d.test,d.test2,d.test3"
 }

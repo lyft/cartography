@@ -92,8 +92,8 @@ def valid_directory(directory):
     Error handling for validating directory.
 
     :type directory: string
-    :param directory: Path to directory. 
-    :return: 
+    :param directory: Path to directory.
+    :return:
     """
     if not directory:
         logger.info("Cannot perform drift-detection because no job path was provided.")
