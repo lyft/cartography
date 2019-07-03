@@ -15,19 +15,19 @@ class DriftState(object):
     :param validation_query: Actual Cypher query being run.
     :type properties: List of Strings
     :param properties: List of keys in order that the cypher query will return.
-    :type expectations: List of List of Strings
-    :param expectations: List of all results of running the validation query
+    :type results: List of List of Strings
+    :param results: List of all results of running the validation query
     """
     def __init__(self,
                  name,
                  validation_query,
                  properties,
-                 expectations):
+                 results):
 
         self.name = name
         self.validation_query = validation_query
         self.properties = properties
-        self.expectations = expectations
+        self.results = results
 
     def run(self, session, update):
         """
@@ -55,9 +55,9 @@ class DriftState(object):
                     values.append(s)
                 else:
                     values.append(field)
-            if values not in self.expectations:
+            if values not in self.results:
                 if update:
-                    self.expectations.append(values)
+                    self.results.append(values)
                 yield _build_drift_insight(record)
 
     def update(self, session):
@@ -69,12 +69,12 @@ class DriftState(object):
         :return: None
         """
 
-        results = session.run(self.validation_query)
+        new_results = session.run(self.validation_query)
         logger.debug("Updating results for {0}".format(self.name))
 
-        new_expectations = []
+        results = []
 
-        for record in results:
+        for record in new_results:
             values = []
             for field in record.values():
                 if isinstance(field, list):
@@ -82,9 +82,9 @@ class DriftState(object):
                     values.append(s)
                 else:
                     values.append(field)
-            new_expectations.append(values)
+            results.append(values)
 
-        self.expectations = new_expectations
+        self.results = results
 
 
 class DriftStateSchema(Schema):
@@ -94,14 +94,14 @@ class DriftStateSchema(Schema):
     name = fields.Str()
     validation_query = fields.Str()
     properties = fields.List(fields.Str())
-    expectations = fields.List(fields.List(fields.Str()))
+    results = fields.List(fields.List(fields.Str()))
 
     @post_load
     def make_driftstate(self, data, **kwargs):
         return DriftState(data['name'],
                           data['validation_query'],
                           data['properties'],
-                          data['expectations'])
+                          data['results'])
 
 
 def load_state_from_json_file(file_path):

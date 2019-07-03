@@ -45,7 +45,7 @@ def test_update_detectors(neo4j_session):
     assert detector_1.name == detector_2.name
     assert detector_1.validation_query == detector_2.validation_query
     assert detector_1.properties == detector_2.properties
-    assert detector_1.expectations == detector_2.expectations
+    assert detector_1.results == detector_2.results
 
     report_info = load_report_info_from_json_file(os.path.join(root, "report_info.json"))
     assert report_info.shortcuts['most-recent'] == file_1

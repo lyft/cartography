@@ -134,7 +134,7 @@ def test_json_loader():
     detector = load_state_from_json_file(filepath)
     assert detector.name == "Test-Expectations"
     assert detector.validation_query == "MATCH (d) RETURN d.test"
-    assert detector.expectations == [['1'], ['2'], ['3'], ['4'], ['5'], ['6']]
+    assert detector.results == [['1'], ['2'], ['3'], ['4'], ['5'], ['6']]
 
 
 def test_detector_differences():
@@ -146,7 +146,7 @@ def test_detector_differences():
     filepath = "tests/data/detectors/test_expectations.json"
     detector_1 = load_state_from_json_file(filepath)
     detector_2 = load_state_from_json_file(filepath)
-    detector_2.expectations.append(["7"])
+    detector_2.results.append(["7"])
     drift_info_detector_pairs = state_differences(detector_1, detector_2)
     assert ({'d.test': "7"}, detector_2) in drift_info_detector_pairs
 
@@ -160,8 +160,8 @@ def test_compare_detectors():
     filepath = "tests/data/detectors/test_expectations.json"
     detector_1 = load_state_from_json_file(filepath)
     detector_2 = load_state_from_json_file(filepath)
-    detector_1.expectations.append(["7"])
-    detector_2.expectations.append(["8"])
+    detector_1.results.append(["7"])
+    detector_2.results.append(["8"])
     new, missing = compare_states(detector_1, detector_2)
     assert ({'d.test': "7"}, detector_1) in missing
     assert ({'d.test': "8"}, detector_2) in new

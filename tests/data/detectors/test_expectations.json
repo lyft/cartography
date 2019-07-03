@@ -2,7 +2,7 @@
   "name": "Test-Expectations",
   "validation_query": "MATCH (d) RETURN d.test",
   "properties": ["d.test"],
-  "expectations": [
+  "results": [
     ["1"],
     ["2"],
     ["3"],

@@ -57,8 +57,8 @@ def state_differences(start_state, end_state):
     :return: list of tuples of differences between detectors in the form (dictionary, DriftDetector object)
     """
     new_results = []
-    for result in end_state.expectations:
-        if result not in start_state.expectations:
+    for result in end_state.results:
+        if result not in start_state.results:
             drift_info = {}
             for i in range(len(end_state.properties)):
                 field = result[i].split("|")

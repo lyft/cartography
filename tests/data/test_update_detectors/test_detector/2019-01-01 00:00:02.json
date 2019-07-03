@@ -1,5 +1,10 @@
 {
-    "expectations": [
+    "properties": [
+        "d.test",
+        "d.test2",
+        "d.test3"
+    ],
+    "results": [
         [
             "1",
             "8",
@@ -40,11 +45,6 @@
             "37",
             "38|39|40"
         ]
-    ],
-    "properties": [
-        "d.test",
-        "d.test2",
-        "d.test3"
     ],
     "name": "test_detector",
     "validation_query": "match (d) return d.test,d.test2,d.test3"

@@ -1,6 +1,6 @@
 {
     "name": "test_detector",
-    "expectations": [
+    "results": [
         [
             "1",
             "8",

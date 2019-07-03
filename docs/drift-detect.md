@@ -1,7 +1,7 @@
 # How to use Drift-Detection
 
 ## Intro
-Drift-Detection is a separate module from cartography which allows you to automate the detection of changes in expectations of your infrastructure after cartography has been run. 
+Drift-Detection is a separate module from cartography which allows you to automate the detection of mutations in your infrastructure after cartography has been run. 
 
 ### How to run
 Queries and their expected results are stored in the form of drift state objects which contain a name, query, type, list of properties, and list of values. When running drift-detection, you should specify a drift detection directory as an input.
@@ -66,7 +66,7 @@ First we create a template file and report info file in the formats shown above.
   "name": "Internet Exposed EC2 Instances",
   "validation_query": "match (n:EC2Instance) where n.exposed_internet = True return n.instancetype, n.privateipaddress, n.publicdnsname, n.exposed_internet_type"
   "properties": ["n.instancetype", "n.privateipaddress", "n.publicdnsname", "n.exposed_internet_type"],
-  "expectations": []
+  "results": []
 }
 ```
 
@@ -101,7 +101,7 @@ After running the update command in cartography, we should now see a new JSON fi
   "name": "Internet Exposed EC2 Instances",
   "validation_query": "match (n:EC2Instance) where n.exposed_internet = True return n.instancetype, n.privateipaddress, n.publicdnsname, n.exposed_internet_type"
   "properties": ["n.instancetype", "n.privateipaddress", "n.publicdnsname", "n.exposed_internet_type"],
-  "expectations": [
+  "results": [
     ["c4.large", "10.255.255.251", "ec2.1.compute.amazonaws.com", "direct"],
     ["t2.micro", "10.255.255.252", "ec2.2.compute.amazonaws.com", "direct"],
     ["c4.large", "10.255.255.253", "ec2.3.compute.amazonaws.com", "direct|elb"],
@@ -117,7 +117,7 @@ Now let's say it's been a couple days, and some new EC2 Instances were added. We
   "name": "Internet Exposed EC2 Instances",
   "validation_query": "match (n:EC2Instance) where n.exposed_internet = True return n.instancetype, n.privateipaddress, n.publicdnsname, n.exposed_internet_type""
   "properties": ["n.instancetype", "n.privateipaddress", "n.publicdnsname", "n.exposed_internet_type"],
-  "expectations": [
+  "results": [
     ["c4.large", "10.255.255.251", "ec2.1.compute.amazonaws.com", "direct"],
     ["t2.micro", "10.255.255.252", "ec2.2.compute.amazonaws.com", "direct"],
     ["c4.large", "10.255.255.253", "ec2.3.compute.amazonaws.com", "direct|elb"],
