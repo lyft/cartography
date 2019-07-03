@@ -1,7 +1,7 @@
 {
-    "shortcuts": {
-        "most_recent_file": "2.json"
-    },
     "detector_type": 1,
+    "shortcuts": {
+        "most-recent": "2.json"
+    },
     "name": "Test-Multiple-Properties"
 }

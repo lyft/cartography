@@ -60,7 +60,7 @@ def test_cli_shortcuts(mock_report_drift):
     Tests that the CLI can parse shortcuts.
     """
     start_state = "1.json"
-    end_state = "most_recent_file"
+    end_state = "most-recent"
     directory = "tests/data/test_cli_detectors/detector"
     cli = CLI(prog="cartography-detectdrift")
     cli.main(["get-drift",

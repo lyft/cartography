@@ -1,7 +1,9 @@
 import datetime
+import os
 
 from cartography.driftdetect.model import load_state_from_json_file
 from cartography.driftdetect.update_drift import update_queries
+from cartography.driftdetect.report_info import load_report_info_from_json_file, write_report_info_to_json_file
 
 
 def test_update_detectors(neo4j_session):
@@ -30,20 +32,22 @@ def test_update_detectors(neo4j_session):
             test2=test2,
             test3=test3
         )
-    root = "tests/data/test_update_detectors/test_detector/"
+    root = "tests/data/test_update_detectors/test_detector"
 
     file_1 = str(datetime.datetime(2019, 1, 1, 0, 0, 2)) + ".json"
     file_2 = str(datetime.datetime(2019, 1, 1, 0, 0, 1)) + ".json"
 
     update_queries(neo4j_session, "tests/data/test_update_detectors", file_1)
 
-    filename_1 = root + file_1
-    filename_2 = root + file_2
-
-    detector_1 = load_state_from_json_file(filename_1)
-    detector_2 = load_state_from_json_file(filename_2)
+    detector_1 = load_state_from_json_file(os.path.join(root, file_1))
+    detector_2 = load_state_from_json_file(os.path.join(root, file_2))
 
     assert detector_1.name == detector_2.name
     assert detector_1.validation_query == detector_2.validation_query
     assert detector_1.properties == detector_2.properties
     assert detector_1.expectations == detector_2.expectations
+
+    report_info = load_report_info_from_json_file(os.path.join(root, "report_info.json"))
+    assert report_info.shortcuts['most-recent'] == file_1
+    report_info.shortcuts.pop('most-recent')
+    write_report_info_to_json_file(report_info, os.path.join(root, "report_info.json"))
