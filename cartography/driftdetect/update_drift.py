@@ -7,6 +7,7 @@ from neo4j.v1 import GraphDatabase
 import neobolt.exceptions
 
 from cartography.driftdetect.model import load_state_from_json_file, write_state_to_json_file
+from cartography.driftdetect.report_info import add_shortcut
 
 logger = logging.getLogger(__name__)
 
@@ -85,6 +86,7 @@ def update_queries(session, expect_folder, filename):
             state = load_state_from_json_file(file_path)
             state.update(session)
             write_state_to_json_file(state, os.path.join(root, directory, filename))
+            add_shortcut(os.path.join(root, directory), 'most-recent', filename)
 
 
 def valid_directory(directory):

@@ -54,7 +54,7 @@ We can also add shortcuts to important files by running the command:
 
 `cartography-detectdrift add-shortcut --query-directory <path to query directory> --shortcut <name of shortcut> --file <driftstate file to shortcut, no directory prefix>`
 
-Now when we run the `get-drift` command, we can replace the name of the file with the shortcut to it. 
+Now when we run the `get-drift` command, we can replace the name of the file with the shortcut to it. The most recent file in each query directory is by default added after each update and can be accessed with the shortcut `most-recent`.
 
 ## Example Detector File: how many more of my EC2 instances are accessible to any host on the internet?
 Let's say we're interested in the internet exposure command from the analysis job example. We've determined that monitoring the growth/decline of internet exposed instances will be important to us maintaining secure architecture in the future and we want to store these results and track them over time. The good news is drift-detection will allow us to do just that!
@@ -129,15 +129,15 @@ Now let's say it's been a couple days, and some new EC2 Instances were added. We
 It looks like our results list has slightly changed. We can add shortcuts to be able to access these two files without specifying the filename. This lets us bookmark certain states with whatever name we want. Let's say we want to bookmark the first update by "first-run" and the second update by "most-recent". To do so we run:
 
 `cartography-detectdrift add-shortcut --shortcut first-run --file <first_date>.json`
-`cartography-detectdrift add-shortcut --shortcut most-recent --file <second_date>.json`
+`cartography-detectdrift add-shortcut --shortcut second-recent --file <second_date>.json`
 
 Now to get the drift information between the two files, we can run
 
-`cartography-detectdrift get-drift --query-directory <query_directory> --start-state <first_date>.json --end-state <second_dat>.json`
+`cartography-detectdrift get-drift --query-directory <query_directory> --start-state <first_date>.json --end-state <second_date>.json`
 
 or to make use of the shortcuts we added,
 
-`cartography-detectdrift get-drift --query-directory <query_directory> --start-state first-run --end-state most-recent`.
+`cartography-detectdrift get-drift --query-directory <query_directory> --start-state first-run --end-state second-run`.
 
 Finally, we should see the following messages pop up:
 
