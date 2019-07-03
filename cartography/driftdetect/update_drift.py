@@ -12,7 +12,7 @@ from cartography.driftdetect.report_info import add_shortcut
 logger = logging.getLogger(__name__)
 
 
-def run_update(config):
+def run_get_states(config):
     """
     Handles neo4j errors and then updates detectors.
 
@@ -65,10 +65,10 @@ def run_update(config):
 
     with neo4j_driver.session() as session:
         filename = '.'.join([str(i) for i in time.gmtime()] + [".json"])
-        update_queries(session, config.drift_detection_directory, filename)
+        get_query_states(session, config.drift_detection_directory, filename)
 
 
-def update_queries(session, expect_folder, filename):
+def get_query_states(session, expect_folder, filename):
     """
     Walks through all detector directories, runs the query, and saves the detector using the detector template.
 
@@ -84,7 +84,7 @@ def update_queries(session, expect_folder, filename):
         for directory in directories:
             file_path = os.path.join(root, directory, "template.json")
             state = load_state_from_json_file(file_path)
-            state.update(session)
+            state.get_state(session)
             write_state_to_json_file(state, os.path.join(root, directory, filename))
             add_shortcut(os.path.join(root, directory), 'most-recent', filename)
 

@@ -6,7 +6,7 @@ import sys
 from marshmallow import ValidationError
 
 from cartography.driftdetect.detect_drift import perform_drift_detection
-from cartography.driftdetect.update_drift import run_update, valid_directory
+from cartography.driftdetect.update_drift import run_get_states, valid_directory
 from cartography.driftdetect.reporter import report_drift
 from cartography.driftdetect.report_info import add_shortcut
 
@@ -28,10 +28,11 @@ class CLI(object):
         parser = argparse.ArgumentParser(
             prog=self.prog,
             description=(
-                "drift-detection takes database queries along with their expected states in the cartography-generated "
-                "graph database and reports the deviations."
+                'drift-detection takes database queries along with their expected states in the cartography-generated '
+                'graph database and reports the deviations.'
             ),
-            epilog='For more documentation please visit: https://github.com/lyft/cartography',
+            epilog='For more documentation please visit: '
+                   'https://github.com/lyft/cartography/blob/master/docs/drift-detect.md',
         )
         parser.add_argument(
             '-v',
@@ -47,16 +48,19 @@ class CLI(object):
         )
         subparsers = parser.add_subparsers(
             dest='command',
-            help='To update current drift files, use the command `cartography-detectdrift update --neo4j_uri <your '
+            help='To get the current drift state, use the command `cartography-detectdrift get-state --neo4j_uri <your '
                  'neo4j_uri> --drift-detection-directory <your drift detection directory>` \n'
-                 'To get drift between two drift files, use the command `cartography-detectdrift get-drift'
-                 '--start-state <path to beginning drift state> --end-state <path to final drift state>'
+                 'To get drift between two state files, use the command `cartography-detectdrift get-drift'
+                 '--query-directory <path to query directory> --start-state <beginning drift state file> --end-state '
+                 '<final drift state file>'
+                 'To add a shortcut between two state files, use the command `cartography-detectdrift add-shortcut'
+                 '--query-directory <path to query directory> --shortcut <shortcut name> --file <driftstate filename>'
         )
-        parser_update = subparsers.add_parser(
-            name='update',
-            help='updates each drift detector with the current status of the neo4j database'
+        parser_get_state = subparsers.add_parser(
+            name='get-state',
+            help='generates new drift state for each query with the current status of the neo4j database'
         )
-        parser_update.add_argument(
+        parser_get_state.add_argument(
             '--neo4j-uri',
             type=str,
             default='bolt://localhost:7687',
@@ -66,19 +70,19 @@ class CLI(object):
                 'structure of a Neo4j URI.'
             ),
         )
-        parser_update.add_argument(
+        parser_get_state.add_argument(
             '--neo4j-user',
             type=str,
             default=None,
             help='A username with which to authenticate to Neo4j.'
         )
-        parser_update.add_argument(
+        parser_get_state.add_argument(
             '--neo4j-password-env-var',
             type=str,
             default=None,
             help='The name of an environment variable containing a password with which to authenticate to Neo4j.',
         )
-        parser_update.add_argument(
+        parser_get_state.add_argument(
             '--neo4j-password-prompt',
             action='store_true',
             help=(
@@ -86,7 +90,7 @@ class CLI(object):
                 'supersedes other methods of supplying a Neo4j password.'
             ),
         )
-        parser_update.add_argument(
+        parser_get_state.add_argument(
             '--drift-detection-directory',
             type=str,
             default=None,
@@ -146,7 +150,7 @@ class CLI(object):
             type=str,
             default=None,
             help=(
-                'The desired name to replace the filename.'
+                'The desired alias for the filename.'
             )
         )
         parser_add_shortcut.add_argument(
@@ -154,7 +158,7 @@ class CLI(object):
             type=str,
             default=None,
             help=(
-                'The desired name of the file to be replace.'
+                'The desired name of the file to be replaced.'
             )
         )
         return parser
@@ -175,8 +179,8 @@ class CLI(object):
         else:
             logging.getLogger('driftdetect').setLevel(logging.INFO)
         logger.debug("Launching driftdetect with CLI configuration: %r", vars(config))
-        if config.command == 'update':
-            return configure_update(config)
+        if config.command == 'get-state':
+            return configure_get_state(config)
         else:
             return config
 
@@ -188,17 +192,18 @@ class CLI(object):
         :param argv: The parameters supplied to the command line program.
         """
         config = self.configure(argv)
-        if config.command == 'update':
+        if config.command == 'get-state':
             try:
-                run_update(config)
+                run_get_states(config)
             except KeyboardInterrupt:
                 return 130
         elif config.command == 'get-drift':
             try:
                 if valid_directory(config.query_directory):
-                    new_results, missing_results = perform_drift_detection(config.query_directory,
-                                                                           config.start_state,
-                                                                           config.end_state)
+                    new_results, missing_results = perform_drift_detection(
+                        config.query_directory,
+                        config.start_state,
+                        config.end_state)
                     report_drift(new_results)
                     report_drift(missing_results)
             except ValidationError as err:
@@ -224,7 +229,7 @@ class CLI(object):
             logger.exception(msg)
 
 
-def configure_update(config):
+def configure_get_state(config):
     """
     Extra configuration options for neo4j interaction.
 

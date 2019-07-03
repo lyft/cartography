@@ -2,13 +2,8 @@ import os
 import json
 import logging
 from marshmallow import Schema, fields, post_load
-from enum import IntEnum
 
 logger = logging.getLogger(__name__)
-
-
-class DriftDetectorType(IntEnum):
-    EXPOSURE = 1
 
 
 class ReportInfo:
@@ -22,10 +17,9 @@ class ReportInfo:
     :type detector_type: DriftDetectorType
     :param detector_type: DriftDetectorType
     """
-    def __init__(self, name, shortcuts, detector_type):
+    def __init__(self, name, shortcuts):
         self.name = name
         self.shortcuts = shortcuts
-        self.detector_type = detector_type
 
 
 class ReportInfoSchema(Schema):
@@ -38,9 +32,9 @@ class ReportInfoSchema(Schema):
 
     @post_load
     def make_misc(self, data, **kwargs):
-        return ReportInfo(data['name'],
-                          data['shortcuts'],
-                          DriftDetectorType(data['detector_type']))
+        return ReportInfo(
+            data['name'],
+            data['shortcuts'])
 
 
 def load_report_info_from_json_file(file_path):

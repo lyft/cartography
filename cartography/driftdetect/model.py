@@ -18,11 +18,12 @@ class DriftState(object):
     :type results: List of List of Strings
     :param results: List of all results of running the validation query
     """
-    def __init__(self,
-                 name,
-                 validation_query,
-                 properties,
-                 results):
+    def __init__(
+            self,
+            name,
+            validation_query,
+            properties,
+            results):
 
         self.name = name
         self.validation_query = validation_query
@@ -60,7 +61,7 @@ class DriftState(object):
                     self.results.append(values)
                 yield _build_drift_insight(record)
 
-    def update(self, session):
+    def get_state(self, session):
         """
         Connects to a neo4j session, runs the validation query, then saves the results to the detector.
 
@@ -98,10 +99,11 @@ class DriftStateSchema(Schema):
 
     @post_load
     def make_driftstate(self, data, **kwargs):
-        return DriftState(data['name'],
-                          data['validation_query'],
-                          data['properties'],
-                          data['results'])
+        return DriftState(
+            data['name'],
+            data['validation_query'],
+            data['properties'],
+            data['results'])
 
 
 def load_state_from_json_file(file_path):

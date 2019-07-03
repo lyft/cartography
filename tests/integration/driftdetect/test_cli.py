@@ -5,13 +5,13 @@ from cartography.driftdetect.cli import CLI
 from cartography.driftdetect.report_info import load_report_info_from_json_file, write_report_info_to_json_file
 
 
-@patch('cartography.driftdetect.cli.run_update')
+@patch('cartography.driftdetect.cli.run_get_states')
 def test_cli_main(mock_run):
     """
     Tests that CLI runs update.
     """
     cli = CLI(prog="cartography-detectdrift")
-    cli.main(["update",
+    cli.main(["get-state",
               "--neo4j-uri",
               settings.get("NEO4J_URL"),
               "--drift-detection-directory",
@@ -25,7 +25,7 @@ def test_configurate():
     """
     cli = CLI(prog="cartography-detectdrift")
     config = cli.configure([
-        "update",
+        "get-state",
         "--neo4j-uri",
         settings.get("NEO4J_URL"),
         "--drift-detection-directory",
