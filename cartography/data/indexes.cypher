@@ -56,3 +56,8 @@ CREATE INDEX ON :GCPNetworkInterface(id);
 CREATE INDEX ON :GCPNicAccessConfig(id);
 CREATE INDEX ON :GCPNetworkTag(id);
 CREATE INDEX ON :GCPNicAccessConfig(id);
+CREATE INDEX ON :OktaOrganization(id);
+CREATE INDEX ON :OktaUser(id);
+CREATE INDEX ON :OktaUser(email);
+CREATE INDEX ON :OktaGroup(id);
+CREATE INDEX ON :OktaApplication(id);
