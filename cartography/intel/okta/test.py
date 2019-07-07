@@ -1,6 +1,7 @@
 # Okta intel module
 import logging
-from okta import UsersClient, UserGroupsClient, AppInstanceClient
+from okta import UsersClient, UserGroupsClient, AppInstanceClient, FactorsClient
+from okta.framework.OktaError import OktaError
 # from okta import UserGroupsClient
 # from cartography.util import run_cleanup_job
 
@@ -24,29 +25,29 @@ def _get_okta_users(user_client):
 
             # https://github.com/okta/okta-sdk-python/blob/master/okta/models/user/User.py
             user_props["id"] = current_user.id
-            user_props["created"] = current_user.created.today().timestamp()
+            user_props["created"] = current_user.created.strftime("%m/%d/%Y, %H:%M:%S")
             if current_user.activated:
-                user_props["activated"] = current_user.activated.today().timestamp()
+                user_props["activated"] = current_user.activated.strftime("%m/%d/%Y, %H:%M:%S")
             else:
                 user_props["activated"] = None
 
             if current_user.statusChanged:
-                user_props["status_changed"] = current_user.statusChanged.today().timestamp()
+                user_props["status_changed"] = current_user.statusChanged.strftime("%m/%d/%Y, %H:%M:%S")
             else:
                 user_props["status_changed"] = None
 
             if current_user.lastLogin:
-                user_props["last_login"] = current_user.lastLogin.today().timestamp()
+                user_props["last_login"] = current_user.lastLogin.strftime("%m/%d/%Y, %H:%M:%S")
             else:
                 user_props["last_login"] = None
 
             if current_user.lastUpdated:
-                user_props["okta_last_updated"] = current_user.lastUpdated.today().timestamp()
+                user_props["okta_last_updated"] = current_user.lastUpdated.strftime("%m/%d/%Y, %H:%M:%S")
             else:
                 user_props["okta_last_updated"] = None
 
             if current_user.passwordChanged:
-                user_props["password_changed"] = current_user.passwordChanged.today().timestamp()
+                user_props["password_changed"] = current_user.passwordChanged.strftime("%m/%d/%Y, %H:%M:%S")
             else:
                 user_props["password_changed"] = None
 
@@ -137,10 +138,10 @@ def _sync_okta_users(neo4j_session, okta_org_id, okta_update_tag):
 
 def _create_user_client(okta_org):
     # http://developer.okta.com/docs/api/getting_started/getting_a_token.html
-    usersClient = UsersClient(base_url="https://{0}.okta.com/".format(okta_org),
+    user_client = UsersClient(base_url="https://{0}.okta.com/".format(okta_org),
                               api_token='')
 
-    return usersClient
+    return user_client
 
 
 def _create_group_client(okta_org):
@@ -153,10 +154,19 @@ def _create_group_client(okta_org):
 
 def _create_application_client(okta_org):
 
-    appClient = AppInstanceClient(base_url="https://{0}.okta.com/".format(okta_org),
+    app_client = AppInstanceClient(base_url="https://{0}.okta.com/".format(okta_org),
+                                   api_token='')
+
+    return app_client
+
+
+def _create_factor_client(okta_org):
+
+    # https://github.com/okta/okta-sdk-python/blob/master/okta/FactorsClient.py
+    factor_client = FactorsClient(base_url="https://{0}.okta.com/".format(okta_org),
                                   api_token='')
 
-    return appClient
+    return factor_client
 
 
 def _get_okta_groups(group_client):
@@ -254,7 +264,7 @@ def _sync_okta_groups(neo4_session, okta_org_id, okta_update_tag):
     data = _get_okta_groups(group_client)
     _load_okta_groups(neo4_session, okta_org_id, data, okta_update_tag)
 
-    _load_okta_group_membership(neo4_session, group_client, okta_update_tag)
+    _load_okta_group_membership(neo4_session, group_client, okta_org_id, okta_update_tag)
 
 
 def start_okta_ingestion(neo4j_session, okta_organization, config) -> None:
@@ -313,20 +323,20 @@ def _load_okta_groups(neo4j_session, okta_org_id, group_list, okta_update_tag):
                       okta_update_tag=okta_update_tag)
 
 
-def _get_okta_groups_id_from_graph(neo4j_session):
-    group_query = "MATCH (group:OktaGroup) return group.id as id"
+def _get_okta_groups_id_from_graph(neo4j_session, okta_org_id):
+    group_query = "MATCH (:OktaOrganization{id: {ORG_ID}})-[:RESOURCE]->(group:OktaGroup) return group.id as id"
 
-    result = neo4j_session.run(group_query)
+    result = neo4j_session.run(group_query, ORG_ID=okta_org_id)
 
     groups = [r['id'] for r in result]
 
     return groups
 
 
-def _get_okta_application_id_from_graph(neo4j_session):
-    app_query = "MATCH (app:OktaApplication) return app.id as id"
+def _get_okta_application_id_from_graph(neo4j_session, okta_org_id):
+    app_query = "MATCH (:OktaOrganization{id: {ORG_ID}})-[:RESOURCE]->(app:OktaApplication) return app.id as id"
 
-    result = neo4j_session.run(group_query)
+    result = neo4j_session.run(group_query, ORG_ID=okta_org_id)
 
     apps = [r['id'] for r in result]
 
@@ -344,9 +354,9 @@ def _get_okta_group_members(group_client, group_id):
     return member_list
 
 
-def _load_okta_group_membership(neo4j_session, group_client, okta_update_tag):
+def _load_okta_group_membership(neo4j_session, group_client, okta_org_id, okta_update_tag):
 
-    for group_id in _get_okta_groups_id_from_graph(neo4j_session):
+    for group_id in _get_okta_groups_id_from_graph(neo4j_session, okta_org_id):
         members = _get_okta_group_members(group_client, group_id)
         _ingest_okta_group_members(neo4j_session, group_id, members, okta_update_tag)
 
@@ -383,19 +393,19 @@ def _get_okta_applications(app_client):
             app_props["name"] = current_application.name
             app_props["label"] = current_application.label
             if current_application.created:
-                app_props["created"] = current_application.created.today().timestamp()
+                app_props["created"] = current_application.created.strftime("%m/%d/%Y, %H:%M:%S")
             else:
                 app_props["created"] = None
 
             if current_application.lastUpdated:
-                app_props["okta_last_updated"] = current_application.lastUpdated.today().timestamp()
+                app_props["okta_last_updated"] = current_application.lastUpdated.strftime("%m/%d/%Y, %H:%M:%S")
             else:
                 app_props["okta_last_updated"] = None
 
             app_props["status"] = current_application.status
 
             if current_application.activated:
-                app_props["activated"] = current_application.activated.today().timestamp()
+                app_props["activated"] = current_application.activated.strftime("%m/%d/%Y, %H:%M:%S")
             else:
                 app_props["activated"] = None
 
@@ -452,9 +462,93 @@ def _sync_okta_applications(neo4_session, okta_org_id, okta_update_tag):
     _load_okta_applications(neo4_session, okta_org_id, data, okta_update_tag)
 
 
+def _get_user_id_from_graph(neo4j_session, okta_org_id):
+    group_query = "MATCH (:OktaOrganization{id: {ORG_ID}})-[:RESOURCE]->(user:OktaUser) return user.id as id"
+
+    result = neo4j_session.run(group_query, ORG_ID=okta_org_id)
+
+    users = [r['id'] for r in result]
+
+    return users
+
+
+def _get_factor_for_user_id(factor_client, user_id):
+    user_factors = []
+    factor_results = []
+
+    try:
+        factor_results = factor_client.get_lifecycle_factors(user_id)
+    except OktaError as okta_error:
+        logger.debug("Unable to get factor for user id {0} with" \
+                     "error code {1} with description {2}".format(user_id,
+                                                                  okta_error.error_code,
+                                                                  okta_error.error_summary))
+        return []
+
+    for current_factor in factor_results:
+
+        # https://github.com/okta/okta-sdk-python/blob/master/okta/models/factor/Factor.py
+        factor_props = {}
+        factor_props["id"] = current_factor.id
+        factor_props["factor_type"] = current_factor.factorType
+        factor_props["provider"] = current_factor.provider
+        factor_props["status"] = current_factor.status
+        if current_factor.created:
+            factor_props["created"] = current_factor.created.strftime("%m/%d/%Y, %H:%M:%S")
+        else:
+            current_factor["created"] = None
+
+        if current_factor.lastUpdated:
+            factor_props["okta_last_updated"] = current_factor.lastUpdated.strftime("%m/%d/%Y, %H:%M:%S")
+        else:
+            current_factor["okta_last_updated"] = None
+
+        # we don't import Profile data into the graph due as it contains sensitive data
+
+        user_factors.append(factor_props)
+
+    return user_factors
+
+
+def _ingest_user_factors(neo4j_session, user_id, factors, okta_update_tag):
+    ingest = """
+    MATCH (user:OktaUser{id: {USER_ID}})
+    WITH user
+    UNWIND {FACTOR_LIST} as factor_data
+    MERGE (new_factor:OktaUserFactor{id: factor_data.id})
+    ON CREATE SET new_factor.firstseen = timestamp()
+    SET new_factor.factor_type = factor_data.factor_type,
+    new_factor.provider = factor_data.provider,
+    new_factor.status = factor_data.status,
+    new_factor.created = factor_data.created,
+    new_factor.okta_last_updated = factor_data.okta_last_updated,
+    new_factor.lastupdated = {okta_update_tag}
+    WITH user, new_factor
+    MERGE (user)-[r:FACTOR]->(new_factor)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {okta_update_tag}
+    """
+
+    neo4j_session.run(ingest,
+                      USER_ID=user_id,
+                      FACTOR_LIST=factors,
+                      okta_update_tag=okta_update_tag)
+
+
+def _sync_users_factors(neo4j_session, okta_org_id, okta_update_tag):
+    logger.debug("Syncing Okta User Factors")
+
+    factor_client = _create_factor_client(okta_org_id)
+    users = _get_user_id_from_graph(neo4j_session, okta_org_id)
+
+    for user_id in users:
+        user_factors = _get_factor_for_user_id(factor_client, user_id)
+        _ingest_user_factors(neo4j_session, user_id, user_factors, okta_update_tag)
+
+
 # def _load_okta_application_membership(neo4j_session, app_client, okta_update_tag):
 #
-#     for app_id in _get_okta_application_id_from_graph(neo4j_session):
+#     for app_id in _get_okta_application_id_from_graph(neo4j_session, okta_org_id):
 #         user_assignment = _get_okta_application_user_assignment(app_client, app_id)
 #         _ingest_okta_application_user_assignment(neo4j_session, app_id, user_assignment, okta_update_tag)
 #
@@ -480,10 +574,12 @@ if __name__ == '__main__':
 
     with driver.session() as session:
         last_update = int(time.time())
-        _create_okta_organization(session, "lyft", last_update)
-        _sync_okta_users(session, "lyft", last_update)
-        _sync_okta_groups(session, "lyft", last_update)
-        _sync_okta_applications(session, "lyft", last_update)
+        org_id = "lyft"
+        # _create_okta_organization(session, org_id, last_update)
+        # _sync_okta_users(session, org_id, last_update)
+        # _sync_okta_groups(session, org_id, last_update)
+        # _sync_okta_applications(session, org_id, last_update)
+        _sync_users_factors(session, org_id, last_update)
 
     # # http://developer.okta.com/docs/api/getting_started/getting_a_token.html
     # usersClient = UsersClient(base_url='https://lyft.okta.com/',
