@@ -26,15 +26,13 @@ def perform_drift_detection(query_directory, start_state_file, end_state_file):
     end_state = load_state_from_json_file(os.path.join(query_directory, report_info.shortcuts.get(
         end_state_file,
         end_state_file)))
-    assert start_state.name == end_state.name
-    assert start_state.validation_query == end_state.validation_query
     new_results, missing_results = compare_states(start_state, end_state)
     return new_results, missing_results
 
 
 def compare_states(start_state, end_state):
     """
-    Compares drift between two detectors.
+    Compares drift between two DriftStates.
 
     :type start_state: DriftState
     :param start_state: The earlier state chronologically to be compared to.
@@ -43,6 +41,8 @@ def compare_states(start_state, end_state):
     :return: tuple of additions and subtractions between the end and start detector in the form of drift_info_detector
     pairs
     """
+    assert start_state.name == end_state.name
+    assert start_state.validation_query == end_state.validation_query
     new_results = state_differences(start_state, end_state)
     missing_results = state_differences(end_state, start_state)
     return new_results, missing_results
@@ -50,7 +50,7 @@ def compare_states(start_state, end_state):
 
 def state_differences(start_state, end_state):
     """
-    Compares drift between two detectors.
+    Compares drift between two DriftStates.
 
     :type start_state: DriftState
     :param start_state: The earlier state chronologically to be compared to.
