@@ -62,3 +62,4 @@ CREATE INDEX ON :OktaUser(email);
 CREATE INDEX ON :OktaGroup(id);
 CREATE INDEX ON :OktaApplication(id);
 CREATE INDEX ON :OktaUserFactor(id);
+CREATE INDEX ON :OktaTrustedOrigin(id);

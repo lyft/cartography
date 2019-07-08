@@ -1,6 +1,10 @@
 # Okta intel module
 import logging
+import json
 from okta import UsersClient, UserGroupsClient, AppInstanceClient, FactorsClient
+from okta.framework.PagedResults import PagedResults
+from okta.models.usergroup import UserGroup
+from okta.framework.ApiClient import ApiClient
 from okta.framework.OktaError import OktaError
 # from okta import UserGroupsClient
 # from cartography.util import run_cleanup_job
@@ -169,102 +173,84 @@ def _create_factor_client(okta_org):
     return factor_client
 
 
-def _get_okta_groups(group_client):
+def _create_api_client(okta_org, path_name):
+
+    api_client = ApiClient(base_url="https://{0}.okta.com/".format(okta_org),
+                           pathname=path_name,
+                           api_token='')
+
+    return api_client
+
+
+def _get_okta_groups(api_client):
     group_list = []
+    next_url = None
 
     # SDK Bug
     # get_paged_groups returns User object instead of UserGroup
-    # paged_groups = group_client.get_paged_groups()
-    # Ticket filed - https://github.com/okta/okta-sdk-python/issues/75
-    group_results = group_client.get_groups()
 
-    for current_group in group_results:
+    while True:
+        try:
+            # https://developer.okta.com/docs/reference/api/groups/#list-groups
+            if next_url:
+                paged_response = api_client.get(next_url)
+            else:
+                params = {
+                    'limit': 10000
+                }
+                paged_response = api_client.get_path('/', params)
+        except OktaError as okta_error:
+            break
 
-        # https://github.com/okta/okta-sdk-python/blob/master/okta/models/usergroup/UserGroup.py
-        group_props = {}
-        group_props["id"] = current_group.id
-        group_props["name"] = current_group.profile.name
-        group_props["description"] = current_group.profile.description
-        if current_group.profile.samAccountName:
-            group_props["sam_account_name"] = current_group.profile.samAccountName
+        paged_results = PagedResults(paged_response, UserGroup)
+
+        for current_group in paged_results.result:
+
+            # https://github.com/okta/okta-sdk-python/blob/master/okta/models/usergroup/UserGroup.py
+            group_props = {}
+            group_props["id"] = current_group.id
+            group_props["name"] = current_group.profile.name
+            group_props["description"] = current_group.profile.description
+            if current_group.profile.samAccountName:
+                group_props["sam_account_name"] = current_group.profile.samAccountName
+            else:
+                group_props["sam_account_name"] = None
+
+            if current_group.profile.dn:
+                group_props["dn"] = current_group.profile.dn
+            else:
+                group_props["dn"] = None
+
+            if current_group.profile.windowsDomainQualifiedName:
+                group_props["windows_domain_qualified_name"] = current_group.profile.windowsDomainQualifiedName
+            else:
+                group_props["windows_domain_qualified_name"] = None
+
+            if current_group.profile.externalId:
+                group_props["external_id"] = current_group.profile.externalId
+            else:
+                group_props["external_id"] = None
+
+            # TODO : Handle links
+
+            group_list.append(group_props)
+
+        if not _is_last_page(paged_response):
+            next_url = paged_response.links.get("next").get("url")
         else:
-            group_props["sam_account_name"] = None
-
-        if current_group.profile.dn:
-            group_props["dn"] = current_group.profile.dn
-        else:
-            group_props["dn"] = None
-
-        if current_group.profile.windowsDomainQualifiedName:
-            group_props["windows_domain_qualified_name"] = current_group.profile.windowsDomainQualifiedName
-        else:
-            group_props["windows_domain_qualified_name"] = None
-
-        if current_group.profile.externalId:
-            group_props["external_id"] = current_group.profile.externalId
-        else:
-            group_props["external_id"] = None
-
-        # TODO : Handle links
-
-        group_list.append(group_props)
+            break
 
     return group_list
 
 
-# Get Paged Groups returns User object - Buggy SDK
-# def _get_okta_groups(group_client):
-#     group_list = []
-#     paged_groups = group_client.get_paged_groups()
-#
-#     while True:
-#         for current_group in paged_groups.result:
-#             # https://github.com/okta/okta-sdk-python/blob/master/okta/models/usergroup/UserGroup.py
-#             group_props = {}
-#             group_props["id"] = current_group.id
-#             group_props["name"] = current_group.profile.name
-#             group_props["description"] = current_group.profile.description
-#             if current_group.profile.samAccountName:
-#                 group_props["sam_account_name"] = current_group.profile.samAccountName
-#             else:
-#                 group_props["sam_account_name"] = None
-#
-#             if current_group.profile.dn:
-#                 group_props["dn"] = current_group.profile.dn
-#             else:
-#                 group_props["dn"] = None
-#
-#             if current_group.profile.windowsDomainQualifiedName:
-#                 group_props["windows_domain_qualified_name"] = current_group.profile.windowsDomainQualifiedName
-#             else:
-#                 group_props["windows_domain_qualified_name"] = None
-#
-#             if current_group.profile.externalId:
-#                 group_props["external_id"] = current_group.profile.externalId
-#             else:
-#                 group_props["external_id"] = None
-#
-#             # TODO : Handle links
-#
-#             group_list.append(group_props)
-#
-#         if not paged_groups.is_last_page():
-#             # Keep on fetching pages of groups until the last page
-#             paged_groups = group_client.get_paged_groups(url=paged_groups.next_url)
-#         else:
-#             break
-#
-#     return group_list
-
-
 def _sync_okta_groups(neo4_session, okta_org_id, okta_update_tag):
     logger.debug("Syncing Okta groups")
-    group_client = _create_group_client(okta_org_id)
+    api_client = _create_api_client(okta_org_id, "/api/v1/groups" )
 
-    data = _get_okta_groups(group_client)
+    data = _get_okta_groups(api_client)
     _load_okta_groups(neo4_session, okta_org_id, data, okta_update_tag)
 
-    _load_okta_group_membership(neo4_session, group_client, okta_org_id, okta_update_tag)
+    _load_okta_group_membership(neo4_session, api_client, okta_org_id, okta_update_tag)
 
 
 def start_okta_ingestion(neo4j_session, okta_organization, config) -> None:
@@ -343,21 +329,40 @@ def _get_okta_application_id_from_graph(neo4j_session, okta_org_id):
     return apps
 
 
-def _get_okta_group_members(group_client, group_id):
+def _get_okta_group_members(api_client, group_id):
     member_list = []
+    next_url = None
 
-    member_results = group_client.get_group_users(group_id)
+    while True:
+        try:
+            # https://developer.okta.com/docs/reference/api/groups/#list-group-members
+            if next_url:
+                paged_response = api_client.get(next_url)
+            else:
+                params = {
+                    'limit': 1000
+                }
+                paged_response = api_client.get_path('{0}/users'.format(group_id), params)
+        except OktaError as okta_error:
+            break
 
-    for member in member_results:
-        member_list.append(member.id)
+        member_results = json.loads(paged_response.text)
+
+        for member in member_results:
+            member_list.append(member.id)
+
+        if not _is_last_page(paged_response):
+            next_url = paged_response.links.get("next").get("url")
+        else:
+            break
 
     return member_list
 
 
-def _load_okta_group_membership(neo4j_session, group_client, okta_org_id, okta_update_tag):
+def _load_okta_group_membership(neo4j_session, api_client, okta_org_id, okta_update_tag):
 
     for group_id in _get_okta_groups_id_from_graph(neo4j_session, okta_org_id):
-        members = _get_okta_group_members(group_client, group_id)
+        members = _get_okta_group_members(api_client, group_id)
         _ingest_okta_group_members(neo4j_session, group_id, members, okta_update_tag)
 
 
@@ -453,13 +458,123 @@ def _load_okta_applications(neo4j_session, okta_org_id, app_list, okta_update_ta
                       okta_update_tag=okta_update_tag)
 
 
-def _sync_okta_applications(neo4_session, okta_org_id, okta_update_tag):
+def _get_application_assigned_users(api_client, app_id):
+    app_users = []
+
+    next_url = None
+    while True:
+        try:
+            # https://developer.okta.com/docs/reference/api/apps/#list-users-assigned-to-application
+            if next_url:
+                paged_response = api_client.get(next_url)
+            else:
+                params = {
+                    'limit': 500
+                }
+                paged_response = api_client.get_path('/{0}/users'.format(app_id), params)
+        except OktaError as okta_error:
+            break
+
+        app_data = json.loads(paged_response.text)
+        for user in app_data:
+            app_users.append(user["id"])
+
+        if not _is_last_page(paged_response):
+            next_url = paged_response.links.get("next").get("url")
+        else:
+            break
+
+    return app_users
+
+
+def _is_last_page(response):
+    # from https://github.com/okta/okta-sdk-python/blob/master/okta/framework/PagedResults.py
+    return not ("next" in response.links)
+
+
+def _get_application_assigned_groups(api_client, app_id):
+    app_groups = []
+
+    next_url = None
+
+    while True:
+        try:
+            if next_url:
+                paged_response = api_client.get(next_url)
+            else:
+                params = {
+                    'limit': 500
+                }
+                paged_response = api_client.get_path('/{0}/groups'.format(app_id), params)
+        except OktaError as okta_error:
+            break
+
+        app_data = json.loads(paged_response.text)
+
+        for group in app_data:
+            app_groups.append(group["id"])
+
+        if not _is_last_page(paged_response):
+            next_url = paged_response.links.get("next").get("url")
+        else:
+            break
+
+    return app_groups
+
+
+def _sync_okta_applications(neo4j_session, okta_org_id, okta_update_tag):
     logger.debug("Syncing Okta Applications")
 
     app_client = _create_application_client(okta_org_id)
 
     data = _get_okta_applications(app_client)
-    _load_okta_applications(neo4_session, okta_org_id, data, okta_update_tag)
+    # _load_okta_applications(neo4j_session, okta_org_id, data, okta_update_tag)
+
+    api_client = _create_api_client(okta_org_id, "/api/v1/apps")
+
+    for app in data:
+        app_id = app["id"]
+        user_list = _get_application_assigned_users(api_client, app_id)
+        _ingest_application_user(neo4j_session, app_id, user_list, okta_update_tag)
+
+        # group_list = _get_application_assigned_groups(api_client, app_id)
+        # _ingest_application_group(neo4j_session, app_id, group_list, okta_update_tag)
+
+
+def _ingest_application_user(neo4j_session, app_id, user_list, okta_update_tag):
+    ingest = """
+    MATCH (app:OktaApplication{id: {APP_ID}})
+    WITH app
+    UNWIND {USER_LIST} as user_id
+    MATCH (user:OktaUser{id: user_id})
+    WITH app, user
+    MERGE (user)-[r:APPLICATION]->(app)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {okta_update_tag}
+    """
+
+    neo4j_session.run(ingest,
+                      APP_ID=app_id,
+                      USER_LIST=user_list,
+                      okta_update_tag=okta_update_tag)
+
+
+def _ingest_application_group(neo4j_session, app_id, group_list, okta_update_tag):
+    ingest = """
+    MATCH (app:OktaApplication{id: {APP_ID}})
+    WITH app
+    UNWIND {GROUP_LIST} as group_id
+    MATCH (group:OktaGroup{id: group_id})
+    WITH app, group
+    MERGE (group)-[r:APPLICATION]->(app)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {okta_update_tag}
+    """
+
+    neo4j_session.run(ingest,
+                      APP_ID=app_id,
+                      GROUP_LIST=group_list,
+                      okta_update_tag=okta_update_tag)
 
 
 def _get_user_id_from_graph(neo4j_session, okta_org_id):
@@ -474,7 +589,6 @@ def _get_user_id_from_graph(neo4j_session, okta_org_id):
 
 def _get_factor_for_user_id(factor_client, user_id):
     user_factors = []
-    factor_results = []
 
     try:
         factor_results = factor_client.get_lifecycle_factors(user_id)
@@ -546,24 +660,102 @@ def _sync_users_factors(neo4j_session, okta_org_id, okta_update_tag):
         _ingest_user_factors(neo4j_session, user_id, user_factors, okta_update_tag)
 
 
-# def _load_okta_application_membership(neo4j_session, app_client, okta_update_tag):
-#
-#     for app_id in _get_okta_application_id_from_graph(neo4j_session, okta_org_id):
-#         user_assignment = _get_okta_application_user_assignment(app_client, app_id)
-#         _ingest_okta_application_user_assignment(neo4j_session, app_id, user_assignment, okta_update_tag)
-#
-#         group_assignment = _get_okta_application_group_assignment(app_client, app_id)
-#         _ingest_okta_application_group_assignment(neo4j_session, app_id, group_assignment, okta_update_tag)
+def _get_user_roles(api_client, user_id):
 
-# def _get_okta_application_user_assignment(app_client, app_id):
-#     member_list = []
+    user_roles = []
+
+    # https://developer.okta.com/docs/reference/api/roles/#role-assignment-operations
+    response = api_client.get_path('/{0}/roles'.format(user_id))
+
+    role_data = json.loads(response.text)
+
+    for role in role_data:
+        role_props = {}
+        role_props["id"] = role["id"]
+        role_props["label"] = role["label"]
+        role_props["type"] = role["type"]
+
+        user_roles.append(role_props)
+
+    return user_roles
+
+
+# TODO - Get token with role permission
+# def _sync_roles(neo4j_session, okta_org_id, okta_update_tag):
+#     logger.debug("Syncing Okta Roles")
 #
-#     member_results = app_client.get_group_users(group_id)
+#     # get API client
+#     api_client = _create_api_client(okta_org_id, "/api/v1/users")
 #
-#     for member in member_results:
-#         member_list.append(member.id)
+#     # users
+#     users = _get_user_id_from_graph(neo4j_session, okta_org_id)
 #
-#     return member_list
+#     for user_id in users:
+#         user_roles = _get_user_roles(api_client, user_id)
+#         # _ingest_user_factors(neo4j_session, user_id, user_factors, okta_update_tag)
+
+def _get_trusted_origins(api_client):
+    ret_list = []
+
+    response = api_client.get_path("/")
+    response_list = json.loads(response.text)
+
+    for data in response_list:
+        props = {}
+        props["id"] = data["id"]
+        props["name"] = data["name"]
+
+        # https://developer.okta.com/docs/reference/api/trusted-origins/#scope-object
+        scope_types = []
+        for scope in data.get("scopes", []):
+            scope_types.append(scope["type"])
+
+        props["scopes"] = scope_types
+        props["status"] = data["status"]
+        props["created"] = data.get("created", None)
+        props["created_by"] = data.get("created_by", None)
+        props["okta_last_updated"] = data.get("lastUpdated", '')
+        props["okta_last_updated_by"] = data["lastUpdatedBy"]
+
+        ret_list.append(props)
+
+    return ret_list
+
+
+def _ingest_trusted_origins(neo4j_session, okta_org_id, trusted_list, okta_update_tag):
+    ingest = """
+    MATCH (org:OktaOrganization{id: {ORG_ID}})
+    WITH org
+    UNWIND {TRUSTED_LIST} as data
+    MERGE (new:OktaTrustedOrigin{id: data.id})
+    ON CREATE SET new.firstseen = timestamp()
+    SET new.name = data.name,
+    new.scopes = data.scoped,
+    new.status = data.status,
+    new.created = data.created,
+    new.created_by = data.created_by,
+    new.okta_last_updated = data.okta_last_updated,
+    new.okta_last_updated_by = data.okta_last_updated_by,
+    new.lastupdated = {okta_update_tag}
+    WITH org, new
+    MERGE (org)-[r:RESOURCE]->(new)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {okta_update_tag}
+    """
+
+    neo4j_session.run(ingest,
+                      ORG_ID=okta_org_id,
+                      TRUSTED_LIST=trusted_list,
+                      okta_update_tag=okta_update_tag)
+
+
+def _sync_trusted_origins(neo4j_session, okta_org_id, okta_update_tag):
+    logger.debug("Syncing Okta Trusted Origins")
+
+    api_client = _create_api_client(okta_org_id, "/api/v1/trustedOrigins")
+
+    trusted_list = _get_trusted_origins(api_client)
+    _ingest_trusted_origins(neo4j_session, okta_org_id, trusted_list, okta_update_tag)
 
 
 if __name__ == '__main__':
@@ -575,11 +767,15 @@ if __name__ == '__main__':
     with driver.session() as session:
         last_update = int(time.time())
         org_id = "lyft"
-        # _create_okta_organization(session, org_id, last_update)
-        # _sync_okta_users(session, org_id, last_update)
-        # _sync_okta_groups(session, org_id, last_update)
-        # _sync_okta_applications(session, org_id, last_update)
+        _create_okta_organization(session, org_id, last_update)
+        _sync_okta_users(session, org_id, last_update)
+        _sync_okta_groups(session, org_id, last_update)
+        _sync_okta_applications(session, org_id, last_update)
         _sync_users_factors(session, org_id, last_update)
+        _sync_trusted_origins(session, org_id, last_update)
+
+        # need creds with permission
+        #_sync_roles(session, org_id, last_update)
 
     # # http://developer.okta.com/docs/api/getting_started/getting_a_token.html
     # usersClient = UsersClient(base_url='https://lyft.okta.com/',
