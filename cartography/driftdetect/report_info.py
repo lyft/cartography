@@ -37,36 +37,58 @@ class ReportInfoSchema(Schema):
             data['shortcuts'])
 
 
+def load_report_info_from_json(file_content):
+    """
+    Creates ReportInfo from JSON File
+    :type file_content: JSON
+    :param file_content: ReportInfo Information in JSON format
+    :return: ReportInfo
+    """
+    data = json.load(file_content)
+    schema = ReportInfoSchema()
+    report_info = schema.load(data)
+    return report_info
+
+
+def write_report_info_to_json(report_info):
+    """
+    Saves detector to JSON file
+    :type report_info: ReportInfo
+    :param report_info: ReportInfo to be saved
+    :return: None
+    """
+    schema = ReportInfoSchema()
+    data = schema.dump(report_info)
+    return data
+
+
 def load_report_info_from_json_file(file_path):
     """
-    Creates misc object from Json File.
+    Creates misc object from JSON File.
 
     :type file_path: string
-    :param file_path: path to json file that detector is created from
-    :return: DriftDetector
+    :param file_path: path to JSON file that ReportInfo is created from
+    :return: ReportInfo
     """
     logger.debug("Creating from json file {0}".format(file_path))
     with open(file_path) as j_file:
-        data = json.load(j_file)
-    schema = ReportInfoSchema()
-    misc = schema.load(data)
-    return misc
+        report_info = load_report_info_from_json(j_file)
+    return report_info
 
 
-def write_report_info_to_json_file(misc, file_path):
+def write_report_info_to_json_file(report_info, file_path):
     """
-    Saves misc object to json file.
+    Saves misc object to JSON file.
 
-    :type misc: DriftDetector
-    :param misc: Detector to be saved
+    :type report_info: ReportInfo
+    :param report_info: ReportInfo to be saved
     :type file_path: string
-    :param file_path: file_path to store detector
+    :param file_path: file_path to store ReportInfo
     :return: None
     """
-    logger.debug("Saving to json file {0}".format(file_path))
-    schema = ReportInfoSchema()
-    data = schema.dump(misc)
+    logger.debug("Saving to JSON file {0}".format(file_path))
     with open(file_path, 'w') as j_file:
+        data = write_report_info_to_json(report_info)
         json.dump(data, j_file, indent=4)
 
 
