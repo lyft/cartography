@@ -115,7 +115,9 @@ def load_state_from_json_file(file_path):
     """
     logger.debug("Creating from json file {0}".format(file_path))
     with open(file_path) as j_file:
-        detector = load_state_from_json(j_file)
+        data = json.load(j_file)
+    schema = DriftStateSchema()
+    detector = schema.load(data)
     return detector
 
 
@@ -129,34 +131,10 @@ def write_state_to_json_file(detector, file_path):
     :return: None
     """
     logger.debug("Saving to json file {0}".format(file_path))
-    with open(file_path, 'w') as j_file:
-        data = write_state_to_json(detector)
-        json.dump(data, j_file, indent=4)
-
-
-def load_state_from_json(file_content):
-    """
-    Creates Detector from JSON File
-    :type file_content: JSON
-    :param file_content: Detector Information in JSON format
-    :return: DriftDetector
-    """
-    data = json.load(file_content)
-    schema = DriftStateSchema()
-    detector = schema.load(data)
-    return detector
-
-
-def write_state_to_json(detector):
-    """
-    Saves detector to json file
-    :type detector: DriftDetector
-    :param detector: Detector to be saved
-    :return: None
-    """
     schema = DriftStateSchema()
     data = schema.dump(detector)
-    return data
+    with open(file_path, 'w') as j_file:
+        json.dump(data, j_file, indent=4)
 
 
 def _build_drift_insight(graph_result):
