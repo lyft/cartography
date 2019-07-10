@@ -8,6 +8,7 @@ import cartography.intel.analysis
 import cartography.intel.aws
 import cartography.intel.gcp
 import cartography.intel.create_indexes
+import cartography.intel.crxcavator
 
 
 logger = logging.getLogger(__name__)
@@ -142,6 +143,7 @@ def build_default_sync():
         ('create-indexes', cartography.intel.create_indexes.run),
         ('aws', cartography.intel.aws.start_aws_ingestion),
         ('gcp', cartography.intel.gcp.start_gcp_ingestion),
+        ('crxcavator', cartography.intel.crxcavator.start_extension_ingestion),
         ('analysis', cartography.intel.analysis.run),
     ])
     return sync
