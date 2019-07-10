@@ -117,11 +117,11 @@ def load_state_from_json_file(file_path):
     with open(file_path) as j_file:
         data = json.load(j_file)
     schema = DriftStateSchema()
-    detector = schema.load(data)
-    return detector
+    state = schema.load(data)
+    return state
 
 
-def write_state_to_json_file(detector, file_path):
+def write_state_to_json_file(state, file_path):
     """
     Saves detector to json file
     :type detector: DriftDetector
@@ -132,7 +132,7 @@ def write_state_to_json_file(detector, file_path):
     """
     logger.debug("Saving to json file {0}".format(file_path))
     schema = DriftStateSchema()
-    data = schema.dump(detector)
+    data = schema.dump(state)
     with open(file_path, 'w') as j_file:
         json.dump(data, j_file, indent=4)
 

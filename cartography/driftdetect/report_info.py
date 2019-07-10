@@ -28,7 +28,6 @@ class ReportInfoSchema(Schema):
     """
     name = fields.Str()
     shortcuts = fields.Dict(keys=fields.Str(), values=fields.Str())
-    detector_type = fields.Int()
 
     @post_load
     def make_misc(self, data, **kwargs):
