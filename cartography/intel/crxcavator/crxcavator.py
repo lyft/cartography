@@ -225,4 +225,3 @@ def sync_extensions(session, common_job_parameters, crxcavator_api_key, crxcavat
         logger.error('Failed to parse user and mapping data')
         return
     load_user_extensions(users, user_extensions, session, common_job_parameters['UPDATE_TAG'])
-
