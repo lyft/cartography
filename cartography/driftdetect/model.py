@@ -79,10 +79,10 @@ class DriftState(object):
             values = []
             for field in record.values():
                 if isinstance(field, list):
-                    s = "|".join(field)
+                    s = "|".join([str(i) for i in field])
                     values.append(s)
                 else:
-                    values.append(field)
+                    values.append(str(field))
             results.append(values)
 
         self.results = results
