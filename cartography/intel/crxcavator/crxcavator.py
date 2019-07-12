@@ -41,11 +41,9 @@ def call_crxcavator_api(api_and_parameters, crxcavator_api_key, crxcavator_base_
         uri,
         headers={'Accept': 'application/json',
                  'API-Key': crxcavator_api_key})
-    if data.ok:
-        return data.json()
-    else:
-        logger.error('Error during CRXcavator API call {}'.format(data.status_code))
-        return
+    # if call failed, use requests library to raise an exception
+    data.raise_for_status()
+    return data.json()
 
 
 def transform_extensions(extension_json):
@@ -97,6 +95,8 @@ def transform_extensions(extension_json):
             'type': data['webstore'].get('type'),
             'price': data['webstore'].get('price')
         })
+    if len(extensions) == 0:
+        raise ValueError('No extensions could be parsed from JSON data')
     return extensions
 
 
@@ -160,6 +160,11 @@ def transform_user_extensions(user_extension_json):
                 extensions_by_user.append({
                     'id': "{0}|{1}".format(extension[0], details[0]),
                     'user': user})
+    if len(users_set) == 0:
+        raise ValueError('No users returned from CRXcavator')
+    if len(extensions_by_user) == 0:
+        raise ValueError('No user->extension mapping returned from CRXcavator')
+
     return list(users_set), extensions_by_user
 
 
@@ -207,21 +212,9 @@ def sync_extensions(session, common_job_parameters, crxcavator_api_key, crxcavat
     :return: None
     """
     extension_json = get_extensions(crxcavator_api_key, crxcavator_base_url)
-    if not extension_json:
-        logger.error('No extensions data returned')
-        return
     extensions = transform_extensions(extension_json)
-    if len(extensions) == 0:
-        logger.error('Failed to parse extensions data')
-        return
     load_extensions(extensions, session, common_job_parameters['UPDATE_TAG'])
 
     user_extensions_json = get_users_extensions(crxcavator_api_key, crxcavator_base_url)
-    if not user_extensions_json:
-        logger.error('Failed to get user data from CRXcavator')
-        return
     users, user_extensions = transform_user_extensions(user_extensions_json)
-    if len(users) == 0 or len(user_extensions) == 0:
-        logger.error('Failed to parse user and mapping data')
-        return
     load_user_extensions(users, user_extensions, session, common_job_parameters['UPDATE_TAG'])
