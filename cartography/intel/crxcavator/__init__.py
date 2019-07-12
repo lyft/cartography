@@ -21,7 +21,7 @@ def start_extension_ingestion(session, config):
     :return: None
     """
     if not CRXcavator_API_BASE_URL or not CRXcavator_API_KEY:
-        logger.warning('CRXcavator import is not configured - skipping this module')
+        logger.warning('CRXcavator import is not configured - skipping this module. See docs to configure.')
         return
 
     common_job_parameters = {
