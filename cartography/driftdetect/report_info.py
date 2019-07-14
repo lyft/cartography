@@ -6,7 +6,7 @@ from marshmallow import Schema, fields, post_load
 logger = logging.getLogger(__name__)
 
 
-class ReportInfo:
+class ReportInfo(object):
     """
     Interface for ReportInfo Class.
 

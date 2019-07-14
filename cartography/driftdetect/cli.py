@@ -212,8 +212,7 @@ class CLI(object):
                     config.end_state,
                     err.messages)
                 logger.exception(msg)
-            except AssertionError:
-                msg = "DriftStates do not belong to the same Query Directory."
+            except Exception as msg:
                 logger.exception(msg)
             except KeyboardInterrupt:
                 return 130

@@ -4,6 +4,8 @@ def report_drift(drift_info_detector_pairs, new=True):
 
     :type drift_info_detector_pairs: List of Tuples of the form (Dictionary, DriftState)
     :param drift_info_detector_pairs: Drift information
+    :type new: bool
+    :param new: Whether or not drift information is new or missing.
     :return: None
     """
 
