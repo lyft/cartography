@@ -30,37 +30,6 @@ class DriftState(object):
         self.properties = properties
         self.results = results
 
-    def run(self, session, update):
-        """
-        Connects to a neo4j session, runs the validation query, saves the results to the detector, and finally returns
-        the new information found.
-
-        :type session: neo4j session
-        :param session: Graph session to pull infrastructure information from.
-        :type update: boolean
-        :param update: Decides whether or not to update the graph.
-        :rtype: List of Dictionaries
-        :return: iterable of dictionaries of drift information.
-        """
-
-        results = session.run(self.validation_query)
-        logger.debug("Running validation for {0}".format(self.name))
-
-        for record in results:
-            values = []
-            for field in record.values():
-                if not field:
-                    values.append("")
-                elif isinstance(field, list):
-                    s = "|".join(field)
-                    values.append(s)
-                else:
-                    values.append(field)
-            if values not in self.results:
-                if update:
-                    self.results.append(values)
-                yield _build_drift_insight(record)
-
     def get_state(self, session):
         """
         Connects to a neo4j session, runs the validation query, then saves the results to the detector.
@@ -135,21 +104,3 @@ def write_state_to_json_file(state, file_path):
     data = schema.dump(state)
     with open(file_path, 'w') as j_file:
         json.dump(data, j_file, indent=4)
-
-
-def _build_drift_insight(graph_result):
-    """
-    Build drift insight
-
-    :type graph_result: BoltStatementResult
-    :param graph_result: Graph data returned by the validation_query
-
-    :rtype: Dictionary
-    :return: Dictionary representing the addition data we have on the drift
-    """
-
-    data = {}
-    for k in graph_result.keys():
-        data[k] = graph_result[k]
-
-    return data

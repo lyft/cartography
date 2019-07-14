@@ -1,10 +1,10 @@
 from unittest.mock import MagicMock
 
-from cartography.driftdetect.model import load_state_from_json_file
+from cartography.driftdetect.model import DriftState, load_state_from_json_file
 from cartography.driftdetect.detect_drift import state_differences, compare_states
 
 
-def test_detector_no_drift():
+def test_drift_state_no_drift():
     """
     Test that a detector that detects no drift returns none.
     :return:
@@ -24,11 +24,11 @@ def test_detector_no_drift():
     mock_boltstatementresult.__getitem__.side_effect = results.__getitem__
     mock_boltstatementresult.__iter__.side_effect = results.__iter__
     mock_session.run.return_value = mock_boltstatementresult
-    detector = load_state_from_json_file("tests/data/detectors/test_expectations.json")
-    drifts = []
-    for it in detector.run(mock_session, False):
-        drifts.append(it)
-    mock_session.run.assert_called_with(detector.validation_query)
+    detector_old = load_state_from_json_file("tests/data/detectors/test_expectations.json")
+    detector_new = DriftState(detector_old.name, detector_old.validation_query, detector_old.properties, [])
+    detector_new.get_state(mock_session)
+    drifts = state_differences(detector_old, detector_new)
+    mock_session.run.assert_called_with(detector_new.validation_query)
     assert not drifts
 
 
@@ -53,13 +53,13 @@ def test_detector_picks_up_drift():
     mock_boltstatementresult.__getitem__.side_effect = results.__getitem__
     mock_boltstatementresult.__iter__.side_effect = results.__iter__
     mock_session.run.return_value = mock_boltstatementresult
-    detector = load_state_from_json_file("tests/data/detectors/test_expectations.json")
-    drifts = []
-    for it in detector.run(mock_session, False):
-        drifts.append(it)
-    mock_session.run.assert_called_with(detector.validation_query)
+    detector_old = load_state_from_json_file("tests/data/detectors/test_expectations.json")
+    detector_new = DriftState(detector_old.name, detector_old.validation_query, detector_old.properties, [])
+    detector_new.get_state(mock_session)
+    drifts = state_differences(detector_old, detector_new)
+    mock_session.run.assert_called_with(detector_new.validation_query)
     assert drifts
-    assert drifts[0] == {key: "7"}
+    assert drifts[0][0] == {key: "7"}
 
 
 def test_detector_multiple_expectations():
@@ -84,12 +84,12 @@ def test_detector_multiple_expectations():
     mock_boltstatementresult.__getitem__.side_effect = results.__getitem__
     mock_boltstatementresult.__iter__.side_effect = results.__iter__
     mock_session.run.return_value = mock_boltstatementresult
-    detector = load_state_from_json_file("tests/data/detectors/test_multiple_expectations.json")
-    drifts = []
-    for it in detector.run(mock_session, False):
-        drifts.append(it)
-    mock_session.run.assert_called_with(detector.validation_query)
-    assert {key_1: "7", key_2: "14"} in drifts
+    detector_old = load_state_from_json_file("tests/data/detectors/test_multiple_expectations.json")
+    detector_new = DriftState(detector_old.name, detector_old.validation_query, detector_old.properties, [])
+    detector_new.get_state(mock_session)
+    drifts = state_differences(detector_old, detector_new)
+    mock_session.run.assert_called_with(detector_new.validation_query)
+    assert {key_1: "7", key_2: "14"} in drifts[0]
 
 
 def test_drift_from_multiple_properties():
@@ -114,14 +114,14 @@ def test_drift_from_multiple_properties():
     mock_boltstatementresult.__getitem__.side_effect = results.__getitem__
     mock_boltstatementresult.__iter__.side_effect = results.__iter__
     mock_session.run.return_value = mock_boltstatementresult
-    detector = load_state_from_json_file("tests/data/detectors/test_multiple_properties.json")
-    drifts = []
-    for it in detector.run(mock_session, False):
-        drifts.append(it)
-    mock_session.run.assert_called_with(detector.validation_query)
+    detector_old = load_state_from_json_file("tests/data/detectors/test_multiple_properties.json")
+    detector_new = DriftState(detector_old.name, detector_old.validation_query, detector_old.properties, [])
+    detector_new.get_state(mock_session)
+    drifts = state_differences(detector_old, detector_new)
+    mock_session.run.assert_called_with(detector_new.validation_query)
     print(drifts)
-    assert {key_1: "7", key_2: "14", key_3: ["21", "28", "35"]} in drifts
-    assert {key_1: "3", key_2: "10", key_3: ["17", "24", "31"]} not in drifts
+    assert {key_1: "7", key_2: "14", key_3: ["21", "28", "35"]} in drifts[0]
+    assert {key_1: "3", key_2: "10", key_3: ["17", "24", "31"]} not in drifts[0]
 
 
 def test_json_loader():
