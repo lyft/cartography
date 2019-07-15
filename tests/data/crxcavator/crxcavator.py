@@ -63,7 +63,8 @@ TRANSFORMED_EXTENSIONS_DATA = [
         'users': 38241,
         'website': '',
         'type': 'Extension',
-        'price': ''
+        'price': '',
+        'report_link': 'https://crxcavator.io/report/f06981cbc72a3c6e2e9e736cbdaef4865a4571bc/1.0'
     }
 ]
 

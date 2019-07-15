@@ -57,7 +57,8 @@ def test_transform_and_load_extensions(neo4j_session):
     ext.users,
     ext.website,
     ext.type,
-    ext.price
+    ext.price,
+    ext.report_link
     """
     expected_extension_id = 'f06981cbc72a3c6e2e9e736cbdaef4865a4571bc|1.0'
     nodes = neo4j_session.run(
@@ -86,7 +87,8 @@ def test_transform_and_load_extensions(neo4j_session):
         n['ext.users'],
         n['ext.website'],
         n['ext.type'],
-        n['ext.price']
+        n['ext.price'],
+        n['ext.report_link']
     ) for n in nodes])
     expected_nodes = list([
         (expected_extension_id,
@@ -110,7 +112,8 @@ def test_transform_and_load_extensions(neo4j_session):
          38241,
          '',
          'Extension',
-         ''
+         '',
+         'https://crxcavator.io/report/f06981cbc72a3c6e2e9e736cbdaef4865a4571bc/1.0'
          )
     ])
     assert actual_nodes == expected_nodes

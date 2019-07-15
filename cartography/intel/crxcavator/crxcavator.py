@@ -90,7 +90,8 @@ def transform_extensions(extension_json):
             'users': data['webstore'].get('users'),
             'website': data['webstore'].get('website'),
             'type': data['webstore'].get('type'),
-            'price': data['webstore'].get('price')
+            'price': data['webstore'].get('price'),
+            'report_link': "https://crxcavator.io/report/" + extension_id + "/" + version
         })
     if len(extensions) == 0:
         raise ValueError('No extensions could be parsed from JSON data')
@@ -133,7 +134,7 @@ def load_extensions(extensions, session, update_tag):
     e.website = extension.website,
     e.type = extension.type,
     e.price = extension.price,
-    e.offline_enabled = extension.offline_enabled,
+    e.report_link = extension.report_link,
     e.lastupdated = {UpdateTag}
     """
 

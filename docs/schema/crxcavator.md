@@ -41,7 +41,7 @@ Placeholder representation of a single G Suite [user object](https://developers.
 | address | Physical address of extension developer | 
 | email | Email address of extension developer |
 | icon | URL of the extension icon |
-| last_updated | Date the extension was last updated in the webstore |
+| crxcavator_last_updated | Date the extension was last updated in the webstore |
 | name | Full name of the extension |
 | offered_by | Name of the extension developer |
 | permissions_warnings | Concatenated list of permissions warnings for the extension |
@@ -55,6 +55,7 @@ Placeholder representation of a single G Suite [user object](https://developers.
 | website | Developer URL for extension |
 | type | Extension categorization |
 | price | Extension price in webstore if applicable |
+| report_link | URL of full extension report on crxcavator.io
 
  ### Relationships
  
