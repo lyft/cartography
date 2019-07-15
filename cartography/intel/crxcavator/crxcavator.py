@@ -63,14 +63,11 @@ def transform_extensions(extension_json):
     for extension in extension_json.items():
         details = extension[_data_index][_row_index]
         if not details:
+            logger.warning('Could not retrieve details for extension {}'.format(extension))
             continue
         extension_id = details['extension_id']
         version = details['version']
         data = details['data']
-        # permissions warnings can be a list or null, if list concat to a single string
-        permission_warnings = data['webstore'].get('permission_warnings')
-        if permission_warnings:
-            permission_warnings = ', '.join(permission_warnings)
         extensions.append({
             'id': "{0}|{1}".format(extension_id, version),
             'extension_id': extension_id,
@@ -80,10 +77,10 @@ def transform_extensions(extension_json):
             'address': data['webstore'].get('address'),
             'email': data['webstore'].get('email'),
             'icon': data['webstore'].get('icon'),
-            'last_updated': data['webstore'].get('last_updated'),
+            'crxcavator_last_updated': data['webstore'].get('last_updated'),
             'name': data['webstore'].get('name'),
             'offered_by': data['webstore'].get('offered_by'),
-            'permissions_warnings': permission_warnings,
+            'permissions_warnings': data['webstore'].get('permission_warnings'),
             'privacy_policy': data['webstore'].get('privacy_policy'),
             'rating': data['webstore'].get('rating'),
             'rating_users': data['webstore'].get('rating_users'),
@@ -122,7 +119,7 @@ def load_extensions(extensions, session, update_tag):
     e.address = extension.address,
     e.email = extension.email,
     e.icon = extension.icon,
-    e.last_updated = extension.last_updated,
+    e.crxcavator_last_updated = extension.crxcavator_last_updated,
     e.name = extension.name,
     e.offered_by = extension.offered_by,
     e.permissions_warnings = extension.permissions_warnings,

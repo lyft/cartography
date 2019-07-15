@@ -44,7 +44,7 @@ def test_transform_and_load_extensions(neo4j_session):
     ext.address,
     ext.email,
     ext.icon,
-    ext.last_updated,
+    ext.crxcavator_last_updated,
     ext.name,
     ext.offered_by,
     ext.permissions_warnings,
@@ -64,7 +64,7 @@ def test_transform_and_load_extensions(neo4j_session):
         query,
         ExtensionId=expected_extension_id
     )
-    actual_nodes = set([(
+    actual_nodes = list([(
         n['ext.id'],
         n['ext.extension_id'],
         n['ext.version'],
@@ -73,7 +73,7 @@ def test_transform_and_load_extensions(neo4j_session):
         n['ext.address'],
         n['ext.email'],
         n['ext.icon'],
-        n['ext.last_updated'],
+        n['ext.crxcavator_last_updated'],
         n['ext.name'],
         n['ext.offered_by'],
         n['ext.permissions_warnings'],
@@ -88,7 +88,7 @@ def test_transform_and_load_extensions(neo4j_session):
         n['ext.type'],
         n['ext.price']
     ) for n in nodes])
-    expected_nodes = set([
+    expected_nodes = list([
         (expected_extension_id,
          'f06981cbc72a3c6e2e9e736cbdaef4865a4571bc',
          '1.0',
@@ -100,7 +100,7 @@ def test_transform_and_load_extensions(neo4j_session):
          '2016-02-22',
          'CartographyIntegrationTest',
          '',
-         'Your data on all websites',
+         ['Your data on all websites'],
          '',
          4.6778846,
          208,

@@ -17,11 +17,11 @@ def start_extension_ingestion(session, config):
     """
     If this module is configured, perform ingestion of CRXcavator data. Otherwise warn and exit
     :param session: Neo4J session for database interface
-    :param config: Neo4J server URI and Update tag for data freshness
+    :param config: A cartography.config object
     :return: None
     """
     if not CRXCAVATOR_API_BASE_URL or not CRXCAVATOR_API_KEY:
-        logger.debug('CRXcavator import is not configured - skipping this module. See docs to configure.')
+        logger.warning('CRXcavator import is not configured - skipping this module. See docs to configure.')
         return
 
     common_job_parameters = {

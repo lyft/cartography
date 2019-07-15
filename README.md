@@ -238,6 +238,14 @@ WHERE ext.name CONTAINS 'Grammarly'
 return ext.name, ext.version, u.email
 ```
 
+### What users have installed extensions that are risky based on [CRXcavator scoring](https://crxcavator.io/docs#/risk_breakdown)?
+Risk > 200 is evidence of 3 or more critical risks or many high risks in the extension. 
+```
+MATCH (u:GSuiteUser)-[r:INSTALLS]->(ext:ChromeExtension)
+WHERE ext.risk_total > 200
+return ext.name, ext.version, u.email
+``` 
+
 ### Data Enrichment
 Cartography adds custom attributes to nodes and relationships to point out security-related items of interest.  Unless mentioned otherwise these data augmentation jobs are stored in `cartography/data/jobs/analysis`.  Here is a summary of all of Cartography's custom attributes.
 
