@@ -19,7 +19,7 @@ def test_cli_main(mock_run):
     mock_run.assert_called_once()
 
 
-def test_configurate():
+def test_configure():
     """
     Tests that the configure method correctly parses args.
     """
