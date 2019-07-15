@@ -339,7 +339,8 @@ def load_user_access_keys(session, user_access_keys, aws_update_tag):
 
 def evaluate_trust_policies(neo4j_session):
     query = """
-    MATCH (origin:AWSAccount)-[:RESOURCE|AWS_ROLE]->()-[r:STS_ASSUMEROLE_ALLOW]->(role:AWSRole)<-[:AWS_ROLE]-(account:AWSAccount)
+    MATCH (origin:AWSAccount)-[:RESOURCE|AWS_ROLE]->()-[r:STS_ASSUMEROLE_ALLOW]->(role:AWSRole)
+        <-[:AWS_ROLE]-(account:AWSAccount)
     WHERE account <> origin AND NOT exists(
         (role)-[:TRUSTS_AWS_PRINCIPAL]->(:AWSPrincipal{arn: 'arn:aws:iam::' + origin.id + ':root'})
     )
@@ -363,7 +364,8 @@ def expand_role_wildcards(neo4j_session, update_tag):
     """
 
     query = """
-    MATCH (origin:AWSAccount)-[:AWS_ROLE]->(assumer:AWSRole)-[:STS_ASSUMEROLE_ALLOW]->(wildcard:AWSRole{arn: {WildcardArn}})
+    MATCH (origin:AWSAccount)-[:AWS_ROLE]->(assumer:AWSRole)
+        -[:STS_ASSUMEROLE_ALLOW]->(wildcard:AWSRole{arn: {WildcardArn}})
     WITH origin, assumer, wildcard
     MATCH (absolute:AWSRole{arn: {AbsoluteArn}})
     WHERE exists( (absolute)-[:TRUSTS_AWS_PRINCIPAL]->(:AWSPrincipal{arn: 'arn:aws:iam::' + origin.id + ':root"}) )
