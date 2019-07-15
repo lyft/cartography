@@ -1,7 +1,7 @@
 from unittest.mock import patch
 from tests.integration import settings
 
-from cartography.driftdetect.detect_drift import run
+from cartography.driftdetect.detect_drift import perform_drift_detection, run
 from cartography.driftdetect.cli import CLI
 
 
@@ -12,7 +12,7 @@ def test_cli_main(mock_run):
     mock_run.assert_called_once()
 
 
-def test_configurate():
+def test_configure():
     cli = CLI(prog="driftdetect")
     config = cli.configure([
         "--neo4j-uri",
@@ -24,7 +24,7 @@ def test_configurate():
     assert config.neo4j_uri == settings.get("NEO4J_URL")
 
 
-def test_run(neo4j_session):
+def test_perform_drift_detection(neo4j_session):
     """
     Test that a full run through with the CLI works
     :param neo4j_session:
@@ -55,25 +55,23 @@ def test_run(neo4j_session):
             test2=test2,
             test3=test3
         )
+
+    drift_pairs = perform_drift_detection(neo4j_session, "tests/data/detectors", update=False)
+    drift_info = [pair[0] for pair in drift_pairs]
+    assert {"d.test": "7"} in drift_info
+    assert {"d.test": "7", "d.test2": "14"} in drift_info
+    assert {"d.test": "7", "d.test2": "14", "d.test3": ["21", "28", "35"]} in drift_info
+    assert {"d.test": "36", "d.test2": "37", "d.test3": ["38", "39", "40"]} in drift_info
+
+
+@patch("cartography.driftdetect.detect_drift.perform_drift_detection")
+def test_run(mock_perform_drift_detection, neo4j_session):
     cli = CLI(prog="driftdetect")
-
-    # Test that run does not work with no directory specified
-
-    config = cli.configure([
-        "--neo4j-uri",
-        settings.get("NEO4J_URL")
-    ])
-    assert not run(config)
-
     config = cli.configure([
         "--neo4j-uri",
         settings.get("NEO4J_URL"),
         "--drift-detector-directory",
         "tests/data/detectors"
     ])
-    drift_pairs = run(config)
-    drift_info = [pair[0] for pair in drift_pairs]
-    assert {"d.test": "7"} in drift_info
-    assert {"d.test": "7", "d.test2": "14"} in drift_info
-    assert {"d.test": "7", "d.test2": "14", "d.test3": ["21", "28", "35"]} in drift_info
-    assert {"d.test": "36", "d.test2": "37", "d.test3": ["38", "39", "40"]} in drift_info
+    run(config)
+    assert mock_perform_drift_detection.called_once_with(neo4j_session, config.drift_detector_directory, False)
