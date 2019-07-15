@@ -500,3 +500,9 @@ def sync(neo4j_session, boto3_session, account_id, update_tag, common_job_parame
     sync_role_policies(neo4j_session, boto3_session, account_id, update_tag, common_job_parameters)
     sync_user_access_keys(neo4j_session, boto3_session, account_id, update_tag, common_job_parameters)
     run_cleanup_job('aws_import_principals_cleanup.json', neo4j_session, common_job_parameters)
+
+
+def analysis(neo4j_session, update_tag):
+    logger.info("Analysing IAM.")
+    evaluate_trust_policies(neo4j_session)
+    expand_role_wildcarads(neo4j_session, update_tag)
