@@ -87,11 +87,11 @@ def state_differences(start_state, end_state):
         if result in start_state.results:
             continue
         drift_info = {}
-        for property, field in zip(end_state.properties, result):
+        for prop, field in zip(end_state.properties, result):
             value = field.split("|")
             if len(value) > 1:
-                drift_info[property] = value
+                drift_info[prop] = value
             else:
-                drift_info[property] = field
+                drift_info[prop] = field
         differences.append((drift_info, end_state))
     return differences

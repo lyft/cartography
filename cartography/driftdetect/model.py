@@ -93,8 +93,8 @@ def load_state_from_json_file(file_path):
 def write_state_to_json_file(state, file_path):
     """
     Saves detector to json file
-    :type detector: DriftDetector
-    :param detector: Detector to be saved
+    :type state: DriftDetector
+    :param state: Detector to be saved
     :type file_path: string
     :param file_path: file_path to store detector
     :return: None
