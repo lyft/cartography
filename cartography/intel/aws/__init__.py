@@ -56,7 +56,7 @@ def _sync_multiple_accounts(session, accounts, regions, sync_tag, common_job_par
     del common_job_parameters["AWS_ID"]
 
     # Complex analysis which runs after all accounts have been synced.
-    iam.analysis(session, update_tag)
+    iam.analysis(session, sync_tag)
 
     # There may be orphan Principals which point outside of known AWS accounts. This job cleans
     # up those nodes after all AWS accounts have been synced.

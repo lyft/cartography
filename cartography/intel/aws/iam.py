@@ -505,4 +505,4 @@ def sync(neo4j_session, boto3_session, account_id, update_tag, common_job_parame
 def analysis(neo4j_session, update_tag):
     logger.info("Analysing IAM.")
     evaluate_trust_policies(neo4j_session)
-    expand_role_wildcarads(neo4j_session, update_tag)
+    expand_role_wildcards(neo4j_session, update_tag)
