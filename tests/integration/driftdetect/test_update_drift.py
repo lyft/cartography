@@ -2,7 +2,7 @@ import datetime
 import os
 
 from cartography.driftdetect.model import load_state_from_json_file
-from cartography.driftdetect.update_drift import get_query_states
+from cartography.driftdetect.get_states import get_query_states
 from cartography.driftdetect.report_info import load_report_info_from_json_file, write_report_info_to_json_file
 
 

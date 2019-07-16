@@ -3,12 +3,11 @@ import getpass
 import logging
 import os
 import sys
-from marshmallow import ValidationError
+import pathlib
 
-from cartography.driftdetect.detect_drift import perform_drift_detection
-from cartography.driftdetect.update_drift import run_get_states, valid_directory
-from cartography.driftdetect.reporter import report_drift
-from cartography.driftdetect.report_info import add_shortcut
+from cartography.driftdetect.detect_deviations import run_drift_detection
+from cartography.driftdetect.get_states import run_get_states
+from cartography.driftdetect.add_shortcut import run_add_shortcut
 
 
 logger = logging.getLogger(__name__)
@@ -180,9 +179,8 @@ class CLI(object):
             logging.getLogger('driftdetect').setLevel(logging.INFO)
         logger.debug("Launching driftdetect with CLI configuration: %r", vars(config))
         if config.command == 'get-state':
-            return configure_get_state(config)
-        else:
-            return config
+            configure_get_state_neo4j(config)
+        return config
 
     def main(self, argv):
         """
@@ -192,43 +190,55 @@ class CLI(object):
         :param argv: The parameters supplied to the command line program.
         """
         config = self.configure(argv)
-        if config.command == 'get-state':
-            try:
+        try:
+            if config.command == 'get-state':
+                if not valid_directory(config.drift_detection_directory):
+                    return
+                configure_get_state_neo4j(config)
                 run_get_states(config)
-            except KeyboardInterrupt:
-                return 130
-        elif config.command == 'get-drift':
-            try:
-                if valid_directory(config.query_directory):
-                    new_results, missing_results = perform_drift_detection(
-                        config.query_directory,
-                        config.start_state,
-                        config.end_state)
-                    report_drift(new_results)
-                    report_drift(missing_results)
-            except ValidationError as err:
-                msg = "Unable to create DriftState from files {0},{1} for \n{2}".format(
-                    config.start_state,
-                    config.end_state,
-                    err.messages)
-                logger.exception(msg)
-            except Exception as msg:
-                logger.exception(msg)
-            except KeyboardInterrupt:
-                return 130
-        elif config.command == 'add-shortcut':
-            if valid_directory(config.query_directory):
-                try:
-                    add_shortcut(config.query_directory, config.shortcut, config.file)
-                except AssertionError:
-                    msg = "Could not load report_info file."
-                    logger.exception(msg)
-        else:
-            msg = "No command detected"
-            logger.exception(msg)
+            elif config.command == 'get-drift':
+                if not valid_directory(config.query_directory):
+                    return
+                run_drift_detection(config)
+            elif config.command == 'add-shortcut':
+                if not valid_directory(config.query_directory):
+                    return
+                run_add_shortcut(config)
+            else:
+                msg = "No command detected. Try --help."
+                logger.error(msg)
+        except KeyboardInterrupt:
+            return 130
 
 
-def configure_get_state(config):
+def valid_directory(directory):
+    """
+    Error handling for validating directory.
+
+    :type directory: string
+    :param directory: Path to directory.
+    :return:
+    """
+    if not directory:
+        logger.info("Cannot perform drift-detection because no job path was provided.")
+        return False
+    drift_detection_directory = pathlib.Path(directory)
+    if not drift_detection_directory.exists():
+        logger.warning(
+            "Cannot perform drift-detection because the provided job path '%s' does not exist.",
+            drift_detection_directory
+        )
+        return False
+    if not drift_detection_directory.is_dir():
+        logger.warning(
+            "Cannot perform drift-detection because the provided job path '%s' is not a directory.",
+            drift_detection_directory
+        )
+        return False
+    return True
+
+
+def configure_get_state_neo4j(config):
     """
     Extra configuration options for neo4j interaction.
 
@@ -253,7 +263,6 @@ def configure_get_state(config):
             logger.warning("Neo4j username was provided but a password could not be found.")
     else:
         config.neo4j_password = None
-    return config
 
 
 def main(argv=None):

@@ -65,7 +65,7 @@ class AddShortcutConfig(object):
     :type shortcut: string
     :param shortcut: Name of shortcut to access the file. Required.
     :type file: string
-    :param: Filename (without the directory prefix) of the driftstate to be shortcut. Required.
+    :param: Filename (without the directory prefix) of the state to be shortcut. Required.
     """
     def __init__(
             self,

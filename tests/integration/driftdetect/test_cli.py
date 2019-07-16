@@ -1,8 +1,19 @@
 from unittest.mock import patch
 
 from tests.integration import settings
-from cartography.driftdetect.cli import CLI
+from cartography.driftdetect.config import UpdateConfig
+from cartography.driftdetect.cli import CLI, valid_directory
 from cartography.driftdetect.report_info import load_report_info_from_json_file, write_report_info_to_json_file
+
+
+def test_valid_directory():
+    """
+    Tests valid directory function.
+    """
+    config = UpdateConfig("tests", "localhost")
+    assert valid_directory(config.drift_detection_directory)
+    config.drift_detection_directory = "temp"
+    assert not valid_directory(config.drift_detection_directory)
 
 
 @patch('cartography.driftdetect.cli.run_get_states')
@@ -35,8 +46,8 @@ def test_configure():
     assert config.neo4j_uri == settings.get("NEO4J_URL")
 
 
-@patch('cartography.driftdetect.cli.report_drift')
-def test_cli_get_drift(mock_report_drift):
+@patch('cartography.driftdetect.cli.run_drift_detection')
+def test_cli_get_drift(mock_run_drift_detection):
     """
     Tests that get_drift is called.
     """
@@ -51,25 +62,26 @@ def test_cli_get_drift(mock_report_drift):
               start_state,
               "--end-state",
               end_state])
-    assert mock_report_drift.call_count == 2
+    mock_run_drift_detection.assert_called_once()
 
 
-@patch('cartography.driftdetect.cli.report_drift')
-def test_cli_shortcuts(mock_report_drift):
+@patch('cartography.driftdetect.cli.run_add_shortcut')
+def test_cli_shortcuts(mock_run_add_shortcut):
     """
     Tests that the CLI can parse shortcuts.
     """
-    start_state = "1.json"
-    end_state = "most-recent"
+    file = "1.json"
+    shortcut = "most-recent"
     directory = "tests/data/test_cli_detectors/detector"
     cli = CLI(prog="cartography-detectdrift")
-    cli.main(["get-drift",
+    cli.main(["add-shortcut",
               "--query-directory",
               directory,
-              "--start-state",
-              start_state,
-              "--end-state",
-              end_state])
+              "--shortcut",
+              shortcut,
+              "--file",
+              file])
+    mock_run_add_shortcut.assert_called_once()
 
 
 def test_add_shortcuts():

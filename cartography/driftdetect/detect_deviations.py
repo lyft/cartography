@@ -1,13 +1,33 @@
 import logging
 import os
+from marshmallow import ValidationError
 
 from cartography.driftdetect.model import load_state_from_json_file
 from cartography.driftdetect.report_info import load_report_info_from_json_file
+from cartography.driftdetect.reporter import report_drift
 
 logger = logging.getLogger(__name__)
 
 
-def perform_drift_detection(query_directory, start_state_file, end_state_file):
+def run_drift_detection(config):
+    try:
+        new_results, missing_results = stitch_drift_detection(
+            config.query_directory,
+            config.start_state,
+            config.end_state)
+        report_drift(new_results)
+        report_drift(missing_results)
+    except ValidationError as err:
+        msg = "Unable to create DriftState from files {0},{1} for \n{2}".format(
+            config.start_state,
+            config.end_state,
+            err.messages)
+        logger.exception(msg)
+    except Exception as msg:
+        logger.exception(msg)
+
+
+def stitch_drift_detection(query_directory, start_state_file, end_state_file):
     """
     Performs Drift Detection.
 
@@ -28,13 +48,13 @@ def perform_drift_detection(query_directory, start_state_file, end_state_file):
         end_state_file)))
     if start_state.name != end_state.name or start_state.validation_query != end_state.validation_query:
         raise Exception("Query Information does not match.")
-    new_results, missing_results = compare_states(start_state, end_state)
+    new_results, missing_results = perform_drift_detection(start_state, end_state)
     return new_results, missing_results
 
 
-def compare_states(start_state, end_state):
+def perform_drift_detection(start_state, end_state):
     """
-    Compares drift between two DriftStates.
+    Returns differences (additions and missing results) between two DriftStates..
 
     :type start_state: DriftState
     :param start_state: The earlier state chronologically to be compared to.
@@ -43,38 +63,14 @@ def compare_states(start_state, end_state):
     :return: tuple of additions and subtractions between the end and start detector in the form of drift_info_detector
     pairs
     """
-    new_results = state_differences(start_state, end_state)
-    missing_results = state_differences(end_state, start_state)
+    new_results = compare_states(start_state, end_state)
+    missing_results = compare_states(end_state, start_state)
     return new_results, missing_results
 
 
-def state_differences_(start_state, end_state):
+def compare_states(start_state, end_state):
     """
-    Compares drift between two DriftStates.
-
-    :type start_state: DriftState
-    :param start_state: The earlier state chronologically to be compared to.
-    :type end_state: DriftState
-    :param end_state: The later state chronologically to be compared to.
-    :return: list of tuples of differences between detectors in the form (dictionary, DriftDetector object)
-    """
-    differences = []
-    for result in end_state.results:
-        if result not in start_state.results:
-            drift_info = {}
-            for i in range(len(end_state.properties)):
-                field = result[i].split("|")
-                if len(field) > 1:
-                    drift_info[end_state.properties[i]] = field
-                else:
-                    drift_info[end_state.properties[i]] = result[i]
-            differences.append((drift_info, end_state))
-    return differences
-
-
-def state_differences(start_state, end_state):
-    """
-    Compares drift between two DriftStates.
+    Helper function for comparing differences between two DriftStates.
 
     :type start_state: DriftState
     :param start_state: The earlier state chronologically to be compared to.

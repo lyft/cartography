@@ -1,4 +1,3 @@
-import os
 import json
 import logging
 from marshmallow import Schema, fields, post_load
@@ -89,21 +88,3 @@ def write_report_info_to_json_file(report_info, file_path):
     with open(file_path, 'w') as j_file:
         data = write_report_info_to_json(report_info)
         json.dump(data, j_file, indent=4)
-
-
-def add_shortcut(directory, shortcut, file):
-    """
-    Adds a shortcut to the Report_Info File.
-
-    :type directory: String
-    :param directory: A path to a directory containing drift-states for a specific query.
-    :type shortcut: String
-    :param shortcut: The desired name to replace the filename.
-    :type file: String
-    :param file: The desired name of the file to be replace (no directory prefix).
-    :return:
-    """
-    report_info_path = os.path.join(directory, "report_info.json")
-    misc = load_report_info_from_json_file(report_info_path)
-    misc.shortcuts[shortcut] = file
-    write_report_info_to_json_file(misc, report_info_path)
