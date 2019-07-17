@@ -29,5 +29,8 @@
 ## Google Cloud Platform
 - Click [here](gcp.md)
 
+## CRXcavator Platform
+- Click [here](crxcavator.md)
+
 ## More to come!
 👍
