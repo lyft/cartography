@@ -93,8 +93,6 @@ def transform_extensions(extension_json):
             'price': data['webstore'].get('price'),
             'report_link': "https://crxcavator.io/report/" + extension_id + "/" + version
         })
-    if len(extensions) == 0:
-        raise ValueError('No extensions could be parsed from JSON data')
     return extensions
 
 
@@ -176,7 +174,6 @@ def load_user_extensions(users, extensions_by_user, session, update_tag):
     :return: None
     """
 
-    # todo: once G Suite ingestion is created, move first MERGE to that process
     user_ingestion_cypher = """
     UNWIND {Users} as user_email
     MERGE (user:GSuiteUser{id: user_email, email: user_email})
@@ -184,7 +181,7 @@ def load_user_extensions(users, extensions_by_user, session, update_tag):
     user.firstseen = timestamp()
     SET user.lastupdated = {UpdateTag}
     """
-    # todo: add relationship to computer node when JAMF data is moved to Cartography
+
     extension_ingestion_cypher = """
     UNWIND {ExtensionsUsers} as extension_user
     MATCH (user:GSuiteUser{email: extension_user.user}),(ext:ChromeExtension{id:extension_user.id})

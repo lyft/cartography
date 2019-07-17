@@ -43,8 +43,8 @@ Time to set up the server that will run Cartography.  Cartography _should_ work 
 4. If you're a CRXcavator user, **prepare your CRXcavator API key**
 
     1. Generate an API key from your CRXcavator [user page](https://crxcavator.io/user/settings#)
-    2. Populate the following environment variables in the shell running the sync service
-        1. CRXcavator_API_KEY - the full URL to the CRXcavator API. https://api.crxcavator.io/v1 as of 07/09/19
+    2. Populate the following environment variables in the shell running Cartography
+        1. CRXCAVATOR_URL - the full URL to the CRXcavator API. https://api.crxcavator.io/v1 as of 07/09/19
         2. CREDENTIALS_CRXCAVATOR_API_KEY - your API key generated in the previous step. Note this is a credential and should be stored in an appropriate secret store to be populated securely into your runtime environment. 
     3. If the credentials are configured, the CRXcavator module will run automatically on the next sync
 	
@@ -231,14 +231,14 @@ WHERE rds.storage_encrypted = false
 return a.name as AWSAccount, count(rds) as UnencryptedInstances
 ```
 
-### What users have the Grammarly for Chrome extension installed?
+#### What users have the TotallyFake extension installed?
 ```
 MATCH (u:GSuiteUser)-[r:INSTALLS]->(ext:ChromeExtension)
-WHERE ext.name CONTAINS 'Grammarly'
+WHERE ext.name CONTAINS 'TotallyFake'
 return ext.name, ext.version, u.email
 ```
 
-### What users have installed extensions that are risky based on [CRXcavator scoring](https://crxcavator.io/docs#/risk_breakdown)?
+#### What users have installed extensions that are risky based on [CRXcavator scoring](https://crxcavator.io/docs#/risk_breakdown)?
 Risk > 200 is evidence of 3 or more critical risks or many high risks in the extension. 
 ```
 MATCH (u:GSuiteUser)-[r:INSTALLS]->(ext:ChromeExtension)

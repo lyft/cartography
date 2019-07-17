@@ -126,25 +126,25 @@ def test_transform_and_load_user_extensions(neo4j_session):
     users_res = tests.data.crxcavator.crxcavator.USER_RESPONSE
     type(users_res)
     users_list, user_extensions_list = cartography.intel.crxcavator.crxcavator.transform_user_extensions(users_res)
-    cartography.intel.crxcavator.crxcavator.load_user_extensions(users_list,
-                                                                 user_extensions_list,
-                                                                 neo4j_session,
-                                                                 TEST_UPDATE_TAG)
+    cartography.intel.crxcavator.crxcavator.load_user_extensions(
+        users_list,
+        user_extensions_list,
+        neo4j_session,
+        TEST_UPDATE_TAG)
 
     query = """
     MATCH(user:GSuiteUser{id:{UserId}})
     RETURN user.id, user.email
     """
     expected_user_id = 'user@example.com'
-    nodes = neo4j_session.run(query,
-                              UserId=expected_user_id)
+    nodes = neo4j_session.run(query, UserId=expected_user_id)
 
-    actual_nodes = set([(
+    actual_nodes = list([(
         n['user.id'],
         n['user.email']
     ) for n in nodes])
 
-    expected_nodes = set([
+    expected_nodes = list([
         ('user@example.com',
          'user@example.com')
     ])
