@@ -4,9 +4,11 @@ import time
 import logging
 from neo4j.v1 import GraphDatabase
 import neobolt.exceptions
+from marshmallow import ValidationError
 
-from cartography.driftdetect.model import load_state_from_json_file, write_state_to_json_file
+from cartography.driftdetect.serializers import StateSchema, ShortcutSchema
 from cartography.driftdetect.add_shortcut import add_shortcut
+from cartography.driftdetect.storage import FileSystem
 
 logger = logging.getLogger(__name__)
 
@@ -62,25 +64,67 @@ def run_get_states(config):
 
     with neo4j_driver.session() as session:
         filename = '.'.join([str(i) for i in time.gmtime()] + ["json"])
-        get_query_states(session, config.drift_detection_directory, filename)
+        state_serializer = StateSchema()
+        shortcut_serializer = ShortcutSchema()
+        for query_directory in FileSystem.walk(config.drift_detection_directory):
+            try:
+                get_query_state(session, query_directory, state_serializer, FileSystem, filename)
+                add_shortcut(FileSystem, shortcut_serializer, query_directory, 'most-recent', filename)
+            except ValidationError as err:
+                msg = "Unable to create State for directory {0}, for \n{1}".format(
+                    query_directory,
+                    err.messages)
+                logger.exception(msg)
 
 
-def get_query_states(session, expect_folder, filename):
+def get_query_state(session, query_directory, state_serializer, storage, filename):
     """
-    Walks through all detector directories, runs the query, and saves the detector using the detector template.
+    Gets the most recent state of a query.
 
-    :type session: neo4j session
-    :param session: The specified neo4j session.
-    :type expect_folder: string
-    :param expect_folder: Path to the drift-detection directory
-    :type filename: string
-    :param filename: Name for the new update.
+    :type session: neo4j session.
+    :param session: neo4j session to connect to.
+    :type query_directory: String.
+    :param query_directory: Path to query directory.
+    :type state_serializer: Schema
+    :param state_serializer: Schema to serialize and deserialize states.
+    :type storage: Storage Object.
+    :param storage: Storage object to supports loading, writing, and walking.
+    :type filename: String.
+    :param filename: Path to filename.
     :return:
     """
-    for root, directories, _ in os.walk(expect_folder):
-        for directory in directories:
-            file_path = os.path.join(root, directory, "template.json")
-            state = load_state_from_json_file(file_path)
-            state.get_state(session)
-            write_state_to_json_file(state, os.path.join(root, directory, filename))
-            add_shortcut(os.path.join(root, directory), 'most-recent', filename)
+    state_data = storage.load(os.path.join(query_directory, "template.json"))
+    state = state_serializer.load(state_data)
+    get_state(session, state)
+    new_state_data = state_serializer.dump(state)
+    fp = os.path.join(query_directory, filename)
+    storage.write(new_state_data, fp)
+
+
+def get_state(session, state):
+    """
+    Connects to a neo4j session, runs the validation query, then saves the results to a state.
+
+    :type session: neo4j session
+    :param session: Graph session to pull infrastructure information from.
+    :type state: State
+    :param state: State to be updated.
+    :return: None
+    """
+
+    new_results = session.run(state.validation_query)
+    logger.debug("Updating results for {0}".format(state.name))
+
+    results = []
+
+    for record in new_results:
+        values = []
+        for field in record.values():
+            if isinstance(field, list):
+                s = "|".join([str(i) for i in field])
+                values.append(s)
+            else:
+                values.append(str(field))
+        results.append(values)
+
+    state.results = results

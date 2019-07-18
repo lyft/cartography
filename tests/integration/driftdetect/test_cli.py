@@ -3,7 +3,8 @@ from unittest.mock import patch
 from tests.integration import settings
 from cartography.driftdetect.config import UpdateConfig
 from cartography.driftdetect.cli import CLI, valid_directory
-from cartography.driftdetect.report_info import load_report_info_from_json_file, write_report_info_to_json_file
+from cartography.driftdetect.serializers import ShortcutSchema
+from cartography.driftdetect.storage import FileSystem
 
 
 def test_valid_directory():
@@ -68,7 +69,7 @@ def test_cli_get_drift(mock_run_drift_detection):
 @patch('cartography.driftdetect.cli.run_add_shortcut')
 def test_cli_shortcuts(mock_run_add_shortcut):
     """
-    Tests that the CLI can parse shortcuts.
+    Tests that the CLI calls add shortcuts.
     """
     file = "1.json"
     shortcut = "most-recent"
@@ -90,17 +91,19 @@ def test_add_shortcuts():
     """
     cli = CLI(prog="cartography-detectdrift")
     directory = "tests/data/test_cli_detectors/detector"
-    shortcut = "test_shortcut"
+    alias = "test_shortcut"
     file = "1.json"
-    report_info_path = directory + '/report_info.json'
+    shortcut_path = directory + '/report_info.json'
     cli.main(["add-shortcut",
               "--query-directory",
               directory,
               "--shortcut",
-              shortcut,
+              alias,
               "--file",
               file])
-    report_info = load_report_info_from_json_file(report_info_path)
-    assert report_info.shortcuts[shortcut] == file
-    report_info.shortcuts.pop(shortcut)
-    write_report_info_to_json_file(report_info, report_info_path)
+    shortcut_data = FileSystem.load(shortcut_path)
+    shortcut = ShortcutSchema().load(shortcut_data)
+    assert shortcut.shortcuts[alias] == file
+    shortcut.shortcuts.pop(alias)
+    shortcut_data = ShortcutSchema().dump(shortcut)
+    FileSystem.write(shortcut_data, shortcut_path)

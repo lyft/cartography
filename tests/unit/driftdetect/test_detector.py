@@ -1,12 +1,15 @@
 from unittest.mock import MagicMock
 
-from cartography.driftdetect.model import DriftState, load_state_from_json_file
+from cartography.driftdetect.model import State
+from cartography.driftdetect.serializers import StateSchema
+from cartography.driftdetect.storage import FileSystem
+from cartography.driftdetect.get_states import get_state
 from cartography.driftdetect.detect_deviations import compare_states, perform_drift_detection
 
 
-def test_drift_state_no_drift():
+def test_state_no_drift():
     """
-    Test that a detector that detects no drift returns none.
+    Test that a state that detects no drift returns none.
     :return:
     """
     mock_session = MagicMock()
@@ -24,17 +27,18 @@ def test_drift_state_no_drift():
     mock_boltstatementresult.__getitem__.side_effect = results.__getitem__
     mock_boltstatementresult.__iter__.side_effect = results.__iter__
     mock_session.run.return_value = mock_boltstatementresult
-    detector_old = load_state_from_json_file("tests/data/detectors/test_expectations.json")
-    detector_new = DriftState(detector_old.name, detector_old.validation_query, detector_old.properties, [])
-    detector_new.get_state(mock_session)
-    drifts = compare_states(detector_old, detector_new)
-    mock_session.run.assert_called_with(detector_new.validation_query)
+    data = FileSystem.load("tests/data/detectors/test_expectations.json")
+    state_old = StateSchema().load(data)
+    state_new = State(state_old.name, state_old.validation_query, state_old.properties, [])
+    get_state(mock_session, state_new)
+    drifts = compare_states(state_old, state_new)
+    mock_session.run.assert_called_with(state_new.validation_query)
     assert not drifts
 
 
-def test_detector_picks_up_drift():
+def test_state_picks_up_drift():
     """
-    Test that a detector that detects drift.
+    Test that a state that detects drift.
     :return:
     """
     key = "d.test"
@@ -53,16 +57,17 @@ def test_detector_picks_up_drift():
     mock_boltstatementresult.__getitem__.side_effect = results.__getitem__
     mock_boltstatementresult.__iter__.side_effect = results.__iter__
     mock_session.run.return_value = mock_boltstatementresult
-    detector_old = load_state_from_json_file("tests/data/detectors/test_expectations.json")
-    detector_new = DriftState(detector_old.name, detector_old.validation_query, detector_old.properties, [])
-    detector_new.get_state(mock_session)
-    drifts = compare_states(detector_old, detector_new)
-    mock_session.run.assert_called_with(detector_new.validation_query)
+    data = FileSystem.load("tests/data/detectors/test_expectations.json")
+    state_old = StateSchema().load(data)
+    state_new = State(state_old.name, state_old.validation_query, state_old.properties, [])
+    get_state(mock_session, state_new)
+    drifts = compare_states(state_old, state_new)
+    mock_session.run.assert_called_with(state_new.validation_query)
     assert drifts
     assert drifts[0][0] == {key: "7"}
 
 
-def test_detector_multiple_expectations():
+def test_state_multiple_expectations():
     """
     Test that multiple fields runs properly.
     :return:
@@ -84,11 +89,12 @@ def test_detector_multiple_expectations():
     mock_boltstatementresult.__getitem__.side_effect = results.__getitem__
     mock_boltstatementresult.__iter__.side_effect = results.__iter__
     mock_session.run.return_value = mock_boltstatementresult
-    detector_old = load_state_from_json_file("tests/data/detectors/test_multiple_expectations.json")
-    detector_new = DriftState(detector_old.name, detector_old.validation_query, detector_old.properties, [])
-    detector_new.get_state(mock_session)
-    drifts = compare_states(detector_old, detector_new)
-    mock_session.run.assert_called_with(detector_new.validation_query)
+    data = FileSystem.load("tests/data/detectors/test_multiple_expectations.json")
+    state_old = StateSchema().load(data)
+    state_new = State(state_old.name, state_old.validation_query, state_old.properties, [])
+    get_state(mock_session, state_new)
+    drifts = compare_states(state_old, state_new)
+    mock_session.run.assert_called_with(state_new.validation_query)
     assert {key_1: "7", key_2: "14"} in drifts[0]
 
 
@@ -114,11 +120,12 @@ def test_drift_from_multiple_properties():
     mock_boltstatementresult.__getitem__.side_effect = results.__getitem__
     mock_boltstatementresult.__iter__.side_effect = results.__iter__
     mock_session.run.return_value = mock_boltstatementresult
-    detector_old = load_state_from_json_file("tests/data/detectors/test_multiple_properties.json")
-    detector_new = DriftState(detector_old.name, detector_old.validation_query, detector_old.properties, [])
-    detector_new.get_state(mock_session)
-    drifts = compare_states(detector_old, detector_new)
-    mock_session.run.assert_called_with(detector_new.validation_query)
+    data = FileSystem.load("tests/data/detectors/test_multiple_properties.json")
+    state_old = StateSchema().load(data)
+    state_new = State(state_old.name, state_old.validation_query, state_old.properties, [])
+    get_state(mock_session, state_new)
+    drifts = compare_states(state_old, state_new)
+    mock_session.run.assert_called_with(state_new.validation_query)
     print(drifts)
     assert {key_1: "7", key_2: "14", key_3: ["21", "28", "35"]} in drifts[0]
     assert {key_1: "3", key_2: "10", key_3: ["17", "24", "31"]} not in drifts[0]
@@ -131,37 +138,40 @@ def test_json_loader():
     """
 
     filepath = "tests/data/detectors/test_expectations.json"
-    detector = load_state_from_json_file(filepath)
-    assert detector.name == "Test-Expectations"
-    assert detector.validation_query == "MATCH (d) RETURN d.test"
-    assert detector.results == [['1'], ['2'], ['3'], ['4'], ['5'], ['6']]
+    data = FileSystem.load(filepath)
+    state = StateSchema().load(data)
+    assert state.name == "Test-Expectations"
+    assert state.validation_query == "MATCH (d) RETURN d.test"
+    assert state.results == [['1'], ['2'], ['3'], ['4'], ['5'], ['6']]
 
 
-def test_detector_differences():
+def test_state_differences():
     """
-    Test that detector_differences picks up new drift
+    Test that state_differences picks up new drift
     :return:
     """
 
     filepath = "tests/data/detectors/test_expectations.json"
-    detector_1 = load_state_from_json_file(filepath)
-    detector_2 = load_state_from_json_file(filepath)
-    detector_2.results.append(["7"])
-    drift_info_detector_pairs = compare_states(detector_1, detector_2)
-    assert ({'d.test': "7"}, detector_2) in drift_info_detector_pairs
+    data = FileSystem.load(filepath)
+    state_1 = StateSchema().load(data)
+    state_2 = StateSchema().load(data)
+    state_2.results.append(["7"])
+    drift_info_state_pairs = compare_states(state_1, state_2)
+    assert ({'d.test': "7"}, state_2) in drift_info_state_pairs
 
 
-def test_compare_detectors():
+def test_compare_states():
     """
-    Test that differences between two detectors is recorded
+    Test that differences between two states is recorded
     :return:
     """
 
     filepath = "tests/data/detectors/test_expectations.json"
-    detector_1 = load_state_from_json_file(filepath)
-    detector_2 = load_state_from_json_file(filepath)
-    detector_1.results.append(["7"])
-    detector_2.results.append(["8"])
-    new, missing = perform_drift_detection(detector_1, detector_2)
-    assert ({'d.test': "7"}, detector_1) in missing
-    assert ({'d.test': "8"}, detector_2) in new
+    data = FileSystem.load(filepath)
+    state_1 = StateSchema().load(data)
+    state_2 = StateSchema().load(data)
+    state_1.results.append(["7"])
+    state_2.results.append(["8"])
+    new, missing = perform_drift_detection(state_1, state_2)
+    assert ({'d.test': "7"}, state_1) in missing
+    assert ({'d.test': "8"}, state_2) in new
