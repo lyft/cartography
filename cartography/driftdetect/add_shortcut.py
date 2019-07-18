@@ -42,7 +42,7 @@ def add_shortcut(storage, shortcut_serializer, query_directory, alias, file):
     :param file: Name of file.
     :return:
     """
-    shortcut_path = os.path.join(query_directory, "report_info.json")
+    shortcut_path = os.path.join(query_directory, "shortcut.json")
     shortcut_data = storage.load(shortcut_path)
     shortcut = shortcut_serializer.load(shortcut_data)
     shortcut.shortcuts[alias] = file

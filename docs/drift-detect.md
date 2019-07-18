@@ -31,7 +31,7 @@ After getting the current state, results will be stored as lists, and properties
 }
 ```
 
-There should also be a file called "report_info.json" stored in the directory which will provide miscellaneous information for drift-detection. This file should contain the same name and an empty dictionary of shortcuts.
+There should also be a file called "shortcut.json" stored in the directory which will provide miscellaneous information for drift-detection. This file should contain the same name and an empty dictionary of shortcuts.
 
 ```
 {

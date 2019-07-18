@@ -56,8 +56,8 @@ def test_get_state_detectors(neo4j_session):
     assert detector_1.properties == detector_2.properties
     assert detector_1.results == detector_2.results
 
-    shortcut_data = FileSystem.load(os.path.join(query_directory, "report_info.json"))
+    shortcut_data = FileSystem.load(os.path.join(query_directory, "shortcut.json"))
     shortcut = shortcut_serializer.load(shortcut_data)
     assert shortcut.shortcuts['most-recent'] == file_1
     shortcut_data = shortcut_serializer.dump(shortcut)
-    FileSystem.write(shortcut_data, os.path.join(query_directory, "report_info.json"))
+    FileSystem.write(shortcut_data, os.path.join(query_directory, "shortcut.json"))

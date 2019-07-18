@@ -93,7 +93,7 @@ def test_add_shortcuts():
     directory = "tests/data/test_cli_detectors/detector"
     alias = "test_shortcut"
     file = "1.json"
-    shortcut_path = directory + '/report_info.json'
+    shortcut_path = directory + '/shortcut.json'
     cli.main(["add-shortcut",
               "--query-directory",
               directory,

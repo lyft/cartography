@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 def run_drift_detection(config):
     try:
-        shortcut_data = FileSystem.load(os.path.join(config.query_directory, "report_info.json"))
+        shortcut_data = FileSystem.load(os.path.join(config.query_directory, "shortcut.json"))
         shortcut = ShortcutSchema.load(shortcut_data)
         start_state_data = FileSystem.load(os.path.join(config.query_directory, shortcut.shortcuts.get(
             config.start_state,
