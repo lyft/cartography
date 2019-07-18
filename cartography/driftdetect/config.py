@@ -32,8 +32,7 @@ class GetDriftConfig(object):
     A common interface for the drift-detection get-drift configuration.
 
     All fields defined on this class must be present on a configuration object. Fields documented as required must
-    contain valid values. Fields documented as optional may contain None, in which case drift-detection will choose a
-    sensible default value for that piece of configuration.
+    contain valid values.
 
     :type query_directory: string
     :param query_directory: Path to query directory. Required.
@@ -57,8 +56,7 @@ class AddShortcutConfig(object):
     A common interface for the drift-detection add-shortcut configuration.
 
     All fields defined on this class must be present on a configuration object. Fields documented as required must
-    contain valid values. Fields documented as optional may contain None, in which case drift-detection will choose a
-    sensible default value for that piece of configuration.
+    contain valid values.
 
     :type query_directory: string
     :param query_directory: Path to query directory. Required.
