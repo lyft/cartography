@@ -65,7 +65,7 @@ def _link_ip_to_A_record(session, update_tag, ip_list, parent_record):
         ParentId=parent_record,
         IP_LIST=ip_list,
         update_tag=update_tag
-    )
+    ).detach()
 
 
 def ingest_dns_record(session, name, value, type, update_tag, points_to_record):
@@ -101,7 +101,7 @@ def ingest_dns_record(session, name, value, type, update_tag, points_to_record):
         Value=value,
         PointsToId=points_to_record,
         update_tag=update_tag
-    )
+    ).detach()
 
     return record_id
 

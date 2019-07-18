@@ -101,7 +101,7 @@ def _load_es_domains(session, domain_list, aws_account_id, aws_update_tag):
         Records=domain_list,
         AWS_ACCOUNT_ID=aws_account_id,
         aws_update_tag=aws_update_tag
-    )
+    ).detach()
 
     for domain in domain_list:
         domain_id = domain["DomainId"]
@@ -166,7 +166,7 @@ def _link_es_domain_vpc(session, domain_id, domain_data, aws_update_tag):
                 DomainId=domain_id,
                 SubnetList=subnetList,
                 aws_update_tag=aws_update_tag
-            )
+            ).detach()
 
         if len(groupList) > 0:
             session.run(
@@ -174,7 +174,7 @@ def _link_es_domain_vpc(session, domain_id, domain_data, aws_update_tag):
                 DomainId=domain_id,
                 SecGroupList=groupList,
                 aws_update_tag=aws_update_tag
-            )
+            ).detach()
 
 
 def _process_access_policy(session, domain_id, domain_data):
@@ -195,7 +195,7 @@ def _process_access_policy(session, domain_id, domain_data):
         if policy.is_internet_accessible():
             exposed_internet = True
 
-    session.run(tag_es, DomainId=domain_id, InternetExposed=exposed_internet)
+    session.run(tag_es, DomainId=domain_id, InternetExposed=exposed_internet).detach()
 
 
 def cleanup(session, update_tag, aws_account_id):

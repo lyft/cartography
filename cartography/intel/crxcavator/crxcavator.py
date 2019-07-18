@@ -137,7 +137,7 @@ def load_extensions(extensions, session, update_tag):
     """
 
     logger.info('Ingesting {} extensions'.format(len(extensions)))
-    session.run(ingestion_cypher, ExtensionsData=extensions, UpdateTag=update_tag)
+    session.run(ingestion_cypher, ExtensionsData=extensions, UpdateTag=update_tag).detach()
 
 
 def transform_user_extensions(user_extension_json):
@@ -192,9 +192,9 @@ def load_user_extensions(users, extensions_by_user, session, update_tag):
     """
 
     logger.info('Ingesting {} users'.format(len(users)))
-    session.run(user_ingestion_cypher, Users=users, UpdateTag=update_tag)
+    session.run(user_ingestion_cypher, Users=users, UpdateTag=update_tag).detach()
     logger.info('Ingesting {} user->extension relationships'.format(len(extensions_by_user)))
-    session.run(extension_ingestion_cypher, ExtensionsUsers=extensions_by_user, UpdateTag=update_tag)
+    session.run(extension_ingestion_cypher, ExtensionsUsers=extensions_by_user, UpdateTag=update_tag).detach()
 
 
 def sync_extensions(session, common_job_parameters, crxcavator_api_key, crxcavator_base_url):

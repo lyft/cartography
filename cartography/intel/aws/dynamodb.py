@@ -42,7 +42,7 @@ def load_dynamodb_tables(session, data, region, current_aws_account_id, aws_upda
             Rows=table['Table']['ItemCount'],
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag
-        )
+        ).detach()
         load_gsi(session, table, region, current_aws_account_id, aws_update_tag)
 
 
@@ -72,7 +72,7 @@ def load_gsi(session, table, region, current_aws_account_id, aws_update_tag):
             GSIName=gsi['IndexName'],
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag
-        )
+        ).detach()
 
 
 def cleanup_dynamodb_tables(session, common_job_parameters):

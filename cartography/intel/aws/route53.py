@@ -13,7 +13,7 @@ def link_aws_resources(session, update_tag):
     ON CREATE SET p.firstseen = timestamp()
     SET p.lastupdated = {aws_update_tag}
     """
-    session.run(link_records, aws_update_tag=update_tag)
+    session.run(link_records, aws_update_tag=update_tag).detach()
 
     # find records that point to AWS LoadBalancers
     link_elb = """
@@ -22,7 +22,7 @@ def link_aws_resources(session, update_tag):
     ON CREATE SET p.firstseen = timestamp()
     SET p.lastupdated = {aws_update_tag}
     """
-    session.run(link_elb, aws_update_tag=update_tag)
+    session.run(link_elb, aws_update_tag=update_tag).detach()
 
     # find records that point to AWS EC2 Instances
     link_ec2 = """
@@ -31,7 +31,7 @@ def link_aws_resources(session, update_tag):
     ON CREATE SET p.firstseen = timestamp()
     SET p.lastupdated = {aws_update_tag}
     """
-    session.run(link_ec2, aws_update_tag=update_tag)
+    session.run(link_ec2, aws_update_tag=update_tag).detach()
 
 
 def load_a_records(session, records, update_tag):
@@ -50,7 +50,7 @@ def load_a_records(session, records, update_tag):
         ingest_records,
         records=records,
         aws_update_tag=update_tag
-    )
+    ).detach()
 
 
 def load_alias_records(session, records, update_tag):
@@ -70,7 +70,7 @@ def load_alias_records(session, records, update_tag):
         ingest_records,
         records=records,
         aws_update_tag=update_tag
-    )
+    ).detach()
 
 
 def load_cname_records(session, records, update_tag):
@@ -89,7 +89,7 @@ def load_cname_records(session, records, update_tag):
         ingest_records,
         records=records,
         aws_update_tag=update_tag
-    )
+    ).detach()
 
 
 def load_zone(session, zone, current_aws_id, update_tag):
@@ -111,7 +111,7 @@ def load_zone(session, zone, current_aws_id, update_tag):
         PrivateZone=zone['privatezone'],
         AWS_ACCOUNT_ID=current_aws_id,
         aws_update_tag=update_tag
-    )
+    ).detach()
 
 
 def parse_record_set(record_set, zone_id):

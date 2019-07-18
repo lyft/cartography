@@ -19,4 +19,4 @@ def run(neo4j_session, config):
     logger.info("Creating indexes for cartography node types.")
     for statement in get_index_statements():
         logger.debug("Executing statement: %s", statement)
-        neo4j_session.run(statement)
+        neo4j_session.run(statement).detach()

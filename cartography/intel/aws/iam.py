@@ -106,7 +106,7 @@ def load_users(session, users, current_aws_account_id, aws_update_tag):
             PASSWORD_LASTUSED=str(user.get("PasswordLastUsed", "")),
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag
-        )
+        ).detach()
 
 
 def load_groups(session, groups, current_aws_account_id, aws_update_tag):
@@ -131,7 +131,7 @@ def load_groups(session, groups, current_aws_account_id, aws_update_tag):
             PATH=group["Path"],
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag
-        )
+        ).detach()
 
 
 def load_policies(session, policies, current_aws_account_id, aws_update_tag):
@@ -163,7 +163,7 @@ def load_policies(session, policies, current_aws_account_id, aws_update_tag):
             ATTACHMENT_COUNT=policy["AttachmentCount"],
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag
-        )
+        ).detach()
 
 
 def load_roles(session, roles, current_aws_account_id, aws_update_tag):
@@ -203,7 +203,7 @@ def load_roles(session, roles, current_aws_account_id, aws_update_tag):
             Path=role["Path"],
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag
-        )
+        ).detach()
 
         for statement in role["AssumeRolePolicyDocument"]["Statement"]:
             principal = statement["Principal"]
@@ -221,7 +221,7 @@ def load_roles(session, roles, current_aws_account_id, aws_update_tag):
                     SpnType=principal_type,
                     RoleArn=role['Arn'],
                     aws_update_tag=aws_update_tag
-                )
+                ).detach()
 
 
 def load_group_memberships(session, group_memberships, aws_update_tag):
@@ -242,7 +242,7 @@ def load_group_memberships(session, group_memberships, aws_update_tag):
                 GroupName=group_name,
                 PrincipalArn=principal_arn,
                 aws_update_tag=aws_update_tag
-            )
+            ).detach()
 
 
 def _find_roles_assumable_in_policy(policy_data):
@@ -280,7 +280,7 @@ def load_group_policies(session, group_policies, aws_update_tag):
                     GroupName=group_name,
                     RoleArn=role_arn,
                     aws_update_tag=aws_update_tag
-                )
+                ).detach()
 
 
 def load_role_policies(session, role_policies, aws_update_tag):
@@ -306,7 +306,7 @@ def load_role_policies(session, role_policies, aws_update_tag):
                     RoleName=role_name,
                     RoleArn=role_arn,
                     aws_update_tag=aws_update_tag
-                )
+                ).detach()
 
 
 def load_user_access_keys(session, user_access_keys, aws_update_tag):
@@ -333,7 +333,7 @@ def load_user_access_keys(session, user_access_keys, aws_update_tag):
                     CreateDate=str(key['CreateDate']),
                     Status=key['Status'],
                     aws_update_tag=aws_update_tag
-                )
+                ).detach()
 
 
 def sync_users(neo4j_session, boto3_session, current_aws_account_id, aws_update_tag, common_job_parameters):

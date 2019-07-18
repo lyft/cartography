@@ -80,7 +80,7 @@ def _load_s3_acls(session, acls, aws_account_id, update_tag):
         ingest_acls,
         acls=acls,
         UpdateTag=update_tag
-    )
+    ).detach()
 
     # implement the acl permission
     # https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#permissions
@@ -108,7 +108,7 @@ def _load_s3_policies(session, policies, update_tag):
         ingest_policies,
         policies=policies,
         UpdateTag=update_tag
-    )
+    ).detach()
 
 
 def _set_default_values(session, aws_account_id):
@@ -120,7 +120,7 @@ def _set_default_values(session, aws_account_id):
     session.run(
         set_defaults,
         AWS_ID=aws_account_id
-    )
+    ).detach()
 
 
 def load_s3_details(session, s3_details_iter, aws_account_id, update_tag):
@@ -300,7 +300,7 @@ def load_s3_buckets(session, data, current_aws_account_id, aws_update_tag):
             CreationDate=str(bucket["CreationDate"]),
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag
-        )
+        ).detach()
 
 
 def cleanup_s3_buckets(session, common_job_parameters):

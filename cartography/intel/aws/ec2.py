@@ -137,7 +137,7 @@ def load_ec2_instances(session, data, region, current_aws_account_id, aws_update
             AWS_ACCOUNT_ID=current_aws_account_id,
             Region=region,
             aws_update_tag=aws_update_tag
-        )
+        ).detach()
 
         for instance in reservation["Instances"]:
             instanceid = instance["InstanceId"]
@@ -170,7 +170,7 @@ def load_ec2_instances(session, data, region, current_aws_account_id, aws_update
                 AWS_ACCOUNT_ID=current_aws_account_id,
                 Region=region,
                 aws_update_tag=aws_update_tag
-            )
+            ).detach()
 
             if instance.get("SecurityGroups"):
                 for group in instance["SecurityGroups"]:
@@ -182,7 +182,7 @@ def load_ec2_instances(session, data, region, current_aws_account_id, aws_update
                         Region=region,
                         AWS_ACCOUNT_ID=current_aws_account_id,
                         aws_update_tag=aws_update_tag
-                    )
+                    ).detach()
 
             load_ec2_instance_network_interfaces(session, instance, aws_update_tag)
 
@@ -229,7 +229,7 @@ def load_ec2_instance_network_interfaces(session, instance_data, aws_update_tag)
             PrivateIpAddress=interface.get("PrivateIpAddress", ""),
             SubnetId=interface.get("SubnetId", ""),
             aws_update_tag=aws_update_tag
-        )
+        ).detach()
 
         for group in interface.get("Groups", []):
             session.run(
@@ -237,7 +237,7 @@ def load_ec2_instance_network_interfaces(session, instance_data, aws_update_tag)
                 NetworkId=interface["NetworkInterfaceId"],
                 GroupId=group["GroupId"],
                 aws_update_tag=aws_update_tag
-            )
+            ).detach()
 
 
 def load_ec2_security_groupinfo(session, data, region, current_aws_account_id, aws_update_tag):
@@ -269,7 +269,7 @@ def load_ec2_security_groupinfo(session, data, region, current_aws_account_id, a
             Region=region,
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag
-        )
+        ).detach()
 
         load_ec2_security_group_rule(session, group, "IpPermissions", aws_update_tag)
         load_ec2_security_group_rule(session, group, "IpPermissionEgress", aws_update_tag)
@@ -330,14 +330,14 @@ def load_ec2_security_group_rule(session, group, rule_type, aws_update_tag):
                 Protocol=protocol,
                 GroupId=group_id,
                 aws_update_tag=aws_update_tag
-            )
+            ).detach()
 
             session.run(
                 ingest_rule_group_pair,
                 GroupId=group_id,
                 RuleId=ruleid,
                 aws_update_tag=aws_update_tag
-            )
+            ).detach()
 
             for ip_range in rule["IpRanges"]:
                 range_id = ip_range["CidrIp"]
@@ -346,7 +346,7 @@ def load_ec2_security_group_rule(session, group, rule_type, aws_update_tag):
                     RangeId=range_id,
                     RuleId=ruleid,
                     aws_update_tag=aws_update_tag
-                )
+                ).detach()
 
 
 def load_ec2_auto_scaling_groups(session, data, region, current_aws_account_id, aws_update_tag):
@@ -406,7 +406,7 @@ def load_ec2_auto_scaling_groups(session, data, region, current_aws_account_id, 
             AWS_ACCOUNT_ID=current_aws_account_id,
             Region=region,
             aws_update_tag=aws_update_tag
-        )
+        ).detach()
 
         if group.get('VPCZoneIdentifier'):
             vpclist = group["VPCZoneIdentifier"]
@@ -416,7 +416,7 @@ def load_ec2_auto_scaling_groups(session, data, region, current_aws_account_id, 
                     SubnetId=vpc,
                     GROUPARN=group_arn,
                     aws_update_tag=aws_update_tag
-                )
+                ).detach()
 
         if group.get("Instances"):
             for instance in group["Instances"]:
@@ -428,7 +428,7 @@ def load_ec2_auto_scaling_groups(session, data, region, current_aws_account_id, 
                     AWS_ACCOUNT_ID=current_aws_account_id,
                     Region=region,
                     aws_update_tag=aws_update_tag
-                )
+                ).detach()
 
 
 def load_load_balancers(session, data, region, current_aws_account_id, aws_update_tag):
@@ -488,7 +488,7 @@ def load_load_balancers(session, data, region, current_aws_account_id, aws_updat
             AWS_ACCOUNT_ID=current_aws_account_id,
             Region=region,
             aws_update_tag=aws_update_tag
-        )
+        ).detach()
 
         if lb["Subnets"]:
             load_load_balancer_subnets(session, load_balancer_id, lb["Subnets"], aws_update_tag)
@@ -500,7 +500,7 @@ def load_load_balancers(session, data, region, current_aws_account_id, aws_updat
                     ID=load_balancer_id,
                     GROUP_ID=str(group),
                     aws_update_tag=aws_update_tag
-                )
+                ).detach()
 
         if lb["SourceSecurityGroup"]:
             source_group = lb["SourceSecurityGroup"]
@@ -509,7 +509,7 @@ def load_load_balancers(session, data, region, current_aws_account_id, aws_updat
                 ID=load_balancer_id,
                 GROUP_NAME=source_group["GroupName"],
                 aws_update_tag=aws_update_tag
-            )
+            ).detach()
 
         if lb["Instances"]:
             for instance in lb["Instances"]:
@@ -519,7 +519,7 @@ def load_load_balancers(session, data, region, current_aws_account_id, aws_updat
                     INSTANCE_ID=instance["InstanceId"],
                     AWS_ACCOUNT_ID=current_aws_account_id,
                     aws_update_tag=aws_update_tag
-                )
+                ).detach()
 
         if lb["ListenerDescriptions"]:
             load_load_balancer_listeners(session, load_balancer_id, lb["ListenerDescriptions"], aws_update_tag)
@@ -539,7 +539,7 @@ def load_load_balancer_subnets(session, load_balancer_id, subnets_data, aws_upda
             ID=load_balancer_id,
             SUBNET_ID=subnet_id,
             aws_update_tag=aws_update_tag
-        )
+        ).detach()
 
 
 def load_load_balancer_listeners(session, load_balancer_id, listener_data, aws_update_tag):
@@ -564,7 +564,7 @@ def load_load_balancer_listeners(session, load_balancer_id, listener_data, aws_u
         LoadBalancerId=load_balancer_id,
         Listeners=listener_data,
         aws_update_tag=aws_update_tag
-    )
+    ).detach()
 
 
 def load_ec2_vpc_peering(session, data, aws_update_tag):
@@ -684,7 +684,7 @@ def load_ec2_vpc_peering(session, data, aws_update_tag):
                 StatusMessage=peering["Status"]["Message"],
                 ConnectionId=peering["VpcPeeringConnectionId"],
                 ExpirationTime=peering.get("ExpirationTime", None),
-                aws_update_tag=aws_update_tag)
+                aws_update_tag=aws_update_tag).detach()
 
             for accepter_block in peering["AccepterVpcInfo"].get("CidrBlockSet", []):
                 for requestor_block in peering["RequesterVpcInfo"].get("CidrBlockSet", []):
@@ -698,7 +698,7 @@ def load_ec2_vpc_peering(session, data, aws_update_tag):
                         StatusMessage=peering["Status"]["Message"],
                         ConnectionId=peering["VpcPeeringConnectionId"],
                         ExpirationTime=peering.get("ExpirationTime", None),
-                        aws_update_tag=aws_update_tag)
+                        aws_update_tag=aws_update_tag).detach()
 
 
 def load_ec2_vpcs(session, data, region, current_aws_account_id, aws_update_tag):
@@ -760,7 +760,7 @@ def load_ec2_vpcs(session, data, region, current_aws_account_id, aws_update_tag)
             DhcpOptionsId=vpc.get("DhcpOptionsId", None),
             Region=region,
             AWS_ACCOUNT_ID=current_aws_account_id,
-            aws_update_tag=aws_update_tag)
+            aws_update_tag=aws_update_tag).detach()
 
         load_cidr_association_set(session,
                                   vpc_id=vpc_id,
@@ -826,7 +826,7 @@ def load_cidr_association_set(session, vpc_id, vpc_data, block_type, aws_update_
         VpcId=vpc_id,
         CidrBlock=data,
         aws_update_tag=aws_update_tag
-    )
+    ).detach()
 
 
 def cleanup_ec2_security_groupinfo(session, common_job_parameters):

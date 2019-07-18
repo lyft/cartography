@@ -430,7 +430,7 @@ def load_gcp_instances(neo4j_session, data, gcp_update_tag):
             ZoneName=instance['zone_name'],
             Hostname=instance.get('hostname', None),
             gcp_update_tag=gcp_update_tag
-        )
+        ).detach()
         _attach_instance_tags(neo4j_session, instance, gcp_update_tag)
         _attach_gcp_nics(neo4j_session, instance, gcp_update_tag)
         _attach_gcp_vpc(neo4j_session, instance['partial_uri'], gcp_update_tag)
@@ -475,7 +475,7 @@ def load_gcp_vpcs(neo4j_session, vpcs, gcp_update_tag):
             RoutingMode=vpc['routing_config_routing_mode'],
             Description=vpc['description'],
             gcp_update_tag=gcp_update_tag
-        )
+        ).detach()
 
 
 def load_gcp_subnets(neo4j_session, subnets, gcp_update_tag):
@@ -522,7 +522,7 @@ def load_gcp_subnets(neo4j_session, subnets, gcp_update_tag):
             IpCidrRange=s['ip_cidr_range'],
             PrivateIpGoogleAccess=s['private_ip_google_access'],
             gcp_update_tag=gcp_update_tag
-        )
+        ).detach()
 
 
 def _attach_instance_tags(neo4j_session, instance, gcp_update_tag):
@@ -563,7 +563,7 @@ def _attach_instance_tags(neo4j_session, instance, gcp_update_tag):
                 TagValue=tag,
                 VpcPartialUri=nic['vpc_partial_uri'],
                 gcp_update_tag=gcp_update_tag
-            )
+            ).detach()
 
 
 def _attach_gcp_nics(neo4j_session, instance, gcp_update_tag):
@@ -608,7 +608,7 @@ def _attach_gcp_nics(neo4j_session, instance, gcp_update_tag):
             NicName=nic['name'],
             gcp_update_tag=gcp_update_tag,
             SubnetPartialUri=nic['subnet_partial_uri']
-        )
+        ).detach()
         _attach_gcp_nic_access_configs(neo4j_session, nic_id, nic, gcp_update_tag)
 
 
@@ -651,7 +651,7 @@ def _attach_gcp_nic_access_configs(neo4j_session, nic_id, nic, gcp_update_tag):
             PublicPtrDomainName=ac.get('publicPtrDomainName', None),
             NetworkTier=ac.get('networkTier', None),
             gcp_update_tag=gcp_update_tag
-        )
+        ).detach()
 
 
 def _attach_gcp_vpc(neo4j_session, instance_id, gcp_update_tag):
@@ -673,7 +673,7 @@ def _attach_gcp_vpc(neo4j_session, instance_id, gcp_update_tag):
         query,
         InstanceId=instance_id,
         gcp_update_tag=gcp_update_tag
-    )
+    ).detach()
 
 
 def load_gcp_ingress_firewalls(neo4j_session, fw_list, gcp_update_tag):
@@ -715,7 +715,7 @@ def load_gcp_ingress_firewalls(neo4j_session, fw_list, gcp_update_tag):
             VpcPartialUri=fw['vpc_partial_uri'],
             HasTargetServiceAccounts=fw['has_target_service_accounts'],
             gcp_update_tag=gcp_update_tag
-        )
+        ).detach()
         _attach_firewall_rules(neo4j_session, fw, gcp_update_tag)
         _attach_target_tags(neo4j_session, fw, gcp_update_tag)
 
@@ -775,7 +775,7 @@ def _attach_firewall_rules(neo4j_session, fw, gcp_update_tag):
                     ToPort=rule.get('toport'),
                     Range=ip_range,
                     gcp_update_tag=gcp_update_tag
-                )
+                ).detach()
 
 
 def _attach_target_tags(neo4j_session, fw, gcp_update_tag):
@@ -807,7 +807,7 @@ def _attach_target_tags(neo4j_session, fw, gcp_update_tag):
             TagId=tag_id,
             TagValue=tag,
             gcp_update_tag=gcp_update_tag
-        )
+        ).detach()
 
 
 def cleanup_gcp_instances(session, common_job_parameters):

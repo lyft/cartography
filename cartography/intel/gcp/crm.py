@@ -82,7 +82,7 @@ def load_gcp_organizations(neo4j_session, data, gcp_update_tag):
             DisplayName=org_object.get('displayName', None),
             LifecycleState=org_object.get('lifecycleState', None),
             gcp_update_tag=gcp_update_tag
-        )
+        ).detach()
 
 
 def load_gcp_folders(neo4j_session, data, gcp_update_tag):
@@ -123,7 +123,7 @@ def load_gcp_folders(neo4j_session, data, gcp_update_tag):
             DisplayName=folder.get('displayName', None),
             LifecycleState=folder.get('lifecycleState', None),
             gcp_update_tag=gcp_update_tag
-        )
+        ).detach()
 
 
 def load_gcp_projects(neo4j_session, data, gcp_update_tag):
@@ -167,7 +167,7 @@ def load_gcp_projects(neo4j_session, data, gcp_update_tag):
             DisplayName=project.get('name', None),
             LifecycleState=project.get('lifecycleState', None),
             gcp_update_tag=gcp_update_tag
-        )
+        ).detach()
 
 
 def cleanup_gcp_organizations(session, common_job_parameters):

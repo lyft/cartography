@@ -105,7 +105,7 @@ def load_aws_accounts(neo4j_session, aws_accounts, aws_update_tag, common_job_pa
             ACCOUNT_NAME=account_name,
             RootArn=root_arn,
             aws_update_tag=aws_update_tag
-        )
+        ).detach()
 
 
 def cleanup(neo4j_session, common_job_parameters):
