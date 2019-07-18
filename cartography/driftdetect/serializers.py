@@ -14,7 +14,7 @@ class StateSchema(Schema):
     results = fields.List(fields.List(fields.Str()))
 
     @post_load
-    def make_driftstate(self, data, **kwargs):
+    def make_state(self, data, **kwargs):
         return State(
             data['name'],
             data['validation_query'],

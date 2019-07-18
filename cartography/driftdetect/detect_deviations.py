@@ -36,11 +36,11 @@ def run_drift_detection(config):
 
 def perform_drift_detection(start_state, end_state):
     """
-    Returns differences (additions and missing results) between two DriftStates..
+    Returns differences (additions and missing results) between two States.
 
-    :type start_state: DriftState
+    :type start_state: State
     :param start_state: The earlier state chronologically to be compared to.
-    :type end_state: DriftState
+    :type end_state: State
     :param end_state: The later state chronologically to be compared to.
     :return: tuple of additions and subtractions between the end and start detector in the form of drift_info_detector
     pairs
@@ -58,13 +58,13 @@ def perform_drift_detection(start_state, end_state):
 
 def compare_states(start_state, end_state):
     """
-    Helper function for comparing differences between two DriftStates.
+    Helper function for comparing differences between two States.
 
-    :type start_state: DriftState
+    :type start_state: State
     :param start_state: The earlier state chronologically to be compared to.
-    :type end_state: DriftState
+    :type end_state: State
     :param end_state: The later state chronologically to be compared to.
-    :return: list of tuples of differences between detectors in the form (dictionary, DriftDetector object)
+    :return: list of tuples of differences between states in the form (dictionary, State object)
     """
     differences = []
     for result in end_state.results:
