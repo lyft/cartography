@@ -22,8 +22,7 @@ Time to set up the server that will run Cartography.  Cartography _should_ work 
 			⚠️ At this time we run our automated tests on Neo4j version 3.2.*.  3.3.* will work but it will currently fail the [test syntax test](https://github.com/lyft/cartography/blob/8f3f4b739e0033a7849c35cfa8edd3b0067be509/tests/integration/cartography/data/jobs/test_syntax.py) ⚠️
 			
 	2. [Install](https://neo4j.com/docs/operations-manual/current/installation/) Neo4j on the server you will run Cartography on.
-
-
+	
 2. If you're an AWS user, **prepare your AWS account(s)** 
 
 	- **If you only have a single AWS account**
@@ -32,9 +31,8 @@ Time to set up the server that will run Cartography.  Cartography _should_ work 
 		2. Set up AWS credentials to this identity on your server, using a `config` and 	`credential` file.  For details, see AWS' [official guide](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html).
   
  	- **If you want to pull from multiple AWS accounts**, see [here](#multiple-aws-account-setup).
-
-
-3. If you're a GCP user, **prepare your GCP credential(s)**
+ 	
+ 3. If you're a GCP user, **prepare your GCP credential(s)**
 
     1. Create an identity - either a User Account or a Service Account - for Cartography to run as
     2. Ensure that this identity has the [securityReviewer](https://cloud.google.com/iam/docs/understanding-roles) role attached to it.
@@ -42,6 +40,13 @@ Time to set up the server that will run Cartography.  Cartography _should_ work 
         - **Method 1**: You can do this by setting your `GOOGLE_APPLICATION_CREDENTIALS` environment variable to point to a json file containing your credentials.  As per SecurityCommonSense™️, please ensure that only the user account that runs Cartography has read-access to this sensitive file.
         - **Method 2**: If you are running Cartography on a GCE instance or other GCP service, you can make use of the credential management provided by the default service accounts on these services.  See the [official docs](https://cloud.google.com/docs/authentication/production) on Application Default Credentials for more details.
 
+4. If you're a CRXcavator user, **prepare your CRXcavator API key**
+
+    1. Generate an API key from your CRXcavator [user page](https://crxcavator.io/user/settings#)
+    2. Populate the following environment variables in the shell running Cartography
+        1. CRXCAVATOR_URL - the full URL to the CRXcavator API. https://api.crxcavator.io/v1 as of 07/09/19
+        2. CREDENTIALS_CRXCAVATOR_API_KEY - your API key generated in the previous step. Note this is a credential and should be stored in an appropriate secret store to be populated securely into your runtime environment. 
+    3. If the credentials are configured, the CRXcavator module will run automatically on the next sync
 	
 5. **Get and run Cartography** 
 
@@ -225,6 +230,21 @@ MATCH (a:AWSAccount)-[:RESOURCE]->(rds:RDSInstance)
 WHERE rds.storage_encrypted = false 
 return a.name as AWSAccount, count(rds) as UnencryptedInstances
 ```
+
+#### What users have the TotallyFake extension installed?
+```
+MATCH (u:GSuiteUser)-[r:INSTALLS]->(ext:ChromeExtension)
+WHERE ext.name CONTAINS 'TotallyFake'
+return ext.name, ext.version, u.email
+```
+
+#### What users have installed extensions that are risky based on [CRXcavator scoring](https://crxcavator.io/docs#/risk_breakdown)?
+Risk > 200 is evidence of 3 or more critical risks or many high risks in the extension. 
+```
+MATCH (u:GSuiteUser)-[r:INSTALLS]->(ext:ChromeExtension)
+WHERE ext.risk_total > 200
+return ext.name, ext.version, u.email
+``` 
 
 ### Data Enrichment
 Cartography adds custom attributes to nodes and relationships to point out security-related items of interest.  Unless mentioned otherwise these data augmentation jobs are stored in `cartography/data/jobs/analysis`.  Here is a summary of all of Cartography's custom attributes.
