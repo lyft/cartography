@@ -61,6 +61,7 @@ def test_state_picks_up_drift():
     state_old = StateSchema().load(data)
     state_new = State(state_old.name, state_old.validation_query, state_old.properties, [])
     get_state(mock_session, state_new)
+    state_new.properties = state_old.properties
     drifts = compare_states(state_old, state_new)
     mock_session.run.assert_called_with(state_new.validation_query)
     assert drifts
@@ -93,6 +94,7 @@ def test_state_multiple_expectations():
     state_old = StateSchema().load(data)
     state_new = State(state_old.name, state_old.validation_query, state_old.properties, [])
     get_state(mock_session, state_new)
+    state_new.properties = state_old.properties
     drifts = compare_states(state_old, state_new)
     mock_session.run.assert_called_with(state_new.validation_query)
     assert {key_1: "7", key_2: "14"} in drifts[0]
@@ -124,6 +126,7 @@ def test_drift_from_multiple_properties():
     state_old = StateSchema().load(data)
     state_new = State(state_old.name, state_old.validation_query, state_old.properties, [])
     get_state(mock_session, state_new)
+    state_new.properties = state_old.properties
     drifts = compare_states(state_old, state_new)
     mock_session.run.assert_called_with(state_new.validation_query)
     print(drifts)

@@ -3,8 +3,6 @@ from unittest.mock import patch
 from tests.integration import settings
 from cartography.driftdetect.config import UpdateConfig
 from cartography.driftdetect.cli import CLI, valid_directory
-from cartography.driftdetect.serializers import ShortcutSchema
-from cartography.driftdetect.storage import FileSystem
 
 
 def test_valid_directory():
@@ -83,27 +81,3 @@ def test_cli_shortcuts(mock_run_add_shortcut):
               "--file",
               file])
     mock_run_add_shortcut.assert_called_once()
-
-
-def test_add_shortcuts():
-    """
-    Tests that the CLI can add shortcuts.
-    """
-    cli = CLI(prog="cartography-detectdrift")
-    directory = "tests/data/test_cli_detectors/detector"
-    alias = "test_shortcut"
-    file = "1.json"
-    shortcut_path = directory + '/shortcut.json'
-    cli.main(["add-shortcut",
-              "--query-directory",
-              directory,
-              "--shortcut",
-              alias,
-              "--file",
-              file])
-    shortcut_data = FileSystem.load(shortcut_path)
-    shortcut = ShortcutSchema().load(shortcut_data)
-    assert shortcut.shortcuts[alias] == file
-    shortcut.shortcuts.pop(alias)
-    shortcut_data = ShortcutSchema().dump(shortcut)
-    FileSystem.write(shortcut_data, shortcut_path)

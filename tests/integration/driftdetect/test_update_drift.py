@@ -1,5 +1,7 @@
 import datetime
 import os
+import neobolt.exceptions
+from marshmallow import ValidationError
 
 from cartography.driftdetect.storage import FileSystem
 from cartography.driftdetect.serializers import StateSchema, ShortcutSchema
@@ -61,3 +63,50 @@ def test_get_state_detectors(neo4j_session):
     assert shortcut.shortcuts['most-recent'] == file_1
     shortcut_data = shortcut_serializer.dump(shortcut)
     FileSystem.write(shortcut_data, os.path.join(query_directory, "shortcut.json"))
+
+
+def test_faulty_detectors(neo4j_session):
+    data = [
+        ["1", "8", ["15", "22", "29"]],
+        ["2", "9", ["16", "23", "30"]],
+        ["3", "10", ["17", "24", "31"]],
+        ["4", "11", ["18", "25", "32"]],
+        ["5", "12", ["19", "26", "33"]],
+        ["6", "13", ["20", "27", "34"]],
+        ["7", "14", ["21", "28", "35"]],
+        ["36", "37", ["38", "39", "40"]]
+    ]
+    ingest_nodes = """
+            MERGE (person:Person{test: {test}})
+            SET person.test2 = {test2},
+            person.test3 = {test3}
+            """
+    for node in data:
+        test = node[0]
+        test2 = node[1]
+        test3 = node[2]
+        neo4j_session.run(
+            ingest_nodes,
+            test=test,
+            test2=test2,
+            test3=test3
+        )
+
+    query_directory = "tests/data/test_update_detectors/invalid_query"
+    state_serializer = StateSchema()
+    storage = FileSystem
+
+    file_1 = str(datetime.datetime(2019, 1, 1, 0, 0, 2)) + ".json"
+    try:
+        get_query_state(neo4j_session, query_directory, state_serializer, storage, file_1)
+    except neobolt.exceptions.CypherSyntaxError:
+        pass
+
+    query_directory = "tests/data/test_update_detectors/invalid_template"
+
+    try:
+        get_query_state(neo4j_session, query_directory, state_serializer, storage, file_1)
+    except KeyError:
+        pass
+    except ValidationError:
+        pass

@@ -71,10 +71,17 @@ def run_get_states(config):
                 get_query_state(session, query_directory, state_serializer, FileSystem, filename)
                 add_shortcut(FileSystem, shortcut_serializer, query_directory, 'most-recent', filename)
             except ValidationError as err:
-                msg = "Unable to create State for directory {0}, for \n{1}".format(
+                msg = "Unable to create State for directory {0}, with data \n{1}".format(
                     query_directory,
                     err.messages)
                 logger.exception(msg)
+            except KeyError as err:
+                msg = "Could not find {0} field in state template for directory {1}.".format(err, query_directory)
+                logger.exception(msg)
+            except FileNotFoundError as err:
+                logger.exception(err)
+            except neobolt.exceptions.CypherSyntaxError as err:
+                logger.exception(err)
 
 
 def get_query_state(session, query_directory, state_serializer, storage, filename):
@@ -91,7 +98,7 @@ def get_query_state(session, query_directory, state_serializer, storage, filenam
     :param storage: Storage object to supports loading, writing, and walking.
     :type filename: String.
     :param filename: Path to filename.
-    :return:
+    :return: The created state.
     """
     state_data = storage.load(os.path.join(query_directory, "template.json"))
     state = state_serializer.load(state_data)
@@ -99,6 +106,7 @@ def get_query_state(session, query_directory, state_serializer, storage, filenam
     new_state_data = state_serializer.dump(state)
     fp = os.path.join(query_directory, filename)
     storage.write(new_state_data, fp)
+    return state
 
 
 def get_state(session, state):
@@ -109,12 +117,13 @@ def get_state(session, state):
     :param session: Graph session to pull infrastructure information from.
     :type state: State
     :param state: State to be updated.
-    :return: None
+    :return:
     """
 
     new_results = session.run(state.validation_query)
     logger.debug("Updating results for {0}".format(state.name))
 
+    state.properties = new_results.keys()
     results = []
 
     for record in new_results:
