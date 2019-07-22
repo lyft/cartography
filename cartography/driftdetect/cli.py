@@ -186,7 +186,7 @@ class CLI(object):
         """
         Entrypoint for the command line interface.
 
-        :type argv: string
+        :type argv: List of strings
         :param argv: The parameters supplied to the command line program.
         """
         config = self.configure(argv)

@@ -17,6 +17,8 @@ def report_drift(drift_info_detector_pairs, new=True):
         print()
 
     for drift_info, detector in drift_info_detector_pairs:
-        print("Detector Name:", detector.name)
-        print("Drift Information:", drift_info)
+        print("Query Name:", detector.name)
+        print("Result Information:", drift_info)
+        for key, value in drift_info.items():
+            print("Field: ", key, "Value:", value)
         print()

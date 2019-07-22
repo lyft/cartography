@@ -48,3 +48,20 @@ def test_nonexistent_shortcuts():
         shortcut.shortcuts[alias]
     except KeyError:
         pass
+
+
+def test_bad_shortcut():
+    cli = CLI(prog="cartography-detectdrift")
+    directory = "tests/data/test_cli_detectors/bad_shortcut"
+    start_state = "1.json"
+    end_state = "invalid-shortcut"
+    try:
+        cli.main(["get-drift",
+                  "--query-directory",
+                  directory,
+                  "--start-state",
+                  start_state,
+                  "--end-state",
+                  end_state])
+    except FileNotFoundError:
+        pass

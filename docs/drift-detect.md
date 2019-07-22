@@ -6,14 +6,14 @@ Drift-Detection is a separate module from cartography which allows you to automa
 ## How To Run
 Queries and their expected results are stored in the form of drift state objects which contain a name, query, list of properties, and list of values. When running drift-detection, you should specify a drift detection directory as an input.
 
-In the specified directory, each query should have a designated subdirectory with a drift state template named "template.json", containing its name, validation query, query properties, and a blank results field. 
+In the specified directory, each query should have a designated subdirectory with a drift state template named "template.json", containing its name, validation query, a blank properties field, and a blank results field. 
 After getting the current state, results will be stored as lists, and properties of results with multiple fields will have their fields concatenated in the created json files.
 
 ```
 {
   "name": "Sample Template",
   "validation_query": "MATCH (n) RETURN n.property_1, n.property_2, n.property_3",
-  "properties": ["n.property_1", "n.property_2", "n.property_3"],
+  "properties": [],
   "results": []
 }
 ```
@@ -63,7 +63,7 @@ First we create a template file and report info file in the formats shown above.
 {
   "name": "Internet Exposed EC2 Instances",
   "validation_query": "match (n:EC2Instance) where n.exposed_internet = True return n.instancetype, n.privateipaddress, n.publicdnsname, n.exposed_internet_type"
-  "properties": ["n.instancetype", "n.privateipaddress", "n.publicdnsname", "n.exposed_internet_type"],
+  "properties": [],
   "results": []
 }
 ```
@@ -139,13 +139,13 @@ or to make use of the shortcuts we added,
 Finally, we should see the following messages pop up:
 
 ```
-New Drift Information:
+New Query Results:
 
-Detector Name: Internet Exposed EC2 Instances
-Drift Information: {'n.instancetype': 'c4.large', 'n.privateipaddress': '10.255.255.255', 'n.publicdnsname': 'ec2.5.compute.amazonaws.com', 'n.exposed_internet_type': ['direct', elb']}
+Query Name: Internet Exposed EC2 Instances
+Results Information: {'n.instancetype': 'c4.large', 'n.privateipaddress': '10.255.255.255', 'n.publicdnsname': 'ec2.5.compute.amazonaws.com', 'n.exposed_internet_type': ['direct', elb']}
 
-Missing Drift Information:
+Missing Query Results:
 
-Detector Name: Internet Exposed EC2 Instances
-Drift Information: {'n.instancetype': 't2.micro', 'n.privateipaddress': '10.255.255.253', 'n.publicdnsname': 'ec2.4.compute.amazonaws.com', 'n.exposed_internet_type': ['direct', elb']}
+Query Name: Internet Exposed EC2 Instances
+Result Information: {'n.instancetype': 't2.micro', 'n.privateipaddress': '10.255.255.253', 'n.publicdnsname': 'ec2.4.compute.amazonaws.com', 'n.exposed_internet_type': ['direct', elb']}
 ```
