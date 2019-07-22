@@ -1,5 +1,6 @@
 import datetime
 import os
+import pytest
 import neobolt.exceptions
 from marshmallow import ValidationError
 
@@ -97,16 +98,10 @@ def test_faulty_queries(neo4j_session):
     storage = FileSystem
 
     file_1 = str(datetime.datetime(2019, 1, 1, 0, 0, 2)) + ".json"
-    try:
+    with pytest.raises(neobolt.exceptions.CypherSyntaxError):
         get_query_state(neo4j_session, query_directory, state_serializer, storage, file_1)
-    except neobolt.exceptions.CypherSyntaxError:
-        pass
 
     query_directory = "tests/data/test_update_detectors/invalid_template"
 
-    try:
+    with pytest.raises(ValidationError):
         get_query_state(neo4j_session, query_directory, state_serializer, storage, file_1)
-    except KeyError:
-        pass
-    except ValidationError:
-        pass

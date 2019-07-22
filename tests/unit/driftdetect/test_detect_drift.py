@@ -1,3 +1,5 @@
+import pytest
+
 from cartography.driftdetect.storage import FileSystem
 from cartography.driftdetect.serializers import StateSchema
 from cartography.driftdetect.detect_deviations import perform_drift_detection
@@ -23,23 +25,17 @@ def test_drift_detection_errors():
     start_state = StateSchema().load(data)
     data = FileSystem.load("tests/data/test_cli_detectors/detector/2.json")
     end_state = StateSchema().load(data)
+
     start_state.name = "Wrong Name"
-    try:
+    with pytest.raises(ValueError):
         perform_drift_detection(start_state, end_state)
-        assert False
-    except ValueError:
-        assert True
+
     start_state = StateSchema().load(data)
     start_state.properties = ["Incorrect", "Properties"]
-    try:
+    with pytest.raises(ValueError):
         perform_drift_detection(start_state, end_state)
-        assert False
-    except ValueError:
-        assert True
+
     start_state = StateSchema().load(data)
     start_state.validation_query = "Invalid Validation Query"
-    try:
+    with pytest.raises(ValueError):
         perform_drift_detection(start_state, end_state)
-        assert False
-    except ValueError:
-        assert True

@@ -1,4 +1,5 @@
 import os
+import pytest
 
 from cartography.driftdetect.storage import FileSystem
 from cartography.driftdetect.serializers import ShortcutSchema
@@ -44,10 +45,8 @@ def test_nonexistent_shortcuts():
               file])
     shortcut_data = FileSystem.load(shortcut_path)
     shortcut = ShortcutSchema().load(shortcut_data)
-    try:
+    with pytest.raises(KeyError):
         shortcut.shortcuts[alias]
-    except KeyError:
-        pass
 
 
 def test_bad_shortcut():
@@ -55,7 +54,7 @@ def test_bad_shortcut():
     directory = "tests/data/test_cli_detectors/bad_shortcut"
     start_state = "1.json"
     end_state = "invalid-shortcut"
-    try:
+    with pytest.raises(FileNotFoundError):
         cli.main(["get-drift",
                   "--query-directory",
                   directory,
@@ -63,5 +62,3 @@ def test_bad_shortcut():
                   start_state,
                   "--end-state",
                   end_state])
-    except FileNotFoundError:
-        pass
