@@ -65,7 +65,7 @@ def test_get_state_detectors(neo4j_session):
     FileSystem.write(shortcut_data, os.path.join(query_directory, "shortcut.json"))
 
 
-def test_faulty_detectors(neo4j_session):
+def test_faulty_queries(neo4j_session):
     data = [
         ["1", "8", ["15", "22", "29"]],
         ["2", "9", ["16", "23", "30"]],
