@@ -212,6 +212,8 @@ def load_roles(session, roles, current_aws_account_id, aws_update_tag):
                 principal_type, principal_values = 'AWS', principal['AWS']
             elif 'Service' in principal:
                 principal_type, principal_values = 'Service', principal['Service']
+            elif 'Federated' in principal:
+                principal_type, principal_values = 'Federated', principal['Federated']
             if not isinstance(principal_values, list):
                 principal_values = [principal_values]
             for principal_value in principal_values:
