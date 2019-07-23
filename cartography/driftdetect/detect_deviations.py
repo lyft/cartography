@@ -4,13 +4,17 @@ from marshmallow import ValidationError
 
 from cartography.driftdetect.serializers import StateSchema, ShortcutSchema
 from cartography.driftdetect.storage import FileSystem
-from cartography.driftdetect.reporter import report_drift
+from cartography.driftdetect.reporter import report_drift_new, report_drift_missing
+from cartography.driftdetect.util import valid_directory
 
 logger = logging.getLogger(__name__)
 
 
 def run_drift_detection(config):
     try:
+        if not valid_directory(config.query_directory):
+            logger.error("Invalid Drift Detection Directory")
+            return
         state_serializer = StateSchema()
         shortcut_serializer = ShortcutSchema()
         shortcut_data = FileSystem.load(os.path.join(config.query_directory, "shortcut.json"))
@@ -24,8 +28,8 @@ def run_drift_detection(config):
             config.end_state)))
         end_state = state_serializer.load(end_state_data)
         new_results, missing_results = perform_drift_detection(start_state, end_state)
-        report_drift(new_results)
-        report_drift(missing_results)
+        report_drift_new(new_results)
+        report_drift_missing(missing_results)
     except ValidationError as err:
         msg = "Unable to create DriftStates from files {0},{1} for \n{2}".format(
             config.start_state,

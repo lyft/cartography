@@ -9,6 +9,7 @@ from marshmallow import ValidationError
 from cartography.driftdetect.serializers import StateSchema, ShortcutSchema
 from cartography.driftdetect.add_shortcut import add_shortcut
 from cartography.driftdetect.storage import FileSystem
+from cartography.driftdetect.util import valid_directory
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +22,9 @@ def run_get_states(config):
     :param config: Config Object from CLI
     :return:
     """
+    if not valid_directory(config.drift_detection_directory):
+        logger.error("Invalid Drift Detection Directory")
+        return
     neo4j_auth = None
     if config.neo4j_user or config.neo4j_password:
         neo4j_auth = (config.neo4j_user, config.neo4j_password)

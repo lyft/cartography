@@ -26,7 +26,7 @@ class FileSystem(object):
         :return:
         """
         with open(file_path, 'w') as json_file:
-            json.dump(data, json_file, indent=4)
+            json.dump(data, json_file, sort_keys=True, indent=4)
 
     @classmethod
     def walk(cls, drift_detection_directory):

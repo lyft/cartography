@@ -15,12 +15,11 @@ class UpdateConfig(object):
     :type neo4j_password: string
     :param neo4j_password: Password for a Neo4j graph database service. Optional.
     """
-    def __init__(
-            self,
-            drift_detection_directory,
-            neo4j_uri,
-            neo4j_user=None,
-            neo4j_password=None):
+    def __init__(self,
+                 drift_detection_directory,
+                 neo4j_uri,
+                 neo4j_user=None,
+                 neo4j_password=None):
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user
         self.neo4j_password = neo4j_password
@@ -41,11 +40,10 @@ class GetDriftConfig(object):
     :type end_state: string
     :param end_state: Filename (without the directory prefix) of the later state to be compared with. Required.
     """
-    def __init__(
-            self,
-            query_directory,
-            start_state,
-            end_state):
+    def __init__(self,
+                 query_directory,
+                 start_state,
+                 end_state):
         self.query_directory = query_directory
         self.start_state = start_state
         self.end_state = end_state
@@ -62,14 +60,13 @@ class AddShortcutConfig(object):
     :param query_directory: Path to query directory. Required.
     :type shortcut: string
     :param shortcut: Name of shortcut to access the file. Required.
-    :type file: string
-    :param: Filename (without the directory prefix) of the state to be shortcut. Required.
+    :type filename: string
+    :param filename: Filename (without the directory prefix) of the state to be shortcut. Required.
     """
-    def __init__(
-            self,
-            query_directory,
-            shortcut,
-            file):
+    def __init__(self,
+                 query_directory,
+                 shortcut,
+                 filename):
         self.query_directory = query_directory
         self.shortcut = shortcut
-        self.file = file
+        self.filename = filename

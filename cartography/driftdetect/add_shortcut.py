@@ -3,6 +3,7 @@ import logging
 from marshmallow import ValidationError
 from cartography.driftdetect.storage import FileSystem
 from cartography.driftdetect.serializers import ShortcutSchema
+from cartography.driftdetect.util import valid_directory
 
 logger = logging.getLogger(__name__)
 
@@ -15,18 +16,21 @@ def run_add_shortcut(config):
     :param config: Config of adding shortcut
     :return:
     """
-    if not os.path.isfile(os.path.join(config.query_directory, config.file)):
+    if not valid_directory(config.query_directory):
+        logger.error("Invalid Drift Detection Directory")
+        return
+    if not os.path.isfile(os.path.join(config.query_directory, config.filename)):
         msg = "File does not exist."
         logger.error(msg)
         return
     try:
-        add_shortcut(FileSystem, ShortcutSchema(), config.query_directory, config.shortcut, config.file)
+        add_shortcut(FileSystem, ShortcutSchema(), config.query_directory, config.shortcut, config.filename)
     except ValidationError as err:
         msg = "Could not load report_info file from {0}.".format(err.messages)
         logger.exception(msg)
 
 
-def add_shortcut(storage, shortcut_serializer, query_directory, alias, file):
+def add_shortcut(storage, shortcut_serializer, query_directory, alias, filename):
     """
     Adds a shortcut to the Report_Info File. If a shortcut already exists for an alias, it replaces that shortcut.
 
@@ -38,14 +42,14 @@ def add_shortcut(storage, shortcut_serializer, query_directory, alias, file):
     :param query_directory: Path to Query Directory.
     :type alias: String.
     :param alias: Alias for the file.
-    :type file: String.
-    :param file: Name of file.
+    :type filename: String.
+    :param filename: Name of file.
     :return: shortcut object.
     """
     shortcut_path = os.path.join(query_directory, "shortcut.json")
     shortcut_data = storage.load(shortcut_path)
     shortcut = shortcut_serializer.load(shortcut_data)
-    shortcut.shortcuts[alias] = file
+    shortcut.shortcuts[alias] = filename
     new_shortcut_data = shortcut_serializer.dump(shortcut)
     storage.write(new_shortcut_data, shortcut_path)
     return shortcut

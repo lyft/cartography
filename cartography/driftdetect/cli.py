@@ -133,7 +133,7 @@ class CLI(object):
         parser_add_shortcut = subparsers.add_parser(
             name='add-shortcut',
             help=(
-                'adds shortcut to a specific '
+                'Adds a shortcut to a specific file in a query directory.'
             )
         )
         parser_add_shortcut.add_argument(
@@ -153,7 +153,7 @@ class CLI(object):
             )
         )
         parser_add_shortcut.add_argument(
-            '--file',
+            '--filename',
             type=str,
             default=None,
             help=(
@@ -192,50 +192,17 @@ class CLI(object):
         config = self.configure(argv)
         try:
             if config.command == 'get-state':
-                if not valid_directory(config.drift_detection_directory):
-                    return
-                configure_get_state_neo4j(config)
+                config = configure_get_state_neo4j(config)
                 run_get_states(config)
             elif config.command == 'get-drift':
-                if not valid_directory(config.query_directory):
-                    return
                 run_drift_detection(config)
             elif config.command == 'add-shortcut':
-                if not valid_directory(config.query_directory):
-                    return
                 run_add_shortcut(config)
             else:
                 msg = "No command detected. Try --help."
                 logger.error(msg)
         except KeyboardInterrupt:
             return 130
-
-
-def valid_directory(directory):
-    """
-    Error handling for validating directory.
-
-    :type directory: string
-    :param directory: Path to directory.
-    :return:
-    """
-    if not directory:
-        logger.info("Cannot perform drift-detection because no job path was provided.")
-        return False
-    drift_detection_directory = pathlib.Path(directory)
-    if not drift_detection_directory.exists():
-        logger.warning(
-            "Cannot perform drift-detection because the provided job path '%s' does not exist.",
-            drift_detection_directory
-        )
-        return False
-    if not drift_detection_directory.is_dir():
-        logger.warning(
-            "Cannot perform drift-detection because the provided job path '%s' is not a directory.",
-            drift_detection_directory
-        )
-        return False
-    return True
 
 
 def configure_get_state_neo4j(config):
@@ -263,6 +230,7 @@ def configure_get_state_neo4j(config):
             logger.warning("Neo4j username was provided but a password could not be found.")
     else:
         config.neo4j_password = None
+    return config
 
 
 def main(argv=None):

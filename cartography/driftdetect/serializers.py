@@ -15,11 +15,10 @@ class StateSchema(Schema):
 
     @post_load
     def make_state(self, data, **kwargs):
-        return State(
-            data['name'],
-            data['validation_query'],
-            data['properties'],
-            data['results'])
+        return State(data['name'],
+                     data['validation_query'],
+                     data['properties'],
+                     data['results'])
 
 
 class ShortcutSchema(Schema):
@@ -31,6 +30,5 @@ class ShortcutSchema(Schema):
 
     @post_load
     def make_misc(self, data, **kwargs):
-        return Shortcut(
-            data['name'],
-            data['shortcuts'])
+        return Shortcut(data['name'],
+                        data['shortcuts'])
