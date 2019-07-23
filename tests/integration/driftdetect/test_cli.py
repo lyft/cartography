@@ -2,7 +2,8 @@ from unittest.mock import patch
 
 from tests.integration import settings
 from cartography.driftdetect.config import UpdateConfig
-from cartography.driftdetect.cli import CLI, valid_directory
+from cartography.driftdetect.cli import CLI
+from cartography.driftdetect.util import valid_directory
 
 
 def test_valid_directory():

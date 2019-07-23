@@ -3,7 +3,6 @@ import getpass
 import logging
 import os
 import sys
-import pathlib
 
 from cartography.driftdetect.detect_deviations import run_drift_detection
 from cartography.driftdetect.get_states import run_get_states

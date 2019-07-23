@@ -1,4 +1,8 @@
 import pathlib
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 def valid_directory(directory):
     """
