@@ -6,7 +6,7 @@ from cartography.driftdetect.shortcut import Shortcut
 
 class StateSchema(Schema):
     """
-    Schema for saving DriftStates
+    Schema to serialize and deserialize DriftStates from JSON.
     """
     name = fields.Str()
     validation_query = fields.Str()
@@ -23,7 +23,7 @@ class StateSchema(Schema):
 
 class ShortcutSchema(Schema):
     """
-    Schema for ReportInfo Object.
+    Schema to serialize and deserialize Shortcuts from JSON.
     """
     name = fields.Str()
     shortcuts = fields.Dict(keys=fields.Str(), values=fields.Str())
