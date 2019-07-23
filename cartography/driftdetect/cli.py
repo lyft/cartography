@@ -178,7 +178,7 @@ class CLI(object):
             logging.getLogger('driftdetect').setLevel(logging.INFO)
         logger.debug("Launching driftdetect with CLI configuration: %r", vars(config))
         if config.command == 'get-state':
-            configure_get_state_neo4j(config)
+            config = configure_get_state_neo4j(config)
         return config
 
     def main(self, argv):
@@ -191,7 +191,6 @@ class CLI(object):
         config = self.configure(argv)
         try:
             if config.command == 'get-state':
-                config = configure_get_state_neo4j(config)
                 run_get_states(config)
             elif config.command == 'get-drift':
                 run_drift_detection(config)
