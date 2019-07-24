@@ -3,4 +3,4 @@ import sys
 
 
 if __name__ == '__main__':
-    sys.exit(cartography.cli.main())
+    sys.exit(cartography.driftdetect.cli.main())
