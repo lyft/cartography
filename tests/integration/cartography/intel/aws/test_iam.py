@@ -74,6 +74,7 @@ def test_load_roles_creates_trust_relationships(neo4j_session):
             ('arn:aws:iam::000000000000:role/example-role-0', 'arn:aws:iam::000000000000:root'),
             ('arn:aws:iam::000000000000:role/example-role-1', 'arn:aws:iam::000000000000:role/example-role-0'),
             ('arn:aws:iam::000000000000:role/example-role-2', 'ec2.amazonaws.com'),
+            ('arn:aws:iam::000000000000:role/example-role-3', 'arn:aws:iam::000000000000:saml-provider/ADFS'),
         )
     )
     # Transform the results of our query above to match the format of our expectations.

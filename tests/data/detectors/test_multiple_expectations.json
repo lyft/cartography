@@ -1,8 +1,8 @@
 {
   "name": "Test-Multiple-Expectations",
   "validation_query": "MATCH (d) RETURN d.test,d.test2",
-  "detector_type": 1,
-  "expectations": [
+  "properties": ["d.test","d.test2"],
+  "results": [
     ["1","8"],
     ["2","9"],
     ["3","10"],

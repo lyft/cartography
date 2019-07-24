@@ -56,3 +56,5 @@ CREATE INDEX ON :GCPNetworkInterface(id);
 CREATE INDEX ON :GCPNicAccessConfig(id);
 CREATE INDEX ON :GCPNetworkTag(id);
 CREATE INDEX ON :GCPNicAccessConfig(id);
+CREATE INDEX ON :GSuiteUser(id);
+CREATE INDEX ON :ChromeExtension(id);
