@@ -37,5 +37,5 @@ def report_drift(deviation_state_pairs):
         print("Query Name:", detector.name)
         print("Result Information:", drift_info)
         for key, value in drift_info.items():
-            print("Field: ", key, "Value:", value)
+            print(key, "|", value)
         print()

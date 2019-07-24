@@ -1,151 +1,170 @@
 # How to use Drift-Detection
 
 ## Intro
-Drift-Detection is a separate module from cartography which allows you to automate the detection of mutations in your infrastructure after cartography has been run. 
+Drift-Detection is a Cartography module that allows you to track changes of query results over time.
 
-## How To Run
-Queries and their expected results are stored in the form of drift state objects which contain a name, query, list of properties, and list of values. When running drift-detection, you should specify a drift detection directory as an input.
 
-In the specified directory, each query should have a designated subdirectory with a drift state template named "template.json", containing its name, validation query, a blank properties field, and a blank results field. 
-After getting the current state, results will be stored as lists, and properties of results with multiple fields will have their fields concatenated in the created json files.
+## A Quick Example: Tracking internet-exposed EC2 instances
+The quickest way to get started using drift-detection is through an example.  We showed you [how we mark EC2 instances as internet-exposed with Cartography analysis jobs](https://github.com/lyft/cartography/blob/master/docs/writing-analysis-jobs.md#example-job-which-of-my-ec2-instances-is-accessible-to-any-host-on-the-internet), and now we can use drift-detection to monitor when these instances are added or removed from our accounts over time!
 
-```
-{
-  "name": "Sample Template",
-  "validation_query": "MATCH (n) RETURN n.property_1, n.property_2, n.property_3",
-  "properties": [],
-  "results": []
-}
-```
+### Setup
+1. **Specify a** `${DRIFT_DETECTION_DIRECTORY}` on the machine that runs `cartography`.  This can be any folder where you have read and write access to.
 
-```
-{
-  "name": "Sample File After Getting State",
-  "validation_query": "MATCH (n) RETURN n.property_1, n.property_2, n.property_3",
-  "properties": ["n.property_1", "n.property_2", "n.property_3"],
-  "results": [
-    ["detector_1.property_1", "detector_1.property_2", "detector_1.concatenated_property_3|detector_1.concatenated_property_3|detector_1.concatenated_property_3", ...],
-    ["detector_2.property_1", "detector_2.property_2", "detector_2.concatenated_property_3|detector_2.concatenated_property_3|detector_2.concatenated_property_3", ...],
-    ...
-  ]
-}
-```
+2. **Set up a folder structure** that looks like this: 
+	
+	```
+	${DRIFT_DETECTION_DIRECTORY}/
+	|
+	|----internet-exposure-query/
+	|
+	|----another-query-youre-interested-in/
+	|
+	|----yet-another-query-to-track-over-time/
+	```
+	
+	As shown here, your `${DRIFT_DETECTION_DIRECTORY}` contains one or more `${QUERY_DIRECTORY}s`.
+	
+3. **Create a template file**
 
-There should also be a file called "shortcut.json" stored in the directory which will provide miscellaneous information for drift-detection. This file should contain the same name and an empty dictionary of shortcuts.
+	Save the below contents as `${DRIFT_DETECTION_DIRECTORY}/internet-exposure-query/template.json`:
+	
+	```
+	{
+	  "name": "Internet Exposed EC2 Instances",
+	  "validation_query": "match (n:EC2Instance) where n.exposed_internet = True return n.instancetype, n.privateipaddress, n.publicdnsname, n.exposed_internet_type"
+	  "properties": [],
+	  "results": []
+	}
+	```
+	
+	- `name` is a helpful name describing the query.
+	- `validation_query` is the neo4j Cypher query to track over time.  In this case, we have simply asked Neo4j to return `instancetype`, `privateipaddress`, `publicdnsname`, and `exposed_internet_type` from EC2Instances that Cartography has identified as accessible from the internet.  When writing your own queries, note that drift-detection only supports `MATCH` queries (i.e. read operations).  `MERGE` queries (write operations) are not supported.
+	- `properties`: Leave this as an empty array.  This field is a placeholder that will be filled.
+	- `results`: Leave this as an empty array.  This field is a placeholder that will be filled.
 
-```
-{
-    "name": "Sample Template",
-    "shortcuts": {}
-}
-```
 
-Once all query files have been created and stored in a directory, we can save the state of each of the queries by running:
+4. **Create a shortcut file**
+	
+	Save the below contents as `${DRIFT_DETECTION_DIRECTORY}/internet-exposure-query/shortcut.json`:
+	
+	```
+	{
+	  "name": "Internet Exposed EC2 Instances",
+	  "shortcuts": {}
+	}
+	```
+	
+	`name` should match the `name` you specified in `template.json`.
+	
+All set 👍
 
-`cartography-detectdrift get-state --neo4j-uri <your neo4j uri> --drift-detection-directory <path to directory containing all query files>`
+### Running drift-detection
 
-To compare states and get the drift information between them, we can run the command:
+1. **Run `get-state` to save results of a query to json**
 
-`cartography-detectdrift get-drift --query-directory <path to query directory> --start-state <filename of first state to compare, no directory prefix> --end-state <filename of end state to compare, no directory prefix>`
+	Run `cartography-detectdrift get-state --neo4j-uri <your_neo4j_uri> --drift-detection-directory ${DRIFT_DETECTION_DIRECTORY}`
 
-We can also add shortcuts to important files by running the command:
+	The internet exposure query might return results that look like this:
+	
+	```
+	| n.instancetype 	| n.privateipaddress 	| n.publicdnsname             	| n.exposed_internet_type 	|
+	|----------------	|--------------------	|-----------------------------	|-------------------------	|
+	| c4.large       	| 10.255.255.251     	| ec2.1.compute.amazonaws.com 	| [direct]                	|
+	| t2.micro       	| 10.255.255.252     	| ec2.2.compute.amazonaws.com 	| [direct]                	|
+	| c4.large       	| 10.255.255.253     	| ec2.3.compute.amazonaws.com 	| [direct, elb]                	|
+	| t2.micro       	| 10.255.255.254     	| ec2.4.compute.amazonaws.com 	| [direct, elb]                 |
+	
+	```
+	and we should now see a new JSON file `<unix_timestamp_1>.json` saved with information in this format:
 
-`cartography-detectdrift add-shortcut --query-directory <path to query directory> --shortcut <name of shortcut> --file <driftstate file to shortcut, no directory prefix>`
+	```
+	{
+	  "name": "Internet Exposed EC2 Instances",
+	  "validation_query": "match (n:EC2Instance) where n.exposed_internet = True return n.instancetype, n.privateipaddress, n.publicdnsname, n.exposed_internet_type"
+	  "properties": ["n.instancetype", "n.privateipaddress", "n.publicdnsname", "n.exposed_internet_type"],
+	  "results": [
+	    ["c4.large", "10.255.255.251", "ec2.1.compute.amazonaws.com", "direct"],
+	    ["t2.micro", "10.255.255.252", "ec2.2.compute.amazonaws.com", "direct"],
+	    ["c4.large", "10.255.255.253", "ec2.3.compute.amazonaws.com", "direct|elb"],
+	    ["t2.micro", "10.255.255.254", "ec2.4.compute.amazonaws.com", "direct|elb"]
+	  ]
+	}
+	```
+	
+	You can continually run `get-state` to save the results of a query to json.  Each json state file will be named with the Unix timestamp of the time drift-detection was run.
+	
 
-Now when we run the `get-drift` command, we can replace the name of the file with the shortcut to it. The most recent file in each query directory is by default added after each update to the query directory and can be accessed with the shortcut `most-recent`.
+2. **Comparing state files**
 
-##A Quick Example: How many more of my EC2 instances are accessible to any host on the internet?
-Let's say we're interested in the internet exposure command from the analysis job example. We've determined that monitoring the growth/decline of internet exposed instances will be important to us maintaining secure architecture in the future and we want to store these results and track them over time. The good news is drift-detection will allow us to do just that!
+	Now let's say a couple days go by and some new EC2 Instances were added to our AWS account. We run the `get-state` command once more and get another file `<unix_timestamp_2>.json` which looks like this:
+	
+	```
+	{
+	  "name": "Internet Exposed EC2 Instances",
+	  "validation_query": "match (n:EC2Instance) where n.exposed_internet = True return n.instancetype, n.privateipaddress, n.publicdnsname, n.exposed_internet_type""
+	  "properties": ["n.instancetype", "n.privateipaddress", "n.publicdnsname", "n.exposed_internet_type"],
+	  "results": [
+	    ["t2.micro", "10.255.255.250", "ec2.0.compute.amazonaws.com", "direct"],
+	    ["c4.large", "10.255.255.251", "ec2.1.compute.amazonaws.com", "direct"],
+	    ["t2.micro", "10.255.255.252", "ec2.2.compute.amazonaws.com", "direct"],
+	    ["c4.large", "10.255.255.253", "ec2.3.compute.amazonaws.com", "direct|elb"],
+	    ["c4.large", "10.255.255.255", "ec2.5.compute.amazonaws.com", "direct|elb"]
+	  ]
+	}
+	```
+	
+	It looks like our results list has slightly changed.  We can use `drift-detection` to quickly diff the two files:
+	
+	
+	`cartography-detectdrift get-drift --query-directory ${DRIFT_DETECTION_DIRECTORY}/internet-exposure-query --start-state <unix_timestamp_1>.json --end-state <unix_timestamp_2>.json`
+	
+	Finally, we should see the following messages pop up:
 
-First we create a template file and report info file in the formats shown above.
+	```
+	New Query Results:
+	
+	Query Name: Internet Exposed EC2 Instances
+	Result Information:
+	n.instancetype | t2.micro
+	n.privateipaddress | 10.255.255.250
+	n.publicdnsname | ec2.0.compute.amazonaws.com
+	n.exposed_internet_type | ['direct']
+	
+	Query Name: Internet Exposed EC2 Instances
+	Result Information:
+	n.instancetype | c4.large
+	n.privateipaddress | 10.255.255.255
+	n.publicdnsname | ec2.5.compute.amazonaws.com
+	n.exposed_internet_type | ['direct', elb']
+	
+	Missing Query Results:
+	
+	Query Name: Internet Exposed EC2 Instances
+	Result Information:
+	n.instancetype | t2.micro
+	n.privateipaddress | 10.255.255.253
+	n.publicdnsname | ec2.4.compute.amazonaws.com
+	n.exposed_internet_type | ['direct', elb']
+	```
+	
+	This gives us a quick way to view infrastructure changes!	
+	
+### Using shortcuts instead of filenames to diff files
 
-```
-{
-  "name": "Internet Exposed EC2 Instances",
-  "validation_query": "match (n:EC2Instance) where n.exposed_internet = True return n.instancetype, n.privateipaddress, n.publicdnsname, n.exposed_internet_type"
-  "properties": [],
-  "results": []
-}
-```
+It can be cumbersome to always type Unix timestamp filenames.  To make this easier we can add `shortcuts` to diff two files without specifying the filename.  This lets us bookmark certain states with whatever name we want. 
+	
+1. **Adding shortcuts**
 
-```
-{
-  "name": "Internet Exposed EC2 Instances",
-  "shortcuts": {}
-}
-```
+	Let's try adding shortcuts.  We will name the first state "first-run" and the second state "second-run" with
 
-We save these two files in a directory `<query_directory>` in our drift detection directory, `<driftdirectory>`. Our infrastructure is saved in a neo4j database accessed by `<neo4j_uri>`.
-Now let's say running the validation query in neo4j produces these results:
+	`cartography-detectdrift add-shortcut --shortcut first-run --file <unix_timestamp_1>.json`
+	
+	`cartography-detectdrift add-shortcut --shortcut second-run --file <unix_timestamp_2>.json`
 
-```
-| n.instancetype 	| n.privateipaddress 	| n.publicdnsname             	| n.exposed_internet_type 	|
-|----------------	|--------------------	|-----------------------------	|-------------------------	|
-| c4.large       	| 10.255.255.251     	| ec2.1.compute.amazonaws.com 	| [direct]                	|
-| t2.micro       	| 10.255.255.252     	| ec2.2.compute.amazonaws.com 	| [direct]                	|
-| c4.large       	| 10.255.255.253     	| ec2.3.compute.amazonaws.com 	| [direct, elb]                	|
-| t2.micro       	| 10.255.255.254     	| ec2.4.compute.amazonaws.com 	| [direct, elb]                 |
+2. **Comparing state files with shortcuts**
 
-```
-We then execute the get-state command in cartography:
+	Now that we have shortcuts, we can now simply run
 
-`cartography-detectdrift get-state --neo4j-uri <neo4j_uri> --drift-detection-directory <driftdirectory>`
-
-After running the get-state command in cartography, we should now see a new JSON file `<first_date>.json` saved with information in this format:
-
-```
-{
-  "name": "Internet Exposed EC2 Instances",
-  "validation_query": "match (n:EC2Instance) where n.exposed_internet = True return n.instancetype, n.privateipaddress, n.publicdnsname, n.exposed_internet_type"
-  "properties": ["n.instancetype", "n.privateipaddress", "n.publicdnsname", "n.exposed_internet_type"],
-  "results": [
-    ["c4.large", "10.255.255.251", "ec2.1.compute.amazonaws.com", "direct"],
-    ["t2.micro", "10.255.255.252", "ec2.2.compute.amazonaws.com", "direct"],
-    ["c4.large", "10.255.255.253", "ec2.3.compute.amazonaws.com", "direct|elb"],
-    ["t2.micro", "10.255.255.254", "ec2.4.compute.amazonaws.com", "direct|elb"]
-  ]
-}
-```
-
-Now let's say it's been a couple days, and some new EC2 Instances were added. We run the get-state command once more and get another file `<second_date>.json` which looks like this:
-
-```
-{
-  "name": "Internet Exposed EC2 Instances",
-  "validation_query": "match (n:EC2Instance) where n.exposed_internet = True return n.instancetype, n.privateipaddress, n.publicdnsname, n.exposed_internet_type""
-  "properties": ["n.instancetype", "n.privateipaddress", "n.publicdnsname", "n.exposed_internet_type"],
-  "results": [
-    ["c4.large", "10.255.255.251", "ec2.1.compute.amazonaws.com", "direct"],
-    ["t2.micro", "10.255.255.252", "ec2.2.compute.amazonaws.com", "direct"],
-    ["c4.large", "10.255.255.253", "ec2.3.compute.amazonaws.com", "direct|elb"],
-    ["c4.large", "10.255.255.255", "ec2.5.compute.amazonaws.com", "direct|elb"]
-  ]
-}
-```
-
-It looks like our results list has slightly changed. We can add shortcuts to be able to access these two files without specifying the filename. This lets us bookmark certain states with whatever name we want. Let's say we want to bookmark the first state update by "first-run" and the second state update by "most-recent". To do so we run:
-
-`cartography-detectdrift add-shortcut --shortcut first-run --file <first_date>.json`
-`cartography-detectdrift add-shortcut --shortcut second-recent --file <second_date>.json`
-
-Now to get the drift information between the two files, we can run
-
-`cartography-detectdrift get-drift --query-directory <query_directory> --start-state <first_date>.json --end-state <second_date>.json`
-
-or to make use of the shortcuts we added,
-
-`cartography-detectdrift get-drift --query-directory <query_directory> --start-state first-run --end-state second-run`.
-
-Finally, we should see the following messages pop up:
-
-```
-New Query Results:
-
-Query Name: Internet Exposed EC2 Instances
-Results Information: {'n.instancetype': 'c4.large', 'n.privateipaddress': '10.255.255.255', 'n.publicdnsname': 'ec2.5.compute.amazonaws.com', 'n.exposed_internet_type': ['direct', elb']}
-
-Missing Query Results:
-
-Query Name: Internet Exposed EC2 Instances
-Result Information: {'n.instancetype': 't2.micro', 'n.privateipaddress': '10.255.255.253', 'n.publicdnsname': 'ec2.4.compute.amazonaws.com', 'n.exposed_internet_type': ['direct', elb']}
-```
+	`cartography-detectdrift get-drift --query-directory ${DRIFT_DETECTION_DIRECTORY}/internet-exposure-query --start-state first-run --end-state second-run`
+	
+Important note: Each execution of `get-state` will automatically generate a shortcut in each query directory, `most-recent`, which will refer to the last state file successfully created in that directory.
