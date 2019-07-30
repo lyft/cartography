@@ -32,7 +32,7 @@ def test_basic_add_shortcuts():
 
 def test_shortcut_renaming():
     """
-    Tests shortcut renaming feature.
+    Tests add_shortcut can parse shortcuts.
     """
     cli = CLI(prog="cartography-detectdrift")
     directory = "tests/data/test_cli_detectors/detector"
