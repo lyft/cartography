@@ -1,13 +1,14 @@
-import os
+import logging
 import os.path
 import time
-import logging
-from neo4j.v1 import GraphDatabase
+
 import neobolt.exceptions
 from marshmallow import ValidationError
+from neo4j.v1 import GraphDatabase
 
-from cartography.driftdetect.serializers import StateSchema, ShortcutSchema
 from cartography.driftdetect.add_shortcut import add_shortcut
+from cartography.driftdetect.serializers import ShortcutSchema
+from cartography.driftdetect.serializers import StateSchema
 from cartography.driftdetect.storage import FileSystem
 from cartography.driftdetect.util import valid_directory
 
@@ -23,7 +24,7 @@ def run_get_states(config):
     :return:
     """
     if not valid_directory(config.drift_detection_directory):
-        logger.error("Invalid Drift Detection Directory")
+        logger.error('Invalid Drift Detection Directory')
         return
     neo4j_auth = None
     if config.neo4j_user or config.neo4j_password:
@@ -34,40 +35,40 @@ def run_get_states(config):
             auth=neo4j_auth,
         )
     except neobolt.exceptions.ServiceUnavailable as e:
-        logger.debug("Error occurred during Neo4j connect.", exc_info=True)
+        logger.debug('Error occurred during Neo4j connect.', exc_info=True)
         logger.error(
             (
                 "Unable to connect to Neo4j using the provided URI '%s', an error occurred: '%s'. Make sure the "
-                "Neo4j server is running and accessible from your network."
+                'Neo4j server is running and accessible from your network.'
             ),
             config.neo4j_uri,
-            e
+            e,
         )
         return
     except neobolt.exceptions.AuthError as e:
-        logger.debug("Error occurred during Neo4j auth.", exc_info=True)
+        logger.debug('Error occurred during Neo4j auth.', exc_info=True)
         if not neo4j_auth:
             logger.error(
                 (
                     "Unable to auth to Neo4j, an error occurred: '%s'. driftdetect attempted to connect to Neo4j "
-                    "without any auth. Check your Neo4j server settings to see if auth is required and, if it is, "
-                    "provide driftdetect with a valid username and password."
+                    'without any auth. Check your Neo4j server settings to see if auth is required and, if it is, '
+                    'provide driftdetect with a valid username and password.'
                 ),
-                e
+                e,
             )
         else:
             logger.error(
                 (
                     "Unable to auth to Neo4j, an error occurred: '%s'. driftdetect attempted to connect to Neo4j "
-                    "with a username and password. Check your Neo4j server settings to see if the username and "
-                    "password provided to driftdetect are valid credentials."
+                    'with a username and password. Check your Neo4j server settings to see if the username and '
+                    'password provided to driftdetect are valid credentials.'
                 ),
-                e
+                e,
             )
         return
 
     with neo4j_driver.session() as session:
-        filename = '.'.join([str(i) for i in time.gmtime()] + ["json"])
+        filename = '.'.join([str(i) for i in time.gmtime()] + ['json'])
         state_serializer = StateSchema()
         shortcut_serializer = ShortcutSchema()
         for query_directory in FileSystem.walk(config.drift_detection_directory):
@@ -75,12 +76,13 @@ def run_get_states(config):
                 get_query_state(session, query_directory, state_serializer, FileSystem, filename)
                 add_shortcut(FileSystem, shortcut_serializer, query_directory, 'most-recent', filename)
             except ValidationError as err:
-                msg = "Unable to create State for directory {0}, with data \n{1}".format(
+                msg = 'Unable to create State for directory {}, with data \n{}'.format(
                     query_directory,
-                    err.messages)
+                    err.messages,
+                )
                 logger.exception(msg)
             except KeyError as err:
-                msg = "Could not find {0} field in state template for directory {1}.".format(err, query_directory)
+                msg = f'Could not find {err} field in state template for directory {query_directory}.'
                 logger.exception(msg)
             except FileNotFoundError as err:
                 logger.exception(err)
@@ -104,7 +106,7 @@ def get_query_state(session, query_directory, state_serializer, storage, filenam
     :param filename: Path to filename.
     :return: The created state.
     """
-    state_data = storage.load(os.path.join(query_directory, "template.json"))
+    state_data = storage.load(os.path.join(query_directory, 'template.json'))
     state = state_serializer.load(state_data)
     get_state(session, state)
     new_state_data = state_serializer.dump(state)
@@ -125,7 +127,7 @@ def get_state(session, state):
     """
 
     new_results = session.run(state.validation_query)
-    logger.debug("Updating results for {0}".format(state.name))
+    logger.debug(f'Updating results for {state.name}')
 
     state.properties = new_results.keys()
     results = []
@@ -134,7 +136,7 @@ def get_state(session, state):
         values = []
         for field in record.values():
             if isinstance(field, list):
-                s = "|".join([str(i) for i in field])
+                s = '|'.join([str(i) for i in field])
                 values.append(s)
             else:
                 values.append(str(field))

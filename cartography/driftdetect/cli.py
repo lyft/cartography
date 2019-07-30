@@ -4,15 +4,15 @@ import logging
 import os
 import sys
 
+from cartography.driftdetect.add_shortcut import run_add_shortcut
 from cartography.driftdetect.detect_deviations import run_drift_detection
 from cartography.driftdetect.get_states import run_get_states
-from cartography.driftdetect.add_shortcut import run_add_shortcut
 
 
 logger = logging.getLogger(__name__)
 
 
-class CLI(object):
+class CLI:
     def __init__(self, prog=None):
         self.prog = prog
         self.parser = self._build_parser()
@@ -52,11 +52,11 @@ class CLI(object):
                  '--query-directory <path to query directory> --start-state <beginning drift state file> --end-state '
                  '<final drift state file>'
                  'To add a shortcut between two state files, use the command `cartography-detectdrift add-shortcut'
-                 '--query-directory <path to query directory> --shortcut <shortcut name> --file <driftstate filename>'
+                 '--query-directory <path to query directory> --shortcut <shortcut name> --file <driftstate filename>',
         )
         parser_get_state = subparsers.add_parser(
             name='get-state',
-            help='generates new drift state for each query with the current status of the neo4j database'
+            help='generates new drift state for each query with the current status of the neo4j database',
         )
         parser_get_state.add_argument(
             '--neo4j-uri',
@@ -72,7 +72,7 @@ class CLI(object):
             '--neo4j-user',
             type=str,
             default=None,
-            help='A username with which to authenticate to Neo4j.'
+            help='A username with which to authenticate to Neo4j.',
         )
         parser_get_state.add_argument(
             '--neo4j-password-env-var',
@@ -102,7 +102,7 @@ class CLI(object):
             name='get-drift',
             help=(
                 'gets drift between two drift states. Must be between the same detection directory'
-            )
+            ),
         )
         parser_get_drift.add_argument(
             '--query-directory',
@@ -133,7 +133,7 @@ class CLI(object):
             name='add-shortcut',
             help=(
                 'Adds a shortcut to a specific file in a query directory.'
-            )
+            ),
         )
         parser_add_shortcut.add_argument(
             '--query-directory',
@@ -141,7 +141,7 @@ class CLI(object):
             default=None,
             help=(
                 'A path to a directory containing drift-states for a specific query.'
-            )
+            ),
         )
         parser_add_shortcut.add_argument(
             '--shortcut',
@@ -149,7 +149,7 @@ class CLI(object):
             default=None,
             help=(
                 'The desired alias for the filename.'
-            )
+            ),
         )
         parser_add_shortcut.add_argument(
             '--filename',
@@ -157,7 +157,7 @@ class CLI(object):
             default=None,
             help=(
                 'The desired name of the file to be replaced.'
-            )
+            ),
         )
         return parser
 
@@ -176,7 +176,7 @@ class CLI(object):
             logging.getLogger('driftdetect').setLevel(logging.WARNING)
         else:
             logging.getLogger('driftdetect').setLevel(logging.INFO)
-        logger.debug("Launching driftdetect with CLI configuration: %r", vars(config))
+        logger.debug('Launching driftdetect with CLI configuration: %r', vars(config))
         if config.command == 'get-state':
             config = configure_get_state_neo4j(config)
         return config
@@ -197,7 +197,7 @@ class CLI(object):
             elif config.command == 'add-shortcut':
                 run_add_shortcut(config)
             else:
-                msg = "No command detected. Try --help."
+                msg = 'No command detected. Try --help.'
                 logger.error(msg)
         except KeyboardInterrupt:
             return 130
@@ -221,11 +221,11 @@ def configure_get_state_neo4j(config):
             logger.debug(
                 "Reading password for Neo4j user '%s' from environment variable '%s'.",
                 config.neo4j_user,
-                config.neo4j_password_env_var
+                config.neo4j_password_env_var,
             )
             config.neo4j_password = os.environ.get(config.neo4j_password_env_var)
         if not config.neo4j_password:
-            logger.warning("Neo4j username was provided but a password could not be found.")
+            logger.warning('Neo4j username was provided but a password could not be found.')
     else:
         config.neo4j_password = None
     return config
@@ -241,4 +241,4 @@ def main(argv=None):
     logging.basicConfig(level=logging.INFO)
     logging.getLogger('neo4j.bolt').setLevel(logging.WARNING)
     argv = argv if argv is not None else sys.argv[1:]
-    return CLI(prog="cartography-detectdrift").main(argv)
+    return CLI(prog='cartography-detectdrift').main(argv)

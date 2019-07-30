@@ -1,8 +1,10 @@
-import os
 import logging
+import os
+
 from marshmallow import ValidationError
-from cartography.driftdetect.storage import FileSystem
+
 from cartography.driftdetect.serializers import ShortcutSchema
+from cartography.driftdetect.storage import FileSystem
 from cartography.driftdetect.util import valid_directory
 
 logger = logging.getLogger(__name__)
@@ -17,16 +19,16 @@ def run_add_shortcut(config):
     :return:
     """
     if not valid_directory(config.query_directory):
-        logger.error("Invalid Drift Detection Directory")
+        logger.error('Invalid Drift Detection Directory')
         return
     if not os.path.isfile(os.path.join(config.query_directory, config.filename)):
-        msg = "File does not exist."
+        msg = 'File does not exist.'
         logger.error(msg)
         return
     try:
         add_shortcut(FileSystem, ShortcutSchema(), config.query_directory, config.shortcut, config.filename)
     except ValidationError as err:
-        msg = "Could not load report_info file from {0}.".format(err.messages)
+        msg = f'Could not load report_info file from {err.messages}.'
         logger.exception(msg)
 
 
@@ -46,7 +48,7 @@ def add_shortcut(storage, shortcut_serializer, query_directory, alias, filename)
     :param filename: Name of file.
     :return: shortcut object.
     """
-    shortcut_path = os.path.join(query_directory, "shortcut.json")
+    shortcut_path = os.path.join(query_directory, 'shortcut.json')
     shortcut_data = storage.load(shortcut_path)
     shortcut = shortcut_serializer.load(shortcut_data)
     shortcut.shortcuts[alias] = filename
