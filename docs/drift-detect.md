@@ -122,7 +122,7 @@ All set 👍
 
 	```
 	Query Name: Internet Exposed EC2 Instances
-	Query Properties: n.instancetype, n.privateipaddress, n.publicdnsname, n.exposed_internet_type
+	Query Properties: ["n.instancetype", "n.privateipaddress", "n.publicdnsname", "n.exposed_internet_type"]
 	
 	New Query Results:
 	
