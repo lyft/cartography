@@ -49,7 +49,7 @@ def load_a_records(session, records, update_tag):
     session.run(
         ingest_records,
         records=records,
-        aws_update_tag=update_tag
+        aws_update_tag=update_tag,
     )
 
 
@@ -69,7 +69,7 @@ def load_alias_records(session, records, update_tag):
     session.run(
         ingest_records,
         records=records,
-        aws_update_tag=update_tag
+        aws_update_tag=update_tag,
     )
 
 
@@ -88,7 +88,7 @@ def load_cname_records(session, records, update_tag):
     session.run(
         ingest_records,
         records=records,
-        aws_update_tag=update_tag
+        aws_update_tag=update_tag,
     )
 
 
@@ -110,7 +110,7 @@ def load_zone(session, zone, current_aws_id, update_tag):
         Comment=zone['comment'],
         PrivateZone=zone['privatezone'],
         AWS_ACCOUNT_ID=current_aws_id,
-        aws_update_tag=update_tag
+        aws_update_tag=update_tag,
     )
 
 
@@ -123,11 +123,11 @@ def parse_record_set(record_set, zone_id):
             if value.endswith('.'):
                 value = value[:-1]
             return {
-                "name": record_set['Name'][:-1],
-                "type": 'CNAME',
-                "zoneid": zone_id,
-                "value": value,
-                "id": record_set['Name'][:-1] + '+WEIGHTED_CNAME'
+                'name': record_set['Name'][:-1],
+                'type': 'CNAME',
+                'zoneid': zone_id,
+                'value': value,
+                'id': record_set['Name'][:-1] + '+WEIGHTED_CNAME',
             }
         else:
             # This is a normal CNAME record
@@ -135,11 +135,11 @@ def parse_record_set(record_set, zone_id):
             if value.endswith('.'):
                 value = value[:-1]
             return {
-                "name": record_set['Name'][:-1],
-                "type": 'CNAME',
-                "zoneid": zone_id,
-                "value": value,
-                "id": record_set['Name'][:-1] + '+CNAME'
+                'name': record_set['Name'][:-1],
+                'type': 'CNAME',
+                'zoneid': zone_id,
+                'value': value,
+                'id': record_set['Name'][:-1] + '+CNAME',
             }
 
     elif record_set['Type'] == 'A':
@@ -147,11 +147,11 @@ def parse_record_set(record_set, zone_id):
             # this is an ALIAS record
             # ALIAS records are a special AWS-only type of A record
             return {
-                "name": record_set['Name'][:-1],
-                "type": 'ALIAS',
-                "zoneid": zone_id,
-                "value": record_set['AliasTarget']['DNSName'][:-1],
-                "id": record_set['Name'][:-1] + '+ALIAS'
+                'name': record_set['Name'][:-1],
+                'type': 'ALIAS',
+                'zoneid': zone_id,
+                'value': record_set['AliasTarget']['DNSName'][:-1],
+                'id': record_set['Name'][:-1] + '+ALIAS',
             }
         else:
             # this is a real A record
@@ -163,11 +163,11 @@ def parse_record_set(record_set, zone_id):
                 value = value + a_value['Value'] + ','
 
             return {
-                "name": record_set['Name'][:-1],
-                "type": 'A',
-                "zoneid": zone_id,
-                "value": value[:-1],
-                "id": record_set['Name'][:-1] + '+A'
+                'name': record_set['Name'][:-1],
+                'type': 'A',
+                'zoneid': zone_id,
+                'value': value[:-1],
+                'id': record_set['Name'][:-1] + '+A',
             }
 
 
@@ -179,11 +179,11 @@ def parse_zone(zone):
         comment = ''
 
     return {
-        "zoneid": zone['Id'],
-        "name": zone['Name'],
-        "privatezone": zone['Config']['PrivateZone'],
-        "comment": comment,
-        "count": zone['ResourceRecordSetCount']
+        'zoneid': zone['Id'],
+        'name': zone['Name'],
+        'privatezone': zone['Config']['PrivateZone'],
+        'comment': comment,
+        'count': zone['ResourceRecordSetCount'],
     }
 
 
@@ -246,7 +246,7 @@ def cleanup_route53(session, current_aws_id, update_tag):
     run_cleanup_job(
         'aws_dns_cleanup.json',
         session,
-        {'UPDATE_TAG': update_tag, 'AWS_ID': current_aws_id}
+        {'UPDATE_TAG': update_tag, 'AWS_ID': current_aws_id},
     )
 
 

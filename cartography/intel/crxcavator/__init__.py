@@ -25,11 +25,11 @@ def start_extension_ingestion(session, config):
         return
 
     common_job_parameters = {
-        "UPDATE_TAG": config.update_tag,
+        'UPDATE_TAG': config.update_tag,
     }
     sync_extensions(session, common_job_parameters, CRXCAVATOR_API_KEY, CRXCAVATOR_API_BASE_URL)
     run_cleanup_job(
         'crxcavator_import_cleanup.json',
         session,
-        common_job_parameters
+        common_job_parameters,
     )

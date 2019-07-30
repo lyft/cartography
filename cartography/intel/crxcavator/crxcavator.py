@@ -1,6 +1,6 @@
-import logging
 import json
-import requests
+import logging
+
 import requests.auth
 
 logger = logging.getLogger(__name__)
@@ -14,7 +14,7 @@ def get_extensions(crxcavator_api_key, crxcavator_base_url):
     :return: JSON text blob containing all extension metadata defined at
     https://crxcavator.io/apidocs#tag/group/paths/~1group~1extensions~1combined/get
     """
-    return call_crxcavator_api("/group/extensions/combined", crxcavator_api_key, crxcavator_base_url)
+    return call_crxcavator_api('/group/extensions/combined', crxcavator_api_key, crxcavator_base_url)
 
 
 def get_users_extensions(crxcavator_api_key, crxcavator_base_url):
@@ -25,7 +25,7 @@ def get_users_extensions(crxcavator_api_key, crxcavator_base_url):
     :return: JSON text blob containing user email to extension id mapping defined at
     https://crxcavator.io/apidocs#tag/group/paths/~1group~1users~1extensions/get
     """
-    return call_crxcavator_api("/group/users/extensions", crxcavator_api_key, crxcavator_base_url)
+    return call_crxcavator_api('/group/users/extensions', crxcavator_api_key, crxcavator_base_url)
 
 
 def call_crxcavator_api(api_and_parameters, crxcavator_api_key, crxcavator_base_url):
@@ -39,8 +39,11 @@ def call_crxcavator_api(api_and_parameters, crxcavator_api_key, crxcavator_base_
     uri = crxcavator_base_url + api_and_parameters
     data = requests.get(
         uri,
-        headers={'Accept': 'application/json',
-                 'API-Key': crxcavator_api_key})
+        headers={
+            'Accept': 'application/json',
+            'API-Key': crxcavator_api_key,
+        },
+    )
     # if call failed, use requests library to raise an exception
     data.raise_for_status()
     return data.json()
@@ -63,13 +66,13 @@ def transform_extensions(extension_json):
     for extension in extension_json.items():
         details = extension[_data_index][_row_index]
         if not details:
-            logger.warning('Could not retrieve details for extension {}'.format(extension))
+            logger.warning(f'Could not retrieve details for extension {extension}')
             continue
         extension_id = details['extension_id']
         version = details['version']
         data = details['data']
         extensions.append({
-            'id': "{0}|{1}".format(extension_id, version),
+            'id': f'{extension_id}|{version}',
             'extension_id': extension_id,
             'version': version,
             'risk_total': data['risk'].get('total'),
@@ -91,7 +94,7 @@ def transform_extensions(extension_json):
             'website': data['webstore'].get('website'),
             'type': data['webstore'].get('type'),
             'price': data['webstore'].get('price'),
-            'report_link': "https://crxcavator.io/report/" + extension_id + "/" + version
+            'report_link': 'https://crxcavator.io/report/' + extension_id + '/' + version,
         })
     return extensions
 
@@ -154,8 +157,9 @@ def transform_user_extensions(user_extension_json):
             for user in details[1]['users']:
                 users_set.add(user)
                 extensions_by_user.append({
-                    'id': "{0}|{1}".format(extension[0], details[0]),
-                    'user': user})
+                    'id': '{}|{}'.format(extension[0], details[0]),
+                    'user': user,
+                })
     if len(users_set) == 0:
         raise ValueError('No users returned from CRXcavator')
     if len(extensions_by_user) == 0:

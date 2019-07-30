@@ -1,6 +1,7 @@
-import botocore.config
 import logging
 import time
+
+import botocore.config
 
 from cartography.util import run_cleanup_job
 
@@ -13,7 +14,7 @@ def _get_botocore_config():
         read_timeout=360,
         retries={
             'max_attempts': 10,
-        }
+        },
     )
 
 
@@ -127,41 +128,41 @@ def load_ec2_instances(session, data, region, current_aws_account_id, aws_update
     """
 
     for reservation in data['Reservations']:
-        reservation_id = reservation["ReservationId"]
+        reservation_id = reservation['ReservationId']
 
         session.run(
             ingest_reservation,
             ReservationId=reservation_id,
-            OwnerId=reservation.get("OwnerId", ""),
-            RequesterId=reservation.get("RequesterId", ""),
+            OwnerId=reservation.get('OwnerId', ''),
+            RequesterId=reservation.get('RequesterId', ''),
             AWS_ACCOUNT_ID=current_aws_account_id,
             Region=region,
-            aws_update_tag=aws_update_tag
+            aws_update_tag=aws_update_tag,
         )
 
-        for instance in reservation["Instances"]:
-            instanceid = instance["InstanceId"]
+        for instance in reservation['Instances']:
+            instanceid = instance['InstanceId']
 
-            monitoring_state = instance.get("Monitoring", {}).get("State", "")
+            monitoring_state = instance.get('Monitoring', {}).get('State', '')
 
-            instance_state = instance.get("State", {}).get("Name", "")
+            instance_state = instance.get('State', {}).get('Name', '')
 
             # NOTE this is a hack because we're using a version of Neo4j that doesn't support temporal data types
-            launch_time = instance.get("LaunchTime", "")
+            launch_time = instance.get('LaunchTime', '')
             if launch_time:
                 launch_time_unix = time.mktime(launch_time.timetuple())
             else:
-                launch_time_unix = ""
+                launch_time_unix = ''
 
             session.run(
                 ingest_instance,
                 InstanceId=instanceid,
-                PublicDnsName=instance.get("PublicDnsName", ""),
-                PublicIpAddress=instance.get("PublicIpAddress", ""),
-                PrivateIpAddress=instance.get("PrivateIpAddress", ""),
-                ImageId=instance.get("ImageId", ""),
-                SubnetId=instance.get("SubnetId", ""),
-                InstanceType=instance.get("InstanceType", ""),
+                PublicDnsName=instance.get('PublicDnsName', ''),
+                PublicIpAddress=instance.get('PublicIpAddress', ''),
+                PrivateIpAddress=instance.get('PrivateIpAddress', ''),
+                ImageId=instance.get('ImageId', ''),
+                SubnetId=instance.get('SubnetId', ''),
+                InstanceType=instance.get('InstanceType', ''),
                 ReservationId=reservation_id,
                 MonitoringState=monitoring_state,
                 LaunchTime=str(launch_time),
@@ -169,19 +170,19 @@ def load_ec2_instances(session, data, region, current_aws_account_id, aws_update
                 State=instance_state,
                 AWS_ACCOUNT_ID=current_aws_account_id,
                 Region=region,
-                aws_update_tag=aws_update_tag
+                aws_update_tag=aws_update_tag,
             )
 
-            if instance.get("SecurityGroups"):
-                for group in instance["SecurityGroups"]:
+            if instance.get('SecurityGroups'):
+                for group in instance['SecurityGroups']:
                     session.run(
                         ingest_security_groups,
-                        GroupId=group["GroupId"],
-                        GroupName=group.get("GroupName", ""),
+                        GroupId=group['GroupId'],
+                        GroupName=group.get('GroupName', ''),
                         InstanceId=instanceid,
                         Region=region,
                         AWS_ACCOUNT_ID=current_aws_account_id,
-                        aws_update_tag=aws_update_tag
+                        aws_update_tag=aws_update_tag,
                     )
 
             load_ec2_instance_network_interfaces(session, instance, aws_update_tag)
@@ -215,28 +216,28 @@ def load_ec2_instance_network_interfaces(session, instance_data, aws_update_tag)
     SET r.lastupdated = {aws_update_tag}
     """
 
-    instance_id = instance_data["InstanceId"]
+    instance_id = instance_data['InstanceId']
 
-    for interface in instance_data["NetworkInterfaces"]:
+    for interface in instance_data['NetworkInterfaces']:
         session.run(
             ingest_network_interface,
             InstanceId=instance_id,
-            NetworkId=interface["NetworkInterfaceId"],
-            Status=interface["Status"],
-            MacAddress=interface.get("MacAddress", ""),
-            Description=interface.get("Description", ""),
-            PrivateDnsName=interface.get("PrivateDnsName", ""),
-            PrivateIpAddress=interface.get("PrivateIpAddress", ""),
-            SubnetId=interface.get("SubnetId", ""),
-            aws_update_tag=aws_update_tag
+            NetworkId=interface['NetworkInterfaceId'],
+            Status=interface['Status'],
+            MacAddress=interface.get('MacAddress', ''),
+            Description=interface.get('Description', ''),
+            PrivateDnsName=interface.get('PrivateDnsName', ''),
+            PrivateIpAddress=interface.get('PrivateIpAddress', ''),
+            SubnetId=interface.get('SubnetId', ''),
+            aws_update_tag=aws_update_tag,
         )
 
-        for group in interface.get("Groups", []):
+        for group in interface.get('Groups', []):
             session.run(
                 ingest_network_group,
-                NetworkId=interface["NetworkInterfaceId"],
-                GroupId=group["GroupId"],
-                aws_update_tag=aws_update_tag
+                NetworkId=interface['NetworkInterfaceId'],
+                GroupId=group['GroupId'],
+                aws_update_tag=aws_update_tag,
             )
 
 
@@ -257,22 +258,22 @@ def load_ec2_security_groupinfo(session, data, region, current_aws_account_id, a
     ON CREATE SET rg.firstseen = timestamp()
     """
 
-    for group in data["SecurityGroups"]:
-        group_id = group["GroupId"]
+    for group in data['SecurityGroups']:
+        group_id = group['GroupId']
 
         session.run(
             ingest_security_group,
             GroupId=group_id,
-            GroupName=group.get("GroupName", ""),
-            Description=group.get("Description", ""),
-            VpcId=group.get("VpcId", None),
+            GroupName=group.get('GroupName', ''),
+            Description=group.get('Description', ''),
+            VpcId=group.get('VpcId', None),
             Region=region,
             AWS_ACCOUNT_ID=current_aws_account_id,
-            aws_update_tag=aws_update_tag
+            aws_update_tag=aws_update_tag,
         )
 
-        load_ec2_security_group_rule(session, group, "IpPermissions", aws_update_tag)
-        load_ec2_security_group_rule(session, group, "IpPermissionEgress", aws_update_tag)
+        load_ec2_security_group_rule(session, group, 'IpPermissions', aws_update_tag)
+        load_ec2_security_group_rule(session, group, 'IpPermissionEgress', aws_update_tag)
 
 
 def load_ec2_security_group_rule(session, group, rule_type, aws_update_tag):
@@ -310,42 +311,42 @@ def load_ec2_security_group_rule(session, group, rule_type, aws_update_tag):
     SET r.lastupdated = {aws_update_tag}
     """
 
-    group_id = group["GroupId"]
-    rule_type_map = {"IpPermissions": "IpPermissionInbound", "IpPermissionEgress": "IpPermissionEgress"}
+    group_id = group['GroupId']
+    rule_type_map = {'IpPermissions': 'IpPermissionInbound', 'IpPermissionEgress': 'IpPermissionEgress'}
 
     if group.get(rule_type):
         for rule in group[rule_type]:
-            protocol = rule.get("IpProtocol", "all")
-            from_port = rule.get("FromPort", "")
-            to_port = rule.get("ToPort", "")
+            protocol = rule.get('IpProtocol', 'all')
+            from_port = rule.get('FromPort', '')
+            to_port = rule.get('ToPort', '')
 
-            ruleid = "{0}/{1}/{2}{3}{4}".format(group_id, rule_type, from_port, to_port, protocol)
+            ruleid = f'{group_id}/{rule_type}/{from_port}{to_port}{protocol}'
             # NOTE Cypher query syntax is incompatible with Python string formatting, so we have to do this awkward
             # NOTE manual formatting instead.
             session.run(
-                ingest_rule.replace("#RULE_TYPE#", rule_type_map[rule_type]),
+                ingest_rule.replace('#RULE_TYPE#', rule_type_map[rule_type]),
                 RuleId=ruleid,
                 FromPort=from_port,
                 ToPort=to_port,
                 Protocol=protocol,
                 GroupId=group_id,
-                aws_update_tag=aws_update_tag
+                aws_update_tag=aws_update_tag,
             )
 
             session.run(
                 ingest_rule_group_pair,
                 GroupId=group_id,
                 RuleId=ruleid,
-                aws_update_tag=aws_update_tag
+                aws_update_tag=aws_update_tag,
             )
 
-            for ip_range in rule["IpRanges"]:
-                range_id = ip_range["CidrIp"]
+            for ip_range in rule['IpRanges']:
+                range_id = ip_range['CidrIp']
                 session.run(
                     ingest_range,
                     RangeId=range_id,
                     RuleId=ruleid,
-                    aws_update_tag=aws_update_tag
+                    aws_update_tag=aws_update_tag,
                 )
 
 
@@ -389,12 +390,12 @@ def load_ec2_auto_scaling_groups(session, data, region, current_aws_account_id, 
     SET r.lastupdated = {aws_update_tag}
     """
 
-    for group in data["AutoScalingGroups"]:
-        name = group["AutoScalingGroupName"]
-        createtime = group.get("CreatedTime", "")
-        lauchconfig_name = group.get("LaunchConfigurationName", "")
-        group_arn = group["AutoScalingGroupARN"]
-        max_size = group["MaxSize"]
+    for group in data['AutoScalingGroups']:
+        name = group['AutoScalingGroupName']
+        createtime = group.get('CreatedTime', '')
+        lauchconfig_name = group.get('LaunchConfigurationName', '')
+        group_arn = group['AutoScalingGroupARN']
+        max_size = group['MaxSize']
 
         session.run(
             ingest_group,
@@ -405,29 +406,29 @@ def load_ec2_auto_scaling_groups(session, data, region, current_aws_account_id, 
             MaxSize=max_size,
             AWS_ACCOUNT_ID=current_aws_account_id,
             Region=region,
-            aws_update_tag=aws_update_tag
+            aws_update_tag=aws_update_tag,
         )
 
         if group.get('VPCZoneIdentifier'):
-            vpclist = group["VPCZoneIdentifier"]
+            vpclist = group['VPCZoneIdentifier']
             for vpc in str(vpclist).split(','):
                 session.run(
                     ingest_vpc,
                     SubnetId=vpc,
                     GROUPARN=group_arn,
-                    aws_update_tag=aws_update_tag
+                    aws_update_tag=aws_update_tag,
                 )
 
-        if group.get("Instances"):
-            for instance in group["Instances"]:
-                instanceid = instance["InstanceId"]
+        if group.get('Instances'):
+            for instance in group['Instances']:
+                instanceid = instance['InstanceId']
                 session.run(
                     ingest_instance,
                     InstanceId=instanceid,
                     GROUPARN=group_arn,
                     AWS_ACCOUNT_ID=current_aws_account_id,
                     Region=region,
-                    aws_update_tag=aws_update_tag
+                    aws_update_tag=aws_update_tag,
                 )
 
 
@@ -474,55 +475,55 @@ def load_load_balancers(session, data, region, current_aws_account_id, aws_updat
     """
 
     for lb in data['LoadBalancerDescriptions']:
-        load_balancer_id = lb["DNSName"]
+        load_balancer_id = lb['DNSName']
 
         session.run(
             ingest_load_balancer,
             ID=load_balancer_id,
-            CREATED_TIME=str(lb["CreatedTime"]),
-            NAME=lb["LoadBalancerName"],
+            CREATED_TIME=str(lb['CreatedTime']),
+            NAME=lb['LoadBalancerName'],
             DNS_NAME=load_balancer_id,
-            HOSTED_ZONE_NAME=lb.get("CanonicalHostedZoneName", ""),
-            HOSTED_ZONE_NAME_ID=lb.get("CanonicalHostedZoneNameID", ""),
-            SCHEME=lb.get("Scheme", ""),
+            HOSTED_ZONE_NAME=lb.get('CanonicalHostedZoneName', ''),
+            HOSTED_ZONE_NAME_ID=lb.get('CanonicalHostedZoneNameID', ''),
+            SCHEME=lb.get('Scheme', ''),
             AWS_ACCOUNT_ID=current_aws_account_id,
             Region=region,
-            aws_update_tag=aws_update_tag
+            aws_update_tag=aws_update_tag,
         )
 
-        if lb["Subnets"]:
-            load_load_balancer_subnets(session, load_balancer_id, lb["Subnets"], aws_update_tag)
+        if lb['Subnets']:
+            load_load_balancer_subnets(session, load_balancer_id, lb['Subnets'], aws_update_tag)
 
-        if lb["SecurityGroups"]:
-            for group in lb["SecurityGroups"]:
+        if lb['SecurityGroups']:
+            for group in lb['SecurityGroups']:
                 session.run(
                     ingest_load_balancer_security_group,
                     ID=load_balancer_id,
                     GROUP_ID=str(group),
-                    aws_update_tag=aws_update_tag
+                    aws_update_tag=aws_update_tag,
                 )
 
-        if lb["SourceSecurityGroup"]:
-            source_group = lb["SourceSecurityGroup"]
+        if lb['SourceSecurityGroup']:
+            source_group = lb['SourceSecurityGroup']
             session.run(
                 ingest_load_balancersource_security_group,
                 ID=load_balancer_id,
-                GROUP_NAME=source_group["GroupName"],
-                aws_update_tag=aws_update_tag
+                GROUP_NAME=source_group['GroupName'],
+                aws_update_tag=aws_update_tag,
             )
 
-        if lb["Instances"]:
-            for instance in lb["Instances"]:
+        if lb['Instances']:
+            for instance in lb['Instances']:
                 session.run(
                     ingest_instances,
                     ID=load_balancer_id,
-                    INSTANCE_ID=instance["InstanceId"],
+                    INSTANCE_ID=instance['InstanceId'],
                     AWS_ACCOUNT_ID=current_aws_account_id,
-                    aws_update_tag=aws_update_tag
+                    aws_update_tag=aws_update_tag,
                 )
 
-        if lb["ListenerDescriptions"]:
-            load_load_balancer_listeners(session, load_balancer_id, lb["ListenerDescriptions"], aws_update_tag)
+        if lb['ListenerDescriptions']:
+            load_load_balancer_listeners(session, load_balancer_id, lb['ListenerDescriptions'], aws_update_tag)
 
 
 def load_load_balancer_subnets(session, load_balancer_id, subnets_data, aws_update_tag):
@@ -538,7 +539,7 @@ def load_load_balancer_subnets(session, load_balancer_id, subnets_data, aws_upda
             ingest_load_balancer_subnet,
             ID=load_balancer_id,
             SUBNET_ID=subnet_id,
-            aws_update_tag=aws_update_tag
+            aws_update_tag=aws_update_tag,
         )
 
 
@@ -563,7 +564,7 @@ def load_load_balancer_listeners(session, load_balancer_id, listener_data, aws_u
         ingest_listener,
         LoadBalancerId=load_balancer_id,
         Listeners=listener_data,
-        aws_update_tag=aws_update_tag
+        aws_update_tag=aws_update_tag,
     )
 
 
@@ -672,33 +673,35 @@ def load_ec2_vpc_peering(session, data, aws_update_tag):
     r.lastupdated = {aws_update_tag}
     """
     for peering in data['VpcPeeringConnections']:
-        if peering["Status"]["Code"] == "active":
+        if peering['Status']['Code'] == 'active':
             session.run(
                 ingest_peering,
-                AccepterVpcId=peering["AccepterVpcInfo"]["VpcId"],
-                AccepterCidrBlock=peering["AccepterVpcInfo"]["CidrBlock"],
-                RequesterOwnerId=peering["RequesterVpcInfo"]["OwnerId"],
-                RequestorVpcId=peering["RequesterVpcInfo"]["VpcId"],
-                RequestorVpcCidrBlock=peering["RequesterVpcInfo"]["CidrBlock"],
-                StatusCode=peering["Status"]["Code"],
-                StatusMessage=peering["Status"]["Message"],
-                ConnectionId=peering["VpcPeeringConnectionId"],
-                ExpirationTime=peering.get("ExpirationTime", None),
-                aws_update_tag=aws_update_tag)
+                AccepterVpcId=peering['AccepterVpcInfo']['VpcId'],
+                AccepterCidrBlock=peering['AccepterVpcInfo']['CidrBlock'],
+                RequesterOwnerId=peering['RequesterVpcInfo']['OwnerId'],
+                RequestorVpcId=peering['RequesterVpcInfo']['VpcId'],
+                RequestorVpcCidrBlock=peering['RequesterVpcInfo']['CidrBlock'],
+                StatusCode=peering['Status']['Code'],
+                StatusMessage=peering['Status']['Message'],
+                ConnectionId=peering['VpcPeeringConnectionId'],
+                ExpirationTime=peering.get('ExpirationTime', None),
+                aws_update_tag=aws_update_tag,
+            )
 
-            for accepter_block in peering["AccepterVpcInfo"].get("CidrBlockSet", []):
-                for requestor_block in peering["RequesterVpcInfo"].get("CidrBlockSet", []):
+            for accepter_block in peering['AccepterVpcInfo'].get('CidrBlockSet', []):
+                for requestor_block in peering['RequesterVpcInfo'].get('CidrBlockSet', []):
                     session.run(
                         ingest_peering_block,
-                        AccepterVpcId=peering["AccepterVpcInfo"]["VpcId"],
-                        AccepterCidrBlock=accepter_block["CidrBlock"],
-                        RequestorVpcId=peering["RequesterVpcInfo"]["VpcId"],
-                        RequestorVpcCidrBlock=requestor_block["CidrBlock"],
-                        StatusCode=peering["Status"]["Code"],
-                        StatusMessage=peering["Status"]["Message"],
-                        ConnectionId=peering["VpcPeeringConnectionId"],
-                        ExpirationTime=peering.get("ExpirationTime", None),
-                        aws_update_tag=aws_update_tag)
+                        AccepterVpcId=peering['AccepterVpcInfo']['VpcId'],
+                        AccepterCidrBlock=accepter_block['CidrBlock'],
+                        RequestorVpcId=peering['RequesterVpcInfo']['VpcId'],
+                        RequestorVpcCidrBlock=requestor_block['CidrBlock'],
+                        StatusCode=peering['Status']['Code'],
+                        StatusMessage=peering['Status']['Message'],
+                        ConnectionId=peering['VpcPeeringConnectionId'],
+                        ExpirationTime=peering.get('ExpirationTime', None),
+                        aws_update_tag=aws_update_tag,
+                    )
 
 
 def load_ec2_vpcs(session, data, region, current_aws_account_id, aws_update_tag):
@@ -748,31 +751,36 @@ def load_ec2_vpcs(session, data, region, current_aws_account_id, aws_update_tag)
     SET r.lastupdated = {aws_update_tag}"""
 
     for vpc in data['Vpcs']:
-        vpc_id = vpc["VpcId"]  # fail if not present
+        vpc_id = vpc['VpcId']  # fail if not present
 
         session.run(
             ingest_vpc,
             VpcId=vpc_id,
-            InstanceTenancy=vpc.get("InstanceTenancy", None),
-            State=vpc.get("State", None),
-            IsDefault=vpc.get("IsDefault", None),
-            PrimaryCIDRBlock=vpc.get("CidrBlock", None),
-            DhcpOptionsId=vpc.get("DhcpOptionsId", None),
+            InstanceTenancy=vpc.get('InstanceTenancy', None),
+            State=vpc.get('State', None),
+            IsDefault=vpc.get('IsDefault', None),
+            PrimaryCIDRBlock=vpc.get('CidrBlock', None),
+            DhcpOptionsId=vpc.get('DhcpOptionsId', None),
             Region=region,
             AWS_ACCOUNT_ID=current_aws_account_id,
-            aws_update_tag=aws_update_tag)
+            aws_update_tag=aws_update_tag,
+        )
 
-        load_cidr_association_set(session,
-                                  vpc_id=vpc_id,
-                                  block_type="ipv4",
-                                  vpc_data=vpc,
-                                  aws_update_tag=aws_update_tag)
+        load_cidr_association_set(
+            session,
+            vpc_id=vpc_id,
+            block_type='ipv4',
+            vpc_data=vpc,
+            aws_update_tag=aws_update_tag,
+        )
 
-        load_cidr_association_set(session,
-                                  vpc_id=vpc_id,
-                                  block_type="ipv6",
-                                  vpc_data=vpc,
-                                  aws_update_tag=aws_update_tag)
+        load_cidr_association_set(
+            session,
+            vpc_id=vpc_id,
+            block_type='ipv6',
+            vpc_data=vpc,
+            aws_update_tag=aws_update_tag,
+        )
 
 
 def _get_cidr_association_statement(block_type):
@@ -792,40 +800,40 @@ def _get_cidr_association_statement(block_type):
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = {aws_update_tag}"""
 
-    BLOCK_CIDR = "CidrBlock"
-    STATE_NAME = "CidrBlockState"
+    BLOCK_CIDR = 'CidrBlock'
+    STATE_NAME = 'CidrBlockState'
 
     # base label type. We add the AWS ipv4 or 6 depending on block type
-    BLOCK_TYPE = "AWSCidrBlock"
+    BLOCK_TYPE = 'AWSCidrBlock'
 
-    if block_type == "ipv6":
-        BLOCK_CIDR = "Ipv6" + BLOCK_CIDR
-        STATE_NAME = "Ipv6" + STATE_NAME
-        BLOCK_TYPE = BLOCK_TYPE + ":AWSIpv6CidrBlock"
-    elif block_type == "ipv4":
-        BLOCK_TYPE = BLOCK_TYPE + ":AWSIpv4CidrBlock"
+    if block_type == 'ipv6':
+        BLOCK_CIDR = 'Ipv6' + BLOCK_CIDR
+        STATE_NAME = 'Ipv6' + STATE_NAME
+        BLOCK_TYPE = BLOCK_TYPE + ':AWSIpv6CidrBlock'
+    elif block_type == 'ipv4':
+        BLOCK_TYPE = BLOCK_TYPE + ':AWSIpv4CidrBlock'
     else:
-        raise ValueError("Unsupported block type specified - {0}".format(block_type))
+        raise ValueError(f'Unsupported block type specified - {block_type}')
 
-    return ingest_cidr.replace("#BLOCK_CIDR#", BLOCK_CIDR)\
-                      .replace("#STATE_NAME#", STATE_NAME)\
-                      .replace("#BLOCK_TYPE#", BLOCK_TYPE)
+    return ingest_cidr.replace('#BLOCK_CIDR#', BLOCK_CIDR)\
+                      .replace('#STATE_NAME#', STATE_NAME)\
+                      .replace('#BLOCK_TYPE#', BLOCK_TYPE)
 
 
 def load_cidr_association_set(session, vpc_id, vpc_data, block_type, aws_update_tag):
 
     ingest_statement = _get_cidr_association_statement(block_type)
 
-    if block_type == "ipv6":
-        data = vpc_data.get("Ipv6CidrBlockAssociationSet", [])
+    if block_type == 'ipv6':
+        data = vpc_data.get('Ipv6CidrBlockAssociationSet', [])
     else:
-        data = vpc_data.get("CidrBlockAssociationSet", [])
+        data = vpc_data.get('CidrBlockAssociationSet', [])
 
     session.run(
         ingest_statement,
         VpcId=vpc_id,
         CidrBlock=data,
-        aws_update_tag=aws_update_tag
+        aws_update_tag=aws_update_tag,
     )
 
 
@@ -833,7 +841,7 @@ def cleanup_ec2_security_groupinfo(session, common_job_parameters):
     run_cleanup_job(
         'aws_import_ec2_security_groupinfo_cleanup.json',
         session,
-        common_job_parameters
+        common_job_parameters,
     )
 
 
@@ -845,7 +853,7 @@ def cleanup_ec2_auto_scaling_groups(session, common_job_parameters):
     run_cleanup_job(
         'aws_ingest_ec2_auto_scaling_groups_cleanup.json',
         session,
-        common_job_parameters
+        common_job_parameters,
     )
 
 
@@ -861,8 +869,10 @@ def cleanup_ec2_vpc_peering(session, common_job_parameters):
     run_cleanup_job('aws_import_vpc_peering_cleanup.json', session, common_job_parameters)
 
 
-def sync_ec2_security_groupinfo(session, boto3_session, regions, current_aws_account_id, aws_update_tag,
-                                common_job_parameters):
+def sync_ec2_security_groupinfo(
+    session, boto3_session, regions, current_aws_account_id, aws_update_tag,
+    common_job_parameters,
+):
     for region in regions:
         logger.debug("Syncing EC2 security groups for region '%s' in account '%s'.", region, current_aws_account_id)
         data = get_ec2_security_group_data(boto3_session, region)
@@ -878,8 +888,10 @@ def sync_ec2_instances(session, boto3_session, regions, current_aws_account_id, 
     cleanup_ec2_instances(session, common_job_parameters)
 
 
-def sync_ec2_auto_scaling_groups(session, boto3_session, regions, current_aws_account_id, aws_update_tag,
-                                 common_job_parameters):
+def sync_ec2_auto_scaling_groups(
+    session, boto3_session, regions, current_aws_account_id, aws_update_tag,
+    common_job_parameters,
+):
     for region in regions:
         logger.debug("Syncing auto scaling groups for region '%s' in account '%s'.", region, current_aws_account_id)
         data = get_ec2_auto_scaling_groups(boto3_session, region)

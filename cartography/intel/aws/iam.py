@@ -1,4 +1,5 @@
 import logging
+
 import policyuniverse.statement
 
 from cartography.util import run_cleanup_job
@@ -98,14 +99,14 @@ def load_users(session, users, current_aws_account_id, aws_update_tag):
     for user in users:
         session.run(
             ingest_user,
-            ARN=user["Arn"],
-            USERID=user["UserId"],
-            CREATE_DATE=str(user["CreateDate"]),
-            USERNAME=user["UserName"],
-            PATH=user["Path"],
-            PASSWORD_LASTUSED=str(user.get("PasswordLastUsed", "")),
+            ARN=user['Arn'],
+            USERID=user['UserId'],
+            CREATE_DATE=str(user['CreateDate']),
+            USERNAME=user['UserName'],
+            PATH=user['Path'],
+            PASSWORD_LASTUSED=str(user.get('PasswordLastUsed', '')),
             AWS_ACCOUNT_ID=current_aws_account_id,
-            aws_update_tag=aws_update_tag
+            aws_update_tag=aws_update_tag,
         )
 
 
@@ -124,13 +125,13 @@ def load_groups(session, groups, current_aws_account_id, aws_update_tag):
     for group in groups:
         session.run(
             ingest_group,
-            ARN=group["Arn"],
-            GROUP_ID=group["GroupId"],
-            CREATE_DATE=str(group["CreateDate"]),
-            GROUP_NAME=group["GroupName"],
-            PATH=group["Path"],
+            ARN=group['Arn'],
+            GROUP_ID=group['GroupId'],
+            CREATE_DATE=str(group['CreateDate']),
+            GROUP_NAME=group['GroupName'],
+            PATH=group['Path'],
             AWS_ACCOUNT_ID=current_aws_account_id,
-            aws_update_tag=aws_update_tag
+            aws_update_tag=aws_update_tag,
         )
 
 
@@ -152,17 +153,17 @@ def load_policies(session, policies, current_aws_account_id, aws_update_tag):
     for policy in policies:
         session.run(
             ingest_policy,
-            ARN=policy["Arn"],
-            POLICY_ID=policy["PolicyId"],
-            POLICY_NAME=policy["PolicyName"],
-            PATH=policy["Path"],
-            DEFAULT_VERSION_ID=policy["DefaultVersionId"],
-            CREATE_DATE=str(policy["CreateDate"]),
-            POLICY_UPDATE=str(policy["UpdateDate"]),
-            IS_ATTACHABLE=policy["IsAttachable"],
-            ATTACHMENT_COUNT=policy["AttachmentCount"],
+            ARN=policy['Arn'],
+            POLICY_ID=policy['PolicyId'],
+            POLICY_NAME=policy['PolicyName'],
+            PATH=policy['Path'],
+            DEFAULT_VERSION_ID=policy['DefaultVersionId'],
+            CREATE_DATE=str(policy['CreateDate']),
+            POLICY_UPDATE=str(policy['UpdateDate']),
+            IS_ATTACHABLE=policy['IsAttachable'],
+            ATTACHMENT_COUNT=policy['AttachmentCount'],
             AWS_ACCOUNT_ID=current_aws_account_id,
-            aws_update_tag=aws_update_tag
+            aws_update_tag=aws_update_tag,
         )
 
 
@@ -196,17 +197,17 @@ def load_roles(session, roles, current_aws_account_id, aws_update_tag):
     for role in roles:
         session.run(
             ingest_role,
-            Arn=role["Arn"],
-            RoleId=role["RoleId"],
-            CreateDate=str(role["CreateDate"]),
-            RoleName=role["RoleName"],
-            Path=role["Path"],
+            Arn=role['Arn'],
+            RoleId=role['RoleId'],
+            CreateDate=str(role['CreateDate']),
+            RoleName=role['RoleName'],
+            Path=role['Path'],
             AWS_ACCOUNT_ID=current_aws_account_id,
-            aws_update_tag=aws_update_tag
+            aws_update_tag=aws_update_tag,
         )
 
-        for statement in role["AssumeRolePolicyDocument"]["Statement"]:
-            principal = statement["Principal"]
+        for statement in role['AssumeRolePolicyDocument']['Statement']:
+            principal = statement['Principal']
             principal_values = []
             if 'AWS' in principal:
                 principal_type, principal_values = 'AWS', principal['AWS']
@@ -222,7 +223,7 @@ def load_roles(session, roles, current_aws_account_id, aws_update_tag):
                     SpnArn=principal_value,
                     SpnType=principal_type,
                     RoleArn=role['Arn'],
-                    aws_update_tag=aws_update_tag
+                    aws_update_tag=aws_update_tag,
                 )
 
 
@@ -237,19 +238,19 @@ def load_group_memberships(session, group_memberships, aws_update_tag):
     """
 
     for group_name, membership_data in group_memberships.items():
-        for info in membership_data["Users"]:
-            principal_arn = info["Arn"]
+        for info in membership_data['Users']:
+            principal_arn = info['Arn']
             session.run(
                 ingest_membership,
                 GroupName=group_name,
                 PrincipalArn=principal_arn,
-                aws_update_tag=aws_update_tag
+                aws_update_tag=aws_update_tag,
             )
 
 
 def _find_roles_assumable_in_policy(policy_data):
     ret = []
-    statements = policy_data["PolicyDocument"]["Statement"]
+    statements = policy_data['PolicyDocument']['Statement']
     if isinstance(statements, dict):
         statements = [statements]
     for statement in statements:
@@ -281,7 +282,7 @@ def load_group_policies(session, group_policies, aws_update_tag):
                     ingest_policies_assume_role,
                     GroupName=group_name,
                     RoleArn=role_arn,
-                    aws_update_tag=aws_update_tag
+                    aws_update_tag=aws_update_tag,
                 )
 
 
@@ -307,7 +308,7 @@ def load_role_policies(session, role_policies, aws_update_tag):
                     ingest_policies_assume_role,
                     RoleName=role_name,
                     RoleArn=role_arn,
-                    aws_update_tag=aws_update_tag
+                    aws_update_tag=aws_update_tag,
                 )
 
 
@@ -326,7 +327,7 @@ def load_user_access_keys(session, user_access_keys, aws_update_tag):
     """
 
     for username, access_keys in user_access_keys.items():
-        for key in access_keys["AccessKeyMetadata"]:
+        for key in access_keys['AccessKeyMetadata']:
             if key.get('AccessKeyId'):
                 session.run(
                     ingest_account_key,
@@ -334,7 +335,7 @@ def load_user_access_keys(session, user_access_keys, aws_update_tag):
                     AccessKeyId=key['AccessKeyId'],
                     CreateDate=str(key['CreateDate']),
                     Status=key['Status'],
-                    aws_update_tag=aws_update_tag
+                    aws_update_tag=aws_update_tag,
                 )
 
 
@@ -368,7 +369,7 @@ def sync_roles(neo4j_session, boto3_session, current_aws_account_id, aws_update_
 
 def sync_group_memberships(neo4j_session, boto3_session, current_aws_account_id, aws_update_tag, common_job_parameters):
     logger.debug("Syncing IAM group membership for account '%s'.", current_aws_account_id)
-    query = "MATCH (group:AWSGroup)<-[:RESOURCE]-(AWSAccount{id: {AWS_ACCOUNT_ID}}) return group.name as name;"
+    query = 'MATCH (group:AWSGroup)<-[:RESOURCE]-(AWSAccount{id: {AWS_ACCOUNT_ID}}) return group.name as name;'
     result = neo4j_session.run(query, AWS_ACCOUNT_ID=current_aws_account_id)
     groups = [r['name'] for r in result]
     groups_membership = {name: get_group_membership_data(boto3_session, name) for name in groups}
@@ -376,13 +377,13 @@ def sync_group_memberships(neo4j_session, boto3_session, current_aws_account_id,
     run_cleanup_job(
         'aws_import_groups_membership_cleanup.json',
         neo4j_session,
-        common_job_parameters
+        common_job_parameters,
     )
 
 
 def sync_group_policies(neo4j_session, boto3_session, current_aws_account_id, aws_update_tag, common_job_parameters):
     logger.debug("Syncing IAM group policies for account '%s'.", current_aws_account_id)
-    query = "MATCH (group:AWSGroup)<-[:RESOURCE]-(AWSAccount{id: {AWS_ACCOUNT_ID}}) return group.name as name;"
+    query = 'MATCH (group:AWSGroup)<-[:RESOURCE]-(AWSAccount{id: {AWS_ACCOUNT_ID}}) return group.name as name;'
     result = neo4j_session.run(query, AWS_ACCOUNT_ID=current_aws_account_id)
     groups = [r['name'] for r in result]
     groups_policies = {}
@@ -394,7 +395,7 @@ def sync_group_policies(neo4j_session, boto3_session, current_aws_account_id, aw
     run_cleanup_job(
         'aws_import_groups_policy_cleanup.json',
         neo4j_session,
-        common_job_parameters
+        common_job_parameters,
     )
 
 
@@ -416,13 +417,13 @@ def sync_role_policies(neo4j_session, boto3_session, current_aws_account_id, aws
     run_cleanup_job(
         'aws_import_roles_policy_cleanup.json',
         neo4j_session,
-        common_job_parameters
+        common_job_parameters,
     )
 
 
 def sync_user_access_keys(neo4j_session, boto3_session, current_aws_account_id, aws_update_tag, common_job_parameters):
     logger.debug("Syncing IAM user access keys for account '%s'.", current_aws_account_id)
-    query = "MATCH (user:AWSUser)<-[:RESOURCE]-(AWSAccount{id: {AWS_ACCOUNT_ID}}) return user.name as name"
+    query = 'MATCH (user:AWSUser)<-[:RESOURCE]-(AWSAccount{id: {AWS_ACCOUNT_ID}}) return user.name as name'
     result = neo4j_session.run(query, AWS_ACCOUNT_ID=current_aws_account_id)
     usernames = [r['name'] for r in result]
     account_access_key = {name: get_account_access_key_data(boto3_session, name) for name in usernames}
@@ -430,7 +431,7 @@ def sync_user_access_keys(neo4j_session, boto3_session, current_aws_account_id, 
     run_cleanup_job(
         'aws_import_account_access_key_cleanup.json',
         neo4j_session,
-        common_job_parameters
+        common_job_parameters,
     )
 
 
