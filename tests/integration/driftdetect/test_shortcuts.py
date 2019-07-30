@@ -30,7 +30,7 @@ def test_basic_add_shortcuts():
     FileSystem.write(shortcut_data, shortcut_path)
 
 
-def test_shortcut_renaming():
+def test_shortcut_parsing():
     """
     Tests add_shortcut can parse shortcuts.
     """
