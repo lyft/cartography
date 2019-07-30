@@ -4,7 +4,7 @@ from cartography.driftdetect.model import State
 from cartography.driftdetect.serializers import StateSchema
 from cartography.driftdetect.storage import FileSystem
 from cartography.driftdetect.get_states import get_state
-from cartography.driftdetect.detect_deviations import compare_states, perform_drift_detection
+from cartography.driftdetect.detect_deviations import compare_states
 
 
 def test_state_no_drift():
@@ -65,7 +65,7 @@ def test_state_picks_up_drift():
     drifts = compare_states(state_old, state_new)
     mock_session.run.assert_called_with(state_new.validation_query)
     assert drifts
-    assert drifts[0][0] == {key: "7"}
+    assert ["7"] in drifts
 
 
 def test_state_multiple_expectations():
@@ -97,7 +97,7 @@ def test_state_multiple_expectations():
     state_new.properties = state_old.properties
     drifts = compare_states(state_old, state_new)
     mock_session.run.assert_called_with(state_new.validation_query)
-    assert {key_1: "7", key_2: "14"} in drifts[0]
+    assert ["7", "14"] in drifts
 
 
 def test_drift_from_multiple_properties():
@@ -129,9 +129,8 @@ def test_drift_from_multiple_properties():
     state_new.properties = state_old.properties
     drifts = compare_states(state_old, state_new)
     mock_session.run.assert_called_with(state_new.validation_query)
-    print(drifts)
-    assert {key_1: "7", key_2: "14", key_3: ["21", "28", "35"]} in drifts[0]
-    assert {key_1: "3", key_2: "10", key_3: ["17", "24", "31"]} not in drifts[0]
+    assert ["7", "14", ["21", "28", "35"]] in drifts
+    assert ["3", "10", ["17", "24", "31"]] not in drifts
 
 
 def test_json_loader():
@@ -146,35 +145,3 @@ def test_json_loader():
     assert state.name == "Test-Expectations"
     assert state.validation_query == "MATCH (d) RETURN d.test"
     assert state.results == [['1'], ['2'], ['3'], ['4'], ['5'], ['6']]
-
-
-def test_state_differences():
-    """
-    Test that state_differences picks up new drift
-    :return:
-    """
-
-    filepath = "tests/data/detectors/test_expectations.json"
-    data = FileSystem.load(filepath)
-    state_1 = StateSchema().load(data)
-    state_2 = StateSchema().load(data)
-    state_2.results.append(["7"])
-    drift_info_state_pairs = compare_states(state_1, state_2)
-    assert ({'d.test': "7"}, state_2) in drift_info_state_pairs
-
-
-def test_compare_states():
-    """
-    Test that differences between two states is recorded
-    :return:
-    """
-
-    filepath = "tests/data/detectors/test_expectations.json"
-    data = FileSystem.load(filepath)
-    state_1 = StateSchema().load(data)
-    state_2 = StateSchema().load(data)
-    state_1.results.append(["7"])
-    state_2.results.append(["8"])
-    new, missing = perform_drift_detection(state_1, state_2)
-    assert ({'d.test': "7"}, state_1) in missing
-    assert ({'d.test': "8"}, state_2) in new
