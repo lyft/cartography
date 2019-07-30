@@ -1,9 +1,12 @@
-from oauth2client.client import GoogleCredentials, ApplicationDefaultCredentialsError
-import googleapiclient.discovery
 import logging
 from collections import namedtuple
 
-from cartography.intel.gcp import crm, compute
+import googleapiclient.discovery
+from oauth2client.client import ApplicationDefaultCredentialsError
+from oauth2client.client import GoogleCredentials
+
+from cartography.intel.gcp import compute
+from cartography.intel.gcp import crm
 from cartography.util import run_analysis_job
 
 logger = logging.getLogger(__name__)
@@ -51,7 +54,7 @@ def _initialize_resources(credentials):
     return Resources(
         crm_v1=_get_crm_resource_v1(credentials),
         crm_v2=_get_crm_resource_v2(credentials),
-        compute=_get_compute_resource(credentials)
+        compute=_get_compute_resource(credentials),
     )
 
 
@@ -82,12 +85,12 @@ def _sync_multiple_projects(session, resources, projects, gcp_update_tag, common
     :param common_job_parameters: Other parameters sent to Neo4j
     :return: Nothing
     """
-    logger.debug("Syncing %d GCP projects.", len(projects))
+    logger.debug('Syncing %d GCP projects.', len(projects))
     crm.sync_gcp_projects(session, projects, gcp_update_tag, common_job_parameters)
 
     for project in projects:
         project_id = project['projectId']
-        logger.info("Syncing GCP project %s.", project_id)
+        logger.info('Syncing GCP project %s.', project_id)
         _sync_single_project(session, resources, project_id, gcp_update_tag, common_job_parameters)
 
 
@@ -101,7 +104,7 @@ def start_gcp_ingestion(session, config):
     :return: Nothing
     """
     common_job_parameters = {
-        "UPDATE_TAG": config.update_tag,
+        'UPDATE_TAG': config.update_tag,
     }
     try:
         # Explicitly use Application Default Credentials.
@@ -109,15 +112,15 @@ def start_gcp_ingestion(session, config):
         #             oauth2client.client.html#oauth2client.client.OAuth2Credentials
         credentials = GoogleCredentials.get_application_default()
     except ApplicationDefaultCredentialsError as e:
-        logger.debug("Error occurred calling GoogleCredentials.get_application_default().", exc_info=True)
+        logger.debug('Error occurred calling GoogleCredentials.get_application_default().', exc_info=True)
         logger.error(
             (
                 "Unable to initialize Google Compute Platform creds. If you don't have GCP data or don't want to load "
-                "GCP data then you can ignore this message. Otherwise, the error code is: %s "
-                "Make sure your GCP credentials are configured correctly, your credentials file (if any) is valid, and "
-                "that the identity you are authenticating to has the securityReviewer role attached."
+                'GCP data then you can ignore this message. Otherwise, the error code is: %s '
+                'Make sure your GCP credentials are configured correctly, your credentials file (if any) is valid, and '
+                'that the identity you are authenticating to has the securityReviewer role attached.'
             ),
-            e
+            e,
         )
         return
     resources = _initialize_resources(credentials)
@@ -133,5 +136,5 @@ def start_gcp_ingestion(session, config):
     run_analysis_job(
         'gcp_compute_asset_inet_exposure.json',
         session,
-        common_job_parameters
+        common_job_parameters,
     )

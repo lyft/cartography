@@ -1,6 +1,7 @@
 # Google Compute Resource Manager
 # https://cloud.google.com/resource-manager/docs/cloud-platform-resource-hierarchy
 import logging
+
 from googleapiclient.discovery import HttpError
 
 from cartography.util import run_cleanup_job
@@ -21,7 +22,7 @@ def get_gcp_organizations(crm_v1):
         res = req.execute()
         return res.get('organizations', [])
     except HttpError as e:
-        logger.warning("HttpError occurred in crm.get_gcp_organizations(), returning empty list. Details: %r", e)
+        logger.warning('HttpError occurred in crm.get_gcp_organizations(), returning empty list. Details: %r', e)
         return []
 
 
@@ -38,7 +39,7 @@ def get_gcp_folders(crm_v2):
         res = req.execute()
         return res.get('folders', [])
     except HttpError as e:
-        logger.warning("HttpError occurred in crm.get_gcp_folders(), returning empty list. Details: %r", e)
+        logger.warning('HttpError occurred in crm.get_gcp_folders(), returning empty list. Details: %r', e)
         return []
 
 
@@ -55,7 +56,7 @@ def get_gcp_projects(crm_v1):
         res = req.execute()
         return res.get('projects', [])
     except HttpError as e:
-        logger.warning("HttpError occurred in crm.get_gcp_projects(), returning empty list. Details: %r", e)
+        logger.warning('HttpError occurred in crm.get_gcp_projects(), returning empty list. Details: %r', e)
         return []
 
 
@@ -81,7 +82,7 @@ def load_gcp_organizations(neo4j_session, data, gcp_update_tag):
             OrgName=org_object['name'],
             DisplayName=org_object.get('displayName', None),
             LifecycleState=org_object.get('lifecycleState', None),
-            gcp_update_tag=gcp_update_tag
+            gcp_update_tag=gcp_update_tag,
         )
 
 
@@ -97,9 +98,9 @@ def load_gcp_folders(neo4j_session, data, gcp_update_tag):
         # Get the correct parent type.
         # Parents of folders can only be GCPOrganizations or other folders, see
         # https://cloud.google.com/resource-manager/docs/cloud-platform-resource-hierarchy
-        if folder['parent'].startswith("organizations"):
-            query = "MATCH (parent:GCPOrganization{id:{ParentId}})"
-        elif folder['parent'].startswith("folders"):
+        if folder['parent'].startswith('organizations'):
+            query = 'MATCH (parent:GCPOrganization{id:{ParentId}})'
+        elif folder['parent'].startswith('folders'):
             query = """
             MERGE (parent:GCPFolder{id:{ParentId}})
             ON CREATE SET parent.firstseen = timestamp()
@@ -122,7 +123,7 @@ def load_gcp_folders(neo4j_session, data, gcp_update_tag):
             FolderName=folder['name'],
             DisplayName=folder.get('displayName', None),
             LifecycleState=folder.get('lifecycleState', None),
-            gcp_update_tag=gcp_update_tag
+            gcp_update_tag=gcp_update_tag,
         )
 
 
@@ -136,13 +137,13 @@ def load_gcp_projects(neo4j_session, data, gcp_update_tag):
     """
     for project in data:
         if project.get('parent', None):
-            if project['parent']['type'] == "organization":
+            if project['parent']['type'] == 'organization':
                 query = """
                 MERGE (parent:GCPOrganization{id:{ParentId}})
                 ON CREATE SET parent.firstseen = timestamp()
                 """
                 parentid = f"organizations/{project['parent']['id']}"
-            elif project['parent']['type'] == "folder":
+            elif project['parent']['type'] == 'folder':
                 query = """
                 MERGE (parent:GCPFolder{id:{ParentId}})
                 ON CREATE SET parent.firstseen = timestamp()
@@ -166,7 +167,7 @@ def load_gcp_projects(neo4j_session, data, gcp_update_tag):
             ProjectId=project['projectId'],
             DisplayName=project.get('name', None),
             LifecycleState=project.get('lifecycleState', None),
-            gcp_update_tag=gcp_update_tag
+            gcp_update_tag=gcp_update_tag,
         )
 
 
@@ -210,7 +211,7 @@ def sync_gcp_organizations(session, crm_v1, gcp_update_tag, common_job_parameter
     :param common_job_parameters: Parameters to carry to the Neo4j jobs
     :return: Nothing
     """
-    logger.debug("Syncing GCP organizations")
+    logger.debug('Syncing GCP organizations')
     data = get_gcp_organizations(crm_v1)
     load_gcp_organizations(session, data, gcp_update_tag)
     cleanup_gcp_organizations(session, common_job_parameters)
@@ -226,7 +227,7 @@ def sync_gcp_folders(session, crm_v2, gcp_update_tag, common_job_parameters):
     :param common_job_parameters: Parameters to carry to the Neo4j jobs
     :return: Nothing
     """
-    logger.debug("Syncing GCP folders")
+    logger.debug('Syncing GCP folders')
     folders = get_gcp_folders(crm_v2)
     load_gcp_folders(session, folders, gcp_update_tag)
     cleanup_gcp_folders(session, common_job_parameters)
@@ -241,6 +242,6 @@ def sync_gcp_projects(session, projects, gcp_update_tag, common_job_parameters):
     :param common_job_parameters: Parameters to carry to the Neo4j jobs
     :return: Nothing
     """
-    logger.debug("Syncing GCP projects")
+    logger.debug('Syncing GCP projects')
     load_gcp_projects(session, projects, gcp_update_tag)
     cleanup_gcp_projects(session, common_job_parameters)
