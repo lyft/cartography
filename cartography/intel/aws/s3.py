@@ -55,6 +55,9 @@ def get_acl(bucket, client):
         if "AccessDenied" in e.args[0]:
             logger.warning("Failed to retrieve S3 bucket {} ACL - Access Denied".format(bucket['Name']))
             return None
+        elif "NoSuchBucket" in e.args[0]:
+            logger.warning("Failed to retrieve S3 bucket {} ACL - No Such Bucket".format(bucket['Name']))
+            return None
         else:
             raise
     return acl
