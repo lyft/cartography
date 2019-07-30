@@ -30,6 +30,40 @@ def test_basic_add_shortcuts():
     FileSystem.write(shortcut_data, shortcut_path)
 
 
+def test_shortcut_renaming():
+    """
+    Tests shortcut renaming feature.
+    """
+    cli = CLI(prog="cartography-detectdrift")
+    directory = "tests/data/test_cli_detectors/detector"
+    alias = "test_shortcut"
+    alias_2 = "test_shortcut_2"
+    file = "1.json"
+    shortcut_path = directory + '/shortcut.json'
+    cli.main(["add-shortcut",
+              "--query-directory",
+              directory,
+              "--shortcut",
+              alias,
+              "--file",
+              file])
+    cli.main(["add-shortcut",
+              "--query-directory",
+              directory,
+              "--shortcut",
+              alias_2,
+              "--file",
+              alias])
+    shortcut_data = FileSystem.load(shortcut_path)
+    shortcut = ShortcutSchema().load(shortcut_data)
+    assert shortcut.shortcuts[alias] == file
+    assert shortcut.shortcuts[alias_2] == file
+    shortcut.shortcuts.pop(alias)
+    shortcut.shortcuts.pop(alias_2)
+    shortcut_data = ShortcutSchema().dump(shortcut)
+    FileSystem.write(shortcut_data, shortcut_path)
+
+
 def test_nonexistent_shortcuts():
     cli = CLI(prog="cartography-detectdrift")
     directory = "tests/data/test_cli_detectors/detector"
