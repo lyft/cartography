@@ -1,10 +1,13 @@
 import logging
 import os
+
 from marshmallow import ValidationError
 
-from cartography.driftdetect.serializers import StateSchema, ShortcutSchema
+from cartography.driftdetect.reporter import report_drift_missing
+from cartography.driftdetect.reporter import report_drift_new
+from cartography.driftdetect.serializers import ShortcutSchema
+from cartography.driftdetect.serializers import StateSchema
 from cartography.driftdetect.storage import FileSystem
-from cartography.driftdetect.reporter import report_drift_new, report_drift_missing
 from cartography.driftdetect.util import valid_directory
 
 logger = logging.getLogger(__name__)
@@ -19,22 +22,33 @@ def run_drift_detection(config):
         shortcut_serializer = ShortcutSchema()
         shortcut_data = FileSystem.load(os.path.join(config.query_directory, "shortcut.json"))
         shortcut = shortcut_serializer.load(shortcut_data)
-        start_state_data = FileSystem.load(os.path.join(config.query_directory, shortcut.shortcuts.get(
-            config.start_state,
-            config.start_state)))
+        start_state_data = FileSystem.load(
+            os.path.join(
+                config.query_directory, shortcut.shortcuts.get(
+                    config.start_state,
+                    config.start_state,
+                ),
+            ),
+        )
         start_state = state_serializer.load(start_state_data)
-        end_state_data = FileSystem.load(os.path.join(config.query_directory, shortcut.shortcuts.get(
-            config.end_state,
-            config.end_state)))
+        end_state_data = FileSystem.load(
+            os.path.join(
+                config.query_directory, shortcut.shortcuts.get(
+                    config.end_state,
+                    config.end_state,
+                ),
+            ),
+        )
         end_state = state_serializer.load(end_state_data)
         new_results, missing_results = perform_drift_detection(start_state, end_state)
         report_drift_new(new_results)
         report_drift_missing(missing_results)
     except ValidationError as err:
-        msg = "Unable to create DriftStates from files {0},{1} for \n{2}".format(
+        msg = "Unable to create DriftStates from files {},{} for \n{}".format(
             config.start_state,
             config.end_state,
-            err.messages)
+            err.messages,
+        )
         logger.exception(msg)
     except ValueError as msg:
         logger.exception(msg)

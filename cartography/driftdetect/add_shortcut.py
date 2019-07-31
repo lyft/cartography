@@ -1,8 +1,10 @@
-import os
 import logging
+import os
+
 from marshmallow import ValidationError
-from cartography.driftdetect.storage import FileSystem
+
 from cartography.driftdetect.serializers import ShortcutSchema
+from cartography.driftdetect.storage import FileSystem
 from cartography.driftdetect.util import valid_directory
 
 logger = logging.getLogger(__name__)
@@ -26,7 +28,7 @@ def run_add_shortcut(config):
     try:
         add_shortcut(FileSystem, ShortcutSchema(), config.query_directory, config.shortcut, config.filename)
     except ValidationError as err:
-        msg = "Could not load report_info file from {0}.".format(err.messages)
+        msg = f"Could not load report_info file from {err.messages}."
         logger.exception(msg)
 
 

@@ -1,9 +1,10 @@
 import os
+
 import pytest
 
-from cartography.driftdetect.storage import FileSystem
-from cartography.driftdetect.serializers import ShortcutSchema
 from cartography.driftdetect.cli import CLI
+from cartography.driftdetect.serializers import ShortcutSchema
+from cartography.driftdetect.storage import FileSystem
 
 
 def test_basic_add_shortcuts():
@@ -15,13 +16,15 @@ def test_basic_add_shortcuts():
     alias = "test_shortcut"
     file = "1.json"
     shortcut_path = directory + '/shortcut.json'
-    cli.main(["add-shortcut",
-              "--query-directory",
-              directory,
-              "--shortcut",
-              alias,
-              "--file",
-              file])
+    cli.main([
+        "add-shortcut",
+        "--query-directory",
+        directory,
+        "--shortcut",
+        alias,
+        "--file",
+        file,
+    ])
     shortcut_data = FileSystem.load(shortcut_path)
     shortcut = ShortcutSchema().load(shortcut_data)
     assert shortcut.shortcuts[alias] == file
@@ -36,13 +39,15 @@ def test_nonexistent_shortcuts():
     alias = "test_shortcut"
     file = "3.json"
     shortcut_path = os.path.join(directory, "shortcut.json")
-    cli.main(["add-shortcut",
-              "--query-directory",
-              directory,
-              "--shortcut",
-              alias,
-              "--file",
-              file])
+    cli.main([
+        "add-shortcut",
+        "--query-directory",
+        directory,
+        "--shortcut",
+        alias,
+        "--file",
+        file,
+    ])
     shortcut_data = FileSystem.load(shortcut_path)
     shortcut = ShortcutSchema().load(shortcut_data)
     with pytest.raises(KeyError):
@@ -55,10 +60,12 @@ def test_bad_shortcut():
     start_state = "1.json"
     end_state = "invalid-shortcut"
     with pytest.raises(FileNotFoundError):
-        cli.main(["get-drift",
-                  "--query-directory",
-                  directory,
-                  "--start-state",
-                  start_state,
-                  "--end-state",
-                  end_state])
+        cli.main([
+            "get-drift",
+            "--query-directory",
+            directory,
+            "--start-state",
+            start_state,
+            "--end-state",
+            end_state,
+        ])

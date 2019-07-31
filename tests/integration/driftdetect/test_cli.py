@@ -1,9 +1,9 @@
 from unittest.mock import patch
 
-from tests.integration import settings
-from cartography.driftdetect.config import UpdateConfig
 from cartography.driftdetect.cli import CLI
+from cartography.driftdetect.config import UpdateConfig
 from cartography.driftdetect.util import valid_directory
+from tests.integration import settings
 
 
 def test_valid_directory():
@@ -22,11 +22,13 @@ def test_cli_main(mock_run):
     Tests that CLI runs update.
     """
     cli = CLI(prog="cartography-detectdrift")
-    cli.main(["get-state",
-              "--neo4j-uri",
-              settings.get("NEO4J_URL"),
-              "--drift-detection-directory",
-              "tests/data/test_update_detectors"])
+    cli.main([
+        "get-state",
+        "--neo4j-uri",
+        settings.get("NEO4J_URL"),
+        "--drift-detection-directory",
+        "tests/data/test_update_detectors",
+    ])
     mock_run.assert_called_once()
 
 
@@ -40,7 +42,7 @@ def test_configure():
         "--neo4j-uri",
         settings.get("NEO4J_URL"),
         "--drift-detection-directory",
-        "tests/data/detectors"
+        "tests/data/detectors",
     ])
     assert config.drift_detection_directory == "tests/data/detectors"
     assert config.neo4j_uri == settings.get("NEO4J_URL")
@@ -55,13 +57,15 @@ def test_cli_get_drift(mock_run_drift_detection):
     end_state = "2.json"
     directory = "tests/data/test_cli_detectors/detector"
     cli = CLI(prog="cartography-detectdrift")
-    cli.main(["get-drift",
-              "--query-directory",
-              directory,
-              "--start-state",
-              start_state,
-              "--end-state",
-              end_state])
+    cli.main([
+        "get-drift",
+        "--query-directory",
+        directory,
+        "--start-state",
+        start_state,
+        "--end-state",
+        end_state,
+    ])
     mock_run_drift_detection.assert_called_once()
 
 
@@ -74,11 +78,13 @@ def test_cli_shortcuts(mock_run_add_shortcut):
     shortcut = "most-recent"
     directory = "tests/data/test_cli_detectors/detector"
     cli = CLI(prog="cartography-detectdrift")
-    cli.main(["add-shortcut",
-              "--query-directory",
-              directory,
-              "--shortcut",
-              shortcut,
-              "--file",
-              file])
+    cli.main([
+        "add-shortcut",
+        "--query-directory",
+        directory,
+        "--shortcut",
+        shortcut,
+        "--file",
+        file,
+    ])
     mock_run_add_shortcut.assert_called_once()

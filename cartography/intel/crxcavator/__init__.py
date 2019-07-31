@@ -31,5 +31,5 @@ def start_extension_ingestion(session, config):
     run_cleanup_job(
         'crxcavator_import_cleanup.json',
         session,
-        common_job_parameters
+        common_job_parameters,
     )

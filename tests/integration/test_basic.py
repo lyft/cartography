@@ -1,4 +1,5 @@
 import neo4j
+
 from tests.integration import settings
 
 
