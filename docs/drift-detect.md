@@ -147,6 +147,10 @@ It can be cumbersome to always type Unix timestamp filenames.  To make this easi
 	`cartography-detectdrift add-shortcut --shortcut first-run --file <unix_timestamp_1>.json`
 	
 	`cartography-detectdrift add-shortcut --shortcut second-run --file <unix_timestamp_2>.json`
+	
+	We can even use shortcuts to refer to files when adding shortcuts!
+	
+	`cartography-detectdrift add-shortcut --shortcut baseline --file most-recent`
 
 2. **Comparing state files with shortcuts**
 

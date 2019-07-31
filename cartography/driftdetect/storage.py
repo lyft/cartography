@@ -41,11 +41,11 @@ class FileSystem(object):
                 yield os.path.join(root, directory)
 
     @classmethod
-    def has_file(cls, file):
+    def has_file(cls, filepath):
         """
         Determines whether or not file exists.
         :type file: string
         :param file: filepath
         :return: Bool
         """
-        return os.path.isfile(file)
+        return os.path.isfile(filepath)
