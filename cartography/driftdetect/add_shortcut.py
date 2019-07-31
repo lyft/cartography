@@ -40,8 +40,11 @@ def add_shortcut(storage, shortcut_serializer, query_directory, alias, filename)
     :param alias: Alias for the file.
     :type filename: String.
     :param filename: Name of file.
-    :return: shortcut object.
+    :return:
     """
+    if storage.has_file(os.path.join(query_directory, alias)):
+        logger.error("Shortcut is the name of another File.")
+        return
     shortcut_path = os.path.join(query_directory, "shortcut.json")
     shortcut_data = storage.load(shortcut_path)
     shortcut = shortcut_serializer.load(shortcut_data)

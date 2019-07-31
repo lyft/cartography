@@ -58,6 +58,8 @@ def test_shortcut_parsing():
     shortcut = ShortcutSchema().load(shortcut_data)
     assert shortcut.shortcuts[alias] == filename
     assert shortcut.shortcuts[alias_2] == filename
+
+    # Return shortcut back to its original state.
     shortcut.shortcuts.pop(alias)
     shortcut.shortcuts.pop(alias_2)
     shortcut_data = ShortcutSchema().dump(shortcut)
