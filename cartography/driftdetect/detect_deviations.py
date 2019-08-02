@@ -31,12 +31,18 @@ def run_drift_detection(config):
         report_drift_new(new_results)
         report_drift_missing(missing_results)
     except ValidationError as err:
-        msg = "Unable to create DriftStates from files {0},{1} for \n{2}".format(
+        msg = "Unable to create DriftStates from files {0},{1} for \n{2} in directory {3}.".format(
             config.start_state,
             config.end_state,
-            err.messages)
+            err.messages,
+            config.query_directory)
         logger.exception(msg)
-    except ValueError as msg:
+    except ValueError as err:
+        msg = "Unable to create DriftStates from files {0},{1} for \n{2} in directory {3}.".format(
+            config.start_state,
+            config.end_state,
+            err,
+            config.query_directory)
         logger.exception(msg)
 
 
