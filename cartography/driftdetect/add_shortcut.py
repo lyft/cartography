@@ -56,4 +56,3 @@ def add_shortcut(storage, shortcut_serializer, query_directory, alias, filename)
     shortcut.shortcuts[alias] = fp
     new_shortcut_data = shortcut_serializer.dump(shortcut)
     storage.write(new_shortcut_data, shortcut_path)
-    return
