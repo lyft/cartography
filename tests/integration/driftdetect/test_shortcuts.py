@@ -30,7 +30,7 @@ def test_basic_add_shortcuts():
     FileSystem.write(shortcut_data, shortcut_path)
 
 
-def test_shortcut_parsing():
+def test_use_shortcuts_for_shortcuts():
     """
     Tests add_shortcut can parse shortcuts.
     """
@@ -64,6 +64,31 @@ def test_shortcut_parsing():
     shortcut.shortcuts.pop(alias_2)
     shortcut_data = ShortcutSchema().dump(shortcut)
     FileSystem.write(shortcut_data, shortcut_path)
+
+
+def test_shortcut_fails_when_shortcut_exists():
+    """
+    Tests add_shortcut fails when shortcuts exist.
+    """
+    cli = CLI(prog="cartography-detectdrift")
+    directory = "tests/data/test_cli_detectors/detector"
+    alias = "2.json"
+    filename = "1.json"
+    cli.main(["add-shortcut",
+              "--query-directory",
+              directory,
+              "--shortcut",
+              alias,
+              "--file",
+              filename])
+    shortcut_path = directory + '/shortcut.json'
+    shortcut_data = FileSystem.load(shortcut_path)
+    shortcut = ShortcutSchema().load(shortcut_data)
+    try:
+        shortcut.shortcuts[alias]
+        assert False
+    except KeyError:
+        assert True
 
 
 def test_nonexistent_shortcuts():
