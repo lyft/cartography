@@ -52,8 +52,8 @@ def add_shortcut(storage, shortcut_serializer, query_directory, alias, filename)
     fp = shortcut.shortcuts.get(filename, filename)
     if not storage.has_file(os.path.join(query_directory, fp)):
         logger.error("File {0} not found in directory {1}.".format(fp, query_directory))
-        return shortcut
+        return
     shortcut.shortcuts[alias] = fp
     new_shortcut_data = shortcut_serializer.dump(shortcut)
     storage.write(new_shortcut_data, shortcut_path)
-    return shortcut
+    return

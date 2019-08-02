@@ -84,11 +84,8 @@ def test_shortcut_fails_when_shortcut_exists():
     shortcut_path = directory + '/shortcut.json'
     shortcut_data = FileSystem.load(shortcut_path)
     shortcut = ShortcutSchema().load(shortcut_data)
-    try:
+    with pytest.raises(KeyError):
         shortcut.shortcuts[alias]
-        assert False
-    except KeyError:
-        assert True
 
 
 def test_nonexistent_shortcuts():
