@@ -19,14 +19,11 @@ def run_add_shortcut(config):
     if not valid_directory(config.query_directory):
         logger.error("Invalid Drift Detection Directory")
         return
-    if not os.path.isfile(os.path.join(config.query_directory, config.filename)):
-        msg = "File does not exist."
-        logger.error(msg)
-        return
     try:
         add_shortcut(FileSystem, ShortcutSchema(), config.query_directory, config.shortcut, config.filename)
     except ValidationError as err:
-        msg = "Could not load report_info file from {0}.".format(err.messages)
+        msg = "Could not load shortcut file from json file {0} in query directory {1}.".format(err.messages,
+                                                                                               config.query_directory)
         logger.exception(msg)
 
 
@@ -43,13 +40,19 @@ def add_shortcut(storage, shortcut_serializer, query_directory, alias, filename)
     :type alias: String.
     :param alias: Alias for the file.
     :type filename: String.
-    :param filename: Name of file.
-    :return: shortcut object.
+    :param filename: Name of file or shortcut to that file.
+    :return:
     """
+    if storage.has_file(os.path.join(query_directory, alias)):
+        logger.error("Shortcut {0} is the name of another File in directory {1}.".format(alias, query_directory))
+        return
     shortcut_path = os.path.join(query_directory, "shortcut.json")
     shortcut_data = storage.load(shortcut_path)
     shortcut = shortcut_serializer.load(shortcut_data)
-    shortcut.shortcuts[alias] = filename
+    fp = shortcut.shortcuts.get(filename, filename)
+    if not storage.has_file(os.path.join(query_directory, fp)):
+        logger.error("File {0} not found in directory {1}.".format(fp, query_directory))
+        return
+    shortcut.shortcuts[alias] = fp
     new_shortcut_data = shortcut_serializer.dump(shortcut)
     storage.write(new_shortcut_data, shortcut_path)
-    return shortcut
