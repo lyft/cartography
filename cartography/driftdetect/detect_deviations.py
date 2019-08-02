@@ -37,7 +37,12 @@ def run_drift_detection(config):
             err.messages,
             config.query_directory)
         logger.exception(msg)
-    except ValueError as msg:
+    except ValueError as err:
+        msg = "Unable to create DriftStates from files {0},{1} for \n{2} in directory {3}.".format(
+            config.start_state,
+            config.end_state,
+            err,
+            config.query_directory)
         logger.exception(msg)
 
 
