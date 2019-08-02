@@ -39,3 +39,13 @@ class FileSystem:
         for root, directories, _ in os.walk(drift_detection_directory):
             for directory in directories:
                 yield os.path.join(root, directory)
+
+    @classmethod
+    def has_file(cls, filename):
+        """
+        Determines whether or not file exists.
+        :type filename: string
+        :param filename: filepath
+        :return: Bool
+        """
+        return os.path.isfile(filename)
