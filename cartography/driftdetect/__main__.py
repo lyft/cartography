@@ -1,5 +1,6 @@
-import cartography.driftdetect.cli
 import sys
+
+import cartography.driftdetect.cli
 
 
 if __name__ == '__main__':

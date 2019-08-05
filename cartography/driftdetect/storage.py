@@ -2,7 +2,7 @@ import json
 import os
 
 
-class FileSystem(object):
+class FileSystem:
     @classmethod
     def load(cls, file_path):
         """

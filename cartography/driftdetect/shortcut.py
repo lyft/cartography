@@ -3,7 +3,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class Shortcut(object):
+class Shortcut:
     """
     Interface for ReportInfo Class.
 
@@ -12,6 +12,7 @@ class Shortcut(object):
     :type shortcuts: Dictionary
     :param shortcuts: Dictionary of Shortcuts to Filenames
     """
+
     def __init__(self, name, shortcuts):
         self.name = name
         self.shortcuts = shortcuts

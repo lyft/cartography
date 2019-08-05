@@ -1,20 +1,21 @@
-from collections import OrderedDict
 import logging
-from neo4j.v1 import GraphDatabase
-import neobolt.exceptions
 import time
+from collections import OrderedDict
+
+import neobolt.exceptions
+from neo4j.v1 import GraphDatabase
 
 import cartography.intel.analysis
 import cartography.intel.aws
-import cartography.intel.gcp
 import cartography.intel.create_indexes
 import cartography.intel.crxcavator.crxcavator
+import cartography.intel.gcp
 
 
 logger = logging.getLogger(__name__)
 
 
-class Sync(object):
+class Sync:
     """
     A cartography sync task.
 
@@ -23,6 +24,7 @@ class Sync(object):
     pushing that data to Neo4j, and removing now-invalid nodes and relationships from the graph. An instance of this
     class can be configured to run any number of stages in a specific order.
     """
+
     def __init__(self):
         # NOTE we may need meta-stages at some point to allow hooking into pre-sync, sync, and post-sync
         self._stages = OrderedDict()
@@ -101,7 +103,7 @@ def run_with_config(sync, config):
                 "server is running and accessible from your network."
             ),
             config.neo4j_uri,
-            e
+            e,
         )
         return
     except neobolt.exceptions.AuthError as e:
@@ -113,7 +115,7 @@ def run_with_config(sync, config):
                     "without any auth. Check your Neo4j server settings to see if auth is required and, if it is, "
                     "provide cartography with a valid username and password."
                 ),
-                e
+                e,
             )
         else:
             logger.error(
@@ -122,7 +124,7 @@ def run_with_config(sync, config):
                     "a username and password. Check your Neo4j server settings to see if the username and password "
                     "provided to cartography are valid credentials."
                 ),
-                e
+                e,
             )
         return
     default_update_tag = int(time.time())

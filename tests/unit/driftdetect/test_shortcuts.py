@@ -1,9 +1,10 @@
 import os
+
 import pytest
 
-from cartography.driftdetect.storage import FileSystem
-from cartography.driftdetect.serializers import ShortcutSchema
 from cartography.driftdetect.cli import CLI
+from cartography.driftdetect.serializers import ShortcutSchema
+from cartography.driftdetect.storage import FileSystem
 
 
 def test_basic_add_shortcuts():
@@ -15,13 +16,15 @@ def test_basic_add_shortcuts():
     alias = "test_shortcut"
     filename = "1.json"
     shortcut_path = directory + '/shortcut.json'
-    cli.main(["add-shortcut",
-              "--query-directory",
-              directory,
-              "--shortcut",
-              alias,
-              "--file",
-              filename])
+    cli.main([
+        "add-shortcut",
+        "--query-directory",
+        directory,
+        "--shortcut",
+        alias,
+        "--file",
+        filename,
+    ])
     shortcut_data = FileSystem.load(shortcut_path)
     shortcut = ShortcutSchema().load(shortcut_data)
     assert shortcut.shortcuts[alias] == filename
@@ -40,20 +43,24 @@ def test_use_shortcuts_for_shortcuts():
     alias_2 = "test_shortcut_2"
     filename = "1.json"
     shortcut_path = directory + '/shortcut.json'
-    cli.main(["add-shortcut",
-              "--query-directory",
-              directory,
-              "--shortcut",
-              alias,
-              "--file",
-              filename])
-    cli.main(["add-shortcut",
-              "--query-directory",
-              directory,
-              "--shortcut",
-              alias_2,
-              "--file",
-              alias])
+    cli.main([
+        "add-shortcut",
+        "--query-directory",
+        directory,
+        "--shortcut",
+        alias,
+        "--file",
+        filename,
+    ])
+    cli.main([
+        "add-shortcut",
+        "--query-directory",
+        directory,
+        "--shortcut",
+        alias_2,
+        "--file",
+        alias,
+    ])
     shortcut_data = FileSystem.load(shortcut_path)
     shortcut = ShortcutSchema().load(shortcut_data)
     assert shortcut.shortcuts[alias] == filename
@@ -74,13 +81,15 @@ def test_shortcut_fails_when_shortcut_exists():
     directory = "tests/data/test_cli_detectors/detector"
     alias = "2.json"
     filename = "1.json"
-    cli.main(["add-shortcut",
-              "--query-directory",
-              directory,
-              "--shortcut",
-              alias,
-              "--file",
-              filename])
+    cli.main([
+        "add-shortcut",
+        "--query-directory",
+        directory,
+        "--shortcut",
+        alias,
+        "--file",
+        filename,
+    ])
     shortcut_path = directory + '/shortcut.json'
     shortcut_data = FileSystem.load(shortcut_path)
     shortcut = ShortcutSchema().load(shortcut_data)
@@ -94,13 +103,15 @@ def test_nonexistent_shortcuts():
     alias = "test_shortcut"
     filename = "3.json"
     shortcut_path = os.path.join(directory, "shortcut.json")
-    cli.main(["add-shortcut",
-              "--query-directory",
-              directory,
-              "--shortcut",
-              alias,
-              "--file",
-              filename])
+    cli.main([
+        "add-shortcut",
+        "--query-directory",
+        directory,
+        "--shortcut",
+        alias,
+        "--file",
+        filename,
+    ])
     shortcut_data = FileSystem.load(shortcut_path)
     shortcut = ShortcutSchema().load(shortcut_data)
     with pytest.raises(KeyError):
@@ -113,10 +124,12 @@ def test_bad_shortcut():
     start_state = "1.json"
     end_state = "invalid-shortcut"
     with pytest.raises(FileNotFoundError):
-        cli.main(["get-drift",
-                  "--query-directory",
-                  directory,
-                  "--start-state",
-                  start_state,
-                  "--end-state",
-                  end_state])
+        cli.main([
+            "get-drift",
+            "--query-directory",
+            directory,
+            "--start-state",
+            start_state,
+            "--end-state",
+            end_state,
+        ])

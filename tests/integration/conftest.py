@@ -1,5 +1,6 @@
 import neo4j
 import pytest
+
 from tests.integration import settings
 
 

@@ -8,6 +8,7 @@ class GraphStatementJSONEncoder(json.JSONEncoder):
     """
     Support JSON serialization for GraphStatement instances.
     """
+
     def default(self, obj):
         if isinstance(obj, GraphStatement):
             return obj.as_dict()
@@ -16,10 +17,11 @@ class GraphStatementJSONEncoder(json.JSONEncoder):
             return json.JSONEncoder.default(self, obj)
 
 
-class GraphStatement(object):
+class GraphStatement:
     """
     A statement that will run against the cartography graph. Statements can query or update the graph.
     """
+
     def __init__(self, query, parameters=None, iterative=False, iterationsize=0):
         self.query = query
         self.parameters = parameters
@@ -54,7 +56,7 @@ class GraphStatement(object):
             "query": self.query,
             "parameters": self.parameters,
             "iterative": self.iterative,
-            "iterationsize": self.iterationsize
+            "iterationsize": self.iterationsize,
         }
 
     def _run(self, session):
@@ -91,7 +93,7 @@ class GraphStatement(object):
             json_obj.get("query", ""),
             json_obj.get("parameters", {}),
             json_obj.get("iterative", False),
-            json_obj.get("iterationsize", 0)
+            json_obj.get("iterationsize", 0),
         )
 
     @classmethod

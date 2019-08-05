@@ -3,7 +3,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class State(object):
+class State:
     """
     The default object which stores query information.
 
@@ -16,12 +16,14 @@ class State(object):
     :type results: List of List of Strings
     :param results: List of all results of running the validation query
     """
+
     def __init__(
             self,
             name,
             validation_query,
             properties,
-            results):
+            results,
+    ):
 
         self.name = name
         self.validation_query = validation_query

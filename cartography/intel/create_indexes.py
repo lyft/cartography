@@ -10,7 +10,7 @@ def get_index_statements():
     with load_resource_binary('cartography.data', 'indexes.cypher') as f:
         for line in f.readlines():
             statements.append(
-                line.decode('UTF-8').rstrip('\r\n')
+                line.decode('UTF-8').rstrip('\r\n'),
             )
     return statements
 
