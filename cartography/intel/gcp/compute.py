@@ -1,9 +1,10 @@
 # Google Compute Engine API-centric functions
 # https://cloud.google.com/compute/docs/concepts
-from googleapiclient.discovery import HttpError
 import json
 import logging
 from collections import namedtuple
+
+from googleapiclient.discovery import HttpError
 
 from cartography.util import run_cleanup_job
 
@@ -58,7 +59,7 @@ def get_zones_in_project(project_id, compute, max_results=None):
                     "Full details: %s"
                 ),
                 project_id,
-                e
+                e,
             )
             return None
         elif reason == 'notFound':
@@ -68,7 +69,7 @@ def get_zones_in_project(project_id, compute, max_results=None):
                     "Full details: %s"
                 ),
                 project_id,
-                e
+                e,
             )
             return None
         else:
@@ -163,7 +164,7 @@ def _parse_instance_uri_prefix(prefix):
 
     return InstanceUriPrefix(
         project_id=split_list[1],
-        zone_name=split_list[3]
+        zone_name=split_list[3],
     )
 
 
@@ -387,7 +388,7 @@ def _parse_port_string_to_rule(port, protocol, fw_partial_uri, is_allow_rule):
         'ruleid': f"{fw_partial_uri}/{rule_type}/{port_range_str}{protocol}",
         'fromport': fromport,
         'toport': toport,
-        'protocol': protocol
+        'protocol': protocol,
     }
 
 
@@ -429,7 +430,7 @@ def load_gcp_instances(neo4j_session, data, gcp_update_tag):
             InstanceName=instance['name'],
             ZoneName=instance['zone_name'],
             Hostname=instance.get('hostname', None),
-            gcp_update_tag=gcp_update_tag
+            gcp_update_tag=gcp_update_tag,
         )
         _attach_instance_tags(neo4j_session, instance, gcp_update_tag)
         _attach_gcp_nics(neo4j_session, instance, gcp_update_tag)
@@ -474,7 +475,7 @@ def load_gcp_vpcs(neo4j_session, vpcs, gcp_update_tag):
             AutoCreateSubnetworks=vpc['auto_create_subnetworks'],
             RoutingMode=vpc['routing_config_routing_mode'],
             Description=vpc['description'],
-            gcp_update_tag=gcp_update_tag
+            gcp_update_tag=gcp_update_tag,
         )
 
 
@@ -521,7 +522,7 @@ def load_gcp_subnets(neo4j_session, subnets, gcp_update_tag):
             GatewayAddress=s['gateway_address'],
             IpCidrRange=s['ip_cidr_range'],
             PrivateIpGoogleAccess=s['private_ip_google_access'],
-            gcp_update_tag=gcp_update_tag
+            gcp_update_tag=gcp_update_tag,
         )
 
 
@@ -562,7 +563,7 @@ def _attach_instance_tags(neo4j_session, instance, gcp_update_tag):
                 TagId=tag_id,
                 TagValue=tag,
                 VpcPartialUri=nic['vpc_partial_uri'],
-                gcp_update_tag=gcp_update_tag
+                gcp_update_tag=gcp_update_tag,
             )
 
 
@@ -607,7 +608,7 @@ def _attach_gcp_nics(neo4j_session, instance, gcp_update_tag):
             NetworkIP=nic['networkIP'],
             NicName=nic['name'],
             gcp_update_tag=gcp_update_tag,
-            SubnetPartialUri=nic['subnet_partial_uri']
+            SubnetPartialUri=nic['subnet_partial_uri'],
         )
         _attach_gcp_nic_access_configs(neo4j_session, nic_id, nic, gcp_update_tag)
 
@@ -650,7 +651,7 @@ def _attach_gcp_nic_access_configs(neo4j_session, nic_id, nic, gcp_update_tag):
             SetPublicPtr=ac.get('setPublicPtr', None),
             PublicPtrDomainName=ac.get('publicPtrDomainName', None),
             NetworkTier=ac.get('networkTier', None),
-            gcp_update_tag=gcp_update_tag
+            gcp_update_tag=gcp_update_tag,
         )
 
 
@@ -672,7 +673,7 @@ def _attach_gcp_vpc(neo4j_session, instance_id, gcp_update_tag):
     neo4j_session.run(
         query,
         InstanceId=instance_id,
-        gcp_update_tag=gcp_update_tag
+        gcp_update_tag=gcp_update_tag,
     )
 
 
@@ -714,7 +715,7 @@ def load_gcp_ingress_firewalls(neo4j_session, fw_list, gcp_update_tag):
             SelfLink=fw['selfLink'],
             VpcPartialUri=fw['vpc_partial_uri'],
             HasTargetServiceAccounts=fw['has_target_service_accounts'],
-            gcp_update_tag=gcp_update_tag
+            gcp_update_tag=gcp_update_tag,
         )
         _attach_firewall_rules(neo4j_session, fw, gcp_update_tag)
         _attach_target_tags(neo4j_session, fw, gcp_update_tag)
@@ -774,7 +775,7 @@ def _attach_firewall_rules(neo4j_session, fw, gcp_update_tag):
                     FromPort=rule.get('fromport'),
                     ToPort=rule.get('toport'),
                     Range=ip_range,
-                    gcp_update_tag=gcp_update_tag
+                    gcp_update_tag=gcp_update_tag,
                 )
 
 
@@ -806,7 +807,7 @@ def _attach_target_tags(neo4j_session, fw, gcp_update_tag):
             FwPartialUri=fw['id'],
             TagId=tag_id,
             TagValue=tag,
-            gcp_update_tag=gcp_update_tag
+            gcp_update_tag=gcp_update_tag,
         )
 
 

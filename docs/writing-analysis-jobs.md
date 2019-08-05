@@ -33,15 +33,15 @@ We can take the ideas above and use Cypher's declarative syntax to "sketch" out 
 
 1. _The EC2 instance is a member of a Security Group that has an IP Rule applied to it that allows inbound traffic from the 0.0.0.0/0 subnet._
 
-    In Cypher, this is 
+    In Cypher, this is
 
     ```
-    MATCH 
+    MATCH
     (:IpRange{id: '0.0.0.0/0'})-[:MEMBER_OF_IP_RULE]->(:IpPermissionInbound)
     -[:MEMBER_OF_EC2_SECURITY_GROUP]->(group:EC2SecurityGroup)
     <-[:MEMBER_OF_EC2_SECURITY_GROUP]-(instance:EC2Instance)
-    
-    SET instance.exposed_internet = true, 
+
+    SET instance.exposed_internet = true,
         instance.exposed_internet_type = coalesce(instance.exposed_internet_type , []) + 'direct';
     ```
     In the `SET` clause we add `exposed_internet = True` to the instance.  We also add a field for `exposed_internet_type` to denote what type of internet exposure has occurred here.  You can read the [documentation for `coalesce`](https://neo4j.com/docs/cypher-manual/current/functions/scalar/#functions-coalesce), but in English this last part says "add `direct` to the list of ways this instance is exposed to the internet".
@@ -52,34 +52,34 @@ We can take the ideas above and use Cypher's declarative syntax to "sketch" out 
     This is the same as the previous query except for the final line:
 
     ```
-    MATCH 
+    MATCH
     (:IpRange{id: '0.0.0.0/0'})-[:MEMBER_OF_IP_RULE]->(:IpPermissionInbound)
     -[:MEMBER_OF_EC2_SECURITY_GROUP]->(group:EC2SecurityGroup)
     <-[:NETWORK_INTERFACE*..2]-(instance:EC2Instance)
 
-    SET instance.exposed_internet = true, 
+    SET instance.exposed_internet = true,
         instance.exposed_internet_type = coalesce(instance.exposed_internet_type , []) + 'direct';
     ```
-    
+
     The `*..2` operator means "within 2 hops".  We use this here as a shortcut because there are a few more relationships between NetworkInterfaces and EC2SecurityGroups that we can skip over.
-    
+
 Finally, notice that (1) and (2) are similar enough that we can actually merge them like this:
-    
+
 ```
-MATCH 
+MATCH
 (:IpRange{id: '0.0.0.0/0'})-[:MEMBER_OF_IP_RULE]->(:IpPermissionInbound)
 -[:MEMBER_OF_EC2_SECURITY_GROUP]->(group:EC2SecurityGroup)
 <-[:MEMBER_OF_EC2_SECURITY_GROUP|NETWORK_INTERFACE*..2]-(instance:EC2Instance)
 
-SET instance.exposed_internet = true, 
+SET instance.exposed_internet = true,
     instance.exposed_internet_type = coalesce(instance.exposed_internet_type , []) + 'direct';
 ```
-    
+
 Kinda neat, right?
 
-    
+
 ### The skeleton of an Analysis Job
-Now that we know what we want to do on a sync, how should we structure the Analysis Job?  Here is the basic skeleton that we recommend.  
+Now that we know what we want to do on a sync, how should we structure the Analysis Job?  Here is the basic skeleton that we recommend.
 
 #### Clean up first, then update
 In general, the first statement(s) should be a "clean-up phase" that removes custom attributes or relationships that you may have added in a previous run.  This ensures that whatever labels you add on this current run will be up to date and not stale.  Next, the statements after the clean-up phase will perform the  matching and attribute updates as described in the previous section.
@@ -92,11 +92,11 @@ In general, the first statement(s) should be a "clean-up phase" that removes cus
   "statements": [
       {
         "__comment": "This is a clean-up statement to remove custom attributes",
-        "query": "MATCH (n) 
-                  WHERE EXISTS(n.exposed_internet) 
-                        AND labels(n) IN ['AutoScalingGroup', 'EC2Instance', 'LoadBalancer'] 
-                  WITH n LIMIT {LIMIT_SIZE} 
-                  REMOVE n.exposed_internet, n.exposed_internet_type 
+        "query": "MATCH (n)
+                  WHERE EXISTS(n.exposed_internet)
+                        AND labels(n) IN ['AutoScalingGroup', 'EC2Instance', 'LoadBalancer']
+                  WITH n LIMIT {LIMIT_SIZE}
+                  REMOVE n.exposed_internet, n.exposed_internet_type
                   RETURN COUNT(*) as TotalCompleted",
         "iterative": true,
         "iterationsize": 1000
@@ -107,12 +107,12 @@ In general, the first statement(s) should be a "clean-up phase" that removes cus
                  -[:MEMBER_OF_EC2_SECURITY_GROUP]->(group:EC2SecurityGroup)
                  <-[:MEMBER_OF_EC2_SECURITY_GROUP|NETWORK_INTERFACE*..2]-(instance:EC2Instance)
 
-                 SET instance.exposed_internet = true, 
+                 SET instance.exposed_internet = true,
                      instance.exposed_internet_type = coalesce(instance.exposed_internet_type , []) + 'direct';,
         "iterative": true,
         "iterationsize": 100
       }
-  ]  
+  ]
 }
 ```
 
