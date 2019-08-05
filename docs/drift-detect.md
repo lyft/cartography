@@ -121,17 +121,15 @@ All set 👍
 	Finally, we should see the following messages pop up:
 
 	```
-	New Query Results:
-
 	Query Name: Internet Exposed EC2 Instances
-	Result Information:
+	
+	New Query Results:
+	
 	n.instancetype | t2.micro
 	n.privateipaddress | 10.255.255.250
 	n.publicdnsname | ec2.0.compute.amazonaws.com
 	n.exposed_internet_type | ['direct']
 
-	Query Name: Internet Exposed EC2 Instances
-	Result Information:
 	n.instancetype | c4.large
 	n.privateipaddress | 10.255.255.255
 	n.publicdnsname | ec2.5.compute.amazonaws.com
@@ -139,8 +137,6 @@ All set 👍
 
 	Missing Query Results:
 
-	Query Name: Internet Exposed EC2 Instances
-	Result Information:
 	n.instancetype | t2.micro
 	n.privateipaddress | 10.255.255.253
 	n.publicdnsname | ec2.4.compute.amazonaws.com
