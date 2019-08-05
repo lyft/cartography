@@ -65,8 +65,7 @@ def test_state_picks_up_drift():
     state_new.properties = state_old.properties
     drifts = compare_states(state_old, state_new)
     mock_session.run.assert_called_with(state_new.validation_query)
-    assert drifts
-    assert drifts[0][0] == {key: "7"}
+    assert {key: "7"} in drifts
 
 
 def test_state_multiple_expectations():
@@ -98,7 +97,7 @@ def test_state_multiple_expectations():
     state_new.properties = state_old.properties
     drifts = compare_states(state_old, state_new)
     mock_session.run.assert_called_with(state_new.validation_query)
-    assert {key_1: "7", key_2: "14"} in drifts[0]
+    assert {key_1: "7", key_2: "14"} in drifts
 
 
 def test_drift_from_multiple_properties():
@@ -131,8 +130,8 @@ def test_drift_from_multiple_properties():
     drifts = compare_states(state_old, state_new)
     mock_session.run.assert_called_with(state_new.validation_query)
     print(drifts)
-    assert {key_1: "7", key_2: "14", key_3: ["21", "28", "35"]} in drifts[0]
-    assert {key_1: "3", key_2: "10", key_3: ["17", "24", "31"]} not in drifts[0]
+    assert {key_1: "7", key_2: "14", key_3: ["21", "28", "35"]} in drifts
+    assert {key_1: "3", key_2: "10", key_3: ["17", "24", "31"]} not in drifts
 
 
 def test_json_loader():
@@ -160,11 +159,11 @@ def test_state_differences():
     state_1 = StateSchema().load(data)
     state_2 = StateSchema().load(data)
     state_2.results.append(["7"])
-    drift_info_state_pairs = compare_states(state_1, state_2)
-    assert ({'d.test': "7"}, state_2) in drift_info_state_pairs
+    drift_info = compare_states(state_1, state_2)
+    assert {'d.test': "7"} in drift_info
 
 
-def test_compare_states():
+def test_perform_drift_detection():
     """
     Test that differences between two states is recorded
     :return:
@@ -177,5 +176,5 @@ def test_compare_states():
     state_1.results.append(["7"])
     state_2.results.append(["8"])
     new, missing = perform_drift_detection(state_1, state_2)
-    assert ({'d.test': "7"}, state_1) in missing
-    assert ({'d.test': "8"}, state_2) in new
+    assert {'d.test': "7"} in missing
+    assert {'d.test': "8"} in new

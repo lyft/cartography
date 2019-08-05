@@ -104,5 +104,5 @@ def compare_states(start_state, end_state):
                 drift_info[prop] = value
             else:
                 drift_info[prop] = field
-        differences.append((drift_info, end_state))
+        differences.append(drift_info)
     return differences
