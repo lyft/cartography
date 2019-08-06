@@ -1,9 +1,12 @@
-from oauth2client.client import GoogleCredentials, ApplicationDefaultCredentialsError
-import googleapiclient.discovery
 import logging
 from collections import namedtuple
 
-from cartography.intel.gcp import crm, compute
+import googleapiclient.discovery
+from oauth2client.client import ApplicationDefaultCredentialsError
+from oauth2client.client import GoogleCredentials
+
+from cartography.intel.gcp import compute
+from cartography.intel.gcp import crm
 from cartography.util import run_analysis_job
 
 logger = logging.getLogger(__name__)
@@ -51,7 +54,7 @@ def _initialize_resources(credentials):
     return Resources(
         crm_v1=_get_crm_resource_v1(credentials),
         crm_v2=_get_crm_resource_v2(credentials),
-        compute=_get_compute_resource(credentials)
+        compute=_get_compute_resource(credentials),
     )
 
 
@@ -117,7 +120,7 @@ def start_gcp_ingestion(session, config):
                 "Make sure your GCP credentials are configured correctly, your credentials file (if any) is valid, and "
                 "that the identity you are authenticating to has the securityReviewer role attached."
             ),
-            e
+            e,
         )
         return
     resources = _initialize_resources(credentials)
@@ -133,5 +136,5 @@ def start_gcp_ingestion(session, config):
     run_analysis_job(
         'gcp_compute_asset_inet_exposure.json',
         session,
-        common_job_parameters
+        common_job_parameters,
     )

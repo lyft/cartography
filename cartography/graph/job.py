@@ -10,6 +10,7 @@ class GraphJobJSONEncoder(json.JSONEncoder):
     """
     Support JSON serialization for GraphJob instances.
     """
+
     def default(self, obj):
         if isinstance(obj, GraphJob):
             return obj.as_dict()
@@ -18,10 +19,11 @@ class GraphJobJSONEncoder(json.JSONEncoder):
             return json.JSONEncoder.default(self, obj)
 
 
-class GraphJob(object):
+class GraphJob:
     """
     A job that will run against the cartography graph. A job is a sequence of statements which execute sequentially.
     """
+
     def __init__(self, name, statements):
         self.name = name
         self.statements = statements
@@ -45,7 +47,7 @@ class GraphJob(object):
                 logger.error(
                     "Unhandled error while executing statement in job '%s': %s",
                     self.name,
-                    e
+                    e,
                 )
                 raise
         logger.debug("Finished job '%s'.", self.name)

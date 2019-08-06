@@ -1,6 +1,7 @@
 import json
-import pytest
 import sys
+
+import pytest
 if sys.version_info >= (3, 7):
     from importlib.resources import contents, read_text
 else:
@@ -15,7 +16,7 @@ def test_analysis_jobs_are_valid_json():
         try:
             json.loads(blob)
         except Exception as e:
-            pytest.fail("json.loads failed for analysis job '{}' with exception: {}".format(job_name, e))
+            pytest.fail(f"json.loads failed for analysis job '{job_name}' with exception: {e}")
 
 
 def test_cleanup_jobs_are_valid_json():
@@ -26,4 +27,4 @@ def test_cleanup_jobs_are_valid_json():
         try:
             json.loads(blob)
         except Exception as e:
-            pytest.fail("json.loads failed for cleanup job '{}' with exception: {}".format(job_name, e))
+            pytest.fail(f"json.loads failed for cleanup job '{job_name}' with exception: {e}")

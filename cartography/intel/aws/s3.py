@@ -5,7 +5,8 @@ import logging
 from botocore.exceptions import ClientError
 from policyuniverse.policy import Policy
 
-from cartography.util import run_analysis_job, run_cleanup_job
+from cartography.util import run_analysis_job
+from cartography.util import run_cleanup_job
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +56,9 @@ def get_acl(bucket, client):
         if "AccessDenied" in e.args[0]:
             logger.warning("Failed to retrieve S3 bucket {} ACL - Access Denied".format(bucket['Name']))
             return None
+        elif "NoSuchBucket" in e.args[0]:
+            logger.warning("Failed to retrieve S3 bucket {} ACL - No Such Bucket".format(bucket['Name']))
+            return None
         else:
             raise
     return acl
@@ -79,7 +83,7 @@ def _load_s3_acls(session, acls, aws_account_id, update_tag):
     session.run(
         ingest_acls,
         acls=acls,
-        UpdateTag=update_tag
+        UpdateTag=update_tag,
     )
 
     # implement the acl permission
@@ -87,7 +91,7 @@ def _load_s3_acls(session, acls, aws_account_id, update_tag):
     run_analysis_job(
         'aws_s3acl_analysis.json',
         session,
-        {'AWS_ID': aws_account_id}
+        {'AWS_ID': aws_account_id},
     )
 
 
@@ -107,7 +111,7 @@ def _load_s3_policies(session, policies, update_tag):
     session.run(
         ingest_policies,
         policies=policies,
-        UpdateTag=update_tag
+        UpdateTag=update_tag,
     )
 
 
@@ -119,7 +123,7 @@ def _set_default_values(session, aws_account_id):
 
     session.run(
         set_defaults,
-        AWS_ID=aws_account_id
+        AWS_ID=aws_account_id,
     )
 
 
@@ -145,7 +149,7 @@ def load_s3_details(session, s3_details_iter, aws_account_id, update_tag):
     run_cleanup_job(
         'aws_s3_details.json',
         session,
-        {'UPDATE_TAG': update_tag, 'AWS_ID': aws_account_id}
+        {'UPDATE_TAG': update_tag, 'AWS_ID': aws_account_id},
     )
 
     _load_s3_acls(session, acls, aws_account_id, update_tag)
@@ -199,7 +203,7 @@ def parse_policy(bucket, policy):
             return {
                 "bucket": bucket,
                 "internet_accessible": True,
-                "accessible_actions": list(policy.internet_accessible_actions())
+                "accessible_actions": list(policy.internet_accessible_actions()),
             }
         else:
             return None
@@ -242,7 +246,7 @@ def parse_acl(acl, bucket, aws_account_id):
                 "displayname": grant['Grantee'].get('DisplayName', "none"),
                 "granteeid": grant['Grantee'].get('ID', "none"),
                 "uri": "",
-                "permission": grant.get('Permission', "none")
+                "permission": grant.get('Permission', "none"),
             }
         elif grant['Grantee']['Type'] == 'Group':
             parsed_acl = {
@@ -253,14 +257,14 @@ def parse_acl(acl, bucket, aws_account_id):
                 "displayname": "",
                 "granteeid": "",
                 "uri": grant['Grantee'].get('URI', "none"),
-                "permission": grant.get('Permission', "none")
+                "permission": grant.get('Permission', "none"),
             }
         else:
             logger.warning("Unexpected grant type: %s", grant['Grantee']['Type'])
             continue
 
         # TODO this can be replaced with a string join
-        id_data = "{0}:{1}:{2}:{3}:{4}:{5}:{6}:{7}".format(
+        id_data = "{}:{}:{}:{}:{}:{}:{}:{}".format(
             aws_account_id,
             parsed_acl['owner'],
             parsed_acl['ownerid'],
@@ -268,7 +272,7 @@ def parse_acl(acl, bucket, aws_account_id):
             parsed_acl['displayname'],
             parsed_acl['granteeid'],
             parsed_acl['uri'],
-            parsed_acl['permission']
+            parsed_acl['permission'],
         )
 
         parsed_acl['id'] = hashlib.sha256(id_data.encode("utf8")).hexdigest()
@@ -299,7 +303,7 @@ def load_s3_buckets(session, data, current_aws_account_id, aws_update_tag):
             BucketName=bucket["Name"],
             CreationDate=str(bucket["CreationDate"]),
             AWS_ACCOUNT_ID=current_aws_account_id,
-            aws_update_tag=aws_update_tag
+            aws_update_tag=aws_update_tag,
         )
 
 

@@ -10,13 +10,14 @@ import cartography.sync
 logger = logging.getLogger(__name__)
 
 
-class CLI(object):
+class CLI:
     """
     :type sync: cartography.sync.Sync
     :param sync: A sync task for the command line program to execute.
     :type prog: string
     :param prog: The name of the command line program. This will be displayed in usage and help output.
     """
+
     def __init__(self, sync, prog=None):
         self.prog = prog
         self.sync = sync
@@ -69,7 +70,7 @@ class CLI(object):
             '--neo4j-user',
             type=str,
             default=None,
-            help='A username with which to authenticate to Neo4j.'
+            help='A username with which to authenticate to Neo4j.',
         )
         parser.add_argument(
             '--neo4j-password-env-var',
@@ -150,7 +151,7 @@ class CLI(object):
                 logger.debug(
                     "Reading password for Neo4j user '%s' from environment variable '%s'.",
                     config.neo4j_user,
-                    config.neo4j_password_env_var
+                    config.neo4j_password_env_var,
                 )
                 config.neo4j_password = os.environ.get(config.neo4j_password_env_var)
             if not config.neo4j_password:
