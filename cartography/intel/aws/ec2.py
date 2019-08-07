@@ -86,9 +86,10 @@ def get_ec2_vpcs(session, region):
 
 def load_ec2_key_pairs(session, data, region, current_aws_account_id, aws_update_tag):
     ingest_key_pair = """
-    MERGE (keypair:KeyPair:EC2KeyPair{keyname: {KeyName}, region: {Region}})
+    MERGE (keypair:KeyPair:EC2KeyPair{arn: {ARN}})
     ON CREATE SET keypair.firstseen = timestamp()
-    SET keypair.keyfingerprint = {KeyFingerprint}, keypair.lastupdated = {aws_update_tag}
+    SET keypair.keyname = {KeyName}, keypair.keyfingerprint = {KeyFingerprint}, keypair.region = {Region},
+    keypair.lastupdated = {aws_update_tag}
     WITH keypair
     MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
     MERGE (aa)-[r:RESOURCE]->(keypair)
@@ -97,11 +98,13 @@ def load_ec2_key_pairs(session, data, region, current_aws_account_id, aws_update
     """
 
     for key_pair in data['KeyPairs']:
-        key_name = key_pair.get("KeyName", "")
-        key_fingerprint = key_pair.get("KeyFingerprint", "")
+        key_name = key_pair["KeyName"]
+        key_fingerprint = key_pair.get("KeyFingerprint")
+        key_pair_arn = f'arn:aws:ec2:{region}:{current_aws_account_id}:key-pair/{key_name}'
 
         session.run(
             ingest_key_pair,
+            ARN=key_pair_arn,
             KeyName=key_name,
             KeyFingerprint=key_fingerprint,
             AWS_ACCOUNT_ID=current_aws_account_id,
@@ -150,9 +153,9 @@ def load_ec2_instances(session, data, region, current_aws_account_id, aws_update
     """
 
     ingest_key_pair = """
-    MERGE (keypair:KeyPair:EC2KeyPair{keyname: {KeyName}, region: {Region}})
+    MERGE (keypair:KeyPair:EC2KeyPair{arn: {KeyPairARN}})
     ON CREATE SET keypair.firstseen = timestamp()
-    SET keypair.lastupdated = {aws_update_tag}
+    SET keypair.keyname = {KeyName}, keypair.region = {Region}, keypair.lastupdated = {aws_update_tag}
     WITH keypair
     MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
     MERGE (aa)-[r:RESOURCE]->(keypair)
@@ -228,9 +231,12 @@ def load_ec2_instances(session, data, region, current_aws_account_id, aws_update
             )
 
             if instance.get("KeyName"):
+                key_name = instance["KeyName"]
+                key_pair_arn = f'arn:aws:ec2:{region}:{current_aws_account_id}:key-pair/{key_name}'
                 session.run(
                     ingest_key_pair,
-                    KeyName=instance.get("KeyName", ""),
+                    KeyPairARN=key_pair_arn,
+                    KeyName=key_name,
                     Region=region,
                     InstanceId=instanceid,
                     AWS_ACCOUNT_ID=current_aws_account_id,
