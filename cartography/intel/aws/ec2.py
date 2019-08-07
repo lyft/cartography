@@ -231,9 +231,12 @@ def load_ec2_instances(session, data, region, current_aws_account_id, aws_update
             )
 
             if instance.get("KeyName"):
+                key_name = instance["KeyName"]
+                key_pair_arn = f'arn:aws:ec2:{region}:{current_aws_account_id}:key-pair/{key_name}'
                 session.run(
                     ingest_key_pair,
-                    KeyName=instance["KeyName"],
+                    KeyPairARN=key_pair_arn
+                    KeyName=key_name,
                     Region=region,
                     InstanceId=instanceid,
                     AWS_ACCOUNT_ID=current_aws_account_id,
