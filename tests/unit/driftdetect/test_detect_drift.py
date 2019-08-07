@@ -1,8 +1,8 @@
 import pytest
 
-from cartography.driftdetect.storage import FileSystem
-from cartography.driftdetect.serializers import StateSchema
 from cartography.driftdetect.detect_deviations import perform_drift_detection
+from cartography.driftdetect.serializers import StateSchema
+from cartography.driftdetect.storage import FileSystem
 
 
 def test_basic_drift_detection():

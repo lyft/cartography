@@ -1,5 +1,6 @@
-import cartography.cli
 import unittest.mock
+
+import cartography.cli
 from tests.integration import settings
 
 

@@ -8,7 +8,7 @@ REPORT_RESPONSE = {
                     'risk':
                         {
                             'total': 437,
-                            'metadata': {}
+                            'metadata': {},
                         },
                     'webstore':
                         {
@@ -19,7 +19,7 @@ REPORT_RESPONSE = {
                             'name': 'CartographyIntegrationTest',
                             'offered_by': '',
                             'permission_warnings': [
-                                'Your data on all websites'
+                                'Your data on all websites',
                             ],
                             'privacy_policy': '',
                             'rating': 4.6778846,
@@ -31,13 +31,13 @@ REPORT_RESPONSE = {
                             'version': '',
                             'website': '',
                             'type': 'Extension',
-                            'price': ''
-                        }
+                            'price': '',
+                        },
                 },
                 'extension_id': 'f06981cbc72a3c6e2e9e736cbdaef4865a4571bc',
-                'version': '1.0'
-            }
-    ]
+                'version': '1.0',
+            },
+        ],
 }
 
 TRANSFORMED_EXTENSIONS_DATA = [
@@ -64,17 +64,19 @@ TRANSFORMED_EXTENSIONS_DATA = [
         'website': '',
         'type': 'Extension',
         'price': '',
-        'report_link': 'https://crxcavator.io/report/f06981cbc72a3c6e2e9e736cbdaef4865a4571bc/1.0'
-    }
+        'report_link': 'https://crxcavator.io/report/f06981cbc72a3c6e2e9e736cbdaef4865a4571bc/1.0',
+    },
 ]
 
 USER_RESPONSE = {
     'f06981cbc72a3c6e2e9e736cbdaef4865a4571bc':
-        {'4.8':
-             {'name': 'CartographyIntegrationTest',
-              'users': ['user@example.com']
-              }
-         }
+        {
+            '4.8':
+            {
+                'name': 'CartographyIntegrationTest',
+                'users': ['user@example.com'],
+            },
+        },
 }
 
 TRANSFORMED_USER_DATA = ['user@example.com']
@@ -82,6 +84,6 @@ TRANSFORMED_USER_DATA = ['user@example.com']
 TRANSFORMED_USER_EXTENSION_DATA = [
     {
         'id': 'f06981cbc72a3c6e2e9e736cbdaef4865a4571bc|1.0',
-        'user': 'user@example.com'
-    }
+        'user': 'user@example.com',
+    },
 ]

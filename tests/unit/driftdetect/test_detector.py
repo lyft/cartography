@@ -51,7 +51,7 @@ def test_state_picks_up_drift():
         {key: "4"},
         {key: "5"},
         {key: "6"},
-        {key: "7"}
+        {key: "7"},
     ]
 
     mock_boltstatementresult.__getitem__.side_effect = results.__getitem__
@@ -84,7 +84,7 @@ def test_state_multiple_expectations():
         {key_1: "4", key_2: "11"},
         {key_1: "5", key_2: "12"},
         {key_1: "6", key_2: "13"},
-        {key_1: "7", key_2: "14"}
+        {key_1: "7", key_2: "14"},
     ]
 
     mock_boltstatementresult.__getitem__.side_effect = results.__getitem__
@@ -117,7 +117,7 @@ def test_drift_from_multiple_properties():
         {key_1: "4", key_2: "11", key_3: ["18", "25", "32"]},
         {key_1: "5", key_2: "12", key_3: ["19", "26", "33"]},
         {key_1: "6", key_2: "13", key_3: ["20", "27", "34"]},
-        {key_1: "7", key_2: "14", key_3: ["21", "28", "35"]}
+        {key_1: "7", key_2: "14", key_3: ["21", "28", "35"]},
     ]
     mock_boltstatementresult.__getitem__.side_effect = results.__getitem__
     mock_boltstatementresult.__iter__.side_effect = results.__iter__

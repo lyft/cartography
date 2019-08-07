@@ -1,13 +1,15 @@
 import datetime
 import os
-import pytest
+
 import neobolt.exceptions
+import pytest
 from marshmallow import ValidationError
 
-from cartography.driftdetect.storage import FileSystem
-from cartography.driftdetect.serializers import StateSchema, ShortcutSchema
-from cartography.driftdetect.get_states import get_query_state
 from cartography.driftdetect.add_shortcut import add_shortcut
+from cartography.driftdetect.get_states import get_query_state
+from cartography.driftdetect.serializers import ShortcutSchema
+from cartography.driftdetect.serializers import StateSchema
+from cartography.driftdetect.storage import FileSystem
 
 
 def test_get_state_detectors(neo4j_session):
@@ -19,7 +21,7 @@ def test_get_state_detectors(neo4j_session):
         ["5", "12", ["19", "26", "33"]],
         ["6", "13", ["20", "27", "34"]],
         ["7", "14", ["21", "28", "35"]],
-        ["36", "37", ["38", "39", "40"]]
+        ["36", "37", ["38", "39", "40"]],
     ]
     ingest_nodes = """
         MERGE (person:Person{test: {test}})
@@ -34,7 +36,7 @@ def test_get_state_detectors(neo4j_session):
             ingest_nodes,
             test=test,
             test2=test2,
-            test3=test3
+            test3=test3,
         )
 
     query_directory = "tests/data/test_update_detectors/test_detector"
@@ -75,7 +77,7 @@ def test_faulty_queries(neo4j_session):
         ["5", "12", ["19", "26", "33"]],
         ["6", "13", ["20", "27", "34"]],
         ["7", "14", ["21", "28", "35"]],
-        ["36", "37", ["38", "39", "40"]]
+        ["36", "37", ["38", "39", "40"]],
     ]
     ingest_nodes = """
             MERGE (person:Person{test: {test}})
@@ -90,7 +92,7 @@ def test_faulty_queries(neo4j_session):
             ingest_nodes,
             test=test,
             test2=test2,
-            test3=test3
+            test3=test3,
         )
 
     query_directory = "tests/data/test_update_detectors/invalid_query"

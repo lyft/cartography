@@ -1,5 +1,5 @@
-import pathlib
 import logging
+import pathlib
 
 logger = logging.getLogger(__name__)
 
@@ -19,13 +19,13 @@ def valid_directory(directory):
     if not drift_detection_directory.exists():
         logger.warning(
             "Cannot perform drift-detection because the provided job path '%s' does not exist.",
-            drift_detection_directory
+            drift_detection_directory,
         )
         return False
     if not drift_detection_directory.is_dir():
         logger.warning(
             "Cannot perform drift-detection because the provided job path '%s' is not a directory.",
-            drift_detection_directory
+            drift_detection_directory,
         )
         return False
     return True

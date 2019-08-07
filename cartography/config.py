@@ -1,4 +1,4 @@
-class Config(object):
+class Config:
     """
     A common interface for cartography configuration.
 
@@ -20,13 +20,16 @@ class Config(object):
     :type analysis_job_directory: str
     :param analysis_job_directory: Path to a directory tree containing analysis jobs to run. Optional.
     """
-    def __init__(self,
-                 neo4j_uri,
-                 neo4j_user=None,
-                 neo4j_password=None,
-                 update_tag=None,
-                 aws_sync_all_profiles=False,
-                 analysis_job_directory=None):
+
+    def __init__(
+        self,
+        neo4j_uri,
+        neo4j_user=None,
+        neo4j_password=None,
+        update_tag=None,
+        aws_sync_all_profiles=False,
+        analysis_job_directory=None,
+    ):
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user
         self.neo4j_password = neo4j_password

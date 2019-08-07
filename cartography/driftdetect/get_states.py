@@ -1,13 +1,14 @@
-import os
+import logging
 import os.path
 import time
-import logging
-from neo4j.v1 import GraphDatabase
+
 import neobolt.exceptions
 from marshmallow import ValidationError
+from neo4j.v1 import GraphDatabase
 
-from cartography.driftdetect.serializers import StateSchema, ShortcutSchema
 from cartography.driftdetect.add_shortcut import add_shortcut
+from cartography.driftdetect.serializers import ShortcutSchema
+from cartography.driftdetect.serializers import StateSchema
 from cartography.driftdetect.storage import FileSystem
 from cartography.driftdetect.util import valid_directory
 
@@ -41,7 +42,7 @@ def run_get_states(config):
                 "Neo4j server is running and accessible from your network."
             ),
             config.neo4j_uri,
-            e
+            e,
         )
         return
     except neobolt.exceptions.AuthError as e:
@@ -53,7 +54,7 @@ def run_get_states(config):
                     "without any auth. Check your Neo4j server settings to see if auth is required and, if it is, "
                     "provide driftdetect with a valid username and password."
                 ),
-                e
+                e,
             )
         else:
             logger.error(
@@ -62,7 +63,7 @@ def run_get_states(config):
                     "with a username and password. Check your Neo4j server settings to see if the username and "
                     "password provided to driftdetect are valid credentials."
                 ),
-                e
+                e,
             )
         return
 
@@ -75,12 +76,13 @@ def run_get_states(config):
                 get_query_state(session, query_directory, state_serializer, FileSystem, filename)
                 add_shortcut(FileSystem, shortcut_serializer, query_directory, 'most-recent', filename)
             except ValidationError as err:
-                msg = "Unable to create State for directory {0}, with data \n{1}".format(
+                msg = "Unable to create State for directory {}, with data \n{}".format(
                     query_directory,
-                    err.messages)
+                    err.messages,
+                )
                 logger.exception(msg)
             except KeyError as err:
-                msg = "Could not find {0} field in state template for directory {1}.".format(err, query_directory)
+                msg = f"Could not find {err} field in state template for directory {query_directory}."
                 logger.exception(msg)
             except FileNotFoundError as err:
                 logger.exception(err)
@@ -125,7 +127,7 @@ def get_state(session, state):
     """
 
     new_results = session.run(state.validation_query)
-    logger.debug("Updating results for {0}".format(state.name))
+    logger.debug(f"Updating results for {state.name}")
 
     state.properties = new_results.keys()
     results = []

@@ -8,7 +8,7 @@
 - [GCPInstance](#gcpinstance)
 - [GCP Network Tags](#gcpnetworktag)
 - [GCPNetworkInterface](#gcpnetworkinterface)
-- [GCPVpc](#gcpvpc) 
+- [GCPVpc](#gcpvpc)
 - [GCPNicAccessConfig](#gcpnicaccessconfig)
 - [GCPSubnet](#gcpsubnet)
 - [GCPFirewall](#gcpfirewall)
@@ -20,9 +20,9 @@ Representation of a GCP [Organization](https://cloud.google.com/resource-manager
 
 
 | Field | Description |
-|-------|--------------| 
+|-------|--------------|
 | firstseen| Timestamp of when a sync job first discovered this node  |
-| lastupdated |  Timestamp of the last time the node was updated | 
+| lastupdated |  Timestamp of the last time the node was updated |
 | id | The name of the GCP Organization, e.g. "organizations/1234" |
 | displayname | The "friendly name", e.g. "My Company"
 | lifecyclestate | The organization's current lifecycle state. Assigned by the server.  See the [official docs](https://cloud.google.com/resource-manager/reference/rest/v1/organizations#LifecycleState).
@@ -34,7 +34,7 @@ Representation of a GCP [Organization](https://cloud.google.com/resource-manager
     ```
     (GCPOrganization)-[RESOURCE]->(GCPFolder)
     ```
-    
+
 - GCPOrganizations can contain GCPProjects.
 
     ```
@@ -42,79 +42,79 @@ Representation of a GCP [Organization](https://cloud.google.com/resource-manager
     ```
 
  ## GCPFolder
- 
+
  Representation of a GCP [Folder](https://cloud.google.com/resource-manager/reference/rest/v2/folders).  An additional helpful reference is the [Google Compute Platform resource hierarchy](https://cloud.google.com/resource-manager/docs/cloud-platform-resource-hierarchy).
 
 | Field | Description |
-|-------|--------------| 
+|-------|--------------|
 | firstseen| Timestamp of when a sync job first discovered this node  |
-| lastupdated |  Timestamp of the last time the node was updated | 
+| lastupdated |  Timestamp of the last time the node was updated |
 | id | The name of the folder, e.g. "folders/1234"|
 | displayname | A friendly name of the folder, e.g. "My Folder".
 | lifecyclestate | The folder's current lifecycle state. Assigned by the server.  See the [official docs](https://cloud.google.com/resource-manager/reference/rest/v2/folders#LifecycleState).
- 
- 
+
+
  ### Relationships
- 
+
  - GCPOrganizations are parents of GCPFolders.
 
     ```
     (GCPOrganization)<-[PARENT]-(GCPFolder)
     ```
-    
+
  - GCPFolders can contain GCPProjects
- 
+
     ```
     (GCPFolder)-[RESOURCE]->(GCPProject)
     ```
-    
+
  - GCPFolders can contain other GCPFolders.
- 
+
     ```
     (GCPFolder)-[RESOURCE]->(GCPFolder)
     ```
- 
+
  ## GCPProject
- 
+
  Representation of a GCP [Project](https://cloud.google.com/resource-manager/reference/rest/v1/projects).  An additional helpful reference is the [Google Compute Platform resource hierarchy](https://cloud.google.com/resource-manager/docs/cloud-platform-resource-hierarchy).
 
 | Field | Description |
-|-------|--------------| 
+|-------|--------------|
 | firstseen| Timestamp of when a sync job first discovered this node  |
-| lastupdated |  Timestamp of the last time the node was updated | 
+| lastupdated |  Timestamp of the last time the node was updated |
 | id | The ID of the project, e.g. "sys-12345"|
 | displayname | A friendly name of the project, e.g. "MyProject".
 | lifecyclestate | The project's current lifecycle state. Assigned by the server.  See the [official docs](https://cloud.google.com/resource-manager/reference/rest/v1/projects#LifecycleState).
- 
+
  ### Relationships
-     
+
 - GCPOrganizations contain GCPProjects.
 
     ```
     (GCPOrganization)-[RESOURCE]->(GCPProjects)
     ```
-       
+
  - GCPFolders can contain GCPProjects
- 
+
     ```
     (GCPFolder)-[RESOURCE]->(GCPProject)
     ```
-    
-- GCPVpcs are part of GCPProjects 
+
+- GCPVpcs are part of GCPProjects
 
     ```
     (GCPProject)-[RESOURCE]->(GCPVpc)
     ```
 
-    
+
  ## GCPInstance
- 
+
  Representation of a GCP [Instance](https://cloud.google.com/compute/docs/reference/rest/v1/instances).  Additional references can be found in the [official documentation]( https://cloud.google.com/compute/docs/concepts).
- 
+
  | Field | Description |
-|-------|--------------| 
+|-------|--------------|
 | firstseen| Timestamp of when a sync job first discovered this node  |
-| lastupdated |  Timestamp of the last time the node was updated | 
+| lastupdated |  Timestamp of the last time the node was updated |
 | id | The partial resource URI representing this instance. Has the form `projects/{project_name}/zones/{zone_name}/instances/{instance_name}`. |
 | partial_uri | Same as `id` above. |
 | self_link | The full resource URI representing this instance. Has the form `https://www.googleapis.com/compute/v1/{partial_uri}` |
@@ -130,7 +130,7 @@ Representation of a GCP [Organization](https://cloud.google.com/resource-manager
     ```
     (GCPProject)-[RESOURCE]->(GCPInstance)
     ```
-    
+
 - GCPNetworkInterfaces are attached to GCPInstances
 
     ```
@@ -142,20 +142,20 @@ Representation of a GCP [Organization](https://cloud.google.com/resource-manager
     ```
     (GCPInstance)-[:MEMBER_OF_GCP_VPC]->(GCPVpc)
     ```
-    
+
     Also note that this relationship is a shortcut for:
-    
+
     ```
     (GCPInstance)-[:NETWORK_INTERFACE]->(:GCPNetworkInterface)-[:PART_OF_SUBNET]->(GCPSubnet)<-[:RESOURCE]-(GCPVpc)
     ```
-    
+
 - GCP Instances may have GCP Tags defined on them for use in [network firewall routing](https://cloud.google.com/blog/products/gcp/labelling-and-grouping-your-google-cloud-platform-resources).
 
     ```
     (GCPInstance)-[:TAGGED]->(GCPNetworkTag)
     ```
 
-- GCP Firewalls allow ingress to GCP instances.  
+- GCP Firewalls allow ingress to GCP instances.
     ```
     (GCPFirewall)-[:FIREWALL_INGRESS]->(GCPInstance)
     ```
@@ -164,14 +164,14 @@ Representation of a GCP [Organization](https://cloud.google.com/resource-manager
     ```
     (vpc:GCPVpc)<-[MEMBER_OF_GCP_VPC]-(GCPInstance)-[TAGGED]->(GCPNetworkTag)-[TARGET_TAG]-(GCPFirewall{direction: 'INGRESS'})<-[RESOURCE]-(vpc)
     ```
-    
+
     as well as
     ```
     MATCH (fw:GCPFirewall{direction: 'INGRESS', has_target_service_accounts: False}})
     WHERE NOT (fw)-[TARGET_TAG]->(GCPNetworkTag)
     MATCH (GCPInstance)-[MEMBER_OF_GCP_VPC]->(GCPVpc)-[RESOURCE]->(fw)
     ```
- 
+
 ## GCPNetworkTag
 
 Representation of a Tag defined on a GCP Instance or GCP Firewall.  Tags are defined on GCP instances for use in [network firewall routing](https://cloud.google.com/blog/products/gcp/labelling-and-grouping-your-google-cloud-platform-resources).
@@ -179,12 +179,12 @@ Representation of a Tag defined on a GCP Instance or GCP Firewall.  Tags are def
 | Field | Description |
 |-------|-------------|
 | firstseen| Timestamp of when a sync job first discovered this node  |
-| lastupdated |  Timestamp of the last time the node was updated | 
+| lastupdated |  Timestamp of the last time the node was updated |
 | id | GCP doesn't define a resource URI for Tags so we define this as `{instance resource URI}/tags/{tag value}`
 | tag_id | same as `id` |
 | value | The actual value of the tag |
 
-### Relationships 
+### Relationships
 
 - GCP Instances can be labeled with tags.
     ```
@@ -201,15 +201,15 @@ Representation of a Tag defined on a GCP Instance or GCP Firewall.  Tags are def
     ```
     (GCPVpc)-[DEFINED_IN]->(GCPNetworkTag)
     ```
-    
+
 ## GCPVpc
 
 Representation of a GCP [VPC](https://cloud.google.com/compute/docs/reference/rest/v1/networks/).  In GCP documentation this is also known simply as a "Network" object.
 
 | Field | Description |
-|-------|--------------| 
+|-------|--------------|
 | firstseen| Timestamp of when a sync job first discovered this node  |
-| lastupdated |  Timestamp of the last time the node was updated | 
+| lastupdated |  Timestamp of the last time the node was updated |
 | id | The partial resource URI representing this VPC.  Has the form `projects/{project_name}/global/networks/{vpc name}`.
 | partial_uri | Same as `id` |
 | self_link | The full resource URI representing this VPC. Has the form `https://www.googleapis.com/compute/v1/{partial_uri}` |
@@ -221,13 +221,13 @@ Representation of a GCP [VPC](https://cloud.google.com/compute/docs/reference/re
 
 ### Relationships
 
-- GCPVpcs are part of projects 
+- GCPVpcs are part of projects
 
     ```
     (GCPProject)-[RESOURCE]->(GCPVpc)
     ```
 
-- GCPVpcs contain GCPSubnets 
+- GCPVpcs contain GCPSubnets
 
     ```
     (GCPVpc)-[RESOURCE]->(GCPSubnet)
@@ -250,21 +250,21 @@ Representation of a GCP [VPC](https://cloud.google.com/compute/docs/reference/re
     ```
     (GCPInstance)-[:MEMBER_OF_GCP_VPC]->(GCPVpc)
     ```
-    
+
     Also note that this relationship is a shortcut for:
-    
+
     ```
     (GCPInstance)-[:NETWORK_INTERFACE]->(:GCPNetworkInterface)-[:PART_OF_SUBNET]->(GCPSubnet)<-[:RESOURCE]-(GCPVpc)
     ```
-    
+
 ## GCPNetworkInterface
 
 Representation of a GCP Instance's [network interface](https://cloud.google.com/compute/docs/reference/rest/v1/instances/list) (scroll down to the fields on "networkInterface").
 
 | Field | Description |
-|-------|--------------| 
+|-------|--------------|
 | firstseen| Timestamp of when a sync job first discovered this node  |
-| lastupdated |  Timestamp of the last time the node was updated | 
+| lastupdated |  Timestamp of the last time the node was updated |
 | id | A partial resource URI representing this network interface.  Note: GCP does not define a partial resource URI for network interfaces, so we create one so we can uniquely identify GCP network interfaces.  Has the form `projects/{project_name}/zones/{zone_name}/instances/{instance_name}/networkinterfaces/{network interface name}`.
 | nic_id | Same as `id` |
 | name | The name of the network interface |
@@ -283,7 +283,7 @@ Representation of a GCP Instance's [network interface](https://cloud.google.com/
     ```
     (GCPNetworkInterface)-[PART_OF_SUBNET]->(GCPSubnet)
     ```
-    
+
 - GCPNetworkInterfaces have GCPNicAccessConfig objects defined on them
 
     ```
@@ -296,9 +296,9 @@ Representation of a GCP Instance's [network interface](https://cloud.google.com/
 Representation of the AccessConfig object on a GCP Instance's [network interface](https://cloud.google.com/compute/docs/reference/rest/v1/instances/list) (scroll down to the fields on "networkInterface").
 
 | Field | Description |
-|-------|--------------| 
+|-------|--------------|
 | firstseen| Timestamp of when a sync job first discovered this node  |
-| lastupdated |  Timestamp of the last time the node was updated | 
+| lastupdated |  Timestamp of the last time the node was updated |
 | id | A partial resource URI representing this AccessConfig.  Note: GCP does not define a partial resource URI for AccessConfigs, so we create one so we can uniquely identify GCP network interface access configs.  Has the form `projects/{project_name}/zones/{zone_name}/instances/{instance_name}/networkinterfaces/{network interface name}/accessconfigs/{access config type}`.
 | partial_uri | Same as `id` |
 | type | The type of configuration. GCP docs say: "The default and only option is ONE_TO_ONE_NAT." |
@@ -321,18 +321,18 @@ Representation of the AccessConfig object on a GCP Instance's [network interface
 Representation of a GCP [Subnetwork](https://cloud.google.com/compute/docs/reference/rest/v1/subnetworks).
 
 | Field | Description |
-|-------|--------------| 
+|-------|--------------|
 | firstseen| Timestamp of when a sync job first discovered this node  |
-| lastupdated |  Timestamp of the last time the node was updated | 
+| lastupdated |  Timestamp of the last time the node was updated |
 | id | A partial resource URI representing this Subnet.  Has the form `projects/{project}/regions/{region}/subnetworks/{subnet name}`.
 | partial_uri | Same as `id` |
 | self_link | The full resource URI representing this subnet. Has the form `https://www.googleapis.com/compute/v1/{partial_uri}` |
-| project_id | The project ID that this Subnet belongs to | 
+| project_id | The project ID that this Subnet belongs to |
 | name | The name of this Subnet |
 | region | The region of this Subnet |
 | gateway_address | Gateway IP address of this Subnet |
 | ip_cidr_range | The CIDR range covered by this Subnet |
-| vpc_partial_uri | The partial URI of the VPC that this Subnet is a part of | 
+| vpc_partial_uri | The partial URI of the VPC that this Subnet is a part of |
 | private_ip_google_access | Whether the VMs in this subnet can access Google services without assigned external IP addresses. This field can be both set at resource creation time and updated using setPrivateIpGoogleAccess. |
 
 ### Relationships
@@ -342,7 +342,7 @@ Representation of a GCP [Subnetwork](https://cloud.google.com/compute/docs/refer
     ```
     (GCPVpc)-[RESOURCE]->(GCPSubnet)
     ```
-    
+
 - GCPNetworkInterfaces are connected to GCPSubnets
 
     ```
@@ -355,9 +355,9 @@ Representation of a GCP [Subnetwork](https://cloud.google.com/compute/docs/refer
 Representation of a GCP [Firewall](https://cloud.google.com/compute/docs/reference/rest/v1/firewalls/list).
 
 | Field | Description |
-|-------|--------------| 
+|-------|--------------|
 | firstseen| Timestamp of when a sync job first discovered this node  |
-| lastupdated |  Timestamp of the last time the node was updated | 
+| lastupdated |  Timestamp of the last time the node was updated |
 | id | A partial resource URI representing this Firewall.
 | partial_uri | Same as `id` |
 | direction | Either 'INGRESS' for inbound or 'EGRESS' for outbound
@@ -385,13 +385,13 @@ Representation of a GCP [Firewall](https://cloud.google.com/compute/docs/referen
     ```
     (GcpIpRule)-[DENIED_BY]->(GCPFirewall)
     ```
-    
+
 - GCP Firewalls can be labeled with tags to direct traffic to or deny traffic to labeled GCPInstances
     ```
     (GCPFirewall)-[:TARGET_TAG]->(GCPNetworkTag)
     ```
 
-- GCP Firewalls allow ingress to GCP instances.  
+- GCP Firewalls allow ingress to GCP instances.
     ```
     (GCPFirewall)-[:FIREWALL_INGRESS]->(GCPInstance)
     ```
@@ -400,7 +400,7 @@ Representation of a GCP [Firewall](https://cloud.google.com/compute/docs/referen
     ```
     (vpc:GCPVpc)<-[MEMBER_OF_GCP_VPC]-(GCPInstance)-[TAGGED]->(GCPNetworkTag)-[TARGET_TAG]-(GCPFirewall{direction: 'INGRESS'})<-[RESOURCE]-(vpc)
     ```
-    
+
     as well as
     ```
     MATCH (fw:GCPFirewall{direction: 'INGRESS', has_target_service_accounts: False}})
@@ -417,7 +417,7 @@ An IpPermissionInbound node is a specific type of IpRule.  It represents a gener
 |-------|-------------|
 | **ruleid** | `{firewall_partial_uri}/{rule_type}/{port_range}{protocol}` |
 | firstseen| Timestamp of when a sync job first discovered this node  |
-| lastupdated |  Timestamp of the last time the node was updated | 
+| lastupdated |  Timestamp of the last time the node was updated |
 | protocol | The protocol this rule applies to |
 | fromport | Lowest port in the range defined by this rule|
 | toport | Highest port in the range defined by this rule|
@@ -429,7 +429,7 @@ An IpPermissionInbound node is a specific type of IpRule.  It represents a gener
 	```
 	(GCPIpRule, IpRule, IpPermissionInbound)<-[MEMBER_OF_IP_RULE)-(:IpRange)
 	```
-	
+
 - Firewalls define rules that allow traffic
 
     ```
@@ -447,9 +447,9 @@ An IpPermissionInbound node is a specific type of IpRule.  It represents a gener
 Representation of an IP range or subnet.
 
 | Field | Description |
-|-------|--------------| 
+|-------|--------------|
 | firstseen| Timestamp of when a sync job first discovered this node  |
-| lastupdated |  Timestamp of the last time the node was updated | 
+| lastupdated |  Timestamp of the last time the node was updated |
 | id | CIDR notation for the IP range. E.g. "0.0.0.0/0" for the whole internet.
 
 - GCP Firewall rules are defined on IpRange objects.

@@ -14,7 +14,7 @@ def test__find_roles_assumable_in_policy():
                 "Resource": "arn:aws:iam::000000000000:role/example-role-0",
                 "Effect": "Allow",
             }],
-            ["arn:aws:iam::000000000000:role/example-role-0"]
+            ["arn:aws:iam::000000000000:role/example-role-0"],
         ),
         Case(
             'must handle policies containing lists of statements',
@@ -28,12 +28,12 @@ def test__find_roles_assumable_in_policy():
                     "Action": "sts:AssumeRole",
                     "Resource": "arn:aws:iam::000000000000:role/example-role-1",
                     "Effect": "Allow",
-                }
+                },
             ],
             [
                 "arn:aws:iam::000000000000:role/example-role-0",
                 "arn:aws:iam::000000000000:role/example-role-1",
-            ]
+            ],
         ),
         Case(
             'must handle policies containing a single statement',
@@ -42,7 +42,7 @@ def test__find_roles_assumable_in_policy():
                 "Resource": "arn:aws:iam::000000000000:role/example-role-0",
                 "Effect": "Allow",
             },
-            ["arn:aws:iam::000000000000:role/example-role-0"]
+            ["arn:aws:iam::000000000000:role/example-role-0"],
         ),
         Case(
             'must handle statements containing lists of actions',
@@ -51,7 +51,7 @@ def test__find_roles_assumable_in_policy():
                 "Resource": "arn:aws:iam::000000000000:role/example-role-0",
                 "Effect": "Allow",
             }],
-            ["arn:aws:iam::000000000000:role/example-role-0"]
+            ["arn:aws:iam::000000000000:role/example-role-0"],
         ),
         Case(
             'must handle actions containing wildcard characters',
@@ -60,7 +60,7 @@ def test__find_roles_assumable_in_policy():
                 "Resource": "arn:aws:iam::000000000000:role/example-role-0",
                 "Effect": "Allow",
             }],
-            ["arn:aws:iam::000000000000:role/example-role-0"]
+            ["arn:aws:iam::000000000000:role/example-role-0"],
         ),
         Case(
             'must not modify resource casing',
@@ -69,8 +69,8 @@ def test__find_roles_assumable_in_policy():
                 "Resource": "arn:aws:iam::000000000000:role/EXAMPLE-role-0",
                 "Effect": "Allow",
             }],
-            ["arn:aws:iam::000000000000:role/EXAMPLE-role-0"]
-        )
+            ["arn:aws:iam::000000000000:role/EXAMPLE-role-0"],
+        ),
     )
 
     for case in cases:
@@ -78,7 +78,7 @@ def test__find_roles_assumable_in_policy():
             {
                 "PolicyDocument": {
                     "Statement": case.statements,
-                }
-            }
+                },
+            },
         )
         assert actual == case.expected, case.message

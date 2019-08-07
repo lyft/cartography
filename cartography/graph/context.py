@@ -32,7 +32,7 @@ Example:
 """
 
 
-class Context(object):
+class Context:
     def __init__(self, update_tag):
         self.update_tag = update_tag
 
