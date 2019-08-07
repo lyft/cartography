@@ -33,6 +33,12 @@ def get_ec2_security_group_data(session, region):
     return {'SecurityGroups': security_groups}
 
 
+def get_ec2_key_pairs(session, region):
+    client = session.client('ec2', region_name=region, config=_get_botocore_config())
+    result = client.describe_key_pairs()
+    return result
+
+
 def get_ec2_instances(session, region):
     client = session.client('ec2', region_name=region, config=_get_botocore_config())
     paginator = client.get_paginator('describe_instances')
@@ -72,6 +78,35 @@ def get_ec2_vpcs(session, region):
     return client.describe_vpcs()
 
 
+def load_ec2_key_pairs(session, data, region, current_aws_account_id, aws_update_tag):
+    ingest_key_pair = """
+    MERGE (keypair:KeyPair:EC2KeyPair{arn: {ARN}, id: {ARN}})
+    ON CREATE SET keypair.firstseen = timestamp()
+    SET keypair.keyname = {KeyName}, keypair.keyfingerprint = {KeyFingerprint}, keypair.region = {Region},
+    keypair.lastupdated = {aws_update_tag}
+    WITH keypair
+    MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MERGE (aa)-[r:RESOURCE]->(keypair)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {aws_update_tag}
+    """
+
+    for key_pair in data['KeyPairs']:
+        key_name = key_pair["KeyName"]
+        key_fingerprint = key_pair.get("KeyFingerprint")
+        key_pair_arn = f'arn:aws:ec2:{region}:{current_aws_account_id}:key-pair/{key_name}'
+
+        session.run(
+            ingest_key_pair,
+            ARN=key_pair_arn,
+            KeyName=key_name,
+            KeyFingerprint=key_fingerprint,
+            AWS_ACCOUNT_ID=current_aws_account_id,
+            Region=region,
+            aws_update_tag=aws_update_tag,
+        )
+
+
 def load_ec2_instances(session, data, region, current_aws_account_id, aws_update_tag):
     ingest_reservation = """
     MERGE (reservation:EC2Reservation{reservationid: {ReservationId}})
@@ -107,6 +142,22 @@ def load_ec2_instances(session, data, region, current_aws_account_id, aws_update
     WITH instance
     MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
     MERGE (aa)-[r:RESOURCE]->(instance)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {aws_update_tag}
+    """
+
+    ingest_key_pair = """
+    MERGE (keypair:KeyPair:EC2KeyPair{arn: {KeyPairARN}, id: {KeyPairARN}})
+    ON CREATE SET keypair.firstseen = timestamp()
+    SET keypair.keyname = {KeyName}, keypair.region = {Region}, keypair.lastupdated = {aws_update_tag}
+    WITH keypair
+    MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MERGE (aa)-[r:RESOURCE]->(keypair)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {aws_update_tag}
+    with keypair
+    MATCH (instance:EC2Instance{instanceid: {InstanceId}})
+    MERGE (instance)<-[r:SSH_LOGIN_TO]-(keypair)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {aws_update_tag}
     """
@@ -172,6 +223,19 @@ def load_ec2_instances(session, data, region, current_aws_account_id, aws_update
                 Region=region,
                 aws_update_tag=aws_update_tag,
             )
+
+            if instance.get("KeyName"):
+                key_name = instance["KeyName"]
+                key_pair_arn = f'arn:aws:ec2:{region}:{current_aws_account_id}:key-pair/{key_name}'
+                session.run(
+                    ingest_key_pair,
+                    KeyPairARN=key_pair_arn,
+                    KeyName=key_name,
+                    Region=region,
+                    InstanceId=instanceid,
+                    AWS_ACCOUNT_ID=current_aws_account_id,
+                    aws_update_tag=aws_update_tag,
+                )
 
             if instance.get("SecurityGroups"):
                 for group in instance["SecurityGroups"]:
@@ -845,6 +909,10 @@ def cleanup_ec2_security_groupinfo(session, common_job_parameters):
     )
 
 
+def cleanup_ec2_key_pairs(session, common_job_parameters):
+    run_cleanup_job('aws_import_ec2_key_pairs_cleanup.json', session, common_job_parameters)
+
+
 def cleanup_ec2_instances(session, common_job_parameters):
     run_cleanup_job('aws_import_ec2_instances_cleanup.json', session, common_job_parameters)
 
@@ -878,6 +946,14 @@ def sync_ec2_security_groupinfo(
         data = get_ec2_security_group_data(boto3_session, region)
         load_ec2_security_groupinfo(session, data, region, current_aws_account_id, aws_update_tag)
     cleanup_ec2_security_groupinfo(session, common_job_parameters)
+
+
+def sync_ec2_key_pairs(session, boto3_session, regions, current_aws_account_id, aws_update_tag, common_job_parameters):
+    for region in regions:
+        logger.debug("Syncing EC2 key pairs for region '%s' in account '%s'.", region, current_aws_account_id)
+        data = get_ec2_key_pairs(boto3_session, region)
+        load_ec2_key_pairs(session, data, region, current_aws_account_id, aws_update_tag)
+    cleanup_ec2_key_pairs(session, common_job_parameters)
 
 
 def sync_ec2_instances(session, boto3_session, regions, current_aws_account_id, aws_update_tag, common_job_parameters):
