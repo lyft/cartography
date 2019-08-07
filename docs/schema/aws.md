@@ -602,6 +602,7 @@ Representation of an AWS [EC2 Key Pair](https://docs.aws.amazon.com/AWSEC2/lates
 | keyname | The name of the key pair |
 | keyfingerprint | The fingerprint of the public key |
 | region| The AWS region |
+| **arn** | AWS-unique identifier for this object |
 
 ### Relationships
 
