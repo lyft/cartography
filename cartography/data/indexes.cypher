@@ -17,7 +17,7 @@ CREATE INDEX ON :DynamoDBGlobalSecondaryIndex(id);
 CREATE INDEX ON :EC2Instance(instanceid);
 CREATE INDEX ON :EC2Instance(publicdnsname);
 CREATE INDEX ON :EC2Reservation(reservationid);
-CREATE INDEX ON :EC2KeyPair(keyname);
+CREATE INDEX ON :EC2KeyPair(arn);
 CREATE INDEX ON :EC2SecurityGroup(id);
 CREATE INDEX ON :EC2SecurityGroup(groupid);
 CREATE INDEX ON :EC2Subnet(id);
