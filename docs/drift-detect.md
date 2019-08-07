@@ -123,14 +123,14 @@ All set 👍
 	```
 	Query Name: Internet Exposed EC2 Instances
 	Query Properties: ["n.instancetype", "n.privateipaddress", "n.publicdnsname", "n.exposed_internet_type"]
-	
+
 	New Query Results:
-	
+
 	["t2.micro", "10.255.255.250", "ec2.0.compute.amazonaws.com", ['direct']]
     ["c4.large", "10.255.255.255", "ec2.5.compute.amazonaws.com", ['direct', elb']]
-	
+
 	Missing Query Results:
-	
+
 	["t2.micro", "10.255.255.253", "ec2.4.compute.amazonaws.com", ['direct', elb']]
 	```
 
@@ -147,9 +147,9 @@ It can be cumbersome to always type Unix timestamp filenames.  To make this easi
 	`cartography-detectdrift add-shortcut --shortcut first-run --file <unix_timestamp_1>.json`
 
 	`cartography-detectdrift add-shortcut --shortcut second-run --file <unix_timestamp_2>.json`
-	
+
 	We can even use shortcuts to refer to files when adding shortcuts!
-	
+
 	`cartography-detectdrift add-shortcut --shortcut baseline --file most-recent`
 
 2. **Comparing state files with shortcuts**

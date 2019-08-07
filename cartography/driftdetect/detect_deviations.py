@@ -3,10 +3,10 @@ import os
 
 from marshmallow import ValidationError
 
+from cartography.driftdetect.reporter import report_drift
 from cartography.driftdetect.serializers import ShortcutSchema
 from cartography.driftdetect.serializers import StateSchema
 from cartography.driftdetect.storage import FileSystem
-from cartography.driftdetect.reporter import report_drift
 from cartography.driftdetect.util import valid_directory
 
 logger = logging.getLogger(__name__)

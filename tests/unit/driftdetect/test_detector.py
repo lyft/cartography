@@ -1,10 +1,10 @@
 from unittest.mock import MagicMock
 
+from cartography.driftdetect.detect_deviations import compare_states
+from cartography.driftdetect.get_states import get_state
 from cartography.driftdetect.model import State
 from cartography.driftdetect.serializers import StateSchema
 from cartography.driftdetect.storage import FileSystem
-from cartography.driftdetect.get_states import get_state
-from cartography.driftdetect.detect_deviations import compare_states
 
 
 def test_state_no_drift():
