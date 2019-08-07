@@ -155,7 +155,7 @@ def load_ec2_instances(session, data, region, current_aws_account_id, aws_update
     ingest_key_pair = """
     MERGE (keypair:KeyPair:EC2KeyPair{arn: {KeyPairARN}})
     ON CREATE SET keypair.firstseen = timestamp()
-    SET keypair.keyname = {KeyName}, keypair.region = {region}, keypair.lastupdated = {aws_update_tag}
+    SET keypair.keyname = {KeyName}, keypair.region = {Region}, keypair.lastupdated = {aws_update_tag}
     WITH keypair
     MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
     MERGE (aa)-[r:RESOURCE]->(keypair)
