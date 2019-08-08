@@ -31,6 +31,8 @@ def test_basic_add_shortcuts():
     shortcut.shortcuts.pop(alias)
     shortcut_data = ShortcutSchema().dump(shortcut)
     FileSystem.write(shortcut_data, shortcut_path)
+    with open(os.path.join(directory, "shortcut.json"), 'a') as f:
+        f.write('\n')
 
 
 def test_use_shortcuts_for_shortcuts():
@@ -71,6 +73,8 @@ def test_use_shortcuts_for_shortcuts():
     shortcut.shortcuts.pop(alias_2)
     shortcut_data = ShortcutSchema().dump(shortcut)
     FileSystem.write(shortcut_data, shortcut_path)
+    with open(os.path.join(directory, "shortcut.json"), 'a') as f:
+        f.write('\n')
 
 
 def test_shortcut_fails_when_shortcut_exists():
