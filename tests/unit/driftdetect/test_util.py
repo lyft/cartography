@@ -1,5 +1,7 @@
 from unittest.mock import MagicMock
-from cartography.driftdetect.util import load_object, store_object
+
+from cartography.driftdetect.util import load_object
+from cartography.driftdetect.util import store_object
 
 
 def test_load_object():
@@ -7,7 +9,7 @@ def test_load_object():
     schema = MagicMock()
     fp = MagicMock()
     data = MagicMock()
-    schema.load.return_value = data
+    storage.load.return_value = data
     load_object(storage, schema, fp)
     storage.load.assert_called_with(fp)
     schema.load.assert_called_with(data)
