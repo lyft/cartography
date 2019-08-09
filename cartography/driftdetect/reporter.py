@@ -1,5 +1,5 @@
 
-def report_drift_new(results):
+def report_drift_new(results, state_properties):
     """
     Prints new additions in Query Results between two states.
 
@@ -10,10 +10,12 @@ def report_drift_new(results):
     print("New Query Results:")
     print()
     for result in results:
-        print(result)
+        for field, value in zip(state_properties, result):
+            print(field, ": ", value)
+        print()
 
 
-def report_drift_missing(results):
+def report_drift_missing(results, state_properties):
     """
     Prints missing results in Query Results between two states.
 
@@ -24,7 +26,9 @@ def report_drift_missing(results):
     print("Missing Query Results:")
     print()
     for result in results:
-        print(result)
+        for field, value in zip(state_properties, result):
+            print(field, ": ", value)
+        print()
 
 
 def report_drift(new_results, missing_results, state_name, state_properties):
@@ -37,10 +41,9 @@ def report_drift(new_results, missing_results, state_name, state_properties):
     :return: None.
     """
     print("Query Name: ", state_name)
-    print("Query Properties: ", state_properties)
     print()
     if new_results:
-        report_drift_new(new_results)
+        report_drift_new(new_results, state_properties)
     print()
     if missing_results:
-        report_drift_missing(missing_results)
+        report_drift_missing(missing_results, state_properties)

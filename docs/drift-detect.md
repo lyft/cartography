@@ -126,12 +126,22 @@ All set 👍
 
 	New Query Results:
 
-	["t2.micro", "10.255.255.250", "ec2.0.compute.amazonaws.com", ['direct']]
-    ["c4.large", "10.255.255.255", "ec2.5.compute.amazonaws.com", ['direct', elb']]
+	n.instancetype: t2.micro
+	n.privateipaddress: 10.255.255.250
+	n.publicdnsname: ec2.0.compute.amazonaws.com
+	n.exposed_internet_type: ['direct']
+
+	n.instancetype: c4.large
+	n.privateipaddress: 10.255.255.255
+	n.publicdnsname: ec2.5.compute.amazonaws.com
+	n.exposed_internet_type: ['direct', 'elb']
 
 	Missing Query Results:
 
-	["t2.micro", "10.255.255.253", "ec2.4.compute.amazonaws.com", ['direct', elb']]
+	n.instancetype: t2.micro
+	n.privateipaddress: 10.255.255.253
+	n.publicdnsname: ec2.4.compute.amazonaws.com
+	n.exposed_internet_type: ['direct', 'elb']
 	```
 
 	This gives us a quick way to view infrastructure changes!
