@@ -66,6 +66,10 @@ def test_get_state_detectors(neo4j_session):
     assert shortcut.shortcuts['most-recent'] == file_1
     shortcut_data = shortcut_serializer.dump(shortcut)
     FileSystem.write(shortcut_data, os.path.join(query_directory, "shortcut.json"))
+    with open(os.path.join(query_directory, "shortcut.json"), 'a') as f:
+        f.write('\n')
+    with open(os.path.join(query_directory, file_1), 'a') as f:
+        f.write('\n')
 
 
 def test_faulty_queries(neo4j_session):
