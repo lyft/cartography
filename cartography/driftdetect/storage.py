@@ -27,6 +27,7 @@ class FileSystem:
         """
         with open(file_path, 'w') as json_file:
             json.dump(data, json_file, sort_keys=True, indent=4)
+            json_file.write('\n')
 
     @classmethod
     def walk(cls, drift_detection_directory):
