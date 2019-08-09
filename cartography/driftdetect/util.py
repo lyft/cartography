@@ -29,3 +29,14 @@ def valid_directory(directory):
         )
         return False
     return True
+
+
+def load_object(storage, schema, fp):
+    data = storage.load(fp)
+    obj = schema.load(data)
+    return obj
+
+
+def store_object(storage, schema, fp, obj):
+    data = schema.dump(obj)
+    storage.write(data, fp)
