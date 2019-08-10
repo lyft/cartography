@@ -26,7 +26,6 @@ def get_all_groups(admin):
             groups = []
             break
         groups = groups + resp.get('groups', [])
-        break
         request = admin.groups().list_next(request, resp)
     return groups
 
@@ -53,7 +52,6 @@ def get_all_users(admin):
             users = []
             break
         users = users + resp.get('users', [])
-        break
         request = admin.users().list_next(request, resp)
     return users
 
