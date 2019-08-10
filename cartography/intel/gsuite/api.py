@@ -26,6 +26,7 @@ def get_all_groups(admin):
             groups = []
             break
         groups = groups + resp.get('groups', [])
+        # break
         request = admin.groups().list_next(request, resp)
     return groups
 
@@ -52,12 +53,13 @@ def get_all_users(admin):
             users = []
             break
         users = users + resp.get('users', [])
+        # break
         request = admin.users().list_next(request, resp)
     return users
 
 
-def load_gsuite_groups(session, groups, gsuite_update_tag):
-    ingestion_cypher = """
+def get_ingestion_groups_qry():
+    return """
         UNWIND {UserData} as group
         MERGE (g:GSuiteGroup{id: group.id})
         ON CREATE SET
@@ -70,12 +72,15 @@ def load_gsuite_groups(session, groups, gsuite_update_tag):
         g.name = group.name,
         g.lastupdated = {UpdateTag}
     """
+
+
+def load_gsuite_groups(session, groups, gsuite_update_tag):
     logger.info('Ingesting {} gsuite groups'.format(len(groups)))
-    session.run(ingestion_cypher, UserData=groups, UpdateTag=gsuite_update_tag)
+    session.run(get_ingestion_groups_qry(), UserData=groups, UpdateTag=gsuite_update_tag)
 
 
-def load_gsuite_users(session, users, gsuite_update_tag):
-    ingestion_cypher = """
+def get_ingestion_users_qry():
+    return """
         UNWIND {UserData} as user
         MERGE (u:GSuiteUser{id: user.id})
         ON CREATE SET
@@ -104,8 +109,11 @@ def load_gsuite_users(session, users, gsuite_update_tag):
         u.thumbnail_photo_url = user.thumbnailPhotoUrl,
         u.lastupdated = {UpdateTag}
     """
+
+
+def load_gsuite_users(session, users, gsuite_update_tag):
     logger.info('Ingesting {} gsuite users'.format(len(users)))
-    session.run(ingestion_cypher, UserData=users, UpdateTag=gsuite_update_tag)
+    session.run(get_ingestion_users_qry(), UserData=users, UpdateTag=gsuite_update_tag)
 
 
 def cleanup_gsuite_users(session, common_job_parameters):

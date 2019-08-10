@@ -58,45 +58,69 @@ def test_get_all_groups():
 
 @patch('cartography.intel.gsuite.api.cleanup_gsuite_users')
 @patch('cartography.intel.gsuite.api.load_gsuite_users')
-@patch('cartography.intel.gsuite.api.get_all_users')
-def test_sync_gsuite_users(all_users, load_gsuite_users, cleanup_gsuite_users):
-    client = mock.MagicMock()
-    session = mock.MagicMock()
-    gcp_update_tag = 1
-    common_job_param = {
-        "UPDATE_TAG": gcp_update_tag,
-    }
-    get_all_users = mock.patch('cartography.intel.gsuite.api.get_all_users')
-    get_all_users.return_value = [
+@patch(
+    'cartography.intel.gsuite.api.get_all_users', return_value=[
         'employee1@test.lyft.com',
         'employee2@test.lyft.com',
-        'employee3@test.lyft.com',
-    ]
-
-    api.sync_gsuite_users(session, client, gcp_update_tag, common_job_param)
-    all_users.assert_called_once()
-    load_gsuite_users.assert_called_once()
+    ],
+)
+def test_sync_gsuite_users(all_users, load_gsuite_users, cleanup_gsuite_users):
+    client = mock.MagicMock()
+    gsuite_update_tag = 1
+    session = mock.MagicMock()
+    common_job_param = {
+        "UPDATE_TAG": gsuite_update_tag,
+    }
+    api.sync_gsuite_users(session, client, gsuite_update_tag, common_job_param)
+    users = all_users()
+    load_gsuite_users.assert_called_with(
+        session, users, gsuite_update_tag,
+    )
     cleanup_gsuite_users.assert_called_once()
 
 
 @patch('cartography.intel.gsuite.api.cleanup_gsuite_groups')
 @patch('cartography.intel.gsuite.api.load_gsuite_groups')
-@patch('cartography.intel.gsuite.api.get_all_groups')
+@patch(
+    'cartography.intel.gsuite.api.get_all_groups', return_value=[
+        'group1@test.lyft.com',
+        'group2@test.lyft.com',
+    ],
+)
 def test_sync_gsuite_groups(all_groups, load_gsuite_groups, cleanup_gsuite_groups):
     client = mock.MagicMock()
     session = mock.MagicMock()
-    gcp_update_tag = 1
+    gsuite_update_tag = 1
     common_job_param = {
-        "UPDATE_TAG": gcp_update_tag,
+        "UPDATE_TAG": gsuite_update_tag,
     }
-    get_all_groups = mock.patch('cartography.intel.gsuite.api.get_all_groups')
-    get_all_groups.return_value = [
-        'group1@test.lyft.com',
-        'group2@test.lyft.com',
-        'group3@test.lyft.com',
-    ]
-
-    api.sync_gsuite_groups(session, client, gcp_update_tag, common_job_param)
-    all_groups.assert_called_once()
-    load_gsuite_groups.assert_called_once()
+    api.sync_gsuite_groups(session, client, gsuite_update_tag, common_job_param)
+    groups = all_groups()
+    load_gsuite_groups.assert_called_with(
+        session, groups, gsuite_update_tag,
+    )
     cleanup_gsuite_groups.assert_called_once()
+
+
+def test_load_gsuite_groups():
+    groups = []
+    update_tag = 1
+    session = mock.MagicMock()
+    api.load_gsuite_groups(session, groups, update_tag)
+    session.run.assert_called_with(
+        api.get_ingestion_groups_qry(),
+        UserData=groups,
+        UpdateTag=update_tag,
+    )
+
+
+def test_load_gsuite_users():
+    users = []
+    update_tag = 1
+    session = mock.MagicMock()
+    api.load_gsuite_users(session, users, update_tag)
+    session.run.assert_called_with(
+        api.get_ingestion_users_qry(),
+        UserData=users,
+        UpdateTag=update_tag,
+    )
