@@ -9,8 +9,8 @@ from cartography.intel.gsuite import api
 
 
 OAUTH_SCOPE = [
-    'https://www.googleapis.com/auth/admin.directory.user',
-    'https://www.googleapis.com/auth/admin.directory.group',
+    'https://www.googleapis.com/auth/admin.directory.user.readonly',
+    'https://www.googleapis.com/auth/admin.directory.group.readonly',
 ]
 
 logger = logging.getLogger(__name__)
@@ -74,5 +74,5 @@ def start_gsuite_ingestion(session, config):
         return
 
     resources = _initialize_resources(credentials)
-    api.sync_gsuite_users(session, resources.admin, config.update_tag, common_job_parameters)
+    # api.sync_gsuite_users(session, resources.admin, config.update_tag, common_job_parameters)
     api.sync_gsuite_groups(session, resources.admin, config.update_tag, common_job_parameters)

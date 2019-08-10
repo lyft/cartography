@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 def get_all_groups(admin):
     """
     Return list of Google Groups in your organization
-    Returns empty list if we are unable to enumerate the users for any reasons
+    Returns empty list if we are unable to enumerate the groups for any reasons
 
     :param admin: apiclient discovery resource object
     See
@@ -26,6 +26,7 @@ def get_all_groups(admin):
             groups = []
             break
         groups = groups + resp.get('groups', [])
+        break
         request = admin.groups().list_next(request, resp)
     return groups
 
@@ -52,18 +53,61 @@ def get_all_users(admin):
             users = []
             break
         users = users + resp.get('users', [])
+        break
         request = admin.users().list_next(request, resp)
     return users
 
 
-def load_gsuite_groups(session, users, gcp_update_tag):
-    # XXX: TODO
-    pass
+def load_gsuite_groups(session, groups, gsuite_update_tag):
+    ingestion_cypher = """
+        UNWIND {UserData} as group
+        MERGE (g:GSuiteGroup{id: group.id})
+        ON CREATE SET
+        g.admin_created = group.adminCreated,
+        g.description = group.description,
+        g.direct_members_count = group.directMembersCount,
+        g.email = group.email,
+        g.etag = group.etag,
+        g.kind = group.kind,
+        g.name = group.name,
+        g.lastupdated = {UpdateTag}
+    """
+    logger.info('Ingesting {} gsuite groups'.format(len(groups)))
+    session.run(ingestion_cypher, UserData=groups, UpdateTag=gsuite_update_tag)
 
 
-def load_gsuite_users(session, users, gcp_update_tag):
-    # XXX: TODO
-    pass
+def load_gsuite_users(session, users, gsuite_update_tag):
+    ingestion_cypher = """
+        UNWIND {UserData} as user
+        MERGE (u:GSuiteUser{id: user.id})
+        ON CREATE SET
+        u.agreed_to_terms = user.agreedToTerms,
+        u.archived = user.archived,
+        u.change_password_at_next_login = user.changePasswordAtNextLogin,
+        u.creation_time = user.creationTime,
+        u.customer_id = user.customerId,
+        u.etag = user.etag,
+        u.include_in_global_address_list = user.includeInGlobalAddressList,
+        u.ip_whitelisted = user.ipWhitelisted,
+        u.is_admin = user.isAdmin,
+        u.is_delegated_admin =  user.isDelegatedAdmin,
+        u.is_enforced_in_2_sv = user.isEnforcedIn2Sv,
+        u.is_enrolled_in_2_sv = user.isEnrolledIn2Sv,
+        u.is_mailbox_setup = user.isMailboxSetup,
+        u.kind = user.kind,
+        u.last_login_time = user.lastLoginTime,
+        u.name = user.name.fullName,
+        u.family_name = user.name.familyName,
+        u.given_name = user.name.givenName,
+        u.org_unit_path = user.orgUnitPath,
+        u.primary_email = user.primaryEmail,
+        u.suspended = user.suspended,
+        u.thumbnail_photo_etag = user.thumbnailPhotoEtag,
+        u.thumbnail_photo_url = user.thumbnailPhotoUrl,
+        u.lastupdated = {UpdateTag}
+    """
+    logger.info('Ingesting {} gsuite users'.format(len(users)))
+    session.run(ingestion_cypher, UserData=users, UpdateTag=gsuite_update_tag)
 
 
 def cleanup_gsuite_users(session, common_job_parameters):
