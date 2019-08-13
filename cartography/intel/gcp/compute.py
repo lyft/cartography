@@ -414,6 +414,7 @@ def load_gcp_instances(neo4j_session, data, gcp_update_tag):
     i.hostname = {Hostname},
     i.zone_name = {ZoneName},
     i.project_id = {ProjectId},
+    i.status = {Status},
     i.lastupdated = {gcp_update_tag}
     WITH i, p
 
@@ -430,6 +431,7 @@ def load_gcp_instances(neo4j_session, data, gcp_update_tag):
             InstanceName=instance['name'],
             ZoneName=instance['zone_name'],
             Hostname=instance.get('hostname', None),
+            Status=instance['status'],
             gcp_update_tag=gcp_update_tag,
         )
         _attach_instance_tags(neo4j_session, instance, gcp_update_tag)
@@ -605,7 +607,7 @@ def _attach_gcp_nics(neo4j_session, instance, gcp_update_tag):
             query,
             InstanceId=instance['partial_uri'],
             NicId=nic_id,
-            NetworkIP=nic['networkIP'],
+            NetworkIP=nic.get('networkIP'),
             NicName=nic['name'],
             gcp_update_tag=gcp_update_tag,
             SubnetPartialUri=nic['subnet_partial_uri'],
