@@ -16,7 +16,7 @@ def get_all_groups(admin):
     :return: List of Google groups in domain
 
     """
-    request = admin.groups().list(customer='my_customer', maxResults=200, orderBy='email')
+    request = admin.groups().list(customer='my_customer', maxResults=20, orderBy='email')
     groups = []
     while request is not None:
         try:
@@ -26,9 +26,56 @@ def get_all_groups(admin):
             groups = []
             break
         groups = groups + resp.get('groups', [])
-        # break
         request = admin.groups().list_next(request, resp)
     return groups
+
+
+def get_all_groups_for_email(admin, email):
+    """ Fetch all groups of which the given group is a member
+
+    Arguments:
+        email: A string representing the email address for the group
+
+    Returns a list of Group models
+    Throws GoogleException
+    """
+    request = admin.groups().list(userKey=email, maxResults=500)
+    groups = []
+    while request is not None:
+        try:
+            resp = request.execute()
+        except HttpError as e:
+            logger.warning('HttpError occurred in api.get_groups_for_email(), returning empty list. Details: %r', e)
+            groups = []
+            break
+        groups = groups + resp.get('groups', [])
+        request = admin.groups().list_next(request, resp)
+    return groups
+
+
+def get_members_for_group(admin, group_email):
+    """ Get all members for a google group
+
+    :param group_email: A string representing the email address for the group
+
+    :return: List of dictionaries representing Users or Groups.
+    """
+    request = admin.members().list(
+        groupKey=group_email,
+        maxResults=500,
+    )
+    members = []
+    while request is not None:
+        try:
+            resp = request.execute()
+        except HttpError as e:
+            logger.warning('HttpError occurred in api.get_members_for_group(), returning empty list. Details: %r', e)
+            members = []
+            break
+        members = members + resp.get('members', [])
+        request = admin.members().list_next(request, resp)
+
+    return members
 
 
 def get_all_users(admin):
@@ -42,7 +89,6 @@ def get_all_users(admin):
     :return: List of Google users in domain
     see https://developers.google.com/admin-sdk/directory/v1/guides/manage-users#get_all_domain_users
     """
-
     request = admin.users().list(customer='my_customer', maxResults=500, orderBy='email')
     users = []
     while request is not None:
@@ -60,7 +106,7 @@ def get_all_users(admin):
 
 def get_ingestion_groups_qry():
     return """
-        UNWIND {UserData} as group
+        UNWIND {GroupData} as group
         MERGE (g:GSuiteGroup{id: group.id})
         ON CREATE SET
         g.admin_created = group.adminCreated,
@@ -76,7 +122,7 @@ def get_ingestion_groups_qry():
 
 def load_gsuite_groups(session, groups, gsuite_update_tag):
     logger.info('Ingesting {} gsuite groups'.format(len(groups)))
-    session.run(get_ingestion_groups_qry(), UserData=groups, UpdateTag=gsuite_update_tag)
+    session.run(get_ingestion_groups_qry(), GroupData=groups, UpdateTag=gsuite_update_tag)
 
 
 def get_ingestion_users_qry():
@@ -114,6 +160,38 @@ def get_ingestion_users_qry():
 def load_gsuite_users(session, users, gsuite_update_tag):
     logger.info('Ingesting {} gsuite users'.format(len(users)))
     session.run(get_ingestion_users_qry(), UserData=users, UpdateTag=gsuite_update_tag)
+
+
+def get_ingestion_membership_qry():
+    """
+    MATCH (user:GSuiteUser),(group:GSuiteGroup)
+        WHERE user.id = '{UserID}' AND group.id = '{GroupID}'
+        MERGE (user)-[r:MEMBER_GSUITE_GROUP]->(group)
+        ON CREATE SET r.lastupdated = {UpdateTag}
+    """
+    return """
+        UNWIND {MemberData} as member
+        MATCH (user:GSuiteUser {id: member.id}),(group:GSuiteGroup {id: {GroupID} })
+        MERGE (user)-[r:MEMBER_GSUITE_GROUP]->(group)
+    """
+
+
+def load_gsuite_members(session, group, members, gsuite_update_tag):
+    # for member in members:
+    print(f"Creating members relationship {len(members)}")
+    session.run(
+        get_ingestion_membership_qry(),
+        MemberData=members,
+        GroupID=group.get("id"),
+        UpdateTag=gsuite_update_tag,
+    )
+
+    qry = """
+    UNWIND {MemberData} as member
+    MATCH(user: GSuiteGroup{id: member.id}), (group:GSuiteGroup {id: {GroupID}})
+    MERGE (user)-[r:MEMBER_GSUITE_GROUP]->(group)
+    """
+    session.run(qry, MemberData=members, GroupID=group.get("id"), UpdateTag=gsuite_update_tag)
 
 
 def cleanup_gsuite_users(session, common_job_parameters):
@@ -156,3 +234,10 @@ def sync_gsuite_groups(session, admin, gsuite_update_tag, common_job_parameters)
     groups = get_all_groups(admin)
     load_gsuite_groups(session, groups, gsuite_update_tag)
     cleanup_gsuite_groups(session, common_job_parameters)
+    sync_gsuite_members(groups, session, admin, gsuite_update_tag)
+
+
+def sync_gsuite_members(groups, session, admin, gsuite_update_tag):
+    for group in groups:
+        members = get_members_for_group(admin, group['email'])
+        load_gsuite_members(session, group, members, gsuite_update_tag)
