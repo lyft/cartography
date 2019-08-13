@@ -158,7 +158,7 @@ It can be cumbersome to always type Unix timestamp filenames.  To make this easi
 
 	`cartography-detectdrift add-shortcut --shortcut second-run --file <unix_timestamp_2>.json`
 
-	We can even use shortcuts to refer to files when adding shortcuts!
+	We can even use aliases instead of filenames when adding shortcuts!
 
 	`cartography-detectdrift add-shortcut --shortcut baseline --file most-recent`
 
