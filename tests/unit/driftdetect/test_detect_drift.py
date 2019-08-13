@@ -1,6 +1,10 @@
+from unittest.mock import patch
+
 import pytest
 
+from cartography.driftdetect.config import GetDriftConfig
 from cartography.driftdetect.detect_deviations import perform_drift_detection
+from cartography.driftdetect.detect_deviations import run_drift_detection
 from cartography.driftdetect.serializers import StateSchema
 from cartography.driftdetect.storage import FileSystem
 
@@ -37,3 +41,10 @@ def test_drift_detection_errors():
     start_state.validation_query = "Invalid Validation Query"
     with pytest.raises(ValueError):
         perform_drift_detection(start_state, end_state)
+
+
+@patch("cartography.driftdetect.detect_deviations.report_drift")
+def test_run_drift_detection(mock_report_drift):
+    config = GetDriftConfig("tests/data/test_cli_detectors/detector", "1.json", "2.json")
+    run_drift_detection(config)
+    mock_report_drift.assert_called_once()
