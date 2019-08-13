@@ -5,11 +5,11 @@ from cartography.util import run_cleanup_job
 logger = logging.getLogger(__name__)
 
 
-def get_rds_instance_data(session, region):
+def get_rds_instance_data(boto3_session, region):
     """
     Create an RDS boto3 client and grab all the DBInstances.
     """
-    client = session.client('rds', region_name=region)
+    client = boto3_session.client('rds', region_name=region)
     paginator = client.get_paginator('describe_db_instances')
     instances = []
     for page in paginator.paginate():

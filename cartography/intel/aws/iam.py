@@ -7,8 +7,8 @@ from cartography.util import run_cleanup_job
 logger = logging.getLogger(__name__)
 
 
-def get_group_policies(session, group_name):
-    client = session.client('iam')
+def get_group_policies(boto3_session, group_name):
+    client = boto3_session.client('iam')
     paginator = client.get_paginator('list_group_policies')
     policy_names = []
     for page in paginator.paginate(GroupName=group_name):
@@ -16,18 +16,18 @@ def get_group_policies(session, group_name):
     return {'PolicyNames': policy_names}
 
 
-def get_group_policy_info(session, group_name, policy_name):
-    client = session.client('iam')
+def get_group_policy_info(boto3_session, group_name, policy_name):
+    client = boto3_session.client('iam')
     return client.get_group_policy(GroupName=group_name, PolicyName=policy_name)
 
 
-def get_group_membership_data(session, group_name):
-    client = session.client('iam')
+def get_group_membership_data(boto3_session, group_name):
+    client = boto3_session.client('iam')
     return client.get_group(GroupName=group_name)
 
 
-def get_user_list_data(session):
-    client = session.client('iam')
+def get_user_list_data(boto3_session):
+    client = boto3_session.client('iam')
     paginator = client.get_paginator('list_users')
     users = []
     for page in paginator.paginate():
@@ -35,8 +35,8 @@ def get_user_list_data(session):
     return {'Users': users}
 
 
-def get_group_list_data(session):
-    client = session.client('iam')
+def get_group_list_data(boto3_session):
+    client = boto3_session.client('iam')
     paginator = client.get_paginator('list_groups')
     groups = []
     for page in paginator.paginate():
@@ -44,8 +44,8 @@ def get_group_list_data(session):
     return {'Groups': groups}
 
 
-def get_policy_list_data(session):
-    client = session.client('iam')
+def get_policy_list_data(boto3_session):
+    client = boto3_session.client('iam')
     paginator = client.get_paginator('list_policies')
     policies = []
     for page in paginator.paginate():
@@ -53,8 +53,8 @@ def get_policy_list_data(session):
     return {'Policies': policies}
 
 
-def get_role_list_data(session):
-    client = session.client('iam')
+def get_role_list_data(boto3_session):
+    client = boto3_session.client('iam')
     paginator = client.get_paginator('list_roles')
     roles = []
     for page in paginator.paginate():
@@ -62,8 +62,8 @@ def get_role_list_data(session):
     return {'Roles': roles}
 
 
-def get_role_policies(session, role_name):
-    client = session.client('iam')
+def get_role_policies(boto3_session, role_name):
+    client = boto3_session.client('iam')
     paginator = client.get_paginator('list_role_policies')
     policy_names = []
     for page in paginator.paginate(RoleName=role_name):
@@ -71,18 +71,18 @@ def get_role_policies(session, role_name):
     return {'PolicyNames': policy_names}
 
 
-def get_role_policy_info(session, role_name, policy_name):
-    client = session.client('iam')
+def get_role_policy_info(boto3_session, role_name, policy_name):
+    client = boto3_session.client('iam')
     return client.get_role_policy(RoleName=role_name, PolicyName=policy_name)
 
 
-def get_account_access_key_data(session, username):
-    client = session.client('iam')
+def get_account_access_key_data(boto3_session, username):
+    client = boto3_session.client('iam')
     # NOTE we can get away without using a paginator here because users are limited to two access keys
     return client.list_access_keys(UserName=username)
 
 
-def load_users(session, users, current_aws_account_id, aws_update_tag):
+def load_users(neo4j_session, users, current_aws_account_id, aws_update_tag):
     ingest_user = """
     MERGE (unode:AWSUser{arn: {ARN}})
     ON CREATE SET unode:AWSPrincipal, unode.userid = {USERID}, unode.firstseen = timestamp(),
@@ -97,7 +97,7 @@ def load_users(session, users, current_aws_account_id, aws_update_tag):
     """
 
     for user in users:
-        session.run(
+        neo4j_session.run(
             ingest_user,
             ARN=user["Arn"],
             USERID=user["UserId"],
@@ -110,7 +110,7 @@ def load_users(session, users, current_aws_account_id, aws_update_tag):
         )
 
 
-def load_groups(session, groups, current_aws_account_id, aws_update_tag):
+def load_groups(neo4j_session, groups, current_aws_account_id, aws_update_tag):
     ingest_group = """
     MERGE (gnode:AWSGroup{arn: {ARN}})
     ON CREATE SET gnode.groupid = {GROUP_ID}, gnode.firstseen = timestamp(), gnode.createdate = {CREATE_DATE}
@@ -123,7 +123,7 @@ def load_groups(session, groups, current_aws_account_id, aws_update_tag):
     """
 
     for group in groups:
-        session.run(
+        neo4j_session.run(
             ingest_group,
             ARN=group["Arn"],
             GROUP_ID=group["GroupId"],
@@ -135,7 +135,7 @@ def load_groups(session, groups, current_aws_account_id, aws_update_tag):
         )
 
 
-def load_policies(session, policies, current_aws_account_id, aws_update_tag):
+def load_policies(neo4j_session, policies, current_aws_account_id, aws_update_tag):
     ingest_policy = """
     MERGE (pnode:AWSPolicy{arn: {ARN}})
     ON CREATE SET pnode.policyid = {POLICY_ID}, pnode.firstseen = timestamp(), pnode.createdate = {CREATE_DATE}
@@ -151,7 +151,7 @@ def load_policies(session, policies, current_aws_account_id, aws_update_tag):
     """
 
     for policy in policies:
-        session.run(
+        neo4j_session.run(
             ingest_policy,
             ARN=policy["Arn"],
             POLICY_ID=policy["PolicyId"],
@@ -167,7 +167,7 @@ def load_policies(session, policies, current_aws_account_id, aws_update_tag):
         )
 
 
-def load_roles(session, roles, current_aws_account_id, aws_update_tag):
+def load_roles(neo4j_session, roles, current_aws_account_id, aws_update_tag):
     ingest_role = """
     MERGE (rnode:AWSRole{arn: {Arn}})
     ON CREATE SET rnode:AWSPrincipal, rnode.roleid = {RoleId}, rnode.firstseen = timestamp(),
@@ -195,7 +195,7 @@ def load_roles(session, roles, current_aws_account_id, aws_update_tag):
     # TODO support conditions
 
     for role in roles:
-        session.run(
+        neo4j_session.run(
             ingest_role,
             Arn=role["Arn"],
             RoleId=role["RoleId"],
@@ -218,7 +218,7 @@ def load_roles(session, roles, current_aws_account_id, aws_update_tag):
             if not isinstance(principal_values, list):
                 principal_values = [principal_values]
             for principal_value in principal_values:
-                session.run(
+                neo4j_session.run(
                     ingest_policy_statement,
                     SpnArn=principal_value,
                     SpnType=principal_type,
@@ -227,7 +227,7 @@ def load_roles(session, roles, current_aws_account_id, aws_update_tag):
                 )
 
 
-def load_group_memberships(session, group_memberships, aws_update_tag):
+def load_group_memberships(neo4j_session, group_memberships, aws_update_tag):
     ingest_membership = """
     MATCH (group:AWSGroup{name: {GroupName}})
     WITH group
@@ -240,7 +240,7 @@ def load_group_memberships(session, group_memberships, aws_update_tag):
     for group_name, membership_data in group_memberships.items():
         for info in membership_data["Users"]:
             principal_arn = info["Arn"]
-            session.run(
+            neo4j_session.run(
                 ingest_membership,
                 GroupName=group_name,
                 PrincipalArn=principal_arn,
@@ -260,7 +260,7 @@ def _find_roles_assumable_in_policy(policy_data):
     return ret
 
 
-def load_group_policies(session, group_policies, aws_update_tag):
+def load_group_policies(neo4j_session, group_policies, aws_update_tag):
     ingest_policies_assume_role = """
     MATCH (group:AWSGroup{name: {GroupName}})
     WITH group
@@ -278,7 +278,7 @@ def load_group_policies(session, group_policies, aws_update_tag):
             for role_arn in _find_roles_assumable_in_policy(policy_data):
                 # TODO resource ARNs may contain wildcards, e.g. arn:aws:iam::*:role/admin --
                 # TODO policyuniverse can't expand resource wildcards so further thought is needed here
-                session.run(
+                neo4j_session.run(
                     ingest_policies_assume_role,
                     GroupName=group_name,
                     RoleArn=role_arn,
@@ -286,7 +286,7 @@ def load_group_policies(session, group_policies, aws_update_tag):
                 )
 
 
-def load_role_policies(session, role_policies, aws_update_tag):
+def load_role_policies(neo4j_session, role_policies, aws_update_tag):
     ingest_policies_assume_role = """
     MATCH (assumer:AWSRole{name: {RoleName}})
     WITH assumer
@@ -304,7 +304,7 @@ def load_role_policies(session, role_policies, aws_update_tag):
             for role_arn in _find_roles_assumable_in_policy(policy_data):
                 # TODO resource ARNs may contain wildcards, e.g. arn:aws:iam::*:role/admin --
                 # TODO policyuniverse can't expand resource wildcards so further thought is needed here
-                session.run(
+                neo4j_session.run(
                     ingest_policies_assume_role,
                     RoleName=role_name,
                     RoleArn=role_arn,
@@ -312,7 +312,7 @@ def load_role_policies(session, role_policies, aws_update_tag):
                 )
 
 
-def load_user_access_keys(session, user_access_keys, aws_update_tag):
+def load_user_access_keys(neo4j_session, user_access_keys, aws_update_tag):
     # TODO change the node label to reflect that this is a user access key, not an account access key
     ingest_account_key = """
     MATCH (user:AWSUser{name: {UserName}})
@@ -329,7 +329,7 @@ def load_user_access_keys(session, user_access_keys, aws_update_tag):
     for username, access_keys in user_access_keys.items():
         for key in access_keys["AccessKeyMetadata"]:
             if key.get('AccessKeyId'):
-                session.run(
+                neo4j_session.run(
                     ingest_account_key,
                     UserName=username,
                     AccessKeyId=key['AccessKeyId'],
