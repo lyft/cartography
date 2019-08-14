@@ -40,3 +40,13 @@ def load_object(storage, schema, fp):
 def store_object(storage, schema, fp, obj):
     data = schema.dump(obj)
     storage.write(data, fp)
+
+
+def transform_results(results, state):
+    transformed_results = []
+    for result in results:
+        drift_dict = {}
+        for key, value in zip(state.properties, result):
+            drift_dict[key] = value
+        transformed_results.append(drift_dict)
+    return transformed_results
