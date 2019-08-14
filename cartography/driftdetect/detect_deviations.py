@@ -3,8 +3,7 @@ import os
 
 from marshmallow import ValidationError
 
-from cartography.driftdetect.reporter import report_drift_missing
-from cartography.driftdetect.reporter import report_drift_new
+from cartography.driftdetect.reporter import report_drift
 from cartography.driftdetect.serializers import ShortcutSchema
 from cartography.driftdetect.serializers import StateSchema
 from cartography.driftdetect.storage import FileSystem
@@ -41,8 +40,7 @@ def run_drift_detection(config):
         )
         end_state = state_serializer.load(end_state_data)
         new_results, missing_results = perform_drift_detection(start_state, end_state)
-        report_drift_new(new_results)
-        report_drift_missing(missing_results)
+        report_drift(new_results, missing_results, end_state.name, end_state.properties)
     except ValidationError as err:
         msg = "Unable to create DriftStates from files {},{} for \n{} in directory {}.".format(
             config.start_state,
@@ -97,12 +95,12 @@ def compare_states(start_state, end_state):
     for result in end_state.results:
         if result in start_state.results:
             continue
-        drift_info = {}
-        for prop, field in zip(end_state.properties, result):
+        drift = []
+        for field in result:
             value = field.split("|")
             if len(value) > 1:
-                drift_info[prop] = value
+                drift.append(value)
             else:
-                drift_info[prop] = field
-        differences.append((drift_info, end_state))
+                drift.append(field)
+        differences.append(drift)
     return differences
