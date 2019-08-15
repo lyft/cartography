@@ -19,6 +19,7 @@
 - [DNSZone::AWSDNSZone](#dnszoneawsdnszone)
 - [DynamoDBTable](#dynamodbtable)
 - [EC2Instance](#ec2instance)
+- [EC2KeyPair](#ec2keypair)
 - [EC2Reservation](#ec2reservation)
 - [EC2SecurityGroup](#ec2securitygroup)
 - [EC2Subnet](#ec2subnet)
@@ -587,6 +588,34 @@ Our representation of an AWS [EC2 Instance](https://docs.aws.amazon.com/AWSEC2/l
 
 	```
 	(AWSAccount)-[RESOURCE]->(EC2Instance)
+	```
+
+
+## EC2KeyPair
+
+Representation of an AWS [EC2 Key Pair](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_KeyPairInfo.html)
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| keyname | The name of the key pair |
+| keyfingerprint | The fingerprint of the public key |
+| region| The AWS region |
+| **arn** | AWS-unique identifier for this object |
+
+### Relationships
+
+- EC2 key pairs are contained in AWS Accounts.
+
+	```
+	(AWSAccount)-[RESOURCE]->(EC2KeyPair)
+	```
+
+- EC2 key pairs can be used to log in to AWS EC2 isntances.
+
+	```
+	(EC2KeyPair)-[SSH_LOGIN_TO]->(EC2Instance)
 	```
 
 
