@@ -32,6 +32,7 @@ def _sync_one_account(session, boto3_session, account_id, regions, sync_tag, com
     logger.info("Syncing EC2 for account '%s'.", account_id)
     ec2.sync_vpc(session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     ec2.sync_ec2_security_groupinfo(session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
+    ec2.sync_ec2_key_pairs(session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     ec2.sync_ec2_instances(session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     ec2.sync_ec2_auto_scaling_groups(session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     ec2.sync_load_balancers(session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
