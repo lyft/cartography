@@ -30,9 +30,9 @@ def start_extension_ingestion(session, config):
         "UPDATE_TAG": config.update_tag,
     }
     # while we typically want to crash sync on failure of module,
-    # the CRXcavator API is still in beta and is not always available.
-    # if we receive a Requests exception from raise_for_status
-    # We'll handle and continue with other modules, otherwise crash sync
+    # the crxcavator API is still in beta and is not always available.
+    # if we receive a requests exception from raise_for_status
+    # we'll handle and continue with other modules, otherwise crash sync
     try:
         sync_extensions(session, common_job_parameters, CRXCAVATOR_API_KEY, CRXCAVATOR_API_BASE_URL)
         run_cleanup_job(
