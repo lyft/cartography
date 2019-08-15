@@ -32,17 +32,38 @@ def valid_directory(directory):
 
 
 def load_object(storage, schema, fp):
+    """
+    Loads and returns an object from a file path.
+    :param storage: Storage Object.
+    :param schema: Serializer.
+    :param fp: File Path.
+    :return: Object
+    """
     data = storage.load(fp)
     obj = schema.load(data)
     return obj
 
 
 def store_object(storage, schema, fp, obj):
+    """
+    Stores an object to a file path.
+    :param storage: Storage Object.
+    :param schema: Serializer.
+    :param fp: File Path.
+    :param obj: Object to be stored
+    :return:
+    """
     data = schema.dump(obj)
     storage.write(data, fp)
 
 
 def transform_results(results, state):
+    """
+    Transforms results from lists to dictionaries.
+    :param results: Results.
+    :param state: State object.
+    :return: List of Dictionary Results.
+    """
     transformed_results = []
     for result in results:
         drift_dict = {}
