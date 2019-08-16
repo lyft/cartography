@@ -1,3 +1,5 @@
+from cartography.driftdetect.util import jsonify, transform_results
+
 
 def report_drift_new(results, state_properties):
     """
@@ -47,3 +49,13 @@ def report_drift(new_results, missing_results, state_name, state_properties):
     print()
     if missing_results:
         report_drift_missing(missing_results, state_properties)
+
+
+def report_drift_json(results):
+    """
+    Prints a JSONified version of results.
+    :param results: Results
+    :return:
+    """
+    transformed_results = transform_results(results)
+    print(jsonify(transformed_results))

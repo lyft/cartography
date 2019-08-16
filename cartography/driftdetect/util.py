@@ -1,3 +1,4 @@
+import json
 import logging
 import pathlib
 
@@ -71,3 +72,7 @@ def transform_results(results, state):
             drift_dict[key] = value
         transformed_results.append(drift_dict)
     return transformed_results
+
+
+def jsonify(transformed_results):
+    return '\n'.join([json.dumps(drift, sort_keys=True, indent=4) for drift in transformed_results])
