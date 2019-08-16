@@ -74,8 +74,8 @@ def perform_drift_detection(start_state, end_state):
         raise ValueError("State names do not match.")
     if start_state.validation_query != end_state.validation_query:
         raise ValueError("State queries do not match.")
-    if start_state.properties != end_state.properties:
-        raise ValueError("State properties do not match.")
+    if start_state.tag != end_state.tag:
+        raise ValueError("State tags do not match.")
     new_results = compare_states(start_state, end_state)
     missing_results = compare_states(end_state, start_state)
     return new_results, missing_results
@@ -92,15 +92,8 @@ def compare_states(start_state, end_state):
     :return: list of tuples of differences between states in the form (dictionary, State object)
     """
     differences = []
-    for result in end_state.results:
-        if result in start_state.results:
+    for key in end_state.keys:
+        if key in start_state.keys:
             continue
-        drift = []
-        for field in result:
-            value = field.split("|")
-            if len(value) > 1:
-                drift.append(value)
-            else:
-                drift.append(field)
-        differences.append(drift)
+        differences.append(end_state.results[key])
     return differences

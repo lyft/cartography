@@ -129,17 +129,31 @@ def get_state(session, state):
     new_results = session.run(state.validation_query)
     logger.debug(f"Updating results for {state.name}")
 
-    state.properties = new_results.keys()
-    results = []
+    results = {}
+    keys = []
 
     for record in new_results:
-        values = []
-        for field in record.values():
-            if isinstance(field, list):
-                s = "|".join([str(i) for i in field])
-                values.append(s)
-            else:
-                values.append(str(field))
-        results.append(values)
+        result = create_result_dictionary(record)
+        key = create_key(state.tag, result)
+        keys.append(key)
+        results[key] = result
 
+    state.keys = keys
     state.results = results
+
+
+def create_result_dictionary(record):
+    result = {}
+    for key, value in record.items():
+        if isinstance(value, list):
+            result[key] = ",".join([str(i) for i in sorted(value)])
+        else:
+            result[key] = str(value)
+    return result
+
+
+def create_key(fields, result_dictionary):
+    tag_list = []
+    for field in fields:
+        tag_list.append(result_dictionary[field])
+    return "|".join(tag_list)

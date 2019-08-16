@@ -11,8 +11,10 @@ class State:
     :param name: Name of the query.
     :type validation_query: String
     :param validation_query: Actual Cypher query being run.
-    :type properties: List of Strings
-    :param properties: List of keys in order that the cypher query will return.
+    :type tags: List of Strings
+    :param tags: List of properties that form a tag.
+    :type keys: List of Strings
+    :param keys: List of keys in order that the cypher query will return.
     :type results: List of List of Strings
     :param results: List of all results of running the validation query
     """
@@ -21,11 +23,13 @@ class State:
             self,
             name,
             validation_query,
-            properties,
+            tag,
+            keys,
             results,
     ):
 
         self.name = name
         self.validation_query = validation_query
-        self.properties = properties
+        self.tag = tag
+        self.keys = keys
         self.results = results

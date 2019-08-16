@@ -12,15 +12,17 @@ class StateSchema(Schema):
     """
     name = fields.Str()
     validation_query = fields.Str()
-    properties = fields.List(fields.Str())
-    results = fields.List(fields.List(fields.Str()))
+    tag = fields.List(fields.Str())
+    keys = fields.List(fields.Str())
+    results = fields.Dict(keys=fields.Str(), values=fields.Dict(keys=fields.Str(), values=fields.Str()))
 
     @post_load
     def make_state(self, data, **kwargs):
         return State(
             data['name'],
             data['validation_query'],
-            data['properties'],
+            data['tags'],
+            data['keys'],
             data['results'],
         )
 
