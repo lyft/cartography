@@ -65,10 +65,10 @@ def start_gsuite_ingestion(session, config):
         logger.debug('Error occurred calling GoogleCredentials.get_application_default().', exc_info=True)
         logger.error(
             (
-                "Unable to initialize Google Compute Platform creds. If you don't have GCP data or don't want to load "
-                'GCP data then you can ignore this message. Otherwise, the error code is: %s '
-                'Make sure your GCP credentials are configured correctly, your credentials file (if any) is valid, and '
-                'that the identity you are authenticating to has the securityReviewer role attached.'
+                "Unable to initialize GSuite creds. If you don't have GSuite data or don't want to load "
+                'Gsuite data then you can ignore this message. Otherwise, the error code is: %s '
+                'Make sure your GSuite credentials are configured correctly, your credentials file (if any) is valid. '
+                'For more details see README'
             ),
             e,
         )

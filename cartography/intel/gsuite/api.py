@@ -104,8 +104,8 @@ def get_all_users(admin):
     return users
 
 
-def get_ingestion_groups_qry():
-    return """
+def load_gsuite_groups(session, groups, gsuite_update_tag):
+    ingestion_qry = """
         UNWIND {GroupData} as group
         MERGE (g:GSuiteGroup{id: group.id})
         ON CREATE SET
@@ -118,15 +118,12 @@ def get_ingestion_groups_qry():
         g.name = group.name,
         g.lastupdated = {UpdateTag}
     """
-
-
-def load_gsuite_groups(session, groups, gsuite_update_tag):
     logger.info('Ingesting {} gsuite groups'.format(len(groups)))
-    session.run(get_ingestion_groups_qry(), GroupData=groups, UpdateTag=gsuite_update_tag)
+    session.run(ingestion_qry, GroupData=groups, UpdateTag=gsuite_update_tag)
 
 
-def get_ingestion_users_qry():
-    return """
+def load_gsuite_users(session, users, gsuite_update_tag):
+    ingestion_qry = """
         UNWIND {UserData} as user
         MERGE (u:GSuiteUser{id: user.id})
         ON CREATE SET
@@ -155,43 +152,31 @@ def get_ingestion_users_qry():
         u.thumbnail_photo_url = user.thumbnailPhotoUrl,
         u.lastupdated = {UpdateTag}
     """
-
-
-def load_gsuite_users(session, users, gsuite_update_tag):
     logger.info('Ingesting {} gsuite users'.format(len(users)))
-    session.run(get_ingestion_users_qry(), UserData=users, UpdateTag=gsuite_update_tag)
-
-
-def get_ingestion_membership_qry():
-    """
-    MATCH (user:GSuiteUser),(group:GSuiteGroup)
-        WHERE user.id = '{UserID}' AND group.id = '{GroupID}'
-        MERGE (user)-[r:MEMBER_GSUITE_GROUP]->(group)
-        ON CREATE SET r.lastupdated = {UpdateTag}
-    """
-    return """
-        UNWIND {MemberData} as member
-        MATCH (user:GSuiteUser {id: member.id}),(group:GSuiteGroup {id: {GroupID} })
-        MERGE (user)-[r:MEMBER_GSUITE_GROUP]->(group)
-    """
+    session.run(ingestion_qry, UserData=users, UpdateTag=gsuite_update_tag)
 
 
 def load_gsuite_members(session, group, members, gsuite_update_tag):
     # for member in members:
     print(f"Creating members relationship {len(members)}")
+    ingestion_qry = """
+        UNWIND {MemberData} as member
+        MATCH (user:GSuiteUser {id: member.id}),(group:GSuiteGroup {id: {GroupID} })
+        MERGE (user)-[r:MEMBER_GSUITE_GROUP]->(group)
+    """
     session.run(
-        get_ingestion_membership_qry(),
+        ingestion_qry,
         MemberData=members,
         GroupID=group.get("id"),
         UpdateTag=gsuite_update_tag,
     )
 
-    qry = """
-    UNWIND {MemberData} as member
-    MATCH(user: GSuiteGroup{id: member.id}), (group:GSuiteGroup {id: {GroupID}})
-    MERGE (user)-[r:MEMBER_GSUITE_GROUP]->(group)
+    membership_qry = """
+        UNWIND {MemberData} as member
+        MATCH(user: GSuiteGroup{id: member.id}), (group:GSuiteGroup {id: {GroupID}})
+        MERGE (user)-[r:MEMBER_GSUITE_GROUP]->(group)
     """
-    session.run(qry, MemberData=members, GroupID=group.get("id"), UpdateTag=gsuite_update_tag)
+    session.run(membership_qry, MemberData=members, GroupID=group.get("id"), UpdateTag=gsuite_update_tag)
 
 
 def cleanup_gsuite_users(session, common_job_parameters):
@@ -206,13 +191,7 @@ def cleanup_gsuite_groups(session, common_job_parameters):
 
 def sync_gsuite_users(session, admin, gsuite_update_tag, common_job_parameters):
     """
-    Get GCP organization data using the CRM v1 resource object, load the data to Neo4j, and clean up stale nodes.
-    :param session: The Neo4j session
-    :param crm_v1: The Compute Resource Manager v1 resource object created by `googleapiclient.discovery.build()`.
-    See https://googleapis.github.io/google-api-python-client/docs/epy/googleapiclient.discovery-module.html#build.
-    :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
-    :param common_job_parameters: Parameters to carry to the Neo4j jobs
-    :return: Nothing
+
     """
     logger.debug('Syncing GSuite Users')
     users = get_all_users(admin)
@@ -222,13 +201,7 @@ def sync_gsuite_users(session, admin, gsuite_update_tag, common_job_parameters):
 
 def sync_gsuite_groups(session, admin, gsuite_update_tag, common_job_parameters):
     """
-    Get GCP organization data using the CRM v1 resource object, load the data to Neo4j, and clean up stale nodes.
-    :param session: The Neo4j session
-    :param crm_v1: The Compute Resource Manager v1 resource object created by `googleapiclient.discovery.build()`.
-    See https://googleapis.github.io/google-api-python-client/docs/epy/googleapiclient.discovery-module.html#build.
-    :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
-    :param common_job_parameters: Parameters to carry to the Neo4j jobs
-    :return: Nothing
+
     """
     logger.debug('Syncing GSuite Groups')
     groups = get_all_groups(admin)
