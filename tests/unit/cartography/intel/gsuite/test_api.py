@@ -46,7 +46,7 @@ def test_get_all_groups():
     raw_request_2.execute.return_value = {'groups': [group3]}
 
     result = api.get_all_groups(client)
-    emails = [u['email'] for u in result]
+    emails = [group['email'] for response_object in result for group in response_object['groups']]
 
     expected = [
         'group1@test.lyft.com',
@@ -84,8 +84,8 @@ def test_sync_gsuite_users(all_users, load_gsuite_users, cleanup_gsuite_users):
 @patch('cartography.intel.gsuite.api.load_gsuite_groups')
 @patch(
     'cartography.intel.gsuite.api.get_all_groups', return_value=[
-        {'email': 'group1@test.lyft.com'},
-        {'email': 'group2@test.lyft.com'},
+        {'groups': [{'email': 'group1@test.lyft.com'}, {'email': 'group2@test.lyft.com'}]},
+        {'groups': [{'email': 'group3@test.lyft.com'}, {'email': 'group4@test.lyft.com'}]},
     ],
 )
 def test_sync_gsuite_groups(all_groups, load_gsuite_groups, cleanup_gsuite_groups, sync_gsuite_members):
@@ -96,7 +96,7 @@ def test_sync_gsuite_groups(all_groups, load_gsuite_groups, cleanup_gsuite_group
         "UPDATE_TAG": gsuite_update_tag,
     }
     api.sync_gsuite_groups(session, admin_client, gsuite_update_tag, common_job_param)
-    groups = all_groups()
+    groups = api.transform_groups(all_groups())
     load_gsuite_groups.assert_called_with(session, groups, gsuite_update_tag,)
     cleanup_gsuite_groups.assert_called_once()
     sync_gsuite_members.assert_called_with(groups, session, admin_client, gsuite_update_tag)

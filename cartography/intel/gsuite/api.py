@@ -17,17 +17,26 @@ def get_all_groups(admin):
 
     """
     request = admin.groups().list(customer='my_customer', maxResults=20, orderBy='email')
-    groups = []
+    response_objects = []
     while request is not None:
         try:
             resp = request.execute()
         except HttpError as e:
             logger.warning('HttpError occurred in api.get_all_groups(), returning empty list. Details: %r', e)
-            groups = []
+            response_objects = []
             break
-        groups = groups + resp.get('groups', [])
+        # groups = groups + resp.get('groups', [])
+        response_objects.append(resp)
         request = admin.groups().list_next(request, resp)
-    return groups
+    return response_objects
+
+
+def transform_groups(response_objects):
+    emails = []
+    for response_object in response_objects:
+        for group in response_object['groups']:
+            emails.append(group['email'])
+    return emails
 
 
 def get_all_groups_for_email(admin, email):
@@ -206,7 +215,8 @@ def sync_gsuite_groups(session, admin, gsuite_update_tag, common_job_parameters)
 
     """
     logger.debug('Syncing GSuite Groups')
-    groups = get_all_groups(admin)
+    resp_objs = get_all_groups(admin)
+    groups = transform_groups(resp_objs)
     load_gsuite_groups(session, groups, gsuite_update_tag)
     cleanup_gsuite_groups(session, common_job_parameters)
     sync_gsuite_members(groups, session, admin, gsuite_update_tag)
