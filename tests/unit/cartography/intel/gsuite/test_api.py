@@ -107,6 +107,7 @@ def test_load_gsuite_groups():
         UNWIND {GroupData} as group
         MERGE (g:GSuiteGroup{id: group.id})
         ON CREATE SET
+        g.group_id = group.id,
         g.admin_created = group.adminCreated,
         g.description = group.description,
         g.direct_members_count = group.directMembersCount,
@@ -132,6 +133,7 @@ def test_load_gsuite_users():
         UNWIND {UserData} as user
         MERGE (u:GSuiteUser{id: user.id})
         ON CREATE SET
+        u.user_id = user.id,
         u.agreed_to_terms = user.agreedToTerms,
         u.archived = user.archived,
         u.change_password_at_next_login = user.changePasswordAtNextLogin,
