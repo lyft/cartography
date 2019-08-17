@@ -60,42 +60,41 @@ def transform_extensions(extension_json):
     # will build a cleaner object for import into graph
 
     _data_index = 1
-    _row_index = 0
 
     extensions = []
     for extension in extension_json.items():
-        details = extension[_data_index][_row_index]
-        if not details:
-            logger.warning(f'Could not retrieve details for extension {extension}')
-            continue
-        extension_id = details['extension_id']
-        version = details['version']
-        data = details['data']
-        extensions.append({
-            'id': f"{extension_id}|{version}",
-            'extension_id': extension_id,
-            'version': version,
-            'risk_total': data['risk'].get('total'),
-            'risk_metadata': json.dumps(data['risk'].get('metadata')),
-            'address': data['webstore'].get('address'),
-            'email': data['webstore'].get('email'),
-            'icon': data['webstore'].get('icon'),
-            'crxcavator_last_updated': data['webstore'].get('last_updated'),
-            'name': data['webstore'].get('name'),
-            'offered_by': data['webstore'].get('offered_by'),
-            'permissions_warnings': data['webstore'].get('permission_warnings'),
-            'privacy_policy': data['webstore'].get('privacy_policy'),
-            'rating': data['webstore'].get('rating'),
-            'rating_users': data['webstore'].get('rating_users'),
-            'short_description': data['webstore'].get('short_description'),
-            'size': data['webstore'].get('size'),
-            'support_site': data['webstore'].get('support_site'),
-            'users': data['webstore'].get('users'),
-            'website': data['webstore'].get('website'),
-            'type': data['webstore'].get('type'),
-            'price': data['webstore'].get('price'),
-            'report_link': "https://crxcavator.io/report/" + extension_id + "/" + version,
-        })
+        for details in extension[_data_index]:
+            if not details:
+                logger.warning(f'Could not retrieve details for extension {extension}')
+                continue
+            extension_id = details['extension_id']
+            version = details['version']
+            data = details['data']
+            extensions.append({
+                'id': f"{extension_id}|{version}",
+                'extension_id': extension_id,
+                'version': version,
+                'risk_total': data['risk'].get('total'),
+                'risk_metadata': json.dumps(data['risk'].get('metadata')),
+                'address': data['webstore'].get('address'),
+                'email': data['webstore'].get('email'),
+                'icon': data['webstore'].get('icon'),
+                'crxcavator_last_updated': data['webstore'].get('last_updated'),
+                'name': data['webstore'].get('name'),
+                'offered_by': data['webstore'].get('offered_by'),
+                'permissions_warnings': data['webstore'].get('permission_warnings'),
+                'privacy_policy': data['webstore'].get('privacy_policy'),
+                'rating': data['webstore'].get('rating'),
+                'rating_users': data['webstore'].get('rating_users'),
+                'short_description': data['webstore'].get('short_description'),
+                'size': data['webstore'].get('size'),
+                'support_site': data['webstore'].get('support_site'),
+                'users': data['webstore'].get('users'),
+                'website': data['webstore'].get('website'),
+                'type': data['webstore'].get('type'),
+                'price': data['webstore'].get('price'),
+                'report_link': "https://crxcavator.io/report/" + extension_id + "/" + version,
+            })
     return extensions
 
 

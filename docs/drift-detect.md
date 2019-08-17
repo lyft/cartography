@@ -121,30 +121,27 @@ All set 👍
 	Finally, we should see the following messages pop up:
 
 	```
+	Query Name: Internet Exposed EC2 Instances
+	Query Properties: ["n.instancetype", "n.privateipaddress", "n.publicdnsname", "n.exposed_internet_type"]
+
 	New Query Results:
 
-	Query Name: Internet Exposed EC2 Instances
-	Result Information:
-	n.instancetype | t2.micro
-	n.privateipaddress | 10.255.255.250
-	n.publicdnsname | ec2.0.compute.amazonaws.com
-	n.exposed_internet_type | ['direct']
+	n.instancetype: t2.micro
+	n.privateipaddress: 10.255.255.250
+	n.publicdnsname: ec2.0.compute.amazonaws.com
+	n.exposed_internet_type: ['direct']
 
-	Query Name: Internet Exposed EC2 Instances
-	Result Information:
-	n.instancetype | c4.large
-	n.privateipaddress | 10.255.255.255
-	n.publicdnsname | ec2.5.compute.amazonaws.com
-	n.exposed_internet_type | ['direct', elb']
+	n.instancetype: c4.large
+	n.privateipaddress: 10.255.255.255
+	n.publicdnsname: ec2.5.compute.amazonaws.com
+	n.exposed_internet_type: ['direct', 'elb']
 
 	Missing Query Results:
 
-	Query Name: Internet Exposed EC2 Instances
-	Result Information:
-	n.instancetype | t2.micro
-	n.privateipaddress | 10.255.255.253
-	n.publicdnsname | ec2.4.compute.amazonaws.com
-	n.exposed_internet_type | ['direct', elb']
+	n.instancetype: t2.micro
+	n.privateipaddress: 10.255.255.253
+	n.publicdnsname: ec2.4.compute.amazonaws.com
+	n.exposed_internet_type: ['direct', 'elb']
 	```
 
 	This gives us a quick way to view infrastructure changes!
@@ -160,6 +157,10 @@ It can be cumbersome to always type Unix timestamp filenames.  To make this easi
 	`cartography-detectdrift add-shortcut --shortcut first-run --file <unix_timestamp_1>.json`
 
 	`cartography-detectdrift add-shortcut --shortcut second-run --file <unix_timestamp_2>.json`
+
+	We can even use aliases instead of filenames when adding shortcuts!
+
+	`cartography-detectdrift add-shortcut --shortcut baseline --file most-recent`
 
 2. **Comparing state files with shortcuts**
 
