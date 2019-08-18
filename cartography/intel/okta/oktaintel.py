@@ -6,10 +6,77 @@ from okta.framework.PagedResults import PagedResults
 from okta.models.usergroup import UserGroup
 from okta.framework.ApiClient import ApiClient
 from okta.framework.OktaError import OktaError
+
+from cartography.config import Config
 from cartography.util import run_cleanup_job
 
 logger = logging.getLogger(__name__)
 
+OKTA_API_TOKEN = ""
+
+def _create_user_client(okta_org):
+    """
+    Create Okta User Client
+    :param okta_org: Okta organization name
+    :return: Instance of UsersClient
+    """
+    # https://github.com/okta/okta-sdk-python/blob/master/okta/models/user/User.py
+    user_client = UsersClient(base_url="https://{0}.okta.com/".format(okta_org),
+                              api_token=OKTA_API_TOKEN)
+
+    return user_client
+
+
+def _create_group_client(okta_org):
+    """
+    Create Okta UserGroupsClient
+    :param okta_org: Okta organization name
+    :return: Instance of UserGroupsClient
+    """
+    usergroups_client = UserGroupsClient(base_url="https://{0}.okta.com/".format(okta_org),
+                                         api_token=OKTA_API_TOKEN)
+
+    return usergroups_client
+
+
+def _create_application_client(okta_org):
+    """
+    Create Okta AppInstanceClient
+    :param okta_org: Okta organization name
+    :return: Instance of AppInstanceClient
+    """
+    app_client = AppInstanceClient(base_url="https://{0}.okta.com/".format(okta_org),
+                                   api_token=OKTA_API_TOKEN)
+
+    return app_client
+
+
+def _create_factor_client(okta_org):
+    """
+    Create Okta FactorsClient
+    :param okta_org: Okta organization name
+    :return: Instance of FactorsClient
+    """
+
+    # https://github.com/okta/okta-sdk-python/blob/master/okta/FactorsClient.py
+    factor_client = FactorsClient(base_url="https://{0}.okta.com/".format(okta_org),
+                                  api_token=OKTA_API_TOKEN)
+
+    return factor_client
+
+
+def _create_api_client(okta_org, path_name):
+    """
+    Create Okta ApiClient
+    :param okta_org: Okta organization name
+    :param path_name: API Path
+    :return: Instance of ApiClient
+    """
+    api_client = ApiClient(base_url="https://{0}.okta.com/".format(okta_org),
+                           pathname=path_name,
+                           api_token=OKTA_API_TOKEN)
+
+    return api_client
 
 def _get_okta_users(user_client):
     """
@@ -21,51 +88,7 @@ def _get_okta_users(user_client):
     paged_users = user_client.get_paged_users()
     while True:
         for current_user in paged_users.result:
-
-            # https://github.com/okta/okta-sdk-python/blob/master/okta/models/user/UserProfile.py
-            user_props = {}
-            user_props["first_name"] = current_user.profile.firstName
-            user_props["last_name"] = current_user.profile.lastName
-            user_props["login"] = current_user.profile.login
-            user_props["email"] = current_user.profile.email
-            user_props["second_email"] = current_user.profile.secondEmail
-            user_props["mobile_phone"] = current_user.profile.mobilePhone
-
-            # https://github.com/okta/okta-sdk-python/blob/master/okta/models/user/User.py
-            user_props["id"] = current_user.id
-            user_props["created"] = current_user.created.strftime("%m/%d/%Y, %H:%M:%S")
-            if current_user.activated:
-                user_props["activated"] = current_user.activated.strftime("%m/%d/%Y, %H:%M:%S")
-            else:
-                user_props["activated"] = None
-
-            if current_user.statusChanged:
-                user_props["status_changed"] = current_user.statusChanged.strftime("%m/%d/%Y, %H:%M:%S")
-            else:
-                user_props["status_changed"] = None
-
-            if current_user.lastLogin:
-                user_props["last_login"] = current_user.lastLogin.strftime("%m/%d/%Y, %H:%M:%S")
-            else:
-                user_props["last_login"] = None
-
-            if current_user.lastUpdated:
-                user_props["okta_last_updated"] = current_user.lastUpdated.strftime("%m/%d/%Y, %H:%M:%S")
-            else:
-                user_props["okta_last_updated"] = None
-
-            if current_user.passwordChanged:
-                user_props["password_changed"] = current_user.passwordChanged.strftime("%m/%d/%Y, %H:%M:%S")
-            else:
-                user_props["password_changed"] = None
-
-            if current_user.transitioningToStatus:
-                user_props["transition_to_status"] = current_user.transitioningToStatus
-            else:
-                user_props["transition_to_status"] = None
-
-            # TODO : Handle links
-
+            user_props = _transform_user_data(current_user)
             user_list.append(user_props)
         if not paged_users.is_last_page():
             # Keep on fetching pages of users until the last page
@@ -74,6 +97,58 @@ def _get_okta_users(user_client):
             break
 
     return user_list
+
+
+def _transform_user_data(okta_user):
+    """
+    Transform okta user data
+    :param okta_user: okta user object
+    :return: Dictionary container user properties for ingestion
+    """
+
+    # https://github.com/okta/okta-sdk-python/blob/master/okta/models/user/UserProfile.py
+    user_props = {}
+    user_props["first_name"] = okta_user.profile.firstName
+    user_props["last_name"] = okta_user.profile.lastName
+    user_props["login"] = okta_user.profile.login
+    user_props["email"] = okta_user.profile.email
+    user_props["second_email"] = okta_user.profile.secondEmail
+    user_props["mobile_phone"] = okta_user.profile.mobilePhone
+
+    # https://github.com/okta/okta-sdk-python/blob/master/okta/models/user/User.py
+    user_props["id"] = okta_user.id
+    user_props["created"] = okta_user.created.strftime("%m/%d/%Y, %H:%M:%S")
+    if okta_user.activated:
+        user_props["activated"] = okta_user.activated.strftime("%m/%d/%Y, %H:%M:%S")
+    else:
+        user_props["activated"] = None
+
+    if okta_user.statusChanged:
+        user_props["status_changed"] = okta_user.statusChanged.strftime("%m/%d/%Y, %H:%M:%S")
+    else:
+        user_props["status_changed"] = None
+
+    if okta_user.lastLogin:
+        user_props["last_login"] = okta_user.lastLogin.strftime("%m/%d/%Y, %H:%M:%S")
+    else:
+        user_props["last_login"] = None
+
+    if okta_user.lastUpdated:
+        user_props["okta_last_updated"] = okta_user.lastUpdated.strftime("%m/%d/%Y, %H:%M:%S")
+    else:
+        user_props["okta_last_updated"] = None
+
+    if okta_user.passwordChanged:
+        user_props["password_changed"] = okta_user.passwordChanged.strftime("%m/%d/%Y, %H:%M:%S")
+    else:
+        user_props["password_changed"] = None
+
+    if okta_user.transitioningToStatus:
+        user_props["transition_to_status"] = okta_user.transitioningToStatus
+    else:
+        user_props["transition_to_status"] = None
+
+    return user_props
 
 
 def _load_okta_users(neo4j_session, okta_org_id, user_list, okta_update_tag):
@@ -141,71 +216,6 @@ def _sync_okta_users(neo4j_session, okta_org_id, okta_update_tag):
     _load_okta_users(neo4j_session, okta_org_id, data, okta_update_tag)
 
 
-def _create_user_client(okta_org):
-    """
-    Create Okta User Client
-    :param okta_org: Okta organization name
-    :return: Instance of UsersClient
-    """
-    # http://developer.okta.com/docs/api/getting_started/getting_a_token.html
-    user_client = UsersClient(base_url="https://{0}.okta.com/".format(okta_org),
-                              api_token='')
-
-    return user_client
-
-
-def _create_group_client(okta_org):
-    """
-    Create Okta UserGroupsClient
-    :param okta_org: Okta organization name
-    :return: Instance of UserGroupsClient
-    """
-    usergroups_client = UserGroupsClient(base_url="https://{0}.okta.com/".format(okta_org),
-                                         api_token='')
-
-    return usergroups_client
-
-
-def _create_application_client(okta_org):
-    """
-    Create Okta AppInstanceClient
-    :param okta_org: Okta organization name
-    :return: Instance of AppInstanceClient
-    """
-    app_client = AppInstanceClient(base_url="https://{0}.okta.com/".format(okta_org),
-                                   api_token='')
-
-    return app_client
-
-
-def _create_factor_client(okta_org):
-    """
-    Create Okta FactorsClient
-    :param okta_org: Okta organization name
-    :return: Instance of FactorsClient
-    """
-
-    # https://github.com/okta/okta-sdk-python/blob/master/okta/FactorsClient.py
-    factor_client = FactorsClient(base_url="https://{0}.okta.com/".format(okta_org),
-                                  api_token='')
-
-    return factor_client
-
-
-def _create_api_client(okta_org, path_name):
-    """
-    Create Okta ApiClient
-    :param okta_org: Okta organization name
-    :param path_name: API Path
-    :return: Instance of ApiClient
-    """
-    api_client = ApiClient(base_url="https://{0}.okta.com/".format(okta_org),
-                           pathname=path_name,
-                           api_token='')
-
-    return api_client
-
-
 def _get_okta_groups(api_client):
     """
     Get groups from Okta server
@@ -234,34 +244,7 @@ def _get_okta_groups(api_client):
         paged_results = PagedResults(paged_response, UserGroup)
 
         for current_group in paged_results.result:
-
-            # https://github.com/okta/okta-sdk-python/blob/master/okta/models/usergroup/UserGroup.py
-            group_props = {}
-            group_props["id"] = current_group.id
-            group_props["name"] = current_group.profile.name
-            group_props["description"] = current_group.profile.description
-            if current_group.profile.samAccountName:
-                group_props["sam_account_name"] = current_group.profile.samAccountName
-            else:
-                group_props["sam_account_name"] = None
-
-            if current_group.profile.dn:
-                group_props["dn"] = current_group.profile.dn
-            else:
-                group_props["dn"] = None
-
-            if current_group.profile.windowsDomainQualifiedName:
-                group_props["windows_domain_qualified_name"] = current_group.profile.windowsDomainQualifiedName
-            else:
-                group_props["windows_domain_qualified_name"] = None
-
-            if current_group.profile.externalId:
-                group_props["external_id"] = current_group.profile.externalId
-            else:
-                group_props["external_id"] = None
-
-            # TODO : Handle links
-
+            group_props = _transform_okta_group(current_group)
             group_list.append(group_props)
 
         if not _is_last_page(paged_response):
@@ -270,6 +253,40 @@ def _get_okta_groups(api_client):
             break
 
     return group_list
+
+
+def _transform_okta_group(okta_group):
+    """
+    Transform okta group object to consumable dictionary for graph
+    :param okta_group: okta group object
+    :return: Dictionary representing the group properties
+    """
+    # https://github.com/okta/okta-sdk-python/blob/master/okta/models/usergroup/UserGroup.py
+    group_props = {}
+    group_props["id"] = okta_group.id
+    group_props["name"] = okta_group.profile.name
+    group_props["description"] = okta_group.profile.description
+    if okta_group.profile.samAccountName:
+        group_props["sam_account_name"] = okta_group.profile.samAccountName
+    else:
+        group_props["sam_account_name"] = None
+
+    if okta_group.profile.dn:
+        group_props["dn"] = okta_group.profile.dn
+    else:
+        group_props["dn"] = None
+
+    if okta_group.profile.windowsDomainQualifiedName:
+        group_props["windows_domain_qualified_name"] = okta_group.profile.windowsDomainQualifiedName
+    else:
+        group_props["windows_domain_qualified_name"] = None
+
+    if okta_group.profile.externalId:
+        group_props["external_id"] = okta_group.profile.externalId
+    else:
+        group_props["external_id"] = None
+
+    return group_props
 
 
 def _sync_okta_groups(neo4_session, okta_org_id, okta_update_tag):
@@ -400,7 +417,8 @@ def _get_okta_group_members(api_client, group_id):
         member_results = json.loads(paged_response.text)
 
         for member in member_results:
-            member_list.append(member.id)
+            member_id = _transform_okta_group_member(member)
+            member_list.append(member_id)
 
         if not _is_last_page(paged_response):
             next_url = paged_response.links.get("next").get("url")
@@ -408,6 +426,15 @@ def _get_okta_group_members(api_client, group_id):
             break
 
     return member_list
+
+
+def _transform_okta_group_member(okta_member):
+    """
+    Transform group member object to graph consumable data
+    :param okta_member: okta_member object
+    :return: member id
+    """
+    return okta_member.id
 
 
 def _load_okta_group_membership(neo4j_session, api_client, okta_org_id, okta_update_tag):
@@ -463,35 +490,7 @@ def _get_okta_applications(app_client):
 
     while True:
         for current_application in page_apps.result:
-
-            # https://github.com/okta/okta-sdk-python/blob/master/okta/models/app/AppInstance.py
-            app_props = {}
-            app_props["id"] = current_application.id
-            app_props["name"] = current_application.name
-            app_props["label"] = current_application.label
-            if current_application.created:
-                app_props["created"] = current_application.created.strftime("%m/%d/%Y, %H:%M:%S")
-            else:
-                app_props["created"] = None
-
-            if current_application.lastUpdated:
-                app_props["okta_last_updated"] = current_application.lastUpdated.strftime("%m/%d/%Y, %H:%M:%S")
-            else:
-                app_props["okta_last_updated"] = None
-
-            app_props["status"] = current_application.status
-
-            if current_application.activated:
-                app_props["activated"] = current_application.activated.strftime("%m/%d/%Y, %H:%M:%S")
-            else:
-                app_props["activated"] = None
-
-            app_props["features"] = current_application.features
-            app_props["sign_on_mode"] = current_application.signOnMode
-
-
-            # TODO handle Accessibility, Visibility, Settings
-
+            app_props = _transform_okta_application(current_application)
             app_list.append(app_props)
         if not page_apps.is_last_page():
             # Keep on fetching pages of users until the last page
@@ -500,6 +499,35 @@ def _get_okta_applications(app_client):
             break
 
     return app_list
+
+
+def _transform_okta_application(okta_application):
+    # https://github.com/okta/okta-sdk-python/blob/master/okta/models/app/AppInstance.py
+    app_props = {}
+    app_props["id"] = okta_application.id
+    app_props["name"] = okta_application.name
+    app_props["label"] = okta_application.label
+    if okta_application.created:
+        app_props["created"] = okta_application.created.strftime("%m/%d/%Y, %H:%M:%S")
+    else:
+        app_props["created"] = None
+
+    if okta_application.lastUpdated:
+        app_props["okta_last_updated"] = okta_application.lastUpdated.strftime("%m/%d/%Y, %H:%M:%S")
+    else:
+        app_props["okta_last_updated"] = None
+
+    app_props["status"] = okta_application.status
+
+    if okta_application.activated:
+        app_props["activated"] = okta_application.activated.strftime("%m/%d/%Y, %H:%M:%S")
+    else:
+        app_props["activated"] = None
+
+    app_props["features"] = okta_application.features
+    app_props["sign_on_mode"] = okta_application.signOnMode
+
+    return app_props
 
 
 def _load_okta_applications(neo4j_session, okta_org_id, app_list, okta_update_tag):
@@ -561,9 +589,8 @@ def _get_application_assigned_users(api_client, app_id):
         except OktaError as okta_error:
             break
 
-        app_data = json.loads(paged_response.text)
-        for user in app_data:
-            app_users.append(user["id"])
+        for user_id in _transform_application_users(paged_response.text):
+            app_users.append(user_id)
 
         if not _is_last_page(paged_response):
             next_url = paged_response.links.get("next").get("url")
@@ -571,6 +598,19 @@ def _get_application_assigned_users(api_client, app_id):
             break
 
     return app_users
+
+
+def _transform_application_users(json_app_data):
+    """
+    Transform application users data for graph consumption
+    :param json_app_data: raw json application data
+    :return: individual user id as yield
+    """
+
+    app_data = json.loads(json_app_data)
+    app_users = []
+    for user in app_data:
+        yield user["id"]
 
 
 def _is_last_page(response):
@@ -606,10 +646,8 @@ def _get_application_assigned_groups(api_client, app_id):
         except OktaError as okta_error:
             break
 
-        app_data = json.loads(paged_response.text)
-
-        for group in app_data:
-            app_groups.append(group["id"])
+        for group_id in _transform_applicationg_assigned_groups(paged_response.text):
+            app_groups.append(group_id)
 
         if not _is_last_page(paged_response):
             next_url = paged_response.links.get("next").get("url")
@@ -617,6 +655,18 @@ def _get_application_assigned_groups(api_client, app_id):
             break
 
     return app_groups
+
+
+def _transform_applicationg_assigned_groups(json_app_data):
+    """
+    Transform application group assignment to consumable data for the graph
+    :param json_app_data: raw json group application assignment data.
+    :return: group ids as yield
+    """
+    app_data = json.loads(json_app_data)
+
+    for group in app_data:
+        yield group["id"]
 
 
 def _sync_okta_applications(neo4j_session, okta_org_id, okta_update_tag):
@@ -733,28 +783,37 @@ def _get_factor_for_user_id(factor_client, user_id):
         return []
 
     for current_factor in factor_results:
-
-        # https://github.com/okta/okta-sdk-python/blob/master/okta/models/factor/Factor.py
-        factor_props = {}
-        factor_props["id"] = current_factor.id
-        factor_props["factor_type"] = current_factor.factorType
-        factor_props["provider"] = current_factor.provider
-        factor_props["status"] = current_factor.status
-        if current_factor.created:
-            factor_props["created"] = current_factor.created.strftime("%m/%d/%Y, %H:%M:%S")
-        else:
-            current_factor["created"] = None
-
-        if current_factor.lastUpdated:
-            factor_props["okta_last_updated"] = current_factor.lastUpdated.strftime("%m/%d/%Y, %H:%M:%S")
-        else:
-            current_factor["okta_last_updated"] = None
-
-        # we don't import Profile data into the graph due as it contains sensitive data
-
+        factor_props = _transform_okta_user_factor(current_factor)
         user_factors.append(factor_props)
 
     return user_factors
+
+
+def _transform_okta_user_factor(okta_factor_info):
+    """
+    Transform okta user factor into consumable data for the graph
+    :param okta_factor_info: okta factor information
+    :return: Dictionary of properties for the factor
+    """
+
+    # https://github.com/okta/okta-sdk-python/blob/master/okta/models/factor/Factor.py
+    factor_props = {}
+    factor_props["id"] = okta_factor_info.id
+    factor_props["factor_type"] = okta_factor_info.factorType
+    factor_props["provider"] = okta_factor_info.provider
+    factor_props["status"] = okta_factor_info.status
+    if okta_factor_info.created:
+        factor_props["created"] = okta_factor_info.created.strftime("%m/%d/%Y, %H:%M:%S")
+    else:
+        factor_props["created"] = None
+
+    if okta_factor_info.lastUpdated:
+        factor_props["okta_last_updated"] = okta_factor_info.lastUpdated.strftime("%m/%d/%Y, %H:%M:%S")
+    else:
+        factor_props["okta_last_updated"] = None
+
+    # we don't import Profile data into the graph due as it contains sensitive data
+    return factor_props
 
 
 def _ingest_user_factors(neo4j_session, user_id, factors, okta_update_tag):
@@ -810,46 +869,151 @@ def _sync_users_factors(neo4j_session, okta_org_id, okta_update_tag):
         _ingest_user_factors(neo4j_session, user_id, user_factors, okta_update_tag)
 
 
-def _get_user_roles(api_client, user_id):
+def _get_user_roles(api_client, user_id, okta_org_id):
     """
     Get user roles from Okta
     :param api_client: api client
     :param user_id: user to fetch roles from
+    :param okta_org_id: okta organization id
     :return: Array of dictionary containing role properties
     """
 
-    user_roles = []
-
-    # https://developer.okta.com/docs/reference/api/roles/#role-assignment-operations
+    # https://developer.okta.com/docs/reference/api/roles/#list-roles
     response = api_client.get_path('/{0}/roles'.format(user_id))
 
-    role_data = json.loads(response.text)
+    return _transform_user_roles_data(response.text, okta_org_id)
+
+
+def _transform_user_roles_data(data, okta_org_id):
+    """
+    Transform user role data
+    :param data: data returned by Okta server
+    :param okta_org_id: okta organization id
+    :return: Array of dictionary containing role properties
+    """
+    role_data = json.loads(data)
+
+    user_roles = []
 
     for role in role_data:
         role_props = {}
-        role_props["id"] = role["id"]
         role_props["label"] = role["label"]
         role_props["type"] = role["type"]
+        role_props["id"] = "{0}-{1}".format(okta_org_id, role["type"])
 
         user_roles.append(role_props)
 
     return user_roles
 
 
-# TODO - Get token with role permission
-# def _sync_roles(neo4j_session, okta_org_id, okta_update_tag):
-#     logger.debug("Syncing Okta Roles")
-#
-#     # get API client
-#     api_client = _create_api_client(okta_org_id, "/api/v1/users")
-#
-#     # users
-#     users = _get_user_id_from_graph(neo4j_session, okta_org_id)
-#
-#     for user_id in users:
-#         user_roles = _get_user_roles(api_client, user_id)
-#         print(user_roles)
-#     #     # _ingest_user_factors(neo4j_session, user_id, user_factors, okta_update_tag)
+def _get_group_roles(api_client, group_id, okta_org_id):
+    """
+    Get user roles from Okta
+    :param api_client: api client
+    :param group_id: user to fetch roles from
+    :param okta_org_id: okta organization id
+    :return: Array of dictionary containing role properties
+    """
+
+    # https://developer.okta.com/docs/reference/api/roles/#list-roles-assigned-to-group
+    response = api_client.get_path('/{0}/roles'.format(group_id))
+
+    return _transform_group_roles_data(response.text, okta_org_id)
+
+
+def _transform_group_roles_data(data, okta_org_id):
+    """
+    Transform user role data
+    :param data: data returned by Okta server
+    :param okta_org_id: okta organization id
+    :return: Array of dictionary containing role properties
+    """
+    role_data = json.loads(data)
+
+    user_roles = []
+
+    for role in role_data:
+        role_props = {}
+        role_props["label"] = role["label"]
+        role_props["type"] = role["type"]
+        role_props["id"] = "{0}-{1}".format(okta_org_id, role["type"])
+
+        user_roles.append(role_props)
+
+    return user_roles
+
+
+# TODO - Make this one fail gracefuly with warning as it requires super admin token
+def _sync_roles(neo4j_session, okta_org_id, okta_update_tag):
+    logger.debug("Syncing Okta Roles")
+
+    # get API client
+    api_client = _create_api_client(okta_org_id, "/api/v1/users")
+
+    # users
+    users = _get_user_id_from_graph(neo4j_session, okta_org_id)
+
+    for user_id in users:
+        user_roles = _get_user_roles(api_client, user_id, okta_org_id)
+        if len(user_roles) > 0:
+            _ingest_user_role(neo4j_session, user_id, user_roles, okta_update_tag)
+
+    # groups
+    groups = _get_okta_groups_id_from_graph(neo4j_session, okta_org_id)
+
+    for group_id in groups:
+        group_roles = _get_group_roles(api_client, group_id, okta_org_id)
+        if len(group_roles) > 0:
+            _ingest_group_role(neo4j_session, group_id, group_roles, okta_update_tag)
+
+
+def _ingest_user_role(neo4j_session, user_id, roles_data, okta_update_tag):
+    ingest = """
+    MATCH (user:OktaUser{id: {USER_ID}})<-[:RESOURCE]-(org:OktaOrganization)
+    WITH user,org
+    UNWIND {ROLES_DATA} as role_data
+    MERGE (role_node:OktaAdministrationRole{id: role_data.type})
+    ON CREATE SET role_node.type = role_data.type, role_node.firstseen = timestamp()
+    SET role_node.label = role_data.label, role_node.lastupdated = {okta_update_tag}
+    WITH user, role_node, org
+    MERGE (user)-[r:MEMBER_OF_OKTA_ROLE]->(role_node)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {okta_update_tag}
+    WITH role_node, org
+    MERGE (org)-[r2:RESOURCE]->(role_node)
+    ON CREATE SET r2.firstseen = timestamp()
+    SET r2.lastupdated = {okta_update_tag}
+    """
+
+    neo4j_session.run(ingest,
+                      USER_ID=user_id,
+                      ROLES_DATA=roles_data,
+                      okta_update_tag=okta_update_tag)
+
+
+def _ingest_group_role(neo4j_session, group_id, roles_data, okta_update_tag):
+    ingest = """
+    MATCH (group:OktaGroup{id: {GROUP_ID}})<-[:RESOURCE]-(org:OktaOrganization)
+    WITH group,org
+    UNWIND {ROLES_DATA} as role_data
+    MERGE (role_node:OktaAdministrationRole{id: role_data.type})
+    ON CREATE SET role_node.type = role_data.type, role_node.firstseen = timestamp()
+    SET role_node.label = role_data.label, role_node.lastupdated = {okta_update_tag}
+    WITH group, role_node, org
+    MERGE (group)-[r:MEMBER_OF_OKTA_ROLE]->(role_node)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {okta_update_tag}
+    WITH role_node, org
+    MERGE (org)-[r2:RESOURCE]->(role_node)
+    ON CREATE SET r2.firstseen = timestamp()
+    SET r2.lastupdated = {okta_update_tag}
+    """
+
+    neo4j_session.run(ingest,
+                      GROUP_ID=group_id,
+                      ROLES_DATA=roles_data,
+                      okta_update_tag=okta_update_tag)
+
 
 def _get_trusted_origins(api_client):
     """
@@ -861,24 +1025,34 @@ def _get_trusted_origins(api_client):
     ret_list = []
 
     response = api_client.get_path("/")
-    response_list = json.loads(response.text)
+    return _transform_trusted_origins(response.text)
 
-    for data in response_list:
+
+def _transform_trusted_origins(data):
+    """
+    Transform trusted origin data returned by Okta Server
+    :param data: json response
+    :return: Array of dictionary containing trusted origins properties
+    """
+    ret_list = []
+
+    json_data = json.loads(data)
+    for factor_data in json_data:
         props = {}
-        props["id"] = data["id"]
-        props["name"] = data["name"]
+        props["id"] = factor_data["id"]
+        props["name"] = factor_data["name"]
 
         # https://developer.okta.com/docs/reference/api/trusted-origins/#scope-object
         scope_types = []
-        for scope in data.get("scopes", []):
+        for scope in factor_data.get("scopes", []):
             scope_types.append(scope["type"])
 
         props["scopes"] = scope_types
-        props["status"] = data["status"]
-        props["created"] = data.get("created", None)
-        props["created_by"] = data.get("created_by", None)
-        props["okta_last_updated"] = data.get("lastUpdated", '')
-        props["okta_last_updated_by"] = data["lastUpdatedBy"]
+        props["status"] = factor_data["status"]
+        props["created"] = factor_data.get("created", None)
+        props["created_by"] = factor_data.get("created_by", None)
+        props["okta_last_updated"] = factor_data.get("lastUpdated", '')
+        props["okta_last_updated_by"] = factor_data["lastUpdatedBy"]
 
         ret_list.append(props)
 
@@ -951,15 +1125,15 @@ def start_okta_ingestion(neo4j_session, okta_organization, config):
         "OKTA_ORG_ID": okta_organization,
     }
 
-    _create_okta_organization(neo4j_session, okta_organization, config.update_tag)
-    _sync_okta_users(neo4j_session, config.update_tag)
-    _sync_okta_groups(neo4j_session, config.update_tag)
-    _sync_okta_applications(session, org_id, last_update)
-    _sync_users_factors(session, org_id, last_update)
-    _sync_trusted_origins(session, org_id, last_update)
+    # _create_okta_organization(neo4j_session, okta_organization, config.update_tag)
+    # _sync_okta_users(neo4j_session, okta_organization, config.update_tag)
+    # _sync_okta_groups(neo4j_session, okta_organization, config.update_tag)
+    # _sync_okta_applications(session, okta_organization, last_update)
+    #_sync_users_factors(session, okta_organization, last_update)
+    _sync_trusted_origins(session, okta_organization, last_update)
 
     # need creds with permission
-    # _sync_roles(session, org_id, last_update)
+    _sync_roles(session, okta_organization, last_update)
 
     _cleanup_okta_organizations(neo4j_session, common_job_parameters)
 
@@ -986,22 +1160,27 @@ if __name__ == '__main__':
         last_update = int(time.time())
         org_id = "lyft"
 
-        # start_okta_ingestion(session, "lyft", {})
-        _create_okta_organization(session, org_id, last_update)
-        _sync_okta_users(session, org_id, last_update)
-        _sync_okta_groups(session, org_id, last_update)
-        _sync_okta_applications(session, org_id, last_update)
-        _sync_users_factors(session, org_id, last_update)
-        _sync_trusted_origins(session, org_id, last_update)
+        config = Config( neo4j_uri="7687",
+                         neo4j_user="neo4j",
+                         neo4j_password="1",
+                         update_tag=last_update)
 
-        # need creds with permission
+        start_okta_ingestion(session, "lyft", config)
+        # _create_okta_organization(session, org_id, last_update)
+        # _sync_okta_users(session, org_id, last_update)
+        # _sync_okta_groups(session, org_id, last_update)
+        # _sync_okta_applications(session, org_id, last_update)
+        # _sync_users_factors(session, org_id, last_update)
+        # _sync_trusted_origins(session, org_id, last_update)
+        #
+        # # need creds with permission
         # _sync_roles(session, org_id, last_update)
 
-        common_job_parameters = {
-            "UPDATE_TAG": last_update,
-            "OKTA_ORG_ID": org_id,
-        }
-        _cleanup_okta_organizations(session, common_job_parameters)
+        # common_job_parameters = {
+        #     "UPDATE_TAG": last_update,
+        #     "OKTA_ORG_ID": org_id,
+        # }
+        # _cleanup_okta_organizations(session, common_job_parameters)
 
     # # http://developer.okta.com/docs/api/getting_started/getting_a_token.html
     # usersClient = UsersClient(base_url='https://lyft.okta.com/',

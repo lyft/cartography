@@ -23,7 +23,7 @@
     {
       "query": "MATCH (:OktaOrganization{id: {OKTA_ORG_ID}})-[:RESOURCE]->(n:OktaGroup) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
       "iterative": true,
-      "iterationsize": 100ß
+      "iterationsize": 100
     },
     {
       "query": "MATCH (:OktaOrganization{id: {OKTA_ORG_ID}})-[:RESOURCE]->(n:OktaApplication) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
@@ -42,6 +42,16 @@
     },
     {
       "query": "MATCH (:OktaOrganization{id: {OKTA_ORG_ID}})-[:RESOURCE]->(n:OktaTrustedOrigin) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (:OktaOrganization{id: {OKTA_ORG_ID}})-[:RESOURCE]->(n:OktaAdministrationRole) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (:OktaOrganization{id: {OKTA_ORG_ID}})-[:RESOURCE]->(n:OktaAdministrationRole)<-[r:MEMBER_OF_OKTA_ROLE]-(:OktaUser)  WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
       "iterative": true,
       "iterationsize": 100
     }
