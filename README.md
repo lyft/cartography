@@ -2,7 +2,7 @@
 Cartography is a Python tool that consolidates infrastructure assets and the relationships between them in an intuitive graph view powered by a [Neo4j](https://www.neo4j.com) database.
 
 ## Why Cartography?
-Cartography aims to enable a broad set of exploration and automation scenarios.  It is particularly good at exposing otherwise hidden dependency relationships between your service's assets so that you may validate assumptions about security risks.  
+Cartography aims to enable a broad set of exploration and automation scenarios.  It is particularly good at exposing otherwise hidden dependency relationships between your service's assets so that you may validate assumptions about security risks.
 
 Service owners can generate asset reports, Red Teamers can discover attack paths, and Blue Teamers can identify areas for security improvement.   All can benefit from using the graph for manual exploration through a web frontend interface, or in an automated fashion by calling the APIs.
 
@@ -20,30 +20,35 @@ Time to set up the server that will run Cartography.  Cartography _should_ work 
 	1. Go to the [Neo4j download page](https://neo4j.com/download-center/#releases), click "Community Server" and download Neo4j Community Edition 3.2.*.
 
 			⚠️ At this time we run our automated tests on Neo4j version 3.2.*.  3.3.* will work but it will currently fail the [test syntax test](https://github.com/lyft/cartography/blob/8f3f4b739e0033a7849c35cfa8edd3b0067be509/tests/integration/cartography/data/jobs/test_syntax.py) ⚠️
-			
+
 	2. [Install](https://neo4j.com/docs/operations-manual/current/installation/) Neo4j on the server you will run Cartography on.
 
-
-2. If you're an AWS user, **prepare your AWS account(s)** 
+2. If you're an AWS user, **prepare your AWS account(s)**
 
 	- **If you only have a single AWS account**
-		
+
 		1. Set up an AWS identity (user, group, or role) for Cartography to use.  Ensure that this identity has the built-in AWS [SecurityAudit policy](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_job-functions.html#jf_security-auditor) (arn:aws:iam::aws:policy/SecurityAudit) attached.  This policy grants access to read security config metadata.
 		2. Set up AWS credentials to this identity on your server, using a `config` and 	`credential` file.  For details, see AWS' [official guide](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html).
-  
+
  	- **If you want to pull from multiple AWS accounts**, see [here](#multiple-aws-account-setup).
 
-
-3. If you're a GCP user, **prepare your GCP credential(s)**
+ 3. If you're a GCP user, **prepare your GCP credential(s)**
 
     1. Create an identity - either a User Account or a Service Account - for Cartography to run as
     2. Ensure that this identity has the [securityReviewer](https://cloud.google.com/iam/docs/understanding-roles) role attached to it.
-    3. Ensure that the machine you are running Cartography on can authenticate to this identity.  
+    3. Ensure that the machine you are running Cartography on can authenticate to this identity.
         - **Method 1**: You can do this by setting your `GOOGLE_APPLICATION_CREDENTIALS` environment variable to point to a json file containing your credentials.  As per SecurityCommonSense™️, please ensure that only the user account that runs Cartography has read-access to this sensitive file.
         - **Method 2**: If you are running Cartography on a GCE instance or other GCP service, you can make use of the credential management provided by the default service accounts on these services.  See the [official docs](https://cloud.google.com/docs/authentication/production) on Application Default Credentials for more details.
 
-	
-5. **Get and run Cartography** 
+4. If you're a CRXcavator user, **prepare your CRXcavator API key**
+
+    1. Generate an API key from your CRXcavator [user page](https://crxcavator.io/user/settings#)
+    2. Populate the following environment variables in the shell running Cartography
+        1. CRXCAVATOR_URL - the full URL to the CRXcavator API. https://api.crxcavator.io/v1 as of 07/09/19
+        2. CREDENTIALS_CRXCAVATOR_API_KEY - your API key generated in the previous step. Note this is a credential and should be stored in an appropriate secret store to be populated securely into your runtime environment.
+    3. If the credentials are configured, the CRXcavator module will run automatically on the next sync
+
+5. **Get and run Cartography**
 
 	1. Run `pip install cartography` to install our code.
 
@@ -54,13 +59,13 @@ Time to set up the server that will run Cartography.  Cartography _should_ work 
 			```
 			cartography --neo4j-uri <uri for your neo4j instance; usually bolt://localhost:7687>
 			```
-		
+
 		- If you have more than one AWS account, run
 
 			```
 			AWS_CONFIG_FILE=/path/to/your/aws/config cartography --neo4j-uri <uri for your neo4j instance; usually bolt://localhost:7687> --aws-sync-all-profiles
 			```
-		
+
 		The sync will pull data from your configured accounts and ingest data to Neo4j!  This process might take a long time if your account has a lot of assets.
 
 
@@ -69,12 +74,12 @@ Time to set up the server that will run Cartography.  Cartography _should_ work 
 Once everything has been installed and synced, you can view the Neo4j web interface at http://localhost:7474.  You can view the reference on this [here](https://neo4j.com/developer/guide-neo4j-browser/#_installing_and_starting_neo4j_browser).
 
 ### ℹ️ Already know [how to query Neo4j](https://neo4j.com/developer/cypher-query-language/)?  You can skip to our reference material!
-If you already know Neo4j and just need to know what are the nodes, attributes, and graph relationships for our representation of infrastructure assets, you can skip this handholdy walkthrough and see our [quick canned queries](#sample-queries).  You can also view our [reference material](#reference). 
+If you already know Neo4j and just need to know what are the nodes, attributes, and graph relationships for our representation of infrastructure assets, you can skip this handholdy walkthrough and see our [quick canned queries](#sample-queries).  You can also view our [reference material](#reference).
 
 
 ### What [RDS](https://aws.amazon.com/rds/) instances are installed in my [AWS](https://aws.amazon.com/) accounts?
 ```
-MATCH (aws:AWSAccount)-[r:RESOURCE]->(rds:RDSInstance) 
+MATCH (aws:AWSAccount)-[r:RESOURCE]->(rds:RDSInstance)
 return *
 ```
 ![Visualization of RDS nodes and AWS nodes](docs/images/accountsandrds.png)
@@ -85,16 +90,16 @@ We will do more interesting things with this result next.
 
 
 #### ℹ️ Protip - customizing your view
-You can adjust the node colors, sizes, and captions by clicking on the node type at the top of the query.  For example, to change the color of an AWSAccount node, first click the "AWSAccount" icon at the top of the view to select the node type 
-![selecting an AWSAccount node](docs/images/selectnode.png) 
+You can adjust the node colors, sizes, and captions by clicking on the node type at the top of the query.  For example, to change the color of an AWSAccount node, first click the "AWSAccount" icon at the top of the view to select the node type
+![selecting an AWSAccount node](docs/images/selectnode.png)
 
-and then pick options on the menu that shows up at the bottom of the view like this: 
+and then pick options on the menu that shows up at the bottom of the view like this:
 ![customizations](docs/images/customizeview.png)
 
 
 ### Which RDS instances have [encryption](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Overview.Encryption.html) turned off?
 ```
-MATCH (a:AWSAccount)-[:RESOURCE]->(rds:RDSInstance{storage_encrypted:false}) 
+MATCH (a:AWSAccount)-[:RESOURCE]->(rds:RDSInstance{storage_encrypted:false})
 RETURN a.name, rds.id
 ```
 
@@ -108,21 +113,21 @@ If you want to go back to viewing the graph and not a table, simply make sure yo
 Let's look at some other AWS assets now.
 
 
-### Which [EC2](https://aws.amazon.com/ec2/) instances are directly exposed to the internet? 
+### Which [EC2](https://aws.amazon.com/ec2/) instances are directly exposed to the internet?
 ```
-MATCH (instance:EC2Instance{exposed_internet: true}) 
-RETURN instance.instanceid, instance.publicdnsname 
+MATCH (instance:EC2Instance{exposed_internet: true})
+RETURN instance.instanceid, instance.publicdnsname
 ```
 ![EC2 instances open to the internet](docs/images/ec2-inet-open.png)
 
-These instances are open to the internet either through permissive inbound IP permissions defined on their EC2SecurityGroups or their NetworkInterfaces. 
+These instances are open to the internet either through permissive inbound IP permissions defined on their EC2SecurityGroups or their NetworkInterfaces.
 
 If you know a lot about AWS, you may have noticed that EC2 instances [don't actually have an exposed_internet field](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_Instance.html).  We're able to query for this because Cartography performs some [data enrichment](#data-enrichment) to add this field to EC2Instance nodes.
 
 
 ### Which [S3](https://aws.amazon.com/s3/) buckets have a policy granting any level of anonymous access to the bucket?
 ```
-MATCH (s:S3Bucket) 
+MATCH (s:S3Bucket)
 WHERE s.anonymous_access = true
 RETURN s
 ```
@@ -138,8 +143,8 @@ A couple of other things to notice: instead of using the "{}" notation to filter
 Let's go back to analyzing RDS instances.  In an earlier example we queried for RDS instances that have encryption turned off.  We can aggregate this data by AWSAccount with a small change:
 
 ```
-MATCH (a:AWSAccount)-[:RESOURCE]->(rds:RDSInstance) 
-WHERE rds.storage_encrypted = false 
+MATCH (a:AWSAccount)-[:RESOURCE]->(rds:RDSInstance)
+WHERE rds.storage_encrypted = false
 RETURN a.name as AWSAccount, count(rds) as UnencryptedInstances
 ```
 ![Table of unencrypted RDS instances by AWS account](docs/images/unencryptedcounts.png)
@@ -195,25 +200,25 @@ Detailed view of [our schema and all data types](docs/schema/index.md) 😁.
 ### Sample queries
 #### What [RDS](https://aws.amazon.com/rds/) instances are installed in my [AWS](https://aws.amazon.com/) accounts?
 ```
-MATCH (aws:AWSAccount)-[r:RESOURCE]->(rds:RDSInstance) 
+MATCH (aws:AWSAccount)-[r:RESOURCE]->(rds:RDSInstance)
 return *
 ```
 
 #### Which RDS instances have [encryption](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Overview.Encryption.html) turned off?
 ```
-MATCH (a:AWSAccount)-[:RESOURCE]->(rds:RDSInstance{storage_encrypted:false}) 
+MATCH (a:AWSAccount)-[:RESOURCE]->(rds:RDSInstance{storage_encrypted:false})
 return a.name, rds.id
 ```
 
-#### Which [EC2](https://aws.amazon.com/ec2/) instances are directly exposed to the internet? 
+#### Which [EC2](https://aws.amazon.com/ec2/) instances are directly exposed to the internet?
 ```
-MATCH (instance:EC2Instance{exposed_internet: true}) 
-RETURN instance.instanceid, instance.publicdnsname 
+MATCH (instance:EC2Instance{exposed_internet: true})
+RETURN instance.instanceid, instance.publicdnsname
 ```
 
 #### Which [S3](https://aws.amazon.com/s3/) buckets have a policy granting any level of anonymous access to the bucket?
 ```
-MATCH (s:S3Bucket) 
+MATCH (s:S3Bucket)
 WHERE s.anonymous_access = true
 RETURN s
 ```
@@ -221,9 +226,24 @@ RETURN s
 #### How many unencrypted RDS instances do I have in all my AWS accounts?
 
 ```
-MATCH (a:AWSAccount)-[:RESOURCE]->(rds:RDSInstance) 
-WHERE rds.storage_encrypted = false 
+MATCH (a:AWSAccount)-[:RESOURCE]->(rds:RDSInstance)
+WHERE rds.storage_encrypted = false
 return a.name as AWSAccount, count(rds) as UnencryptedInstances
+```
+
+#### What users have the TotallyFake extension installed?
+```
+MATCH (u:GSuiteUser)-[r:INSTALLS]->(ext:ChromeExtension)
+WHERE ext.name CONTAINS 'TotallyFake'
+return ext.name, ext.version, u.email
+```
+
+#### What users have installed extensions that are risky based on [CRXcavator scoring](https://crxcavator.io/docs#/risk_breakdown)?
+Risk > 200 is evidence of 3 or more critical risks or many high risks in the extension.
+```
+MATCH (u:GSuiteUser)-[r:INSTALLS]->(ext:ChromeExtension)
+WHERE ext.risk_total > 200
+return ext.name, ext.version, u.email
 ```
 
 ### Data Enrichment
@@ -231,7 +251,7 @@ Cartography adds custom attributes to nodes and relationships to point out secur
 
 - `exposed_internet` indicates whether the asset is accessible to the public internet.
 
-	- **Elastic Load Balancers**: The `exposed_internet` flag is set to `True` when the load balancer's `scheme` field is set to `internet-facing`.  This indicates that the load balancer has a public DNS name that resolves to a public IP address. 
+	- **Elastic Load Balancers**: The `exposed_internet` flag is set to `True` when the load balancer's `scheme` field is set to `internet-facing`.  This indicates that the load balancer has a public DNS name that resolves to a public IP address.
 
 	- **EC2 instances**: The `exposed_internet` flag on an EC2 instance is set to `True` when any of following apply:
 
@@ -255,7 +275,7 @@ There are many ways to allow Cartography to pull from more than one AWS account.
 	1. Attach the built-in AWS [SecurityAudit IAM policy](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_job-functions.html#jf_security-auditor) (arn:aws:iam::aws:policy/SecurityAudit) to the role.  This grants access to read security config metadata.
 	2. Set up a trust relationship so that the Spoke accounts will allow the Hub account to assume the `cartography-read-only` role.  The resulting trust relationship should look something like this:
 
-		```	               
+		```
 		{
 		  "Version": "2012-10-17",
 		  "Statement": [
@@ -270,7 +290,7 @@ There are many ways to allow Cartography to pull from more than one AWS account.
 		}
 		```
 	3. Allow a role in the Hub account to **assume the `cartography-read-only` role** on your Spoke account(s).
-		
+
 		- On the Hub account, create a role called `cartography-service`.
 		- On this new `cartography-service` role, add an inline policy with the following JSON:
 
@@ -286,14 +306,14 @@ There are many ways to allow Cartography to pull from more than one AWS account.
 			  ]
 			}
 			```
-	
-			This allows the Hub role to assume the `cartography-read-only` role on your Spoke accounts.  
+
+			This allows the Hub role to assume the `cartography-read-only` role on your Spoke accounts.
 		- When prompted to name the policy, you can name it anything you want - perhaps `CartographyAssumeRolePolicy`.
 
 3. **Set up your EC2 instance to correctly access these AWS identities**
 
 	1. Attach the `cartography-service` role to the EC2 instance that you will run Cartography on.  You can do this by following [these official AWS steps](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/iam-roles-for-amazon-ec2.html#attach-iam-role).
-		
+
 	2. Ensure that the `[default]` profile in your `AWS_CONFIG_FILE` file (default `~/.aws/config` in Linux, and `%UserProfile%\.aws\config` in Windows) looks like this:
 
 			[default]
@@ -302,19 +322,19 @@ There are many ways to allow Cartography to pull from more than one AWS account.
 
 
 	3.  Add a profile for each AWS account you want Cartography to sync with to your `AWS_CONFIG_FILE`.  It will look something like this:
-	
+
 		```
 		[profile accountname1]
 		role_arn = arn:aws:iam::<AccountId#1>:role/cartography-read-only
 		region=us-east-1
 		output=json
 		credential_source = Ec2InstanceMetadata
-		
+
 		[profile accountname2]
 		role_arn = arn:aws:iam::<AccountId#2>:role/cartography-read-only
 		region=us-west-1
 		output=json
 		credential_source = Ec2InstanceMetadata
-		
+
 		... etc ...
-		```	
+		```

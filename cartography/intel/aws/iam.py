@@ -1,4 +1,5 @@
 import logging
+
 import policyuniverse.statement
 
 from cartography.util import run_cleanup_job
@@ -105,7 +106,7 @@ def load_users(session, users, current_aws_account_id, aws_update_tag):
             PATH=user["Path"],
             PASSWORD_LASTUSED=str(user.get("PasswordLastUsed", "")),
             AWS_ACCOUNT_ID=current_aws_account_id,
-            aws_update_tag=aws_update_tag
+            aws_update_tag=aws_update_tag,
         )
 
 
@@ -130,7 +131,7 @@ def load_groups(session, groups, current_aws_account_id, aws_update_tag):
             GROUP_NAME=group["GroupName"],
             PATH=group["Path"],
             AWS_ACCOUNT_ID=current_aws_account_id,
-            aws_update_tag=aws_update_tag
+            aws_update_tag=aws_update_tag,
         )
 
 
@@ -162,7 +163,7 @@ def load_policies(session, policies, current_aws_account_id, aws_update_tag):
             IS_ATTACHABLE=policy["IsAttachable"],
             ATTACHMENT_COUNT=policy["AttachmentCount"],
             AWS_ACCOUNT_ID=current_aws_account_id,
-            aws_update_tag=aws_update_tag
+            aws_update_tag=aws_update_tag,
         )
 
 
@@ -202,15 +203,18 @@ def load_roles(session, roles, current_aws_account_id, aws_update_tag):
             RoleName=role["RoleName"],
             Path=role["Path"],
             AWS_ACCOUNT_ID=current_aws_account_id,
-            aws_update_tag=aws_update_tag
+            aws_update_tag=aws_update_tag,
         )
 
         for statement in role["AssumeRolePolicyDocument"]["Statement"]:
             principal = statement["Principal"]
+            principal_values = []
             if 'AWS' in principal:
                 principal_type, principal_values = 'AWS', principal['AWS']
             elif 'Service' in principal:
                 principal_type, principal_values = 'Service', principal['Service']
+            elif 'Federated' in principal:
+                principal_type, principal_values = 'Federated', principal['Federated']
             if not isinstance(principal_values, list):
                 principal_values = [principal_values]
             for principal_value in principal_values:
@@ -219,7 +223,7 @@ def load_roles(session, roles, current_aws_account_id, aws_update_tag):
                     SpnArn=principal_value,
                     SpnType=principal_type,
                     RoleArn=role['Arn'],
-                    aws_update_tag=aws_update_tag
+                    aws_update_tag=aws_update_tag,
                 )
 
 
@@ -240,7 +244,7 @@ def load_group_memberships(session, group_memberships, aws_update_tag):
                 ingest_membership,
                 GroupName=group_name,
                 PrincipalArn=principal_arn,
-                aws_update_tag=aws_update_tag
+                aws_update_tag=aws_update_tag,
             )
 
 
@@ -278,7 +282,7 @@ def load_group_policies(session, group_policies, aws_update_tag):
                     ingest_policies_assume_role,
                     GroupName=group_name,
                     RoleArn=role_arn,
-                    aws_update_tag=aws_update_tag
+                    aws_update_tag=aws_update_tag,
                 )
 
 
@@ -304,7 +308,7 @@ def load_role_policies(session, role_policies, aws_update_tag):
                     ingest_policies_assume_role,
                     RoleName=role_name,
                     RoleArn=role_arn,
-                    aws_update_tag=aws_update_tag
+                    aws_update_tag=aws_update_tag,
                 )
 
 
@@ -331,7 +335,7 @@ def load_user_access_keys(session, user_access_keys, aws_update_tag):
                     AccessKeyId=key['AccessKeyId'],
                     CreateDate=str(key['CreateDate']),
                     Status=key['Status'],
-                    aws_update_tag=aws_update_tag
+                    aws_update_tag=aws_update_tag,
                 )
 
 
@@ -373,7 +377,7 @@ def sync_group_memberships(neo4j_session, boto3_session, current_aws_account_id,
     run_cleanup_job(
         'aws_import_groups_membership_cleanup.json',
         neo4j_session,
-        common_job_parameters
+        common_job_parameters,
     )
 
 
@@ -391,7 +395,7 @@ def sync_group_policies(neo4j_session, boto3_session, current_aws_account_id, aw
     run_cleanup_job(
         'aws_import_groups_policy_cleanup.json',
         neo4j_session,
-        common_job_parameters
+        common_job_parameters,
     )
 
 
@@ -413,7 +417,7 @@ def sync_role_policies(neo4j_session, boto3_session, current_aws_account_id, aws
     run_cleanup_job(
         'aws_import_roles_policy_cleanup.json',
         neo4j_session,
-        common_job_parameters
+        common_job_parameters,
     )
 
 
@@ -427,7 +431,7 @@ def sync_user_access_keys(neo4j_session, boto3_session, current_aws_account_id, 
     run_cleanup_job(
         'aws_import_account_access_key_cleanup.json',
         neo4j_session,
-        common_job_parameters
+        common_job_parameters,
     )
 
 

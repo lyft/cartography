@@ -1,9 +1,18 @@
-import boto3
-import botocore.exceptions
 import logging
 
-from cartography.intel.aws import dynamodb, ec2, elasticsearch, iam, organizations, route53, s3, rds
-from cartography.util import run_analysis_job, run_cleanup_job
+import boto3
+import botocore.exceptions
+
+from cartography.intel.aws import dynamodb
+from cartography.intel.aws import ec2
+from cartography.intel.aws import elasticsearch
+from cartography.intel.aws import iam
+from cartography.intel.aws import organizations
+from cartography.intel.aws import rds
+from cartography.intel.aws import route53
+from cartography.intel.aws import s3
+from cartography.util import run_analysis_job
+from cartography.util import run_cleanup_job
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +32,7 @@ def _sync_one_account(session, boto3_session, account_id, regions, sync_tag, com
     logger.info("Syncing EC2 for account '%s'.", account_id)
     ec2.sync_vpc(session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     ec2.sync_ec2_security_groupinfo(session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
+    ec2.sync_ec2_key_pairs(session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     ec2.sync_ec2_instances(session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     ec2.sync_ec2_auto_scaling_groups(session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     ec2.sync_load_balancers(session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
@@ -77,7 +87,7 @@ def start_aws_ingestion(session, config):
                 "are configured correctly, your AWS config file is valid, and your credentials have the SecurityAudit "
                 "policy attached."
             ),
-            e
+            e,
         )
         return
 
@@ -88,7 +98,7 @@ def start_aws_ingestion(session, config):
 
     if not aws_accounts:
         logger.warning(
-            "No valid AWS credentials could be found. No AWS accounts can be synced. Exiting AWS sync stage."
+            "No valid AWS credentials could be found. No AWS accounts can be synced. Exiting AWS sync stage.",
         )
         return
     if len(list(aws_accounts.values())) != len(set(aws_accounts.values())):
@@ -97,7 +107,7 @@ def start_aws_ingestion(session, config):
                 "There are duplicate AWS accounts in your AWS configuration. It is strongly recommended that you run "
                 "cartography with an AWS configuration which has exactly one profile for each AWS account you want to "
                 "sync. Doing otherwise will result in undefined and untested behavior."
-            )
+            ),
         )
 
     try:
@@ -109,7 +119,7 @@ def start_aws_ingestion(session, config):
                 "Failed to retrieve AWS region list, an error occurred: %s. The AWS sync cannot run without a valid "
                 "region list."
             ),
-            e
+            e,
         )
         return
 
@@ -118,5 +128,5 @@ def start_aws_ingestion(session, config):
     run_analysis_job(
         'aws_ec2_asset_exposure.json',
         session,
-        common_job_parameters
+        common_job_parameters,
     )

@@ -1,6 +1,7 @@
+import logging
+
 import boto3
 import botocore.exceptions
-import logging
 
 from cartography.util import run_cleanup_job
 
@@ -32,7 +33,7 @@ def get_aws_account_default(session):
                 "configured correctly, your AWS config file is valid, and your credentials have the SecurityAudit "
                 "policy attached."
             ),
-            e
+            e,
         )
         return {}
 
@@ -54,7 +55,7 @@ def get_aws_accounts_from_botocore_config(session):
                     "have the SecurityAudit policy attached."
                 ),
                 profile_name,
-                e
+                e,
             )
             continue
         try:
@@ -63,7 +64,7 @@ def get_aws_accounts_from_botocore_config(session):
             logger.debug(
                 "Error occurred getting AWS account number with profile_name '%s'.",
                 profile_name,
-                exc_info=True
+                exc_info=True,
             )
             logger.error(
                 (
@@ -72,13 +73,13 @@ def get_aws_accounts_from_botocore_config(session):
                     "the SecurityAudit policy attached."
                 ),
                 profile_name,
-                e
+                e,
             )
             continue
         logger.debug(
             "Discovered AWS account '%s' associated with configured profile '%s'.",
             d[profile_name],
-            profile_name
+            profile_name,
         )
     return d
 
@@ -98,13 +99,13 @@ def load_aws_accounts(neo4j_session, aws_accounts, aws_update_tag, common_job_pa
     SET r.lastupdated = {aws_update_tag};
     """
     for account_name, account_id in aws_accounts.items():
-        root_arn = 'arn:aws:iam::{}:root'.format(account_id)
+        root_arn = f'arn:aws:iam::{account_id}:root'
         neo4j_session.run(
             query,
             ACCOUNT_ID=account_id,
             ACCOUNT_NAME=account_name,
             RootArn=root_arn,
-            aws_update_tag=aws_update_tag
+            aws_update_tag=aws_update_tag,
         )
 
 

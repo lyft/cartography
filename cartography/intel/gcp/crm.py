@@ -1,6 +1,7 @@
 # Google Compute Resource Manager
 # https://cloud.google.com/resource-manager/docs/cloud-platform-resource-hierarchy
 import logging
+
 from googleapiclient.discovery import HttpError
 
 from cartography.util import run_cleanup_job
@@ -81,7 +82,7 @@ def load_gcp_organizations(neo4j_session, data, gcp_update_tag):
             OrgName=org_object['name'],
             DisplayName=org_object.get('displayName', None),
             LifecycleState=org_object.get('lifecycleState', None),
-            gcp_update_tag=gcp_update_tag
+            gcp_update_tag=gcp_update_tag,
         )
 
 
@@ -122,7 +123,7 @@ def load_gcp_folders(neo4j_session, data, gcp_update_tag):
             FolderName=folder['name'],
             DisplayName=folder.get('displayName', None),
             LifecycleState=folder.get('lifecycleState', None),
-            gcp_update_tag=gcp_update_tag
+            gcp_update_tag=gcp_update_tag,
         )
 
 
@@ -166,7 +167,7 @@ def load_gcp_projects(neo4j_session, data, gcp_update_tag):
             ProjectId=project['projectId'],
             DisplayName=project.get('name', None),
             LifecycleState=project.get('lifecycleState', None),
-            gcp_update_tag=gcp_update_tag
+            gcp_update_tag=gcp_update_tag,
         )
 
 

@@ -103,7 +103,7 @@ def load_rds_instances(neo4j_session, data, region, current_aws_account_id, aws_
             EndpointPort=ep.get('Port'),
             Region=region,
             AWS_ACCOUNT_ID=current_aws_account_id,
-            aws_update_tag=aws_update_tag
+            aws_update_tag=aws_update_tag,
         )
         _attach_ec2_security_groups(neo4j_session, rds, aws_update_tag)
         _attach_ec2_subnet_groups(neo4j_session, rds, region, current_aws_account_id, aws_update_tag)
@@ -139,7 +139,7 @@ def _attach_ec2_subnet_groups(neo4j_session, instance, region, current_aws_accou
             DBSubnetGroupDescription=db_sng.get('DBSubnetGroupDescription'),
             DBSubnetGroupStatus=db_sng.get('SubnetGroupStatus'),
             DBInstanceArn=instance['DBInstanceArn'],
-            aws_update_tag=aws_update_tag
+            aws_update_tag=aws_update_tag,
         )
         _attach_ec2_subnets_to_subnetgroup(neo4j_session, db_sng, region, current_aws_account_id, aws_update_tag)
 
@@ -171,7 +171,7 @@ def _attach_ec2_subnets_to_subnetgroup(neo4j_session, db_subnet_group, region, c
             SubnetIdentifier=subnet_id,
             sng_arn=arn,
             aws_update_tag=aws_update_tag,
-            SubnetAvailabilityZone=sn.get('SubnetAvailabilityZone', {}).get('Name')
+            SubnetAvailabilityZone=sn.get('SubnetAvailabilityZone', {}).get('Name'),
         )
 
 
@@ -191,7 +191,7 @@ def _attach_ec2_security_groups(neo4j_session, instance, aws_update_tag):
             attach_rds_to_group,
             RdsArn=instance['DBInstanceArn'],
             GroupId=group['VpcSecurityGroupId'],
-            aws_update_tag=aws_update_tag
+            aws_update_tag=aws_update_tag,
         )
 
 
@@ -211,7 +211,7 @@ def _attach_read_replicas(neo4j_session, read_replicas, aws_update_tag):
             attach_replica_to_source,
             ReplicaArn=replica['DBInstanceArn'],
             SourceInstanceIdentifier=replica['ReadReplicaSourceDBInstanceIdentifier'],
-            aws_update_tag=aws_update_tag
+            aws_update_tag=aws_update_tag,
         )
 
 
@@ -243,8 +243,10 @@ def cleanup_rds_instances_and_db_subnet_groups(neo4j_session, common_job_paramet
     run_cleanup_job('aws_import_rds_instances_cleanup.json', neo4j_session, common_job_parameters)
 
 
-def sync_rds_instances(neo4j_session, boto3_session, regions, current_aws_account_id, aws_update_tag,
-                       common_job_parameters):
+def sync_rds_instances(
+    neo4j_session, boto3_session, regions, current_aws_account_id, aws_update_tag,
+    common_job_parameters,
+):
     """
     Grab RDS instance data from AWS, ingest to neo4j, and run the cleanup job.
     """
