@@ -29,7 +29,7 @@ def test_state_no_drift():
     mock_session.run.return_value = mock_boltstatementresult
     data = FileSystem.load("tests/data/detectors/test_expectations.json")
     state_old = StateSchema().load(data)
-    state_new = State(state_old.name, state_old.validation_query, state_old.properties, [])
+    state_new = State(state_old.name, state_old.validation_query, state_old.tag, [], {})
     get_state(mock_session, state_new)
     drifts = compare_states(state_old, state_new)
     mock_session.run.assert_called_with(state_new.validation_query)
@@ -59,13 +59,13 @@ def test_state_picks_up_drift():
     mock_session.run.return_value = mock_boltstatementresult
     data = FileSystem.load("tests/data/detectors/test_expectations.json")
     state_old = StateSchema().load(data)
-    state_new = State(state_old.name, state_old.validation_query, state_old.properties, [])
+    state_new = State(state_old.name, state_old.validation_query, state_old.tag, [], {})
     get_state(mock_session, state_new)
-    state_new.properties = state_old.properties
+    state_new.tag = state_old.tag
     drifts = compare_states(state_old, state_new)
     mock_session.run.assert_called_with(state_new.validation_query)
     assert drifts
-    assert ["7"] in drifts
+    assert {"d.test": "7"} in drifts
 
 
 def test_state_multiple_expectations():
@@ -92,12 +92,12 @@ def test_state_multiple_expectations():
     mock_session.run.return_value = mock_boltstatementresult
     data = FileSystem.load("tests/data/detectors/test_multiple_expectations.json")
     state_old = StateSchema().load(data)
-    state_new = State(state_old.name, state_old.validation_query, state_old.properties, [])
+    state_new = State(state_old.name, state_old.validation_query, state_old.tag, [], {})
     get_state(mock_session, state_new)
-    state_new.properties = state_old.properties
+    state_new.tag = state_old.tag
     drifts = compare_states(state_old, state_new)
     mock_session.run.assert_called_with(state_new.validation_query)
-    assert ["7", "14"] in drifts
+    assert {"d.test": "7", "d.test2": "14"} in drifts
 
 
 def test_drift_from_multiple_properties():
@@ -124,13 +124,13 @@ def test_drift_from_multiple_properties():
     mock_session.run.return_value = mock_boltstatementresult
     data = FileSystem.load("tests/data/detectors/test_multiple_properties.json")
     state_old = StateSchema().load(data)
-    state_new = State(state_old.name, state_old.validation_query, state_old.properties, [])
+    state_new = State(state_old.name, state_old.validation_query, state_old.tag, [], {})
     get_state(mock_session, state_new)
-    state_new.properties = state_old.properties
+    state_new.tag = state_old.tag
     drifts = compare_states(state_old, state_new)
     mock_session.run.assert_called_with(state_new.validation_query)
-    assert ["7", "14", ["21", "28", "35"]] in drifts
-    assert ["3", "10", ["17", "24", "31"]] not in drifts
+    assert {"d.test": "7", "d.test2": "14", "d.test3": "21,28,35"} in drifts
+    assert {"d.test": "3", "d.test2": "10", "d.test3": "17,24,31"} not in drifts
 
 
 def test_json_loader():
@@ -144,4 +144,11 @@ def test_json_loader():
     state = StateSchema().load(data)
     assert state.name == "Test-Expectations"
     assert state.validation_query == "MATCH (d) RETURN d.test"
-    assert state.results == [['1'], ['2'], ['3'], ['4'], ['5'], ['6']]
+    assert state.results == {
+        "1": {"d.test": "1"},
+        "2": {"d.test": "2"},
+        "3": {"d.test": "3"},
+        "4": {"d.test": "4"},
+        "5": {"d.test": "5"},
+        "6": {"d.test": "6"},
+    }

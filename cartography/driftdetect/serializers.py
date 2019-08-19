@@ -21,7 +21,7 @@ class StateSchema(Schema):
         return State(
             data['name'],
             data['validation_query'],
-            data['tags'],
+            data['tag'],
             data['keys'],
             data['results'],
         )

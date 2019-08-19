@@ -58,7 +58,7 @@ def test_get_state_detectors(neo4j_session):
 
     assert detector_1.name == detector_2.name
     assert detector_1.validation_query == detector_2.validation_query
-    assert detector_1.properties == detector_2.properties
+    assert detector_1.tag == detector_2.tag
     assert detector_1.results == detector_2.results
 
     shortcut_data = FileSystem.load(os.path.join(query_directory, "shortcut.json"))

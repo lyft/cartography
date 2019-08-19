@@ -146,14 +146,14 @@ def create_result_dictionary(record):
     result = {}
     for key, value in record.items():
         if isinstance(value, list):
-            result[key] = ",".join([str(i) for i in sorted(value)])
+            result[key] = ",".join(sorted([str(i) for i in value]))
         else:
             result[key] = str(value)
     return result
 
 
-def create_key(fields, result_dictionary):
+def create_key(tag, result_dictionary):
     tag_list = []
-    for field in fields:
+    for field in tag:
         tag_list.append(result_dictionary[field])
     return "|".join(tag_list)

@@ -1,6 +1,7 @@
 {
   "name": "Test-Multiple-Properties",
   "validation_query": "MATCH (d) RETURN d.test,d.test2,d.test3",
-  "properties": ["d.test","d.test2","d.test3"],
-  "results": []
+  "tag": ["d.test","d.test2","d.test3"],
+  "keys": [],
+  "results": {}
 }

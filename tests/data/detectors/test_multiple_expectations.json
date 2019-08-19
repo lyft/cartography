@@ -1,13 +1,21 @@
 {
   "name": "Test-Multiple-Expectations",
   "validation_query": "MATCH (d) RETURN d.test,d.test2",
-  "properties": ["d.test","d.test2"],
-  "results": [
-    ["1","8"],
-    ["2","9"],
-    ["3","10"],
-    ["4","11"],
-    ["5","12"],
-    ["6","13"]
-  ]
+  "tag": ["d.test","d.test2"],
+  "keys": [
+    "1|8",
+    "2|9",
+    "3|10",
+    "4|11",
+    "5|12",
+    "6|13"
+  ],
+  "results": {
+    "1|8":  {"d.test":  "1", "d.test2":  "8"},
+    "2|9": {"d.test":  "2", "d.test2":  "9"},
+    "3|10":  {"d.test":  "3", "d.test2":  "10"},
+    "4|11": {"d.test":  "4", "d.test2":  "11"},
+    "5|12":  {"d.test":  "5", "d.test2":  "12"},
+    "6|13": {"d.test":  "6", "d.test2":  "13"}
+  }
 }
