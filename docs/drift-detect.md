@@ -245,7 +245,7 @@ Important note: Each execution of `get-state` will automatically generate a shor
 
 Sometimes you may be interested in certain properties of a query result but not interested in alerting when other result properties change over time. For example, when tracking internet exposed EC2 instances, you may not want to alert on the public dns names if they get shuffled around your system very frequently, but you might still want the public dns names stored somewhere. In this case we can create a tag based on certain keys of our result.
 
-Continuing our example, to ignore alerting on changes in our dns names, we create a tag omitting that property from the query result. 
+Continuing our example, to ignore alerting on changes in our dns names, we create a tag omitting that property from the query result.
 
 `"tag": ["n.instancetype", "n.privateipaddress", "n.publicdnsname", "n.exposed_internet_type"]`
 
