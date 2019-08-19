@@ -8,6 +8,7 @@
 - [OktaApplication](#oktaapplication)
 - [OktaUserFactor](#oktauserfactor)
 - [OktaTrustedOrigin](#oktatrustedorigin)
+- [OktaAdministrationRole](#oktaadministrationrole)
 
 
 ## OktaOrganization
@@ -44,6 +45,11 @@ Representation of a Okta [Organization](https://developer.okta.com/docs/concepts
 
     ```
     (OktaOrganization)-[RESOURCE]->(OktaTrustedOrigin)
+    ```
+- OktaOrganization has OktaAdministrationRole.
+
+    ```
+    (OktaOrganization)-[RESOURCE]->(OktaAdministrationRole)
     ```
  ## OktaUser
  
@@ -177,5 +183,56 @@ Representation of a Okta user authentication factors (https://developer.okta.com
 | lastupdated |  Timestamp of the last time the node was updated | 
 
 ### Relationships
+ - OktaUser can have authentication Factors
+     ```
+    (OktaUser)-[FACTOR]->(OktaUserFactor)
+    ```
 
-   
+## OktaTrustedOrigin
+Representation of a Okta trusted origin for login/logout or recovery operations. For more information visit Okta documentation at https://developer.okta.com/docs/reference/api/trusted-origins
+
+| Field | Description |
+|-------|--------------| 
+| id | trusted origin id |
+| name | name |
+| scopes | array of scope |
+| status | status |
+| created | date & time of creation in okta |
+| create_by | id of user who created the trusted origin |
+| okta_last_updated | date and time of last user property changes |
+| okta_last_updated_by | id of user who last updated the trusted origin |
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+
+### Relationships
+- OktaOrganization has OktaTrustedOrigin.
+
+    ```
+    (OktaOrganization)-[RESOURCE]->(OktaTrustedOrigin)
+    ```
+
+## OktaAdministrationRole
+Representation of Okta administration roles. For more information visa Okta documentation https://developer.okta.com/docs/reference/api/roles/
+
+| Field | Description |
+|-------|--------------| 
+| id | role id mapped to the type |
+| type | role type |
+| label | role label |
+| firstseen| Timestamp of when a sync job first discovered this node |
+| lastupdated |  Timestamp of the last time the node was updated |
+
+### Relationships
+ - OktaUser can be a member of an OktaAdministrationRole
+     ```
+    (OktaUser)-[MEMBER_OF_OKTA_ROLE]->(OktaAdministrationRole)
+    ```
+ - OktaGroup can be a member of an OktaAdministrationRole
+     ```
+    (OktaGroup)-[MEMBER_OF_OKTA_ROLE]->(OktaAdministrationRole)
+    ```
+- OktaOrganization has OktaAdministrationRole.
+
+    ```
+    (OktaOrganization)-[RESOURCE]->(OktaAdministrationRole)
+    ```

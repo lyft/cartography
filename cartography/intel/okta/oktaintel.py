@@ -1044,22 +1044,22 @@ def _transform_trusted_origins(data):
     ret_list = []
 
     json_data = json.loads(data)
-    for factor_data in json_data:
+    for origin_data in json_data:
         props = {}
-        props["id"] = factor_data["id"]
-        props["name"] = factor_data["name"]
+        props["id"] = origin_data["id"]
+        props["name"] = origin_data["name"]
 
         # https://developer.okta.com/docs/reference/api/trusted-origins/#scope-object
         scope_types = []
-        for scope in factor_data.get("scopes", []):
+        for scope in origin_data.get("scopes", []):
             scope_types.append(scope["type"])
 
         props["scopes"] = scope_types
-        props["status"] = factor_data["status"]
-        props["created"] = factor_data.get("created", None)
-        props["created_by"] = factor_data.get("created_by", None)
-        props["okta_last_updated"] = factor_data.get("lastUpdated", '')
-        props["okta_last_updated_by"] = factor_data["lastUpdatedBy"]
+        props["status"] = origin_data["status"]
+        props["created"] = origin_data.get("created", None)
+        props["created_by"] = origin_data.get("created_by", None)
+        props["okta_last_updated"] = origin_data.get("lastUpdated", '')
+        props["okta_last_updated_by"] = origin_data["lastUpdatedBy"]
 
         ret_list.append(props)
 
