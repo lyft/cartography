@@ -19,6 +19,7 @@
 - [DNSZone::AWSDNSZone](#dnszoneawsdnszone)
 - [DynamoDBTable](#dynamodbtable)
 - [EC2Instance](#ec2instance)
+- [EC2KeyPair](#ec2keypair)
 - [EC2Reservation](#ec2reservation)
 - [EC2SecurityGroup](#ec2securitygroup)
 - [EC2Subnet](#ec2subnet)
@@ -50,7 +51,7 @@ Representation of an AWS Account.
 - Many node types belong to an `AWSAccount`.
 
 	```
-	(AWSAccount)-[RESOURCE]->(AWSDNSZone, 
+	(AWSAccount)-[RESOURCE]->(AWSDNSZone,
                               AWSGroup,
                               AWSPrincipal,
                               AWSUser,
@@ -107,7 +108,7 @@ type for `AWSIpv4CidrBlock` and `AWSIpv6CidrBlock`
   MATCH p=(:AWSAccount)-[:RESOURCE|BLOCK_ASSOCIATION*..]->(:AWSCidrBlock)<-[r:VPC_PEERING]->(:AWSCidrBlock)<-[:RESOURCE|BLOCK_ASSOCIATION*..]-(:AWSAccount)
   RETURN p
   ```
-  
+
   Exploring detailed inbound peering rules
   ```
   MATCH (outbound_account:AWSAccount)-[:RESOURCE|BLOCK_ASSOCIATION*..]->(:AWSCidrBlock)<-[r:VPC_PEERING]->(inbound_block:AWSCidrBlock)<-[:BLOCK_ASSOCIATION]-(inbound_vpc:AWSVpc)<-[:RESOURCE]-(inbound_account:AWSAccount)
@@ -123,7 +124,7 @@ Representation of AWS [IAM Groups](https://docs.aws.amazon.com/IAM/latest/APIRef
 | Field | Description |
 |-------|-------------|
 |firstseen| Timestamp of when a sync job first discovered this node  |
-| lastupdated|  Timestamp of the last time the node was updated | 
+| lastupdated|  Timestamp of the last time the node was updated |
 |path | The path to the group (IAM identifier, see linked docs above for details)|
 | groupid| Unique string identifying the group |
 |name | The friendly name that identifies the group|
@@ -136,13 +137,13 @@ Representation of AWS [IAM Groups](https://docs.aws.amazon.com/IAM/latest/APIRef
 	```
 	(AWSGroup)-[STS_ASSUMEROLE_ALLOW]->(AWSRole)
 	```
-	
+
 - AWSUsers and AWSPrincipals can be members of AWSGroups.
 
 	```
 	(AWSUser, AWSPrincipal)-[MEMBER_AWS_GROUP]->(AWSGroup)
 	```
-	
+
 - AWSGroups belong to AWSAccounts.
 
 	```
@@ -183,11 +184,11 @@ Representation of an [AWSPrincipal](https://docs.aws.amazon.com/IAM/latest/APIRe
 | Field | Description |
 |-------|-------------|
 | firstseen| Timestamp of when a sync job first discovered this node  |
-| lastupdated |  Timestamp of the last time the node was updated | 
-| path | The path to the principal | 
-| name | The friendly name of the principal | 
-| createdate | ISO 8601 date-time when the principal was created | 
-| **arn** | AWS-unique identifier for this object | 
+| lastupdated |  Timestamp of the last time the node was updated |
+| path | The path to the principal |
+| name | The friendly name of the principal |
+| createdate | ISO 8601 date-time when the principal was created |
+| **arn** | AWS-unique identifier for this object |
 | userid | The stable and unique string identifying the principal.  |
 | passwordlastused | Datetime when this principal's password was last used
 
@@ -199,7 +200,7 @@ Representation of an [AWSPrincipal](https://docs.aws.amazon.com/IAM/latest/APIRe
 	```
 	(AWSPrincipal)-[MEMBER_AWS_GROUP]->(AWSGroup)
 	```
-	
+
 - This AccountAccessKey is used to authenticate to this AWSPrincipal.
 
 	```
@@ -224,11 +225,11 @@ Representation of an [AWSUser](https://docs.aws.amazon.com/IAM/latest/APIReferen
 | Field | Description |
 |-------|-------------|
 | firstseen| Timestamp of when a sync job first discovered this node  |
-| lastupdated |  Timestamp of the last time the node was updated | 
-| path | The path to the user | 
-| name | The friendly name of the user | 
-| createdate | ISO 8601 date-time when the user was created | 
-| **arn** | AWS-unique identifier for this object | 
+| lastupdated |  Timestamp of the last time the node was updated |
+| path | The path to the user |
+| name | The friendly name of the user |
+| createdate | ISO 8601 date-time when the user was created |
+| **arn** | AWS-unique identifier for this object |
 | userid | The stable and unique string identifying the user.  |
 | passwordlastused | Datetime when this user's password was last used
 
@@ -238,13 +239,13 @@ Representation of an [AWSUser](https://docs.aws.amazon.com/IAM/latest/APIReferen
 	```
 	(AWSUser)-[MEMBER_AWS_GROUP]->(AWSGroup)
 	```
-	
+
 - AWS Users can assume AWS Roles.
 
 	```
 	(AWSUser)-[STS_ASSUMEROLE_ALLOW]->(AWSRole)
 	```
-	
+
 - This AccountAccessKey is used to authenticate to this AWSUser
 
 	```
@@ -265,9 +266,9 @@ Representation of an AWS [IAM Role](https://docs.aws.amazon.com/IAM/latest/APIRe
 | Field | Description |
 |-------|-------------|
 | firstseen| Timestamp of when a sync job first discovered this node  |
-| lastupdated |  Timestamp of the last time the node was updated | 
+| lastupdated |  Timestamp of the last time the node was updated |
 | roleid | The stable and unique string identifying the role.  |
-| name | The friendly name that identifies the role.| 
+| name | The friendly name that identifies the role.|
 | createdate| The date and time, in ISO 8601 date-time format, when the role was created. |
 | **arn** | AWS-unique identifier for this object |
 
@@ -325,7 +326,7 @@ More information on https://docs.aws.amazon.com/cli/latest/reference/ec2/describ
   ```
   (AWSVpc)<-[MEMBER_OF_EC2_SECURITY_GROUP]-(EC2SecurityGroup)
   ```
-	
+
 ## AccountAccessKey
 
 Representation of an AWS [Access Key](https://docs.aws.amazon.com/IAM/latest/APIReference/API_AccessKey.html).
@@ -333,7 +334,7 @@ Representation of an AWS [Access Key](https://docs.aws.amazon.com/IAM/latest/API
 | Field | Description |
 |-------|-------------|
 | firstseen| Timestamp of when a sync job first discovered this node  |
-| lastupdated |  Timestamp of the last time the node was updated 
+| lastupdated |  Timestamp of the last time the node was updated
 | createdate | Date when access key was created |
 | status | Active: valid for API calls.  Inactive: not valid for API calls|
 | **accesskeyid** | The ID for this access key|
@@ -354,7 +355,7 @@ Representation of an RDS [DB Subnet Group](https://docs.aws.amazon.com/AmazonRDS
 |-------|-------------|
 |firstseen| Timestamp of when a sync job first discovered this node |
 |id| The ARN of the DBSubnetGroup|
-|name | The name of DBSubnetGroup | 
+|name | The name of DBSubnetGroup |
 |lastupdated| Timestamp of the last time the node was updated|
 |description| Description of the DB Subnet Group|
 |status| The status of the group |
@@ -404,7 +405,7 @@ Representation of a generic DNSRecord.
 
 
 - DNSRecords can point to LoadBalancers.
-	
+
 	```
 	(DNSRecord)-[DNS_POINTS_TO]->(LoadBalancer)
 	```
@@ -415,7 +416,7 @@ Representation of a generic DNSRecord.
 	```
 	(DNSRecord)-[MEMBER_OF_DNS_ZONE]->(DNSZone)
 	```
-	
+
 
 ## DNSRecord::AWSDNSRecord
 
@@ -439,7 +440,7 @@ Representation of an AWS DNS [ResourceRecordSet](https://docs.aws.amazon.com/Rou
 
 
 - AWSDNSRecords can point to LoadBalancers.
-	
+
 	```
 	(AWSDNSRecord)-[DNS_POINTS_TO]->(LoadBalancer)
 	```
@@ -458,7 +459,7 @@ Representation of a generic DNS Zone.
 | Field | Description |
 |-------|-------------|
 |firstseen| Timestamp of when a sync job first discovered this node  |
-| lastupdated|  Timestamp of the last time the node was updated | 
+| lastupdated|  Timestamp of the last time the node was updated |
 |**name**| the name of the DNS zone|
 | comment | Comments about the zone |
 
@@ -481,13 +482,13 @@ Representation of an AWS DNS [HostedZone](https://docs.aws.amazon.com/Route53/la
 |firstseen| Timestamp of when a sync job first discovered this node  |
 |**name**| the name of the DNS zone|
 | zoneid| The zoneid defined by Amazon Route53|
-| lastupdated|  Timestamp of the last time the node was updated | 
+| lastupdated|  Timestamp of the last time the node was updated |
 | comment| Comments about the zone |
 | privatezone | Whether or not this is a private DNS zone |
 
 ### Relationships
 
-- AWSDNSZones and DNSZones can be part of AWSAccounts. 
+- AWSDNSZones and DNSZones can be part of AWSAccounts.
 
 	```
 	(AWSAccount)-[RESOURCE]->(AWSDNSZone)
@@ -508,9 +509,9 @@ Representation of an AWS [DynamoDBTable](https://docs.aws.amazon.com/amazondynam
 | Field | Description |
 |-------|-------------|
 | firstseen| Timestamp of when a sync job first discovered this node  |
-| lastupdated |  Timestamp of the last time the node was updated | 
+| lastupdated |  Timestamp of the last time the node was updated |
 | name | The name of the table |
-| **id** | The ARN of the table | 
+| **id** | The ARN of the table |
 | region | The AWS region of the table |
 | **arn** | The AWS-unique identifier
 
@@ -529,7 +530,7 @@ Our representation of an AWS [EC2 Instance](https://docs.aws.amazon.com/AWSEC2/l
 | Field | Description |
 |-------|-------------|
 | firstseen| Timestamp of when a sync job first discovered this node  |
-| lastupdated |  Timestamp of the last time the node was updated | 
+| lastupdated |  Timestamp of the last time the node was updated |
 | **instanceid**| The ID of the instance|
 | **publicdnsname** | The public DNS name assigned to the instance |
 | publicipaddress | The public IPv4 address assigned to the instance if applicable |
@@ -537,10 +538,10 @@ Our representation of an AWS [EC2 Instance](https://docs.aws.amazon.com/AWSEC2/l
 | imageid | The ID of the [Amazon Machine Image](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AMIs.html) used to launch the instance |
 | subnetid | The ID of the EC2Subnet associated with this instance |
 | instancetype | The instance type.  See API docs linked above for specifics. |
-| launchtime | The time the instance was launched | 
-| monitoringstate | Whether monitoring is enabled.  Valid Values: disabled, disabling, enabled,  pending. | 
+| launchtime | The time the instance was launched |
+| monitoringstate | Whether monitoring is enabled.  Valid Values: disabled, disabling, enabled,  pending. |
 | state | The [current state](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_InstanceState.html) of the instance.
-| launchtimeunix | The time the instance was launched in unix time | 
+| launchtimeunix | The time the instance was launched in unix time |
 | region | The AWS region this Instance is running in|
 | exposed_internet |  The `exposed_internet` flag on an EC2 instance is set to `True` when (1) the instance is part of an EC2 security group or is connected to a network interface connected to an EC2 security group that allows connectivity from the 0.0.0.0/0 subnet or (2) the instance is connected to an Elastic Load Balancer that has its own `exposed_internet` flag set to `True`. |
 
@@ -552,7 +553,7 @@ Our representation of an AWS [EC2 Instance](https://docs.aws.amazon.com/AWSEC2/l
 	```
 	(EC2Instance)-[PART_OF_SUBNET]->(EC2Subnet)
 	```
-	
+
 - EC2 Instances can have NetworkInterfaces connected to them
 
 	```
@@ -570,7 +571,7 @@ Our representation of an AWS [EC2 Instance](https://docs.aws.amazon.com/AWSEC2/l
 	```
 	(EC2Instance)-[MEMBER_OF_EC2_SECURITY_GROUP]->(EC2SecurityGroup)
 	```
-	
+
 - Load Balancers can expose (be connected to) EC2 Instances
 
 	```
@@ -582,11 +583,39 @@ Our representation of an AWS [EC2 Instance](https://docs.aws.amazon.com/AWSEC2/l
 	```
 	(Package, Dependency)-[DEPLOYED]->(EC2Instance)
 	```
-	
+
 - AWS Accounts contain EC2 Instances.
 
 	```
 	(AWSAccount)-[RESOURCE]->(EC2Instance)
+	```
+
+
+## EC2KeyPair
+
+Representation of an AWS [EC2 Key Pair](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_KeyPairInfo.html)
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| keyname | The name of the key pair |
+| keyfingerprint | The fingerprint of the public key |
+| region| The AWS region |
+| **arn** | AWS-unique identifier for this object |
+
+### Relationships
+
+- EC2 key pairs are contained in AWS Accounts.
+
+	```
+	(AWSAccount)-[RESOURCE]->(EC2KeyPair)
+	```
+
+- EC2 key pairs can be used to log in to AWS EC2 isntances.
+
+	```
+	(EC2KeyPair)-[SSH_LOGIN_TO]->(EC2Instance)
 	```
 
 
@@ -596,10 +625,10 @@ Representation of an AWS EC2 [Reservation](https://docs.aws.amazon.com/AWSEC2/la
 | Field | Description |
 |-------|-------------|
 | firstseen| Timestamp of when a sync job first discovered this node  |
-| lastupdated |  Timestamp of the last time the node was updated | 
+| lastupdated |  Timestamp of the last time the node was updated |
 | requesterid | The ID of the requester that launched the instances on your behalf |
-| **reservationid** | The ID of the reservation. | 
-| region| The AWS region |  
+| **reservationid** | The ID of the reservation. |
+| region| The AWS region |
 | ownerid | The ID of the AWS account that owns the reservation. |
 
 ### Relationships
@@ -611,7 +640,7 @@ Representation of an AWS EC2 [Reservation](https://docs.aws.amazon.com/AWSEC2/la
 	```
 
 - EC2 Instances are members of EC2 reservations.
- 
+
 	```
 	(EC2Instance)-[MEMBER_OF_EC2_RESERVATION]->(EC2Reservation)
 	```
@@ -623,7 +652,7 @@ Representation of an AWS EC2 [Security Group](https://docs.aws.amazon.com/AWSEC2
 | Field | Description |
 |-------|-------------|
 | firstseen| Timestamp of when a sync job first discovered this node  |
-| lastupdated |  Timestamp of the last time the node was updated | 
+| lastupdated |  Timestamp of the last time the node was updated |
 | groupid | The ID of the security group|
 | name | The name of the security group|
 | description | A description of the security group|
@@ -645,7 +674,7 @@ Representation of an AWS EC2 [Security Group](https://docs.aws.amazon.com/AWSEC2
 	 RDSInstance,
 	 AWSVpc)-[MEMBER_OF_EC2_SECURITY_GROUP]->(EC2SecurityGroup)
 	```
-	
+
 - Load balancers can define inbound [Source Security Groups](https://docs.aws.amazon.com/elasticloadbalancing/latest/classic/elb-security-groups.html).
 
 	```
@@ -666,7 +695,7 @@ Representation of an AWS EC2 [Subnet](https://docs.aws.amazon.com/AWSEC2/latest/
 | Field | Description |
 |-------|-------------|
 | firstseen| Timestamp of when a sync job first discovered this node  |
-| lastupdated |  Timestamp of the last time the node was updated | 
+| lastupdated |  Timestamp of the last time the node was updated |
 | **subnetid** | The ID of the subnet|
 | **id** | same as subnetid |
 | region| The AWS region the subnet is installed on|
@@ -692,7 +721,7 @@ Representation of an AWS EC2 [Subnet](https://docs.aws.amazon.com/AWSEC2/latest/
 	```
 	(LoadBalancer)-[SUBNET]->(EC2Subnet)
 	```
-	
+
 - DB Subnet Groups consist of EC2 Subnets
     ```
     (DBSubnetGroup)-[:RESOURCE]->(EC2Subnet)
@@ -707,15 +736,15 @@ Representation of an AWS [ElasticSearch Domain](https://docs.aws.amazon.com/elas
 | Field | Description |
 |-------|-------------|
 | firstseen| Timestamp of when a sync job first discovered this node  |
-| lastupdated |  Timestamp of the last time the node was updated | 
-| elasticsearch\_cluster\_config_instancetype | The instancetype | 
-| elasticsearch_version | The version of elasticsearch | 
+| lastupdated |  Timestamp of the last time the node was updated |
+| elasticsearch\_cluster\_config_instancetype | The instancetype |
+| elasticsearch_version | The version of elasticsearch |
 | elasticsearch\_cluster\_config_zoneawarenessenabled | Indicates whether multiple Availability Zones are enabled.  |
 | elasticsearch\_cluster\_config_dedicatedmasterenabled | Indicates whether dedicated master nodes are enabled for the cluster. True if the cluster will use a dedicated master node. False if the cluster will not.  |
 | elasticsearch\_cluster\_config_dedicatedmastercount |Number of dedicated master nodes in the cluster.|
 | elasticsearch\_cluster\_config_dedicatedmastertype | Amazon ES instance type of the dedicated master nodes in the cluster.|
 | domainid | Unique identifier for an Amazon ES domain. |
-| encryption\_at\_rest\_options_enabled | Specify true to enable encryption at rest. | 
+| encryption\_at\_rest\_options_enabled | Specify true to enable encryption at rest. |
 | deleted | Status of the deletion of an Amazon ES domain. True if deletion of the domain is complete. False if domain deletion is still in progress. |
 | **id** | same as `domainid` |
 | **arn** |Amazon Resource Name (ARN) of an Amazon ES domain. |
@@ -730,27 +759,27 @@ Representation of an AWS [ElasticSearch Domain](https://docs.aws.amazon.com/elas
 	```
 
 -	Elastic Search domains belong to AWS Accounts.
-	
+
 	```
 	(AWSAccount)-[RESOURCE]->(ESDomain)
 	```
 
 - DNS Records can point to Elastic Search domains.
-	
+
 	```
 	(DNSRecord)-[DNS_POINTS_TO]->(ESDomain)
 	```
 
 ## Endpoint
 
-Representation of a generic network endpoint.  
+Representation of a generic network endpoint.
 
 | Field | Description |
 |-------|-------------|
 | firstseen| Timestamp of when a sync job first discovered this node  |
-| lastupdated |  Timestamp of the last time the node was updated | 
+| lastupdated |  Timestamp of the last time the node was updated |
 | protocol | The protocol of this endpoint |
-| port | The port of this endpoint | 
+| port | The port of this endpoint |
 
 
 ### Relationships
@@ -769,10 +798,10 @@ Representation of an AWS Elastic Load Balancer [Listener](https://docs.aws.amazo
 | Field | Description |
 |-------|-------------|
 | firstseen| Timestamp of when a sync job first discovered this node  |
-| lastupdated |  Timestamp of the last time the node was updated | 
+| lastupdated |  Timestamp of the last time the node was updated |
 | protocol | The protocol of this endpoint |
-| port | The port of this endpoint | 
-| **id** | The ELB ID.  This is a concatenation of the DNS name, port, and protocol. | 
+| port | The port of this endpoint |
+| **id** | The ELB ID.  This is a concatenation of the DNS name, port, and protocol. |
 | instance_port | The port open on the EC2 instance that this listener is connected to |
 | instance_protocol | The protocol defined on the EC2 instance that this listener is connected to |
 
@@ -793,9 +822,9 @@ Represents a generic IP address.
 | Field | Description |
 |-------|-------------|
 | firstseen| Timestamp of when a sync job first discovered this node  |
-| lastupdated |  Timestamp of the last time the node was updated | 
+| lastupdated |  Timestamp of the last time the node was updated |
 | **ip** | The IPv4 address |
-| **id** | Same as `ip` | 
+| **id** | Same as `ip` |
 
 
 ### Relationships
@@ -816,7 +845,7 @@ Represents a generic IP rule.  The creation of this node is currently derived fr
 | **ruleid** | `{group_id}/{rule_type}/{from_port}{to_port}{protocol}` |
 | groupid | The groupid of the EC2 Security Group that this was derived from |
 | firstseen| Timestamp of when a sync job first discovered this node  |
-| lastupdated |  Timestamp of the last time the node was updated | 
+| lastupdated |  Timestamp of the last time the node was updated |
 | protocol | The protocol this rule applies to |
 | fromport | Lowest port in the range defined by this rule|
 | toport | Highest port in the range defined by this rule|
@@ -830,7 +859,7 @@ Represents a generic IP rule.  The creation of this node is currently derived fr
 	(IpRule, IpPermissionInbound)-[MEMBER_OF_EC2_SECURITY_GROUP]->(EC2SecurityGroup)
 	```
 
-	
+
 ## IpRule::IpPermissionInbound
 
 An IpPermissionInbound node is a specific type of IpRule.  It represents a generic inbound IP-based rules.  The creation of this node is currently derived from ingesting AWS [EC2 Security Group](#ec2securitygroup) rules.
@@ -840,7 +869,7 @@ An IpPermissionInbound node is a specific type of IpRule.  It represents a gener
 | **ruleid** | `{group_id}/{rule_type}/{from_port}{to_port}{protocol}` |
 | groupid |  The groupid of the EC2 Security Group that this was derived from |
 | firstseen| Timestamp of when a sync job first discovered this node  |
-| lastupdated |  Timestamp of the last time the node was updated | 
+| lastupdated |  Timestamp of the last time the node was updated |
 | protocol | The protocol this rule applies to |
 | fromport | Lowest port in the range defined by this rule|
 | toport | Highest port in the range defined by this rule|
@@ -852,7 +881,7 @@ An IpPermissionInbound node is a specific type of IpRule.  It represents a gener
 	```
 	(IpRule, IpPermissionInbound)-[MEMBER_OF_EC2_SECURITY_GROUP]->(EC2SecurityGroup)
 	```
-	
+
 
 ## LoadBalancer
 
@@ -861,7 +890,7 @@ Represents an AWS Elastic Load Balancer.  See [spec for details](https://docs.aw
 | Field | Description |
 |-------|-------------|
 | firstseen| Timestamp of when a sync job first discovered this node  |
-| lastupdated |  Timestamp of the last time the node was updated | 
+| lastupdated |  Timestamp of the last time the node was updated |
 | scheme|  The type of load balancer. Valid only for load balancers in a VPC. If scheme is `internet-facing`, the load balancer has a public DNS name that resolves to a public IP address.  If scheme is `internal`, the load balancer has a public DNS name that resolves to a private IP address. |
 | name| The name of the load balancer|
 | **dnsname** | The DNS name of the load balancer. |
@@ -880,7 +909,7 @@ Represents an AWS Elastic Load Balancer.  See [spec for details](https://docs.aw
 	```
 	(LoadBalancer)-[EXPOSE]->(EC2Instance)
 	```
-	
+
 - LoadBalancers can have [source security groups](https://docs.aws.amazon.com/elasticloadbalancing/latest/classic/elb-security-groups.html) configured.
 
 	```
@@ -924,12 +953,12 @@ Representation of a generic Network Interface.  Currently however, we only creat
 | Field | Description |
 |-------|-------------|
 | firstseen| Timestamp of when a sync job first discovered this node  |
-| lastupdated |  Timestamp of the last time the node was updated | 
+| lastupdated |  Timestamp of the last time the node was updated |
 | mac_address| The MAC address of the network interface|
 | description |  Description of the network interface|
 | private\_ip_address| The IPv4 address of the network interface within the subnet |
 | **id** | The ID of the network interface.  (known as `networkInterfaceId` in EC2) |
-| private\_dns_name| The private DNS name | 
+| private\_dns_name| The private DNS name |
 | status | Status of the network interface.  Valid Values: `available | associated | attaching | in-use | detaching ` |
 
 
@@ -940,13 +969,13 @@ Representation of a generic Network Interface.  Currently however, we only creat
 	```
 	(NetworkInterface)-[PART_OF_SUBNET]->(EC2Subnet)
 	```
-	
+
 - Network interfaces can be members of EC2SecurityGroups.
 
-	```	
+	```
 	(NetworkInterface)-[MEMBER_OF_EC2_SECURITY_GROUP]->(EC2SecurityGroup)
 	```
-	
+
 - EC2Instances can have NetworkInterfaces connected to them.
 
 	```
@@ -961,7 +990,7 @@ Representation of an AWS Relational Database Service [DBInstance](https://docs.a
 | Field | Description |
 |-------|-------------|
 | firstseen| Timestamp of when a sync job first discovered this node  |
-| lastupdated |  Timestamp of the last time the node was updated | 
+| lastupdated |  Timestamp of the last time the node was updated |
 | **id**                               | The Amazon Resource Name (ARN) for the DB instance. |
 | **db\_instance_identifier**           | Contains a user-supplied database identifier. This identifier is the unique key that identifies a DB instance.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | availability_zone                | Specifies the name of the Availability Zone the DB instance is located in.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
@@ -998,7 +1027,7 @@ Representation of an AWS Relational Database Service [DBInstance](https://docs.a
 	```
 	(AWSAccount)-[RESOURCE]->(RDSInstance)
 	```
-	
+
 - Some RDS instances are Read Replicas.
 
     ```
@@ -1024,7 +1053,7 @@ Representation of an AWS S3 [Access Control List](https://docs.aws.amazon.com/Am
 | Field | Description |
 |-------|-------------|
 | firstseen| Timestamp of when a sync job first discovered this node  |
-| lastupdated |  Timestamp of the last time the node was updated | 
+| lastupdated |  Timestamp of the last time the node was updated |
 | granteeid | The ID of the grantee as defined [here](https://docs.aws.amazon.com/AmazonS3/latest/API/API_control_S3Grantee.html) |
 | displayname | Optional display name for the ACL |
 | permission | Valid values: `FULL_CONTROL | READ | WRITE | READ_ACP | WRITE_ACP` (ACP = Access Control Policy)|
@@ -1049,9 +1078,9 @@ Representation of an AWS S3 [Bucket](https://docs.aws.amazon.com/AmazonS3/latest
 | Field | Description |
 |-------|-------------|
 | firstseen| Timestamp of when a sync job first discovered this node  |
-| lastupdated |  Timestamp of the last time the node was updated | 
+| lastupdated |  Timestamp of the last time the node was updated |
 | creationdate | Date-time when the bucket was created |
-| **name** | The friendly name of the bucket | 
+| **name** | The friendly name of the bucket |
 | anonymous_actions |  List of anonymous internet accessible actions that may be run on the bucket.  This list is taken by running [policyuniverse](https://github.com/Netflix-Skunkworks/policyuniverse#internet-accessible-policy) on the policy that applies to the bucket.   |
 | anonymous_access | True if this bucket has a policy applied to it that allows anonymous access or if it is open to the internet.  These policy determinations are made by using the [policyuniverse](https://github.com/Netflix-Skunkworks/policyuniverse) library.  |
 
@@ -1062,7 +1091,7 @@ Representation of an AWS S3 [Bucket](https://docs.aws.amazon.com/AmazonS3/latest
 	```
 	(AWSAccount)-[RESOURCE]->(S3Bucket)
 	```
-	
+
 - S3 Access Control Lists apply to S3 buckets.
 
 	```

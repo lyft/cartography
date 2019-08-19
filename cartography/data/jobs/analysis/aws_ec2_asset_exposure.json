@@ -10,7 +10,7 @@
     "iterative": false
   },
   {
-    "query": "MATCH (elb:LoadBalancer{scheme: 'internet-facing'}) SET elb.exposed_internet = true",
+    "query": "MATCH (cidr:IpRange{range:'0.0.0.0/0'})—->(perm:IpPermissionInbound)—->(sg:EC2SecurityGroup)<-[:SOURCE_SECURITY_GROUP]-(elb:LoadBalancer{scheme: 'internet-facing'})—->(listener:ELBListener)\nWHERE listener.port>=perm.fromport AND listener.port<=perm.toport\nSET elb.exposed_internet = true",
     "iterative": false
   },
   {

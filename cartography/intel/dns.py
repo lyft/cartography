@@ -1,6 +1,7 @@
 import logging
-import dns.resolver
+
 import dns.rdatatype
+import dns.resolver
 
 logger = logging.getLogger(__name__)
 
@@ -31,10 +32,10 @@ def ingest_dns_record_by_fqdn(session, update_tag, fqdn, points_to_record):
         return record_id
     else:
         raise NotImplementedError(
-            "Ingestion of DNS record type '{0}' by FQDN has not been implemented. Failed to ingest '{1}'.".format(
+            "Ingestion of DNS record type '{}' by FQDN has not been implemented. Failed to ingest '{}'.".format(
                 record_type,
-                fqdn
-            )
+                fqdn,
+            ),
         )
 
 
@@ -64,7 +65,7 @@ def _link_ip_to_A_record(session, update_tag, ip_list, parent_record):
         ingest,
         ParentId=parent_record,
         IP_LIST=ip_list,
-        update_tag=update_tag
+        update_tag=update_tag,
     )
 
 
@@ -91,7 +92,7 @@ def ingest_dns_record(session, name, value, type, update_tag, points_to_record):
     SET r.lastupdated = {update_tag}
     """
 
-    record_id = "{0}+{1}".format(name, type)
+    record_id = f"{name}+{type}"
 
     session.run(
         ingest,
@@ -100,7 +101,7 @@ def ingest_dns_record(session, name, value, type, update_tag, points_to_record):
         Type=type,
         Value=value,
         PointsToId=points_to_record,
-        update_tag=update_tag
+        update_tag=update_tag,
     )
 
     return record_id

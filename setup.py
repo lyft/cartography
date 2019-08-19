@@ -1,6 +1,7 @@
-from setuptools import setup, find_packages
+from setuptools import find_packages
+from setuptools import setup
 
-__version__ = '0.7.0'
+__version__ = '0.8.0'
 
 
 setup(
@@ -36,6 +37,7 @@ setup(
         "oauth2client>=4.1.3",
         "marshmallow>=3.0.0rc7",
         "okta>=0.0.4"
+        "requests>=2.22.0",
     ],
     extras_require={
         ':python_version<"3.7"': [
@@ -45,8 +47,8 @@ setup(
     entry_points={
         'console_scripts': [
             'cartography = cartography.cli:main',
-            'cartography-detectdrift = cartography.driftdetect.cli:main'
-        ]
+            'cartography-detectdrift = cartography.driftdetect.cli:main',
+        ],
     },
     classifiers=[
         'Development Status :: 4 - Beta',

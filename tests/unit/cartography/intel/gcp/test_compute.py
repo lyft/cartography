@@ -1,5 +1,7 @@
 import cartography.intel.gcp.compute
-from tests.data.gcp.compute import VPC_RESPONSE, VPC_SUBNET_RESPONSE, LIST_FIREWALLS_RESPONSE
+from tests.data.gcp.compute import LIST_FIREWALLS_RESPONSE
+from tests.data.gcp.compute import VPC_RESPONSE
+from tests.data.gcp.compute import VPC_SUBNET_RESPONSE
 
 
 def test_transform_gcp_vpcs():

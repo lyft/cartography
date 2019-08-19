@@ -1,8 +1,8 @@
 {
   "name": "Test-Multiple-Properties",
   "validation_query": "MATCH (d) RETURN d.test,d.test2,d.test3",
-  "detector_type": 1,
-  "expectations": [
+  "properties": ["d.test","d.test2","d.test3"],
+  "results": [
     ["1","8","15|22|29"],
     ["2","9","16|23|30"],
     ["3","10","17|24|31"],

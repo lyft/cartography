@@ -1,0 +1,7 @@
+{
+    "name": "Test-Multiple-Properties",
+    "shortcuts": {
+        "most-recent": "2.json",
+        "invalid-shortcut": "3.json"
+    }
+}

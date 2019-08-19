@@ -1,4 +1,5 @@
 import sys
+
 from cartography.graph.job import GraphJob
 
 if sys.version_info >= (3, 7):
@@ -12,9 +13,9 @@ def run_analysis_job(filename, session, common_job_parameters):
         session,
         read_text(
             'cartography.data.jobs.analysis',
-            filename
+            filename,
         ),
-        common_job_parameters
+        common_job_parameters,
     )
 
 
@@ -23,9 +24,9 @@ def run_cleanup_job(filename, session, common_job_parameters):
         session,
         read_text(
             'cartography.data.jobs.cleanup',
-            filename
+            filename,
         ),
-        common_job_parameters
+        common_job_parameters,
     )
 
 

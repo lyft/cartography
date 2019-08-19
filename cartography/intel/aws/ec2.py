@@ -1,6 +1,7 @@
-import botocore.config
 import logging
 import time
+
+import botocore.config
 
 from cartography.util import run_cleanup_job
 
@@ -13,7 +14,7 @@ def _get_botocore_config():
         read_timeout=360,
         retries={
             'max_attempts': 10,
-        }
+        },
     )
 
 
@@ -30,6 +31,12 @@ def get_ec2_security_group_data(session, region):
     for page in paginator.paginate():
         security_groups.extend(page['SecurityGroups'])
     return {'SecurityGroups': security_groups}
+
+
+def get_ec2_key_pairs(session, region):
+    client = session.client('ec2', region_name=region, config=_get_botocore_config())
+    result = client.describe_key_pairs()
+    return result
 
 
 def get_ec2_instances(session, region):
@@ -71,6 +78,35 @@ def get_ec2_vpcs(session, region):
     return client.describe_vpcs()
 
 
+def load_ec2_key_pairs(session, data, region, current_aws_account_id, aws_update_tag):
+    ingest_key_pair = """
+    MERGE (keypair:KeyPair:EC2KeyPair{arn: {ARN}, id: {ARN}})
+    ON CREATE SET keypair.firstseen = timestamp()
+    SET keypair.keyname = {KeyName}, keypair.keyfingerprint = {KeyFingerprint}, keypair.region = {Region},
+    keypair.lastupdated = {aws_update_tag}
+    WITH keypair
+    MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MERGE (aa)-[r:RESOURCE]->(keypair)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {aws_update_tag}
+    """
+
+    for key_pair in data['KeyPairs']:
+        key_name = key_pair["KeyName"]
+        key_fingerprint = key_pair.get("KeyFingerprint")
+        key_pair_arn = f'arn:aws:ec2:{region}:{current_aws_account_id}:key-pair/{key_name}'
+
+        session.run(
+            ingest_key_pair,
+            ARN=key_pair_arn,
+            KeyName=key_name,
+            KeyFingerprint=key_fingerprint,
+            AWS_ACCOUNT_ID=current_aws_account_id,
+            Region=region,
+            aws_update_tag=aws_update_tag,
+        )
+
+
 def load_ec2_instances(session, data, region, current_aws_account_id, aws_update_tag):
     ingest_reservation = """
     MERGE (reservation:EC2Reservation{reservationid: {ReservationId}})
@@ -110,6 +146,22 @@ def load_ec2_instances(session, data, region, current_aws_account_id, aws_update
     SET r.lastupdated = {aws_update_tag}
     """
 
+    ingest_key_pair = """
+    MERGE (keypair:KeyPair:EC2KeyPair{arn: {KeyPairARN}, id: {KeyPairARN}})
+    ON CREATE SET keypair.firstseen = timestamp()
+    SET keypair.keyname = {KeyName}, keypair.region = {Region}, keypair.lastupdated = {aws_update_tag}
+    WITH keypair
+    MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MERGE (aa)-[r:RESOURCE]->(keypair)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {aws_update_tag}
+    with keypair
+    MATCH (instance:EC2Instance{instanceid: {InstanceId}})
+    MERGE (instance)<-[r:SSH_LOGIN_TO]-(keypair)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {aws_update_tag}
+    """
+
     ingest_security_groups = """
     MERGE (group:EC2SecurityGroup{id: {GroupId}})
     ON CREATE SET group.firstseen = timestamp(), group.groupid = {GroupId}
@@ -136,7 +188,7 @@ def load_ec2_instances(session, data, region, current_aws_account_id, aws_update
             RequesterId=reservation.get("RequesterId", ""),
             AWS_ACCOUNT_ID=current_aws_account_id,
             Region=region,
-            aws_update_tag=aws_update_tag
+            aws_update_tag=aws_update_tag,
         )
 
         for instance in reservation["Instances"]:
@@ -169,8 +221,21 @@ def load_ec2_instances(session, data, region, current_aws_account_id, aws_update
                 State=instance_state,
                 AWS_ACCOUNT_ID=current_aws_account_id,
                 Region=region,
-                aws_update_tag=aws_update_tag
+                aws_update_tag=aws_update_tag,
             )
+
+            if instance.get("KeyName"):
+                key_name = instance["KeyName"]
+                key_pair_arn = f'arn:aws:ec2:{region}:{current_aws_account_id}:key-pair/{key_name}'
+                session.run(
+                    ingest_key_pair,
+                    KeyPairARN=key_pair_arn,
+                    KeyName=key_name,
+                    Region=region,
+                    InstanceId=instanceid,
+                    AWS_ACCOUNT_ID=current_aws_account_id,
+                    aws_update_tag=aws_update_tag,
+                )
 
             if instance.get("SecurityGroups"):
                 for group in instance["SecurityGroups"]:
@@ -181,7 +246,7 @@ def load_ec2_instances(session, data, region, current_aws_account_id, aws_update
                         InstanceId=instanceid,
                         Region=region,
                         AWS_ACCOUNT_ID=current_aws_account_id,
-                        aws_update_tag=aws_update_tag
+                        aws_update_tag=aws_update_tag,
                     )
 
             load_ec2_instance_network_interfaces(session, instance, aws_update_tag)
@@ -228,7 +293,7 @@ def load_ec2_instance_network_interfaces(session, instance_data, aws_update_tag)
             PrivateDnsName=interface.get("PrivateDnsName", ""),
             PrivateIpAddress=interface.get("PrivateIpAddress", ""),
             SubnetId=interface.get("SubnetId", ""),
-            aws_update_tag=aws_update_tag
+            aws_update_tag=aws_update_tag,
         )
 
         for group in interface.get("Groups", []):
@@ -236,7 +301,7 @@ def load_ec2_instance_network_interfaces(session, instance_data, aws_update_tag)
                 ingest_network_group,
                 NetworkId=interface["NetworkInterfaceId"],
                 GroupId=group["GroupId"],
-                aws_update_tag=aws_update_tag
+                aws_update_tag=aws_update_tag,
             )
 
 
@@ -268,7 +333,7 @@ def load_ec2_security_groupinfo(session, data, region, current_aws_account_id, a
             VpcId=group.get("VpcId", None),
             Region=region,
             AWS_ACCOUNT_ID=current_aws_account_id,
-            aws_update_tag=aws_update_tag
+            aws_update_tag=aws_update_tag,
         )
 
         load_ec2_security_group_rule(session, group, "IpPermissions", aws_update_tag)
@@ -319,7 +384,7 @@ def load_ec2_security_group_rule(session, group, rule_type, aws_update_tag):
             from_port = rule.get("FromPort", "")
             to_port = rule.get("ToPort", "")
 
-            ruleid = "{0}/{1}/{2}{3}{4}".format(group_id, rule_type, from_port, to_port, protocol)
+            ruleid = f"{group_id}/{rule_type}/{from_port}{to_port}{protocol}"
             # NOTE Cypher query syntax is incompatible with Python string formatting, so we have to do this awkward
             # NOTE manual formatting instead.
             session.run(
@@ -329,14 +394,14 @@ def load_ec2_security_group_rule(session, group, rule_type, aws_update_tag):
                 ToPort=to_port,
                 Protocol=protocol,
                 GroupId=group_id,
-                aws_update_tag=aws_update_tag
+                aws_update_tag=aws_update_tag,
             )
 
             session.run(
                 ingest_rule_group_pair,
                 GroupId=group_id,
                 RuleId=ruleid,
-                aws_update_tag=aws_update_tag
+                aws_update_tag=aws_update_tag,
             )
 
             for ip_range in rule["IpRanges"]:
@@ -345,7 +410,7 @@ def load_ec2_security_group_rule(session, group, rule_type, aws_update_tag):
                     ingest_range,
                     RangeId=range_id,
                     RuleId=ruleid,
-                    aws_update_tag=aws_update_tag
+                    aws_update_tag=aws_update_tag,
                 )
 
 
@@ -405,7 +470,7 @@ def load_ec2_auto_scaling_groups(session, data, region, current_aws_account_id, 
             MaxSize=max_size,
             AWS_ACCOUNT_ID=current_aws_account_id,
             Region=region,
-            aws_update_tag=aws_update_tag
+            aws_update_tag=aws_update_tag,
         )
 
         if group.get('VPCZoneIdentifier'):
@@ -415,7 +480,7 @@ def load_ec2_auto_scaling_groups(session, data, region, current_aws_account_id, 
                     ingest_vpc,
                     SubnetId=vpc,
                     GROUPARN=group_arn,
-                    aws_update_tag=aws_update_tag
+                    aws_update_tag=aws_update_tag,
                 )
 
         if group.get("Instances"):
@@ -427,7 +492,7 @@ def load_ec2_auto_scaling_groups(session, data, region, current_aws_account_id, 
                     GROUPARN=group_arn,
                     AWS_ACCOUNT_ID=current_aws_account_id,
                     Region=region,
-                    aws_update_tag=aws_update_tag
+                    aws_update_tag=aws_update_tag,
                 )
 
 
@@ -487,7 +552,7 @@ def load_load_balancers(session, data, region, current_aws_account_id, aws_updat
             SCHEME=lb.get("Scheme", ""),
             AWS_ACCOUNT_ID=current_aws_account_id,
             Region=region,
-            aws_update_tag=aws_update_tag
+            aws_update_tag=aws_update_tag,
         )
 
         if lb["Subnets"]:
@@ -499,7 +564,7 @@ def load_load_balancers(session, data, region, current_aws_account_id, aws_updat
                     ingest_load_balancer_security_group,
                     ID=load_balancer_id,
                     GROUP_ID=str(group),
-                    aws_update_tag=aws_update_tag
+                    aws_update_tag=aws_update_tag,
                 )
 
         if lb["SourceSecurityGroup"]:
@@ -508,7 +573,7 @@ def load_load_balancers(session, data, region, current_aws_account_id, aws_updat
                 ingest_load_balancersource_security_group,
                 ID=load_balancer_id,
                 GROUP_NAME=source_group["GroupName"],
-                aws_update_tag=aws_update_tag
+                aws_update_tag=aws_update_tag,
             )
 
         if lb["Instances"]:
@@ -518,7 +583,7 @@ def load_load_balancers(session, data, region, current_aws_account_id, aws_updat
                     ID=load_balancer_id,
                     INSTANCE_ID=instance["InstanceId"],
                     AWS_ACCOUNT_ID=current_aws_account_id,
-                    aws_update_tag=aws_update_tag
+                    aws_update_tag=aws_update_tag,
                 )
 
         if lb["ListenerDescriptions"]:
@@ -538,7 +603,7 @@ def load_load_balancer_subnets(session, load_balancer_id, subnets_data, aws_upda
             ingest_load_balancer_subnet,
             ID=load_balancer_id,
             SUBNET_ID=subnet_id,
-            aws_update_tag=aws_update_tag
+            aws_update_tag=aws_update_tag,
         )
 
 
@@ -563,7 +628,7 @@ def load_load_balancer_listeners(session, load_balancer_id, listener_data, aws_u
         ingest_listener,
         LoadBalancerId=load_balancer_id,
         Listeners=listener_data,
-        aws_update_tag=aws_update_tag
+        aws_update_tag=aws_update_tag,
     )
 
 
@@ -684,7 +749,8 @@ def load_ec2_vpc_peering(session, data, aws_update_tag):
                 StatusMessage=peering["Status"]["Message"],
                 ConnectionId=peering["VpcPeeringConnectionId"],
                 ExpirationTime=peering.get("ExpirationTime", None),
-                aws_update_tag=aws_update_tag)
+                aws_update_tag=aws_update_tag,
+            )
 
             for accepter_block in peering["AccepterVpcInfo"].get("CidrBlockSet", []):
                 for requestor_block in peering["RequesterVpcInfo"].get("CidrBlockSet", []):
@@ -698,7 +764,8 @@ def load_ec2_vpc_peering(session, data, aws_update_tag):
                         StatusMessage=peering["Status"]["Message"],
                         ConnectionId=peering["VpcPeeringConnectionId"],
                         ExpirationTime=peering.get("ExpirationTime", None),
-                        aws_update_tag=aws_update_tag)
+                        aws_update_tag=aws_update_tag,
+                    )
 
 
 def load_ec2_vpcs(session, data, region, current_aws_account_id, aws_update_tag):
@@ -760,19 +827,24 @@ def load_ec2_vpcs(session, data, region, current_aws_account_id, aws_update_tag)
             DhcpOptionsId=vpc.get("DhcpOptionsId", None),
             Region=region,
             AWS_ACCOUNT_ID=current_aws_account_id,
-            aws_update_tag=aws_update_tag)
+            aws_update_tag=aws_update_tag,
+        )
 
-        load_cidr_association_set(session,
-                                  vpc_id=vpc_id,
-                                  block_type="ipv4",
-                                  vpc_data=vpc,
-                                  aws_update_tag=aws_update_tag)
+        load_cidr_association_set(
+            session,
+            vpc_id=vpc_id,
+            block_type="ipv4",
+            vpc_data=vpc,
+            aws_update_tag=aws_update_tag,
+        )
 
-        load_cidr_association_set(session,
-                                  vpc_id=vpc_id,
-                                  block_type="ipv6",
-                                  vpc_data=vpc,
-                                  aws_update_tag=aws_update_tag)
+        load_cidr_association_set(
+            session,
+            vpc_id=vpc_id,
+            block_type="ipv6",
+            vpc_data=vpc,
+            aws_update_tag=aws_update_tag,
+        )
 
 
 def _get_cidr_association_statement(block_type):
@@ -805,7 +877,7 @@ def _get_cidr_association_statement(block_type):
     elif block_type == "ipv4":
         BLOCK_TYPE = BLOCK_TYPE + ":AWSIpv4CidrBlock"
     else:
-        raise ValueError("Unsupported block type specified - {0}".format(block_type))
+        raise ValueError(f"Unsupported block type specified - {block_type}")
 
     return ingest_cidr.replace("#BLOCK_CIDR#", BLOCK_CIDR)\
                       .replace("#STATE_NAME#", STATE_NAME)\
@@ -825,7 +897,7 @@ def load_cidr_association_set(session, vpc_id, vpc_data, block_type, aws_update_
         ingest_statement,
         VpcId=vpc_id,
         CidrBlock=data,
-        aws_update_tag=aws_update_tag
+        aws_update_tag=aws_update_tag,
     )
 
 
@@ -833,8 +905,12 @@ def cleanup_ec2_security_groupinfo(session, common_job_parameters):
     run_cleanup_job(
         'aws_import_ec2_security_groupinfo_cleanup.json',
         session,
-        common_job_parameters
+        common_job_parameters,
     )
+
+
+def cleanup_ec2_key_pairs(session, common_job_parameters):
+    run_cleanup_job('aws_import_ec2_key_pairs_cleanup.json', session, common_job_parameters)
 
 
 def cleanup_ec2_instances(session, common_job_parameters):
@@ -845,7 +921,7 @@ def cleanup_ec2_auto_scaling_groups(session, common_job_parameters):
     run_cleanup_job(
         'aws_ingest_ec2_auto_scaling_groups_cleanup.json',
         session,
-        common_job_parameters
+        common_job_parameters,
     )
 
 
@@ -861,13 +937,23 @@ def cleanup_ec2_vpc_peering(session, common_job_parameters):
     run_cleanup_job('aws_import_vpc_peering_cleanup.json', session, common_job_parameters)
 
 
-def sync_ec2_security_groupinfo(session, boto3_session, regions, current_aws_account_id, aws_update_tag,
-                                common_job_parameters):
+def sync_ec2_security_groupinfo(
+    session, boto3_session, regions, current_aws_account_id, aws_update_tag,
+    common_job_parameters,
+):
     for region in regions:
         logger.debug("Syncing EC2 security groups for region '%s' in account '%s'.", region, current_aws_account_id)
         data = get_ec2_security_group_data(boto3_session, region)
         load_ec2_security_groupinfo(session, data, region, current_aws_account_id, aws_update_tag)
     cleanup_ec2_security_groupinfo(session, common_job_parameters)
+
+
+def sync_ec2_key_pairs(session, boto3_session, regions, current_aws_account_id, aws_update_tag, common_job_parameters):
+    for region in regions:
+        logger.debug("Syncing EC2 key pairs for region '%s' in account '%s'.", region, current_aws_account_id)
+        data = get_ec2_key_pairs(boto3_session, region)
+        load_ec2_key_pairs(session, data, region, current_aws_account_id, aws_update_tag)
+    cleanup_ec2_key_pairs(session, common_job_parameters)
 
 
 def sync_ec2_instances(session, boto3_session, regions, current_aws_account_id, aws_update_tag, common_job_parameters):
@@ -878,8 +964,10 @@ def sync_ec2_instances(session, boto3_session, regions, current_aws_account_id, 
     cleanup_ec2_instances(session, common_job_parameters)
 
 
-def sync_ec2_auto_scaling_groups(session, boto3_session, regions, current_aws_account_id, aws_update_tag,
-                                 common_job_parameters):
+def sync_ec2_auto_scaling_groups(
+    session, boto3_session, regions, current_aws_account_id, aws_update_tag,
+    common_job_parameters,
+):
     for region in regions:
         logger.debug("Syncing auto scaling groups for region '%s' in account '%s'.", region, current_aws_account_id)
         data = get_ec2_auto_scaling_groups(boto3_session, region)
