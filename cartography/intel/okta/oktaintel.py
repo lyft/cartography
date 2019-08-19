@@ -1125,11 +1125,11 @@ def start_okta_ingestion(neo4j_session, okta_organization, config):
         "OKTA_ORG_ID": okta_organization,
     }
 
-    # _create_okta_organization(neo4j_session, okta_organization, config.update_tag)
-    # _sync_okta_users(neo4j_session, okta_organization, config.update_tag)
-    # _sync_okta_groups(neo4j_session, okta_organization, config.update_tag)
-    # _sync_okta_applications(session, okta_organization, last_update)
-    #_sync_users_factors(session, okta_organization, last_update)
+    _create_okta_organization(neo4j_session, okta_organization, config.update_tag)
+    _sync_okta_users(neo4j_session, okta_organization, config.update_tag)
+    _sync_okta_groups(neo4j_session, okta_organization, config.update_tag)
+    _sync_okta_applications(session, okta_organization, last_update)
+    _sync_users_factors(session, okta_organization, last_update)
     _sync_trusted_origins(session, okta_organization, last_update)
 
     # need creds with permission
@@ -1166,36 +1166,4 @@ if __name__ == '__main__':
                          update_tag=last_update)
 
         start_okta_ingestion(session, "lyft", config)
-        # _create_okta_organization(session, org_id, last_update)
-        # _sync_okta_users(session, org_id, last_update)
-        # _sync_okta_groups(session, org_id, last_update)
-        # _sync_okta_applications(session, org_id, last_update)
-        # _sync_users_factors(session, org_id, last_update)
-        # _sync_trusted_origins(session, org_id, last_update)
-        #
-        # # need creds with permission
-        # _sync_roles(session, org_id, last_update)
 
-        # common_job_parameters = {
-        #     "UPDATE_TAG": last_update,
-        #     "OKTA_ORG_ID": org_id,
-        # }
-        # _cleanup_okta_organizations(session, common_job_parameters)
-
-    # # http://developer.okta.com/docs/api/getting_started/getting_a_token.html
-    # usersClient = UsersClient(base_url='https://lyft.okta.com/',
-    #                           api_token='00ig0il4HVi4GBlm9_chkwruYCaVuysKgomChun72Y')
-    #
-    # users = usersClient.get_paged_users()
-    #
-    # while True:
-    #     for user in users.result:
-    #         print(u"First Name: {}".format(user.profile.firstName))
-    #         print(u"Last Name:  {}".format(user.profile.lastName))
-    #         print(u"Login:      {}".format(user.profile.login))
-    #         print(u"User ID:    {}\n".format(user.id))
-    #     if not users.is_last_page():
-    #         # Keep on fetching pages of users until the last page
-    #         users = usersClient.get_paged_users(url=users.next_url)
-    #     else:
-    #         break
