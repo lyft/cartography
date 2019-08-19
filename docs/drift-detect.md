@@ -32,15 +32,17 @@ The quickest way to get started using drift-detection is through an example.  We
 	{
 	  "name": "Internet Exposed EC2 Instances",
 	  "validation_query": "match (n:EC2Instance) where n.exposed_internet = True return n.instancetype, n.privateipaddress, n.publicdnsname, n.exposed_internet_type"
-	  "properties": [],
-	  "results": []
+	  "tag": [],
+	  "keys": [],
+	  "results": {}
 	}
 	```
 
 	- `name` is a helpful name describing the query.
-	- `validation_query` is the neo4j Cypher query to track over time.  In this case, we have simply asked Neo4j to return `instancetype`, `privateipaddress`, `publicdnsname`, and `exposed_internet_type` from EC2Instances that Cartography has identified as accessible from the internet.  When writing your own queries, note that drift-detection only supports `MATCH` queries (i.e. read operations).  `MERGE` queries (write operations) are not supported.
-	- `properties`: Leave this as an empty array.  This field is a placeholder that will be filled.
-	- `results`: Leave this as an empty array.  This field is a placeholder that will be filled.
+	- `validation_query` is the neo4j Cypher query to track over time. In this case, we have simply asked Neo4j to return `instancetype`, `privateipaddress`, `publicdnsname`, and `exposed_internet_type` from EC2Instances that Cartography has identified as accessible from the internet.  When writing your own queries, note that drift-detection only supports `MATCH` queries (i.e. read operations).  `MERGE` queries (write operations) are not supported.
+	- `tag`: This field will contain the tag for the query. If this field is empty, it will default to using all fields of the query result when constructing keys.
+	- `keys`: Leave this as an empty list. This field is a placeholder that will be filled.
+	- `results`: Leave this as an empty dictionary. This field is a placeholder that will be filled.
 
 
 4. **Create a shortcut file**
@@ -81,13 +83,39 @@ All set 👍
 	{
 	  "name": "Internet Exposed EC2 Instances",
 	  "validation_query": "match (n:EC2Instance) where n.exposed_internet = True return n.instancetype, n.privateipaddress, n.publicdnsname, n.exposed_internet_type"
-	  "properties": ["n.instancetype", "n.privateipaddress", "n.publicdnsname", "n.exposed_internet_type"],
-	  "results": [
-	    ["c4.large", "10.255.255.251", "ec2.1.compute.amazonaws.com", "direct"],
-	    ["t2.micro", "10.255.255.252", "ec2.2.compute.amazonaws.com", "direct"],
-	    ["c4.large", "10.255.255.253", "ec2.3.compute.amazonaws.com", "direct|elb"],
-	    ["t2.micro", "10.255.255.254", "ec2.4.compute.amazonaws.com", "direct|elb"]
+	  "tag": ["n.instancetype", "n.privateipaddress", "n.publicdnsname", "n.exposed_internet_type"],
+	  "keys": [
+	    "c4.large|10.255.255.251|ec2.1.compute.amazonaws.com|direct",
+	    "t2.micro|10.255.255.252|ec2.2.compute.amazonaws.com|direct",
+	    "c4.large|10.255.255.253|ec2.3.compute.amazonaws.com|direct,elb",
+	    "t2.micro|10.255.255.254|ec2.4.compute.amazonaws.com|direct,elb"
 	  ]
+	  results: {
+	    "c4.large|10.255.255.251|ec2.1.compute.amazonaws.com|direct": {
+	        "n.instancetype": "c4.large"
+	        "n.privateipaddress": "10.255.255.251"
+	        "n.publicdnsname": "ec2.1.compute.amazonaws.com"
+	        "n.exposed_internet_type": "direct"
+	    },
+	    "t2.micro|10.255.255.252|ec2.2.compute.amazonaws.com|direct": {
+	        "n.instancetype": "t2.micro"
+	        "n.privateipaddress": "10.255.255.252"
+	        "n.publicdnsname": "ec2.2.compute.amazonaws.com"
+	        "n.exposed_internet_type": "direct"
+	    },
+	    "c4.large|10.255.255.253|ec2.3.compute.amazonaws.com|direct,elb": {
+	        "n.instancetype": "c4.large"
+	        "n.privateipaddress": "10.255.255.253"
+	        "n.publicdnsname": "ec2.3.compute.amazonaws.com"
+	        "n.exposed_internet_type": "direct,elb"
+	    },
+	    "t2.micro|10.255.255.254|ec2.4.compute.amazonaws.com|direct,elb": {
+	        "n.instancetype": "t2.micro"
+	        "n.privateipaddress": "10.255.255.254"
+	        "n.publicdnsname": "ec2.4.compute.amazonaws.com"
+	        "n.exposed_internet_type": "direct,elb"
+	    }
+	  }
 	}
 	```
 
@@ -102,7 +130,7 @@ All set 👍
 	{
 	  "name": "Internet Exposed EC2 Instances",
 	  "validation_query": "match (n:EC2Instance) where n.exposed_internet = True return n.instancetype, n.privateipaddress, n.publicdnsname, n.exposed_internet_type""
-	  "properties": ["n.instancetype", "n.privateipaddress", "n.publicdnsname", "n.exposed_internet_type"],
+	  "tag": ["n.instancetype", "n.privateipaddress", "n.publicdnsname", "n.exposed_internet_type"],
 	  "results": [
 	    ["t2.micro", "10.255.255.250", "ec2.0.compute.amazonaws.com", "direct"],
 	    ["c4.large", "10.255.255.251", "ec2.1.compute.amazonaws.com", "direct"],
@@ -110,6 +138,50 @@ All set 👍
 	    ["c4.large", "10.255.255.253", "ec2.3.compute.amazonaws.com", "direct|elb"],
 	    ["c4.large", "10.255.255.255", "ec2.5.compute.amazonaws.com", "direct|elb"]
 	  ]
+	}
+	{
+	  "name": "Internet Exposed EC2 Instances",
+	  "validation_query": "match (n:EC2Instance) where n.exposed_internet = True return n.instancetype, n.privateipaddress, n.publicdnsname, n.exposed_internet_type"
+	  "tag": ["n.instancetype", "n.privateipaddress", "n.publicdnsname", "n.exposed_internet_type"],
+	  "keys": [
+	    "t2.micro|10.255.255.250|ec2.0.compute.amazonaws.com|direct",
+	    "c4.large|10.255.255.251|ec2.1.compute.amazonaws.com|direct",
+	    "t2.micro|10.255.255.252|ec2.2.compute.amazonaws.com|direct",
+	    "c4.large|10.255.255.253|ec2.3.compute.amazonaws.com|direct,elb",
+	    "t2.micro|10.255.255.255|ec2.5.compute.amazonaws.com|direct,elb"
+	  ]
+	  results: {
+	    "t2.micro|10.255.255.250|ec2.0.compute.amazonaws.com|direct": {
+	        "n.instancetype": "t2.micro"
+	        "n.privateipaddress": "10.255.255.250"
+	        "n.publicdnsname": "ec2.0.compute.amazonaws.com"
+	        "n.exposed_internet_type": "direct"
+	    },
+	    "c4.large|10.255.255.251|ec2.1.compute.amazonaws.com|direct": {
+	        "n.instancetype": "c4.large"
+	        "n.privateipaddress": "10.255.255.251"
+	        "n.publicdnsname": "ec2.1.compute.amazonaws.com"
+	        "n.exposed_internet_type": "direct"
+	    },
+	    "t2.micro|10.255.255.252|ec2.2.compute.amazonaws.com|direct": {
+	        "n.instancetype": "t2.micro"
+	        "n.privateipaddress": "10.255.255.252"
+	        "n.publicdnsname": "ec2.2.compute.amazonaws.com"
+	        "n.exposed_internet_type": "direct"
+	    },
+	    "c4.large|10.255.255.253|ec2.3.compute.amazonaws.com|direct,elb": {
+	        "n.instancetype": "c4.large"
+	        "n.privateipaddress": "10.255.255.253"
+	        "n.publicdnsname": "ec2.3.compute.amazonaws.com"
+	        "n.exposed_internet_type": "direct,elb"
+	    },
+	    "t2.micro|10.255.255.255|ec2.5.compute.amazonaws.com|direct,elb": {
+	        "n.instancetype": "t2.micro"
+	        "n.privateipaddress": "10.255.255.255"
+	        "n.publicdnsname": "ec2.5.compute.amazonaws.com"
+	        "n.exposed_internet_type": "direct,elb"
+	    }
+	  }
 	}
 	```
 
@@ -122,26 +194,25 @@ All set 👍
 
 	```
 	Query Name: Internet Exposed EC2 Instances
-	Query Properties: ["n.instancetype", "n.privateipaddress", "n.publicdnsname", "n.exposed_internet_type"]
 
 	New Query Results:
 
 	n.instancetype: t2.micro
 	n.privateipaddress: 10.255.255.250
 	n.publicdnsname: ec2.0.compute.amazonaws.com
-	n.exposed_internet_type: ['direct']
+	n.exposed_internet_type: direct
 
 	n.instancetype: c4.large
 	n.privateipaddress: 10.255.255.255
 	n.publicdnsname: ec2.5.compute.amazonaws.com
-	n.exposed_internet_type: ['direct', 'elb']
+	n.exposed_internet_type: direct,elb
 
 	Missing Query Results:
 
 	n.instancetype: t2.micro
 	n.privateipaddress: 10.255.255.253
 	n.publicdnsname: ec2.4.compute.amazonaws.com
-	n.exposed_internet_type: ['direct', 'elb']
+	n.exposed_internet_type: direct,elb
 	```
 
 	This gives us a quick way to view infrastructure changes!
@@ -169,3 +240,28 @@ It can be cumbersome to always type Unix timestamp filenames.  To make this easi
 	`cartography-detectdrift get-drift --query-directory ${DRIFT_DETECTION_DIRECTORY}/internet-exposure-query --start-state first-run --end-state second-run`
 
 Important note: Each execution of `get-state` will automatically generate a shortcut in each query directory, `most-recent`, which will refer to the last state file successfully created in that directory.
+
+### Using tags
+
+Sometimes you may be interested in certain properties of a query result but not interested in alerting when other result properties change over time. For example, when tracking internet exposed EC2 instances, you may not want to alert on the public dns names if they get shuffled around your system very frequently, but you might still want the public dns names stored somewhere. In this case we can create a tag based on certain keys of our result.
+
+Continuing our example, to ignore alerting on changes in our dns names, we create a tag omitting that property from the query result. 
+
+`"tag": ["n.instancetype", "n.privateipaddress", "n.publicdnsname", "n.exposed_internet_type"]`
+
+When running drift detection, a key will now be created for the tag. An example key for our example may look like this. Notice how the public dns name is omitted.
+
+`t2.micro|10.255.255.250|direct`
+
+Our result dictionary will contain the full value for the result indexed by the key so that our optional information is not lost!
+
+```
+"t2.micro|10.255.255.250|direct": {
+	        "n.instancetype": "t2.micro"
+	        "n.privateipaddress": "10.255.255.250"
+	        "n.publicdnsname": "ec2.0.compute.amazonaws.com"
+	        "n.exposed_internet_type": "direct"
+	    }
+```
+
+Now if the dns name changes, drift detection will not report it, but if another field changes, drift detection will return the dns names associated with it at that time.
