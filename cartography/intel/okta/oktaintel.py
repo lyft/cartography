@@ -1,4 +1,11 @@
 # Okta intel module
+
+# TODO
+# - set password from env
+# - role sync soft fail
+# - integrate with global sync
+# - unit tests
+# - user doc + schema image
 import logging
 import json
 from okta import UsersClient, UserGroupsClient, AppInstanceClient, FactorsClient
@@ -1166,4 +1173,5 @@ if __name__ == '__main__':
                          update_tag=last_update)
 
         start_okta_ingestion(session, "lyft", config)
+
 
