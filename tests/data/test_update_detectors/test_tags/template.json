@@ -1,0 +1,7 @@
+{
+  "name": "test_detector",
+  "validation_query": "match (d) return d.test,d.test2,d.test3",
+  "tag": ["d.test","d.test2"],
+  "keys": [],
+  "results": {}
+}
