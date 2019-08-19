@@ -31,7 +31,7 @@ def report_drift_missing(results):
         print()
 
 
-def report_drift(new_results, missing_results, state_name, state_properties):
+def report_drift(new_results, missing_results, state_name):
     """
     Prints the results between two states.
     :param new_results: List of new results.

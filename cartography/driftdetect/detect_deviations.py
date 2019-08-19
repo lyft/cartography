@@ -40,7 +40,7 @@ def run_drift_detection(config):
         )
         end_state = state_serializer.load(end_state_data)
         new_results, missing_results = perform_drift_detection(start_state, end_state)
-        report_drift(new_results, missing_results, end_state.name, end_state.properties)
+        report_drift(new_results, missing_results, end_state.name)
     except ValidationError as err:
         msg = "Unable to create DriftStates from files {},{} for \n{} in directory {}.".format(
             config.start_state,
