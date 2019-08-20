@@ -263,7 +263,7 @@ def _get_okta_groups(api_client):
                 }
                 paged_response = api_client.get_path('/', params)
         except OktaError as okta_error:
-            logger.debug("Got error while going through list group {0}".format(okta_error))
+            logger.debug(f"Got error while going through list group {okta_error}")
             break
 
         paged_results = PagedResults(paged_response, UserGroup)
@@ -441,7 +441,7 @@ def _get_okta_group_members(api_client, group_id):
                 }
                 paged_response = api_client.get_path(f'{group_id}/users', params)
         except OktaError as okta_error:
-            logger.debug("Got error while going through list group member {0}".format(okta_error))
+            logger.debug(f"Got error while going through list group member {okta_error}")
             break
 
         member_results = json.loads(paged_response.text)
@@ -621,7 +621,7 @@ def _get_application_assigned_users(api_client, app_id):
                 }
                 paged_response = api_client.get_path(f'/{app_id}/users', params)
         except OktaError as okta_error:
-            logger.debug("Got error while going through list application assigned users {0}".format(okta_error))
+            logger.debug(f"Got error while going through list application assigned users {okta_error}")
             break
 
         for user_id in _transform_application_users(paged_response.text):
@@ -678,7 +678,7 @@ def _get_application_assigned_groups(api_client, app_id):
                 }
                 paged_response = api_client.get_path(f'/{app_id}/groups', params)
         except OktaError as okta_error:
-            logger.debug("Got error while going through list application assigned groups {0}".format(okta_error))
+            logger.debug(f"Got error while going through list application assigned groups {okta_error}")
             break
 
         for group_id in _transform_applicationg_assigned_groups(paged_response.text):
@@ -815,14 +815,9 @@ def _get_factor_for_user_id(factor_client, user_id):
     try:
         factor_results = factor_client.get_lifecycle_factors(user_id)
     except OktaError as okta_error:
-        logger.debug(
-            "Unable to get factor for user id {} with"
-            "error code {} with description {}".format(
-                user_id,
-                okta_error.error_code,
-                okta_error.error_summary,
-            ),
-        )
+        logger.debug(f"Unable to get factor for user id {user_id} with "
+                     f"error code {okta_error.error_code} with description {okta_error.error_summary}")
+
         return []
 
     for current_factor in factor_results:
