@@ -815,7 +815,7 @@ def _get_factor_for_user_id(factor_client, user_id):
     try:
         factor_results = factor_client.get_lifecycle_factors(user_id)
     except OktaError as okta_error:
-        logger.debug(f"Unable to get factor for user id {user_id} with "
+        logger.debug(f"Unable to get factor for user id {user_id} with " +
                      f"error code {okta_error.error_code} with description {okta_error.error_summary}")
 
         return []
