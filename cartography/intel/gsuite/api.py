@@ -2,6 +2,8 @@ import logging
 
 from googleapiclient.discovery import HttpError
 
+from cartography.util import run_cleanup_job
+
 
 logger = logging.getLogger(__name__)
 
@@ -191,13 +193,19 @@ def load_gsuite_members(session, group, members, gsuite_update_tag):
 
 
 def cleanup_gsuite_users(session, common_job_parameters):
-    # XXX: TODO
-    pass
+    run_cleanup_job(
+        'gsuite_ingest_users_cleanup.json',
+        session,
+        common_job_parameters,
+    )
 
 
 def cleanup_gsuite_groups(session, common_job_parameters):
-    # XXX: TODO
-    pass
+    run_cleanup_job(
+        'gsuite_ingest_groups_cleanup.json',
+        session,
+        common_job_parameters,
+    )
 
 
 def sync_gsuite_users(session, admin, gsuite_update_tag, common_job_parameters):
