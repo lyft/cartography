@@ -1,4 +1,5 @@
 import logging
+import os
 from collections import namedtuple
 
 import googleapiclient.discovery
@@ -7,6 +8,8 @@ from oauth2client.client import GoogleCredentials
 
 from cartography.intel.gsuite import api
 
+# GSuite Delegated admin e-mail https://developers.google.com/admin-sdk/directory/v1/guides/delegation
+GSUITE_DELEGATED_ADMIN = os.environ.get('GSUITE_GSUITE_DELEGATED_ADMIN')
 
 OAUTH_SCOPE = [
     'https://www.googleapis.com/auth/admin.directory.user.readonly',
@@ -59,7 +62,7 @@ def start_gsuite_ingestion(session, config):
         #             oauth2client.client.html#oauth2client.client.OAuth2Credentials
         credentials = GoogleCredentials.get_application_default()
         credentials = credentials.create_scoped(OAUTH_SCOPE)
-        credentials = credentials.create_delegated('cartography-admin@lyft.com')
+        credentials = credentials.create_delegated(GSUITE_DELEGATED_ADMIN)
 
     except ApplicationDefaultCredentialsError as e:
         logger.debug('Error occurred calling GoogleCredentials.get_application_default().', exc_info=True)
