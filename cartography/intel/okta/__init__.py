@@ -1,11 +1,12 @@
-import os
 import logging
+import os
 
 from cartography.intel.okta.oktaintel import start_okta_ingestion
 
 logger = logging.getLogger(__name__)
 
 OKTA_API_KEY = os.environ.get('CREDENTIALS_OKTA_API_KEY')
+
 
 def start_okta_ingestion(session, config):
     """

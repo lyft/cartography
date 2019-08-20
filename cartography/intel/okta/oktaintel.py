@@ -1,18 +1,21 @@
 # Okta intel module
-
 # TODO
 # - set password from env
 # - role sync soft fail
 # - integrate with global sync
 # - unit tests
 # - user doc + schema image
-import logging
 import json
-from okta import UsersClient, UserGroupsClient, AppInstanceClient, FactorsClient
-from okta.framework.PagedResults import PagedResults
-from okta.models.usergroup import UserGroup
+import logging
+
+from okta import AppInstanceClient
+from okta import FactorsClient
+from okta import UserGroupsClient
+from okta import UsersClient
 from okta.framework.ApiClient import ApiClient
 from okta.framework.OktaError import OktaError
+from okta.framework.PagedResults import PagedResults
+from okta.models.usergroup import UserGroup
 
 from cartography.config import Config
 from cartography.util import run_cleanup_job
@@ -21,6 +24,7 @@ logger = logging.getLogger(__name__)
 
 OKTA_API_TOKEN = ""
 
+
 def _create_user_client(okta_org):
     """
     Create Okta User Client
@@ -28,8 +32,10 @@ def _create_user_client(okta_org):
     :return: Instance of UsersClient
     """
     # https://github.com/okta/okta-sdk-python/blob/master/okta/models/user/User.py
-    user_client = UsersClient(base_url="https://{0}.okta.com/".format(okta_org),
-                              api_token=OKTA_API_TOKEN)
+    user_client = UsersClient(
+        base_url=f"https://{okta_org}.okta.com/",
+        api_token=OKTA_API_TOKEN,
+    )
 
     return user_client
 
@@ -40,8 +46,10 @@ def _create_group_client(okta_org):
     :param okta_org: Okta organization name
     :return: Instance of UserGroupsClient
     """
-    usergroups_client = UserGroupsClient(base_url="https://{0}.okta.com/".format(okta_org),
-                                         api_token=OKTA_API_TOKEN)
+    usergroups_client = UserGroupsClient(
+        base_url=f"https://{okta_org}.okta.com/",
+        api_token=OKTA_API_TOKEN,
+    )
 
     return usergroups_client
 
@@ -52,8 +60,10 @@ def _create_application_client(okta_org):
     :param okta_org: Okta organization name
     :return: Instance of AppInstanceClient
     """
-    app_client = AppInstanceClient(base_url="https://{0}.okta.com/".format(okta_org),
-                                   api_token=OKTA_API_TOKEN)
+    app_client = AppInstanceClient(
+        base_url=f"https://{okta_org}.okta.com/",
+        api_token=OKTA_API_TOKEN,
+    )
 
     return app_client
 
@@ -66,8 +76,10 @@ def _create_factor_client(okta_org):
     """
 
     # https://github.com/okta/okta-sdk-python/blob/master/okta/FactorsClient.py
-    factor_client = FactorsClient(base_url="https://{0}.okta.com/".format(okta_org),
-                                  api_token=OKTA_API_TOKEN)
+    factor_client = FactorsClient(
+        base_url=f"https://{okta_org}.okta.com/",
+        api_token=OKTA_API_TOKEN,
+    )
 
     return factor_client
 
@@ -79,11 +91,14 @@ def _create_api_client(okta_org, path_name):
     :param path_name: API Path
     :return: Instance of ApiClient
     """
-    api_client = ApiClient(base_url="https://{0}.okta.com/".format(okta_org),
-                           pathname=path_name,
-                           api_token=OKTA_API_TOKEN)
+    api_client = ApiClient(
+        base_url=f"https://{okta_org}.okta.com/",
+        pathname=path_name,
+        api_token=OKTA_API_TOKEN,
+    )
 
     return api_client
+
 
 def _get_okta_users(user_client):
     """
@@ -95,7 +110,7 @@ def _get_okta_users(user_client):
     paged_users = user_client.get_paged_users()
     while True:
         for current_user in paged_users.result:
-            user_props = _transform_user_data(current_user)
+            user_props = _transform_okta_user(current_user)
             user_list.append(user_props)
         if not paged_users.is_last_page():
             # Keep on fetching pages of users until the last page
@@ -106,14 +121,14 @@ def _get_okta_users(user_client):
     return user_list
 
 
-def _transform_user_data(okta_user):
+def transform_okta_user(okta_user):
     """
     Transform okta user data
     :param okta_user: okta user object
     :return: Dictionary container user properties for ingestion
     """
 
-    # https://github.com/okta/okta-sdk-python/blob/master/okta/models/user/UserProfile.py
+    # https://github.com/okta/okta-sdk-python/blob/master/okta/models/user/User.py
     user_props = {}
     user_props["first_name"] = okta_user.profile.firstName
     user_props["last_name"] = okta_user.profile.lastName
@@ -201,10 +216,12 @@ def _load_okta_users(neo4j_session, okta_org_id, user_list, okta_update_tag):
     SET h.lastupdated = {okta_update_tag}
     """
 
-    neo4j_session.run(ingest_statement,
-                      ORG_ID=okta_org_id,
-                      USER_LIST=user_list,
-                      okta_update_tag=okta_update_tag)
+    neo4j_session.run(
+        ingest_statement,
+        ORG_ID=okta_org_id,
+        USER_LIST=user_list,
+        okta_update_tag=okta_update_tag,
+    )
 
 
 def _sync_okta_users(neo4j_session, okta_org_id, okta_update_tag):
@@ -242,7 +259,7 @@ def _get_okta_groups(api_client):
                 paged_response = api_client.get(next_url)
             else:
                 params = {
-                    'limit': 10000
+                    'limit': 10000,
                 }
                 paged_response = api_client.get_path('/', params)
         except OktaError as okta_error:
@@ -305,7 +322,7 @@ def _sync_okta_groups(neo4_session, okta_org_id, okta_update_tag):
     :return: Nothing
     """
     logger.debug("Syncing Okta groups")
-    api_client = _create_api_client(okta_org_id, "/api/v1/groups" )
+    api_client = _create_api_client(okta_org_id, "/api/v1/groups")
 
     data = _get_okta_groups(api_client)
     _load_okta_groups(neo4_session, okta_org_id, data, okta_update_tag)
@@ -327,9 +344,11 @@ def _create_okta_organization(neo4j_session, organization, okta_update_tag):
     SET org.lastupdated = {okta_update_tag}
     """
 
-    neo4j_session.run(ingest,
-                      ORG_NAME=organization,
-                      okta_update_tag=okta_update_tag)
+    neo4j_session.run(
+        ingest,
+        ORG_NAME=organization,
+        okta_update_tag=okta_update_tag,
+    )
 
 
 def _load_okta_groups(neo4j_session, okta_org_id, group_list, okta_update_tag):
@@ -360,10 +379,12 @@ def _load_okta_groups(neo4j_session, okta_org_id, group_list, okta_update_tag):
     SET org_r.lastupdated = {okta_update_tag}
     """
 
-    neo4j_session.run(ingest_statement,
-                      ORG_ID=okta_org_id,
-                      GROUP_LIST=group_list,
-                      okta_update_tag=okta_update_tag)
+    neo4j_session.run(
+        ingest_statement,
+        ORG_ID=okta_org_id,
+        GROUP_LIST=group_list,
+        okta_update_tag=okta_update_tag,
+    )
 
 
 def _get_okta_groups_id_from_graph(neo4j_session, okta_org_id):
@@ -391,7 +412,7 @@ def _get_okta_application_id_from_graph(neo4j_session, okta_org_id):
     """
     app_query = "MATCH (:OktaOrganization{id: {ORG_ID}})-[:RESOURCE]->(app:OktaApplication) return app.id as id"
 
-    result = neo4j_session.run(group_query, ORG_ID=okta_org_id)
+    result = neo4j_session.run(app_query, ORG_ID=okta_org_id)
 
     apps = [r['id'] for r in result]
 
@@ -415,9 +436,9 @@ def _get_okta_group_members(api_client, group_id):
                 paged_response = api_client.get(next_url)
             else:
                 params = {
-                    'limit': 1000
+                    'limit': 1000,
                 }
-                paged_response = api_client.get_path('{0}/users'.format(group_id), params)
+                paged_response = api_client.get_path(f'{group_id}/users', params)
         except OktaError as okta_error:
             break
 
@@ -479,10 +500,12 @@ def _ingest_okta_group_members(neo4j_session, group_id, member_list, okta_update
     SET r.lastupdated = {okta_update_tag}
     """
 
-    neo4j_session.run(ingest,
-                      GROUP_ID=group_id,
-                      MEMBER_LIST=member_list,
-                      okta_update_tag=okta_update_tag)
+    neo4j_session.run(
+        ingest,
+        GROUP_ID=group_id,
+        MEMBER_LIST=member_list,
+        okta_update_tag=okta_update_tag,
+    )
 
 
 def _get_okta_applications(app_client):
@@ -567,10 +590,12 @@ def _load_okta_applications(neo4j_session, okta_org_id, app_list, okta_update_ta
     SET org_r.lastupdated = {okta_update_tag}
     """
 
-    neo4j_session.run(ingest_statement,
-                      ORG_ID=okta_org_id,
-                      APP_LIST=app_list,
-                      okta_update_tag=okta_update_tag)
+    neo4j_session.run(
+        ingest_statement,
+        ORG_ID=okta_org_id,
+        APP_LIST=app_list,
+        okta_update_tag=okta_update_tag,
+    )
 
 
 def _get_application_assigned_users(api_client, app_id):
@@ -590,9 +615,9 @@ def _get_application_assigned_users(api_client, app_id):
                 paged_response = api_client.get(next_url)
             else:
                 params = {
-                    'limit': 500
+                    'limit': 500,
                 }
-                paged_response = api_client.get_path('/{0}/users'.format(app_id), params)
+                paged_response = api_client.get_path(f'/{app_id}/users', params)
         except OktaError as okta_error:
             break
 
@@ -647,9 +672,9 @@ def _get_application_assigned_groups(api_client, app_id):
                 paged_response = api_client.get(next_url)
             else:
                 params = {
-                    'limit': 500
+                    'limit': 500,
                 }
-                paged_response = api_client.get_path('/{0}/groups'.format(app_id), params)
+                paged_response = api_client.get_path(f'/{app_id}/groups', params)
         except OktaError as okta_error:
             break
 
@@ -722,10 +747,12 @@ def _ingest_application_user(neo4j_session, app_id, user_list, okta_update_tag):
     SET r.lastupdated = {okta_update_tag}
     """
 
-    neo4j_session.run(ingest,
-                      APP_ID=app_id,
-                      USER_LIST=user_list,
-                      okta_update_tag=okta_update_tag)
+    neo4j_session.run(
+        ingest,
+        APP_ID=app_id,
+        USER_LIST=user_list,
+        okta_update_tag=okta_update_tag,
+    )
 
 
 def _ingest_application_group(neo4j_session, app_id, group_list, okta_update_tag):
@@ -748,10 +775,12 @@ def _ingest_application_group(neo4j_session, app_id, group_list, okta_update_tag
     SET r.lastupdated = {okta_update_tag}
     """
 
-    neo4j_session.run(ingest,
-                      APP_ID=app_id,
-                      GROUP_LIST=group_list,
-                      okta_update_tag=okta_update_tag)
+    neo4j_session.run(
+        ingest,
+        APP_ID=app_id,
+        GROUP_LIST=group_list,
+        okta_update_tag=okta_update_tag,
+    )
 
 
 def _get_user_id_from_graph(neo4j_session, okta_org_id):
@@ -783,10 +812,14 @@ def _get_factor_for_user_id(factor_client, user_id):
     try:
         factor_results = factor_client.get_lifecycle_factors(user_id)
     except OktaError as okta_error:
-        logger.debug("Unable to get factor for user id {0} with" \
-                     "error code {1} with description {2}".format(user_id,
-                                                                  okta_error.error_code,
-                                                                  okta_error.error_summary))
+        logger.debug(
+            "Unable to get factor for user id {} with"
+            "error code {} with description {}".format(
+                user_id,
+                okta_error.error_code,
+                okta_error.error_summary,
+            ),
+        )
         return []
 
     for current_factor in factor_results:
@@ -851,10 +884,12 @@ def _ingest_user_factors(neo4j_session, user_id, factors, okta_update_tag):
     SET r.lastupdated = {okta_update_tag}
     """
 
-    neo4j_session.run(ingest,
-                      USER_ID=user_id,
-                      FACTOR_LIST=factors,
-                      okta_update_tag=okta_update_tag)
+    neo4j_session.run(
+        ingest,
+        USER_ID=user_id,
+        FACTOR_LIST=factors,
+        okta_update_tag=okta_update_tag,
+    )
 
 
 def _sync_users_factors(neo4j_session, okta_org_id, okta_update_tag):
@@ -886,7 +921,7 @@ def _get_user_roles(api_client, user_id, okta_org_id):
     """
 
     # https://developer.okta.com/docs/reference/api/roles/#list-roles
-    response = api_client.get_path('/{0}/roles'.format(user_id))
+    response = api_client.get_path(f'/{user_id}/roles')
 
     return _transform_user_roles_data(response.text, okta_org_id)
 
@@ -906,7 +941,7 @@ def _transform_user_roles_data(data, okta_org_id):
         role_props = {}
         role_props["label"] = role["label"]
         role_props["type"] = role["type"]
-        role_props["id"] = "{0}-{1}".format(okta_org_id, role["type"])
+        role_props["id"] = "{}-{}".format(okta_org_id, role["type"])
 
         user_roles.append(role_props)
 
@@ -923,7 +958,7 @@ def _get_group_roles(api_client, group_id, okta_org_id):
     """
 
     # https://developer.okta.com/docs/reference/api/roles/#list-roles-assigned-to-group
-    response = api_client.get_path('/{0}/roles'.format(group_id))
+    response = api_client.get_path(f'/{group_id}/roles')
 
     return _transform_group_roles_data(response.text, okta_org_id)
 
@@ -943,7 +978,7 @@ def _transform_group_roles_data(data, okta_org_id):
         role_props = {}
         role_props["label"] = role["label"]
         role_props["type"] = role["type"]
-        role_props["id"] = "{0}-{1}".format(okta_org_id, role["type"])
+        role_props["id"] = "{}-{}".format(okta_org_id, role["type"])
 
         user_roles.append(role_props)
 
@@ -992,10 +1027,12 @@ def _ingest_user_role(neo4j_session, user_id, roles_data, okta_update_tag):
     SET r2.lastupdated = {okta_update_tag}
     """
 
-    neo4j_session.run(ingest,
-                      USER_ID=user_id,
-                      ROLES_DATA=roles_data,
-                      okta_update_tag=okta_update_tag)
+    neo4j_session.run(
+        ingest,
+        USER_ID=user_id,
+        ROLES_DATA=roles_data,
+        okta_update_tag=okta_update_tag,
+    )
 
 
 def _ingest_group_role(neo4j_session, group_id, roles_data, okta_update_tag):
@@ -1016,10 +1053,12 @@ def _ingest_group_role(neo4j_session, group_id, roles_data, okta_update_tag):
     SET r2.lastupdated = {okta_update_tag}
     """
 
-    neo4j_session.run(ingest,
-                      GROUP_ID=group_id,
-                      ROLES_DATA=roles_data,
-                      okta_update_tag=okta_update_tag)
+    neo4j_session.run(
+        ingest,
+        GROUP_ID=group_id,
+        ROLES_DATA=roles_data,
+        okta_update_tag=okta_update_tag,
+    )
 
 
 def _get_trusted_origins(api_client):
@@ -1096,10 +1135,12 @@ def _ingest_trusted_origins(neo4j_session, okta_org_id, trusted_list, okta_updat
     SET r.lastupdated = {okta_update_tag}
     """
 
-    neo4j_session.run(ingest,
-                      ORG_ID=okta_org_id,
-                      TRUSTED_LIST=trusted_list,
-                      okta_update_tag=okta_update_tag)
+    neo4j_session.run(
+        ingest,
+        ORG_ID=okta_org_id,
+        TRUSTED_LIST=trusted_list,
+        okta_update_tag=okta_update_tag,
+    )
 
 
 def _sync_trusted_origins(neo4j_session, okta_org_id, okta_update_tag):
@@ -1167,11 +1208,11 @@ if __name__ == '__main__':
         last_update = int(time.time())
         org_id = "lyft"
 
-        config = Config( neo4j_uri="7687",
-                         neo4j_user="neo4j",
-                         neo4j_password="1",
-                         update_tag=last_update)
+        config = Config(
+            neo4j_uri="7687",
+            neo4j_user="neo4j",
+            neo4j_password="1",
+            update_tag=last_update,
+        )
 
         start_okta_ingestion(session, "lyft", config)
-
-

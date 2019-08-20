@@ -17,9 +17,9 @@ Representation of a Okta [Organization](https://developer.okta.com/docs/concepts
 
 
 | Field | Description |
-|-------|--------------| 
+|-------|--------------|
 | firstseen| Timestamp of when a sync job first discovered this node  |
-| lastupdated |  Timestamp of the last time the node was updated | 
+| lastupdated |  Timestamp of the last time the node was updated |
 | id | The name of the Okta Organization, e.g. "lyft" |
 | name | The name of the Okta Organization, e.g. "lyft"
 
@@ -30,7 +30,7 @@ Representation of a Okta [Organization](https://developer.okta.com/docs/concepts
     ```
     (OktaOrganization)-[RESOURCE]->(OktaUser)
     ```
-    
+
 - OktaOrganization has OktaGroup.
 
     ```
@@ -52,11 +52,11 @@ Representation of a Okta [Organization](https://developer.okta.com/docs/concepts
     (OktaOrganization)-[RESOURCE]->(OktaAdministrationRole)
     ```
  ## OktaUser
- 
+
  Representation of a Okta User (https://github.com/okta/okta-sdk-python/blob/master/okta/models/user/User.py).
 
 | Field | Description |
-|-------|--------------| 
+|-------|--------------|
 | id | user id  |
 | first_name | user first name  |
 | last_name | user last name  |
@@ -72,21 +72,21 @@ Representation of a Okta [Organization](https://developer.okta.com/docs/concepts
 | password_changed | date and time of last password change |
 | transition_to_status | date and time of last state transition change |
 | firstseen| Timestamp of when a sync job first discovered this node  |
-| lastupdated |  Timestamp of the last time the node was updated | 
+| lastupdated |  Timestamp of the last time the node was updated |
 
  ### Relationships
- 
+
  - OktaUser is a resource of an OktaOrganization
     ```
     (OktaUser)<-[RESOURCE]->(OkOrganization)
     ```
  - OktaUser is assigned OktaApplication
- 
+
     ```
     (OktaUser)-[APPLICATION]->(OktaApplication)
     ```
  - OktaUser is an identity for a Human
- 
+
     ```
     (OktaUser)<-[IDENTITY_OKTA]-(Human)
     ```
@@ -102,12 +102,12 @@ Representation of a Okta [Organization](https://developer.okta.com/docs/concepts
      ```
     (OktaUser)-[FACTOR]->(OktaUserFactor)
     ```
- 
+
  ## OktaGroup
  Representation of a OktaGroup (https://github.com/okta/okta-sdk-python/blob/master/okta/models/usergroup/UserGroup.py).
- 
+
 | Field | Description |
-|-------|--------------| 
+|-------|--------------|
 | id | application id  |
 | name | group name |
 | description | group description |
@@ -116,7 +116,7 @@ Representation of a Okta [Organization](https://developer.okta.com/docs/concepts
 | windows_domain_qualified_name | windows domain name |
 | external_id | group foreign id |
 | firstseen| Timestamp of when a sync job first discovered this node  |
-| lastupdated |  Timestamp of the last time the node was updated | 
+| lastupdated |  Timestamp of the last time the node was updated |
 
  ### Relationships
   - OktaGroup is a resource of an OktaOrganization
@@ -124,7 +124,7 @@ Representation of a Okta [Organization](https://developer.okta.com/docs/concepts
     (OktaGroup)<-[RESOURCE]->(OkOrganization)
     ```
  - OktaGroup is assigned OktaApplication
- 
+
     ```
     (OktaGroup)-[APPLICATION]->(OktaApplication)
     ```
@@ -140,7 +140,7 @@ Representation of a Okta [Organization](https://developer.okta.com/docs/concepts
 Representation of a Okta Application (https://developer.okta.com/docs/reference/api/apps/).
 
 | Field | Description |
-|-------|--------------| 
+|-------|--------------|
 | id | application id |
 | name | application name |
 | label | application label |
@@ -151,7 +151,7 @@ Representation of a Okta Application (https://developer.okta.com/docs/reference/
 | features | application features |
 | sign_on_mode | application signon mode |
 | firstseen| Timestamp of when a sync job first discovered this node  |
-| lastupdated |  Timestamp of the last time the node was updated | 
+| lastupdated |  Timestamp of the last time the node was updated |
 
 ### Relationships
   - OktaApplication is a resource of an OktaOrganization
@@ -159,12 +159,12 @@ Representation of a Okta Application (https://developer.okta.com/docs/reference/
     (OktaApplication)<-[RESOURCE]->(OkOrganization)
     ```
  - OktaGroup is assigned OktaApplication
- 
+
     ```
     (OktaGroup)-[APPLICATION]->(OktaApplication)
     ```
  - OktaUser is assigned OktaApplication
- 
+
     ```
     (OktaUser)-[APPLICATION]->(OktaApplication)
     ```
@@ -172,7 +172,7 @@ Representation of a Okta Application (https://developer.okta.com/docs/reference/
 Representation of a Okta user authentication factors (https://developer.okta.com/docs/reference/api/factors/).
 
 | Field | Description |
-|-------|--------------| 
+|-------|--------------|
 | id | factor id |
 | factor_type | factor type |
 | provider | factor provider |
@@ -180,7 +180,7 @@ Representation of a Okta user authentication factors (https://developer.okta.com
 | created | factor creation date and time |
 | okta_last_updated | date and time of last property changes |
 | firstseen| Timestamp of when a sync job first discovered this node  |
-| lastupdated |  Timestamp of the last time the node was updated | 
+| lastupdated |  Timestamp of the last time the node was updated |
 
 ### Relationships
  - OktaUser can have authentication Factors
@@ -192,7 +192,7 @@ Representation of a Okta user authentication factors (https://developer.okta.com
 Representation of a Okta trusted origin for login/logout or recovery operations. For more information visit Okta documentation at https://developer.okta.com/docs/reference/api/trusted-origins
 
 | Field | Description |
-|-------|--------------| 
+|-------|--------------|
 | id | trusted origin id |
 | name | name |
 | scopes | array of scope |
@@ -215,7 +215,7 @@ Representation of a Okta trusted origin for login/logout or recovery operations.
 Representation of Okta administration roles. For more information visa Okta documentation https://developer.okta.com/docs/reference/api/roles/
 
 | Field | Description |
-|-------|--------------| 
+|-------|--------------|
 | id | role id mapped to the type |
 | type | role type |
 | label | role label |
