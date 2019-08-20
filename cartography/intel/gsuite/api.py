@@ -13,10 +13,11 @@ def get_all_groups(admin):
     Return list of Google Groups in your organization
     Returns empty list if we are unable to enumerate the groups for any reasons
 
-    :param admin: apiclient discovery resource object
-    See
-    :return: List of Google groups in domain
+    googleapiclient.discovery.build('admin', 'directory_v1', credentials=credentials, cache_discovery=False)
 
+    :param admin: google's apiclient discovery resource object.  From googleapiclient.discovery.build
+    See https://googleapis.github.io/google-api-python-client/docs/epy/googleapiclient.discovery-module.html#build.
+    :return: List of Google groups in domain
     """
     request = admin.groups().list(customer='my_customer', maxResults=20, orderBy='email')
     response_objects = []
@@ -170,7 +171,6 @@ def load_gsuite_users(session, users, gsuite_update_tag):
 
 
 def load_gsuite_members(session, group, members, gsuite_update_tag):
-    # for member in members:
     print(f"Creating members relationship {len(members)}")
     ingestion_qry = """
         UNWIND {MemberData} as member
@@ -210,7 +210,14 @@ def cleanup_gsuite_groups(session, common_job_parameters):
 
 def sync_gsuite_users(session, admin, gsuite_update_tag, common_job_parameters):
     """
+    GET GSuite user objects using the google admin api resource, load the data into Neo4j and clean up stale nodes.
 
+    :param session: The Neo4j session
+    :param admin: Google admin resource object created by `googleapiclient.discovery.build()`.
+    See https://googleapis.github.io/google-api-python-client/docs/epy/googleapiclient.discovery-module.html#build.
+    :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
+    :param common_job_parameters: Parameters to carry to the Neo4j jobs
+    :return: Nothing
     """
     logger.debug('Syncing GSuite Users')
     users = get_all_users(admin)
@@ -220,8 +227,16 @@ def sync_gsuite_users(session, admin, gsuite_update_tag, common_job_parameters):
 
 def sync_gsuite_groups(session, admin, gsuite_update_tag, common_job_parameters):
     """
+    GET GSuite group objects using the google admin api resource, load the data into Neo4j and clean up stale nodes.
 
+    :param session: The Neo4j session
+    :param admin: Google admin resource object created by `googleapiclient.discovery.build()`.
+    See https://googleapis.github.io/google-api-python-client/docs/epy/googleapiclient.discovery-module.html#build.
+    :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
+    :param common_job_parameters: Parameters to carry to the Neo4j jobs
+    :return: Nothing
     """
+
     logger.debug('Syncing GSuite Groups')
     resp_objs = get_all_groups(admin)
     groups = transform_groups(resp_objs)
