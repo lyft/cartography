@@ -643,7 +643,6 @@ def _transform_application_users(json_app_data):
     """
 
     app_data = json.loads(json_app_data)
-    app_users = []
     for user in app_data:
         yield user["id"]
 
