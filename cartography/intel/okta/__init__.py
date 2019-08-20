@@ -1,7 +1,7 @@
 import logging
 import os
 
-from cartography.intel.okta.oktaintel import start_okta_ingestion
+# from cartography.intel.okta.oktaintel import start_okta_ingestion
 
 logger = logging.getLogger(__name__)
 

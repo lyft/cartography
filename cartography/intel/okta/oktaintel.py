@@ -110,7 +110,7 @@ def _get_okta_users(user_client):
     paged_users = user_client.get_paged_users()
     while True:
         for current_user in paged_users.result:
-            user_props = _transform_okta_user(current_user)
+            user_props = transform_okta_user(current_user)
             user_list.append(user_props)
         if not paged_users.is_last_page():
             # Keep on fetching pages of users until the last page
@@ -263,6 +263,7 @@ def _get_okta_groups(api_client):
                 }
                 paged_response = api_client.get_path('/', params)
         except OktaError as okta_error:
+            logger.debug("Got error while going through list group {0}".format(okta_error))
             break
 
         paged_results = PagedResults(paged_response, UserGroup)
@@ -440,6 +441,7 @@ def _get_okta_group_members(api_client, group_id):
                 }
                 paged_response = api_client.get_path(f'{group_id}/users', params)
         except OktaError as okta_error:
+            logger.debug("Got error while going through list group member {0}".format(okta_error))
             break
 
         member_results = json.loads(paged_response.text)
@@ -619,6 +621,7 @@ def _get_application_assigned_users(api_client, app_id):
                 }
                 paged_response = api_client.get_path(f'/{app_id}/users', params)
         except OktaError as okta_error:
+            logger.debug("Got error while going through list application assigned users {0}".format(okta_error))
             break
 
         for user_id in _transform_application_users(paged_response.text):
@@ -676,6 +679,7 @@ def _get_application_assigned_groups(api_client, app_id):
                 }
                 paged_response = api_client.get_path(f'/{app_id}/groups', params)
         except OktaError as okta_error:
+            logger.debug("Got error while going through list application assigned groups {0}".format(okta_error))
             break
 
         for group_id in _transform_applicationg_assigned_groups(paged_response.text):
@@ -1067,8 +1071,6 @@ def _get_trusted_origins(api_client):
     :param api_client: api client
     :return: Array of dictionary containing trusted origins properties
     """
-
-    ret_list = []
 
     response = api_client.get_path("/")
     return _transform_trusted_origins(response.text)
