@@ -10,6 +10,5 @@ def start_okta_ingestion(session, config):
     :param config: A `cartography.config` object
     :return: Nothing
     """
-
-    sync()
+    sync(session, config)
 

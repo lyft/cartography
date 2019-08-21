@@ -1,6 +1,4 @@
 # Okta intel module
-# TODO
-# - integrate with global sync
 import json
 import logging
 import os
@@ -1159,13 +1157,17 @@ def _sync_trusted_origins(neo4j_session, okta_org_id, okta_update_tag):
     _ingest_trusted_origins(neo4j_session, okta_org_id, trusted_list, okta_update_tag)
 
 
-def sync(neo4j_session, okta_organization, config):
+def sync(neo4j_session, config):
     """
     Starts the Okta ingestion process by initializing Okta API session and pulling necessary information
     :param neo4j_session: The Neo4j session
     :param config: A `cartography.config` object
     :return: Nothing
     """
+
+    okta_organization = config.okta_organization
+
+    logger.debug(f"Starting Okta sync on {okta_organization}")
 
     common_job_parameters = {
         "UPDATE_TAG": config.update_tag,

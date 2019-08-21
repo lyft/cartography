@@ -124,6 +124,14 @@ class CLI:
                 'jobs are executed.'
             ),
         )
+        parser.add_argument(
+            '--okta-organization',
+            type=str,
+            default=None,
+            help=(
+                'Define the Okta organization to sync'
+            ),
+        )
         return parser
 
     def main(self, argv):
