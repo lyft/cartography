@@ -54,6 +54,10 @@
       "query": "MATCH (:OktaOrganization{id: {OKTA_ORG_ID}})-[:RESOURCE]->(n:OktaAdministrationRole)<-[r:MEMBER_OF_OKTA_ROLE]-(:OktaUser)  WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
       "iterative": true,
       "iterationsize": 100
+    },
+    {
+      "query": "MATCH (n:OktaOrganization{id: {OKTA_ORG_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} DELETE (n)",
+      "iterative": false
     }
   ],
   "name": "Okta intel module cleanup"
