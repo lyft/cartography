@@ -1,12 +1,10 @@
 # Okta intel module
 # TODO
-# - set password from env
-# - role sync soft fail
 # - integrate with global sync
-# - unit tests
-# - user doc + schema image
 import json
 import logging
+import os
+import sys
 
 from okta import AppInstanceClient
 from okta import FactorsClient
@@ -22,8 +20,7 @@ from cartography.util import run_cleanup_job
 
 logger = logging.getLogger(__name__)
 
-OKTA_API_TOKEN = ""
-
+OKTA_API_KEY = os.environ.get('CREDENTIALS_OKTA_API_KEY')
 
 def _create_user_client(okta_org):
     """
@@ -34,7 +31,7 @@ def _create_user_client(okta_org):
     # https://github.com/okta/okta-sdk-python/blob/master/okta/models/user/User.py
     user_client = UsersClient(
         base_url=f"https://{okta_org}.okta.com/",
-        api_token=OKTA_API_TOKEN,
+        api_token=OKTA_API_KEY,
     )
 
     return user_client
@@ -48,7 +45,7 @@ def _create_group_client(okta_org):
     """
     usergroups_client = UserGroupsClient(
         base_url=f"https://{okta_org}.okta.com/",
-        api_token=OKTA_API_TOKEN,
+        api_token=OKTA_API_KEY,
     )
 
     return usergroups_client
@@ -62,7 +59,7 @@ def _create_application_client(okta_org):
     """
     app_client = AppInstanceClient(
         base_url=f"https://{okta_org}.okta.com/",
-        api_token=OKTA_API_TOKEN,
+        api_token=OKTA_API_KEY,
     )
 
     return app_client
@@ -78,7 +75,7 @@ def _create_factor_client(okta_org):
     # https://github.com/okta/okta-sdk-python/blob/master/okta/FactorsClient.py
     factor_client = FactorsClient(
         base_url=f"https://{okta_org}.okta.com/",
-        api_token=OKTA_API_TOKEN,
+        api_token=OKTA_API_KEY,
     )
 
     return factor_client
@@ -94,7 +91,7 @@ def _create_api_client(okta_org, path_name):
     api_client = ApiClient(
         base_url=f"https://{okta_org}.okta.com/",
         pathname=path_name,
-        api_token=OKTA_API_TOKEN,
+        api_token=OKTA_API_KEY,
     )
 
     return api_client
@@ -1162,7 +1159,7 @@ def _sync_trusted_origins(neo4j_session, okta_org_id, okta_update_tag):
     _ingest_trusted_origins(neo4j_session, okta_org_id, trusted_list, okta_update_tag)
 
 
-def start_okta_ingestion(neo4j_session, okta_organization, config):
+def sync(neo4j_session, okta_organization, config):
     """
     Starts the Okta ingestion process by initializing Okta API session and pulling necessary information
     :param neo4j_session: The Neo4j session
@@ -1183,7 +1180,12 @@ def start_okta_ingestion(neo4j_session, okta_organization, config):
     _sync_trusted_origins(session, okta_organization, last_update)
 
     # need creds with permission
-    _sync_roles(session, okta_organization, last_update)
+    # soft fail as some won't be able to get such high priv token
+    try:
+        _sync_roles(session, okta_organization, last_update)
+    except:
+        print("Unable to sync admin roles - api token needs admin rights to pull admin roles data")
+        logger.warning("Unable to pull admin roles got {0}".format(sys.exc_info()[0]))
 
     _cleanup_okta_organizations(neo4j_session, common_job_parameters)
 
@@ -1204,7 +1206,7 @@ if __name__ == '__main__':
     import time
     from neo4j import GraphDatabase
 
-    driver = GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "1"))
+    driver = GraphDatabase.driver("bolt://localhost:7687")
 
     with driver.session() as session:
         last_update = int(time.time())
@@ -1217,4 +1219,4 @@ if __name__ == '__main__':
             update_tag=last_update,
         )
 
-        start_okta_ingestion(session, "lyft", config)
+        sync(session, "lyft", config)
