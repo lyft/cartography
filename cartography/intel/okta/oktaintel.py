@@ -269,7 +269,7 @@ def _get_okta_groups(api_client):
         paged_results = PagedResults(paged_response, UserGroup)
 
         for current_group in paged_results.result:
-            group_props = _transform_okta_group(current_group)
+            group_props = transform_okta_group(current_group)
             group_list.append(group_props)
 
         if not _is_last_page(paged_response):
@@ -280,7 +280,7 @@ def _get_okta_groups(api_client):
     return group_list
 
 
-def _transform_okta_group(okta_group):
+def transform_okta_group(okta_group):
     """
     Transform okta group object to consumable dictionary for graph
     :param okta_group: okta group object
@@ -444,11 +444,8 @@ def _get_okta_group_members(api_client, group_id):
             logger.debug(f"Got error while going through list group member {okta_error}")
             break
 
-        member_results = json.loads(paged_response.text)
-
-        for member in member_results:
-            member_id = _transform_okta_group_member(member)
-            member_list.append(member_id)
+        member_results = transform_okta_group_member(paged_response.text)
+        member_list.extend(member_results)
 
         if not _is_last_page(paged_response):
             next_url = paged_response.links.get("next").get("url")
@@ -458,13 +455,19 @@ def _get_okta_group_members(api_client, group_id):
     return member_list
 
 
-def _transform_okta_group_member(okta_member):
+def transform_okta_group_member(raw_json_response):
     """
     Transform group member object to graph consumable data
-    :param okta_member: okta_member object
-    :return: member id
+    :param raw_json_response: okta server response from list group members
+    :return: array of member id
     """
-    return okta_member.id
+    member_list = []
+    member_results = json.loads(raw_json_response)
+
+    for member in member_results:
+        member_list.append(member["id"])
+
+    return member_list
 
 
 def _load_okta_group_membership(neo4j_session, api_client, okta_org_id, okta_update_tag):
@@ -522,7 +525,7 @@ def _get_okta_applications(app_client):
 
     while True:
         for current_application in page_apps.result:
-            app_props = _transform_okta_application(current_application)
+            app_props = transform_okta_application(current_application)
             app_list.append(app_props)
         if not page_apps.is_last_page():
             # Keep on fetching pages of users until the last page
@@ -533,7 +536,7 @@ def _get_okta_applications(app_client):
     return app_list
 
 
-def _transform_okta_application(okta_application):
+def transform_okta_application(okta_application):
     # https://github.com/okta/okta-sdk-python/blob/master/okta/models/app/AppInstance.py
     app_props = {}
     app_props["id"] = okta_application.id
@@ -624,7 +627,7 @@ def _get_application_assigned_users(api_client, app_id):
             logger.debug(f"Got error while going through list application assigned users {okta_error}")
             break
 
-        for user_id in _transform_application_users(paged_response.text):
+        for user_id in transform_application_users(paged_response.text):
             app_users.append(user_id)
 
         if not _is_last_page(paged_response):
@@ -635,7 +638,7 @@ def _get_application_assigned_users(api_client, app_id):
     return app_users
 
 
-def _transform_application_users(json_app_data):
+def transform_application_users(json_app_data):
     """
     Transform application users data for graph consumption
     :param json_app_data: raw json application data
@@ -681,7 +684,7 @@ def _get_application_assigned_groups(api_client, app_id):
             logger.debug(f"Got error while going through list application assigned groups {okta_error}")
             break
 
-        for group_id in _transform_applicationg_assigned_groups(paged_response.text):
+        for group_id in transform_applicationg_assigned_groups(paged_response.text):
             app_groups.append(group_id)
 
         if not _is_last_page(paged_response):
@@ -692,7 +695,7 @@ def _get_application_assigned_groups(api_client, app_id):
     return app_groups
 
 
-def _transform_applicationg_assigned_groups(json_app_data):
+def transform_applicationg_assigned_groups(json_app_data):
     """
     Transform application group assignment to consumable data for the graph
     :param json_app_data: raw json group application assignment data.
@@ -822,13 +825,13 @@ def _get_factor_for_user_id(factor_client, user_id):
         return []
 
     for current_factor in factor_results:
-        factor_props = _transform_okta_user_factor(current_factor)
+        factor_props = transform_okta_user_factor(current_factor)
         user_factors.append(factor_props)
 
     return user_factors
 
 
-def _transform_okta_user_factor(okta_factor_info):
+def transform_okta_user_factor(okta_factor_info):
     """
     Transform okta user factor into consumable data for the graph
     :param okta_factor_info: okta factor information
@@ -922,10 +925,10 @@ def _get_user_roles(api_client, user_id, okta_org_id):
     # https://developer.okta.com/docs/reference/api/roles/#list-roles
     response = api_client.get_path(f'/{user_id}/roles')
 
-    return _transform_user_roles_data(response.text, okta_org_id)
+    return transform_user_roles_data(response.text, okta_org_id)
 
 
-def _transform_user_roles_data(data, okta_org_id):
+def transform_user_roles_data(data, okta_org_id):
     """
     Transform user role data
     :param data: data returned by Okta server
@@ -959,10 +962,10 @@ def _get_group_roles(api_client, group_id, okta_org_id):
     # https://developer.okta.com/docs/reference/api/roles/#list-roles-assigned-to-group
     response = api_client.get_path(f'/{group_id}/roles')
 
-    return _transform_group_roles_data(response.text, okta_org_id)
+    return transform_group_roles_data(response.text, okta_org_id)
 
 
-def _transform_group_roles_data(data, okta_org_id):
+def transform_group_roles_data(data, okta_org_id):
     """
     Transform user role data
     :param data: data returned by Okta server
@@ -1068,10 +1071,10 @@ def _get_trusted_origins(api_client):
     """
 
     response = api_client.get_path("/")
-    return _transform_trusted_origins(response.text)
+    return transform_trusted_origins(response.text)
 
 
-def _transform_trusted_origins(data):
+def transform_trusted_origins(data):
     """
     Transform trusted origin data returned by Okta Server
     :param data: json response
@@ -1084,6 +1087,7 @@ def _transform_trusted_origins(data):
         props = {}
         props["id"] = origin_data["id"]
         props["name"] = origin_data["name"]
+        props["origin"] = origin_data["origin"]
 
         # https://developer.okta.com/docs/reference/api/trusted-origins/#scope-object
         scope_types = []
@@ -1093,9 +1097,9 @@ def _transform_trusted_origins(data):
         props["scopes"] = scope_types
         props["status"] = origin_data["status"]
         props["created"] = origin_data.get("created", None)
-        props["created_by"] = origin_data.get("created_by", None)
-        props["okta_last_updated"] = origin_data.get("lastUpdated", '')
-        props["okta_last_updated_by"] = origin_data["lastUpdatedBy"]
+        props["created_by"] = origin_data.get("createdBy", None)
+        props["okta_last_updated"] = origin_data.get("lastUpdated", None)
+        props["okta_last_updated_by"] = origin_data.get("lastUpdatedBy", None)
 
         ret_list.append(props)
 
@@ -1119,6 +1123,7 @@ def _ingest_trusted_origins(neo4j_session, okta_org_id, trusted_list, okta_updat
     MERGE (new:OktaTrustedOrigin{id: data.id})
     ON CREATE SET new.firstseen = timestamp()
     SET new.name = data.name,
+    new.origin = data.origin,
     new.scopes = data.scoped,
     new.status = data.status,
     new.created = data.created,
