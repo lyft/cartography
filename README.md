@@ -52,15 +52,13 @@ Time to set up the server that will run Cartography.  Cartography _should_ work 
 
     Ingesting GSuite Users and Groups utilizes the [Google Admin SDK](https://developers.google.com/admin-sdk/).
 
-    1. Enable API access
-        https://support.google.com/a/answer/60757?hl=en
-    2.  Create a new G Suite user account and accept the Terms of Service. This account will be used as the domain-wide delegated access.
-    3. Perform G Suite Domain-Wide Delegation of Authority
-        https://developers.google.com/admin-sdk/directory/v1/guides/delegation
+    1. [Enable Google API access](https://support.google.com/a/answer/60757?hl=en)
+    2. Create a new G Suite user account and accept the Terms of Service. This account will be used as the domain-wide delegated access.
+    3. [Perform G Suite Domain-Wide Delegation of Authority](https://developers.google.com/admin-sdk/directory/v1/guides/delegation)
     4.  Download the service account's credentials
     5.  Export the environmental variables:
-      1. `GOOGLE_APPLICATION_CREDENTIALS` - location of the credentials file.
-      2. `GSUITE_DELEGATED_ADMIN` - email address that you created in step 2
+        1. `GSUITE_GOOGLE_APPLICATION_CREDENTIALS` - location of the credentials file.
+        2. `GSUITE_DELEGATED_ADMIN` - email address that you created in step 2
 
 
 5. **Get and run Cartography**

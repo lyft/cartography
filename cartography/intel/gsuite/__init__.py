@@ -9,7 +9,8 @@ from oauth2client.client import GoogleCredentials
 from cartography.intel.gsuite import api
 
 # GSuite Delegated admin e-mail https://developers.google.com/admin-sdk/directory/v1/guides/delegation
-GSUITE_DELEGATED_ADMIN = os.environ.get('GSUITE_GSUITE_DELEGATED_ADMIN')
+GSUITE_DELEGATED_ADMIN = os.environ.get('GSUITE_DELEGATED_ADMIN')
+GSUITE_CREDS = os.environ.get('GSUITE_GOOGLE_APPLICATION_CREDENTIALS')
 
 OAUTH_SCOPE = [
     'https://www.googleapis.com/auth/admin.directory.user.readonly',
@@ -57,10 +58,7 @@ def start_gsuite_ingestion(session, config):
     }
 
     try:
-        # Explicitly use Application Default Credentials.
-        # See https://oauth2client.readthedocs.io/en/latest/source/
-        #             oauth2client.client.html#oauth2client.client.OAuth2Credentials
-        credentials = GoogleCredentials.get_application_default()
+        credentials = GoogleCredentials.from_stream(GSUITE_CREDS)
         credentials = credentials.create_scoped(OAUTH_SCOPE)
         credentials = credentials.create_delegated(GSUITE_DELEGATED_ADMIN)
 
