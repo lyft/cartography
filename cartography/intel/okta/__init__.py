@@ -1,7 +1,10 @@
 import logging
+
 from cartography.intel.okta.oktaintel import sync
 
+
 logger = logging.getLogger(__name__)
+
 
 def start_okta_ingestion(session, config):
     """
@@ -11,4 +14,3 @@ def start_okta_ingestion(session, config):
     :return: Nothing
     """
     sync(session, config)
-

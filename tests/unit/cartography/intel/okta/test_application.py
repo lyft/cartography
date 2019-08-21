@@ -1,7 +1,9 @@
-from cartography.intel.okta.oktaintel import transform_okta_application, transform_application_users, \
-                                             transform_applicationg_assigned_groups
-from tests.data.okta.application import create_test_application, LIST_APPLICATION_USER_ASSIGNED_RESPONSE, \
-                                        LIST_APPLICATION_GROUP_ASSIGNED_RESPONSE
+from cartography.intel.okta.oktaintel import transform_application_users
+from cartography.intel.okta.oktaintel import transform_applicationg_assigned_groups
+from cartography.intel.okta.oktaintel import transform_okta_application
+from tests.data.okta.application import create_test_application
+from tests.data.okta.application import LIST_APPLICATION_GROUP_ASSIGNED_RESPONSE
+from tests.data.okta.application import LIST_APPLICATION_USER_ASSIGNED_RESPONSE
 
 
 def test_application_with_all_values():
@@ -29,7 +31,7 @@ def test_application_with_created_none():
     assert transformed_data["id"] == app.id
     assert transformed_data["name"] == app.name
     assert transformed_data["label"] == app.label
-    assert transformed_data["created"] == None
+    assert transformed_data["created"] is None
     assert transformed_data["okta_last_updated"] == app.lastUpdated.strftime("%m/%d/%Y, %H:%M:%S")
     assert transformed_data["status"] == app.status
     assert transformed_data["activated"] == app.activated.strftime("%m/%d/%Y, %H:%M:%S")
@@ -47,7 +49,7 @@ def test_application_with_last_updated_none():
     assert transformed_data["name"] == app.name
     assert transformed_data["label"] == app.label
     assert transformed_data["created"] == app.created.strftime("%m/%d/%Y, %H:%M:%S")
-    assert transformed_data["okta_last_updated"] == None
+    assert transformed_data["okta_last_updated"] is None
     assert transformed_data["status"] == app.status
     assert transformed_data["activated"] == app.activated.strftime("%m/%d/%Y, %H:%M:%S")
     assert transformed_data["features"] == app.features
@@ -66,7 +68,7 @@ def test_application_with_activated_none():
     assert transformed_data["created"] == app.created.strftime("%m/%d/%Y, %H:%M:%S")
     assert transformed_data["okta_last_updated"] == app.lastUpdated.strftime("%m/%d/%Y, %H:%M:%S")
     assert transformed_data["status"] == app.status
-    assert transformed_data["activated"] == None
+    assert transformed_data["activated"] is None
     assert transformed_data["features"] == app.features
     assert transformed_data["sign_on_mode"] == app.signOnMode
 
@@ -89,8 +91,3 @@ def test_application_assigned_groups():
     assert len(values_to_test) == 2
     assert values_to_test[0] == "00gbkkGFFWZDLCNTAGQR"
     assert values_to_test[1] == "00gg0xVALADWBPXOFZAS"
-
-
-
-
-

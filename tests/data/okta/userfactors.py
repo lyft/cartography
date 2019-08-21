@@ -1,4 +1,5 @@
 from datetime import datetime
+
 from okta.models.factor.Factor import Factor
 
 

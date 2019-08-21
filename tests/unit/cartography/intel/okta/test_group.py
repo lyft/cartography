@@ -1,5 +1,7 @@
-from cartography.intel.okta.oktaintel import transform_okta_group, transform_okta_group_member
-from tests.data.okta.groups import create_test_group, LIST_GROUP_MEMBER_RESPONSE
+from cartography.intel.okta.oktaintel import transform_okta_group
+from cartography.intel.okta.oktaintel import transform_okta_group_member
+from tests.data.okta.groups import create_test_group
+from tests.data.okta.groups import LIST_GROUP_MEMBER_RESPONSE
 
 
 def test_group_transform_with_all_values():
@@ -25,7 +27,7 @@ def test_group_transform_with_sam_account_none():
     assert transform_props["id"] == group.id
     assert transform_props["name"] == group.profile.name
     assert transform_props["description"] == group.profile.description
-    assert transform_props["sam_account_name"] == None
+    assert transform_props["sam_account_name"] is None
     assert transform_props["dn"] == group.profile.dn
     assert transform_props["windows_domain_qualified_name"] == group.profile.windowsDomainQualifiedName
     assert transform_props["external_id"] == group.profile.externalId
@@ -42,7 +44,7 @@ def test_group_transform_with_windows_domain_none():
     assert transform_props["description"] == group.profile.description
     assert transform_props["sam_account_name"] == group.profile.samAccountName
     assert transform_props["dn"] == group.profile.dn
-    assert transform_props["windows_domain_qualified_name"] == None
+    assert transform_props["windows_domain_qualified_name"] is None
     assert transform_props["external_id"] == group.profile.externalId
 
 
@@ -58,7 +60,7 @@ def test_group_transform_with_external_id_none():
     assert transform_props["sam_account_name"] == group.profile.samAccountName
     assert transform_props["dn"] == group.profile.dn
     assert transform_props["windows_domain_qualified_name"] == group.profile.windowsDomainQualifiedName
-    assert transform_props["external_id"] == None
+    assert transform_props["external_id"] is None
 
 
 def test_group_member_list_transform():
@@ -67,4 +69,3 @@ def test_group_member_list_transform():
     assert len(values_to_test) == 2
     assert values_to_test[0] == "00u1f96ECLNVOKVMUSEA"
     assert values_to_test[1] == "00u1f9cMYQZFMPVXIDIZ"
-

@@ -1,4 +1,5 @@
 from datetime import datetime
+
 from okta.models.app.AppInstance import AppInstance
 
 LIST_APPLICATION_USER_ASSIGNED_RESPONSE = """

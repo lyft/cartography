@@ -1,6 +1,5 @@
-from datetime import datetime
-from tests.data.okta.userfactors import create_test_factor
 from cartography.intel.okta.oktaintel import transform_okta_user_factor
+from tests.data.okta.userfactors import create_test_factor
 
 
 def test_factor_transform_with_all_values():
@@ -26,7 +25,7 @@ def test_factor_transform_with_created_none():
     assert transform_props["factor_type"] == factor.factorType
     assert transform_props["provider"] == factor.provider
     assert transform_props["status"] == factor.status
-    assert transform_props["created"] == None
+    assert transform_props["created"] is None
     assert transform_props["okta_last_updated"] == factor.lastUpdated.strftime("%m/%d/%Y, %H:%M:%S")
 
 
@@ -41,6 +40,4 @@ def test_factor_transform_with_lastupdated_none():
     assert transform_props["provider"] == factor.provider
     assert transform_props["status"] == factor.status
     assert transform_props["created"] == factor.created.strftime("%m/%d/%Y, %H:%M:%S")
-    assert transform_props["okta_last_updated"] == None
-
-
+    assert transform_props["okta_last_updated"] is None

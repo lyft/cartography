@@ -1,5 +1,5 @@
-from tests.data.okta.trustedorigin import LIST_TRUSTED_ORIGIN_RESPONSE
 from cartography.intel.okta.oktaintel import transform_trusted_origins
+from tests.data.okta.trustedorigin import LIST_TRUSTED_ORIGIN_RESPONSE
 
 
 def test_transform_trusted_origin_all_values():
@@ -31,5 +31,3 @@ def test_transform_trusted_origin_all_values():
     assert current_props["created_by"] == "00ut5t92p6IEOi4bu10g31"
     assert current_props["okta_last_updated"] == "2017-12-16T05:01:12.000Z"
     assert current_props["okta_last_updated_by"] == "00ut5t92p6IEOi4bu0g34"
-
-

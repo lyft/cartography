@@ -1,5 +1,7 @@
-from tests.data.okta.adminroles import LIST_ASSIGNED_GROUP_ROLE_RESPONSE, LIST_ASSIGNED_USER_ROLE_RESPONSE
-from cartography.intel.okta.oktaintel import transform_user_roles_data, transform_group_roles_data
+from cartography.intel.okta.oktaintel import transform_group_roles_data
+from cartography.intel.okta.oktaintel import transform_user_roles_data
+from tests.data.okta.adminroles import LIST_ASSIGNED_GROUP_ROLE_RESPONSE
+from tests.data.okta.adminroles import LIST_ASSIGNED_USER_ROLE_RESPONSE
 
 
 def test_transform_user_roles():

@@ -2,7 +2,6 @@
 import json
 import logging
 import os
-import sys
 
 from okta import AppInstanceClient
 from okta import FactorsClient
@@ -19,6 +18,7 @@ from cartography.util import run_cleanup_job
 logger = logging.getLogger(__name__)
 
 OKTA_API_KEY = os.environ.get('CREDENTIALS_OKTA_API_KEY')
+
 
 def _create_user_client(okta_org):
     """
@@ -813,9 +813,10 @@ def _get_factor_for_user_id(factor_client, user_id):
     try:
         factor_results = factor_client.get_lifecycle_factors(user_id)
     except OktaError as okta_error:
-        logger.debug(f"Unable to get factor for user id {user_id} with "
-                     f"error code {okta_error.error_code} with description {okta_error.error_summary}",
-                     )
+        logger.debug(
+            f"Unable to get factor for user id {user_id} with "
+            f"error code {okta_error.error_code} with description {okta_error.error_summary}",
+        )
 
         return []
 
@@ -1185,9 +1186,9 @@ def sync(neo4j_session, config):
     # soft fail as some won't be able to get such high priv token
     try:
         _sync_roles(session, okta_organization, last_update)
-    except:
+    except Exception as exception:
         print("Unable to sync admin roles - api token needs admin rights to pull admin roles data")
-        logger.warning("Unable to pull admin roles got {0}".format(sys.exc_info()[0]))
+        logger.warning(f"Unable to pull admin roles got {exception}")
 
     _cleanup_okta_organizations(neo4j_session, common_job_parameters)
 
@@ -1212,13 +1213,13 @@ if __name__ == '__main__':
 
     with driver.session() as session:
         last_update = int(time.time())
-        org_id = "lyft"
 
         config = Config(
             neo4j_uri="7687",
             neo4j_user="neo4j",
             neo4j_password="1",
             update_tag=last_update,
+            okta_organization="lyft",
         )
 
-        sync(session, "lyft", config)
+        sync(session, config)

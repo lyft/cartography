@@ -1,4 +1,5 @@
 from datetime import datetime
+
 from okta.models.user.User import User
 from okta.models.user.UserProfile import UserProfile
 

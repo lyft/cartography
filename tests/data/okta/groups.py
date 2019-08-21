@@ -1,4 +1,3 @@
-import json
 from okta.models.usergroup.UserGroup import UserGroup
 from okta.models.usergroup.UserGroupProfile import UserGroupProfile
 
@@ -65,6 +64,7 @@ LIST_GROUP_MEMBER_RESPONSE = """
 ]
 """
 
+
 def create_test_group():
     group = UserGroup()
     group.id = "grouid"
@@ -78,7 +78,3 @@ def create_test_group():
     group.profile.externalId = "007"
 
     return group
-
-
-
-
