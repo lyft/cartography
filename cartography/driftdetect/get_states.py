@@ -133,7 +133,7 @@ def get_state(session, state):
     keys = []
 
     if not state.tag:
-        state.tag = new_results.keys()
+        state.tag = [key for key in new_results.keys()]
 
     for record in new_results:
         result = create_result_dictionary(record)
