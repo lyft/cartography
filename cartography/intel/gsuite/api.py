@@ -38,7 +38,7 @@ def transform_groups(response_objects):
     emails = []
     for response_object in response_objects:
         for group in response_object['groups']:
-            emails.append(group['email'])
+            emails.append(group)
     return emails
 
 
