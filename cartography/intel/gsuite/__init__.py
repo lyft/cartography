@@ -76,6 +76,5 @@ def start_gsuite_ingestion(session, config):
         return
 
     resources = _initialize_resources(credentials)
-    # api.sync_gsuite_users(session, resources.admin, config.update_tag, common_job_parameters)
+    api.sync_gsuite_users(session, resources.admin, config.update_tag, common_job_parameters)
     api.sync_gsuite_groups(session, resources.admin, config.update_tag, common_job_parameters)
-    # api.sync_gsuite_members(session, resources.admin, config.update_tag, common_job_parameters)

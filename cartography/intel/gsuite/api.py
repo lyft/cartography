@@ -111,7 +111,6 @@ def get_all_users(admin):
             users = []
             break
         users = users + resp.get('users', [])
-        # break
         request = admin.users().list_next(request, resp)
     return users
 
@@ -236,7 +235,6 @@ def sync_gsuite_groups(session, admin, gsuite_update_tag, common_job_parameters)
     :param common_job_parameters: Parameters to carry to the Neo4j jobs
     :return: Nothing
     """
-
     logger.debug('Syncing GSuite Groups')
     resp_objs = get_all_groups(admin)
     groups = transform_groups(resp_objs)
