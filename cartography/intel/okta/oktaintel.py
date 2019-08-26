@@ -434,7 +434,7 @@ def _get_okta_group_members(api_client, group_id):
                 params = {
                     'limit': 1000,
                 }
-                paged_response = api_client.get_path(f'{group_id}/users', params)
+                paged_response = api_client.get_path(f'/{group_id}/users', params)
         except OktaError as okta_error:
             logger.debug(f"Got error while going through list group member {okta_error}")
             break
@@ -1209,6 +1209,8 @@ if __name__ == '__main__':
     import time
     from neo4j import GraphDatabase
 
+    logging.basicConfig(level=logging.DEBUG)
+
     driver = GraphDatabase.driver("bolt://localhost:7687")
 
     with driver.session() as session:
@@ -1216,8 +1218,6 @@ if __name__ == '__main__':
 
         config = Config(
             neo4j_uri="7687",
-            neo4j_user="neo4j",
-            neo4j_password="1",
             update_tag=last_update,
             okta_organization="lyft",
         )
