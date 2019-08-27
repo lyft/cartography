@@ -20,7 +20,7 @@ def test_get_all_users():
     raw_request_2.execute.return_value = {'users': [user3]}
 
     result = api.get_all_users(client)
-    emails = [u['primaryEmail'] for u in result]
+    emails = [user['primaryEmail'] for response_object in result for user in response_object['users']]
 
     expected = [
         'employee1@test.lyft.com',
@@ -60,11 +60,11 @@ def test_get_all_groups():
 @patch('cartography.intel.gsuite.api.load_gsuite_users')
 @patch(
     'cartography.intel.gsuite.api.get_all_users', return_value=[
-        'employee1@test.lyft.com',
-        'employee2@test.lyft.com',
+        {'users': [{'primaryEmail': 'group1@test.lyft.com'}, {'primaryEmail': 'group2@test.lyft.com'}]},
+        {'users': [{'primaryEmail': 'group3@test.lyft.com'}, {'primaryEmail': 'group4@test.lyft.com'}]},
     ],
 )
-def test_sync_gsuite_users(all_users, load_gsuite_users, cleanup_gsuite_users):
+def test_sync_gsuite_users(get_all_users, load_gsuite_users, cleanup_gsuite_users):
     client = mock.MagicMock()
     gsuite_update_tag = 1
     session = mock.MagicMock()
@@ -72,7 +72,7 @@ def test_sync_gsuite_users(all_users, load_gsuite_users, cleanup_gsuite_users):
         "UPDATE_TAG": gsuite_update_tag,
     }
     api.sync_gsuite_users(session, client, gsuite_update_tag, common_job_param)
-    users = all_users()
+    users = api.transform_users(get_all_users())
     load_gsuite_users.assert_called_with(
         session, users, gsuite_update_tag,
     )
@@ -154,6 +154,7 @@ def test_load_gsuite_users():
         u.given_name = user.name.givenName,
         u.org_unit_path = user.orgUnitPath,
         u.primary_email = user.primaryEmail,
+        u.email = user.primaryEmail,
         u.suspended = user.suspended,
         u.thumbnail_photo_etag = user.thumbnailPhotoEtag,
         u.thumbnail_photo_url = user.thumbnailPhotoUrl,
@@ -168,3 +169,4 @@ def test_load_gsuite_users():
         UserData=users,
         UpdateTag=update_tag,
     )
+

@@ -28,18 +28,34 @@ def get_all_groups(admin):
             logger.warning('HttpError occurred in api.get_all_groups(), returning empty list. Details: %r', e)
             response_objects = []
             break
-        # groups = groups + resp.get('groups', [])
         response_objects.append(resp)
         request = admin.groups().list_next(request, resp)
     return response_objects
 
 
 def transform_groups(response_objects):
-    emails = []
+    """  Strips list of API response objects to return list of group objects only
+
+    :param response_objects:
+    :return: list of dictionary objects as defined in /docs/schema/gsuite.md
+    """
+    groups = []
     for response_object in response_objects:
         for group in response_object['groups']:
-            emails.append(group)
-    return emails
+            groups.append(group)
+    return groups
+
+
+def transform_users(response_objects):
+    """  Strips list of API response objects to return list of group objects only
+    :param response_objects:
+    :return: list of dictionary objects as defined in /docs/schema/gsuite.md
+    """
+    users = []
+    for response_object in response_objects:
+        for user in response_object['users']:
+            users.append(user)
+    return users
 
 
 def get_all_groups_for_email(admin, email):
@@ -102,17 +118,16 @@ def get_all_users(admin):
     see https://developers.google.com/admin-sdk/directory/v1/guides/manage-users#get_all_domain_users
     """
     request = admin.users().list(customer='my_customer', maxResults=500, orderBy='email')
-    users = []
+    response_objects = []
     while request is not None:
         try:
             resp = request.execute()
         except HttpError as e:
             logger.warning('HttpError occurred in api.get_all_users(), returning empty list. Details: %r', e)
-            users = []
             break
-        users = users + resp.get('users', [])
+        response_objects.append(resp)
         request = admin.users().list_next(request, resp)
-    return users
+    return response_objects
 
 
 def load_gsuite_groups(session, groups, gsuite_update_tag):
@@ -160,6 +175,7 @@ def load_gsuite_users(session, users, gsuite_update_tag):
         u.given_name = user.name.givenName,
         u.org_unit_path = user.orgUnitPath,
         u.primary_email = user.primaryEmail,
+        u.email = user.primaryEmail,
         u.suspended = user.suspended,
         u.thumbnail_photo_etag = user.thumbnailPhotoEtag,
         u.thumbnail_photo_url = user.thumbnailPhotoUrl,
@@ -182,7 +198,6 @@ def load_gsuite_members(session, group, members, gsuite_update_tag):
         GroupID=group.get("id"),
         UpdateTag=gsuite_update_tag,
     )
-
     membership_qry = """
         UNWIND {MemberData} as member
         MATCH(user: GSuiteGroup{id: member.id}), (group:GSuiteGroup {id: {GroupID}})
@@ -219,7 +234,8 @@ def sync_gsuite_users(session, admin, gsuite_update_tag, common_job_parameters):
     :return: Nothing
     """
     logger.debug('Syncing GSuite Users')
-    users = get_all_users(admin)
+    resp_objs = get_all_users(admin)
+    users = transform_users(resp_objs)
     load_gsuite_users(session, users, gsuite_update_tag)
     cleanup_gsuite_users(session, common_job_parameters)
 

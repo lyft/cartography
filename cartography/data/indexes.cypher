@@ -60,4 +60,6 @@ CREATE INDEX ON :GCPNicAccessConfig(id);
 CREATE INDEX ON :GSuiteUser(id);
 CREATE INDEX ON :ChromeExtension(id);
 CREATE INDEX ON :GSuiteUser(id);
+CREATE INDEX ON :GSuiteUser(email);
 CREATE INDEX ON :GSuiteGroup(id);
+CREATE INDEX ON :GSuiteGroup(email);
