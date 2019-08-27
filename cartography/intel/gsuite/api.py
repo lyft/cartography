@@ -145,6 +145,8 @@ def load_gsuite_groups(session, groups, gsuite_update_tag):
         g.name = group.name,
         g.firstseen = {UpdateTag},
         g.lastupdated = {UpdateTag}
+        ON MATCH SET
+        g.lastupdated = {UpdateTag}
     """
     logger.info('Ingesting {} gsuite groups'.format(len(groups)))
     session.run(ingestion_qry, GroupData=groups, UpdateTag=gsuite_update_tag)
@@ -181,6 +183,8 @@ def load_gsuite_users(session, users, gsuite_update_tag):
         u.thumbnail_photo_etag = user.thumbnailPhotoEtag,
         u.thumbnail_photo_url = user.thumbnailPhotoUrl,
         u.firstseen = {UpdateTag},
+        u.lastupdated = {UpdateTag}
+        ON MATCH SET
         u.lastupdated = {UpdateTag}
     """
     logger.info('Ingesting {} gsuite users'.format(len(users)))

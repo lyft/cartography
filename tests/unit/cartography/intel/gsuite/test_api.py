@@ -117,6 +117,8 @@ def test_load_gsuite_groups():
         g.name = group.name,
         g.firstseen = {UpdateTag},
         g.lastupdated = {UpdateTag}
+        ON MATCH SET
+        g.lastupdated = {UpdateTag}
     """
     groups = []
     update_tag = 1
@@ -160,6 +162,8 @@ def test_load_gsuite_users():
         u.thumbnail_photo_etag = user.thumbnailPhotoEtag,
         u.thumbnail_photo_url = user.thumbnailPhotoUrl,
         u.firstseen = {UpdateTag},
+        u.lastupdated = {UpdateTag}
+        ON MATCH SET
         u.lastupdated = {UpdateTag}
     """
     users = []
