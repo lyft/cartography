@@ -205,8 +205,8 @@ def load_gsuite_members(session, group, members, gsuite_update_tag):
     )
     membership_qry = """
         UNWIND {MemberData} as member
-        MATCH(user: GSuiteGroup{id: member.id}), (group:GSuiteGroup {id: {GroupID}})
-        MERGE (user)-[r:MEMBER_GSUITE_GROUP]->(group)
+        MATCH(group_1: GSuiteGroup{id: member.id}), (group_2:GSuiteGroup {id: {GroupID}})
+        MERGE (group_1)-[r:MEMBER_GSUITE_GROUP]->(group_2)
         ON CREATE SET
         r.firstseen = {UpdateTag},
         r.lastupdated = {UpdateTag}
