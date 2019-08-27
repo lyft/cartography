@@ -170,3 +170,28 @@ def test_load_gsuite_users():
         UpdateTag=update_tag,
     )
 
+
+def test_transform_groups():
+    param = [
+        {'groups': [{'email': 'group1@test.lyft.com'}, {'email': 'group2@test.lyft.com'}]},
+        {'groups': [{'email': 'group3@test.lyft.com'}, {'email': 'group4@test.lyft.com'}]},
+    ]
+    expected = [
+        {'email': 'group1@test.lyft.com'}, {'email': 'group2@test.lyft.com'},
+        {'email': 'group3@test.lyft.com'}, {'email': 'group4@test.lyft.com'},
+    ]
+    result = api.transform_groups(param)
+    assert result == expected
+
+
+def test_transform_users():
+    param = [
+        {'users': [{'primaryEmail': 'group1@test.lyft.com'}, {'primaryEmail': 'group2@test.lyft.com'}]},
+        {'users': [{'primaryEmail': 'group3@test.lyft.com'}, {'primaryEmail': 'group4@test.lyft.com'}]},
+    ]
+    expected = [
+        {'primaryEmail': 'group1@test.lyft.com'}, {'primaryEmail': 'group2@test.lyft.com'},
+        {'primaryEmail': 'group3@test.lyft.com'}, {'primaryEmail': 'group4@test.lyft.com'},
+    ]
+    result = api.transform_users(param)
+    assert result == expected

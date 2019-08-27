@@ -191,6 +191,9 @@ def load_gsuite_members(session, group, members, gsuite_update_tag):
         UNWIND {MemberData} as member
         MATCH (user:GSuiteUser {id: member.id}),(group:GSuiteGroup {id: {GroupID} })
         MERGE (user)-[r:MEMBER_GSUITE_GROUP]->(group)
+        ON CREATE SET
+        r.firstseen = {UpdateTag},
+        r.lastupdated = {UpdateTag}
     """
     session.run(
         ingestion_qry,
@@ -202,6 +205,9 @@ def load_gsuite_members(session, group, members, gsuite_update_tag):
         UNWIND {MemberData} as member
         MATCH(user: GSuiteGroup{id: member.id}), (group:GSuiteGroup {id: {GroupID}})
         MERGE (user)-[r:MEMBER_GSUITE_GROUP]->(group)
+        ON CREATE SET
+        r.firstseen = {UpdateTag},
+        r.lastupdated = {UpdateTag}
     """
     session.run(membership_qry, MemberData=members, GroupID=group.get("id"), UpdateTag=gsuite_update_tag)
 
