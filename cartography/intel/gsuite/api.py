@@ -143,6 +143,7 @@ def load_gsuite_groups(session, groups, gsuite_update_tag):
         g.etag = group.etag,
         g.kind = group.kind,
         g.name = group.name,
+        u.firstseen = {UpdateTag},
         g.lastupdated = {UpdateTag}
     """
     logger.info('Ingesting {} gsuite groups'.format(len(groups)))
@@ -179,6 +180,7 @@ def load_gsuite_users(session, users, gsuite_update_tag):
         u.suspended = user.suspended,
         u.thumbnail_photo_etag = user.thumbnailPhotoEtag,
         u.thumbnail_photo_url = user.thumbnailPhotoUrl,
+        u.firstseen = {UpdateTag},
         u.lastupdated = {UpdateTag}
     """
     logger.info('Ingesting {} gsuite users'.format(len(users)))

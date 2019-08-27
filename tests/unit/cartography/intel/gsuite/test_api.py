@@ -115,6 +115,7 @@ def test_load_gsuite_groups():
         g.etag = group.etag,
         g.kind = group.kind,
         g.name = group.name,
+        u.firstseen = {UpdateTag},
         g.lastupdated = {UpdateTag}
     """
     groups = []
@@ -158,6 +159,7 @@ def test_load_gsuite_users():
         u.suspended = user.suspended,
         u.thumbnail_photo_etag = user.thumbnailPhotoEtag,
         u.thumbnail_photo_url = user.thumbnailPhotoUrl,
+        u.firstseen = {UpdateTag},
         u.lastupdated = {UpdateTag}
     """
     users = []
