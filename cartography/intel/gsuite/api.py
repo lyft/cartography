@@ -143,7 +143,7 @@ def load_gsuite_groups(session, groups, gsuite_update_tag):
         g.etag = group.etag,
         g.kind = group.kind,
         g.name = group.name,
-        u.firstseen = {UpdateTag},
+        g.firstseen = {UpdateTag},
         g.lastupdated = {UpdateTag}
     """
     logger.info('Ingesting {} gsuite groups'.format(len(groups)))

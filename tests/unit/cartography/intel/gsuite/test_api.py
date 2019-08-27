@@ -115,7 +115,7 @@ def test_load_gsuite_groups():
         g.etag = group.etag,
         g.kind = group.kind,
         g.name = group.name,
-        u.firstseen = {UpdateTag},
+        g.firstseen = {UpdateTag},
         g.lastupdated = {UpdateTag}
     """
     groups = []
