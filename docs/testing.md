@@ -42,7 +42,7 @@ After completing the section above, you are now able to manually test intel modu
     The integration tests expect Neo4j to be running locally, listening on default ports, with auth disabled:
 
     To disable auth, edit your `neo4j.conf` file with `dbms.security.auth_enabled=false`.  Additional details on [neo4j.com](    https://neo4j.com/docs/operations-manual/current/authentication-authorization/enable/).
-    
+
     To run the integration tests on a specific Neo4j instance, add the following environment variable:
 
     `export "NEO4J_URL=<your_neo4j_instance_bolt_url:your_neo4j_instance_port>"`
