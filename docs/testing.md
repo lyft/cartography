@@ -45,7 +45,7 @@ After completing the section above, you are now able to manually test intel modu
     
     To run the integration tests on a specific Neo4j instance, add the following environment variable:
 
-    `export "NEO4J_URL=<your_neo4j_instance_url:your_neo4j_instance_port>"`
+    `export "NEO4J_URL=<your_neo4j_instance_bolt_url:your_neo4j_instance_port>"`
 
 3. **Run tests using `make`**
     - `make test_lint` can be used to run [pre-commit](https://pre-commit.com) linting against the codebase.  We use [pre-commit](https://pre-commit.com) to standardize our linting across our code-base at Lyft.
