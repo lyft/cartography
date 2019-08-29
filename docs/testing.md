@@ -39,7 +39,12 @@ After completing the section above, you are now able to manually test intel modu
 
 2. **(OPTIONAL) Setup environment variables for integration tests**
 
-    The integration tests expect Neo4j to be running locally, listening on default ports, with auth disabled. To run the integration tests on a specific Neo4j instance, add the following environment variable:
+    The integration tests expect Neo4j to be running locally, listening on default ports, with auth disabled:
+
+    To disable auth, edit your `neo4j.conf` file:
+    https://neo4j.com/docs/operations-manual/current/authentication-authorization/enable/
+    
+    To run the integration tests on a specific Neo4j instance, add the following environment variable:
 
     `export "NEO4J_URL=<your_neo4j_instance_url:your_neo4j_instance_port>"`
 
