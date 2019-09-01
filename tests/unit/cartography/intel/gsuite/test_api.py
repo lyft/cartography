@@ -107,6 +107,8 @@ def test_load_gsuite_groups():
         UNWIND {GroupData} as group
         MERGE (g:GSuiteGroup{id: group.id})
         ON CREATE SET
+        g.firstseen = {UpdateTag}
+        ON MATCH SET
         g.group_id = group.id,
         g.admin_created = group.adminCreated,
         g.description = group.description,
@@ -115,9 +117,6 @@ def test_load_gsuite_groups():
         g.etag = group.etag,
         g.kind = group.kind,
         g.name = group.name,
-        g.firstseen = {UpdateTag},
-        g.lastupdated = {UpdateTag}
-        ON MATCH SET
         g.lastupdated = {UpdateTag}
     """
     groups = []
@@ -136,6 +135,8 @@ def test_load_gsuite_users():
         UNWIND {UserData} as user
         MERGE (u:GSuiteUser{id: user.id})
         ON CREATE SET
+        u.firstseen = {UpdateTag}
+        ON MATCH SET
         u.user_id = user.id,
         u.agreed_to_terms = user.agreedToTerms,
         u.archived = user.archived,
@@ -161,9 +162,6 @@ def test_load_gsuite_users():
         u.suspended = user.suspended,
         u.thumbnail_photo_etag = user.thumbnailPhotoEtag,
         u.thumbnail_photo_url = user.thumbnailPhotoUrl,
-        u.firstseen = {UpdateTag},
-        u.lastupdated = {UpdateTag}
-        ON MATCH SET
         u.lastupdated = {UpdateTag}
     """
     users = []

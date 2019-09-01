@@ -135,6 +135,8 @@ def load_gsuite_groups(session, groups, gsuite_update_tag):
         UNWIND {GroupData} as group
         MERGE (g:GSuiteGroup{id: group.id})
         ON CREATE SET
+        g.firstseen = {UpdateTag}
+        ON MATCH SET
         g.group_id = group.id,
         g.admin_created = group.adminCreated,
         g.description = group.description,
@@ -143,9 +145,6 @@ def load_gsuite_groups(session, groups, gsuite_update_tag):
         g.etag = group.etag,
         g.kind = group.kind,
         g.name = group.name,
-        g.firstseen = {UpdateTag},
-        g.lastupdated = {UpdateTag}
-        ON MATCH SET
         g.lastupdated = {UpdateTag}
     """
     logger.info('Ingesting {} gsuite groups'.format(len(groups)))
@@ -157,6 +156,8 @@ def load_gsuite_users(session, users, gsuite_update_tag):
         UNWIND {UserData} as user
         MERGE (u:GSuiteUser{id: user.id})
         ON CREATE SET
+        u.firstseen = {UpdateTag}
+        ON MATCH SET
         u.user_id = user.id,
         u.agreed_to_terms = user.agreedToTerms,
         u.archived = user.archived,
@@ -182,9 +183,6 @@ def load_gsuite_users(session, users, gsuite_update_tag):
         u.suspended = user.suspended,
         u.thumbnail_photo_etag = user.thumbnailPhotoEtag,
         u.thumbnail_photo_url = user.thumbnailPhotoUrl,
-        u.firstseen = {UpdateTag},
-        u.lastupdated = {UpdateTag}
-        ON MATCH SET
         u.lastupdated = {UpdateTag}
     """
     logger.info('Ingesting {} gsuite users'.format(len(users)))
@@ -198,7 +196,8 @@ def load_gsuite_members(session, group, members, gsuite_update_tag):
         MATCH (user:GSuiteUser {id: member.id}),(group:GSuiteGroup {id: {GroupID} })
         MERGE (user)-[r:MEMBER_GSUITE_GROUP]->(group)
         ON CREATE SET
-        r.firstseen = {UpdateTag},
+        r.firstseen = {UpdateTag}
+        ON MATCH SET
         r.lastupdated = {UpdateTag}
     """
     session.run(
@@ -212,7 +211,8 @@ def load_gsuite_members(session, group, members, gsuite_update_tag):
         MATCH(group_1: GSuiteGroup{id: member.id}), (group_2:GSuiteGroup {id: {GroupID}})
         MERGE (group_1)-[r:MEMBER_GSUITE_GROUP]->(group_2)
         ON CREATE SET
-        r.firstseen = {UpdateTag},
+        r.firstseen = {UpdateTag}
+        ON MATCH SET
         r.lastupdated = {UpdateTag}
     """
     session.run(membership_qry, MemberData=members, GroupID=group.get("id"), UpdateTag=gsuite_update_tag)
