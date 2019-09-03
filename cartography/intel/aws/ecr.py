@@ -27,9 +27,8 @@ def load_ecr_repositories(neo4j_session, data, region, current_aws_account_id, a
     query = """
     MERGE (repo:ECRRepository{id: {RepositoryArn}})
     ON CREATE SET repo.firstseen = timestamp(), repo.arn = {RepositoryArn}, repo.name = {RepositoryName},
-        repo.region = {Region}, repo.uri = {RepositoryUri}, repo.created_at = {CreatedAt},
-        repo.image_tag_mutability = {ImageTagMutability}
-    SET repo.lastupdated = {aws_update_tag}
+        repo.region = {Region}, repo.created_at = {CreatedAt}
+    SET repo.lastupdated = {aws_update_tag}, repo.uri = {RepositoryUri}
     WITH repo
     MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
     MERGE (owner)-[r:RESOURCE]->(repo)
@@ -43,8 +42,7 @@ def load_ecr_repositories(neo4j_session, data, region, current_aws_account_id, a
             RepositoryArn=repo['repositoryArn'],
             RepositoryName=repo['repositoryName'],
             RepositoryUri=repo['repositoryUri'],
-            CreatedAt=repo['createdAt'],  # TODO this is a datetime
-            ImageTagMutability=repo['imageTagMutability'],
+            CreatedAt=repo['createdAt'],  # TODO this is documented as a datetime but testing indicates it's unix time
             Region=region,
             aws_update_tag=aws_update_tag,
             AWS_ACCOUNT_ID=current_aws_account_id,
