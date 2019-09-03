@@ -51,12 +51,45 @@ def test_load_ecr_images(neo4j_session):
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG,
     )
-    expected_nodes = set()
+
+    # TODO it's possible to have the same image in multiple repositories -- current code doesn't represent that in the graph well
+    expected_nodes = {
+        (
+            'arn:aws:ecr:us-east-1:000000000000:repository/example-repository',
+            'sha256:0000000000000000000000000000000000000000000000000000000000000000',
+            '1',
+        ),
+        (
+            'arn:aws:ecr:us-east-1:000000000000:repository/example-repository',
+            'sha256:0000000000000000000000000000000000000000000000000000000000000001',
+            '2',
+        ),
+        (
+            'arn:aws:ecr:us-east-1:000000000000:repository/sample-repository',
+            'sha256:0000000000000000000000000000000000000000000000000000000000000000',
+            '1',
+        ),
+        (
+            'arn:aws:ecr:us-east-1:000000000000:repository/sample-repository',
+            'sha256:0000000000000000000000000000000000000000000000000000000000000011',
+            '2',
+        ),
+        (
+            'arn:aws:ecr:us-east-1:000000000000:repository/test-repository',
+            'sha256:0000000000000000000000000000000000000000000000000000000000000000',
+            '1234567890',
+        ),
+        (
+            'arn:aws:ecr:us-east-1:000000000000:repository/test-repository',
+            'sha256:0000000000000000000000000000000000000000000000000000000000000021',
+            '1',
+        ),
+    }
 
     nodes = neo4j_session.run(
         """
         MATCH (repo:ECRRepository)-[:IMAGE]->(image:ECRImage) RETURN repo.arn, image.digest;
         """
     )
-    actual_nodes = {(n['repo.arn'], n['image.digest'] for n in nodes)}
+    actual_nodes = {((n['repo.arn'], n['image.digest']) for n in nodes)}
     assert actual_nodes == expected_nodes
