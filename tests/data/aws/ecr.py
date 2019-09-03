@@ -8,14 +8,14 @@ DESCRIBE_REPOSITORIES = {
             'registryId': '000000000000',
             'repositoryName': 'example-repository',
             'repositoryUri': '000000000000.dkr.ecr.us-east-1/example-repository',
-            'createdAt': 1546329601.0,  # datetime.datetime(2019, 1, 1, 0, 0, 1),
+            'createdAt': datetime.datetime(2019, 1, 1, 0, 0, 1),
         },
         {
             'repositoryArn': 'arn:aws:ecr:us-east-1:000000000000:repository/sample-repository',
             'registryId': '000000000000',
             'repositoryName': 'sample-repository',
             'repositoryUri': '000000000000.dkr.ecr.us-east-1/sample-repository',
-            'createdAt': 1546329601.0,  # datetime.datetime(2019, 1, 1, 0, 0, 1),
+            'createdAt': datetime.datetime(2019, 1, 1, 0, 0, 1),
         },
         {
             'repositoryArn': 'arn:aws:ecr:us-east-1:000000000000:repository/test-repository',
@@ -29,5 +29,7 @@ DESCRIBE_REPOSITORIES = {
 
 
 LIST_REPOSITORY_IMAGES = {
-
+    'arn:aws:ecr:us-east-1:000000000000:repository/example-repository': [],
+    'arn:aws:ecr:us-east-1:000000000000:repository/sample-repository': [],
+    'arn:aws:ecr:us-east-1:000000000000:repository/test-repository': [],
 }
