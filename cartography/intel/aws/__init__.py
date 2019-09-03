@@ -5,6 +5,7 @@ import botocore.exceptions
 
 from cartography.intel.aws import dynamodb
 from cartography.intel.aws import ec2
+from cartography.intel.aws import ecr
 from cartography.intel.aws import elasticsearch
 from cartography.intel.aws import iam
 from cartography.intel.aws import organizations
@@ -37,6 +38,9 @@ def _sync_one_account(session, boto3_session, account_id, regions, sync_tag, com
     ec2.sync_ec2_auto_scaling_groups(session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     ec2.sync_load_balancers(session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     ec2.sync_vpc_peering(session, boto3_session, regions, sync_tag, account_id, common_job_parameters)
+
+    # ECR
+    ecr.sync(session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
 
     # RDS
     rds.sync_rds_instances(session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
