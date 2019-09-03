@@ -13,8 +13,8 @@ https://developers.google.com/admin-sdk/directory/v1/reference/users#resource
 
 | Field | Description |
 |-------|--------------|
-| id | The unique ID for the user. A user id can be used as a user request URI's userKey
-| user_id | duplicate of id
+| id | The unique ID for the user as a string. A user id can be used as a user request URI's userKey
+| user_id | duplicate of id.
 | agreed_to_terms |  This property is true if the user has completed an initial login and accepted the Terms of Service agreement.
 | change_password_at_next_login | Indicates if the user is forced to change their password at next login. This setting doesn't apply when the user signs in via a third-party identity provider.
 | creation_time | The time the user's account was created. The value is in ISO 8601 date and time format. The time is the complete date plus hours, minutes, and seconds in the form YYYY-MM-DDThh:mm:ssTZD. For example, 2010-04-05T17:30:04+01:00.
