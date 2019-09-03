@@ -11,9 +11,9 @@
     "iterationsize": 100
   },
   {
-    "query": "MATCH (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(:ECRRepository)-[r:IMAGE]->(:ECRImage) WHERE r.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (r) RETURN COUNT(*) AS TotalCompleted",
+    "query": "MATCH (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(:ECRRepository)-[r:IMAGE]->(:ECRImage) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) RETURN COUNT(*) AS TotalCompleted",
     "iterative": true,
     "iterationsize": 100
   }],
-  "name": "cleanup ECRImage|ECRRepository"
+  "name": "cleanup ECRImage|ECRRepository|IMAGE"
 }
