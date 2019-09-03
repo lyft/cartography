@@ -42,7 +42,7 @@ def load_ecr_repositories(neo4j_session, data, region, current_aws_account_id, a
             RepositoryArn=repo['repositoryArn'],
             RepositoryName=repo['repositoryName'],
             RepositoryUri=repo['repositoryUri'],
-            CreatedAt=repo['createdAt'],  # TODO this is documented as a datetime but testing indicates it's unix time
+            CreatedAt=str(repo['createdAt']),
             Region=region,
             aws_update_tag=aws_update_tag,
             AWS_ACCOUNT_ID=current_aws_account_id,
