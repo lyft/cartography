@@ -32,4 +32,31 @@ def test_load_ecr_repositories(neo4j_session):
 
 
 def test_load_ecr_images(neo4j_session):
-    pass
+    repo_data = tests.data.aws.ecr.DESCRIBE_REPOSITORIES
+
+    cartography.intel.aws.ecr.load_ecr_repositories(
+        neo4j_session,
+        repo_data,
+        TEST_REGION,
+        TEST_ACCOUNT_ID,
+        TEST_UPDATE_TAG,
+    )
+
+    data = tests.data.aws.ecr.LIST_REPOSITORY_IMAGES
+
+    cartography.intel.aws.ecr.load_ecr_repository_images(
+        neo4j_session,
+        repo_data,
+        TEST_REGION,
+        TEST_ACCOUNT_ID,
+        TEST_UPDATE_TAG,
+    )
+    expected_nodes = set()
+
+    nodes = neo4j_session.run(
+        """
+        MATCH (repo:ECRRepository)-[:IMAGE]->(image:ECRImage) RETURN repo.arn, image.digest;
+        """
+    )
+    actual_nodes = {(n['repo.arn'], n['image.digest'] for n in nodes)}
+    assert actual_nodes == expected_nodes
