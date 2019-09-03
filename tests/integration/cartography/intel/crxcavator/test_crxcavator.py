@@ -138,23 +138,21 @@ def test_transform_and_load_user_extensions(neo4j_session):
     )
 
     query = """
-    MATCH(user:GSuiteUser{id:{UserId}})
+    MATCH(user:GSuiteUser{email:{GSuiteEmail}})
     RETURN user.id, user.email
     """
-    expected_user_id = 'user@example.com'
-    nodes = neo4j_session.run(query, UserId=expected_user_id)
+    expected_user_email = 'user@example.com'
+    nodes = neo4j_session.run(query, GSuiteEmail=expected_user_email)
 
     actual_nodes = list([
         (
-            n['user.id'],
-            n['user.email'],
+            n['user.email']
         ) for n in nodes
     ])
 
     expected_nodes = list([
         (
-            'user@example.com',
-            'user@example.com',
+            'user@example.com'
         ),
     ])
     assert actual_nodes == expected_nodes
@@ -168,7 +166,7 @@ def test_user_to_extension(neo4j_session):
     _ensure_local_neo4j_has_test_user_extensions_data(neo4j_session)
     query = """
     MATCH(user:GSuiteUser)-[:INSTALLS]->(ext:ChromeExtension{id:{ExtensionId}})
-    RETURN user.id, ext.id, ext.name
+    RETURN user.email, ext.id, ext.name
     """
     expected_extension_id = 'f06981cbc72a3c6e2e9e736cbdaef4865a4571bc|1.0'
     nodes = neo4j_session.run(
@@ -177,7 +175,7 @@ def test_user_to_extension(neo4j_session):
     )
     actual_nodes = {
         (
-            n['user.id'],
+            n['user.email'],
             n['ext.id'],
             n['ext.name'],
         ) for n in nodes
