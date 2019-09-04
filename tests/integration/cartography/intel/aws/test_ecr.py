@@ -44,7 +44,7 @@ def test_load_ecr_images(neo4j_session):
 
     data = tests.data.aws.ecr.LIST_REPOSITORY_IMAGES
 
-    cartography.intel.aws.ecr.load_ecr_repository_images(
+    cartography.intel.aws.ecr.load_ecr_images(
         neo4j_session,
         data,
         TEST_REGION,
