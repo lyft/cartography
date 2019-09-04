@@ -27,7 +27,7 @@ def test_load_ecr_repositories(neo4j_session):
         MATCH (r:ECRRepository) RETURN r.arn;
         """
     )
-    actual_nodes = {(n['r.arn'] for n in nodes)}
+    actual_nodes = {n['r.arn'] for n in nodes}
     assert actual_nodes == expected_nodes
 
 
@@ -89,8 +89,8 @@ def test_load_ecr_images(neo4j_session):
 
     nodes = neo4j_session.run(
         """
-        MATCH (repo:ECRRepository)-[:IMAGE]->(image:ECRImage) RETURN repo.arn, image.digest;
+        MATCH (repo:ECRRepository)-[:IMAGE]->(image:ECRImage) RETURN repo.arn, image.digest, image.tag;
         """
     )
-    actual_nodes = {((n['repo.arn'], n['image.digest']) for n in nodes)}
+    actual_nodes = {(n['repo.arn'], n['image.digest'], n['image.tag']) for n in nodes}
     assert actual_nodes == expected_nodes
