@@ -49,25 +49,37 @@ def load_ecr_repositories(neo4j_session, data, region, current_aws_account_id, a
         )
 
 
-def load_ecr_images(neo4j_session, data, region, aws_update_tag):
+def load_ecr_repository_images(neo4j_session, data, region, aws_update_tag):
     query = """
+    MERGE (repo_image:ECRRepositoryImage{id: {RepositoryImageUri}})
+    ON CREATE SET repo_image.firstseen = timestamp()
+    SET repo_image.lastupdated = {aws_update_tag}, repo_image.tag = {ImageTag},
+        repo_image.uri = {RepositoryImageUri}
+    WITH repo_image
     MERGE (image:ECRImage{id: {ImageDigest}})
     ON CREATE SET image.firstseen = timestamp(), image.digest = {ImageDigest}
-    SET image.lastupdated = {aws_update_tag}, image.tag = {ImageTag}
-    WITH image
+    SET image.last_updated = {aws_update_tag}
+    WITH repo_image, image
+    MERGE (repo_image)-[r1:IMAGE]->(image)
+    ON CREATE SET r1.firstseen = timestamp()
+    SET r1.lastupdated = {aws_update_tag}
+    WITH repo_image
     MATCH (repo:ECRRepository{id: {RepositoryArn}})
-    MERGE (repo)-[r:IMAGE]->(image)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    MERGE (repo)-[r2:REPO_IMAGE]->(repo_image)
+    ON CREATE SET r2.firstseen = timestamp()
+    SET r2.lastupdated = {aws_update_tag}
     """
 
-    for repo_arn, repo_images in data.items():
+    for repo_uri, repo_images in data.items():
         for repo_image in repo_images:
+            image_tag = repo_image['imageTag']
+            repo_image_uri = f"{repo_uri}:{image_tag}"  # TODO this assumes image tags are immutable
             neo4j_session.run(
                 query,
-                RepositoryArn=repo_arn,
+                RepositoryImageUri=repo_image_uri,
                 ImageDigest=repo_image['imageDigest'],
                 ImageTag=repo_image['imageTag'],
+                RepositoryUri=repo_uri,
                 aws_update_tag=aws_update_tag,
             )
 
@@ -82,7 +94,7 @@ def sync(neo4j_session, boto3_session, regions, current_aws_account_id, aws_upda
         repository_data = get_ecr_repositories(boto3_session, region)
         image_data = {}
         for repo in repository_data:
-            image_data[repo['repositoryArn']] = get_ecr_repository_images(boto3_session, region, repo['repositoryName'])
+            image_data[repo['repositoryUri']] = get_ecr_repository_images(boto3_session, region, repo['repositoryName'])
         load_ecr_repositories(neo4j_session, repository_data, region, current_aws_account_id, aws_update_tag)
-        load_ecr_images(neo4j_session, image_data, region, current_aws_account_id, aws_update_tag)
+        load_ecr_repository_images(neo4j_session, image_data, region, current_aws_account_id, aws_update_tag)
     cleanup(neo4j_session, common_job_parameters)
