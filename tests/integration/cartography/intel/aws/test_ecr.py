@@ -46,13 +46,14 @@ def test_load_ecr_images(neo4j_session):
 
     cartography.intel.aws.ecr.load_ecr_repository_images(
         neo4j_session,
-        repo_data,
+        data,
         TEST_REGION,
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG,
     )
 
-    # TODO it's possible to have the same image in multiple repositories -- current code doesn't represent that in the graph well
+    # TODO it's possible to have the same image in multiple repositories -- current code doesn't represent that in the
+    #      graph well
     expected_nodes = {
         (
             'arn:aws:ecr:us-east-1:000000000000:repository/example-repository',

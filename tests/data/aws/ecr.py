@@ -31,7 +31,7 @@ DESCRIBE_REPOSITORIES = {
 LIST_REPOSITORY_IMAGES = {
     'arn:aws:ecr:us-east-1:000000000000:repository/example-repository': [
         {
-            'imageDigest': 'sha256:0000000000000000000000000000000000000000000000000000000000000000',  # NOTE same digest and tag as image in sample-repository
+            'imageDigest': 'sha256:0000000000000000000000000000000000000000000000000000000000000000',
             'imageTag': '1',
         },
         {
@@ -41,7 +41,8 @@ LIST_REPOSITORY_IMAGES = {
     ],
     'arn:aws:ecr:us-east-1:000000000000:repository/sample-repository': [
         {
-            'imageDigest': 'sha256:0000000000000000000000000000000000000000000000000000000000000000',  # NOTE same digest and tag as image in example-repository
+            # NOTE same digest and tag as image in example-repository
+            'imageDigest': 'sha256:0000000000000000000000000000000000000000000000000000000000000000',
             'imageTag': '1',
         },
         {
@@ -51,7 +52,8 @@ LIST_REPOSITORY_IMAGES = {
     ],
     'arn:aws:ecr:us-east-1:000000000000:repository/test-repository': [
         {
-            'imageDigest': 'sha256:0000000000000000000000000000000000000000000000000000000000000000',  # NOTE same digest but different tag as image in example-repository
+            # NOTE same digest but different tag from image in example-repository
+            'imageDigest': 'sha256:0000000000000000000000000000000000000000000000000000000000000000',
             'imageTag': '1234567890',
         },
         {
