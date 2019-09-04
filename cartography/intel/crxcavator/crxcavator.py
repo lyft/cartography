@@ -146,8 +146,14 @@ def parse_risk(risk_data):
     :param risk_data: the risk object returned from the API
     :return: dictionary of the important risk data
     """
-    permissions_score = risk_data.get('permissions').get('total')
-    webstore_score = risk_data.get('webstore').get('total')
+    permissions_score = 0
+    permissions = risk_data.get('permissions')
+    if permissions:
+        permissions_score = permissions.get('total')
+    webstore_score = 0
+    webstore = risk_data.get('webstore')
+    if webstore:
+        webstore_score = webstore.get('total')
     metadata = json.dumps(risk_data.get('metadata'))
     optional_permissions_score = 0
     optional_permissions = risk_data.get('optional_permissions')
@@ -244,13 +250,13 @@ def transform_user_extensions(user_extension_json):
             version = details[0]
             extensions.append({
                 'extension_id': extension_id,
-                'version': version
+                'version': version,
             })
             for user in details[1]['users']:
                 users_set.add(user)
                 extensions_by_user.append({
                     'id': f"{extension_id}|{version}",
-                    'user': user
+                    'user': user,
                 })
     if len(users_set) == 0:
         raise ValueError('No users returned from CRXcavator')
