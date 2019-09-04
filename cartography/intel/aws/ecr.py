@@ -64,7 +64,7 @@ def load_ecr_repository_images(neo4j_session, data, region, aws_update_tag):
     ON CREATE SET r1.firstseen = timestamp()
     SET r1.lastupdated = {aws_update_tag}
     WITH repo_image
-    MATCH (repo:ECRRepository{id: {RepositoryArn}})
+    MATCH (repo:ECRRepository{uri: {RepositoryUri}})
     MERGE (repo)-[r2:REPO_IMAGE]->(repo_image)
     ON CREATE SET r2.firstseen = timestamp()
     SET r2.lastupdated = {aws_update_tag}
@@ -73,7 +73,7 @@ def load_ecr_repository_images(neo4j_session, data, region, aws_update_tag):
     for repo_uri, repo_images in data.items():
         for repo_image in repo_images:
             image_tag = repo_image['imageTag']
-            repo_image_uri = f"{repo_uri}:{image_tag}"  # TODO this assumes image tags are immutable
+            repo_image_uri = f"{repo_uri}:{image_tag}"  # TODO this assumes image tags and uris are immutable
             neo4j_session.run(
                 query,
                 RepositoryImageUri=repo_image_uri,

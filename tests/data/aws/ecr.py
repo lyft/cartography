@@ -29,7 +29,7 @@ DESCRIBE_REPOSITORIES = {
 
 
 LIST_REPOSITORY_IMAGES = {
-    'arn:aws:ecr:us-east-1:000000000000:repository/example-repository': [
+    '000000000000.dkr.ecr.us-east-1/example-repository': [
         {
             'imageDigest': 'sha256:0000000000000000000000000000000000000000000000000000000000000000',
             'imageTag': '1',
@@ -39,7 +39,7 @@ LIST_REPOSITORY_IMAGES = {
             'imageTag': '2',
         },
     ],
-    'arn:aws:ecr:us-east-1:000000000000:repository/sample-repository': [
+    '000000000000.dkr.ecr.us-east-1/sample-repository': [
         {
             # NOTE same digest and tag as image in example-repository
             'imageDigest': 'sha256:0000000000000000000000000000000000000000000000000000000000000000',
@@ -50,7 +50,7 @@ LIST_REPOSITORY_IMAGES = {
             'imageTag': '2',
         },
     ],
-    'arn:aws:ecr:us-east-1:000000000000:repository/test-repository': [
+    '000000000000.dkr.ecr.us-east-1/test-repository': [
         {
             # NOTE same digest but different tag from image in example-repository
             'imageDigest': 'sha256:0000000000000000000000000000000000000000000000000000000000000000',

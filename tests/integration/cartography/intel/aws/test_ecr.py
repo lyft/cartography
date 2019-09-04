@@ -31,7 +31,7 @@ def test_load_ecr_repositories(neo4j_session):
     assert actual_nodes == expected_nodes
 
 
-def test_load_ecr_images(neo4j_session):
+def test_load_ecr_repository_images(neo4j_session):
     repo_data = tests.data.aws.ecr.DESCRIBE_REPOSITORIES
 
     cartography.intel.aws.ecr.load_ecr_repositories(
