@@ -62,13 +62,16 @@ def get_extensions(crxcavator_api_key, crxcavator_base_url, extensions_list):
     """
     extensions_details = []
     for extension in extensions_list:
-        extension_id = extension.get['extension_id']
-        version = extension.get['version']
+        extension_id = extension.get('extension_id')
+        version = extension.get('version')
         try:
             details = get_extension_details(crxcavator_api_key, crxcavator_base_url, extension_id, version)
+            if not details:
+                logger.info(f"No results returned from API for extension {extension_id}")
+                continue
             extensions_details.append(details)
         except exceptions.RequestException as e:
-            logger.info(f"Could not retrieve details for extension {extension_id}", e)
+            logger.info(f"API error retrieving details for extension {extension_id}", e)
     return extensions_details
 
 
@@ -153,7 +156,7 @@ def parse_risk(risk_data):
     csp_score = 0
     csp = risk_data.get('csp')
     if csp:
-        csp_score.get('total')
+        csp_score = csp.get('total')
     extcalls_score = 0
     extcalls = risk_data.get('extcalls')
     if extcalls:
@@ -233,30 +236,30 @@ def transform_user_extensions(user_extension_json):
     """
     user_extensions = user_extension_json.items()
     users_set = set()
-    extensions_set = set()
+    extensions = []
     extensions_by_user = []
     for extension in user_extensions:
         for details in extension[1].items():
+            extension_id = extension[0]
+            version = details[0]
+            extensions.append({
+                'extension_id': extension_id,
+                'version': version
+            })
             for user in details[1]['users']:
                 users_set.add(user)
-                extension_id = extension[0]
-                version = details[0]
-                extensions_set.add({
-                    'extension_id': extension_id,
-                    'version': version,
-                })
                 extensions_by_user.append({
                     'id': f"{extension_id}|{version}",
-                    'user': user,
+                    'user': user
                 })
     if len(users_set) == 0:
         raise ValueError('No users returned from CRXcavator')
-    if len(extensions_set) == 0:
+    if len(extensions) == 0:
         raise ValueError('No extensions information returned from CRXcavator')
     if len(extensions_by_user) == 0:
         raise ValueError('No user->extension mapping returned from CRXcavator')
 
-    return list(users_set), list(extensions_set), extensions_by_user
+    return list(users_set), extensions, extensions_by_user
 
 
 def load_user_extensions(users, extensions_by_user, session, update_tag):
