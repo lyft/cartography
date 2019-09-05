@@ -106,10 +106,7 @@ def transform_extensions(extension_details):
             risk = {}
         else:
             risk = parse_risk(risk_data)
-        webstore = data.get('webstore')
-        if not webstore:
-            logger.warning(f'Store data missing for extension {extension}')
-            continue
+        webstore = data.get('webstore', {})
         extensions.append({
             'id': f"{extension_id}|{version}",
             'extension_id': extension_id,
@@ -139,7 +136,7 @@ def transform_extensions(extension_details):
             'website': webstore.get('website'),
             'type': webstore.get('type'),
             'price': webstore.get('price'),
-            'report_link': "https://crxcavator.io/report/" + extension_id + "/" + version,
+            'report_link': f"https://crxcavator.io/report/{extension_id}/{version}",
         })
     return extensions
 
