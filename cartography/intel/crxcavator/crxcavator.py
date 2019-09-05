@@ -67,7 +67,7 @@ def get_extensions(crxcavator_api_key, crxcavator_base_url, extensions_list):
         try:
             details = get_extension_details(crxcavator_api_key, crxcavator_base_url, extension_id, version)
             if not details:
-                logger.info(f"No results returned from API for extension {extension_id}")
+                logger.info(f"No results returned from API for extension {extension_id} {version}")
                 continue
             extensions_details.append(details)
         except exceptions.RequestException as e:
@@ -92,10 +92,6 @@ def transform_extensions(extension_details):
         data = extension.get('data')
         if not data:
             logger.warning(f'Could not retrieve details for extension {extension}')
-            continue
-        manifest = data.get('manifest')
-        if not manifest:
-            logger.warning(f'Manifest missing for extension {extension}')
             continue
         risk_data = data.get('risk')
         if not risk_data:

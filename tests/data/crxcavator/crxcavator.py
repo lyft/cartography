@@ -1,5 +1,5 @@
 # flake8: noqa
-REPORT_RESPONSE = {
+REPORT_RESPONSE = [{
     'data':
         {
             'risk':
@@ -45,7 +45,7 @@ REPORT_RESPONSE = {
         },
     'extension_id': 'f06981cbc72a3c6e2e9e736cbdaef4865a4571bc',
         'version': '1.0',
-}
+}]
 
 TRANSFORMED_EXTENSIONS_DATA = [
     {

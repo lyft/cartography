@@ -105,6 +105,7 @@ def test_transform_and_load_extensions(neo4j_session):
             n['ext.report_link'],
         ) for n in nodes
     ])
+    print(actual_nodes)
     expected_nodes = list([
         (
             expected_extension_id,
@@ -147,7 +148,8 @@ def test_transform_and_load_user_extensions(neo4j_session):
     """
     users_res = tests.data.crxcavator.crxcavator.USER_RESPONSE
     type(users_res)
-    users_list, user_extensions_list = cartography.intel.crxcavator.crxcavator.transform_user_extensions(users_res)
+    users_list, extensions_list, user_extensions_list = \
+        cartography.intel.crxcavator.crxcavator.transform_user_extensions(users_res)
     cartography.intel.crxcavator.crxcavator.load_user_extensions(
         users_list,
         user_extensions_list,
