@@ -64,11 +64,15 @@ def get_extensions(crxcavator_api_key, crxcavator_base_url, extensions_list):
     for extension in extensions_list:
         extension_id = extension.get('extension_id')
         version = extension.get('version')
+        name = extension.get('name')
         try:
             details = get_extension_details(crxcavator_api_key, crxcavator_base_url, extension_id, version)
             if not details:
-                logger.info(f"No results returned from API for extension {extension_id} {version}")
-                continue
+                # we only have the name and version from group API, create minimal version
+                logger.info(f"No results returned from report API for extension {extension_id} {version}")
+                details = {'data': dict(webstore={
+                    'name': name,
+                }), 'extension_id': extension_id, 'version': version}
             extensions_details.append(details)
         except exceptions.RequestException as e:
             logger.info(f"API error retrieving details for extension {extension_id}", e)
@@ -95,9 +99,9 @@ def transform_extensions(extension_details):
             continue
         risk_data = data.get('risk')
         if not risk_data:
-            logger.warning(f'Risk data missing for extension {extension}')
-            continue
-        risk = parse_risk(risk_data)
+            risk = {}
+        else:
+            risk = parse_risk(risk_data)
         webstore = data.get('webstore')
         if not webstore:
             logger.warning(f'Store data missing for extension {extension}')
@@ -106,14 +110,14 @@ def transform_extensions(extension_details):
             'id': f"{extension_id}|{version}",
             'extension_id': extension_id,
             'version': version,
-            'risk_total': risk['total'],
-            'risk_permissions_score': risk['permissions_score'],
-            'risk_webstore_score': risk['webstore_score'],
-            'risk_metadata': risk['metadata'],
-            'risk_optional_permissions_score': risk['optional_permissions_score'],
-            'risk_csp_score': risk['csp_score'],
-            'risk_extcalls_score': risk['extcalls_score'],
-            'risk_vuln_score': risk['vuln_score'],
+            'risk_total': risk.get('total'),
+            'risk_permissions_score': risk.get('permissions_score'),
+            'risk_webstore_score': risk.get('webstore_score'),
+            'risk_metadata': risk.get('metadata'),
+            'risk_optional_permissions_score': risk.get('optional_permissions_score'),
+            'risk_csp_score': risk.get('csp_score'),
+            'risk_extcalls_score': risk.get('extcalls_score'),
+            'risk_vuln_score': risk.get('vuln_score'),
             'address': webstore.get('address'),
             'email': webstore.get('email'),
             'icon': webstore.get('icon'),
@@ -247,6 +251,7 @@ def transform_user_extensions(user_extension_json):
             extensions.append({
                 'extension_id': extension_id,
                 'version': version,
+                'name': details[1]['name'],
             })
             for user in details[1]['users']:
                 users_set.add(user)
