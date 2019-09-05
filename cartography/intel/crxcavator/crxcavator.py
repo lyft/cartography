@@ -70,9 +70,13 @@ def get_extensions(crxcavator_api_key, crxcavator_base_url, extensions_list):
             if not details:
                 # we only have the name and version from group API, create minimal version
                 logger.info(f"No results returned from report API for extension {extension_id} {version}")
-                details = {'data': dict(webstore={
-                    'name': name,
-                }), 'extension_id': extension_id, 'version': version}
+                details = {
+                    'data': dict(
+                        webstore={
+                            'name': name,
+                        },
+                    ), 'extension_id': extension_id, 'version': version,
+                }
             extensions_details.append(details)
         except exceptions.RequestException as e:
             logger.info(f"API error retrieving details for extension {extension_id}", e)
