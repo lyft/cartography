@@ -276,7 +276,7 @@ def load_user_extensions(users, extensions_by_user, session, update_tag):
 
     user_ingestion_cypher = """
     UNWIND {Users} as user_email
-    MERGE (user:GSuiteUser{id: user_email, email: user_email})
+    MERGE (user:GSuiteUser{email: user_email})
     ON CREATE SET
     user.firstseen = timestamp()
     SET user.lastupdated = {UpdateTag}
