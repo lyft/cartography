@@ -62,9 +62,9 @@ def get_extensions(crxcavator_api_key, crxcavator_base_url, extensions_list):
     """
     extensions_details = []
     for extension in extensions_list:
-        extension_id = extension.get('extension_id')
-        version = extension.get('version')
-        name = extension.get('name')
+        extension_id = extension['extension_id']
+        version = extension['version']
+        name = extension['name']
         try:
             details = get_extension_details(crxcavator_api_key, crxcavator_base_url, extension_id, version)
             if not details:
@@ -101,24 +101,20 @@ def transform_extensions(extension_details):
         if not data:
             logger.warning(f'Could not retrieve details for extension {extension}')
             continue
-        risk_data = data.get('risk')
-        if not risk_data:
-            risk = {}
-        else:
-            risk = parse_risk(risk_data)
+        risk = data.get('risk', {})
         webstore = data.get('webstore', {})
         extensions.append({
             'id': f"{extension_id}|{version}",
             'extension_id': extension_id,
             'version': version,
-            'risk_total': risk.get('total'),
-            'risk_permissions_score': risk.get('permissions_score'),
-            'risk_webstore_score': risk.get('webstore_score'),
-            'risk_metadata': risk.get('metadata'),
-            'risk_optional_permissions_score': risk.get('optional_permissions_score'),
-            'risk_csp_score': risk.get('csp_score'),
-            'risk_extcalls_score': risk.get('extcalls_score'),
-            'risk_vuln_score': risk.get('vuln_score'),
+            'risk_total': risk.get('total', 0),
+            'risk_permissions_score': get_risk_data(risk, 'permissions'),
+            'risk_webstore_score': get_risk_data(risk, 'webstore'),
+            'risk_metadata': json.dumps(risk.get('metadata')),
+            'risk_optional_permissions_score': get_risk_data(risk, 'optional_permissions'),
+            'risk_csp_score': get_risk_data(risk, 'csp'),
+            'risk_extcalls_score': get_risk_data(risk, 'extcalls'),
+            'risk_vuln_score': get_risk_data(risk, 'retire'),
             'address': webstore.get('address'),
             'email': webstore.get('email'),
             'icon': webstore.get('icon'),
@@ -141,48 +137,16 @@ def transform_extensions(extension_details):
     return extensions
 
 
-def parse_risk(risk_data):
+def get_risk_data(data_dict, key):
     """
-    Parses the risk object into single dictionary
-    :param risk_data: the risk object returned from the API
-    :return: dictionary of the important risk data
+    Gets the total risk value from the provided key and returns the value else 0
+    :param data_dict: input data dictionary to parse
+    :param key: key name to retrieve
+    :return:
     """
-    permissions_score = 0
-    permissions = risk_data.get('permissions')
-    if permissions:
-        permissions_score = permissions.get('total')
-    webstore_score = 0
-    webstore = risk_data.get('webstore')
-    if webstore:
-        webstore_score = webstore.get('total')
-    metadata = json.dumps(risk_data.get('metadata'))
-    optional_permissions_score = 0
-    optional_permissions = risk_data.get('optional_permissions')
-    if optional_permissions:
-        optional_permissions_score = optional_permissions.get('total')
-    csp_score = 0
-    csp = risk_data.get('csp')
-    if csp:
-        csp_score = csp.get('total')
-    extcalls_score = 0
-    extcalls = risk_data.get('extcalls')
-    if extcalls:
-        extcalls_score = extcalls.get('total')
-    vuln_score = 0
-    retire = risk_data.get('retire')
-    if retire:
-        vuln_score = retire.get('total')
-    total = risk_data['total']
-    return {
-        'total': total,
-        'permissions_score': permissions_score,
-        'webstore_score': webstore_score,
-        'metadata': metadata,
-        'optional_permissions_score': optional_permissions_score,
-        'csp_score': csp_score,
-        'extcalls_score': extcalls_score,
-        'vuln_score': vuln_score,
-    }
+    data = data_dict.get(key)
+    data_score = data.get('total', 0) if data else 0
+    return data_score
 
 
 def load_extensions(extensions, session, update_tag):
