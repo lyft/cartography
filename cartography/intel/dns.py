@@ -6,11 +6,11 @@ import dns.resolver
 logger = logging.getLogger(__name__)
 
 
-def ingest_dns_record_by_fqdn(session, update_tag, fqdn, points_to_record):
+def ingest_dns_record_by_fqdn(neo4j_session, update_tag, fqdn, points_to_record):
     """
     Ingest a new DNS record by it's FQDN
 
-    :param session: Neo4j session object
+    :param neo4j_session: Neo4j session object
     :param update_tag: Update tag to set the node with and childs
     :param fqdn: the fqdn record to add
     :param points_to_record: parent record to set DNS_POINTS_TO relationship to. Can be None
@@ -26,8 +26,8 @@ def ingest_dns_record_by_fqdn(session, update_tag, fqdn, points_to_record):
             ip_list.append(ip)
 
         value = ",".join(ip_list)
-        record_id = ingest_dns_record(session, fqdn, value, record_type, update_tag, points_to_record)
-        _link_ip_to_A_record(session, update_tag, ip_list, record_id)
+        record_id = ingest_dns_record(neo4j_session, fqdn, value, record_type, update_tag, points_to_record)
+        _link_ip_to_A_record(neo4j_session, update_tag, ip_list, record_id)
 
         return record_id
     else:
@@ -39,11 +39,11 @@ def ingest_dns_record_by_fqdn(session, update_tag, fqdn, points_to_record):
         )
 
 
-def _link_ip_to_A_record(session, update_tag, ip_list, parent_record):
+def _link_ip_to_A_record(neo4j_session, update_tag, ip_list, parent_record):
     """
     Link A record to to its IP
 
-    :param session: Neo4j session object
+    :param neo4j_session: Neo4j session object
     :param update_tag: Update tag to set the node with and childs
     :param ip_list: List of IP to link
     :param parent_record: parent record to set DNS_POINTS_TO relationship to
@@ -61,7 +61,7 @@ def _link_ip_to_A_record(session, update_tag, ip_list, parent_record):
     SET r.lastupdated = {update_tag}
     """
 
-    session.run(
+    neo4j_session.run(
         ingest,
         ParentId=parent_record,
         IP_LIST=ip_list,
@@ -69,11 +69,11 @@ def _link_ip_to_A_record(session, update_tag, ip_list, parent_record):
     )
 
 
-def ingest_dns_record(session, name, value, type, update_tag, points_to_record):
+def ingest_dns_record(neo4j_session, name, value, type, update_tag, points_to_record):
     """
     Ingest a new DNS record
 
-    :param session: Neo4j session object
+    :param neo4j_session: Neo4j session object
     :param name: record name
     :param value: record value
     :param type: record type
@@ -94,7 +94,7 @@ def ingest_dns_record(session, name, value, type, update_tag, points_to_record):
 
     record_id = f"{name}+{type}"
 
-    session.run(
+    neo4j_session.run(
         ingest,
         Id=record_id,
         Name=name,

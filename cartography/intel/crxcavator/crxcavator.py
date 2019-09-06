@@ -303,10 +303,10 @@ def load_user_extensions(users, extensions_by_user, session, update_tag):
     session.run(extension_ingestion_cypher, ExtensionsUsers=extensions_by_user, UpdateTag=update_tag)
 
 
-def sync_extensions(session, common_job_parameters, crxcavator_api_key, crxcavator_base_url):
+def sync_extensions(neo4j_session, common_job_parameters, crxcavator_api_key, crxcavator_base_url):
     """
     Performs the sequential tasks to collect, transform, and sync extension data
-    :param session: Neo4J session for database interface
+    :param neo4j_session: Neo4J session for database interface
     :param common_job_parameters: Common job parameters containing UPDATE_TAG
     :param crxcavator_api_key: The API key to access the CRXcavator service
     :param crxcavator_base_url: The URL for the CRXcavator API
