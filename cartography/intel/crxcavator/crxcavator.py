@@ -317,5 +317,5 @@ def sync_extensions(neo4j_session, common_job_parameters, crxcavator_api_key, cr
     users, extensions_list, user_extensions = transform_user_extensions(user_extensions_json)
     extension_details = get_extensions(crxcavator_api_key, crxcavator_base_url, extensions_list)
     extensions = transform_extensions(extension_details)
-    load_extensions(extensions, session, common_job_parameters['UPDATE_TAG'])
-    load_user_extensions(users, user_extensions, session, common_job_parameters['UPDATE_TAG'])
+    load_extensions(extensions, neo4j_session, common_job_parameters['UPDATE_TAG'])
+    load_user_extensions(users, user_extensions, neo4j_session, common_job_parameters['UPDATE_TAG'])
