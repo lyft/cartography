@@ -8,9 +8,9 @@ else:
     from importlib_resources import open_binary, read_text
 
 
-def run_analysis_job(filename, session, common_job_parameters):
+def run_analysis_job(filename, neo4j_session, common_job_parameters):
     GraphJob.run_from_json(
-        session,
+        neo4j_session,
         read_text(
             'cartography.data.jobs.analysis',
             filename,
@@ -19,9 +19,9 @@ def run_analysis_job(filename, session, common_job_parameters):
     )
 
 
-def run_cleanup_job(filename, session, common_job_parameters):
+def run_cleanup_job(filename, neo4j_session, common_job_parameters):
     GraphJob.run_from_json(
-        session,
+        neo4j_session,
         read_text(
             'cartography.data.jobs.cleanup',
             filename,
