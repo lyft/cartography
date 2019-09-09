@@ -229,7 +229,7 @@ def load_roles(neo4j_session, roles, current_aws_account_id, aws_update_tag):
 
 def load_group_memberships(neo4j_session, group_memberships, aws_update_tag):
     ingest_membership = """
-    MATCH (group:AWSGroup{name: {GroupName}})
+    MATCH (group:AWSGroup{arn: {GroupArn}})
     WITH group
     MATCH (user:AWSUser{arn: {PrincipalArn}})
     MERGE (user)-[r:MEMBER_AWS_GROUP]->(group)
@@ -237,12 +237,12 @@ def load_group_memberships(neo4j_session, group_memberships, aws_update_tag):
     SET r.lastupdated = {aws_update_tag}
     """
 
-    for group_name, membership_data in group_memberships.items():
+    for group_arn, membership_data in group_memberships.items():
         for info in membership_data["Users"]:
             principal_arn = info["Arn"]
             neo4j_session.run(
                 ingest_membership,
-                GroupName=group_name,
+                GroupArn=group_arn,
                 PrincipalArn=principal_arn,
                 aws_update_tag=aws_update_tag,
             )
@@ -369,10 +369,10 @@ def sync_roles(neo4j_session, boto3_session, current_aws_account_id, aws_update_
 
 def sync_group_memberships(neo4j_session, boto3_session, current_aws_account_id, aws_update_tag, common_job_parameters):
     logger.debug("Syncing IAM group membership for account '%s'.", current_aws_account_id)
-    query = "MATCH (group:AWSGroup)<-[:RESOURCE]-(AWSAccount{id: {AWS_ACCOUNT_ID}}) return group.name as name;"
-    result = neo4j_session.run(query, AWS_ACCOUNT_ID=current_aws_account_id)
-    groups = [r['name'] for r in result]
-    groups_membership = {name: get_group_membership_data(boto3_session, name) for name in groups}
+    query = "MATCH (group:AWSGroup)<-[:RESOURCE]-(AWSAccount{id: {AWS_ACCOUNT_ID}}) " \
+            "return group.name as name, group.arn as arn;"
+    groups = neo4j_session.run(query, AWS_ACCOUNT_ID=current_aws_account_id)
+    groups_membership = {group["arn"]: get_group_membership_data(boto3_session, group["name"]) for group in groups}
     load_group_memberships(neo4j_session, groups_membership, aws_update_tag)
     run_cleanup_job(
         'aws_import_groups_membership_cleanup.json',
