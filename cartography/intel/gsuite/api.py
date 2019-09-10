@@ -190,7 +190,6 @@ def load_gsuite_users(session, users, gsuite_update_tag):
 
 
 def load_gsuite_members(session, group, members, gsuite_update_tag):
-    print(f"Creating members relationship {len(members)}")
     ingestion_qry = """
         UNWIND {MemberData} as member
         MATCH (user:GSuiteUser {id: member.id}),(group:GSuiteGroup {id: {GroupID} })
