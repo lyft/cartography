@@ -29,6 +29,9 @@
 ## Google Cloud Platform
 - Click [here](gcp.md)
 
+## GSuite
+- Click [here](gsuite.md)
+
 ## CRXcavator Platform
 - Click [here](crxcavator.md)
 
