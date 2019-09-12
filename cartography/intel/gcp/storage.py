@@ -5,31 +5,31 @@ import googleapiclient.discovery
 from oauth2client.client import ApplicationDefaultCredentialsError
 from oauth2client.client import GoogleCredentials
 
-
-def create_storage_client(credentials):
-    '''
-    Instantiates a Google Cloud Bucket Resource
+#resource instatiation in __init__.py 
+# def create_storage_client(credentials):
+#     '''
+#     Instantiates a Google Cloud Bucket Resource
     
-    :param credentials: The GoogleCredentials object
-    :return: A Google Cloud Bucket Resource Object
-    '''
-    return googleapiclient.discovery.build('storage', 'v1', credentials=credentials)
+#     :param credentials: The GoogleCredentials object
+#     :return: A Google Cloud Bucket Resource Object
+#     '''
+#     return googleapiclient.discovery.build('storage', 'v1', credentials=credentials)
     
 
-def get_bucket_metadata(bucket, credentials):
+def get_bucket_metadata(storage, bucket, credentials):
     """
     Retrieves metadata about the given bucket
     
+    :param storage: The storage resource object created by googleapiclient.discovery.build()
     :param bucket: Google Cloud Bucket object
     :param credentials: The GoogleCredentials object
     :return: Metadata for specified bucket
     """
-    service = create_storage_client(credentials)
-    req = service.buckets().get(bucket=bucket)
+    req = storage.buckets().get(bucket=bucket)
     return req.execute()
 
 
-def list_buckets(project, credentials):
+def list_buckets(storage, project, credentials):
     """
     Returns a list of storage objects within some given project
     
@@ -37,10 +37,8 @@ def list_buckets(project, credentials):
     :param credentials: The GoogleCredentials object
     :return: List of storage objects
     """
-    service = create_storage_client(credentials)
-    req = service.buckets().list(project=project)
+    req = storage.buckets().list(project=project)
     res = req.execute()
-    
     all_objects = []
     all_objects.extend(res.get('items', []))
     return all_objects
