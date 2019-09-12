@@ -4,6 +4,8 @@ from collections import namedtuple
 import googleapiclient.discovery
 from oauth2client.client import ApplicationDefaultCredentialsError
 from oauth2client.client import GoogleCredentials
+
+from cartography.intel.gcp import compute
     
 
 def get_bucket_metadata(storage, bucket, credentials):
@@ -27,7 +29,7 @@ def get_bucket_metadata(storage, bucket, credentials):
         res = req.execute()
         return res
     except HttpError as e:
-        reason = _get_error_reason(e)
+        reason = compute._get_error_reason(e)
         if reason == 'notFound':
             logger.debug(
                 (
@@ -75,7 +77,7 @@ def list_buckets(storage, project, credentials):
         all_objects.extend(res.get('items', []))
         return all_objects
     except HttpError as e:
-        reason = _get_error_reason(e)
+        reason = compute._get_error_reason(e)
         if reason == 'invalid':
             logger.debug(
                 (
