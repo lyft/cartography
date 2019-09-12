@@ -10,9 +10,16 @@ def get_bucket_metadata(storage, bucket, credentials):
     """
     Retrieves metadata about the given bucket
     
+    :type storage: A storage resource object
     :param storage: The storage resource object created by googleapiclient.discovery.build()
-    :param bucket: Google Cloud Bucket object
-    :param credentials: The GoogleCredentials object
+    
+    :type bucket: str
+    :param bucket: Google Cloud Bucket name
+    
+    :type credentials: A GoogleCredentials object 
+    :param credentials: The GoogleCredentials object used for authentication 
+    
+    :rtype: dict 
     :return: Metadata for specified bucket
     """
     try:
@@ -49,9 +56,16 @@ def list_buckets(storage, project, credentials):
     """
     Returns a list of storage objects within some given project
     
+    :type storage: A storage resource object
     :param storage: The storage resource object created by googleapiclient.discovery.build()
+    
+    :type project: str 
     :param project: The Google Project name that you are retrieving buckets from
-    :param credentials: The GoogleCredentials object
+    
+    :type credentials: A GoogleCredentials object 
+    :param credentials: The GoogleCredentials object used for authentication 
+    
+    :rtype: list
     :return: List of storage objects
     """
     try:
