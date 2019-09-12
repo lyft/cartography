@@ -6,7 +6,7 @@ from oauth2client.client import ApplicationDefaultCredentialsError
 from oauth2client.client import GoogleCredentials
 
 from cartography.intel.gcp import compute
-    
+logger = logging.getLogger(__name__)
 
 def get_bucket_metadata(storage, bucket):
     """
