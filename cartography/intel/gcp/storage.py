@@ -8,7 +8,7 @@ from oauth2client.client import GoogleCredentials
 from cartography.intel.gcp import compute
     
 
-def get_bucket_metadata(storage, bucket, credentials):
+def get_bucket_metadata(storage, bucket):
     """
     Retrieves metadata about the given bucket
     
@@ -17,9 +17,6 @@ def get_bucket_metadata(storage, bucket, credentials):
     
     :type bucket: str
     :param bucket: Google Cloud Bucket name
-    
-    :type credentials: A GoogleCredentials object 
-    :param credentials: The GoogleCredentials object used for authentication 
     
     :rtype: dict 
     :return: Metadata for specified bucket
@@ -54,7 +51,7 @@ def get_bucket_metadata(storage, bucket, credentials):
             raise
 
 
-def list_buckets(storage, project, credentials):
+def list_buckets(storage, project):
     """
     Returns a list of storage objects within some given project
     
@@ -63,10 +60,7 @@ def list_buckets(storage, project, credentials):
     
     :type project: str 
     :param project: The Google Project name that you are retrieving buckets from
-    
-    :type credentials: A GoogleCredentials object 
-    :param credentials: The GoogleCredentials object used for authentication 
-    
+
     :rtype: list
     :return: List of storage objects
     """
@@ -95,6 +89,48 @@ def list_buckets(storage, project, credentials):
                     "Full details: %s"
                 ),
                 project,
+                e,
+            )
+            return None
+        else:
+            raise
+            
+def get_bucket_iam_policy(storage, bucket): 
+    """
+    Retrieves IAM policy about the given bucket.
+    
+    :type storage: A storage resource object
+    :param storage: The storage resource object created by googleapiclient.discovery.build()
+    
+    :type bucket: str
+    :param bucket: Google Cloud Bucket name
+    
+    :rtype: dict 
+    :return: IAM Policy for specified bucket
+    """
+    try:
+        req = storage.buckets().getIamPolicy(bucket=bucket)
+        res = req.execute()
+        return res
+    except HttpError as e:
+        reason = compute._get_error_reason(e)
+        if reason == 'notFound':
+            logger.debug(
+                (
+                    "The bucket %s was not found - returned a 404 not found error."
+                    "Full details: %s"
+                ),
+                bucket,
+                e,
+            )
+            return None
+        elif reason == 'forbidden':
+            logger.debug(
+                (
+                    "You do not have storage.bucket.getIamPolicy access to the bucket %s. "
+                    "Full details: %s"
+                ),
+                bucket,
                 e,
             )
             return None
