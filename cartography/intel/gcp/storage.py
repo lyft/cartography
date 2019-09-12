@@ -8,17 +8,18 @@ from oauth2client.client import GoogleCredentials
 from cartography.intel.gcp import compute
 logger = logging.getLogger(__name__)
 
+
 def get_bucket_metadata(storage, bucket):
     """
     Retrieves metadata about the given bucket
-    
+
     :type storage: A storage resource object
     :param storage: The storage resource object created by googleapiclient.discovery.build()
-    
+
     :type bucket: str
     :param bucket: Google Cloud Bucket name
-    
-    :rtype: dict 
+
+    :rtype: dict
     :return: Metadata for specified bucket
     """
     try:
@@ -29,23 +30,13 @@ def get_bucket_metadata(storage, bucket):
         reason = compute._get_error_reason(e)
         if reason == 'notFound':
             logger.debug(
-                (
-                    "The bucket %s was not found - returned a 404 not found error."
-                    "Full details: %s"
-                ),
-                bucket,
-                e,
-            )
+                ("The bucket %s was not found - returned a 404 not found error."
+                 "Full details: %s"), bucket, e, )
             return None
         elif reason == 'forbidden':
             logger.debug(
-                (
-                    "You do not have storage.bucket.get access to the bucket %s. "
-                    "Full details: %s"
-                ),
-                bucket,
-                e,
-            )
+                ("You do not have storage.bucket.get access to the bucket %s. "
+                 "Full details: %s"), bucket, e, )
             return None
         else:
             raise
@@ -54,13 +45,12 @@ def get_bucket_metadata(storage, bucket):
 def list_buckets(storage, project):
     """
     Returns a list of storage objects within some given project
-    
+
     :type storage: A storage resource object
     :param storage: The storage resource object created by googleapiclient.discovery.build()
-    
-    :type project: str 
-    :param project: The Google Project name that you are retrieving buckets from
 
+    :type project: str
+    :param project: The Google Project name that you are retrieving buckets from
     :rtype: list
     :return: List of storage objects
     """
@@ -84,28 +74,24 @@ def list_buckets(storage, project):
             return None
         elif reason == 'forbidden':
             logger.debug(
-                (
-                    "You do not have storage.bucket.list access to the project %s. "
-                    "Full details: %s"
-                ),
-                project,
-                e,
-            )
+                ("You do not have storage.bucket.list access to the project %s. "
+                 "Full details: %s"), project, e, )
             return None
         else:
             raise
-            
-def get_bucket_iam_policy(storage, bucket): 
+
+
+def get_bucket_iam_policy(storage, bucket):
     """
     Retrieves IAM policy about the given bucket.
-    
+
     :type storage: A storage resource object
     :param storage: The storage resource object created by googleapiclient.discovery.build()
-    
+
     :type bucket: str
     :param bucket: Google Cloud Bucket name
-    
-    :rtype: dict 
+
+    :rtype: dict
     :return: IAM Policy for specified bucket
     """
     try:
@@ -116,23 +102,13 @@ def get_bucket_iam_policy(storage, bucket):
         reason = compute._get_error_reason(e)
         if reason == 'notFound':
             logger.debug(
-                (
-                    "The bucket %s was not found - returned a 404 not found error."
-                    "Full details: %s"
-                ),
-                bucket,
-                e,
-            )
+                ("The bucket %s was not found - returned a 404 not found error."
+                 "Full details: %s"), bucket, e, )
             return None
         elif reason == 'forbidden':
             logger.debug(
-                (
-                    "You do not have storage.bucket.getIamPolicy access to the bucket %s. "
-                    "Full details: %s"
-                ),
-                bucket,
-                e,
-            )
+                ("You do not have storage.bucket.getIamPolicy access to the bucket %s. "
+                 "Full details: %s"), bucket, e, )
             return None
         else:
             raise
