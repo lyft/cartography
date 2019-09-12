@@ -10,7 +10,7 @@ from cartography.intel.gcp import crm
 from cartography.util import run_analysis_job
 
 logger = logging.getLogger(__name__)
-Resources = namedtuple('Resources', 'crm_v1 crm_v2 compute')
+Resources = namedtuple('Resources', 'crm_v1 crm_v2 compute storage')
 
 
 def _get_crm_resource_v1(credentials):
