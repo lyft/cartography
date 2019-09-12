@@ -46,8 +46,8 @@ def _get_compute_resource(credentials):
 
 def _get_storage_resource(credentials): 
     """
-    Instantiates a Google Cloud Storage resource object to call the Storage API. This is used to pull zone, instance, and
-    networking data. See https://cloud.google.com/storage/docs/json_api/.
+    Instantiates a Google Cloud Storage resource object to call the Storage API. This is used to pull bucket metadata 
+    and IAM Policies as well as list buckets in a specified project. See https://cloud.google.com/storage/docs/json_api/.
     :param credentials: The GoogleCredentials object
     :return: A Storage resource object
     """
