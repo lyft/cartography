@@ -44,6 +44,15 @@ def _get_compute_resource(credentials):
     """
     return googleapiclient.discovery.build('compute', 'v1', credentials=credentials, cache_discovery=False)
 
+def _get_storage_resource(credentials): 
+    """
+    Instantiates a Google Cloud Storage resource object to call the Storage API. This is used to pull zone, instance, and
+    networking data. See https://cloud.google.com/storage/docs/json_api/.
+    :param credentials: The GoogleCredentials object
+    :return: A Storage resource object
+    """
+    return googleapiclient.discovery.build('storage', 'v1', credentials=credentials, cache_discovery=False) 
+
 
 def _initialize_resources(credentials):
     """
@@ -55,6 +64,7 @@ def _initialize_resources(credentials):
         crm_v1=_get_crm_resource_v1(credentials),
         crm_v2=_get_crm_resource_v2(credentials),
         compute=_get_compute_resource(credentials),
+        storage=_get_storage_resource(credentials),
     )
 
 
