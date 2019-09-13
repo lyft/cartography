@@ -983,7 +983,6 @@ def transform_group_roles_data(data, okta_org_id):
     return user_roles
 
 
-# TODO - Make this one fail gracefuly with warning as it requires super admin token
 def _sync_roles(neo4j_session, okta_org_id, okta_update_tag):
     logger.debug("Syncing Okta Roles")
 

@@ -48,7 +48,11 @@ Time to set up the server that will run Cartography.  Cartography _should_ work 
         2. CREDENTIALS_CRXCAVATOR_API_KEY - your API key generated in the previous step. Note this is a credential and should be stored in an appropriate secret store to be populated securely into your runtime environment.
     3. If the credentials are configured, the CRXcavator module will run automatically on the next sync
 
-5. **Get and run Cartography**
+5. If you're using Okta intel module, **prepare your Okta API token**
+    1. Generate your API token by following the steps from [Okta Create An API Token documentation](https://developer.okta.com/docs/guides/create-an-api-token/overview/)
+    2. Populate the OKTA_API_KEY environment variable with the API token before running Cartography
+
+6. **Get and run Cartography**
 
 	1. Run `pip install cartography` to install our code.
 

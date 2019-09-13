@@ -25,28 +25,28 @@ Representation of a Okta [Organization](https://developer.okta.com/docs/concepts
 
 ### Relationships
 
-- OktaOrganization has OktaUser.
+- An OktaOrganization contains OktaUsers
 
     ```
     (OktaOrganization)-[RESOURCE]->(OktaUser)
     ```
 
-- OktaOrganization has OktaGroup.
+- An OktaOrganization contains OktaGroups.
 
     ```
     (OktaOrganization)-[RESOURCE]->(OktaGroup)
     ```
-- OktaOrganization has OktaApplication.
+- An OktaOrganization contains OktaApplications
 
     ```
     (OktaOrganization)-[RESOURCE]->(OktaApplication)
     ```
-- OktaOrganization has OktaTrustedOrigin.
+- An OktaOrganization has OktaTrustedOrigins
 
     ```
     (OktaOrganization)-[RESOURCE]->(OktaTrustedOrigin)
     ```
-- OktaOrganization has OktaAdministrationRole.
+- An OktaOrganization has OktaAdministrationRoles
 
     ```
     (OktaOrganization)-[RESOURCE]->(OktaAdministrationRole)
@@ -76,11 +76,11 @@ Representation of a Okta [Organization](https://developer.okta.com/docs/concepts
 
  ### Relationships
 
- - OktaUser is a resource of an OktaOrganization
+ - An OktaOrganization contains OktaUsers
     ```
     (OktaUser)<-[RESOURCE]->(OkOrganization)
     ```
- - OktaUser is assigned OktaApplication
+ - OktaUsers are assigned OktaApplication
 
     ```
     (OktaUser)-[APPLICATION]->(OktaApplication)
@@ -90,15 +90,15 @@ Representation of a Okta [Organization](https://developer.okta.com/docs/concepts
     ```
     (OktaUser)<-[IDENTITY_OKTA]-(Human)
     ```
- - OktaUser can be a member of a OktaGroup
+ - An OktaUser can be a member of a OktaGroup
      ```
     (OktaUser)-[MEMBER_OF_OKTA_GROUP]->(OktaGroup)
     ```
- - OktaUser can be a member of an OktaAdministrationRole
+ - An OktaUser can be a member of an OktaAdministrationRole
      ```
     (OktaUser)-[MEMBER_OF_OKTA_ROLE]->(OktaAdministrationRole)
     ```
- - OktaUser can have authentication Factors
+ - OktaUsers can have authentication factors
      ```
     (OktaUser)-[FACTOR]->(OktaUserFactor)
     ```
@@ -119,20 +119,20 @@ Representation of a Okta [Organization](https://developer.okta.com/docs/concepts
 | lastupdated |  Timestamp of the last time the node was updated |
 
  ### Relationships
-  - OktaGroup is a resource of an OktaOrganization
+  - OktaOrganizations contain OktaGroups
     ```
     (OktaGroup)<-[RESOURCE]->(OkOrganization)
     ```
- - OktaGroup is assigned OktaApplication
+ - OktaApplications can be assigned to OktaGroups
 
     ```
     (OktaGroup)-[APPLICATION]->(OktaApplication)
     ```
- - OktaGroup can have members of OktaUser
+ - An OktaUser can be a member of an OktaGroup
      ```
     (OktaUser)-[MEMBER_OF_OKTA_GROUP]->(OktaGroup)
     ```
- - OktaGroup can be a member of an OktaAdministrationRole
+ - An OktaGroup can be a member of an OktaAdministrationRole
      ```
     (OktaGroup)-[MEMBER_OF_OKTA_ROLE]->(OktaAdministrationRole)
     ```
@@ -145,7 +145,7 @@ Representation of a Okta Application (https://developer.okta.com/docs/reference/
 | name | application name |
 | label | application label |
 | created | application creation date |
-| okta_last_updated | date and time of last user property changes |
+| okta_last_updated | date and time of last application property changes |
 | status | application status |
 | activated | application activation state |
 | features | application features |
@@ -158,18 +158,18 @@ Representation of a Okta Application (https://developer.okta.com/docs/reference/
     ```
     (OktaApplication)<-[RESOURCE]->(OkOrganization)
     ```
- - OktaGroup is assigned OktaApplication
+ - OktaGroups can be assigned OktaApplications
 
     ```
     (OktaGroup)-[APPLICATION]->(OktaApplication)
     ```
- - OktaUser is assigned OktaApplication
+ - OktaUsers are assigned OktaApplications
 
     ```
     (OktaUser)-[APPLICATION]->(OktaApplication)
     ```
  ## OktaUserFactor
-Representation of a Okta user authentication factors (https://developer.okta.com/docs/reference/api/factors/).
+Representation of Okta user authentication factors (https://developer.okta.com/docs/reference/api/factors/).
 
 | Field | Description |
 |-------|--------------|
@@ -199,20 +199,20 @@ Representation of a Okta trusted origin for login/logout or recovery operations.
 | status | status |
 | created | date & time of creation in okta |
 | create_by | id of user who created the trusted origin |
-| okta_last_updated | date and time of last user property changes |
+| okta_last_updated | date and time of last property changes |
 | okta_last_updated_by | id of user who last updated the trusted origin |
 | firstseen| Timestamp of when a sync job first discovered this node  |
 | lastupdated |  Timestamp of the last time the node was updated |
 
 ### Relationships
-- OktaOrganization has OktaTrustedOrigin.
+- An OktaOrganization has OktaTrustedOrigins.
 
     ```
     (OktaOrganization)-[RESOURCE]->(OktaTrustedOrigin)
     ```
 
 ## OktaAdministrationRole
-Representation of Okta administration roles. For more information visa Okta documentation https://developer.okta.com/docs/reference/api/roles/
+Representation of Okta administration roles. For more information, visit Okta documentation https://developer.okta.com/docs/reference/api/roles/
 
 | Field | Description |
 |-------|--------------|
@@ -223,15 +223,15 @@ Representation of Okta administration roles. For more information visa Okta docu
 | lastupdated |  Timestamp of the last time the node was updated |
 
 ### Relationships
- - OktaUser can be a member of an OktaAdministrationRole
+ - OktaUsers can be members of OktaAdministrationRoles
      ```
     (OktaUser)-[MEMBER_OF_OKTA_ROLE]->(OktaAdministrationRole)
     ```
- - OktaGroup can be a member of an OktaAdministrationRole
+ - An OktaGroup can be a member of an OktaAdministrationRolee
      ```
     (OktaGroup)-[MEMBER_OF_OKTA_ROLE]->(OktaAdministrationRole)
     ```
-- OktaOrganization has OktaAdministrationRole.
+- An OktaOrganization contains OktaAdministrationRoles
 
     ```
     (OktaOrganization)-[RESOURCE]->(OktaAdministrationRole)
