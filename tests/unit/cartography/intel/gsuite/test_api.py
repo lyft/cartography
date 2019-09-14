@@ -43,6 +43,24 @@ def test_repeat_request_failure():
     assert raw_req_1.execute.call_count == 3
 
 
+def test_transform_api_objects():
+    resp_objs = [
+        {
+            'a': '1',
+            'b': '2',
+            'c': ['x'],
+        },
+        {
+            'a': '1',
+            'b': '2',
+            'c': ['y', 'z'],
+        },
+    ]
+    expected = ['x', 'y', 'z']
+    result = api.transform_api_objects(resp_objs, 'c')
+    assert result == expected
+
+
 @patch(
     'cartography.intel.gsuite.api.repeat_request', return_value=[
         {'users': [{'primaryEmail': 'employee1@test.lyft.com'}, {'primaryEmail': 'employee2@test.lyft.com'}]},
