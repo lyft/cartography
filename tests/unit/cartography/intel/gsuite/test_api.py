@@ -52,7 +52,6 @@ def test_transform_api_objects():
         },
         {
             'a': '1',
-            'b': '2',
             'c': ['y', 'z'],
         },
     ]
