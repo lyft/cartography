@@ -206,7 +206,6 @@ def transform_user_extensions(user_extension_json):
     :return: Tuple containing unique users list, unique extension list, and extension mapping for ingestion
     """
     user_extensions = user_extension_json.items()
-    users_set = set()
     extensions = []
     extensions_by_user = []
     for extension in user_extensions:
@@ -219,37 +218,25 @@ def transform_user_extensions(user_extension_json):
                 'name': details[1]['name'],
             })
             for user in details[1]['users']:
-                users_set.add(user)
                 extensions_by_user.append({
                     'id': f"{extension_id}|{version}",
                     'user': user,
                 })
-    if len(users_set) == 0:
-        raise ValueError('No users returned from CRXcavator')
     if len(extensions) == 0:
         raise ValueError('No extensions information returned from CRXcavator')
     if len(extensions_by_user) == 0:
         raise ValueError('No user->extension mapping returned from CRXcavator')
 
-    return list(users_set), extensions, extensions_by_user
+    return extensions, extensions_by_user
 
 
-def load_user_extensions(users, extensions_by_user, session, update_tag):
+def load_user_extensions(extensions_by_user, session, update_tag):
     """
     Ingests the extension to user mapping details into Neo4J
-    :param users: List of user objects to create for mapping
     :param extensions_by_user: List of user to extension id mappings
     :param session: Neo4J session object for server communication
     :param update_tag: Timestamp used to determine data freshness
     :return: None
-    """
-
-    user_ingestion_cypher = """
-    UNWIND {Users} as user_email
-    MERGE (user:GSuiteUser{email: user_email})
-    ON CREATE SET
-    user.firstseen = timestamp()
-    SET user.lastupdated = {UpdateTag}
     """
 
     extension_ingestion_cypher = """
@@ -261,8 +248,6 @@ def load_user_extensions(users, extensions_by_user, session, update_tag):
     SET r.lastupdated = {UpdateTag}
     """
 
-    logger.info(f'Ingesting {len(users)} users')
-    session.run(user_ingestion_cypher, Users=users, UpdateTag=update_tag)
     logger.info(f'Ingesting {len(extensions_by_user)} user->extension relationships')
     session.run(extension_ingestion_cypher, ExtensionsUsers=extensions_by_user, UpdateTag=update_tag)
 
@@ -278,8 +263,8 @@ def sync_extensions(neo4j_session, common_job_parameters, crxcavator_api_key, cr
     """
 
     user_extensions_json = get_users_extensions(crxcavator_api_key, crxcavator_base_url)
-    users, extensions_list, user_extensions = transform_user_extensions(user_extensions_json)
+    extensions_list, user_extensions = transform_user_extensions(user_extensions_json)
     extension_details = get_extensions(crxcavator_api_key, crxcavator_base_url, extensions_list)
     extensions = transform_extensions(extension_details)
     load_extensions(extensions, neo4j_session, common_job_parameters['UPDATE_TAG'])
-    load_user_extensions(users, user_extensions, neo4j_session, common_job_parameters['UPDATE_TAG'])
+    load_user_extensions(user_extensions, neo4j_session, common_job_parameters['UPDATE_TAG'])
