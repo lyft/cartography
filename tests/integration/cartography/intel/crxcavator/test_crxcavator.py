@@ -42,6 +42,12 @@ def test_transform_and_load_extensions(neo4j_session):
     ext.version,
     ext.risk_total,
     ext.risk_metadata,
+    ext.risk_permissions_score,
+    ext.risk_webstore_score,
+    ext.risk_csp_score,
+    ext.risk_optional_permissions_score,
+    ext.risk_extcalls_score,
+    ext.risk_vuln_score,
     ext.address,
     ext.email,
     ext.icon,
@@ -73,6 +79,12 @@ def test_transform_and_load_extensions(neo4j_session):
             n['ext.version'],
             n['ext.risk_total'],
             n['ext.risk_metadata'],
+            n['ext.risk_permissions_score'],
+            n['ext.risk_webstore_score'],
+            n['ext.risk_csp_score'],
+            n['ext.risk_optional_permissions_score'],
+            n['ext.risk_extcalls_score'],
+            n['ext.risk_vuln_score'],
             n['ext.address'],
             n['ext.email'],
             n['ext.icon'],
@@ -93,13 +105,20 @@ def test_transform_and_load_extensions(neo4j_session):
             n['ext.report_link'],
         ) for n in nodes
     ])
+    print(actual_nodes)
     expected_nodes = list([
         (
             expected_extension_id,
             'f06981cbc72a3c6e2e9e736cbdaef4865a4571bc',
             '1.0',
-            437,
+            344,
             '{}',
+            110,
+            12,
+            47,
+            85,
+            20,
+            80,
             '',
             '',
             'https://lh3.googleusercontent.com/fake',
@@ -129,7 +148,8 @@ def test_transform_and_load_user_extensions(neo4j_session):
     """
     users_res = tests.data.crxcavator.crxcavator.USER_RESPONSE
     type(users_res)
-    users_list, user_extensions_list = cartography.intel.crxcavator.crxcavator.transform_user_extensions(users_res)
+    users_list, extensions_list, user_extensions_list = \
+        cartography.intel.crxcavator.crxcavator.transform_user_extensions(users_res)
     cartography.intel.crxcavator.crxcavator.load_user_extensions(
         users_list,
         user_extensions_list,
@@ -138,23 +158,21 @@ def test_transform_and_load_user_extensions(neo4j_session):
     )
 
     query = """
-    MATCH(user:GSuiteUser{id:{UserId}})
+    MATCH(user:GSuiteUser{email:{GSuiteEmail}})
     RETURN user.id, user.email
     """
-    expected_user_id = 'user@example.com'
-    nodes = neo4j_session.run(query, UserId=expected_user_id)
+    expected_user_email = 'user@example.com'
+    nodes = neo4j_session.run(query, GSuiteEmail=expected_user_email)
 
     actual_nodes = list([
         (
-            n['user.id'],
-            n['user.email'],
+            n['user.email']
         ) for n in nodes
     ])
 
     expected_nodes = list([
         (
-            'user@example.com',
-            'user@example.com',
+            'user@example.com'
         ),
     ])
     assert actual_nodes == expected_nodes
@@ -168,7 +186,7 @@ def test_user_to_extension(neo4j_session):
     _ensure_local_neo4j_has_test_user_extensions_data(neo4j_session)
     query = """
     MATCH(user:GSuiteUser)-[:INSTALLS]->(ext:ChromeExtension{id:{ExtensionId}})
-    RETURN user.id, ext.id, ext.name
+    RETURN user.email, ext.id, ext.name
     """
     expected_extension_id = 'f06981cbc72a3c6e2e9e736cbdaef4865a4571bc|1.0'
     nodes = neo4j_session.run(
@@ -177,7 +195,7 @@ def test_user_to_extension(neo4j_session):
     )
     actual_nodes = {
         (
-            n['user.id'],
+            n['user.email'],
             n['ext.id'],
             n['ext.name'],
         ) for n in nodes

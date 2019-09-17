@@ -5,7 +5,7 @@ from cartography.util import run_cleanup_job
 logger = logging.getLogger(__name__)
 
 
-def link_aws_resources(session, update_tag):
+def link_aws_resources(neo4j_session, update_tag):
     # find records that point to other records
     link_records = """
     MATCH (n:AWSDNSRecord) WITH n MATCH (v:AWSDNSRecord{value: n.name})
@@ -13,7 +13,7 @@ def link_aws_resources(session, update_tag):
     ON CREATE SET p.firstseen = timestamp()
     SET p.lastupdated = {aws_update_tag}
     """
-    session.run(link_records, aws_update_tag=update_tag)
+    neo4j_session.run(link_records, aws_update_tag=update_tag)
 
     # find records that point to AWS LoadBalancers
     link_elb = """
@@ -22,7 +22,7 @@ def link_aws_resources(session, update_tag):
     ON CREATE SET p.firstseen = timestamp()
     SET p.lastupdated = {aws_update_tag}
     """
-    session.run(link_elb, aws_update_tag=update_tag)
+    neo4j_session.run(link_elb, aws_update_tag=update_tag)
 
     # find records that point to AWS EC2 Instances
     link_ec2 = """
@@ -31,10 +31,10 @@ def link_aws_resources(session, update_tag):
     ON CREATE SET p.firstseen = timestamp()
     SET p.lastupdated = {aws_update_tag}
     """
-    session.run(link_ec2, aws_update_tag=update_tag)
+    neo4j_session.run(link_ec2, aws_update_tag=update_tag)
 
 
-def load_a_records(session, records, update_tag):
+def load_a_records(neo4j_session, records, update_tag):
     ingest_records = """
     UNWIND {records} as record
     MERGE (a:DNSRecord:AWSDNSRecord{id: record.id})
@@ -46,14 +46,14 @@ def load_a_records(session, records, update_tag):
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {aws_update_tag}
     """
-    session.run(
+    neo4j_session.run(
         ingest_records,
         records=records,
         aws_update_tag=update_tag,
     )
 
 
-def load_alias_records(session, records, update_tag):
+def load_alias_records(neo4j_session, records, update_tag):
     # create the DNSRecord nodes and link them to matching DNSZone and S3Bucket nodes
     ingest_records = """
     UNWIND {records} as record
@@ -66,14 +66,14 @@ def load_alias_records(session, records, update_tag):
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {aws_update_tag}
     """
-    session.run(
+    neo4j_session.run(
         ingest_records,
         records=records,
         aws_update_tag=update_tag,
     )
 
 
-def load_cname_records(session, records, update_tag):
+def load_cname_records(neo4j_session, records, update_tag):
     ingest_records = """
     UNWIND {records} as record
     MERGE (a:DNSRecord:AWSDNSRecord{id: record.id})
@@ -85,14 +85,14 @@ def load_cname_records(session, records, update_tag):
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {aws_update_tag}
     """
-    session.run(
+    neo4j_session.run(
         ingest_records,
         records=records,
         aws_update_tag=update_tag,
     )
 
 
-def load_zone(session, zone, current_aws_id, update_tag):
+def load_zone(neo4j_session, zone, current_aws_id, update_tag):
     ingest_z = """
     MERGE (zone:DNSZone:AWSDNSZone{name: {ZoneName}})
     ON CREATE SET zone.firstseen = timestamp(), zone.zoneid = {ZoneId}
@@ -103,7 +103,7 @@ def load_zone(session, zone, current_aws_id, update_tag):
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {aws_update_tag}
     """
-    session.run(
+    neo4j_session.run(
         ingest_z,
         ZoneName=zone['name'][:-1],
         ZoneId=zone['zoneid'],
@@ -187,7 +187,7 @@ def parse_zone(zone):
     }
 
 
-def load_dns_details(session, dns_details, current_aws_id, update_tag):
+def load_dns_details(neo4j_session, dns_details, current_aws_id, update_tag):
     for zone, zone_record_sets in dns_details:
         zone_a_records = []
         zone_alias_records = []
@@ -195,7 +195,7 @@ def load_dns_details(session, dns_details, current_aws_id, update_tag):
 
         parsed_zone = parse_zone(zone)
 
-        load_zone(session, parsed_zone, current_aws_id, update_tag)
+        load_zone(neo4j_session, parsed_zone, current_aws_id, update_tag)
 
         for record_set in zone_record_sets:
             if record_set['Type'] == 'A' or record_set['Type'] == 'CNAME':
@@ -209,15 +209,15 @@ def load_dns_details(session, dns_details, current_aws_id, update_tag):
                     zone_cname_records.append(record)
 
         if zone_a_records:
-            load_a_records(session, zone_a_records, update_tag)
+            load_a_records(neo4j_session, zone_a_records, update_tag)
 
         if zone_alias_records:
-            load_alias_records(session, zone_alias_records, update_tag)
+            load_alias_records(neo4j_session, zone_alias_records, update_tag)
 
         if zone_cname_records:
-            load_cname_records(session, zone_cname_records, update_tag)
+            load_cname_records(neo4j_session, zone_cname_records, update_tag)
 
-    link_aws_resources(session, update_tag)
+    link_aws_resources(neo4j_session, update_tag)
 
 
 def get_zone_record_sets(client, zone_id):
@@ -242,17 +242,17 @@ def get_zones(client):
     return results
 
 
-def cleanup_route53(session, current_aws_id, update_tag):
+def cleanup_route53(neo4j_session, current_aws_id, update_tag):
     run_cleanup_job(
         'aws_dns_cleanup.json',
-        session,
+        neo4j_session,
         {'UPDATE_TAG': update_tag, 'AWS_ID': current_aws_id},
     )
 
 
-def sync_route53(session, boto3_session, aws_id, update_tag):
+def sync_route53(neo4j_session, boto3_session, aws_id, update_tag):
     logger.info("Syncing Route53 for account '%s'.", aws_id)
     client = boto3_session.client('route53')
     zones = get_zones(client)
-    load_dns_details(session, zones, aws_id, update_tag)
-    cleanup_route53(session, aws_id, update_tag)
+    load_dns_details(neo4j_session, zones, aws_id, update_tag)
+    cleanup_route53(neo4j_session, aws_id, update_tag)

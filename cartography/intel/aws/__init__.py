@@ -17,68 +17,68 @@ from cartography.util import run_cleanup_job
 logger = logging.getLogger(__name__)
 
 
-def _sync_one_account(session, boto3_session, account_id, regions, sync_tag, common_job_parameters):
+def _sync_one_account(neo4j_session, boto3_session, account_id, regions, sync_tag, common_job_parameters):
     # IAM
-    iam.sync(session, boto3_session, account_id, sync_tag, common_job_parameters)
+    iam.sync(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters)
 
     # S3
-    s3.sync(session, boto3_session, account_id, sync_tag, common_job_parameters)
+    s3.sync(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters)
 
     # Dynamo
-    dynamodb.sync_dynamodb_tables(session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
+    dynamodb.sync_dynamodb_tables(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
 
     # EC2
     # TODO move this to EC2 module
     logger.info("Syncing EC2 for account '%s'.", account_id)
-    ec2.sync_vpc(session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-    ec2.sync_ec2_security_groupinfo(session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-    ec2.sync_ec2_key_pairs(session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-    ec2.sync_ec2_instances(session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-    ec2.sync_ec2_auto_scaling_groups(session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-    ec2.sync_load_balancers(session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-    ec2.sync_vpc_peering(session, boto3_session, regions, sync_tag, account_id, common_job_parameters)
+    ec2.sync_vpc(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
+    ec2.sync_ec2_security_groupinfo(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
+    ec2.sync_ec2_key_pairs(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
+    ec2.sync_ec2_instances(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
+    ec2.sync_ec2_auto_scaling_groups(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
+    ec2.sync_load_balancers(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
+    ec2.sync_vpc_peering(neo4j_session, boto3_session, regions, sync_tag, account_id, common_job_parameters)
 
     # RDS
-    rds.sync_rds_instances(session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
+    rds.sync_rds_instances(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
 
     # NOTE each of the below will generate DNS records
     # Route53
-    route53.sync_route53(session, boto3_session, account_id, sync_tag)
+    route53.sync_route53(neo4j_session, boto3_session, account_id, sync_tag)
 
     # Elasticsearch
-    elasticsearch.sync(session, boto3_session, account_id, sync_tag)
+    elasticsearch.sync(neo4j_session, boto3_session, account_id, sync_tag)
 
     # NOTE clean up all DNS records, regardless of which job created them
-    run_cleanup_job('aws_account_dns_cleanup.json', session, common_job_parameters)
+    run_cleanup_job('aws_account_dns_cleanup.json', neo4j_session, common_job_parameters)
 
 
-def _sync_multiple_accounts(session, accounts, regions, sync_tag, common_job_parameters):
+def _sync_multiple_accounts(neo4j_session, accounts, regions, sync_tag, common_job_parameters):
     logger.debug("Syncing AWS accounts: %s", ', '.join(accounts.values()))
-    organizations.sync(session, accounts, sync_tag, common_job_parameters)
+    organizations.sync(neo4j_session, accounts, sync_tag, common_job_parameters)
 
     for profile_name, account_id in accounts.items():
         logger.info("Syncing AWS account with ID '%s' using configured profile '%s'.", account_id, profile_name)
         common_job_parameters["AWS_ID"] = account_id
         boto3_session = boto3.Session(profile_name=profile_name)
 
-        _sync_one_account(session, boto3_session, account_id, regions, sync_tag, common_job_parameters)
+        _sync_one_account(neo4j_session, boto3_session, account_id, regions, sync_tag, common_job_parameters)
 
     del common_job_parameters["AWS_ID"]
 
     # There may be orphan Principals which point outside of known AWS accounts. This job cleans
     # up those nodes after all AWS accounts have been synced.
-    run_cleanup_job('aws_post_ingestion_principals_cleanup.json', session, common_job_parameters)
+    run_cleanup_job('aws_post_ingestion_principals_cleanup.json', neo4j_session, common_job_parameters)
     # There may be orphan DNS entries that point outside of known AWS zones. This job cleans
     # up those entries after all AWS accounts have been synced.
-    run_cleanup_job('aws_post_ingestion_dns_cleanup.json', session, common_job_parameters)
+    run_cleanup_job('aws_post_ingestion_dns_cleanup.json', neo4j_session, common_job_parameters)
 
 
-def start_aws_ingestion(session, config):
+def start_aws_ingestion(neo4j_session, config):
     common_job_parameters = {
         "UPDATE_TAG": config.update_tag,
     }
     try:
-        default_boto3_session = boto3.Session()
+        boto3_session = boto3.Session()
     except (botocore.exceptions.BotoCoreError, botocore.exceptions.ClientError) as e:
         logger.debug("Error occurred calling boto3.Session().", exc_info=True)
         logger.error(
@@ -92,9 +92,9 @@ def start_aws_ingestion(session, config):
         return
 
     if config.aws_sync_all_profiles:
-        aws_accounts = organizations.get_aws_accounts_from_botocore_config(default_boto3_session)
+        aws_accounts = organizations.get_aws_accounts_from_botocore_config(boto3_session)
     else:
-        aws_accounts = organizations.get_aws_account_default(default_boto3_session)
+        aws_accounts = organizations.get_aws_account_default(boto3_session)
 
     if not aws_accounts:
         logger.warning(
@@ -111,7 +111,7 @@ def start_aws_ingestion(session, config):
         )
 
     try:
-        regions = ec2.get_ec2_regions(default_boto3_session)
+        regions = ec2.get_ec2_regions(boto3_session)
     except botocore.exceptions.ClientError as e:
         logger.debug("Error occurred getting EC2 regions.", exc_info=True)
         logger.error(
@@ -123,10 +123,10 @@ def start_aws_ingestion(session, config):
         )
         return
 
-    _sync_multiple_accounts(session, aws_accounts, regions, config.update_tag, common_job_parameters)
+    _sync_multiple_accounts(neo4j_session, aws_accounts, regions, config.update_tag, common_job_parameters)
 
     run_analysis_job(
         'aws_ec2_asset_exposure.json',
-        session,
+        neo4j_session,
         common_job_parameters,
     )

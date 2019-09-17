@@ -122,6 +122,7 @@ Representation of a GCP [Organization](https://cloud.google.com/resource-manager
 | zone_name | The zone that the instance is installed on |
 | hostname | If present, the hostname of the instance |
 | internet_exposed | Set to True  with `exposed_internet_type = 'direct'` if there is an 'allow' IPRule attached to one of the instance's ingress firewalls with the following conditions:  The 'allow' IpRule allows traffic from one or more TCP ports, and the 'allow' IpRule is not superceded by a 'deny' IPRule (in GCP, a firewall rule of priority 1 gets applied ahead of a firewall rule of priority 100, and 'deny' rules of the same priority are applied ahead of 'allow' rules) |
+| status | The [GCP Instance Lifecycle](https://cloud.google.com/compute/docs/instances/instance-life-cycle) state of the instance |
 
 ### Relationships
 
