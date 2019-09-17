@@ -2,19 +2,22 @@ import json
 import logging
 
 import requests.auth
+from requests import exceptions
 
 logger = logging.getLogger(__name__)
 
 
-def get_extensions(crxcavator_api_key, crxcavator_base_url):
+def get_extension_details(crxcavator_api_key, crxcavator_base_url, extension_id, version):
     """
-    Get all of the installed extension metadata
+    Get metadata for the specific extension_id and version number provided
     :param crxcavator_api_key: The API key to access the CRXcavator service
     :param crxcavator_base_url: The URL for the CRXcavator API
+    :param extension_id: The extension id to request metadata for
+    :param version: The version number of the extension to request metadata for
     :return: JSON text blob containing all extension metadata defined at
     https://crxcavator.io/apidocs#tag/group/paths/~1group~1extensions~1combined/get
     """
-    return call_crxcavator_api("/group/extensions/combined", crxcavator_api_key, crxcavator_base_url)
+    return call_crxcavator_api(f"/report/{extension_id}/{version}", crxcavator_api_key, crxcavator_base_url)
 
 
 def get_users_extensions(crxcavator_api_key, crxcavator_base_url):
@@ -49,53 +52,101 @@ def call_crxcavator_api(api_and_parameters, crxcavator_api_key, crxcavator_base_
     return data.json()
 
 
-def transform_extensions(extension_json):
+def get_extensions(crxcavator_api_key, crxcavator_base_url, extensions_list):
+    """
+    Retrieves the detailed information for all the extension_id and version pairs
+    :param crxcavator_api_key: The API key to access the CRXcavator service
+    :param crxcavator_base_url: The URL for the CRXcavator API
+    :param extensions_list: list of dictonary items containing the extension_id and version pairs
+    :return: list containing all metadata for extensions
+    """
+    extensions_details = []
+    for extension in extensions_list:
+        extension_id = extension['extension_id']
+        version = extension['version']
+        name = extension['name']
+        try:
+            details = get_extension_details(crxcavator_api_key, crxcavator_base_url, extension_id, version)
+            if not details:
+                # we only have the name and version from group API, create minimal version
+                logger.debug(f"No results returned from report API for extension {extension_id} {version}")
+                details = {
+                    'data': dict(
+                        webstore={
+                            'name': name,
+                        },
+                    ), 'extension_id': extension_id, 'version': version,
+                }
+            extensions_details.append(details)
+        except exceptions.RequestException as e:
+            logger.info(f"API error retrieving details for extension {extension_id}", e)
+    return extensions_details
+
+
+def transform_extensions(extension_details):
     """
     Transforms the raw extensions JSON from the API into a list of extensions data
-    :param extension_json:  The JSON text blob returned from the CRXcavator API
+    :param extension_details:  List containing the extension details
     :return: List containing extension info for ingestion
     """
     # the JSON returned from the CRXcavator API does not return well formatted objects
     # instead, each object is named after it's key, making enumeration more difficult
     # will build a cleaner object for import into graph
 
-    _data_index = 1
-
     extensions = []
-    for extension in extension_json.items():
-        for details in extension[_data_index]:
-            if not details:
-                logger.warning(f'Could not retrieve details for extension {extension}')
-                continue
-            extension_id = details['extension_id']
-            version = details['version']
-            data = details['data']
-            extensions.append({
-                'id': f"{extension_id}|{version}",
-                'extension_id': extension_id,
-                'version': version,
-                'risk_total': data['risk'].get('total'),
-                'risk_metadata': json.dumps(data['risk'].get('metadata')),
-                'address': data['webstore'].get('address'),
-                'email': data['webstore'].get('email'),
-                'icon': data['webstore'].get('icon'),
-                'crxcavator_last_updated': data['webstore'].get('last_updated'),
-                'name': data['webstore'].get('name'),
-                'offered_by': data['webstore'].get('offered_by'),
-                'permissions_warnings': data['webstore'].get('permission_warnings'),
-                'privacy_policy': data['webstore'].get('privacy_policy'),
-                'rating': data['webstore'].get('rating'),
-                'rating_users': data['webstore'].get('rating_users'),
-                'short_description': data['webstore'].get('short_description'),
-                'size': data['webstore'].get('size'),
-                'support_site': data['webstore'].get('support_site'),
-                'users': data['webstore'].get('users'),
-                'website': data['webstore'].get('website'),
-                'type': data['webstore'].get('type'),
-                'price': data['webstore'].get('price'),
-                'report_link': "https://crxcavator.io/report/" + extension_id + "/" + version,
-            })
+    for extension in extension_details:
+        extension_id = extension['extension_id']
+        version = extension['version']
+        data = extension.get('data')
+        if not data:
+            logger.warning(f'Could not retrieve details for extension {extension}')
+            continue
+        risk = data.get('risk', {})
+        webstore = data.get('webstore', {})
+        extensions.append({
+            'id': f"{extension_id}|{version}",
+            'extension_id': extension_id,
+            'version': version,
+            'risk_total': risk.get('total', 0),
+            'risk_permissions_score': get_risk_data(risk, 'permissions'),
+            'risk_webstore_score': get_risk_data(risk, 'webstore'),
+            'risk_metadata': json.dumps(risk.get('metadata')),
+            'risk_optional_permissions_score': get_risk_data(risk, 'optional_permissions'),
+            'risk_csp_score': get_risk_data(risk, 'csp'),
+            'risk_extcalls_score': get_risk_data(risk, 'extcalls'),
+            'risk_vuln_score': get_risk_data(risk, 'retire'),
+            'address': webstore.get('address'),
+            'email': webstore.get('email'),
+            'icon': webstore.get('icon'),
+            'crxcavator_last_updated': webstore.get('last_updated'),
+            'name': webstore.get('name'),
+            'offered_by': webstore.get('offered_by'),
+            'permissions_warnings': webstore.get('permission_warnings'),
+            'privacy_policy': webstore.get('privacy_policy'),
+            'rating': webstore.get('rating'),
+            'rating_users': webstore.get('rating_users'),
+            'short_description': webstore.get('short_description'),
+            'size': webstore.get('size'),
+            'support_site': webstore.get('support_site'),
+            'users': webstore.get('users'),
+            'website': webstore.get('website'),
+            'type': webstore.get('type'),
+            'price': webstore.get('price'),
+            'report_link': f"https://crxcavator.io/report/{extension_id}/{version}",
+        })
     return extensions
+
+
+def get_risk_data(data_dict, key):
+    """
+    Gets the total risk value from the provided key and returns the value else 0
+    :param data_dict: input data dictionary to parse
+    :param key: key name to retrieve
+    :return:
+    """
+    data = data_dict.get(key)
+    data_score = data.get('total', 0) if data else 0
+    return data_score
 
 
 def load_extensions(extensions, session, update_tag):
@@ -116,7 +167,13 @@ def load_extensions(extensions, session, update_tag):
     SET
     e.extcalls = extension.extcalls,
     e.risk_total = extension.risk_total,
+    e.risk_permissions_score = extension.risk_permissions_score,
     e.risk_metadata = extension.risk_metadata,
+    e.risk_webstore_score = extension.risk_webstore_score,
+    e.risk_optional_permissions_score = extension.risk_optional_permissions_score,
+    e.risk_csp_score = extension.risk_csp_score,
+    e.risk_extcalls_score = extension.risk_extcalls_score,
+    e.risk_vuln_score = extension.risk_vuln_score,
     e.address = extension.address,
     e.email = extension.email,
     e.icon = extension.icon,
@@ -138,7 +195,7 @@ def load_extensions(extensions, session, update_tag):
     e.lastupdated = {UpdateTag}
     """
 
-    logger.info('Ingesting {} extensions'.format(len(extensions)))
+    logger.info(f'Ingesting {len(extensions)} extensions')
     session.run(ingestion_cypher, ExtensionsData=extensions, UpdateTag=update_tag)
 
 
@@ -146,25 +203,35 @@ def transform_user_extensions(user_extension_json):
     """
     Transforms the raw extensions JSON from the API into a list of extensions mapped to users
     :param user_extension_json:  The JSON text blob returned from the CRXcavator API
-    :return: Tuple containing unique users list and extension info for ingestion
+    :return: Tuple containing unique users list, unique extension list, and extension mapping for ingestion
     """
     user_extensions = user_extension_json.items()
     users_set = set()
+    extensions = []
     extensions_by_user = []
     for extension in user_extensions:
         for details in extension[1].items():
+            extension_id = extension[0]
+            version = details[0]
+            extensions.append({
+                'extension_id': extension_id,
+                'version': version,
+                'name': details[1]['name'],
+            })
             for user in details[1]['users']:
                 users_set.add(user)
                 extensions_by_user.append({
-                    'id': "{}|{}".format(extension[0], details[0]),
+                    'id': f"{extension_id}|{version}",
                     'user': user,
                 })
     if len(users_set) == 0:
         raise ValueError('No users returned from CRXcavator')
+    if len(extensions) == 0:
+        raise ValueError('No extensions information returned from CRXcavator')
     if len(extensions_by_user) == 0:
         raise ValueError('No user->extension mapping returned from CRXcavator')
 
-    return list(users_set), extensions_by_user
+    return list(users_set), extensions, extensions_by_user
 
 
 def load_user_extensions(users, extensions_by_user, session, update_tag):
@@ -179,7 +246,7 @@ def load_user_extensions(users, extensions_by_user, session, update_tag):
 
     user_ingestion_cypher = """
     UNWIND {Users} as user_email
-    MERGE (user:GSuiteUser{id: user_email, email: user_email})
+    MERGE (user:GSuiteUser{email: user_email})
     ON CREATE SET
     user.firstseen = timestamp()
     SET user.lastupdated = {UpdateTag}
@@ -194,25 +261,25 @@ def load_user_extensions(users, extensions_by_user, session, update_tag):
     SET r.lastupdated = {UpdateTag}
     """
 
-    logger.info('Ingesting {} users'.format(len(users)))
+    logger.info(f'Ingesting {len(users)} users')
     session.run(user_ingestion_cypher, Users=users, UpdateTag=update_tag)
-    logger.info('Ingesting {} user->extension relationships'.format(len(extensions_by_user)))
+    logger.info(f'Ingesting {len(extensions_by_user)} user->extension relationships')
     session.run(extension_ingestion_cypher, ExtensionsUsers=extensions_by_user, UpdateTag=update_tag)
 
 
-def sync_extensions(session, common_job_parameters, crxcavator_api_key, crxcavator_base_url):
+def sync_extensions(neo4j_session, common_job_parameters, crxcavator_api_key, crxcavator_base_url):
     """
     Performs the sequential tasks to collect, transform, and sync extension data
-    :param session: Neo4J session for database interface
+    :param neo4j_session: Neo4J session for database interface
     :param common_job_parameters: Common job parameters containing UPDATE_TAG
     :param crxcavator_api_key: The API key to access the CRXcavator service
     :param crxcavator_base_url: The URL for the CRXcavator API
     :return: None
     """
-    extension_json = get_extensions(crxcavator_api_key, crxcavator_base_url)
-    extensions = transform_extensions(extension_json)
-    load_extensions(extensions, session, common_job_parameters['UPDATE_TAG'])
 
     user_extensions_json = get_users_extensions(crxcavator_api_key, crxcavator_base_url)
-    users, user_extensions = transform_user_extensions(user_extensions_json)
-    load_user_extensions(users, user_extensions, session, common_job_parameters['UPDATE_TAG'])
+    users, extensions_list, user_extensions = transform_user_extensions(user_extensions_json)
+    extension_details = get_extensions(crxcavator_api_key, crxcavator_base_url, extensions_list)
+    extensions = transform_extensions(extension_details)
+    load_extensions(extensions, neo4j_session, common_job_parameters['UPDATE_TAG'])
+    load_user_extensions(users, user_extensions, neo4j_session, common_job_parameters['UPDATE_TAG'])

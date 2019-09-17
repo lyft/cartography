@@ -13,18 +13,18 @@ def get_account_from_arn(arn):
     return arn.split(":")[4]
 
 
-def get_caller_identity(session):
-    client = session.client('sts')
+def get_caller_identity(boto3_session):
+    client = boto3_session.client('sts')
     return client.get_caller_identity()
 
 
-def get_current_aws_account_id(session):
-    return get_caller_identity(session)['Account']
+def get_current_aws_account_id(boto3_session):
+    return get_caller_identity(boto3_session)['Account']
 
 
-def get_aws_account_default(session):
+def get_aws_account_default(boto3_session):
     try:
-        return {"default": get_current_aws_account_id(session)}
+        return {"default": get_current_aws_account_id(boto3_session)}
     except (botocore.exceptions.BotoCoreError, botocore.exceptions.ClientError) as e:
         logger.debug("Error occurred getting default AWS account number.", exc_info=True)
         logger.error(
@@ -38,14 +38,14 @@ def get_aws_account_default(session):
         return {}
 
 
-def get_aws_accounts_from_botocore_config(session):
+def get_aws_accounts_from_botocore_config(boto3_session):
     d = {}
-    for profile_name in session.available_profiles:
+    for profile_name in boto3_session.available_profiles:
         if profile_name == 'default':
             logger.debug("Skipping AWS profile 'default'.")
             continue
         try:
-            boto3_session = boto3.Session(profile_name=profile_name)
+            profile_boto3_session = boto3.Session(profile_name=profile_name)
         except (botocore.exceptions.BotoCoreError, botocore.exceptions.ClientError) as e:
             logger.debug("Error occurred calling boto3.Session() with profile_name '%s'.", profile_name, exc_info=True)
             logger.error(
@@ -59,7 +59,7 @@ def get_aws_accounts_from_botocore_config(session):
             )
             continue
         try:
-            d[profile_name] = get_current_aws_account_id(boto3_session)
+            d[profile_name] = get_current_aws_account_id(profile_boto3_session)
         except (botocore.exceptions.BotoCoreError, botocore.exceptions.ClientError) as e:
             logger.debug(
                 "Error occurred getting AWS account number with profile_name '%s'.",

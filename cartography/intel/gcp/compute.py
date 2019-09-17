@@ -414,6 +414,7 @@ def load_gcp_instances(neo4j_session, data, gcp_update_tag):
     i.hostname = {Hostname},
     i.zone_name = {ZoneName},
     i.project_id = {ProjectId},
+    i.status = {Status},
     i.lastupdated = {gcp_update_tag}
     WITH i, p
 
@@ -430,6 +431,7 @@ def load_gcp_instances(neo4j_session, data, gcp_update_tag):
             InstanceName=instance['name'],
             ZoneName=instance['zone_name'],
             Hostname=instance.get('hostname', None),
+            Status=instance['status'],
             gcp_update_tag=gcp_update_tag,
         )
         _attach_instance_tags(neo4j_session, instance, gcp_update_tag)
@@ -605,7 +607,7 @@ def _attach_gcp_nics(neo4j_session, instance, gcp_update_tag):
             query,
             InstanceId=instance['partial_uri'],
             NicId=nic_id,
-            NetworkIP=nic['networkIP'],
+            NetworkIP=nic.get('networkIP'),
             NicName=nic['name'],
             gcp_update_tag=gcp_update_tag,
             SubnetPartialUri=nic['subnet_partial_uri'],
@@ -811,50 +813,50 @@ def _attach_target_tags(neo4j_session, fw, gcp_update_tag):
         )
 
 
-def cleanup_gcp_instances(session, common_job_parameters):
+def cleanup_gcp_instances(neo4j_session, common_job_parameters):
     """
     Delete out-of-date GCP instance nodes and relationships
-    :param session: The Neo4j session
+    :param neo4j_session: The Neo4j session
     :param common_job_parameters: dict of other job parameters to pass to Neo4j
     :return: Nothing
     """
-    run_cleanup_job('gcp_compute_instance_cleanup.json', session, common_job_parameters)
+    run_cleanup_job('gcp_compute_instance_cleanup.json', neo4j_session, common_job_parameters)
 
 
-def cleanup_gcp_vpcs(session, common_job_parameters):
+def cleanup_gcp_vpcs(neo4j_session, common_job_parameters):
     """
     Delete out-of-date GCP VPC nodes and relationships
-    :param session: The Neo4j session
+    :param neo4j_session: The Neo4j session
     :param common_job_parameters: dict of other job parameters to pass to Neo4j
     :return: Nothing
     """
-    run_cleanup_job('gcp_compute_vpc_cleanup.json', session, common_job_parameters)
+    run_cleanup_job('gcp_compute_vpc_cleanup.json', neo4j_session, common_job_parameters)
 
 
-def cleanup_gcp_subnets(session, common_job_parameters):
+def cleanup_gcp_subnets(neo4j_session, common_job_parameters):
     """
     Delete out-of-date GCP VPC subnet nodes and relationships
-    :param session: The Neo4j session
+    :param neo4j_session: The Neo4j session
     :param common_job_parameters: dict of other job parameters to pass to Neo4j
     :return: Nothing
     """
-    run_cleanup_job('gcp_compute_vpc_subnet_cleanup.json', session, common_job_parameters)
+    run_cleanup_job('gcp_compute_vpc_subnet_cleanup.json', neo4j_session, common_job_parameters)
 
 
-def cleanup_gcp_firewall_rules(session, common_job_parameters):
+def cleanup_gcp_firewall_rules(neo4j_session, common_job_parameters):
     """
     Delete out of date GCP firewalls and their relationships
-    :param session: The Neo4j session
+    :param neo4j_session: The Neo4j session
     :param common_job_parameters: dict of other job parameters to pass to Neo4j
     :return: Nothing
     """
-    run_cleanup_job('gcp_compute_firewall_cleanup.json', session, common_job_parameters)
+    run_cleanup_job('gcp_compute_firewall_cleanup.json', neo4j_session, common_job_parameters)
 
 
-def sync_gcp_instances(session, compute, project_id, zones, gcp_update_tag, common_job_parameters):
+def sync_gcp_instances(neo4j_session, compute, project_id, zones, gcp_update_tag, common_job_parameters):
     """
     Get GCP instances using the Compute resource object, ingest to Neo4j, and clean up old data.
-    :param session: The Neo4j session object
+    :param neo4j_session: The Neo4j session object
     :param compute: The GCP Compute resource object
     :param project_id: The project ID number to sync.  See  the `projectId` field in
     https://cloud.google.com/resource-manager/reference/rest/v1/projects
@@ -866,14 +868,14 @@ def sync_gcp_instances(session, compute, project_id, zones, gcp_update_tag, comm
     """
     instance_responses = get_gcp_instance_responses(project_id, zones, compute)
     instance_list = transform_gcp_instances(instance_responses)
-    load_gcp_instances(session, instance_list, gcp_update_tag)
-    cleanup_gcp_instances(session, common_job_parameters)
+    load_gcp_instances(neo4j_session, instance_list, gcp_update_tag)
+    cleanup_gcp_instances(neo4j_session, common_job_parameters)
 
 
-def sync_gcp_vpcs(session, compute, project_id, gcp_update_tag, common_job_parameters):
+def sync_gcp_vpcs(neo4j_session, compute, project_id, gcp_update_tag, common_job_parameters):
     """
     Get GCP VPCs, ingest to Neo4j, and clean up old data.
-    :param session: The Neo4j session
+    :param neo4j_session: The Neo4j session
     :param compute: The GCP Compute resource object
     :param project_id: The project ID to sync
     :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
@@ -882,22 +884,22 @@ def sync_gcp_vpcs(session, compute, project_id, gcp_update_tag, common_job_param
     """
     vpc_res = get_gcp_vpcs(project_id, compute)
     vpcs = transform_gcp_vpcs(vpc_res)
-    load_gcp_vpcs(session, vpcs, gcp_update_tag)
-    cleanup_gcp_vpcs(session, common_job_parameters)
+    load_gcp_vpcs(neo4j_session, vpcs, gcp_update_tag)
+    cleanup_gcp_vpcs(neo4j_session, common_job_parameters)
 
 
-def sync_gcp_subnets(session, compute, project_id, regions, gcp_update_tag, common_job_parameters):
+def sync_gcp_subnets(neo4j_session, compute, project_id, regions, gcp_update_tag, common_job_parameters):
     for r in regions:
         subnet_res = get_gcp_subnets(project_id, r, compute)
         subnets = transform_gcp_subnets(subnet_res)
-        load_gcp_subnets(session, subnets, gcp_update_tag)
-        cleanup_gcp_subnets(session, common_job_parameters)
+        load_gcp_subnets(neo4j_session, subnets, gcp_update_tag)
+        cleanup_gcp_subnets(neo4j_session, common_job_parameters)
 
 
-def sync_gcp_firewall_rules(session, compute, project_id, gcp_update_tag, common_job_parameters):
+def sync_gcp_firewall_rules(neo4j_session, compute, project_id, gcp_update_tag, common_job_parameters):
     """
     Sync GCP firewalls
-    :param session: The Neo4j session
+    :param neo4j_session: The Neo4j session
     :param compute: The Compute resource object
     :param project_id: The project ID that the firewalls are in
     :param common_job_parameters: dict of other job params to pass to Neo4j
@@ -905,8 +907,8 @@ def sync_gcp_firewall_rules(session, compute, project_id, gcp_update_tag, common
     """
     fw_response = get_gcp_firewall_ingress_rules(project_id, compute)
     fw_list = transform_gcp_firewall(fw_response)
-    load_gcp_ingress_firewalls(session, fw_list, gcp_update_tag)
-    cleanup_gcp_firewall_rules(session, common_job_parameters)
+    load_gcp_ingress_firewalls(neo4j_session, fw_list, gcp_update_tag)
+    cleanup_gcp_firewall_rules(neo4j_session, common_job_parameters)
 
 
 def _zones_to_regions(zones):
@@ -923,10 +925,10 @@ def _zones_to_regions(zones):
     return list(regions)
 
 
-def sync(session, compute, project_id, gcp_update_tag, common_job_parameters):
+def sync(neo4j_session, compute, project_id, gcp_update_tag, common_job_parameters):
     """
     Sync all objects that we need the GCP Compute resource object for.
-    :param session: The Neo4j session object
+    :param neo4j_session: The Neo4j session object
     :param compute: The GCP Compute resource object
     :param project_id: The project ID number to sync.
     :param project_id: The project ID number to sync.  See  the `projectId` field in
@@ -942,7 +944,7 @@ def sync(session, compute, project_id, gcp_update_tag, common_job_parameters):
         return
     else:
         regions = _zones_to_regions(zones)
-        sync_gcp_vpcs(session, compute, project_id, gcp_update_tag, common_job_parameters)
-        sync_gcp_firewall_rules(session, compute, project_id, gcp_update_tag, common_job_parameters)
-        sync_gcp_subnets(session, compute, project_id, regions, gcp_update_tag, common_job_parameters)
-        sync_gcp_instances(session, compute, project_id, zones, gcp_update_tag, common_job_parameters)
+        sync_gcp_vpcs(neo4j_session, compute, project_id, gcp_update_tag, common_job_parameters)
+        sync_gcp_firewall_rules(neo4j_session, compute, project_id, gcp_update_tag, common_job_parameters)
+        sync_gcp_subnets(neo4j_session, compute, project_id, regions, gcp_update_tag, common_job_parameters)
+        sync_gcp_instances(neo4j_session, compute, project_id, zones, gcp_update_tag, common_job_parameters)
