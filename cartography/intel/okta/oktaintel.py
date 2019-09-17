@@ -320,10 +320,10 @@ def _sync_okta_groups(neo4_session, okta_org_id, okta_update_tag):
     logger.debug("Syncing Okta groups")
     api_client = _create_api_client(okta_org_id, "/api/v1/groups")
 
-    data = _get_okta_groups(api_client)
-    _load_okta_groups(neo4_session, okta_org_id, data, okta_update_tag)
+    group_list_info = _get_okta_groups(api_client)
+    _load_okta_groups(neo4_session, okta_org_id, group_list_info, okta_update_tag)
 
-    _load_okta_group_membership(neo4_session, api_client, okta_org_id, okta_update_tag)
+    _load_okta_group_membership(neo4_session, api_client, group_list_info, okta_update_tag)
 
 
 def _create_okta_organization(neo4j_session, organization, okta_update_tag):
@@ -399,22 +399,6 @@ def _get_okta_groups_id_from_graph(neo4j_session, okta_org_id):
     return groups
 
 
-def _get_okta_application_id_from_graph(neo4j_session, okta_org_id):
-    """
-    Get the okta applications from the graph
-    :param neo4j_session: session with the Neo4j server
-    :param okta_org_id: okta organization id
-    :return: Array of application id
-    """
-    app_query = "MATCH (:OktaOrganization{id: {ORG_ID}})-[:RESOURCE]->(app:OktaApplication) return app.id as id"
-
-    result = neo4j_session.run(app_query, ORG_ID=okta_org_id)
-
-    apps = [r['id'] for r in result]
-
-    return apps
-
-
 def _get_okta_group_members(api_client, group_id):
     """
     Get group members from Okta server
@@ -465,17 +449,18 @@ def transform_okta_group_member(raw_json_response):
     return member_list
 
 
-def _load_okta_group_membership(neo4j_session, api_client, okta_org_id, okta_update_tag):
+def _load_okta_group_membership(neo4j_session, api_client, group_list_info, okta_update_tag):
     """
     Map group members in the graph
     :param neo4j_session: session with the Neo4j server
     :param api_client: Okta api client
-    :param okta_org_id: Okta organization id
+    :param group_list_info: Group information as list
     :param okta_update_tag: The timestamp value to set our new Neo4j resources with
     :return: Nothing
     """
 
-    for group_id in _get_okta_groups_id_from_graph(neo4j_session, okta_org_id):
+    for group_info in group_list_info:
+        group_id = group_info["id"]
         members = _get_okta_group_members(api_client, group_id)
         _ingest_okta_group_members(neo4j_session, group_id, members, okta_update_tag)
 
@@ -1183,11 +1168,16 @@ def sync(neo4j_session, config):
 
     # need creds with permission
     # soft fail as some won't be able to get such high priv token
+    # when we get the E0000006 error
+    # see https://developer.okta.com/docs/reference/error-codes/
     try:
         _sync_roles(session, okta_organization, last_update)
-    except Exception as exception:
-        print("Unable to sync admin roles - api token needs admin rights to pull admin roles data")
-        logger.warning(f"Unable to pull admin roles got {exception}")
+    except OktaError as okta_error:
+        logger.warning(f"Unable to pull admin roles got {okta_error}")
+
+        # Getting roles requires super admin which most won't be able to get easily
+        if okta_error.error_code == "E0000006":
+            print("Unable to sync admin roles - api token needs admin rights to pull admin roles data")
 
     _cleanup_okta_organizations(neo4j_session, common_job_parameters)
 
