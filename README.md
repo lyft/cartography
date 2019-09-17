@@ -336,7 +336,6 @@ There are many ways to allow Cartography to pull from more than one AWS account.
 			region=<the region of your Hub account, e.g. us-east-1>
 			output=json
 
-
 	3.  Add a profile for each AWS account you want Cartography to sync with to your `AWS_CONFIG_FILE`.  It will look something like this:
 
 		```
