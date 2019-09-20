@@ -182,7 +182,7 @@ All contributors and participants agree to abide by its terms.
 
 #### How to test your code contributions
 
-See [these docs](docs/testing.md).
+See [these docs](docs/developer-guide.md).
 
 #### Sign the Contributor License Agreement (CLA)
 

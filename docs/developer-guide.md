@@ -1,4 +1,6 @@
-## How to test Cartography as a developer
+# Cartography Developer Guide
+
+## Testing
 
 ### Running from source
 
