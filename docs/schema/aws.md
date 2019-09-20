@@ -558,12 +558,12 @@ Representation of an AWS [DynamoDBTable](https://docs.aws.amazon.com/amazondynam
 | region | The AWS region of the table |
 | **arn** | The AWS-unique identifier
 
-### Relationships 
+### Relationships
 - DynamoDBTables belong to AWS Accounts.
 
 	```
 	(AWSAccount)-[RESOURCE]->(DynamoDBTable)
-   ```
+	```
 
 
 ## EC2Instance
