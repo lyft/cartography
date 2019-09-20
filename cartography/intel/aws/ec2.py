@@ -1008,3 +1008,14 @@ def sync_vpc_peering(
         data = get_ec2_vpc_peering(boto3_session, region)
         load_ec2_vpc_peering(neo4j_session, data, aws_update_tag)
     cleanup_ec2_vpc_peering(neo4j_session, common_job_parameters)
+
+
+def sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters):
+    logger.info("Syncing EC2 for account '%s'.", account_id)
+    sync_vpc(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
+    sync_ec2_security_groupinfo(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
+    sync_ec2_key_pairs(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
+    sync_ec2_instances(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
+    sync_ec2_auto_scaling_groups(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
+    sync_load_balancers(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
+    sync_vpc_peering(neo4j_session, boto3_session, regions, sync_tag, account_id, common_job_parameters)
