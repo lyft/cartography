@@ -1,3 +1,17 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Cartography Schema](#cartography-schema)
+    - [ℹ️ Quick notes on notation](#-quick-notes-on-notation)
+  - [Amazon Web Services](#amazon-web-services)
+  - [Google Cloud Platform](#google-cloud-platform)
+  - [GSuite](#gsuite)
+  - [CRXcavator Platform](#crxcavator-platform)
+  - [More to come!](#more-to-come)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Cartography Schema
 
 ### ℹ️ Quick notes on notation

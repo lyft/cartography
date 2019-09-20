@@ -1,3 +1,83 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Cartography - Amazon Web Services Schema](#cartography---amazon-web-services-schema)
+  - [Table of contents](#table-of-contents)
+  - [AWSAccount](#awsaccount)
+    - [Relationships](#relationships)
+  - [AWSCidrBlock](#awscidrblock)
+    - [AWSIpv4CidrBlock](#awsipv4cidrblock)
+    - [AWSIpv6CidrBlock](#awsipv6cidrblock)
+    - [Relationships](#relationships-1)
+  - [AWSGroup](#awsgroup)
+    - [Relationships](#relationships-2)
+  - [AWSPolicy](#awspolicy)
+    - [Relationships](#relationships-3)
+  - [AWSPrincipal](#awsprincipal)
+    - [Relationships](#relationships-4)
+  - [AWSPrincipal::AWSUser](#awsprincipalawsuser)
+    - [Relationships](#relationships-5)
+  - [AWSPrincipal::AWSRole](#awsprincipalawsrole)
+    - [Relationships](#relationships-6)
+  - [AWSVpc](#awsvpc)
+    - [Relationships](#relationships-7)
+  - [AccountAccessKey](#accountaccesskey)
+    - [Relationships](#relationships-8)
+  - [DBSubnetGroup](#dbsubnetgroup)
+    - [Relationships](#relationships-9)
+  - [DNSRecord](#dnsrecord)
+    - [Relationships](#relationships-10)
+  - [DNSRecord::AWSDNSRecord](#dnsrecordawsdnsrecord)
+    - [Relationships](#relationships-11)
+  - [DNSZone](#dnszone)
+    - [Relationships](#relationships-12)
+  - [DNSZone::AWSDNSZone](#dnszoneawsdnszone)
+    - [Relationships](#relationships-13)
+  - [DynamoDBTable](#dynamodbtable)
+    - [Relationships ](#relationships)
+  - [ EC2Instanc](#ec2instanc)
+    - [ Relationship](#relationship)
+  - [ EC2KeyPai](#ec2keypai)
+    - [ Relationship](#relationship-1)
+  - [ EC2Reservatio](#ec2reservatio)
+    - [ Relationship](#relationship-2)
+  - [ EC2SecurityGroup](#ec2securitygroup)
+    - [# Relationshi](#-relationshi)
+  - [# EC2Subn](#-ec2subn)
+    - [# Relationshi](#-relationshi-1)
+  - [# ESDoma](#-esdoma)
+    - [posed_interne](#posed_interne)
+  - [`
+
+## En](#%0A%0A-en)
+    - [# Relationshi](#-relationshi-2)
+  - [# Endpoint::ELBListen](#-endpointelblisten)
+    - [# Relationshi](#-relationshi-3)
+  - [# ](#)
+    - [# Relationshi](#-relationshi-4)
+  - [# IpRu](#-ipru)
+    - [# Relationshi](#-relationshi-5)
+  - [# IpRule::IpPermissionInbou](#-ipruleippermissioninbou)
+    - [port | Highes](#port--highes)
+  - [# LoadBalanc](#-loadbalanc)
+    - [# Relationshi](#-relationshi-6)
+  - [`
+
+## NetworkInt](#%0A%0A-networkint)
+    - [# Relationshi](#-relationshi-7)
+  - [# RDSInstan](#-rdsinstan)
+    - [# Relationshi](#-relationshi-8)
+  - [ ```
+](#)
+    - [# Relationshi](#-relationshi-9)
+  - [`
+
+## S3](#%0A%0A-s3)
+    - [onymous_acces](#onymous_acces)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Cartography - Amazon Web Services Schema
 
 ## Table of contents

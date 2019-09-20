@@ -1,3 +1,16 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [How to use Drift-Detection](#how-to-use-drift-detection)
+  - [Intro](#intro)
+  - [A Quick Example: Tracking internet-exposed EC2 instances](#a-quick-example-tracking-internet-exposed-ec2-instances)
+    - [Setup](#setup)
+    - [Running drift-detection](#running-drift-detection)
+    - [Using shortcuts instead of filenames to diff files](#using-shortcuts-instead-of-filenames-to-diff-files)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # How to use Drift-Detection
 
 ## Intro

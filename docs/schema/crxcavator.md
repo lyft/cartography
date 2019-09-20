@@ -1,3 +1,15 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Cartography - Google Cloud Platform Schema](#cartography---google-cloud-platform-schema)
+  - [Table of contents](#table-of-contents)
+  - [GSuiteUser](#gsuiteuser)
+    - [Relationships](#relationships)
+    - [Relationships](#relationships-1)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Cartography - Google Cloud Platform Schema
 
 ## Table of contents

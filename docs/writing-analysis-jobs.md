@@ -1,3 +1,21 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [How to extend Cartography with Analysis Jobs](#how-to-extend-cartography-with-analysis-jobs)
+  - [Intro](#intro)
+    - [The stages](#the-stages)
+    - [How to run](#how-to-run)
+  - [Example job: which of my EC2 instances is accessible to any host on the internet?](#example-job-which-of-my-ec2-instances-is-accessible-to-any-host-on-the-internet)
+    - [Our goal](#our-goal)
+    - [The logic in plain English](#the-logic-in-plain-english)
+    - [Translating the plain-English logic into Neo4j's Cypher syntax](#translating-the-plain-english-logic-into-neo4js-cypher-syntax)
+    - [The skeleton of an Analysis Job](#the-skeleton-of-an-analysis-job)
+      - [Clean up first, then update](#clean-up-first-then-update)
+  - [Recap](#recap)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # How to extend Cartography with Analysis Jobs
 
 ## Intro
