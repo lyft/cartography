@@ -14,3 +14,39 @@ DESCRIBE_KEY_PAIRS = {
         },
     ],
 }
+
+
+DESCRIBE_TAGS = {
+    "Tags": [
+        {
+            "ResourceType": "instance",
+            "ResourceId": "tagged-instance",
+            "Value": "foo",
+            "Key": "Name",
+        },
+        {
+            "ResourceType": "network-interface",
+            "ResourceId": "tagged-network-interface",
+            "Value": "bar",
+            "Key": "Name",
+        },
+        {
+            "ResourceType": "security-group",
+            "ResourceId": "tagged-security-group",
+            "Value": "High",
+            "Key": "Importance",
+        },
+        {
+            "ResourceType": "subnet",
+            "ResourceId": "tagged-subnet",
+            "Value": "Test",
+            "Key": "Environment",
+        },
+        {
+            "ResourceType": "vpc",
+            "ResourceId": "tagged-vpc",
+            "Value": "Private",
+            "Key": "Name",
+        },
+    ],
+}

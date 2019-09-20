@@ -1,5 +1,6 @@
 import logging
 import time
+from string import Template
 
 import botocore.config
 
@@ -76,6 +77,46 @@ def get_ec2_vpcs(boto3_session, region):
     client = boto3_session.client('ec2', region_name=region, config=_get_botocore_config())
     # paginator not supported by boto
     return client.describe_vpcs()
+
+
+def get_ec2_tags(boto3_session, region):
+    client = boto3_session.client('ec2', region_name=region, config=_get_botocore_config())
+    paginator = client.get_paginator('describe_tags')
+    tags = []
+    for page in paginator.paginate(
+            Filters=[{
+                'Name': 'resource-type',
+                'Values': [
+                    # 'customer-gateway',
+                    # 'dedicated-host',
+                    # 'dhcp-options',
+                    # 'elastic-ip',
+                    # 'fleet',
+                    # 'fpga-image',
+                    # 'image',
+                    'instance',
+                    # 'host-reservation',
+                    # 'internet-gateway',
+                    # 'launch-template',
+                    # 'natgateway',
+                    # 'network-acl',
+                    'network-interface',
+                    # 'reserved-instances',
+                    # 'route-table',
+                    'security-group',
+                    # 'snapshot',
+                    # 'spot-instances-request',
+                    'subnet',
+                    # 'volume',
+                    'vpc',
+                    # 'vpc-peering-connection',
+                    # 'vpn-connection',
+                    # 'vpn-gateway'
+                ],
+            }],
+    ):
+        tags.extend(page['Tags'])
+    return {'Tags': tags}
 
 
 def load_ec2_key_pairs(neo4j_session, data, region, current_aws_account_id, aws_update_tag):
@@ -847,6 +888,50 @@ def load_ec2_vpcs(neo4j_session, data, region, current_aws_account_id, aws_updat
         )
 
 
+TAG_RESOURCE_TYPE_MAPPINGS = {
+    'instance': {'label': 'EC2Instance', 'property': 'instanceid'},
+    'network-interface': {'label': 'NetworkInterface', 'property': 'id'},
+    'security-group': {'label': 'EC2SecurityGroup', 'property': 'id'},
+    'subnet': {'label': 'EC2Subnet', 'property': 'subnetid'},
+    'vpc': {'label': 'AWSVPC', 'property': 'id'},
+}
+
+TAG_INGEST_TEMPLATE = Template("""
+MATCH (n:$label{$property: {id}})
+WITH n
+MERGE (tag:Tag{key: {Key}})
+ON CREATE SET tag.firstseen = timestamp()
+WITH tag, n
+MERGE (n)<-[r:TAGGED]-(tag)
+ON CREATE SET r.firstseen = timestamp()
+SET r.value = {Value}, r.lastupdated = {aws_update_tag}
+""")
+
+
+def get_tag_ingest_statement(resource_type):
+    mapping = TAG_RESOURCE_TYPE_MAPPINGS.get(resource_type)
+    if mapping:
+        return TAG_INGEST_TEMPLATE.safe_substitute(
+            label=mapping.get('label'),
+            property=mapping.get('property'),
+        )
+    return None
+
+
+def load_ec2_tags(neo4j_session, data, aws_update_tag):
+    for tag in data['Tags']:
+        ingest_statement = get_tag_ingest_statement(tag.get('ResourceType'))
+        if ingest_statement:
+            logger.debug('Adding tag %s to %s', tag.get('Key'), tag.get('ResourceId'))
+            neo4j_session.run(
+                ingest_statement,
+                Key=tag.get('Key'),
+                Value=tag.get('Value'),
+                id=tag.get('ResourceId'),
+                aws_update_tag=aws_update_tag,
+            )
+
+
 def _get_cidr_association_statement(block_type):
     ingest_cidr = """
     MATCH (vpc:AWSVpc{id: {VpcId}})
@@ -936,6 +1021,10 @@ def cleanup_ec2_vpc_peering(neo4j_session, common_job_parameters):
     run_cleanup_job('aws_import_vpc_peering_cleanup.json', neo4j_session, common_job_parameters)
 
 
+def cleanup_ec2_tags(neo4j_session, common_job_parameters):
+    run_cleanup_job('aws_import_tags_cleanup.json', neo4j_session, common_job_parameters)
+
+
 def sync_ec2_security_groupinfo(
         neo4j_session, boto3_session, regions, current_aws_account_id, aws_update_tag,
         common_job_parameters,
@@ -1010,6 +1099,17 @@ def sync_vpc_peering(
     cleanup_ec2_vpc_peering(neo4j_session, common_job_parameters)
 
 
+def sync_tags(
+    neo4j_session, boto3_session, regions, current_aws_account_id, aws_update_tag,
+    common_job_parameters,
+):
+    for region in regions:
+        logger.debug("Syncing EC2 tags for region '%s' in account '%s'.", region, current_aws_account_id)
+        data = get_ec2_tags(boto3_session, region)
+        load_ec2_tags(neo4j_session, data, aws_update_tag)
+    cleanup_ec2_tags(neo4j_session, common_job_parameters)
+
+
 def sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters):
     logger.info("Syncing EC2 for account '%s'.", account_id)
     sync_vpc(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
@@ -1019,3 +1119,4 @@ def sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job
     sync_ec2_auto_scaling_groups(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     sync_load_balancers(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     sync_vpc_peering(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
+    sync_tags(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)

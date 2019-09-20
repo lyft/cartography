@@ -1,3 +1,5 @@
+from string import Template
+
 import cartography.intel.aws.ec2
 import tests.data.aws.ec2
 
@@ -39,6 +41,54 @@ def test_load_ec2_key_pairs(neo4j_session, *args):
         (
             n['k.arn'],
             n['k.keyfingerprint'],
+        )
+        for n in nodes
+    }
+    assert actual_nodes == expected_nodes
+
+
+def test_load_ec2_tags(neo4j_session):
+    # Add resources that can be tagged
+    MERGE_TEMPLATE = Template("""
+        MERGE (n:$label{$property: 'tagged-${type}'})
+        ON CREATE SET n.firstseen = timestamp()
+        SET n.lastupdated = {aws_update_tag}
+        """)
+
+    for type, mapping in cartography.intel.aws.ec2.TAG_RESOURCE_TYPE_MAPPINGS.items():
+        insert_statement = MERGE_TEMPLATE.safe_substitute(
+            type=type,
+            label=mapping.get('label'),
+            property=mapping.get('property'),
+        )
+        neo4j_session.run(insert_statement, aws_update_tag=TEST_UPDATE_TAG)
+
+    # Add tags
+    data = tests.data.aws.ec2.DESCRIBE_TAGS
+    cartography.intel.aws.ec2.load_ec2_tags(
+        neo4j_session,
+        data,
+        TEST_UPDATE_TAG,
+    )
+
+    expected_nodes = {
+        ('Environment', 'Test', 'EC2Subnet'),
+        ('Importance', 'High', 'EC2SecurityGroup'),
+        ('Name', 'Private', 'AWSVPC'),
+        ('Name', 'bar', 'NetworkInterface'),
+        ('Name', 'foo', 'EC2Instance'),
+    }
+
+    nodes = neo4j_session.run(
+        """
+        MATCH (t:Tag)-[r:TAGGED]->(n) return t.key, r.value, labels(n)[0] AS label
+        """
+    )
+    actual_nodes = {
+        (
+            n['t.key'],
+            n['r.value'],
+            n['label'],
         )
         for n in nodes
     }
