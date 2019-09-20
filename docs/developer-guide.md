@@ -41,7 +41,7 @@ if __name__ == '__main__':
 Which can then be invoked using `python custom_sync.py` and will have all the features of the cartography CLI while only including the intel modules you are specifically interested in using. For example:
 
 ```sh
-cartography$ python3 custom_sync.py
+cartography$ python custom_sync.py
 INFO:cartography.sync:Starting sync with update tag '1569022981'
 INFO:cartography.sync:Starting sync stage 'create-indexes'
 INFO:cartography.intel.create_indexes:Creating indexes for cartography node types.
