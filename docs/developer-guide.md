@@ -25,8 +25,8 @@ from cartography.intel import create_indexes
 def build_custom_sync():
     s = sync.Sync()
     s.add_stages([
-        ('create-indexes', create_indexes.start_aws_ingestion),
-        ('aws', aws.sync),
+        ('create-indexes', create_indexes.run),
+        ('aws', aws.start_aws_ingestion),
     ])
     return s
 
