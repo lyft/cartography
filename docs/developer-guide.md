@@ -75,7 +75,7 @@ After completing the section above, you are now able to manually test intel modu
 
 ## Implementing custom sync commands
 
-By default, cartography will try to sync every intel module included as part of the default sync. If you're not using certain intel modules you can create a custom sync script and invoke it using the cartography CLI. For example, if you're only interested in the AWS intel module you can create a sync script that looks like this:
+By default, cartography will try to sync every intel module included as part of the default sync. If you're not using certain intel modules you can create a custom sync script and invoke it using the cartography CLI. For example, if you're only interested in the AWS intel module you can create a sync script, `custom_sync.py`, that looks like this:
 
 ```python
 from cartography import cli
