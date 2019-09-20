@@ -1,39 +1,75 @@
 # Cartography - Amazon Web Services Schema
 
-## Table of contents
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
 - [AWSAccount](#awsaccount)
+  - [Relationships](#relationships)
 - [AWSCidrBlock](#awscidrblock)
+  - [AWSIpv4CidrBlock](#awsipv4cidrblock)
+  - [AWSIpv6CidrBlock](#awsipv6cidrblock)
+  - [Relationships](#relationships-1)
 - [AWSGroup](#awsgroup)
-- [AWSIpv4CidrBlock](#awsipv4cidrblock)
-- [AWSIpv6CidrBlock](#awsipv6cidrblock)
+  - [Relationships](#relationships-2)
 - [AWSPolicy](#awspolicy)
+  - [Relationships](#relationships-3)
 - [AWSPrincipal](#awsprincipal)
+  - [Relationships](#relationships-4)
 - [AWSPrincipal::AWSUser](#awsprincipalawsuser)
-- [AWSRole](#awsrole)
+  - [Relationships](#relationships-5)
+- [AWSPrincipal::AWSRole](#awsprincipalawsrole)
+  - [Relationships](#relationships-6)
 - [AWSVpc](#awsvpc)
+  - [Relationships](#relationships-7)
 - [AccountAccessKey](#accountaccesskey)
+  - [Relationships](#relationships-8)
+- [DBSubnetGroup](#dbsubnetgroup)
+  - [Relationships](#relationships-9)
 - [DNSRecord](#dnsrecord)
+  - [Relationships](#relationships-10)
 - [DNSRecord::AWSDNSRecord](#dnsrecordawsdnsrecord)
+  - [Relationships](#relationships-11)
 - [DNSZone](#dnszone)
+  - [Relationships](#relationships-12)
 - [DNSZone::AWSDNSZone](#dnszoneawsdnszone)
+  - [Relationships](#relationships-13)
 - [DynamoDBTable](#dynamodbtable)
+  - [Relationships](#relationships-14)
 - [EC2Instance](#ec2instance)
+  - [Relationships](#relationships-15)
 - [EC2KeyPair](#ec2keypair)
+  - [Relationships](#relationships-16)
 - [EC2Reservation](#ec2reservation)
+  - [Relationships](#relationships-17)
 - [EC2SecurityGroup](#ec2securitygroup)
+  - [Relationships](#relationships-18)
 - [EC2Subnet](#ec2subnet)
+  - [Relationships](#relationships-19)
 - [ESDomain](#esdomain)
+  - [Relationships](#relationships-20)
 - [Endpoint](#endpoint)
+  - [Relationships](#relationships-21)
 - [Endpoint::ELBListener](#endpointelblistener)
+  - [Relationships](#relationships-22)
 - [Ip](#ip)
+  - [Relationships](#relationships-23)
 - [IpRule](#iprule)
+  - [Relationships](#relationships-24)
 - [IpRule::IpPermissionInbound](#ipruleippermissioninbound)
+  - [Relationships](#relationships-25)
 - [LoadBalancer](#loadbalancer)
+  - [Relationships](#relationships-26)
 - [NetworkInterface](#networkinterface)
+  - [Relationships](#relationships-27)
 - [RDSInstance](#rdsinstance)
+  - [Relationships](#relationships-28)
 - [S3Acl](#s3acl)
+  - [Relationships](#relationships-29)
 - [S3Bucket](#s3bucket)
+  - [Relationships](#relationships-30)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 
 ## AWSAccount
@@ -88,11 +124,11 @@ type for `AWSIpv4CidrBlock` and `AWSIpv6CidrBlock`
 | Field | Description |
 |-------|-------------|
 |firstseen| Timestamp of when a sync job discovered this node|
-|cidr_block| The CIDR block|
-|block_state| The state of the block|
-|association_id| the association id if the block is associated to a VPC
+|cidr\_block| The CIDR block|
+|block\_state| The state of the block|
+|association\_id| the association id if the block is associated to a VPC
 |lastupdated| Timestamp of the last time the node was updated|
-|**id**| Unique identifier defined with the VPC association and the cidr_block
+|**id**| Unique identifier defined with the VPC association and the cidr\_block
 
 ### Relationships
 - `AWSVpc` association
@@ -307,8 +343,8 @@ More information on https://docs.aws.amazon.com/cli/latest/reference/ec2/describ
 |-------|-------------|
 |firstseen| Timestamp of when a sync job discovered this node|
 |vpcid| The VPC unique identifier|
-|primary_cidr_block|The primary IPv4 CIDR block for the VPC.|
-|instance_tenancy| The allowed tenancy of instances launched into the VPC.|
+|primary\_cidr\_block|The primary IPv4 CIDR block for the VPC.|
+|instance\_tenancy| The allowed tenancy of instances launched into the VPC.|
 |state| The current state of the VPC.|
 |region| (optional) the region of this VPC.  This field is only available on VPCs in your account.  It is not available on VPCs that are external to your account and linked via a VPC peering relationship.
 |**id**| Unique identifier defined VPC node (vpcid)
@@ -359,7 +395,7 @@ Representation of an RDS [DB Subnet Group](https://docs.aws.amazon.com/AmazonRDS
 |lastupdated| Timestamp of the last time the node was updated|
 |description| Description of the DB Subnet Group|
 |status| The status of the group |
-|vpc_id| The ID of the VPC (Virtual Private Cloud) that this DB Subnet Group is associated with.|
+|vpc\_id| The ID of the VPC (Virtual Private Cloud) that this DB Subnet Group is associated with.|
 |value| The IP address that the DNSRecord points to|
 
 ### Relationships
@@ -515,12 +551,12 @@ Representation of an AWS [DynamoDBTable](https://docs.aws.amazon.com/amazondynam
 | region | The AWS region of the table |
 | **arn** | The AWS-unique identifier
 
-### Relationships 
+### Relationships
 - DynamoDBTables belong to AWS Accounts.
 
 	```
 	(AWSAccount)-[RESOURCE]->(DynamoDBTable)
-   ```
+	```
 
 
 ## EC2Instance
@@ -543,7 +579,7 @@ Our representation of an AWS [EC2 Instance](https://docs.aws.amazon.com/AWSEC2/l
 | state | The [current state](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_InstanceState.html) of the instance.
 | launchtimeunix | The time the instance was launched in unix time |
 | region | The AWS region this Instance is running in|
-| exposed_internet |  The `exposed_internet` flag on an EC2 instance is set to `True` when (1) the instance is part of an EC2 security group or is connected to a network interface connected to an EC2 security group that allows connectivity from the 0.0.0.0/0 subnet or (2) the instance is connected to an Elastic Load Balancer that has its own `exposed_internet` flag set to `True`. |
+| exposed\_internet |  The `exposed_internet` flag on an EC2 instance is set to `True` when (1) the instance is part of an EC2 security group or is connected to a network interface connected to an EC2 security group that allows connectivity from the 0.0.0.0/0 subnet or (2) the instance is connected to an Elastic Load Balancer that has its own `exposed_internet` flag set to `True`. |
 
 
 ### Relationships
@@ -646,7 +682,7 @@ Representation of an AWS EC2 [Reservation](https://docs.aws.amazon.com/AWSEC2/la
 	```
 
 
-## EC2SecurityGroup 
+## EC2SecurityGroup
 Representation of an AWS EC2 [Security Group](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_SecurityGroup.html).
 
 | Field | Description |
@@ -737,18 +773,18 @@ Representation of an AWS [ElasticSearch Domain](https://docs.aws.amazon.com/elas
 |-------|-------------|
 | firstseen| Timestamp of when a sync job first discovered this node  |
 | lastupdated |  Timestamp of the last time the node was updated |
-| elasticsearch\_cluster\_config_instancetype | The instancetype |
-| elasticsearch_version | The version of elasticsearch |
-| elasticsearch\_cluster\_config_zoneawarenessenabled | Indicates whether multiple Availability Zones are enabled.  |
-| elasticsearch\_cluster\_config_dedicatedmasterenabled | Indicates whether dedicated master nodes are enabled for the cluster. True if the cluster will use a dedicated master node. False if the cluster will not.  |
-| elasticsearch\_cluster\_config_dedicatedmastercount |Number of dedicated master nodes in the cluster.|
-| elasticsearch\_cluster\_config_dedicatedmastertype | Amazon ES instance type of the dedicated master nodes in the cluster.|
+| elasticsearch\_cluster\_config\_instancetype | The instancetype |
+| elasticsearch\_version | The version of elasticsearch |
+| elasticsearch\_cluster\_config\_zoneawarenessenabled | Indicates whether multiple Availability Zones are enabled.  |
+| elasticsearch\_cluster\_config\_dedicatedmasterenabled | Indicates whether dedicated master nodes are enabled for the cluster. True if the cluster will use a dedicated master node. False if the cluster will not.  |
+| elasticsearch\_cluster\_config\_dedicatedmastercount |Number of dedicated master nodes in the cluster.|
+| elasticsearch\_cluster\_config\_dedicatedmastertype | Amazon ES instance type of the dedicated master nodes in the cluster.|
 | domainid | Unique identifier for an Amazon ES domain. |
-| encryption\_at\_rest\_options_enabled | Specify true to enable encryption at rest. |
+| encryption\_at\_rest\_options\_enabled | Specify true to enable encryption at rest. |
 | deleted | Status of the deletion of an Amazon ES domain. True if deletion of the domain is complete. False if domain deletion is still in progress. |
 | **id** | same as `domainid` |
 | **arn** |Amazon Resource Name (ARN) of an Amazon ES domain. |
-| exposed_internet | `exposed_internet` is set to `True` if the ElasticSearch domain has a policy applied to it that makes it internet-accessible.  This policy determination is made by using the [policyuniverse](https://github.com/Netflix-Skunkworks/policyuniverse) library.  The code for this augmentation is implemented at `cartography.intel.aws.elasticsearch._process_access_policy()`. |
+| exposed\_internet | `exposed_internet` is set to `True` if the ElasticSearch domain has a policy applied to it that makes it internet-accessible.  This policy determination is made by using the [policyuniverse](https://github.com/Netflix-Skunkworks/policyuniverse) library.  The code for this augmentation is implemented at `cartography.intel.aws.elasticsearch._process_access_policy()`. |
 
 ### Relationships
 
@@ -802,8 +838,8 @@ Representation of an AWS Elastic Load Balancer [Listener](https://docs.aws.amazo
 | protocol | The protocol of this endpoint |
 | port | The port of this endpoint |
 | **id** | The ELB ID.  This is a concatenation of the DNS name, port, and protocol. |
-| instance_port | The port open on the EC2 instance that this listener is connected to |
-| instance_protocol | The protocol defined on the EC2 instance that this listener is connected to |
+| instance\_port | The port open on the EC2 instance that this listener is connected to |
+| instance\_protocol | The protocol defined on the EC2 instance that this listener is connected to |
 
 
 ### Relationships
@@ -899,7 +935,7 @@ Represents an AWS Elastic Load Balancer.  See [spec for details](https://docs.aw
 | region| The region of the load balancer |
 |createdtime | The date and time the load balancer was created. |
 |canonicalhostedzonenameid| The ID of the Amazon Route 53 hosted zone for the load balancer. |
-| exposed_internet | The `exposed_internet` flag is set to `True` when the load balancer's `scheme` field is set to `internet-facing`.  This indicates that the load balancer has a public DNS name that resolves to a public IP address. |
+| exposed\_internet | The `exposed_internet` flag is set to `True` when the load balancer's `scheme` field is set to `internet-facing`.  This indicates that the load balancer has a public DNS name that resolves to a public IP address. |
 
 
 ### Relationships
@@ -954,11 +990,11 @@ Representation of a generic Network Interface.  Currently however, we only creat
 |-------|-------------|
 | firstseen| Timestamp of when a sync job first discovered this node  |
 | lastupdated |  Timestamp of the last time the node was updated |
-| mac_address| The MAC address of the network interface|
+| mac\_address| The MAC address of the network interface|
 | description |  Description of the network interface|
-| private\_ip_address| The IPv4 address of the network interface within the subnet |
+| private\_ip\_address| The IPv4 address of the network interface within the subnet |
 | **id** | The ID of the network interface.  (known as `networkInterfaceId` in EC2) |
-| private\_dns_name| The private DNS name |
+| private\_dns\_name| The private DNS name |
 | status | Status of the network interface.  Valid Values: `available | associated | attaching | in-use | detaching ` |
 
 
@@ -993,30 +1029,30 @@ Representation of an AWS Relational Database Service [DBInstance](https://docs.a
 | lastupdated |  Timestamp of the last time the node was updated |
 | **id**                               | The Amazon Resource Name (ARN) for the DB instance. |
 | **db\_instance_identifier**           | Contains a user-supplied database identifier. This identifier is the unique key that identifies a DB instance.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| availability_zone                | Specifies the name of the Availability Zone the DB instance is located in.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| backup\_retention_period          | Specifies the number of days for which automatic DB snapshots are retained.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| preferred\_backup_window          | Specifies the daily time range during which automated backups are created if automated backups are enabled, as determined by the BackupRetentionPeriod.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| ca\_certificate_identifier        | The identifier of the CA certificate for this DB instance.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| db\_cluster_identifier            | If the DB instance is a member of a DB cluster, contains the name of the DB cluster that the DB instance is a member of.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| db\_instance_class                | Contains the name of the compute and memory capacity class of the DB instance.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| db\_instance_port                 | Specifies the port that the DB instance listens on.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| dbi\_resource_id                  | The AWS Region-unique, immutable identifier for the DB instance. This identifier is found in AWS CloudTrail log entries whenever the AWS KMS key for the DB instance is accessed.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| db_name                          | The meaning of this parameter differs according to the database engine you use. For example, this value returns MySQL, MariaDB, or PostgreSQL information when returning values from CreateDBInstanceReadReplica since Read Replicas are only supported for these engines.<br><br>**MySQL, MariaDB, SQL Server, PostgreSQL:** Contains the name of the initial database of this instance that was provided at create time, if one was specified when the DB instance was created. This same name is returned for the life of the DB instance.<br><br>**Oracle:** Contains the Oracle System ID (SID) of the created DB instance. Not shown when the returned parameters do not apply to an Oracle DB instance. |
+| availability\_zone                | Specifies the name of the Availability Zone the DB instance is located in.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| backup\_retention\_period          | Specifies the number of days for which automatic DB snapshots are retained.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| preferred\_backup\_window          | Specifies the daily time range during which automated backups are created if automated backups are enabled, as determined by the BackupRetentionPeriod.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ca\_certificate\_identifier        | The identifier of the CA certificate for this DB instance.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| db\_cluster\_identifier            | If the DB instance is a member of a DB cluster, contains the name of the DB cluster that the DB instance is a member of.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| db\_instance\_class                | Contains the name of the compute and memory capacity class of the DB instance.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| db\_instance\_port                 | Specifies the port that the DB instance listens on.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| dbi\_resource\_id                  | The AWS Region-unique, immutable identifier for the DB instance. This identifier is found in AWS CloudTrail log entries whenever the AWS KMS key for the DB instance is accessed.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| db\_name                          | The meaning of this parameter differs according to the database engine you use. For example, this value returns MySQL, MariaDB, or PostgreSQL information when returning values from CreateDBInstanceReadReplica since Read Replicas are only supported for these engines.<br><br>**MySQL, MariaDB, SQL Server, PostgreSQL:** Contains the name of the initial database of this instance that was provided at create time, if one was specified when the DB instance was created. This same name is returned for the life of the DB instance.<br><br>**Oracle:** Contains the Oracle System ID (SID) of the created DB instance. Not shown when the returned parameters do not apply to an Oracle DB instance. |
 | engine                           | Provides the name of the database engine to be used for this DB instance.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| engine_version                   | Indicates the database engine version.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| enhanced_monitoring_resource_arn | The Amazon Resource Name (ARN) of the Amazon CloudWatch Logs log stream that receives the Enhanced Monitoring metrics data for the DB instance.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| instance\_create_time             | Provides the date and time the DB instance was created.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| kms\_key_id                       | If StorageEncrypted is true, the AWS KMS key identifier for the encrypted DB instance.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| master_username                  | Contains the master username for the DB instance.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| monitoring\_role_arn              | The ARN for the IAM role that permits RDS to send Enhanced Monitoring metrics to Amazon CloudWatch Logs.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| multi_az                         | Specifies if the DB instance is a Multi-AZ deployment.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| performance\_insights_enabled     | True if Performance Insights is enabled for the DB instance, and otherwise false.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| preferred\_maintenance_window     | Specifies the weekly time range during which system maintenance can occur, in Universal Coordinated Time (UTC).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| publicly_accessible              | Specifies the accessibility options for the DB instance. A value of true specifies an Internet-facing instance with a publicly resolvable DNS name, which resolves to a public IP address. A value of false specifies an internal instance with a DNS name that resolves to a private IP address.                                                                                                                                                                                                                                                                                                                                                                                    |
-| storage_encrypted                | Specifies whether the DB instance is encrypted.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| endpoint_address                 | DNS name of the RDS instance|
-| endpoint_port                    | The port that the RDS instance is listening on |
-| endpoint_hostedzoneid            | The AWS DNS Zone ID that is associated with the RDS instance's DNS entry |
+| engine\_version                   | Indicates the database engine version.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| enhanced\_monitoring\_resource\_arn | The Amazon Resource Name (ARN) of the Amazon CloudWatch Logs log stream that receives the Enhanced Monitoring metrics data for the DB instance.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| instance\_create\_time             | Provides the date and time the DB instance was created.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| kms\_key\_id                       | If StorageEncrypted is true, the AWS KMS key identifier for the encrypted DB instance.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| master\_username                  | Contains the master username for the DB instance.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| monitoring\_role\_arn              | The ARN for the IAM role that permits RDS to send Enhanced Monitoring metrics to Amazon CloudWatch Logs.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| multi\_az                         | Specifies if the DB instance is a Multi-AZ deployment.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| performance\_insights\_enabled     | True if Performance Insights is enabled for the DB instance, and otherwise false.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| preferred\_maintenance\_window     | Specifies the weekly time range during which system maintenance can occur, in Universal Coordinated Time (UTC).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| publicly\_accessible              | Specifies the accessibility options for the DB instance. A value of true specifies an Internet-facing instance with a publicly resolvable DNS name, which resolves to a public IP address. A value of false specifies an internal instance with a DNS name that resolves to a private IP address.                                                                                                                                                                                                                                                                                                                                                                                    |
+| storage\_encrypted                | Specifies whether the DB instance is encrypted.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| endpoint\_address                 | DNS name of the RDS instance|
+| endpoint\_port                    | The port that the RDS instance is listening on |
+| endpoint\_hostedzoneid            | The AWS DNS Zone ID that is associated with the RDS instance's DNS entry |
 
 
 
@@ -1081,8 +1117,8 @@ Representation of an AWS S3 [Bucket](https://docs.aws.amazon.com/AmazonS3/latest
 | lastupdated |  Timestamp of the last time the node was updated |
 | creationdate | Date-time when the bucket was created |
 | **name** | The friendly name of the bucket |
-| anonymous_actions |  List of anonymous internet accessible actions that may be run on the bucket.  This list is taken by running [policyuniverse](https://github.com/Netflix-Skunkworks/policyuniverse#internet-accessible-policy) on the policy that applies to the bucket.   |
-| anonymous_access | True if this bucket has a policy applied to it that allows anonymous access or if it is open to the internet.  These policy determinations are made by using the [policyuniverse](https://github.com/Netflix-Skunkworks/policyuniverse) library.  |
+| anonymous\_actions |  List of anonymous internet accessible actions that may be run on the bucket.  This list is taken by running [policyuniverse](https://github.com/Netflix-Skunkworks/policyuniverse#internet-accessible-policy) on the policy that applies to the bucket.   |
+| anonymous\_access | True if this bucket has a policy applied to it that allows anonymous access or if it is open to the internet.  These policy determinations are made by using the [policyuniverse](https://github.com/Netflix-Skunkworks/policyuniverse) library.  |
 
 ### Relationships
 
