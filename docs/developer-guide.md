@@ -11,6 +11,45 @@
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
+## Implementing custom sync commands
+
+By default, cartography will try to sync every intel module included as part of the default sync. If you're not using certain intel modules you can create a custom sync script and invoke it using the cartography CLI. For example, if you're only interested in the AWS intel module you can create a sync script that looks like this:
+
+```python
+from cartography import cli
+from cartography import sync
+from cartography.intel import aws
+from cartography.intel import create_indexes
+
+def build_custom_sync():
+    s = sync.Sync()
+    s.add_stages([
+        ('create-indexes', create_indexes.start_aws_ingestion),
+        ('aws', aws.sync),
+    ])
+    return s
+
+def main(argv):
+    return cli.CLI(build_custom_sync(), prog='cartography').main(argv)
+
+if __name__ == '__main__':
+    import sys
+    sys.exit(main(sys.argv[1:]))
+```
+
+Which can then be invoked using `python custom_sync.py` and will have all the features of the cartography CLI while only including the intel modules you are specifically interested in using. For example:
+
+```sh
+cartography$ python3 custom_sync.py
+INFO:cartography.sync:Starting sync with update tag '1569022981'
+INFO:cartography.sync:Starting sync stage 'create-indexes'
+INFO:cartography.intel.create_indexes:Creating indexes for cartography node types.
+INFO:cartography.sync:Finishing sync stage 'create-indexes'
+INFO:cartography.sync:Starting sync stage 'aws'
+INFO:botocore.credentials:Found credentials in shared credentials file: ~/.aws/credentials
+...
+```
+
 ## Testing
 
 ### Running from source
