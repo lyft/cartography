@@ -1,3 +1,5 @@
+# Cartography - Google Suite (GSuite) Schema
+
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
@@ -8,14 +10,6 @@
   - [GSuiteGroup](#gsuitegroup)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
-
-# Cartography - Google Suite (GSuite) Schema
-
-## Table of contents
-
-- [GSuiteUser](#gsuiteuser)
-- [GSuiteGroup](#gsuitegroup)
-
 
 ## GSuiteUser
 

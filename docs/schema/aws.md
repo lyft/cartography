@@ -1,3 +1,5 @@
+# Cartography - Amazon Web Services Schema
+
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
@@ -77,43 +79,6 @@
     - [onymous_acces](#onymous_acces)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
-
-# Cartography - Amazon Web Services Schema
-
-## Table of contents
-
-- [AWSAccount](#awsaccount)
-- [AWSCidrBlock](#awscidrblock)
-- [AWSGroup](#awsgroup)
-- [AWSIpv4CidrBlock](#awsipv4cidrblock)
-- [AWSIpv6CidrBlock](#awsipv6cidrblock)
-- [AWSPolicy](#awspolicy)
-- [AWSPrincipal](#awsprincipal)
-- [AWSPrincipal::AWSUser](#awsprincipalawsuser)
-- [AWSRole](#awsrole)
-- [AWSVpc](#awsvpc)
-- [AccountAccessKey](#accountaccesskey)
-- [DNSRecord](#dnsrecord)
-- [DNSRecord::AWSDNSRecord](#dnsrecordawsdnsrecord)
-- [DNSZone](#dnszone)
-- [DNSZone::AWSDNSZone](#dnszoneawsdnszone)
-- [DynamoDBTable](#dynamodbtable)
-- [EC2Instance](#ec2instance)
-- [EC2KeyPair](#ec2keypair)
-- [EC2Reservation](#ec2reservation)
-- [EC2SecurityGroup](#ec2securitygroup)
-- [EC2Subnet](#ec2subnet)
-- [ESDomain](#esdomain)
-- [Endpoint](#endpoint)
-- [Endpoint::ELBListener](#endpointelblistener)
-- [Ip](#ip)
-- [IpRule](#iprule)
-- [IpRule::IpPermissionInbound](#ipruleippermissioninbound)
-- [LoadBalancer](#loadbalancer)
-- [NetworkInterface](#networkinterface)
-- [RDSInstance](#rdsinstance)
-- [S3Acl](#s3acl)
-- [S3Bucket](#s3bucket)
 
 
 ## AWSAccount

@@ -1,3 +1,5 @@
+# Cartography - Google Cloud Platform Schema
+
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
@@ -27,22 +29,6 @@
   - [IpRange](#iprange)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
-
-# Cartography - Google Cloud Platform Schema
-
-## Table of contents
-
-- [GCPOrganization](#gcporganization)
-- [GCPFolder](#gcpfolder)
-- [GCPProject](#gcpproject)
-- [GCPInstance](#gcpinstance)
-- [GCP Network Tags](#gcpnetworktag)
-- [GCPNetworkInterface](#gcpnetworkinterface)
-- [GCPVpc](#gcpvpc)
-- [GCPNicAccessConfig](#gcpnicaccessconfig)
-- [GCPSubnet](#gcpsubnet)
-- [GCPFirewall](#gcpfirewall)
-
 
 ## GCPOrganization
 

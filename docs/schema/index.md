@@ -1,3 +1,5 @@
+# Cartography Schema
+
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
@@ -12,9 +14,7 @@
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
-# Cartography Schema
-
-### ℹ️ Quick notes on notation
+## ℹ️ Quick notes on notation
 - **Bolded words** in the schema tables indicate that this field is indexed, so your queries will run faster if you use these fields.
 
 - This isn't proper Neo4j syntax, but for the purpose of this document we will use this notation:
