@@ -1,6 +1,19 @@
 # Cartography Schema
 
-### ℹ️ Quick notes on notation
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [ℹ️ Quick notes on notation](#-quick-notes-on-notation)
+- [Amazon Web Services](#amazon-web-services)
+- [Google Cloud Platform](#google-cloud-platform)
+- [GSuite](#gsuite)
+- [CRXcavator Platform](#crxcavator-platform)
+- [More to come!](#more-to-come)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
+## ℹ️ Quick notes on notation
 - **Bolded words** in the schema tables indicate that this field is indexed, so your queries will run faster if you use these fields.
 
 - This isn't proper Neo4j syntax, but for the purpose of this document we will use this notation:

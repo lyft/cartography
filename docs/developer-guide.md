@@ -1,4 +1,17 @@
-## How to test Cartography as a developer
+# Cartography Developer Guide
+
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Testing](#testing)
+  - [Running from source](#running-from-source)
+  - [Manually testing individual intel modules](#manually-testing-individual-intel-modules)
+  - [Automated testing](#automated-testing)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
+## Testing
 
 ### Running from source
 
