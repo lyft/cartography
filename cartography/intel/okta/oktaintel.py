@@ -19,6 +19,8 @@ logger = logging.getLogger(__name__)
 
 OKTA_API_KEY = os.environ.get('CREDENTIALS_OKTA_API_KEY')
 
+OKTA_ORG_ID = os.environ.get("OKTA_ORG_ID")
+
 
 def _create_user_client(okta_org):
     """
@@ -1150,28 +1152,26 @@ def sync(neo4j_session, config):
     :return: Nothing
     """
 
-    okta_organization = config.okta_organization
-
-    logger.debug(f"Starting Okta sync on {okta_organization}")
+    logger.debug(f"Starting Okta sync on {OKTA_ORG_ID}")
 
     common_job_parameters = {
         "UPDATE_TAG": config.update_tag,
-        "OKTA_ORG_ID": okta_organization,
+        "OKTA_ORG_ID": OKTA_ORG_ID,
     }
 
-    _create_okta_organization(neo4j_session, okta_organization, config.update_tag)
-    _sync_okta_users(neo4j_session, okta_organization, config.update_tag)
-    _sync_okta_groups(neo4j_session, okta_organization, config.update_tag)
-    _sync_okta_applications(session, okta_organization, last_update)
-    _sync_users_factors(session, okta_organization, last_update)
-    _sync_trusted_origins(session, okta_organization, last_update)
+    _create_okta_organization(neo4j_session, OKTA_ORG_ID, config.update_tag)
+    _sync_okta_users(neo4j_session, OKTA_ORG_ID, config.update_tag)
+    _sync_okta_groups(neo4j_session, OKTA_ORG_ID, config.update_tag)
+    _sync_okta_applications(neo4j_session, OKTA_ORG_ID, config.update_tag)
+    _sync_users_factors(neo4j_session, OKTA_ORG_ID, config.update_tag)
+    _sync_trusted_origins(neo4j_session, OKTA_ORG_ID, config.update_tag)
 
     # need creds with permission
     # soft fail as some won't be able to get such high priv token
     # when we get the E0000006 error
     # see https://developer.okta.com/docs/reference/error-codes/
     try:
-        _sync_roles(session, okta_organization, last_update)
+        _sync_roles(neo4j_session, OKTA_ORG_ID, config.update_tag)
     except OktaError as okta_error:
         logger.warning(f"Unable to pull admin roles got {okta_error}")
 
@@ -1187,28 +1187,7 @@ def _cleanup_okta_organizations(session, common_job_parameters):
     Remove stale Okta organization
     :param session: The Neo4j session
     :param common_job_parameters: Parameters to carry to the cleanup job
-    :param okta_organization: Okta org id to cleanup
     :return: Nothing
     """
 
     run_cleanup_job('okta_import_cleanup.json', session, common_job_parameters)
-
-
-if __name__ == '__main__':
-    import time
-    from neo4j import GraphDatabase
-
-    logging.basicConfig(level=logging.DEBUG)
-
-    driver = GraphDatabase.driver("bolt://localhost:7687")
-
-    with driver.session() as session:
-        last_update = int(time.time())
-
-        config = Config(
-            neo4j_uri="7687",
-            update_tag=last_update,
-            okta_organization="lyft",
-        )
-
-        sync(session, config)

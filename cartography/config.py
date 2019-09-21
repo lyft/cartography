@@ -19,8 +19,6 @@ class Config:
         False (default), AWS sync will run using the default credentials only. Optional.
     :type analysis_job_directory: str
     :param analysis_job_directory: Path to a directory tree containing analysis jobs to run. Optional.
-    :type okta_organization: str
-    :param okta_organization : Okta organization to sync. Optional
     """
 
     def __init__(
@@ -30,8 +28,7 @@ class Config:
         neo4j_password=None,
         update_tag=None,
         aws_sync_all_profiles=False,
-        analysis_job_directory=None,
-        okta_organization=None,
+        analysis_job_directory=None
     ):
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user
@@ -39,4 +36,3 @@ class Config:
         self.update_tag = update_tag
         self.aws_sync_all_profiles = aws_sync_all_profiles
         self.analysis_job_directory = analysis_job_directory
-        self.okta_organization = okta_organization
