@@ -1018,4 +1018,4 @@ def sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job
     sync_ec2_instances(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     sync_ec2_auto_scaling_groups(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     sync_load_balancers(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-    sync_vpc_peering(neo4j_session, boto3_session, regions, sync_tag, account_id, common_job_parameters)
+    sync_vpc_peering(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
