@@ -58,10 +58,10 @@ def _initialize_resources(credentials):
     )
 
 
-def _sync_single_project(session, resources, project_id, gcp_update_tag, common_job_parameters):
+def _sync_single_project(neo4j_session, resources, project_id, gcp_update_tag, common_job_parameters):
     """
     Handles graph sync for a single GCP project.
-    :param session: The Neo4j session
+    :param neo4j_session: The Neo4j session
     :param resources: namedtuple of the GCP resource objects
     :param project_id: The project ID number to sync.  See  the `projectId` field in
     https://cloud.google.com/resource-manager/reference/rest/v1/projects
@@ -69,13 +69,13 @@ def _sync_single_project(session, resources, project_id, gcp_update_tag, common_
     :param common_job_parameters: Other parameters sent to Neo4j
     :return: Nothing
     """
-    compute.sync(session, resources.compute, project_id, gcp_update_tag, common_job_parameters)
+    compute.sync(neo4j_session, resources.compute, project_id, gcp_update_tag, common_job_parameters)
 
 
-def _sync_multiple_projects(session, resources, projects, gcp_update_tag, common_job_parameters):
+def _sync_multiple_projects(neo4j_session, resources, projects, gcp_update_tag, common_job_parameters):
     """
     Handles graph sync for multiple GCP projects.
-    :param session: The Neo4j session
+    :param neo4j_session: The Neo4j session
     :param resources: namedtuple of the GCP resource objects
     :param: projects: A list of projects. At minimum, this list should contain a list of dicts with the key "projectId"
      defined; so it would look like this: [{"projectId": "my-project-id-12345"}].
@@ -86,20 +86,20 @@ def _sync_multiple_projects(session, resources, projects, gcp_update_tag, common
     :return: Nothing
     """
     logger.debug("Syncing %d GCP projects.", len(projects))
-    crm.sync_gcp_projects(session, projects, gcp_update_tag, common_job_parameters)
+    crm.sync_gcp_projects(neo4j_session, projects, gcp_update_tag, common_job_parameters)
 
     for project in projects:
         project_id = project['projectId']
         logger.info("Syncing GCP project %s.", project_id)
-        _sync_single_project(session, resources, project_id, gcp_update_tag, common_job_parameters)
+        _sync_single_project(neo4j_session, resources, project_id, gcp_update_tag, common_job_parameters)
 
 
-def start_gcp_ingestion(session, config):
+def start_gcp_ingestion(neo4j_session, config):
     """
     Starts the GCP ingestion process by initializing Google Application Default Credentials, creating the necessary
     resource objects, listing all GCP organizations and projects available to the GCP identity, and supplying that
     context to all intel modules.
-    :param session: The Neo4j session
+    :param neo4j_session: The Neo4j session
     :param config: A `cartography.config` object
     :return: Nothing
     """
@@ -126,15 +126,15 @@ def start_gcp_ingestion(session, config):
     resources = _initialize_resources(credentials)
 
     # If we don't have perms to pull Orgs or Folders from GCP, we will skip safely
-    crm.sync_gcp_organizations(session, resources.crm_v1, config.update_tag, common_job_parameters)
-    crm.sync_gcp_folders(session, resources.crm_v2, config.update_tag, common_job_parameters)
+    crm.sync_gcp_organizations(neo4j_session, resources.crm_v1, config.update_tag, common_job_parameters)
+    crm.sync_gcp_folders(neo4j_session, resources.crm_v2, config.update_tag, common_job_parameters)
 
     projects = crm.get_gcp_projects(resources.crm_v1)
 
-    _sync_multiple_projects(session, resources, projects, config.update_tag, common_job_parameters)
+    _sync_multiple_projects(neo4j_session, resources, projects, config.update_tag, common_job_parameters)
 
     run_analysis_job(
         'gcp_compute_asset_inet_exposure.json',
-        session,
+        neo4j_session,
         common_job_parameters,
     )

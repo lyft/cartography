@@ -1,18 +1,32 @@
 # Cartography - Google Cloud Platform Schema
 
-## Table of contents
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
 - [GCPOrganization](#gcporganization)
-- [GCPFolder](#gcpfolder)
-- [GCPProject](#gcpproject)
+  - [Relationships](#relationships)
+  - [Relationships](#relationships-1)
+  - [Relationships](#relationships-2)
 - [GCPInstance](#gcpinstance)
-- [GCP Network Tags](#gcpnetworktag)
-- [GCPNetworkInterface](#gcpnetworkinterface)
+  - [Relationships](#relationships-3)
+- [GCPNetworkTag](#gcpnetworktag)
+  - [Relationships](#relationships-4)
 - [GCPVpc](#gcpvpc)
+  - [Relationships](#relationships-5)
+- [GCPNetworkInterface](#gcpnetworkinterface)
+  - [Relationships](#relationships-6)
 - [GCPNicAccessConfig](#gcpnicaccessconfig)
+  - [Relationships](#relationships-7)
 - [GCPSubnet](#gcpsubnet)
+  - [Relationships](#relationships-8)
 - [GCPFirewall](#gcpfirewall)
+  - [Relationships](#relationships-9)
+- [IpRule::IpPermissionInbound::GCPIpRule](#ipruleippermissioninboundgcpiprule)
+  - [Relationships](#relationships-10)
+- [IpRange](#iprange)
 
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 ## GCPOrganization
 
@@ -122,6 +136,7 @@ Representation of a GCP [Organization](https://cloud.google.com/resource-manager
 | zone_name | The zone that the instance is installed on |
 | hostname | If present, the hostname of the instance |
 | internet_exposed | Set to True  with `exposed_internet_type = 'direct'` if there is an 'allow' IPRule attached to one of the instance's ingress firewalls with the following conditions:  The 'allow' IpRule allows traffic from one or more TCP ports, and the 'allow' IpRule is not superceded by a 'deny' IPRule (in GCP, a firewall rule of priority 1 gets applied ahead of a firewall rule of priority 100, and 'deny' rules of the same priority are applied ahead of 'allow' rules) |
+| status | The [GCP Instance Lifecycle](https://cloud.google.com/compute/docs/instances/instance-life-cycle) state of the instance |
 
 ### Relationships
 

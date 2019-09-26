@@ -1,4 +1,15 @@
-# Cartography - Google Cloud Platform Schema
+# Cartography - CRXcavator Schema
+
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Table of contents](#table-of-contents)
+- [GSuiteUser](#gsuiteuser)
+  - [Relationships](#relationships)
+  - [Relationships](#relationships-1)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 ## Table of contents
 
@@ -38,6 +49,12 @@ Placeholder representation of a single G Suite [user object](https://developers.
 | version | The versions of the extension in this report |
 | risk_total | CRXcavator risk score for the extension |
 | risk_metadata | Additional data provided by CRXcavator on the risk score |
+| risk_permissions_score | Sum of the permissions component of the risk score |
+| risk_webstore_score | Sum of the webstore component of the risk score |
+| risk_csp_score | Sum of the CSP component of the risk score |
+| risk_optional_permissions_score | Sum of the optional permissions component of the risk score |
+| risk_extcalls_score | Sum of the external calls component of the risk score |
+| risk_vuln_score | Sum of the RetireJS vulnerability component of the risk score |
 | address | Physical address of extension developer |
 | email | Email address of extension developer |
 | icon | URL of the extension icon |

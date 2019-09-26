@@ -35,14 +35,14 @@ class GraphJob:
         for s in self.statements:
             s.merge_parameters(parameters)
 
-    def run(self, session):
+    def run(self, neo4j_session):
         """
         Run the job. This will execute all statements sequentially.
         """
         logger.debug("Starting job '%s'.", self.name)
         for stm in self.statements:
             try:
-                stm.run(session)
+                stm.run(neo4j_session)
             except Exception as e:
                 logger.error(
                     "Unhandled error while executing statement in job '%s': %s",
@@ -83,7 +83,7 @@ class GraphJob:
         return cls(name, statements)
 
     @classmethod
-    def run_from_json(cls, session, blob, parameters=None):
+    def run_from_json(cls, neo4j_session, blob, parameters=None):
         """
         Run a job from a JSON blob. This will deserialize the job and execute all statements sequentially.
         """
@@ -92,10 +92,10 @@ class GraphJob:
 
         job = cls.from_json(blob)
         job.merge_parameters(parameters)
-        job.run(session)
+        job.run(neo4j_session)
 
     @classmethod
-    def run_from_json_file(cls, file_path, session, parameters=None):
+    def run_from_json_file(cls, file_path, neo4j_session, parameters=None):
         """
         Run a job from a JSON file. This will deserialize the job and execute all statements sequentially.
         """
@@ -104,7 +104,7 @@ class GraphJob:
 
         job = cls.from_json_file(file_path)
         job.merge_parameters(parameters)
-        job.run(session)
+        job.run(neo4j_session)
 
 
 def _get_statements_from_json(blob):

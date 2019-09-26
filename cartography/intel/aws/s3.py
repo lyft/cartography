@@ -11,17 +11,17 @@ from cartography.util import run_cleanup_job
 logger = logging.getLogger(__name__)
 
 
-def get_s3_bucket_list(session):
-    client = session.client('s3')
+def get_s3_bucket_list(boto3_session):
+    client = boto3_session.client('s3')
     # NOTE no paginator available for this operation
     return client.list_buckets()
 
 
-def get_s3_bucket_details(session, bucket_data):
+def get_s3_bucket_details(boto3_session, bucket_data):
     """
     Iterates over all S3 buckets. Yields bucket name (string) and pairs of S3 bucket policies (JSON) and ACLs (JSON)
     """
-    client = session.client('s3')
+    client = boto3_session.client('s3')
     for bucket in bucket_data['Buckets']:
         acl = get_acl(bucket, client)
         policy = get_policy(bucket, client)
@@ -64,7 +64,7 @@ def get_acl(bucket, client):
     return acl
 
 
-def _load_s3_acls(session, acls, aws_account_id, update_tag):
+def _load_s3_acls(neo4j_session, acls, aws_account_id, update_tag):
     """
     Ingest S3 ACL into neo4j.
     """
@@ -80,7 +80,7 @@ def _load_s3_acls(session, acls, aws_account_id, update_tag):
     SET r.lastupdated = {UpdateTag}
     """
 
-    session.run(
+    neo4j_session.run(
         ingest_acls,
         acls=acls,
         UpdateTag=update_tag,
@@ -90,12 +90,12 @@ def _load_s3_acls(session, acls, aws_account_id, update_tag):
     # https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#permissions
     run_analysis_job(
         'aws_s3acl_analysis.json',
-        session,
+        neo4j_session,
         {'AWS_ID': aws_account_id},
     )
 
 
-def _load_s3_policies(session, policies, update_tag):
+def _load_s3_policies(neo4j_session, policies, update_tag):
     """
     Ingest S3 policy results into neo4j.
     """
@@ -108,26 +108,26 @@ def _load_s3_policies(session, policies, update_tag):
     s.lastupdated = {UpdateTag}
     """
 
-    session.run(
+    neo4j_session.run(
         ingest_policies,
         policies=policies,
         UpdateTag=update_tag,
     )
 
 
-def _set_default_values(session, aws_account_id):
+def _set_default_values(neo4j_session, aws_account_id):
     set_defaults = """
     MATCH (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(s:S3Bucket) where NOT EXISTS(s.anonymous_actions)
     SET s.anonymous_access = false, s.anonymous_actions = []
     """
 
-    session.run(
+    neo4j_session.run(
         set_defaults,
         AWS_ID=aws_account_id,
     )
 
 
-def load_s3_details(session, s3_details_iter, aws_account_id, update_tag):
+def load_s3_details(neo4j_session, s3_details_iter, aws_account_id, update_tag):
     """
     Create dictionaries for all bucket ACLs and all bucket policies so we can import them in a single query for each
     """
@@ -148,13 +148,13 @@ def load_s3_details(session, s3_details_iter, aws_account_id, update_tag):
     # cleanup existing policy properties set on S3 Buckets
     run_cleanup_job(
         'aws_s3_details.json',
-        session,
+        neo4j_session,
         {'UPDATE_TAG': update_tag, 'AWS_ID': aws_account_id},
     )
 
-    _load_s3_acls(session, acls, aws_account_id, update_tag)
-    _load_s3_policies(session, policies, update_tag)
-    _set_default_values(session, aws_account_id)
+    _load_s3_acls(neo4j_session, acls, aws_account_id, update_tag)
+    _load_s3_policies(neo4j_session, policies, update_tag)
+    _set_default_values(neo4j_session, aws_account_id)
 
 
 def parse_policy(bucket, policy):
@@ -281,7 +281,7 @@ def parse_acl(acl, bucket, aws_account_id):
     return acl_list
 
 
-def load_s3_buckets(session, data, current_aws_account_id, aws_update_tag):
+def load_s3_buckets(neo4j_session, data, current_aws_account_id, aws_update_tag):
     ingest_bucket = """
     MERGE (bucket:S3Bucket{name: {BucketName}})
     ON CREATE SET bucket.firstseen = timestamp(), bucket.creationdate = {CreationDate}
@@ -298,7 +298,7 @@ def load_s3_buckets(session, data, current_aws_account_id, aws_update_tag):
     # so we map to that directly
 
     for bucket in data["Buckets"]:
-        session.run(
+        neo4j_session.run(
             ingest_bucket,
             BucketName=bucket["Name"],
             CreationDate=str(bucket["CreationDate"]),
@@ -307,12 +307,12 @@ def load_s3_buckets(session, data, current_aws_account_id, aws_update_tag):
         )
 
 
-def cleanup_s3_buckets(session, common_job_parameters):
-    run_cleanup_job('aws_import_s3_buckets_cleanup.json', session, common_job_parameters)
+def cleanup_s3_buckets(neo4j_session, common_job_parameters):
+    run_cleanup_job('aws_import_s3_buckets_cleanup.json', neo4j_session, common_job_parameters)
 
 
-def cleanup_s3_bucket_acl_and_policy(session, common_job_parameters):
-    run_cleanup_job('aws_import_s3_acl_cleanup.json', session, common_job_parameters)
+def cleanup_s3_bucket_acl_and_policy(neo4j_session, common_job_parameters):
+    run_cleanup_job('aws_import_s3_acl_cleanup.json', neo4j_session, common_job_parameters)
 
 
 def sync(neo4j_session, boto3_session, current_aws_account_id, aws_update_tag, common_job_parameters):
