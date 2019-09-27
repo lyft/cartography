@@ -10,20 +10,32 @@ else:
 
 
 def test_analysis_jobs_cypher_syntax(neo4j_session):
+    cases = {
+        'aws_s3acl_analysis.json': {'AWS_ID': '000000000000'},
+    }  # job name: parameter override
     for job_name in contents('cartography.data.jobs.analysis'):
         if not job_name.endswith('.json'):
             continue
+        if job_name not in cases:
+            cases[job_name] = {}
+
+    for job_name, parameters in cases.items():
         try:
-            cartography.util.run_analysis_job(job_name, neo4j_session, {})
+            cartography.util.run_analysis_job(job_name, neo4j_session, parameters)
         except Exception as e:
             pytest.fail(f"run_analysis_job failed for analysis job '{job_name}' with exception: {e}")
 
 
 def test_cleanup_jobs_cypher_syntax(neo4j_session):
+    cases = {}  # job name: parameter override
     for job_name in contents('cartography.data.jobs.cleanup'):
-        if not job_name.endswith('json'):
+        if not job_name.endswith('.json'):
             continue
+        if job_name not in cases:
+            cases[job_name] = {}
+
+    for job_name, parameters in cases.items():
         try:
-            cartography.util.run_cleanup_job(job_name, neo4j_session, {})
+            cartography.util.run_cleanup_job(job_name, neo4j_session, parameters)
         except Exception as e:
             pytest.fail(f"run_cleanup_job failed for cleanup job '{job_name}' with exception: {e}")
