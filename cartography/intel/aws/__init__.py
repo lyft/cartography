@@ -3,14 +3,14 @@ import logging
 import boto3
 import botocore.exceptions
 
-from cartography.intel.aws import dynamodb
-from cartography.intel.aws import ec2
-from cartography.intel.aws import elasticsearch
-from cartography.intel.aws import iam
-from cartography.intel.aws import organizations
-from cartography.intel.aws import rds
-from cartography.intel.aws import route53
-from cartography.intel.aws import s3
+from . import dynamodb
+from . import ec2
+from . import elasticsearch
+from . import iam
+from . import organizations
+from . import rds
+from . import route53
+from . import s3
 from cartography.util import run_analysis_job
 from cartography.util import run_cleanup_job
 
@@ -18,34 +18,14 @@ logger = logging.getLogger(__name__)
 
 
 def _sync_one_account(neo4j_session, boto3_session, account_id, regions, sync_tag, common_job_parameters):
-    # IAM
     iam.sync(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters)
-
-    # S3
     s3.sync(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters)
-
-    # Dynamo
-    dynamodb.sync_dynamodb_tables(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-
-    # EC2
-    # TODO move this to EC2 module
-    logger.info("Syncing EC2 for account '%s'.", account_id)
-    ec2.sync_vpc(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-    ec2.sync_ec2_security_groupinfo(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-    ec2.sync_ec2_key_pairs(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-    ec2.sync_ec2_instances(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-    ec2.sync_ec2_auto_scaling_groups(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-    ec2.sync_load_balancers(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-    ec2.sync_vpc_peering(neo4j_session, boto3_session, regions, sync_tag, account_id, common_job_parameters)
-
-    # RDS
-    rds.sync_rds_instances(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
+    dynamodb.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
+    ec2.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
+    rds.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
 
     # NOTE each of the below will generate DNS records
-    # Route53
-    route53.sync_route53(neo4j_session, boto3_session, account_id, sync_tag)
-
-    # Elasticsearch
+    route53.sync(neo4j_session, boto3_session, account_id, sync_tag)
     elasticsearch.sync(neo4j_session, boto3_session, account_id, sync_tag)
 
     # NOTE clean up all DNS records, regardless of which job created them

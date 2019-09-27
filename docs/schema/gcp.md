@@ -1,18 +1,32 @@
 # Cartography - Google Cloud Platform Schema
 
-## Table of contents
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
 - [GCPOrganization](#gcporganization)
-- [GCPFolder](#gcpfolder)
-- [GCPProject](#gcpproject)
+  - [Relationships](#relationships)
+  - [Relationships](#relationships-1)
+  - [Relationships](#relationships-2)
 - [GCPInstance](#gcpinstance)
-- [GCP Network Tags](#gcpnetworktag)
-- [GCPNetworkInterface](#gcpnetworkinterface)
+  - [Relationships](#relationships-3)
+- [GCPNetworkTag](#gcpnetworktag)
+  - [Relationships](#relationships-4)
 - [GCPVpc](#gcpvpc)
+  - [Relationships](#relationships-5)
+- [GCPNetworkInterface](#gcpnetworkinterface)
+  - [Relationships](#relationships-6)
 - [GCPNicAccessConfig](#gcpnicaccessconfig)
+  - [Relationships](#relationships-7)
 - [GCPSubnet](#gcpsubnet)
+  - [Relationships](#relationships-8)
 - [GCPFirewall](#gcpfirewall)
+  - [Relationships](#relationships-9)
+- [IpRule::IpPermissionInbound::GCPIpRule](#ipruleippermissioninboundgcpiprule)
+  - [Relationships](#relationships-10)
+- [IpRange](#iprange)
 
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 ## GCPOrganization
 
