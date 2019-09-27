@@ -112,3 +112,34 @@ def get_bucket_iam_policy(storage, bucket):
             return None
         else:
             raise
+
+def transform_gcp_buckets(bucket_res): 
+    '''
+    Transform the GCP Storage Bucket response object for Neo4j ingestion
+    
+    :type bucket_res: A storage resource object
+    :param bucket_res: The return data
+    
+    :rtype: list
+    :return: List of buckets ready for ingestion to Neo4j
+    '''
+    #TODO: Verify data type of each value corresponding to some field (from gcp storage object response) 
+    bucket_list = []
+    for b in bucket_res.get('items', []):
+        bucket = {}
+        bucket['etag'] = b.get('etag', '')  
+        bucket['iam_config_bucket_policy_only'] = b.get('iamConfiguration', {}).get('bucketPolicyOnly', {}).get('enabled', None)
+        bucket['iam_config_uniform_bucket_level_access'] = b.get('iamConfiguration', {}).get('uniformBucketLevelAccess', {}).get('enabled', None)
+        bucket['id'] = b.get('id', '') 
+        bucket['kind'] = b.get('kind', '') 
+        bucket['location'] = b.get('location', '') 
+        bucket['location_type'] = b.get('locationType', '')
+        bucket['meta_generation'] = g.get('metageneration', '') 
+        bucket['name'] = b.get('name', '')
+        bucket['project_number'] = b.get('projectNumber', '') 
+        bucket['self_link'] = b.get('selfLink', '') 
+        bucket['storage_class'] = b.get('storageClass', '')
+        bucket['time_created'] = b.get('timeCreated', '') 
+        bucket['updated'] = b.get('updated', '') 
+        bucket_list.append(bucket)
+    return bucket_list
