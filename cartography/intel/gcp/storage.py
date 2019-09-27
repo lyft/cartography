@@ -117,13 +117,13 @@ def transform_gcp_buckets(bucket_res):
     '''
     Transform the GCP Storage Bucket response object for Neo4j ingestion
     
-    :type bucket_res: A storage resource object
+    :type bucket_res: A storage resource object (https://cloud.google.com/storage/docs/json_api/v1/buckets) 
     :param bucket_res: The return data
     
     :rtype: list
     :return: List of buckets ready for ingestion to Neo4j
     '''
-    #TODO: Verify data type of each value corresponding to some field (from gcp storage object response) 
+    
     bucket_list = []
     for b in bucket_res.get('items', []):
         bucket = {}
@@ -131,15 +131,25 @@ def transform_gcp_buckets(bucket_res):
         bucket['iam_config_bucket_policy_only'] = b.get('iamConfiguration', {}).get('bucketPolicyOnly', {}).get('enabled', None)
         bucket['iam_config_uniform_bucket_level_access'] = b.get('iamConfiguration', {}).get('uniformBucketLevelAccess', {}).get('enabled', None)
         bucket['id'] = b.get('id', '') 
+        bucket['labels'] = [(key, val) for (key, val) in b.get('labels', {}).items()] 
+        bucket['name'] = b.get('name', '')
+        bucket['owner_entity'] = b.get('owner', {}).get('entity', '') 
+        bucket['owner_entity_id'] = b.get('owner', {}).get('entityId', '') 
         bucket['kind'] = b.get('kind', '') 
         bucket['location'] = b.get('location', '') 
         bucket['location_type'] = b.get('locationType', '')
-        bucket['meta_generation'] = g.get('metageneration', '') 
-        bucket['name'] = b.get('name', '')
-        bucket['project_number'] = b.get('projectNumber', '') 
+        bucket['meta_generation'] = g.get('metageneration', None) 
+        bucket['project_number'] = b.get('projectNumber', None) 
         bucket['self_link'] = b.get('selfLink', '') 
         bucket['storage_class'] = b.get('storageClass', '')
         bucket['time_created'] = b.get('timeCreated', '') 
         bucket['updated'] = b.get('updated', '') 
+        bucket['versioning_enabled'] = b.get('versioning', {}).get('enabled', None) 
+        bucket['default_event_based_hold']  = b.get('defaultEventBasedHold', None) 
+        bucket['retention_period'] = b.get('retentionPolicy', {}).get('retentionPeriod', None) 
+        bucket['default_kms_key_name'] = b.get('encryption', {}).get('defaultKmsKeyName', '') 
+        bucket['log_bucket'] = b.get('logging', {}).get('logBucket', '') 
+        bucket['requester_pays'] = b.get('billing', {}).get('requesterPays', None)  
         bucket_list.append(bucket)
     return bucket_list
+
