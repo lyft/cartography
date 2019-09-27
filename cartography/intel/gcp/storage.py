@@ -42,7 +42,7 @@ def get_bucket_metadata(storage, bucket):
             raise
 
 
-def list_buckets(storage, project):
+def get_buckets(storage, project):
     """
     Returns a list of storage objects within some given project
 
