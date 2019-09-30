@@ -9,7 +9,7 @@ from cartography.intel.gcp import compute
 logger = logging.getLogger(__name__)
 
 
-def get_bucket_metadata(storage, bucket):
+def get_gcp_bucket_metadata(storage, bucket):
     """
     Retrieves metadata about the given bucket
 
@@ -42,7 +42,7 @@ def get_bucket_metadata(storage, bucket):
             raise
 
 
-def get_buckets(storage, project):
+def get_gcp_buckets(storage, project):
     """
     Returns a list of storage objects within some given project
 
@@ -81,7 +81,7 @@ def get_buckets(storage, project):
             raise
 
 
-def get_bucket_iam_policy(storage, bucket):
+def get_gcp_bucket_iam_policy(storage, bucket):
     """
     Retrieves IAM policy about the given bucket.
 
@@ -132,7 +132,6 @@ def transform_gcp_buckets(bucket_res):
         bucket['iam_config_uniform_bucket_level_access'] = b.get('iamConfiguration', {}).get('uniformBucketLevelAccess', {}).get('enabled', None)
         bucket['id'] = b.get('id', '') 
         bucket['labels'] = [(key, val) for (key, val) in b.get('labels', {}).items()] 
-        bucket['name'] = b.get('name', '')
         bucket['owner_entity'] = b.get('owner', {}).get('entity', '') 
         bucket['owner_entity_id'] = b.get('owner', {}).get('entityId', '') 
         bucket['kind'] = b.get('kind', '') 
@@ -153,3 +152,72 @@ def transform_gcp_buckets(bucket_res):
         bucket_list.append(bucket)
     return bucket_list
 
+def load_gcp_buckets(neo4j_session, buckets, gcp_update_tag): 
+    '''
+    Ingest GCP Storage Buckets to Neo4j
+    
+    :type neo4j_session: Neo4j session object 
+    :param neo4j session: The Neo4j session object
+    
+    :type buckets: list
+    :param buckets: List of GCP Buckets to injest 
+    
+    :type gcp_update_tag: timestamp
+    :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
+    
+    :rtype: NoneType
+    :return: Nothing 
+    '''
+    #TODO: Map project_id to bucket_id ! 
+    query = """
+    MERGE(p:GCPProject{id:{ProjectId}}) 
+    ON CREATE SET p.firstseen = timestamp()
+    SET p.lastupdated = {gcp_update_tag}
+    
+    MERGE(bucket:GCPBuckets{id:{BucketId}})
+    ON CREATE SET vpc.firstseen = timestamp(),
+    SET bucket.self_link = {SelfLink},
+    bucket.id = {BucketId}, 
+    bucket.project_id = {ProjectId}, 
+    bucket.project_number = {ProjectNumber}, 
+    bucket.kind = {Kind}, 
+    bucket.location = {Location}, 
+    bucket.location_type = {LocationType}, 
+    bucket.meta_generation = {MetaGeneration}, 
+    bucket.storage_class = {StorageClass}, 
+    bucket.time_created = {TimeCreated}, 
+    bucket.retention_period = {RetentionPeriod}, 
+    bucket.iam_config_bucket_policy_only = {IamConfigBucketPolicy}, 
+    bucket.iam_config_uniform_bucket_level_access = {IamConfigUniformBucketLevelAccess}, 
+    bucket.owner_entity = {OwnerEntity}, 
+    bucket.owner_entity_id = {OwnerEntityId},
+    bucket.lastupdated = {gcp_update_tag}
+    
+    MERGE (p)-[r:RESOURCE]->(bucket)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}
+    """
+    for bucket in buckets:
+        neo4j_session.run(
+            query,
+            ProjectId=bucket['project_id'],
+            ProjectNumber=bucket['project_number'],
+            BucketId=bucket['id'], 
+            SelfLink=bucket['self_link'],
+            Kind=bucket['kind'], 
+            Location=bucket['location'],
+            LocationType=bucket['location_type'],
+            MetaGeneration=bucket['meta_generation'],
+            StorageClass=bucket['storage_class'],
+            TimeCreated=bucket['time_created'],
+            RetentionPeriod=bucket['retention_period'],
+            IamConfigBucketPolicy=bucket['iam_config_bucket_policy_only'],
+            IamConfigUniformBucketLevelAccess=bucket['iam_config_uniform_bucket_level_access'],
+            OwnerEntity=bucket['owner_entity'],
+            OwnerEntityId = bucket['owner_entity_id'],
+            gcp_update_tag=gcp_update_tag,
+        )
+    
+    
+    
+    
