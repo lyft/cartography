@@ -39,3 +39,7 @@ repos:
     rev: v0.700
     hooks:
     -   id: mypy
+-   repo: https://github.com/thlorenz/doctoc
+    rev: v1.4.0
+    hooks:
+    -   id: doctoc

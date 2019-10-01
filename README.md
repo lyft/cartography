@@ -1,6 +1,44 @@
 # Cartography
 Cartography is a Python tool that consolidates infrastructure assets and the relationships between them in an intuitive graph view powered by a [Neo4j](https://www.neo4j.com) database.
 
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Why Cartography?](#why-cartography)
+- [Installation](#installation)
+- [Usage Tutorial](#usage-tutorial)
+  - [ℹ️ Already know how to query Neo4j?  You can skip to our reference material!](#-already-know-how-to-query-neo4j--you-can-skip-to-our-reference-material)
+  - [What RDS instances are installed in my AWS accounts?](#what-rds-instances-are-installed-in-my-aws-accounts)
+    - [ℹ️ Protip - customizing your view](#-protip---customizing-your-view)
+  - [Which RDS instances have encryption turned off?](#which-rds-instances-have-encryption-turned-off)
+  - [Which EC2 instances are directly exposed to the internet?](#which-ec2-instances-are-directly-exposed-to-the-internet)
+  - [Which S3 buckets have a policy granting any level of anonymous access to the bucket?](#which-s3-buckets-have-a-policy-granting-any-level-of-anonymous-access-to-the-bucket)
+  - [How many unencrypted RDS instances do I have in all my AWS accounts?](#how-many-unencrypted-rds-instances-do-i-have-in-all-my-aws-accounts)
+  - [Learning more](#learning-more)
+- [Extending Cartography with Analysis Jobs](#extending-cartography-with-analysis-jobs)
+- [Contributing](#contributing)
+  - [Code of conduct](#code-of-conduct)
+  - [Contributing code](#contributing-code)
+    - [How to test your code contributions](#how-to-test-your-code-contributions)
+    - [Sign the Contributor License Agreement (CLA)](#sign-the-contributor-license-agreement-cla)
+    - [File issues in Github](#file-issues-in-github)
+    - [Submit pull requests](#submit-pull-requests)
+- [Reference](#reference)
+  - [Schema](#schema)
+  - [Sample queries](#sample-queries)
+    - [What RDS instances are installed in my AWS accounts?](#what-rds-instances-are-installed-in-my-aws-accounts-1)
+    - [Which RDS instances have encryption turned off?](#which-rds-instances-have-encryption-turned-off-1)
+    - [Which EC2 instances are directly exposed to the internet?](#which-ec2-instances-are-directly-exposed-to-the-internet-1)
+    - [Which S3 buckets have a policy granting any level of anonymous access to the bucket?](#which-s3-buckets-have-a-policy-granting-any-level-of-anonymous-access-to-the-bucket-1)
+    - [How many unencrypted RDS instances do I have in all my AWS accounts?](#how-many-unencrypted-rds-instances-do-i-have-in-all-my-aws-accounts-1)
+    - [What users have the TotallyFake extension installed?](#what-users-have-the-totallyfake-extension-installed)
+    - [What users have installed extensions that are risky based on CRXcavator scoring?](#what-users-have-installed-extensions-that-are-risky-based-on-crxcavator-scoring)
+  - [Data Enrichment](#data-enrichment)
+- [Multiple AWS Account Setup](#multiple-aws-account-setup)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 ## Why Cartography?
 Cartography aims to enable a broad set of exploration and automation scenarios.  It is particularly good at exposing otherwise hidden dependency relationships between your service's assets so that you may validate assumptions about security risks.
 
@@ -182,7 +220,7 @@ All contributors and participants agree to abide by its terms.
 
 #### How to test your code contributions
 
-See [these docs](docs/testing.md).
+See [these docs](docs/developer-guide.md).
 
 #### Sign the Contributor License Agreement (CLA)
 
