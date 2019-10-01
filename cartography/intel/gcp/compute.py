@@ -5,6 +5,7 @@ import logging
 from collections import namedtuple
 
 from googleapiclient.discovery import HttpError
+from cartography.intel.helper.google_request import repeat_request
 
 from cartography.util import run_cleanup_job
 
@@ -89,9 +90,11 @@ def get_gcp_instance_responses(project_id, zones, compute):
         return []
     response_objects = []
     for zone in zones:
-        req = compute.instances().list(project=project_id, zone=zone['name'])
-        res = req.execute()
-        response_objects.append(res)
+        objects = repeat_request(req=compute.instances().list,
+                                 req_args={'project': project_id, 'zone': zone['name']},
+                                 req_next=compute.instances().list_next,
+                                 )
+        response_objects.append(objects)
     return response_objects
 
 
@@ -866,6 +869,7 @@ def sync_gcp_instances(neo4j_session, compute, project_id, zones, gcp_update_tag
     :param common_job_parameters: dict of other job parameters to pass to Neo4j
     :return: Nothing
     """
+
     instance_responses = get_gcp_instance_responses(project_id, zones, compute)
     instance_list = transform_gcp_instances(instance_responses)
     load_gcp_instances(neo4j_session, instance_list, gcp_update_tag)
