@@ -1,9 +1,7 @@
 import logging
 
-from googleapiclient.discovery import HttpError
-
+from cartography.intel.helper.google_request import repeat_request
 from cartography.util import run_cleanup_job
-
 
 logger = logging.getLogger(__name__)
 
@@ -19,67 +17,34 @@ def get_all_groups(admin):
     See https://googleapis.github.io/google-api-python-client/docs/epy/googleapiclient.discovery-module.html#build.
     :return: List of Google groups in domain
     """
-    request = admin.groups().list(customer='my_customer', maxResults=20, orderBy='email')
-    response_objects = []
-    while request is not None:
-        try:
-            resp = request.execute()
-        except HttpError as e:
-            logger.warning('HttpError occurred in api.get_all_groups(), returning empty list. Details: %r', e)
-            response_objects = []
-            break
-        response_objects.append(resp)
-        request = admin.groups().list_next(request, resp)
-    return response_objects
+    return repeat_request(
+        req=admin.groups().list,
+        req_args={'customer': 'my_customer', 'maxResults': 200, 'orderBy': 'email'},
+        req_next=admin.groups().list_next,
+    )
 
 
-def transform_groups(response_objects):
-    """  Strips list of API response objects to return list of group objects only
+def transform_api_objects(response_objects, key):
+    """ Helper method to strip list of API response objects from its request metadata.
+    Returns list of dictionaries of the core objects we're interested in such as users, groups, members.
 
-    :param response_objects:
+    Example:
+    {kind':'admin#directory#users',
+    'etag': 'SXFHf...',
+    'nextPageToken': '0a30f...'
+    'users': [{...}]}
+
+    This function would return a concatenated list of the 'users' key.
+
+    :param response_objects: list of raw response objects from the GSuite API
+    :param key: where the core objects live
     :return: list of dictionary objects as defined in /docs/schema/gsuite.md
     """
     groups = []
     for response_object in response_objects:
-        for group in response_object['groups']:
+        for group in response_object.get(key, []):
             groups.append(group)
     return groups
-
-
-def transform_users(response_objects):
-    """  Strips list of API response objects to return list of group objects only
-    :param response_objects:
-    :return: list of dictionary objects as defined in /docs/schema/gsuite.md
-    """
-    users = []
-    for response_object in response_objects:
-        for user in response_object['users']:
-            users.append(user)
-    return users
-
-
-def get_all_groups_for_email(admin, email):
-    """ Fetch all groups of which the given group is a member
-
-    Arguments:
-        email: A string representing the email address for the group
-
-    Returns a list of Group models
-    Throws GoogleException
-    """
-    request = admin.groups().list(userKey=email, maxResults=500)
-    groups = []
-    while request is not None:
-        try:
-            resp = request.execute()
-        except HttpError as e:
-            logger.warning('HttpError occurred in api.get_groups_for_email(), returning empty list. Details: %r', e)
-            groups = []
-            break
-        groups = groups + resp.get('groups', [])
-        request = admin.groups().list_next(request, resp)
-    return groups
-
 
 def get_members_for_group(admin, group_email):
     """ Get all members for a google group
@@ -88,22 +53,11 @@ def get_members_for_group(admin, group_email):
 
     :return: List of dictionaries representing Users or Groups.
     """
-    request = admin.members().list(
-        groupKey=group_email,
-        maxResults=500,
+    return repeat_request(
+        req=admin.members().list,
+        req_args={'groupKey': group_email, 'maxResults': 500},
+        req_next=admin.members().list_next,
     )
-    members = []
-    while request is not None:
-        try:
-            resp = request.execute()
-        except HttpError as e:
-            logger.warning('HttpError occurred in api.get_members_for_group(), returning empty list. Details: %r', e)
-            members = []
-            break
-        members = members + resp.get('members', [])
-        request = admin.members().list_next(request, resp)
-
-    return members
 
 
 def get_all_users(admin):
@@ -117,17 +71,11 @@ def get_all_users(admin):
     :return: List of Google users in domain
     see https://developers.google.com/admin-sdk/directory/v1/guides/manage-users#get_all_domain_users
     """
-    request = admin.users().list(customer='my_customer', maxResults=500, orderBy='email')
-    response_objects = []
-    while request is not None:
-        try:
-            resp = request.execute()
-        except HttpError as e:
-            logger.warning('HttpError occurred in api.get_all_users(), returning empty list. Details: %r', e)
-            break
-        response_objects.append(resp)
-        request = admin.users().list_next(request, resp)
-    return response_objects
+    return repeat_request(
+        req=admin.users().list,
+        req_args={'customer': 'my_customer', 'maxResults': 500, 'orderBy': 'email'},
+        req_next=admin.users().list_next,
+    )
 
 
 def load_gsuite_groups(session, groups, gsuite_update_tag):
@@ -246,7 +194,7 @@ def sync_gsuite_users(session, admin, gsuite_update_tag, common_job_parameters):
     """
     logger.debug('Syncing GSuite Users')
     resp_objs = get_all_users(admin)
-    users = transform_users(resp_objs)
+    users = transform_api_objects(resp_objs, 'users')
     load_gsuite_users(session, users, gsuite_update_tag)
     cleanup_gsuite_users(session, common_job_parameters)
 
@@ -264,7 +212,7 @@ def sync_gsuite_groups(session, admin, gsuite_update_tag, common_job_parameters)
     """
     logger.debug('Syncing GSuite Groups')
     resp_objs = get_all_groups(admin)
-    groups = transform_groups(resp_objs)
+    groups = transform_api_objects(resp_objs, 'groups')
     load_gsuite_groups(session, groups, gsuite_update_tag)
     cleanup_gsuite_groups(session, common_job_parameters)
     sync_gsuite_members(groups, session, admin, gsuite_update_tag)
@@ -272,5 +220,6 @@ def sync_gsuite_groups(session, admin, gsuite_update_tag, common_job_parameters)
 
 def sync_gsuite_members(groups, session, admin, gsuite_update_tag):
     for group in groups:
-        members = get_members_for_group(admin, group['email'])
+        resp_objs = get_members_for_group(admin, group['email'])
+        members = transform_api_objects(resp_objs, 'members')
         load_gsuite_members(session, group, members, gsuite_update_tag)
