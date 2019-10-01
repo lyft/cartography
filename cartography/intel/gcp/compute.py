@@ -95,7 +95,7 @@ def get_gcp_instance_responses(project_id, zones, compute):
             req_args={'project': project_id, 'zone': zone['name']},
             req_next=compute.instances().list_next,
         )
-        response_objects.append(objects)
+        response_objects = response_objects + objects
     return response_objects
 
 

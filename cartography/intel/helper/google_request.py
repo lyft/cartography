@@ -21,7 +21,7 @@ def repeat_request(req, req_args, req_next, retries=5):
         try:
             resp = request.execute()
             response_objects.append(resp)
-            request = req_next(request, resp)
+            request = req_next(request, resp) if req_next else None
         except HttpError as e:
             logger.warning(f'HttpError occurred returning empty list. Details: {e}, retry: {retry}')
             retry += 1
