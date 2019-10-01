@@ -46,6 +46,7 @@ def transform_api_objects(response_objects, key):
             groups.append(group)
     return groups
 
+
 def get_members_for_group(admin, group_email):
     """ Get all members for a google group
 
