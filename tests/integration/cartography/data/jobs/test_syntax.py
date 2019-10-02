@@ -12,6 +12,7 @@ else:
 def test_analysis_jobs_cypher_syntax(neo4j_session):
     parameters = {
         'AWS_ID': None,
+        'UPDATE_TAG': None,
     }
 
     for job_name in contents('cartography.data.jobs.analysis'):
