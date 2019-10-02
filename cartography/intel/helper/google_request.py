@@ -27,7 +27,7 @@ def repeat_request(req, req_args, req_next=None, retries=5, retry_delay_ms=500):
         except HttpError as e:
             logger.warning(f'HttpError occurred returning empty list. Details: {e}, retry: {retry}')
             retry += 1
-            time.sleep(retry_delay_ms/1000.0)
+            time.sleep(retry_delay_ms / 1000.0)
             if retry >= retries:
                 break
     return response_objects
