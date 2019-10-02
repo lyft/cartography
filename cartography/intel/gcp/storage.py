@@ -51,15 +51,13 @@ def get_gcp_buckets(storage, project):
 
     :type project: str
     :param project: The Google Project name that you are retrieving buckets from
-    :rtype: list
-    :return: List of storage objects
+    :rtype: Storage Object
+    :return: Storage response object
     """
     try:
         req = storage.buckets().list(project=project)
         res = req.execute()
-        all_objects = []
-        all_objects.extend(res.get('items', []))
-        return all_objects
+        return res
     except HttpError as e:
         reason = compute._get_error_reason(e)
         if reason == 'invalid':
@@ -113,7 +111,7 @@ def get_gcp_bucket_iam_policy(storage, bucket):
         else:
             raise
 
-def transform_gcp_buckets(bucket_res): 
+def transform_gcp_buckets(bucket_res): #TODO: Properly parse the object to retain project_id ! 
     '''
     Transform the GCP Storage Bucket response object for Neo4j ingestion
     
