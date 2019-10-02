@@ -6,8 +6,6 @@ TEST_UPDATE_TAG = 123456789
 
 
 def test_load_gcp_projects(neo4j_session):
-    data = tests.data.aws.dynamodb.LIST_DYNAMODB_TABLES
-
     cartography.intel.gcp.crm.load_gcp_projects(
         neo4j_session,
         tests.data.gcp.crm.GCP_PROJECTS,
