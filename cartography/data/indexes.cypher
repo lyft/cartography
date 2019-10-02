@@ -40,6 +40,7 @@ CREATE INDEX ON :GCPNicAccessConfig(id);
 CREATE INDEX ON :GCPNicAccessConfig(id);
 CREATE INDEX ON :GCPOrganization(id);
 CREATE INDEX ON :GCPProject(id);
+CREATE INDEX ON :GCPProject(projectnumber);
 CREATE INDEX ON :GCPSubnet(id);
 CREATE INDEX ON :GCPVpc(id);
 CREATE INDEX ON :GSuiteGroup(email);
