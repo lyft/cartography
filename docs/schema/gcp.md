@@ -97,6 +97,7 @@ Representation of a GCP [Organization](https://cloud.google.com/resource-manager
 | firstseen| Timestamp of when a sync job first discovered this node  |
 | lastupdated |  Timestamp of the last time the node was updated |
 | id | The ID of the project, e.g. "sys-12345"|
+| projectnumber | The number uniquely identifying the project, e.g. '987654'|
 | displayname | A friendly name of the project, e.g. "MyProject".
 | lifecyclestate | The project's current lifecycle state. Assigned by the server.  See the [official docs](https://cloud.google.com/resource-manager/reference/rest/v1/projects#LifecycleState).
 
