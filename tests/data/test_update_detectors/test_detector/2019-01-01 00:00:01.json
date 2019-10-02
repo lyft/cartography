@@ -1,5 +1,10 @@
 {
     "name": "test_detector",
+    "properties": [
+        "d.test",
+        "d.test2",
+        "d.test3"
+    ],
     "results": [
         [
             "1",
@@ -15,6 +20,11 @@
             "3",
             "10",
             "17|24|31"
+        ],
+        [
+            "36",
+            "37",
+            "38|39|40"
         ],
         [
             "4",
@@ -35,17 +45,7 @@
             "7",
             "14",
             "21|28|35"
-        ],
-        [
-            "36",
-            "37",
-            "38|39|40"
         ]
-    ],
-    "properties": [
-        "d.test",
-        "d.test2",
-        "d.test3"
     ],
     "validation_query": "match (d) return d.test,d.test2,d.test3"
 }
