@@ -142,4 +142,4 @@ def get_state(session, state):
                 values.append(str(field))
         results.append(values)
 
-    state.results = results
+    state.results = sorted(results)
