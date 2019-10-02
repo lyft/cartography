@@ -27,14 +27,13 @@ def test_analysis_jobs_cypher_syntax(neo4j_session):
 
 
 def test_cleanup_jobs_cypher_syntax(neo4j_session):
-    cases = {}  # job name: parameter override
+    parameters = {
+        'AWS_ID': None,
+    }
+
     for job_name in contents('cartography.data.jobs.cleanup'):
         if not job_name.endswith('.json'):
             continue
-        if job_name not in cases:
-            cases[job_name] = {}
-
-    for job_name, parameters in cases.items():
         try:
             cartography.util.run_cleanup_job(job_name, neo4j_session, parameters)
         except Exception as e:
