@@ -1,9 +1,5 @@
 import logging
-from collections import namedtuple
-
-import googleapiclient.discovery
-from oauth2client.client import ApplicationDefaultCredentialsError
-from oauth2client.client import GoogleCredentials
+from googleapiclient.discovery import HttpError
 
 from cartography.intel.gcp import compute
 logger = logging.getLogger(__name__)
@@ -111,7 +107,8 @@ def get_gcp_bucket_iam_policy(storage, bucket):
         else:
             raise
 
-def transform_gcp_buckets(bucket_res): #TODO: Properly parse the object to retain project_id ! 
+
+def transform_gcp_buckets(bucket_res): 
     '''
     Transform the GCP Storage Bucket response object for Neo4j ingestion
     
@@ -126,8 +123,10 @@ def transform_gcp_buckets(bucket_res): #TODO: Properly parse the object to retai
     for b in bucket_res.get('items', []):
         bucket = {}
         bucket['etag'] = b.get('etag', '')  
-        bucket['iam_config_bucket_policy_only'] = b.get('iamConfiguration', {}).get('bucketPolicyOnly', {}).get('enabled', None)
-        bucket['iam_config_uniform_bucket_level_access'] = b.get('iamConfiguration', {}).get('uniformBucketLevelAccess', {}).get('enabled', None)
+        bucket['iam_config_bucket_policy_only'] = b.get('iamConfiguration'
+                                                        , {}).get('bucketPolicyOnly', {}).get('enabled', None)
+        bucket['iam_config_uniform_bucket_level_access'] = b.get('iamConfiguration'
+                                                                 , {}).get('uniformBucketLevelAccess', {}).get('enabled', None)
         bucket['id'] = b.get('id', '') 
         bucket['labels'] = [(key, val) for (key, val) in b.get('labels', {}).items()] 
         bucket['owner_entity'] = b.get('owner', {}).get('entity', '') 
@@ -150,6 +149,7 @@ def transform_gcp_buckets(bucket_res): #TODO: Properly parse the object to retai
         bucket_list.append(bucket)
     return bucket_list
 
+
 def load_gcp_buckets(neo4j_session, buckets, gcp_update_tag): 
     '''
     Ingest GCP Storage Buckets to Neo4j
@@ -166,17 +166,16 @@ def load_gcp_buckets(neo4j_session, buckets, gcp_update_tag):
     :rtype: NoneType
     :return: Nothing 
     '''
-    #TODO: Map project_id to bucket_id ! 
+    
     query = """
-    MERGE(p:GCPProject{id:{ProjectId}}) 
+    MERGE(p:GCPProject{projectnumber:{ProjectNumber}}) 
     ON CREATE SET p.firstseen = timestamp()
     SET p.lastupdated = {gcp_update_tag}
     
     MERGE(bucket:GCPBuckets{id:{BucketId}})
-    ON CREATE SET vpc.firstseen = timestamp(),
+    ON CREATE SET bucket.firstseen = timestamp(),
     SET bucket.self_link = {SelfLink},
     bucket.id = {BucketId}, 
-    bucket.project_id = {ProjectId}, 
     bucket.project_number = {ProjectNumber}, 
     bucket.kind = {Kind}, 
     bucket.location = {Location}, 
@@ -185,11 +184,15 @@ def load_gcp_buckets(neo4j_session, buckets, gcp_update_tag):
     bucket.storage_class = {StorageClass}, 
     bucket.time_created = {TimeCreated}, 
     bucket.retention_period = {RetentionPeriod}, 
-    bucket.iam_config_bucket_policy_only = {IamConfigBucketPolicy}, 
+    bucket.iam_config_bucket_policy_only = {IamConfigBucketPolicyOnly}, 
     bucket.iam_config_uniform_bucket_level_access = {IamConfigUniformBucketLevelAccess}, 
     bucket.owner_entity = {OwnerEntity}, 
     bucket.owner_entity_id = {OwnerEntityId},
-    bucket.lastupdated = {gcp_update_tag}
+    bucket.lastupdated = {gcp_update_tag}, 
+    bucket.versioning_enabled = {VersioningEnabled}, 
+    bucket.log_bucket = {LogBucket}, 
+    bucket.requester_pays = {RequesterPays}, 
+    bucket.default_kms_key_name = {DefaultKmsKeyName}
     
     MERGE (p)-[r:RESOURCE]->(bucket)
     ON CREATE SET r.firstseen = timestamp()
@@ -198,7 +201,6 @@ def load_gcp_buckets(neo4j_session, buckets, gcp_update_tag):
     for bucket in buckets:
         neo4j_session.run(
             query,
-            ProjectId=bucket['project_id'],
             ProjectNumber=bucket['project_number'],
             BucketId=bucket['id'], 
             SelfLink=bucket['self_link'],
@@ -209,13 +211,13 @@ def load_gcp_buckets(neo4j_session, buckets, gcp_update_tag):
             StorageClass=bucket['storage_class'],
             TimeCreated=bucket['time_created'],
             RetentionPeriod=bucket['retention_period'],
-            IamConfigBucketPolicy=bucket['iam_config_bucket_policy_only'],
+            IamConfigBucketPolicyOnly=bucket['iam_config_bucket_policy_only'],
             IamConfigUniformBucketLevelAccess=bucket['iam_config_uniform_bucket_level_access'],
             OwnerEntity=bucket['owner_entity'],
-            OwnerEntityId = bucket['owner_entity_id'],
+            OwnerEntityId=bucket['owner_entity_id'],
+            VersioningEnabled=bucket['versioning_enabled'], 
+            LogBucket=bucket['log_bucket'], 
+            RequesterPays=bucket['requester_pays'], 
+            DefaultKmsKeyName=bucket['default_kms_key_name'],
             gcp_update_tag=gcp_update_tag,
         )
-    
-    
-    
-    
