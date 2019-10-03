@@ -153,6 +153,7 @@ def load_gcp_projects(neo4j_session, data, gcp_update_tag):
         MERGE (project:GCPProject{id:{ProjectId}})
         ON CREATE SET project.firstseen = timestamp()
         SET project.projectid = {ProjectId},
+        project.projectnumber = {ProjectNumber},
         project.displayname = {DisplayName},
         project.lifecyclestate = {LifecycleState},
         project.lastupdated = {gcp_update_tag}
@@ -165,6 +166,7 @@ def load_gcp_projects(neo4j_session, data, gcp_update_tag):
             query,
             ParentId=parentid,
             ProjectId=project['projectId'],
+            ProjectNumber=project['projectNumber'],
             DisplayName=project.get('name', None),
             LifecycleState=project.get('lifecycleState', None),
             gcp_update_tag=gcp_update_tag,

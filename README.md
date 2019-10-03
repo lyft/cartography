@@ -55,9 +55,9 @@ Time to set up the server that will run Cartography.  Cartography _should_ work 
 
 1. **Get and install the Neo4j graph database** on your server.
 
-	1. Go to the [Neo4j download page](https://neo4j.com/download-center/#releases), click "Community Server" and download Neo4j Community Edition 3.2.*.
+	1. Go to the [Neo4j download page](https://neo4j.com/download-center/#releases), click "Community Server" and download Neo4j Community Edition 3.5.\*.
 
-			⚠️ At this time we run our automated tests on Neo4j version 3.2.*.  3.3.* will work but it will currently fail the [test syntax test](https://github.com/lyft/cartography/blob/8f3f4b739e0033a7849c35cfa8edd3b0067be509/tests/integration/cartography/data/jobs/test_syntax.py) ⚠️
+			⚠️ At this time we run our automated tests on Neo4j version 3.5.\*.  Other versions may work but are not explicitly supported. ⚠️
 
 	2. [Install](https://neo4j.com/docs/operations-manual/current/installation/) Neo4j on the server you will run Cartography on.
 
