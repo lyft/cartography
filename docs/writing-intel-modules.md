@@ -145,10 +145,12 @@ by using `MERGE`.  We now need to delete nodes and relationships that no longer 
 all nodes and relationships that have `lastupdated` NOT set to the `update_tag` of this current run.
 
 - Delete all old nodes
+
     You can see this in our [GCP VPCs example](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/data/jobs/cleanup/gcp_compute_vpc_cleanup.json#L4).
     We run `DETACH DELETE` to delete an old node and disconnect it from all other nodes.
     
  - Delete all old relationships
+ 
     You can see this in the GCP VPC example [here](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/data/jobs/cleanup/gcp_compute_vpc_cleanup.json#L10)
     and [here](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/data/jobs/cleanup/gcp_compute_vpc_cleanup.json#L16).
     
