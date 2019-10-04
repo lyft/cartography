@@ -114,4 +114,4 @@ INFO:botocore.credentials:Found credentials in shared credentials file: ~/.aws/c
 ```
 
 ## How to write a new intel module
-See [here](docs/writing-intel-modules.md).
+See [here](writing-intel-modules.md).
