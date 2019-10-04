@@ -5,39 +5,6 @@ from cartography.intel.gcp import compute
 logger = logging.getLogger(__name__)
 
 
-def get_gcp_bucket_metadata(storage, bucket):
-    """
-    Retrieves metadata about the given bucket
-
-    :type storage: A storage resource object
-    :param storage: The storage resource object created by googleapiclient.discovery.build()
-
-    :type bucket: str
-    :param bucket: Google Cloud Bucket name
-
-    :rtype: dict
-    :return: Metadata for specified bucket
-    """
-    try:
-        req = storage.buckets().get(bucket=bucket)
-        res = req.execute()
-        return res
-    except HttpError as e:
-        reason = compute._get_error_reason(e)
-        if reason == 'notFound':
-            logger.debug(
-                ("The bucket %s was not found - returned a 404 not found error."
-                 "Full details: %s"), bucket, e, )
-            return None
-        elif reason == 'forbidden':
-            logger.debug(
-                ("You do not have storage.bucket.get access to the bucket %s. "
-                 "Full details: %s"), bucket, e, )
-            return None
-        else:
-            raise
-
-
 def get_gcp_buckets(storage, project):
     """
     Returns a list of storage objects within some given project
@@ -75,39 +42,6 @@ def get_gcp_buckets(storage, project):
             raise
 
 
-def get_gcp_bucket_iam_policy(storage, bucket):
-    """
-    Retrieves IAM policy about the given bucket.
-
-    :type storage: A storage resource object
-    :param storage: The storage resource object created by googleapiclient.discovery.build()
-
-    :type bucket: str
-    :param bucket: Google Cloud Bucket name
-
-    :rtype: dict
-    :return: IAM Policy for specified bucket
-    """
-    try:
-        req = storage.buckets().getIamPolicy(bucket=bucket)
-        res = req.execute()
-        return res
-    except HttpError as e:
-        reason = compute._get_error_reason(e)
-        if reason == 'notFound':
-            logger.debug(
-                ("The bucket %s was not found - returned a 404 not found error."
-                 "Full details: %s"), bucket, e, )
-            return None
-        elif reason == 'forbidden':
-            logger.debug(
-                ("You do not have storage.bucket.getIamPolicy access to the bucket %s. "
-                 "Full details: %s"), bucket, e, )
-            return None
-        else:
-            raise
-
-
 def transform_gcp_buckets(bucket_res): 
     '''
     Transform the GCP Storage Bucket response object for Neo4j ingestion
@@ -122,29 +56,27 @@ def transform_gcp_buckets(bucket_res):
     bucket_list = []
     for b in bucket_res.get('items', []):
         bucket = {}
-        bucket['etag'] = b.get('etag', '')  
-        bucket['iam_config_bucket_policy_only'] = b.get('iamConfiguration'
-                                                        , {}).get('bucketPolicyOnly', {}).get('enabled', None)
-        bucket['iam_config_uniform_bucket_level_access'] = b.get('iamConfiguration'
-                                                                 , {}).get('uniformBucketLevelAccess', {}).get('enabled', None)
-        bucket['id'] = b.get('id', '') 
+        bucket['etag'] = b.get('etag')  
+        bucket['iam_config_bucket_policy_only'] = b.get('iamConfiguration', {}).get('bucketPolicyOnly', {}).get('enabled', None)
+        bucket['iam_config_uniform_bucket_level_access'] = b.get('iamConfiguration', {}).get('uniformBucketLevelAccess', {}).get('enabled', None)
+        bucket['id'] = b.get('id') 
         bucket['labels'] = [(key, val) for (key, val) in b.get('labels', {}).items()] 
-        bucket['owner_entity'] = b.get('owner', {}).get('entity', '') 
-        bucket['owner_entity_id'] = b.get('owner', {}).get('entityId', '') 
-        bucket['kind'] = b.get('kind', '') 
-        bucket['location'] = b.get('location', '') 
-        bucket['location_type'] = b.get('locationType', '')
-        bucket['meta_generation'] = g.get('metageneration', None) 
+        bucket['owner_entity'] = b.get('owner', {}).get('entity') 
+        bucket['owner_entity_id'] = b.get('owner', {}).get('entityId') 
+        bucket['kind'] = b.get('kind') 
+        bucket['location'] = b.get('location') 
+        bucket['location_type'] = b.get('locationType')
+        bucket['meta_generation'] = b.get('metageneration', None) 
         bucket['project_number'] = b.get('projectNumber', None) 
-        bucket['self_link'] = b.get('selfLink', '') 
-        bucket['storage_class'] = b.get('storageClass', '')
-        bucket['time_created'] = b.get('timeCreated', '') 
-        bucket['updated'] = b.get('updated', '') 
+        bucket['self_link'] = b.get('selfLink') 
+        bucket['storage_class'] = b.get('storageClass')
+        bucket['time_created'] = b.get('timeCreated') 
+        bucket['updated'] = b.get('updated') 
         bucket['versioning_enabled'] = b.get('versioning', {}).get('enabled', None) 
         bucket['default_event_based_hold']  = b.get('defaultEventBasedHold', None) 
         bucket['retention_period'] = b.get('retentionPolicy', {}).get('retentionPeriod', None) 
-        bucket['default_kms_key_name'] = b.get('encryption', {}).get('defaultKmsKeyName', '') 
-        bucket['log_bucket'] = b.get('logging', {}).get('logBucket', '') 
+        bucket['default_kms_key_name'] = b.get('encryption', {}).get('defaultKmsKeyName') 
+        bucket['log_bucket'] = b.get('logging', {}).get('logBucket') 
         bucket['requester_pays'] = b.get('billing', {}).get('requesterPays', None)  
         bucket_list.append(bucket)
     return bucket_list
@@ -174,12 +106,12 @@ def load_gcp_buckets(neo4j_session, buckets, gcp_update_tag):
     
     MERGE(bucket:GCPBuckets{id:{BucketId}})
     ON CREATE SET bucket.firstseen = timestamp(),
-    SET bucket.self_link = {SelfLink},
-    bucket.id = {BucketId}, 
+    bucket.self_link = {SelfLink}, 
     bucket.project_number = {ProjectNumber}, 
     bucket.kind = {Kind}, 
     bucket.location = {Location}, 
     bucket.location_type = {LocationType}, 
+    bucket.labels = {Labels},
     bucket.meta_generation = {MetaGeneration}, 
     bucket.storage_class = {StorageClass}, 
     bucket.time_created = {TimeCreated}, 
@@ -204,6 +136,7 @@ def load_gcp_buckets(neo4j_session, buckets, gcp_update_tag):
             ProjectNumber=bucket['project_number'],
             BucketId=bucket['id'], 
             SelfLink=bucket['self_link'],
+	    Labels=bucket['labels'], 
             Kind=bucket['kind'], 
             Location=bucket['location'],
             LocationType=bucket['location_type'],
