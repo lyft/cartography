@@ -181,7 +181,7 @@ with every change!
 
 ## Making tests
 
-- Before making tests, read through [these docs](docs/developer-guide.md).
+- Before making tests, read through [these docs](developer-guide.md).
 
 - Add fake data for testing at `tests/data`.  We can see 
 the GCP VPC example here: https://github.com/lyft/cartography/blob/master/tests/data/gcp/compute.py#L2.
