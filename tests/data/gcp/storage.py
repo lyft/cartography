@@ -13,42 +13,18 @@ STORAGE_RESPONSE = {
    "metageneration": "1",
    "iamConfiguration": {
     "bucketPolicyOnly": {
-     "enabled": false
+     "enabled": False
     },
     "uniformBucketLevelAccess": {
-     "enabled": false
+     "enabled": False
     }
    },
    "location": "US",
    "locationType": "multi-region",
-   "defaultEventBasedHold": false,
+   "defaultEventBasedHold": False,
    "storageClass": "STANDARD",
    "etag": "CAE="
   }
  ]
-}
-
-BUCKET_METADATA_RESPONSE = {
- "kind": "storage#bucket",
- "id": "bucket_name",
- "selfLink": "https://www.googleapis.com/storage/v1/b/bucket_name",
- "projectNumber": "some_num",
- "name": "bucket_name",
- "timeCreated": "some_time",
- "updated": "some_time",
- "metageneration": "1",
- "iamConfiguration": {
-  "bucketPolicyOnly": {
-   "enabled": false
-  },
-  "uniformBucketLevelAccess": {
-   "enabled": false
-  }
- },
- "location": "US",
- "locationType": "multi-region",
- "defaultEventBasedHold": false,
- "storageClass": "STANDARD",
- "etag": "CAE="
 }
 
