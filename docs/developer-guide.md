@@ -112,3 +112,6 @@ INFO:cartography.sync:Starting sync stage 'aws'
 INFO:botocore.credentials:Found credentials in shared credentials file: ~/.aws/credentials
 ...
 ```
+
+## How to write a new intel module
+See [here](docs/writing-intel-modules.md).
