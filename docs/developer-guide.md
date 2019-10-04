@@ -9,6 +9,7 @@
   - [Manually testing individual intel modules](#manually-testing-individual-intel-modules)
   - [Automated testing](#automated-testing)
 - [Implementing custom sync commands](#implementing-custom-sync-commands)
+- [How to write a new intel module](#how-to-write-a-new-intel-module)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
