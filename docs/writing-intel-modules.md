@@ -34,7 +34,7 @@ The `get` function [retrieves necessary data](https://github.com/lyft/cartograph
 from a resource provider API, which is GCP in this example.
 
 `get` should be "dumb" in the sense that it should not handle retry logic or data
-manipulation. 
+manipulation.
 
 ### Transform
 
@@ -81,11 +81,11 @@ The `load` function [ingests the processed data to neo4j](https://github.com/lyf
         see [GCPNetworkTag](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/docs/schema/gcp.md#gcpnetworktag).
 
         When setting an `id`, ensure that you also include the field name that it came from.  For example, since we've
-        decided to use `partial_uri`s as GCPVpc `id`,  we should include both `partial_uri` _and_ `id` on the node.  
+        decided to use `partial_uri`s as GCPVpc `id`,  we should include both `partial_uri` _and_ `id` on the node.
         This way, a user can tell what fields were used to derive the `id`.  This is accomplished [here](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/intel/gcp/compute.py#L455-L457).
 
-    - `lastupdated` - See the special section below on how to set this.
-    - `firstseen` - See the special section below on how to set this.
+    - `lastupdated` - See [below](#lastupdated-and-firstseen) on how to set this.
+    - `firstseen` - See [below](#lastupdated-and-firstseen) on how to set this.
 
 - At minimum, set these fields on all relationships:
     - `lastupdated` - See the special section below on how to set this.
@@ -102,9 +102,9 @@ The `load` function [ingests the processed data to neo4j](https://github.com/lyf
   with your new node type.
 
 
-- Make sure to set the `lastupdated` and `firstseen` fields on both nodes and relationships.
-
-    Suppose we are creating the following chain:
+- lastupdated and firstseen
+    Make sure to set the `lastupdated` and `firstseen` fields on both nodes and relationships.  Suppose we are creating
+    the following chain:
 
     ```cypher
     MERGE (n:NodeType)-[r:RELATIONSHIP]->(n2:NodeType2)
@@ -153,7 +153,7 @@ all nodes and relationships that have `lastupdated` NOT set to the `update_tag` 
     and [here](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/data/jobs/cleanup/gcp_compute_vpc_cleanup.json#L16).
 
     - Q: We just `DETACH DELETE`'d the node.  Why do we need to delete the relationships too?
-        
+
     - A: There are cases where the node may continue to exist but the relationships between it and other nodes have changed.
         Explicitly deleting stale relationships accounts for this case.
         See this [short discussion](https://github.com/lyft/cartography/pull/124/files#r312277725).
