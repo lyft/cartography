@@ -17,31 +17,29 @@
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 This doc contains guidelines on creating a Cartography intel module.  If you want to add a new data type to Cartography,
-this is guide for you!  It is fairly straightforward to copy the structure of an existing intel module and test it,
-but we'll share some best practices and nuances in this doc to save you some time.  We look forward to receiving your PR!
+this is the guide for you!  It is fairly straightforward to copy the structure of an existing intel module and test it,
+but we'll share some best practices in this doc to save you some time.  We look forward to receiving your PR!
 
 
 ## Sync = Get, Transform, Load, Cleanup
 
-A cartography intel module consists of one `sync` function.  `sync` should then call `get` followed by `load`, which is
-then concluded with `cleanup`.
+A cartography intel module consists of one `sync` function.  `sync` should call `get`, then `load`, and finally `cleanup`.
 
 We'll use the example of [ingesting GCP VPCs](https://github.com/lyft/cartography/blob/9607b0835928e8195f9b8d601c4f32a37d17de96/cartography/intel/gcp/compute.py#L875)
 to walk through how this works.
 
 ### Get
 
-The `get*` function [retrieves necessary data](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/intel/gcp/compute.py#L98)
-from a resource provider API, in this case GCP.
+The `get` function [retrieves necessary data](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/intel/gcp/compute.py#L98)
+from a resource provider API, which is GCP in this example.
 
-`get` should be "dumb".  Our current guidance is that a `get` function should not handle retry logic or data
-manipulation. (⚠️At the time of this writing we are aware of issues with not having retry logic, and we are holding off
-on implementing a solution immediately to better understand problems with different APIs)
+`get` should be "dumb" in the sense that it should not handle retry logic or data
+manipulation. 
 
 ### Transform
 
-The `transform*` function [performs transformations](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/intel/gcp/compute.py#L193)
-on the data to make it easier to ingest to the graph.  We have some best practices on handling transforms:
+The `transform` function [manipulates data](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/intel/gcp/compute.py#L193)
+to make it easier to ingest to the graph.  We have some best practices on handling transforms:
 
 - Use `my_dict['someField']` when accessing important fields, and use `my_dict.get('someField')` for less important ones.
 
@@ -59,10 +57,9 @@ on the data to make it easier to ingest to the graph.  We have some best practic
 
 ### Load
 
-The `load*` function [ingests the processed data to neo4j](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/intel/gcp/compute.py#L442).
-There are several practices that we employ with `load*`:
+The `load` function [ingests the processed data to neo4j](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/intel/gcp/compute.py#L442).
 
-- What is the cartography `update_tag`?
+- The cartography `update_tag`:
 
     `cartography`'s global [config object carries around an `update_tag` property](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/cli.py#L91-L98) which is
     [set to the time that the CLI is run](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/sync.py#L131-L134).
@@ -79,13 +76,13 @@ There are several practices that we employ with `load*`:
         [schema docs](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/docs/schema/gcp.md#gcpvpc).
         For an AWS node, it would make sense to set `id` to an ARN.
 
-        If possible, we should always use API-provided fields for IDs and not create derived IDs based on multiple fields.
+        If possible, we should use API-provided fields for IDs and not create derived IDs based on multiple fields.
         In some cases though this is unavoidable -
         see [GCPNetworkTag](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/docs/schema/gcp.md#gcpnetworktag).
 
         When setting an `id`, ensure that you also include the field name that it came from.  For example, since we've
-        decided to use `partial_uri`s as GCPVpc `id`,  we should include both `partial_uri` _and_ `id`.  This way,
-        a user can tell what fields were used to derive the `id`.  This is accomplished [here](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/intel/gcp/compute.py#L455-L457).
+        decided to use `partial_uri`s as GCPVpc `id`,  we should include both `partial_uri` _and_ `id` on the node.  
+        This way, a user can tell what fields were used to derive the `id`.  This is accomplished [here](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/intel/gcp/compute.py#L455-L457).
 
     - `lastupdated` - See the special section below on how to set this.
     - `firstseen` - See the special section below on how to set this.
@@ -98,7 +95,7 @@ There are several practices that we employ with `load*`:
 
     In this example of ingesting GCP VPCs, we connect VPCs with GCPProjects
     [based on GCPProject `id`s and GCPVpc `id`s](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/intel/gcp/compute.py#L451).
-    These are both indexed fields, as seen [here](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/data/indexes.cypher#L45)
+    `id`s are indexed, as seen [here](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/data/indexes.cypher#L45)
     and [here](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/data/indexes.cypher#L42).
 
 - On that note, ensure that you [update the indexes.cypher file](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/data/indexes.cypher)
@@ -155,8 +152,9 @@ all nodes and relationships that have `lastupdated` NOT set to the `update_tag` 
     You can see this in the GCP VPC example [here](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/data/jobs/cleanup/gcp_compute_vpc_cleanup.json#L10)
     and [here](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/data/jobs/cleanup/gcp_compute_vpc_cleanup.json#L16).
 
-    - FAQ: But we just `DETACH DELETE`'d the node, why do we need to delete the relationships?
-        There are cases where the node may continue to exist but the relationships between it and other nodes have changed.
+    - Q: We just `DETACH DELETE`'d the node.  Why do we need to delete the relationships too?
+        
+    - A: There are cases where the node may continue to exist but the relationships between it and other nodes have changed.
         Explicitly deleting stale relationships accounts for this case.
         See this [short discussion](https://github.com/lyft/cartography/pull/124/files#r312277725).
 
