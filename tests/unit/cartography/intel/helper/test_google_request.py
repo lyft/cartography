@@ -1,8 +1,11 @@
+from unittest import mock
+
 import pytest
 from googleapiclient.discovery import HttpError
-from unittest import mock
-from cartography.intel.helper.google_request import repeat_request
+
 from cartography.intel.helper.google_request import GoogleRetryException
+from cartography.intel.helper.google_request import repeat_request
+
 
 def test_repeat_request():
     # Test pagination
@@ -12,6 +15,7 @@ def test_repeat_request():
     req_next.side_effect = [mock.MagicMock(), mock.MagicMock(), None]
     repeat_request(req, req_args, req_next, retry_delay_ms=1)
     assert req_next.call_count == 3
+
 
 def test_repeat_request_fail():
     # Test that proper exception is raised on multiple retry failures
