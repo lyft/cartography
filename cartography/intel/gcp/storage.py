@@ -57,7 +57,8 @@ def transform_gcp_buckets(bucket_res):
     for b in bucket_res.get('items', []):
         bucket = {}
         bucket['etag'] = b.get('etag')  
-        bucket['iam_config_bucket_policy_only'] = b.get('iamConfiguration', {}).get('bucketPolicyOnly', {}).get('enabled', None)
+        bucket['iam_config_bucket_policy_only'] = \
+        b.get('iamConfiguration', {}).get('bucketPolicyOnly', {}).get('enabled', None)
         bucket['id'] = b['id']
         bucket['labels'] = [(key, val) for (key, val) in b.get('labels', {}).items()] 
         bucket['owner_entity'] = b.get('owner', {}).get('entity') 
@@ -72,7 +73,7 @@ def transform_gcp_buckets(bucket_res):
         bucket['time_created'] = b.get('timeCreated') 
         bucket['updated'] = b.get('updated') 
         bucket['versioning_enabled'] = b.get('versioning', {}).get('enabled', None) 
-        bucket['default_event_based_hold']  = b.get('defaultEventBasedHold', None) 
+        bucket['default_event_based_hold'] = b.get('defaultEventBasedHold', None) 
         bucket['retention_period'] = b.get('retentionPolicy', {}).get('retentionPeriod', None) 
         bucket['default_kms_key_name'] = b.get('encryption', {}).get('defaultKmsKeyName') 
         bucket['log_bucket'] = b.get('logging', {}).get('logBucket') 

@@ -10,4 +10,4 @@ def test_transform_gcp_buckets():
     assert bucket['items'][0]['projectNumber'] == 9999
     assert bucket['items'][0]['id'] == 'bucket_name' 
     assert bucket['items'][0]['selfLink'] == 'https://www.googleapis.com/storage/v1/b/bucket_name'
-    assert bucket['items'][0]['iamConfiguration']['uniformBucketLevelAccess']['enabled'] == False
+    assert bucket['items'][0]['iamConfiguration']['uniformBucketLevelAccess']['enabled'] is False

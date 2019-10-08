@@ -22,7 +22,7 @@ def test_transform_and_load_storage_buckets(neo4j_session):
     expected_kind = 'storage#bucket'
     nodes = neo4j_session.run(
         query,
-        BucketId=expected_bucket_id,
+        BucketId=expected_id,
     )
     actual_nodes = {(n['bucket.id'], n['bucket.project_number'], n['bucket.kind']) for n in nodes}
     expected_nodes = {
