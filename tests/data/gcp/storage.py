@@ -1,12 +1,13 @@
 # flake8: noqa
-STORAGE_RESPONSE = {
+STORAGE_RESPONSE = [
+{
  "kind": "storage#buckets",
  "items": [
   {
    "kind": "storage#bucket",
    "id": "bucket_name",
    "selfLink": "https://www.googleapis.com/storage/v1/b/bucket_name",
-   "projectNumber": "some_num",
+   "projectNumber": 9999,
    "name": "bucket_name",
    "timeCreated": "some_time",
    "updated": "some_time",
@@ -27,4 +28,4 @@ STORAGE_RESPONSE = {
   }
  ]
 }
-
+]

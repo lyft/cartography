@@ -58,8 +58,7 @@ def transform_gcp_buckets(bucket_res):
         bucket = {}
         bucket['etag'] = b.get('etag')  
         bucket['iam_config_bucket_policy_only'] = b.get('iamConfiguration', {}).get('bucketPolicyOnly', {}).get('enabled', None)
-        bucket['iam_config_uniform_bucket_level_access'] = b.get('iamConfiguration', {}).get('uniformBucketLevelAccess', {}).get('enabled', None)
-        bucket['id'] = b.get('id') 
+        bucket['id'] = b['id']
         bucket['labels'] = [(key, val) for (key, val) in b.get('labels', {}).items()] 
         bucket['owner_entity'] = b.get('owner', {}).get('entity') 
         bucket['owner_entity_id'] = b.get('owner', {}).get('entityId') 
@@ -67,7 +66,7 @@ def transform_gcp_buckets(bucket_res):
         bucket['location'] = b.get('location') 
         bucket['location_type'] = b.get('locationType')
         bucket['meta_generation'] = b.get('metageneration', None) 
-        bucket['project_number'] = b.get('projectNumber', None) 
+        bucket['project_number'] = b['projectNumber']
         bucket['self_link'] = b.get('selfLink') 
         bucket['storage_class'] = b.get('storageClass')
         bucket['time_created'] = b.get('timeCreated') 
@@ -104,9 +103,10 @@ def load_gcp_buckets(neo4j_session, buckets, gcp_update_tag):
     ON CREATE SET p.firstseen = timestamp()
     SET p.lastupdated = {gcp_update_tag}
     
-    MERGE(bucket:GCPBuckets{id:{BucketId}})
+    MERGE(bucket:GCPBucket{id:{BucketId}})
     ON CREATE SET bucket.firstseen = timestamp(),
-    bucket.self_link = {SelfLink}, 
+    bucket.bucket_id = {BucketId}
+    SET bucket.self_link = {SelfLink}, 
     bucket.project_number = {ProjectNumber}, 
     bucket.kind = {Kind}, 
     bucket.location = {Location}, 
@@ -117,7 +117,6 @@ def load_gcp_buckets(neo4j_session, buckets, gcp_update_tag):
     bucket.time_created = {TimeCreated}, 
     bucket.retention_period = {RetentionPeriod}, 
     bucket.iam_config_bucket_policy_only = {IamConfigBucketPolicyOnly}, 
-    bucket.iam_config_uniform_bucket_level_access = {IamConfigUniformBucketLevelAccess}, 
     bucket.owner_entity = {OwnerEntity}, 
     bucket.owner_entity_id = {OwnerEntityId},
     bucket.lastupdated = {gcp_update_tag}, 
@@ -136,7 +135,7 @@ def load_gcp_buckets(neo4j_session, buckets, gcp_update_tag):
             ProjectNumber=bucket['project_number'],
             BucketId=bucket['id'], 
             SelfLink=bucket['self_link'],
-	    Labels=bucket['labels'], 
+            Labels=bucket['labels'], 
             Kind=bucket['kind'], 
             Location=bucket['location'],
             LocationType=bucket['location_type'],
@@ -145,7 +144,6 @@ def load_gcp_buckets(neo4j_session, buckets, gcp_update_tag):
             TimeCreated=bucket['time_created'],
             RetentionPeriod=bucket['retention_period'],
             IamConfigBucketPolicyOnly=bucket['iam_config_bucket_policy_only'],
-            IamConfigUniformBucketLevelAccess=bucket['iam_config_uniform_bucket_level_access'],
             OwnerEntity=bucket['owner_entity'],
             OwnerEntityId=bucket['owner_entity_id'],
             VersioningEnabled=bucket['versioning_enabled'], 
