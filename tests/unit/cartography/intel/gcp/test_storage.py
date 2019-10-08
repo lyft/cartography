@@ -3,7 +3,7 @@ from tests.data.gcp.storage import STORAGE_RESPONSE
 
 
 def test_transform_gcp_buckets(): 
-    bucket_list = STORAGE_RESPONSE 
+    bucket_list = cartography.intel.gcp.storage.transform_gcp_buckets(STORAGE_RESPONSE) 
     assert len(bucket_list) == 1
     bucket = bucket_list[0]
     assert len(bucket['items']) == 1 
