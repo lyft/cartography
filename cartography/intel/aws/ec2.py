@@ -189,7 +189,7 @@ def load_ec2_instances(neo4j_session, data, region, current_aws_account_id, aws_
             AWS_ACCOUNT_ID=current_aws_account_id,
             Region=region,
             aws_update_tag=aws_update_tag,
-        )
+        ).consume()  # TODO see issue 170
 
         for instance in reservation["Instances"]:
             instanceid = instance["InstanceId"]
@@ -222,7 +222,7 @@ def load_ec2_instances(neo4j_session, data, region, current_aws_account_id, aws_
                 AWS_ACCOUNT_ID=current_aws_account_id,
                 Region=region,
                 aws_update_tag=aws_update_tag,
-            )
+            ).consume()  # TODO see issue 170
 
             if instance.get("KeyName"):
                 key_name = instance["KeyName"]
@@ -235,7 +235,7 @@ def load_ec2_instances(neo4j_session, data, region, current_aws_account_id, aws_
                     InstanceId=instanceid,
                     AWS_ACCOUNT_ID=current_aws_account_id,
                     aws_update_tag=aws_update_tag,
-                )
+                ).consume()  # TODO see issue 170
 
             if instance.get("SecurityGroups"):
                 for group in instance["SecurityGroups"]:
@@ -247,7 +247,7 @@ def load_ec2_instances(neo4j_session, data, region, current_aws_account_id, aws_
                         Region=region,
                         AWS_ACCOUNT_ID=current_aws_account_id,
                         aws_update_tag=aws_update_tag,
-                    )
+                    ).consume()  # TODO see issue 170
 
             load_ec2_instance_network_interfaces(neo4j_session, instance, aws_update_tag)
 
@@ -294,7 +294,7 @@ def load_ec2_instance_network_interfaces(neo4j_session, instance_data, aws_updat
             PrivateIpAddress=interface.get("PrivateIpAddress", ""),
             SubnetId=interface.get("SubnetId", ""),
             aws_update_tag=aws_update_tag,
-        )
+        ).consume()  # TODO see issue 170
 
         for group in interface.get("Groups", []):
             neo4j_session.run(
@@ -302,7 +302,7 @@ def load_ec2_instance_network_interfaces(neo4j_session, instance_data, aws_updat
                 NetworkId=interface["NetworkInterfaceId"],
                 GroupId=group["GroupId"],
                 aws_update_tag=aws_update_tag,
-            )
+            ).consume()  # TODO see issue 170
 
 
 def load_ec2_security_groupinfo(neo4j_session, data, region, current_aws_account_id, aws_update_tag):

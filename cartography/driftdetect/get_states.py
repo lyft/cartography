@@ -4,7 +4,7 @@ import time
 
 import neobolt.exceptions
 from marshmallow import ValidationError
-from neo4j.v1 import GraphDatabase
+from neo4j import GraphDatabase
 
 from cartography.driftdetect.add_shortcut import add_shortcut
 from cartography.driftdetect.serializers import ShortcutSchema
@@ -142,4 +142,4 @@ def get_state(session, state):
                 values.append(str(field))
         results.append(values)
 
-    state.results = results
+    state.results = sorted(results)
