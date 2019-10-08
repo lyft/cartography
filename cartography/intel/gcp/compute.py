@@ -6,6 +6,7 @@ from collections import namedtuple
 
 from googleapiclient.discovery import HttpError
 
+from cartography.intel.helper.google_request import GoogleRetryException
 from cartography.intel.helper.google_request import repeat_request
 from cartography.util import run_cleanup_job
 
@@ -90,12 +91,18 @@ def get_gcp_instance_responses(project_id, zones, compute):
         return []
     response_objects = []
     for zone in zones:
-        objects = repeat_request(
-            req=compute.instances().list,
-            req_args={'project': project_id, 'zone': zone['name']},
-            req_next=compute.instances().list_next,
-        )
-        response_objects = response_objects + objects
+        try:
+            objects = repeat_request(
+                req=compute.instances().list,
+                req_args={'project': project_id, 'zone': zone['name']},
+                req_next=compute.instances().list_next,
+            )
+            response_objects = response_objects + objects
+        except GoogleRetryException as e:
+            logger.warning(f"Failed to sync compute instances.  Reason: {e}")
+            response_objects = []
+            break
+
     return response_objects
 
 

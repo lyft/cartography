@@ -1,9 +1,11 @@
 from unittest import mock
 from unittest.mock import patch
 
+import pytest
 from googleapiclient.discovery import HttpError
 
 from cartography.intel.gsuite import api
+from cartography.intel.helper.google_request import GoogleRetryException
 
 
 def test_repeat_request():
@@ -39,8 +41,9 @@ def test_repeat_request_failure():
     raw_req_1.execute.return_value = resp_req_1
     raw_req_1.execute.side_effect = HttpError(mock.Mock(status=503), content=b'Service Unavailable')
 
-    api.repeat_request(req, req_args, req_next, retries=3)
-    assert raw_req_1.execute.call_count == 3
+    with pytest.raises(GoogleRetryException):
+        api.repeat_request(req, req_args, req_next, retries=3)
+        assert raw_req_1.execute.call_count == 3
 
 
 def test_transform_api_objects():

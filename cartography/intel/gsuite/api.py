@@ -1,5 +1,6 @@
 import logging
 
+from cartography.intel.helper.google_request import GoogleRetryException
 from cartography.intel.helper.google_request import repeat_request
 from cartography.util import run_cleanup_job
 
@@ -194,10 +195,16 @@ def sync_gsuite_users(session, admin, gsuite_update_tag, common_job_parameters):
     :return: Nothing
     """
     logger.debug('Syncing GSuite Users')
-    resp_objs = get_all_users(admin)
-    users = transform_api_objects(resp_objs, 'users')
-    load_gsuite_users(session, users, gsuite_update_tag)
-    cleanup_gsuite_users(session, common_job_parameters)
+    try:
+        resp_objs = get_all_users(admin)
+    except GoogleRetryException as e:
+        logger.warning(f"Failed to sync GSuite Users.  Reason: {e}")
+        resp_objs = []
+
+    if resp_objs:
+        users = transform_api_objects(resp_objs, 'users')
+        load_gsuite_users(session, users, gsuite_update_tag)
+        cleanup_gsuite_users(session, common_job_parameters)
 
 
 def sync_gsuite_groups(session, admin, gsuite_update_tag, common_job_parameters):
@@ -212,11 +219,18 @@ def sync_gsuite_groups(session, admin, gsuite_update_tag, common_job_parameters)
     :return: Nothing
     """
     logger.debug('Syncing GSuite Groups')
-    resp_objs = get_all_groups(admin)
-    groups = transform_api_objects(resp_objs, 'groups')
-    load_gsuite_groups(session, groups, gsuite_update_tag)
-    cleanup_gsuite_groups(session, common_job_parameters)
-    sync_gsuite_members(groups, session, admin, gsuite_update_tag)
+
+    try:
+        resp_objs = get_all_groups(admin)
+    except GoogleRetryException as e:
+        logger.warning(f"Failed to sync GSuite Groups.  Reason: {e}")
+        resp_objs = []
+
+    if resp_objs:
+        groups = transform_api_objects(resp_objs, 'groups')
+        load_gsuite_groups(session, groups, gsuite_update_tag)
+        cleanup_gsuite_groups(session, common_job_parameters)
+        sync_gsuite_members(groups, session, admin, gsuite_update_tag)
 
 
 def sync_gsuite_members(groups, session, admin, gsuite_update_tag):

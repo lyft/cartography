@@ -5,6 +5,10 @@ from googleapiclient.discovery import HttpError
 logger = logging.getLogger(__name__)
 
 
+class GoogleRetryException(Exception):
+    pass
+
+
 def repeat_request(req, req_args, req_next=None, retries=5, retry_delay_ms=500):
     """ Wrapper to retry requests.  We make a lot of requests to Google.
     Sometimes it may flake out due to network or server issues.  Repeat if it fails.
@@ -19,6 +23,7 @@ def repeat_request(req, req_args, req_next=None, retries=5, retry_delay_ms=500):
     retry = 0
     request = req(**req_args)
     response_objects = []
+
     while request is not None:
         try:
             resp = request.execute()
@@ -29,5 +34,6 @@ def repeat_request(req, req_args, req_next=None, retries=5, retry_delay_ms=500):
             retry += 1
             time.sleep(retry_delay_ms / 1000.0)
             if retry >= retries:
-                break
+                raise GoogleRetryException(f'Retry limit: {retries} exceeded.')
+
     return response_objects
