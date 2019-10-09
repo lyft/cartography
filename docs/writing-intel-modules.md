@@ -20,6 +20,10 @@ This doc contains guidelines on creating a Cartography intel module.  If you wan
 this is the guide for you!  It is fairly straightforward to copy the structure of an existing intel module and test it,
 but we'll share some best practices in this doc to save you some time.  We look forward to receiving your PR!
 
+## Before getting started...
+
+Read through and follow the setup steps in [the Cartography developer guide](developer-guide.md).
+
 
 ## Sync = Get, Transform, Load, Cleanup
 
@@ -88,8 +92,8 @@ The `load` function [ingests the processed data to neo4j](https://github.com/lyf
     - `firstseen` - See [below](#lastupdated-and-firstseen) on how to set this.
 
 - At minimum, set these fields on all relationships:
-    - `lastupdated` - See the special section below on how to set this.
-    - `firstseen` - See the special section below on how to set this.
+    - `lastupdated` - See [below](#lastupdated-and-firstseen) on how to set this.
+    - `firstseen` - See [below](#lastupdated-and-firstseen) on how to set this.
 
 - For best performance, ensure that you `MERGE` on fields that are indexed.
 
@@ -102,7 +106,8 @@ The `load` function [ingests the processed data to neo4j](https://github.com/lyf
   with your new node type.
 
 
-- lastupdated and firstseen
+- <a name="lastupdated-and-firstseen">lastupdated and firstseen</a>
+
     Make sure to set the `lastupdated` and `firstseen` fields on both nodes and relationships.  Suppose we are creating
     the following chain:
 
@@ -182,7 +187,7 @@ with every change!
 
 ## Making tests
 
-- Before making tests, read through [these docs](developer-guide.md).
+- Before making tests, read through and follow the setup steps in [the Cartography developer guide](developer-guide.md).
 
 - Add fake data for testing at `tests/data`.  We can see
 the GCP VPC example here: https://github.com/lyft/cartography/blob/0652c2b6dede589e805156925353bffc72da6c2b/tests/data/gcp/compute.py#L2.
