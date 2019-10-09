@@ -1,6 +1,5 @@
 # flake8: noqa
-STORAGE_RESPONSE = [
-    {
+STORAGE_RESPONSE = {
         "kind": "storage#buckets",
         "items": [
             {
@@ -27,5 +26,4 @@ STORAGE_RESPONSE = [
                 "etag": "CAE=",
             },
         ],
-    },
-]
+    }
