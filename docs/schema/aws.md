@@ -1053,6 +1053,8 @@ Representation of an AWS Relational Database Service [DBInstance](https://docs.a
 | endpoint\_address                 | DNS name of the RDS instance|
 | endpoint\_port                    | The port that the RDS instance is listening on |
 | endpoint\_hostedzoneid            | The AWS DNS Zone ID that is associated with the RDS instance's DNS entry |
+| auto\_minor\_version\_upgrade       | Specifies whether minor version upgrades are applied automatically to the DB instance during the maintenance window |
+| iam\_database\_authentication\_enabled       | Specifies if mapping of AWS Identity and Access Management (IAM) accounts to database accounts is enabled |
 
 
 
