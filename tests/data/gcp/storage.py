@@ -1,7 +1,7 @@
 # flake8: noqa
 STORAGE_RESPONSE = {
-        "kind": "storage#buckets",
-        "items": [
+    "kind": "storage#buckets",
+    "items": [
             {
                 "kind": "storage#bucket",
                 "id": "bucket_name",
@@ -25,5 +25,5 @@ STORAGE_RESPONSE = {
                 "storageClass": "STANDARD",
                 "etag": "CAE=",
             },
-        ],
-    }
+    ],
+}
