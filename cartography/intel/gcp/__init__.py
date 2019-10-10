@@ -6,6 +6,7 @@ from oauth2client.client import ApplicationDefaultCredentialsError
 from oauth2client.client import GoogleCredentials
 
 from cartography.intel.gcp import compute
+from cartography.intel.gcp import storage
 from cartography.intel.gcp import crm
 from cartography.util import run_analysis_job
 
