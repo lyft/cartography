@@ -71,6 +71,20 @@ def _initialize_resources(credentials):
     )
 
 
+def _sync_gcp_bucket(neo4j_session, resources, project_id, gcp_update_tag, common_job_parameters):
+    """
+    Handles graph sync for a GCP storage bucket.
+    :param neo4j_session: The Neo4j session
+    :param resources: namedtuple of the GCP resource objects
+    :param project_id: The project ID number to sync.  See  the `projectId` field in
+    https://cloud.google.com/resource-manager/reference/rest/v1/projects
+    :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
+    :param common_job_parameters: Other parameters sent to Neo4j
+    :return: Nothing
+    """
+    storage.sync(neo4j_session, resources.storage, project_id, gcp_update_tag, common_job_parameters)
+
+
 def _sync_single_project(neo4j_session, resources, project_id, gcp_update_tag, common_job_parameters):
     """
     Handles graph sync for a single GCP project.

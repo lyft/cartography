@@ -3,23 +3,25 @@ import logging
 from googleapiclient.discovery import HttpError
 
 from cartography.intel.gcp import compute
+from cartography.util import run_cleanup_job
 logger = logging.getLogger(__name__)
 
 
-def get_gcp_buckets(storage, project):
+def get_gcp_buckets(storage, project_id):
     """
     Returns a list of storage objects within some given project
 
-    :type storage: A storage resource object
+    :type storage: The GCP storage resource object
     :param storage: The storage resource object created by googleapiclient.discovery.build()
 
-    :type project: str
-    :param project: The Google Project name that you are retrieving buckets from
+    :type project_id: str
+    :param project_id: The Google Project Id that you are retrieving buckets from
+
     :rtype: Storage Object
     :return: Storage response object
     """
     try:
-        req = storage.buckets().list(project=project)
+        req = storage.buckets().list(project=project_id)
         res = req.execute()
         return res
     except HttpError as e:
@@ -30,7 +32,7 @@ def get_gcp_buckets(storage, project):
                     "The project %s is invalid - returned a 400 invalid error."
                     "Full details: %s"
                 ),
-                project,
+                project_id,
                 e,
             )
             return None
@@ -39,7 +41,7 @@ def get_gcp_buckets(storage, project):
                 (
                     "You do not have storage.bucket.list access to the project %s. "
                     "Full details: %s"
-                ), project, e, )
+                ), project_id, e, )
             return None
         else:
             raise
@@ -49,7 +51,7 @@ def transform_gcp_buckets(bucket_res):
     '''
     Transform the GCP Storage Bucket response object for Neo4j ingestion
 
-    :type bucket_res: A storage resource object (https://cloud.google.com/storage/docs/json_api/v1/buckets)
+    :type bucket_res: The GCP storage resource object (https://cloud.google.com/storage/docs/json_api/v1/buckets)
     :param bucket_res: The return data
 
     :rtype: list
@@ -93,7 +95,7 @@ def load_gcp_buckets(neo4j_session, buckets, gcp_update_tag):
     :param neo4j session: The Neo4j session object
 
     :type buckets: list
-    :param buckets: List of GCP Buckets to injest
+    :param buckets: List of GCP Storage Buckets to injest
 
     :type gcp_update_tag: timestamp
     :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
@@ -156,3 +158,47 @@ def load_gcp_buckets(neo4j_session, buckets, gcp_update_tag):
             DefaultKmsKeyName=bucket['default_kms_key_name'],
             gcp_update_tag=gcp_update_tag,
         )
+
+
+def cleanup_gcp_buckets(neo4j_session, common_job_parameters):
+    """
+    Delete out-of-date GCP Storage Bucket nodes and relationships
+
+    :type neo4j_session: The Neo4j session object
+    :param neo4j_session: The Neo4j session
+
+    :type common_job_parameters: dict
+    :param common_job_parameters: Dictionary of other job parameters to pass to Neo4j
+
+    :rtype: NoneType
+    :return: Nothing
+    """
+    run_cleanup_job('gcp_storage_bucket_cleanup.json', neo4j_session, common_job_parameters)
+
+
+def sync_gcp_buckets(neo4j_session, storage, project_id, gcp_update_tag, common_job_parameters):
+    """
+    Get GCP instances using the Storage resource object, ingest to Neo4j, and clean up old data.
+
+    :type neo4j_session: The Neo4j session object
+    :param neo4j_session: The Neo4j session
+
+    :type storage: The storage resource object created by googleapiclient.discovery.build()
+    :param storage: The GCP Storage resource object
+
+    :type project_id: str
+    :param project_id: The project ID of the corresponding project
+
+    :type gcp_update_tag: timestamp
+    :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
+
+    :type common_job_parameters: dict
+    :param common_job_parameters: Dictionary of other job parameters to pass to Neo4j
+
+    :rtype: NoneType
+    :return: Nothing
+    """
+    storage_res = get_gcp_buckets(storage, project_id)
+    bucket_list = transform_gcp_buckets(storage_res)
+    load_gcp_buckets(neo4j_session, bucket_list, gcp_update_tag)
+    cleanup_gcp_buckets(neo4j_session, common_job_parameters)
