@@ -84,7 +84,7 @@ def _sync_single_project(neo4j_session, resources, project_id, gcp_update_tag, c
     :return: Nothing
     """
     compute.sync(neo4j_session, resources.compute, project_id, gcp_update_tag, common_job_parameters)
-    storage.sync(neo4j_session, resources.storage, project_id, gcp_update_tag, common_job_parameters)
+    storage.sync_gcp_buckets(neo4j_session, resources.storage, project_id, gcp_update_tag, common_job_parameters)
 
 
 def _sync_multiple_projects(neo4j_session, resources, projects, gcp_update_tag, common_job_parameters):
