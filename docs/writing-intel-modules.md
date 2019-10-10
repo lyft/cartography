@@ -3,12 +3,20 @@
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
+- [Before getting started...](#before-getting-started)
 - [Sync = Get, Transform, Load, Cleanup](#sync--get-transform-load-cleanup)
   - [Get](#get)
   - [Transform](#transform)
+    - [Handling required versus optional fields](#handling-required-versus-optional-fields)
   - [Load](#load)
+    - [Handling cartography's `update_tag`:](#handling-cartographys-update_tag)
+    - [All nodes need these fields](#all-nodes-need-these-fields)
+    - [All relationships need these fields](#all-relationships-need-these-fields)
+    - [Run queries only on indexed fields for best performance](#run-queries-only-on-indexed-fields-for-best-performance)
+    - [Create an index for new nodes](#create-an-index-for-new-nodes)
+    - [lastupdated and firstseen](#lastupdated-and-firstseen)
+    - [Connecting different node types with the _attach pattern](#connecting-different-node-types-with-the-_attach-pattern)
   - [Cleanup](#cleanup)
-  - [The _attach pattern](#the-_attach-pattern)
 - [Error handling principles](#error-handling-principles)
 - [Schema](#schema)
 - [Making tests](#making-tests)
@@ -22,20 +30,19 @@ but we'll share some best practices in this doc to save you some time.  We look 
 
 ## Before getting started...
 
-Read through and follow the setup steps in [the Cartography developer guide](developer-guide.md).
+Read through and follow the setup steps in [the Cartography developer guide](developer-guide.md).  Learn the basics of
+running, testing, and linting your code there.
 
 
 ## Sync = Get, Transform, Load, Cleanup
 
 A cartography intel module consists of one `sync` function.  `sync` should call `get`, then `load`, and finally `cleanup`.
 
-We'll use the example of [ingesting GCP VPCs](https://github.com/lyft/cartography/blob/9607b0835928e8195f9b8d601c4f32a37d17de96/cartography/intel/gcp/compute.py#L875)
-to walk through how this works.
 
 ### Get
 
 The `get` function [retrieves necessary data](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/intel/gcp/compute.py#L98)
-from a resource provider API, which is GCP in this example.
+from a resource provider API, which is GCP in this particular example.
 
 `get` should be "dumb" in the sense that it should not handle retry logic or data
 manipulation.
@@ -45,100 +52,122 @@ manipulation.
 The `transform` function [manipulates data](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/intel/gcp/compute.py#L193)
 to make it easier to ingest to the graph.  We have some best practices on handling transforms:
 
-- Use `my_dict['someField']` when accessing important fields, and use `my_dict.get('someField')` for less important ones.
+#### Handling required versus optional fields
 
-    We should directly access dicts in cases where not having the data should cause a sync to fail.
-    For example, if we are transforming AWS data, we definitely need an AWS object's ARN field because it uniquely
-    identifies the object.  Therefore, we should access an object's ARN using `data['arn']` as opposed to
-    using `data.get('arn')` (the former will raise a `KeyError` if `arn` does not exist and the latter will just return
-    `None` without an exception).
+TL;DR: Use `my_dict['someField']` when accessing important fields, and use `my_dict.get('someField')` for less important ones.
 
-    We _want_ the sync to fail if an important field is not present in our data.  The idea here is that
-    it is better to fail a sync than to add malformed data.
+We should directly access dicts in cases where not having the data should cause a sync to fail.
+For example, if we are transforming AWS data, we definitely need an AWS object's ARN field because it uniquely
+identifies the object.  Therefore, we should access an object's ARN using `data['arn']` as opposed to
+using `data.get('arn')` (the former will raise a `KeyError` if `arn` does not exist and the latter will just return
+`None` without an exception).
 
-    On the other hand, we should use `data.get('SomeField')` if `SomeField` is something optional that can afford to be `None`.
+We _want_ the sync to fail if an important field is not present in our data.  The idea here is that
+it is better to fail a sync than to add malformed data.
+
+On the other hand, we should use `data.get('SomeField')` if `SomeField` is something optional that can afford to be
+`None`.
 
 
 ### Load
 
-The `load` function [ingests the processed data to neo4j](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/intel/gcp/compute.py#L442).
+The `load` function ingests the processed data to Neo4j, [as seen in this GCP VPC example](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/intel/gcp/compute.py#L442).
+There are many best practices to consider here.
 
-- The cartography `update_tag`:
+#### Handling cartography's `update_tag`:
 
-    `cartography`'s global [config object carries around an `update_tag` property](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/cli.py#L91-L98) which is
-    [set to the time that the CLI is run](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/sync.py#L131-L134).
-    All `cartography` intel modules need to set the `lastupdated` property on all nodes and all relationships to this
-    `update_tag`.  You can see a couple examples of this in our
-    [AWS ingestion code](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/intel/aws/__init__.py#L106) and our
+`cartography`'s global [config object carries around an `update_tag` property](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/cli.py#L91-L98) which is
+[set to the time that the CLI is run](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/sync.py#L131-L134).
+All `cartography` intel modules need to set the `lastupdated` property on all nodes and all relationships to this
+`update_tag`.  You can see a couple examples of this in our
+[AWS ingestion code](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/intel/aws/__init__.py#L106) and our
     [GCP ingestion code](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/intel/gcp/__init__.py#L134).
 
 
-- At minimum, set these fields on all nodes:
-    - `id`
-        Set this to a field that uniquely identifies the node.  For our example of GCP VPCs, we will use the `partial_uri`
-        as an unique identifier for `id` - this is shown in our
-        [schema docs](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/docs/schema/gcp.md#gcpvpc).
-        For an AWS node, it would make sense to set `id` to an ARN.
+#### All nodes need these fields
 
-        If possible, we should use API-provided fields for IDs and not create derived IDs based on multiple fields.
-        In some cases though this is unavoidable -
-        see [GCPNetworkTag](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/docs/schema/gcp.md#gcpnetworktag).
+- <a name="id">`id`</a> - an ID should be a string that uniquely identifies the node.  In AWS, this is usually an
+    ARN.  In GCP, this is usually a partial URI.
 
-        When setting an `id`, ensure that you also include the field name that it came from.  For example, since we've
-        decided to use `partial_uri`s as GCPVpc `id`,  we should include both `partial_uri` _and_ `id` on the node.
-        This way, a user can tell what fields were used to derive the `id`.  This is accomplished [here](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/intel/gcp/compute.py#L455-L457).
+    If possible, we should use API-provided fields for IDs and not create our own.
+    In some cases though this is unavoidable -
+    see [GCPNetworkTag](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/docs/schema/gcp.md#gcpnetworktag).
 
-    - `lastupdated` - See [below](#lastupdated-and-firstseen) on how to set this.
-    - `firstseen` - See [below](#lastupdated-and-firstseen) on how to set this.
+    When setting an `id`, ensure that you also include the field name that it came from.  For example, since we've
+    decided to use `partial_uri`s as an id for a GCPVpc,  we should include both `partial_uri` _and_ `id` on the node.
+    This way, a user can tell what fields were used to derive the `id`.  This is accomplished [here](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/intel/gcp/compute.py#L455-L457).
 
-- At minimum, set these fields on all relationships:
-    - `lastupdated` - See [below](#lastupdated-and-firstseen) on how to set this.
-    - `firstseen` - See [below](#lastupdated-and-firstseen) on how to set this.
+- `lastupdated` - See [below](#lastupdated-and-firstseen) on how to set this.
+- `firstseen` - See [below](#lastupdated-and-firstseen) on how to set this.
 
-- For best performance, ensure that you `MERGE` on fields that are indexed.
+#### All relationships need these fields
 
-    In this example of ingesting GCP VPCs, we connect VPCs with GCPProjects
-    [based on GCPProject `id`s and GCPVpc `id`s](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/intel/gcp/compute.py#L451).
-    `id`s are indexed, as seen [here](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/data/indexes.cypher#L45)
-    and [here](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/data/indexes.cypher#L42).
+Cartography currently does not create indexes on relationships, so we should keep relationships lightweight with only these two fields:
 
-- On that note, ensure that you [update the indexes.cypher file](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/data/indexes.cypher)
-  with your new node type.
+- `lastupdated` - See [below](#lastupdated-and-firstseen) on how to set this.
+- `firstseen` - See [below](#lastupdated-and-firstseen) on how to set this.
 
 
-- <a name="lastupdated-and-firstseen">lastupdated and firstseen</a>
 
-    Make sure to set the `lastupdated` and `firstseen` fields on both nodes and relationships.  Suppose we are creating
-    the following chain:
 
-    ```cypher
-    MERGE (n:NodeType)-[r:RELATIONSHIP]->(n2:NodeType2)
-    ```
+#### Run queries only on indexed fields for best performance
 
-    - To handle nodes in this case,
+In this example of ingesting GCP VPCs, we connect VPCs with GCPProjects
+[based on GCPProject `id`s and GCPVpc `id`s](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/intel/gcp/compute.py#L451).
+`id`s are indexed, as seen [here](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/data/indexes.cypher#L45)
+and [here](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/data/indexes.cypher#L42).
+All of these queries use indexes for faster lookup.
 
-        - Every `MERGE` query that creates a new node should look like this
 
-            ```cypher
-            ON CREATE SET n.firstseen = {UpdateTag}
-            SET
-            n.lastupdated = {UpdateTag},
-            node.field1 = {value1},
-            node.field2 = {value2},
-            ...
-            node.fieldN = {valueN}
-            ```
+#### Create an index for new nodes
 
-    - To handle relationships in this case,
+Be sure to [update the indexes.cypher file](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/data/indexes.cypher)
+with your new node type.
 
-        - Every `MERGE` query that creates a new relationship should look like this
 
-            ```cypher
-            ON CREATE SET r.firstseen = {UpdateTag}
-            SET
-            r.lastupdated = {UpdateTag}
-            ```
+#### lastupdated and firstseen
 
+Set the `lastupdated` and `firstseen` fields on both nodes and relationships.  Suppose we are creating
+the following chain:
+
+```cypher
+MERGE (n:NodeType)-[r:RELATIONSHIP]->(n2:NodeType2)
+```
+
+- To handle nodes in this case,
+
+    - Every `MERGE` query that creates a new node should look like this
+
+        ```cypher
+        ON CREATE SET n.firstseen = {UpdateTag}
+        SET
+        n.lastupdated = {UpdateTag},
+        node.field1 = {value1},
+        node.field2 = {value2},
+        ...
+        node.fieldN = {valueN}
+        ```
+
+- To handle relationships in this case,
+
+    - Every `MERGE` query that creates a new relationship should look like this
+
+        ```cypher
+        ON CREATE SET r.firstseen = {UpdateTag}
+        SET
+        r.lastupdated = {UpdateTag}
+        ```
+
+#### Connecting different node types with the _attach pattern
+
+Node connections can be complex.  In many cases we need to connect many different node types together, so we use an
+`_attach` function to manage this.
+
+The best way to explain `_attach` is through an example, like when [we connect GCP instances to their VPCs](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/intel/gcp/compute.py#L439).
+In this case, we create a [helper _attach function](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/intel/gcp/compute.py#L660)
+that accepts the instance's `id` and connects the instance to the VPC using a `MERGE` query.
+
+This pattern can also be seen when [attaching AWS RDS instances to EC2 security groups](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/intel/aws/rds.py#L108).
 
 
 ### Cleanup
@@ -164,15 +193,6 @@ all nodes and relationships that have `lastupdated` NOT set to the `update_tag` 
         See this [short discussion](https://github.com/lyft/cartography/pull/124/files#r312277725).
 
 
-### The _attach pattern
-
-Node connections can be complex.  In this GCP VPC example, we need to connect GCP instances to the VPCs that
-they belong to.  We can do this with the `_attach` pattern, as seen [here](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/intel/gcp/compute.py#L439).
-
-In this case, we create a [helper function](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/intel/gcp/compute.py#L660)
-that accepts the instance's `id` and connects the instance to the VPC using a `MERGE` query.
-
-This pattern can also be seen when [attaching AWS RDS instances to EC2 security groups](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/intel/aws/rds.py#L108).
 
 
 ## Error handling principles
@@ -202,3 +222,27 @@ the GCP VPC example here: https://github.com/lyft/cartography/blob/0652c2b6dede5
 ## Other
 
 - Smaller PRs are much better than larger PRs!  It's so much easier to review smaller chunks of work.
+
+- Each intel module offers its own view of the graph
+
+    ℹ️ This best practice is a little more less precise, so if you've gotten to this point and you need clarification, just
+    submit your PR and ask us.
+
+    As much as possible, each intel module should ingest data without assuming that a different module will ingest the
+    same data.  Explained another way, each module should "offer its own perspective" on the data.  We believe doing this
+    gives us a more complete graph.  Below are some key guidelines clarifying and justifying this design choice.
+
+    - Use `MERGE` when connecting one node type to another node type.
+
+    - It is possible (and encouraged) for more than one intel module to modify the same node type.
+
+        For example, when we [connect RDS instances to their associated EC2 security
+        groups](https://github.com/lyft/cartography/blob/6e060389fbeb14f4ccc3e58005230129f1c6962f/cartography/intel/aws/rds.py#L188)
+        there are actually two different intel modules that retrieve EC2 security group data: the [RDS module](https://github.com/lyft/cartography/blob/6e060389fbeb14f4ccc3e58005230129f1c6962f/cartography/intel/aws/rds.py#L13)
+        returns [partial group data](https://docs.aws.amazon.com/AmazonRDS/latest/APIReference/API_DBSecurityGroupMembership.html),
+        and the EC2 module returns more complete data as it calls APIs specific for [retrieving and loading security groups](https://github.com/lyft/cartography/blob/6e060389fbeb14f4ccc3e58005230129f1c6962f/cartography/intel/aws/ec2.py#L166).
+        Because both the RDS and EC2 modules `MERGE` on a unique ID, we don't need to worry about
+        creating duplicate nodes in the graph.
+
+        Another less obvious benefit of using `MERGE` across more than one intel module to connect nodes in this way is that
+        in many cases, we've seen an intel module discover nodes that another module was not aware of!
