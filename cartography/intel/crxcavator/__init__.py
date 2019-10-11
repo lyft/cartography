@@ -8,12 +8,6 @@ from cartography.util import run_cleanup_job
 
 logger = logging.getLogger(__name__)
 
-# API key for CRXcavator generaated from crxcavator.io portal
-CRXCAVATOR_API_KEY = os.environ.get('CREDENTIALS_CRXCAVATOR_API_KEY')
-
-# API for the CRXcavator API - https://api.crxcavator.io/v1 as of 07/09/19
-CRXCAVATOR_API_BASE_URL = os.environ.get('CRXCAVATOR_URL')
-
 
 def start_extension_ingestion(neo4j_session, config):
     """
@@ -22,7 +16,7 @@ def start_extension_ingestion(neo4j_session, config):
     :param config: A cartography.config object
     :return: None
     """
-    if not CRXCAVATOR_API_BASE_URL or not CRXCAVATOR_API_KEY:
+    if not config.crxcavator_api_base_uri or not config.crxcavator_api_key:
         logger.warning('CRXcavator import is not configured - skipping this module. See docs to configure.')
         return
 
@@ -34,7 +28,7 @@ def start_extension_ingestion(neo4j_session, config):
     # if we receive a requests exception from raise_for_status
     # we'll handle and continue with other modules, otherwise crash sync
     try:
-        sync_extensions(neo4j_session, common_job_parameters, CRXCAVATOR_API_KEY, CRXCAVATOR_API_BASE_URL)
+        sync_extensions(neo4j_session, common_job_parameters, config.crxcavator_api_key, config.crxcavator_api_base_uri)
         run_cleanup_job(
             'crxcavator_import_cleanup.json',
             neo4j_session,

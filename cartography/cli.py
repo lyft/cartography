@@ -158,6 +158,9 @@ class CLI:
                 logger.warning("Neo4j username was provided but a password could not be found.")
         else:
             config.neo4j_password = None
+        # TODO make the below proper CLI parameters
+        config.crxcavator_api_base_uri = os.environ.get("CRXCAVATOR_URL")
+        config.crxcavator_api_key = os.environ.get("CREDENTIALS_CRXCAVATOR_API_KEY")
         try:
             return cartography.sync.run_with_config(self.sync, config)
         except KeyboardInterrupt:
