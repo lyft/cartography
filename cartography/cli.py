@@ -113,6 +113,23 @@ class CLI:
             ),
         )
         parser.add_argument(
+            '--crxcavator-api-base-uri',
+            type=str,
+            default=None,
+            help=(
+                'Base URI for the CRXcavator API. Required if you are using the CRXcavator intel module. Ignored '
+                'otherwise.'
+            ),
+        )
+        parser.add_argument(
+            '--crxcavator-api-key-env-var',
+            type=str,
+            default=None,
+            help=(
+                'Key for the CRXcavator API. Required if you are using the CRXcavator intel module. Ignored otherwise.'
+            ),
+        )
+        parser.add_argument(
             '--analysis-job-directory',
             type=str,
             default=None,
@@ -135,6 +152,7 @@ class CLI:
         """
         # TODO support parameter lookup in environment variables if not present on command line
         config = self.parser.parse_args(argv)
+        # Logging config
         if config.verbose:
             logging.getLogger('cartography').setLevel(logging.DEBUG)
         elif config.quiet:
@@ -142,6 +160,7 @@ class CLI:
         else:
             logging.getLogger('cartography').setLevel(logging.INFO)
         logger.debug("Launching cartography with CLI configuration: %r", vars(config))
+        # Neo4j config
         if config.neo4j_user:
             config.neo4j_password = None
             if config.neo4j_password_prompt:
@@ -158,9 +177,11 @@ class CLI:
                 logger.warning("Neo4j username was provided but a password could not be found.")
         else:
             config.neo4j_password = None
-        # TODO make the below proper CLI parameters
-        config.crxcavator_api_base_uri = os.environ.get("CRXCAVATOR_URL")
-        config.crxcavator_api_key = os.environ.get("CREDENTIALS_CRXCAVATOR_API_KEY")
+        # CRXcavator config
+        if config.crxcavator_api_base_uri and config.crxcavator_api_key_env_var:
+            logger.debug("Reading API key for CRXcavator from environment variable '%s'.")
+            config.crxcavator_api_key = os.environ.get(config.crxcavator_api_key_env_var)
+        # Run cartography
         try:
             return cartography.sync.run_with_config(self.sync, config)
         except KeyboardInterrupt:
