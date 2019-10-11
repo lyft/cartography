@@ -126,7 +126,8 @@ class CLI:
             type=str,
             default=None,
             help=(
-                'Key for the CRXcavator API. Required if you are using the CRXcavator intel module. Ignored otherwise.'
+                'The name of an environment variable containing a key with which to auth to the CRXcavator API. '
+                'Required if you are using the CRXcavator intel module. Ignored otherwise.'
             ),
         )
         parser.add_argument(
