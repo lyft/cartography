@@ -32,7 +32,7 @@ class Config:
         neo4j_password=None,
         update_tag=None,
         aws_sync_all_profiles=False,
-        crxcavator_api_base_url=None,
+        crxcavator_api_base_uri=None,
         crxcavator_api_key=None,
         analysis_job_directory=None,
     ):
@@ -41,4 +41,6 @@ class Config:
         self.neo4j_password = neo4j_password
         self.update_tag = update_tag
         self.aws_sync_all_profiles = aws_sync_all_profiles
+        self.crxcavator_api_base_uri = crxcavator_api_base_uri
+        self.crxcavator_api_key = crxcavator_api_key
         self.analysis_job_directory = analysis_job_directory
