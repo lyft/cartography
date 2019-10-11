@@ -64,7 +64,6 @@ Time to set up the server that will run Cartography.  Cartography _should_ work 
     1. Generate your API token by following the steps from [Okta Create An API Token documentation](https://developer.okta.com/docs/guides/create-an-api-token/overview/)
     2. Populate the OKTA_API_KEY environment variable with the API token
     3. Populate the OKTA_ORG_ID environment variable with the organization id you want to query. The organization id is the first part of the Okta url for your organization.
-       Example org id is **lyft** for https://lyft.okta.com
 
 7. **Get and run Cartography**
 

@@ -1,4 +1,4 @@
-from datetime import datetime
+import datetime
 
 from okta.models.app.AppInstance import AppInstance
 
@@ -93,14 +93,14 @@ LIST_APPLICATION_GROUP_ASSIGNED_RESPONSE = """
 
 def create_test_application():
     app = AppInstance()
-    app.id = "appid_kjsldkf"
-    app.name = "app name dsfsd"
-    app.label = "dsfkjklh"
-    app.created = datetime.now()
-    app.lastUpdated = datetime.now()
-    app.status = "kjsdlkfj"
-    app.activated = datetime.now()
-    app.features = "kljsdlkfjdsf"
-    app.signOnMode = "lkjdslfkjdsf"
+    app.id = "app_id_value"
+    app.name = "app_name_value"
+    app.label = "app_label_value"
+    app.created = datetime.datetime(2019, 1, 1, 0, 0, 1)
+    app.lastUpdated = datetime.datetime(2019, 1, 1, 0, 0, 1)
+    app.status = "app_status_value"
+    app.activated = datetime.datetime(2019, 1, 1, 0, 0, 1)
+    app.features = "app_features_value"
+    app.signOnMode = "app_signonmode_value"
 
     return app

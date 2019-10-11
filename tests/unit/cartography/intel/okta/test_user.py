@@ -8,12 +8,12 @@ def test_user_transform_with_all_values():
     transform_props = transform_okta_user(user)
 
     assert transform_props["id"] == user.id
-    assert transform_props["activated"] == user.activated.strftime("%m/%d/%Y, %H:%M:%S")
-    assert transform_props["created"] == user.created.strftime("%m/%d/%Y, %H:%M:%S")
-    assert transform_props["status_changed"] == user.statusChanged.strftime("%m/%d/%Y, %H:%M:%S")
-    assert transform_props["last_login"] == user.lastLogin.strftime("%m/%d/%Y, %H:%M:%S")
-    assert transform_props["okta_last_updated"] == user.lastUpdated.strftime("%m/%d/%Y, %H:%M:%S")
-    assert transform_props["password_changed"] == user.passwordChanged.strftime("%m/%d/%Y, %H:%M:%S")
+    assert transform_props["activated"] == '01/01/2019, 00:00:01'
+    assert transform_props["created"] == '01/01/2019, 00:00:01'
+    assert transform_props["status_changed"] == '01/01/2019, 00:00:01'
+    assert transform_props["last_login"] == '01/01/2019, 00:00:01'
+    assert transform_props["okta_last_updated"] == '01/01/2019, 00:00:01'
+    assert transform_props["password_changed"] == '01/01/2019, 00:00:01'
     assert transform_props["transition_to_status"] == user.transitioningToStatus
     assert transform_props["login"] == user.profile.login
     assert transform_props["email"] == user.profile.email
@@ -31,11 +31,11 @@ def test_userprofile_transform_with_no_activated():
 
     assert transform_props["id"] == user.id
     assert transform_props["activated"] is None
-    assert transform_props["created"] == user.created.strftime("%m/%d/%Y, %H:%M:%S")
-    assert transform_props["status_changed"] == user.statusChanged.strftime("%m/%d/%Y, %H:%M:%S")
-    assert transform_props["last_login"] == user.lastLogin.strftime("%m/%d/%Y, %H:%M:%S")
-    assert transform_props["okta_last_updated"] == user.lastUpdated.strftime("%m/%d/%Y, %H:%M:%S")
-    assert transform_props["password_changed"] == user.passwordChanged.strftime("%m/%d/%Y, %H:%M:%S")
+    assert transform_props["created"] == '01/01/2019, 00:00:01'
+    assert transform_props["status_changed"] == '01/01/2019, 00:00:01'
+    assert transform_props["last_login"] == '01/01/2019, 00:00:01'
+    assert transform_props["okta_last_updated"] == '01/01/2019, 00:00:01'
+    assert transform_props["password_changed"] == '01/01/2019, 00:00:01'
     assert transform_props["transition_to_status"] == user.transitioningToStatus
     assert transform_props["login"] == user.profile.login
     assert transform_props["email"] == user.profile.email
@@ -52,12 +52,12 @@ def test_userprofile_transform_with_no_status_changed():
     transform_props = transform_okta_user(user)
 
     assert transform_props["id"] == user.id
-    assert transform_props["activated"] == user.activated.strftime("%m/%d/%Y, %H:%M:%S")
-    assert transform_props["created"] == user.created.strftime("%m/%d/%Y, %H:%M:%S")
+    assert transform_props["activated"] == '01/01/2019, 00:00:01'
+    assert transform_props["created"] == '01/01/2019, 00:00:01'
     assert transform_props["status_changed"] is None
-    assert transform_props["last_login"] == user.lastLogin.strftime("%m/%d/%Y, %H:%M:%S")
-    assert transform_props["okta_last_updated"] == user.lastUpdated.strftime("%m/%d/%Y, %H:%M:%S")
-    assert transform_props["password_changed"] == user.passwordChanged.strftime("%m/%d/%Y, %H:%M:%S")
+    assert transform_props["last_login"] == '01/01/2019, 00:00:01'
+    assert transform_props["okta_last_updated"] == '01/01/2019, 00:00:01'
+    assert transform_props["password_changed"] == '01/01/2019, 00:00:01'
     assert transform_props["transition_to_status"] == user.transitioningToStatus
     assert transform_props["login"] == user.profile.login
     assert transform_props["email"] == user.profile.email
@@ -74,12 +74,12 @@ def test_userprofile_transform_with_no_last_login():
     transform_props = transform_okta_user(user)
 
     assert transform_props["id"] == user.id
-    assert transform_props["activated"] == user.activated.strftime("%m/%d/%Y, %H:%M:%S")
-    assert transform_props["created"] == user.created.strftime("%m/%d/%Y, %H:%M:%S")
-    assert transform_props["status_changed"] == user.statusChanged.strftime("%m/%d/%Y, %H:%M:%S")
+    assert transform_props["activated"] == '01/01/2019, 00:00:01'
+    assert transform_props["created"] == '01/01/2019, 00:00:01'
+    assert transform_props["status_changed"] == '01/01/2019, 00:00:01'
     assert transform_props["last_login"] is None
-    assert transform_props["okta_last_updated"] == user.lastUpdated.strftime("%m/%d/%Y, %H:%M:%S")
-    assert transform_props["password_changed"] == user.passwordChanged.strftime("%m/%d/%Y, %H:%M:%S")
+    assert transform_props["okta_last_updated"] == '01/01/2019, 00:00:01'
+    assert transform_props["password_changed"] == '01/01/2019, 00:00:01'
     assert transform_props["transition_to_status"] == user.transitioningToStatus
     assert transform_props["login"] == user.profile.login
     assert transform_props["email"] == user.profile.email
@@ -96,12 +96,12 @@ def test_userprofile_transform_with_no_last_updated():
     transform_props = transform_okta_user(user)
 
     assert transform_props["id"] == user.id
-    assert transform_props["activated"] == user.activated.strftime("%m/%d/%Y, %H:%M:%S")
-    assert transform_props["created"] == user.created.strftime("%m/%d/%Y, %H:%M:%S")
-    assert transform_props["status_changed"] == user.statusChanged.strftime("%m/%d/%Y, %H:%M:%S")
-    assert transform_props["last_login"] == user.lastLogin.strftime("%m/%d/%Y, %H:%M:%S")
+    assert transform_props["activated"] == '01/01/2019, 00:00:01'
+    assert transform_props["created"] == '01/01/2019, 00:00:01'
+    assert transform_props["status_changed"] == '01/01/2019, 00:00:01'
+    assert transform_props["last_login"] == '01/01/2019, 00:00:01'
     assert transform_props["okta_last_updated"] is None
-    assert transform_props["password_changed"] == user.passwordChanged.strftime("%m/%d/%Y, %H:%M:%S")
+    assert transform_props["password_changed"] == '01/01/2019, 00:00:01'
     assert transform_props["transition_to_status"] == user.transitioningToStatus
     assert transform_props["login"] == user.profile.login
     assert transform_props["email"] == user.profile.email
@@ -118,11 +118,11 @@ def test_userprofile_transform_with_no_password_changed():
     transform_props = transform_okta_user(user)
 
     assert transform_props["id"] == user.id
-    assert transform_props["activated"] == user.activated.strftime("%m/%d/%Y, %H:%M:%S")
-    assert transform_props["created"] == user.created.strftime("%m/%d/%Y, %H:%M:%S")
-    assert transform_props["status_changed"] == user.statusChanged.strftime("%m/%d/%Y, %H:%M:%S")
-    assert transform_props["last_login"] == user.lastLogin.strftime("%m/%d/%Y, %H:%M:%S")
-    assert transform_props["okta_last_updated"] == user.lastUpdated.strftime("%m/%d/%Y, %H:%M:%S")
+    assert transform_props["activated"] == '01/01/2019, 00:00:01'
+    assert transform_props["created"] == '01/01/2019, 00:00:01'
+    assert transform_props["status_changed"] == '01/01/2019, 00:00:01'
+    assert transform_props["last_login"] == '01/01/2019, 00:00:01'
+    assert transform_props["okta_last_updated"] == '01/01/2019, 00:00:01'
     assert transform_props["password_changed"] is None
     assert transform_props["transition_to_status"] == user.transitioningToStatus
     assert transform_props["login"] == user.profile.login
@@ -140,12 +140,12 @@ def test_userprofile_transform_with_no_transition_status():
     transform_props = transform_okta_user(user)
 
     assert transform_props["id"] == user.id
-    assert transform_props["activated"] == user.activated.strftime("%m/%d/%Y, %H:%M:%S")
-    assert transform_props["created"] == user.created.strftime("%m/%d/%Y, %H:%M:%S")
-    assert transform_props["status_changed"] == user.statusChanged.strftime("%m/%d/%Y, %H:%M:%S")
-    assert transform_props["last_login"] == user.lastLogin.strftime("%m/%d/%Y, %H:%M:%S")
-    assert transform_props["okta_last_updated"] == user.lastUpdated.strftime("%m/%d/%Y, %H:%M:%S")
-    assert transform_props["password_changed"] == user.passwordChanged.strftime("%m/%d/%Y, %H:%M:%S")
+    assert transform_props["activated"] == '01/01/2019, 00:00:01'
+    assert transform_props["created"] == '01/01/2019, 00:00:01'
+    assert transform_props["status_changed"] == '01/01/2019, 00:00:01'
+    assert transform_props["last_login"] == '01/01/2019, 00:00:01'
+    assert transform_props["okta_last_updated"] == '01/01/2019, 00:00:01'
+    assert transform_props["password_changed"] == '01/01/2019, 00:00:01'
     assert transform_props["transition_to_status"] is None
     assert transform_props["login"] == user.profile.login
     assert transform_props["email"] == user.profile.email

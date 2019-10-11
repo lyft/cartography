@@ -11,8 +11,8 @@ def test_factor_transform_with_all_values():
     assert transform_props["factor_type"] == factor.factorType
     assert transform_props["provider"] == factor.provider
     assert transform_props["status"] == factor.status
-    assert transform_props["created"] == factor.created.strftime("%m/%d/%Y, %H:%M:%S")
-    assert transform_props["okta_last_updated"] == factor.lastUpdated.strftime("%m/%d/%Y, %H:%M:%S")
+    assert transform_props["created"] == '01/01/2019, 00:00:01'
+    assert transform_props["okta_last_updated"] == '01/01/2019, 00:00:01'
 
 
 def test_factor_transform_with_created_none():
@@ -26,7 +26,7 @@ def test_factor_transform_with_created_none():
     assert transform_props["provider"] == factor.provider
     assert transform_props["status"] == factor.status
     assert transform_props["created"] is None
-    assert transform_props["okta_last_updated"] == factor.lastUpdated.strftime("%m/%d/%Y, %H:%M:%S")
+    assert transform_props["okta_last_updated"] == '01/01/2019, 00:00:01'
 
 
 def test_factor_transform_with_lastupdated_none():
@@ -39,5 +39,5 @@ def test_factor_transform_with_lastupdated_none():
     assert transform_props["factor_type"] == factor.factorType
     assert transform_props["provider"] == factor.provider
     assert transform_props["status"] == factor.status
-    assert transform_props["created"] == factor.created.strftime("%m/%d/%Y, %H:%M:%S")
+    assert transform_props["created"] == '01/01/2019, 00:00:01'
     assert transform_props["okta_last_updated"] is None

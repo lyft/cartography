@@ -1,4 +1,4 @@
-from datetime import datetime
+import datetime
 
 from okta.models.user.User import User
 from okta.models.user.UserProfile import UserProfile
@@ -8,13 +8,13 @@ def create_test_user():
     user = User()
 
     user.id = "userid"
-    user.activated = datetime.now()
-    user.created = datetime.now()
-    user.activated = datetime.now()
-    user.statusChanged = datetime.now()
-    user.lastLogin = datetime.now()
-    user.lastUpdated = datetime.now()
-    user.passwordChanged = datetime.now()
+    user.activated = datetime.datetime(2019, 1, 1, 0, 0, 1)
+    user.created = datetime.datetime(2019, 1, 1, 0, 0, 1)
+    user.activated = datetime.datetime(2019, 1, 1, 0, 0, 1)
+    user.statusChanged = datetime.datetime(2019, 1, 1, 0, 0, 1)
+    user.lastLogin = datetime.datetime(2019, 1, 1, 0, 0, 1)
+    user.lastUpdated = datetime.datetime(2019, 1, 1, 0, 0, 1)
+    user.passwordChanged = datetime.datetime(2019, 1, 1, 0, 0, 1)
     user.transitioningToStatus = "transition"
 
     # profile

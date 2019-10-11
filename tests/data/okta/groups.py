@@ -67,14 +67,14 @@ LIST_GROUP_MEMBER_RESPONSE = """
 
 def create_test_group():
     group = UserGroup()
-    group.id = "grouid"
+    group.id = "group_id_value"
 
     group.profile = UserGroupProfile()
-    group.profile.name = "name-2323"
-    group.profile.description = "description-123"
-    group.profile.samAccountName = "samAccount223"
-    group.profile.dn = "dn1233"
-    group.profile.windowsDomainQualifiedName = "domain-2323"
-    group.profile.externalId = "007"
+    group.profile.name = "group_profile_name_value"
+    group.profile.description = "group_profile_description_value"
+    group.profile.samAccountName = "group_profile_samAccountName_value"
+    group.profile.dn = "group_profile_dn_value"
+    group.profile.windowsDomainQualifiedName = "group_profile_windowsDomainQualifiedName_value"
+    group.profile.externalId = "group_profile_external_id_value"
 
     return group

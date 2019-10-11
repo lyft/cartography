@@ -250,18 +250,14 @@ def _get_okta_groups(api_client):
     # get_paged_groups returns User object instead of UserGroup
 
     while True:
-        try:
-            # https://developer.okta.com/docs/reference/api/groups/#list-groups
-            if next_url:
-                paged_response = api_client.get(next_url)
-            else:
-                params = {
-                    'limit': 10000,
-                }
-                paged_response = api_client.get_path('/', params)
-        except OktaError as okta_error:
-            logger.debug(f"Got error while going through list group {okta_error}")
-            break
+        # https://developer.okta.com/docs/reference/api/groups/#list-groups
+        if next_url:
+            paged_response = api_client.get(next_url)
+        else:
+            params = {
+                'limit': 10000,
+            }
+            paged_response = api_client.get_path('/', params)
 
         paged_results = PagedResults(paged_response, UserGroup)
 
@@ -624,12 +620,15 @@ def transform_application_users(json_app_data):
     """
     Transform application users data for graph consumption
     :param json_app_data: raw json application data
-    :return: individual user id as yield
+    :return: individual user id
     """
 
+    users = []
     app_data = json.loads(json_app_data)
     for user in app_data:
-        yield user["id"]
+        users.append(user["id"])
+
+    return users
 
 
 def _is_last_page(response):
@@ -666,7 +665,7 @@ def _get_application_assigned_groups(api_client, app_id):
             logger.debug(f"Got error while going through list application assigned groups {okta_error}")
             break
 
-        for group_id in transform_applicationg_assigned_groups(paged_response.text):
+        for group_id in transform_application_assigned_groups(paged_response.text):
             app_groups.append(group_id)
 
         if not _is_last_page(paged_response):
@@ -677,16 +676,19 @@ def _get_application_assigned_groups(api_client, app_id):
     return app_groups
 
 
-def transform_applicationg_assigned_groups(json_app_data):
+def transform_application_assigned_groups(json_app_data):
     """
     Transform application group assignment to consumable data for the graph
     :param json_app_data: raw json group application assignment data.
-    :return: group ids as yield
+    :return: group ids
     """
+    groups = []
     app_data = json.loads(json_app_data)
 
     for group in app_data:
-        yield group["id"]
+        groups.append(group["id"])
+
+    return groups
 
 
 def _sync_okta_applications(neo4j_session, okta_org_id, okta_update_tag):
