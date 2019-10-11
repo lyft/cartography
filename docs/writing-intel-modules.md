@@ -15,7 +15,7 @@
     - [Run queries only on indexed fields for best performance](#run-queries-only-on-indexed-fields-for-best-performance)
     - [Create an index for new nodes](#create-an-index-for-new-nodes)
     - [lastupdated and firstseen](#lastupdated-and-firstseen)
-    - [Connecting different node types with the _attach pattern](#connecting-different-node-types-with-the-_attach-pattern)
+    - [Connecting different node types with the `_attach` pattern](#connecting-different-node-types-with-the-_attach-pattern)
   - [Cleanup](#cleanup)
 - [Error handling principles](#error-handling-principles)
 - [Schema](#schema)
@@ -45,7 +45,7 @@ The `get` function [retrieves necessary data](https://github.com/lyft/cartograph
 from a resource provider API, which is GCP in this particular example.
 
 `get` should be "dumb" in the sense that it should not handle retry logic or data
-manipulation.
+manipulation.  It should also raise an exception if it's not able to complete successfully.
 
 ### Transform
 
@@ -76,8 +76,10 @@ There are many best practices to consider here.
 
 #### Handling cartography's `update_tag`:
 
-`cartography`'s global [config object carries around an `update_tag` property](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/cli.py#L91-L98) which is
-[set to the time that the CLI is run](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/sync.py#L131-L134).
+`cartography`'s global [config object carries around an `update_tag` property](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/cli.py#L91-L98)
+which is a tag/label associated with the current sync.  Cartography's CLI code [sets this to a Unix timestamp of when the CLI was run](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/sync.py#L131-L134),
+but in theory could be anything provided that it is unique per sync.
+
 All `cartography` intel modules need to set the `lastupdated` property on all nodes and all relationships to this
 `update_tag`.  You can see a couple examples of this in our
 [AWS ingestion code](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/intel/aws/__init__.py#L106) and our
@@ -122,7 +124,8 @@ All of these queries use indexes for faster lookup.
 #### Create an index for new nodes
 
 Be sure to [update the indexes.cypher file](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/data/indexes.cypher)
-with your new node type.
+with your new node type.  Indexing on ID is required, and indexing on anything else that will be frequently queried is
+encouraged.
 
 
 #### lastupdated and firstseen
@@ -158,13 +161,13 @@ MERGE (n:NodeType)-[r:RELATIONSHIP]->(n2:NodeType2)
         r.lastupdated = {UpdateTag}
         ```
 
-#### Connecting different node types with the _attach pattern
+#### Connecting different node types with the `_attach` pattern
 
 Node connections can be complex.  In many cases we need to connect many different node types together, so we use an
 `_attach` function to manage this.
 
 The best way to explain `_attach` is through an example, like when [we connect GCP instances to their VPCs](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/intel/gcp/compute.py#L439).
-In this case, we create a [helper _attach function](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/intel/gcp/compute.py#L660)
+In this case, we create a [helper `_attach` function](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/intel/gcp/compute.py#L660)
 that accepts the instance's `id` and connects the instance to the VPC using a `MERGE` query.
 
 This pattern can also be seen when [attaching AWS RDS instances to EC2 security groups](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/intel/aws/rds.py#L108).
@@ -197,7 +200,11 @@ all nodes and relationships that have `lastupdated` NOT set to the `update_tag` 
 
 ## Error handling principles
 
-- Don't catch the base Exception class when error handling because it makes it difficult to trace.
+- Don't catch the base Exception class when error handling because it makes problems difficult to trace.
+
+- Do catch the narrowest possible class of exception.
+
+- Only catch exceptions when your code can resolve the issue.  Otherwise, allow exceptions to bubble up.
 
 
 ## Schema
@@ -221,7 +228,9 @@ the GCP VPC example here: https://github.com/lyft/cartography/blob/0652c2b6dede5
 
 ## Other
 
-- Smaller PRs are much better than larger PRs!  It's so much easier to review smaller chunks of work.
+- We prefer and will accept PRs which incrementally add information from a particular data source.  Incomplete
+representations are OK provided they are consistent over time.  For example, we don't sync 100% of AWS resources but the
+resources that exist in the graph don't change across syncs.
 
 - Each intel module offers its own view of the graph
 
