@@ -1,5 +1,5 @@
-from cartography.intel.okta.oktaintel import transform_okta_group
-from cartography.intel.okta.oktaintel import transform_okta_group_member
+from cartography.intel.okta.groups import transform_okta_group
+from cartography.intel.okta.groups import transform_okta_group_member
 from tests.data.okta.groups import create_test_group
 from tests.data.okta.groups import LIST_GROUP_MEMBER_RESPONSE
 

@@ -1,4 +1,4 @@
-from cartography.intel.okta.oktaintel import transform_trusted_origins
+from cartography.intel.okta.origins import transform_trusted_origins
 from tests.data.okta.trustedorigin import LIST_TRUSTED_ORIGIN_RESPONSE
 
 

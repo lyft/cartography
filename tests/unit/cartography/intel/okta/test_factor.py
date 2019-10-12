@@ -1,4 +1,4 @@
-from cartography.intel.okta.oktaintel import transform_okta_user_factor
+from cartography.intel.okta.factors import transform_okta_user_factor
 from tests.data.okta.userfactors import create_test_factor
 
 

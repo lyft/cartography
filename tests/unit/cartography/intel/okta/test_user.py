@@ -1,4 +1,4 @@
-from cartography.intel.okta.oktaintel import transform_okta_user
+from cartography.intel.okta.users import transform_okta_user
 from tests.data.okta.users import create_test_user
 
 
