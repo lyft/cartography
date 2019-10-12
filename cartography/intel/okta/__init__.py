@@ -1,6 +1,8 @@
 import logging
 
-from cartography.util import run_cleanup_job
+from okta.framework.ApiClient import ApiClient
+from okta.framework.OktaError import OktaError
+
 from cartography.intel.okta import applications
 from cartography.intel.okta import factors
 from cartography.intel.okta import groups
@@ -8,9 +10,7 @@ from cartography.intel.okta import organization
 from cartography.intel.okta import origins
 from cartography.intel.okta import roles
 from cartography.intel.okta import users
-
-from okta.framework.ApiClient import ApiClient
-from okta.framework.OktaError import OktaError
+from cartography.util import run_cleanup_job
 
 logger = logging.getLogger(__name__)
 

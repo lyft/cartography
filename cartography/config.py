@@ -34,7 +34,7 @@ class Config:
         aws_sync_all_profiles=False,
         analysis_job_directory=None,
         okta_org_id=None,
-        okta_api_key=None
+        okta_api_key=None,
     ):
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user

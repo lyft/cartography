@@ -1,10 +1,10 @@
 # Okta intel module - Factors
 import logging
 
-from cartography.intel.okta import get_user_id_from_graph, get_okta_api_key
-
 from okta import FactorsClient
 from okta.framework.OktaError import OktaError
+
+from cartography.intel.okta import get_user_id_from_graph
 
 logger = logging.getLogger(__name__)
 

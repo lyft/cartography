@@ -3,22 +3,20 @@ import logging
 
 from okta import UsersClient
 
-from cartography.intel.okta import get_okta_api_key
-
-
 logger = logging.getLogger(__name__)
 
 
-def _create_user_client(okta_org):
+def _create_user_client(okta_org, okta_api_key):
     """
     Create Okta User Client
     :param okta_org: Okta organization name
+    :param okta_api_key: Okta API key
     :return: Instance of UsersClient
     """
     # https://github.com/okta/okta-sdk-python/blob/master/okta/models/user/User.py
     user_client = UsersClient(
         base_url=f"https://{okta_org}.okta.com/",
-        api_token=get_okta_api_key(),
+        api_token=okta_api_key,
     )
 
     return user_client
