@@ -2,7 +2,6 @@
 import json
 import logging
 
-from okta import UserGroupsClient
 from okta.framework.OktaError import OktaError
 from okta.framework.PagedResults import PagedResults
 from okta.models.usergroup import UserGroup
@@ -11,21 +10,6 @@ from cartography.intel.okta.utils import create_api_client
 from cartography.intel.okta.utils import is_last_page
 
 logger = logging.getLogger(__name__)
-
-
-def _create_group_client(okta_org, okta_api_key):
-    """
-    Create Okta UserGroupsClient
-    :param okta_org: Okta organization name
-    :param okta_api_key: Okta API key
-    :return: Instance of UserGroupsClient
-    """
-    usergroups_client = UserGroupsClient(
-        base_url=f"https://{okta_org}.okta.com/",
-        api_token=okta_api_key,
-    )
-
-    return usergroups_client
 
 
 def _get_okta_groups(api_client):

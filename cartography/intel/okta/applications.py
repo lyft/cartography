@@ -288,7 +288,7 @@ def sync_okta_applications(neo4j_session, okta_org_id, okta_update_tag, okta_api
     data = _get_okta_applications(app_client)
     _load_okta_applications(neo4j_session, okta_org_id, data, okta_update_tag)
 
-    api_client = create_api_client(okta_org_id, "/api/v1/apps")
+    api_client = create_api_client(okta_org_id, "/api/v1/apps", okta_api_key)
 
     for app in data:
         app_id = app["id"]
