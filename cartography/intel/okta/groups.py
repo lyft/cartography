@@ -12,15 +12,16 @@ from okta.models.usergroup import UserGroup
 logger = logging.getLogger(__name__)
 
 
-def _create_group_client(okta_org):
+def _create_group_client(okta_org, okta_api_key):
     """
     Create Okta UserGroupsClient
     :param okta_org: Okta organization name
+    :param okta_api_key: Okta API key
     :return: Instance of UserGroupsClient
     """
     usergroups_client = UserGroupsClient(
         base_url=f"https://{okta_org}.okta.com/",
-        api_token=get_okta_api_key(),
+        api_token=okta_api_key,
     )
 
     return usergroups_client
@@ -226,16 +227,17 @@ def _load_okta_group_members(neo4j_session, group_id, member_list, okta_update_t
     )
 
 
-def sync_okta_groups(neo4_session, okta_org_id, okta_update_tag):
+def sync_okta_groups(neo4_session, okta_org_id, okta_update_tag, okta_api_key):
     """
     Synchronize okta groups
     :param neo4_session: session with the Neo4j server
     :param okta_org_id: okta organization id
     :param okta_update_tag: The timestamp value to set our new Neo4j resources with
+    :param okta_api_key: Okta API key
     :return: Nothing
     """
     logger.debug("Syncing Okta groups")
-    api_client = create_api_client(okta_org_id, "/api/v1/groups")
+    api_client = create_api_client(okta_org_id, "/api/v1/groups", okta_api_key)
 
     group_list_info = _get_okta_groups(api_client)
     _load_okta_groups(neo4_session, okta_org_id, group_list_info, okta_update_tag)

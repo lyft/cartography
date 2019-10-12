@@ -89,18 +89,19 @@ def _load_trusted_origins(neo4j_session, okta_org_id, trusted_list, okta_update_
     )
 
 
-def sync_trusted_origins(neo4j_session, okta_org_id, okta_update_tag):
+def sync_trusted_origins(neo4j_session, okta_org_id, okta_update_tag, okta_api_key):
     """
     Sync trusted origins
     :param neo4j_session: session with the Neo4j server
     :param okta_org_id: okta organization id
     :param okta_update_tag: The timestamp value to set our new Neo4j resources with
+    :param okta_api_key: okta api key
     :return: Nothing
     """
 
     logger.debug("Syncing Okta Trusted Origins")
 
-    api_client = create_api_client(okta_org_id, "/api/v1/trustedOrigins")
+    api_client = create_api_client(okta_org_id, "/api/v1/trustedOrigins", okta_api_key)
 
     trusted_list = _get_trusted_origins(api_client)
     _load_trusted_origins(neo4j_session, okta_org_id, trusted_list, okta_update_tag)

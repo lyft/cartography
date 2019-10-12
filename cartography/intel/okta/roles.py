@@ -133,11 +133,19 @@ def _load_group_role(neo4j_session, group_id, roles_data, okta_update_tag):
     )
 
 
-def sync_roles(neo4j_session, okta_org_id, okta_update_tag):
+def sync_roles(neo4j_session, okta_org_id, okta_update_tag, okta_api_key):
+    """
+    Sync okta roles
+    :param neo4j_session: Neo4j Session
+    :param okta_org_id: Okta organization id
+    :param okta_update_tag: Update tag
+    :param okta_api_key: Okta API key
+    :return: None
+    """
     logger.debug("Syncing Okta Roles")
 
     # get API client
-    api_client = create_api_client(okta_org_id, "/api/v1/users")
+    api_client = create_api_client(okta_org_id, "/api/v1/users", okta_api_key)
 
     # users
     users = get_user_id_from_graph(neo4j_session, okta_org_id)
@@ -154,4 +162,3 @@ def sync_roles(neo4j_session, okta_org_id, okta_update_tag):
         group_roles = _get_group_roles(api_client, group_id, okta_org_id)
         if len(group_roles) > 0:
             _load_group_role(neo4j_session, group_id, group_roles, okta_update_tag)
-

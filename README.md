@@ -62,8 +62,8 @@ Time to set up the server that will run Cartography.  Cartography _should_ work 
 
 6. If you're using Okta intel module, **prepare your Okta API token**
     1. Generate your API token by following the steps from [Okta Create An API Token documentation](https://developer.okta.com/docs/guides/create-an-api-token/overview/)
-    2. Populate the OKTA_API_KEY environment variable with the API token
-    3. Populate the OKTA_ORG_ID environment variable with the organization id you want to query. The organization id is the first part of the Okta url for your organization.
+    2. Populate an environment variable with the API token. You can pass the environment variable name via the cli --okta-api-key-env-var parameter
+    3. Use the cli --okta-org-id parameter with the organization id you want to query. The organization id is the first part of the Okta url for your organization.
 
 7. **Get and run Cartography**
 

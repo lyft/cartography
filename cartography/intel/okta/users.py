@@ -148,17 +148,18 @@ def _load_okta_users(neo4j_session, okta_org_id, user_list, okta_update_tag):
     )
 
 
-def sync_okta_users(neo4j_session, okta_org_id, okta_update_tag):
+def sync_okta_users(neo4j_session, okta_org_id, okta_update_tag, okta_api_key):
     """
     Sync okta users
     :param neo4j_session: Session with Neo4j server
     :param okta_org_id: Okta organization id to sync
     :param okta_update_tag: The timestamp value to set our new Neo4j resources with
+    :param okta_api_key: Okta API key
     :return: Nothing
     """
 
     logger.debug("Syncing Okta users")
-    user_client = _create_user_client(okta_org_id)
+    user_client = _create_user_client(okta_org_id, okta_api_key)
     data = _get_okta_users(user_client)
 
     _load_okta_users(neo4j_session, okta_org_id, data, okta_update_tag)

@@ -9,17 +9,18 @@ from okta.framework.OktaError import OktaError
 logger = logging.getLogger(__name__)
 
 
-def _create_factor_client(okta_org):
+def _create_factor_client(okta_org, okta_api_key):
     """
     Create Okta FactorsClient
     :param okta_org: Okta organization name
+    :param okta_api_key: Okta API Key
     :return: Instance of FactorsClient
     """
 
     # https://github.com/okta/okta-sdk-python/blob/master/okta/FactorsClient.py
     factor_client = FactorsClient(
         base_url=f"https://{okta_org}.okta.com/",
-        api_token=get_okta_api_key(),
+        api_token=okta_api_key,
     )
 
     return factor_client
@@ -115,18 +116,19 @@ def _load_user_factors(neo4j_session, user_id, factors, okta_update_tag):
     )
 
 
-def sync_users_factors(neo4j_session, okta_org_id, okta_update_tag):
+def sync_users_factors(neo4j_session, okta_org_id, okta_update_tag, okta_api_key):
     """
     Sync user factors
     :param neo4j_session: session with the Neo4j server
     :param okta_org_id: okta organization id
     :param okta_update_tag: The timestamp value to set our new Neo4j resources with
+    :param okta_api_key: Okta API key
     :return: Nothing
     """
 
     logger.debug("Syncing Okta User Factors")
 
-    factor_client = _create_factor_client(okta_org_id)
+    factor_client = _create_factor_client(okta_org_id, okta_api_key)
     users = get_user_id_from_graph(neo4j_session, okta_org_id)
 
     for user_id in users:

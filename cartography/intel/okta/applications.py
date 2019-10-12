@@ -10,15 +10,16 @@ from okta.framework.OktaError import OktaError
 logger = logging.getLogger(__name__)
 
 
-def _create_application_client(okta_org):
+def _create_application_client(okta_org, okta_api_key):
     """
     Create Okta AppInstanceClient
     :param okta_org: Okta organization name
+    :param okta_api_key: Okta API key
     :return: Instance of AppInstanceClient
     """
     app_client = AppInstanceClient(
         base_url=f"https://{okta_org}.okta.com/",
-        api_token=get_okta_api_key(),
+        api_token=okta_api_key,
     )
 
     return app_client
@@ -270,17 +271,18 @@ def _load_application_group(neo4j_session, app_id, group_list, okta_update_tag):
     )
 
 
-def sync_okta_applications(neo4j_session, okta_org_id, okta_update_tag):
+def sync_okta_applications(neo4j_session, okta_org_id, okta_update_tag, okta_api_key):
     """
     Sync okta application
     :param neo4j_session: session from the Neo4j server
     :param okta_org_id: okta organization id
     :param okta_update_tag: The timestamp value to set our new Neo4j resources with
+    :param okta_api_key: Okta api key
     :return: Nothing
     """
     logger.debug("Syncing Okta Applications")
 
-    app_client = _create_application_client(okta_org_id)
+    app_client = _create_application_client(okta_org_id, okta_api_key)
 
     data = _get_okta_applications(app_client)
     _load_okta_applications(neo4j_session, okta_org_id, data, okta_update_tag)
