@@ -2,9 +2,9 @@
 import json
 import logging
 
-from cartography.intel.okta import create_api_client
-from cartography.intel.okta import get_okta_groups_id_from_graph
-from cartography.intel.okta import get_user_id_from_graph
+from cartography.intel.okta.utils import create_api_client
+from cartography.intel.okta.utils import get_okta_groups_id_from_graph
+from cartography.intel.okta.utils import get_user_id_from_graph
 
 logger = logging.getLogger(__name__)
 

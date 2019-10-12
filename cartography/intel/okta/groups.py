@@ -7,8 +7,8 @@ from okta.framework.OktaError import OktaError
 from okta.framework.PagedResults import PagedResults
 from okta.models.usergroup import UserGroup
 
-from cartography.intel.okta import create_api_client
-from cartography.intel.okta import is_last_page
+from cartography.intel.okta.utils import create_api_client
+from cartography.intel.okta.utils import is_last_page
 
 logger = logging.getLogger(__name__)
 

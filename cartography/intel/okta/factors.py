@@ -4,7 +4,7 @@ import logging
 from okta import FactorsClient
 from okta.framework.OktaError import OktaError
 
-from cartography.intel.okta import get_user_id_from_graph
+from cartography.intel.okta.utils import get_user_id_from_graph
 
 logger = logging.getLogger(__name__)
 

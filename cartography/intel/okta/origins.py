@@ -2,7 +2,7 @@
 import json
 import logging
 
-from cartography.intel.okta import create_api_client
+from cartography.intel.okta.utils import create_api_client
 
 logger = logging.getLogger(__name__)
 
