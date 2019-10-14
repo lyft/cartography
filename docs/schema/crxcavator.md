@@ -4,17 +4,14 @@
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
-- [Table of contents](#table-of-contents)
 - [GSuiteUser](#gsuiteuser)
   - [Relationships](#relationships)
+- [ChromeExtension](#chromeextension)
   - [Relationships](#relationships-1)
+- [ChromeExtensionPermission](#chromeextensionpermission)
+  - [Relationships](#relationships-2)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
-
-## Table of contents
-
-- [GSuiteUser](#gsuiteuser)
-- [ChromeExtension](#chromeextension)
 
 ## GSuiteUser
 
@@ -36,7 +33,7 @@ Placeholder representation of a single G Suite [user object](https://developers.
     (GSuiteUser)-[INSTALLS]->(ChromeExtension)
     ```
 
- ## ChromeExtension
+## ChromeExtension
 
  Representation of a CRXcavator Chrome Extension [Report](https://crxcavator.io/apidocs#tag/report).
 
@@ -74,10 +71,30 @@ Placeholder representation of a single G Suite [user object](https://developers.
 | price | Extension price in webstore if applicable |
 | report_link | URL of full extension report on crxcavator.io
 
- ### Relationships
+### Relationships
 
 - GSuiteUsers install ChromeExternsions.
 
     ```
     (GSuiteUser)-[INSTALLS]->(ChromeExtension)
+    ```
+
+
+## ChromeExtensionPermission
+
+Individual permission entries from the extension manifest file.
+
+
+| Field | Description |
+|-------|--------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| name | The specific permission declared in the manifest
+
+### Relationships
+
+- ChromeExtension declares ChromeExternsionPermission.
+
+    ```
+    (ChromeExtension)-[DECLARES]->(ChromeExtensionPermission)
     ```
