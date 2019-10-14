@@ -176,11 +176,9 @@ class CLI:
         else:
             config.neo4j_password = None
         # Okta config
-        config.okta_org_id = "lyft"
-        config.okta_api_key = os.environ.get("CREDENTIALS_OKTA_API_TOKEN")
-        # if config.okta_org_id and config.okta_api_key_env_var:
-        #     logger.debug(f"Reading API key for Okta from environment variable {config.okta_api_key_env_var}")
-        #     config.okta_api_key = os.environ.get(config.okta_api_key_env_var)
+        if config.okta_org_id and config.okta_api_key_env_var:
+            logger.debug(f"Reading API key for Okta from environment variable {config.okta_api_key_env_var}")
+            config.okta_api_key = os.environ.get(config.okta_api_key_env_var)
 
         # Run cartography
         try:
