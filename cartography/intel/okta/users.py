@@ -45,7 +45,7 @@ def transform_okta_user_list(okta_user_list):
     users = []
 
     for current in okta_user_list:
-        current.append(transform_okta_user(current))
+        users.append(transform_okta_user(current))
 
     return users
 
