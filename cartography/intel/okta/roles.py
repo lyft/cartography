@@ -154,7 +154,7 @@ def sync_roles(neo4j_session, okta_org_id, okta_update_tag, okta_api_key):
 
     for user_id in users:
         user_roles_data = _get_user_roles(api_client, user_id, okta_org_id)
-        user_roles = transform_user_roles_data(user_roles_data)
+        user_roles = transform_user_roles_data(user_roles_data, okta_org_id)
         if len(user_roles) > 0:
             _load_user_role(neo4j_session, user_id, user_roles, okta_update_tag)
 
@@ -163,6 +163,6 @@ def sync_roles(neo4j_session, okta_org_id, okta_update_tag, okta_api_key):
 
     for group_id in groups:
         group_roles_data = _get_group_roles(api_client, group_id, okta_org_id)
-        group_roles = transform_group_roles_data(group_roles_data)
+        group_roles = transform_group_roles_data(group_roles_data, okta_org_id)
         if len(group_roles) > 0:
             _load_group_role(neo4j_session, group_id, group_roles, okta_update_tag)
