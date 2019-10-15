@@ -26,14 +26,12 @@ def _get_okta_users(user_client):
     """
     Get Okta users from Okta server
     :param user_client: user client
-    :return: Array of dictionary containing user properties
+    :return: Array of user data
     """
     user_list = []
     paged_users = user_client.get_paged_users()
     while True:
-        for current_user in paged_users.result:
-            user_props = transform_okta_user(current_user)
-            user_list.append(user_props)
+        user_list.extend(paged_users.result)
         if not paged_users.is_last_page():
             # Keep on fetching pages of users until the last page
             paged_users = user_client.get_paged_users(url=paged_users.next_url)
@@ -41,6 +39,15 @@ def _get_okta_users(user_client):
             break
 
     return user_list
+
+
+def transform_okta_user_list(okta_user_list):
+    users = []
+
+    for current in okta_user_list:
+        current.append(transform_okta_user(current))
+
+    return users
 
 
 def transform_okta_user(okta_user):
@@ -159,5 +166,6 @@ def sync_okta_users(neo4j_session, okta_org_id, okta_update_tag, okta_api_key):
     logger.debug("Syncing Okta users")
     user_client = _create_user_client(okta_org_id, okta_api_key)
     data = _get_okta_users(user_client)
+    users = transform_okta_user_list(data)
 
-    _load_okta_users(neo4j_session, okta_org_id, data, okta_update_tag)
+    _load_okta_users(neo4j_session, okta_org_id, users, okta_update_tag)

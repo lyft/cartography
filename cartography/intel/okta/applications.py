@@ -30,7 +30,7 @@ def _get_okta_applications(app_client):
     """
     Get application data from Okta server
     :param app_client: api client
-    :return: Array of dictionary containing application properties
+    :return: application data
     """
     app_list = []
 
@@ -38,8 +38,7 @@ def _get_okta_applications(app_client):
 
     while True:
         for current_application in page_apps.result:
-            app_props = transform_okta_application(current_application)
-            app_list.append(app_props)
+            app_list.append(current_application)
         if not page_apps.is_last_page():
             # Keep on fetching pages of users until the last page
             page_apps = app_client.get_paged_app_instances(url=page_apps.next_url)
@@ -54,7 +53,7 @@ def _get_application_assigned_users(api_client, app_id):
     Get users assigned to a specific application
     :param api_client: api client
     :param app_id: application id to get users from
-    :return: Array of user id
+    :return: Array of user data
     """
     app_users = []
 
@@ -73,8 +72,7 @@ def _get_application_assigned_users(api_client, app_id):
             logger.debug(f"Got error while going through list application assigned users {okta_error}")
             break
 
-        for user_id in transform_application_users(paged_response.text):
-            app_users.append(user_id)
+        app_users.append(paged_response.text)
 
         if not is_last_page(paged_response):
             next_url = paged_response.links.get("next").get("url")
@@ -108,8 +106,7 @@ def _get_application_assigned_groups(api_client, app_id):
             logger.debug(f"Got error while going through list application assigned groups {okta_error}")
             break
 
-        for group_id in transform_application_assigned_groups(paged_response.text):
-            app_groups.append(group_id)
+        app_groups.append(paged_response.text)
 
         if not is_last_page(paged_response):
             next_url = paged_response.links.get("next").get("url")
@@ -119,7 +116,21 @@ def _get_application_assigned_groups(api_client, app_id):
     return app_groups
 
 
-def transform_application_users(json_app_data):
+def transform_application_assigned_users_list(assigned_user_list):
+    """
+    Transform application users Okta data
+    :param assigned_user_list: Okta data on assigned users
+    :return: Array of users
+    """
+    users = []
+
+    for current in assigned_user_list:
+        users.extend(transform_application_assigned_users(current))
+
+    return users
+
+
+def transform_application_assigned_users(json_app_data):
     """
     Transform application users data for graph consumption
     :param json_app_data: raw json application data
@@ -132,6 +143,16 @@ def transform_application_users(json_app_data):
         users.append(user["id"])
 
     return users
+
+
+def transform_application_assigned_groups_list(assigned_group_list):
+    group_list = []
+
+    for current in assigned_group_list:
+        group_data = transform_application_assigned_groups(current)
+        group_list.extend(group_data)
+
+    return group_list
 
 
 def transform_application_assigned_groups(json_app_data):
@@ -147,6 +168,16 @@ def transform_application_assigned_groups(json_app_data):
         groups.append(group["id"])
 
     return groups
+
+
+def transform_okta_application_list(okta_applications):
+    app_list = []
+
+    for current in okta_applications:
+        app_info = transform_okta_application(current)
+        app_list.append(app_info)
+
+    return app_list
 
 
 def transform_okta_application(okta_application):
@@ -285,15 +316,18 @@ def sync_okta_applications(neo4j_session, okta_org_id, okta_update_tag, okta_api
 
     app_client = _create_application_client(okta_org_id, okta_api_key)
 
-    data = _get_okta_applications(app_client)
-    _load_okta_applications(neo4j_session, okta_org_id, data, okta_update_tag)
+    okta_app_data = _get_okta_applications(app_client)
+    app_data = transform_okta_application_list(okta_app_data)
+    _load_okta_applications(neo4j_session, okta_org_id, app_data, okta_update_tag)
 
     api_client = create_api_client(okta_org_id, "/api/v1/apps", okta_api_key)
 
-    for app in data:
+    for app in app_data:
         app_id = app["id"]
-        user_list = _get_application_assigned_users(api_client, app_id)
+        user_list_data = _get_application_assigned_users(api_client, app_id)
+        user_list = transform_application_assigned_users_list(user_list_data)
         _load_application_user(neo4j_session, app_id, user_list, okta_update_tag)
 
-        group_list = _get_application_assigned_groups(api_client, app_id)
+        group_list_data = _get_application_assigned_groups(api_client, app_id)
+        group_list = transform_application_assigned_groups_list(group_list_data)
         _load_application_group(neo4j_session, app_id, group_list, okta_update_tag)

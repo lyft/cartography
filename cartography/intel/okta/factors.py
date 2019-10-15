@@ -31,10 +31,8 @@ def _get_factor_for_user_id(factor_client, user_id):
     Get factor for user from the Okta server
     :param factor_client: factor client
     :param user_id: user to fetch the data from
-    :return: Array of dictionary containing factor properties
+    :return: Array of user factor information
     """
-
-    user_factors = []
 
     try:
         factor_results = factor_client.get_lifecycle_factors(user_id)
@@ -46,11 +44,16 @@ def _get_factor_for_user_id(factor_client, user_id):
 
         return []
 
-    for current_factor in factor_results:
-        factor_props = transform_okta_user_factor(current_factor)
-        user_factors.append(factor_props)
+    return factor_results
 
-    return user_factors
+
+def transform_okta_user_factor_list(okta_factor_list):
+    factors = []
+
+    for current in okta_factor_list:
+        factors.append(transform_okta_user_factor(current))
+
+    return factors
 
 
 def transform_okta_user_factor(okta_factor_info):
@@ -132,5 +135,6 @@ def sync_users_factors(neo4j_session, okta_org_id, okta_update_tag, okta_api_key
     users = get_user_id_from_graph(neo4j_session, okta_org_id)
 
     for user_id in users:
-        user_factors = _get_factor_for_user_id(factor_client, user_id)
+        factor_data = _get_factor_for_user_id(factor_client, user_id)
+        user_factors = transform_okta_user_factor_list(factor_data)
         _load_user_factors(neo4j_session, user_id, user_factors, okta_update_tag)

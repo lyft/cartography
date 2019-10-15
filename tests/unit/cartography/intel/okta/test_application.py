@@ -1,5 +1,5 @@
 from cartography.intel.okta.applications import transform_application_assigned_groups
-from cartography.intel.okta.applications import transform_application_users
+from cartography.intel.okta.applications import transform_application_assigned_users
 from cartography.intel.okta.applications import transform_okta_application
 from tests.data.okta.application import create_test_application
 from tests.data.okta.application import LIST_APPLICATION_GROUP_ASSIGNED_RESPONSE
@@ -76,7 +76,7 @@ def test_application_with_activated_none():
 def test_application_assigned_users():
     values_to_test = []
 
-    values_to_test = transform_application_users(LIST_APPLICATION_USER_ASSIGNED_RESPONSE)
+    values_to_test = transform_application_assigned_users(LIST_APPLICATION_USER_ASSIGNED_RESPONSE)
 
     assert len(values_to_test) == 2
     assert values_to_test[0] == "00ui2sVIFZNCNKFFNBPM"

@@ -16,7 +16,7 @@ def _get_okta_groups(api_client):
     """
     Get groups from Okta server
     :param api_client: Okta api client
-    :return: Array of Dictionary containing group properties
+    :return: Array of group information
     """
     group_list = []
     next_url = None
@@ -36,9 +36,7 @@ def _get_okta_groups(api_client):
 
         paged_results = PagedResults(paged_response, UserGroup)
 
-        for current_group in paged_results.result:
-            group_props = transform_okta_group(current_group)
-            group_list.append(group_props)
+        group_list.extend(paged_results.result)
 
         if not is_last_page(paged_response):
             next_url = paged_response.links.get("next").get("url")
@@ -53,7 +51,7 @@ def _get_okta_group_members(api_client, group_id):
     Get group members from Okta server
     :param api_client: Okta api client
     :param group_id: group to fetch members from
-    :return: Array member id
+    :return: Array or group membership information
     """
     member_list = []
     next_url = None
@@ -72,8 +70,7 @@ def _get_okta_group_members(api_client, group_id):
             logger.debug(f"Got error while going through list group member {okta_error}")
             break
 
-        member_results = transform_okta_group_member(paged_response.text)
-        member_list.extend(member_results)
+        member_list.append(paged_response.text)
 
         if not is_last_page(paged_response):
             next_url = paged_response.links.get("next").get("url")
@@ -81,6 +78,15 @@ def _get_okta_group_members(api_client, group_id):
             break
 
     return member_list
+
+
+def transform_okta_group_list(okta_group_list):
+    groups = []
+
+    for current in okta_group_list:
+        groups.append(current)
+
+    return groups
 
 
 def transform_okta_group(okta_group):
@@ -115,6 +121,15 @@ def transform_okta_group(okta_group):
         group_props["external_id"] = None
 
     return group_props
+
+
+def transform_okta_group_member_list(okta_member_list):
+    member_list = []
+
+    for current in okta_member_list:
+        member_list.extend(transform_okta_group_member(current))
+
+    return member_list
 
 
 def transform_okta_group_member(raw_json_response):
@@ -168,22 +183,6 @@ def _load_okta_groups(neo4j_session, okta_org_id, group_list, okta_update_tag):
     )
 
 
-def _load_okta_group_membership(neo4j_session, api_client, group_list_info, okta_update_tag):
-    """
-    Map group members in the graph
-    :param neo4j_session: session with the Neo4j server
-    :param api_client: Okta api client
-    :param group_list_info: Group information as list
-    :param okta_update_tag: The timestamp value to set our new Neo4j resources with
-    :return: Nothing
-    """
-
-    for group_info in group_list_info:
-        group_id = group_info["id"]
-        members = _get_okta_group_members(api_client, group_id)
-        _load_okta_group_members(neo4j_session, group_id, members, okta_update_tag)
-
-
 def _load_okta_group_members(neo4j_session, group_id, member_list, okta_update_tag):
     """
     Add group membership data into the graph
@@ -212,6 +211,23 @@ def _load_okta_group_members(neo4j_session, group_id, member_list, okta_update_t
     )
 
 
+def _sync_okta_group_membership(neo4j_session, api_client, group_list_info, okta_update_tag):
+    """
+    Map group members in the graph
+    :param neo4j_session: session with the Neo4j server
+    :param api_client: Okta api client
+    :param group_list_info: Group information as list
+    :param okta_update_tag: The timestamp value to set our new Neo4j resources with
+    :return: Nothing
+    """
+
+    for group_info in group_list_info:
+        group_id = group_info["id"]
+        members_data = _get_okta_group_members(api_client, group_id)
+        members = transform_okta_group_member_list(members_data)
+        _load_okta_group_members(neo4j_session, group_id, members, okta_update_tag)
+
+
 def sync_okta_groups(neo4_session, okta_org_id, okta_update_tag, okta_api_key):
     """
     Synchronize okta groups
@@ -224,7 +240,8 @@ def sync_okta_groups(neo4_session, okta_org_id, okta_update_tag, okta_api_key):
     logger.debug("Syncing Okta groups")
     api_client = create_api_client(okta_org_id, "/api/v1/groups", okta_api_key)
 
-    group_list_info = _get_okta_groups(api_client)
+    okta_group_data = _get_okta_groups(api_client)
+    group_list_info = transform_okta_group_list(okta_group_data)
     _load_okta_groups(neo4_session, okta_org_id, group_list_info, okta_update_tag)
 
-    _load_okta_group_membership(neo4_session, api_client, group_list_info, okta_update_tag)
+    _sync_okta_group_membership(neo4_session, api_client, group_list_info, okta_update_tag)

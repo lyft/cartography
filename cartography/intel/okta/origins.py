@@ -11,11 +11,12 @@ def _get_trusted_origins(api_client):
     """
     Get trusted origins from Okta
     :param api_client: api client
-    :return: Array of dictionary containing trusted origins properties
+    :return: api response data
     """
 
     response = api_client.get_path("/")
-    return transform_trusted_origins(response.text)
+
+    return response.text
 
 
 def transform_trusted_origins(data):
@@ -103,5 +104,7 @@ def sync_trusted_origins(neo4j_session, okta_org_id, okta_update_tag, okta_api_k
 
     api_client = create_api_client(okta_org_id, "/api/v1/trustedOrigins", okta_api_key)
 
-    trusted_list = _get_trusted_origins(api_client)
+    trusted_data = _get_trusted_origins(api_client)
+    trusted_list = transform_trusted_origins(trusted_data)
+
     _load_trusted_origins(neo4j_session, okta_org_id, trusted_list, okta_update_tag)
