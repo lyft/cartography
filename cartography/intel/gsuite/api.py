@@ -8,6 +8,9 @@ from cartography.util import run_cleanup_job
 logger = logging.getLogger(__name__)
 
 
+GOOGLE_API_NUM_RETRIES = 5
+
+
 def get_all_groups(admin):
     """
     Return list of Google Groups in your organization
@@ -22,12 +25,7 @@ def get_all_groups(admin):
     request = admin.groups().list(customer='my_customer', maxResults=20, orderBy='email')
     response_objects = []
     while request is not None:
-        try:
-            resp = request.execute()
-        except HttpError as e:
-            logger.warning('HttpError occurred in api.get_all_groups(), returning empty list. Details: %r', e)
-            response_objects = []
-            break
+        resp = request.execute(num_retries=GOOGLE_API_NUM_RETRIES)
         response_objects.append(resp)
         request = admin.groups().list_next(request, resp)
     return response_objects
@@ -70,12 +68,7 @@ def get_all_groups_for_email(admin, email):
     request = admin.groups().list(userKey=email, maxResults=500)
     groups = []
     while request is not None:
-        try:
-            resp = request.execute()
-        except HttpError as e:
-            logger.warning('HttpError occurred in api.get_groups_for_email(), returning empty list. Details: %r', e)
-            groups = []
-            break
+        resp = request.execute(num_retries=GOOGLE_API_NUM_RETRIES)
         groups = groups + resp.get('groups', [])
         request = admin.groups().list_next(request, resp)
     return groups
@@ -94,12 +87,7 @@ def get_members_for_group(admin, group_email):
     )
     members = []
     while request is not None:
-        try:
-            resp = request.execute()
-        except HttpError as e:
-            logger.warning('HttpError occurred in api.get_members_for_group(), returning empty list. Details: %r', e)
-            members = []
-            break
+        resp = request.execute(num_retries=GOOGLE_API_NUM_RETRIES)
         members = members + resp.get('members', [])
         request = admin.members().list_next(request, resp)
 
@@ -120,11 +108,7 @@ def get_all_users(admin):
     request = admin.users().list(customer='my_customer', maxResults=500, orderBy='email')
     response_objects = []
     while request is not None:
-        try:
-            resp = request.execute()
-        except HttpError as e:
-            logger.warning('HttpError occurred in api.get_all_users(), returning empty list. Details: %r', e)
-            break
+        resp = request.execute(num_retries=GOOGLE_API_NUM_RETRIES)
         response_objects.append(resp)
         request = admin.users().list_next(request, resp)
     return response_objects
