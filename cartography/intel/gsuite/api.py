@@ -1,7 +1,5 @@
 import logging
 
-from googleapiclient.discovery import HttpError
-
 from cartography.util import run_cleanup_job
 
 
