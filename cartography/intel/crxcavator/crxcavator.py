@@ -263,8 +263,6 @@ def load_extensions(extensions, permissions, extension_permissions, session, upd
     SET r.lastupdated = {UpdateTag}
     """
 
-    print(extension_permissions)
-
     logger.info(f'Ingesting {len(extensions)} extensions')
     session.run(extensions_ingestion_cypher, ExtensionsData=extensions, UpdateTag=update_tag)
 
