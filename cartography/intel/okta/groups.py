@@ -84,7 +84,7 @@ def transform_okta_group_list(okta_group_list):
     groups = []
 
     for current in okta_group_list:
-        groups.append(current)
+        groups.append(transform_okta_group(current))
 
     return groups
 
