@@ -88,3 +88,13 @@ def sync_dynamodb_tables(
         data = get_dynamodb_tables(boto3_session, region)
         load_dynamodb_tables(neo4j_session, data, region, current_aws_account_id, aws_update_tag)
     cleanup_dynamodb_tables(neo4j_session, common_job_parameters)
+
+
+def sync(
+        neo4j_session, boto3_session, regions, current_aws_account_id, aws_update_tag,
+        common_job_parameters,
+):
+    sync_dynamodb_tables(
+        neo4j_session, boto3_session, regions, current_aws_account_id, aws_update_tag,
+        common_job_parameters,
+    )

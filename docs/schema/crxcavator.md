@@ -1,4 +1,15 @@
-# Cartography - Google Cloud Platform Schema
+# Cartography - CRXcavator Schema
+
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Table of contents](#table-of-contents)
+- [GSuiteUser](#gsuiteuser)
+  - [Relationships](#relationships)
+  - [Relationships](#relationships-1)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 ## Table of contents
 

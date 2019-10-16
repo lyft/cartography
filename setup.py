@@ -1,7 +1,7 @@
 from setuptools import find_packages
 from setuptools import setup
 
-__version__ = '0.9.0'
+__version__ = '0.10.0'
 
 
 setup(
@@ -29,8 +29,8 @@ setup(
         "boto3>=1.7.0",
         "botocore>=1.12.0",
         "dnspython>=1.15.0",
-        "neo4j-driver>=1.7.0",
-        "neobolt>=1.7.0",
+        "neo4j>=1.7.0,<4.0.0",
+        "neobolt>=1.7.0,<4.0.0",
         "policyuniverse>=1.1.0.0",
         "python-dateutil>=2.7.0",
         "google-api-python-client>=1.7.8",

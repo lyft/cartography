@@ -52,6 +52,8 @@ def load_rds_instances(neo4j_session, data, region, current_aws_account_id, aws_
     rds.endpoint_address = {EndpointAddress},
     rds.endpoint_hostedzoneid = {EndpointHostedZoneId},
     rds.endpoint_port = {EndpointPort},
+    rds.iam_database_authentication_enabled = {IAMDatabaseAuthenticationEnabled},
+    rds.auto_minor_version_upgrade = {AutoMinorVersionUpgrade},
     rds.lastupdated = {aws_update_tag}
     WITH rds
     MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
@@ -101,6 +103,8 @@ def load_rds_instances(neo4j_session, data, region, current_aws_account_id, aws_
             EndpointAddress=ep.get('Address'),
             EndpointHostedZoneId=ep.get('HostedZoneId'),
             EndpointPort=ep.get('Port'),
+            IAMDatabaseAuthenticationEnabled=rds.get('IAMDatabaseAuthenticationEnabled'),
+            AutoMinorVersionUpgrade=rds.get('AutoMinorVersionUpgrade'),
             Region=region,
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag,
@@ -255,3 +259,7 @@ def sync_rds_instances(
         data = get_rds_instance_data(boto3_session, region)
         load_rds_instances(neo4j_session, data, region, current_aws_account_id, aws_update_tag)
     cleanup_rds_instances_and_db_subnet_groups(neo4j_session, common_job_parameters)
+
+
+def sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters):
+    sync_rds_instances(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)

@@ -1,18 +1,32 @@
 # Cartography - Google Cloud Platform Schema
 
-## Table of contents
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
 - [GCPOrganization](#gcporganization)
-- [GCPFolder](#gcpfolder)
-- [GCPProject](#gcpproject)
+  - [Relationships](#relationships)
+  - [Relationships](#relationships-1)
+  - [Relationships](#relationships-2)
 - [GCPInstance](#gcpinstance)
-- [GCP Network Tags](#gcpnetworktag)
-- [GCPNetworkInterface](#gcpnetworkinterface)
+  - [Relationships](#relationships-3)
+- [GCPNetworkTag](#gcpnetworktag)
+  - [Relationships](#relationships-4)
 - [GCPVpc](#gcpvpc)
+  - [Relationships](#relationships-5)
+- [GCPNetworkInterface](#gcpnetworkinterface)
+  - [Relationships](#relationships-6)
 - [GCPNicAccessConfig](#gcpnicaccessconfig)
+  - [Relationships](#relationships-7)
 - [GCPSubnet](#gcpsubnet)
+  - [Relationships](#relationships-8)
 - [GCPFirewall](#gcpfirewall)
+  - [Relationships](#relationships-9)
+- [IpRule::IpPermissionInbound::GCPIpRule](#ipruleippermissioninboundgcpiprule)
+  - [Relationships](#relationships-10)
+- [IpRange](#iprange)
 
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 ## GCPOrganization
 
@@ -83,6 +97,7 @@ Representation of a GCP [Organization](https://cloud.google.com/resource-manager
 | firstseen| Timestamp of when a sync job first discovered this node  |
 | lastupdated |  Timestamp of the last time the node was updated |
 | id | The ID of the project, e.g. "sys-12345"|
+| projectnumber | The number uniquely identifying the project, e.g. '987654'|
 | displayname | A friendly name of the project, e.g. "MyProject".
 | lifecyclestate | The project's current lifecycle state. Assigned by the server.  See the [official docs](https://cloud.google.com/resource-manager/reference/rest/v1/projects#LifecycleState).
 
