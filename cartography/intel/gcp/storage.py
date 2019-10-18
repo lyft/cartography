@@ -27,7 +27,7 @@ def get_gcp_buckets(storage, project_id):
     except HttpError as e:
         reason = compute._get_error_reason(e)
         if reason == 'invalid':
-            logger.debug(
+            logger.warning(
                 (
                     "The project %s is invalid - returned a 400 invalid error."
                     "Full details: %s"
@@ -35,14 +35,14 @@ def get_gcp_buckets(storage, project_id):
                 project_id,
                 e,
             )
-            return None
+            return {}
         elif reason == 'forbidden':
-            logger.debug(
+            logger.warning(
                 (
                     "You do not have storage.bucket.list access to the project %s. "
                     "Full details: %s"
                 ), project_id, e, )
-            return None
+            return {}
         else:
             raise
 
