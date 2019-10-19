@@ -1,15 +1,25 @@
 # Cartography - Okta Schema
 
-## Table of contents
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
 - [OktaOrganization](#oktaorganization)
+  - [Relationships](#relationships)
 - [OktaUser](#oktauser)
+  - [Relationships](#relationships-1)
 - [OktaGroup](#oktagroup)
+  - [Relationships](#relationships-2)
 - [OktaApplication](#oktaapplication)
+  - [Relationships](#relationships-3)
 - [OktaUserFactor](#oktauserfactor)
+  - [Relationships](#relationships-4)
 - [OktaTrustedOrigin](#oktatrustedorigin)
+  - [Relationships](#relationships-5)
 - [OktaAdministrationRole](#oktaadministrationrole)
+  - [Relationships](#relationships-6)
 
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 ## OktaOrganization
 
@@ -51,9 +61,10 @@ Representation of a Okta [Organization](https://developer.okta.com/docs/concepts
     ```
     (OktaOrganization)-[RESOURCE]->(OktaAdministrationRole)
     ```
- ## OktaUser
 
- Representation of a Okta User (https://github.com/okta/okta-sdk-python/blob/master/okta/models/user/User.py).
+## OktaUser
+
+Representation of a Okta User (https://github.com/okta/okta-sdk-python/blob/master/okta/models/user/User.py).
 
 | Field | Description |
 |-------|--------------|
@@ -74,7 +85,7 @@ Representation of a Okta [Organization](https://developer.okta.com/docs/concepts
 | firstseen| Timestamp of when a sync job first discovered this node  |
 | lastupdated |  Timestamp of the last time the node was updated |
 
- ### Relationships
+### Relationships
 
  - An OktaOrganization contains OktaUsers
     ```
@@ -103,8 +114,9 @@ Representation of a Okta [Organization](https://developer.okta.com/docs/concepts
     (OktaUser)-[FACTOR]->(OktaUserFactor)
     ```
 
- ## OktaGroup
- Representation of a OktaGroup (https://github.com/okta/okta-sdk-python/blob/master/okta/models/usergroup/UserGroup.py).
+## OktaGroup
+
+Representation of a OktaGroup (https://github.com/okta/okta-sdk-python/blob/master/okta/models/usergroup/UserGroup.py).
 
 | Field | Description |
 |-------|--------------|
@@ -118,7 +130,8 @@ Representation of a Okta [Organization](https://developer.okta.com/docs/concepts
 | firstseen| Timestamp of when a sync job first discovered this node  |
 | lastupdated |  Timestamp of the last time the node was updated |
 
- ### Relationships
+### Relationships
+
   - OktaOrganizations contain OktaGroups
     ```
     (OktaGroup)<-[RESOURCE]->(OkOrganization)
@@ -136,7 +149,9 @@ Representation of a Okta [Organization](https://developer.okta.com/docs/concepts
      ```
     (OktaGroup)-[MEMBER_OF_OKTA_ROLE]->(OktaAdministrationRole)
     ```
- ## OktaApplication
+
+## OktaApplication
+
 Representation of a Okta Application (https://developer.okta.com/docs/reference/api/apps/).
 
 | Field | Description |
@@ -154,6 +169,7 @@ Representation of a Okta Application (https://developer.okta.com/docs/reference/
 | lastupdated |  Timestamp of the last time the node was updated |
 
 ### Relationships
+
   - OktaApplication is a resource of an OktaOrganization
     ```
     (OktaApplication)<-[RESOURCE]->(OkOrganization)
@@ -168,7 +184,9 @@ Representation of a Okta Application (https://developer.okta.com/docs/reference/
     ```
     (OktaUser)-[APPLICATION]->(OktaApplication)
     ```
- ## OktaUserFactor
+
+## OktaUserFactor
+
 Representation of Okta user authentication factors (https://developer.okta.com/docs/reference/api/factors/).
 
 | Field | Description |
@@ -183,12 +201,14 @@ Representation of Okta user authentication factors (https://developer.okta.com/d
 | lastupdated |  Timestamp of the last time the node was updated |
 
 ### Relationships
+
  - OktaUser can have authentication Factors
      ```
     (OktaUser)-[FACTOR]->(OktaUserFactor)
     ```
 
 ## OktaTrustedOrigin
+
 Representation of a Okta trusted origin for login/logout or recovery operations. For more information visit Okta documentation at https://developer.okta.com/docs/reference/api/trusted-origins
 
 | Field | Description |
@@ -205,6 +225,7 @@ Representation of a Okta trusted origin for login/logout or recovery operations.
 | lastupdated |  Timestamp of the last time the node was updated |
 
 ### Relationships
+
 - An OktaOrganization has OktaTrustedOrigins.
 
     ```
@@ -212,6 +233,7 @@ Representation of a Okta trusted origin for login/logout or recovery operations.
     ```
 
 ## OktaAdministrationRole
+
 Representation of Okta administration roles. For more information, visit Okta documentation https://developer.okta.com/docs/reference/api/roles/
 
 | Field | Description |
@@ -223,6 +245,7 @@ Representation of Okta administration roles. For more information, visit Okta do
 | lastupdated |  Timestamp of the last time the node was updated |
 
 ### Relationships
+
  - OktaUsers can be members of OktaAdministrationRoles
      ```
     (OktaUser)-[MEMBER_OF_OKTA_ROLE]->(OktaAdministrationRole)
