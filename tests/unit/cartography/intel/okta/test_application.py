@@ -9,85 +9,99 @@ from tests.data.okta.application import LIST_APPLICATION_USER_ASSIGNED_RESPONSE
 def test_application_with_all_values():
     app = create_test_application()
 
-    transformed_data = transform_okta_application(app)
+    result = transform_okta_application(app)
 
-    assert transformed_data["id"] == app.id
-    assert transformed_data["name"] == app.name
-    assert transformed_data["label"] == app.label
-    assert transformed_data["created"] == '01/01/2019, 00:00:01'
-    assert transformed_data["okta_last_updated"] == '01/01/2019, 00:00:01'
-    assert transformed_data["status"] == app.status
-    assert transformed_data["activated"] == '01/01/2019, 00:00:01'
-    assert transformed_data["features"] == app.features
-    assert transformed_data["sign_on_mode"] == app.signOnMode
+    expected = {
+        'id': app.id,
+        'name': app.name,
+        'label': app.label,
+        'created': '01/01/2019, 00:00:01',
+        'okta_last_updated': '01/01/2019, 00:00:01',
+        'status': app.status,
+        'activated': '01/01/2019, 00:00:01',
+        'features': app.features,
+        'sign_on_mode': app.signOnMode,
+    }
+
+    assert result == expected
 
 
 def test_application_with_created_none():
     app = create_test_application()
-
     app.created = None
-    transformed_data = transform_okta_application(app)
 
-    assert transformed_data["id"] == app.id
-    assert transformed_data["name"] == app.name
-    assert transformed_data["label"] == app.label
-    assert transformed_data["created"] is None
-    assert transformed_data["okta_last_updated"] == '01/01/2019, 00:00:01'
-    assert transformed_data["status"] == app.status
-    assert transformed_data["activated"] == '01/01/2019, 00:00:01'
-    assert transformed_data["features"] == app.features
-    assert transformed_data["sign_on_mode"] == app.signOnMode
+    result = transform_okta_application(app)
+
+    expected = {
+        'id': app.id,
+        'name': app.name,
+        'label': app.label,
+        'created': None,
+        'okta_last_updated': '01/01/2019, 00:00:01',
+        'status': app.status,
+        'activated': '01/01/2019, 00:00:01',
+        'features': app.features,
+        'sign_on_mode': app.signOnMode,
+    }
+
+    assert result == expected
 
 
 def test_application_with_last_updated_none():
     app = create_test_application()
-
     app.lastUpdated = None
-    transformed_data = transform_okta_application(app)
 
-    assert transformed_data["id"] == app.id
-    assert transformed_data["name"] == app.name
-    assert transformed_data["label"] == app.label
-    assert transformed_data["created"] == '01/01/2019, 00:00:01'
-    assert transformed_data["okta_last_updated"] is None
-    assert transformed_data["status"] == app.status
-    assert transformed_data["activated"] == '01/01/2019, 00:00:01'
-    assert transformed_data["features"] == app.features
-    assert transformed_data["sign_on_mode"] == app.signOnMode
+    result = transform_okta_application(app)
+
+    expected = {
+        'id': app.id,
+        'name': app.name,
+        'label': app.label,
+        'created': '01/01/2019, 00:00:01',
+        'okta_last_updated': None,
+        'status': app.status,
+        'activated': '01/01/2019, 00:00:01',
+        'features': app.features,
+        'sign_on_mode': app.signOnMode,
+    }
+
+    assert result == expected
 
 
 def test_application_with_activated_none():
     app = create_test_application()
     app.activated = None
 
-    transformed_data = transform_okta_application(app)
+    result = transform_okta_application(app)
 
-    assert transformed_data["id"] == app.id
-    assert transformed_data["name"] == app.name
-    assert transformed_data["label"] == app.label
-    assert transformed_data["created"] == '01/01/2019, 00:00:01'
-    assert transformed_data["okta_last_updated"] == '01/01/2019, 00:00:01'
-    assert transformed_data["status"] == app.status
-    assert transformed_data["activated"] is None
-    assert transformed_data["features"] == app.features
-    assert transformed_data["sign_on_mode"] == app.signOnMode
+    expected = {
+        'id': app.id,
+        'name': app.name,
+        'label': app.label,
+        'created': '01/01/2019, 00:00:01',
+        'okta_last_updated': '01/01/2019, 00:00:01',
+        'status': app.status,
+        'activated': None,
+        'features': app.features,
+        'sign_on_mode': app.signOnMode,
+    }
+
+    assert result == expected
 
 
 def test_application_assigned_users():
-    values_to_test = []
+    result = []
 
-    values_to_test = transform_application_assigned_users(LIST_APPLICATION_USER_ASSIGNED_RESPONSE)
+    result = transform_application_assigned_users(LIST_APPLICATION_USER_ASSIGNED_RESPONSE)
 
-    assert len(values_to_test) == 2
-    assert values_to_test[0] == "00ui2sVIFZNCNKFFNBPM"
-    assert values_to_test[1] == "00ujsgVNDRESKKXERBUJ"
+    expected = ["00ui2sVIFZNCNKFFNBPM", "00ujsgVNDRESKKXERBUJ"]
+    assert result == expected
 
 
 def test_application_assigned_groups():
-    values_to_test = []
+    result = []
 
-    values_to_test = transform_application_assigned_groups(LIST_APPLICATION_GROUP_ASSIGNED_RESPONSE)
+    result = transform_application_assigned_groups(LIST_APPLICATION_GROUP_ASSIGNED_RESPONSE)
 
-    assert len(values_to_test) == 2
-    assert values_to_test[0] == "00gbkkGFFWZDLCNTAGQR"
-    assert values_to_test[1] == "00gg0xVALADWBPXOFZAS"
+    expected = ["00gbkkGFFWZDLCNTAGQR", "00gg0xVALADWBPXOFZAS"]
+    assert result == expected
