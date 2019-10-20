@@ -64,7 +64,7 @@ CREATE INDEX ON :OktaGroup(id);
 CREATE INDEX ON :OktaApplication(id);
 CREATE INDEX ON :OktaUserFactor(id);
 CREATE INDEX ON :OktaTrustedOrigin(id);
-CREATE INDEX ON: OktaAdministratorRole(id);
+CREATE INDEX ON: OktaAdministrationRole(id);
 CREATE INDEX ON :PublicIpAddress(ip);
 CREATE INDEX ON :RDSInstance(db_instance_identifier);
 CREATE INDEX ON :RDSInstance(id);
