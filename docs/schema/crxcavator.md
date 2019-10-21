@@ -41,7 +41,7 @@ Placeholder representation of a single G Suite [user object](https://developers.
 |-------|--------------|
 | firstseen| Timestamp of when a sync job first discovered this node  |
 | lastupdated |  Timestamp of the last time the node was updated |
-| id | The combined extension name and version e.g. "Docs|1.0" |
+| id | The combined extension name and version e.g. "Docs&#124;1.0" |
 | extension_id | CRXcavator id for extension. |
 | version | The versions of the extension in this report |
 | risk_total | CRXcavator risk score for the extension |
@@ -73,7 +73,7 @@ Placeholder representation of a single G Suite [user object](https://developers.
 
 ### Relationships
 
-- GSuiteUsers install ChromeExternsions.
+- GSuiteUsers install ChromeExtensions.
 
     ```
     (GSuiteUser)-[INSTALLS]->(ChromeExtension)
@@ -82,18 +82,19 @@ Placeholder representation of a single G Suite [user object](https://developers.
 
 ## ChromeExtensionPermission
 
-Individual permission entries from the extension manifest file.
+Individual permission entries from the extension manifest file. This information is returned from the manifest object in the [Report](https://crxcavator.io/apidocs#tag/report) API. These permissions are defined in the [Chrome documentation](https://developer.chrome.com/apps/declare_permissions#manifest).
 
 
 | Field | Description |
 |-------|--------------|
 | firstseen| Timestamp of when a sync job first discovered this node  |
 | lastupdated |  Timestamp of the last time the node was updated |
+| id | The permission name" |
 | name | The specific permission declared in the manifest
 
 ### Relationships
 
-- ChromeExtension declares ChromeExternsionPermission.
+- ChromeExtension declares ChromeExtensionPermission.
 
     ```
     (ChromeExtension)-[DECLARES]->(ChromeExtensionPermission)

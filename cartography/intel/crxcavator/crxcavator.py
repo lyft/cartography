@@ -248,7 +248,10 @@ def load_extensions(extensions, permissions, extension_permissions, session, upd
 
     permissions_ingestion_cypher = """
     UNWIND {Permissions} as permission
-    MERGE (e:ChromeExtensionPermission{name: permission})
+    MERGE (e:ChromeExtensionPermission{id: permission})
+    SET
+    e.name = permission,
+    e.lastupdated = {UpdateTag}
     ON CREATE SET
     e.firstseen = timestamp()
     """
