@@ -770,7 +770,7 @@ def _attach_firewall_rules(neo4j_session, fw, gcp_update_tag):
             # Since an IP range cannot have a tag applied to it, it is ok if we don't ingest this rule.
             for ip_range in fw.get('sourceRanges', []):
                 neo4j_session.run(
-                    query + subquery,
+                    query + sub_query,
                     FwPartialUri=fw['id'],
                     RuleId=rule['ruleid'],
                     Protocol=rule['protocol'],
