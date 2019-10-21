@@ -753,13 +753,13 @@ def _attach_firewall_rules(neo4j_session, fw, gcp_update_tag):
     """
     for list_type in 'transformed_allow_list', 'transformed_deny_list':
         if list_type == 'transformed_allow_list':
-            query += """
+            sub_query = """
             MERGE (fw)<-[r:ALLOWED_BY]-(rule)
             ON CREATE SET r.firstseen = timestamp()
             SET r.lastupdated = {gcp_update_tag}
             """
         else:
-            query += """
+            sub_query = """
             MERGE (fw)<-[r:DENIED_BY]-(rule)
             ON CREATE SET r.firstseen = timestamp()
             SET r.lastupdated = {gcp_update_tag}
@@ -770,7 +770,7 @@ def _attach_firewall_rules(neo4j_session, fw, gcp_update_tag):
             # Since an IP range cannot have a tag applied to it, it is ok if we don't ingest this rule.
             for ip_range in fw.get('sourceRanges', []):
                 neo4j_session.run(
-                    query,
+                    query + subquery,
                     FwPartialUri=fw['id'],
                     RuleId=rule['ruleid'],
                     Protocol=rule['protocol'],
