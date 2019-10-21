@@ -7,6 +7,7 @@
 - [GCPOrganization](#gcporganization)
   - [Relationships](#relationships)
   - [Relationships](#relationships-1)
+- [GCPBucket](#gcpbucket)
   - [Relationships](#relationships-2)
 - [GCPInstance](#gcpinstance)
   - [Relationships](#relationships-3)
@@ -92,14 +93,14 @@ Representation of a GCP [Organization](https://cloud.google.com/resource-manager
 
  Representation of a GCP [Project](https://cloud.google.com/resource-manager/reference/rest/v1/projects).  An additional helpful reference is the [Google Compute Platform resource hierarchy](https://cloud.google.com/resource-manager/docs/cloud-platform-resource-hierarchy).
 
-| Field | Description |
-|-------|--------------|
-| firstseen| Timestamp of when a sync job first discovered this node  |
-| lastupdated |  Timestamp of the last time the node was updated |
-| id | The ID of the project, e.g. "sys-12345"|
-| projectnumber | The number uniquely identifying the project, e.g. '987654'|
-| displayname | A friendly name of the project, e.g. "MyProject".
-| lifecyclestate | The project's current lifecycle state. Assigned by the server.  See the [official docs](https://cloud.google.com/resource-manager/reference/rest/v1/projects#LifecycleState).
+ | Field | Description |
+ |-------|--------------|
+ | firstseen| Timestamp of when a sync job first discovered this node  |
+ | lastupdated |  Timestamp of the last time the node was updated |
+ | id | The ID of the project, e.g. "sys-12345"|
+ | projectnumber | The number uniquely identifying the project, e.g. '987654'|
+ | displayname | A friendly name of the project, e.g. "MyProject".
+ | lifecyclestate | The project's current lifecycle state. Assigned by the server.  See the [official docs](https://cloud.google.com/resource-manager/reference/rest/v1/projects#LifecycleState).
 
  ### Relationships
 
@@ -119,6 +120,42 @@ Representation of a GCP [Organization](https://cloud.google.com/resource-manager
 
     ```
     (GCPProject)-[RESOURCE]->(GCPVpc)
+    ```
+
+
+ ## GCPBucket
+ Representation of a GCP [Storage Bucket](https://cloud.google.com/storage/docs/json_api/v1/buckets).
+
+ | Field | Description |
+ |-------|--------------|
+ | firstseen| Timestamp of when a sync job first discovered this node  |
+ | lastupdated |  Timestamp of the last time the node was updated |
+ | id | The ID of the storage bucket, e.g. "bucket-12345"|
+ | projectnumber | The number uniquely identifying the project associated with the storage bucket, e.g. '987654' |
+ | self_link | The URI of the storage bucket |
+ | kind | The kind of item this is. For storage buckets, this is always storage#bucket |
+ | location | The location of the bucket. Object data for objects in the bucket resides in physical storage within this region. Defaults to US. See [Cloud Storage bucket locations](https://cloud.google.com/storage/docs/locations) for the authoritative list. |
+ | location_type | The type of location that the bucket resides in, as determined by the `location` property |
+ | labels | User-provided bucket [labels](https://cloud.google.com/storage/docs/key-terms#bucket-labels), in key/value pairs |
+ | meta_generation | The metadata generation of this bucket |
+ | storage_class | The bucket's default storage class, used whenever no `storageClass` is specified for a newly-created object. For more information, see [storage classes](https://cloud.google.com/storage/docs/storage-classes) |
+ | time_created | The creation time of the bucket in RFC 3339 format |
+ | retention_period | The period of time, in seconds, that objects in the bucket must be retained and cannot be deleted, overwritten, or archived |
+ | iam_config_bucket_policy_only | The bucket's [Bucket Policy Only](https://cloud.google.com/storage/docs/bucket-policy-only) configuration |
+ | owner_entity | The entity, in the form `project-owner-projectId` |
+ | owner_entity_id | The ID for the entity |
+ | versioning_enabled | The bucket's versioning configuration (if set to `True`, versioning is fully enabled for this bucket) |
+ | log_bucket | The destination bucket where the current bucket's logs should be placed |
+ | requester_pays | The bucket's billing configuration (if set to true, Requester Pays is enabled for this bucket) |
+ | default_kms_key_name | A Cloud KMS key that will be used to encrypt objects inserted into this bucket, if no encryption method is specified |
+
+ ### Relationships
+
+
+- GCPBuckets are part of GCPProjects.
+
+    ```
+    (GCPProject)-[RESOURCE]->(GCPBucket)
     ```
 
 
