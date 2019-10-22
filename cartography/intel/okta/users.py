@@ -43,11 +43,13 @@ def _get_okta_users(user_client):
 
 def transform_okta_user_list(okta_user_list):
     users = []
+    user_ids = []
 
     for current in okta_user_list:
         users.append(transform_okta_user(current))
+        user_ids.append(current.id)
 
-    return users
+    return users, user_ids
 
 
 def transform_okta_user(okta_user):
@@ -153,19 +155,23 @@ def _load_okta_users(neo4j_session, okta_org_id, user_list, okta_update_tag):
     )
 
 
-def sync_okta_users(neo4j_session, okta_org_id, okta_update_tag, okta_api_key):
+def sync_okta_users(neo4j_session, okta_org_id, okta_update_tag, okta_api_key, sync_state):
     """
     Sync okta users
     :param neo4j_session: Session with Neo4j server
     :param okta_org_id: Okta organization id to sync
     :param okta_update_tag: The timestamp value to set our new Neo4j resources with
     :param okta_api_key: Okta API key
+    :param sync_state: Okta sync state
     :return: Nothing
     """
 
     logger.debug("Syncing Okta users")
     user_client = _create_user_client(okta_org_id, okta_api_key)
     data = _get_okta_users(user_client)
-    users = transform_okta_user_list(data)
+    users_data, user_ids = transform_okta_user_list(data)
 
-    _load_okta_users(neo4j_session, okta_org_id, users, okta_update_tag)
+    _load_okta_users(neo4j_session, okta_org_id, users_data, okta_update_tag)
+
+    # store result for later use
+    sync_state.users = user_ids

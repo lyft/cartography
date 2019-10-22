@@ -71,4 +71,3 @@ CREATE INDEX ON :RDSInstance(id);
 CREATE INDEX ON :S3Acl(id);
 CREATE INDEX ON :S3Bucket(name);
 CREATE INDEX ON :User(arn);
-CREATE INDEX ON :S3Acl(id);

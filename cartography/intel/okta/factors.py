@@ -4,7 +4,6 @@ import logging
 from okta import FactorsClient
 from okta.framework.OktaError import OktaError
 
-from cartography.intel.okta.utils import get_user_id_from_graph
 
 logger = logging.getLogger(__name__)
 
@@ -119,22 +118,22 @@ def _load_user_factors(neo4j_session, user_id, factors, okta_update_tag):
     )
 
 
-def sync_users_factors(neo4j_session, okta_org_id, okta_update_tag, okta_api_key):
+def sync_users_factors(neo4j_session, okta_org_id, okta_update_tag, okta_api_key, sync_state):
     """
     Sync user factors
     :param neo4j_session: session with the Neo4j server
     :param okta_org_id: okta organization id
     :param okta_update_tag: The timestamp value to set our new Neo4j resources with
     :param okta_api_key: Okta API key
+    :param sync_state: Okta sync state
     :return: Nothing
     """
 
     logger.debug("Syncing Okta User Factors")
 
     factor_client = _create_factor_client(okta_org_id, okta_api_key)
-    users = get_user_id_from_graph(neo4j_session, okta_org_id)
 
-    for user_id in users:
+    for user_id in sync_state.users:
         factor_data = _get_factor_for_user_id(factor_client, user_id)
         user_factors = transform_okta_user_factor_list(factor_data)
         _load_user_factors(neo4j_session, user_id, user_factors, okta_update_tag)

@@ -3,8 +3,6 @@ import json
 import logging
 
 from cartography.intel.okta.utils import create_api_client
-from cartography.intel.okta.utils import get_okta_groups_id_from_graph
-from cartography.intel.okta.utils import get_user_id_from_graph
 
 logger = logging.getLogger(__name__)
 
@@ -135,33 +133,29 @@ def _load_group_role(neo4j_session, group_id, roles_data, okta_update_tag):
     )
 
 
-def sync_roles(neo4j_session, okta_org_id, okta_update_tag, okta_api_key):
+def sync_roles(neo4j_session, okta_org_id, okta_update_tag, okta_api_key, sync_state):
     """
     Sync okta roles
     :param neo4j_session: Neo4j Session
     :param okta_org_id: Okta organization id
     :param okta_update_tag: Update tag
     :param okta_api_key: Okta API key
+    :param sync_state: Okta sync state
     :return: None
     """
+
     logger.debug("Syncing Okta Roles")
 
     # get API client
     api_client = create_api_client(okta_org_id, "/api/v1/users", okta_api_key)
 
-    # users
-    users = get_user_id_from_graph(neo4j_session, okta_org_id)
-
-    for user_id in users:
+    for user_id in sync_state.users:
         user_roles_data = _get_user_roles(api_client, user_id, okta_org_id)
         user_roles = transform_user_roles_data(user_roles_data, okta_org_id)
         if len(user_roles) > 0:
             _load_user_role(neo4j_session, user_id, user_roles, okta_update_tag)
 
-    # groups
-    groups = get_okta_groups_id_from_graph(neo4j_session, okta_org_id)
-
-    for group_id in groups:
+    for group_id in sync_state.groups:
         group_roles_data = _get_group_roles(api_client, group_id, okta_org_id)
         group_roles = transform_group_roles_data(group_roles_data, okta_org_id)
         if len(group_roles) > 0:
