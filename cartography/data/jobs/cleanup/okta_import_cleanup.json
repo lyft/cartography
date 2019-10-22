@@ -1,6 +1,11 @@
 {
   "statements": [
     {
+      "query": "MATCH (n:ReplyUri) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
       "query": "MATCH (:OktaOrganization{id: {OKTA_ORG_ID}})-[:RESOURCE]->(n:OktaUser)-[:FACTOR]->(n:OktaUserFactor) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
       "iterative": true,
       "iterationsize": 100
