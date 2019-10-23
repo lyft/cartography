@@ -1,6 +1,7 @@
 # Okta intel module - Applications
 import json
 import logging
+import socket
 from datetime import datetime
 from cartography.intel.okta.utils import create_api_client
 from cartography.intel.okta.utils import is_last_page
@@ -201,11 +202,23 @@ def transform_okta_application(okta_application):
     return app_props
 
 def transform_okta_application_extract_replyurls(okta_application):
-    uris = None
+    """
+    Extracts the reply uri information from an okta app 
+    and determines if the dns of the reply url is valid
+    """
+    uris = []
     if "oauthClient" in okta_application["settings"]:
         if "redirect_uris" in okta_application["settings"]["oauthClient"]:
-            uris = okta_application["settings"]["oauthClient"]["redirect_uris"]
-    return uris
+            for uri in okta_application["settings"]["oauthClient"]["redirect_uris"]:
+                netloc = urlparse(uri).netloc
+                try:
+                    socket.gethostbyname(netloc)
+                    resolved = True
+                except Exception as ex:
+                    resolved = False
+                uris.append({"uri":uri, "valid": resolved})
+            return uris
+    return None
 
 def _load_okta_applications(neo4j_session, okta_org_id, app_list, okta_update_tag):
     """
@@ -304,9 +317,8 @@ def _load_application_reply_urls(neo4j_session, app_id, reply_urls, okta_update_
     """
     Add reply urls to their applications
     :param neo4j_session: session with the Neo4j server
-    :param app_id: application to map
-    :param group_list: reply urls to map
-    :param reply_urls: The timestamp value to set our new Neo4j resources with
+    :param app_id: application to map the reply urls to
+    :param reply_urls: reply urls to map
     :param okta_update_tag: The timestamp value to set our new Neo4j resources with
     :return: Nothing
     """
@@ -316,9 +328,10 @@ def _load_application_reply_urls(neo4j_session, app_id, reply_urls, okta_update_
     MATCH (app:OktaApplication{id: {APP_ID}})
     WITH app
     UNWIND {URL_LIST} as url_list
-    MERGE (uri:ReplyUri{uri: url_list})
+    MERGE (uri:ReplyUri{uri: url_list.uri})
     ON CREATE SET uri.firstseen = timestamp()
-    SET uri.lastupdated = {okta_update_tag}
+    SET uri.valid = url_list.valid,
+    uri.lastupdated = {okta_update_tag}
     WITH app, uri
     MERGE (uri)<-[r:REPLYURI]-(app)
     ON CREATE SET r.firstseen = timestamp()
@@ -364,3 +377,6 @@ def sync_okta_applications(neo4j_session, okta_org_id, okta_update_tag, okta_api
 
         reply_urls = transform_okta_application_extract_replyurls(app)
         _load_application_reply_urls(neo4j_session, app_id, reply_urls, okta_update_tag)
+
+    
+    
