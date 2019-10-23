@@ -42,11 +42,12 @@ def start_okta_ingestion(neo4j_session, config):
     }
 
     organization.create_okta_organization(neo4j_session, config.okta_org_id, config.update_tag)
-    #users.sync_okta_users(neo4j_session, config.okta_org_id, config.update_tag, config.okta_api_key)
-    #groups.sync_okta_groups(neo4j_session, config.okta_org_id, config.update_tag, config.okta_api_key)
-    #applications.sync_okta_applications(neo4j_session, config.okta_org_id, config.update_tag, config.okta_api_key)
-    #factors.sync_users_factors(neo4j_session, config.okta_org_id, config.update_tag, config.okta_api_key)
-    #origins.sync_trusted_origins(neo4j_session, config.okta_org_id, config.update_tag, config.okta_api_key)
+    users.sync_okta_users(neo4j_session, config.okta_org_id, config.update_tag, config.okta_api_key)
+    groups.sync_okta_groups(neo4j_session, config.okta_org_id, config.update_tag, config.okta_api_key)
+    applications.sync_okta_applications(neo4j_session, config.okta_org_id, config.update_tag, config.okta_api_key)
+    factors.sync_users_factors(neo4j_session, config.okta_org_id, config.update_tag, config.okta_api_key)
+    origins.sync_trusted_origins(neo4j_session, config.okta_org_id, config.update_tag, config.okta_api_key)
+    # TODO get regex_match plumed through from the CLI
     awssaml.sync_okta_aws_saml(neo4j_session, "AWS_(?{{accountid}}\d+)_(?{{role}}[a-zA-Z0-9+=,.@\-_]+)", config.update_tag)
     # need creds with permission
     # soft fail as some won't be able to get such high priv token
