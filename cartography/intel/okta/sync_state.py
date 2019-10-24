@@ -16,5 +16,5 @@ class OktaSyncState:
         user=None,
         groups=None
     ):
-        self._users = user
-        self._groups = groups
+        self.users = user
+        self.groups = groups
