@@ -244,7 +244,7 @@ def sync_okta_groups(neo4_session, okta_org_id, okta_update_tag, okta_api_key, s
     api_client = create_api_client(okta_org_id, "/api/v1/groups", okta_api_key)
 
     okta_group_data = _get_okta_groups(api_client)
-    group_list_info, group_ids= transform_okta_group_list(okta_group_data)
+    group_list_info, group_ids = transform_okta_group_list(okta_group_data)
 
     # store result for later use
     sync_state.groups = group_ids

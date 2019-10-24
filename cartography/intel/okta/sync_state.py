@@ -11,10 +11,11 @@ class OktaSyncState:
     :type groups: array of string
     :param groups: Array of group id as string. Optional
     """
+
     def __init__(
         self,
         user=None,
-        groups=None
+        groups=None,
     ):
         self.users = user
         self.groups = groups
