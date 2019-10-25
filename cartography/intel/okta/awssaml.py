@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 
 def _parse_regex(regex_string):
-    return regex_string.replace("{{accountid}}", "P<accountid>").replace("{{role}}", "P<role>")
+    return regex_string.replace("{{accountid}}", "P<accountid>").replace("{{role}}", "P<role>").strip()
 
 
 def transform_okta_group_to_aws_role(group_id, group_name, mapping_regex):
@@ -31,7 +31,7 @@ def query_for_okta_to_aws_role_mapping(neo4j_session, mapping_regex):
     group_to_role_mapping = []
     has_results = False
     results = neo4j_session.run(query)
-    
+
     for res in results:
         has_results = True
         mapping = transform_okta_group_to_aws_role(res["group.id"], res["group.name"], mapping_regex)
@@ -39,8 +39,11 @@ def query_for_okta_to_aws_role_mapping(neo4j_session, mapping_regex):
             group_to_role_mapping.append(mapping)
 
     if has_results and not group_to_role_mapping:
-        logger.warn("AWS Okta Application present, but no mappings were found. Please verify the mapping regex is correct")
-    
+        logger.warn(
+            "AWS Okta Application present, but no mappings were found. "
+            "Please verify the mapping regex is correct",
+        )
+
     return group_to_role_mapping
 
 
@@ -53,7 +56,7 @@ def _load_okta_group_to_aws_roles(neo4j_session, group_to_role, okta_update_tag)
     :return: Nothing
     """
     ingest_statement = """
-    
+
     UNWIND {GROUP_TO_ROLE} as app_data
     MATCH (role:AWSRole{arn: app_data.role})
     MATCH (group:OktaGroup{id: app_data.groupid})
@@ -71,10 +74,10 @@ def _load_okta_group_to_aws_roles(neo4j_session, group_to_role, okta_update_tag)
 
 def sync_okta_aws_saml(neo4j_session, mapping_regex, okta_update_tag):
     """
-    Sync okta integration with saml. This will link OktaGroups to the AWSRoles they enable. 
+    Sync okta integration with saml. This will link OktaGroups to the AWSRoles they enable.
     This is for people who use the okta saml provider for AWS
     https://saml-doc.okta.com/SAML_Docs/How-to-Configure-SAML-2.0-for-Amazon-Web-Service#scenarioC
-    If an organization does not use okta as a SAML provider for AWS the query will not return any results 
+    If an organization does not use okta as a SAML provider for AWS the query will not return any results
     and nothing will be added to the graph
     :param mapping_regex: session from the Neo4j server
     :param okta_org_id: okta organization id

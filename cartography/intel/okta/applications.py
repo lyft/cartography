@@ -3,12 +3,16 @@ import json
 import logging
 import socket
 from datetime import datetime
+from urllib.parse import urlparse
+
+from okta.framework.OktaError import OktaError
+
 from cartography.intel.okta.utils import create_api_client
 from cartography.intel.okta.utils import is_last_page
 
 
-
 logger = logging.getLogger(__name__)
+
 
 def _get_okta_applications(api_client):
     """
@@ -174,36 +178,44 @@ def transform_okta_application_list(okta_applications):
 
     return app_list
 
+
 def transform_okta_application(okta_application):
     app_props = {}
     app_props["id"] = okta_application["id"]
     app_props["name"] = okta_application["name"]
     app_props["label"] = okta_application["label"]
-    if "created" in okta_application:
-        app_props["created"] = datetime.strptime(okta_application["created"], "%Y-%m-%dT%H:%M:%S.%fZ").strftime("%m/%d/%Y, %H:%M:%S")
+    if "created" in okta_application and okta_application["created"]:
+        app_props["created"] = datetime.strptime(
+            okta_application["created"], "%Y-%m-%dT%H:%M:%S.%fZ",
+        ).strftime("%m/%d/%Y, %H:%M:%S")
     else:
         app_props["created"] = None
 
-    if "lastUpdated" in okta_application:
-        app_props["okta_last_updated"] = datetime.strptime(okta_application["lastUpdated"], "%Y-%m-%dT%H:%M:%S.%fZ").strftime("%m/%d/%Y, %H:%M:%S")
+    if "lastUpdated" in okta_application and okta_application["lastUpdated"]:
+        app_props["okta_last_updated"] = datetime.strptime(
+            okta_application["lastUpdated"], "%Y-%m-%dT%H:%M:%S.%fZ",
+        ).strftime("%m/%d/%Y, %H:%M:%S")
     else:
         app_props["okta_last_updated"] = None
 
     app_props["status"] = okta_application["status"]
 
-    if "activated" in okta_application:
-        app_props["activated"] = datetime.strptime(okta_application["activated"], "%Y-%m-%dT%H:%M:%S.%fZ").strftime("%m/%d/%Y, %H:%M:%S")
+    if "activated" in okta_application and okta_application["activated"]:
+        app_props["activated"] = datetime.strptime(
+            okta_application["activated"], "%Y-%m-%dT%H:%M:%S.%fZ",
+        ).strftime("%m/%d/%Y, %H:%M:%S")
     else:
         app_props["activated"] = None
 
     app_props["features"] = okta_application["features"]
     app_props["sign_on_mode"] = okta_application["signOnMode"]
-    
+
     return app_props
+
 
 def transform_okta_application_extract_replyurls(okta_application):
     """
-    Extracts the reply uri information from an okta app 
+    Extracts the reply uri information from an okta app
     and determines if the dns of the reply url is valid
     """
     uris = []
@@ -214,11 +226,12 @@ def transform_okta_application_extract_replyurls(okta_application):
                 try:
                     socket.gethostbyname(netloc)
                     resolved = True
-                except Exception as ex:
+                except Exception:
                     resolved = False
-                uris.append({"uri":uri, "valid": resolved})
+                uris.append({"uri": uri, "valid": resolved})
             return uris
     return None
+
 
 def _load_okta_applications(neo4j_session, okta_org_id, app_list, okta_update_tag):
     """
@@ -313,6 +326,7 @@ def _load_application_group(neo4j_session, app_id, group_list, okta_update_tag):
         okta_update_tag=okta_update_tag,
     )
 
+
 def _load_application_reply_urls(neo4j_session, app_id, reply_urls, okta_update_tag):
     """
     Add reply urls to their applications
@@ -363,8 +377,6 @@ def sync_okta_applications(neo4j_session, okta_org_id, okta_update_tag, okta_api
     app_data = transform_okta_application_list(okta_app_data)
     _load_okta_applications(neo4j_session, okta_org_id, app_data, okta_update_tag)
 
-    
-
     for app in okta_app_data:
         app_id = app["id"]
         user_list_data = _get_application_assigned_users(api_client, app_id)
@@ -377,6 +389,3 @@ def sync_okta_applications(neo4j_session, okta_org_id, okta_update_tag, okta_api
 
         reply_urls = transform_okta_application_extract_replyurls(app)
         _load_application_reply_urls(neo4j_session, app_id, reply_urls, okta_update_tag)
-
-    
-    
