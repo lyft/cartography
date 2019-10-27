@@ -98,8 +98,12 @@ Time to set up the server that will run Cartography.  Cartography _should_ work 
         1. `GSUITE_GOOGLE_APPLICATION_CREDENTIALS` - location of the credentials file.
         2. `GSUITE_DELEGATED_ADMIN` - email address that you created in step 2
 
+6. If you're using Okta intel module, **prepare your Okta API token**
+    1. Generate your API token by following the steps from [Okta Create An API Token documentation](https://developer.okta.com/docs/guides/create-an-api-token/overview/)
+    2. Populate an environment variable with the API token. You can pass the environment variable name via the cli --okta-api-key-env-var parameter
+    3. Use the cli --okta-org-id parameter with the organization id you want to query. The organization id is the first part of the Okta url for your organization.
 
-5. **Get and run Cartography**
+7. **Get and run Cartography**
 
 	1. Run `pip install cartography` to install our code.
 
@@ -370,7 +374,6 @@ There are many ways to allow Cartography to pull from more than one AWS account.
 			[default]
 			region=<the region of your Hub account, e.g. us-east-1>
 			output=json
-
 
 	3.  Add a profile for each AWS account you want Cartography to sync with to your `AWS_CONFIG_FILE`.  It will look something like this:
 
