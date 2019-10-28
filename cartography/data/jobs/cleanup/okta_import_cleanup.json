@@ -1,0 +1,70 @@
+{
+  "statements": [
+    {
+      "query": "MATCH (:OktaOrganization{id: {OKTA_ORG_ID}})-[:RESOURCE]->(n:OktaUser)-[:FACTOR]->(n:OktaUserFactor) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100,
+      "__comment__": "Deletate stale OktaUserFactor"
+    },
+    {
+      "query": "MATCH (:OktaOrganization{id: {OKTA_ORG_ID}})-[:RESOURCE]->(:OktaUser)-[r:FACTOR]->(:OktaUserFactor)  WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100,
+      "__comment__": "Delete stale OktaUserFactor to OktaUser relationship"
+    },
+    {
+      "query": "MATCH (:OktaOrganization{id: {OKTA_ORG_ID}})-[:RESOURCE]->(n:OktaUser) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100,
+      "__comment__": "Delete stale OktaUser"
+    },
+    {
+      "query": "MATCH (:OktaOrganization{id: {OKTA_ORG_ID}})-[:RESOURCE]->(:OktaGroup)<-[r:MEMBER_OF_OKTA_GROUP]-(:OktaUser) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100,
+      "__comment__": "Delete stale OktaUser relationship to OktaGroup"
+    },
+    {
+      "query": "MATCH (:OktaOrganization{id: {OKTA_ORG_ID}})-[:RESOURCE]->(n:OktaGroup) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100,
+      "__comment__": "Delete stale OktaGroup"
+    },
+    {
+      "query": "MATCH (:OktaOrganization{id: {OKTA_ORG_ID}})-[:RESOURCE]->(n:OktaApplication) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100,
+      "__comment__": "Delete stale OktaApplication"
+    },
+    {
+      "query": "MATCH (:OktaOrganization{id: {OKTA_ORG_ID}})-[:RESOURCE]->(:OktaApplication)<-[r:APPLICATION]-(n) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100,
+      "__comment__": "Delete stale OktaApplication relationships"
+    },
+    {
+      "query": "MATCH (:OktaOrganization{id: {OKTA_ORG_ID}})-[:RESOURCE]->(n:OktaTrustedOrigin) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100,
+      "__comment__": "Delete stale OktaTrustedOrigin"
+    },
+    {
+      "query": "MATCH (:OktaOrganization{id: {OKTA_ORG_ID}})-[:RESOURCE]->(n:OktaAdministrationRole) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100,
+      "__comment__": "Delete stale OktaAdministrationRole"
+    },
+    {
+      "query": "MATCH (:OktaOrganization{id: {OKTA_ORG_ID}})-[:RESOURCE]->(:OktaAdministrationRole)<-[r:MEMBER_OF_OKTA_ROLE]-(n)  WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100,
+      "__comment__": "Delete stale OktaAdministrationRole relationships"
+    },
+    {
+      "query": "MATCH (n:OktaOrganization{id: {OKTA_ORG_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} DELETE (n)",
+      "iterative": false,
+      "__comment__": "Delete stale OktaOrganization"
+    }
+  ],
+  "name": "Okta intel module cleanup"
+}

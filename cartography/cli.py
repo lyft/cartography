@@ -124,6 +124,23 @@ class CLI:
                 'jobs are executed.'
             ),
         )
+        parser.add_argument(
+            '--okta-org-id',
+            type=str,
+            default=None,
+            help=(
+                'Okta organizational id to sync. Required if you are using the Okta intel module. Ignored otherwise.'
+            ),
+        )
+        parser.add_argument(
+            '--okta-api-key-env-var',
+            type=str,
+            default=None,
+            help=(
+                'The name of an environment variable containing a key with which to auth to the Okta API.'
+                'Required if you are using the Okta intel module. Ignored otherwise.'
+            ),
+        )
         return parser
 
     def main(self, argv):
@@ -158,6 +175,12 @@ class CLI:
                 logger.warning("Neo4j username was provided but a password could not be found.")
         else:
             config.neo4j_password = None
+        # Okta config
+        if config.okta_org_id and config.okta_api_key_env_var:
+            logger.debug(f"Reading API key for Okta from environment variable {config.okta_api_key_env_var}")
+            config.okta_api_key = os.environ.get(config.okta_api_key_env_var)
+
+        # Run cartography
         try:
             return cartography.sync.run_with_config(self.sync, config)
         except KeyboardInterrupt:

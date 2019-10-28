@@ -36,6 +36,7 @@ setup(
         "google-api-python-client>=1.7.8",
         "oauth2client>=4.1.3",
         "marshmallow>=3.0.0rc7",
+        "okta>=0.0.4",
         "requests>=2.22.0",
     ],
     extras_require={
