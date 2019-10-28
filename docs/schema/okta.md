@@ -184,7 +184,11 @@ Representation of a Okta Application (https://developer.okta.com/docs/reference/
     ```
     (OktaUser)-[APPLICATION]->(OktaApplication)
     ```
+- OktaApplications have ReplyUris
 
+    ```
+    (ReplyUri)-[REPLYURI]->(OktaApplication)
+    ```
 ## OktaUserFactor
 
 Representation of Okta user authentication factors (https://developer.okta.com/docs/reference/api/factors/).
@@ -258,4 +262,23 @@ Representation of Okta administration roles. For more information, visit Okta do
 
     ```
     (OktaOrganization)-[RESOURCE]->(OktaAdministrationRole)
+    ```
+
+## Reply Uri
+
+Representation of Okta application ReplyUri. For more information, visit Okta documentation https://developer.okta.com/docs/reference/api/apps/
+
+| Field | Description |
+|-------|--------------|
+| uri | uri the app can send the reply to |
+| valid | is the DNS of the reply uri valid. Invalid replyuris can lead to oath phishing |
+| firstseen| Timestamp of when a sync job first discovered this node |
+| lastupdated |  Timestamp of the last time the node was updated |
+
+### Relationships
+
+ - OktaApplications have ReplyUris
+
+    ```
+    (ReplyUri)-[REPLYURI]->(OktaApplication)
     ```
