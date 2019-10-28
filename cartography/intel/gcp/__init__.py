@@ -7,10 +7,11 @@ from oauth2client.client import GoogleCredentials
 
 from cartography.intel.gcp import compute
 from cartography.intel.gcp import crm
+from cartography.intel.gcp import storage
 from cartography.util import run_analysis_job
 
 logger = logging.getLogger(__name__)
-Resources = namedtuple('Resources', 'crm_v1 crm_v2 compute')
+Resources = namedtuple('Resources', 'crm_v1 crm_v2 compute storage')
 
 
 def _get_crm_resource_v1(credentials):
@@ -45,6 +46,18 @@ def _get_compute_resource(credentials):
     return googleapiclient.discovery.build('compute', 'v1', credentials=credentials, cache_discovery=False)
 
 
+def _get_storage_resource(credentials):
+    """
+    Instantiates a Google Cloud Storage resource object to call the Storage API.
+    This is used to pull bucket metadata and IAM Policies
+    as well as list buckets in a specified project.
+    See https://cloud.google.com/storage/docs/json_api/.
+    :param credentials: The GoogleCredentials object
+    :return: A Storage resource object
+    """
+    return googleapiclient.discovery.build('storage', 'v1', credentials=credentials, cache_discovery=False)
+
+
 def _initialize_resources(credentials):
     """
     Create namedtuple of all resource objects necessary for GCP data gathering.
@@ -55,6 +68,7 @@ def _initialize_resources(credentials):
         crm_v1=_get_crm_resource_v1(credentials),
         crm_v2=_get_crm_resource_v2(credentials),
         compute=_get_compute_resource(credentials),
+        storage=_get_storage_resource(credentials),
     )
 
 
@@ -70,6 +84,7 @@ def _sync_single_project(neo4j_session, resources, project_id, gcp_update_tag, c
     :return: Nothing
     """
     compute.sync(neo4j_session, resources.compute, project_id, gcp_update_tag, common_job_parameters)
+    storage.sync_gcp_buckets(neo4j_session, resources.storage, project_id, gcp_update_tag, common_job_parameters)
 
 
 def _sync_multiple_projects(neo4j_session, resources, projects, gcp_update_tag, common_job_parameters):

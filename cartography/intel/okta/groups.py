@@ -82,11 +82,13 @@ def _get_okta_group_members(api_client, group_id):
 
 def transform_okta_group_list(okta_group_list):
     groups = []
+    groups_id = []
 
     for current in okta_group_list:
         groups.append(transform_okta_group(current))
+        groups_id.append(current.id)
 
-    return groups
+    return groups, groups_id
 
 
 def transform_okta_group(okta_group):
@@ -228,20 +230,25 @@ def _sync_okta_group_membership(neo4j_session, api_client, group_list_info, okta
         _load_okta_group_members(neo4j_session, group_id, members, okta_update_tag)
 
 
-def sync_okta_groups(neo4_session, okta_org_id, okta_update_tag, okta_api_key):
+def sync_okta_groups(neo4_session, okta_org_id, okta_update_tag, okta_api_key, sync_state):
     """
     Synchronize okta groups
     :param neo4_session: session with the Neo4j server
     :param okta_org_id: okta organization id
     :param okta_update_tag: The timestamp value to set our new Neo4j resources with
     :param okta_api_key: Okta API key
+    :param sync_state: Okta sync state
     :return: Nothing
     """
     logger.debug("Syncing Okta groups")
     api_client = create_api_client(okta_org_id, "/api/v1/groups", okta_api_key)
 
     okta_group_data = _get_okta_groups(api_client)
-    group_list_info = transform_okta_group_list(okta_group_data)
+    group_list_info, group_ids = transform_okta_group_list(okta_group_data)
+
+    # store result for later use
+    sync_state.groups = group_ids
+
     _load_okta_groups(neo4_session, okta_org_id, group_list_info, okta_update_tag)
 
     _sync_okta_group_membership(neo4_session, api_client, group_list_info, okta_update_tag)
