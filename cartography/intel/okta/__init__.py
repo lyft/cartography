@@ -2,8 +2,8 @@ import logging
 
 from okta.framework.OktaError import OktaError
 
-from cartography.intel.okta import awssaml
 from cartography.intel.okta import applications
+from cartography.intel.okta import awssaml
 from cartography.intel.okta import factors
 from cartography.intel.okta import groups
 from cartography.intel.okta import organization
@@ -51,7 +51,7 @@ def start_okta_ingestion(neo4j_session, config):
     factors.sync_users_factors(neo4j_session, config.okta_org_id, config.update_tag, config.okta_api_key, state)
     origins.sync_trusted_origins(neo4j_session, config.okta_org_id, config.update_tag, config.okta_api_key)
     awssaml.sync_okta_aws_saml(neo4j_session, config.okta_saml_role_regex, config.update_tag)
-    
+
     # need creds with permission
     # soft fail as some won't be able to get such high priv token
     # when we get the E0000006 error
