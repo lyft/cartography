@@ -258,7 +258,7 @@ def load_extensions(extensions, permissions, extension_permissions, session, upd
 
     extensions_permissions_cypher = """
     UNWIND {ExtensionPermissions} as extension_permission
-    MATCH (perm:ChromeExtensionPermission{name: extension_permission.permission}),
+    MATCH (perm:ChromeExtensionPermission{id: extension_permission.permission}),
     (ext:ChromeExtension{id:extension_permission.id})
     MERGE (ext)-[r:DECLARES]->(perm)
     ON CREATE SET
