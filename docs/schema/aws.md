@@ -52,22 +52,26 @@
   - [Relationships](#relationships-21)
 - [Endpoint::ELBListener](#endpointelblistener)
   - [Relationships](#relationships-22)
-- [Ip](#ip)
+- [Endpoint::ELBV2Listener](#endpointelbv2listener)
   - [Relationships](#relationships-23)
-- [IpRule](#iprule)
+- [Ip](#ip)
   - [Relationships](#relationships-24)
-- [IpRule::IpPermissionInbound](#ipruleippermissioninbound)
+- [IpRule](#iprule)
   - [Relationships](#relationships-25)
-- [LoadBalancer](#loadbalancer)
+- [IpRule::IpPermissionInbound](#ipruleippermissioninbound)
   - [Relationships](#relationships-26)
-- [NetworkInterface](#networkinterface)
+- [LoadBalancer](#loadbalancer)
   - [Relationships](#relationships-27)
-- [RDSInstance](#rdsinstance)
+- [LoadBalancerV2](#loadbalancerv2)
   - [Relationships](#relationships-28)
-- [S3Acl](#s3acl)
+- [NetworkInterface](#networkinterface)
   - [Relationships](#relationships-29)
-- [S3Bucket](#s3bucket)
+- [RDSInstance](#rdsinstance)
   - [Relationships](#relationships-30)
+- [S3Acl](#s3acl)
+  - [Relationships](#relationships-31)
+- [S3Bucket](#s3bucket)
+  - [Relationships](#relationships-32)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -850,6 +854,27 @@ Representation of an AWS Elastic Load Balancer [Listener](https://docs.aws.amazo
 	(LoadBalancer)-[ELB_LISTENER]->(ELBListener)
 	```
 
+## Endpoint::ELBV2Listener
+
+Representation of an AWS Elastic Load Balancer V2 [Listener](https://docs.aws.amazon.com/elasticloadbalancing/latest/APIReference/API_Listener.html).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| protocol | The protocol of this endpoint - One of `'HTTP''HTTPS''TCP''TLS''UDP''TCP_UDP'` |
+| port | The port of this endpoint |
+| targetgrouparn | The ARN of the Target Group, if the Action type is `forward`. |
+
+
+### Relationships
+
+- A ELBV2Listener is installed on a LoadBalancerV2.
+
+	```
+	(elbv2)-[r:ELBV2_LISTENER]->(ELBV2Listener)
+	```
+
 
 ## Ip
 
@@ -980,6 +1005,52 @@ Represents an AWS Elastic Load Balancer.  See [spec for details](https://docs.aw
 
 	```
 	(AWSDNSRecord, DNSRecord)-[DNS_POINTS_TO]->(LoadBalancer)
+	```
+
+## LoadBalancerV2
+
+Represents an Elastic Load Balancer V2 ([Application Load Balancer](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/introduction.html) or [Network Load Balancer](https://docs.aws.amazon.com/elasticloadbalancing/latest/network/introduction.html).)
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| scheme|  The type of load balancer.  If scheme is `internet-facing`, the load balancer has a public DNS name that resolves to a public IP address.  If scheme is `internal`, the load balancer has a public DNS name that resolves to a private IP address. |
+| name| The name of the load balancer|
+| **dnsname** | The DNS name of the load balancer. |
+| exposed_internet | The `exposed_internet` flag is set to `True` when the load balancer's `scheme` field is set to `internet-facing`.  This indicates that the load balancer has a public DNS name that resolves to a public IP address. |
+| **id** |  Currently set to the `dnsname` of the load balancer. |
+| type | Can be `application` or `network` |
+| region| The region of the load balancer |
+|createdtime | The date and time the load balancer was created. |
+|canonicalhostedzonenameid| The ID of the Amazon Route 53 hosted zone for the load balancer. |
+
+
+### Relationships
+
+
+- LoadBalancerV2's can be connected to EC2Instances and therefore expose them.
+
+	```
+	(LoadBalancerV2)-[EXPOSE]->(EC2Instance)
+	```
+
+- LoadBalancerV2's can be part of EC2SecurityGroups.
+
+	```
+	(LoadBalancerV2)-[MEMBER_OF_EC2_SECURITY_GROUP]->(EC2SecurityGroup)
+	```
+
+- LoadBalancerV2's can be part of EC2 Subnets
+
+	```
+	(LoadBalancerV2)-[SUBNET]->(EC2Subnet)
+	```
+
+- LoadBalancerV2's have [listeners](https://docs.aws.amazon.com/elasticloadbalancing/latest/APIReference/API_Listener.html):
+
+	```
+	(LoadBalancerV2)-[ELBV2_LISTENER]->(ELBV2Listener)
 	```
 
 ## NetworkInterface
