@@ -69,7 +69,10 @@ def get_extensions(crxcavator_api_key, crxcavator_base_url, extensions_list):
             details = get_extension_details(crxcavator_api_key, crxcavator_base_url, extension_id, version)
             if not details:
                 # we only have the name and version from group API, create minimal version
-                logger.debug(f"CRXcavator ingest - No results returned from report API for extension {extension_id} {version}")
+                logger.debug(
+                    f"CRXcavator ingest - No results returned from report API for "
+                    f"extension {extension_id} {version}",
+                )
                 details = {
                     'data': dict(
                         webstore={
@@ -179,7 +182,7 @@ def parse_permissions_dict(permissions_dict):
     for media in media_galleries:
         permissions.append(f"mediagalleries-{media}")
     if len(permissions) == 0:
-        # this is a case not currently handled, so just log it and do not ingest it’
+        # this is a case not currently handled, so just log it and do not ingest it
         permission = json.dumps(permissions_dict)
         logger.warning(f"CRXcavator ingest - Unknown permissions dict type {permission}")
     return permissions
