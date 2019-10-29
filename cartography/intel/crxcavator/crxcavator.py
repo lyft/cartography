@@ -69,7 +69,7 @@ def get_extensions(crxcavator_api_key, crxcavator_base_url, extensions_list):
             details = get_extension_details(crxcavator_api_key, crxcavator_base_url, extension_id, version)
             if not details:
                 # we only have the name and version from group API, create minimal version
-                logger.debug(f"No results returned from report API for extension {extension_id} {version}")
+                logger.debug(f"CRXcavator ingest - No results returned from report API for extension {extension_id} {version}")
                 details = {
                     'data': dict(
                         webstore={
@@ -79,7 +79,7 @@ def get_extensions(crxcavator_api_key, crxcavator_base_url, extensions_list):
                 }
             extensions_details.append(details)
         except exceptions.RequestException as e:
-            logger.info(f"API error retrieving details for extension {extension_id}", e)
+            logger.info(f"CRXcavator ingest - API error retrieving details for extension {extension_id}", e)
     return extensions_details
 
 
@@ -103,7 +103,7 @@ def transform_extensions(extension_details):
         version = extension['version']
         data = extension.get('data')
         if not data:
-            logger.warning(f'Could not retrieve details for extension {extension}')
+            logger.warning(f'CRXcavator ingest - Could not retrieve details for extension {extension}')
             continue
         risk = data.get('risk', {})
         webstore = data.get('webstore', {})
@@ -181,7 +181,7 @@ def parse_permissions_dict(permissions_dict):
     if len(permissions) == 0:
         # this is a case not currently handled, so do not ingest it
         permission = json.dumps(permissions_dict)
-        logger.warning(f"Unknown permissions dict type {permission}")
+        logger.warning(f"CRXcavator ingest - Unknown permissions dict type {permission}")
     return permissions
 
 
@@ -265,13 +265,13 @@ def load_extensions(extensions, permissions, extension_permissions, session, upd
     SET r.lastupdated = {UpdateTag}
     """
 
-    logger.info(f'Ingesting {len(extensions)} extensions')
+    logger.info(f'CRXcavator ingest - Ingesting {len(extensions)} extensions')
     session.run(extensions_ingestion_cypher, ExtensionsData=extensions, UpdateTag=update_tag)
 
-    logger.info(f'Ingesting {len(permissions)} Chrome extension permissions')
+    logger.info(f'CRXcavator ingest - Ingesting {len(permissions)} Chrome extension permissions')
     session.run(permissions_ingestion_cypher, Permissions=permissions, UpdateTag=update_tag)
 
-    logger.info(f'Ingesting {len(extension_permissions)} extension to permission links')
+    logger.info(f'CRXcavator ingest - Ingesting {len(extension_permissions)} extension to permission links')
     session.run(extensions_permissions_cypher, ExtensionPermissions=extension_permissions, UpdateTag=update_tag)
 
 
@@ -337,9 +337,9 @@ def load_user_extensions(users, extensions_by_user, session, update_tag):
     SET r.lastupdated = {UpdateTag}
     """
 
-    logger.info(f'Ingesting {len(users)} users')
+    logger.info(f'CRXcavator ingest - Ingesting {len(users)} users')
     session.run(user_ingestion_cypher, Users=users, UpdateTag=update_tag)
-    logger.info(f'Ingesting {len(extensions_by_user)} user->extension relationships')
+    logger.info(f'CRXcavator ingest - Ingesting {len(extensions_by_user)} user->extension relationships')
     session.run(extension_ingestion_cypher, ExtensionsUsers=extensions_by_user, UpdateTag=update_tag)
 
 
