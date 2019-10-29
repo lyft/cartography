@@ -180,6 +180,7 @@ def parse_permissions_dict(permissions_dict):
         permissions.append(f"mediagalleries-{media}")
     if len(permissions) == 0:
         # this is a case not currently handled, so do not ingest it
+        permission = json.dumps(permissions_dict)
         logger.warning(f"Unknown permissions dict type {permission}")
     return permissions
 
