@@ -69,7 +69,10 @@ def get_extensions(crxcavator_api_key, crxcavator_base_url, extensions_list):
             details = get_extension_details(crxcavator_api_key, crxcavator_base_url, extension_id, version)
             if not details:
                 # we only have the name and version from group API, create minimal version
-                logger.debug(f"No results returned from report API for extension {extension_id} {version}")
+                logger.debug(
+                    f"CRXcavator ingest - No results returned from report API for "
+                    f"extension {extension_id} {version}",
+                )
                 details = {
                     'data': dict(
                         webstore={
@@ -79,7 +82,7 @@ def get_extensions(crxcavator_api_key, crxcavator_base_url, extensions_list):
                 }
             extensions_details.append(details)
         except exceptions.RequestException as e:
-            logger.info(f"API error retrieving details for extension {extension_id}", e)
+            logger.info(f"CRXcavator ingest - API error retrieving details for extension {extension_id}", e)
     return extensions_details
 
 
@@ -87,22 +90,43 @@ def transform_extensions(extension_details):
     """
     Transforms the raw extensions JSON from the API into a list of extensions data
     :param extension_details:  List containing the extension details
-    :return: List containing extension info for ingestion
+    :return extension: List containing extension info for ingestion
+    :return permissions: Unique list of permissions returned from crxcavator
+    :return extension_permissions: Dictionary linking extensions to permissions
     """
     # the JSON returned from the CRXcavator API does not return well formatted objects
     # instead, each object is named after it's key, making enumeration more difficult
     # will build a cleaner object for import into graph
 
     extensions = []
+    permissions_set = set()
+    extensions_permissions = []
     for extension in extension_details:
         extension_id = extension['extension_id']
         version = extension['version']
         data = extension.get('data')
         if not data:
-            logger.warning(f'Could not retrieve details for extension {extension}')
+            logger.warning(f'CRXcavator ingest - Could not retrieve details for extension {extension}')
             continue
         risk = data.get('risk', {})
         webstore = data.get('webstore', {})
+        manifest = data.get('manifest', {})
+        permissions = manifest.get('permissions', {})
+        for permission in permissions:
+            if type(permission) is dict:
+                parsed_permissions = parse_permissions_dict(permission)
+                permissions_set.update(parsed_permissions)
+                for sub_permission in parsed_permissions:
+                    extensions_permissions.append({
+                        'id': f"{extension_id}|{version}",
+                        'permission': sub_permission,
+                    })
+                continue
+            permissions_set.add(permission)
+            extensions_permissions.append({
+                'id': f"{extension_id}|{version}",
+                'permission': permission,
+            })
         extensions.append({
             'id': f"{extension_id}|{version}",
             'extension_id': extension_id,
@@ -134,7 +158,34 @@ def transform_extensions(extension_details):
             'price': webstore.get('price'),
             'report_link': f"https://crxcavator.io/report/{extension_id}/{version}",
         })
-    return extensions
+    return extensions, list(permissions_set), extensions_permissions
+
+
+def parse_permissions_dict(permissions_dict):
+    """
+    Parses the possible complex permissions objects into a list of objects
+    Parsing cases based on results from crxcavator API as of October 2019
+    :param permissions_dict: a dict object from the permissions key
+    :return: a list of individual permissions
+    """
+    permissions = []
+    usb_devices = permissions_dict.get('usbDevices', [])
+    for device in usb_devices:
+        permissions.append(f"usbdevice-{device.get('productId', 'none')}-{device.get('vendorId', 'none')}")
+    filesystem = permissions_dict.get('fileSystem', [])
+    for filesystem_permission in filesystem:
+        permissions.append(f"filesystem-{filesystem_permission}")
+    socket = permissions_dict.get('socket', [])
+    for socket_permission in socket:
+        permissions.append(f"socket-{socket_permission}")
+    media_galleries = permissions_dict.get('mediaGalleries', [])
+    for media in media_galleries:
+        permissions.append(f"mediagalleries-{media}")
+    if len(permissions) == 0:
+        # this is a case not currently handled, so just log it and do not ingest it
+        permission = json.dumps(permissions_dict)
+        logger.warning(f"CRXcavator ingest - Unknown permissions dict type {permission}")
+    return permissions
 
 
 def get_risk_data(data_dict, key):
@@ -149,15 +200,17 @@ def get_risk_data(data_dict, key):
     return data_score
 
 
-def load_extensions(extensions, session, update_tag):
+def load_extensions(extensions, permissions, extension_permissions, session, update_tag):
     """
     Ingests the extension details into Neo4J
     :param extensions: List of extension data to load to Neo4J
+    :param permissions: unique list of extension permissions
+    :param extension_permissions: Dictionary of extension-permission pairings
     :param session: Neo4J session object for server communication
     :param update_tag: Timestamp used to determine data freshness
     :return: None
     """
-    ingestion_cypher = """
+    extensions_ingestion_cypher = """
     UNWIND {ExtensionsData} as extension
     MERGE (e:ChromeExtension{id: extension.id})
     ON CREATE SET
@@ -195,8 +248,34 @@ def load_extensions(extensions, session, update_tag):
     e.lastupdated = {UpdateTag}
     """
 
-    logger.info(f'Ingesting {len(extensions)} extensions')
-    session.run(ingestion_cypher, ExtensionsData=extensions, UpdateTag=update_tag)
+    permissions_ingestion_cypher = """
+    UNWIND {Permissions} as permission
+    MERGE (e:ChromeExtensionPermission{id: permission})
+    ON CREATE SET
+    e.firstseen = timestamp()
+    SET
+    e.name = permission,
+    e.lastupdated = {UpdateTag}
+    """
+
+    extensions_permissions_cypher = """
+    UNWIND {ExtensionPermissions} as extension_permission
+    MATCH (perm:ChromeExtensionPermission{id: extension_permission.permission}),
+    (ext:ChromeExtension{id:extension_permission.id})
+    MERGE (ext)-[r:DECLARES]->(perm)
+    ON CREATE SET
+    r.firstseen = timestamp()
+    SET r.lastupdated = {UpdateTag}
+    """
+
+    logger.info(f'CRXcavator ingest - Ingesting {len(extensions)} extensions')
+    session.run(extensions_ingestion_cypher, ExtensionsData=extensions, UpdateTag=update_tag)
+
+    logger.info(f'CRXcavator ingest - Ingesting {len(permissions)} Chrome extension permissions')
+    session.run(permissions_ingestion_cypher, Permissions=permissions, UpdateTag=update_tag)
+
+    logger.info(f'CRXcavator ingest - Ingesting {len(extension_permissions)} extension to permission links')
+    session.run(extensions_permissions_cypher, ExtensionPermissions=extension_permissions, UpdateTag=update_tag)
 
 
 def transform_user_extensions(user_extension_json):
@@ -261,9 +340,9 @@ def load_user_extensions(users, extensions_by_user, session, update_tag):
     SET r.lastupdated = {UpdateTag}
     """
 
-    logger.info(f'Ingesting {len(users)} users')
+    logger.info(f'CRXcavator ingest - Ingesting {len(users)} users')
     session.run(user_ingestion_cypher, Users=users, UpdateTag=update_tag)
-    logger.info(f'Ingesting {len(extensions_by_user)} user->extension relationships')
+    logger.info(f'CRXcavator ingest - Ingesting {len(extensions_by_user)} user->extension relationships')
     session.run(extension_ingestion_cypher, ExtensionsUsers=extensions_by_user, UpdateTag=update_tag)
 
 
@@ -280,6 +359,9 @@ def sync_extensions(neo4j_session, common_job_parameters, crxcavator_api_key, cr
     user_extensions_json = get_users_extensions(crxcavator_api_key, crxcavator_base_url)
     users, extensions_list, user_extensions = transform_user_extensions(user_extensions_json)
     extension_details = get_extensions(crxcavator_api_key, crxcavator_base_url, extensions_list)
-    extensions = transform_extensions(extension_details)
-    load_extensions(extensions, neo4j_session, common_job_parameters['UPDATE_TAG'])
+    extensions, permissions_list, extension_permissions = transform_extensions(extension_details)
+    load_extensions(
+        extensions, permissions_list, extension_permissions,
+        neo4j_session, common_job_parameters['UPDATE_TAG'],
+    )
     load_user_extensions(users, user_extensions, neo4j_session, common_job_parameters['UPDATE_TAG'])

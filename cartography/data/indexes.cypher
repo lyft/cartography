@@ -14,6 +14,7 @@ CREATE INDEX ON :AWSVpc(id);
 CREATE INDEX ON :AccountAccessKey(accesskeyid);
 CREATE INDEX ON :AutoScalingGroup(arn);
 CREATE INDEX ON :ChromeExtension(id);
+CREATE INDEX ON :ChromeExtensionPermission(id);
 CREATE INDEX ON :DBGroup(name);
 CREATE INDEX ON :DNSRecord(id);
 CREATE INDEX ON :DNSZone(name);
