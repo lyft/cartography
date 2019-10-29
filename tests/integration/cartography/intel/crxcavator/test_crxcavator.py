@@ -8,6 +8,8 @@ TEST_UPDATE_TAG = 123456789
 def _ensure_local_neo4j_has_test_extensions_data(neo4j_session):
     cartography.intel.crxcavator.crxcavator.load_extensions(
         tests.data.crxcavator.crxcavator.TRANSFORMED_EXTENSIONS_DATA,
+        tests.data.crxcavator.crxcavator.TRANSFORMED_PERMISSIONS_DATA,
+        tests.data.crxcavator.crxcavator.TRANSFORMED_EXTENSION_PERMISSIONS_DATA,
         neo4j_session,
         TEST_UPDATE_TAG,
     )
@@ -27,9 +29,12 @@ def test_transform_and_load_extensions(neo4j_session):
     Test that we can correctly transform and load ChromeExtension nodes to Neo4j.
     """
     extension_res = tests.data.crxcavator.crxcavator.REPORT_RESPONSE
-    extension_list = cartography.intel.crxcavator.crxcavator.transform_extensions(extension_res)
+    extension_list, permissions, extension_permissions = \
+        cartography.intel.crxcavator.crxcavator.transform_extensions(extension_res)
     cartography.intel.crxcavator.crxcavator.load_extensions(
         extension_list,
+        permissions,
+        extension_permissions,
         neo4j_session,
         TEST_UPDATE_TAG,
     )
@@ -105,7 +110,6 @@ def test_transform_and_load_extensions(neo4j_session):
             n['ext.report_link'],
         ) for n in nodes
     ])
-    print(actual_nodes)
     expected_nodes = list([
         (
             expected_extension_id,
@@ -142,12 +146,43 @@ def test_transform_and_load_extensions(neo4j_session):
     assert actual_nodes == expected_nodes
 
 
+def test_permission_to_extension(neo4j_session):
+    """
+    Ensure that permissions are connected to extensions.
+    """
+    _ensure_local_neo4j_has_test_extensions_data(neo4j_session)
+    query = """
+    MATCH(permission:ChromeExtensionPermission)<-[:DECLARES]-(ext:ChromeExtension{id:{ExtensionId}})
+    RETURN permission.name, ext.id, ext.name
+    """
+    expected_extension_id = 'f06981cbc72a3c6e2e9e736cbdaef4865a4571bc|1.0'
+    nodes = neo4j_session.run(
+        query,
+        ExtensionId=expected_extension_id,
+    )
+    actual_nodes = {
+        (
+            n['permission.name'],
+            n['ext.id'],
+            n['ext.name'],
+        ) for n in nodes
+    }
+
+    expected_nodes = {
+        (
+            '*://*/*',
+            'f06981cbc72a3c6e2e9e736cbdaef4865a4571bc|1.0',
+            'CartographyIntegrationTest',
+        ),
+    }
+    assert actual_nodes == expected_nodes
+
+
 def test_transform_and_load_user_extensions(neo4j_session):
     """
     Ensure we can transform and load users and extension mapping.
     """
     users_res = tests.data.crxcavator.crxcavator.USER_RESPONSE
-    type(users_res)
     users_list, extensions_list, user_extensions_list = \
         cartography.intel.crxcavator.crxcavator.transform_user_extensions(users_res)
     cartography.intel.crxcavator.crxcavator.load_user_extensions(

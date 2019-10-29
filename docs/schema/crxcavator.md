@@ -4,17 +4,14 @@
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
-- [Table of contents](#table-of-contents)
 - [GSuiteUser](#gsuiteuser)
   - [Relationships](#relationships)
+- [ChromeExtension](#chromeextension)
   - [Relationships](#relationships-1)
+- [ChromeExtensionPermission](#chromeextensionpermission)
+  - [Relationships](#relationships-2)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
-
-## Table of contents
-
-- [GSuiteUser](#gsuiteuser)
-- [ChromeExtension](#chromeextension)
 
 ## GSuiteUser
 
@@ -36,7 +33,7 @@ Placeholder representation of a single G Suite [user object](https://developers.
     (GSuiteUser)-[INSTALLS]->(ChromeExtension)
     ```
 
- ## ChromeExtension
+## ChromeExtension
 
  Representation of a CRXcavator Chrome Extension [Report](https://crxcavator.io/apidocs#tag/report).
 
@@ -44,7 +41,7 @@ Placeholder representation of a single G Suite [user object](https://developers.
 |-------|--------------|
 | firstseen| Timestamp of when a sync job first discovered this node  |
 | lastupdated |  Timestamp of the last time the node was updated |
-| id | The combined extension name and version e.g. "Docs|1.0" |
+| id | The combined extension name and version e.g. "Docs&#124;1.0" |
 | extension_id | CRXcavator id for extension. |
 | version | The versions of the extension in this report |
 | risk_total | CRXcavator risk score for the extension |
@@ -74,10 +71,31 @@ Placeholder representation of a single G Suite [user object](https://developers.
 | price | Extension price in webstore if applicable |
 | report_link | URL of full extension report on crxcavator.io
 
- ### Relationships
+### Relationships
 
-- GSuiteUsers install ChromeExternsions.
+- GSuiteUsers install ChromeExtensions.
 
     ```
     (GSuiteUser)-[INSTALLS]->(ChromeExtension)
+    ```
+
+
+## ChromeExtensionPermission
+
+Individual permission entries from the extension manifest file. This information is returned from the manifest object in the [Report](https://crxcavator.io/apidocs#tag/report) API. These permissions are defined in the [Chrome documentation](https://developer.chrome.com/apps/declare_permissions#manifest).
+
+
+| Field | Description |
+|-------|--------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| id | The permission name" |
+| name | The specific permission declared in the manifest
+
+### Relationships
+
+- ChromeExtension declares ChromeExtensionPermission.
+
+    ```
+    (ChromeExtension)-[DECLARES]->(ChromeExtensionPermission)
     ```
