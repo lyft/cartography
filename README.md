@@ -51,7 +51,7 @@ You can learn more about the story behind Cartography in our [presentation at BS
 
 ## Installation
 
-Time to set up the server that will run Cartography.  Cartography _should_ work on both Linux and Windows servers, but bear in mind we've only tested it in Linux so far.  Cartography requires Python 3.4 or greater.
+Time to set up the server that will run Cartography.  Cartography _should_ work on both Linux and Windows servers, but bear in mind we've only tested it in Linux so far.  Cartography requires Python 3.6 or greater.
 
 1. **Get and install the Neo4j graph database** on your server.
 
