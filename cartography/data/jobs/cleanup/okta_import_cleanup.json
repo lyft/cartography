@@ -67,18 +67,6 @@
                   "__comment__": "Delete stale OktaOrganization"
             },
             {
-                  "query": "MATCH (:AWSRole)<-[r:ALLOWED_BY]-(:OktaGroup) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE r return COUNT(*) as TotalCompleted",
-                  "iterative": true,
-                  "iterationsize": 100,
-                  "__comment__": "Delete Stale OktaGroup to AWSRole ALLOWED_BY relationship"
-            },
-            {
-                  "query": "MATCH (:AWSRole)<-[r:CAN_ASSUME_ROLE]-(:Human) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE r return COUNT(*) as TotalCompleted",
-                  "iterative": true,
-                  "iterationsize": 100,
-                  "__comment__": "Delete Stale Human to AWSRole CAN_ASSUME_ROLE relationship"
-            },
-            {
                   "query": "MATCH (n:ReplyUri) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
                   "iterative": true,
                   "iterationsize": 100,
@@ -89,6 +77,18 @@
                   "iterative": true,
                   "iterationsize": 100,
                   "__comment__": "Delete Stale ReplyUri relationships"
+            },
+            {
+                  "query": "MATCH (:AWSRole)<-[r:ALLOWED_BY]-(:OktaGroup) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE r return COUNT(*) as TotalCompleted",
+                  "iterative": true,
+                  "iterationsize": 100,
+                  "__comment__": "Delete Stale OktaGroup to AWSRole ALLOWED_BY relationship"
+            },
+            {
+                  "query": "MATCH (:AWSRole)<-[r:CAN_ASSUME_ROLE]-(:Human) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE r return COUNT(*) as TotalCompleted",
+                  "iterative": true,
+                  "iterationsize": 100,
+                  "__comment__": "Delete Stale Human to AWSRole CAN_ASSUME_ROLE relationship"
             }
       ],
       "name": "Okta intel module cleanup"
