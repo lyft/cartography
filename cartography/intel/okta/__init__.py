@@ -47,7 +47,10 @@ def start_okta_ingestion(neo4j_session, config):
     organization.create_okta_organization(neo4j_session, config.okta_org_id, config.update_tag)
     users.sync_okta_users(neo4j_session, config.okta_org_id, config.update_tag, config.okta_api_key, state)
     groups.sync_okta_groups(neo4j_session, config.okta_org_id, config.update_tag, config.okta_api_key, state)
-    applications.sync_okta_applications(neo4j_session, config.okta_org_id, config.update_tag, config.okta_api_key)
+    applications.sync_okta_applications(
+        neo4j_session, config.okta_org_id,
+        config.update_tag, config.okta_api_key, config.okta_resolve_replyuris,
+    )
     factors.sync_users_factors(neo4j_session, config.okta_org_id, config.update_tag, config.okta_api_key, state)
     origins.sync_trusted_origins(neo4j_session, config.okta_org_id, config.update_tag, config.okta_api_key)
     awssaml.sync_okta_aws_saml(neo4j_session, config.okta_saml_role_regex, config.update_tag)

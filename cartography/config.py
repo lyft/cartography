@@ -23,6 +23,10 @@ class Config:
     :param okta_org_id: Okta organization id. Optional.
     :type okta_api_key: str
     :param okta_api_key: Okta API key. Optional.
+    :type okta_saml_role_regex: str
+    :param okta_saml_role_regex: Okta Group to role Regex. Optional.
+    :type okta_resolve_reply_uri: bool
+    :param okta_resolve_reply_uri: Resolve DNS of reply uris. Optional.
     """
 
     def __init__(
@@ -36,6 +40,7 @@ class Config:
         okta_org_id=None,
         okta_api_key=None,
         okta_saml_role_regex=None,
+        okta_resolve_reply_uri=None,
     ):
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user
@@ -46,3 +51,4 @@ class Config:
         self.okta_org_id = okta_org_id
         self.okta_api_key = okta_api_key
         self.okta_saml_role_regex = okta_saml_role_regex
+        self.okta_resolve_reply_uri = okta_resolve_reply_uri

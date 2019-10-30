@@ -273,7 +273,7 @@ Representation of Okta application ReplyUri. For more information, visit Okta do
 | Field | Description |
 |-------|--------------|
 | uri | uri the app can send the reply to |
-| valid | is the DNS of the reply uri valid. Invalid replyuris can lead to oath phishing |
+| valid | is the DNS of the reply uri valid. Invalid replyuris can lead to oath phishing. This field is only present if DNS resolution was performed using the --okta-resolve-replyuris command line switch|
 | firstseen| Timestamp of when a sync job first discovered this node |
 | lastupdated |  Timestamp of the last time the node was updated |
 
