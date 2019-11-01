@@ -95,18 +95,10 @@ def test_application_with_activated_none():
 
 def test_application_with_reply_uris():
     app = json.loads(APPLICATION_WITH_REDITECT_URIS)
-    result = transform_okta_application_extract_replyurls(app, False)
+    result = transform_okta_application_extract_replyurls(app)
 
     assert len(result) == 2
     assert result[0]["uri"] == "https://domain.net/auth/oauth2/callback1"
-
-def test_application_with_reply_uris_with_validation():
-    app = json.loads(APPLICATION_WITH_REDITECT_URIS)
-    result = transform_okta_application_extract_replyurls(app, True)
-
-    assert len(result) == 2
-    assert result[0]["valid"]
-
 
 
 def test_application_assigned_users():
