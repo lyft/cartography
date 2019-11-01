@@ -1,9 +1,7 @@
 # Okta intel module - Applications
 import json
 import logging
-import socket
 from datetime import datetime
-from urllib.parse import urlparse
 
 from okta.framework.OktaError import OktaError
 
@@ -216,20 +214,11 @@ def transform_okta_application(okta_application):
 def transform_okta_application_extract_replyurls(okta_application):
     """
     Extracts the reply uri information from an okta app
-    and determines if the dns of the reply url is valid
     """
-    uris = []
+
     if "oauthClient" in okta_application["settings"]:
         if "redirect_uris" in okta_application["settings"]["oauthClient"]:
-            for uri in okta_application["settings"]["oauthClient"]["redirect_uris"]:
-                netloc = urlparse(uri).netloc
-                try:
-                    socket.gethostbyname(netloc)
-                    resolved = True
-                except Exception:
-                    resolved = False
-                uris.append({"uri": uri, "valid": resolved})
-            return uris
+            return [uri for uri in okta_application["settings"]["oauthClient"]["redirect_uris"]]
     return None
 
 
@@ -342,10 +331,9 @@ def _load_application_reply_urls(neo4j_session, app_id, reply_urls, okta_update_
     MATCH (app:OktaApplication{id: {APP_ID}})
     WITH app
     UNWIND {URL_LIST} as url_list
-    MERGE (uri:ReplyUri{uri: url_list.uri})
+    MERGE (uri:ReplyUri{uri: url_list})
     ON CREATE SET uri.firstseen = timestamp()
-    SET uri.valid = url_list.valid,
-    uri.lastupdated = {okta_update_tag}
+    SET uri.lastupdated = {okta_update_tag}
     WITH app, uri
     MERGE (uri)<-[r:REPLYURI]-(app)
     ON CREATE SET r.firstseen = timestamp()

@@ -98,7 +98,7 @@ def test_application_with_reply_uris():
     result = transform_okta_application_extract_replyurls(app)
 
     assert len(result) == 2
-    assert result[0]["uri"] == "https://domain.net/auth/oauth2/callback1"
+    assert result[0] == "https://domain.net/auth/oauth2/callback1"
 
 
 def test_application_assigned_users():
