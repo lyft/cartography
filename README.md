@@ -104,7 +104,6 @@ Time to set up the server that will run Cartography.  Cartography _should_ work 
     1. Use the cli --okta-org-id parameter with the organization id you want to query. The organization id is the first part of the Okta url for your organization.
 	1. If you are using okta to administer AWS as a SAML provider(https://saml-doc.okta.com/SAML_Docs/How-to-Configure-SAML-2.0-for-Amazon-Web-Service#scenarioC) the the module will automatically match OktaGroups to the AWSRole they control access for.
 		- If you are using a regex other than the standard okta group to role regex `^aws\#\S+\#(?{{role}}[\w\-]+)\#(?{{accountid}}\d+)$` then you can specify your regex with the --okta-saml-role-regex parameter.
-	1. Use the cli switch --okta-resolve-replyuris to perform DNS resolution on the reply uris
 
 1. **Get and run Cartography**
 

@@ -152,14 +152,6 @@ class CLI:
                 'It the regex must contain the {{role}} and {{accountid}} tags'
             ),
         )
-        parser.add_argument(
-            '--okta-resolve-replyuris',
-            action='store_true',
-            help=(
-                'Perform a DNS lookup on the replyuris. Reply uris that no longer resolve are suseptable to '
-                'Redirect URL manipulation https://www.oauth.com/oauth2-servers/authorization/security-considerations/'
-            ),
-        )
         return parser
 
     def main(self, argv):

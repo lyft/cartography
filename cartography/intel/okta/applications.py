@@ -213,7 +213,7 @@ def transform_okta_application(okta_application):
     return app_props
 
 
-def transform_okta_application_extract_replyurls(okta_application, resolve_reply_uris):
+def transform_okta_application_extract_replyurls(okta_application):
     """
     Extracts the reply uri information from an okta app
     and determines if the dns of the reply url is valid
@@ -222,14 +222,12 @@ def transform_okta_application_extract_replyurls(okta_application, resolve_reply
     if "oauthClient" in okta_application["settings"]:
         if "redirect_uris" in okta_application["settings"]["oauthClient"]:
             for uri in okta_application["settings"]["oauthClient"]["redirect_uris"]:
-                resolved = None
-                if resolve_reply_uris:
-                    netloc = urlparse(uri).netloc
-                    try:
-                        socket.gethostbyname(netloc)
-                        resolved = True
-                    except Exception:
-                        resolved = False
+                netloc = urlparse(uri).netloc
+                try:
+                    socket.gethostbyname(netloc)
+                    resolved = True
+                except Exception:
+                    resolved = False
                 uris.append({"uri": uri, "valid": resolved})
             return uris
     return None
@@ -362,7 +360,7 @@ def _load_application_reply_urls(neo4j_session, app_id, reply_urls, okta_update_
     )
 
 
-def sync_okta_applications(neo4j_session, okta_org_id, okta_update_tag, okta_api_key, resolve_reply_uris):
+def sync_okta_applications(neo4j_session, okta_org_id, okta_update_tag, okta_api_key):
     """
     Sync okta application
     :param neo4j_session: session from the Neo4j server
@@ -389,5 +387,5 @@ def sync_okta_applications(neo4j_session, okta_org_id, okta_update_tag, okta_api
         group_list = transform_application_assigned_groups_list(group_list_data)
         _load_application_group(neo4j_session, app_id, group_list, okta_update_tag)
 
-        reply_urls = transform_okta_application_extract_replyurls(app, resolve_reply_uris)
+        reply_urls = transform_okta_application_extract_replyurls(app)
         _load_application_reply_urls(neo4j_session, app_id, reply_urls, okta_update_tag)
