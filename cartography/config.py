@@ -23,6 +23,8 @@ class Config:
     :param okta_org_id: Okta organization id. Optional.
     :type okta_api_key: str
     :param okta_api_key: Okta API key. Optional.
+    :type okta_saml_role_regex: str
+    :param okta_saml_role_regex: The regex used to map okta groups to aws roles. Optional.
     """
 
     def __init__(
