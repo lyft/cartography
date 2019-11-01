@@ -218,7 +218,7 @@ def transform_okta_application_extract_replyurls(okta_application):
 
     if "oauthClient" in okta_application["settings"]:
         if "redirect_uris" in okta_application["settings"]["oauthClient"]:
-            return [uri for uri in okta_application["settings"]["oauthClient"]["redirect_uris"]]
+            return okta_application["settings"]["oauthClient"]["redirect_uris"]
     return None
 
 
