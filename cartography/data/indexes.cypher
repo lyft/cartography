@@ -62,6 +62,7 @@ CREATE INDEX ON :OktaOrganization(id);
 CREATE INDEX ON :OktaUser(id);
 CREATE INDEX ON :OktaUser(email);
 CREATE INDEX ON :OktaGroup(id);
+CREATE INDEX ON :OktaGroup(name);
 CREATE INDEX ON :OktaApplication(id);
 CREATE INDEX ON :OktaUserFactor(id);
 CREATE INDEX ON :OktaTrustedOrigin(id);
@@ -69,7 +70,7 @@ CREATE INDEX ON: OktaAdministrationRole(id);
 CREATE INDEX ON :PublicIpAddress(ip);
 CREATE INDEX ON :RDSInstance(db_instance_identifier);
 CREATE INDEX ON :RDSInstance(id);
-CREATE INDEX ON :ReplyUri(uri)
+CREATE INDEX ON :ReplyUri(id)
 CREATE INDEX ON :S3Acl(id);
 CREATE INDEX ON :S3Bucket(name);
 CREATE INDEX ON :User(arn);
