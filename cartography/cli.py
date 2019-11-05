@@ -149,7 +149,7 @@ class CLI:
                 'The regex used to map okta groups to aws roles when using okta as a SAML provider.'
                 'The regex is the one entered in Step 5: Enabling Group Based Role Mapping in Okta'
                 'https://saml-doc.okta.com/SAML_Docs/How-to-Configure-SAML-2.0-for-Amazon-Web-Service#c-step5'
-                'It the regex must contain the {{role}} and {{accountid}} tags'
+                'The regex must contain the {{role}} and {{accountid}} tags'
             ),
         )
         return parser
