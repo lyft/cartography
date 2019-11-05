@@ -42,12 +42,6 @@ REPORT_RESPONSE = [{
                     'type': 'Extension',
                     'price': '',
                 },
-            'manifest':
-                {
-                    'permissions': [
-                        '*://*/*',
-                    ],
-                },
         },
     'extension_id': 'f06981cbc72a3c6e2e9e736cbdaef4865a4571bc',
         'version': '1.0',
@@ -84,15 +78,6 @@ TRANSFORMED_EXTENSIONS_DATA = [
         'type': 'Extension',
         'price': '',
         'report_link': 'https://crxcavator.io/report/f06981cbc72a3c6e2e9e736cbdaef4865a4571bc/1.0',
-    },
-]
-
-TRANSFORMED_PERMISSIONS_DATA = ['*://*/*']
-
-TRANSFORMED_EXTENSION_PERMISSIONS_DATA = [
-    {
-        'id': 'f06981cbc72a3c6e2e9e736cbdaef4865a4571bc|1.0',
-        'permission': '*://*/*',
     },
 ]
 
