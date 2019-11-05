@@ -225,6 +225,10 @@ the GCP VPC example here: https://github.com/lyft/cartography/blob/0652c2b6dede5
 - Add integration tests to  `tests/integration/cartography/intel`.  See this [example](https://github.com/lyft/cartography/blob/828ed600f2b14adae9d0b78ef82de0acaf24b86a/tests/integration/cartography/intel/gcp/test_compute.py).
   These tests assume that you have neo4j running at localhost:7687 with no password, and ensure that nodes loaded to the
   graph match your mock data.
+  
+## Configuration and credential management
+
+- 
 
 ## Other
 
