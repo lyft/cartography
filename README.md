@@ -59,55 +59,57 @@ Time to set up the server that will run Cartography.  Cartography _should_ work 
 
 			⚠️ At this time we run our automated tests on Neo4j version 3.5.\*.  Other versions may work but are not explicitly supported. ⚠️
 
-	2. [Install](https://neo4j.com/docs/operations-manual/current/installation/) Neo4j on the server you will run Cartography on.
+	1. [Install](https://neo4j.com/docs/operations-manual/current/installation/) Neo4j on the server you will run Cartography on.
 
-2. If you're an AWS user, **prepare your AWS account(s)**
+1. If you're an AWS user, **prepare your AWS account(s)**
 
 	- **If you only have a single AWS account**
 
 		1. Set up an AWS identity (user, group, or role) for Cartography to use.  Ensure that this identity has the built-in AWS [SecurityAudit policy](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_job-functions.html#jf_security-auditor) (arn:aws:iam::aws:policy/SecurityAudit) attached.  This policy grants access to read security config metadata.
-		2. Set up AWS credentials to this identity on your server, using a `config` and 	`credential` file.  For details, see AWS' [official guide](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html).
+		1. Set up AWS credentials to this identity on your server, using a `config` and 	`credential` file.  For details, see AWS' [official guide](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html).
 
  	- **If you want to pull from multiple AWS accounts**, see [here](#multiple-aws-account-setup).
 
- 3. If you're a GCP user, **prepare your GCP credential(s)**
+ 1. If you're a GCP user, **prepare your GCP credential(s)**
 
     1. Create an identity - either a User Account or a Service Account - for Cartography to run as
-    2. Ensure that this identity has the [securityReviewer](https://cloud.google.com/iam/docs/understanding-roles) role attached to it.
-    3. Ensure that the machine you are running Cartography on can authenticate to this identity.
+    1. Ensure that this identity has the [securityReviewer](https://cloud.google.com/iam/docs/understanding-roles) role attached to it.
+    1. Ensure that the machine you are running Cartography on can authenticate to this identity.
         - **Method 1**: You can do this by setting your `GOOGLE_APPLICATION_CREDENTIALS` environment variable to point to a json file containing your credentials.  As per SecurityCommonSense™️, please ensure that only the user account that runs Cartography has read-access to this sensitive file.
         - **Method 2**: If you are running Cartography on a GCE instance or other GCP service, you can make use of the credential management provided by the default service accounts on these services.  See the [official docs](https://cloud.google.com/docs/authentication/production) on Application Default Credentials for more details.
 
-4. If you're a CRXcavator user, **prepare your CRXcavator API key**
+1. If you're a CRXcavator user, **prepare your CRXcavator API key**
 
     1. Generate an API key from your CRXcavator [user page](https://crxcavator.io/user/settings#)
-    2. Populate the following environment variables in the shell running Cartography
+    1. Populate the following environment variables in the shell running Cartography
         1. CRXCAVATOR_URL - the full URL to the CRXcavator API. https://api.crxcavator.io/v1 as of 07/09/19
-        2. CREDENTIALS_CRXCAVATOR_API_KEY - your API key generated in the previous step. Note this is a credential and should be stored in an appropriate secret store to be populated securely into your runtime environment.
-    3. If the credentials are configured, the CRXcavator module will run automatically on the next sync
+        1. CREDENTIALS_CRXCAVATOR_API_KEY - your API key generated in the previous step. Note this is a credential and should be stored in an appropriate secret store to be populated securely into your runtime environment.
+    1. If the credentials are configured, the CRXcavator module will run automatically on the next sync
 
-5.  If you're using GSuite, **prepare your GSuite Credential**
+1.  If you're using GSuite, **prepare your GSuite Credential**
 
     Ingesting GSuite Users and Groups utilizes the [Google Admin SDK](https://developers.google.com/admin-sdk/).
 
     1. [Enable Google API access](https://support.google.com/a/answer/60757?hl=en)
-    2. Create a new G Suite user account and accept the Terms of Service. This account will be used as the domain-wide delegated access.
-    3. [Perform G Suite Domain-Wide Delegation of Authority](https://developers.google.com/admin-sdk/directory/v1/guides/delegation)
-    4.  Download the service account's credentials
-    5.  Export the environmental variables:
+    1. Create a new G Suite user account and accept the Terms of Service. This account will be used as the domain-wide delegated access.
+    1. [Perform G Suite Domain-Wide Delegation of Authority](https://developers.google.com/admin-sdk/directory/v1/guides/delegation)
+    1.  Download the service account's credentials
+    1.  Export the environmental variables:
         1. `GSUITE_GOOGLE_APPLICATION_CREDENTIALS` - location of the credentials file.
-        2. `GSUITE_DELEGATED_ADMIN` - email address that you created in step 2
+        1. `GSUITE_DELEGATED_ADMIN` - email address that you created in step 2
 
-6. If you're using Okta intel module, **prepare your Okta API token**
+1. If you're using Okta intel module, **prepare your Okta API token**
     1. Generate your API token by following the steps from [Okta Create An API Token documentation](https://developer.okta.com/docs/guides/create-an-api-token/overview/)
-    2. Populate an environment variable with the API token. You can pass the environment variable name via the cli --okta-api-key-env-var parameter
-    3. Use the cli --okta-org-id parameter with the organization id you want to query. The organization id is the first part of the Okta url for your organization.
+    1. Populate an environment variable with the API token. You can pass the environment variable name via the cli --okta-api-key-env-var parameter
+    1. Use the cli --okta-org-id parameter with the organization id you want to query. The organization id is the first part of the Okta url for your organization.
+	1. If you are using Okta to [administer AWS as a SAML provider](https://saml-doc.okta.com/SAML_Docs/How-to-Configure-SAML-2.0-for-Amazon-Web-Service#scenarioC) then the module will automatically match OktaGroups to the AWSRole they control access for
+		- If you are using a regex other than the standard okta group to role regex `^aws\#\S+\#(?{{role}}[\w\-]+)\#(?{{accountid}}\d+)$` defined in [Step 5: Enabling Group Based Role Mapping in Okta](https://saml-doc.okta.com/SAML_Docs/How-to-Configure-SAML-2.0-for-Amazon-Web-Service#scenarioC)  then you can specify your regex with the --okta-saml-role-regex parameter.
 
-7. **Get and run Cartography**
+1. **Get and run Cartography**
 
 	1. Run `pip install cartography` to install our code.
 
-	2. Finally, to sync your data:
+	1. Finally, to sync your data:
 
 		- If you have one AWS account, run
 

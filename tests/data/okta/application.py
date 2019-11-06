@@ -1,7 +1,3 @@
-import datetime
-
-from okta.models.app.AppInstance import AppInstance
-
 LIST_APPLICATION_USER_ASSIGNED_RESPONSE = """
 [
   {
@@ -90,17 +86,77 @@ LIST_APPLICATION_GROUP_ASSIGNED_RESPONSE = """
 ]
 """
 
+APPLICATION_WITH_REDITECT_URIS = """
+{
+    "id": "someid",
+    "name": "redirec_app",
+    "label": "ciexec",
+    "status": "ACTIVE",
+    "lastUpdated": "2019-01-10T18:28:42.000Z",
+    "created": "2019-01-10T18:28:42.000Z",
+    "accessibility": {
+        "selfService": false,
+        "errorRedirectUrl": null,
+        "loginRedirectUrl": null
+    },
+    "visibility": {
+        "autoSubmitToolbar": false,
+        "hide": {
+            "iOS": true,
+            "web": true
+        },
+        "appLinks": {
+            "oidc_client_link": true
+        }
+    },
+    "features": [],
+    "signOnMode": "OPENID_CONNECT",
+    "credentials": {
+        "userNameTemplate": {
+            "template": "${source.login}",
+            "type": "BUILT_IN"
+        },
+        "signing": {},
+        "oauthClient": {
+            "autoKeyRotation": true,
+            "client_id": "someid",
+            "token_endpoint_auth_method": "client_secret_basic"
+        }
+    },
+    "settings": {
+        "app": {},
+        "notifications": {},
+        "oauthClient": {
+            "client_uri": null,
+            "logo_uri": null,
+            "redirect_uris": [
+                "https://domain.net/auth/oauth2/callback1",
+                "https://domain.net/auth/oauth2/callback"
+            ],
+            "response_types": [
+                "code"
+            ],
+            "grant_types": [
+                "authorization_code"
+            ],
+            "application_type": "web",
+            "issuer_mode": "ORG_URL"
+        }
+    }
+}
+"""
+
 
 def create_test_application():
-    app = AppInstance()
-    app.id = "app_id_value"
-    app.name = "app_name_value"
-    app.label = "app_label_value"
-    app.created = datetime.datetime(2019, 1, 1, 0, 0, 1)
-    app.lastUpdated = datetime.datetime(2019, 1, 1, 0, 0, 1)
-    app.status = "app_status_value"
-    app.activated = datetime.datetime(2019, 1, 1, 0, 0, 1)
-    app.features = "app_features_value"
-    app.signOnMode = "app_signonmode_value"
-
+    app = {
+        "id": "app_id_value",
+        "name": "app_name_value",
+        "label": "app_label_value",
+        "created": "2019-01-01T00:00:01.000Z",
+        "lastUpdated": '2019-01-01T00:00:01.000Z',
+        "status": "app_status_value",
+        "activated": '2019-01-01T00:00:01.000Z',
+        "features": "app_features_value",
+        "signOnMode": "app_signonmode_value",
+    }
     return app
