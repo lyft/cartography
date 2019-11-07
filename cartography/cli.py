@@ -141,6 +141,17 @@ class CLI:
                 'Required if you are using the Okta intel module. Ignored otherwise.'
             ),
         )
+        parser.add_argument(
+            '--okta-saml-role-regex',
+            type=str,
+            default=r"^aws\#\S+\#(?{{role}}[\w\-]+)\#(?{{accountid}}\d+)$",
+            help=(
+                'The regex used to map Okta groups to AWS roles when using okta as a SAML provider.'
+                'The regex is the one entered in Step 5: Enabling Group Based Role Mapping in Okta'
+                'https://saml-doc.okta.com/SAML_Docs/How-to-Configure-SAML-2.0-for-Amazon-Web-Service#c-step5'
+                'The regex must contain the {{role}} and {{accountid}} tags'
+            ),
+        )
         return parser
 
     def main(self, argv):
