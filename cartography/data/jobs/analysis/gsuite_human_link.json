@@ -1,0 +1,9 @@
+{
+  "statements": [
+  {
+    "query": "MATCH (human:Human), (guser:GSuiteUser) WHERE human.email = guser.email WITH human, guser MERGE (human)-[r:IDENTITY_GSUITE]->(guser) ON CREATE SET r.firstseen = {UPDATE_TAG} SET r.lastupdated = {UPDATE_TAG}",
+    "iterative": false
+  }
+],
+  "name": "GSuite user map to Human"
+}
