@@ -29,7 +29,9 @@ Cartography is a Python tool that consolidates infrastructure assets and the rel
   - [Sample queries](#sample-queries)
     - [What RDS instances are installed in my AWS accounts?](#what-rds-instances-are-installed-in-my-aws-accounts-1)
     - [Which RDS instances have encryption turned off?](#which-rds-instances-have-encryption-turned-off-1)
-    - [Which EC2 instances are directly exposed to the internet?](#which-ec2-instances-are-directly-exposed-to-the-internet-1)
+    - [Which EC2 instances are exposed (directly or indirectly) to the internet?](#which-ec2-instances-are-exposed-directly-or-indirectly-to-the-internet)
+    - [Which ELB LoadBalancers are internet accessible?](#which-elb-loadbalancers-are-internet-accessible)
+    - [Which ELBv2 LoadBalancerV2s (Application Load Balancers) are internet accessible?](#which-elbv2-loadbalancerv2s-application-load-balancers-are-internet-accessible)
     - [Which S3 buckets have a policy granting any level of anonymous access to the bucket?](#which-s3-buckets-have-a-policy-granting-any-level-of-anonymous-access-to-the-bucket-1)
     - [How many unencrypted RDS instances do I have in all my AWS accounts?](#how-many-unencrypted-rds-instances-do-i-have-in-all-my-aws-accounts-1)
     - [What users have the TotallyFake extension installed?](#what-users-have-the-totallyfake-extension-installed)
@@ -267,10 +269,24 @@ MATCH (a:AWSAccount)-[:RESOURCE]->(rds:RDSInstance{storage_encrypted:false})
 return a.name, rds.id
 ```
 
-#### Which [EC2](https://aws.amazon.com/ec2/) instances are directly exposed to the internet?
+#### Which [EC2](https://aws.amazon.com/ec2/) instances are exposed (directly or indirectly) to the internet?
 ```
 MATCH (instance:EC2Instance{exposed_internet: true})
 RETURN instance.instanceid, instance.publicdnsname
+```
+
+#### Which [ELB](https://aws.amazon.com/elasticloadbalancing/) LoadBalancers are internet accessible?
+```
+MATCH (elb:LoadBalancer{exposed_internet: true})—->(listener:ELBListener)
+RETURN elb.dnsname, listener.port
+ORDER by elb.dnsname, listener.port
+```
+
+#### Which [ELBv2](https://aws.amazon.com/elasticloadbalancing/) LoadBalancerV2s (Application Load Balancers) are internet accessible?
+```
+MATCH (elbv2:LoadBalancerV2{exposed_internet: true})—->(listener:ELBV2Listener)
+RETURN elbv2.dnsname, listener.port
+ORDER by elbv2.dnsname, listener.port
 ```
 
 #### Which [S3](https://aws.amazon.com/s3/) buckets have a policy granting any level of anonymous access to the bucket?
@@ -308,13 +324,19 @@ Cartography adds custom attributes to nodes and relationships to point out secur
 
 - `exposed_internet` indicates whether the asset is accessible to the public internet.
 
-	- **Elastic Load Balancers**: The `exposed_internet` flag is set to `True` when the load balancer's `scheme` field is set to `internet-facing`.  This indicates that the load balancer has a public DNS name that resolves to a public IP address.
+	- **Elastic Load Balancers**: The `exposed_internet` flag is set to `True` when the load balancer's `scheme` field is set to `internet-facing`, and the load balancer has an attached source security group with rules allowing `0.0.0.0/0` ingress on ports or port ranges matching listeners on the load balancer.  This scheme indicates that the load balancer has a public DNS name that resolves to a public IP address.
+
+	- **Application Load Balancers**: The `exposed_internet` flag is set to `True` when the load balancer's `scheme` field is set to `internet-facing`, and the load balancer has an attached security group with rules allowing `0.0.0.0/0` ingress on ports or port ranges matching listeners on the load balancer.  This scheme indicates that the load balancer has a public DNS name that resolves to a public IP address.
+
+
 
 	- **EC2 instances**: The `exposed_internet` flag on an EC2 instance is set to `True` when any of following apply:
 
 		- The instance is part of an EC2 security group or is connected to a network interface connected to an EC2 security group that allows connectivity from the 0.0.0.0/0 subnet.
 
 		- The instance is connected to an Elastic Load Balancer that has its own `exposed_internet` flag set to `True`.
+
+		- The instance is connected to a TargetGroup which is attached to a Listener on an Application Load Balancer (elbv2) that has its own `exposed_internet` flag set to `True`.
 
 	- **ElasticSearch domain**: `exposed_internet` is set to `True` if the ElasticSearch domain has a policy applied to it that makes it internet-accessible.  This policy determination is made by using the [policyuniverse](https://github.com/Netflix-Skunkworks/policyuniverse) library.  The code for this augmentation is implemented at `cartography.intel.aws.elasticsearch._process_access_policy()`.
 
