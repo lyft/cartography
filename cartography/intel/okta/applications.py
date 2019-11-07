@@ -1,32 +1,18 @@
 # Okta intel module - Applications
 import json
 import logging
+from datetime import datetime
 
-from okta import AppInstanceClient
 from okta.framework.OktaError import OktaError
 
 from cartography.intel.okta.utils import create_api_client
 from cartography.intel.okta.utils import is_last_page
 
+
 logger = logging.getLogger(__name__)
 
 
-def _create_application_client(okta_org, okta_api_key):
-    """
-    Create Okta AppInstanceClient
-    :param okta_org: Okta organization name
-    :param okta_api_key: Okta API key
-    :return: Instance of AppInstanceClient
-    """
-    app_client = AppInstanceClient(
-        base_url=f"https://{okta_org}.okta.com/",
-        api_token=okta_api_key,
-    )
-
-    return app_client
-
-
-def _get_okta_applications(app_client):
+def _get_okta_applications(api_client):
     """
     Get application data from Okta server
     :param app_client: api client
@@ -34,14 +20,25 @@ def _get_okta_applications(app_client):
     """
     app_list = []
 
-    page_apps = app_client.get_paged_app_instances()
-
+    next_url = None
     while True:
-        for current_application in page_apps.result:
-            app_list.append(current_application)
-        if not page_apps.is_last_page():
-            # Keep on fetching pages of users until the last page
-            page_apps = app_client.get_paged_app_instances(url=page_apps.next_url)
+        try:
+            # https://developer.okta.com/docs/reference/api/apps/#list-applications
+            if next_url:
+                paged_response = api_client.get(next_url)
+            else:
+                params = {
+                    'limit': 500,
+                }
+                paged_response = api_client.get_path('/', params)
+        except OktaError as okta_error:
+            logger.debug(f"Got error while listing applications {okta_error}")
+            break
+
+        app_list.extend(json.loads(paged_response.text))
+
+        if not is_last_page(paged_response):
+            next_url = paged_response.links.get("next").get("url")
         else:
             break
 
@@ -181,32 +178,48 @@ def transform_okta_application_list(okta_applications):
 
 
 def transform_okta_application(okta_application):
-    # https://github.com/okta/okta-sdk-python/blob/master/okta/models/app/AppInstance.py
     app_props = {}
-    app_props["id"] = okta_application.id
-    app_props["name"] = okta_application.name
-    app_props["label"] = okta_application.label
-    if okta_application.created:
-        app_props["created"] = okta_application.created.strftime("%m/%d/%Y, %H:%M:%S")
+    app_props["id"] = okta_application["id"]
+    app_props["name"] = okta_application["name"]
+    app_props["label"] = okta_application["label"]
+    if "created" in okta_application and okta_application["created"]:
+        app_props["created"] = datetime.strptime(
+            okta_application["created"], "%Y-%m-%dT%H:%M:%S.%fZ",
+        ).strftime("%m/%d/%Y, %H:%M:%S")
     else:
         app_props["created"] = None
 
-    if okta_application.lastUpdated:
-        app_props["okta_last_updated"] = okta_application.lastUpdated.strftime("%m/%d/%Y, %H:%M:%S")
+    if "lastUpdated" in okta_application and okta_application["lastUpdated"]:
+        app_props["okta_last_updated"] = datetime.strptime(
+            okta_application["lastUpdated"], "%Y-%m-%dT%H:%M:%S.%fZ",
+        ).strftime("%m/%d/%Y, %H:%M:%S")
     else:
         app_props["okta_last_updated"] = None
 
-    app_props["status"] = okta_application.status
+    app_props["status"] = okta_application["status"]
 
-    if okta_application.activated:
-        app_props["activated"] = okta_application.activated.strftime("%m/%d/%Y, %H:%M:%S")
+    if "activated" in okta_application and okta_application["activated"]:
+        app_props["activated"] = datetime.strptime(
+            okta_application["activated"], "%Y-%m-%dT%H:%M:%S.%fZ",
+        ).strftime("%m/%d/%Y, %H:%M:%S")
     else:
         app_props["activated"] = None
 
-    app_props["features"] = okta_application.features
-    app_props["sign_on_mode"] = okta_application.signOnMode
+    app_props["features"] = okta_application["features"]
+    app_props["sign_on_mode"] = okta_application["signOnMode"]
 
     return app_props
+
+
+def transform_okta_application_extract_replyurls(okta_application):
+    """
+    Extracts the reply uri information from an okta app
+    """
+
+    if "oauthClient" in okta_application["settings"]:
+        if "redirect_uris" in okta_application["settings"]["oauthClient"]:
+            return okta_application["settings"]["oauthClient"]["redirect_uris"]
+    return None
 
 
 def _load_okta_applications(neo4j_session, okta_org_id, app_list, okta_update_tag):
@@ -303,6 +316,39 @@ def _load_application_group(neo4j_session, app_id, group_list, okta_update_tag):
     )
 
 
+def _load_application_reply_urls(neo4j_session, app_id, reply_urls, okta_update_tag):
+    """
+    Add reply urls to their applications
+    :param neo4j_session: session with the Neo4j server
+    :param app_id: application to map the reply urls to
+    :param reply_urls: reply urls to map
+    :param okta_update_tag: The timestamp value to set our new Neo4j resources with
+    :return: Nothing
+    """
+    if not reply_urls:
+        return
+    ingest = """
+    MATCH (app:OktaApplication{id: {APP_ID}})
+    WITH app
+    UNWIND {URL_LIST} as url_list
+    MERGE (uri:ReplyUri{id: url_list})
+    ON CREATE SET uri.firstseen = timestamp()
+    SET uri.uri = url_list,
+    uri.lastupdated = {okta_update_tag}
+    WITH app, uri
+    MERGE (uri)<-[r:REPLYURI]-(app)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {okta_update_tag}
+    """
+
+    neo4j_session.run(
+        ingest,
+        APP_ID=app_id,
+        URL_LIST=reply_urls,
+        okta_update_tag=okta_update_tag,
+    )
+
+
 def sync_okta_applications(neo4j_session, okta_org_id, okta_update_tag, okta_api_key):
     """
     Sync okta application
@@ -314,15 +360,13 @@ def sync_okta_applications(neo4j_session, okta_org_id, okta_update_tag, okta_api
     """
     logger.debug("Syncing Okta Applications")
 
-    app_client = _create_application_client(okta_org_id, okta_api_key)
+    api_client = create_api_client(okta_org_id, "/api/v1/apps", okta_api_key)
 
-    okta_app_data = _get_okta_applications(app_client)
+    okta_app_data = _get_okta_applications(api_client)
     app_data = transform_okta_application_list(okta_app_data)
     _load_okta_applications(neo4j_session, okta_org_id, app_data, okta_update_tag)
 
-    api_client = create_api_client(okta_org_id, "/api/v1/apps", okta_api_key)
-
-    for app in app_data:
+    for app in okta_app_data:
         app_id = app["id"]
         user_list_data = _get_application_assigned_users(api_client, app_id)
         user_list = transform_application_assigned_users_list(user_list_data)
@@ -331,3 +375,6 @@ def sync_okta_applications(neo4j_session, okta_org_id, okta_update_tag, okta_api
         group_list_data = _get_application_assigned_groups(api_client, app_id)
         group_list = transform_application_assigned_groups_list(group_list_data)
         _load_application_group(neo4j_session, app_id, group_list, okta_update_tag)
+
+        reply_urls = transform_okta_application_extract_replyurls(app)
+        _load_application_reply_urls(neo4j_session, app_id, reply_urls, okta_update_tag)
