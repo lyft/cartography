@@ -109,4 +109,4 @@ def sync_okta_aws_saml(neo4j_session, mapping_regex, okta_update_tag):
     # Query for the aws application and its associated groups
     group_to_role_mapping = query_for_okta_to_aws_role_mapping(neo4j_session, mapping_regex)
     _load_okta_group_to_aws_roles(neo4j_session, group_to_role_mapping, okta_update_tag)
-    _load_human_can_assume_role(neo4j_session)
+    _load_human_can_assume_role(neo4j_session, okta_update_tag)
