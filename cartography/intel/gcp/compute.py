@@ -742,12 +742,12 @@ def _attach_firewall_rules(neo4j_session, fw, gcp_update_tag):
     rule.fromport = {FromPort},
     rule.toport = {ToPort},
     rule.lastupdated = {gcp_update_tag}
-    
+
     MERGE (rng:IpRange{id:{Range}})
     ON CREATE SET rng.firstseen = timestamp(),
     rng.range = {Range}
     SET rng.lastupdated = {gcp_update_tag}
-    
+
     MERGE (rng)-[m:MEMBER_OF_IP_RULE]->(rule)
     ON CREATE SET m.firstseen = timestamp()
     SET m.lastupdated = {gcp_update_tag}
