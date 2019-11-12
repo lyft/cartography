@@ -734,7 +734,7 @@ def _attach_firewall_rules(neo4j_session, fw, gcp_update_tag):
     """
     template = Template("""
     MATCH (fw:GCPFirewall{id:{FwPartialUri}})
-    
+
     MERGE (rule:IpRule:IpPermissionInbound:GCPIpRule{id:{RuleId}})
     ON CREATE SET rule.firstseen = timestamp(),
     rule.ruleid = {RuleId}
