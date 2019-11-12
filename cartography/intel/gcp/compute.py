@@ -733,25 +733,24 @@ def _attach_firewall_rules(neo4j_session, fw, gcp_update_tag):
     :return: Nothing
     """
     template = Template("""
-    MERGE (fw:GCPFirewall{id:{FwPartialUri}})
-    ON CREATE SET fw.firstseen = timestamp(),
-    fw.partial_uri = {FwPartialUri}
-    SET fw.direction = {Direction},
-    fw.disabled = {Disabled},
-    fw.name = {Name},
-    fw.priority = {Priority},
-    fw.self_link = {SelfLink},
-    fw.has_target_service_accounts = {HasTargetServiceAccounts},
-    fw.lastupdated = {gcp_update_tag}
-
-    MERGE (vpc:GCPVpc{id:{VpcPartialUri}})
-    ON CREATE SET vpc.firstseen = timestamp(),
-    vpc.partial_uri = {VpcPartialUri}
-    SET vpc.lastupdated = {gcp_update_tag}
-
-    MERGE (vpc)-[r:RESOURCE]->(fw)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    MATCH (fw:GCPFirewall{id:{FwPartialUri}})
+    
+    MERGE (rule:IpRule:IpPermissionInbound:GCPIpRule{id:{RuleId}})
+    ON CREATE SET rule.firstseen = timestamp(),
+    rule.ruleid = {RuleId}
+    SET rule.protocol = {Protocol},
+    rule.fromport = {FromPort},
+    rule.toport = {ToPort},
+    rule.lastupdated = {gcp_update_tag}
+    
+    MERGE (rng:IpRange{id:{Range}})
+    ON CREATE SET rng.firstseen = timestamp(),
+    rng.range = {Range}
+    SET rng.lastupdated = {gcp_update_tag}
+    
+    MERGE (rng)-[m:MEMBER_OF_IP_RULE]->(rule)
+    ON CREATE SET m.firstseen = timestamp()
+    SET m.lastupdated = {gcp_update_tag}
 
     MERGE (fw)<-[r:$fw_rule_relationship_label]-(rule)
     ON CREATE SET r.firstseen = timestamp()
