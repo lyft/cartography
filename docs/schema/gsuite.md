@@ -5,6 +5,7 @@
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
 - [GSuiteUser](#gsuiteuser)
+  - [Relationships](#relationships)
 - [GSuiteGroup](#gsuitegroup)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -42,6 +43,12 @@ https://developers.google.com/admin-sdk/directory/v1/reference/users#resource
 | thumbnail_photo_url | Photo Url of the user
 | lastupdated | Timestamp of when a sync job last updated this node
 | firstseen | Timestamp of when a sync job first discovered this node
+
+### Relationships
+- GSuiteUser is an identity for a Human
+    ```
+    (Human)-[IDENTITY_GSUITE]->(GSuiteUser)
+    ```
 
 ## GSuiteGroup
 
