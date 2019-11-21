@@ -68,7 +68,7 @@ After completing the section above, you are now able to manually test intel modu
     ⚠️ Important!  The below commands will **DELETE ALL NODES** on your local Neo4j instance as part of our testing procedure.  Only run any of the below commands if you are ok with this. ⚠️
 
     - `make test_integration` can be used to run the integration test suite.
-    For more granular testing, you can invoke `pyttest` directly:
+    For more granular testing, you can invoke `pytest` directly:
       - `pytest ./tests/integration/cartography/intel/aws/test_iam.py`
       - `pytest ./tests/integration/cartography/intel/aws/test_iam.py::test_load_groups`
     - `make test` can be used to run all of the above.
