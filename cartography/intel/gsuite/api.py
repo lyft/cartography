@@ -84,7 +84,6 @@ def get_all_users(admin):
     )
 
 
-
 def load_gsuite_groups(session, groups, gsuite_update_tag):
     ingestion_qry = """
         UNWIND {GroupData} as group
