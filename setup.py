@@ -32,7 +32,7 @@ setup(
         "neo4j>=1.7.0,<4.0.0",
         "neobolt>=1.7.0,<4.0.0",
         "policyuniverse>=1.1.0.0",
-        "python-dateutil>=2.7.0",
+        "python-dateutil<2.8.1",
         "google-api-python-client>=1.7.8",
         "oauth2client>=4.1.3",
         "marshmallow>=3.0.0rc7",
