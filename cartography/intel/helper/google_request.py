@@ -4,6 +4,8 @@ import time
 from googleapiclient.discovery import HttpError
 logger = logging.getLogger(__name__)
 
+GOOGLE_API_NUM_RETRIES = 5
+
 
 class GoogleRetryException(Exception):
     pass
@@ -11,7 +13,8 @@ class GoogleRetryException(Exception):
 
 def repeat_request(req, req_args, req_next=None, retries=5, retry_delay_ms=500):
     """ Wrapper to retry requests.  We make a lot of requests to Google.
-    Sometimes it may flake out due to network or server issues.  Repeat if it fails.
+    Sometimes it may flake out due to network or server 5XX issues.  Repeat if it fails.
+    If it's a 4XX
 
     :param req: The API request to make
     :param req_args: The API request arguments
@@ -26,14 +29,19 @@ def repeat_request(req, req_args, req_next=None, retries=5, retry_delay_ms=500):
 
     while request is not None:
         try:
-            resp = request.execute()
+            resp = request.execute(num_retries=GOOGLE_API_NUM_RETRIES)
             response_objects.append(resp)
             request = req_next(request, resp) if req_next else None
+            retry = 0
         except HttpError as e:
-            logger.warning(f'HttpError occurred returning empty list. Details: {e}, retry: {retry}')
-            retry += 1
-            time.sleep(retry_delay_ms / 1000.0)
-            if retry >= retries:
-                raise GoogleRetryException(f'Retry limit: {retries} exceeded.')
+            if e.resp.status >= 400 and e.resp.status < 500:
+                logger.warning(f'HttpError client occurred, skipping.  Details: {e}')
+                continue
+            elif e.resp.status >= 500 and e.resp.status < 600:
+                logger.warning(f'HttpError server occurred returning empty list. Details: {e}, retry: {retry}')
+                retry += 1
+                time.sleep(retry_delay_ms / 1000.0)
+                if retry >= retries:
+                    raise GoogleRetryException(f'Retry limit: {retries} exceeded.')
 
     return response_objects

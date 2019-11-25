@@ -21,7 +21,7 @@ def test_repeat_request_fail():
     # Test that proper exception is raised on multiple retry failures
     req = mock.MagicMock()
     req_args = {'lisa': 'sister', 'bart': 'brother'}
-    req(req_args).execute.side_effect = HttpError(resp=mock.MagicMock(), content=b'error')
+    req(req_args).execute.side_effect = HttpError(resp=mock.Mock(status=503), content=b'error')
 
     with pytest.raises(GoogleRetryException):
         repeat_request(req, req_args, req_next=None, retries=7, retry_delay_ms=1)

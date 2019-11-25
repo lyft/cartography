@@ -28,7 +28,8 @@ def test_repeat_request():
     assert result == expected
 
 
-def test_repeat_request_failure():
+@patch('time.sleep')
+def test_repeat_request_failure(patched_sleep):
     # Test that we retry a failed request n-times on HttpError
     req = mock.MagicMock()
     req_args = {'test': '123'}
@@ -37,13 +38,13 @@ def test_repeat_request_failure():
     resp_req_1 = {'users': [1, 2]}
 
     req.return_value = raw_req_1
-
     raw_req_1.execute.return_value = resp_req_1
-    raw_req_1.execute.side_effect = HttpError(mock.Mock(status=503), content=b'Service Unavailable')
 
+    raw_req_1.execute.side_effect = HttpError(mock.Mock(status=503), content=b'Service Unavailable')
     with pytest.raises(GoogleRetryException):
         api.repeat_request(req, req_args, req_next, retries=3)
         assert raw_req_1.execute.call_count == 3
+        assert patched_sleep.called
 
 
 def test_transform_api_objects():

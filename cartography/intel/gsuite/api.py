@@ -223,7 +223,7 @@ def sync_gsuite_groups(session, admin, gsuite_update_tag, common_job_parameters)
     try:
         resp_objs = get_all_groups(admin)
     except GoogleRetryException as e:
-        logger.warning(f"Failed to sync GSuite Groups.  Reason: {e}")
+        logger.warning(f"Failed to sync GSuite Groups.  Aborting GSuite groups sync.  Reason: {e}")
         resp_objs = []
 
     if resp_objs:
@@ -235,6 +235,15 @@ def sync_gsuite_groups(session, admin, gsuite_update_tag, common_job_parameters)
 
 def sync_gsuite_members(groups, session, admin, gsuite_update_tag):
     for group in groups:
-        resp_objs = get_members_for_group(admin, group['email'])
-        members = transform_api_objects(resp_objs, 'members')
-        load_gsuite_members(session, group, members, gsuite_update_tag)
+        try:
+            resp_objs = get_members_for_group(admin, group['email'])
+        except GoogleRetryException as e:
+            logger.warning(
+                f"Failed to sync GSuite members for group {group['email']}."
+                f"Aborting member sync for current group.  Reason: {e}.",
+            )
+            resp_objs = []
+
+        if resp_objs:
+            members = transform_api_objects(resp_objs, 'members')
+            load_gsuite_members(session, group, members, gsuite_update_tag)
