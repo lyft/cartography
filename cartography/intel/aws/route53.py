@@ -95,8 +95,8 @@ def load_cname_records(neo4j_session, records, update_tag):
 
 def load_zone(neo4j_session, zone, current_aws_id, update_tag):
     ingest_z = """
-    MERGE (zone:DNSZone:AWSDNSZone{name: {ZoneName}})
-    ON CREATE SET zone.firstseen = timestamp(), zone.zoneid = {ZoneId}
+    MERGE (zone:DNSZone:AWSDNSZone{zoneid:{ZoneId}})
+    ON CREATE SET zone.firstseen = timestamp(), zone.name = {ZoneName}
     SET zone.lastupdated = {aws_update_tag}, zone.comment = {Comment}, zone.privatezone = {PrivateZone}
     WITH zone
     MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
@@ -113,6 +113,7 @@ def load_zone(neo4j_session, zone, current_aws_id, update_tag):
         AWS_ACCOUNT_ID=current_aws_id,
         aws_update_tag=update_tag,
     )
+
 
 def load_ns_records(neo4j_session, records, zone_name, update_tag):
     ingest_records = """
@@ -132,7 +133,7 @@ def load_ns_records(neo4j_session, records, zone_name, update_tag):
     SET ns.lastupdated = {aws_update_tag}, ns.name = server
     MERGE (a)-[pt:DNS_POINTS_TO]->(ns)
     SET pt.lastupdated = {aws_update_tag}
-   
+
     """
     neo4j_session.run(
         ingest_records,
@@ -140,12 +141,12 @@ def load_ns_records(neo4j_session, records, zone_name, update_tag):
         aws_update_tag=update_tag,
     )
 
-    # Map the official name servers for a domain. 
+    # Map the official name servers for a domain.
     map_ns_records = """
     UNWIND {servers} as server
     MATCH (ns:NameServer{id:server})
     MATCH (zone:AWSDNSZone{zoneid:{zoneid}})
-    MERGE (ns)-[r:NAMESERVER_FOR]->(zone)
+    MERGE (ns)<-[r:NAMESERVER]-(zone)
     SET r.lastupdated = {aws_update_tag}
     """
     for record in records:
@@ -213,13 +214,15 @@ def parse_record_set(record_set, zone_id):
                 "value": value[:-1],
                 "id": record_set['Name'][:-1] + '+A',
             }
+
+
 def parse_ns_record_set(record_set, zone_id):
     if "ResourceRecords" in record_set:
-        servers = [record["Value"][:-1] for record in record_set["ResourceRecords"] ]
+        servers = [record["Value"][:-1] for record in record_set["ResourceRecords"]]
         return {
-            "zoneid":zone_id,
-            "type":"NS",
-            "name":record_set["Name"][:-1],
+            "zoneid": zone_id,
+            "type": "NS",
+            "name": record_set["Name"][:-1],
             "servers": servers,
             "id": record_set['Name'][:-1] + '+NS',
         }
@@ -261,7 +264,7 @@ def load_dns_details(neo4j_session, dns_details, current_aws_id, update_tag):
                     zone_alias_records.append(record)
                 elif record['type'] == 'CNAME':
                     zone_cname_records.append(record)
-        
+
             if record_set['Type'] == 'NS':
                 record = parse_ns_record_set(record_set, zone['Id'])
                 zone_ns_records.append(record)
@@ -299,11 +302,18 @@ def get_zones(client):
         results.append((hosted_zone, record_sets))
     return results
 
-def link_subdomain_zones(neo4j_session, update_tag):
-    query="""
-    match (z:AWSDNSZone)<-[:MEMBER_OF_DNS_ZONE]-(record:DNSRecord{type:"NS"})-[:DNS_POINTS_TO]->(ns:NameServer)-[:NAMESERVER_FOR]->(z2) 
-    WHERE record.name=z2.name AND NOT z=z2 
-    MERGE (z2)<-[r:SUBDOMAIN_ZONE]-(z)
+
+def link_sub_zones(neo4j_session, update_tag):
+    query = """
+    match (z:AWSDNSZone)
+    <-[:MEMBER_OF_DNS_ZONE]-
+    (record:DNSRecord{type:"NS"})
+    -[:DNS_POINTS_TO]->
+    (ns:NameServer)
+    <-[:NAMESERVER]-
+    (z2)
+    WHERE record.name=z2.name AND NOT z=z2
+    MERGE (z2)<-[r:SUBZONE]-(z)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {aws_update_tag}
     """
@@ -311,6 +321,8 @@ def link_subdomain_zones(neo4j_session, update_tag):
         query,
         aws_update_tag=update_tag,
     )
+
+
 def cleanup_route53(neo4j_session, current_aws_id, update_tag):
     run_cleanup_job(
         'aws_dns_cleanup.json',
@@ -324,5 +336,5 @@ def sync(neo4j_session, boto3_session, aws_id, update_tag):
     client = boto3_session.client('route53')
     zones = get_zones(client)
     load_dns_details(neo4j_session, zones, aws_id, update_tag)
-    link_subdomain_zones(neo4j_session, update_tag)
+    link_sub_zones(neo4j_session, update_tag)
     cleanup_route53(neo4j_session, aws_id, update_tag)
