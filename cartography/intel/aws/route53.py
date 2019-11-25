@@ -159,6 +159,26 @@ def load_ns_records(neo4j_session, records, zone_name, update_tag):
             )
 
 
+def link_sub_zones(neo4j_session, update_tag):
+    query = """
+    match (z:AWSDNSZone)
+    <-[:MEMBER_OF_DNS_ZONE]-
+    (record:DNSRecord{type:"NS"})
+    -[:DNS_POINTS_TO]->
+    (ns:NameServer)
+    <-[:NAMESERVER]-
+    (z2)
+    WHERE record.name=z2.name AND NOT z=z2
+    MERGE (z2)<-[r:SUBZONE]-(z)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {aws_update_tag}
+    """
+    neo4j_session.run(
+        query,
+        aws_update_tag=update_tag,
+    )
+
+
 def parse_record_set(record_set, zone_id):
     # process CNAME, ALIAS and A records
     if record_set['Type'] == 'CNAME':
@@ -301,26 +321,6 @@ def get_zones(client):
         record_sets = get_zone_record_sets(client, hosted_zone['Id'])
         results.append((hosted_zone, record_sets))
     return results
-
-
-def link_sub_zones(neo4j_session, update_tag):
-    query = """
-    match (z:AWSDNSZone)
-    <-[:MEMBER_OF_DNS_ZONE]-
-    (record:DNSRecord{type:"NS"})
-    -[:DNS_POINTS_TO]->
-    (ns:NameServer)
-    <-[:NAMESERVER]-
-    (z2)
-    WHERE record.name=z2.name AND NOT z=z2
-    MERGE (z2)<-[r:SUBZONE]-(z)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
-    """
-    neo4j_session.run(
-        query,
-        aws_update_tag=update_tag,
-    )
 
 
 def cleanup_route53(neo4j_session, current_aws_id, update_tag):
