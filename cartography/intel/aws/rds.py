@@ -52,6 +52,8 @@ def load_rds_instances(neo4j_session, data, region, current_aws_account_id, aws_
     rds.endpoint_address = {EndpointAddress},
     rds.endpoint_hostedzoneid = {EndpointHostedZoneId},
     rds.endpoint_port = {EndpointPort},
+    rds.iam_database_authentication_enabled = {IAMDatabaseAuthenticationEnabled},
+    rds.auto_minor_version_upgrade = {AutoMinorVersionUpgrade},
     rds.lastupdated = {aws_update_tag}
     WITH rds
     MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
@@ -101,6 +103,8 @@ def load_rds_instances(neo4j_session, data, region, current_aws_account_id, aws_
             EndpointAddress=ep.get('Address'),
             EndpointHostedZoneId=ep.get('HostedZoneId'),
             EndpointPort=ep.get('Port'),
+            IAMDatabaseAuthenticationEnabled=rds.get('IAMDatabaseAuthenticationEnabled'),
+            AutoMinorVersionUpgrade=rds.get('AutoMinorVersionUpgrade'),
             Region=region,
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag,

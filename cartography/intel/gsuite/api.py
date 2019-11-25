@@ -7,6 +7,9 @@ from cartography.util import run_cleanup_job
 logger = logging.getLogger(__name__)
 
 
+GOOGLE_API_NUM_RETRIES = 5
+
+
 def get_all_groups(admin):
     """
     Return list of Google Groups in your organization
@@ -45,6 +48,7 @@ def transform_api_objects(response_objects, key):
     for response_object in response_objects:
         for group in response_object.get(key, []):
             groups.append(group)
+
     return groups
 
 
@@ -78,6 +82,7 @@ def get_all_users(admin):
         req_args={'customer': 'my_customer', 'maxResults': 500, 'orderBy': 'email'},
         req_next=admin.users().list_next,
     )
+
 
 
 def load_gsuite_groups(session, groups, gsuite_update_tag):
