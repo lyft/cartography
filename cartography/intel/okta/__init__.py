@@ -34,6 +34,11 @@ def start_okta_ingestion(neo4j_session, config):
     :param config: A `cartography.config` object
     :return: Nothing
     """
+    if not config.okta_api_key:
+        logger.warning(
+            "No valid Okta credentials could be found. Exiting Okta sync stage.",
+        )
+        return
 
     logger.debug(f"Starting Okta sync on {config.okta_org_id}")
 
