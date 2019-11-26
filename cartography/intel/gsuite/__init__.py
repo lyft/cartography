@@ -57,6 +57,11 @@ def start_gsuite_ingestion(session, config):
         "UPDATE_TAG": config.update_tag,
     }
 
+    # If the env vars are undefined, the user probably doesn't want to run the GSuite sync.
+    if not GSUITE_CREDS or not GSUITE_DELEGATED_ADMIN:
+        logger.warning("Unable to initialize GSuite creds; skipping GSuite sync.")
+        return
+
     try:
         credentials = GoogleCredentials.from_stream(GSUITE_CREDS)
         credentials = credentials.create_scoped(OAUTH_SCOPE)
@@ -66,10 +71,9 @@ def start_gsuite_ingestion(session, config):
         logger.debug('Error occurred calling GoogleCredentials.get_application_default().', exc_info=True)
         logger.error(
             (
-                "Unable to initialize GSuite creds. If you don't have GSuite data or don't want to load "
-                'Gsuite data then you can ignore this message. Otherwise, the error code is: %s '
-                'Make sure your GSuite credentials are configured correctly, your credentials file (if any) is valid. '
-                'For more details see README'
+                "Unable to initialize GSuite creds. The error code is: %s. '
+                'Make sure your GSuite credentials are configured correctly and your credentials file (if any) is valid. '
+                'For more details see README.'
             ),
             e,
         )
