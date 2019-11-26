@@ -36,12 +36,12 @@ def repeat_request(req, req_args, req_next=None, retries=5, retry_delay_ms=500):
         except HttpError as e:
             if e.resp.status >= 400 and e.resp.status < 500:
                 logger.warning(f'HttpError client occurred, skipping.  Details: {e}')
-                continue
+                break
             elif e.resp.status >= 500 and e.resp.status < 600:
                 logger.warning(f'HttpError server occurred returning empty list. Details: {e}, retry: {retry}')
-                retry += 1
                 time.sleep(retry_delay_ms / 1000.0)
                 if retry >= retries:
                     raise GoogleRetryException(f'Retry limit: {retries} exceeded.')
+                retry += 1
 
     return response_objects
