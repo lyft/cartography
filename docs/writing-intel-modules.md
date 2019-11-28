@@ -4,6 +4,9 @@
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
 - [Before getting started...](#before-getting-started)
+- [Configuration and credential management](#configuration-and-credential-management)
+  - [Supplying credentials and arguments to your module](#supplying-credentials-and-arguments-to-your-module)
+  - [An important note on validating your commandline args](#an-important-note-on-validating-your-commandline-args)
 - [Sync = Get, Transform, Load, Cleanup](#sync--get-transform-load-cleanup)
   - [Get](#get)
   - [Transform](#transform)
@@ -32,6 +35,17 @@ but we'll share some best practices in this doc to save you some time.  We look 
 
 Read through and follow the setup steps in [the Cartography developer guide](developer-guide.md).  Learn the basics of
 running, testing, and linting your code there.
+
+
+## Configuration and credential management
+
+### Supplying credentials and arguments to your module
+
+If you need to supply an API key or other credential to your Cartography module, we recommend adding a CLI argument.  An example of this can be seen [in our Okta module](https://github.com/lyft/cartography/blob/670336918bd0a92c2add640cf3c33ef8d34c1e5a/cartography/cli.py#L135) where we require the user to specify the name of an environment variable containing their Okta API key.  This credential will then be bound to Cartography's [Config object](https://github.com/lyft/cartography/blob/670336918bd0a92c2add640cf3c33ef8d34c1e5a/cartography/config.py#L3) which is present in all modules.  You can specify different arguments from the commandline for your module via the Config object.
+
+### An important note on validating your commandline args
+
+Note that it is your module's responsibility to validate arguments that you introduce.  For example with the Okta module, we [validate](https://github.com/lyft/cartography/blob/670336918bd0a92c2add640cf3c33ef8d34c1e5a/cartography/intel/okta/__init__.py#L37) that `config.okta_api_key` has been defined before attempting to continue.
 
 
 ## Sync = Get, Transform, Load, Cleanup
@@ -225,10 +239,8 @@ the GCP VPC example here: https://github.com/lyft/cartography/blob/0652c2b6dede5
 - Add integration tests to  `tests/integration/cartography/intel`.  See this [example](https://github.com/lyft/cartography/blob/828ed600f2b14adae9d0b78ef82de0acaf24b86a/tests/integration/cartography/intel/gcp/test_compute.py).
   These tests assume that you have neo4j running at localhost:7687 with no password, and ensure that nodes loaded to the
   graph match your mock data.
-  
-## Configuration and credential management
 
-- 
+
 
 ## Other
 
