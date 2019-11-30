@@ -64,7 +64,7 @@
   - [Relationships](#relationships-27)
 - [LoadBalancerV2](#loadbalancerv2)
   - [Relationships](#relationships-28)
-- [NameServer](#nameserver)
+- [Nameserver](#nameserver)
   - [Relationships](#relationships-29)
 - [NetworkInterface](#networkinterface)
   - [Relationships](#relationships-30)
@@ -1059,7 +1059,7 @@ Represents an Elastic Load Balancer V2 ([Application Load Balancer](https://docs
 	```
 ## Nameserver
 
-Represents a DNS nameserver. 
+Represents a DNS nameserver.
 | Field | Description |
 |-------|-------------|
 | firstseen| Timestamp of when a sync job first discovered this node  |
