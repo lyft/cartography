@@ -64,14 +64,16 @@
   - [Relationships](#relationships-27)
 - [LoadBalancerV2](#loadbalancerv2)
   - [Relationships](#relationships-28)
-- [NetworkInterface](#networkinterface)
+- [NameServer](#nameserver)
   - [Relationships](#relationships-29)
-- [RDSInstance](#rdsinstance)
+- [NetworkInterface](#networkinterface)
   - [Relationships](#relationships-30)
-- [S3Acl](#s3acl)
+- [RDSInstance](#rdsinstance)
   - [Relationships](#relationships-31)
-- [S3Bucket](#s3bucket)
+- [S3Acl](#s3acl)
   - [Relationships](#relationships-32)
+- [S3Bucket](#s3bucket)
+  - [Relationships](#relationships-33)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -539,7 +541,10 @@ Representation of an AWS DNS [HostedZone](https://docs.aws.amazon.com/Route53/la
 	```
 	(AWSDNSRecord)-[MEMBER_OF_DNS_ZONE]->(AWSDNSZone)
 	```
-
+- AWSDNSZone can have subzones hosted by another AWSDNSZone
+	```
+	(AWSDNSZone)<-[SUBZONE]-(AWSDNSZone)
+	```
 
 
 ## DynamoDBTable
@@ -1051,6 +1056,23 @@ Represents an Elastic Load Balancer V2 ([Application Load Balancer](https://docs
 
 	```
 	(LoadBalancerV2)-[ELBV2_LISTENER]->(ELBV2Listener)
+	```
+## Nameserver
+
+Represents a DNS nameserver. 
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| id | The address of the nameserver|
+| name |  The name or address of the nameserver|
+
+### Relationships
+
+- Nameservers are nameservers for to DNSZone.
+
+	```
+	(Nameserver)-[NAMESERVER]->(DNSZone)
 	```
 
 ## NetworkInterface
