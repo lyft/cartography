@@ -1,4 +1,3 @@
-
 LIST_ASSIGNED_USER_ROLE_RESPONSE = """
 [
     {
