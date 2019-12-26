@@ -41,11 +41,11 @@ running, testing, and linting your code there.
 
 ### Supplying credentials and arguments to your module
 
-If you need to supply an API key or other credential to your Cartography module, we recommend adding a CLI argument.  An example of this can be seen [in our Okta module](https://github.com/lyft/cartography/blob/670336918bd0a92c2add640cf3c33ef8d34c1e5a/cartography/cli.py#L135) where we require the user to specify the name of an environment variable containing their Okta API key.  This credential will then be bound to Cartography's [Config object](https://github.com/lyft/cartography/blob/670336918bd0a92c2add640cf3c33ef8d34c1e5a/cartography/config.py#L3) which is present in all modules.  You can specify different arguments from the commandline for your module via the Config object.
+If you need to supply an API key or other credential to your Cartography module, we recommend adding a CLI argument.  An example of this can be seen [in our Okta module](https://github.com/lyft/cartography/blob/811990606c22a42791d213c7ca845b15f87e47f1/cartography/cli.py#L136) where we require the user to specify the name of an environment variable containing their Okta API key.  This credential will then be bound to Cartography's [Config object](https://github.com/lyft/cartography/blob/811990606c22a42791d213c7ca845b15f87e47f1/cartography/config.py#L3) which is present in all modules.  You can specify different arguments from the commandline for your module via the Config object.
 
 ### An important note on validating your commandline args
 
-Note that it is your module's responsibility to validate arguments that you introduce.  For example with the Okta module, we [validate](https://github.com/lyft/cartography/blob/670336918bd0a92c2add640cf3c33ef8d34c1e5a/cartography/intel/okta/__init__.py#L37) that `config.okta_api_key` has been defined before attempting to continue.
+Note that it is your module's responsibility to validate arguments that you introduce.  For example with the Okta module, we [validate](https://github.com/lyft/cartography/blob/811990606c22a42791d213c7ca845b15f87e47f1/cartography/intel/okta/__init__.py#L37) that `config.okta_api_key` has been defined before attempting to continue.
 
 
 ## Sync = Get, Transform, Load, Cleanup
