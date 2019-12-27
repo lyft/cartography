@@ -9,6 +9,7 @@
   - [Manually testing individual intel modules](#manually-testing-individual-intel-modules)
   - [Automated testing](#automated-testing)
 - [Implementing custom sync commands](#implementing-custom-sync-commands)
+- [How to write a new intel module](#how-to-write-a-new-intel-module)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -63,7 +64,7 @@ After completing the section above, you are now able to manually test intel modu
 
 3. **Run tests using `make`**
     - `make test_lint` can be used to run [pre-commit](https://pre-commit.com) linting against the codebase.  We use [pre-commit](https://pre-commit.com) to standardize our linting across our code-base at Lyft.
-    - `make test_unit` can be used to run the (currently non-existent) unit test suite.
+    - `make test_unit` can be used to run the unit test suite.
 
     ⚠️ Important!  The below commands will **DELETE ALL NODES** on your local Neo4j instance as part of our testing procedure.  Only run any of the below commands if you are ok with this. ⚠️
 
@@ -111,3 +112,6 @@ INFO:cartography.sync:Starting sync stage 'aws'
 INFO:botocore.credentials:Found credentials in shared credentials file: ~/.aws/credentials
 ...
 ```
+
+## How to write a new intel module
+See [here](writing-intel-modules.md).
