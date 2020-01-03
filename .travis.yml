@@ -5,7 +5,7 @@ addons:
       - sourceline: 'deb https://debian.neo4j.org/repo stable/'
         key_url: 'https://debian.neo4j.org/neotechnology.gpg.key'
     packages:
-      neo4j=1:3.5.*
+      - neo4j=1:3.5.*
 sudo: true
 language: python
 python:
