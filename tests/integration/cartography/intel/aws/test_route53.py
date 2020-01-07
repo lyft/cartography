@@ -22,7 +22,7 @@ def test_ns(neo4j_session):
 
 
 def test_zone(neo4j_session):
-    # test that zone are being added by zone id
+    # testtest that zone are being added by zone id
     data = tests.data.aws.route53.ZONE_RECORDS
 
     for zone in data:
