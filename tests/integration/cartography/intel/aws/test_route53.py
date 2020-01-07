@@ -8,21 +8,21 @@ TEST_AWS_ACCOUNTID = "AWSID"
 
 
 def test_cname(neo4j_session):
-    # test that cnames can be parsed and loaded
+    # Test that cnames can be parsed and loaded
     data = tests.data.aws.route53.CNAME_RECORD
     parsed_data = cartography.intel.aws.route53.parse_record_set(data, TEST_ZONE_ID)
     cartography.intel.aws.route53.load_cname_records(neo4j_session, parsed_data, TEST_UPDATE_TAG)
 
 
 def test_ns(neo4j_session):
-    # test that ns records can be parsed and loaded
+    # Test that ns records can be parsed and loaded
     data = tests.data.aws.route53.NS_RECORD
     parsed_data = [cartography.intel.aws.route53.parse_ns_record_set(data, TEST_ZONE_ID)]
     cartography.intel.aws.route53.load_ns_records(neo4j_session, parsed_data, TEST_ZONE_NAME, TEST_UPDATE_TAG)
 
 
 def test_zone(neo4j_session):
-    # testtest that zone are being added by zone id
+    # Test that zone are being added by zone id
     data = tests.data.aws.route53.ZONE_RECORDS
 
     for zone in data:

@@ -242,7 +242,7 @@ def parse_ns_record_set(record_set, zone_id):
         return {
             "zoneid": zone_id,
             "type": "NS",
-            "name": record_set["Name"][:-1],
+            "name": record_set["Name"][:-1], # looks like "name.some.fqdn.net.", so this removes the trailing comma.
             "servers": servers,
             "id": record_set['Name'][:-1] + '+NS',
         }
