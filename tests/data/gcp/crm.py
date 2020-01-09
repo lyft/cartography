@@ -9,3 +9,13 @@ GCP_PROJECTS = [
         'projectNumber': 'sample-number-121212',
     },
 ]
+
+GCP_PROJECTS_WITHOUT_PARENT = [
+    {
+        'createTime': '2019-11-11T21:06:32.043Z',
+        'lifecycleState': 'ACTIVE',
+        'name': 'my-parentless-project',
+        'projectId': 'my-parentless-project-987654',
+        'projectNumber': '123456789012',
+    },
+]
