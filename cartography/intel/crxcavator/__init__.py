@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 CRXCAVATOR_API_KEY = os.environ.get('CREDENTIALS_CRXCAVATOR_API_KEY')
 
 # API for the CRXcavator API - https://api.crxcavator.io/v1 as of 07/09/19
-CRXCAVATOR_API_BASE_URL = os.environ.get('CRXCAVATOR_URL')
+CRXCAVATOR_API_BASE_URL = os.environ.get('CRXCAVATOR_URL', 'https://api.crxcavator.io/v1')
 
 
 def start_extension_ingestion(neo4j_session, config):

@@ -47,6 +47,9 @@ CREATE INDEX ON :GCPProject(projectnumber);
 CREATE INDEX ON :GCPBucket(id);
 CREATE INDEX ON :GCPSubnet(id);
 CREATE INDEX ON :GCPVpc(id);
+CREATE INDEX ON :GitHubOrganization(id):
+CREATE INDEX ON :GitHubRepository(id):
+CREATE INDEX ON :GitHubUser(id):
 CREATE INDEX ON :GSuiteGroup(email);
 CREATE INDEX ON :GSuiteGroup(id);
 CREATE INDEX ON :GSuiteUser(email);
@@ -70,7 +73,8 @@ CREATE INDEX ON :OktaGroup(name);
 CREATE INDEX ON :OktaApplication(id);
 CREATE INDEX ON :OktaUserFactor(id);
 CREATE INDEX ON :OktaTrustedOrigin(id);
-CREATE INDEX ON: OktaAdministrationRole(id);
+CREATE INDEX ON :OktaAdministrationRole(id);
+CREATE INDEX ON :ProgrammingLanguage(id):
 CREATE INDEX ON :PublicIpAddress(ip);
 CREATE INDEX ON :RDSInstance(db_instance_identifier);
 CREATE INDEX ON :RDSInstance(id);
