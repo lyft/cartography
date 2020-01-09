@@ -583,6 +583,7 @@ Our representation of an AWS [EC2 Instance](https://docs.aws.amazon.com/AWSEC2/l
 | imageid | The ID of the [Amazon Machine Image](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AMIs.html) used to launch the instance |
 | subnetid | The ID of the EC2Subnet associated with this instance |
 | instancetype | The instance type.  See API docs linked above for specifics. |
+| iaminstanceprofile | The IAM instance profile associated with the instance, if applicable. |
 | launchtime | The time the instance was launched |
 | monitoringstate | Whether monitoring is enabled.  Valid Values: disabled, disabling, enabled,  pending. |
 | state | The [current state](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_InstanceState.html) of the instance.
