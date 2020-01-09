@@ -130,9 +130,9 @@ def transform_github_repos(repos_json, github_url):
         primarylanguageref = repo.get('primaryLanguage')
         if primarylanguageref:
             primarylanguage = primarylanguageref.get('name')
-        sshurl = repo.get['sshUrl']
+        sshurl = repo.get('sshUrl')
         if sshurl:
-            giturl = sshurl.replace(":", "/").replace("git@", "git://")
+            giturl = sshurl.replace("/", ":").replace("git@", "git://")
         else:
             giturl = None
         repos.append({
@@ -194,7 +194,7 @@ def load_github_repos(session, update_tag, repo_data):
     ON CREATE SET branch.firstseen = timestamp()
     SET branch.name = repo.defaultbranch, branch.lastupdated = {UpdateTag}
     WITH repo, branch
-    MERGE (repo)<-[r:BRANCH]-(branch)
+    MERGE (repo)-[r:BRANCH]->(branch)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = r.UpdateTag;"""
 

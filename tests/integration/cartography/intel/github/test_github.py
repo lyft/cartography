@@ -3,6 +3,7 @@ import tests.data.github.github
 
 
 TEST_UPDATE_TAG = 123456789
+TEST_GITHUB_URL = "https://fake.github.net/graphql/"
 
 
 def _ensure_local_neo4j_has_test_repositories_data(neo4j_session):
@@ -33,8 +34,8 @@ def test_transform_and_load_repositories(neo4j_session):
     """
     Test that we can correctly transform and load GitHubRepository nodes to Neo4j.
     """
-    repositories_res = tests.data.github.github.API_RESPONSE
-    repos_data = cartography.intel.github.github.transform_github_repos(repositories_res)
+    repositories_res = tests.data.github.github.API_RESPONSE['data']['organization']['repositories']['nodes']
+    repos_data = cartography.intel.github.github.transform_github_repos(repositories_res, TEST_GITHUB_URL)
     cartography.intel.github.github.load_github_repos(
         neo4j_session,
         TEST_UPDATE_TAG,
@@ -116,8 +117,8 @@ def test_transform_and_load_repository_owners(neo4j_session):
     """
     Ensure we can transform and load GitHub repository owner nodes.
     """
-    repositories_res = tests.data.github.github.API_RESPONSE
-    repos_data = cartography.intel.github.github.transform_github_repos(repositories_res)
+    repositories_res = tests.data.github.github.API_RESPONSE['data']['organization']['repositories']['nodes']
+    repos_data = cartography.intel.github.github.transform_github_repos(repositories_res, TEST_GITHUB_URL)
     cartography.intel.github.github.load_github_owners(
         neo4j_session,
         TEST_UPDATE_TAG,
@@ -151,8 +152,8 @@ def test_transform_and_load_repository_languages(neo4j_session):
     """
     Ensure we can transform and load GitHub repository languages nodes.
     """
-    repositories_res = tests.data.github.github.API_RESPONSE
-    repos_data = cartography.intel.github.github.transform_github_repos(repositories_res)
+    repositories_res = tests.data.github.github.API_RESPONSE['data']['organization']['repositories']['nodes']
+    repos_data = cartography.intel.github.github.transform_github_repos(repositories_res, TEST_GITHUB_URL)
     cartography.intel.github.github.load_github_languages(
         neo4j_session,
         TEST_UPDATE_TAG,
@@ -161,7 +162,7 @@ def test_transform_and_load_repository_languages(neo4j_session):
 
     query = """
     MATCH(lang:ProgrammingLanguage{id:{LanguageId}})
-    RETURN lang.id, lang.language
+    RETURN lang.id, lang.name
     """
     expected_language_id = 'Makefile'
     nodes = neo4j_session.run(query, LanguageId=expected_language_id)
@@ -169,7 +170,7 @@ def test_transform_and_load_repository_languages(neo4j_session):
     actual_nodes = list([
         (
             n['lang.id'],
-            n['lang.language'],
+            n['lang.name'],
         ) for n in nodes
     ])
 
@@ -215,6 +216,38 @@ def test_repository_to_owners(neo4j_session):
     assert actual_nodes == expected_nodes
 
 
+def test_repository_to_branches(neo4j_session):
+    """
+    Ensure that repositories are connected to branches.
+    """
+    _ensure_local_neo4j_has_test_repositories_data(neo4j_session)
+    query = """
+    MATCH(branch:GitHubBranch)<-[:BRANCH]-(repo:GitHubRepository{id:{RepositoryId}})
+    RETURN branch.name, repo.id, repo.name
+    """
+    expected_repository_id = 'https://fake.github.net/graphql/:MDEwOlJlcG9zaXRvcnkxNg=='
+    nodes = neo4j_session.run(
+        query,
+        RepositoryId=expected_repository_id,
+    )
+    actual_nodes = {
+        (
+            n['branch.name'],
+            n['repo.id'],
+            n['repo.name'],
+        ) for n in nodes
+    }
+
+    expected_nodes = {
+        (
+            'master',
+            'https://fake.github.net/graphql/:MDEwOlJlcG9zaXRvcnkxNg==',
+            'pythontestlib',
+        ),
+    }
+    assert actual_nodes == expected_nodes
+
+
 def test_repository_to_languages(neo4j_session):
     """
     Ensure that repositories are connected to languages.
@@ -240,7 +273,7 @@ def test_repository_to_languages(neo4j_session):
 
     expected_nodes = {
         (
-            'MakeFile',
+            'Makefile',
             'https://fake.github.net/graphql/:MDEwOlJlcG9zaXRvcnkxNg==',
             'pythontestlib',
         ),

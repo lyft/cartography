@@ -1,5 +1,5 @@
 # flake8: noqa
-API_RESPONSE = [{
+API_RESPONSE = {
     "data": {
         "organization": {
             "repositories": {
@@ -52,7 +52,7 @@ API_RESPONSE = [{
             },
         },
     },
-}]
+}
 
 TRANSFORMED_REPOS_DATA = {
     "repos": [
