@@ -1,4 +1,3 @@
-
 def report_drift_new(results, state_properties):
     """
     Prints new additions in Query Results between two states.

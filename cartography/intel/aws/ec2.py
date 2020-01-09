@@ -1,5 +1,6 @@
 import logging
 import time
+from string import Template
 
 import botocore.config
 
@@ -166,7 +167,8 @@ def load_ec2_instances(neo4j_session, data, region, current_aws_account_id, aws_
     SET instance.publicdnsname = {PublicDnsName}, instance.privateipaddress = {PrivateIpAddress},
     instance.imageid = {ImageId}, instance.instancetype = {InstanceType}, instance.monitoringstate = {MonitoringState},
     instance.state = {State}, instance.launchtime = {LaunchTime}, instance.launchtimeunix = {LaunchTimeUnix},
-    instance.region = {Region}, instance.lastupdated = {aws_update_tag}
+    instance.region = {Region}, instance.lastupdated = {aws_update_tag},
+    instance.iaminstanceprofile = {IamInstanceProfile}
     WITH instance
     MERGE (subnet:EC2Subnet{subnetid: {SubnetId}})
     ON CREATE SET subnet.firstseen = timestamp()
@@ -254,6 +256,7 @@ def load_ec2_instances(neo4j_session, data, region, current_aws_account_id, aws_
                 ImageId=instance.get("ImageId", ""),
                 SubnetId=instance.get("SubnetId", ""),
                 InstanceType=instance.get("InstanceType", ""),
+                IamInstanceProfile=instance.get("IamInstanceProfile", {}).get("Arn"),
                 ReservationId=reservation_id,
                 MonitoringState=monitoring_state,
                 LaunchTime=str(launch_time),
@@ -381,8 +384,8 @@ def load_ec2_security_groupinfo(neo4j_session, data, region, current_aws_account
 
 
 def load_ec2_security_group_rule(neo4j_session, group, rule_type, aws_update_tag):
-    ingest_rule = """
-    MERGE (rule:#RULE_TYPE#{ruleid: {RuleId}})
+    INGEST_RULE_TEMPLATE = Template("""
+    MERGE (rule:$rule_label{ruleid: {RuleId}})
     ON CREATE SET rule :IpRule, rule.firstseen = timestamp(), rule.fromport = {FromPort}, rule.toport = {ToPort},
     rule.protocol = {Protocol}
     SET rule.lastupdated = {aws_update_tag}
@@ -391,7 +394,7 @@ def load_ec2_security_group_rule(neo4j_session, group, rule_type, aws_update_tag
     MERGE (group)<-[r:MEMBER_OF_EC2_SECURITY_GROUP]-(rule)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {aws_update_tag};
-    """
+    """)
 
     ingest_rule_group_pair = """
     MERGE (group:EC2SecurityGroup{id: {GroupId}})
@@ -428,7 +431,7 @@ def load_ec2_security_group_rule(neo4j_session, group, rule_type, aws_update_tag
             # NOTE Cypher query syntax is incompatible with Python string formatting, so we have to do this awkward
             # NOTE manual formatting instead.
             neo4j_session.run(
-                ingest_rule.replace("#RULE_TYPE#", rule_type_map[rule_type]),
+                INGEST_RULE_TEMPLATE.safe_substitute(rule_label=rule_type_map[rule_type]),
                 RuleId=ruleid,
                 FromPort=from_port,
                 ToPort=to_port,
@@ -1031,21 +1034,21 @@ def load_ec2_vpcs(neo4j_session, data, region, current_aws_account_id, aws_updat
 
 
 def _get_cidr_association_statement(block_type):
-    ingest_cidr = """
+    INGEST_CIDR_TEMPLATE = Template("""
     MATCH (vpc:AWSVpc{id: {VpcId}})
     WITH vpc
     UNWIND {CidrBlock} as block_data
-        MERGE (new_block:#BLOCK_TYPE#{id: {VpcId} + '|' + block_data.#BLOCK_CIDR#})
+        MERGE (new_block:$block_label{id: {VpcId} + '|' + block_data.$block_cidr})
         ON CREATE SET new_block.firstseen = timestamp()
         SET new_block.association_id = block_data.AssociationId,
-        new_block.cidr_block = block_data.#BLOCK_CIDR#,
-        new_block.block_state = block_data.#STATE_NAME#.State,
-        new_block.block_state_message = block_data.#STATE_NAME#.StatusMessage,
+        new_block.cidr_block = block_data.$block_cidr,
+        new_block.block_state = block_data.$state_name.State,
+        new_block.block_state_message = block_data.$state_name.StatusMessage,
         new_block.lastupdated = {aws_update_tag}
         WITH vpc, new_block
         MERGE (vpc)-[r:BLOCK_ASSOCIATION]->(new_block)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {aws_update_tag}"""
+        SET r.lastupdated = {aws_update_tag}""")
 
     BLOCK_CIDR = "CidrBlock"
     STATE_NAME = "CidrBlockState"
@@ -1062,9 +1065,7 @@ def _get_cidr_association_statement(block_type):
     else:
         raise ValueError(f"Unsupported block type specified - {block_type}")
 
-    return ingest_cidr.replace("#BLOCK_CIDR#", BLOCK_CIDR) \
-        .replace("#STATE_NAME#", STATE_NAME) \
-        .replace("#BLOCK_TYPE#", BLOCK_TYPE)
+    return INGEST_CIDR_TEMPLATE.safe_substitute(block_label=BLOCK_TYPE, block_cidr=BLOCK_CIDR, state_name=STATE_NAME)
 
 
 def load_cidr_association_set(neo4j_session, vpc_id, vpc_data, block_type, aws_update_tag):

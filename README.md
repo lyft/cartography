@@ -37,7 +37,9 @@ Cartography is a Python tool that consolidates infrastructure assets and the rel
     - [What users have the TotallyFake extension installed?](#what-users-have-the-totallyfake-extension-installed)
     - [What users have installed extensions that are risky based on CRXcavator scoring?](#what-users-have-installed-extensions-that-are-risky-based-on-crxcavator-scoring)
   - [Data Enrichment](#data-enrichment)
-- [Multiple AWS Account Setup](#multiple-aws-account-setup)
+- [Cross-Account Auditing](#cross-account-auditing)
+  - [Multiple AWS Account Setup](#multiple-aws-account-setup)
+  - [Multiple GCP Project Setup](#multiple-gcp-project-setup)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -75,10 +77,14 @@ Time to set up the server that will run Cartography.  Cartography _should_ work 
  1. If you're a GCP user, **prepare your GCP credential(s)**
 
     1. Create an identity - either a User Account or a Service Account - for Cartography to run as
-    1. Ensure that this identity has the [securityReviewer](https://cloud.google.com/iam/docs/understanding-roles) role attached to it.
+    1. Ensure that this identity has the following roles (https://cloud.google.com/iam/docs/understanding-roles) attached to it:
+        - `roles/iam.securityReviewer`
+        - `roles/resourcemanager.organizationViewer`: needed to list/get GCP Organizations
+        - `roles/resourcemanager.folderViewer`: needed to list/get GCP Folders
     1. Ensure that the machine you are running Cartography on can authenticate to this identity.
         - **Method 1**: You can do this by setting your `GOOGLE_APPLICATION_CREDENTIALS` environment variable to point to a json file containing your credentials.  As per SecurityCommonSense™️, please ensure that only the user account that runs Cartography has read-access to this sensitive file.
         - **Method 2**: If you are running Cartography on a GCE instance or other GCP service, you can make use of the credential management provided by the default service accounts on these services.  See the [official docs](https://cloud.google.com/docs/authentication/production) on Application Default Credentials for more details.
+    1. **If you want to pull from multiple GCP Projects**, see [here](#multiple-gcp-project-setup).
 
 1. If you're a CRXcavator user, **prepare your CRXcavator API key**
 
@@ -345,7 +351,9 @@ Cartography adds custom attributes to nodes and relationships to point out secur
 	- **S3 buckets**: `anonymous_access` is set to `True` on an S3 bucket if this bucket has an S3Acl with a policy applied to it that allows the [predefined AWS "Authenticated Users" or "All Users" groups](https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#specifying-grantee-predefined-groups) to access it.  These determinations are made by using the [policyuniverse](https://github.com/Netflix-Skunkworks/policyuniverse) library.
 
 
-## Multiple AWS Account Setup
+## Cross-Account Auditing
+
+### Multiple AWS Account Setup
 There are many ways to allow Cartography to pull from more than one AWS account.  We can't cover all of them, but we _can_ show you the way we have things set up at Lyft.  In this scenario we will assume that you are going to run Cartography on an EC2 instance.
 
 1. Pick one of your AWS accounts to be the "**Hub**" account.  This Hub account will pull data from all of your other accounts - we'll call those "**Spoke**" accounts.
@@ -381,12 +389,18 @@ There are many ways to allow Cartography to pull from more than one AWS account.
 			      "Effect": "Allow",
 			      "Resource": "arn:aws:iam::*:role/cartography-read-only",
 			      "Action": "sts:AssumeRole"
-			    }
+			    },
+				{
+				  "Effect": "Allow",
+				  "Action": "ec2:DescribeRegions",
+				  "Resource": "*"
+				}
 			  ]
 			}
 			```
 
-			This allows the Hub role to assume the `cartography-read-only` role on your Spoke accounts.
+			This allows the Hub role to assume the `cartography-read-only` role on your Spoke accounts and to fetch all the different regions used by the Spoke accounts.
+
 		- When prompted to name the policy, you can name it anything you want - perhaps `CartographyAssumeRolePolicy`.
 
 3. **Set up your EC2 instance to correctly access these AWS identities**
@@ -416,3 +430,9 @@ There are many ways to allow Cartography to pull from more than one AWS account.
 
 		... etc ...
 		```
+
+
+### Multiple GCP Project Setup
+
+In order for Cartography to be able to pull all assets from all GCP Projects within an Organization, the User/Service Account assigned to Cartography needs to be created at the **Organization** level.
+This is because [IAM access control policies applied on the Organization resource apply throughout the hierarchy on all resources in the organization](https://cloud.google.com/resource-manager/docs/cloud-platform-resource-hierarchy#organizations).
