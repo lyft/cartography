@@ -19,3 +19,17 @@ GCP_PROJECTS_WITHOUT_PARENT = [
         'projectNumber': '123456789012',
     },
 ]
+
+GCP_ORGANIZATIONS = [
+    {
+        'displayName': 'example.com',
+        'owner':
+            {
+                'directoryCustomerId': 'asdf'
+            },
+        'creationTime': '2017-01-13T20:06:21.571Z',
+        'lifecycleState': 'ACTIVE',
+        'name': 'organizations/1337'
+    }
+]
+
