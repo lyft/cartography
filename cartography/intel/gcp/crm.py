@@ -1,6 +1,7 @@
 # Google Compute Resource Manager
 # https://cloud.google.com/resource-manager/docs/cloud-platform-resource-hierarchy
 import logging
+from string import Template
 
 from googleapiclient.discovery import HttpError
 
@@ -136,41 +137,67 @@ def load_gcp_projects(neo4j_session, data, gcp_update_tag):
     :return: Nothing
     """
     for project in data:
-        if project.get('parent', None):
-            if project['parent']['type'] == "organization":
-                query = """
-                MERGE (parent:GCPOrganization{id:{ParentId}})
-                ON CREATE SET parent.firstseen = timestamp()
-                """
-                parentid = f"organizations/{project['parent']['id']}"
-            elif project['parent']['type'] == "folder":
-                query = """
-                MERGE (parent:GCPFolder{id:{ParentId}})
-                ON CREATE SET parent.firstseen = timestamp()
-                """
-                parentid = f"folders/{project['parent']['id']}"
-        query += """
-        MERGE (project:GCPProject{id:{ProjectId}})
-        ON CREATE SET project.firstseen = timestamp()
-        SET project.projectid = {ProjectId},
-        project.projectnumber = {ProjectNumber},
-        project.displayname = {DisplayName},
-        project.lifecyclestate = {LifecycleState},
-        project.lastupdated = {gcp_update_tag}
-        WITH parent, project
-        MERGE (parent)-[r:RESOURCE]->(project)
-        ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {gcp_update_tag}
-        """
-        neo4j_session.run(
-            query,
-            ParentId=parentid,
-            ProjectId=project['projectId'],
-            ProjectNumber=project['projectNumber'],
-            DisplayName=project.get('name', None),
-            LifecycleState=project.get('lifecycleState', None),
-            gcp_update_tag=gcp_update_tag,
-        )
+        if project.get('parent') is not None:
+            # Project has parents, so set the parent node label to either `GCPOrganization` or `GCPFolder`.
+            if project['parent']['type'] == 'organization':
+                parent_label = 'GCPOrganization'
+            elif project['parent']['type'] == 'folder':
+                parent_label = 'GCPFolder'
+            else:
+                raise NotImplementedError(
+                    "Ingestion of GCP {}s as parent nodes is currently not supported. "
+                    "Please file an issue at https://github.com/lyft/cartography/issues.".format(
+                        project['parent']['type'],
+                    ),
+                )
+            # Create a parent node ID: either `organizations/{id}` or `folders/{id}`.
+            parentid = f"{project['parent']['type']}s/{project['parent']['id']}"
+
+            # Create parent node, create project node, and connect them together.
+            INGEST_PARENT_TEMPLATE = Template("""
+            MERGE (parent:$parent_label{id:{ParentId}})
+            ON CREATE SET parent.firstseen = timestamp()
+
+            MERGE (project:GCPProject{id:{ProjectId}})
+            ON CREATE SET project.firstseen = timestamp()
+            SET project.projectid = {ProjectId},
+            project.projectnumber = {ProjectNumber},
+            project.displayname = {DisplayName},
+            project.lifecyclestate = {LifecycleState},
+            project.lastupdated = {gcp_update_tag}
+
+            MERGE (parent)-[r:RESOURCE]->(project)
+            ON CREATE SET r.firstseen = timestamp()
+            SET r.lastupdated = {gcp_update_tag}
+            """)
+            neo4j_session.run(
+                INGEST_PARENT_TEMPLATE.safe_substitute(parent_label=parent_label),
+                ParentId=parentid,
+                ProjectId=project['projectId'],
+                ProjectNumber=project['projectNumber'],
+                DisplayName=project.get('name', None),
+                LifecycleState=project.get('lifecycleState', None),
+                gcp_update_tag=gcp_update_tag,
+            )
+        else:
+            # Project has no parents so just merge the Project node
+            no_parents_query = """
+            MERGE (project:GCPProject{id:{ProjectId}})
+            ON CREATE SET project.firstseen = timestamp()
+            SET project.projectid = {ProjectId},
+            project.projectnumber = {ProjectNumber},
+            project.displayname = {DisplayName},
+            project.lifecyclestate = {LifecycleState},
+            project.lastupdated = {gcp_update_tag}
+            """
+            neo4j_session.run(
+                no_parents_query,
+                ProjectId=project['projectId'],
+                ProjectNumber=project['projectNumber'],
+                DisplayName=project.get('name', None),
+                LifecycleState=project.get('lifecycleState', None),
+                gcp_update_tag=gcp_update_tag,
+            )
 
 
 def cleanup_gcp_organizations(neo4j_session, common_job_parameters):
