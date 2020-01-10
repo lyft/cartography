@@ -150,54 +150,67 @@ def load_gcp_projects(neo4j_session, data, gcp_update_tag):
                         project['parent']['type'],
                     ),
                 )
-            # Create a parent node ID: either `organizations/{id}` or `folders/{id}`.
-            parentid = f"{project['parent']['type']}s/{project['parent']['id']}"
-
-            # Create parent node, create project node, and connect them together.
-            INGEST_PARENT_TEMPLATE = Template("""
-            MERGE (parent:$parent_label{id:{ParentId}})
-            ON CREATE SET parent.firstseen = timestamp()
-
-            MERGE (project:GCPProject{id:{ProjectId}})
-            ON CREATE SET project.firstseen = timestamp()
-            SET project.projectid = {ProjectId},
-            project.projectnumber = {ProjectNumber},
-            project.displayname = {DisplayName},
-            project.lifecyclestate = {LifecycleState},
-            project.lastupdated = {gcp_update_tag}
-
-            MERGE (parent)-[r:RESOURCE]->(project)
-            ON CREATE SET r.firstseen = timestamp()
-            SET r.lastupdated = {gcp_update_tag}
-            """)
-            neo4j_session.run(
-                INGEST_PARENT_TEMPLATE.safe_substitute(parent_label=parent_label),
-                ParentId=parentid,
-                ProjectId=project['projectId'],
-                ProjectNumber=project['projectNumber'],
-                DisplayName=project.get('name', None),
-                LifecycleState=project.get('lifecycleState', None),
-                gcp_update_tag=gcp_update_tag,
-            )
+            _load_gcp_project_with_parent(gcp_update_tag, neo4j_session, parent_label, project)
         else:
-            # Project has no parents so just merge the Project node
-            no_parents_query = """
-            MERGE (project:GCPProject{id:{ProjectId}})
-            ON CREATE SET project.firstseen = timestamp()
-            SET project.projectid = {ProjectId},
-            project.projectnumber = {ProjectNumber},
-            project.displayname = {DisplayName},
-            project.lifecyclestate = {LifecycleState},
-            project.lastupdated = {gcp_update_tag}
-            """
-            neo4j_session.run(
-                no_parents_query,
-                ProjectId=project['projectId'],
-                ProjectNumber=project['projectNumber'],
-                DisplayName=project.get('name', None),
-                LifecycleState=project.get('lifecycleState', None),
-                gcp_update_tag=gcp_update_tag,
-            )
+            _load_gcp_project_without_parent(gcp_update_tag, neo4j_session, project)
+
+
+def _load_gcp_project_with_parent(gcp_update_tag, neo4j_session, parent_label, project):
+    """
+    Helper function to ingest GCP project nodes that have parents.
+    """
+    # Create a parent node ID: either `organizations/{id}` or `folders/{id}`.
+    parentid = f"{project['parent']['type']}s/{project['parent']['id']}"
+    # Create parent node, create project node, and connect them together.
+    INGEST_PARENT_TEMPLATE = Template("""
+        MERGE (parent:$parent_label{id:{ParentId}})
+        ON CREATE SET parent.firstseen = timestamp()
+
+        MERGE (project:GCPProject{id:{ProjectId}})
+        ON CREATE SET project.firstseen = timestamp()
+        SET project.projectid = {ProjectId},
+        project.projectnumber = {ProjectNumber},
+        project.displayname = {DisplayName},
+        project.lifecyclestate = {LifecycleState},
+        project.lastupdated = {gcp_update_tag}
+
+        MERGE (parent)-[r:RESOURCE]->(project)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {gcp_update_tag}
+        """)
+    neo4j_session.run(
+        INGEST_PARENT_TEMPLATE.safe_substitute(parent_label=parent_label),
+        ParentId=parentid,
+        ProjectId=project['projectId'],
+        ProjectNumber=project['projectNumber'],
+        DisplayName=project.get('name', None),
+        LifecycleState=project.get('lifecycleState', None),
+        gcp_update_tag=gcp_update_tag,
+    )
+
+
+def _load_gcp_project_without_parent(gcp_update_tag, neo4j_session, project):
+    """
+    Helper function to ingest GCP project nodes that don't have parents.
+    """
+    # Project has no parents so just merge the Project node
+    no_parents_query = """
+        MERGE (project:GCPProject{id:{ProjectId}})
+        ON CREATE SET project.firstseen = timestamp()
+        SET project.projectid = {ProjectId},
+        project.projectnumber = {ProjectNumber},
+        project.displayname = {DisplayName},
+        project.lifecyclestate = {LifecycleState},
+        project.lastupdated = {gcp_update_tag}
+        """
+    neo4j_session.run(
+        no_parents_query,
+        ProjectId=project['projectId'],
+        ProjectNumber=project['projectNumber'],
+        DisplayName=project.get('name', None),
+        LifecycleState=project.get('lifecycleState', None),
+        gcp_update_tag=gcp_update_tag,
+    )
 
 
 def cleanup_gcp_organizations(neo4j_session, common_job_parameters):
