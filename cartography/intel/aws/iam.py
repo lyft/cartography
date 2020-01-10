@@ -262,7 +262,7 @@ def _find_roles_assumable_in_policy(policy_data):
 
 def load_group_policies(neo4j_session, group_policies, aws_update_tag):
     ingest_policies_assume_role = """
-    MATCH (group:AWSGroup{name: {GroupName}})
+    MATCH (group:AWSGroup{arn: {GroupArn}})
     WITH group
     MERGE (role:AWSRole{arn: {RoleArn}})
     ON CREATE SET role.firstseen = timestamp()
@@ -273,14 +273,14 @@ def load_group_policies(neo4j_session, group_policies, aws_update_tag):
     SET r.lastupdated = {aws_update_tag}
     """
 
-    for group_name, policies in group_policies.items():
+    for group_arn, policies in group_policies.items():
         for policy_name, policy_data in policies.items():
             for role_arn in _find_roles_assumable_in_policy(policy_data):
                 # TODO resource ARNs may contain wildcards, e.g. arn:aws:iam::*:role/admin --
                 # TODO policyuniverse can't expand resource wildcards so further thought is needed here
                 neo4j_session.run(
                     ingest_policies_assume_role,
-                    GroupName=group_name,
+                    GroupArn=group_arn,
                     RoleArn=role_arn,
                     aws_update_tag=aws_update_tag,
                 )
@@ -288,9 +288,9 @@ def load_group_policies(neo4j_session, group_policies, aws_update_tag):
 
 def load_role_policies(neo4j_session, role_policies, aws_update_tag):
     ingest_policies_assume_role = """
-    MATCH (assumer:AWSRole{name: {RoleName}})
+    MATCH (assumer:AWSRole{arn: {FromArn}})
     WITH assumer
-    MERGE (role:AWSRole{arn: {RoleArn}})
+    MERGE (role:AWSRole{arn: {ToArn}})
     ON CREATE SET role.firstseen = timestamp()
     SET role.lastupdated = {aws_update_tag}
     WITH role, assumer
@@ -299,15 +299,15 @@ def load_role_policies(neo4j_session, role_policies, aws_update_tag):
     SET r.lastupdated = {aws_update_tag}
     """
 
-    for role_name, policies in role_policies.items():
+    for role_arn, policies in role_policies.items():
         for policy_name, policy_data in policies.items():
-            for role_arn in _find_roles_assumable_in_policy(policy_data):
+            for to_arn in _find_roles_assumable_in_policy(policy_data):
                 # TODO resource ARNs may contain wildcards, e.g. arn:aws:iam::*:role/admin --
                 # TODO policyuniverse can't expand resource wildcards so further thought is needed here
                 neo4j_session.run(
                     ingest_policies_assume_role,
-                    RoleName=role_name,
-                    RoleArn=role_arn,
+                    FromArn=role_arn,
+                    ToArn=to_arn,
                     aws_update_tag=aws_update_tag,
                 )
 
@@ -383,14 +383,16 @@ def sync_group_memberships(neo4j_session, boto3_session, current_aws_account_id,
 
 def sync_group_policies(neo4j_session, boto3_session, current_aws_account_id, aws_update_tag, common_job_parameters):
     logger.debug("Syncing IAM group policies for account '%s'.", current_aws_account_id)
-    query = "MATCH (group:AWSGroup)<-[:RESOURCE]-(AWSAccount{id: {AWS_ACCOUNT_ID}}) return group.name as name;"
-    result = neo4j_session.run(query, AWS_ACCOUNT_ID=current_aws_account_id)
-    groups = [r['name'] for r in result]
+    query = "MATCH (group:AWSGroup)<-[:RESOURCE]-(AWSAccount{id: {AWS_ACCOUNT_ID}}) " \
+            "return group.name as name, group.arn as arn;"
+    groups = neo4j_session.run(query, AWS_ACCOUNT_ID=current_aws_account_id)
     groups_policies = {}
-    for group_name in groups:
-        groups_policies[group_name] = {}
+    for group in groups:
+        group_arn = group["arn"]
+        group_name = group["name"]
+        groups_policies[group_arn] = {}
         for policy_name in get_group_policies(boto3_session, group_name)['PolicyNames']:
-            groups_policies[group_name][policy_name] = get_group_policy_info(boto3_session, group_name, policy_name)
+            groups_policies[group_arn][policy_name] = get_group_policy_info(boto3_session, group_name, policy_name)
     load_group_policies(neo4j_session, groups_policies, aws_update_tag)
     run_cleanup_job(
         'aws_import_groups_policy_cleanup.json',
@@ -404,15 +406,16 @@ def sync_role_policies(neo4j_session, boto3_session, current_aws_account_id, aws
     query = """
     MATCH (role:AWSRole)<-[:AWS_ROLE]-(AWSAccount{id: {AWS_ACCOUNT_ID}})
     WHERE exists(role.name)
-    RETURN role.name AS name;
+    RETURN role.name AS name, role.arn AS arn;
     """
-    result = neo4j_session.run(query, AWS_ACCOUNT_ID=current_aws_account_id)
-    roles = [r['name'] for r in result]
+    roles = neo4j_session.run(query, AWS_ACCOUNT_ID=current_aws_account_id)
     roles_policies = {}
-    for role_name in roles:
-        roles_policies[role_name] = {}
+    for role in roles:
+        role_arn = role["arn"]
+        role_name = role["name"]
+        roles_policies[role_arn] = {}
         for policy_name in get_role_policies(boto3_session, role_name)['PolicyNames']:
-            roles_policies[role_name][policy_name] = get_role_policy_info(boto3_session, role_name, policy_name)
+            roles_policies[role_arn][policy_name] = get_role_policy_info(boto3_session, role_name, policy_name)
     load_role_policies(neo4j_session, roles_policies, aws_update_tag)
     run_cleanup_job(
         'aws_import_roles_policy_cleanup.json',
