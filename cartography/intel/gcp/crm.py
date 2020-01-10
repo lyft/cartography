@@ -137,7 +137,7 @@ def load_gcp_projects(neo4j_session, data, gcp_update_tag):
     :return: Nothing
     """
     for project in data:
-        if project.get('parent') is not None:
+        if project.get('parent'):
             # Project has parents, so set the parent node label to either `GCPOrganization` or `GCPFolder`.
             if project['parent']['type'] == 'organization':
                 parent_label = 'GCPOrganization'

@@ -79,7 +79,7 @@ def test_load_gcp_projects_without_parent(neo4j_session):
     }
     nodes = neo4j_session.run(
         """
-        MATCH (d:GCPProject) where NOT (d)<-[:RESOURCE]-() return d.id, d.projectnumber
+        MATCH (d:GCPProject) WHERE NOT (d)<-[:RESOURCE]-() RETURN d.id, d.projectnumber
         """
     )
     actual_nodes = {(n['d.id'], n['d.projectnumber']) for n in nodes}
