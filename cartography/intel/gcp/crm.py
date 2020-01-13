@@ -136,79 +136,60 @@ def load_gcp_projects(neo4j_session, data, gcp_update_tag):
     :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
     :return: Nothing
     """
+    query = """
+    MERGE (project:GCPProject{id:{ProjectId}})
+    ON CREATE SET project.firstseen = timestamp()
+    SET project.projectid = {ProjectId},
+    project.projectnumber = {ProjectNumber},
+    project.displayname = {DisplayName},
+    project.lifecyclestate = {LifecycleState},
+    project.lastupdated = {gcp_update_tag}
+    """
+
     for project in data:
+        neo4j_session.run(
+            query,
+            ProjectId=project['projectId'],
+            ProjectNumber=project['projectNumber'],
+            DisplayName=project.get('name', None),
+            LifecycleState=project.get('lifecycleState', None),
+            gcp_update_tag=gcp_update_tag,
+        )
         if project.get('parent'):
-            # Project has parents, so set the parent node label to either `GCPOrganization` or `GCPFolder`.
-            if project['parent']['type'] == 'organization':
-                parent_label = 'GCPOrganization'
-            elif project['parent']['type'] == 'folder':
-                parent_label = 'GCPFolder'
-            else:
-                raise NotImplementedError(
-                    "Ingestion of GCP {}s as parent nodes is currently not supported. "
-                    "Please file an issue at https://github.com/lyft/cartography/issues.".format(
-                        project['parent']['type'],
-                    ),
-                )
-            _load_gcp_project_with_parent(gcp_update_tag, neo4j_session, parent_label, project)
-        else:
-            _load_gcp_project_without_parent(gcp_update_tag, neo4j_session, project)
+            _attach_gcp_project_parent(neo4j_session, project, gcp_update_tag)
 
 
-def _load_gcp_project_with_parent(gcp_update_tag, neo4j_session, parent_label, project):
+def _attach_gcp_project_parent(neo4j_session, project, gcp_update_tag):
     """
-    Helper function to ingest GCP project nodes that have parents.
+    Attach a project to its respective parent, as in the Resource Hierarchy -
+    https://cloud.google.com/resource-manager/docs/cloud-platform-resource-hierarchy
     """
-    # Create a parent node ID: either `organizations/{id}` or `folders/{id}`.
-    parentid = f"{project['parent']['type']}s/{project['parent']['id']}"
-    # Create parent node, create project node, and connect them together.
+    if project['parent']['type'] == 'organization':
+        parent_label = 'GCPOrganization'
+    elif project['parent']['type'] == 'folder':
+        parent_label = 'GCPFolder'
+    else:
+        raise NotImplementedError(
+            "Ingestion of GCP {}s as parent nodes is currently not supported. "
+            "Please file an issue at https://github.com/lyft/cartography/issues.".format(
+                project['parent']['type'],
+            ),
+        )
+    parent_id = f"{project['parent']['type']}s/{project['parent']['id']}"
     INGEST_PARENT_TEMPLATE = Template("""
-        MERGE (parent:$parent_label{id:{ParentId}})
-        ON CREATE SET parent.firstseen = timestamp()
+    MATCH (project:GCPProject{id:{ProjectId}})
 
-        MERGE (project:GCPProject{id:{ProjectId}})
-        ON CREATE SET project.firstseen = timestamp()
-        SET project.projectid = {ProjectId},
-        project.projectnumber = {ProjectNumber},
-        project.displayname = {DisplayName},
-        project.lifecyclestate = {LifecycleState},
-        project.lastupdated = {gcp_update_tag}
+    MERGE (parent:$parent_label{id:{ParentId}})
+    ON CREATE SET parent.firstseen = timestamp()
 
-        MERGE (parent)-[r:RESOURCE]->(project)
-        ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {gcp_update_tag}
-        """)
+    MERGE (parent)-[r:RESOURCE]->(project)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}
+    """)
     neo4j_session.run(
         INGEST_PARENT_TEMPLATE.safe_substitute(parent_label=parent_label),
-        ParentId=parentid,
+        ParentId=parent_id,
         ProjectId=project['projectId'],
-        ProjectNumber=project['projectNumber'],
-        DisplayName=project.get('name', None),
-        LifecycleState=project.get('lifecycleState', None),
-        gcp_update_tag=gcp_update_tag,
-    )
-
-
-def _load_gcp_project_without_parent(gcp_update_tag, neo4j_session, project):
-    """
-    Helper function to ingest GCP project nodes that don't have parents.
-    """
-    # Project has no parents so just merge the Project node
-    no_parents_query = """
-        MERGE (project:GCPProject{id:{ProjectId}})
-        ON CREATE SET project.firstseen = timestamp()
-        SET project.projectid = {ProjectId},
-        project.projectnumber = {ProjectNumber},
-        project.displayname = {DisplayName},
-        project.lifecyclestate = {LifecycleState},
-        project.lastupdated = {gcp_update_tag}
-        """
-    neo4j_session.run(
-        no_parents_query,
-        ProjectId=project['projectId'],
-        ProjectNumber=project['projectNumber'],
-        DisplayName=project.get('name', None),
-        LifecycleState=project.get('lifecycleState', None),
         gcp_update_tag=gcp_update_tag,
     )
 

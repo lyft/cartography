@@ -28,8 +28,8 @@ GCP_PROJECTS = [
         'lifecycleState': 'ACTIVE',
         'name': 'Group 1',
         'parent': {'id': '1414', 'type': 'folder'},
-        'projectId': 'project-232323',
-        'projectNumber': 'sample-number-121212',
+        'projectId': 'this-project-has-a-parent-232323',
+        'projectNumber': '232323',
     },
 ]
 

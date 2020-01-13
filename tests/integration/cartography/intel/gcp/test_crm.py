@@ -27,14 +27,14 @@ def test_load_gcp_projects(neo4j_session):
 
     # Ensure the sample project gets ingested correctly
     expected_nodes = {
-        ("project-232323", "sample-number-121212"),
+        ("this-project-has-a-parent-232323"),
     }
     nodes = neo4j_session.run(
         """
-        MATCH (d:GCPProject) return d.id, d.projectnumber
+        MATCH (d:GCPProject) return d.id
         """
     )
-    actual_nodes = {(n['d.id'], n['d.projectnumber']) for n in nodes}
+    actual_nodes = {(n['d.id']) for n in nodes}
     assert actual_nodes == expected_nodes
 
     # Expect (GCPProject{project-232323})<-[:RESOURCE]-(GCPFolder{1414})
@@ -45,7 +45,7 @@ def test_load_gcp_projects(neo4j_session):
     """
     nodes = neo4j_session.run(
         query,
-        ProjectId='project-232323',
+        ProjectId='this-project-has-a-parent-232323',
     )
     actual_nodes = {
         (
@@ -56,7 +56,7 @@ def test_load_gcp_projects(neo4j_session):
     }
     expected_nodes = {
         (
-            'project-232323',
+            'this-project-has-a-parent-232323',
             'folders/1414',
             'organizations/1337',
         ),
@@ -75,12 +75,12 @@ def test_load_gcp_projects_without_parent(neo4j_session):
     )
 
     expected_nodes = {
-        ("my-parentless-project-987654", "123456789012"),
+        ("my-parentless-project-987654"),
     }
     nodes = neo4j_session.run(
         """
-        MATCH (d:GCPProject) WHERE NOT (d)<-[:RESOURCE]-() RETURN d.id, d.projectnumber
+        MATCH (d:GCPProject) WHERE NOT (d)<-[:RESOURCE]-() RETURN d.id
         """
     )
-    actual_nodes = {(n['d.id'], n['d.projectnumber']) for n in nodes}
+    actual_nodes = {(n['d.id']) for n in nodes}
     assert actual_nodes == expected_nodes
