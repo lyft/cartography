@@ -1,6 +1,7 @@
 # Google Compute Resource Manager
 # https://cloud.google.com/resource-manager/docs/cloud-platform-resource-hierarchy
 import logging
+from string import Template
 
 from googleapiclient.discovery import HttpError
 
@@ -135,42 +136,62 @@ def load_gcp_projects(neo4j_session, data, gcp_update_tag):
     :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
     :return: Nothing
     """
+    query = """
+    MERGE (project:GCPProject{id:{ProjectId}})
+    ON CREATE SET project.firstseen = timestamp()
+    SET project.projectid = {ProjectId},
+    project.projectnumber = {ProjectNumber},
+    project.displayname = {DisplayName},
+    project.lifecyclestate = {LifecycleState},
+    project.lastupdated = {gcp_update_tag}
+    """
+
     for project in data:
-        if project.get('parent', None):
-            if project['parent']['type'] == "organization":
-                query = """
-                MERGE (parent:GCPOrganization{id:{ParentId}})
-                ON CREATE SET parent.firstseen = timestamp()
-                """
-                parentid = f"organizations/{project['parent']['id']}"
-            elif project['parent']['type'] == "folder":
-                query = """
-                MERGE (parent:GCPFolder{id:{ParentId}})
-                ON CREATE SET parent.firstseen = timestamp()
-                """
-                parentid = f"folders/{project['parent']['id']}"
-        query += """
-        MERGE (project:GCPProject{id:{ProjectId}})
-        ON CREATE SET project.firstseen = timestamp()
-        SET project.projectid = {ProjectId},
-        project.projectnumber = {ProjectNumber},
-        project.displayname = {DisplayName},
-        project.lifecyclestate = {LifecycleState},
-        project.lastupdated = {gcp_update_tag}
-        WITH parent, project
-        MERGE (parent)-[r:RESOURCE]->(project)
-        ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {gcp_update_tag}
-        """
         neo4j_session.run(
             query,
-            ParentId=parentid,
             ProjectId=project['projectId'],
             ProjectNumber=project['projectNumber'],
             DisplayName=project.get('name', None),
             LifecycleState=project.get('lifecycleState', None),
             gcp_update_tag=gcp_update_tag,
         )
+        if project.get('parent'):
+            _attach_gcp_project_parent(neo4j_session, project, gcp_update_tag)
+
+
+def _attach_gcp_project_parent(neo4j_session, project, gcp_update_tag):
+    """
+    Attach a project to its respective parent, as in the Resource Hierarchy -
+    https://cloud.google.com/resource-manager/docs/cloud-platform-resource-hierarchy
+    """
+    if project['parent']['type'] == 'organization':
+        parent_label = 'GCPOrganization'
+    elif project['parent']['type'] == 'folder':
+        parent_label = 'GCPFolder'
+    else:
+        raise NotImplementedError(
+            "Ingestion of GCP {}s as parent nodes is currently not supported. "
+            "Please file an issue at https://github.com/lyft/cartography/issues.".format(
+                project['parent']['type'],
+            ),
+        )
+    parent_id = f"{project['parent']['type']}s/{project['parent']['id']}"
+    INGEST_PARENT_TEMPLATE = Template("""
+    MATCH (project:GCPProject{id:{ProjectId}})
+
+    MERGE (parent:$parent_label{id:{ParentId}})
+    ON CREATE SET parent.firstseen = timestamp()
+
+    MERGE (parent)-[r:RESOURCE]->(project)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}
+    """)
+    neo4j_session.run(
+        INGEST_PARENT_TEMPLATE.safe_substitute(parent_label=parent_label),
+        ParentId=parent_id,
+        ProjectId=project['projectId'],
+        gcp_update_tag=gcp_update_tag,
+    )
 
 
 def cleanup_gcp_organizations(neo4j_session, common_job_parameters):
