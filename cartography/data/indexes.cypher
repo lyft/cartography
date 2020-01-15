@@ -21,6 +21,7 @@ CREATE INDEX ON :DNSZone(name);
 CREATE INDEX ON :DynamoDBGlobalSecondaryIndex(id);
 CREATE INDEX ON :DynamoDBTable(arn);
 CREATE INDEX ON :DynamoDBTable(id);
+CREATE INDEX ON :EC2Instance(id);
 CREATE INDEX ON :EC2Instance(instanceid);
 CREATE INDEX ON :EC2Instance(publicdnsname);
 CREATE INDEX ON :EC2KeyPair(id);
@@ -78,5 +79,6 @@ CREATE INDEX ON :RDSInstance(db_instance_identifier);
 CREATE INDEX ON :RDSInstance(id);
 CREATE INDEX ON :ReplyUri(id)
 CREATE INDEX ON :S3Acl(id);
+CREATE INDEX ON :S3Bucket(id);
 CREATE INDEX ON :S3Bucket(name);
 CREATE INDEX ON :User(arn);

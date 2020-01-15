@@ -74,7 +74,7 @@ def _load_s3_acls(neo4j_session, acls, aws_account_id, update_tag):
     ON CREATE SET a.firstseen = timestamp(), a.owner = acl.owner, a.ownerid = acl.ownerid, a.type = acl.type,
     a.displayname = acl.displayname, a.granteeid = acl.granteeid, a.uri = acl.uri, a.permission = acl.permission
     SET a.lastupdated = {UpdateTag}
-    WITH a,acl MATCH (s3:S3Bucket{name: acl.bucket})
+    WITH a,acl MATCH (s3:S3Bucket{id: acl.bucket})
     MERGE (a)-[r:APPLIES_TO]->(s3)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {UpdateTag}
@@ -283,9 +283,9 @@ def parse_acl(acl, bucket, aws_account_id):
 
 def load_s3_buckets(neo4j_session, data, current_aws_account_id, aws_update_tag):
     ingest_bucket = """
-    MERGE (bucket:S3Bucket{name: {BucketName}})
+    MERGE (bucket:S3Bucket{id:{BucketName}})
     ON CREATE SET bucket.firstseen = timestamp(), bucket.creationdate = {CreationDate}
-    SET bucket.lastupdated = {aws_update_tag}
+    SET bucket.name = {BucketName}, bucket.lastupdated = {aws_update_tag}
     WITH bucket
     MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
     MERGE (owner)-[r:RESOURCE]->(bucket)
