@@ -282,9 +282,8 @@ def parse_acl(acl, bucket, aws_account_id):
 
 
 def load_s3_buckets(neo4j_session, data, current_aws_account_id, aws_update_tag):
-    # TODO: Test if this change results in duplicate buckets being MERGED
     ingest_bucket = """
-    MERGE (bucket:S3Bucket{id:{BucketName})
+    MERGE (bucket:S3Bucket{id:{BucketName}})
     ON CREATE SET bucket.firstseen = timestamp(), bucket.creationdate = {CreationDate}
     SET bucket.name = {BucketName}, bucket.lastupdated = {aws_update_tag}
     WITH bucket
