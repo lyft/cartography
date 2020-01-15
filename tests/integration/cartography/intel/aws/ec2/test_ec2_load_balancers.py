@@ -1,5 +1,5 @@
 import cartography.intel.aws.ec2
-import tests.data.aws.ec2
+import tests.data.aws.ec2.load_balancers
 
 TEST_ACCOUNT_ID = '000000000000'
 TEST_REGION = 'us-east-1'
@@ -7,7 +7,7 @@ TEST_UPDATE_TAG = 123456789
 
 
 def test_load_load_balancer_v2s(neo4j_session, *args):
-    load_balancer_data = tests.data.aws.ec2.LOAD_BALANCER_DATA
+    load_balancer_data = tests.data.aws.ec2.load_balancers.LOAD_BALANCER_DATA
     ec2_instance_id = 'i-0f76fade'
     sg_group_id = 'sg-123456'
     sg_group_id_2 = 'sg-234567'
@@ -98,7 +98,7 @@ def test_load_load_balancer_v2_listeners(neo4j_session, *args):
         aws_udpate_tag=TEST_UPDATE_TAG,
     )
 
-    listener_data = tests.data.aws.ec2.LOAD_BALANCER_LISTENERS
+    listener_data = tests.data.aws.ec2.load_balancers.LOAD_BALANCER_LISTENERS
     cartography.intel.aws.ec2.load_load_balancer_v2_listeners(
         neo4j_session,
         load_balancer_id,
@@ -136,7 +136,7 @@ def test_load_load_balancer_v2_target_groups(neo4j_session, *args):
     load_balancer_id = 'asadfmyloadbalancerid'
     ec2_instance_id = 'i-0f76fade'
 
-    target_groups = tests.data.aws.ec2.TARGET_GROUPS
+    target_groups = tests.data.aws.ec2.load_balancers.TARGET_GROUPS
 
     # an elbv2, ec2instance, and AWSAccount must exist or nothing will match
     neo4j_session.run(
@@ -241,45 +241,6 @@ def test_load_load_balancer_v2_subnets(neo4j_session, *args):
             n['subnet.subnetid'],
             n['subnet.region'],
             n['subnet.lastupdated'],
-        )
-        for n in nodes
-    }
-    assert actual_nodes == expected_nodes
-
-
-def test_load_ec2_key_pairs(neo4j_session, *args):
-    data = tests.data.aws.ec2.DESCRIBE_KEY_PAIRS
-    cartography.intel.aws.ec2.load_ec2_key_pairs(
-        neo4j_session,
-        data,
-        TEST_REGION,
-        TEST_ACCOUNT_ID,
-        TEST_UPDATE_TAG,
-    )
-    expected_nodes = {
-        (
-            "arn:aws:ec2:us-east-1:000000000000:key-pair/sample_key_pair_1",
-            "11:11:11:11:11:11:11:11:11:11:11:11:11:11:11:11:11:11:11:11",
-        ),
-        (
-            "arn:aws:ec2:us-east-1:000000000000:key-pair/sample_key_pair_2",
-            "22:22:22:22:22:22:22:22:22:22:22:22:22:22:22:22:22:22:22:22",
-        ),
-        (
-            "arn:aws:ec2:us-east-1:000000000000:key-pair/sample_key_pair_3",
-            "33:33:33:33:33:33:33:33:33:33:33:33:33:33:33:33:33:33:33:33",
-        ),
-    }
-
-    nodes = neo4j_session.run(
-        """
-        MATCH (k:EC2KeyPair) return k.arn, k.keyfingerprint
-        """
-    )
-    actual_nodes = {
-        (
-            n['k.arn'],
-            n['k.keyfingerprint'],
         )
         for n in nodes
     }
