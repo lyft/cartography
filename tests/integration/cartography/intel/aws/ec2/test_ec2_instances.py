@@ -5,6 +5,7 @@ TEST_ACCOUNT_ID = '000000000000'
 TEST_REGION = 'us-east-1'
 TEST_UPDATE_TAG = 123456789
 
+
 def test_load_ec2_instances(neo4j_session, *args):
     """
     Ensure that instances actually get loaded and have their key fields
@@ -73,7 +74,7 @@ def test_ec2_reservations_to_instances(neo4j_session, *args):
     }
 
     nodes = neo4j_session.run(
-    """
+        """
     MATCH (r:EC2Reservation)<-[:MEMBER_OF_EC2_RESERVATION]-(i:EC2Instance) RETURN r.reservationid, i.id
     """
     )

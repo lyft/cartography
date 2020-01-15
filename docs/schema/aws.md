@@ -576,7 +576,8 @@ Our representation of an AWS [EC2 Instance](https://docs.aws.amazon.com/AWSEC2/l
 |-------|-------------|
 | firstseen| Timestamp of when a sync job first discovered this node  |
 | lastupdated |  Timestamp of the last time the node was updated |
-| **instanceid**| The ID of the instance|
+| **id** | Same as `instanceid` below. |
+| instanceid | The instance id provided by AWS.  This is [globally unique](https://forums.aws.amazon.com/thread.jspa?threadID=137203) |
 | **publicdnsname** | The public DNS name assigned to the instance |
 | publicipaddress | The public IPv4 address assigned to the instance if applicable |
 | privateipaddress | The private IPv4 address assigned to the instance |
