@@ -10,7 +10,7 @@ TEST_AWS_ACCOUNTID = "AWSID"
 def test_cname(neo4j_session):
     # Test that cnames can be parsed and loaded
     data = tests.data.aws.route53.CNAME_RECORD
-    parsed_data = cartography.intel.aws.route53.parse_record_set(data, TEST_ZONE_ID)
+    parsed_data = cartography.intel.aws.route53.parse_record_set(data, TEST_ZONE_ID, data['Name'][:-1])
     cartography.intel.aws.route53.load_cname_records(neo4j_session, parsed_data, TEST_UPDATE_TAG)
 
 
@@ -36,10 +36,10 @@ def test_zone(neo4j_session):
 def test_unique_cname_records(neo4j_session):
     # Test that zone are being added by zone id
     data = tests.data.aws.route53.CNAME_RECORD
-    first_data = cartography.intel.aws.route53.parse_record_set(data, TEST_ZONE_ID)
+    first_data = cartography.intel.aws.route53.parse_record_set(data, TEST_ZONE_ID, data['Name'][:-1])
     cartography.intel.aws.route53.load_cname_records(neo4j_session, first_data, TEST_UPDATE_TAG)
 
-    second_data = cartography.intel.aws.route53.parse_record_set(data, TEST_ZONE_ID + "2")
+    second_data = cartography.intel.aws.route53.parse_record_set(data, TEST_ZONE_ID + "2", data['Name'][:-1])
     cartography.intel.aws.route53.load_cname_records(neo4j_session, second_data, TEST_UPDATE_TAG)
     result = neo4j_session.run("MATCH (n:AWSDNSRecord{name:'subdomain.lyft.com'}) return count(n) as recordcount")
     for r in result:
