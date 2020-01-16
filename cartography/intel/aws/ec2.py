@@ -167,7 +167,8 @@ def load_ec2_instances(neo4j_session, data, region, current_aws_account_id, aws_
     SET instance.publicdnsname = {PublicDnsName}, instance.privateipaddress = {PrivateIpAddress},
     instance.imageid = {ImageId}, instance.instancetype = {InstanceType}, instance.monitoringstate = {MonitoringState},
     instance.state = {State}, instance.launchtime = {LaunchTime}, instance.launchtimeunix = {LaunchTimeUnix},
-    instance.region = {Region}, instance.lastupdated = {aws_update_tag}
+    instance.region = {Region}, instance.lastupdated = {aws_update_tag},
+    instance.iaminstanceprofile = {IamInstanceProfile}
     WITH instance
     MERGE (subnet:EC2Subnet{subnetid: {SubnetId}})
     ON CREATE SET subnet.firstseen = timestamp()
@@ -255,6 +256,7 @@ def load_ec2_instances(neo4j_session, data, region, current_aws_account_id, aws_
                 ImageId=instance.get("ImageId", ""),
                 SubnetId=instance.get("SubnetId", ""),
                 InstanceType=instance.get("InstanceType", ""),
+                IamInstanceProfile=instance.get("IamInstanceProfile", {}).get("Arn"),
                 ReservationId=reservation_id,
                 MonitoringState=monitoring_state,
                 LaunchTime=str(launch_time),
