@@ -469,7 +469,7 @@ Representation of an AWS DNS [ResourceRecordSet](https://docs.aws.amazon.com/Rou
 |firstseen| Timestamp of when a sync job first discovered this node |
 |name| The name of the DNSRecord|
 |lastupdated| Timestamp of the last time the node was updated|
-|**id**| The name of the DNSRecord concatenated with the record type|
+|**id**| The zoneid for the record, the value of the record, and the type concatenated together|
 |type| The record type of the DNS record|
 |value| The IP address that the DNSRecord points to|
 

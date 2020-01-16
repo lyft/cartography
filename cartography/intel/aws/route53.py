@@ -192,7 +192,7 @@ def parse_record_set(record_set, zone_id):
                 "type": 'CNAME',
                 "zoneid": zone_id,
                 "value": value,
-                "id": record_set['Name'][:-1] + '+WEIGHTED_CNAME',
+                "id": _generate_id(zone_id, record_set['Name'][:-1], 'WEIGHTED_CNAME'),
             }
         else:
             # This is a normal CNAME record
@@ -204,7 +204,7 @@ def parse_record_set(record_set, zone_id):
                 "type": 'CNAME',
                 "zoneid": zone_id,
                 "value": value,
-                "id": record_set['Name'][:-1] + '+CNAME',
+                "id": _generate_id(zone_id, record_set['Name'][:-1], 'CNAME'),
             }
 
     elif record_set['Type'] == 'A':
@@ -216,7 +216,7 @@ def parse_record_set(record_set, zone_id):
                 "type": 'ALIAS',
                 "zoneid": zone_id,
                 "value": record_set['AliasTarget']['DNSName'][:-1],
-                "id": record_set['Name'][:-1] + '+ALIAS',
+                "id": _generate_id(zone_id, record_set['Name'][:-1], 'ALIAS'),
             }
         else:
             # this is a real A record
@@ -232,7 +232,7 @@ def parse_record_set(record_set, zone_id):
                 "type": 'A',
                 "zoneid": zone_id,
                 "value": value[:-1],
-                "id": record_set['Name'][:-1] + '+A',
+                "id": _generate_id(zone_id, record_set['Name'][:-1], 'A'),
             }
 
 
@@ -245,7 +245,7 @@ def parse_ns_record_set(record_set, zone_id):
             # looks like "name.some.fqdn.net.", so this removes the trailing comma.
             "name": record_set["Name"][:-1],
             "servers": servers,
-            "id": record_set['Name'][:-1] + '+NS',
+            "id": _generate_id(zone_id, record_set['Name'][:-1], 'NS'),
         }
 
 
@@ -322,6 +322,10 @@ def get_zones(client):
         record_sets = get_zone_record_sets(client, hosted_zone['Id'])
         results.append((hosted_zone, record_sets))
     return results
+
+
+def _generate_id(zoneid, name, record_type):
+    return "/".join([zoneid, name, record_type])
 
 
 def cleanup_route53(neo4j_session, current_aws_id, update_tag):
