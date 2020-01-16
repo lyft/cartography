@@ -179,7 +179,7 @@ def link_sub_zones(neo4j_session, update_tag):
     )
 
 
-def parse_record_set(record_set, zone_id):
+def parse_record_set(record_set, zone_id, name):
     # process CNAME, ALIAS and A records
     if record_set['Type'] == 'CNAME':
         if 'AliasTarget' in record_set:
@@ -188,11 +188,11 @@ def parse_record_set(record_set, zone_id):
             if value.endswith('.'):
                 value = value[:-1]
             return {
-                "name": record_set['Name'][:-1],
+                "name": name,
                 "type": 'CNAME',
                 "zoneid": zone_id,
                 "value": value,
-                "id": record_set['Name'][:-1] + '+WEIGHTED_CNAME',
+                "id": _generate_id(zone_id, name, 'WEIGHTED_CNAME'),
             }
         else:
             # This is a normal CNAME record
@@ -200,11 +200,11 @@ def parse_record_set(record_set, zone_id):
             if value.endswith('.'):
                 value = value[:-1]
             return {
-                "name": record_set['Name'][:-1],
+                "name": name,
                 "type": 'CNAME',
                 "zoneid": zone_id,
                 "value": value,
-                "id": record_set['Name'][:-1] + '+CNAME',
+                "id": _generate_id(zone_id, name, 'CNAME'),
             }
 
     elif record_set['Type'] == 'A':
@@ -212,11 +212,11 @@ def parse_record_set(record_set, zone_id):
             # this is an ALIAS record
             # ALIAS records are a special AWS-only type of A record
             return {
-                "name": record_set['Name'][:-1],
+                "name": name,
                 "type": 'ALIAS',
                 "zoneid": zone_id,
                 "value": record_set['AliasTarget']['DNSName'][:-1],
-                "id": record_set['Name'][:-1] + '+ALIAS',
+                "id": _generate_id(zone_id, name, 'ALIAS'),
             }
         else:
             # this is a real A record
@@ -228,11 +228,11 @@ def parse_record_set(record_set, zone_id):
                 value = value + a_value['Value'] + ','
 
             return {
-                "name": record_set['Name'][:-1],
+                "name": name,
                 "type": 'A',
                 "zoneid": zone_id,
                 "value": value[:-1],
-                "id": record_set['Name'][:-1] + '+A',
+                "id": _generate_id(zone_id, name, 'A'),
             }
 
 
@@ -245,7 +245,7 @@ def parse_ns_record_set(record_set, zone_id):
             # looks like "name.some.fqdn.net.", so this removes the trailing comma.
             "name": record_set["Name"][:-1],
             "servers": servers,
-            "id": record_set['Name'][:-1] + '+NS',
+            "id": _generate_id(zone_id, record_set['Name'][:-1], 'NS'),
         }
 
 
@@ -277,7 +277,7 @@ def load_dns_details(neo4j_session, dns_details, current_aws_id, update_tag):
 
         for record_set in zone_record_sets:
             if record_set['Type'] == 'A' or record_set['Type'] == 'CNAME':
-                record = parse_record_set(record_set, zone['Id'])
+                record = parse_record_set(record_set, zone['Id'], record_set['Name'][:-1])
 
                 if record['type'] == 'A':
                     zone_a_records.append(record)
@@ -322,6 +322,10 @@ def get_zones(client):
         record_sets = get_zone_record_sets(client, hosted_zone['Id'])
         results.append((hosted_zone, record_sets))
     return results
+
+
+def _generate_id(zoneid, name, record_type):
+    return "/".join([zoneid, name, record_type])
 
 
 def cleanup_route53(neo4j_session, current_aws_id, update_tag):
