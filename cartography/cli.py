@@ -115,10 +115,9 @@ class CLI:
         parser.add_argument(
             '--crxcavator-api-base-uri',
             type=str,
-            default=None,
+            default='https://api.crxcavator.io/v1',
             help=(
-                'Base URI for the CRXcavator API. Required if you are using the CRXcavator intel module. Ignored '
-                'otherwise.'
+                'Base URI for the CRXcavator API. Defaults to public API endpoint.'
             ),
         )
         parser.add_argument(
