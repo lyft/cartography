@@ -17,14 +17,40 @@ def get_s3_bucket_list(boto3_session):
     return client.list_buckets()
 
 
+def get_s3_clients(boto3_session):
+    """
+    Generates S3 clients for all active regions
+
+    Arguments:
+        boto3_session {boto3.session} -- Current AWS Session
+
+    Returns:
+        dict -- dictionary of regional s3 clients
+    """
+    ec2 = boto3_session.client('ec2')
+    resp = ec2.describe_regions()['Regions']
+    active_regions = [
+        x['RegionName'] for x in resp
+        if x['OptInStatus'] in ['opt-in-not-required', 'opted-in']
+    ]
+
+    clients = {
+        region: boto3_session.client('s3', region_name=region)
+        for region in active_regions
+    }
+    return clients
+
+
 def get_s3_bucket_details(boto3_session, bucket_data):
     """
     Iterates over all S3 buckets. Yields bucket name (string) and pairs of S3 bucket policies (JSON) and ACLs (JSON)
     """
+    clients = get_s3_clients(boto3_session)
     client = boto3_session.client('s3')
     for bucket in bucket_data['Buckets']:
-        acl = get_acl(bucket, client)
-        policy = get_policy(bucket, client)
+        region_name = client.get_bucket_location(Bucket=bucket['Name'])['LocationConstraint'] or 'us-east-1'
+        acl = get_acl(bucket, clients[region_name])
+        policy = get_policy(bucket, clients[region_name])
         yield bucket['Name'], acl, policy
 
 
