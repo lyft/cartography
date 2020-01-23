@@ -210,11 +210,11 @@ class CLI:
             logger.debug(f"Reading API key for Okta from environment variable {config.okta_api_key_env_var}")
             config.okta_api_key = os.environ.get(config.okta_api_key_env_var)
         # CRXcavator config
-            if config.crxcavator_api_base_uri and config.crxcavator_api_key_env_var:
-                logger.debug("Reading API key for CRXcavator from environment variable '%s'.")
-                config.crxcavator_api_key = os.environ.get(config.crxcavator_api_key_env_var)
-            else:
-                config.crxcavator_api_key = None
+        if config.crxcavator_api_base_uri and config.crxcavator_api_key_env_var:
+            logger.debug("Reading API key for CRXcavator from environment variable '%s'.")
+            config.crxcavator_api_key = os.environ.get(config.crxcavator_api_key_env_var)
+        else:
+            config.crxcavator_api_key = None
         # Run cartography
         try:
             return cartography.sync.run_with_config(self.sync, config)
