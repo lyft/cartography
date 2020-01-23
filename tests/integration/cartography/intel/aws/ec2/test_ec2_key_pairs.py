@@ -1,5 +1,6 @@
 import cartography.intel.aws.ec2
-import tests.data.aws.ec2
+import tests.data.aws.ec2.key_pairs
+
 
 TEST_ACCOUNT_ID = '000000000000'
 TEST_REGION = 'us-east-1'
@@ -7,7 +8,7 @@ TEST_UPDATE_TAG = 123456789
 
 
 def test_load_ec2_key_pairs(neo4j_session, *args):
-    data = tests.data.aws.ec2.DESCRIBE_KEY_PAIRS
+    data = tests.data.aws.ec2.key_pairs.DESCRIBE_KEY_PAIRS
     cartography.intel.aws.ec2.load_ec2_key_pairs(
         neo4j_session,
         data,

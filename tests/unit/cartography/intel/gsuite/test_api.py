@@ -97,7 +97,7 @@ def test_sync_gsuite_groups(all_groups, load_gsuite_groups, cleanup_gsuite_group
     }
     api.sync_gsuite_groups(session, admin_client, gsuite_update_tag, common_job_param)
     groups = api.transform_groups(all_groups())
-    load_gsuite_groups.assert_called_with(session, groups, gsuite_update_tag,)
+    load_gsuite_groups.assert_called_with(session, groups, gsuite_update_tag)
     cleanup_gsuite_groups.assert_called_once()
     sync_gsuite_members.assert_called_with(groups, session, admin_client, gsuite_update_tag)
 

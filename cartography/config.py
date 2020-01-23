@@ -23,6 +23,12 @@ class Config:
     :param crxcavator_api_key: Auth key for CRXcavator API. Optional.
     :type analysis_job_directory: str
     :param analysis_job_directory: Path to a directory tree containing analysis jobs to run. Optional.
+    :type okta_org_id: str
+    :param okta_org_id: Okta organization id. Optional.
+    :type okta_api_key: str
+    :param okta_api_key: Okta API key. Optional.
+    :type okta_saml_role_regex: str
+    :param okta_saml_role_regex: The regex used to map okta groups to AWS roles. Optional.
     """
 
     def __init__(
@@ -35,6 +41,9 @@ class Config:
         crxcavator_api_base_uri=None,
         crxcavator_api_key=None,
         analysis_job_directory=None,
+        okta_org_id=None,
+        okta_api_key=None,
+        okta_saml_role_regex=None,
     ):
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user
@@ -44,3 +53,6 @@ class Config:
         self.crxcavator_api_base_uri = crxcavator_api_base_uri
         self.crxcavator_api_key = crxcavator_api_key
         self.analysis_job_directory = analysis_job_directory
+        self.okta_org_id = okta_org_id
+        self.okta_api_key = okta_api_key
+        self.okta_saml_role_regex = okta_saml_role_regex

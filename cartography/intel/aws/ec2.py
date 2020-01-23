@@ -1,5 +1,6 @@
 import logging
 import time
+from string import Template
 
 import botocore.config
 
@@ -66,6 +67,46 @@ def get_loadbalancer_data(boto3_session, region):
     return {'LoadBalancerDescriptions': elbs}
 
 
+def get_load_balancer_v2_listeners(client, load_balancer_arn):
+    paginator = client.get_paginator('describe_listeners')
+    listeners = []
+    for page in paginator.paginate(LoadBalancerArn=load_balancer_arn):
+        listeners.extend(page['Listeners'])
+
+    return listeners
+
+
+def get_load_balancer_v2_target_groups(client, load_balancer_arn):
+    paginator = client.get_paginator('describe_target_groups')
+    target_groups = []
+    for page in paginator.paginate(LoadBalancerArn=load_balancer_arn):
+        target_groups.extend(page['TargetGroups'])
+
+    # Add instance data
+    for target_group in target_groups:
+        target_group['Targets'] = []
+        target_health = client.describe_target_health(TargetGroupArn=target_group['TargetGroupArn'])
+        for target_health_description in target_health['TargetHealthDescriptions']:
+            target_group['Targets'].append(target_health_description['Target']['Id'])
+
+    return target_groups
+
+
+def get_loadbalancer_v2_data(boto3_session, region):
+    client = boto3_session.client('elbv2', region_name=region, config=_get_botocore_config())
+    paginator = client.get_paginator('describe_load_balancers')
+    elbv2s = []
+    for page in paginator.paginate():
+        elbv2s.extend(page['LoadBalancers'])
+
+    # Make extra calls to get listeners
+    for elbv2 in elbv2s:
+        elbv2['Listeners'] = get_load_balancer_v2_listeners(client, elbv2['LoadBalancerArn'])
+        elbv2['TargetGroups'] = get_load_balancer_v2_target_groups(client, elbv2['LoadBalancerArn'])
+
+    return {'LoadBalancers': elbv2s}
+
+
 def get_ec2_vpc_peering(boto3_session, region):
     client = boto3_session.client('ec2', region_name=region, config=_get_botocore_config())
     # paginator not supported by boto
@@ -121,12 +162,13 @@ def load_ec2_instances(neo4j_session, data, region, current_aws_account_id, aws_
     """
 
     ingest_instance = """
-    MERGE (instance:Instance:EC2Instance{instanceid: {InstanceId}})
+    MERGE (instance:Instance:EC2Instance{id: {InstanceId}})
     ON CREATE SET instance.firstseen = timestamp()
-    SET instance.publicdnsname = {PublicDnsName}, instance.privateipaddress = {PrivateIpAddress},
-    instance.imageid = {ImageId}, instance.instancetype = {InstanceType}, instance.monitoringstate = {MonitoringState},
-    instance.state = {State}, instance.launchtime = {LaunchTime}, instance.launchtimeunix = {LaunchTimeUnix},
-    instance.region = {Region}, instance.lastupdated = {aws_update_tag}
+    SET instance.instanceid = {InstanceId}, instance.publicdnsname = {PublicDnsName},
+    instance.privateipaddress = {PrivateIpAddress}, instance.imageid = {ImageId},
+    instance.instancetype = {InstanceType}, instance.monitoringstate = {MonitoringState}, instance.state = {State},
+    instance.launchtime = {LaunchTime}, instance.launchtimeunix = {LaunchTimeUnix}, instance.region = {Region},
+    instance.lastupdated = {aws_update_tag}, instance.iaminstanceprofile = {IamInstanceProfile}
     WITH instance
     MERGE (subnet:EC2Subnet{subnetid: {SubnetId}})
     ON CREATE SET subnet.firstseen = timestamp()
@@ -214,6 +256,7 @@ def load_ec2_instances(neo4j_session, data, region, current_aws_account_id, aws_
                 ImageId=instance.get("ImageId", ""),
                 SubnetId=instance.get("SubnetId", ""),
                 InstanceType=instance.get("InstanceType", ""),
+                IamInstanceProfile=instance.get("IamInstanceProfile", {}).get("Arn"),
                 ReservationId=reservation_id,
                 MonitoringState=monitoring_state,
                 LaunchTime=str(launch_time),
@@ -341,8 +384,8 @@ def load_ec2_security_groupinfo(neo4j_session, data, region, current_aws_account
 
 
 def load_ec2_security_group_rule(neo4j_session, group, rule_type, aws_update_tag):
-    ingest_rule = """
-    MERGE (rule:#RULE_TYPE#{ruleid: {RuleId}})
+    INGEST_RULE_TEMPLATE = Template("""
+    MERGE (rule:$rule_label{ruleid: {RuleId}})
     ON CREATE SET rule :IpRule, rule.firstseen = timestamp(), rule.fromport = {FromPort}, rule.toport = {ToPort},
     rule.protocol = {Protocol}
     SET rule.lastupdated = {aws_update_tag}
@@ -351,7 +394,7 @@ def load_ec2_security_group_rule(neo4j_session, group, rule_type, aws_update_tag
     MERGE (group)<-[r:MEMBER_OF_EC2_SECURITY_GROUP]-(rule)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {aws_update_tag};
-    """
+    """)
 
     ingest_rule_group_pair = """
     MERGE (group:EC2SecurityGroup{id: {GroupId}})
@@ -388,7 +431,7 @@ def load_ec2_security_group_rule(neo4j_session, group, rule_type, aws_update_tag
             # NOTE Cypher query syntax is incompatible with Python string formatting, so we have to do this awkward
             # NOTE manual formatting instead.
             neo4j_session.run(
-                ingest_rule.replace("#RULE_TYPE#", rule_type_map[rule_type]),
+                INGEST_RULE_TEMPLATE.safe_substitute(rule_label=rule_type_map[rule_type]),
                 RuleId=ruleid,
                 FromPort=from_port,
                 ToPort=to_port,
@@ -439,9 +482,9 @@ def load_ec2_auto_scaling_groups(neo4j_session, data, region, current_aws_accoun
     """
 
     ingest_instance = """
-    MERGE (instance:Instance:EC2Instance{instanceid: {InstanceId}})
+    MERGE (instance:Instance:EC2Instance{id: {InstanceId}})
     ON CREATE SET instance.firstseen = timestamp()
-    SET instance.lastupdated = {aws_update_tag}, instance.region={Region}
+    SET instance.instanceid = {InstanceId}, instance.lastupdated = {aws_update_tag}, instance.region={Region}
     WITH instance
     MATCH (group:AutoScalingGroup{arn: {GROUPARN}})
     MERGE (instance)-[r:MEMBER_AUTO_SCALE_GROUP]->(group)
@@ -494,6 +537,74 @@ def load_ec2_auto_scaling_groups(neo4j_session, data, region, current_aws_accoun
                     Region=region,
                     aws_update_tag=aws_update_tag,
                 )
+
+
+def load_load_balancer_v2s(neo4j_session, data, region, current_aws_account_id, aws_update_tag):
+    ingest_load_balancer_v2 = """
+    MERGE (elbv2:LoadBalancerV2{id: {ID}})
+    ON CREATE SET elbv2.firstseen = timestamp(), elbv2.createdtime = {CREATED_TIME}
+    SET elbv2.lastupdated = {aws_update_tag}, elbv2.name = {NAME}, elbv2.dnsname = {DNS_NAME},
+    elbv2.canonicalhostedzonenameid = {HOSTED_ZONE_NAME_ID},
+    elbv2.type = {ELBv2_TYPE},
+    elbv2.scheme = {SCHEME}, elbv2.region = {Region}
+    WITH elbv2
+    MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MERGE (aa)-[r:RESOURCE]->(elbv2)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {aws_update_tag}
+    """
+    for lb in data['LoadBalancers']:
+        load_balancer_id = lb["DNSName"]
+
+        neo4j_session.run(
+            ingest_load_balancer_v2,
+            ID=load_balancer_id,
+            CREATED_TIME=str(lb["CreatedTime"]),
+            NAME=lb["LoadBalancerName"],
+            DNS_NAME=load_balancer_id,
+            HOSTED_ZONE_NAME_ID=lb.get("CanonicalHostedZoneNameID"),
+            ELBv2_TYPE=lb.get("Type"),
+            SCHEME=lb.get("Scheme"),
+            AWS_ACCOUNT_ID=current_aws_account_id,
+            Region=region,
+            aws_update_tag=aws_update_tag,
+        )
+
+        if lb["AvailabilityZones"]:
+            az = lb["AvailabilityZones"]
+            load_load_balancer_v2_subnets(neo4j_session, load_balancer_id, az, region, aws_update_tag)
+
+        # NLB's don't have SecurityGroups, so check for one first.
+        if 'SecurityGroups' in lb and lb["SecurityGroups"]:
+            ingest_load_balancer_v2_security_group = """
+            MATCH (elbv2:LoadBalancerV2{id: {ID}}),
+            (group:EC2SecurityGroup{groupid: {GROUP_ID}})
+            MERGE (elbv2)-[r:MEMBER_OF_EC2_SECURITY_GROUP]->(group)
+            ON CREATE SET r.firstseen = timestamp()
+            SET r.lastupdated = {aws_update_tag}
+            """
+            for group in lb["SecurityGroups"]:
+                neo4j_session.run(
+                    ingest_load_balancer_v2_security_group,
+                    ID=load_balancer_id,
+                    GROUP_ID=str(group),
+                    aws_update_tag=aws_update_tag,
+                )
+
+        if lb['Listeners']:
+            load_load_balancer_v2_listeners(neo4j_session, load_balancer_id, lb['Listeners'], aws_update_tag)
+
+        if lb['TargetGroups']:
+            load_load_balancer_v2_target_groups(
+                neo4j_session, load_balancer_id, lb['TargetGroups'],
+                current_aws_account_id, aws_update_tag,
+            )
+
+        if lb['TargetGroups']:
+            load_load_balancer_v2_target_groups(
+                neo4j_session, load_balancer_id, lb['TargetGroups'],
+                current_aws_account_id, aws_update_tag,
+            )
 
 
 def load_load_balancers(neo4j_session, data, region, current_aws_account_id, aws_update_tag):
@@ -590,6 +701,27 @@ def load_load_balancers(neo4j_session, data, region, current_aws_account_id, aws
             load_load_balancer_listeners(neo4j_session, load_balancer_id, lb["ListenerDescriptions"], aws_update_tag)
 
 
+def load_load_balancer_v2_subnets(neo4j_session, load_balancer_id, az_data, region, aws_update_tag):
+    ingest_load_balancer_subnet = """
+    MATCH (elbv2:LoadBalancerV2{id: {ID}})
+    MERGE (subnet:EC2Subnet{subnetid: {SubnetId}})
+    ON CREATE SET subnet.firstseen = timestamp()
+    SET subnet.region = {region}, subnet.lastupdated = {aws_update_tag}
+    WITH elbv2, subnet
+    MERGE (elbv2)-[r:SUBNET]->(subnet)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {aws_update_tag}
+    """
+    for az in az_data:
+        neo4j_session.run(
+            ingest_load_balancer_subnet,
+            ID=load_balancer_id,
+            SubnetId=az['SubnetId'],
+            region=region,
+            aws_update_tag=aws_update_tag,
+        )
+
+
 def load_load_balancer_subnets(neo4j_session, load_balancer_id, subnets_data, aws_update_tag):
     ingest_load_balancer_subnet = """
     MATCH (elb:LoadBalancer{id: {ID}}), (subnet:EC2Subnet{subnetid: {SUBNET_ID}})
@@ -605,6 +737,60 @@ def load_load_balancer_subnets(neo4j_session, load_balancer_id, subnets_data, aw
             SUBNET_ID=subnet_id,
             aws_update_tag=aws_update_tag,
         )
+
+
+def load_load_balancer_v2_target_groups(
+    neo4j_session, load_balancer_id, target_groups, current_aws_account_id,
+    aws_update_tag,
+):
+    ingest_instances = """
+    MATCH (elbv2:LoadBalancerV2{id: {ID}}), (instance:EC2Instance{instanceid: {INSTANCE_ID}})
+    MERGE (elbv2)-[r:EXPOSE]->(instance)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {aws_update_tag}
+    WITH instance
+    MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MERGE (aa)-[r:RESOURCE]->(instance)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {aws_update_tag}
+    """
+    for target_group in target_groups:
+
+        if not target_group['TargetType'] == 'instance':
+            # Only working on EC2 Instances now. TODO: Add IP & Lambda EXPOSE.
+            continue
+
+        for instance in target_group["Targets"]:
+            neo4j_session.run(
+                ingest_instances,
+                ID=load_balancer_id,
+                INSTANCE_ID=instance,
+                AWS_ACCOUNT_ID=current_aws_account_id,
+                aws_update_tag=aws_update_tag,
+            )
+
+
+def load_load_balancer_v2_listeners(neo4j_session, load_balancer_id, listener_data, aws_update_tag):
+    ingest_listener = """
+    MATCH (elbv2:LoadBalancerV2{id: {LoadBalancerId}})
+    WITH elbv2
+    UNWIND {Listeners} as data
+        MERGE (l:Endpoint:ELBV2Listener{id: data.ListenerArn})
+        ON CREATE SET l.port = data.Port, l.protocol = data.Protocol,
+        l.firstseen = timestamp(),
+        l.targetgrouparn = data.TargetGroupArn
+        SET l.lastupdated = {aws_update_tag}
+        WITH l, elbv2
+        MERGE (elbv2)-[r:ELBV2_LISTENER]->(l)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {aws_update_tag}
+    """
+    neo4j_session.run(
+        ingest_listener,
+        LoadBalancerId=load_balancer_id,
+        Listeners=listener_data,
+        aws_update_tag=aws_update_tag,
+    )
 
 
 def load_load_balancer_listeners(neo4j_session, load_balancer_id, listener_data, aws_update_tag):
@@ -848,21 +1034,21 @@ def load_ec2_vpcs(neo4j_session, data, region, current_aws_account_id, aws_updat
 
 
 def _get_cidr_association_statement(block_type):
-    ingest_cidr = """
+    INGEST_CIDR_TEMPLATE = Template("""
     MATCH (vpc:AWSVpc{id: {VpcId}})
     WITH vpc
     UNWIND {CidrBlock} as block_data
-        MERGE (new_block:#BLOCK_TYPE#{id: {VpcId} + '|' + block_data.#BLOCK_CIDR#})
+        MERGE (new_block:$block_label{id: {VpcId} + '|' + block_data.$block_cidr})
         ON CREATE SET new_block.firstseen = timestamp()
         SET new_block.association_id = block_data.AssociationId,
-        new_block.cidr_block = block_data.#BLOCK_CIDR#,
-        new_block.block_state = block_data.#STATE_NAME#.State,
-        new_block.block_state_message = block_data.#STATE_NAME#.StatusMessage,
+        new_block.cidr_block = block_data.$block_cidr,
+        new_block.block_state = block_data.$state_name.State,
+        new_block.block_state_message = block_data.$state_name.StatusMessage,
         new_block.lastupdated = {aws_update_tag}
         WITH vpc, new_block
         MERGE (vpc)-[r:BLOCK_ASSOCIATION]->(new_block)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {aws_update_tag}"""
+        SET r.lastupdated = {aws_update_tag}""")
 
     BLOCK_CIDR = "CidrBlock"
     STATE_NAME = "CidrBlockState"
@@ -879,9 +1065,7 @@ def _get_cidr_association_statement(block_type):
     else:
         raise ValueError(f"Unsupported block type specified - {block_type}")
 
-    return ingest_cidr.replace("#BLOCK_CIDR#", BLOCK_CIDR) \
-        .replace("#STATE_NAME#", STATE_NAME) \
-        .replace("#BLOCK_TYPE#", BLOCK_TYPE)
+    return INGEST_CIDR_TEMPLATE.safe_substitute(block_label=BLOCK_TYPE, block_cidr=BLOCK_CIDR, state_name=STATE_NAME)
 
 
 def load_cidr_association_set(neo4j_session, vpc_id, vpc_data, block_type, aws_update_tag):
@@ -926,6 +1110,11 @@ def cleanup_ec2_auto_scaling_groups(neo4j_session, common_job_parameters):
 
 def cleanup_load_balancers(neo4j_session, common_job_parameters):
     run_cleanup_job('aws_ingest_load_balancers_cleanup.json', neo4j_session, common_job_parameters)
+
+
+def cleanup_load_balancer_v2s(neo4j_session, common_job_parameters):
+    """Delete elbv2's and dependent resources in the DB without the most recent lastupdated tag."""
+    run_cleanup_job('aws_ingest_load_balancers_v2_cleanup.json', neo4j_session, common_job_parameters)
 
 
 def cleanup_ec2_vpcs(neo4j_session, common_job_parameters):
@@ -991,6 +1180,17 @@ def sync_load_balancers(
     cleanup_load_balancers(neo4j_session, common_job_parameters)
 
 
+def sync_load_balancer_v2s(
+    neo4j_session, boto3_session, regions, current_aws_account_id, aws_update_tag,
+    common_job_parameters,
+):
+    for region in regions:
+        logger.debug("Syncing EC2 load balancers v2 for region '%s' in account '%s'.", region, current_aws_account_id)
+        data = get_loadbalancer_v2_data(boto3_session, region)
+        load_load_balancer_v2s(neo4j_session, data, region, current_aws_account_id, aws_update_tag)
+    cleanup_load_balancer_v2s(neo4j_session, common_job_parameters)
+
+
 def sync_vpc(neo4j_session, boto3_session, regions, current_aws_account_id, aws_update_tag, common_job_parameters):
     for region in regions:
         logger.debug("Syncing EC2 VPC for region '%s' in account '%s'.", region, current_aws_account_id)
@@ -1018,4 +1218,5 @@ def sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job
     sync_ec2_instances(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     sync_ec2_auto_scaling_groups(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     sync_load_balancers(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
+    sync_load_balancer_v2s(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     sync_vpc_peering(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)

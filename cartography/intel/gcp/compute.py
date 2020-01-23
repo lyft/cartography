@@ -3,6 +3,7 @@
 import json
 import logging
 from collections import namedtuple
+from string import Template
 
 from googleapiclient.discovery import HttpError
 
@@ -731,7 +732,7 @@ def _attach_firewall_rules(neo4j_session, fw, gcp_update_tag):
     :param gcp_update_tag: The timestamp
     :return: Nothing
     """
-    query = """
+    template = Template("""
     MATCH (fw:GCPFirewall{id:{FwPartialUri}})
 
     MERGE (rule:IpRule:IpPermissionInbound:GCPIpRule{id:{RuleId}})
@@ -750,27 +751,23 @@ def _attach_firewall_rules(neo4j_session, fw, gcp_update_tag):
     MERGE (rng)-[m:MEMBER_OF_IP_RULE]->(rule)
     ON CREATE SET m.firstseen = timestamp()
     SET m.lastupdated = {gcp_update_tag}
-    """
+
+    MERGE (fw)<-[r:$fw_rule_relationship_label]-(rule)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}
+    """)
     for list_type in 'transformed_allow_list', 'transformed_deny_list':
         if list_type == 'transformed_allow_list':
-            query += """
-            MERGE (fw)<-[r:ALLOWED_BY]-(rule)
-            ON CREATE SET r.firstseen = timestamp()
-            SET r.lastupdated = {gcp_update_tag}
-            """
+            label = "ALLOWED_BY"
         else:
-            query += """
-            MERGE (fw)<-[r:DENIED_BY]-(rule)
-            ON CREATE SET r.firstseen = timestamp()
-            SET r.lastupdated = {gcp_update_tag}
-            """
+            label = "DENIED_BY"
         for rule in fw[list_type]:
             # It is possible for sourceRanges to not be specified for this rule
             # If sourceRanges is not specified then the rule must specify sourceTags.
             # Since an IP range cannot have a tag applied to it, it is ok if we don't ingest this rule.
             for ip_range in fw.get('sourceRanges', []):
                 neo4j_session.run(
-                    query,
+                    template.safe_substitute(fw_rule_relationship_label=label),
                     FwPartialUri=fw['id'],
                     RuleId=rule['ruleid'],
                     Protocol=rule['protocol'],
