@@ -181,6 +181,8 @@ class CLI:
         if config.crxcavator_api_base_uri and config.crxcavator_api_key_env_var:
             logger.debug("Reading API key for CRXcavator from environment variable '%s'.")
             config.crxcavator_api_key = os.environ.get(config.crxcavator_api_key_env_var)
+        else:
+            config.crxcavator_api_key = None
         # Run cartography
         try:
             return cartography.sync.run_with_config(self.sync, config)
