@@ -7,6 +7,7 @@
 - [Table of contents](#table-of-contents)
 - [GSuiteUser](#gsuiteuser)
   - [Relationships](#relationships)
+- [ChromeExtension](#chromeextension)
   - [Relationships](#relationships-1)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -30,13 +31,13 @@ Placeholder representation of a single G Suite [user object](https://developers.
 
 ### Relationships
 
-- GSuiteUsers install ChromeExternsions.
+- GSuiteUsers install ChromeExtensions.
 
     ```
     (GSuiteUser)-[INSTALLS]->(ChromeExtension)
     ```
 
- ## ChromeExtension
+## ChromeExtension
 
  Representation of a CRXcavator Chrome Extension [Report](https://crxcavator.io/apidocs#tag/report).
 
@@ -76,7 +77,7 @@ Placeholder representation of a single G Suite [user object](https://developers.
 
  ### Relationships
 
-- GSuiteUsers install ChromeExternsions.
+- GSuiteUsers install ChromeExtensions.
 
     ```
     (GSuiteUser)-[INSTALLS]->(ChromeExtension)
