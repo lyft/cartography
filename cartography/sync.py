@@ -12,6 +12,7 @@ import cartography.intel.crxcavator.crxcavator
 import cartography.intel.gcp
 import cartography.intel.gsuite
 import cartography.intel.okta
+import cartography.intel.oci
 
 
 logger = logging.getLogger(__name__)
@@ -147,6 +148,7 @@ def build_default_sync():
         ('create-indexes', cartography.intel.create_indexes.run),
         ('aws', cartography.intel.aws.start_aws_ingestion),
         ('gcp', cartography.intel.gcp.start_gcp_ingestion),
+        ('oci', cartography.intel.oci.start_oci_ingestion),
         ('gsuite', cartography.intel.gsuite.start_gsuite_ingestion),
         ('crxcavator', cartography.intel.crxcavator.start_extension_ingestion),
         ('okta', cartography.intel.okta.start_okta_ingestion),

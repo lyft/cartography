@@ -40,7 +40,8 @@ Cartography is a Python tool that consolidates infrastructure assets and the rel
 - [Cross-Account Auditing](#cross-account-auditing)
   - [Multiple AWS Account Setup](#multiple-aws-account-setup)
   - [Multiple GCP Project Setup](#multiple-gcp-project-setup)
-
+  - [Multiple OCI Tenancy Setup](#multiple-oci-tenancy-setup)
+  
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 ## Why Cartography?
@@ -74,7 +75,7 @@ Time to set up the server that will run Cartography.  Cartography _should_ work 
 
  	- **If you want to pull from multiple AWS accounts**, see [here](#multiple-aws-account-setup).
 
- 1. If you're a GCP user, **prepare your GCP credential(s)**
+1. If you're a GCP user, **prepare your GCP credential(s)**
 
     1. Create an identity - either a User Account or a Service Account - for Cartography to run as
     1. Ensure that this identity has the following roles (https://cloud.google.com/iam/docs/understanding-roles) attached to it:
@@ -86,6 +87,18 @@ Time to set up the server that will run Cartography.  Cartography _should_ work 
         - **Method 2**: If you are running Cartography on a GCE instance or other GCP service, you can make use of the credential management provided by the default service accounts on these services.  See the [official docs](https://cloud.google.com/docs/authentication/production) on Application Default Credentials for more details.
     1. **If you want to pull from multiple GCP Projects**, see [here](#multiple-gcp-project-setup).
 
+1. If you're a OCI user, **prepare your OCI credential(s)**
+
+    1. Create an OCI Identity in your Tenancy for Cartography to run as
+    1. Ensure that this identity has the following policy for Auditors (https://docs.cloud.oracle.com/iaas/Content/Identity/Concepts/commonpolicies.htm) attached to it:
+        - `Allow group Auditors to inspect all-resources in tenancy`
+        - `Allow group Auditors to read instances in tenancy`
+        - `Allow group Auditors to read audit-events in tenancy`
+    1. Ensure that the machine you are running Cartography on can authenticate to this identity.
+        - Set up OCI credentials to this identity on your server, using a `config` file.  For details, see OCI's [official guide](https://docs.cloud.oracle.com/iaas/Content/API/SDKDocs/cliinstall.htm).
+    1. **If you want to pull from multiple OCI Tenancies**, see [here](#multiple-oci-tenancy-setup).
+
+ 
 1. If you're a CRXcavator user, **prepare your CRXcavator API key**
 
     1. Generate an API key from your CRXcavator [user page](https://crxcavator.io/user/settings#)
@@ -130,7 +143,8 @@ Time to set up the server that will run Cartography.  Cartography _should_ work 
 			```
 			AWS_CONFIG_FILE=/path/to/your/aws/config cartography --neo4j-uri <uri for your neo4j instance; usually bolt://localhost:7687> --aws-sync-all-profiles
 			```
-
+   		- If you have more than one OCI account include the `--oci-sync-all-profiles` flag
+   		
 		The sync will pull data from your configured accounts and ingest data to Neo4j!  This process might take a long time if your account has a lot of assets.
 
 
@@ -436,3 +450,23 @@ There are many ways to allow Cartography to pull from more than one AWS account.
 
 In order for Cartography to be able to pull all assets from all GCP Projects within an Organization, the User/Service Account assigned to Cartography needs to be created at the **Organization** level.
 This is because [IAM access control policies applied on the Organization resource apply throughout the hierarchy on all resources in the organization](https://cloud.google.com/resource-manager/docs/cloud-platform-resource-hierarchy#organizations).
+
+### Multiple OCI Tenancy Setup
+1. Add a profile for each OCI Tenancy you want Cartography to sync with to your `config`.  It will look something like this:
+    ```
+   [tenancy1]
+   user=ocid1.user.oc1..9q8z3bdjhie1pkazptpymaif87a6h9ci6gw71n0waeehk7u4kku447zeamd5
+   fingerprint=3a:ff:f5:4c:b8:26:85:94:bb:d3:f8:a3:01:25:6f:29
+   key_file=/home/user/.oci/oci_api_key.pem
+   tenancy=ocid1.tenancy.oc1..e1pkazptpymaif9q8z3bdjhi87a6h9ci6gw71n0waeehk7u4kku447zeamd5
+   region=us-phoenix-1
+   [tenancy2]
+   user=ocid1.user.oc1..hie1pkazptpymaif9q8z3bdj87a6h9ci6gw71n0waeehk7u4kku447zeamd5
+   fingerprint=3a:ff:f5:4c:b8:26:85:94:bb:d3:f8:a3:01:25:6f:29
+   key_file=/home/user/.oci/oci_api_key.pem
+   tenancy=ocid1.tenancy.oc1..1n0waeehk7u4kke1pkazptpymaif9q8z3bdjhi87a6h9ci6gw7u447zeamd5
+   region=us-phoenix-1
+   
+   ... etc ...
+   ```
+   Please note that when the `--oci-sync-all-profiles` flag is enabled it will skill the `DEFAULT` profile in the OCI `config`.
