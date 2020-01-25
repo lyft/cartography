@@ -19,7 +19,7 @@
 
 1. **Install**
 
-    Follow steps 1 and 2 in [Installation](https://github.com/lyft/cartography/blob/master/README.md#installation).  Ensure that Neo4j Community is running on your local machine.
+    Follow steps 1 and 2 in [Installation](https://github.com/lyft/cartography/blob/master/README.md#installation).  Ensure that you have JVM 11 installed and Neo4j Community Edition 3.5 is running on your local machine.
 2. **Clone the source code**
 
     Run `cd {path-where-you-want-your-source-code}`.  Get the source code with `git clone git://github.com/lyft/cartography.git`
