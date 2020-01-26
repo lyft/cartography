@@ -110,3 +110,9 @@ def start_aws_ingestion(neo4j_session, config):
         neo4j_session,
         common_job_parameters,
     )
+
+    run_analysis_job(
+        'aws_ec2_keypair_analysis.json',
+        neo4j_session,
+        common_job_parameters,
+    )
