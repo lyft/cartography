@@ -331,9 +331,7 @@ def _generate_id(zoneid, name, record_type):
 
 
 def _normalize_dns_address(address):
-    if address.endswith('.'):
-        address = address[:-1]
-    return address
+    return address.rstrip('.')
 
 
 def cleanup_route53(neo4j_session, current_aws_id, update_tag):
