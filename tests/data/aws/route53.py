@@ -3,7 +3,7 @@ NS_RECORD = {
     "Type": "NS",
     "TTL": 172800,
     "ResourceRecords": [
-        {"Value": "ns-856.awsdns-43.net."},
+        {"Value": "ns-856.awsdns-43.net"},
         {"Value": "ns-1418.awsdns-49.org."},
         {"Value": "ns-1913.awsdns-47.co.uk."},
         {"Value": "ns-192.awsdns-24.com."},
