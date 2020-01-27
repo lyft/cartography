@@ -1,7 +1,6 @@
 import base64
 import json
 import logging
-import os
 
 from requests import exceptions
 
@@ -9,9 +8,6 @@ from cartography.intel.github.github import sync_github
 from cartography.util import run_cleanup_job
 
 logger = logging.getLogger(__name__)
-
-# API key for GitHub
-GITHUB_AUTH_DATA = os.environ.get('CREDENTIALS_GITHUB_AUTH_DATA')
 
 
 def start_github_ingestion(neo4j_session, config):
@@ -21,10 +17,10 @@ def start_github_ingestion(neo4j_session, config):
     :param config: A cartography.config object
     :return: None
     """
-    if not GITHUB_AUTH_DATA:
+    if not config.github_config:
         logger.warning('GitHub import is not configured - skipping this module. See docs to configure.')
         return
-    auth_tokens = json.loads(base64.b64decode(GITHUB_AUTH_DATA).decode())
+    auth_tokens = json.loads(base64.b64decode(config.github_config).decode())
     common_job_parameters = {
         "UPDATE_TAG": config.update_tag,
     }

@@ -25,6 +25,8 @@ class Config:
     :param okta_api_key: Okta API key. Optional.
     :type okta_saml_role_regex: str
     :param okta_saml_role_regex: The regex used to map okta groups to AWS roles. Optional.
+    :type github_config: str
+    :param github_config: Base64 encoded config object for GitHub ingestion. Optional
     """
 
     def __init__(
@@ -38,6 +40,7 @@ class Config:
         okta_org_id=None,
         okta_api_key=None,
         okta_saml_role_regex=None,
+        github_config=None,
     ):
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user
@@ -48,3 +51,4 @@ class Config:
         self.okta_org_id = okta_org_id
         self.okta_api_key = okta_api_key
         self.okta_saml_role_regex = okta_saml_role_regex
+        self.github_config = github_config
