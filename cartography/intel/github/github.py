@@ -1,4 +1,5 @@
 import logging
+from string import Template
 
 import requests
 
@@ -214,22 +215,19 @@ def load_github_owners(session, update_tag, repo_owners):
     :return: None
     """
     for owner in repo_owners:
-        ingest_owner = """MERGE (user:#TYPE#{id: {Id}})
+        ingest_owner_template = Template("""MERGE (user:$account_type{id: {Id}})
             ON CREATE SET user.firstseen = timestamp()
             SET user.username = {UserName}, user.lastupdated = {UpdateTag}
             WITH user
             MATCH (repo:GitHubRepository{id: {RepoId}})
             MERGE (user)-[r:OWNER]->(repo)
             ON CREATE SET r.firstseen = timestamp()
-            SET r.lastupdated = {UpdateTag}"""
+            SET r.lastupdated = {UpdateTag}""")
 
         account_type = {'User': "GitHubUser", 'Organization': "GitHubOrganization"}
 
         session.run(
-            ingest_owner.replace(
-                "#TYPE#",
-                account_type[owner['type']],
-            ),
+            ingest_owner_template.safe_substitute(account_type=account_type[owner['type']]),
             Id=owner['ownerid'],
             UserName=owner['owner'],
             RepoId=owner['repoid'],
