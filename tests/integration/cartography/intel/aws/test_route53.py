@@ -17,8 +17,9 @@ def test_cname(neo4j_session):
 def test_ns(neo4j_session):
     # Test that ns records can be parsed and loaded
     data = tests.data.aws.route53.NS_RECORD
-    parsed_data = [cartography.intel.aws.route53.parse_ns_record_set(data, TEST_ZONE_ID)]
-    cartography.intel.aws.route53.load_ns_records(neo4j_session, parsed_data, TEST_ZONE_NAME, TEST_UPDATE_TAG)
+    parsed_data = cartography.intel.aws.route53.parse_ns_record_set(data, TEST_ZONE_ID)
+    assert "ns-856.awsdns-43.net" in parsed_data["servers"]
+    cartography.intel.aws.route53.load_ns_records(neo4j_session, [parsed_data], TEST_ZONE_NAME, TEST_UPDATE_TAG)
 
 
 def test_zone(neo4j_session):

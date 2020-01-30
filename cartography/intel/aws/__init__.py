@@ -17,9 +17,23 @@ from cartography.util import run_cleanup_job
 logger = logging.getLogger(__name__)
 
 
-def _sync_one_account(neo4j_session, boto3_session, account_id, regions, sync_tag, common_job_parameters):
+def _sync_one_account(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters):
     iam.sync(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters)
     s3.sync(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters)
+
+    try:
+        regions = ec2.get_ec2_regions(boto3_session)
+    except botocore.exceptions.ClientError as e:
+        logger.debug("Error occurred getting EC2 regions.", exc_info=True)
+        logger.error(
+            (
+                "Failed to retrieve AWS region list, an error occurred: %s. Could not get regions for account %s."
+            ),
+            e,
+            account_id,
+        )
+        return
+
     dynamodb.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     ec2.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     rds.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
@@ -32,7 +46,7 @@ def _sync_one_account(neo4j_session, boto3_session, account_id, regions, sync_ta
     run_cleanup_job('aws_account_dns_cleanup.json', neo4j_session, common_job_parameters)
 
 
-def _sync_multiple_accounts(neo4j_session, accounts, regions, sync_tag, common_job_parameters):
+def _sync_multiple_accounts(neo4j_session, accounts, sync_tag, common_job_parameters):
     logger.debug("Syncing AWS accounts: %s", ', '.join(accounts.values()))
     organizations.sync(neo4j_session, accounts, sync_tag, common_job_parameters)
 
@@ -41,7 +55,7 @@ def _sync_multiple_accounts(neo4j_session, accounts, regions, sync_tag, common_j
         common_job_parameters["AWS_ID"] = account_id
         boto3_session = boto3.Session(profile_name=profile_name)
 
-        _sync_one_account(neo4j_session, boto3_session, account_id, regions, sync_tag, common_job_parameters)
+        _sync_one_account(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters)
 
     del common_job_parameters["AWS_ID"]
 
@@ -90,20 +104,7 @@ def start_aws_ingestion(neo4j_session, config):
             ),
         )
 
-    try:
-        regions = ec2.get_ec2_regions(boto3_session)
-    except botocore.exceptions.ClientError as e:
-        logger.debug("Error occurred getting EC2 regions.", exc_info=True)
-        logger.error(
-            (
-                "Failed to retrieve AWS region list, an error occurred: %s. The AWS sync cannot run without a valid "
-                "region list."
-            ),
-            e,
-        )
-        return
-
-    _sync_multiple_accounts(neo4j_session, aws_accounts, regions, config.update_tag, common_job_parameters)
+    _sync_multiple_accounts(neo4j_session, aws_accounts, config.update_tag, common_job_parameters)
 
     run_analysis_job(
         'aws_ec2_asset_exposure.json',

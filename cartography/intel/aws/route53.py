@@ -237,13 +237,15 @@ def parse_record_set(record_set, zone_id, name):
 
 
 def parse_ns_record_set(record_set, zone_id):
+
     if "ResourceRecords" in record_set:
-        servers = [record["Value"][:-1] for record in record_set["ResourceRecords"]]
+        # Sometimes the value records have a trailing period, sometimes they dont.
+        servers = [_normalize_dns_address(record["Value"]) for record in record_set["ResourceRecords"]]
         return {
             "zoneid": zone_id,
             "type": "NS",
             # looks like "name.some.fqdn.net.", so this removes the trailing comma.
-            "name": record_set["Name"][:-1],
+            "name": _normalize_dns_address(record_set["Name"]),
             "servers": servers,
             "id": _generate_id(zone_id, record_set['Name'][:-1], 'NS'),
         }
@@ -326,6 +328,10 @@ def get_zones(client):
 
 def _generate_id(zoneid, name, record_type):
     return "/".join([zoneid, name, record_type])
+
+
+def _normalize_dns_address(address):
+    return address.rstrip('.')
 
 
 def cleanup_route53(neo4j_session, current_aws_id, update_tag):
