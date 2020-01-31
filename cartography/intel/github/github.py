@@ -220,7 +220,7 @@ def load_github_owners(session, update_tag, repo_owners):
             SET user.username = {UserName}, user.lastupdated = {UpdateTag}
             WITH user
             MATCH (repo:GitHubRepository{id: {RepoId}})
-            MERGE (user)-[r:OWNER]->(repo)
+            MERGE (user)<-[r:OWNER]-(repo)
             ON CREATE SET r.firstseen = timestamp()
             SET r.lastupdated = {UpdateTag}""")
 

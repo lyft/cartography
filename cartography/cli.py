@@ -231,6 +231,8 @@ class CLI:
         if config.github_config_env_var:
             logger.debug(f"Reading config string for GitHub from environment variable {config.github_config_env_var}")
             config.github_config = os.environ.get(config.github_config_env_var)
+        else:
+            config.github_config = None
 
         # Run cartography
         try:

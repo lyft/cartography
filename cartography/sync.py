@@ -10,6 +10,7 @@ import cartography.intel.aws
 import cartography.intel.create_indexes
 import cartography.intel.crxcavator.crxcavator
 import cartography.intel.gcp
+import cartography.intel.github
 import cartography.intel.gsuite
 import cartography.intel.okta
 
@@ -150,6 +151,7 @@ def build_default_sync():
         ('gsuite', cartography.intel.gsuite.start_gsuite_ingestion),
         ('crxcavator', cartography.intel.crxcavator.start_extension_ingestion),
         ('okta', cartography.intel.okta.start_okta_ingestion),
+        ('github', cartography.intel.github.start_github_ingestion),
         ('analysis', cartography.intel.analysis.run),
     ])
     return sync

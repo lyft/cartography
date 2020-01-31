@@ -190,7 +190,7 @@ def test_repository_to_owners(neo4j_session):
     _ensure_local_neo4j_has_test_repositories_data(neo4j_session)
     _ensure_local_neo4j_has_test_owners_data(neo4j_session)
     query = """
-    MATCH(owner:GitHubOrganization)-[:OWNER]->(repo:GitHubRepository{id:{RepositoryId}})
+    MATCH(owner:GitHubOrganization)<-[:OWNER]-(repo:GitHubRepository{id:{RepositoryId}})
     RETURN owner.username, repo.id, repo.name
     """
     expected_repository_id = 'https://fake.github.net/graphql/:MDEwOlJlcG9zaXRvcnkxNg=='
