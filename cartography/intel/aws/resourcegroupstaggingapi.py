@@ -46,5 +46,7 @@ def get_tag_data(boto3_session, region):
 def load_tag_data(neo4j_session, data, region, current_aws_account_id, aws_update_tag):
     INGEST_TAG_TEMPLATE = Template("""
     MATCH (resource:$resource_label{id:{ResourceId}})
-    
+    MERGE(aws_tag:AWSTag:Tag{id:{}})
+    MERGE (resource)-[r:TAGGED]->(aws_tag)
+    SET r.lastupdated = {UpdateTag}, r.first
     """)
