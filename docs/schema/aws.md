@@ -64,14 +64,16 @@
   - [Relationships](#relationships-27)
 - [LoadBalancerV2](#loadbalancerv2)
   - [Relationships](#relationships-28)
-- [NetworkInterface](#networkinterface)
+- [Nameserver](#nameserver)
   - [Relationships](#relationships-29)
-- [RDSInstance](#rdsinstance)
+- [NetworkInterface](#networkinterface)
   - [Relationships](#relationships-30)
-- [S3Acl](#s3acl)
+- [RDSInstance](#rdsinstance)
   - [Relationships](#relationships-31)
-- [S3Bucket](#s3bucket)
+- [S3Acl](#s3acl)
   - [Relationships](#relationships-32)
+- [S3Bucket](#s3bucket)
+  - [Relationships](#relationships-33)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -467,7 +469,7 @@ Representation of an AWS DNS [ResourceRecordSet](https://docs.aws.amazon.com/Rou
 |firstseen| Timestamp of when a sync job first discovered this node |
 |name| The name of the DNSRecord|
 |lastupdated| Timestamp of the last time the node was updated|
-|**id**| The name of the DNSRecord concatenated with the record type|
+|**id**| The zoneid for the record, the value of the record, and the type concatenated together|
 |type| The record type of the DNS record|
 |value| The IP address that the DNSRecord points to|
 
@@ -539,7 +541,10 @@ Representation of an AWS DNS [HostedZone](https://docs.aws.amazon.com/Route53/la
 	```
 	(AWSDNSRecord)-[MEMBER_OF_DNS_ZONE]->(AWSDNSZone)
 	```
-
+- AWSDNSZone can have subzones hosted by another AWSDNSZone
+	```
+	(AWSDNSZone)<-[SUBZONE]-(AWSDNSZone)
+	```
 
 
 ## DynamoDBTable
@@ -571,13 +576,15 @@ Our representation of an AWS [EC2 Instance](https://docs.aws.amazon.com/AWSEC2/l
 |-------|-------------|
 | firstseen| Timestamp of when a sync job first discovered this node  |
 | lastupdated |  Timestamp of the last time the node was updated |
-| **instanceid**| The ID of the instance|
-| **publicdnsname** | The public DNS name assigned to the instance |
+| **id** | Same as `instanceid` below. |
+| instanceid | The instance id provided by AWS.  This is [globally unique](https://forums.aws.amazon.com/thread.jspa?threadID=137203) |
+| publicdnsname | The public DNS name assigned to the instance |
 | publicipaddress | The public IPv4 address assigned to the instance if applicable |
 | privateipaddress | The private IPv4 address assigned to the instance |
 | imageid | The ID of the [Amazon Machine Image](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AMIs.html) used to launch the instance |
 | subnetid | The ID of the EC2Subnet associated with this instance |
 | instancetype | The instance type.  See API docs linked above for specifics. |
+| iaminstanceprofile | The IAM instance profile associated with the instance, if applicable. |
 | launchtime | The time the instance was launched |
 | monitoringstate | Whether monitoring is enabled.  Valid Values: disabled, disabling, enabled,  pending. |
 | state | The [current state](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_InstanceState.html) of the instance.
@@ -1052,6 +1059,23 @@ Represents an Elastic Load Balancer V2 ([Application Load Balancer](https://docs
 	```
 	(LoadBalancerV2)-[ELBV2_LISTENER]->(ELBV2Listener)
 	```
+## Nameserver
+
+Represents a DNS nameserver.
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| id | The address of the nameserver|
+| name |  The name or address of the nameserver|
+
+### Relationships
+
+- Nameservers are nameservers for to DNSZone.
+
+	```
+	(Nameserver)-[NAMESERVER]->(DNSZone)
+	```
 
 ## NetworkInterface
 
@@ -1189,7 +1213,8 @@ Representation of an AWS S3 [Bucket](https://docs.aws.amazon.com/AmazonS3/latest
 | firstseen| Timestamp of when a sync job first discovered this node  |
 | lastupdated |  Timestamp of the last time the node was updated |
 | creationdate | Date-time when the bucket was created |
-| **name** | The friendly name of the bucket |
+| **id** | Same as `name`, as seen below |
+| name | The name of the bucket.  This is guaranteed to be [globally unique](https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3.html#S3.Client.list_buckets) |
 | anonymous\_actions |  List of anonymous internet accessible actions that may be run on the bucket.  This list is taken by running [policyuniverse](https://github.com/Netflix-Skunkworks/policyuniverse#internet-accessible-policy) on the policy that applies to the bucket.   |
 | anonymous\_access | True if this bucket has a policy applied to it that allows anonymous access or if it is open to the internet.  These policy determinations are made by using the [policyuniverse](https://github.com/Netflix-Skunkworks/policyuniverse) library.  |
 

@@ -25,7 +25,7 @@ Placeholder representation of a single G Suite [user object](https://developers.
 
 ### Relationships
 
-- GSuiteUsers install ChromeExternsions.
+- GSuiteUsers install ChromeExtensions.
 
     ```
     (GSuiteUser)-[INSTALLS]->(ChromeExtension)
@@ -71,7 +71,7 @@ Placeholder representation of a single G Suite [user object](https://developers.
 
  ### Relationships
 
-- GSuiteUsers install ChromeExternsions.
+- GSuiteUsers install ChromeExtensions.
 
     ```
     (GSuiteUser)-[INSTALLS]->(ChromeExtension)

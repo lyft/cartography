@@ -220,7 +220,7 @@ def transform_user_extensions(user_extension_json):
             })
             for user in details[1]['users']:
                 if user is None:
-                    print(f"bad user for {extension_id}|{version}")
+                    logger.info(f'bad user for {extension_id}{version}')
                     continue
                 users_set.add(user)
                 extensions_by_user.append({
