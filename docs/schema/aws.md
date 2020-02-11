@@ -651,7 +651,7 @@ Representation of an AWS [EC2 Key Pair](https://docs.aws.amazon.com/AWSEC2/lates
 | region| The AWS region |
 | **arn** | AWS-unique identifier for this object |
  id | same as `arn` |
-| uploaded | `uploaded` is set to `True` if the the KeyPair was uploaded to AWS. Uploaded KeyPairs$
+| user_uploaded | `user_uploaded` is set to `True` if the the KeyPair was uploaded to AWS. Uploaded KeyPairs$
 | duplicate_keyfingerprint | `duplicate_keyfingerprint` is set to `True` if it's `keyfingerprint` $
 
 ### Relationships
