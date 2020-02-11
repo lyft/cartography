@@ -12,6 +12,10 @@ from cartography.util import run_cleanup_job
 
 logger = logging.getLogger(__name__)
 
+def get_region_subscriptions(iam, current_tenancy_id):
+    response = oci.pagination.list_call_get_all_results(iam.list_region_subscriptions, current_tenancy_id)
+    return {'RegionSubscriptions': utils.oci_object_to_json(response.data)}
+
 def sync_compartments(neo4j_session, iam, current_tenancy_id, oci_update_tag, common_job_parameters):
     logger.debug("Syncing IAM compartments for account '%s'.", current_tenancy_id)
     data = get_compartment_list_data(iam,current_tenancy_id)
