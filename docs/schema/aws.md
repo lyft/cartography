@@ -652,7 +652,7 @@ Representation of an AWS [EC2 Key Pair](https://docs.aws.amazon.com/AWSEC2/lates
 | **arn** | AWS-unique identifier for this object |
  id | same as `arn` |
 | user_uploaded | `user_uploaded` is set to `True` if the the KeyPair was uploaded to AWS. Uploaded KeyPairs$
-| duplicate_keyfingerprint | `duplicate_keyfingerprint` is set to `True` if it's `keyfingerprint` $
+| duplicate_keyfingerprint | `duplicate_keyfingerprint` is set to `True` if the KeyPair has the same `keyfingerprint` as another KeyPair.
 
 ### Relationships
 
