@@ -650,6 +650,9 @@ Representation of an AWS [EC2 Key Pair](https://docs.aws.amazon.com/AWSEC2/lates
 | keyfingerprint | The fingerprint of the public key |
 | region| The AWS region |
 | **arn** | AWS-unique identifier for this object |
+ id | same as `arn` |
+| user_uploaded | `user_uploaded` is set to `True` if the the KeyPair was uploaded to AWS. Uploaded KeyPairs will have 128-bit MD5 hashed `keyfingerprint`, and KeyPiars from AWS will have 160-bit SHA-1 hashed `keyfingerprint`s.
+| duplicate_keyfingerprint | `duplicate_keyfingerprint` is set to `True` if the KeyPair has the same `keyfingerprint` as another KeyPair.
 
 ### Relationships
 
@@ -663,6 +666,12 @@ Representation of an AWS [EC2 Key Pair](https://docs.aws.amazon.com/AWSEC2/lates
 
 	```
 	(EC2KeyPair)-[SSH_LOGIN_TO]->(EC2Instance)
+	```
+
+- EC2 key pairs have matching `keyfingerprint`.
+
+	```
+	(EC2KeyPair)-[MATCHING_FINGERPRINT]->(EC2KeyPair)
 	```
 
 
