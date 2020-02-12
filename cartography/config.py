@@ -17,6 +17,10 @@ class Config:
     :type aws_sync_all_profiles: bool
     :param aws_sync_all_profiles: If True, AWS sync will run for all non-default profiles in the AWS_CONFIG_FILE. If
         False (default), AWS sync will run using the default credentials only. Optional.
+    :type crxcavator_api_base_uri: str
+    :param crxcavator_api_base_uri: URI for CRXcavator API. Optional.
+    :type crxcavator_api_key: str
+    :param crxcavator_api_key: Auth key for CRXcavator API. Optional.
     :type analysis_job_directory: str
     :param analysis_job_directory: Path to a directory tree containing analysis jobs to run. Optional.
     :type okta_org_id: str
@@ -35,6 +39,8 @@ class Config:
         update_tag=None,
         aws_sync_all_profiles=False,
         analysis_job_directory=None,
+        crxcavator_api_base_uri=None,
+        crxcavator_api_key=None,
         okta_org_id=None,
         okta_api_key=None,
         okta_saml_role_regex=None,
@@ -45,6 +51,8 @@ class Config:
         self.update_tag = update_tag
         self.aws_sync_all_profiles = aws_sync_all_profiles
         self.analysis_job_directory = analysis_job_directory
+        self.crxcavator_api_base_uri = crxcavator_api_base_uri
+        self.crxcavator_api_key = crxcavator_api_key
         self.okta_org_id = okta_org_id
         self.okta_api_key = okta_api_key
         self.okta_saml_role_regex = okta_saml_role_regex
