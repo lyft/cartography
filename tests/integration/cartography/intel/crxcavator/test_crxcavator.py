@@ -105,7 +105,6 @@ def test_transform_and_load_extensions(neo4j_session):
             n['ext.report_link'],
         ) for n in nodes
     ])
-    print(actual_nodes)
     expected_nodes = list([
         (
             expected_extension_id,
