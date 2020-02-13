@@ -169,6 +169,15 @@ class CLI:
                 'The regex must contain the {{role}} and {{accountid}} tags'
             ),
         )
+        parser.add_argument(
+            '--github-config-env-var',
+            type=str,
+            default=None,
+            help=(
+                'The name of an environment variable containing a Base64 encoded GitHub config object.'
+                'Required if you are using the GitHub intel module. Ignored otherwise.'
+            ),
+        )
         return parser
 
     def main(self, argv):
@@ -205,16 +214,26 @@ class CLI:
                 logger.warning("Neo4j username was provided but a password could not be found.")
         else:
             config.neo4j_password = None
+
         # Okta config
         if config.okta_org_id and config.okta_api_key_env_var:
             logger.debug(f"Reading API key for Okta from environment variable {config.okta_api_key_env_var}")
             config.okta_api_key = os.environ.get(config.okta_api_key_env_var)
+
         # CRXcavator config
         if config.crxcavator_api_base_uri and config.crxcavator_api_key_env_var:
             logger.debug("Reading API key for CRXcavator from environment variable '%s'.")
             config.crxcavator_api_key = os.environ.get(config.crxcavator_api_key_env_var)
         else:
             config.crxcavator_api_key = None
+
+        # GitHub config
+        if config.github_config_env_var:
+            logger.debug(f"Reading config string for GitHub from environment variable {config.github_config_env_var}")
+            config.github_config = os.environ.get(config.github_config_env_var)
+        else:
+            config.github_config = None
+
         # Run cartography
         try:
             return cartography.sync.run_with_config(self.sync, config)
