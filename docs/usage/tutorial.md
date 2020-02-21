@@ -1,3 +1,21 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Usage Tutorial](#usage-tutorial)
+  - [ℹ️ Already know how to query Neo4j?  You can skip to our reference material!](#-already-know-how-to-query-neo4j--you-can-skip-to-our-reference-material)
+  - [What RDS instances are installed in my AWS accounts?](#what-rds-instances-are-installed-in-my-aws-accounts)
+    - [ℹ️ Protip - customizing your view](#-protip---customizing-your-view)
+  - [Which RDS instances have encryption turned off?](#which-rds-instances-have-encryption-turned-off)
+  - [Which EC2 instances are directly exposed to the internet?](#which-ec2-instances-are-directly-exposed-to-the-internet)
+  - [Which S3 buckets have a policy granting any level of anonymous access to the bucket?](#which-s3-buckets-have-a-policy-granting-any-level-of-anonymous-access-to-the-bucket)
+  - [How many unencrypted RDS instances do I have in all my AWS accounts?](#how-many-unencrypted-rds-instances-do-i-have-in-all-my-aws-accounts)
+  - [Learning more](#learning-more)
+  - [Data Enrichment](#data-enrichment)
+- [Extending Cartography with Analysis Jobs](#extending-cartography-with-analysis-jobs)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 ## Usage Tutorial
 
 Once everything has been installed and synced, you can view the Neo4j web interface at http://localhost:7474.  You can view the reference on this [here](https://neo4j.com/developer/guide-neo4j-browser/#_installing_and_starting_neo4j_browser).
