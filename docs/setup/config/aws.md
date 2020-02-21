@@ -1,6 +1,16 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Amazon Web Services Configuration](#amazon-web-services-configuration)
+    - [Single AWS Account Setup](#single-aws-account-setup)
+    - [Multiple AWS Account Setup](#multiple-aws-account-setup)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Amazon Web Services Configuration
 
-Follow these steps to analyze AWS assets with Cartography. 
+Follow these steps to analyze AWS assets with Cartography.
 
 ### Single AWS Account Setup
 

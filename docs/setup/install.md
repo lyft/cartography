@@ -12,14 +12,7 @@ Time to set up the server that will run Cartography.  Cartography _should_ work 
 	1. [Install](https://neo4j.com/docs/operations-manual/current/installation/) Neo4j on the server you will run Cartography on.
 
 
-1. Set up your data source(s)
-     
-    - AWS - [how to setup](), [supported data types]()
-    - GCP - [how to setup](), [supported data types]()
-    - GSuite -  [how to setup](), [supported data types]()
-    - CRXcavator -  [how to setup](), [supported data types]()
-    - Okta -  [how to setup](), [supported data types]()
-    - Github -  [how to setup](), [supported data types]()
+1. [Configure your data sources](config/README.md).
 
 1. **Get and run Cartography**
 

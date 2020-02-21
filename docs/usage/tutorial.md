@@ -1,9 +1,6 @@
 ## Usage Tutorial
 
 Once everything has been installed and synced, you can view the Neo4j web interface at http://localhost:7474.  You can view the reference on this [here](https://neo4j.com/developer/guide-neo4j-browser/#_installing_and_starting_neo4j_browser).
-<!-- START doctoc generated TOC please keep comment here to allow auto update -->
-<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-<!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 ### ℹ️ Already know [how to query Neo4j](https://neo4j.com/developer/cypher-query-language/)?  You can skip to our reference material!
 If you already know Neo4j and just need to know what are the nodes, attributes, and graph relationships for our representation of infrastructure assets, you can skip this handholdy walkthrough and see our [quick canned queries](#sample-queries).  You can also view our [reference material](#reference).
@@ -85,10 +82,6 @@ RETURN a.name as AWSAccount, count(rds) as UnencryptedInstances
 ### Learning more
 If you want to learn more in depth about Neo4j and Cypher queries you can look at [this tutorial](https://neo4j.com/developer/cypher-query-language/) and see this [reference card](https://neo4j.com/docs/cypher-refcard/current/).
 
-
-## Extending Cartography with Analysis Jobs
-You can add your own custom attributes and relationships without writing Python code!  Here's [how](docs/writing-analysis-jobs.md).
-
 ### Data Enrichment
 Cartography adds custom attributes to nodes and relationships to point out security-related items of interest.  Unless mentioned otherwise these data augmentation jobs are stored in `cartography/data/jobs/analysis`.  Here is a summary of all of Cartography's custom attributes.
 
@@ -111,3 +104,6 @@ Cartography adds custom attributes to nodes and relationships to point out secur
 - `anonymous_access` indicates whether the asset allows access without needing to specify an identity.
 
 	- **S3 buckets**: `anonymous_access` is set to `True` on an S3 bucket if this bucket has an S3Acl with a policy applied to it that allows the [predefined AWS "Authenticated Users" or "All Users" groups](https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#specifying-grantee-predefined-groups) to access it.  These determinations are made by using the [policyuniverse](https://github.com/Netflix-Skunkworks/policyuniverse) library.
+
+## Extending Cartography with Analysis Jobs
+You can add your own custom attributes and relationships without writing Python code!  Here's [how](../dev/writing-analysis-jobs.md).
