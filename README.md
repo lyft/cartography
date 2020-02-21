@@ -1,24 +1,23 @@
-<!-- START doctoc generated TOC please keep comment here to allow auto update -->
-<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
-
-- [Cartography](#cartography)
-  - [Why Cartography?](#why-cartography)
-  - [Install and configure](#install-and-configure)
-  - [Supported platforms](#supported-platforms)
-  - [Usage](#usage)
-  - [Contact](#contact)
-  - [Contributing](#contributing)
-    - [Code of conduct](#code-of-conduct)
-    - [Developing Cartography](#developing-cartography)
-      - [Sign the Contributor License Agreement (CLA)](#sign-the-contributor-license-agreement-cla)
-
-<!-- END doctoc generated TOC please keep comment here to allow auto update -->
-
 # Cartography
 Cartography is a Python tool that consolidates infrastructure assets and the relationships between them in an intuitive graph view powered by a [Neo4j](https://www.neo4j.com) database.
 
 ![Visualization of RDS nodes and AWS nodes](docs/images/accountsandrds.png)
+
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Why Cartography?](#why-cartography)
+- [Install and configure](#install-and-configure)
+- [Supported platforms](#supported-platforms)
+- [Usage](#usage)
+- [Contact](#contact)
+- [Contributing](#contributing)
+  - [Code of conduct](#code-of-conduct)
+  - [Developing Cartography](#developing-cartography)
+    - [Sign the Contributor License Agreement (CLA)](#sign-the-contributor-license-agreement-cla)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 ## Why Cartography?
 Cartography aims to enable a broad set of exploration and automation scenarios.  It is particularly good at exposing otherwise hidden dependency relationships between your service's assets so that you may validate assumptions about security risks.
@@ -46,7 +45,7 @@ Start with our [tutorial](docs/usage/tutorial.md).
 ## Contact
 
 - Join us on `#cartography` on the [Lyft OSS Slack](https://join.slack.com/t/lyftoss/shared_invite/enQtOTYzODg5OTQwNDE2LTFiYjgwZWM3NTNhMTFkZjc4Y2IxOTI4NTdiNTdhNjQ4M2Q5NTIzMjVjOWI4NmVlNjRiZmU2YzA5NTc3MmFjYTQ).
-- Talk to us at our [monthly community meeting](https://calendar.google.com/calendar/embed?src=lyft.com_p10o6ceuiieq9sqcn1ef61v1io%40group.calendar.google.com&ctz=America%2FLos_Angeles).
+- Talk to us and see what we're working on at our [monthly community meeting](https://calendar.google.com/calendar/embed?src=lyft.com_p10o6ceuiieq9sqcn1ef61v1io%40group.calendar.google.com&ctz=America%2FLos_Angeles).
 
 ## Contributing
 Thank you for considering contributing to Cartography!

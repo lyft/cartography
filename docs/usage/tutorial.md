@@ -1,9 +1,14 @@
+## Usage Tutorial
+
+Once everything has been installed and synced, you can view the Neo4j web interface at http://localhost:7474.  You can view the reference on this [here](https://neo4j.com/developer/guide-neo4j-browser/#_installing_and_starting_neo4j_browser).
+
+### ℹ️ Already know [how to query Neo4j](https://neo4j.com/developer/cypher-query-language/)?  You can skip to our reference material!
+If you already know Neo4j and just need to know what are the nodes, attributes, and graph relationships for our representation of infrastructure assets, you can skip this handholdy walkthrough and see our [quick canned queries](#sample-queries).  You can also view our [reference material](#reference).
+
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
-- [Usage Tutorial](#usage-tutorial)
-  - [ℹ️ Already know how to query Neo4j?  You can skip to our reference material!](#-already-know-how-to-query-neo4j--you-can-skip-to-our-reference-material)
   - [What RDS instances are installed in my AWS accounts?](#what-rds-instances-are-installed-in-my-aws-accounts)
     - [ℹ️ Protip - customizing your view](#-protip---customizing-your-view)
   - [Which RDS instances have encryption turned off?](#which-rds-instances-have-encryption-turned-off)
@@ -15,13 +20,6 @@
 - [Extending Cartography with Analysis Jobs](#extending-cartography-with-analysis-jobs)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
-
-## Usage Tutorial
-
-Once everything has been installed and synced, you can view the Neo4j web interface at http://localhost:7474.  You can view the reference on this [here](https://neo4j.com/developer/guide-neo4j-browser/#_installing_and_starting_neo4j_browser).
-
-### ℹ️ Already know [how to query Neo4j](https://neo4j.com/developer/cypher-query-language/)?  You can skip to our reference material!
-If you already know Neo4j and just need to know what are the nodes, attributes, and graph relationships for our representation of infrastructure assets, you can skip this handholdy walkthrough and see our [quick canned queries](#sample-queries).  You can also view our [reference material](#reference).
 
 
 ### What [RDS](https://aws.amazon.com/rds/) instances are installed in my [AWS](https://aws.amazon.com/) accounts?

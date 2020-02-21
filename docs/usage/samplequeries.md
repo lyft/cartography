@@ -1,25 +1,22 @@
+## Reference
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
-- [Reference](#reference)
-  - [Sample queries](#sample-queries)
-    - [What RDS instances are installed in my AWS accounts?](#what-rds-instances-are-installed-in-my-aws-accounts)
-    - [Which RDS instances have encryption turned off?](#which-rds-instances-have-encryption-turned-off)
-    - [Which EC2 instances are exposed (directly or indirectly) to the internet?](#which-ec2-instances-are-exposed-directly-or-indirectly-to-the-internet)
-    - [Which ELB LoadBalancers are internet accessible?](#which-elb-loadbalancers-are-internet-accessible)
-    - [Which ELBv2 LoadBalancerV2s (Application Load Balancers) are internet accessible?](#which-elbv2-loadbalancerv2s-application-load-balancers-are-internet-accessible)
-    - [Which S3 buckets have a policy granting any level of anonymous access to the bucket?](#which-s3-buckets-have-a-policy-granting-any-level-of-anonymous-access-to-the-bucket)
-    - [How many unencrypted RDS instances do I have in all my AWS accounts?](#how-many-unencrypted-rds-instances-do-i-have-in-all-my-aws-accounts)
-    - [What users have the TotallyFake Chrome extension installed?](#what-users-have-the-totallyfake-chrome-extension-installed)
-    - [What users have installed extensions that are risky based on CRXcavator scoring?](#what-users-have-installed-extensions-that-are-risky-based-on-crxcavator-scoring)
+- [Sample queries](#sample-queries)
+  - [What RDS instances are installed in my AWS accounts?](#what-rds-instances-are-installed-in-my-aws-accounts)
+  - [Which RDS instances have encryption turned off?](#which-rds-instances-have-encryption-turned-off)
+  - [Which EC2 instances are exposed (directly or indirectly) to the internet?](#which-ec2-instances-are-exposed-directly-or-indirectly-to-the-internet)
+  - [Which ELB LoadBalancers are internet accessible?](#which-elb-loadbalancers-are-internet-accessible)
+  - [Which ELBv2 LoadBalancerV2s (Application Load Balancers) are internet accessible?](#which-elbv2-loadbalancerv2s-application-load-balancers-are-internet-accessible)
+  - [Which S3 buckets have a policy granting any level of anonymous access to the bucket?](#which-s3-buckets-have-a-policy-granting-any-level-of-anonymous-access-to-the-bucket)
+  - [How many unencrypted RDS instances do I have in all my AWS accounts?](#how-many-unencrypted-rds-instances-do-i-have-in-all-my-aws-accounts)
+  - [What users have the TotallyFake Chrome extension installed?](#what-users-have-the-totallyfake-chrome-extension-installed)
+  - [What users have installed extensions that are risky based on CRXcavator scoring?](#what-users-have-installed-extensions-that-are-risky-based-on-crxcavator-scoring)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
-
-## Reference
-
-
 ### Sample queries
+
 #### What [RDS](https://aws.amazon.com/rds/) instances are installed in my [AWS](https://aws.amazon.com/) accounts?
 ```
 MATCH (aws:AWSAccount)-[r:RESOURCE]->(rds:RDSInstance)
