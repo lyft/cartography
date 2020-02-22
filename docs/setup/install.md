@@ -40,4 +40,6 @@ Time to set up the server that will run Cartography.  Cartography _should_ work 
 			AWS_CONFIG_FILE=/path/to/your/aws/config cartography --neo4j-uri <uri for your neo4j instance; usually bolt://localhost:7687> --aws-sync-all-profiles
 			```
 
+	    You can view a full list of Cartography's CLI arguments by running `cartography --help`
+
 		The sync will pull data from your configured accounts and ingest data to Neo4j!  This process might take a long time if your account has a lot of assets.
