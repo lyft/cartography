@@ -137,7 +137,7 @@ Setting a statement as `iterative: true` means that we will run this query on `#
 
 Now we can enjoy the fruits of our labor and query for internet exposure:
 
-![internet-exposure-query](images/exposed-internet.png)
+![internet-exposure-query](../images/exposed-internet.png)
 
 ## Recap
 As shown, you create an Analysis Job by putting together a bunch of `statements` together (which are essentially Neo4j queries).  In general, each job should first clean up the custom attributes added by a previous run, and then it can perform the match and update steps to add the custom attributes back again.  This ensures that your data is up to date.
