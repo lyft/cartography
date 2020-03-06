@@ -24,6 +24,10 @@ STORAGE_RESPONSE = {
                 "defaultEventBasedHold": False,
                 "storageClass": "STANDARD",
                 "etag": "CAE=",
+                "labels": {
+                    "label_key_1": "label_value_1",
+                    "label_key_2": "label_value_2",
+                },
             },
     ],
 }
