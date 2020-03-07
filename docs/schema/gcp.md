@@ -9,6 +9,7 @@
   - [Relationships](#relationships-1)
 - [GCPBucket](#gcpbucket)
   - [Relationships](#relationships-2)
+- [Label: GCPBucketLabel](#label-gcpbucketlabel)
 - [GCPInstance](#gcpinstance)
   - [Relationships](#relationships-3)
 - [GCPNetworkTag](#gcpnetworktag)
@@ -136,7 +137,6 @@ Representation of a GCP [Organization](https://cloud.google.com/resource-manager
  | kind | The kind of item this is. For storage buckets, this is always storage#bucket |
  | location | The location of the bucket. Object data for objects in the bucket resides in physical storage within this region. Defaults to US. See [Cloud Storage bucket locations](https://cloud.google.com/storage/docs/locations) for the authoritative list. |
  | location_type | The type of location that the bucket resides in, as determined by the `location` property |
- | labels | User-provided bucket [labels](https://cloud.google.com/storage/docs/key-terms#bucket-labels), in key/value pairs |
  | meta_generation | The metadata generation of this bucket |
  | storage_class | The bucket's default storage class, used whenever no `storageClass` is specified for a newly-created object. For more information, see [storage classes](https://cloud.google.com/storage/docs/storage-classes) |
  | time_created | The creation time of the bucket in RFC 3339 format |
@@ -156,6 +156,29 @@ Representation of a GCP [Organization](https://cloud.google.com/resource-manager
 
     ```
     (GCPProject)-[RESOURCE]->(GCPBucket)
+    ```
+
+- GCPBuckets can be labelled with GCPBucketLabels.
+
+    ```
+    (GCPBucket)<-[LABELLED]-(GCPBucketLabels)
+    ```
+
+## Label: GCPBucketLabel
+Representation of a GCP [Storage Bucket Label](https://cloud.google.com/storage/docs/key-terms#bucket-labels).  This node contains a key-value pair.
+
+ | Field | Description |
+ |-------|--------------|
+ | firstseen| Timestamp of when a sync job first discovered this node  |
+ | lastupdated |  Timestamp of the last time the node was updated |
+ | id | The ID of the bucket label.  Takes the form "GCPBucketLabel_{key}."|
+ | key| The key of the bucket label. |
+ | value | The value of the bucket label. |
+
+- GCPBuckets can be labeled with GCPBucketLabels.
+
+    ```
+    (GCPBucket)<-[LABELED]-(GCPBucketLabels)
     ```
 
 
