@@ -69,6 +69,8 @@ CREATE INDEX ON :OCICompartment(ocid);
 CREATE INDEX ON :OCICompartment(name);
 CREATE INDEX ON :OCIGroup(ocid);
 CREATE INDEX ON :OCIPolicy(ocid);
+CREATE INDEX ON :OCIRegion(key);
+CREATE INDEX ON :OCIRegion(name);
 CREATE INDEX ON :OCITenancy(ocid);
 CREATE INDEX ON :OCIUser(ocid);
 CREATE INDEX ON :OCIUser(name);

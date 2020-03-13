@@ -162,3 +162,24 @@ Representation of an [OCI Policy](https://docs.cloud.oracle.com/iaas/api/#/en/id
 	```
 	(OCIPolicy)-[OCI_POLICY_REFERENCE]->(OCIGroup)
 	```
+ 
+## OCIRegion
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| name | The key (not ocid) identifying the region |
+| name | The friendly name (not ocid) identifying the region |
+
+- An `OCITenancy` node can reference an `OCIRegion`.
+
+	```
+	(OCIPolicy)-[OCI_POLICY_REFERENCE]->(OCIGroup)
+	```
+ - Many node types belong to an `OCIRegion`.
+
+	```
+	(OCITenancy)<-[OCI_REGION]-(OCIUser,
+                              OCIGroup,
+                              OCICompartment)
+	```

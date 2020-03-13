@@ -12,10 +12,6 @@ from cartography.util import run_cleanup_job
 
 logger = logging.getLogger(__name__)
 
-def get_region_subscriptions(iam, current_tenancy_id):
-    response = oci.pagination.list_call_get_all_results(iam.list_region_subscriptions, current_tenancy_id)
-    return {'RegionSubscriptions': utils.oci_object_to_json(response.data)}
-
 def sync_compartments(neo4j_session, iam, current_tenancy_id, oci_update_tag, common_job_parameters):
     logger.debug("Syncing IAM compartments for account '%s'.", current_tenancy_id)
     data = get_compartment_list_data(iam,current_tenancy_id)
@@ -273,6 +269,36 @@ def sync_oci_policy_references(neo4j_session, tenancy_id, oci_update_tag, common
                             if compartment["name"].lower()==m.group(0).lower():
                                 load_oci_policy_compartment_reference(neo4j_session, policy["ocid"], compartment['ocid'], tenancy_id, oci_update_tag)
 
+def get_region_subscriptions_list_data(iam, current_tenancy_id):
+    response = oci.pagination.list_call_get_all_results(iam.list_region_subscriptions, current_tenancy_id)
+    return {'RegionSubscriptions': utils.oci_object_to_json(response.data)}
+
+def load_region_subscriptions(neo4j_session, regions, tenancy_id, oci_update_tag):
+    query = """
+    MERGE (aa:OCIRegion{key: {REGION_KEY}})
+    ON CREATE SET aa.firstseen = timestamp()
+    SET aa.lastupdated = {oci_update_tag}, aa.name = {REGION_NAME}
+    WITH aa
+    MATCH (bb:OCITenancy{ocid: {OCI_TENANCY_ID}})
+    MERGE (bb)-[r:OCI_REGION_SUBSCRIPTION]->(aa)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {oci_update_tag}
+    """
+    for region in regions:
+        neo4j_session.run(
+            query,
+            REGION_KEY=region["region-key"],
+            REGION_NAME=region["region-name"],
+            oci_update_tag=oci_update_tag,
+            OCI_TENANCY_ID=tenancy_id,
+        )
+
+def sync_region_subscriptions(neo4j_session, iam, current_tenancy_id, oci_update_tag, common_job_parameters):
+    logger.debug("Syncing IAM region subscriptions for account '%s'.", current_tenancy_id)
+    data = get_region_subscriptions_list_data(iam,current_tenancy_id)
+    load_region_subscriptions(neo4j_session, data["RegionSubscriptions"], current_tenancy_id, oci_update_tag)
+    #run_cleanup_job('oci_import_region_subscriptions_cleanup.json', neo4j_session, common_job_parameters)
+
 def sync(neo4j_session, iam, tenancy_id, oci_update_tag, common_job_parameters):
     logger.info("Syncing IAM for account '%s'.", tenancy_id)
     sync_users(neo4j_session, iam, tenancy_id, oci_update_tag, common_job_parameters)
@@ -281,4 +307,5 @@ def sync(neo4j_session, iam, tenancy_id, oci_update_tag, common_job_parameters):
     sync_compartments(neo4j_session, iam, tenancy_id, oci_update_tag, common_job_parameters)
     sync_policies(neo4j_session, iam, tenancy_id, oci_update_tag, common_job_parameters)
     sync_oci_policy_references(neo4j_session, tenancy_id, oci_update_tag, common_job_parameters)
+    sync_region_subscriptions(neo4j_session, iam, tenancy_id, oci_update_tag, common_job_parameters)
 

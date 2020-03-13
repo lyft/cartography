@@ -8,6 +8,7 @@ from oci.exceptions import ConfigFileNotFound, ProfileNotFound, InvalidConfig
 #from . import compute
 from . import iam
 from . import organizations
+from . import utils
 from cartography.util import run_analysis_job
 from cartography.util import run_cleanup_job
 
@@ -16,14 +17,15 @@ logger = logging.getLogger(__name__)
 Resources = namedtuple('Resources', 'compute iam network')
 
 def _sync_one_account(neo4j_session, resources, tenancy_id, oci_sync_tag, common_job_parameters):
-    logger.info("Syncing OCI region subscriptions for OCI Tenancy with ID '%s'.", tenancy_id)
-    regions = iam.get_region_subscriptions(resources.iam, tenancy_id)
-    for region in regions["RegionSubscriptions"]:
-        logger.info("Syncing OCI region '%s' for OCI Tenancy with ID '%s'.", region["region-name"], tenancy_id)
-        _change_resources_region(resources, region["region-name"])
-        iam.sync(neo4j_session, resources.iam, tenancy_id, oci_sync_tag, common_job_parameters)
-        #compute.sync(neo4j_session, resources.compute, tenancy_id, oci_sync_tag, common_job_parameters)
-        #network.sync(neo4j_session, resources.network, tenancy_id, oci_sync_tag, common_job_parameters)
+    logger.info("Syncing OCI IAM client for OCI Tenancy with ID '%s'.", tenancy_id)
+    iam.sync(neo4j_session, resources.iam, tenancy_id, oci_sync_tag, common_job_parameters)
+
+    regions = utils.get_regions_in_tenancy(neo4j_session, tenancy_id)
+    for region in regions:
+        logger.info("Syncing OCI region '%s' for OCI Tenancy with ID '%s'.", region["name"], tenancy_id)
+        _change_resources_region(resources, region["name"])
+        #compute.sync(neo4j_session, resources.compute, tenancy_id, region["name"], oci_sync_tag, common_job_parameters)
+        #network.sync(neo4j_session, resources.network, tenancy_id, region["name"], oci_sync_tag, common_job_parameters)
 
     #Look into adding once DNS records are implemented.
     # NOTE clean up all DNS records, regardless of which job created them
