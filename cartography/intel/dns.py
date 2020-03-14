@@ -1,4 +1,5 @@
 import logging
+from string import Template
 
 import dns.rdatatype
 import dns.resolver
@@ -6,7 +7,7 @@ import dns.resolver
 logger = logging.getLogger(__name__)
 
 
-def ingest_dns_record_by_fqdn(neo4j_session, update_tag, fqdn, points_to_record):
+def ingest_dns_record_by_fqdn(neo4j_session, update_tag, fqdn, points_to_record, node_label):
     """
     Ingest a new DNS record by it's FQDN
 
@@ -14,6 +15,7 @@ def ingest_dns_record_by_fqdn(neo4j_session, update_tag, fqdn, points_to_record)
     :param update_tag: Update tag to set the node with and childs
     :param fqdn: the fqdn record to add
     :param points_to_record: parent record to set DNS_POINTS_TO relationship to. Can be None
+    :param node_label: the label of the node to attach to a DNS record
     :return: the graph node id for the new/merged record
     """
     fqdn_data = get_dns_resolution_by_fqdn(fqdn)
@@ -26,7 +28,7 @@ def ingest_dns_record_by_fqdn(neo4j_session, update_tag, fqdn, points_to_record)
             ip_list.append(ip)
 
         value = ",".join(ip_list)
-        record_id = ingest_dns_record(neo4j_session, fqdn, value, record_type, update_tag, points_to_record)
+        record_id = ingest_dns_record(neo4j_session, fqdn, value, record_type, update_tag, points_to_record, node_label)
         _link_ip_to_A_record(neo4j_session, update_tag, ip_list, record_id)
 
         return record_id
@@ -69,7 +71,7 @@ def _link_ip_to_A_record(neo4j_session, update_tag, ip_list, parent_record):
     )
 
 
-def ingest_dns_record(neo4j_session, name, value, type, update_tag, points_to_record):
+def ingest_dns_record(neo4j_session, name, value, type, update_tag, points_to_record, node_label):
     """
     Ingest a new DNS record
 
@@ -79,23 +81,24 @@ def ingest_dns_record(neo4j_session, name, value, type, update_tag, points_to_re
     :param type: record type
     :param update_tag: Update tag to set the node with and childs
     :param points_to_record: parent record to set DNS_POINTS_TO relationship to. Can be None
+    :param node_label: the label of the node to attach to a DNS record
     :return: the intel graph node id for the new/merged record
     """
-    ingest = """
+    template = Template("""
     MERGE (record:DNSRecord{id: {Id}})
     ON CREATE SET record.firstseen = timestamp(), record.name = {Name}, record.type = {Type}
     SET record.lastupdated = {update_tag}, record.value = {Value}
     WITH record
-    MATCH (n{id: {PointsToId}})
+    MATCH (n:$node_label{id: {PointsToId}})
     MERGE (record)-[r:DNS_POINTS_TO]->(n)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {update_tag}
-    """
+    """)
 
     record_id = f"{name}+{type}"
 
     neo4j_session.run(
-        ingest,
+        template.safe_substitute(node_label=node_label),
         Id=record_id,
         Name=name,
         Type=type,

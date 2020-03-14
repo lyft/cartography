@@ -123,7 +123,7 @@ def _link_es_domains_to_dns(neo4j_session, domain_id, domain_data, aws_update_ta
     """
     # TODO add support for endpoints to this method
     if domain_data.get("Endpoint"):
-        ingest_dns_record_by_fqdn(neo4j_session, aws_update_tag, domain_data["Endpoint"], domain_id)
+        ingest_dns_record_by_fqdn(neo4j_session, aws_update_tag, domain_data["Endpoint"], domain_id, "ESDomain")
     else:
         logger.debug(f"No es endpoint data for domain id {domain_id}")
 
