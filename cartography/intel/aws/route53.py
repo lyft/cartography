@@ -192,7 +192,7 @@ def transform_record_set(record_set, zone_id, name):
                 "type": 'CNAME',
                 "zoneid": zone_id,
                 "value": value,
-                "id": _generate_id(zone_id, name, 'WEIGHTED_CNAME'),
+                "id": _create_dns_record_id(zone_id, name, 'WEIGHTED_CNAME'),
             }
         else:
             # This is a normal CNAME record
@@ -204,7 +204,7 @@ def transform_record_set(record_set, zone_id, name):
                 "type": 'CNAME',
                 "zoneid": zone_id,
                 "value": value,
-                "id": _generate_id(zone_id, name, 'CNAME'),
+                "id": _create_dns_record_id(zone_id, name, 'CNAME'),
             }
 
     elif record_set['Type'] == 'A':
@@ -216,7 +216,7 @@ def transform_record_set(record_set, zone_id, name):
                 "type": 'ALIAS',
                 "zoneid": zone_id,
                 "value": record_set['AliasTarget']['DNSName'][:-1],
-                "id": _generate_id(zone_id, name, 'ALIAS'),
+                "id": _create_dns_record_id(zone_id, name, 'ALIAS'),
             }
         else:
             # this is a real A record
@@ -232,7 +232,7 @@ def transform_record_set(record_set, zone_id, name):
                 "type": 'A',
                 "zoneid": zone_id,
                 "value": value[:-1],
-                "id": _generate_id(zone_id, name, 'A'),
+                "id": _create_dns_record_id(zone_id, name, 'A'),
             }
 
 
@@ -247,7 +247,7 @@ def transform_ns_record_set(record_set, zone_id):
             # looks like "name.some.fqdn.net.", so this removes the trailing comma.
             "name": _normalize_dns_address(record_set["Name"]),
             "servers": servers,
-            "id": _generate_id(zone_id, record_set['Name'][:-1], 'NS'),
+            "id": _create_dns_record_id(zone_id, record_set['Name'][:-1], 'NS'),
         }
 
 
@@ -326,7 +326,7 @@ def get_zones(client):
     return results
 
 
-def _generate_id(zoneid, name, record_type):
+def _create_dns_record_id(zoneid, name, record_type):
     return "/".join([zoneid, name, record_type])
 
 
