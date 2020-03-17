@@ -179,7 +179,7 @@ def link_sub_zones(neo4j_session, update_tag):
     )
 
 
-def parse_record_set(record_set, zone_id, name):
+def transform_record_set(record_set, zone_id, name):
     # process CNAME, ALIAS and A records
     if record_set['Type'] == 'CNAME':
         if 'AliasTarget' in record_set:
@@ -236,7 +236,7 @@ def parse_record_set(record_set, zone_id, name):
             }
 
 
-def parse_ns_record_set(record_set, zone_id):
+def transform_ns_record_set(record_set, zone_id):
 
     if "ResourceRecords" in record_set:
         # Sometimes the value records have a trailing period, sometimes they dont.
@@ -251,7 +251,7 @@ def parse_ns_record_set(record_set, zone_id):
         }
 
 
-def parse_zone(zone):
+def transform_zone(zone):
     # TODO simplify this
     if 'Comment' in zone['Config']:
         comment = zone['Config']['Comment']
@@ -273,13 +273,13 @@ def load_dns_details(neo4j_session, dns_details, current_aws_id, update_tag):
         zone_alias_records = []
         zone_cname_records = []
         zone_ns_records = []
-        parsed_zone = parse_zone(zone)
+        parsed_zone = transform_zone(zone)
 
         load_zone(neo4j_session, parsed_zone, current_aws_id, update_tag)
 
         for record_set in zone_record_sets:
             if record_set['Type'] == 'A' or record_set['Type'] == 'CNAME':
-                record = parse_record_set(record_set, zone['Id'], record_set['Name'][:-1])
+                record = transform_record_set(record_set, zone['Id'], record_set['Name'][:-1])
 
                 if record['type'] == 'A':
                     zone_a_records.append(record)
@@ -289,7 +289,7 @@ def load_dns_details(neo4j_session, dns_details, current_aws_id, update_tag):
                     zone_cname_records.append(record)
 
             if record_set['Type'] == 'NS':
-                record = parse_ns_record_set(record_set, zone['Id'])
+                record = transform_ns_record_set(record_set, zone['Id'])
                 zone_ns_records.append(record)
         if zone_a_records:
             load_a_records(neo4j_session, zone_a_records, update_tag)
