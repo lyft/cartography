@@ -20,7 +20,7 @@ Time to set up the server that will run Cartography.  Cartography _should_ work 
 	1. [Install](https://neo4j.com/docs/operations-manual/current/installation/) Neo4j on the server you will run Cartography on.
 
 
-1. [Configure your data sources](config/README.md).
+1. [Configure your data sources](config).
 
 1. **Get and run Cartography**
 
