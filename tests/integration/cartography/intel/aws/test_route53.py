@@ -7,6 +7,14 @@ TEST_ZONE_NAME = "TESTZONENAME"
 TEST_AWS_ACCOUNTID = "AWSID"
 
 
+def _ensure_local_neo4j_has_test_route53_records(neo4j_session):
+    cartography.intel.aws.route53.load_dns_details(
+        neo4j_session, tests.data.aws.route53.GET_ZONES_SAMPLE_RESPONSE,
+        TEST_AWS_ACCOUNTID, TEST_UPDATE_TAG,
+    )
+    cartography.intel.aws.route53.link_sub_zones(neo4j_session, TEST_UPDATE_TAG)
+
+
 def test_transform_and_load_ns(neo4j_session):
     # Test that NS records can be parsed and loaded
     data = tests.data.aws.route53.NS_RECORD
@@ -51,3 +59,57 @@ def test_transform_and_load_ns_records(neo4j_session):
     result = neo4j_session.run("MATCH (n:AWSDNSRecord{name:'testdomain.net'}) return count(n) as recordcount")
     for r in result:
         assert r["recordcount"] == 2
+
+
+def test_transform_load_and_cleanup_linked_records(neo4j_session):
+    """
+    1. Load DNS resources
+    2. Link them together
+    3. Ensure that the expected :DNS_POINTS_TO relationships have been created
+    4. Assume that these nodes are now stale and perform cleanup
+    5. Ensure that the :DNS_POINTS_TO relationships have been deleted
+    """
+    _ensure_local_neo4j_has_test_route53_records(neo4j_session)
+    # Now, have one DNS record point to another object.
+    # This is to simulate having a DNS record pointing to a node that was synced in another module.
+    neo4j_session.run(
+        """
+        MERGE (n1:AWSDNSRecord{id:"/hostedzone/HOSTED_ZONE/example.com/NS"})
+        -[:DNS_POINTS_TO]->(:NewTestAsset{name:"hello"})
+        """
+    )
+
+    # Verify that the expected AWS DNS records point to each other
+    result = neo4j_session.run(
+        """
+        MATCH (n1:AWSDNSRecord{id:"/hostedzone/HOSTED_ZONE/example.com/NS"})-[:DNS_POINTS_TO]->(n2:AWSDNSRecord)
+        RETURN n1.name, n2.id
+        """
+    )
+    expected = {("example.com", "/hostedzone/HOSTED_ZONE/example.com/A")}
+    actual = {(r['n1.name'], r['n2.id']) for r in result}
+    assert actual == expected
+
+    # Clean up the route53 assets
+    cartography.intel.aws.route53.cleanup_route53(neo4j_session, TEST_AWS_ACCOUNTID, TEST_UPDATE_TAG)
+
+    # Verify that the AWSDNSRecord-->AWSDNSRecord relationships don't exist anymore
+    result = neo4j_session.run(
+        """
+        MATCH (n1:AWSDNSRecord{id:"/hostedzone/HOSTED_ZONE/example.com/NS"})-[:DNS_POINTS_TO]->(n2:AWSDNSRecord)
+        RETURN count(n2) as recordcount
+        """
+    )
+    for r in result:
+        assert r["recordcount"] == 0
+
+    # Verify that the AWSDNSRecord-->NewTestAsset relationship still exists
+    result = neo4j_session.run(
+        """
+        MATCH (n1:AWSDNSRecord{id:"/hostedzone/HOSTED_ZONE/example.com/NS"})-[:DNS_POINTS_TO]->(n2:NewTestAsset)
+        RETURN n1.name, n2.name
+        """
+    )
+    actual = {(r['n1.arn'], r['n2.name']) for r in result}
+    expected = {("example.com", "hello")}
+    assert actual == expected
