@@ -23,6 +23,5 @@ def create_test_user():
     user.profile.email = "test@lyft.com"
     user.profile.lastName = "LastName"
     user.profile.firstName = "firstName"
-    user.profile.mobilePhone = "000-000-0000"
 
     return user

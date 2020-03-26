@@ -65,7 +65,6 @@ def transform_okta_user(okta_user):
     user_props["last_name"] = okta_user.profile.lastName
     user_props["login"] = okta_user.profile.login
     user_props["email"] = okta_user.profile.email
-    user_props["mobile_phone"] = okta_user.profile.mobilePhone
 
     # https://github.com/okta/okta-sdk-python/blob/master/okta/models/user/User.py
     user_props["id"] = okta_user.id

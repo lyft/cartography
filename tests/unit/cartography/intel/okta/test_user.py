@@ -20,7 +20,6 @@ def test_user_transform_with_all_values():
         'email': user.profile.email,
         'last_name': user.profile.lastName,
         'first_name': user.profile.firstName,
-        'mobile_phone': user.profile.mobilePhone,
     }
 
     assert result == expected
@@ -45,7 +44,6 @@ def test_userprofile_transform_with_no_activated():
         'email': user.profile.email,
         'last_name': user.profile.lastName,
         'first_name': user.profile.firstName,
-        'mobile_phone': user.profile.mobilePhone,
     }
 
     assert result == expected
@@ -70,7 +68,6 @@ def test_userprofile_transform_with_no_status_changed():
         'email': user.profile.email,
         'last_name': user.profile.lastName,
         'first_name': user.profile.firstName,
-        'mobile_phone': user.profile.mobilePhone,
     }
 
     assert result == expected
@@ -95,7 +92,6 @@ def test_userprofile_transform_with_no_last_login():
         'email': user.profile.email,
         'last_name': user.profile.lastName,
         'first_name': user.profile.firstName,
-        'mobile_phone': user.profile.mobilePhone,
     }
 
     assert result == expected
@@ -120,7 +116,6 @@ def test_userprofile_transform_with_no_last_updated():
         'email': user.profile.email,
         'last_name': user.profile.lastName,
         'first_name': user.profile.firstName,
-        'mobile_phone': user.profile.mobilePhone,
     }
 
     assert result == expected
@@ -145,7 +140,6 @@ def test_userprofile_transform_with_no_password_changed():
         'email': user.profile.email,
         'last_name': user.profile.lastName,
         'first_name': user.profile.firstName,
-        'mobile_phone': user.profile.mobilePhone,
     }
 
     assert result == expected
@@ -170,7 +164,6 @@ def test_userprofile_transform_with_no_transition_status():
         'email': user.profile.email,
         'last_name': user.profile.lastName,
         'first_name': user.profile.firstName,
-        'mobile_phone': user.profile.mobilePhone,
     }
 
     assert result == expected
