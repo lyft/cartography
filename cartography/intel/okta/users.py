@@ -65,7 +65,6 @@ def transform_okta_user(okta_user):
     user_props["last_name"] = okta_user.profile.lastName
     user_props["login"] = okta_user.profile.login
     user_props["email"] = okta_user.profile.email
-    user_props["second_email"] = okta_user.profile.secondEmail
     user_props["mobile_phone"] = okta_user.profile.mobilePhone
 
     # https://github.com/okta/okta-sdk-python/blob/master/okta/models/user/User.py
@@ -125,7 +124,6 @@ def _load_okta_users(neo4j_session, okta_org_id, user_list, okta_update_tag):
     new_user.login = user_data.login,
     new_user.email = user_data.email,
     new_user.second_email = user_data.second_email,
-    new_user.mobile_phone = user_data.mobile_phone,
     new_user.created = user_data.created,
     new_user.activated = user_data.activated,
     new_user.status_changed = user_data.status_changed,
