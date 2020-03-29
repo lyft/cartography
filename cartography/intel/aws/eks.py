@@ -15,7 +15,8 @@ def get_eks_clusters(boto3_session, region):
     except client.exceptions.ClientError as e:
         # The account is not authorized to use this service in this region
         # so we can continue without raising an exception
-        if e.response['Error']['Code'] == 'AccessDeniedException' and 'not authorized to use this service' in e.response['Error']['Message']:
+        if e.response['Error']['Code'] == 'AccessDeniedException' \
+                and 'not authorized to use this service' in e.response['Error']['Message']:
             logger.warn("{} in this region. Skipping...".format(e.response['Error']['Message']))
         else:
             raise(e)
