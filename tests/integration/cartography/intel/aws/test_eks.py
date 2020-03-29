@@ -18,7 +18,7 @@ def test_load_eks_clusters(neo4j_session):
     )
     expected_nodes = {
         "arn:aws:eks:eu-west-1:111111111111:cluster/cluster_1",
-        "arn:aws:eks:eu-west-1:111111111111:cluster/cluster_2"
+        "arn:aws:eks:eu-west-1:111111111111:cluster/cluster_2",
     }
 
     nodes = neo4j_session.run(
