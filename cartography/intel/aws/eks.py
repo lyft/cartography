@@ -52,15 +52,15 @@ def load_eks_clusters(neo4j_session, cluster_data, region, current_aws_account_i
         cluster = cluster_data[cd]
         neo4j_session.run(
             query,
-            ClusterArn = cluster['arn'],
-            ClusterName = cluster['name'],
-            ClusterEndpoint = cluster['endpoint'],
-            ClusterVersion = cluster['version'],
-            ClusterPlatformVersion = cluster['platformVersion'],
-            ClusterStatus = cluster['status'],
-            CreatedAt = str(cluster['createdAt']),
-            Region = region,
-            aws_update_tag = aws_update_tag,
+            ClusterArn=cluster['arn'],
+            ClusterName=cluster['name'],
+            ClusterEndpoint=cluster['endpoint'],
+            ClusterVersion=cluster['version'],
+            ClusterPlatformVersion=cluster['platformVersion'],
+            ClusterStatus=cluster['status'],
+            CreatedAt=str(cluster['createdAt']),
+            Region=region,
+            aws_update_tag=aws_update_tag,
             AWS_ACCOUNT_ID=current_aws_account_id,
         )
 

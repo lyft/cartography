@@ -2,7 +2,7 @@ import datetime
 
 LIST_CLUSTERS = [
     "cluster_1",
-    "cluster_2"
+    "cluster_2",
 ]
 
 DESCRIBE_CLUSTERS = {
@@ -21,19 +21,19 @@ DESCRIBE_CLUSTERS = {
             "vpcId": "vpc-1111",
             "endpointPublicAccess": False,
             "endpointPrivateAccess": True,
-            "publicAccessCidrs": []
+            "publicAccessCidrs": [],
         },
         "logging": {
             "clusterLogging": [{
                 "types": ["api", "audit"],
-                "enabled": True
-            }]
+                "enabled": True,
+            }],
         },
         "status": "ACTIVE",
         "certificateAuthority": {
-            "data": "aaaaaaa"
+            "data": "aaaaaaa",
         },
-        "tags": {}
+        "tags": {},
     },
     "cluster_2": {
         "name": "cluster_2",
@@ -50,18 +50,18 @@ DESCRIBE_CLUSTERS = {
             "vpcId": "vpc-1111",
             "endpointPublicAccess": False,
             "endpointPrivateAccess": True,
-            "publicAccessCidrs": []
+            "publicAccessCidrs": [],
         },
         "logging": {
             "clusterLogging": [{
                 "types": ["api", "audit"],
-                "enabled": True
-            }]
+                "enabled": True,
+            }],
         },
         "status": "ACTIVE",
         "certificateAuthority": {
-            "data": "aaaaaaa"
+            "data": "aaaaaaa",
         },
-        "tags": {}
-    }
+        "tags": {},
+    },
 }
