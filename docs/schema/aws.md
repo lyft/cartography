@@ -46,34 +46,36 @@
   - [Relationships](#relationships-18)
 - [EC2Subnet](#ec2subnet)
   - [Relationships](#relationships-19)
-- [ESDomain](#esdomain)
+- [EKSCluster](#ekscluster)
   - [Relationships](#relationships-20)
-- [Endpoint](#endpoint)
+- [ESDomain](#esdomain)
   - [Relationships](#relationships-21)
-- [Endpoint::ELBListener](#endpointelblistener)
+- [Endpoint](#endpoint)
   - [Relationships](#relationships-22)
-- [Endpoint::ELBV2Listener](#endpointelbv2listener)
+- [Endpoint::ELBListener](#endpointelblistener)
   - [Relationships](#relationships-23)
-- [Ip](#ip)
+- [Endpoint::ELBV2Listener](#endpointelbv2listener)
   - [Relationships](#relationships-24)
-- [IpRule](#iprule)
+- [Ip](#ip)
   - [Relationships](#relationships-25)
-- [IpRule::IpPermissionInbound](#ipruleippermissioninbound)
+- [IpRule](#iprule)
   - [Relationships](#relationships-26)
-- [LoadBalancer](#loadbalancer)
+- [IpRule::IpPermissionInbound](#ipruleippermissioninbound)
   - [Relationships](#relationships-27)
-- [LoadBalancerV2](#loadbalancerv2)
+- [LoadBalancer](#loadbalancer)
   - [Relationships](#relationships-28)
-- [Nameserver](#nameserver)
+- [LoadBalancerV2](#loadbalancerv2)
   - [Relationships](#relationships-29)
-- [NetworkInterface](#networkinterface)
+- [Nameserver](#nameserver)
   - [Relationships](#relationships-30)
-- [RDSInstance](#rdsinstance)
+- [NetworkInterface](#networkinterface)
   - [Relationships](#relationships-31)
-- [S3Acl](#s3acl)
+- [RDSInstance](#rdsinstance)
   - [Relationships](#relationships-32)
-- [S3Bucket](#s3bucket)
+- [S3Acl](#s3acl)
   - [Relationships](#relationships-33)
+- [S3Bucket](#s3bucket)
+  - [Relationships](#relationships-34)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -783,6 +785,32 @@ Representation of an AWS EC2 [Subnet](https://docs.aws.amazon.com/AWSEC2/latest/
     (DBSubnetGroup)-[:RESOURCE]->(EC2Subnet)
     ```
 
+
+## EKSCluster
+
+Representation of an AWS [EKS Cluster](https://docs.aws.amazon.com/eks/latest/userguide/what-is-eks.html).
+
+| Field            | Description                                             |
+| ---------------- | ------------------------------------------------------- |
+| firstseen        | Timestamp of when a sync job first discovered this node |
+| lastupdated      | Timestamp of the last time the node was updated         |
+| created_at       | The date and time the cluster was created               |
+| region           | The AWS region                                          |
+| **arn**          | AWS-unique identifier for this object                   |
+| id               | same as `arn`                                           |
+| name             | Name of the EKS Cluster                                 |
+| endpoint         | Endpoint of the cluster                                 |
+| version          | Kubernetes version running                              |
+| platform_version | Version of EKS                                          |
+| status           | Status of the cluster                                   |
+
+
+### Relationships
+
+- EKS Clusters belong to AWS Accounts.
+      ```
+      (AWSAccount)-[RESOURCE]->(EKSCluster)
+      ```
 
 
 ## ESDomain
