@@ -19,7 +19,7 @@ def get_eks_clusters(boto3_session, region):
                 and 'not authorized to use this service' in e.response['Error']['Message']:
             logger.warn("{} in this region. Skipping...".format(e.response['Error']['Message']))
         else:
-            raise(e)
+            raise
     return clusters
 
 
