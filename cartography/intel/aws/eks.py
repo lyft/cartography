@@ -39,6 +39,7 @@ def load_eks_clusters(neo4j_session, cluster_data, region, current_aws_account_i
                 cluster.created_at = {CreatedAt}
     SET cluster.lastupdated = {aws_update_tag},
         cluster.endpoint = {ClusterEndpoint},
+        cluster.exposed_internet = {ClusterExposed},
         cluster.rolearn = {ClusterRoleArn},
         cluster.version = {ClusterVersion},
         cluster.platform_version = {ClusterPlatformVersion},
@@ -58,6 +59,7 @@ def load_eks_clusters(neo4j_session, cluster_data, region, current_aws_account_i
             ClusterArn=cluster['arn'],
             ClusterName=cluster['name'],
             ClusterEndpoint=cluster.get('endpoint'),
+            ClusterExposed=_process_access_policy(cluster),
             ClusterRoleArn=cluster.get('roleArn'),
             ClusterVersion=cluster.get('version'),
             ClusterPlatformVersion=cluster.get('platformVersion'),
@@ -69,15 +71,28 @@ def load_eks_clusters(neo4j_session, cluster_data, region, current_aws_account_i
             AWS_ACCOUNT_ID=current_aws_account_id,
         )
 
+
 def _process_logging(cluster):
-    """ Parse cluster.logging.clusterLogging to verify if
-        at least one entry has audit logging set to Enabled.
+    """
+    Parse cluster.logging.clusterLogging to verify if
+    at least one entry has audit logging set to Enabled.
     """
     logging = False
     cluster_logging = cluster.get('logging', {}).get('clusterLogging')
     if cluster_logging:
         logging = any(filter(lambda x: 'audit' in x['types'] and x['enabled'], cluster_logging))
     return logging
+
+
+def _process_access_policy(cluster):
+    """
+    Set exposed_internet to True if the EKS Cluster public API server endpoint
+    is enabled (cluster.resourcesVpcConfig.endpointPublicAccess)
+    """
+    public_access = cluster.get('resourcesVpcConfig', {}).get('endpointPublicAccess')
+    if public_access and public_access is True:
+        return True
+    return False
 
 
 def cleanup(neo4j_session, common_job_parameters):
