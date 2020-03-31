@@ -788,7 +788,7 @@ Representation of an AWS EC2 [Subnet](https://docs.aws.amazon.com/AWSEC2/latest/
 
 ## EKSCluster
 
-Representation of an AWS [EKS Cluster](https://docs.aws.amazon.com/eks/latest/userguide/what-is-eks.html).
+Representation of an AWS [EKS Cluster](https://docs.aws.amazon.com/eks/latest/APIReference/API_Cluster.html).
 
 | Field            | Description                                             |
 | ---------------- | ------------------------------------------------------- |
