@@ -41,7 +41,8 @@ def load_eks_clusters(neo4j_session, cluster_data, region, current_aws_account_i
         cluster.endpoint = {ClusterEndpoint},
         cluster.version = {ClusterVersion},
         cluster.platform_version = {ClusterPlatformVersion},
-        cluster.status = {ClusterStatus}
+        cluster.status = {ClusterStatus},
+        cluster.audit_logging = {ClusterLogging}
     WITH cluster
     MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
     MERGE (owner)-[r:RESOURCE]->(cluster)
@@ -60,10 +61,21 @@ def load_eks_clusters(neo4j_session, cluster_data, region, current_aws_account_i
             ClusterPlatformVersion=cluster.get('platformVersion'),
             ClusterStatus=cluster.get('status'),
             CreatedAt=str(cluster.get('createdAt')),
+            ClusterLogging=parse_logging(cluster),
             Region=region,
             aws_update_tag=aws_update_tag,
             AWS_ACCOUNT_ID=current_aws_account_id,
         )
+
+def parse_logging(cluster):
+    """ Parse cluster.logging.clusterLogging to verify if
+        at least one entry has audit logging set to Enabled.
+    """
+    logging = False
+    cluster_logging = cluster.get('logging', {}).get('clusterLogging')
+    if cluster_logging:
+        logging = any(filter(lambda x: 'audit' in x['types'] and x['enabled'], cluster_logging))
+    return logging
 
 
 def cleanup(neo4j_session, common_job_parameters):
