@@ -63,13 +63,13 @@ def load_eks_clusters(neo4j_session, cluster_data, region, current_aws_account_i
             ClusterPlatformVersion=cluster.get('platformVersion'),
             ClusterStatus=cluster.get('status'),
             CreatedAt=str(cluster.get('createdAt')),
-            ClusterLogging=parse_logging(cluster),
+            ClusterLogging=_process_logging(cluster),
             Region=region,
             aws_update_tag=aws_update_tag,
             AWS_ACCOUNT_ID=current_aws_account_id,
         )
 
-def parse_logging(cluster):
+def _process_logging(cluster):
     """ Parse cluster.logging.clusterLogging to verify if
         at least one entry has audit logging set to Enabled.
     """
