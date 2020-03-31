@@ -39,6 +39,7 @@ def load_eks_clusters(neo4j_session, cluster_data, region, current_aws_account_i
                 cluster.created_at = {CreatedAt}
     SET cluster.lastupdated = {aws_update_tag},
         cluster.endpoint = {ClusterEndpoint},
+        cluster.rolearn = {ClusterRoleArn},
         cluster.version = {ClusterVersion},
         cluster.platform_version = {ClusterPlatformVersion},
         cluster.status = {ClusterStatus},
@@ -57,6 +58,7 @@ def load_eks_clusters(neo4j_session, cluster_data, region, current_aws_account_i
             ClusterArn=cluster['arn'],
             ClusterName=cluster['name'],
             ClusterEndpoint=cluster.get('endpoint'),
+            ClusterRoleArn=cluster.get('roleArn'),
             ClusterVersion=cluster.get('version'),
             ClusterPlatformVersion=cluster.get('platformVersion'),
             ClusterStatus=cluster.get('status'),
