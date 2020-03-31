@@ -18,6 +18,15 @@ def get_caller_identity(boto3_session):
     return client.get_caller_identity()
 
 
+def list_account_aliases(boto3_session):
+    """
+    Lists the account alias associated with the AWS account (Note: you can have only one).
+    Source: https://docs.aws.amazon.com/IAM/latest/APIReference/API_ListAccountAliases.html
+    """
+    client = boto3_session.client('iam')
+    return client.list_account_aliases()['AccountAliases'][0]
+
+
 def get_current_aws_account_id(boto3_session):
     return get_caller_identity(boto3_session)['Account']
 
