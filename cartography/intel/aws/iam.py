@@ -389,6 +389,7 @@ def _generate_policy_statements(statements, policy_name):
 def load_policy_data(neo4j_session, policy_map, aws_update_tag):
     injest_policy = """
     MERGE (policy:AWSPolicy{name: {Name}})
+    SET policy.lastupdated = {aws_update_tag}
     WITH policy
     UNWIND {Statements} as statement_data
     MERGE (statement:AWSPolicyStatement{sid: statement_data.Sid})
@@ -405,7 +406,7 @@ def load_policy_data(neo4j_session, policy_map, aws_update_tag):
     """ 
 
     ingest_role_policy = """
-    MATCH (role:AWSRole{arn: {Arn}})
+    MATCH (role:AWSPrincipal{arn: {Arn}})
     MATCH (policy:AWSPolicy{name: {Name}})
     MERGE (policy) <-[r:POLICIES]-(role) 
     """
