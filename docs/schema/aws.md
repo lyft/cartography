@@ -790,19 +790,23 @@ Representation of an AWS EC2 [Subnet](https://docs.aws.amazon.com/AWSEC2/latest/
 
 Representation of an AWS [EKS Cluster](https://docs.aws.amazon.com/eks/latest/APIReference/API_Cluster.html).
 
-| Field            | Description                                             |
-| ---------------- | ------------------------------------------------------- |
-| firstseen        | Timestamp of when a sync job first discovered this node |
-| lastupdated      | Timestamp of the last time the node was updated         |
-| created_at       | The date and time the cluster was created               |
-| region           | The AWS region                                          |
-| **arn**          | AWS-unique identifier for this object                   |
-| id               | same as `arn`                                           |
-| name             | Name of the EKS Cluster                                 |
-| endpoint         | Endpoint of the cluster                                 |
-| version          | Kubernetes version running                              |
-| platform_version | Version of EKS                                          |
-| status           | Status of the cluster                                   |
+| Field            | Description                                                                                                 |
+| ---------------- | ----------------------------------------------------------------------------------------------------------- |
+| firstseen        | Timestamp of when a sync job first discovered this node                                                     |
+| lastupdated      | Timestamp of the last time the node was updated                                                             |
+| created_at       | The date and time the cluster was created                                                                   |
+| region           | The AWS region                                                                                              |
+| **arn**          | AWS-unique identifier for this object                                                                       |
+| id               | same as `arn`                                                                                               |
+| name             | Name of the EKS Cluster                                                                                     |
+| endpoint         | The endpoint for the Kubernetes API server.                                                                 |
+| endpoint_public_access | Indicates whether the Amazon EKS public API server endpoint is enabled                                |
+| exposed_internet | Set to True if the EKS Cluster public API server endpoint is enabled                                        |
+| rolearn          | The ARN of the IAM role that provides permissions for the Kubernetes control plane to make calls to AWS API |
+| version          | Kubernetes version running                                                                                  |
+| platform_version | Version of EKS                                                                                              |
+| status           | Status of the cluster. Valid Values: creating, active, deleting, failed, updating                           |
+| audit_logging    | Whether audit logging is enabled                                                                            |
 
 
 ### Relationships

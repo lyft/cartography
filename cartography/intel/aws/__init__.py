@@ -119,3 +119,9 @@ def start_aws_ingestion(neo4j_session, config):
         neo4j_session,
         common_job_parameters,
     )
+
+    run_analysis_job(
+        'aws_eks_asset_exposure.json',
+        neo4j_session,
+        common_job_parameters,
+    )
