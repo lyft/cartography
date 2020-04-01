@@ -365,30 +365,33 @@ def load_user_access_keys(neo4j_session, user_access_keys, aws_update_tag):
                     Status=key['Status'],
                     aws_update_tag=aws_update_tag,
                 )
-def _replace_with_regex( action_list ):
-    if not isinstance(action_list, list):
-        action_list = [action_list]
-    return [x.replace("*",".*").replace("/","\\/").replace("$","\\$").replace("{","\\{").replace("}","\\}") for x in action_list]
+def _replace_with_regex( statement_list ):
+    if not isinstance(statement_list, list):
+        statement_list = [statement_list]
+    return [x.replace("*",".*").replace("/","\\/").replace("$","\\$").replace("{","\\{").replace("}","\\}") for x in statement_list]
 
-def _generate_policy_statements(statements, policy_name):
+def _generate_policy_statements(statements, policy_arn):
     count = 1
     if not isinstance(statements, list):
         statements = [statements]
     for stmt in statements:
         if not "Sid" in stmt:
-            stmt["Sid"] = f"{policy_name}/policy{count}"
+            sid = count
             count += 1 
-        stmt["Resource"] = _replace_with_regex(stmt["Resource"])
+        else:
+            sid = stmt["Sid"]
+        stmt["Sid"] = f"{policy_arn}/statement/{sid}"
+        if "Resource" in stmt:
+            stmt["Resource"] = _replace_with_regex(stmt["Resource"])
         if "Action" in stmt:
             stmt["Action"] = _replace_with_regex(stmt["Action"])
         if "NotAction" in stmt:
             stmt["NotAction"] = _replace_with_regex(stmt["NotAction"])
     return statements
 
-
 def load_policy_data(neo4j_session, policy_map, aws_update_tag):
     injest_policy = """
-    MERGE (policy:AWSPolicy{name: {Name}})
+    MERGE (policy:AWSPolicy{arn: {PolicyArn}})
     SET policy.lastupdated = {aws_update_tag}
     WITH policy
     UNWIND {Statements} as statement_data
@@ -406,23 +409,26 @@ def load_policy_data(neo4j_session, policy_map, aws_update_tag):
     """ 
 
     ingest_role_policy = """
-    MATCH (role:AWSPrincipal{arn: {Arn}})
-    MATCH (policy:AWSPolicy{name: {Name}})
+    MATCH (role:AWSPrincipal{arn: {PrincipalArn}})
+    MATCH (policy:AWSPolicy{arn: {PolicyArn}})
     MERGE (policy) <-[r:POLICIES]-(role) 
     """
 
-    for arn, policy_list in policy_map.items():
+    for principal_arn, policy_list in policy_map.items():
         for policy in policy_list:
-            neo4j_session.run(
+            name = policy.name
+            policy_arn = f"{principal_arn}/inline_policy/{name}"
+            statement = _generate_policy_statements(policy.policy_document["Statement"], policy_arn)
+            result = neo4j_session.run(
                 injest_policy,
-                Name=policy.name,
-               Statements=_generate_policy_statements(policy.policy_document["Statement"], policy.name),
+                PolicyArn=policy_arn,
+                Statements=statement,
                 aws_update_tag=aws_update_tag
             )
             neo4j_session.run(
                 ingest_role_policy,
-                Name=policy.name,
-                Arn=arn,
+                PolicyArn=policy_arn,
+                PrincipalArn=principal_arn,
                 aws_update_tag=aws_update_tag
             )
 
