@@ -7,6 +7,8 @@ CREATE INDEX ON :AWSGroup(arn);
 CREATE INDEX ON :AWSIpv4CidrBlock(id);
 CREATE INDEX ON :AWSIpv6CidrBlock(id);
 CREATE INDEX ON :AWSPolicy(arn);
+CREATE INDEX ON :AWSPolicy(name);
+CREATE INDEX ON :AWSPolicyStatement(sid);
 CREATE INDEX ON :AWSPrincipal(arn);
 CREATE INDEX ON :AWSRole(arn);
 CREATE INDEX ON :AWSUser(arn);
