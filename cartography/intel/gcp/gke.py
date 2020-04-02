@@ -72,7 +72,7 @@ def load_gke_clusters(neo4j_session, gke_list, project_number, gcp_update_tag):
     MERGE(cluster:GKECluster{id:{ClusterSelfLink}})
     ON CREATE SET
         cluster.firstseen = timestamp(),
-        cluster.create_time = {ClusterCreateTime}
+        cluster.created_at = {ClusterCreateTime}
     SET
         cluster.name = {ClusterName},
         cluster.self_link = {ClusterSelfLink},
