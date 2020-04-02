@@ -41,7 +41,7 @@ Start [here](docs/setup/install.md).
 - [Github](docs/setup/config/github.md) - repos, branches, users
 
 ## Usage
-Start with our [tutorial](docs/usage/tutorial.md).
+Start with our [tutorial](docs/usage/tutorial.md). Our [data schema](docs/schema) is a helpful reference when you get stuck.
 
 ## Contact
 

@@ -117,7 +117,6 @@ def load_gcp_buckets(neo4j_session, buckets, gcp_update_tag):
     bucket.kind = {Kind},
     bucket.location = {Location},
     bucket.location_type = {LocationType},
-    bucket.labels = {Labels},
     bucket.meta_generation = {MetaGeneration},
     bucket.storage_class = {StorageClass},
     bucket.time_created = {TimeCreated},
@@ -141,7 +140,6 @@ def load_gcp_buckets(neo4j_session, buckets, gcp_update_tag):
             ProjectNumber=bucket['project_number'],
             BucketId=bucket['id'],
             SelfLink=bucket['self_link'],
-            Labels=bucket['labels'],
             Kind=bucket['kind'],
             Location=bucket['location'],
             LocationType=bucket['location_type'],
@@ -156,6 +154,38 @@ def load_gcp_buckets(neo4j_session, buckets, gcp_update_tag):
             LogBucket=bucket['log_bucket'],
             RequesterPays=bucket['requester_pays'],
             DefaultKmsKeyName=bucket['default_kms_key_name'],
+            gcp_update_tag=gcp_update_tag,
+        )
+        _attach_gcp_bucket_labels(neo4j_session, bucket, gcp_update_tag)
+
+
+def _attach_gcp_bucket_labels(neo4j_session, bucket, gcp_update_tag):
+    """
+    Attach GCP bucket labels to the bucket.
+    :param neo4j_session: The neo4j session
+    :param bucket: The GCP bucket object
+    :param gcp_update_tag: The update tag for this sync
+    :return: Nothing
+    """
+    query = """
+    MERGE (l:Label:GCPBucketLabel{id: {BucketLabelId}})
+    ON CREATE SET l.firstseen = timestamp(),
+    l.key = {Key}
+    SET l.value = {Value},
+    l.lastupdated = {gcp_update_tag}
+    WITH l
+    MATCH (bucket:GCPBucket{id:{BucketId}})
+    MERGE (l)<-[r:LABELED]-(bucket)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}
+    """
+    for (key, val) in bucket.get('labels', []):
+        neo4j_session.run(
+            query,
+            BucketLabelId=f"GCPBucket_{key}",
+            Key=key,
+            Value=val,
+            BucketId=bucket['id'],
             gcp_update_tag=gcp_update_tag,
         )
 

@@ -5,6 +5,7 @@ import botocore.exceptions
 
 from . import dynamodb
 from . import ec2
+from . import eks
 from . import elasticsearch
 from . import iam
 from . import organizations
@@ -36,6 +37,7 @@ def _sync_one_account(neo4j_session, boto3_session, account_id, sync_tag, common
 
     dynamodb.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     ec2.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
+    eks.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     rds.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
 
     # NOTE each of the below will generate DNS records
@@ -114,6 +116,12 @@ def start_aws_ingestion(neo4j_session, config):
 
     run_analysis_job(
         'aws_ec2_keypair_analysis.json',
+        neo4j_session,
+        common_job_parameters,
+    )
+
+    run_analysis_job(
+        'aws_eks_asset_exposure.json',
         neo4j_session,
         common_job_parameters,
     )

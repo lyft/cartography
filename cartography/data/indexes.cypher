@@ -47,6 +47,7 @@ CREATE INDEX ON :GCPOrganization(id);
 CREATE INDEX ON :GCPProject(id);
 CREATE INDEX ON :GCPProject(projectnumber);
 CREATE INDEX ON :GCPBucket(id);
+CREATE INDEX ON :GCPBucketLabel(key);
 CREATE INDEX ON :GCPSubnet(id);
 CREATE INDEX ON :GCPVpc(id);
 CREATE INDEX ON :GitHubOrganization(id);
