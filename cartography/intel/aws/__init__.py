@@ -12,6 +12,7 @@ from . import organizations
 from . import rds
 from . import route53
 from . import s3
+from . import resource_permissions
 from cartography.util import run_analysis_job
 from cartography.util import run_cleanup_job
 
@@ -22,31 +23,32 @@ def _sync_one_account(neo4j_session, boto3_session, account_id, sync_tag, common
     iam.sync(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters)
     s3.sync(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters)
 
-    try:
-        regions = ec2.get_ec2_regions(boto3_session)
-    except botocore.exceptions.ClientError as e:
-        logger.debug("Error occurred getting EC2 regions.", exc_info=True)
-        logger.error(
-            (
-                "Failed to retrieve AWS region list, an error occurred: %s. Could not get regions for account %s."
-            ),
-            e,
-            account_id,
-        )
-        return
+    # try:
+    #     regions = ec2.get_ec2_regions(boto3_session)
+    # except botocore.exceptions.ClientError as e:
+    #     logger.debug("Error occurred getting EC2 regions.", exc_info=True)
+    #     logger.error(
+    #         (
+    #             "Failed to retrieve AWS region list, an error occurred: %s. Could not get regions for account %s."
+    #         ),
+    #         e,
+    #         account_id,
+    #     )
+    #     return
 
-    dynamodb.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-    ec2.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-    eks.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-    rds.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
+    # dynamodb.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
+    # ec2.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
+    # eks.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
+    # rds.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
 
-    # NOTE each of the below will generate DNS records
-    route53.sync(neo4j_session, boto3_session, account_id, sync_tag)
-    elasticsearch.sync(neo4j_session, boto3_session, account_id, sync_tag)
+    # # NOTE each of the below will generate DNS records
+    # route53.sync(neo4j_session, boto3_session, account_id, sync_tag)
+    # elasticsearch.sync(neo4j_session, boto3_session, account_id, sync_tag)
 
-    # NOTE clean up all DNS records, regardless of which job created them
-    run_cleanup_job('aws_account_dns_cleanup.json', neo4j_session, common_job_parameters)
+    # # NOTE clean up all DNS records, regardless of which job created them
+    # run_cleanup_job('aws_account_dns_cleanup.json', neo4j_session, common_job_parameters)
 
+    resource_permissions.sync(neo4j_session, account_id, sync_tag, common_job_parameters)
 
 def _sync_multiple_accounts(neo4j_session, accounts, sync_tag, common_job_parameters):
     logger.debug("Syncing AWS accounts: %s", ', '.join(accounts.values()))
@@ -55,7 +57,7 @@ def _sync_multiple_accounts(neo4j_session, accounts, sync_tag, common_job_parame
     for profile_name, account_id in accounts.items():
         logger.info("Syncing AWS account with ID '%s' using configured profile '%s'.", account_id, profile_name)
         common_job_parameters["AWS_ID"] = account_id
-        boto3_session = boto3.Session(profile_name=profile_name)
+        boto3_session = boto3.Session()
 
         _sync_one_account(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters)
 
@@ -63,6 +65,7 @@ def _sync_multiple_accounts(neo4j_session, accounts, sync_tag, common_job_parame
 
     # There may be orphan Principals which point outside of known AWS accounts. This job cleans
     # up those nodes after all AWS accounts have been synced.
+    
     run_cleanup_job('aws_post_ingestion_principals_cleanup.json', neo4j_session, common_job_parameters)
     # There may be orphan DNS entries that point outside of known AWS zones. This job cleans
     # up those entries after all AWS accounts have been synced.
@@ -70,6 +73,8 @@ def _sync_multiple_accounts(neo4j_session, accounts, sync_tag, common_job_parame
 
 
 def start_aws_ingestion(neo4j_session, config):
+    import urllib3
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     common_job_parameters = {
         "UPDATE_TAG": config.update_tag,
     }

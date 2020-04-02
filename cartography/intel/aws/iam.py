@@ -309,6 +309,10 @@ def load_group_memberships(neo4j_session, group_memberships, aws_update_tag):
     MERGE (user)-[r:MEMBER_AWS_GROUP]->(group)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {aws_update_tag}
+    WITH user, group
+    MATCH (group)-[:POLICIES]->(policy:AWSPolicy)
+    MERGE (user)-[r2:POLICIES]->(policy)
+    SET r2.lastupdated = {aws_update_tag}
     """
 
     for group_arn, membership_data in group_memberships.items():
@@ -413,10 +417,10 @@ def load_user_access_keys(neo4j_session, user_access_keys, aws_update_tag):
                 )
 
 
-def _replace_with_regex(statement_list):
-    if not isinstance(statement_list, list):
-        statement_list = [statement_list]
-    return [x.replace("*", ".*").replace("/", "\\/").replace("$", "\\$").replace("{", "\\{").replace("}", "\\}") for x in statement_list]
+# def _replace_with_regex(statement_list):
+#     if not isinstance(statement_list, list):
+#         statement_list = [statement_list]
+#     return [x.replace("*", ".*").replace("/", "\\/").replace("$", "\\$").replace("{", "\\{").replace("}", "\\}") for x in statement_list]
 
 
 def _generate_policy_statements(statements, policy_id):
@@ -431,11 +435,11 @@ def _generate_policy_statements(statements, policy_id):
             statement_id = stmt["Sid"]
         stmt["id"] = f"{policy_id}/statement/{statement_id}"
         if "Resource" in stmt:
-            stmt["Resource"] = _replace_with_regex(stmt["Resource"])
+            stmt["Resource"] = stmt["Resource"]
         if "Action" in stmt:
-            stmt["Action"] = _replace_with_regex(stmt["Action"])
+            stmt["Action"] = stmt["Action"]
         if "NotAction" in stmt:
-            stmt["NotAction"] = _replace_with_regex(stmt["NotAction"])
+            stmt["NotAction"] = stmt["NotAction"]
     return statements
 
 
