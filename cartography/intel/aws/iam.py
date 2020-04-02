@@ -7,7 +7,9 @@ from cartography.util import run_cleanup_job
 logger = logging.getLogger(__name__)
 
 # Overview of IAM in AWS
-# 
+#
+
+
 def get_group_policies(boto3_session, group_name):
     client = boto3_session.client('iam', verify=False)
     paginator = client.get_paginator('list_group_policies')
@@ -27,6 +29,28 @@ def get_group_membership_data(boto3_session, group_name):
     return client.get_group(GroupName=group_name)
 
 
+def get_group_policy_data(boto3_session, group_list):
+    # Needs to be fixed to return {arn: policy list}
+    resource_client = boto3_session.resource('iam', verify=False)
+    policies = {}
+    for group in group_list:
+        name = group["GroupName"]
+        arn = group["Arn"]
+        resource_group = resource_client.Group(name)
+        policies[arn] = list(resource_group.policies.all())
+    return policies
+
+def get_group_managed_policy_data(boto3_session, group_list):
+    # Needs to be fixed to return {arn: policy list}
+    resource_client = boto3_session.resource('iam', verify=False)
+    policies = {}
+    for group in group_list:
+        name = group["GroupName"]
+        arn = group["Arn"]
+        resource_group = resource_client.Group(name)
+        policies[arn] = list(resource_group.attached_policies.all())
+    return policies
+
 def get_user_policy_data(boto3_session, user_list):
     # Needs to be fixed to return {arn: policy list}
     resource_client = boto3_session.resource('iam', verify=False)
@@ -38,6 +62,18 @@ def get_user_policy_data(boto3_session, user_list):
         policies[arn] = list(resource_user.policies.all())
     return policies
 
+def get_user_managed_policy_data(boto3_session, user_list):
+    # Needs to be fixed to return {arn: policy list}
+    resource_client = boto3_session.resource('iam', verify=False)
+    policies = {}
+    for user in user_list:
+        name = user["UserName"]
+        arn = user["Arn"]
+        resource_user = resource_client.User(name)
+        policies[arn] = list(resource_user.attached_policies.all())
+    return policies
+
+
 def get_role_policy_data(boto3_session, role_list):
     count = 0
     resource_client = boto3_session.resource('iam', verify=False)
@@ -47,14 +83,24 @@ def get_role_policy_data(boto3_session, role_list):
         arn = role["Arn"]
         resource_role = resource_client.Role(name)
         policies[arn] = list(resource_role.policies.all())
-        count += 1
-        if count > 1000:
-            return policies
     return policies
+
+
+def get_role_managed_policy_data(boto3_session, role_list):
+    count = 0
+    resource_client = boto3_session.resource('iam', verify=False)
+    policies = {}
+    for role in role_list:
+        name = role["RoleName"]
+        arn = role["Arn"]
+        resource_role = resource_client.Role(name)
+        policies[arn] = list(resource_role.attached_policies.all())
+    return policies
+
 
 def get_user_list_data(boto3_session):
     client = boto3_session.client('iam', verify=False)
-    
+
     paginator = client.get_paginator('list_users')
     users = []
     policies = []
@@ -72,13 +118,13 @@ def get_group_list_data(boto3_session):
     return {'Groups': groups}
 
 
-def get_policy_list_data(boto3_session):
-    client = boto3_session.client('iam', verify=False)
-    paginator = client.get_paginator('list_policies')
-    policies = []
-    for page in paginator.paginate():
-        policies.extend(page['Policies'])
-    return {'Policies': policies}
+# def get_policy_list_data(boto3_session):
+#     client = boto3_session.client('iam', verify=False)
+#     paginator = client.get_paginator('list_policies')
+#     policies = []
+#     for page in paginator.paginate():
+#         policies.extend(page['Policies'])
+#     return {'Policies': policies}
 
 
 def get_role_list_data(boto3_session):
@@ -142,7 +188,7 @@ def load_groups(neo4j_session, groups, current_aws_account_id, aws_update_tag):
     ingest_group = """
     MERGE (gnode:AWSGroup{arn: {ARN}})
     ON CREATE SET gnode.groupid = {GROUP_ID}, gnode.firstseen = timestamp(), gnode.createdate = {CREATE_DATE}
-    SET gnode.name = {GROUP_NAME}, gnode.path = {PATH},gnode.lastupdated = {aws_update_tag}
+    SET gnode:AWSPrincipal, gnode.name = {GROUP_NAME}, gnode.path = {PATH},gnode.lastupdated = {aws_update_tag}
     WITH gnode
     MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
     MERGE (aa)-[r:RESOURCE]->(gnode)
@@ -163,36 +209,36 @@ def load_groups(neo4j_session, groups, current_aws_account_id, aws_update_tag):
         )
 
 
-def load_policies(neo4j_session, policies, current_aws_account_id, aws_update_tag):
-    ingest_policy = """
-    MERGE (pnode:AWSPolicy{arn: {ARN}})
-    ON CREATE SET pnode.policyid = {POLICY_ID}, pnode.firstseen = timestamp(), pnode.createdate = {CREATE_DATE}
-    SET pnode.name = {POLICY_NAME}, pnode.path = {PATH}, pnode.defaultversionid = {DEFAULT_VERSION_ID},
-    pnode.updatedate = {POLICY_UPDATE}, pnode.isattachable = {IS_ATTACHABLE},
-    pnode.attachmentcount = {ATTACHMENT_COUNT},
-    pnode.lastupdated = {aws_update_tag}
-    WITH pnode
-    MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
-    MERGE (aa)-[r:AWS_POLICY]->(pnode)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
-    """
+# def load_policies(neo4j_session, policies, current_aws_account_id, aws_update_tag):
+#     ingest_policy = """
+#     MERGE (pnode:AWSPolicy{arn: {ARN}})
+#     ON CREATE SET pnode.policyid = {POLICY_ID}, pnode.firstseen = timestamp(), pnode.createdate = {CREATE_DATE}
+#     SET pnode.name = {POLICY_NAME}, pnode.path = {PATH}, pnode.defaultversionid = {DEFAULT_VERSION_ID},
+#     pnode.updatedate = {POLICY_UPDATE}, pnode.isattachable = {IS_ATTACHABLE},
+#     pnode.attachmentcount = {ATTACHMENT_COUNT},
+#     pnode.lastupdated = {aws_update_tag}
+#     WITH pnode
+#     MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+#     MERGE (aa)-[r:AWS_POLICY]->(pnode)
+#     ON CREATE SET r.firstseen = timestamp()
+#     SET r.lastupdated = {aws_update_tag}
+#     """
 
-    for policy in policies:
-        neo4j_session.run(
-            ingest_policy,
-            ARN=policy["Arn"],
-            POLICY_ID=policy["PolicyId"],
-            POLICY_NAME=policy["PolicyName"],
-            PATH=policy["Path"],
-            DEFAULT_VERSION_ID=policy["DefaultVersionId"],
-            CREATE_DATE=str(policy["CreateDate"]),
-            POLICY_UPDATE=str(policy["UpdateDate"]),
-            IS_ATTACHABLE=policy["IsAttachable"],
-            ATTACHMENT_COUNT=policy["AttachmentCount"],
-            AWS_ACCOUNT_ID=current_aws_account_id,
-            aws_update_tag=aws_update_tag,
-        )
+#     for policy in policies:
+#         neo4j_session.run(
+#             ingest_policy,
+#             ARN=policy["Arn"],
+#             POLICY_ID=policy["PolicyId"],
+#             POLICY_NAME=policy["PolicyName"],
+#             PATH=policy["Path"],
+#             DEFAULT_VERSION_ID=policy["DefaultVersionId"],
+#             CREATE_DATE=str(policy["CreateDate"]),
+#             POLICY_UPDATE=str(policy["UpdateDate"]),
+#             IS_ATTACHABLE=policy["IsAttachable"],
+#             ATTACHMENT_COUNT=policy["AttachmentCount"],
+#             AWS_ACCOUNT_ID=current_aws_account_id,
+#             aws_update_tag=aws_update_tag,
+#         )
 
 
 def load_roles(neo4j_session, roles, current_aws_account_id, aws_update_tag):
@@ -365,22 +411,25 @@ def load_user_access_keys(neo4j_session, user_access_keys, aws_update_tag):
                     Status=key['Status'],
                     aws_update_tag=aws_update_tag,
                 )
-def _replace_with_regex( statement_list ):
+
+
+def _replace_with_regex(statement_list):
     if not isinstance(statement_list, list):
         statement_list = [statement_list]
-    return [x.replace("*",".*").replace("/","\\/").replace("$","\\$").replace("{","\\{").replace("}","\\}") for x in statement_list]
+    return [x.replace("*", ".*").replace("/", "\\/").replace("$", "\\$").replace("{", "\\{").replace("}", "\\}") for x in statement_list]
 
-def _generate_policy_statements(statements, policy_arn):
+
+def _generate_policy_statements(statements, policy_id):
     count = 1
     if not isinstance(statements, list):
         statements = [statements]
     for stmt in statements:
         if not "Sid" in stmt:
-            sid = count
-            count += 1 
+            statement_id = count
+            count += 1
         else:
-            sid = stmt["Sid"]
-        stmt["Sid"] = f"{policy_arn}/statement/{sid}"
+            statement_id = stmt["Sid"]
+        stmt["id"] = f"{policy_id}/statement/{statement_id}"
         if "Resource" in stmt:
             stmt["Resource"] = _replace_with_regex(stmt["Resource"])
         if "Action" in stmt:
@@ -389,80 +438,122 @@ def _generate_policy_statements(statements, policy_arn):
             stmt["NotAction"] = _replace_with_regex(stmt["NotAction"])
     return statements
 
-def load_policy_data(neo4j_session, policy_map, aws_update_tag):
+
+def load_policy(neo4j_session, policy_id, policy_name, policy_type, principal_arn, aws_update_tag):
     injest_policy = """
-    MERGE (policy:AWSPolicy{arn: {PolicyArn}})
-    SET policy.lastupdated = {aws_update_tag}
+    MERGE (policy:AWSPolicy{id: {PolicyId}})
+    ON CREATE SET
+    policy.firstseen = timestamp(),
+    policy.type = {PolicyType},
+    policy.name = {PolicyName}
+    SET
+    policy.lastupdated = {aws_update_tag}
     WITH policy
-    UNWIND {Statements} as statement_data
-    MERGE (statement:AWSPolicyStatement{sid: statement_data.Sid})
-    SET 
-    statement.effect = statement_data.Effect,
-    statement.action = statement_data.Action,
-    statement.notaction = statement_data.NotAction,
-    statement.resource = statement_data.Resource,
-    statement.lastupdated = {aws_update_tag}
-    
-    MERGE (policy)-[r:STATEMENTS]->(statement)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
-    """ 
-
-    ingest_role_policy = """
     MATCH (role:AWSPrincipal{arn: {PrincipalArn}})
-    MATCH (policy:AWSPolicy{arn: {PolicyArn}})
-    MERGE (policy) <-[r:POLICIES]-(role) 
+    MERGE (policy) <-[r:POLICIES]-(role)
+    SET r.lastupdated = {aws_update_tag}
     """
+    neo4j_session.run(
+        injest_policy,
+        PolicyId=policy_id,
+        PolicyName=policy_name,
+        PolicyType=policy_type,
+        PrincipalArn=principal_arn,
+        aws_update_tag=aws_update_tag,
+    )
 
+
+def load_policy_statements(neo4j_session, policy_id, policy_name, statements, aws_update_tag):
+    injest_policy_statement = """
+        MATCH (policy:AWSPolicy{id: {PolicyId}})
+        WITH policy
+        UNWIND {Statements} as statement_data
+        MERGE (statement:AWSPolicyStatement{id: statement_data.id})
+        SET
+        statement.effect = statement_data.Effect,
+        statement.action = statement_data.Action,
+        statement.notaction = statement_data.NotAction,
+        statement.resource = statement_data.Resource,
+        statement.sid = statement_data.Sid,
+        statement.lastupdated = {aws_update_tag}
+        MERGE (policy)-[r:STATEMENTS]->(statement)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {aws_update_tag}
+        """
+    neo4j_session.run(
+        injest_policy_statement,
+        PolicyId=policy_id,
+        PolicyName=policy_name,
+        Statements=statements,
+        aws_update_tag=aws_update_tag,
+    )
+
+
+def load_policy_data(neo4j_session, policy_map, aws_update_tag):
     for principal_arn, policy_list in policy_map.items():
         for policy in policy_list:
             name = policy.name
-            policy_arn = f"{principal_arn}/inline_policy/{name}"
-            statement = _generate_policy_statements(policy.policy_document["Statement"], policy_arn)
-            result = neo4j_session.run(
-                injest_policy,
-                PolicyArn=policy_arn,
-                Statements=statement,
-                aws_update_tag=aws_update_tag
-            )
-            neo4j_session.run(
-                ingest_role_policy,
-                PolicyArn=policy_arn,
-                PrincipalArn=principal_arn,
-                aws_update_tag=aws_update_tag
-            )
+            policy_id = f"{principal_arn}/inline_policy/{name}"
+            statements = _generate_policy_statements(policy.policy_document["Statement"], policy_id)
+            load_policy(neo4j_session, policy_id, name, "inline", principal_arn, aws_update_tag)
+            load_policy_statements(neo4j_session, policy_id, name, statements, aws_update_tag)
 
 
-     
+def load_managed_policy_data(neo4j_session, policy_map, aws_update_tag):
+    for principal_arn, policy_list in policy_map.items():
+        for policy in policy_list:
+            name = policy.policy_name
+            policy_id = policy.arn
+            statements = _generate_policy_statements(policy.default_version.document["Statement"], policy_id)
+            load_policy(neo4j_session, policy_id, name, "managed", principal_arn, aws_update_tag)
+            load_policy_statements(neo4j_session, policy_id, name, statements, aws_update_tag)
+
+
 def sync_users(neo4j_session, boto3_session, current_aws_account_id, aws_update_tag, common_job_parameters):
-    logger.debug("Syncing IAM users for account '%s'.", current_aws_account_id)
+    logger.info("Syncing IAM users for account '%s'.", current_aws_account_id)
     data = get_user_list_data(boto3_session)
-    policy_data = get_user_policy_data(boto3_session, data['Users'])
     load_users(neo4j_session, data['Users'], current_aws_account_id, aws_update_tag)
+    
+    policy_data = get_user_policy_data(boto3_session, data['Users'])
     load_policy_data(neo4j_session, policy_data, aws_update_tag)
+    
+    managed_policy_data = get_user_managed_policy_data(boto3_session, data['Users'])
+    load_managed_policy_data(neo4j_session, managed_policy_data, aws_update_tag)
+
     run_cleanup_job('aws_import_users_cleanup.json', neo4j_session, common_job_parameters)
 
 
 def sync_groups(neo4j_session, boto3_session, current_aws_account_id, aws_update_tag, common_job_parameters):
-    logger.debug("Syncing IAM groups for account '%s'.", current_aws_account_id)
+    logger.info("Syncing IAM groups for account '%s'.", current_aws_account_id)
     data = get_group_list_data(boto3_session)
     load_groups(neo4j_session, data['Groups'], current_aws_account_id, aws_update_tag)
+    
+    policy_data = get_group_policy_data(boto3_session, data["Groups"])
+    load_policy_data(neo4j_session, policy_data, aws_update_tag)
+
+    managed_policy_data = get_group_managed_policy_data(boto3_session, data["Groups"])
+    load_managed_policy_data(neo4j_session, managed_policy_data, aws_update_tag)
+
     run_cleanup_job('aws_import_groups_cleanup.json', neo4j_session, common_job_parameters)
 
 
-def sync_policies(neo4j_session, boto3_session, current_aws_account_id, aws_update_tag, common_job_parameters):
-    logger.debug("Syncing IAM policies for account '%s'.", current_aws_account_id)
-    data = get_policy_list_data(boto3_session)
-    load_policies(neo4j_session, data['Policies'], current_aws_account_id, aws_update_tag)
-    run_cleanup_job('aws_import_policies_cleanup.json', neo4j_session, common_job_parameters)
+# def sync_policies(neo4j_session, boto3_session, current_aws_account_id, aws_update_tag, common_job_parameters):
+#     logger.debug("Syncing IAM policies for account '%s'.", current_aws_account_id)
+#     data = get_policy_list_data(boto3_session)
+#     load_policies(neo4j_session, data['Policies'], current_aws_account_id, aws_update_tag)
+#     run_cleanup_job('aws_import_policies_cleanup.json', neo4j_session, common_job_parameters)
 
 
 def sync_roles(neo4j_session, boto3_session, current_aws_account_id, aws_update_tag, common_job_parameters):
-    logger.debug("Syncing IAM roles for account '%s'.", current_aws_account_id)
+    logger.info("Syncing IAM roles for account '%s'.", current_aws_account_id)
     data = get_role_list_data(boto3_session)
-    policy_data = get_role_policy_data(boto3_session, data["Roles"])
     load_roles(neo4j_session, data['Roles'], current_aws_account_id, aws_update_tag)
-    load_policy_data(neo4j_session, policy_data, aws_update_tag)
+
+    inline_policy_data = get_role_policy_data(boto3_session, data["Roles"])
+    load_policy_data(neo4j_session, inline_policy_data, aws_update_tag)
+    
+    managed_policy_data = get_role_managed_policy_data(boto3_session, data["Roles"])
+    load_managed_policy_data(neo4j_session, managed_policy_data, aws_update_tag)
     run_cleanup_job('aws_import_roles_cleanup.json', neo4j_session, common_job_parameters)
 
 
@@ -540,10 +631,10 @@ def sync_user_access_keys(neo4j_session, boto3_session, current_aws_account_id, 
 def sync(neo4j_session, boto3_session, account_id, update_tag, common_job_parameters):
     logger.info("Syncing IAM for account '%s'.", account_id)
     sync_users(neo4j_session, boto3_session, account_id, update_tag, common_job_parameters)
-    # sync_groups(neo4j_session, boto3_session, account_id, update_tag, common_job_parameters)
+    sync_groups(neo4j_session, boto3_session, account_id, update_tag, common_job_parameters)
     # sync_policies(neo4j_session, boto3_session, account_id, update_tag, common_job_parameters)
     sync_roles(neo4j_session, boto3_session, account_id, update_tag, common_job_parameters)
-    # sync_group_memberships(neo4j_session, boto3_session, account_id, update_tag, common_job_parameters)
+    sync_group_memberships(neo4j_session, boto3_session, account_id, update_tag, common_job_parameters)
     # sync_group_policies(neo4j_session, boto3_session, account_id, update_tag, common_job_parameters)
     # sync_role_policies(neo4j_session, boto3_session, account_id, update_tag, common_job_parameters)
     # sync_user_access_keys(neo4j_session, boto3_session, account_id, update_tag, common_job_parameters)

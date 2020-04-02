@@ -14,68 +14,70 @@
   - [Relationships](#relationships-2)
 - [AWSPolicy](#awspolicy)
   - [Relationships](#relationships-3)
-- [AWSPrincipal](#awsprincipal)
+- [AWSPolicyStatement](#awspolicystatement)
   - [Relationships](#relationships-4)
-- [AWSPrincipal::AWSUser](#awsprincipalawsuser)
+- [AWSPrincipal](#awsprincipal)
   - [Relationships](#relationships-5)
-- [AWSPrincipal::AWSRole](#awsprincipalawsrole)
+- [AWSPrincipal::AWSUser](#awsprincipalawsuser)
   - [Relationships](#relationships-6)
-- [AWSVpc](#awsvpc)
+- [AWSPrincipal::AWSRole](#awsprincipalawsrole)
   - [Relationships](#relationships-7)
-- [AccountAccessKey](#accountaccesskey)
+- [AWSVpc](#awsvpc)
   - [Relationships](#relationships-8)
-- [DBSubnetGroup](#dbsubnetgroup)
+- [AccountAccessKey](#accountaccesskey)
   - [Relationships](#relationships-9)
-- [DNSRecord](#dnsrecord)
+- [DBSubnetGroup](#dbsubnetgroup)
   - [Relationships](#relationships-10)
-- [DNSRecord::AWSDNSRecord](#dnsrecordawsdnsrecord)
+- [DNSRecord](#dnsrecord)
   - [Relationships](#relationships-11)
-- [DNSZone](#dnszone)
+- [DNSRecord::AWSDNSRecord](#dnsrecordawsdnsrecord)
   - [Relationships](#relationships-12)
-- [DNSZone::AWSDNSZone](#dnszoneawsdnszone)
+- [DNSZone](#dnszone)
   - [Relationships](#relationships-13)
-- [DynamoDBTable](#dynamodbtable)
+- [DNSZone::AWSDNSZone](#dnszoneawsdnszone)
   - [Relationships](#relationships-14)
-- [EC2Instance](#ec2instance)
+- [DynamoDBTable](#dynamodbtable)
   - [Relationships](#relationships-15)
-- [EC2KeyPair](#ec2keypair)
+- [EC2Instance](#ec2instance)
   - [Relationships](#relationships-16)
-- [EC2Reservation](#ec2reservation)
+- [EC2KeyPair](#ec2keypair)
   - [Relationships](#relationships-17)
-- [EC2SecurityGroup](#ec2securitygroup)
+- [EC2Reservation](#ec2reservation)
   - [Relationships](#relationships-18)
-- [EC2Subnet](#ec2subnet)
+- [EC2SecurityGroup](#ec2securitygroup)
   - [Relationships](#relationships-19)
-- [EKSCluster](#ekscluster)
+- [EC2Subnet](#ec2subnet)
   - [Relationships](#relationships-20)
-- [ESDomain](#esdomain)
+- [EKSCluster](#ekscluster)
   - [Relationships](#relationships-21)
-- [Endpoint](#endpoint)
+- [ESDomain](#esdomain)
   - [Relationships](#relationships-22)
-- [Endpoint::ELBListener](#endpointelblistener)
+- [Endpoint](#endpoint)
   - [Relationships](#relationships-23)
-- [Endpoint::ELBV2Listener](#endpointelbv2listener)
+- [Endpoint::ELBListener](#endpointelblistener)
   - [Relationships](#relationships-24)
-- [Ip](#ip)
+- [Endpoint::ELBV2Listener](#endpointelbv2listener)
   - [Relationships](#relationships-25)
-- [IpRule](#iprule)
+- [Ip](#ip)
   - [Relationships](#relationships-26)
-- [IpRule::IpPermissionInbound](#ipruleippermissioninbound)
+- [IpRule](#iprule)
   - [Relationships](#relationships-27)
-- [LoadBalancer](#loadbalancer)
+- [IpRule::IpPermissionInbound](#ipruleippermissioninbound)
   - [Relationships](#relationships-28)
-- [LoadBalancerV2](#loadbalancerv2)
+- [LoadBalancer](#loadbalancer)
   - [Relationships](#relationships-29)
-- [Nameserver](#nameserver)
+- [LoadBalancerV2](#loadbalancerv2)
   - [Relationships](#relationships-30)
-- [NetworkInterface](#networkinterface)
+- [Nameserver](#nameserver)
   - [Relationships](#relationships-31)
-- [RDSInstance](#rdsinstance)
+- [NetworkInterface](#networkinterface)
   - [Relationships](#relationships-32)
-- [S3Acl](#s3acl)
+- [RDSInstance](#rdsinstance)
   - [Relationships](#relationships-33)
-- [S3Bucket](#s3bucket)
+- [S3Acl](#s3acl)
   - [Relationships](#relationships-34)
+- [S3Bucket](#s3bucket)
+  - [Relationships](#relationships-35)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -203,15 +205,18 @@ Representation of an [AWS Policy](https://docs.aws.amazon.com/IAM/latest/APIRefe
 |-------|-------------|
 | firstseen| Timestamp of when a sync job first discovered this node  |
 | lastupdated |  Timestamp of the last time the node was updated |
-|path | The path to the policy |
-| defaultversionid| The identifier for the version of the policy that is set as the default version |
-| isattachable | Specifies whether the policy can be attaced to an IAM user, group, or role |
-|updatedate | ISO 8601 date-time when the policy was last updated |
-| policyid | The stable and unique string identifying the policy, see the API docs above for specifics|
-| attachmentcount | Number of entities (users, groups, and roles) that the policy is attached to|
+| path | (Managed policies only) The path to the policy |
+| defaultversionid| (Managed policies only) The identifier for the version of the policy that is set as the default version |
+| isattachable | (Managed policies only) Specifies whether the policy can be attaced to an IAM user, group, or role |
+|updatedate | (Managed policies only) ISO 8601 date-time when the policy was last updated |
+| policyid | (Managed policies only) The stable and unique string identifying the policy, see the API docs above for specifics|
+| attachmentcount | (Managed policies only) Number of entities (users, groups, and roles) that the policy is attached to|
 | name | The friendly name (not ARN) identifying the policy |
 | createdate | ISO 8601 date-time when the policy was created|
-| **arn** | The AWS-unique identifier for this object |
+| type | "inline" or "managed" - the type of policy it is|
+| arn | The arn for this object |
+| **id** | The unique identifer for a policy. If the policy is managed this will be the Arn. If the policy is inline this will calculated as _AWSPrincipal_/inline_policy/_PolicyName_|
+
 
 ### Relationships
 
@@ -219,6 +224,39 @@ Representation of an [AWS Policy](https://docs.aws.amazon.com/IAM/latest/APIRefe
 
 	```
 	(AWSAccount)-[AWS_POLICY]->(AWSPolicy)
+	```
+- `AWSPrincipals` contain `AWSPolicies`
+
+	```
+	(AWSPrincipal)-[POLICY]->(AWSPolicy)
+	```
+
+## AWSPolicyStatement
+
+Representation of an [AWS Policy Statement](https://docs.aws.amazon.com/IAM/latest/APIReference/API_Statement.html).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated | Timestamp of the last time the node was updated |
+| resources | (array) The resources the statement is applied to. Can contain wildcards |
+| actions | (array) The permissions allowed or denied by the statetent. Can contain wildcards |
+| notactions | (array) The permission explicitly not matched by the statement |
+| effect | "Allow" or "Deny" - the effect of this statement |
+| **id** | The unique identifier for a statement. <br>If the statement has an Sid the id will be calculated as _AWSPolicy.id_/statements/_Sid_. <br>If the statement has no Sid the id will be calculated as  _AWSPolicy.id_/statements/_index of statement in statement list_ |
+
+
+### Relationships
+
+- An `AWSPolicy` node is defined in an `AWSAccount`.
+
+	```
+	(AWSAccount)-[AWS_POLICY]->(AWSPolicy)
+	```
+- `AWSPrincipals` contain `AWSPolicies`
+
+	```
+	(AWSPrincipal)-[POLICY]->(AWSPolicy)
 	```
 
 
