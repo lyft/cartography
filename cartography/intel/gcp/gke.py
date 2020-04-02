@@ -136,7 +136,7 @@ def load_gke_clusters(neo4j_session, gke_list, project_number, gcp_update_tag):
             ClusterPublicEndpoint=cluster.get('privateClusterConfig', {}).get('publicEndpoint'),
             ClusterMasterUsername=cluster.get('masterAuth', {}).get('username'),
             ClusterMasterPassword=cluster.get('masterAuth', {}).get('password'),
-            gcp_update_tag=gcp_update_tag
+            gcp_update_tag=gcp_update_tag,
         )
 
 

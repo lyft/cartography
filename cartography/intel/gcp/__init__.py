@@ -58,6 +58,7 @@ def _get_storage_resource(credentials):
     """
     return googleapiclient.discovery.build('storage', 'v1', credentials=credentials, cache_discovery=False)
 
+
 def _get_container_resource(credentials):
     """
     Instantiates a Google Cloud Container resource object to call the
