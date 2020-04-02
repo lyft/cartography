@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_group_policies(boto3_session, group_name):
-    client = boto3_session.client('iam', verify=False)
+    client = boto3_session.client('iam')
     paginator = client.get_paginator('list_group_policies')
     policy_names = []
     for page in paginator.paginate(GroupName=group_name):
@@ -20,18 +20,18 @@ def get_group_policies(boto3_session, group_name):
 
 
 def get_group_policy_info(boto3_session, group_name, policy_name):
-    client = boto3_session.client('iam', verify=False)
+    client = boto3_session.client('iam')
     return client.get_group_policy(GroupName=group_name, PolicyName=policy_name)
 
 
 def get_group_membership_data(boto3_session, group_name):
-    client = boto3_session.client('iam', verify=False)
+    client = boto3_session.client('iam')
     return client.get_group(GroupName=group_name)
 
 
 def get_group_policy_data(boto3_session, group_list):
     # Needs to be fixed to return {arn: policy list}
-    resource_client = boto3_session.resource('iam', verify=False)
+    resource_client = boto3_session.resource('iam')
     policies = {}
     for group in group_list:
         name = group["GroupName"]
@@ -42,7 +42,7 @@ def get_group_policy_data(boto3_session, group_list):
 
 def get_group_managed_policy_data(boto3_session, group_list):
     # Needs to be fixed to return {arn: policy list}
-    resource_client = boto3_session.resource('iam', verify=False)
+    resource_client = boto3_session.resource('iam')
     policies = {}
     for group in group_list:
         name = group["GroupName"]
@@ -53,7 +53,7 @@ def get_group_managed_policy_data(boto3_session, group_list):
 
 def get_user_policy_data(boto3_session, user_list):
     # Needs to be fixed to return {arn: policy list}
-    resource_client = boto3_session.resource('iam', verify=False)
+    resource_client = boto3_session.resource('iam')
     policies = {}
     for user in user_list:
         name = user["UserName"]
@@ -64,7 +64,7 @@ def get_user_policy_data(boto3_session, user_list):
 
 def get_user_managed_policy_data(boto3_session, user_list):
     # Needs to be fixed to return {arn: policy list}
-    resource_client = boto3_session.resource('iam', verify=False)
+    resource_client = boto3_session.resource('iam')
     policies = {}
     for user in user_list:
         name = user["UserName"]
@@ -76,7 +76,7 @@ def get_user_managed_policy_data(boto3_session, user_list):
 
 def get_role_policy_data(boto3_session, role_list):
     count = 0
-    resource_client = boto3_session.resource('iam', verify=False)
+    resource_client = boto3_session.resource('iam')
     policies = {}
     for role in role_list:
         name = role["RoleName"]
@@ -88,7 +88,7 @@ def get_role_policy_data(boto3_session, role_list):
 
 def get_role_managed_policy_data(boto3_session, role_list):
     count = 0
-    resource_client = boto3_session.resource('iam', verify=False)
+    resource_client = boto3_session.resource('iam')
     policies = {}
     for role in role_list:
         name = role["RoleName"]
@@ -99,7 +99,7 @@ def get_role_managed_policy_data(boto3_session, role_list):
 
 
 def get_user_list_data(boto3_session):
-    client = boto3_session.client('iam', verify=False)
+    client = boto3_session.client('iam')
 
     paginator = client.get_paginator('list_users')
     users = []
@@ -110,7 +110,7 @@ def get_user_list_data(boto3_session):
 
 
 def get_group_list_data(boto3_session):
-    client = boto3_session.client('iam', verify=False)
+    client = boto3_session.client('iam')
     paginator = client.get_paginator('list_groups')
     groups = []
     for page in paginator.paginate():
@@ -119,7 +119,7 @@ def get_group_list_data(boto3_session):
 
 
 # def get_policy_list_data(boto3_session):
-#     client = boto3_session.client('iam', verify=False)
+#     client = boto3_session.client('iam')
 #     paginator = client.get_paginator('list_policies')
 #     policies = []
 #     for page in paginator.paginate():
@@ -128,7 +128,7 @@ def get_group_list_data(boto3_session):
 
 
 def get_role_list_data(boto3_session):
-    client = boto3_session.client('iam', verify=False)
+    client = boto3_session.client('iam')
     paginator = client.get_paginator('list_roles')
     roles = []
     for page in paginator.paginate():
@@ -137,7 +137,7 @@ def get_role_list_data(boto3_session):
 
 
 def get_role_policies(boto3_session, role_name):
-    client = boto3_session.client('iam', verify=False)
+    client = boto3_session.client('iam')
     paginator = client.get_paginator('list_role_policies')
     policy_names = []
     for page in paginator.paginate(RoleName=role_name):
@@ -146,12 +146,12 @@ def get_role_policies(boto3_session, role_name):
 
 
 def get_role_policy_info(boto3_session, role_name, policy_name):
-    client = boto3_session.client('iam', verify=False)
+    client = boto3_session.client('iam')
     return client.get_role_policy(RoleName=role_name, PolicyName=policy_name)
 
 
 def get_account_access_key_data(boto3_session, username):
-    client = boto3_session.client('iam', verify=False)
+    client = boto3_session.client('iam')
     # NOTE we can get away without using a paginator here because users are limited to two access keys
     return client.list_access_keys(UserName=username)
 
