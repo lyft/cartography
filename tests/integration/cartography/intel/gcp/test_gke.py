@@ -15,7 +15,8 @@ def test_load_gke_clusters(neo4j_session):
     )
 
     expected_nodes = {
-        "https://container.googleapis.com/v1/projects/test-cluster/locations/europe-west2/clusters/test-cluster"
+        # flake8: noqa
+        "https://container.googleapis.com/v1/projects/test-cluster/locations/europe-west2/clusters/test-cluster",
     }
 
     nodes = neo4j_session.run(
