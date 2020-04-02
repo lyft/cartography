@@ -7,11 +7,12 @@ from oauth2client.client import GoogleCredentials
 
 from cartography.intel.gcp import compute
 from cartography.intel.gcp import crm
+from cartography.intel.gcp import gke
 from cartography.intel.gcp import storage
 from cartography.util import run_analysis_job
 
 logger = logging.getLogger(__name__)
-Resources = namedtuple('Resources', 'crm_v1 crm_v2 compute storage')
+Resources = namedtuple('Resources', 'crm_v1 crm_v2 compute storage container')
 
 
 def _get_crm_resource_v1(credentials):
@@ -57,6 +58,16 @@ def _get_storage_resource(credentials):
     """
     return googleapiclient.discovery.build('storage', 'v1', credentials=credentials, cache_discovery=False)
 
+def _get_container_resource(credentials):
+    """
+    Instantiates a Google Cloud Container resource object to call the
+    Container API. See: https://cloud.google.com/kubernetes-engine/docs/reference/rest/v1/.
+
+    :param credentials: The GoogleCredentials object
+    :return: A Container resource object
+    """
+    return googleapiclient.discovery.build('container', 'v1', credentials=credentials, cache_discovery=False)
+
 
 def _initialize_resources(credentials):
     """
@@ -69,6 +80,7 @@ def _initialize_resources(credentials):
         crm_v2=_get_crm_resource_v2(credentials),
         compute=_get_compute_resource(credentials),
         storage=_get_storage_resource(credentials),
+        container=_get_container_resource(credentials),
     )
 
 
@@ -85,6 +97,7 @@ def _sync_single_project(neo4j_session, resources, project_id, gcp_update_tag, c
     """
     compute.sync(neo4j_session, resources.compute, project_id, gcp_update_tag, common_job_parameters)
     storage.sync_gcp_buckets(neo4j_session, resources.storage, project_id, gcp_update_tag, common_job_parameters)
+    gke.sync_gke_clusters(neo4j_session, resources.container, project_id, gcp_update_tag, common_job_parameters)
 
 
 def _sync_multiple_projects(neo4j_session, resources, projects, gcp_update_tag, common_job_parameters):
@@ -150,6 +163,18 @@ def start_gcp_ingestion(neo4j_session, config):
 
     run_analysis_job(
         'gcp_compute_asset_inet_exposure.json',
+        neo4j_session,
+        common_job_parameters,
+    )
+
+    run_analysis_job(
+        'gcp_gke_asset_exposure.json',
+        neo4j_session,
+        common_job_parameters,
+    )
+
+    run_analysis_job(
+        'gcp_gke_basic_auth.json',
         neo4j_session,
         common_job_parameters,
     )
