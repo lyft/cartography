@@ -121,7 +121,7 @@ Representation of an AWS Account.
 - `AWSRole` nodes are defined in `AWSAccount` nodes.
 
 	```
-	(AWSAccount)-[AWS_ROLE]->(AWSRole)
+	(AWSAccount)-[RESOURCE]->(AWSRole)
 	```
 
 ## AWSCidrBlock
@@ -378,7 +378,7 @@ Representation of an AWS [IAM Role](https://docs.aws.amazon.com/IAM/latest/APIRe
 - AWS Roles are defined in AWS Accounts.
 
     ```
-    (AWSAccount)-[AWS_ROLE]->(AWSRole)
+    (AWSAccount)-[RESOURCE]->(AWSRole)
     ```
 
 ## AWSVpc

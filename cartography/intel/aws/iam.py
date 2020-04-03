@@ -339,7 +339,10 @@ def load_user_access_keys(neo4j_session, user_access_keys, aws_update_tag):
                     aws_update_tag=aws_update_tag,
                 )
 
-
+def ensure_list(obj):
+    if not isinstance(obj, list):
+        obj = [obj]
+    return obj
 def _generate_policy_statements(statements, policy_id):
     count = 1
     if not isinstance(statements, list):
@@ -352,11 +355,11 @@ def _generate_policy_statements(statements, policy_id):
             statement_id = stmt["Sid"]
         stmt["id"] = f"{policy_id}/statement/{statement_id}"
         if "Resource" in stmt:
-            stmt["Resource"] = stmt["Resource"]
+            stmt["Resource"] = ensure_list(stmt["Resource"])
         if "Action" in stmt:
-            stmt["Action"] = stmt["Action"]
+            stmt["Action"] = ensure_list(stmt["Action"])
         if "NotAction" in stmt:
-            stmt["NotAction"] = stmt["NotAction"]
+            stmt["NotAction"] = ensure_list(stmt["NotAction"])
     return statements
 
 
@@ -503,9 +506,10 @@ def sync_user_access_keys(neo4j_session, boto3_session, current_aws_account_id, 
 
 def sync(neo4j_session, boto3_session, account_id, update_tag, common_job_parameters):
     logger.info("Syncing IAM for account '%s'.", account_id)
+    # This module only syncs IAM information that is in use.
+    # As such only policies that are attached to a user, role or group are synced
     sync_users(neo4j_session, boto3_session, account_id, update_tag, common_job_parameters)
     sync_groups(neo4j_session, boto3_session, account_id, update_tag, common_job_parameters)
-    sync_policies(neo4j_session, boto3_session, account_id, update_tag, common_job_parameters)
     sync_roles(neo4j_session, boto3_session, account_id, update_tag, common_job_parameters)
     sync_group_memberships(neo4j_session, boto3_session, account_id, update_tag, common_job_parameters)
     sync_user_access_keys(neo4j_session, boto3_session, account_id, update_tag, common_job_parameters)
