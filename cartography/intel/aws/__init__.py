@@ -23,20 +23,20 @@ def _sync_one_account(neo4j_session, boto3_session, account_id, sync_tag, common
     iam.sync(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters)
     s3.sync(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters)
 
-    # try:
-    #     regions = ec2.get_ec2_regions(boto3_session)
-    # except botocore.exceptions.ClientError as e:
-    #     logger.debug("Error occurred getting EC2 regions.", exc_info=True)
-    #     logger.error(
-    #         (
-    #             "Failed to retrieve AWS region list, an error occurred: %s. Could not get regions for account %s."
-    #         ),
-    #         e,
-    #         account_id,
-    #     )
-    #     return
+    try:
+        regions = ec2.get_ec2_regions(boto3_session)
+    except botocore.exceptions.ClientError as e:
+        logger.debug("Error occurred getting EC2 regions.", exc_info=True)
+        logger.error(
+            (
+                "Failed to retrieve AWS region list, an error occurred: %s. Could not get regions for account %s."
+            ),
+            e,
+            account_id,
+        )
+        return
 
-    # dynamodb.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
+    dynamodb.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     # ec2.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     # eks.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     # rds.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)

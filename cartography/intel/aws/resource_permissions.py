@@ -20,6 +20,11 @@ RESOURCE_PERMISSIONS_RELATIONSHIPS = [
         "resource_type": "S3Bucket",
         "permissions": ["S3:PutObject"],
         "relationship_name" : "CAN_WRITE"
+    },
+    {
+        "resource_type": "DynamoDBTable",
+        "permissions": ["dynamodb:BatchGetItem", "dynamodb:GetItem", "dynamodb:GetRecords", "dynamodb:Query"],
+        "relationship_name" : "CAN_QUERY"
     }
 ]
 
