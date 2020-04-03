@@ -24,8 +24,10 @@
   - [Relationships](#relationships-8)
 - [GCPFirewall](#gcpfirewall)
   - [Relationships](#relationships-9)
-- [IpRule::IpPermissionInbound::GCPIpRule](#ipruleippermissioninboundgcpiprule)
+- [GKECluster](#gkecluster)
   - [Relationships](#relationships-10)
+- [IpRule::IpPermissionInbound::GCPIpRule](#ipruleippermissioninboundgcpiprule)
+  - [Relationships](#relationships-11)
 - [IpRange](#iprange)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -482,6 +484,53 @@ Representation of a GCP [Firewall](https://cloud.google.com/compute/docs/referen
     MATCH (fw:GCPFirewall{direction: 'INGRESS', has_target_service_accounts: False}})
     WHERE NOT (fw)-[TARGET_TAG]->(GCPNetworkTag)
     MATCH (GCPInstance)-[MEMBER_OF_GCP_VPC]->(GCPVpc)-[RESOURCE]->(fw)
+    ```
+
+
+## GKECluster
+
+Representation of a GCP [GKE Cluster](https://cloud.google.com/kubernetes-engine/docs/reference/rest/v1/).
+
+| Field                    | Description                                                                                                                                  |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| basic_auth | Set to `True` if both `masterauth_username` and `masterauth_password` are set |
+| created_at               | The date and time the cluster was created                                                                                                    |
+| cluster_ipv4cidr         | The IP address range of the container pods in the cluster                                                                                    |
+| current_master_version   | The current software version of the master endpoint                                                                                          |
+| database_encryption      | Configuration of etcd encryption                                                                                                             |
+| description              | An optional description of the cluster                                                                                                       |
+| endpoint                 | The IP address of the cluster's master endpoint. The endpoint can be accessed from the internet at https://username:password@endpoint/       |
+| exposed_internet | Set to `True` if at least among `private_nodes`, `private_endpoint_enabled`, or `master_authorized_networks` are disabled |
+| firstseen                | Timestamp of when a sync job first discovered this node                                                                                      |
+| **id**                   | Same as `self_link`                                                                                                                          |
+| initial_version          | The initial Kubernetes version for the cluster                                                                                               |
+| location                 | The name of the Google Compute Engine zone or region in which the cluster resides                                                            |
+| logging_service          | The logging service used to write logs. Available options: `logging.googleapis.com/kubernetes`, `logging.googleapis.com`, `none`             |
+|master_authorized_networks | If enabled, it disallows all external traffic to access Kubernetes master through HTTPS except traffic from the given CIDR blocks, Google Compute Engine Public IPs and Google Prod IPs |
+masterauth_username |The username to use for HTTP basic authentication to the master endpoint. For clusters v1.6.0 and later, basic authentication can be disabled by leaving username unspecified (or setting it to the empty string) |
+masterauth_password | The password to use for HTTP basic authentication to the master endpoint. If a password is provided for cluster creation, username must be non-empty |
+| monitoring_service       | The monitoring service used to write metrics. Available options: `monitoring.googleapis.com/kubernetes`, `monitoring.googleapis.com`, `none` |
+| name                     | The name of the cluster                                                                                                                      |
+| network                  | The name of the Google Compute Engine network to which the cluster is connected                                                              |
+| network_policy           | Set to `True` if a network policy provider has been enabled                                                                                  |
+| private_endpoint_enabled | Whether the master's internal IP address is used as the cluster endpoint                                                                     |
+| private_endpoint         | The internal IP address of the cluster's master endpoint                                                                                     |
+| private_nodes            | If enabled, all nodes are given only private addresses and communicate with the master via private networking                                |
+| public_endpoint          | The external IP address of the cluster's master endpoint                                                                                     |
+| **self_link**            | Server-defined URL for the resource                                                                                                          |
+| services_ipv4cidr        | The IP address range of the Kubernetes services in the cluster                                                                               |
+| shielded_nodes           | Whether Shielded Nodes are enabled                                                                                                           |
+| status                   | The current status of the cluster                                                                                                            |
+| subnetwork               | The name of the Google Compute Engine subnetwork to which the cluster is connected                                                           |
+| zone                     | The name of the Google Compute Engine zone in which the cluster resides                                                                      |
+
+
+### Relationships
+
+- GKEClusters are resources of GCPProjects.
+
+    ```
+    (GKECluster)-[RESOURCE]->(GCPInstance)
     ```
 
 
