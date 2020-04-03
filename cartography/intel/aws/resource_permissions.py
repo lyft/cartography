@@ -25,12 +25,13 @@ RESOURCE_PERMISSIONS_RELATIONSHIPS = [
         "resource_type": "DynamoDBTable",
         "permissions": ["dynamodb:BatchGetItem", "dynamodb:GetItem", "dynamodb:GetRecords", "dynamodb:Query"],
         "relationship_name": "CAN_QUERY",
-    },
-    {
-        "resource_type": "AWSRole",
-        "permissions": ["sts:AssumeRole"],
-        "relationship_name": "STS_ASSUMEROLE_ALLOW",
-    },
+    }
+    #,
+    # {
+    #     "resource_type": "AWSRole",
+    #     "permissions": ["sts:AssumeRole"],
+    #     "relationship_name": "STS_ASSUMEROLE_ALLOW",
+    # },
 
 ]
 

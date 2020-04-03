@@ -75,7 +75,6 @@ def get_user_managed_policy_data(boto3_session, user_list):
         policies[arn] = list(resource_user.attached_policies.all())
     return policies
 
-
 def get_role_policy_data(boto3_session, role_list):
     count = 0
     resource_client = boto3_session.resource('iam')
@@ -129,18 +128,18 @@ def get_role_list_data(boto3_session):
     return {'Roles': roles}
 
 
-def get_role_policies(boto3_session, role_name):
-    client = boto3_session.client('iam')
-    paginator = client.get_paginator('list_role_policies')
-    policy_names = []
-    for page in paginator.paginate(RoleName=role_name):
-        policy_names.extend(page['PolicyNames'])
-    return {'PolicyNames': policy_names}
+# def get_role_policies(boto3_session, role_name):
+#     client = boto3_session.client('iam')
+#     paginator = client.get_paginator('list_role_policies')
+#     policy_names = []
+#     for page in paginator.paginate(RoleName=role_name):
+#         policy_names.extend(page['PolicyNames'])
+#     return {'PolicyNames': policy_names}
 
 
-def get_role_policy_info(boto3_session, role_name, policy_name):
-    client = boto3_session.client('iam')
-    return client.get_role_policy(RoleName=role_name, PolicyName=policy_name)
+# def get_role_policy_info(boto3_session, role_name, policy_name):
+#     client = boto3_session.client('iam')
+#     return client.get_role_policy(RoleName=role_name, PolicyName=policy_name)
 
 
 def get_account_access_key_data(boto3_session, username):
@@ -384,7 +383,7 @@ def load_policy(neo4j_session, policy_id, policy_name, policy_type, principal_ar
         PolicyType=policy_type,
         PrincipalArn=principal_arn,
         aws_update_tag=aws_update_tag,
-    )
+    ).consume()
 
 
 def load_policy_statements(neo4j_session, policy_id, policy_name, statements, aws_update_tag):
@@ -410,11 +409,12 @@ def load_policy_statements(neo4j_session, policy_id, policy_name, statements, aw
         PolicyName=policy_name,
         Statements=statements,
         aws_update_tag=aws_update_tag,
-    )
+    ).consume()
 
 
 def load_policy_data(neo4j_session, policy_map, aws_update_tag):
     for principal_arn, policy_list in policy_map.items():
+        logger.debug(f"Syncing IAM role inline policies for role {principal_arn}")
         for policy in policy_list:
             name = policy.name
             policy_id = f"{principal_arn}/inline_policy/{name}"
