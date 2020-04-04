@@ -1,4 +1,5 @@
 import cartography.intel.aws.route53
+import cartography.util
 import tests.data.aws.route53
 
 TEST_UPDATE_TAG = 123456789
@@ -61,7 +62,7 @@ def test_transform_and_load_ns_records(neo4j_session):
         assert r["recordcount"] == 2
 
 
-def test_transform_load_and_cleanup_linked_records(neo4j_session):
+def test_load_and_cleanup_dnspointsto_relationships(neo4j_session):
     """
     1. Load DNS resources
     2. Link them together
@@ -90,8 +91,18 @@ def test_transform_load_and_cleanup_linked_records(neo4j_session):
     actual = {(r['n1.name'], r['n2.id']) for r in result}
     assert actual == expected
 
-    # Clean up the route53 assets
-    cartography.intel.aws.route53.cleanup_route53(neo4j_session, TEST_AWS_ACCOUNTID, TEST_UPDATE_TAG)
+    new_update_tag = 1337
+    new_job_parameters = {
+        "UPDATE_TAG": new_update_tag,
+        "AWS_ID": TEST_AWS_ACCOUNTID,
+    }
+    # Run all cleanup jobs where DNS_POINTS_TO is mentioned in the AWS sync.
+    cartography.intel.aws.route53.cleanup_route53(neo4j_session, TEST_AWS_ACCOUNTID, new_update_tag)
+    cartography.intel.aws.elasticsearch.cleanup(
+        neo4j_session, update_tag=new_update_tag, aws_account_id=TEST_AWS_ACCOUNTID,
+    )
+    cartography.util.run_cleanup_job('aws_account_dns_cleanup.json', neo4j_session, new_job_parameters)
+    cartography.util.run_cleanup_job('aws_post_ingestion_dns_cleanup.json', neo4j_session, new_job_parameters)
 
     # Verify that the AWSDNSRecord-->AWSDNSRecord relationships don't exist anymore
     result = neo4j_session.run(
@@ -107,9 +118,11 @@ def test_transform_load_and_cleanup_linked_records(neo4j_session):
     result = neo4j_session.run(
         """
         MATCH (n1:AWSDNSRecord{id:"/hostedzone/HOSTED_ZONE/example.com/NS"})-[:DNS_POINTS_TO]->(n2:NewTestAsset)
-        RETURN n1.name, n2.name
+        RETURN n1.id, n2.name
         """
     )
-    actual = {(r['n1.arn'], r['n2.name']) for r in result}
-    expected = {("example.com", "hello")}
+    actual = {(r['n1.id'], r['n2.name']) for r in result}
+    expected = {("/hostedzone/HOSTED_ZONE/example.com/NS", "hello")}
+    print(actual)
+    print(expected)
     assert actual == expected
