@@ -12,15 +12,18 @@ def ingest_dns_record_by_fqdn(
     dns_node_additional_label=None,
 ):
     """
-    Creates a DNSRecord node in the graph from the given FQDN and performs DNS resolution to connect it to its
-    associated IP addresses.  Connects the new DNSRecord to the node with ID `points_to_record` of label `node_label`.
+    Creates a :DNSRecord node in the graph from the given FQDN and performs DNS resolution to connect it to its
+    associated IP addresses.
+    This also connects the new :DNSRecord to the node with ID `points_to_record` of label `record_label`.
+    Finally, the :DNSRecord node is also labeled with a specified `dns_node_additional_label`, e.g. `AWSDNSRecord`.
 
-    This results the following relationships:
-    :DNSRecord-[:DNS_POINTS_TO]->:Ip
-    :DNSRecord-[:DNS_POINTS_TO]->:$`node_label`
+    This results the following new nodes and relationships:
+    (:DNSRecord:$`dns_node_additional_label`)-[:DNS_POINTS_TO]->(:Ip)
+    (:DNSRecord:$`dns_node_additional_label`)-[:DNS_POINTS_TO]->(:$`record_label`)
 
     Example usage in ElasticSearch sync:
-    ingest_dns_record_by_fqdn(neo4j_session, aws_update_tag, fqdn, node_id_of_the_ESDomain, node_label="ESDomain")
+    ingest_dns_record_by_fqdn(neo4j_session, aws_update_tag, fqdn, node_id_of_the_ESDomain,
+                              dns_node_additional_label="ESDomain")
 
     :param neo4j_session: Neo4j session object
     :param update_tag: Update tag to set the node with and childs
