@@ -7,4 +7,4 @@ echo -e "[default]\naws_access_key_id=${AWS_ACCESS_KEY_ID}\naws_secret_access_ke
 echo "Done with settings aws credentials"
 
 echo "Starting Cartography..."
-cartography --neo4j-uri bolt://neo4j:7687 --neo4j-user $USERNAME --neo4j-password-env-var NEO4J_PASS
+cartography --neo4j-uri bolt://neo4j:7687 --neo4j-user $USERNAME --neo4j-password-env-var $NEO4J_PASSWORD

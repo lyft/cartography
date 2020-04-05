@@ -18,7 +18,7 @@ services:
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN}
       - USERNAME=neo4j
-      - NEO4J_PASS=${NEO4J_PASSWORD}
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD}
     container_name: cartography
     image: cartography
     build:
