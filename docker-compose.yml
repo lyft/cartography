@@ -1,7 +1,9 @@
 version: '3'
 services:
   neo4j:
-    image: neo4j:3.3
+    environment:
+      - NEO4J_AUTH=neo4j/${NEO4J_PASSWORD}
+    image: neo4j:3.5
     healthcheck:
       test: curl -i http://127.0.0.1:7474 2>&1 | grep -c -e '200 OK'
     ports:
@@ -16,7 +18,7 @@ services:
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN}
       - USERNAME=neo4j
-      - NEO4J_PASS=neo4j
+      - NEO4J_PASS=${NEO4J_PASSWORD}
     container_name: cartography
     image: cartography
     build:
