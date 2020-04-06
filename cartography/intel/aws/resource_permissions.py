@@ -35,33 +35,27 @@ RESOURCE_PERMISSIONS_RELATIONSHIPS = [
 
 ]
 
-
-def evaulate_resource(resources_allowed, resource):
-    for ra in resources_allowed:
-        ra = ra.replace("*", ".*")
-        result = re.search(ra, resource, flags=re.IGNORECASE)
-        if result is not None:
-            return True
-    return False
-
-
-def evaluate_action_for_permission(action, permission):
-    action = action.replace("*", ".*")
-    result = re.search(action, permission, flags=re.IGNORECASE)
+def evaluate_clause(clause, match):
+    clause = clause.replace("*", ".*")
+    result = re.search(clause, match, flags=re.IGNORECASE)
     return not result is None
+
+def evaluate_statment_clause_for_permission(statement, clause_name, match):
+    if clause_name in statement:
+        for clause in statement[clause_name]:
+            if evaluate_clause(clause, match):
+                return True
+    return False
 
 
 def evaluate_statements_for_permission(statements, permission, resource_arn):
     allowed = False
     for statement in statements:
-        if "action" in statement:
-            for action in statement["action"]:
-                if evaluate_action_for_permission(action, permission):
-                    allowed = True
-        if allowed and "notaction" in statement:
-            for notaction in statement["notaction"]:
-                if evaluate_action_for_permission(notaction, permission):
-                    allowed = False
+        if evaluate_statment_clause_for_permission(statement, "action", permission):
+            if not evaluate_statment_clause_for_permission(statement, "notaction", permission):
+                if evaluate_statment_clause_for_permission(statement, "resource", resource_arn):
+                    return True
+
     return allowed
 
 
