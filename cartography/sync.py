@@ -93,43 +93,51 @@ def run_with_config(sync, config):
     neo4j_auth = None
     if config.neo4j_user or config.neo4j_password:
         neo4j_auth = (config.neo4j_user, config.neo4j_password)
-    try:
-        neo4j_driver = GraphDatabase.driver(
-            config.neo4j_uri,
-            auth=neo4j_auth,
-        )
-    except neobolt.exceptions.ServiceUnavailable as e:
-        logger.debug("Error occurred during Neo4j connect.", exc_info=True)
-        logger.error(
-            (
-                "Unable to connect to Neo4j using the provided URI '%s', an error occurred: '%s'. Make sure the Neo4j "
-                "server is running and accessible from your network."
-            ),
-            config.neo4j_uri,
-            e,
-        )
-        return
-    except neobolt.exceptions.AuthError as e:
-        logger.debug("Error occurred during Neo4j auth.", exc_info=True)
-        if not neo4j_auth:
+
+    retry_times = 5
+    sleep_time = 5  # seconds
+    for i in range(retry_times):
+        try:
+            neo4j_driver = GraphDatabase.driver(
+                config.neo4j_uri,
+                auth=neo4j_auth,
+            )
+        except neobolt.exceptions.ServiceUnavailable as e:
+            logger.debug("Error occurred during Neo4j connect.", exc_info=True)
             logger.error(
                 (
-                    "Unable to auth to Neo4j, an error occurred: '%s'. cartography attempted to connect to Neo4j "
-                    "without any auth. Check your Neo4j server settings to see if auth is required and, if it is, "
-                    "provide cartography with a valid username and password."
+                    "Unable to connect to Neo4j using the provided URI '%s', \
+                    an error occurred: '%s'. Make sure the Neo4j "
+                    "server is running and accessible from your network."
                 ),
-                e,
+                config.neo4j_uri,
+                e
             )
+        except neobolt.exceptions.AuthError as e:
+            logger.debug("Error occurred during Neo4j auth.", exc_info=True)
+            if not neo4j_auth:
+                logger.error(
+                    (
+                        "Unable to auth to Neo4j, an error occurred: '%s'. cartography attempted to connect to Neo4j "
+                        "without any auth. Check your Neo4j server settings to see if auth is required and, if it is, "
+                        "provide cartography with a valid username and password."
+                    ),
+                    e
+                )
+            else:
+                logger.error(
+                    (
+                        "Unable to auth to Neo4j, an error occurred: '%s'. cartography attempted to connect \
+                        to Neo4j with a username and password. Check your Neo4j server settings to see if \
+                        the username and password provided to cartography are valid credentials."
+                    ),
+                    e
+                )
+        if i < retry_times:
+            time.sleep(sleep_time)
+            next
         else:
-            logger.error(
-                (
-                    "Unable to auth to Neo4j, an error occurred: '%s'. cartography attempted to connect to Neo4j with "
-                    "a username and password. Check your Neo4j server settings to see if the username and password "
-                    "provided to cartography are valid credentials."
-                ),
-                e,
-            )
-        return
+            return
     default_update_tag = int(time.time())
     if not config.update_tag:
         config.update_tag = default_update_tag

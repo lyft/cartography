@@ -34,6 +34,11 @@
 
     After this finishes you should be able to run Cartography from source with `cartography --neo4j-uri <uri for your neo4j instance; usually bolt://localhost:7687>`.  Any changes to the source code in `{path-where-you-want-your-source-code}/cartography` are now locally testable by running `cartography` from the command line.
 
+### Testing with Docker
+1. Ensure that the docker daemon is installed in running.
+2. Run `docker-compose build`
+3. Run `docker-compose up`
+
 ### Manually testing individual intel modules
 
 After completing the section above, you are now able to manually test intel modules.
