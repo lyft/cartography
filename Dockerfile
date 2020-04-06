@@ -1,10 +1,10 @@
-FROM python:3.6-alpine
+FROM python:3.7-alpine
 
 ENV HOME /home
 RUN mkdir ~/.aws && mkdir ~/app
 
 ## CONFIGURE AWS
-COPY config /home/.aws/
+#COPY config /home/.aws/
 
 ## CONFIGURE APP
 WORKDIR /home/app
