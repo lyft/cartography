@@ -139,9 +139,9 @@ def sync(neo4j_session, account_id, update_tag, common_job_parameters):
 
     for rpr in RESOURCE_PERMISSIONS_RELATIONSHIPS:
         resource_arns = get_resource_arns(neo4j_session, account_id, rpr["resource_type"])
-        policy_mapping = []
         for policy_id, statements in policies.items():
+            policy_mapping = []
             for resource_arn in resource_arns:
                 if evaluate_policy_for_permission(statements, rpr["permissions"], resource_arn):
                     policy_mapping.append({"policy_id": policy_id, "resource_arn": resource_arn})
-        load_policy_mappings(neo4j_session, policy_mapping, rpr["resource_type"], rpr["relationship_name"], update_tag)
+            load_policy_mappings(neo4j_session, policy_mapping, rpr["resource_type"], rpr["relationship_name"], update_tag)
