@@ -18,10 +18,8 @@ def test_user_transform_with_all_values():
         'transition_to_status': user.transitioningToStatus,
         'login': user.profile.login,
         'email': user.profile.email,
-        'second_email': user.profile.secondEmail,
         'last_name': user.profile.lastName,
         'first_name': user.profile.firstName,
-        'mobile_phone': user.profile.mobilePhone,
     }
 
     assert result == expected
@@ -44,10 +42,8 @@ def test_userprofile_transform_with_no_activated():
         'transition_to_status': user.transitioningToStatus,
         'login': user.profile.login,
         'email': user.profile.email,
-        'second_email': user.profile.secondEmail,
         'last_name': user.profile.lastName,
         'first_name': user.profile.firstName,
-        'mobile_phone': user.profile.mobilePhone,
     }
 
     assert result == expected
@@ -70,10 +66,8 @@ def test_userprofile_transform_with_no_status_changed():
         'transition_to_status': user.transitioningToStatus,
         'login': user.profile.login,
         'email': user.profile.email,
-        'second_email': user.profile.secondEmail,
         'last_name': user.profile.lastName,
         'first_name': user.profile.firstName,
-        'mobile_phone': user.profile.mobilePhone,
     }
 
     assert result == expected
@@ -96,10 +90,8 @@ def test_userprofile_transform_with_no_last_login():
         'transition_to_status': user.transitioningToStatus,
         'login': user.profile.login,
         'email': user.profile.email,
-        'second_email': user.profile.secondEmail,
         'last_name': user.profile.lastName,
         'first_name': user.profile.firstName,
-        'mobile_phone': user.profile.mobilePhone,
     }
 
     assert result == expected
@@ -122,10 +114,8 @@ def test_userprofile_transform_with_no_last_updated():
         'transition_to_status': user.transitioningToStatus,
         'login': user.profile.login,
         'email': user.profile.email,
-        'second_email': user.profile.secondEmail,
         'last_name': user.profile.lastName,
         'first_name': user.profile.firstName,
-        'mobile_phone': user.profile.mobilePhone,
     }
 
     assert result == expected
@@ -148,10 +138,8 @@ def test_userprofile_transform_with_no_password_changed():
         'transition_to_status': user.transitioningToStatus,
         'login': user.profile.login,
         'email': user.profile.email,
-        'second_email': user.profile.secondEmail,
         'last_name': user.profile.lastName,
         'first_name': user.profile.firstName,
-        'mobile_phone': user.profile.mobilePhone,
     }
 
     assert result == expected
@@ -174,10 +162,8 @@ def test_userprofile_transform_with_no_transition_status():
         'transition_to_status': None,
         'login': user.profile.login,
         'email': user.profile.email,
-        'second_email': user.profile.secondEmail,
         'last_name': user.profile.lastName,
         'first_name': user.profile.firstName,
-        'mobile_phone': user.profile.mobilePhone,
     }
 
     assert result == expected
