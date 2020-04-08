@@ -4,7 +4,7 @@ from cartography.util import run_cleanup_job
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
-
+import json
 # Overview of IAM in AWS
 #
 
@@ -74,6 +74,7 @@ def get_user_managed_policy_data(boto3_session, user_list):
         resource_user = resource_client.User(name)
         policies[arn] = list(resource_user.attached_policies.all())
     return policies
+
 
 def get_role_policy_data(boto3_session, role_list):
     count = 0
@@ -338,10 +339,13 @@ def load_user_access_keys(neo4j_session, user_access_keys, aws_update_tag):
                     aws_update_tag=aws_update_tag,
                 )
 
+
 def ensure_list(obj):
     if not isinstance(obj, list):
         obj = [obj]
     return obj
+
+
 def _generate_policy_statements(statements, policy_id):
     count = 1
     if not isinstance(statements, list):
@@ -359,6 +363,10 @@ def _generate_policy_statements(statements, policy_id):
             stmt["Action"] = ensure_list(stmt["Action"])
         if "NotAction" in stmt:
             stmt["NotAction"] = ensure_list(stmt["NotAction"])
+        if "NotResource" in stmt:
+            stmt["NotResource"] = ensure_list(stmt["NotResource"])
+        if "Condition" in stmt:
+            stmt["Condition"] = json.dumps(ensure_list(stmt["Condition"]))
     return statements
 
 
@@ -397,6 +405,8 @@ def load_policy_statements(neo4j_session, policy_id, policy_name, statements, aw
         statement.action = statement_data.Action,
         statement.notaction = statement_data.NotAction,
         statement.resource = statement_data.Resource,
+        statement.notresource = statement_data.NotResource,
+        statement.condition = statement_data.Condition,
         statement.sid = statement_data.Sid,
         statement.lastupdated = {aws_update_tag}
         MERGE (policy)-[r:STATEMENT]->(statement)
@@ -414,7 +424,7 @@ def load_policy_statements(neo4j_session, policy_id, policy_name, statements, aw
 
 def load_policy_data(neo4j_session, policy_map, aws_update_tag):
     for principal_arn, policy_list in policy_map.items():
-        logger.debug(f"Syncing IAM role inline policies for role {principal_arn}")
+        logger.debug(f"Syncing IAM inline policies for principal {principal_arn}")
         for policy in policy_list:
             name = policy.name
             policy_id = f"{principal_arn}/inline_policy/{name}"

@@ -178,6 +178,15 @@ class CLI:
                 'Required if you are using the GitHub intel module. Ignored otherwise.'
             ),
         )
+        parser.add_argument(
+            '--permission-relationships-file',
+            type=str,
+            default="cartography/data/permission_relationships.yaml",
+            help=(
+                'The path to the permission relationships mapping file.'
+                'If omitted the default permission relationships will be created'
+            ),
+        )
         return parser
 
     def main(self, argv):

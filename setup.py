@@ -16,6 +16,7 @@ setup(
     package_data={
         'cartography.data': [
             '*.cypher',
+            '*.yaml'
         ],
         'cartography.data.jobs.analysis': [
             '*.json',
@@ -36,6 +37,7 @@ setup(
         "oauth2client>=4.1.3",
         "marshmallow>=3.0.0rc7",
         "okta>=0.0.4",
+        "pyyaml>=5.3.1",
         "requests>=2.22.0",
     ],
     extras_require={

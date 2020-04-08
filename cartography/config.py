@@ -31,6 +31,8 @@ class Config:
     :param okta_saml_role_regex: The regex used to map okta groups to AWS roles. Optional.
     :type github_config: str
     :param github_config: Base64 encoded config object for GitHub ingestion. Optional
+    :type permission_relationship_file: str
+    :param permission_relationship_file: File path for the resource permission relationships file. Optional
     """
 
     def __init__(
@@ -47,6 +49,7 @@ class Config:
         okta_api_key=None,
         okta_saml_role_regex=None,
         github_config=None,
+        permission_relationship_file=None
     ):
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user
@@ -60,3 +63,4 @@ class Config:
         self.okta_api_key = okta_api_key
         self.okta_saml_role_regex = okta_saml_role_regex
         self.github_config = github_config
+        self.permission_relationship_file = permission_relationship_file

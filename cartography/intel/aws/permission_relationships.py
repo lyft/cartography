@@ -1,60 +1,39 @@
 import logging
 import re
-
+import yaml
 import policyuniverse.statement
-
+import os
 from cartography.util import run_cleanup_job
-
+from cartography.graph.statement import GraphStatement
 logger = logging.getLogger(__name__)
 
 # Overview of IAM in AWS
 #
 
-RESOURCE_PERMISSIONS_RELATIONSHIPS = [
-    {
-        "resource_type": "S3Bucket",
-        "permissions": ["S3:GetObject"],
-        "relationship_name": "CAN_READ",
-    },
-    {
-        "resource_type": "S3Bucket",
-        "permissions": ["S3:PutObject"],
-        "relationship_name": "CAN_WRITE",
-    },
-    {
-        "resource_type": "DynamoDBTable",
-        "permissions": ["dynamodb:BatchGetItem", "dynamodb:GetItem", "dynamodb:GetRecords", "dynamodb:Query"],
-        "relationship_name": "CAN_QUERY",
-    }
-    #,
-    # {
-    #     "resource_type": "AWSRole",
-    #     "permissions": ["sts:AssumeRole"],
-    #     "relationship_name": "STS_ASSUMEROLE_ALLOW",
-    # },
-
-]
 
 def evaluate_clause(clause, match):
     clause = clause.replace("*", ".*")
     result = re.search(clause, match, flags=re.IGNORECASE)
     return not result is None
 
-def evaluate_statment_clause_for_permission(statement, clause_name, match):
-    if clause_name in statement:
-        for clause in statement[clause_name]:
-            if evaluate_clause(clause, match):
-                return True
+
+def evaluate_statment_clause_for_permission(statement, clause_name, match, missing_clause_return=False):
+    if not clause_name in statement:
+        return missing_clause_return
+    for clause in statement[clause_name]:
+        if evaluate_clause(clause, match):
+            return True
     return False
 
 
 def evaluate_statements_for_permission(statements, permission, resource_arn):
     allowed = False
     for statement in statements:
-        if evaluate_statment_clause_for_permission(statement, "action", permission):
+        if evaluate_statment_clause_for_permission(statement, "action", permission, missing_clause_return=True):
             if not evaluate_statment_clause_for_permission(statement, "notaction", permission):
                 if evaluate_statment_clause_for_permission(statement, "resource", resource_arn):
-                    return True
+                    if not evaluate_statment_clause_for_permission(statement, "notresource", resource_arn):
+                        return True
 
     return allowed
 
@@ -127,15 +106,37 @@ def load_policy_mappings(neo4j_session, policy_mapping, node_type, relationship_
     )
 
 
-def sync(neo4j_session, account_id, update_tag, common_job_parameters):
-    logger.info("Syncing Resource Permissions for account '%s'.", account_id)
-    policies = get_policies_for_account(neo4j_session, account_id)
+def cleanup_rpr(neo4j_session, node_type, relationship_name, update_tag, current_aws_id):
+    cleanup_rpr_query = """
+        MATCH (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(principal:AWSPrincipal)-[r:{RelationshipName}]->(resource:{NodeType}) 
+        WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE}  DELETE (r) return COUNT(*) as TotalCompleted
+    """
+    cleanup_rpr_query = cleanup_rpr_query.replace("{NodeType}", node_type)
+    cleanup_rpr_query = cleanup_rpr_query.replace("{RelationshipName}", relationship_name)
 
-    for rpr in RESOURCE_PERMISSIONS_RELATIONSHIPS:
-        resource_arns = get_resource_arns(neo4j_session, account_id, rpr["resource_type"])
+    statement = GraphStatement(cleanup_rpr_query, {'UPDATE_TAG': update_tag, 'AWS_ID': current_aws_id}, True, 1000)
+    statement.run(neo4j_session)
+
+
+def parse_permission_relationship_file(file):
+    if not os.path.isabs(file):
+        file = os.path.join(os.getcwd(), file)
+    with open(file) as f:
+        relationship_mapping = yaml.load(f)
+    return relationship_mapping
+
+
+def sync(neo4j_session, account_id, update_tag, common_job_parameters):
+    logger.info("Syncing Permission Relationships for account '%s'.", account_id)
+    policies = get_policies_for_account(neo4j_session, account_id)
+    relationship_mapping = parse_permission_relationship_file(common_job_parameters["permission_relationship_file"])
+    for rpr in relationship_mapping:
+        resource_arns = get_resource_arns(neo4j_session, account_id, rpr["target_label"])
         for policy_id, statements in policies.items():
             policy_mapping = []
             for resource_arn in resource_arns:
                 if evaluate_policy_for_permission(statements, rpr["permissions"], resource_arn):
                     policy_mapping.append({"policy_id": policy_id, "resource_arn": resource_arn})
-            load_policy_mappings(neo4j_session, policy_mapping, rpr["resource_type"], rpr["relationship_name"], update_tag)
+            load_policy_mappings(neo4j_session, policy_mapping,
+                                 rpr["target_label"], rpr["relationship_name"], update_tag)
+        cleanup_rpr(neo4j_session, rpr["target_label"], rpr["relationship_name"], update_tag, account_id)

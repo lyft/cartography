@@ -10,7 +10,7 @@ from . import elasticsearch
 from . import iam
 from . import organizations
 from . import rds
-from . import resource_permissions
+from . import permission_relationships
 from . import route53
 from . import s3
 from cartography.util import run_analysis_job
@@ -48,7 +48,7 @@ def _sync_one_account(neo4j_session, boto3_session, account_id, sync_tag, common
     # # NOTE clean up all DNS records, regardless of which job created them
     # run_cleanup_job('aws_account_dns_cleanup.json', neo4j_session, common_job_parameters)
 
-    resource_permissions.sync(neo4j_session, account_id, sync_tag, common_job_parameters)
+    permission_relationships.sync(neo4j_session, account_id, sync_tag, common_job_parameters)
 
 
 def _sync_multiple_accounts(neo4j_session, accounts, sync_tag, common_job_parameters):
@@ -78,6 +78,7 @@ def start_aws_ingestion(neo4j_session, config):
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     common_job_parameters = {
         "UPDATE_TAG": config.update_tag,
+        "permission_relationship_file": config.permission_relationships_file
     }
     try:
         boto3_session = boto3.Session()
