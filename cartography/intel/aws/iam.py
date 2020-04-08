@@ -27,7 +27,7 @@ def get_group_membership_data(boto3_session, group_name):
         client.get_group(GroupName=group_name)
     except client.exceptions.NoSuchEntityException:
         # Avoid crashing the sync
-        logger.warning("client.get_group(GroupName=%s failed with NoSuchEntityException; skipping.", group_name)
+        logger.warning("client.get_group(GroupName='%s') failed with NoSuchEntityException; skipping.", group_name)
         return {}
 
 
