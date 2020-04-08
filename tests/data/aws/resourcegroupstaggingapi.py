@@ -5,5 +5,27 @@ GET_RESOURCES_RESPONSE = [
             'Key': 'TestKey',
             'Value': 'TestValue',
         }],
+    }, {
+        'ResourceARN': 'arn:aws:s3:::bucket-1',
+        'Tags': [
+            {
+                'Key': 'Department',
+                'Value': 'Engineering',
+            }, {
+                'Key': 'Owner',
+                'Value': 'cartography',
+            },
+        ],
+    }, {
+        'ResourceARN': 'arn:aws:rds:us-east-1:1234:db:rds-db-1',
+        'Tags': [
+            {
+                'Key': 'Department',
+                'Value': 'Engineering',
+            }, {
+                'Key': 'LastReviewed',
+                'Value': 'January',
+            },
+        ],
     },
 ]

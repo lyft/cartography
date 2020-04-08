@@ -4,7 +4,7 @@ import tests.data.aws.ec2.instances
 import tests.data.aws.resourcegroupstaggingapi
 
 
-TEST_ACCOUNT_ID = '000000000000'
+TEST_ACCOUNT_ID = '1234'
 TEST_REGION = 'us-east-1'
 TEST_UPDATE_TAG = 123456789
 
