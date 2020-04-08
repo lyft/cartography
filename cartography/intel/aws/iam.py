@@ -23,7 +23,12 @@ def get_group_policy_info(boto3_session, group_name, policy_name):
 
 def get_group_membership_data(boto3_session, group_name):
     client = boto3_session.client('iam')
-    return client.get_group(GroupName=group_name)
+    try:
+        client.get_group(GroupName=group_name)
+    except client.exceptions.NoSuchEntityException:
+        # Avoid crashing the sync
+        logger.warning("client.get_group(GroupName=%s failed with NoSuchEntityException; skipping.", group_name)
+        return {}
 
 
 def get_user_list_data(boto3_session):
@@ -238,7 +243,7 @@ def load_group_memberships(neo4j_session, group_memberships, aws_update_tag):
     """
 
     for group_arn, membership_data in group_memberships.items():
-        for info in membership_data["Users"]:
+        for info in membership_data.get("Users", []):
             principal_arn = info["Arn"]
             neo4j_session.run(
                 ingest_membership,
