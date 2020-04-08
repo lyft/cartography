@@ -22,60 +22,62 @@
   - [Relationships](#relationships-6)
 - [AWSVpc](#awsvpc)
   - [Relationships](#relationships-7)
-- [AccountAccessKey](#accountaccesskey)
+- [Tag::AWSTag](#tagawstag)
   - [Relationships](#relationships-8)
-- [DBSubnetGroup](#dbsubnetgroup)
+- [AccountAccessKey](#accountaccesskey)
   - [Relationships](#relationships-9)
-- [DNSRecord](#dnsrecord)
+- [DBSubnetGroup](#dbsubnetgroup)
   - [Relationships](#relationships-10)
-- [DNSRecord::AWSDNSRecord](#dnsrecordawsdnsrecord)
+- [DNSRecord](#dnsrecord)
   - [Relationships](#relationships-11)
-- [DNSZone](#dnszone)
+- [DNSRecord::AWSDNSRecord](#dnsrecordawsdnsrecord)
   - [Relationships](#relationships-12)
-- [DNSZone::AWSDNSZone](#dnszoneawsdnszone)
+- [DNSZone](#dnszone)
   - [Relationships](#relationships-13)
-- [DynamoDBTable](#dynamodbtable)
+- [DNSZone::AWSDNSZone](#dnszoneawsdnszone)
   - [Relationships](#relationships-14)
-- [EC2Instance](#ec2instance)
+- [DynamoDBTable](#dynamodbtable)
   - [Relationships](#relationships-15)
-- [EC2KeyPair](#ec2keypair)
+- [EC2Instance](#ec2instance)
   - [Relationships](#relationships-16)
-- [EC2Reservation](#ec2reservation)
+- [EC2KeyPair](#ec2keypair)
   - [Relationships](#relationships-17)
-- [EC2SecurityGroup](#ec2securitygroup)
+- [EC2Reservation](#ec2reservation)
   - [Relationships](#relationships-18)
-- [EC2Subnet](#ec2subnet)
+- [EC2SecurityGroup](#ec2securitygroup)
   - [Relationships](#relationships-19)
-- [EKSCluster](#ekscluster)
+- [EC2Subnet](#ec2subnet)
   - [Relationships](#relationships-20)
-- [ESDomain](#esdomain)
+- [EKSCluster](#ekscluster)
   - [Relationships](#relationships-21)
-- [Endpoint](#endpoint)
+- [ESDomain](#esdomain)
   - [Relationships](#relationships-22)
-- [Endpoint::ELBListener](#endpointelblistener)
+- [Endpoint](#endpoint)
   - [Relationships](#relationships-23)
-- [Endpoint::ELBV2Listener](#endpointelbv2listener)
+- [Endpoint::ELBListener](#endpointelblistener)
   - [Relationships](#relationships-24)
-- [Ip](#ip)
+- [Endpoint::ELBV2Listener](#endpointelbv2listener)
   - [Relationships](#relationships-25)
-- [IpRule](#iprule)
+- [Ip](#ip)
   - [Relationships](#relationships-26)
-- [IpRule::IpPermissionInbound](#ipruleippermissioninbound)
+- [IpRule](#iprule)
   - [Relationships](#relationships-27)
-- [LoadBalancer](#loadbalancer)
+- [IpRule::IpPermissionInbound](#ipruleippermissioninbound)
   - [Relationships](#relationships-28)
-- [LoadBalancerV2](#loadbalancerv2)
+- [LoadBalancer](#loadbalancer)
   - [Relationships](#relationships-29)
-- [Nameserver](#nameserver)
+- [LoadBalancerV2](#loadbalancerv2)
   - [Relationships](#relationships-30)
-- [NetworkInterface](#networkinterface)
+- [Nameserver](#nameserver)
   - [Relationships](#relationships-31)
-- [RDSInstance](#rdsinstance)
+- [NetworkInterface](#networkinterface)
   - [Relationships](#relationships-32)
-- [S3Acl](#s3acl)
+- [RDSInstance](#rdsinstance)
   - [Relationships](#relationships-33)
-- [S3Bucket](#s3bucket)
+- [S3Acl](#s3acl)
   - [Relationships](#relationships-34)
+- [S3Bucket](#s3bucket)
+  - [Relationships](#relationships-35)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -370,6 +372,30 @@ More information on https://docs.aws.amazon.com/cli/latest/reference/ec2/describ
   ```
   (AWSVpc)<-[MEMBER_OF_EC2_SECURITY_GROUP]-(EC2SecurityGroup)
   ```
+-  AWS VPCs can be tagged with AWSTags.
+    ```
+	(AWSVpc)-[TAGGED]->(AWSTag)
+	```
+
+
+## Tag::AWSTag
+
+Representation of an AWS [Tag](https://docs.aws.amazon.com/resourcegroupstagging/latest/APIReference/API_Tag.html). AWS Tags can be applied to many objects.
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | This tag's unique identifier of the format `{TagKey}:{TagValue}`. We fabricated this ID. |
+| key | One part of a key-value pair that makes up a tag.|
+| value | One part of a key-value pair that makes up a tag. |
+| region | The region where this tag was discovered.|
+
+### Relationships
+-  AWS VPCs, DB Subnet Groups, EC2 Instances, EC2 SecurityGroups, EC2 Subnets, EC2 Network Interfaces, RDS Instances, and S3 Buckets can be tagged with AWSTags.
+    ```
+	(AWSVpc, DBSubnetGroup, EC2Instance, EC2SecurityGroup, EC2Subnet, NetworkInterface, RDSInstance, S3Bucket)-[TAGGED]->(AWSTag)
+	```
 
 ## AccountAccessKey
 
@@ -417,6 +443,12 @@ Representation of an RDS [DB Subnet Group](https://docs.aws.amazon.com/AmazonRDS
     ```
     (DBSubnetGroup)-[:RESOURCE]->(EC2Subnet)
     ```
+
+-  DB Subnet Groups can be tagged with AWSTags.
+
+	```
+	(DBSubnetGroup)-[TAGGED]->(AWSTag)
+	```
 
 
 ## DNSRecord
@@ -639,6 +671,12 @@ Our representation of an AWS [EC2 Instance](https://docs.aws.amazon.com/AWSEC2/l
 	(AWSAccount)-[RESOURCE]->(EC2Instance)
 	```
 
+-  EC2 Instances can be tagged with AWSTags.
+
+	```
+	(EC2Instance)-[TAGGED]->(AWSTag)
+	```
+
 
 ## EC2KeyPair
 
@@ -745,6 +783,12 @@ Representation of an AWS EC2 [Security Group](https://docs.aws.amazon.com/AWSEC2
 	(AWSAccount)-[RESOURCE]->(EC2SecurityGroup)
 	```
 
+-  EC2 SecurityGroups can be tagged with AWSTags.
+
+	```
+	(EC2SecurityGroup)-[TAGGED]->(AWSTag)
+	```
+
 
 ## EC2Subnet
 
@@ -784,6 +828,13 @@ Representation of an AWS EC2 [Subnet](https://docs.aws.amazon.com/AWSEC2/latest/
     ```
     (DBSubnetGroup)-[:RESOURCE]->(EC2Subnet)
     ```
+
+
+-  EC2 Subnets can be tagged with AWSTags.
+
+	```
+	(EC2Subnet)-[TAGGED]->(AWSTag)
+	```
 
 
 ## EKSCluster
@@ -1154,6 +1205,12 @@ Representation of a generic Network Interface.  Currently however, we only creat
 	(EC2Instance)-[NETWORK_INTERFACE]->(NetworkInterface)
 	```
 
+-  EC2 Network Interfaces can be tagged with AWSTags.
+
+	```
+	(NetworkInterface)-[TAGGED]->(AWSTag)
+	```
+
 
 ## RDSInstance
 
@@ -1220,6 +1277,12 @@ Representation of an AWS Relational Database Service [DBInstance](https://docs.a
     (RDSInstance)-[:MEMBER_OF_DB_SUBNET_GROUP]->(DBSubnetGroup)
     ```
 
+-  RDS Instances can be tagged with AWSTags.
+
+	```
+	(RDSInstance)-[TAGGED]->(AWSTag)
+	```
+
 ## S3Acl
 
 Representation of an AWS S3 [Access Control List](https://docs.aws.amazon.com/AmazonS3/latest/API/API_control_S3AccessControlList.html).
@@ -1271,4 +1334,10 @@ Representation of an AWS S3 [Bucket](https://docs.aws.amazon.com/AmazonS3/latest
 
 	```
 	(S3Acl)-[APPLIES_TO]->(S3Bucket)
+	```
+
+-  S3 Buckets can be tagged with AWSTags.
+
+	```
+	(S3Bucket)-[TAGGED]->(AWSTag)
 	```
