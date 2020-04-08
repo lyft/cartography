@@ -17,6 +17,12 @@ def get_short_id_from_ec2_arn(arn):
 
 
 def get_bucket_name_from_arn(bucket_arn):
+    """
+    Return the bucket name from an S3 bucket ARN.
+    For example, for "arn:aws:s3:::bucket_name", return 'bucket_name'.
+    :param arn: The S3 bucket's full ARN
+    :return: The S3 bucket's name
+    """
     return bucket_arn.split(':')[-1]
 
 
@@ -26,12 +32,17 @@ def get_bucket_name_from_arn(bucket_arn):
 # id_func: [optional] - EC2 instances and S3 buckets in cartography currently use non-ARNs as their primary identifiers
 # so we need to supply a function pointer to translate the ARN returned by the resourcegroupstaggingapi to the form that
 # cartography uses.
-# TODO - we should make EC2 instances and S3 buckets query-able by their full ARN so that we don't need this workaround.
+# TODO - we should make EC2 and S3 assets query-able by their full ARN so that we don't need this workaround.
 TAG_RESOURCE_TYPE_MAPPINGS = {
     'ec2:instance': {'label': 'EC2Instance', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},
+    'ec2:network-interface': {'label': 'NetworkInterface', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},
+    'ec2:security-group': {'label': 'EC2SecurityGroup', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},
+    'ec2:subnet': {'label': 'EC2Subnet', 'property': 'subnetid', 'id_func': get_short_id_from_ec2_arn},
+    'ec2:vpc': {'label': 'AWSVpc', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},
     'es:domain': {'label': 'ESDomain', 'property': 'id'},
     'rds:db': {'label': 'RDSInstance', 'property': 'id'},
     'rds:subgrp': {'label': 'DBSubnetGroup', 'property': 'id'},
+    # Buckets are the only objects in the S3 service: https://docs.aws.amazon.com/AmazonS3/latest/dev/s3-arn-format.html
     's3': {'label': 'S3Bucket', 'property': 'id', 'id_func': get_bucket_name_from_arn},
 }
 

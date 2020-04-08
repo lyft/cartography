@@ -1,7 +1,7 @@
-import cartography.intel.aws.resourcegroupstaggingapi
-import cartography.intel.aws.ec2.load_ec2_instances
-import tests.data.aws.resourcegroupstaggingapi
+import cartography.intel.aws.ec2
+import cartography.intel.aws.resourcegroupstaggingapi as rgta
 import tests.data.aws.ec2.instances
+import tests.data.aws.resourcegroupstaggingapi
 
 
 TEST_ACCOUNT_ID = '000000000000'
@@ -14,12 +14,16 @@ def _ensure_local_neo4j_has_test_ec2_instance_data(neo4j_session):
     cartography.intel.aws.ec2.load_ec2_instances(neo4j_session, data, TEST_REGION, TEST_ACCOUNT_ID, TEST_UPDATE_TAG)
 
 
-def test_load_ec2_tags(neo4j_session):
-    data = tests.data.aws.resourcegroupstaggingapi.GET_RESOURCES_RESPONSE
+def test_transform_and_load_ec2_tags(neo4j_session):
+    """
+    Verify that (:EC2Instance)-[:TAGGED]->(:AWSTag) relationships work as expected.
+    """
+    _ensure_local_neo4j_has_test_ec2_instance_data(neo4j_session)
     resource_type = 'ec2:instance'
-    cartography.intel.aws.resourcegroupstaggingapi.load_tags(
+    rgta.transform_tags(tests.data.aws.resourcegroupstaggingapi.GET_RESOURCES_RESPONSE, resource_type)
+    rgta.load_tags(
         neo4j_session,
-        data,
+        tests.data.aws.resourcegroupstaggingapi.GET_RESOURCES_RESPONSE,
         resource_type,
         TEST_REGION,
         TEST_UPDATE_TAG,

@@ -41,7 +41,7 @@ def _sync_one_account(neo4j_session, boto3_session, account_id, sync_tag, common
     eks.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     rds.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
 
-    # NOTE each of the below will generate DNS records
+    # # NOTE each of the below will generate DNS records
     route53.sync(neo4j_session, boto3_session, account_id, sync_tag)
     elasticsearch.sync(neo4j_session, boto3_session, account_id, sync_tag)
 
