@@ -10,6 +10,7 @@ from . import elasticsearch
 from . import iam
 from . import organizations
 from . import rds
+from . import resourcegroupstaggingapi
 from . import route53
 from . import s3
 from cartography.util import run_analysis_job
@@ -46,6 +47,9 @@ def _sync_one_account(neo4j_session, boto3_session, account_id, sync_tag, common
 
     # NOTE clean up all DNS records, regardless of which job created them
     run_cleanup_job('aws_account_dns_cleanup.json', neo4j_session, common_job_parameters)
+
+    # AWS Tags - Must always be last.
+    resourcegroupstaggingapi.sync(neo4j_session, boto3_session, regions, sync_tag, common_job_parameters)
 
 
 def _sync_multiple_accounts(neo4j_session, accounts, sync_tag, common_job_parameters):

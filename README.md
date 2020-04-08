@@ -33,8 +33,8 @@ You can learn more about the story behind Cartography in our [presentation at BS
 Start [here](docs/setup/install.md).
 
 ## Supported platforms
-- [Amazon Web Services](docs/setup/config/aws.md) -  EC2, Elasticsearch, DynamoDB, IAM,  RDS, Route53, S3, STS
-- [Google Cloud Platform](docs/setup/config/gcp.md) - Cloud Resource Manager, Compute, Storage
+- [Amazon Web Services](docs/setup/config/aws.md) -  EC2, Elasticsearch, Elastic Kubernetes Service, DynamoDB, IAM,  RDS, Route53, S3, STS, Tags
+- [Google Cloud Platform](docs/setup/config/gcp.md) - Cloud Resource Manager, Compute, Storage, Google Kubernetes Engine
 - [Google GSuite](docs/setup/config/gsuite.md) - users, groups
 - [Duo CRXcavator](docs/setup/config/crxcavator.md) - Chrome extensions, GSuite users
 - [Okta](docs/setup/config/okta.md) - users, groups, organizations, roles, applications, factors, trusted origins, reply URIs
