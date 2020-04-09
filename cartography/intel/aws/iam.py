@@ -24,7 +24,8 @@ def get_group_policy_info(boto3_session, group_name, policy_name):
 def get_group_membership_data(boto3_session, group_name):
     client = boto3_session.client('iam')
     try:
-        client.get_group(GroupName=group_name)
+        memberships = client.get_group(GroupName=group_name)
+        return memberships
     except client.exceptions.NoSuchEntityException:
         # Avoid crashing the sync
         logger.warning("client.get_group(GroupName='%s') failed with NoSuchEntityException; skipping.", group_name)
