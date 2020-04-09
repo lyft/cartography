@@ -530,7 +530,7 @@ masterauth_password | The password to use for HTTP basic authentication to the m
 - GKEClusters are resources of GCPProjects.
 
     ```
-    (GKECluster)-[RESOURCE]->(GCPInstance)
+    (GCPProject)-[RESOURCE]->(GKECluster)
     ```
 
 
