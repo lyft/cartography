@@ -518,7 +518,7 @@ Representation of an AWS DNS [ResourceRecordSet](https://docs.aws.amazon.com/Rou
 - AWSDNSRecords can point to LoadBalancers.
 
 	```
-	(AWSDNSRecord)-[DNS_POINTS_TO]->(LoadBalancer)
+	(AWSDNSRecord)-[DNS_POINTS_TO]->(LoadBalancer, ESDomain)
 	```
 
 
