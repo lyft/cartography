@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 def evaluate_clause(clause, match):
     clause = clause.replace("*", ".*")
-    result = re.search(clause, match, flags=re.IGNORECASE)
+    result = re.fullmatch(clause, match, flags=re.IGNORECASE)
     return not result is None
 
 
