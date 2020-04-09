@@ -24,7 +24,7 @@ def get_current_aws_account_id(boto3_session):
 
 def get_aws_account_default(boto3_session):
     try:
-        return {"default": get_current_aws_account_id(boto3_session)}
+        return {boto3_session.profile_name: get_current_aws_account_id(boto3_session)}
     except (botocore.exceptions.BotoCoreError, botocore.exceptions.ClientError) as e:
         logger.debug("Error occurred getting default AWS account number.", exc_info=True)
         logger.error(

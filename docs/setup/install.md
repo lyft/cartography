@@ -28,13 +28,19 @@ Time to set up the server that will run Cartography.  Cartography _should_ work 
 
 	1. Finally, to sync your data:
 
-		- If you have one AWS account, run
+		- For one account using the `default` profile defined in your AWS config file, run
 
 			```
 			cartography --neo4j-uri <uri for your neo4j instance; usually bolt://localhost:7687>
 			```
 
-		- If you have more than one AWS account, run
+		- Or for a specific account defined as a separate profile in your AWS config file, set the `AWS_PROFILE` environment variable, for example
+
+			```
+			AWS_PROFILE=other-profile cartography --neo4j-uri <uri for your neo4j instance; usually bolt://localhost:7687>
+			```
+
+		- For more than one AWS account, run
 
 			```
 			AWS_CONFIG_FILE=/path/to/your/aws/config cartography --neo4j-uri <uri for your neo4j instance; usually bolt://localhost:7687> --aws-sync-all-profiles
