@@ -54,6 +54,26 @@ def evaluate_policy_for_permission(statements, permissions, resource_arn):
                 return True, False
     return False, False
 
+def evaluate_policies_against_resource(policies, resource_arn, permissions):
+    granted = False
+    for policy_id, statements in policies.items():
+        allowed, explicit_deny = evaluate_policy_for_permission(statements, permissions, resource_arn)
+        # If the action is explicitly denied then no other policy can override it
+        if explicit_deny:
+            return False
+        if not granted and allowed:
+            granted = True
+    
+    return granted
+
+def evaluate_relationships(principals, resource_arns, permission):
+    allowed_mappings = []
+    for resource_arn in resource_arns:
+        for principal_arn, policies in principals.items():
+            if evaluate_policies_against_resource(policies, resource_arn, permission):
+                allowed_mappings.append({"principal_arn": principal_arn, "resource_arn": resource_arn})
+    return allowed_mappings
+
 
 def parse_statement_node_group(node_group):
     return [n._properties for n in node_group]
@@ -136,28 +156,10 @@ def parse_permission_relationship_file(file):
     if not os.path.isabs(file):
         file = os.path.join(os.getcwd(), file)
     with open(file) as f:
-        relationship_mapping = yaml.load(f)
+        relationship_mapping = yaml.load(f, Loader=yaml.FullLoader)
     return relationship_mapping
 
-def evaluate_policies_against_resource(policies, resource_arn, permissions):
-    granted = False
-    for policy_id, statements in policies.items():
-        allowed, explicit_deny = evaluate_policy_for_permission(statements, permissions, resource_arn)
-        # If the action is explicitly denied then no other policy can override it
-        if explicit_deny:
-            return False
-        if not granted and allowed:
-            granted = True
-    
-    return granted
 
-def evaluate_relationships(principals, resource_arns, permission):
-    allowed_mappings = []
-    for resource_arn in resource_arns:
-        for principal_arn, policies in principals.items():
-            if evaluate_policies_against_resource(policies, resource_arn, permission):
-                allowed_mappings.append({"principal_arn": principal_arn, "resource_arn": resource_arn})
-    return allowed_mappings
 
 def sync(neo4j_session, account_id, update_tag, common_job_parameters):
     logger.info("Syncing Permission Relationships for account '%s'.", account_id)
