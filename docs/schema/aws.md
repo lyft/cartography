@@ -115,7 +115,7 @@ Representation of an AWS Account.
 - An `AWSPolicy` node is defined for an `AWSAccount`.
 
 	```
-	(AWSAccount)-[AWS_POLICY]->(AWSPolicy)
+	(AWSAccount)-[RESOURCE]->(AWSPolicy)
 	```
 
 - `AWSRole` nodes are defined in `AWSAccount` nodes.
@@ -223,7 +223,7 @@ Representation of an [AWS Policy](https://docs.aws.amazon.com/IAM/latest/APIRefe
 - An `AWSPolicy` node is defined in an `AWSAccount`.
 
 	```
-	(AWSAccount)-[AWS_POLICY]->(AWSPolicy)
+	(AWSAccount)-[RESOURCE]->(AWSPolicy)
 	```
 - `AWSPrincipals` contain `AWSPolicies`
 
@@ -251,7 +251,7 @@ Representation of an [AWS Policy Statement](https://docs.aws.amazon.com/IAM/late
 - An `AWSPolicy` node is defined in an `AWSAccount`.
 
 	```
-	(AWSAccount)-[AWS_POLICY]->(AWSPolicy)
+	(AWSAccount)-[RESOURCE]->(AWSPolicy)
 	```
 - `AWSPrincipals` contain `AWSPolicies`
 
