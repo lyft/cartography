@@ -1,5 +1,4 @@
 import logging
-import os
 
 import boto3
 import botocore.exceptions
@@ -79,8 +78,7 @@ def start_aws_ingestion(neo4j_session, config):
         "UPDATE_TAG": config.update_tag,
     }
     try:
-        profile_name = os.getenv("AWS_PROFILE", default="default") or "default"
-        boto3_session = boto3.Session(profile_name=profile_name)
+        boto3_session = boto3.Session()
     except (botocore.exceptions.BotoCoreError, botocore.exceptions.ClientError) as e:
         logger.debug("Error occurred calling boto3.Session().", exc_info=True)
         logger.error(
