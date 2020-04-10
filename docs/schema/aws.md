@@ -22,7 +22,7 @@
   - [Relationships](#relationships-6)
 - [AWSPrincipal::AWSRole](#awsprincipalawsrole)
   - [Relationships](#relationships-7)
-- [AWSVpc](#awsvpc)
+- [Tag::AWSTag](#tagawstag)
   - [Relationships](#relationships-8)
 - [AccountAccessKey](#accountaccesskey)
   - [Relationships](#relationships-9)
@@ -408,6 +408,30 @@ More information on https://docs.aws.amazon.com/cli/latest/reference/ec2/describ
   ```
   (AWSVpc)<-[MEMBER_OF_EC2_SECURITY_GROUP]-(EC2SecurityGroup)
   ```
+-  AWS VPCs can be tagged with AWSTags.
+    ```
+	(AWSVpc)-[TAGGED]->(AWSTag)
+	```
+
+
+## Tag::AWSTag
+
+Representation of an AWS [Tag](https://docs.aws.amazon.com/resourcegroupstagging/latest/APIReference/API_Tag.html). AWS Tags can be applied to many objects.
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | This tag's unique identifier of the format `{TagKey}:{TagValue}`. We fabricated this ID. |
+| key | One part of a key-value pair that makes up a tag.|
+| value | One part of a key-value pair that makes up a tag. |
+| region | The region where this tag was discovered.|
+
+### Relationships
+-  AWS VPCs, DB Subnet Groups, EC2 Instances, EC2 SecurityGroups, EC2 Subnets, EC2 Network Interfaces, RDS Instances, and S3 Buckets can be tagged with AWSTags.
+    ```
+	(AWSVpc, DBSubnetGroup, EC2Instance, EC2SecurityGroup, EC2Subnet, NetworkInterface, RDSInstance, S3Bucket)-[TAGGED]->(AWSTag)
+	```
 
 ## AccountAccessKey
 
@@ -455,6 +479,12 @@ Representation of an RDS [DB Subnet Group](https://docs.aws.amazon.com/AmazonRDS
     ```
     (DBSubnetGroup)-[:RESOURCE]->(EC2Subnet)
     ```
+
+-  DB Subnet Groups can be tagged with AWSTags.
+
+	```
+	(DBSubnetGroup)-[TAGGED]->(AWSTag)
+	```
 
 
 ## DNSRecord
@@ -524,7 +554,7 @@ Representation of an AWS DNS [ResourceRecordSet](https://docs.aws.amazon.com/Rou
 - AWSDNSRecords can point to LoadBalancers.
 
 	```
-	(AWSDNSRecord)-[DNS_POINTS_TO]->(LoadBalancer)
+	(AWSDNSRecord)-[DNS_POINTS_TO]->(LoadBalancer, ESDomain)
 	```
 
 
@@ -677,6 +707,12 @@ Our representation of an AWS [EC2 Instance](https://docs.aws.amazon.com/AWSEC2/l
 	(AWSAccount)-[RESOURCE]->(EC2Instance)
 	```
 
+-  EC2 Instances can be tagged with AWSTags.
+
+	```
+	(EC2Instance)-[TAGGED]->(AWSTag)
+	```
+
 
 ## EC2KeyPair
 
@@ -783,6 +819,12 @@ Representation of an AWS EC2 [Security Group](https://docs.aws.amazon.com/AWSEC2
 	(AWSAccount)-[RESOURCE]->(EC2SecurityGroup)
 	```
 
+-  EC2 SecurityGroups can be tagged with AWSTags.
+
+	```
+	(EC2SecurityGroup)-[TAGGED]->(AWSTag)
+	```
+
 
 ## EC2Subnet
 
@@ -824,23 +866,34 @@ Representation of an AWS EC2 [Subnet](https://docs.aws.amazon.com/AWSEC2/latest/
     ```
 
 
+-  EC2 Subnets can be tagged with AWSTags.
+
+	```
+	(EC2Subnet)-[TAGGED]->(AWSTag)
+	```
+
+
 ## EKSCluster
 
-Representation of an AWS [EKS Cluster](https://docs.aws.amazon.com/eks/latest/userguide/what-is-eks.html).
+Representation of an AWS [EKS Cluster](https://docs.aws.amazon.com/eks/latest/APIReference/API_Cluster.html).
 
-| Field            | Description                                             |
-| ---------------- | ------------------------------------------------------- |
-| firstseen        | Timestamp of when a sync job first discovered this node |
-| lastupdated      | Timestamp of the last time the node was updated         |
-| created_at       | The date and time the cluster was created               |
-| region           | The AWS region                                          |
-| **arn**          | AWS-unique identifier for this object                   |
-| id               | same as `arn`                                           |
-| name             | Name of the EKS Cluster                                 |
-| endpoint         | Endpoint of the cluster                                 |
-| version          | Kubernetes version running                              |
-| platform_version | Version of EKS                                          |
-| status           | Status of the cluster                                   |
+| Field            | Description                                                                                                 |
+| ---------------- | ----------------------------------------------------------------------------------------------------------- |
+| firstseen        | Timestamp of when a sync job first discovered this node                                                     |
+| lastupdated      | Timestamp of the last time the node was updated                                                             |
+| created_at       | The date and time the cluster was created                                                                   |
+| region           | The AWS region                                                                                              |
+| **arn**          | AWS-unique identifier for this object                                                                       |
+| id               | same as `arn`                                                                                               |
+| name             | Name of the EKS Cluster                                                                                     |
+| endpoint         | The endpoint for the Kubernetes API server.                                                                 |
+| endpoint_public_access | Indicates whether the Amazon EKS public API server endpoint is enabled                                |
+| exposed_internet | Set to True if the EKS Cluster public API server endpoint is enabled                                        |
+| rolearn          | The ARN of the IAM role that provides permissions for the Kubernetes control plane to make calls to AWS API |
+| version          | Kubernetes version running                                                                                  |
+| platform_version | Version of EKS                                                                                              |
+| status           | Status of the cluster. Valid Values: creating, active, deleting, failed, updating                           |
+| audit_logging    | Whether audit logging is enabled                                                                            |
 
 
 ### Relationships
@@ -1188,6 +1241,12 @@ Representation of a generic Network Interface.  Currently however, we only creat
 	(EC2Instance)-[NETWORK_INTERFACE]->(NetworkInterface)
 	```
 
+-  EC2 Network Interfaces can be tagged with AWSTags.
+
+	```
+	(NetworkInterface)-[TAGGED]->(AWSTag)
+	```
+
 
 ## RDSInstance
 
@@ -1254,6 +1313,12 @@ Representation of an AWS Relational Database Service [DBInstance](https://docs.a
     (RDSInstance)-[:MEMBER_OF_DB_SUBNET_GROUP]->(DBSubnetGroup)
     ```
 
+-  RDS Instances can be tagged with AWSTags.
+
+	```
+	(RDSInstance)-[TAGGED]->(AWSTag)
+	```
+
 ## S3Acl
 
 Representation of an AWS S3 [Access Control List](https://docs.aws.amazon.com/AmazonS3/latest/API/API_control_S3AccessControlList.html).
@@ -1305,4 +1370,10 @@ Representation of an AWS S3 [Bucket](https://docs.aws.amazon.com/AmazonS3/latest
 
 	```
 	(S3Acl)-[APPLIES_TO]->(S3Bucket)
+	```
+
+-  S3 Buckets can be tagged with AWSTags.
+
+	```
+	(S3Bucket)-[TAGGED]->(AWSTag)
 	```

@@ -11,6 +11,7 @@ from . import iam
 from . import organizations
 from . import rds
 from . import permission_relationships
+from . import resourcegroupstaggingapi
 from . import route53
 from . import s3
 from cartography.util import run_analysis_job
@@ -49,6 +50,9 @@ def _sync_one_account(neo4j_session, boto3_session, account_id, sync_tag, common
     # run_cleanup_job('aws_account_dns_cleanup.json', neo4j_session, common_job_parameters)
 
     permission_relationships.sync(neo4j_session, account_id, sync_tag, common_job_parameters)
+
+    # AWS Tags - Must always be last.
+    resourcegroupstaggingapi.sync(neo4j_session, boto3_session, regions, sync_tag, common_job_parameters)
 
 
 def _sync_multiple_accounts(neo4j_session, accounts, sync_tag, common_job_parameters):
@@ -123,6 +127,12 @@ def start_aws_ingestion(neo4j_session, config):
 
     run_analysis_job(
         'aws_ec2_keypair_analysis.json',
+        neo4j_session,
+        common_job_parameters,
+    )
+
+    run_analysis_job(
+        'aws_eks_asset_exposure.json',
         neo4j_session,
         common_job_parameters,
     )

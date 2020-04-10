@@ -11,6 +11,7 @@ CREATE INDEX ON :AWSPolicy(name);
 CREATE INDEX ON :AWSPolicyStatement(id);
 CREATE INDEX ON :AWSPrincipal(arn);
 CREATE INDEX ON :AWSRole(arn);
+CREATE INDEX ON :AWSTag(id);
 CREATE INDEX ON :AWSUser(arn);
 CREATE INDEX ON :AWSUser(name);
 CREATE INDEX ON :AWSVpc(id);
