@@ -7,13 +7,11 @@ from cartography.util import run_cleanup_job
 from cartography.graph.statement import GraphStatement
 logger = logging.getLogger(__name__)
 
-# Overview of IAM in AWS
-#
-
 
 def evaluate_clause(clause, match):
+    # AWS [not]actions and [not]resources can use linux style wildcards *
+    # fnmatch does not do a true case insensitive match, so we must convert the inputs
     return fnmatch.fnmatch(match.lower(), clause.lower())
-    return not result is None
 
 
 def evaluate_statment_clause_for_permission(statement, clause_name, match, missing_clause_return=False):
@@ -40,20 +38,28 @@ def evaluate_statements_for_permission(statements, permission, resource_arn):
 def evaluate_policy_for_permission(statements, permissions, resource_arn):
     # AWS Policy evaluation reference
     # https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic.html
+    # returns (allowed_by_policy, explicitly_denied_by_policy)
+    # return cases
+    # (True, False) - The policy allows the action
+    # (False, False) - The poliy does not allow the action, but also doesn't explicitly deny it
+    # (False, True) - The policy specifically denies the action. There is no need to evaluate other policies
+
     allow_statements = [s for s in statements if s["effect"] == "Allow"]
     deny_statements = [s for s in statements if s["effect"] == "Deny"]
     for permission in permissions:
-        if not evaluate_statements_for_permission(deny_statements, permission, resource_arn):
+        if evaluate_statements_for_permission(deny_statements, permission, resource_arn):
+            return False, True
+        else:
             if evaluate_statements_for_permission(allow_statements, permission, resource_arn):
-                return True
-    return False
+                return True, False
+    return False, False
 
 
 def parse_statement_node_group(node_group):
     return [n._properties for n in node_group]
 
 
-def get_policies_for_account(neo4j_session, account_id):
+def get_principals_for_account(neo4j_session, account_id):
     get_policy_query = """
     MATCH
     (acc:AWSAccount{id:{AccountId}})-[:RESOURCE]->
@@ -61,15 +67,22 @@ def get_policies_for_account(neo4j_session, account_id):
     (policy:AWSPolicy)-[:STATEMENT]->
     (statements:AWSPolicyStatement)
     RETURN
-    DISTINCT policy.id AS policy_id,
-    COLLECT(DISTINCT statements) AS statements
+    DISTINCT principal.arn as principal_arn, policy.id as policy_id, collect(statements) as statements 
     """
     results = neo4j_session.run(
         get_policy_query,
         AccountId=account_id,
     )
-    policies = {r["policy_id"]: parse_statement_node_group(r["statements"]) for r in results}
-    return policies
+    principals = {}
+    #{r["principal_arn"}:{r["policy_id"]: parse_statement_node_group(r["statements"])} for r in results}
+    for r in results:
+        principal_arn = r["principal_arn"]
+        policy_id = r["policy_id"]
+        statements = r["statements"]
+        if not principal_arn in principals:
+            principals[principal_arn] = {}
+        principals[principal_arn][policy_id] = parse_statement_node_group(statements)
+    return principals
 
 
 def get_resource_arns(neo4j_session, account_id, node_label):
@@ -86,26 +99,28 @@ def get_resource_arns(neo4j_session, account_id, node_label):
     return arns
 
 
-def load_policy_mappings(neo4j_session, policy_mapping, node_type, relationship_name, update_tag):
+def load_principal_mappings(neo4j_session, principal_mappings, node_type, relationship_name, update_tag):
     map_policy_query = """
     UNWIND {Mapping} as mapping
-    MATCH (principal:AWSPrincipal)-[:POLICY]-> (policy:AWSPolicy{id:mapping.policy_id})
+    MATCH (principal:AWSPrincipal{arn:mapping.principal_arn})
     MATCH (resource:{NodeType}{arn:mapping.resource_arn})
     MERGE (principal)-[r:{RelationshipName}]->(resource)
     SET r.lastupdated = {aws_update_tag}
     """
-    if not policy_mapping:
+    #{"principal_arn": principal_arn, "resource_arn": resource_arn}
+    if not principal_mappings:
         return
     map_policy_query = map_policy_query.replace("{NodeType}", node_type)
     map_policy_query = map_policy_query.replace("{RelationshipName}", relationship_name)
     neo4j_session.run(
         map_policy_query,
-        Mapping=policy_mapping,
+        Mapping=principal_mappings,
         aws_update_tag=update_tag,
     )
 
 
 def cleanup_rpr(neo4j_session, node_type, relationship_name, update_tag, current_aws_id):
+    logger.info("Cleaning up relationship '%s' for node label '%s'", relationship_name, node_type)
     cleanup_rpr_query = """
         MATCH (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(principal:AWSPrincipal)-[r:{RelationshipName}]->(resource:{NodeType}) 
         WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE}  DELETE (r) return COUNT(*) as TotalCompleted
@@ -124,18 +139,39 @@ def parse_permission_relationship_file(file):
         relationship_mapping = yaml.load(f)
     return relationship_mapping
 
+def evaluate_policies_against_resource(policies, resource_arn, permissions):
+    granted = False
+    for policy_id, statements in policies.items():
+        allowed, explicit_deny = evaluate_policy_for_permission(statements, permissions, resource_arn)
+        # If the action is explicitly denied then no other policy can override it
+        if explicit_deny:
+            return False
+        if not granted and allowed:
+            granted = True
+    
+    return granted
+
+def evaluate_relationships(principals, resource_arns, permission):
+    allowed_mappings = []
+    for resource_arn in resource_arns:
+        for principal_arn, policies in principals.items():
+            if evaluate_policies_against_resource(policies, resource_arn, permission):
+                allowed_mappings.append({"principal_arn": principal_arn, "resource_arn": resource_arn})
+    return allowed_mappings
 
 def sync(neo4j_session, account_id, update_tag, common_job_parameters):
     logger.info("Syncing Permission Relationships for account '%s'.", account_id)
-    policies = get_policies_for_account(neo4j_session, account_id)
+    principals = get_principals_for_account(neo4j_session, account_id)
     relationship_mapping = parse_permission_relationship_file(common_job_parameters["permission_relationship_file"])
     for rpr in relationship_mapping:
-        resource_arns = get_resource_arns(neo4j_session, account_id, rpr["target_label"])
-        for policy_id, statements in policies.items():
-            policy_mapping = []
-            for resource_arn in resource_arns:
-                if evaluate_policy_for_permission(statements, rpr["permissions"], resource_arn):
-                    policy_mapping.append({"policy_id": policy_id, "resource_arn": resource_arn})
-            load_policy_mappings(neo4j_session, policy_mapping,
-                                 rpr["target_label"], rpr["relationship_name"], update_tag)
-        cleanup_rpr(neo4j_session, rpr["target_label"], rpr["relationship_name"], update_tag, account_id)
+        permissions = rpr["permissions"]
+        relationship_name = rpr["relationship_name"]
+        target_label = rpr["target_label"]
+        resource_arns = get_resource_arns(neo4j_session, account_id, target_label)
+        logger.info("Syncing relationship '%s' for node label '%s'", relationship_name, target_label)
+        allowed_mappings = evaluate_relationships(principals, resource_arns, permissions)
+        load_principal_mappings(neo4j_session, allowed_mappings,
+                             target_label, relationship_name, update_tag)
+        cleanup_rpr(neo4j_session, target_label, relationship_name, update_tag, account_id)
+
+

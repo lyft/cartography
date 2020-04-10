@@ -1,9 +1,10 @@
 import logging
 
 from cartography.util import run_cleanup_job
-
+from cartography.intel.aws.permission_relationships import parse_statement_node_group
+from cartography.intel.aws.permission_relationships import evaluate_policies_against_resource
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+
 import json
 # Overview of IAM in AWS
 #
@@ -127,20 +128,6 @@ def get_role_list_data(boto3_session):
     for page in paginator.paginate():
         roles.extend(page['Roles'])
     return {'Roles': roles}
-
-
-# def get_role_policies(boto3_session, role_name):
-#     client = boto3_session.client('iam')
-#     paginator = client.get_paginator('list_role_policies')
-#     policy_names = []
-#     for page in paginator.paginate(RoleName=role_name):
-#         policy_names.extend(page['PolicyNames'])
-#     return {'PolicyNames': policy_names}
-
-
-# def get_role_policy_info(boto3_session, role_name, policy_name):
-#     client = boto3_session.client('iam')
-#     return client.get_role_policy(RoleName=role_name, PolicyName=policy_name)
 
 
 def get_account_access_key_data(boto3_session, username):
@@ -286,32 +273,62 @@ def load_group_memberships(neo4j_session, group_memberships, aws_update_tag):
                 aws_update_tag=aws_update_tag,
             )
 
+def get_policies_for_principal(neo4j_session, principal_arn):
+    get_policy_query = """
+    MATCH
+    (principal:AWSPrincipal{arn:{Arn}})-[:POLICY]->
+    (policy:AWSPolicy)-[:STATEMENT]->
+    (statements:AWSPolicyStatement)
+    RETURN
+    DISTINCT policy.id AS policy_id,
+    COLLECT(DISTINCT statements) AS statements
+    """
+    results = neo4j_session.run(
+        get_policy_query,
+        Arn=principal_arn,
+    )
+    policies = {r["policy_id"]: parse_statement_node_group(r["statements"]) for r in results}
+    return policies
 
-def load_role_policies(neo4j_session, role_policies, aws_update_tag):
+def sync_assume_role(neo4j_session, current_aws_account_id, aws_update_tag):
+    logger.debug("Syncing assume role for account '%s'.", current_aws_account_id)
+    query_potential_matches = """
+    MATCH (:AWSAccount{id:{AccountId}})-[:RESOURCE]->(target:AWSRole)-[:TRUSTS_AWS_PRINCIPAL]->(source:AWSPrincipal)
+    WHERE NOT source.arn ENDS WITH 'root' 
+    AND NOT source.type = 'Service'
+    AND NOT source.type = 'Federated'
+    RETURN target.arn AS target_arn,
+    source.arn AS source_arn
+    """
+
     ingest_policies_assume_role = """
-    MATCH (assumer:AWSRole{arn: {FromArn}})
-    WITH assumer
-    MERGE (role:AWSRole{arn: {ToArn}})
-    ON CREATE SET role :AWSPrincipal, role.firstseen = timestamp()
-    SET role.lastupdated = {aws_update_tag}
-    WITH role, assumer
-    MERGE (assumer)-[r:STS_ASSUMEROLE_ALLOW]->(role)
+    MATCH (source:AWSPrincipal{arn: {SourceArn}})
+    WITH source
+    MATCH (role:AWSRole{arn: {TargetArn}})
+    WITH role, source
+    MERGE (source)-[r:STS_ASSUMEROLE_ALLOW]->(role)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {aws_update_tag}
     """
 
-    for role_arn, policies in role_policies.items():
-        for policy_name, policy_data in policies.items():
-            for to_arn in _find_roles_assumable_in_policy(policy_data):
-                # TODO resource ARNs may contain wildcards, e.g. arn:aws:iam::*:role/admin --
-                # TODO policyuniverse can't expand resource wildcards so further thought is needed here
-                neo4j_session.run(
-                    ingest_policies_assume_role,
-                    FromArn=role_arn,
-                    ToArn=to_arn,
-                    aws_update_tag=aws_update_tag,
-                )
-
+    results = neo4j_session.run(
+        query_potential_matches,
+        AccountId=current_aws_account_id,
+    )
+    potential_matches = [(r["source_arn"], r["target_arn"]) for r in results]
+    for source_arn, target_arn in potential_matches:
+        policies = get_policies_for_principal(neo4j_session, source_arn)
+        if evaluate_policies_against_resource(policies, target_arn, "sts:AssumeRole"):
+            neo4j_session.run(
+            ingest_policies_assume_role,
+            SourceArn=source_arn,
+            TargetArn=target_arn,
+            aws_update_tag=aws_update_tag)   
+    run_cleanup_job(
+        'aws_import_roles_policy_cleanup.json',
+        neo4j_session,
+        common_job_parameters,
+    )
 
 def load_user_access_keys(neo4j_session, user_access_keys, aws_update_tag):
     # TODO change the node label to reflect that this is a user access key, not an account access key
@@ -522,5 +539,6 @@ def sync(neo4j_session, boto3_session, account_id, update_tag, common_job_parame
     sync_groups(neo4j_session, boto3_session, account_id, update_tag, common_job_parameters)
     sync_roles(neo4j_session, boto3_session, account_id, update_tag, common_job_parameters)
     sync_group_memberships(neo4j_session, boto3_session, account_id, update_tag, common_job_parameters)
+    sync_assume_role(neo4j_session, account_id, update_tag)
     sync_user_access_keys(neo4j_session, boto3_session, account_id, update_tag, common_job_parameters)
     run_cleanup_job('aws_import_principals_cleanup.json', neo4j_session, common_job_parameters)
