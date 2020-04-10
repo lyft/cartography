@@ -183,7 +183,7 @@ def test_no_action_statement():
 def test_notaction_deny_without_allow():
     statements = [{
         "notaction":[
-            "s3.*"
+            "s3:*"
         ],
         "resource": [
             "*"
@@ -191,6 +191,19 @@ def test_notaction_deny_without_allow():
         "effect": "Allow"
     }]
     assert False == permission_relationships.evaluate_policy_for_permission(
+        statements, ["S3:GetObject"], "arn:aws:s3:::testbucket")
+
+def test_notaction_malformed():
+    statements = [{
+        "notaction":[
+            "s3.*"
+        ],
+        "resource": [
+            "*"
+        ],
+        "effect": "Allow"
+    }]
+    assert True == permission_relationships.evaluate_policy_for_permission(
         statements, ["S3:GetObject"], "arn:aws:s3:::testbucket")
 
 def test_resource_substring():

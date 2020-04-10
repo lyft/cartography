@@ -1,8 +1,8 @@
 import logging
-import re
 import yaml
 import policyuniverse.statement
 import os
+import fnmatch
 from cartography.util import run_cleanup_job
 from cartography.graph.statement import GraphStatement
 logger = logging.getLogger(__name__)
@@ -12,8 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 def evaluate_clause(clause, match):
-    clause = clause.replace("*", ".*")
-    result = re.fullmatch(clause, match, flags=re.IGNORECASE)
+    return fnmatch.fnmatch(match.lower(), clause.lower())
     return not result is None
 
 
