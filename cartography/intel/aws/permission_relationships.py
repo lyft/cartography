@@ -1,10 +1,11 @@
-import logging
-import yaml
-import policyuniverse.statement
-import os
 import fnmatch
-from cartography.util import run_cleanup_job
+import logging
+import os
+
+import yaml
+
 from cartography.graph.statement import GraphStatement
+
 logger = logging.getLogger(__name__)
 
 
@@ -15,7 +16,7 @@ def evaluate_clause(clause, match):
 
 
 def evaluate_statment_clause_for_permission(statement, clause_name, match, missing_clause_return=False):
-    if not clause_name in statement:
+    if clause_name not in statement:
         return missing_clause_return
     for clause in statement[clause_name]:
         if evaluate_clause(clause, match):
@@ -54,6 +55,7 @@ def evaluate_policy_for_permission(statements, permissions, resource_arn):
                 return True, False
     return False, False
 
+
 def evaluate_policies_against_resource(policies, resource_arn, permissions):
     granted = False
     for policy_id, statements in policies.items():
@@ -63,8 +65,9 @@ def evaluate_policies_against_resource(policies, resource_arn, permissions):
             return False
         if not granted and allowed:
             granted = True
-    
+
     return granted
+
 
 def evaluate_relationships(principals, resource_arns, permission):
     allowed_mappings = []
@@ -87,19 +90,18 @@ def get_principals_for_account(neo4j_session, account_id):
     (policy:AWSPolicy)-[:STATEMENT]->
     (statements:AWSPolicyStatement)
     RETURN
-    DISTINCT principal.arn as principal_arn, policy.id as policy_id, collect(statements) as statements 
+    DISTINCT principal.arn as principal_arn, policy.id as policy_id, collect(statements) as statements
     """
     results = neo4j_session.run(
         get_policy_query,
         AccountId=account_id,
     )
     principals = {}
-    #{r["principal_arn"}:{r["policy_id"]: parse_statement_node_group(r["statements"])} for r in results}
     for r in results:
         principal_arn = r["principal_arn"]
         policy_id = r["policy_id"]
         statements = r["statements"]
-        if not principal_arn in principals:
+        if principal_arn not in principals:
             principals[principal_arn] = {}
         principals[principal_arn][policy_id] = parse_statement_node_group(statements)
     return principals
@@ -127,7 +129,6 @@ def load_principal_mappings(neo4j_session, principal_mappings, node_type, relati
     MERGE (principal)-[r:{RelationshipName}]->(resource)
     SET r.lastupdated = {aws_update_tag}
     """
-    #{"principal_arn": principal_arn, "resource_arn": resource_arn}
     if not principal_mappings:
         return
     map_policy_query = map_policy_query.replace("{NodeType}", node_type)
@@ -142,8 +143,10 @@ def load_principal_mappings(neo4j_session, principal_mappings, node_type, relati
 def cleanup_rpr(neo4j_session, node_type, relationship_name, update_tag, current_aws_id):
     logger.info("Cleaning up relationship '%s' for node label '%s'", relationship_name, node_type)
     cleanup_rpr_query = """
-        MATCH (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(principal:AWSPrincipal)-[r:{RelationshipName}]->(resource:{NodeType}) 
-        WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE}  DELETE (r) return COUNT(*) as TotalCompleted
+        MATCH (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(principal:AWSPrincipal)-[r:{RelationshipName}]->
+        (resource:{NodeType})
+        WHERE r.lastupdated <> {UPDATE_TAG}
+        WITH r LIMIT {LIMIT_SIZE}  DELETE (r) return COUNT(*) as TotalCompleted
     """
     cleanup_rpr_query = cleanup_rpr_query.replace("{NodeType}", node_type)
     cleanup_rpr_query = cleanup_rpr_query.replace("{RelationshipName}", relationship_name)
@@ -160,7 +163,6 @@ def parse_permission_relationship_file(file):
     return relationship_mapping
 
 
-
 def sync(neo4j_session, account_id, update_tag, common_job_parameters):
     logger.info("Syncing Permission Relationships for account '%s'.", account_id)
     principals = get_principals_for_account(neo4j_session, account_id)
@@ -172,8 +174,8 @@ def sync(neo4j_session, account_id, update_tag, common_job_parameters):
         resource_arns = get_resource_arns(neo4j_session, account_id, target_label)
         logger.info("Syncing relationship '%s' for node label '%s'", relationship_name, target_label)
         allowed_mappings = evaluate_relationships(principals, resource_arns, permissions)
-        load_principal_mappings(neo4j_session, allowed_mappings,
-                             target_label, relationship_name, update_tag)
+        load_principal_mappings(
+            neo4j_session, allowed_mappings,
+            target_label, relationship_name, update_tag,
+        )
         cleanup_rpr(neo4j_session, target_label, relationship_name, update_tag, account_id)
-
-

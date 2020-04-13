@@ -16,7 +16,7 @@ setup(
     package_data={
         'cartography.data': [
             '*.cypher',
-            '*.yaml'
+            '*.yaml',
         ],
         'cartography.data.jobs.analysis': [
             '*.json',

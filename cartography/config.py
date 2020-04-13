@@ -49,7 +49,7 @@ class Config:
         okta_api_key=None,
         okta_saml_role_regex=None,
         github_config=None,
-        permission_relationship_file=None
+        permission_relationship_file=None,
     ):
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user
