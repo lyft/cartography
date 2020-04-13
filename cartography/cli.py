@@ -193,7 +193,7 @@ class CLI:
             type=str,
             default='',
             help=(
-                'The string to prefix statsd metrics with. Only used if --statsd-enabled is on. Empty string by default.'
+                'The string to prefix statsd metrics with. Only used if --statsd-enabled is on. Default = empty string.'
             ),
         )
         parser.add_argument(
