@@ -1,10 +1,11 @@
 import logging
 
-from cartography.util import run_cleanup_job
+from cartography.util import run_cleanup_job, timeit
 
 logger = logging.getLogger(__name__)
 
 
+@timeit
 def get_eks_clusters(boto3_session, region):
     client = boto3_session.client('eks', region_name=region)
     clusters = []
@@ -23,12 +24,14 @@ def get_eks_clusters(boto3_session, region):
     return clusters
 
 
+@timeit
 def get_eks_describe_cluster(boto3_session, region, cluster_name):
     client = boto3_session.client('eks', region_name=region)
     response = client.describe_cluster(name=cluster_name)
     return response['cluster']
 
 
+@timeit
 def load_eks_clusters(neo4j_session, cluster_data, region, current_aws_account_id, aws_update_tag):
     query = """
     MERGE (cluster:EKSCluster{id: {ClusterArn}})
@@ -84,10 +87,12 @@ def _process_logging(cluster):
     return logging
 
 
+@timeit
 def cleanup(neo4j_session, common_job_parameters):
     run_cleanup_job('aws_import_eks_cleanup.json', neo4j_session, common_job_parameters)
 
 
+@timeit
 def sync(neo4j_session, boto3_session, regions, current_aws_account_id, aws_update_tag, common_job_parameters):
     for region in regions:
         logger.info("Syncing EKS for region '%s' in account '%s'.", region, current_aws_account_id)

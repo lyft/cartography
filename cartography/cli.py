@@ -4,7 +4,10 @@ import logging
 import os
 import sys
 
+from statsd import StatsClient
+
 import cartography.sync
+import cartography.util
 
 
 logger = logging.getLogger(__name__)
@@ -178,6 +181,37 @@ class CLI:
                 'Required if you are using the GitHub intel module. Ignored otherwise.'
             ),
         )
+        parser.add_argument(
+            '--statsd-enabled',
+            action='store_true',
+            help=(
+                'If set, enables sending metrics using statsd to a server of your choice.'
+            )
+        )
+        parser.add_argument(
+            '--statsd-prefix',
+            type=str,
+            default='',
+            help=(
+                'The string to prefix statsd metrics with. Only used if --statsd-enabled is on. Empty string by default.'
+            )
+        )
+        parser.add_argument(
+            '--statsd-host',
+            type=str,
+            default='127.0.0.1',
+            help=(
+                'The IP address of your statsd server. Only used if --statsd-enabled is on. Default = 127.0.0.1.'
+            )
+        )
+        parser.add_argument(
+            '--statsd-port',
+            type=int,
+            default=8125,
+            help=(
+                'The port of your statsd server. Only used if --statsd-enabled is on. Default = UDP 8125.'
+            )
+        )
         return parser
 
     def main(self, argv):
@@ -233,6 +267,14 @@ class CLI:
             config.github_config = os.environ.get(config.github_config_env_var)
         else:
             config.github_config = None
+
+        # Statsd config
+        if config.statsd_enabled:
+            cartography.util.stats_client = StatsClient(
+                host=config.statsd_host,
+                port=config.statsd_port,
+                prefix=config.statsd_prefix,
+            )
 
         # Run cartography
         try:

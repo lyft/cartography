@@ -4,7 +4,7 @@ from string import Template
 
 import botocore.config
 
-from cartography.util import run_cleanup_job
+from cartography.util import run_cleanup_job, timeit
 
 logger = logging.getLogger(__name__)
 
@@ -18,13 +18,14 @@ def _get_botocore_config():
         },
     )
 
-
+@timeit
 def get_ec2_regions(boto3_session):
     client = boto3_session.client('ec2')
     result = client.describe_regions()
     return [r['RegionName'] for r in result['Regions']]
 
 
+@timeit
 def get_ec2_security_group_data(boto3_session, region):
     client = boto3_session.client('ec2', region_name=region, config=_get_botocore_config())
     paginator = client.get_paginator('describe_security_groups')
@@ -34,12 +35,14 @@ def get_ec2_security_group_data(boto3_session, region):
     return {'SecurityGroups': security_groups}
 
 
+@timeit
 def get_ec2_key_pairs(boto3_session, region):
     client = boto3_session.client('ec2', region_name=region, config=_get_botocore_config())
     result = client.describe_key_pairs()
     return result
 
 
+@timeit
 def get_ec2_instances(boto3_session, region):
     client = boto3_session.client('ec2', region_name=region, config=_get_botocore_config())
     paginator = client.get_paginator('describe_instances')
@@ -49,6 +52,7 @@ def get_ec2_instances(boto3_session, region):
     return {'Reservations': reservations}
 
 
+@timeit
 def get_ec2_auto_scaling_groups(boto3_session, region):
     client = boto3_session.client('autoscaling', region_name=region, config=_get_botocore_config())
     paginator = client.get_paginator('describe_auto_scaling_groups')
@@ -58,6 +62,7 @@ def get_ec2_auto_scaling_groups(boto3_session, region):
     return {'AutoScalingGroups': asgs}
 
 
+@timeit
 def get_loadbalancer_data(boto3_session, region):
     client = boto3_session.client('elb', region_name=region, config=_get_botocore_config())
     paginator = client.get_paginator('describe_load_balancers')
@@ -67,6 +72,7 @@ def get_loadbalancer_data(boto3_session, region):
     return {'LoadBalancerDescriptions': elbs}
 
 
+@timeit
 def get_load_balancer_v2_listeners(client, load_balancer_arn):
     paginator = client.get_paginator('describe_listeners')
     listeners = []
@@ -76,6 +82,7 @@ def get_load_balancer_v2_listeners(client, load_balancer_arn):
     return listeners
 
 
+@timeit
 def get_load_balancer_v2_target_groups(client, load_balancer_arn):
     paginator = client.get_paginator('describe_target_groups')
     target_groups = []
@@ -92,6 +99,7 @@ def get_load_balancer_v2_target_groups(client, load_balancer_arn):
     return target_groups
 
 
+@timeit
 def get_loadbalancer_v2_data(boto3_session, region):
     client = boto3_session.client('elbv2', region_name=region, config=_get_botocore_config())
     paginator = client.get_paginator('describe_load_balancers')
@@ -107,18 +115,21 @@ def get_loadbalancer_v2_data(boto3_session, region):
     return {'LoadBalancers': elbv2s}
 
 
+@timeit
 def get_ec2_vpc_peering(boto3_session, region):
     client = boto3_session.client('ec2', region_name=region, config=_get_botocore_config())
     # paginator not supported by boto
     return client.describe_vpc_peering_connections()
 
 
+@timeit
 def get_ec2_vpcs(boto3_session, region):
     client = boto3_session.client('ec2', region_name=region, config=_get_botocore_config())
     # paginator not supported by boto
     return client.describe_vpcs()
 
 
+@timeit
 def load_ec2_key_pairs(neo4j_session, data, region, current_aws_account_id, aws_update_tag):
     ingest_key_pair = """
     MERGE (keypair:KeyPair:EC2KeyPair{arn: {ARN}, id: {ARN}})
@@ -148,6 +159,7 @@ def load_ec2_key_pairs(neo4j_session, data, region, current_aws_account_id, aws_
         )
 
 
+@timeit
 def load_ec2_instances(neo4j_session, data, region, current_aws_account_id, aws_update_tag):
     ingest_reservation = """
     MERGE (reservation:EC2Reservation{reservationid: {ReservationId}})
@@ -295,6 +307,7 @@ def load_ec2_instances(neo4j_session, data, region, current_aws_account_id, aws_
             load_ec2_instance_network_interfaces(neo4j_session, instance, aws_update_tag)
 
 
+@timeit
 def load_ec2_instance_network_interfaces(neo4j_session, instance_data, aws_update_tag):
     ingest_network_interface = """
     MATCH (instance:EC2Instance{instanceid: {InstanceId}})
@@ -348,6 +361,7 @@ def load_ec2_instance_network_interfaces(neo4j_session, instance_data, aws_updat
             ).consume()  # TODO see issue 170
 
 
+@timeit
 def load_ec2_security_groupinfo(neo4j_session, data, region, current_aws_account_id, aws_update_tag):
     ingest_security_group = """
     MERGE (group:EC2SecurityGroup{id: {GroupId}})
@@ -383,6 +397,7 @@ def load_ec2_security_groupinfo(neo4j_session, data, region, current_aws_account
         load_ec2_security_group_rule(neo4j_session, group, "IpPermissionEgress", aws_update_tag)
 
 
+@timeit
 def load_ec2_security_group_rule(neo4j_session, group, rule_type, aws_update_tag):
     INGEST_RULE_TEMPLATE = Template("""
     MERGE (rule:$rule_label{ruleid: {RuleId}})
@@ -457,6 +472,7 @@ def load_ec2_security_group_rule(neo4j_session, group, rule_type, aws_update_tag
                 )
 
 
+@timeit
 def load_ec2_auto_scaling_groups(neo4j_session, data, region, current_aws_account_id, aws_update_tag):
     ingest_group = """
     MERGE (group:AutoScalingGroup{arn: {ARN}})
@@ -539,6 +555,7 @@ def load_ec2_auto_scaling_groups(neo4j_session, data, region, current_aws_accoun
                 )
 
 
+@timeit
 def load_load_balancer_v2s(neo4j_session, data, region, current_aws_account_id, aws_update_tag):
     ingest_load_balancer_v2 = """
     MERGE (elbv2:LoadBalancerV2{id: {ID}})
@@ -607,6 +624,7 @@ def load_load_balancer_v2s(neo4j_session, data, region, current_aws_account_id, 
             )
 
 
+@timeit
 def load_load_balancers(neo4j_session, data, region, current_aws_account_id, aws_update_tag):
     ingest_load_balancer = """
     MERGE (elb:LoadBalancer{id: {ID}})
@@ -701,6 +719,7 @@ def load_load_balancers(neo4j_session, data, region, current_aws_account_id, aws
             load_load_balancer_listeners(neo4j_session, load_balancer_id, lb["ListenerDescriptions"], aws_update_tag)
 
 
+@timeit
 def load_load_balancer_v2_subnets(neo4j_session, load_balancer_id, az_data, region, aws_update_tag):
     ingest_load_balancer_subnet = """
     MATCH (elbv2:LoadBalancerV2{id: {ID}})
@@ -722,6 +741,7 @@ def load_load_balancer_v2_subnets(neo4j_session, load_balancer_id, az_data, regi
         )
 
 
+@timeit
 def load_load_balancer_subnets(neo4j_session, load_balancer_id, subnets_data, aws_update_tag):
     ingest_load_balancer_subnet = """
     MATCH (elb:LoadBalancer{id: {ID}}), (subnet:EC2Subnet{subnetid: {SUBNET_ID}})
@@ -739,6 +759,7 @@ def load_load_balancer_subnets(neo4j_session, load_balancer_id, subnets_data, aw
         )
 
 
+@timeit
 def load_load_balancer_v2_target_groups(
     neo4j_session, load_balancer_id, target_groups, current_aws_account_id,
     aws_update_tag,
@@ -770,6 +791,7 @@ def load_load_balancer_v2_target_groups(
             )
 
 
+@timeit
 def load_load_balancer_v2_listeners(neo4j_session, load_balancer_id, listener_data, aws_update_tag):
     ingest_listener = """
     MATCH (elbv2:LoadBalancerV2{id: {LoadBalancerId}})
@@ -793,6 +815,7 @@ def load_load_balancer_v2_listeners(neo4j_session, load_balancer_id, listener_da
     )
 
 
+@timeit
 def load_load_balancer_listeners(neo4j_session, load_balancer_id, listener_data, aws_update_tag):
     ingest_listener = """
     MATCH (elb:LoadBalancer{id: {LoadBalancerId}})
@@ -818,6 +841,7 @@ def load_load_balancer_listeners(neo4j_session, load_balancer_id, listener_data,
     )
 
 
+@timeit
 def load_ec2_vpc_peering(neo4j_session, data, aws_update_tag):
     # https://docs.aws.amazon.com/cli/latest/reference/ec2/describe-vpc-peering-connections.html
     # {
@@ -954,6 +978,7 @@ def load_ec2_vpc_peering(neo4j_session, data, aws_update_tag):
                     )
 
 
+@timeit
 def load_ec2_vpcs(neo4j_session, data, region, current_aws_account_id, aws_update_tag):
     # https://docs.aws.amazon.com/cli/latest/reference/ec2/describe-vpcs.html
     # {
@@ -1068,6 +1093,7 @@ def _get_cidr_association_statement(block_type):
     return INGEST_CIDR_TEMPLATE.safe_substitute(block_label=BLOCK_TYPE, block_cidr=BLOCK_CIDR, state_name=STATE_NAME)
 
 
+@timeit
 def load_cidr_association_set(neo4j_session, vpc_id, vpc_data, block_type, aws_update_tag):
     ingest_statement = _get_cidr_association_statement(block_type)
 
@@ -1084,6 +1110,7 @@ def load_cidr_association_set(neo4j_session, vpc_id, vpc_data, block_type, aws_u
     )
 
 
+@timeit
 def cleanup_ec2_security_groupinfo(neo4j_session, common_job_parameters):
     run_cleanup_job(
         'aws_import_ec2_security_groupinfo_cleanup.json',
@@ -1092,14 +1119,17 @@ def cleanup_ec2_security_groupinfo(neo4j_session, common_job_parameters):
     )
 
 
+@timeit
 def cleanup_ec2_key_pairs(neo4j_session, common_job_parameters):
     run_cleanup_job('aws_import_ec2_key_pairs_cleanup.json', neo4j_session, common_job_parameters)
 
 
+@timeit
 def cleanup_ec2_instances(neo4j_session, common_job_parameters):
     run_cleanup_job('aws_import_ec2_instances_cleanup.json', neo4j_session, common_job_parameters)
 
 
+@timeit
 def cleanup_ec2_auto_scaling_groups(neo4j_session, common_job_parameters):
     run_cleanup_job(
         'aws_ingest_ec2_auto_scaling_groups_cleanup.json',
@@ -1108,23 +1138,28 @@ def cleanup_ec2_auto_scaling_groups(neo4j_session, common_job_parameters):
     )
 
 
+@timeit
 def cleanup_load_balancers(neo4j_session, common_job_parameters):
     run_cleanup_job('aws_ingest_load_balancers_cleanup.json', neo4j_session, common_job_parameters)
 
 
+@timeit
 def cleanup_load_balancer_v2s(neo4j_session, common_job_parameters):
     """Delete elbv2's and dependent resources in the DB without the most recent lastupdated tag."""
     run_cleanup_job('aws_ingest_load_balancers_v2_cleanup.json', neo4j_session, common_job_parameters)
 
 
+@timeit
 def cleanup_ec2_vpcs(neo4j_session, common_job_parameters):
     run_cleanup_job('aws_import_vpc_cleanup.json', neo4j_session, common_job_parameters)
 
 
+@timeit
 def cleanup_ec2_vpc_peering(neo4j_session, common_job_parameters):
     run_cleanup_job('aws_import_vpc_peering_cleanup.json', neo4j_session, common_job_parameters)
 
 
+@timeit
 def sync_ec2_security_groupinfo(
         neo4j_session, boto3_session, regions, current_aws_account_id, aws_update_tag,
         common_job_parameters,
@@ -1136,6 +1171,7 @@ def sync_ec2_security_groupinfo(
     cleanup_ec2_security_groupinfo(neo4j_session, common_job_parameters)
 
 
+@timeit
 def sync_ec2_key_pairs(
     neo4j_session, boto3_session, regions, current_aws_account_id, aws_update_tag,
     common_job_parameters,
@@ -1147,6 +1183,7 @@ def sync_ec2_key_pairs(
     cleanup_ec2_key_pairs(neo4j_session, common_job_parameters)
 
 
+@timeit
 def sync_ec2_instances(
     neo4j_session, boto3_session, regions, current_aws_account_id, aws_update_tag,
     common_job_parameters,
@@ -1158,6 +1195,7 @@ def sync_ec2_instances(
     cleanup_ec2_instances(neo4j_session, common_job_parameters)
 
 
+@timeit
 def sync_ec2_auto_scaling_groups(
         neo4j_session, boto3_session, regions, current_aws_account_id, aws_update_tag,
         common_job_parameters,
@@ -1169,6 +1207,7 @@ def sync_ec2_auto_scaling_groups(
     cleanup_ec2_auto_scaling_groups(neo4j_session, common_job_parameters)
 
 
+@timeit
 def sync_load_balancers(
     neo4j_session, boto3_session, regions, current_aws_account_id, aws_update_tag,
     common_job_parameters,
@@ -1180,6 +1219,7 @@ def sync_load_balancers(
     cleanup_load_balancers(neo4j_session, common_job_parameters)
 
 
+@timeit
 def sync_load_balancer_v2s(
     neo4j_session, boto3_session, regions, current_aws_account_id, aws_update_tag,
     common_job_parameters,
@@ -1191,6 +1231,7 @@ def sync_load_balancer_v2s(
     cleanup_load_balancer_v2s(neo4j_session, common_job_parameters)
 
 
+@timeit
 def sync_vpc(neo4j_session, boto3_session, regions, current_aws_account_id, aws_update_tag, common_job_parameters):
     for region in regions:
         logger.debug("Syncing EC2 VPC for region '%s' in account '%s'.", region, current_aws_account_id)
@@ -1199,9 +1240,10 @@ def sync_vpc(neo4j_session, boto3_session, regions, current_aws_account_id, aws_
     cleanup_ec2_vpcs(neo4j_session, common_job_parameters)
 
 
+@timeit
 def sync_vpc_peering(
-    neo4j_session, boto3_session, regions, current_aws_account_id, aws_update_tag,
-    common_job_parameters,
+        neo4j_session, boto3_session, regions, current_aws_account_id, aws_update_tag,
+        common_job_parameters,
 ):
     for region in regions:
         logger.debug("Syncing EC2 VPC peering for region '%s' in account '%s'.", region, current_aws_account_id)
