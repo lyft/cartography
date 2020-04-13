@@ -4,9 +4,12 @@ from googleapiclient.discovery import HttpError
 
 from cartography.intel.gcp import compute
 from cartography.util import run_cleanup_job
+from cartography.util import timeit
+
 logger = logging.getLogger(__name__)
 
 
+@timeit
 def get_gke_clusters(container, project_id):
     """
     Returns a list of GKE clusters within some given project.
@@ -47,6 +50,7 @@ def get_gke_clusters(container, project_id):
             raise
 
 
+@timeit
 def load_gke_clusters(neo4j_session, gke_list, project_number, gcp_update_tag):
     """
     Ingest GCP GKE Clusters to Neo4j
@@ -149,6 +153,7 @@ def _process_network_policy(cluster):
     return False
 
 
+@timeit
 def cleanup_gke_clusters(neo4j_session, common_job_parameters):
     """
     Delete out-of-date GCP GKE Clusters nodes and relationships
@@ -165,6 +170,7 @@ def cleanup_gke_clusters(neo4j_session, common_job_parameters):
     run_cleanup_job('gcp_gke_cluster_cleanup.json', neo4j_session, common_job_parameters)
 
 
+@timeit
 def sync_gke_clusters(neo4j_session, container, project_id, gcp_update_tag, common_job_parameters):
     """
     Get GCP GKE Clusters using the Container resource object, ingest to Neo4j, and clean up old data.

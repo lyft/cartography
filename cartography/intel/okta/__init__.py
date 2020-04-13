@@ -12,10 +12,12 @@ from cartography.intel.okta import roles
 from cartography.intel.okta import users
 from cartography.intel.okta.sync_state import OktaSyncState
 from cartography.util import run_cleanup_job
+from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 
 
+@timeit
 def _cleanup_okta_organizations(session, common_job_parameters):
     """
     Remove stale Okta organization

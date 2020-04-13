@@ -1,6 +1,7 @@
 import logging
 
 from cartography.util import run_cleanup_job
+from cartography.util import timeit
 
 
 logger = logging.getLogger(__name__)
@@ -9,6 +10,7 @@ logger = logging.getLogger(__name__)
 GOOGLE_API_NUM_RETRIES = 5
 
 
+@timeit
 def get_all_groups(admin):
     """
     Return list of Google Groups in your organization
@@ -29,6 +31,7 @@ def get_all_groups(admin):
     return response_objects
 
 
+@timeit
 def transform_groups(response_objects):
     """  Strips list of API response objects to return list of group objects only
 
@@ -42,6 +45,7 @@ def transform_groups(response_objects):
     return groups
 
 
+@timeit
 def transform_users(response_objects):
     """  Strips list of API response objects to return list of group objects only
     :param response_objects:
@@ -54,6 +58,7 @@ def transform_users(response_objects):
     return users
 
 
+@timeit
 def get_all_groups_for_email(admin, email):
     """ Fetch all groups of which the given group is a member
 
@@ -72,6 +77,7 @@ def get_all_groups_for_email(admin, email):
     return groups
 
 
+@timeit
 def get_members_for_group(admin, group_email):
     """ Get all members for a google group
 
@@ -92,6 +98,7 @@ def get_members_for_group(admin, group_email):
     return members
 
 
+@timeit
 def get_all_users(admin):
     """
     Return list of Google Users in your organization
@@ -112,6 +119,7 @@ def get_all_users(admin):
     return response_objects
 
 
+@timeit
 def load_gsuite_groups(session, groups, gsuite_update_tag):
     ingestion_qry = """
         UNWIND {GroupData} as group
@@ -133,6 +141,7 @@ def load_gsuite_groups(session, groups, gsuite_update_tag):
     session.run(ingestion_qry, GroupData=groups, UpdateTag=gsuite_update_tag)
 
 
+@timeit
 def load_gsuite_users(session, users, gsuite_update_tag):
     ingestion_qry = """
         UNWIND {UserData} as user
@@ -171,6 +180,7 @@ def load_gsuite_users(session, users, gsuite_update_tag):
     session.run(ingestion_qry, UserData=users, UpdateTag=gsuite_update_tag)
 
 
+@timeit
 def load_gsuite_members(session, group, members, gsuite_update_tag):
     ingestion_qry = """
         UNWIND {MemberData} as member
@@ -199,6 +209,7 @@ def load_gsuite_members(session, group, members, gsuite_update_tag):
     session.run(membership_qry, MemberData=members, GroupID=group.get("id"), UpdateTag=gsuite_update_tag)
 
 
+@timeit
 def cleanup_gsuite_users(session, common_job_parameters):
     run_cleanup_job(
         'gsuite_ingest_users_cleanup.json',
@@ -207,6 +218,7 @@ def cleanup_gsuite_users(session, common_job_parameters):
     )
 
 
+@timeit
 def cleanup_gsuite_groups(session, common_job_parameters):
     run_cleanup_job(
         'gsuite_ingest_groups_cleanup.json',
@@ -215,6 +227,7 @@ def cleanup_gsuite_groups(session, common_job_parameters):
     )
 
 
+@timeit
 def sync_gsuite_users(session, admin, gsuite_update_tag, common_job_parameters):
     """
     GET GSuite user objects using the google admin api resource, load the data into Neo4j and clean up stale nodes.
@@ -233,6 +246,7 @@ def sync_gsuite_users(session, admin, gsuite_update_tag, common_job_parameters):
     cleanup_gsuite_users(session, common_job_parameters)
 
 
+@timeit
 def sync_gsuite_groups(session, admin, gsuite_update_tag, common_job_parameters):
     """
     GET GSuite group objects using the google admin api resource, load the data into Neo4j and clean up stale nodes.
@@ -252,6 +266,7 @@ def sync_gsuite_groups(session, admin, gsuite_update_tag, common_job_parameters)
     sync_gsuite_members(groups, session, admin, gsuite_update_tag)
 
 
+@timeit
 def sync_gsuite_members(groups, session, admin, gsuite_update_tag):
     for group in groups:
         members = get_members_for_group(admin, group['email'])

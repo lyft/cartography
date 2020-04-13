@@ -3,6 +3,8 @@ from string import Template
 
 import requests
 
+from cartography.util import timeit
+
 logger = logging.getLogger(__name__)
 
 
@@ -21,6 +23,7 @@ def call_github_api(query, variables, token, api_url):
     return response.json()
 
 
+@timeit
 def get_github_repos(token, api_url, organization):
     """
     Gets the repo data for all repos in the organization
@@ -100,6 +103,7 @@ def get_github_repos(token, api_url, organization):
     return repos
 
 
+@timeit
 def transform_github_repos(repos_json, github_url):
     """
     Parses the JSON returned from GitHub API to create data for graph ingestion
@@ -170,6 +174,7 @@ def transform_github_repos(repos_json, github_url):
     return results
 
 
+@timeit
 def load_github_repos(session, update_tag, repo_data):
     """
     Ingest the GitHub repository information
@@ -206,6 +211,7 @@ def load_github_repos(session, update_tag, repo_data):
     )
 
 
+@timeit
 def load_github_owners(session, update_tag, repo_owners):
     """
     Ingest the relationships for repo owners
@@ -235,6 +241,7 @@ def load_github_owners(session, update_tag, repo_owners):
         )
 
 
+@timeit
 def load_github_languages(session, update_tag, repo_languages):
     """
     Ingest the relationships for repo languages
@@ -260,6 +267,7 @@ def load_github_languages(session, update_tag, repo_languages):
     )
 
 
+@timeit
 def sync_github(neo4j_session, common_job_parameters, github_api_key, github_url, organization):
     """
         Performs the sequential tasks to collect, transform, and sync github data
