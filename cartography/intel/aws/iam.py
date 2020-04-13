@@ -296,7 +296,7 @@ def get_policies_for_principal(neo4j_session, principal_arn):
     policies = {r["policy_id"]: parse_statement_node_group(r["statements"]) for r in results}
     return policies
 
-def sync_assume_role(neo4j_session, current_aws_account_id, aws_update_tag):
+def sync_assume_role(neo4j_session, current_aws_account_id, aws_update_tag, common_job_parameters):
     logger.debug("Syncing assume role for account '%s'.", current_aws_account_id)
     query_potential_matches = """
     MATCH (:AWSAccount{id:{AccountId}})-[:RESOURCE]->(target:AWSRole)-[:TRUSTS_AWS_PRINCIPAL]->(source:AWSPrincipal)
@@ -545,6 +545,6 @@ def sync(neo4j_session, boto3_session, account_id, update_tag, common_job_parame
     sync_groups(neo4j_session, boto3_session, account_id, update_tag, common_job_parameters)
     sync_roles(neo4j_session, boto3_session, account_id, update_tag, common_job_parameters)
     sync_group_memberships(neo4j_session, boto3_session, account_id, update_tag, common_job_parameters)
-    sync_assume_role(neo4j_session, account_id, update_tag)
+    sync_assume_role(neo4j_session, account_id, update_tag, common_job_parameters)
     sync_user_access_keys(neo4j_session, boto3_session, account_id, update_tag, common_job_parameters)
     run_cleanup_job('aws_import_principals_cleanup.json', neo4j_session, common_job_parameters)
