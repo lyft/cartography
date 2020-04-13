@@ -4,7 +4,8 @@ from string import Template
 
 import botocore.config
 
-from cartography.util import run_cleanup_job, timeit
+from cartography.util import run_cleanup_job
+from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +18,7 @@ def _get_botocore_config():
             'max_attempts': 10,
         },
     )
+
 
 @timeit
 def get_ec2_regions(boto3_session):

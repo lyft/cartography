@@ -186,7 +186,7 @@ class CLI:
             action='store_true',
             help=(
                 'If set, enables sending metrics using statsd to a server of your choice.'
-            )
+            ),
         )
         parser.add_argument(
             '--statsd-prefix',
@@ -194,7 +194,7 @@ class CLI:
             default='',
             help=(
                 'The string to prefix statsd metrics with. Only used if --statsd-enabled is on. Empty string by default.'
-            )
+            ),
         )
         parser.add_argument(
             '--statsd-host',
@@ -202,7 +202,7 @@ class CLI:
             default='127.0.0.1',
             help=(
                 'The IP address of your statsd server. Only used if --statsd-enabled is on. Default = 127.0.0.1.'
-            )
+            ),
         )
         parser.add_argument(
             '--statsd-port',
@@ -210,7 +210,7 @@ class CLI:
             default=8125,
             help=(
                 'The port of your statsd server. Only used if --statsd-enabled is on. Default = UDP 8125.'
-            )
+            ),
         )
         return parser
 

@@ -1,6 +1,7 @@
 import logging
 
-from cartography.util import run_cleanup_job, timeit
+from cartography.util import run_cleanup_job
+from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 
@@ -354,6 +355,7 @@ def cleanup_route53(neo4j_session, current_aws_id, update_tag):
         neo4j_session,
         {'UPDATE_TAG': update_tag, 'AWS_ID': current_aws_id},
     )
+
 
 @timeit
 def sync(neo4j_session, boto3_session, aws_id, update_tag):

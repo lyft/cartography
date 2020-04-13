@@ -37,6 +37,7 @@ def load_resource_binary(package, resource_name):
 # The statsd client used for observability.  This is `None` unless cartography.config.statsd_enabled is True.
 stats_client = None
 
+
 def timeit(method):
     """
     This decorator uses statsd to time the execution of the wrapped method and sends it to the statsd server.

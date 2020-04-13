@@ -1,6 +1,7 @@
 import logging
 
-from cartography.util import run_cleanup_job, timeit
+from cartography.util import run_cleanup_job
+from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 
