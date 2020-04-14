@@ -51,7 +51,7 @@ def get_gke_clusters(container, project_id):
 
 
 @timeit
-def load_gke_clusters(neo4j_session, gke_list, project_number, gcp_update_tag):
+def load_gke_clusters(neo4j_session, gke_list, project_id, gcp_update_tag):
     """
     Ingest GCP GKE Clusters to Neo4j
 
@@ -101,7 +101,7 @@ def load_gke_clusters(neo4j_session, gke_list, project_number, gcp_update_tag):
         cluster.masterauth_username = {ClusterMasterUsername},
         cluster.masterauth_password = {ClusterMasterPassword}
     WITH cluster
-    MATCH (owner:GCPProject{projectnumber:{ProjectNumber}})
+    MATCH (owner:GCPProject{id:{ProjectId}})
     MERGE (owner)-[r:RESOURCE]->(cluster)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {gcp_update_tag}
@@ -109,7 +109,7 @@ def load_gke_clusters(neo4j_session, gke_list, project_number, gcp_update_tag):
     for cluster in gke_list.get('clusters', []):
         neo4j_session.run(
             query,
-            ProjectNumber=project_number,
+            ProjectId=project_id,
             ClusterSelfLink=cluster['selfLink'],
             ClusterCreateTime=cluster['createTime'],
             ClusterName=cluster['name'],
