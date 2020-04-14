@@ -7,7 +7,7 @@ from oauth2client.client import ApplicationDefaultCredentialsError
 from oauth2client.client import GoogleCredentials
 
 from cartography.intel.gsuite import api
-from  cartography.util import timeit
+from cartography.util import timeit
 
 # GSuite Delegated admin e-mail https://developers.google.com/admin-sdk/directory/v1/guides/delegation
 GSUITE_DELEGATED_ADMIN = os.environ.get('GSUITE_DELEGATED_ADMIN')
