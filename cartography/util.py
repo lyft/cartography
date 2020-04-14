@@ -48,7 +48,6 @@ def timeit(method):
         if stats_client:
             # Example metric name "cartography.intel.aws.iam.get_group_membership_data"
             metric_name = f"{method.__module__}.{method.__name__}"
-            print(metric_name)
             timer = stats_client.timer(metric_name)
             timer.start()
             result = method(*args, **kwargs)
