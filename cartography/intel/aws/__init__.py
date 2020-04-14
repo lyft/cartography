@@ -15,6 +15,7 @@ from . import route53
 from . import s3
 from cartography.util import run_analysis_job
 from cartography.util import run_cleanup_job
+from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +74,7 @@ def _sync_multiple_accounts(neo4j_session, accounts, sync_tag, common_job_parame
     run_cleanup_job('aws_post_ingestion_dns_cleanup.json', neo4j_session, common_job_parameters)
 
 
+@timeit
 def start_aws_ingestion(neo4j_session, config):
     common_job_parameters = {
         "UPDATE_TAG": config.update_tag,

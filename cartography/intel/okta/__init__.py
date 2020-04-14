@@ -29,6 +29,7 @@ def _cleanup_okta_organizations(session, common_job_parameters):
     run_cleanup_job('okta_import_cleanup.json', session, common_job_parameters)
 
 
+@timeit
 def start_okta_ingestion(neo4j_session, config):
     """
     Starts the OKTA ingestion process
