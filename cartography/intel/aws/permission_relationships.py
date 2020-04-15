@@ -1,7 +1,7 @@
 import fnmatch
 import logging
 import os
-
+import re
 import yaml
 
 from cartography.graph.statement import GraphStatement
@@ -12,8 +12,9 @@ logger = logging.getLogger(__name__)
 def evaluate_clause(clause, match):
     # AWS [not]actions and [not]resources can use linux style wildcards *
     # fnmatch does not do a true case insensitive match, so we must convert the inputs
-    clause = clause.replace("*", ".*").replace(".","\\.")
+    clause = clause.replace(".","\\.").replace("*", ".*")
     result = re.fullmatch(clause, match, flags=re.IGNORECASE)
+    print(f"clause = {clause} match = {match}")
     return result is not None
     #return fnmatch.fnmatchcase(match.lower(), clause.lower())
 
