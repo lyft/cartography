@@ -47,6 +47,10 @@ class Config:
         okta_api_key=None,
         okta_saml_role_regex=None,
         github_config=None,
+        statsd_enabled=False,
+        statsd_prefix=None,
+        statsd_host=None,
+        statsd_port=None,
     ):
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user
@@ -60,3 +64,7 @@ class Config:
         self.okta_api_key = okta_api_key
         self.okta_saml_role_regex = okta_saml_role_regex
         self.github_config = github_config
+        self.statsd_enabled = statsd_enabled
+        self.statsd_prefix = statsd_prefix
+        self.statsd_host = statsd_host
+        self.statsd_port = statsd_port

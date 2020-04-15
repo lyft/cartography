@@ -8,10 +8,12 @@ from okta.models.usergroup import UserGroup
 
 from cartography.intel.okta.utils import create_api_client
 from cartography.intel.okta.utils import is_last_page
+from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 
 
+@timeit
 def _get_okta_groups(api_client):
     """
     Get groups from Okta server
@@ -46,6 +48,7 @@ def _get_okta_groups(api_client):
     return group_list
 
 
+@timeit
 def _get_okta_group_members(api_client, group_id):
     """
     Get group members from Okta server
@@ -80,6 +83,7 @@ def _get_okta_group_members(api_client, group_id):
     return member_list
 
 
+@timeit
 def transform_okta_group_list(okta_group_list):
     groups = []
     groups_id = []
@@ -91,6 +95,7 @@ def transform_okta_group_list(okta_group_list):
     return groups, groups_id
 
 
+@timeit
 def transform_okta_group(okta_group):
     """
     Transform okta group object to consumable dictionary for graph
@@ -125,6 +130,7 @@ def transform_okta_group(okta_group):
     return group_props
 
 
+@timeit
 def transform_okta_group_member_list(okta_member_list):
     member_list = []
 
@@ -134,6 +140,7 @@ def transform_okta_group_member_list(okta_member_list):
     return member_list
 
 
+@timeit
 def transform_okta_group_member(raw_json_response):
     """
     Transform group member object to graph consumable data
@@ -149,6 +156,7 @@ def transform_okta_group_member(raw_json_response):
     return member_list
 
 
+@timeit
 def _load_okta_groups(neo4j_session, okta_org_id, group_list, okta_update_tag):
     """
     Add okta groups to the graph
@@ -185,6 +193,7 @@ def _load_okta_groups(neo4j_session, okta_org_id, group_list, okta_update_tag):
     )
 
 
+@timeit
 def _load_okta_group_members(neo4j_session, group_id, member_list, okta_update_tag):
     """
     Add group membership data into the graph
@@ -213,6 +222,7 @@ def _load_okta_group_members(neo4j_session, group_id, member_list, okta_update_t
     )
 
 
+@timeit
 def _sync_okta_group_membership(neo4j_session, api_client, group_list_info, okta_update_tag):
     """
     Map group members in the graph
@@ -230,6 +240,7 @@ def _sync_okta_group_membership(neo4j_session, api_client, group_list_info, okta
         _load_okta_group_members(neo4j_session, group_id, members, okta_update_tag)
 
 
+@timeit
 def sync_okta_groups(neo4_session, okta_org_id, okta_update_tag, okta_api_key, sync_state):
     """
     Synchronize okta groups

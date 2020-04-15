@@ -4,9 +4,12 @@ from string import Template
 import dns.rdatatype
 import dns.resolver
 
+from cartography.util import timeit
+
 logger = logging.getLogger(__name__)
 
 
+@timeit
 def ingest_dns_record_by_fqdn(
     neo4j_session, update_tag, fqdn, points_to_record, record_label,
     dns_node_additional_label=None,
@@ -59,6 +62,7 @@ def ingest_dns_record_by_fqdn(
         )
 
 
+@timeit
 def _link_ip_to_A_record(neo4j_session, update_tag, ip_list, parent_record):
     """
     Link A record to to its IP
@@ -89,6 +93,7 @@ def _link_ip_to_A_record(neo4j_session, update_tag, ip_list, parent_record):
     )
 
 
+@timeit
 def ingest_dns_record(
     neo4j_session, name, value, type, update_tag, points_to_record, record_label,
     dns_node_additional_label,
@@ -132,6 +137,7 @@ def ingest_dns_record(
     return record_id
 
 
+@timeit
 def get_dns_resolution_by_fqdn(fqdn):
     """
     Get dns resolution data for fqdn

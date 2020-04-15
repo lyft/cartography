@@ -8,6 +8,7 @@ from string import Template
 from googleapiclient.discovery import HttpError
 
 from cartography.util import run_cleanup_job
+from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 InstanceUriPrefix = namedtuple('InstanceUriPrefix', 'zone_name project_id')
@@ -35,6 +36,7 @@ def _get_error_reason(http_error):
     return reason
 
 
+@timeit
 def get_zones_in_project(project_id, compute, max_results=None):
     """
     Return the zones where the Compute Engine API is enabled for the given project_id.
@@ -77,6 +79,7 @@ def get_zones_in_project(project_id, compute, max_results=None):
             raise
 
 
+@timeit
 def get_gcp_instance_responses(project_id, zones, compute):
     """
     Return list of GCP instance response objects for a given project and list of zones
@@ -96,6 +99,7 @@ def get_gcp_instance_responses(project_id, zones, compute):
     return response_objects
 
 
+@timeit
 def get_gcp_subnets(projectid, region, compute):
     """
     Return list of all subnets in the given projectid and region
@@ -108,6 +112,7 @@ def get_gcp_subnets(projectid, region, compute):
     return req.execute()
 
 
+@timeit
 def get_gcp_vpcs(projectid, compute):
     """
     Get VPC data for given project
@@ -119,6 +124,7 @@ def get_gcp_vpcs(projectid, compute):
     return req.execute()
 
 
+@timeit
 def get_gcp_firewall_ingress_rules(project_id, compute):
     """
     Get ingress Firewall data for a given project
@@ -130,6 +136,7 @@ def get_gcp_firewall_ingress_rules(project_id, compute):
     return req.execute()
 
 
+@timeit
 def transform_gcp_instances(response_objects):
     """
     Process the GCP instance response objects and return a flattened list of GCP instances with all the necessary fields
@@ -191,6 +198,7 @@ def _create_gcp_network_tag_id(vpc_partial_uri, tag):
     return f"{vpc_partial_uri}/tags/{tag}"
 
 
+@timeit
 def transform_gcp_vpcs(vpc_res):
     """
     Transform the VPC response object for Neo4j ingestion
@@ -218,6 +226,7 @@ def transform_gcp_vpcs(vpc_res):
     return vpc_list
 
 
+@timeit
 def transform_gcp_subnets(subnet_res):
     """
     Add additional fields to the subnet object to make it easier to process in `load_gcp_subnets()`.
@@ -254,6 +263,7 @@ def transform_gcp_subnets(subnet_res):
     return subnet_list
 
 
+@timeit
 def transform_gcp_firewall(fw_response):
     """
     Adjust the firewall response objects into a format that is easy to write to Neo4j.
@@ -393,6 +403,7 @@ def _parse_port_string_to_rule(port, protocol, fw_partial_uri, is_allow_rule):
     }
 
 
+@timeit
 def load_gcp_instances(neo4j_session, data, gcp_update_tag):
     """
     Ingest GCP instance objects to Neo4j
@@ -440,6 +451,7 @@ def load_gcp_instances(neo4j_session, data, gcp_update_tag):
         _attach_gcp_vpc(neo4j_session, instance['partial_uri'], gcp_update_tag)
 
 
+@timeit
 def load_gcp_vpcs(neo4j_session, vpcs, gcp_update_tag):
     """
     Ingest VPCs to Neo4j
@@ -482,6 +494,7 @@ def load_gcp_vpcs(neo4j_session, vpcs, gcp_update_tag):
         )
 
 
+@timeit
 def load_gcp_subnets(neo4j_session, subnets, gcp_update_tag):
     """
     Ingest GCP subnet data to Neo4j
@@ -529,6 +542,7 @@ def load_gcp_subnets(neo4j_session, subnets, gcp_update_tag):
         )
 
 
+@timeit
 def _attach_instance_tags(neo4j_session, instance, gcp_update_tag):
     """
     Attach tags to GCP instance and to the VPCs that they are defined in.
@@ -570,6 +584,7 @@ def _attach_instance_tags(neo4j_session, instance, gcp_update_tag):
             )
 
 
+@timeit
 def _attach_gcp_nics(neo4j_session, instance, gcp_update_tag):
     """
     Attach GCP Network Interfaces to GCP Instances and GCP Subnets.
@@ -616,6 +631,7 @@ def _attach_gcp_nics(neo4j_session, instance, gcp_update_tag):
         _attach_gcp_nic_access_configs(neo4j_session, nic_id, nic, gcp_update_tag)
 
 
+@timeit
 def _attach_gcp_nic_access_configs(neo4j_session, nic_id, nic, gcp_update_tag):
     """
     Attach an access configuration to the GCP NIC.
@@ -658,6 +674,7 @@ def _attach_gcp_nic_access_configs(neo4j_session, nic_id, nic, gcp_update_tag):
         )
 
 
+@timeit
 def _attach_gcp_vpc(neo4j_session, instance_id, gcp_update_tag):
     """
     Attach a GCP instance directly to a VPC
@@ -680,6 +697,7 @@ def _attach_gcp_vpc(neo4j_session, instance_id, gcp_update_tag):
     )
 
 
+@timeit
 def load_gcp_ingress_firewalls(neo4j_session, fw_list, gcp_update_tag):
     """
     Load the firewall list to Neo4j
@@ -724,6 +742,7 @@ def load_gcp_ingress_firewalls(neo4j_session, fw_list, gcp_update_tag):
         _attach_target_tags(neo4j_session, fw, gcp_update_tag)
 
 
+@timeit
 def _attach_firewall_rules(neo4j_session, fw, gcp_update_tag):
     """
     Attach the allow_rules to the Firewall object
@@ -778,6 +797,7 @@ def _attach_firewall_rules(neo4j_session, fw, gcp_update_tag):
                 )
 
 
+@timeit
 def _attach_target_tags(neo4j_session, fw, gcp_update_tag):
     """
     Attach target tags to the firewall object
@@ -810,6 +830,7 @@ def _attach_target_tags(neo4j_session, fw, gcp_update_tag):
         )
 
 
+@timeit
 def cleanup_gcp_instances(neo4j_session, common_job_parameters):
     """
     Delete out-of-date GCP instance nodes and relationships
@@ -820,6 +841,7 @@ def cleanup_gcp_instances(neo4j_session, common_job_parameters):
     run_cleanup_job('gcp_compute_instance_cleanup.json', neo4j_session, common_job_parameters)
 
 
+@timeit
 def cleanup_gcp_vpcs(neo4j_session, common_job_parameters):
     """
     Delete out-of-date GCP VPC nodes and relationships
@@ -830,6 +852,7 @@ def cleanup_gcp_vpcs(neo4j_session, common_job_parameters):
     run_cleanup_job('gcp_compute_vpc_cleanup.json', neo4j_session, common_job_parameters)
 
 
+@timeit
 def cleanup_gcp_subnets(neo4j_session, common_job_parameters):
     """
     Delete out-of-date GCP VPC subnet nodes and relationships
@@ -840,6 +863,7 @@ def cleanup_gcp_subnets(neo4j_session, common_job_parameters):
     run_cleanup_job('gcp_compute_vpc_subnet_cleanup.json', neo4j_session, common_job_parameters)
 
 
+@timeit
 def cleanup_gcp_firewall_rules(neo4j_session, common_job_parameters):
     """
     Delete out of date GCP firewalls and their relationships
@@ -850,6 +874,7 @@ def cleanup_gcp_firewall_rules(neo4j_session, common_job_parameters):
     run_cleanup_job('gcp_compute_firewall_cleanup.json', neo4j_session, common_job_parameters)
 
 
+@timeit
 def sync_gcp_instances(neo4j_session, compute, project_id, zones, gcp_update_tag, common_job_parameters):
     """
     Get GCP instances using the Compute resource object, ingest to Neo4j, and clean up old data.
@@ -869,6 +894,7 @@ def sync_gcp_instances(neo4j_session, compute, project_id, zones, gcp_update_tag
     cleanup_gcp_instances(neo4j_session, common_job_parameters)
 
 
+@timeit
 def sync_gcp_vpcs(neo4j_session, compute, project_id, gcp_update_tag, common_job_parameters):
     """
     Get GCP VPCs, ingest to Neo4j, and clean up old data.
@@ -885,6 +911,7 @@ def sync_gcp_vpcs(neo4j_session, compute, project_id, gcp_update_tag, common_job
     cleanup_gcp_vpcs(neo4j_session, common_job_parameters)
 
 
+@timeit
 def sync_gcp_subnets(neo4j_session, compute, project_id, regions, gcp_update_tag, common_job_parameters):
     for r in regions:
         subnet_res = get_gcp_subnets(project_id, r, compute)
@@ -893,6 +920,7 @@ def sync_gcp_subnets(neo4j_session, compute, project_id, regions, gcp_update_tag
         cleanup_gcp_subnets(neo4j_session, common_job_parameters)
 
 
+@timeit
 def sync_gcp_firewall_rules(neo4j_session, compute, project_id, gcp_update_tag, common_job_parameters):
     """
     Sync GCP firewalls

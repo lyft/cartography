@@ -37,6 +37,7 @@ setup(
         "marshmallow>=3.0.0rc7",
         "okta>=0.0.4",
         "requests>=2.22.0",
+        "statsd",
     ],
     extras_require={
         ':python_version<"3.7"': [
