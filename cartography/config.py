@@ -31,6 +31,12 @@ class Config:
     :param okta_saml_role_regex: The regex used to map okta groups to AWS roles. Optional.
     :type github_config: str
     :param github_config: Base64 encoded config object for GitHub ingestion. Optional
+    :type statsd_enabled: bool
+    :param statsd_enabled: Whether to collect statsd metrics such as sync execution times.
+    :type statsd_host: str
+    :param statsd_host: If statsd_enabled is True, send metrics to this host. Default=127.0.0.1.
+    :type: statsd_port: int
+    :param statsd_port: If statsd_enabled is True, send metrics to this port on statsd_host. Default=8125.
     """
 
     def __init__(
