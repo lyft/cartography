@@ -12,7 +12,10 @@ logger = logging.getLogger(__name__)
 def evaluate_clause(clause, match):
     # AWS [not]actions and [not]resources can use linux style wildcards *
     # fnmatch does not do a true case insensitive match, so we must convert the inputs
-    return fnmatch.fnmatchcase(match.lower(), clause.lower())
+    clause = clause.replace("*", ".*").replace(".","\\.")
+    result = re.fullmatch(clause, match, flags=re.IGNORECASE)
+    return result is not None
+    #return fnmatch.fnmatchcase(match.lower(), clause.lower())
 
 
 def evaluate_statment_clause_for_permission(statement, clause_name, match, missing_clause_return=False):
