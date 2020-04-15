@@ -6,10 +6,12 @@ from requests import exceptions
 
 from cartography.intel.github.github import sync_github
 from cartography.util import run_cleanup_job
+from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 
 
+@timeit
 def start_github_ingestion(neo4j_session, config):
     """
     If this module is configured, perform ingestion of CRXcavator data. Otherwise warn and exit

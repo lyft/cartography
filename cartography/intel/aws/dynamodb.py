@@ -1,10 +1,12 @@
 import logging
 
 from cartography.util import run_cleanup_job
+from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 
 
+@timeit
 def get_dynamodb_tables(boto3_session, region):
     client = boto3_session.client('dynamodb', region_name=region)
     paginator = client.get_paginator('list_tables')
@@ -15,6 +17,7 @@ def get_dynamodb_tables(boto3_session, region):
     return {'Tables': dynamodb_tables}
 
 
+@timeit
 def load_dynamodb_tables(neo4j_session, data, region, current_aws_account_id, aws_update_tag):
     ingest_table = """
     MERGE (table:DynamoDBTable{id: {Arn}})
@@ -46,6 +49,7 @@ def load_dynamodb_tables(neo4j_session, data, region, current_aws_account_id, aw
         load_gsi(neo4j_session, table, region, current_aws_account_id, aws_update_tag)
 
 
+@timeit
 def load_gsi(neo4j_session, table, region, current_aws_account_id, aws_update_tag):
     ingest_gsi = """
     MERGE (gsi:DynamoDBGlobalSecondaryIndex{id: {Arn}})
@@ -75,10 +79,12 @@ def load_gsi(neo4j_session, table, region, current_aws_account_id, aws_update_ta
         )
 
 
+@timeit
 def cleanup_dynamodb_tables(neo4j_session, common_job_parameters):
     run_cleanup_job('aws_import_dynamodb_tables_cleanup.json', neo4j_session, common_job_parameters)
 
 
+@timeit
 def sync_dynamodb_tables(
     neo4j_session, boto3_session, regions, current_aws_account_id, aws_update_tag,
     common_job_parameters,

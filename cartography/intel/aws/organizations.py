@@ -4,6 +4,7 @@ import boto3
 import botocore.exceptions
 
 from cartography.util import run_cleanup_job
+from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 
@@ -113,6 +114,7 @@ def cleanup(neo4j_session, common_job_parameters):
     run_cleanup_job('aws_account_cleanup.json', neo4j_session, common_job_parameters)
 
 
+@timeit
 def sync(neo4j_session, accounts, aws_update_tag, common_job_parameters):
     load_aws_accounts(neo4j_session, accounts, aws_update_tag, common_job_parameters)
     cleanup(neo4j_session, common_job_parameters)

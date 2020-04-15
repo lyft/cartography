@@ -1,9 +1,12 @@
 # Okta intel module - Organization
 import logging
 
+from cartography.util import timeit
+
 logger = logging.getLogger(__name__)
 
 
+@timeit
 def create_okta_organization(neo4j_session, organization, okta_update_tag):
     """
     Create Okta organization in the graph

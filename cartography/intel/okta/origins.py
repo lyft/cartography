@@ -3,10 +3,12 @@ import json
 import logging
 
 from cartography.intel.okta.utils import create_api_client
+from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 
 
+@timeit
 def _get_trusted_origins(api_client):
     """
     Get trusted origins from Okta
@@ -19,6 +21,7 @@ def _get_trusted_origins(api_client):
     return response.text
 
 
+@timeit
 def transform_trusted_origins(data):
     """
     Transform trusted origin data returned by Okta Server
@@ -51,6 +54,7 @@ def transform_trusted_origins(data):
     return ret_list
 
 
+@timeit
 def _load_trusted_origins(neo4j_session, okta_org_id, trusted_list, okta_update_tag):
     """
     Add trusted origins to the graph
@@ -90,6 +94,7 @@ def _load_trusted_origins(neo4j_session, okta_org_id, trusted_list, okta_update_
     )
 
 
+@timeit
 def sync_trusted_origins(neo4j_session, okta_org_id, okta_update_tag, okta_api_key):
     """
     Sync trusted origins
