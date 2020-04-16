@@ -4,8 +4,6 @@ import logging
 import os
 import sys
 
-from statsd import StatsClient
-
 import cartography.sync
 import cartography.util
 
@@ -268,12 +266,10 @@ class CLI:
         else:
             config.github_config = None
 
-        # Statsd config
         if config.statsd_enabled:
-            cartography.util.stats_client = StatsClient(
-                host=config.statsd_host,
-                port=config.statsd_port,
-                prefix=config.statsd_prefix,
+            logger.debug(
+                f'statsd enabled. Sending metrics to server {config.statsd_host}:{config.statsd_port}. '
+                f'Metrics have prefix "{config.statsd_prefix}".',
             )
 
         # Run cartography
