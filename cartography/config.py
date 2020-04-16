@@ -32,11 +32,11 @@ class Config:
     :type github_config: str
     :param github_config: Base64 encoded config object for GitHub ingestion. Optional
     :type statsd_enabled: bool
-    :param statsd_enabled: Whether to collect statsd metrics such as sync execution times.
+    :param statsd_enabled: Whether to collect statsd metrics such as sync execution times. Optional.
     :type statsd_host: str
-    :param statsd_host: If statsd_enabled is True, send metrics to this host. Default=127.0.0.1.
+    :param statsd_host: If statsd_enabled is True, send metrics to this host. Optional.
     :type: statsd_port: int
-    :param statsd_port: If statsd_enabled is True, send metrics to this port on statsd_host. Default=8125.
+    :param statsd_port: If statsd_enabled is True, send metrics to this port on statsd_host. Optional.
     """
 
     def __init__(
