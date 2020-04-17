@@ -7,7 +7,6 @@ from cartography.util import timeit
 logger = logging.getLogger(__name__)
 
 
-@timeit
 def get_short_id_from_ec2_arn(arn):
     """
     Return the short-form resource ID from an EC2 ARN.
@@ -18,7 +17,6 @@ def get_short_id_from_ec2_arn(arn):
     return arn.split('/')[-1]
 
 
-@timeit
 def get_bucket_name_from_arn(bucket_arn):
     """
     Return the bucket name from an S3 bucket ARN.
@@ -103,7 +101,6 @@ def transform_tags(tag_data, resource_type):
         tag_mapping['resource_id'] = compute_resource_id(tag_mapping, resource_type)
 
 
-@timeit
 def compute_resource_id(tag_mapping, resource_type):
     resource_id = tag_mapping['ResourceARN']
     if 'id_func' in TAG_RESOURCE_TYPE_MAPPINGS[resource_type]:
