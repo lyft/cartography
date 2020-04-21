@@ -86,7 +86,7 @@ def parse_statement_node_group(node_group):
 
 
 def compile_regex(item):
-    if not isinstance(item, re.Pattern):
+    if isinstance(item, str):
         item = item.replace(".", "\\.").replace("*", ".*")
         item = re.compile(item, flags=re.IGNORECASE)
     return item
