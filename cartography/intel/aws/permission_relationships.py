@@ -1,7 +1,7 @@
-import fnmatch
 import logging
 import os
 import re
+
 import yaml
 
 from cartography.graph.statement import GraphStatement
@@ -10,12 +10,12 @@ logger = logging.getLogger(__name__)
 
 
 def evaluate_clause(clause, match):
-    # AWS [not]actions and [not]resources can use linux style wildcards *
-    # fnmatch does not do a true case insensitive match, so we must convert the inputs
-    clause = clause.replace(".","\\.").replace("*", ".*")
-    result = re.fullmatch(clause, match, flags=re.IGNORECASE)
+    # AWS [not]actions and [not]resources can use
+    # variable length wildcards (*)
+    # fixed length wildcards (?)
+
+    result = compile_regex(clause).fullmatch(match)
     return result is not None
-    #return fnmatch.fnmatchcase(match.lower(), clause.lower())
 
 
 def evaluate_statment_clause_for_permission(statement, clause_name, match, missing_clause_return=False):
@@ -30,8 +30,8 @@ def evaluate_statment_clause_for_permission(statement, clause_name, match, missi
 def evaluate_statements_for_permission(statements, permission, resource_arn):
     allowed = False
     for statement in statements:
-        if evaluate_statment_clause_for_permission(statement, "action", permission, missing_clause_return=True):
-            if not evaluate_statment_clause_for_permission(statement, "notaction", permission):
+        if not evaluate_statment_clause_for_permission(statement, "notaction", permission):
+            if evaluate_statment_clause_for_permission(statement, "action", permission, missing_clause_return=True):
                 if evaluate_statment_clause_for_permission(statement, "resource", resource_arn):
                     if not evaluate_statment_clause_for_permission(statement, "notresource", resource_arn):
                         return True
@@ -85,6 +85,22 @@ def parse_statement_node_group(node_group):
     return [n._properties for n in node_group]
 
 
+def compile_regex(item):
+    if not isinstance(item, re.Pattern):
+        item = item.replace(".", "\\.").replace("*", ".*")
+        item = re.compile(item, flags=re.IGNORECASE)
+    return item
+
+
+def compile_statement(statements):
+    properties = ['action', 'resource', 'notresource', 'notaction']
+    for statement in statements:
+        for statement_property in properties:
+            if statement_property in statement:
+                statement[statement_property] = [compile_regex(item) for item in statement[statement_property]]
+    return statements
+
+
 def get_principals_for_account(neo4j_session, account_id):
     get_policy_query = """
     MATCH
@@ -106,7 +122,7 @@ def get_principals_for_account(neo4j_session, account_id):
         statements = r["statements"]
         if principal_arn not in principals:
             principals[principal_arn] = {}
-        principals[principal_arn][policy_id] = parse_statement_node_group(statements)
+        principals[principal_arn][policy_id] = compile_statement(parse_statement_node_group(statements))
     return principals
 
 
