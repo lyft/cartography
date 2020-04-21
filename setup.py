@@ -38,6 +38,8 @@ setup(
         "okta>=0.0.4",
         "requests>=2.22.0",
         "statsd",
+        "multiprocessing-dag>=0.1.0",
+        "multiprocessing-logging>=0.3.0",
     ],
     extras_require={
         ':python_version<"3.7"': [
