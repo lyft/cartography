@@ -28,18 +28,6 @@ def test_load_groups(neo4j_session):
         TEST_UPDATE_TAG,
     )
 
-
-def test_load_policies(neo4j_session):
-    data = tests.data.aws.iam.LIST_POLICIES['Policies']
-
-    cartography.intel.aws.iam.load_policies(
-        neo4j_session,
-        data,
-        TEST_ACCOUNT_ID,
-        TEST_UPDATE_TAG,
-    )
-
-
 def test_load_roles(neo4j_session):
     data = tests.data.aws.iam.LIST_ROLES['Roles']
 
