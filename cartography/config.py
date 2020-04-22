@@ -33,6 +33,12 @@ class Config:
     :param github_config: Base64 encoded config object for GitHub ingestion. Optional
     :type permission_relationship_file: str
     :param permission_relationship_file: File path for the resource permission relationships file. Optional
+    :type statsd_enabled: bool
+    :param statsd_enabled: Whether to collect statsd metrics such as sync execution times. Optional.
+    :type statsd_host: str
+    :param statsd_host: If statsd_enabled is True, send metrics to this host. Optional.
+    :type: statsd_port: int
+    :param statsd_port: If statsd_enabled is True, send metrics to this port on statsd_host. Optional.
     """
 
     def __init__(
@@ -50,6 +56,10 @@ class Config:
         okta_saml_role_regex=None,
         github_config=None,
         permission_relationship_file=None,
+        statsd_enabled=False,
+        statsd_prefix=None,
+        statsd_host=None,
+        statsd_port=None,
     ):
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user
@@ -64,3 +74,7 @@ class Config:
         self.okta_saml_role_regex = okta_saml_role_regex
         self.github_config = github_config
         self.permission_relationship_file = permission_relationship_file
+        self.statsd_enabled = statsd_enabled
+        self.statsd_prefix = statsd_prefix
+        self.statsd_host = statsd_host
+        self.statsd_port = statsd_port

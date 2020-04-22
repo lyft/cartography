@@ -4,12 +4,15 @@ import logging
 from cartography.intel.aws.permission_relationships import evaluate_policies_against_resource
 from cartography.intel.aws.permission_relationships import parse_statement_node_group
 from cartography.util import run_cleanup_job
+from cartography.util import timeit
+
 logger = logging.getLogger(__name__)
 
 # Overview of IAM in AWS
 #
 
 
+@timeit
 def get_group_policies(boto3_session, group_name):
     client = boto3_session.client('iam')
     paginator = client.get_paginator('list_group_policies')
@@ -19,11 +22,13 @@ def get_group_policies(boto3_session, group_name):
     return {'PolicyNames': policy_names}
 
 
+@timeit
 def get_group_policy_info(boto3_session, group_name, policy_name):
     client = boto3_session.client('iam')
     return client.get_group_policy(GroupName=group_name, PolicyName=policy_name)
 
 
+@timeit
 def get_group_membership_data(boto3_session, group_name):
     client = boto3_session.client('iam')
     try:
@@ -35,6 +40,7 @@ def get_group_membership_data(boto3_session, group_name):
         return {}
 
 
+@timeit
 def get_group_policy_data(boto3_session, group_list):
     # Needs to be fixed to return {arn: policy list}
     resource_client = boto3_session.resource('iam')
@@ -47,6 +53,7 @@ def get_group_policy_data(boto3_session, group_list):
     return policies
 
 
+@timeit
 def get_group_managed_policy_data(boto3_session, group_list):
     # Needs to be fixed to return {arn: policy list}
     resource_client = boto3_session.resource('iam')
@@ -59,6 +66,7 @@ def get_group_managed_policy_data(boto3_session, group_list):
     return policies
 
 
+@timeit
 def get_user_policy_data(boto3_session, user_list):
     resource_client = boto3_session.resource('iam')
     policies = {}
@@ -70,6 +78,7 @@ def get_user_policy_data(boto3_session, user_list):
     return policies
 
 
+@timeit
 def get_user_managed_policy_data(boto3_session, user_list):
     resource_client = boto3_session.resource('iam')
     policies = {}
@@ -81,6 +90,7 @@ def get_user_managed_policy_data(boto3_session, user_list):
     return policies
 
 
+@timeit
 def get_role_policy_data(boto3_session, role_list):
     resource_client = boto3_session.resource('iam')
     policies = {}
@@ -92,6 +102,7 @@ def get_role_policy_data(boto3_session, role_list):
     return policies
 
 
+@timeit
 def get_role_managed_policy_data(boto3_session, role_list):
     resource_client = boto3_session.resource('iam')
     policies = {}
@@ -103,6 +114,7 @@ def get_role_managed_policy_data(boto3_session, role_list):
     return policies
 
 
+@timeit
 def get_user_list_data(boto3_session):
     client = boto3_session.client('iam')
 
@@ -113,6 +125,7 @@ def get_user_list_data(boto3_session):
     return {'Users': users}
 
 
+@timeit
 def get_group_list_data(boto3_session):
     client = boto3_session.client('iam')
     paginator = client.get_paginator('list_groups')
@@ -122,6 +135,7 @@ def get_group_list_data(boto3_session):
     return {'Groups': groups}
 
 
+@timeit
 def get_role_list_data(boto3_session):
     client = boto3_session.client('iam')
     paginator = client.get_paginator('list_roles')
@@ -131,12 +145,14 @@ def get_role_list_data(boto3_session):
     return {'Roles': roles}
 
 
+@timeit
 def get_account_access_key_data(boto3_session, username):
     client = boto3_session.client('iam')
     # NOTE we can get away without using a paginator here because users are limited to two access keys
     return client.list_access_keys(UserName=username)
 
 
+@timeit
 def load_users(neo4j_session, users, current_aws_account_id, aws_update_tag):
     ingest_user = """
     MERGE (unode:AWSUser{arn: {ARN}})
@@ -165,6 +181,7 @@ def load_users(neo4j_session, users, current_aws_account_id, aws_update_tag):
         )
 
 
+@timeit
 def load_groups(neo4j_session, groups, current_aws_account_id, aws_update_tag):
     ingest_group = """
     MERGE (gnode:AWSGroup{arn: {ARN}})
@@ -190,6 +207,7 @@ def load_groups(neo4j_session, groups, current_aws_account_id, aws_update_tag):
         )
 
 
+@timeit
 def load_roles(neo4j_session, roles, current_aws_account_id, aws_update_tag):
     ingest_role = """
     MERGE (rnode:AWSRole{arn: {Arn}})
@@ -250,6 +268,7 @@ def load_roles(neo4j_session, roles, current_aws_account_id, aws_update_tag):
                 )
 
 
+@timeit
 def load_group_memberships(neo4j_session, group_memberships, aws_update_tag):
     ingest_membership = """
     MATCH (group:AWSGroup{arn: {GroupArn}})
@@ -275,6 +294,7 @@ def load_group_memberships(neo4j_session, group_memberships, aws_update_tag):
             )
 
 
+@timeit
 def get_policies_for_principal(neo4j_session, principal_arn):
     get_policy_query = """
     MATCH
@@ -293,6 +313,7 @@ def get_policies_for_principal(neo4j_session, principal_arn):
     return policies
 
 
+@timeit
 def sync_assume_role(neo4j_session, current_aws_account_id, aws_update_tag, common_job_parameters):
     logger.debug("Syncing assume role for account '%s'.", current_aws_account_id)
     query_potential_matches = """
@@ -335,6 +356,7 @@ def sync_assume_role(neo4j_session, current_aws_account_id, aws_update_tag, comm
     )
 
 
+@timeit
 def load_user_access_keys(neo4j_session, user_access_keys, aws_update_tag):
     # TODO change the node label to reflect that this is a user access key, not an account access key
     ingest_account_key = """
@@ -392,6 +414,7 @@ def _generate_policy_statements(statements, policy_id):
     return statements
 
 
+@timeit
 def load_policy(neo4j_session, policy_id, policy_name, policy_type, principal_arn, aws_update_tag):
     injest_policy = """
     MERGE (policy:AWSPolicy{id: {PolicyId}})
@@ -416,6 +439,7 @@ def load_policy(neo4j_session, policy_id, policy_name, policy_type, principal_ar
     ).consume()
 
 
+@timeit
 def load_policy_statements(neo4j_session, policy_id, policy_name, statements, aws_update_tag):
     injest_policy_statement = """
         MATCH (policy:AWSPolicy{id: {PolicyId}})
@@ -444,6 +468,7 @@ def load_policy_statements(neo4j_session, policy_id, policy_name, statements, aw
     ).consume()
 
 
+@timeit
 def load_policy_data(neo4j_session, policy_map, aws_update_tag):
     for principal_arn, policy_list in policy_map.items():
         logger.debug(f"Syncing IAM inline policies for principal {principal_arn}")
@@ -455,6 +480,7 @@ def load_policy_data(neo4j_session, policy_map, aws_update_tag):
             load_policy_statements(neo4j_session, policy_id, name, statements, aws_update_tag)
 
 
+@timeit
 def load_managed_policy_data(neo4j_session, policy_map, aws_update_tag):
     for principal_arn, policy_list in policy_map.items():
         for policy in policy_list:
@@ -465,6 +491,7 @@ def load_managed_policy_data(neo4j_session, policy_map, aws_update_tag):
             load_policy_statements(neo4j_session, policy_id, name, statements, aws_update_tag)
 
 
+@timeit
 def sync_users(neo4j_session, boto3_session, current_aws_account_id, aws_update_tag, common_job_parameters):
     logger.debug("Syncing IAM users for account '%s'.", current_aws_account_id)
     data = get_user_list_data(boto3_session)
@@ -479,6 +506,7 @@ def sync_users(neo4j_session, boto3_session, current_aws_account_id, aws_update_
     run_cleanup_job('aws_import_users_cleanup.json', neo4j_session, common_job_parameters)
 
 
+@timeit
 def sync_groups(neo4j_session, boto3_session, current_aws_account_id, aws_update_tag, common_job_parameters):
     logger.debug("Syncing IAM groups for account '%s'.", current_aws_account_id)
     data = get_group_list_data(boto3_session)
@@ -493,6 +521,7 @@ def sync_groups(neo4j_session, boto3_session, current_aws_account_id, aws_update
     run_cleanup_job('aws_import_groups_cleanup.json', neo4j_session, common_job_parameters)
 
 
+@timeit
 def sync_roles(neo4j_session, boto3_session, current_aws_account_id, aws_update_tag, common_job_parameters):
     logger.debug("Syncing IAM roles for account '%s'.", current_aws_account_id)
     data = get_role_list_data(boto3_session)
@@ -508,6 +537,7 @@ def sync_roles(neo4j_session, boto3_session, current_aws_account_id, aws_update_
     run_cleanup_job('aws_import_roles_cleanup.json', neo4j_session, common_job_parameters)
 
 
+@timeit
 def sync_group_memberships(neo4j_session, boto3_session, current_aws_account_id, aws_update_tag, common_job_parameters):
     logger.debug("Syncing IAM group membership for account '%s'.", current_aws_account_id)
     query = "MATCH (group:AWSGroup)<-[:RESOURCE]-(AWSAccount{id: {AWS_ACCOUNT_ID}}) " \
@@ -522,6 +552,7 @@ def sync_group_memberships(neo4j_session, boto3_session, current_aws_account_id,
     )
 
 
+@timeit
 def sync_user_access_keys(neo4j_session, boto3_session, current_aws_account_id, aws_update_tag, common_job_parameters):
     logger.debug("Syncing IAM user access keys for account '%s'.", current_aws_account_id)
     query = "MATCH (user:AWSUser)<-[:RESOURCE]-(AWSAccount{id: {AWS_ACCOUNT_ID}}) return user.name as name"
@@ -536,6 +567,7 @@ def sync_user_access_keys(neo4j_session, boto3_session, current_aws_account_id, 
     )
 
 
+@timeit
 def sync(neo4j_session, boto3_session, account_id, update_tag, common_job_parameters):
     logger.info("Syncing IAM for account '%s'.", account_id)
     # This module only syncs IAM information that is in use.

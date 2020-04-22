@@ -1,7 +1,7 @@
 from setuptools import find_packages
 from setuptools import setup
 
-__version__ = '0.19.2'
+__version__ = '0.20.0'
 
 
 setup(
@@ -39,6 +39,7 @@ setup(
         "okta>=0.0.4",
         "pyyaml>=5.3.1",
         "requests>=2.22.0",
+        "statsd",
     ],
     extras_require={
         ':python_version<"3.7"': [

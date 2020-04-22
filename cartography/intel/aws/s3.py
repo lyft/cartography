@@ -7,16 +7,19 @@ from policyuniverse.policy import Policy
 
 from cartography.util import run_analysis_job
 from cartography.util import run_cleanup_job
+from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 
 
+@timeit
 def get_s3_bucket_list(boto3_session):
     client = boto3_session.client('s3')
     # NOTE no paginator available for this operation
     return client.list_buckets()
 
 
+@timeit
 def get_s3_bucket_details(boto3_session, bucket_data):
     """
     Iterates over all S3 buckets. Yields bucket name (string) and pairs of S3 bucket policies (JSON) and ACLs (JSON)
@@ -28,6 +31,7 @@ def get_s3_bucket_details(boto3_session, bucket_data):
         yield bucket['Name'], acl, policy
 
 
+@timeit
 def get_policy(bucket, client):
     """
     Gets the S3 bucket policy. Returns policy string or None if no policy
@@ -46,6 +50,7 @@ def get_policy(bucket, client):
     return policy
 
 
+@timeit
 def get_acl(bucket, client):
     """
     Gets the S3 bucket ACL. Returns ACL string
@@ -64,6 +69,7 @@ def get_acl(bucket, client):
     return acl
 
 
+@timeit
 def _load_s3_acls(neo4j_session, acls, aws_account_id, update_tag):
     """
     Ingest S3 ACL into neo4j.
@@ -95,6 +101,7 @@ def _load_s3_acls(neo4j_session, acls, aws_account_id, update_tag):
     )
 
 
+@timeit
 def _load_s3_policies(neo4j_session, policies, update_tag):
     """
     Ingest S3 policy results into neo4j.
@@ -127,6 +134,7 @@ def _set_default_values(neo4j_session, aws_account_id):
     )
 
 
+@timeit
 def load_s3_details(neo4j_session, s3_details_iter, aws_account_id, update_tag):
     """
     Create dictionaries for all bucket ACLs and all bucket policies so we can import them in a single query for each
@@ -157,6 +165,7 @@ def load_s3_details(neo4j_session, s3_details_iter, aws_account_id, update_tag):
     _set_default_values(neo4j_session, aws_account_id)
 
 
+@timeit
 def parse_policy(bucket, policy):
     """
     Uses PolicyUniverse to parse S3 policies and returns the internet accessibility results
@@ -211,6 +220,7 @@ def parse_policy(bucket, policy):
         return None
 
 
+@timeit
 def parse_acl(acl, bucket, aws_account_id):
     """ Parses the AWS ACL object and returns a dict of the relevant data """
     # ACL JSON looks like
@@ -281,6 +291,7 @@ def parse_acl(acl, bucket, aws_account_id):
     return acl_list
 
 
+@timeit
 def load_s3_buckets(neo4j_session, data, current_aws_account_id, aws_update_tag):
     ingest_bucket = """
     MERGE (bucket:S3Bucket{id:{BucketName}})
@@ -309,14 +320,17 @@ def load_s3_buckets(neo4j_session, data, current_aws_account_id, aws_update_tag)
         )
 
 
+@timeit
 def cleanup_s3_buckets(neo4j_session, common_job_parameters):
     run_cleanup_job('aws_import_s3_buckets_cleanup.json', neo4j_session, common_job_parameters)
 
 
+@timeit
 def cleanup_s3_bucket_acl_and_policy(neo4j_session, common_job_parameters):
     run_cleanup_job('aws_import_s3_acl_cleanup.json', neo4j_session, common_job_parameters)
 
 
+@timeit
 def sync(neo4j_session, boto3_session, current_aws_account_id, aws_update_tag, common_job_parameters):
     logger.info("Syncing S3 for account '%s'.", current_aws_account_id)
     bucket_data = get_s3_bucket_list(boto3_session)

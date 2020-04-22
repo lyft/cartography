@@ -49,3 +49,5 @@ Time to set up the server that will run Cartography.  Cartography _should_ work 
 	    You can view a full list of Cartography's CLI arguments by running `cartography --help`
 
 		The sync will pull data from your configured accounts and ingest data to Neo4j!  This process might take a long time if your account has a lot of assets.
+
+	1. See our [Operations Guide](ops.md) for tips on running Cartography in production.
