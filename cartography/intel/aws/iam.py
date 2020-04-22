@@ -505,9 +505,11 @@ def sync_users(neo4j_session, boto3_session, current_aws_account_id, aws_update_
 
     run_cleanup_job('aws_import_users_cleanup.json', neo4j_session, common_job_parameters)
 
+
 def sync_user_managed_policies(boto3_session, data, neo4j_session, aws_update_tag):
     managed_policy_data = get_user_managed_policy_data(boto3_session, data['Users'])
     load_managed_policy_data(neo4j_session, managed_policy_data, aws_update_tag)
+
 
 def sync_user_inline_policies(boto3_session, data, neo4j_session, aws_update_tag):
     policy_data = get_user_policy_data(boto3_session, data['Users'])
@@ -526,9 +528,11 @@ def sync_groups(neo4j_session, boto3_session, current_aws_account_id, aws_update
 
     run_cleanup_job('aws_import_groups_cleanup.json', neo4j_session, common_job_parameters)
 
+
 def sync_group_managed_policies(boto3_session, data, neo4j_session, aws_update_tag):
     managed_policy_data = get_group_managed_policy_data(boto3_session, data["Groups"])
     load_managed_policy_data(neo4j_session, managed_policy_data, aws_update_tag)
+
 
 def sync_groups_inline_policies(boto3_session, data, neo4j_session, aws_update_tag):
     policy_data = get_group_policy_data(boto3_session, data["Groups"])
@@ -544,13 +548,15 @@ def sync_roles(neo4j_session, boto3_session, current_aws_account_id, aws_update_
     sync_role_inline_policies(current_aws_account_id, boto3_session, data, neo4j_session, aws_update_tag)
 
     sync_role_managed_policies(current_aws_account_id, boto3_session, data, neo4j_session, aws_update_tag)
-    
+
     run_cleanup_job('aws_import_roles_cleanup.json', neo4j_session, common_job_parameters)
+
 
 def sync_role_managed_policies(current_aws_account_id, boto3_session, data, neo4j_session, aws_update_tag):
     logger.debug("Syncing IAM role managed policies for account '%s'.", current_aws_account_id)
     managed_policy_data = get_role_managed_policy_data(boto3_session, data["Roles"])
     load_managed_policy_data(neo4j_session, managed_policy_data, aws_update_tag)
+
 
 def sync_role_inline_policies(current_aws_account_id, boto3_session, data, neo4j_session, aws_update_tag):
     logger.debug("Syncing IAM role inline policies for account '%s'.", current_aws_account_id)
