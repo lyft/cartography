@@ -18,6 +18,7 @@ If you already know Neo4j and just need to know what are the nodes, attributes, 
   - [Learning more](#learning-more)
   - [Data Enrichment](#data-enrichment)
 - [Extending Cartography with Analysis Jobs](#extending-cartography-with-analysis-jobs)
+- [Mapping AWS Access Permissions](#mapping-aws-access-permissions)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -123,3 +124,6 @@ Cartography adds custom attributes to nodes and relationships to point out secur
 
 ## Extending Cartography with Analysis Jobs
 You can add your own custom attributes and relationships without writing Python code!  Here's [how](../dev/writing-analysis-jobs.md).
+
+## Mapping AWS Access Permissions
+Cartography can map permissions between IAM Principals and resources in the graph. Here's [how](permissions-mapping.md).

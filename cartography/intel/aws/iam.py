@@ -2,14 +2,14 @@ import json
 import logging
 
 from cartography.intel.aws.permission_relationships import evaluate_policies_against_resource
-from cartography.intel.aws.permission_relationships import parse_statement_node_group
+from cartography.intel.aws.permission_relationships import parse_statement_node
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 
 # Overview of IAM in AWS
-#
+# https://aws.amazon.com/iam/
 
 
 @timeit
@@ -42,7 +42,6 @@ def get_group_membership_data(boto3_session, group_name):
 
 @timeit
 def get_group_policy_data(boto3_session, group_list):
-    # Needs to be fixed to return {arn: policy list}
     resource_client = boto3_session.resource('iam')
     policies = {}
     for group in group_list:
@@ -55,7 +54,6 @@ def get_group_policy_data(boto3_session, group_list):
 
 @timeit
 def get_group_managed_policy_data(boto3_session, group_list):
-    # Needs to be fixed to return {arn: policy list}
     resource_client = boto3_session.resource('iam')
     policies = {}
     for group in group_list:
@@ -309,7 +307,7 @@ def get_policies_for_principal(neo4j_session, principal_arn):
         get_policy_query,
         Arn=principal_arn,
     )
-    policies = {r["policy_id"]: parse_statement_node_group(r["statements"]) for r in results}
+    policies = {r["policy_id"]: parse_statement_node(r["statements"]) for r in results}
     return policies
 
 
@@ -390,7 +388,7 @@ def ensure_list(obj):
     return obj
 
 
-def _generate_policy_statements(statements, policy_id):
+def _transform_policy_statements(statements, policy_id):
     count = 1
     if not isinstance(statements, list):
         statements = [statements]
@@ -475,7 +473,9 @@ def load_policy_data(neo4j_session, policy_map, aws_update_tag):
         for policy in policy_list:
             name = policy.name
             policy_id = f"{principal_arn}/inline_policy/{name}"
-            statements = _generate_policy_statements(policy.policy_document["Statement"], policy_id)
+            statements = _transform_policy_statements(
+                policy.policy_document["Statement"], policy_id,
+            )
             load_policy(neo4j_session, policy_id, name, "inline", principal_arn, aws_update_tag)
             load_policy_statements(neo4j_session, policy_id, name, statements, aws_update_tag)
 
@@ -486,7 +486,9 @@ def load_managed_policy_data(neo4j_session, policy_map, aws_update_tag):
         for policy in policy_list:
             name = policy.policy_name
             policy_id = policy.arn
-            statements = _generate_policy_statements(policy.default_version.document["Statement"], policy_id)
+            statements = _transform_policy_statements(
+                policy.default_version.document["Statement"], policy_id,
+            )
             load_policy(neo4j_session, policy_id, name, "managed", principal_arn, aws_update_tag)
             load_policy_statements(neo4j_session, policy_id, name, statements, aws_update_tag)
 

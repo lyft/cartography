@@ -64,7 +64,7 @@ def _sync_multiple_accounts(neo4j_session, accounts, sync_tag, common_job_parame
     for profile_name, account_id in accounts.items():
         logger.info("Syncing AWS account with ID '%s' using configured profile '%s'.", account_id, profile_name)
         common_job_parameters["AWS_ID"] = account_id
-        boto3_session = boto3.Session()
+        boto3_session = boto3.Session(profile_name=profile_name)
 
         _sync_one_account(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters)
 
@@ -72,8 +72,8 @@ def _sync_multiple_accounts(neo4j_session, accounts, sync_tag, common_job_parame
 
     # There may be orphan Principals which point outside of known AWS accounts. This job cleans
     # up those nodes after all AWS accounts have been synced.
-
     run_cleanup_job('aws_post_ingestion_principals_cleanup.json', neo4j_session, common_job_parameters)
+
     # There may be orphan DNS entries that point outside of known AWS zones. This job cleans
     # up those entries after all AWS accounts have been synced.
     run_cleanup_job('aws_post_ingestion_dns_cleanup.json', neo4j_session, common_job_parameters)

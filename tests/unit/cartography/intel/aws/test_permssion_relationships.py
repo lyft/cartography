@@ -15,7 +15,7 @@ GET_OBJECT_LOWERCASE_RESOURCE_WILDCARD = [
 ]
 
 
-def test_admin_statments():
+def test_admin_statements():
     statement = [{
         "action": [
             "*",
@@ -405,7 +405,7 @@ def test_full_multiple_principal():
         },
     }
     assert 1 == len(
-        permission_relationships.evaluate_relationships(
+        permission_relationships.calculate_permission_relationships(
             principals, ["arn:aws:s3:::testbucket"], ["S3:GetObject"],
         ),
     )
