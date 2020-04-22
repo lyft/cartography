@@ -8,6 +8,8 @@ import cartography.sync
 import cartography.intel.create_indexes
 from cartography.intel.github import start_github_ingestion
 from cartography.intel.aws import start_aws_ingestion
+from cartography.intel.gcp import start_gcp_ingestion
+from cartography.intel.gsuite import start_gsuite_ingestion
 
 
 
@@ -93,23 +95,23 @@ def build_pipeline(config):
     task_gcp = build_cartography_sync_task(
         config,
         'gcp',
-        cartography.intel.gcp.start_gcp_ingestion,
+        start_gcp_ingestion,
     )
     pipeline_multi.add(task_gcp)
 
-    task_gsuite = build_cartography_sync_task(
-        config,
-        'gsuite',
-        cartography.intel.gsuite.start_gsuite_ingestion,
-    )
-    pipeline_multi.add(task_gsuite)
+    # task_gsuite = build_cartography_sync_task(
+    #     config,
+    #     'gsuite',
+    #     start_gsuite_ingestion,
+    # )
+    # pipeline_multi.add(task_gsuite)
 
-    task_github = build_cartography_sync_task(
-        config,
-        'github',
-        start_github_ingestion,
-    )
-    pipeline_multi.add(task_github)
+    # task_github = build_cartography_sync_task(
+    #     config,
+    #     'github',
+    #     start_github_ingestion,
+    # )
+    # pipeline_multi.add(task_github)
 
     pipeline.add(pipeline_multi, upstreams=[pipeline_start])
 
