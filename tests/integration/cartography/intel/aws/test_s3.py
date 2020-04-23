@@ -12,7 +12,7 @@ def test_load_s3_buckets(neo4j_session, *args):
     Ensure that expected buckets get loaded with their key fields.
     """
     data = tests.data.aws.s3.LIST_BUCKETS
-    cartography.intel.aws.s3.load_s3_buckets(neo4j_session, data, TEST_ACCOUNT_ID, TEST_UPDATE_TAG)
+    cartography.intel.aws.s3.load_s3_buckets(neo4j_session, data, TEST_REGION, TEST_ACCOUNT_ID, TEST_UPDATE_TAG)
 
     expected_nodes = {
         (
