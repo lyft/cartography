@@ -35,8 +35,9 @@ def get_ec2_regions(boto3_session):
             else:
                 logger.warning(
                     (
-                    'Skipping region %s because it needs to be opted-in before we can access it. Please see the '
-                    'instructions at https://docs.aws.amazon.com/general/latest/gr/rande-manage.html on how to do this.'
+                        'Skipping region %s because it needs to be opted-in before we can access it. Please see the '
+                        'instructions at https://docs.aws.amazon.com/general/latest/gr/rande-manage.html on how to do '
+                        'this.'
                     ),
                     r['RegionName'],
                 )
