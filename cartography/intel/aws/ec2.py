@@ -22,9 +22,25 @@ def _get_botocore_config():
 
 @timeit
 def get_ec2_regions(boto3_session):
+    """
+    Only return opted-in regions.
+    See https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html
+    :return: List of AWS regions that do not require to be opted-in or we are already opted-in to them.
+    """
     client = boto3_session.client('ec2')
-    result = client.describe_regions()
-    return [r['RegionName'] for r in result['Regions']]
+    response = client.describe_regions()['Regions']
+    active_regions = []
+    for r in response:
+        if 'OptInStatus' in r:
+            if r['OptInStatus'] in ['opt-in-not-required', 'opted-in']:
+                active_regions.append(r['RegionName'])
+            else:
+                # Region is not opted-in, so we won't sync it.
+                pass
+        else:
+            # If OptInStatus is not defined on the object, assume it is ok to sync.
+            active_regions.append(r['RegionName'])
+    return active_regions
 
 
 @timeit

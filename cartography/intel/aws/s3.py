@@ -13,18 +13,18 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
-def get_s3_bucket_list(boto3_session):
-    client = boto3_session.client('s3')
+def get_s3_bucket_list(boto3_session, region):
+    client = boto3_session.client('s3', region_name=region)
     # NOTE no paginator available for this operation
     return client.list_buckets()
 
 
 @timeit
-def get_s3_bucket_details(boto3_session, bucket_data):
+def get_s3_bucket_details(boto3_session, bucket_data, region):
     """
     Iterates over all S3 buckets. Yields bucket name (string) and pairs of S3 bucket policies (JSON) and ACLs (JSON)
     """
-    client = boto3_session.client('s3')
+    client = boto3_session.client('s3', region_name=region)
     for bucket in bucket_data['Buckets']:
         acl = get_acl(bucket, client)
         policy = get_policy(bucket, client)
@@ -292,11 +292,11 @@ def parse_acl(acl, bucket, aws_account_id):
 
 
 @timeit
-def load_s3_buckets(neo4j_session, data, current_aws_account_id, aws_update_tag):
+def load_s3_buckets(neo4j_session, data, region, current_aws_account_id, aws_update_tag):
     ingest_bucket = """
     MERGE (bucket:S3Bucket{id:{BucketName}})
     ON CREATE SET bucket.firstseen = timestamp(), bucket.creationdate = {CreationDate}
-    SET bucket.name = {BucketName}, bucket.lastupdated = {aws_update_tag}
+    SET bucket.name = {BucketName}, bucket.lastupdated = {aws_update_tag}, bucket.region = {Region}
     WITH bucket
     MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
     MERGE (owner)-[r:RESOURCE]->(bucket)
@@ -315,6 +315,7 @@ def load_s3_buckets(neo4j_session, data, current_aws_account_id, aws_update_tag)
             CreationDate=str(bucket["CreationDate"]),
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag,
+            Region=region
         )
 
 
@@ -329,13 +330,14 @@ def cleanup_s3_bucket_acl_and_policy(neo4j_session, common_job_parameters):
 
 
 @timeit
-def sync(neo4j_session, boto3_session, current_aws_account_id, aws_update_tag, common_job_parameters):
-    logger.info("Syncing S3 for account '%s'.", current_aws_account_id)
-    bucket_data = get_s3_bucket_list(boto3_session)
+def sync(neo4j_session, boto3_session, regions, current_aws_account_id, aws_update_tag, common_job_parameters):
+    for region in regions:
+        logger.info("Syncing S3 for account '%s' in region '%s'.", current_aws_account_id, region)
+        bucket_data = get_s3_bucket_list(boto3_session, region)
 
-    load_s3_buckets(neo4j_session, bucket_data, current_aws_account_id, aws_update_tag)
-    cleanup_s3_buckets(neo4j_session, common_job_parameters)
+        load_s3_buckets(neo4j_session, bucket_data, region, current_aws_account_id, aws_update_tag)
+        cleanup_s3_buckets(neo4j_session, common_job_parameters)
 
-    acl_and_policy_data_iter = get_s3_bucket_details(boto3_session, bucket_data)
-    load_s3_details(neo4j_session, acl_and_policy_data_iter, current_aws_account_id, aws_update_tag)
-    cleanup_s3_bucket_acl_and_policy(neo4j_session, common_job_parameters)
+        acl_and_policy_data_iter = get_s3_bucket_details(boto3_session, bucket_data, region)
+        load_s3_details(neo4j_session, acl_and_policy_data_iter, current_aws_account_id, aws_update_tag)
+        cleanup_s3_bucket_acl_and_policy(neo4j_session, common_job_parameters)
