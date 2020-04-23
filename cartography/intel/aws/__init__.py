@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 def _sync_one_account(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters):
-    #iam.sync(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters)
+    iam.sync(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters)
 
     try:
         regions = ec2.get_ec2_regions(boto3_session)

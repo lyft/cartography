@@ -315,7 +315,7 @@ def load_s3_buckets(neo4j_session, data, region, current_aws_account_id, aws_upd
             CreationDate=str(bucket["CreationDate"]),
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag,
-            Region=region
+            Region=region,
         )
 
 
