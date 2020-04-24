@@ -1,4 +1,5 @@
-# Cartography
+![Cartography](docs/images/logo-horizontal.png)
+
 Cartography is a Python tool that consolidates infrastructure assets and the relationships between them in an intuitive graph view powered by a [Neo4j](https://www.neo4j.com) database.
 
 ![Visualization of RDS nodes and AWS nodes](docs/images/accountsandrds.png)
