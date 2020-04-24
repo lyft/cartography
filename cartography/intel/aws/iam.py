@@ -1,7 +1,7 @@
 import json
 import logging
 
-from botocore.errorfactory import NoSuchEntityException
+from botocore.exceptions import ClientError
 
 from cartography.intel.aws.permission_relationships import evaluate_policies_against_resource
 from cartography.intel.aws.permission_relationships import parse_statement_node
@@ -313,7 +313,9 @@ def get_policies_for_principal(neo4j_session, principal_arn):
 
 
 @timeit
-def sync_assume_role(neo4j_session, current_aws_account_id, aws_update_tag, common_job_parameters):
+def sync_assumerole_relationships(neo4j_session, current_aws_account_id, aws_update_tag, common_job_parameters):
+    # Must be called after load_role
+    # Computes and syncs the STS_ASSUME_ROLE allow relationship
     logger.debug("Syncing assume role for account '%s'.", current_aws_account_id)
     query_potential_matches = """
     MATCH (:AWSAccount{id:{AccountId}})-[:RESOURCE]->(target:AWSRole)-[:TRUSTS_AWS_PRINCIPAL]->(source:AWSPrincipal)
@@ -480,9 +482,9 @@ def load_policy_data(neo4j_session, policy_map, aws_update_tag):
                 )
                 load_policy(neo4j_session, policy_id, name, "inline", principal_arn, aws_update_tag)
                 load_policy_statements(neo4j_session, policy_id, name, statements, aws_update_tag)
-            except NoSuchEntityException:
+            except ClientError:
                 # Avoid crashing the sync
-                logger.warning("inline policy {name} failed with NoSuchEntityException; skipping.")
+                logger.warning("inline policy {name} failed with ClientError; skipping.")
                 continue
 
 
@@ -498,9 +500,9 @@ def load_managed_policy_data(neo4j_session, policy_map, aws_update_tag):
                 )
                 load_policy(neo4j_session, policy_id, name, "managed", principal_arn, aws_update_tag)
                 load_policy_statements(neo4j_session, policy_id, name, statements, aws_update_tag)
-            except NoSuchEntityException:
+            except ClientError:
                 # Avoid crashing the sync
-                logger.warning("managed policy {name} failed with NoSuchEntityException; skipping.")
+                logger.warning("managed policy {name} failed with ClientError; skipping.")
                 continue
 
 
@@ -614,6 +616,6 @@ def sync(neo4j_session, boto3_session, account_id, update_tag, common_job_parame
     sync_groups(neo4j_session, boto3_session, account_id, update_tag, common_job_parameters)
     sync_roles(neo4j_session, boto3_session, account_id, update_tag, common_job_parameters)
     sync_group_memberships(neo4j_session, boto3_session, account_id, update_tag, common_job_parameters)
-    sync_assume_role(neo4j_session, account_id, update_tag, common_job_parameters)
+    sync_assumerole_relationships(neo4j_session, account_id, update_tag, common_job_parameters)
     sync_user_access_keys(neo4j_session, boto3_session, account_id, update_tag, common_job_parameters)
     run_cleanup_job('aws_import_principals_cleanup.json', neo4j_session, common_job_parameters)
