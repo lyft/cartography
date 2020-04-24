@@ -1,11 +1,12 @@
 import json
 import logging
 
+from botocore.errorfactory import NoSuchEntityException
+
 from cartography.intel.aws.permission_relationships import evaluate_policies_against_resource
 from cartography.intel.aws.permission_relationships import parse_statement_node
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
-
 logger = logging.getLogger(__name__)
 
 # Overview of IAM in AWS
@@ -473,11 +474,16 @@ def load_policy_data(neo4j_session, policy_map, aws_update_tag):
         for policy in policy_list:
             name = policy.name
             policy_id = f"{principal_arn}/inline_policy/{name}"
-            statements = _transform_policy_statements(
-                policy.policy_document["Statement"], policy_id,
-            )
-            load_policy(neo4j_session, policy_id, name, "inline", principal_arn, aws_update_tag)
-            load_policy_statements(neo4j_session, policy_id, name, statements, aws_update_tag)
+            try:
+                statements = _transform_policy_statements(
+                    policy.policy_document["Statement"], policy_id,
+                )
+                load_policy(neo4j_session, policy_id, name, "inline", principal_arn, aws_update_tag)
+                load_policy_statements(neo4j_session, policy_id, name, statements, aws_update_tag)
+            except NoSuchEntityException:
+                # Avoid crashing the sync
+                logger.warning("inline policy {name} failed with NoSuchEntityException; skipping.")
+                continue
 
 
 @timeit
@@ -486,11 +492,16 @@ def load_managed_policy_data(neo4j_session, policy_map, aws_update_tag):
         for policy in policy_list:
             name = policy.policy_name
             policy_id = policy.arn
-            statements = _transform_policy_statements(
-                policy.default_version.document["Statement"], policy_id,
-            )
-            load_policy(neo4j_session, policy_id, name, "managed", principal_arn, aws_update_tag)
-            load_policy_statements(neo4j_session, policy_id, name, statements, aws_update_tag)
+            try:
+                statements = _transform_policy_statements(
+                    policy.default_version.document["Statement"], policy_id,
+                )
+                load_policy(neo4j_session, policy_id, name, "managed", principal_arn, aws_update_tag)
+                load_policy_statements(neo4j_session, policy_id, name, statements, aws_update_tag)
+            except NoSuchEntityException:
+                # Avoid crashing the sync
+                logger.warning("managed policy {name} failed with NoSuchEntityException; skipping.")
+                continue
 
 
 @timeit
