@@ -220,7 +220,7 @@ def get_principals_for_account(neo4j_session, account_id):
 
 def get_resource_arns(neo4j_session, account_id, node_label):
     get_resource_query = Template("""
-    MATCH (acc:AWSAccount{id:{AccountId}})-[:RESOURCE]->(resource:{$node_label})
+    MATCH (acc:AWSAccount{id:{AccountId}})-[:RESOURCE]->(resource:$node_label)
     return resource.arn as arn
     """)
     get_resource_query = get_resource_query.safe_substitute(node_label=node_label)
