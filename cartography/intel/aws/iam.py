@@ -1,8 +1,6 @@
 import json
 import logging
 
-from botocore.exceptions import ClientError
-
 from cartography.intel.aws.permission_relationships import evaluate_policies_against_resource
 from cartography.intel.aws.permission_relationships import parse_statement_node
 from cartography.util import run_cleanup_job
@@ -49,7 +47,7 @@ def get_group_policy_data(boto3_session, group_list):
         name = group["GroupName"]
         arn = group["Arn"]
         resource_group = resource_client.Group(name)
-        policies[arn] = list(resource_group.policies.all())
+        policies[arn] = policies[arn] = {p.name: p.policy_document["Statement"] for p in resource_group.policies.all()}
     return policies
 
 
@@ -61,7 +59,7 @@ def get_group_managed_policy_data(boto3_session, group_list):
         name = group["GroupName"]
         arn = group["Arn"]
         resource_group = resource_client.Group(name)
-        policies[arn] = list(resource_group.attached_policies.all())
+        policies[arn] = {p.policy_name: p.default_version.document["Statement"] for p in resource_group.attached_policies.all()}
     return policies
 
 
@@ -73,7 +71,7 @@ def get_user_policy_data(boto3_session, user_list):
         name = user["UserName"]
         arn = user["Arn"]
         resource_user = resource_client.User(name)
-        policies[arn] = list(resource_user.policies.all())
+        policies[arn] = {p.name: p.policy_document["Statement"] for p in resource_user.policies.all()}
     return policies
 
 
@@ -85,7 +83,7 @@ def get_user_managed_policy_data(boto3_session, user_list):
         name = user["UserName"]
         arn = user["Arn"]
         resource_user = resource_client.User(name)
-        policies[arn] = list(resource_user.attached_policies.all())
+        policies[arn] = {p.policy_name: p.default_version.document["Statement"] for p in resource_user.attached_policies.all()}
     return policies
 
 
@@ -97,7 +95,7 @@ def get_role_policy_data(boto3_session, role_list):
         name = role["RoleName"]
         arn = role["Arn"]
         resource_role = resource_client.Role(name)
-        policies[arn] = list(resource_role.policies.all())
+        policies[arn] = {p.name: p.policy_document["Statement"] for p in resource_role.policies.all()}
     return policies
 
 
@@ -109,7 +107,7 @@ def get_role_managed_policy_data(boto3_session, role_list):
         name = role["RoleName"]
         arn = role["Arn"]
         resource_role = resource_client.Role(name)
-        policies[arn] = list(resource_role.attached_policies.all())
+        policies[arn] = {p.policy_name: p.default_version.document["Statement"] for p in resource_role.attached_policies.all()}
     return policies
 
 
@@ -415,6 +413,16 @@ def _transform_policy_statements(statements, policy_id):
     return statements
 
 
+def transform_policy_data(policy_map):
+    for principal_arn, policy_list in policy_map.items():
+        logger.debug(f"Syncing IAM inline policies for principal {principal_arn}")
+        for policy_name, statements in policy_list.items():
+            policy_id = f"{principal_arn}/inline_policy/{policy_name}"
+            statements = _transform_policy_statements(
+                statements, policy_id,
+            )
+
+
 @timeit
 def load_policy(neo4j_session, policy_id, policy_name, policy_type, principal_arn, aws_update_tag):
     injest_policy = """
@@ -473,37 +481,19 @@ def load_policy_statements(neo4j_session, policy_id, policy_name, statements, aw
 def load_policy_data(neo4j_session, policy_map, aws_update_tag):
     for principal_arn, policy_list in policy_map.items():
         logger.debug(f"Syncing IAM inline policies for principal {principal_arn}")
-        for policy in policy_list:
-            name = policy.name
-            policy_id = f"{principal_arn}/inline_policy/{name}"
-            try:
-                statements = _transform_policy_statements(
-                    policy.policy_document["Statement"], policy_id,
-                )
-                load_policy(neo4j_session, policy_id, name, "inline", principal_arn, aws_update_tag)
-                load_policy_statements(neo4j_session, policy_id, name, statements, aws_update_tag)
-            except ClientError:
-                # Avoid crashing the sync
-                logger.warning("inline policy {name} failed with ClientError; skipping.")
-                continue
+        for policy_name, statements in policy_list.items():
+            policy_id = f"{principal_arn}/inline_policy/{policy_name}"
+            load_policy(neo4j_session, policy_id, policy_name, "inline", principal_arn, aws_update_tag)
+            load_policy_statements(neo4j_session, policy_id, policy_name, statements, aws_update_tag)
 
 
 @timeit
 def load_managed_policy_data(neo4j_session, policy_map, aws_update_tag):
     for principal_arn, policy_list in policy_map.items():
-        for policy in policy_list:
-            name = policy.policy_name
-            policy_id = policy.arn
-            try:
-                statements = _transform_policy_statements(
-                    policy.default_version.document["Statement"], policy_id,
-                )
-                load_policy(neo4j_session, policy_id, name, "managed", principal_arn, aws_update_tag)
-                load_policy_statements(neo4j_session, policy_id, name, statements, aws_update_tag)
-            except ClientError:
-                # Avoid crashing the sync
-                logger.warning("managed policy {name} failed with ClientError; skipping.")
-                continue
+        for policy_name, statements in policy_list.items():
+            policy_id = f"{principal_arn}/inline_policy/{policy_name}"
+            load_policy(neo4j_session, policy_id, policy_name, "managed", principal_arn, aws_update_tag)
+            load_policy_statements(neo4j_session, policy_id, policy_name, statements, aws_update_tag)
 
 
 @timeit
@@ -521,11 +511,13 @@ def sync_users(neo4j_session, boto3_session, current_aws_account_id, aws_update_
 
 def sync_user_managed_policies(boto3_session, data, neo4j_session, aws_update_tag):
     managed_policy_data = get_user_managed_policy_data(boto3_session, data['Users'])
+    transform_policy_data(managed_policy_data)
     load_managed_policy_data(neo4j_session, managed_policy_data, aws_update_tag)
 
 
 def sync_user_inline_policies(boto3_session, data, neo4j_session, aws_update_tag):
     policy_data = get_user_policy_data(boto3_session, data['Users'])
+    transform_policy_data(policy_data)
     load_policy_data(neo4j_session, policy_data, aws_update_tag)
 
 
@@ -544,11 +536,13 @@ def sync_groups(neo4j_session, boto3_session, current_aws_account_id, aws_update
 
 def sync_group_managed_policies(boto3_session, data, neo4j_session, aws_update_tag):
     managed_policy_data = get_group_managed_policy_data(boto3_session, data["Groups"])
+    transform_policy_data(managed_policy_data)
     load_managed_policy_data(neo4j_session, managed_policy_data, aws_update_tag)
 
 
 def sync_groups_inline_policies(boto3_session, data, neo4j_session, aws_update_tag):
     policy_data = get_group_policy_data(boto3_session, data["Groups"])
+    transform_policy_data(policy_data)
     load_policy_data(neo4j_session, policy_data, aws_update_tag)
 
 
@@ -568,12 +562,14 @@ def sync_roles(neo4j_session, boto3_session, current_aws_account_id, aws_update_
 def sync_role_managed_policies(current_aws_account_id, boto3_session, data, neo4j_session, aws_update_tag):
     logger.debug("Syncing IAM role managed policies for account '%s'.", current_aws_account_id)
     managed_policy_data = get_role_managed_policy_data(boto3_session, data["Roles"])
+    transform_policy_data(managed_policy_data)
     load_managed_policy_data(neo4j_session, managed_policy_data, aws_update_tag)
 
 
 def sync_role_inline_policies(current_aws_account_id, boto3_session, data, neo4j_session, aws_update_tag):
     logger.debug("Syncing IAM role inline policies for account '%s'.", current_aws_account_id)
     inline_policy_data = get_role_policy_data(boto3_session, data["Roles"])
+    transform_policy_data(inline_policy_data)
     load_policy_data(neo4j_session, inline_policy_data, aws_update_tag)
 
 
