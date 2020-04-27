@@ -42,7 +42,7 @@ def evaluate_statement_clause_for_permission(statement, clause_name, match, miss
         (default: {False})
 
     Returns:
-        [type] -- If the specific clause_name grants access to the item
+        [type] -- If the any of the specificed clause_names matches the match
     """
     if clause_name not in statement:
         return missing_clause_return
