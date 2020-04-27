@@ -59,7 +59,10 @@ def get_group_managed_policy_data(boto3_session, group_list):
         name = group["GroupName"]
         arn = group["Arn"]
         resource_group = resource_client.Group(name)
-        policies[arn] = {p.policy_name: p.default_version.document["Statement"] for p in resource_group.attached_policies.all()}
+        policies[arn] = {
+            p.policy_name: p.default_version.document["Statement"]
+            for p in resource_group.attached_policies.all()
+        }
     return policies
 
 
@@ -83,7 +86,10 @@ def get_user_managed_policy_data(boto3_session, user_list):
         name = user["UserName"]
         arn = user["Arn"]
         resource_user = resource_client.User(name)
-        policies[arn] = {p.policy_name: p.default_version.document["Statement"] for p in resource_user.attached_policies.all()}
+        policies[arn] = {
+            p.policy_name: p.default_version.document["Statement"]
+            for p in resource_user.attached_policies.all()
+        }
     return policies
 
 
@@ -107,7 +113,10 @@ def get_role_managed_policy_data(boto3_session, role_list):
         name = role["RoleName"]
         arn = role["Arn"]
         resource_role = resource_client.Role(name)
-        policies[arn] = {p.policy_name: p.default_version.document["Statement"] for p in resource_role.attached_policies.all()}
+        policies[arn] = {
+            p.policy_name: p.default_version.document["Statement"]
+            for p in resource_role.attached_policies.all()
+        }
     return policies
 
 

@@ -114,10 +114,10 @@ def evaluate_policies_against_resource(policies, resource_arn, permissions):
         permissions {[str]} -- The permissions to evaluate
 
     Returns:
-        [type] -- [description]
+        [bool] -- True if the policies allow the permission against the resource
     """
     granted = False
-    for policy_id, statements in policies.items():
+    for _, statements in policies.items():
         allowed, explicit_deny = evaluate_policy_for_permission(statements, permissions, resource_arn)
 
         if explicit_deny:
@@ -282,11 +282,25 @@ def parse_permission_relationship_file(file):
         return []
 
 
+def is_valid_rpr(rpr):
+    required_fields = ["permissions", "relationship_name", "target_label"]
+    for field in required_fields:
+        if field not in rpr:
+            return False
+
+    return True
+
+
 def sync(neo4j_session, account_id, update_tag, common_job_parameters):
     logger.info("Syncing Permission Relationships for account '%s'.", account_id)
     principals = get_principals_for_account(neo4j_session, account_id)
     relationship_mapping = parse_permission_relationship_file(common_job_parameters["permission_relationship_file"])
     for rpr in relationship_mapping:
+        if not is_valid_rpr(rpr):
+            raise ValueError("""
+        Resource permission relationship is missing fields.
+        Required fields: permissions, relationship_name, target_label"
+        """)
         permissions = rpr["permissions"]
         relationship_name = rpr["relationship_name"]
         target_label = rpr["target_label"]
