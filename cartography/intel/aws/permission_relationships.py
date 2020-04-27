@@ -105,7 +105,7 @@ def evaluate_policy_for_permission(statements, permissions, resource_arn):
     return False, False
 
 
-def evaluate_policies_against_resource(policies, resource_arn, permissions):
+def principal_allowed_on_resource(policies, resource_arn, permissions):
     """ Evaluates an enture set of policies for a specific resource for a specific permission
 
     Arguments:
@@ -143,7 +143,7 @@ def calculate_permission_relationships(principals, resource_arns, permission):
     allowed_mappings = []
     for resource_arn in resource_arns:
         for principal_arn, policies in principals.items():
-            if evaluate_policies_against_resource(policies, resource_arn, permission):
+            if principal_allowed_on_resource(policies, resource_arn, permission):
                 allowed_mappings.append({"principal_arn": principal_arn, "resource_arn": resource_arn})
     return allowed_mappings
 

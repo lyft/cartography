@@ -302,7 +302,7 @@ def test_full_policy_explicit_deny():
             "effect": "Deny",
         }],
     }
-    assert not permission_relationships.evaluate_policies_against_resource(
+    assert not permission_relationships.principal_allowed_on_resource(
         policies, "arn:aws:s3:::testbucket", ["S3:GetObject"],
     )
 
@@ -328,7 +328,7 @@ def test_full_policy_no_explicit_allow():
             "effect": "Allow",
         }],
     }
-    assert not permission_relationships.evaluate_policies_against_resource(
+    assert not permission_relationships.principal_allowed_on_resource(
         policies, "arn:aws:s3:::testbucket", ["S3:GetObject"],
     )
 
@@ -355,7 +355,7 @@ def test_full_policy_explicit_allow():
             "effect": "Allow",
         }],
     }
-    assert permission_relationships.evaluate_policies_against_resource(
+    assert permission_relationships.principal_allowed_on_resource(
         policies, "arn:aws:s3:::testbucket", ["S3:GetObject"],
     )
 
