@@ -27,5 +27,5 @@
   }
 
 ],
-  "name": "cleanup AWSPrincipal"
+  "name": "cleanup AWSPrincipals, AWSPolicies and AWSPolicyStatements"
 }
