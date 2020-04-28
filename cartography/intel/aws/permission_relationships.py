@@ -122,7 +122,8 @@ def evaluate_policy_for_permission(statements, permissions, resource_arn):
 
 
 def principal_allowed_on_resource(policies, resource_arn, permissions):
-    """ Evaluates an enture set of policies for a specific resource for a specific permission
+    """ Evaluates an enture set of policies for a specific resource for a specific permission.
+
 
     Arguments:
         policies {[dict]} -- The policys to evaluate
@@ -147,6 +148,13 @@ def principal_allowed_on_resource(policies, resource_arn, permissions):
 
 def calculate_permission_relationships(principals, resource_arns, permission):
     """ Evaluate principals permissions to resources
+    This currently only evaluates policies on IAM principals. It does not take into account
+    Resource Policies - Policies attached to the resource instead of the IAM principal
+    Permission Boundaries - Boundaries for an IAM principal
+    Session Policies - Special policies for Federated users
+
+    AWS Policy evaluation reference
+    https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic.html
 
     Arguments:
         principals {[dict]} -- The principals to check permission for
