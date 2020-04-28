@@ -28,36 +28,51 @@ def evaluate_clause(clause, match):
     return result is not None
 
 
-def evaluate_statement_clause_for_permission(statement, clause_name, match, missing_clause_return=False):
-    """ Evaluates a specific clause (action, resource ect) against a match (resource arn or action name)
-
-    Arguments:
-        statement {dict} -- The AWS policy statement
-        clause_name {str} -- The Clause in the statement to evaluate.
-            Can be one of action, notaction, resource, notresource
-        match {str, re.Pattern} -- The item to match against
-
-    Keyword Arguments:
-        missing_clause_return {bool} -- If the statement doesn't contain the clause_name this is the return type
-        (default: {False})
-
-    Returns:
-        [type] -- If the any of the specificed clause_names matches the match
-    """
-    if clause_name not in statement:
-        return missing_clause_return
-    for clause in statement[clause_name]:
-        if evaluate_clause(clause, match):
+def evaluate_notaction_for_permission(statement, permission):
+    """Return whether an IAM 'notaction' clause in the given statement applies to the item"""
+    if 'notaction' not in statement:
+        return False
+    for clause in statement['notaction']:
+        if evaluate_clause(clause, permission):
             return True
     return False
 
+
+def evaluate_action_for_permission(statement, permission):
+    """Return whether an IAM 'action' clause in the given statement applies to the permission"""
+    if 'action' not in statement:
+        return True
+    for clause in statement['action']:
+        if evaluate_clause(clause, permission):
+            return True
+    return False
+
+
+def evaluate_resource_for_permission(statement, resource_arn):
+    """Return whether the given IAM 'resource' statement applies to the resource_arn"""
+    if 'resource' not in statement:
+        return False
+    for clause in statement['resource']:
+        if evaluate_clause(clause, resource_arn):
+            return True
+    return False
+
+
+def evaluate_notresource_for_permission(statement, resource_arn):
+    """Return whether an IAM 'notresource' clause in the given statement applies to the resource_arn"""
+    if 'notresource' not in statement:
+        return False
+    for clause in statement['notresource']:
+        if evaluate_clause(clause, resource_arn):
+            return True
+    return False
 
 def evaluate_statements_for_permission(statements, permission, resource_arn):
     """ Evaluate an entire statement for a specific permission against a resource
 
     Arguments:
         statements {[dict]} -- The list of statements to be evaluated
-        permission {str} -- The permission to evaluate
+        permission {str} -- The permission to evaluate. ex "s3:GetObject"
         resource_arn {[type]} -- The resource to test the permission against
 
     Returns:
@@ -65,10 +80,10 @@ def evaluate_statements_for_permission(statements, permission, resource_arn):
     """
     allowed = False
     for statement in statements:
-        if not evaluate_statement_clause_for_permission(statement, "notaction", permission):
-            if evaluate_statement_clause_for_permission(statement, "action", permission, missing_clause_return=True):
-                if evaluate_statement_clause_for_permission(statement, "resource", resource_arn):
-                    if not evaluate_statement_clause_for_permission(statement, "notresource", resource_arn):
+        if not evaluate_notaction_for_permission(statement, permission):
+            if evaluate_action_for_permission(statement, permission):
+                if evaluate_resource_for_permission(statement, resource_arn):
+                    if not evaluate_notresource_for_permission(statement, resource_arn):
                         return True
 
     return allowed
