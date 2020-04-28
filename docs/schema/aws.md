@@ -227,7 +227,7 @@ Representation of an [AWS Policy](https://docs.aws.amazon.com/IAM/latest/APIRefe
 	```
 	(AWSPolicy)-[STATEMENTS]->(AWSPolicyStatement)
 	```
-	
+
 ## AWSPolicyStatement
 
 Representation of an [AWS Policy Statement](https://docs.aws.amazon.com/IAM/latest/APIReference/API_Statement.html).

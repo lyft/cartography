@@ -518,12 +518,14 @@ def sync_users(neo4j_session, boto3_session, current_aws_account_id, aws_update_
     run_cleanup_job('aws_import_users_cleanup.json', neo4j_session, common_job_parameters)
 
 
+@timeit
 def sync_user_managed_policies(boto3_session, data, neo4j_session, aws_update_tag):
     managed_policy_data = get_user_managed_policy_data(boto3_session, data['Users'])
     transform_policy_data(managed_policy_data)
     load_managed_policy_data(neo4j_session, managed_policy_data, aws_update_tag)
 
 
+@timeit
 def sync_user_inline_policies(boto3_session, data, neo4j_session, aws_update_tag):
     policy_data = get_user_policy_data(boto3_session, data['Users'])
     transform_policy_data(policy_data)
