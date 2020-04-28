@@ -12,10 +12,12 @@ from cartography.intel.okta import roles
 from cartography.intel.okta import users
 from cartography.intel.okta.sync_state import OktaSyncState
 from cartography.util import run_cleanup_job
+from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 
 
+@timeit
 def _cleanup_okta_organizations(session, common_job_parameters):
     """
     Remove stale Okta organization
@@ -27,6 +29,7 @@ def _cleanup_okta_organizations(session, common_job_parameters):
     run_cleanup_job('okta_import_cleanup.json', session, common_job_parameters)
 
 
+@timeit
 def start_okta_ingestion(neo4j_session, config):
     """
     Starts the OKTA ingestion process
@@ -34,7 +37,7 @@ def start_okta_ingestion(neo4j_session, config):
     :param config: A `cartography.config` object
     :return: Nothing
     """
-    if 'okta_api_key' not in config:
+    if not config.okta_api_key:
         logger.warning(
             "No valid Okta credentials could be found. Exiting Okta sync stage.",
         )

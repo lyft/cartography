@@ -1,7 +1,7 @@
 from setuptools import find_packages
 from setuptools import setup
 
-__version__ = '0.19.2'
+__version__ = '0.20.0'
 
 
 setup(
@@ -37,6 +37,7 @@ setup(
         "marshmallow>=3.0.0rc7",
         "okta>=0.0.4",
         "requests>=2.22.0",
+        "statsd",
     ],
     extras_require={
         ':python_version<"3.7"': [

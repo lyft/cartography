@@ -3,6 +3,9 @@ import logging
 
 from okta import UsersClient
 
+from cartography.util import timeit
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -22,6 +25,7 @@ def _create_user_client(okta_org, okta_api_key):
     return user_client
 
 
+@timeit
 def _get_okta_users(user_client):
     """
     Get Okta users from Okta server
@@ -41,6 +45,7 @@ def _get_okta_users(user_client):
     return user_list
 
 
+@timeit
 def transform_okta_user_list(okta_user_list):
     users = []
     user_ids = []
@@ -52,6 +57,7 @@ def transform_okta_user_list(okta_user_list):
     return users, user_ids
 
 
+@timeit
 def transform_okta_user(okta_user):
     """
     Transform okta user data
@@ -102,6 +108,7 @@ def transform_okta_user(okta_user):
     return user_props
 
 
+@timeit
 def _load_okta_users(neo4j_session, okta_org_id, user_list, okta_update_tag):
     """
     Load Okta user information into the graph
@@ -152,6 +159,7 @@ def _load_okta_users(neo4j_session, okta_org_id, user_list, okta_update_tag):
     )
 
 
+@timeit
 def sync_okta_users(neo4j_session, okta_org_id, okta_update_tag, okta_api_key, sync_state):
     """
     Sync okta users

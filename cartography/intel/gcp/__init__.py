@@ -10,6 +10,7 @@ from cartography.intel.gcp import crm
 from cartography.intel.gcp import gke
 from cartography.intel.gcp import storage
 from cartography.util import run_analysis_job
+from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 Resources = namedtuple('Resources', 'crm_v1 crm_v2 compute storage container')
@@ -123,6 +124,7 @@ def _sync_multiple_projects(neo4j_session, resources, projects, gcp_update_tag, 
         _sync_single_project(neo4j_session, resources, project_id, gcp_update_tag, common_job_parameters)
 
 
+@timeit
 def start_gcp_ingestion(neo4j_session, config):
     """
     Starts the GCP ingestion process by initializing Google Application Default Credentials, creating the necessary

@@ -7,11 +7,13 @@ from okta.framework.OktaError import OktaError
 
 from cartography.intel.okta.utils import create_api_client
 from cartography.intel.okta.utils import is_last_page
+from cartography.util import timeit
 
 
 logger = logging.getLogger(__name__)
 
 
+@timeit
 def _get_okta_applications(api_client):
     """
     Get application data from Okta server
@@ -45,6 +47,7 @@ def _get_okta_applications(api_client):
     return app_list
 
 
+@timeit
 def _get_application_assigned_users(api_client, app_id):
     """
     Get users assigned to a specific application
@@ -79,6 +82,7 @@ def _get_application_assigned_users(api_client, app_id):
     return app_users
 
 
+@timeit
 def _get_application_assigned_groups(api_client, app_id):
     """
     Get groups assigned to a specific application
@@ -113,6 +117,7 @@ def _get_application_assigned_groups(api_client, app_id):
     return app_groups
 
 
+@timeit
 def transform_application_assigned_users_list(assigned_user_list):
     """
     Transform application users Okta data
@@ -127,6 +132,7 @@ def transform_application_assigned_users_list(assigned_user_list):
     return users
 
 
+@timeit
 def transform_application_assigned_users(json_app_data):
     """
     Transform application users data for graph consumption
@@ -142,6 +148,7 @@ def transform_application_assigned_users(json_app_data):
     return users
 
 
+@timeit
 def transform_application_assigned_groups_list(assigned_group_list):
     group_list = []
 
@@ -152,6 +159,7 @@ def transform_application_assigned_groups_list(assigned_group_list):
     return group_list
 
 
+@timeit
 def transform_application_assigned_groups(json_app_data):
     """
     Transform application group assignment to consumable data for the graph
@@ -167,6 +175,7 @@ def transform_application_assigned_groups(json_app_data):
     return groups
 
 
+@timeit
 def transform_okta_application_list(okta_applications):
     app_list = []
 
@@ -177,6 +186,7 @@ def transform_okta_application_list(okta_applications):
     return app_list
 
 
+@timeit
 def transform_okta_application(okta_application):
     app_props = {}
     app_props["id"] = okta_application["id"]
@@ -211,6 +221,7 @@ def transform_okta_application(okta_application):
     return app_props
 
 
+@timeit
 def transform_okta_application_extract_replyurls(okta_application):
     """
     Extracts the reply uri information from an okta app
@@ -222,6 +233,7 @@ def transform_okta_application_extract_replyurls(okta_application):
     return None
 
 
+@timeit
 def _load_okta_applications(neo4j_session, okta_org_id, app_list, okta_update_tag):
     """
     Add application into the graph
@@ -260,6 +272,7 @@ def _load_okta_applications(neo4j_session, okta_org_id, app_list, okta_update_ta
     )
 
 
+@timeit
 def _load_application_user(neo4j_session, app_id, user_list, okta_update_tag):
     """
     Add application users into the graph
@@ -288,6 +301,7 @@ def _load_application_user(neo4j_session, app_id, user_list, okta_update_tag):
     )
 
 
+@timeit
 def _load_application_group(neo4j_session, app_id, group_list, okta_update_tag):
     """
     Add application groups into the graph
@@ -316,6 +330,7 @@ def _load_application_group(neo4j_session, app_id, group_list, okta_update_tag):
     )
 
 
+@timeit
 def _load_application_reply_urls(neo4j_session, app_id, reply_urls, okta_update_tag):
     """
     Add reply urls to their applications
@@ -349,6 +364,7 @@ def _load_application_reply_urls(neo4j_session, app_id, reply_urls, okta_update_
     )
 
 
+@timeit
 def sync_okta_applications(neo4j_session, okta_org_id, okta_update_tag, okta_api_key):
     """
     Sync okta application
