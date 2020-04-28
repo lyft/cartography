@@ -67,6 +67,7 @@ def evaluate_notresource_for_permission(statement, resource_arn):
             return True
     return False
 
+
 def evaluate_statements_for_permission(statements, permission, resource_arn):
     """ Evaluate an entire statement for a specific permission against a resource
 
