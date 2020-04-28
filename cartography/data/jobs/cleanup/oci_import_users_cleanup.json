@@ -4,5 +4,6 @@
     "iterative": true,
     "iterationsize": 100
   }],
-  "name": "cleanup OCIUser"
+  "name": "cleanup OCIUser",
+  "comment":"Copyright (c) 2020, Oracle and/or its affiliates."
 }

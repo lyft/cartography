@@ -9,5 +9,6 @@
     "iterative": true,
     "iterationsize": 100
   }],
-  "name": "cleanup OCIGroup"
+  "name": "cleanup OCIGroup",
+  "comment":"Copyright (c) 2020, Oracle and/or its affiliates."
 }

@@ -9,5 +9,6 @@
     "iterative": true,
     "iterationsize": 100
   }],
-  "name": "cleanup OCIPolicy"
+  "name": "cleanup OCIPolicy",
+  "comment":"Copyright (c) 2020, Oracle and/or its affiliates."
 }

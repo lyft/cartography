@@ -4,5 +4,6 @@
     "iterative": true,
     "iterationsize": 100
   }],
-  "name": "cleanup MEMBER_OCI_GROUP"
+  "name": "cleanup MEMBER_OCI_GROUP",
+  "comment":"Copyright (c) 2020, Oracle and/or its affiliates."
 }

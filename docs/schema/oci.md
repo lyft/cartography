@@ -1,3 +1,5 @@
+#Copyright (c) 2020, Oracle and/or its affiliates.
+
 ## OCITenancy
 
 Representation of an OCI Tenancy.

@@ -1,3 +1,4 @@
+#Copyright (c) 2020, Oracle and/or its affiliates.
 # OCI Identity API-centric functions
 # https://docs.cloud.oracle.com/iaas/Content/Identity/Concepts/overview.htm
 import oci
@@ -301,11 +302,11 @@ def sync_region_subscriptions(neo4j_session, iam, current_tenancy_id, oci_update
 
 def sync(neo4j_session, iam, tenancy_id, oci_update_tag, common_job_parameters):
     logger.info("Syncing IAM for account '%s'.", tenancy_id)
-    sync_users(neo4j_session, iam, tenancy_id, oci_update_tag, common_job_parameters)
-    sync_groups(neo4j_session, iam, tenancy_id, oci_update_tag, common_job_parameters)
-    sync_group_memberships(neo4j_session, iam, tenancy_id, oci_update_tag, common_job_parameters)
+    #sync_users(neo4j_session, iam, tenancy_id, oci_update_tag, common_job_parameters)
+    #sync_groups(neo4j_session, iam, tenancy_id, oci_update_tag, common_job_parameters)
+    #sync_group_memberships(neo4j_session, iam, tenancy_id, oci_update_tag, common_job_parameters)
     sync_compartments(neo4j_session, iam, tenancy_id, oci_update_tag, common_job_parameters)
-    sync_policies(neo4j_session, iam, tenancy_id, oci_update_tag, common_job_parameters)
-    sync_oci_policy_references(neo4j_session, tenancy_id, oci_update_tag, common_job_parameters)
+    #sync_policies(neo4j_session, iam, tenancy_id, oci_update_tag, common_job_parameters)
+    #sync_oci_policy_references(neo4j_session, tenancy_id, oci_update_tag, common_job_parameters)
     sync_region_subscriptions(neo4j_session, iam, tenancy_id, oci_update_tag, common_job_parameters)
 

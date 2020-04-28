@@ -1,3 +1,4 @@
+#Copyright (c) 2020, Oracle and/or its affiliates.
 import logging
 from collections import namedtuple
 
