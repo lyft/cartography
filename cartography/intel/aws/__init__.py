@@ -61,6 +61,23 @@ def _sync_multiple_accounts(neo4j_session, accounts, sync_tag, common_job_parame
         common_job_parameters["AWS_ID"] = account_id
         boto3_session = boto3.Session(profile_name=profile_name)
 
+        #######
+        # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/organizations.html#Organizations.Client.list_accounts
+        # TODO: CHECK PAGINATION
+        # TODO: CHECK PERMISSIONS
+        # TODO: filter by 'Status': 'ACTIVE'
+        logger.info(">>>>> LOOK FOR ACCOUNTS")
+        try:
+            org = boto3_session.client('organizations')
+            response = org.list_accounts()
+            for el in response.get('Accounts'):
+                # {'Id': '', 'Arn': '', 'Email': '', 'Name': '', 'Status': '', 'JoinedMethod': '', 'JoinedTimestamp': datetime.datetime(2018, 1, 9, 17, 52, 12, 909000, tzinfo=tzlocal())}
+                print(">>>>>> {}".format(el))
+            print(">>>>>> {}".format(len(response.get('Accounts'))))
+        except:
+            logger.error(">>>> NO PERMISSIONS")
+        #######
+
         _sync_one_account(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters)
 
     del common_job_parameters["AWS_ID"]
