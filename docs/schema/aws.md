@@ -207,12 +207,6 @@ Representation of an [AWS Policy](https://docs.aws.amazon.com/IAM/latest/APIRefe
 |-------|-------------|
 | firstseen| Timestamp of when a sync job first discovered this node  |
 | lastupdated |  Timestamp of the last time the node was updated |
-| path | (Managed policies only) The path to the policy |
-| defaultversionid| (Managed policies only) The identifier for the version of the policy that is set as the default version |
-| isattachable | (Managed policies only) Specifies whether the policy can be attaced to an IAM user, group, or role |
-|updatedate | (Managed policies only) ISO 8601 date-time when the policy was last updated |
-| policyid | (Managed policies only) The stable and unique string identifying the policy, see the API docs above for specifics|
-| attachmentcount | (Managed policies only) Number of entities (users, groups, and roles) that the policy is attached to|
 | name | The friendly name (not ARN) identifying the policy |
 | createdate | ISO 8601 date-time when the policy was created|
 | type | "inline" or "managed" - the type of policy it is|
@@ -222,17 +216,18 @@ Representation of an [AWS Policy](https://docs.aws.amazon.com/IAM/latest/APIRefe
 
 ### Relationships
 
-- An `AWSPolicy` node is defined in an `AWSAccount`.
-
-	```
-	(AWSAccount)-[RESOURCE]->(AWSPolicy)
-	```
-- `AWSPrincipals` contain `AWSPolicies`
+- `AWSPrincipal` contains `AWSPolicy`
 
 	```
 	(AWSPrincipal)-[POLICY]->(AWSPolicy)
 	```
 
+- `AWSPolicy` contains `AWSPolicyStatement`
+
+	```
+	(AWSPolicy)-[STATEMENTS]->(AWSPolicyStatement)
+	```
+	
 ## AWSPolicyStatement
 
 Representation of an [AWS Policy Statement](https://docs.aws.amazon.com/IAM/latest/APIReference/API_Statement.html).
@@ -250,15 +245,10 @@ Representation of an [AWS Policy Statement](https://docs.aws.amazon.com/IAM/late
 
 ### Relationships
 
-- An `AWSPolicy` node is defined in an `AWSAccount`.
+- `AWSPolicy` contains `AWSPolicyStatement`
 
 	```
-	(AWSAccount)-[RESOURCE]->(AWSPolicy)
-	```
-- `AWSPrincipals` contain `AWSPolicies`
-
-	```
-	(AWSPrincipal)-[POLICY]->(AWSPolicy)
+	(AWSPolicy)-[STATEMENTS]->(AWSPolicyStatement)
 	```
 
 

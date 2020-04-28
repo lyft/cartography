@@ -171,7 +171,7 @@ def parse_statement_node(node_group):
         node_group {[Neo4j.Node]} -- the node to parse
 
     Returns:
-        [dict] -- A dictionary of statements from the node
+        [list] -- A list of statements from the node
     """
     return [n._properties for n in node_group]
 
