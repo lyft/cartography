@@ -500,7 +500,7 @@ def load_policy_data(neo4j_session, policy_map, aws_update_tag):
 def load_managed_policy_data(neo4j_session, policy_map, aws_update_tag):
     for principal_arn, policy_list in policy_map.items():
         for policy_name, statements in policy_list.items():
-            policy_id = f"{principal_arn}/inline_policy/{policy_name}"
+            policy_id = f"{principal_arn}/managed_policy/{policy_name}"
             load_policy(neo4j_session, policy_id, policy_name, "managed", principal_arn, aws_update_tag)
             load_policy_statements(neo4j_session, policy_id, policy_name, statements, aws_update_tag)
 
