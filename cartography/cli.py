@@ -251,10 +251,12 @@ class CLI:
         if config.okta_org_id and config.okta_api_key_env_var:
             logger.debug(f"Reading API key for Okta from environment variable {config.okta_api_key_env_var}")
             config.okta_api_key = os.environ.get(config.okta_api_key_env_var)
+        else:
+            config.okta_api_key = None
 
         # CRXcavator config
         if config.crxcavator_api_base_uri and config.crxcavator_api_key_env_var:
-            logger.debug("Reading API key for CRXcavator from environment variable '%s'.")
+            logger.debug(f"Reading API key for CRXcavator from env variable {config.crxcavator_api_key_env_var}.")
             config.crxcavator_api_key = os.environ.get(config.crxcavator_api_key_env_var)
         else:
             config.crxcavator_api_key = None
