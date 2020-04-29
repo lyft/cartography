@@ -310,7 +310,7 @@ def parse_permission_relationship_file(file):
             relationship_mapping = yaml.load(f, Loader=yaml.FullLoader)
         return relationship_mapping
     except FileNotFoundError:
-        logger.warn(f"Permission relationshp mapping file {file} not found, skipping injestion ")
+        logger.warning(f"Permission relationshp mapping file {file} not found, skipping injestion ")
         return []
 
 
