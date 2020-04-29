@@ -411,6 +411,36 @@ def test_full_multiple_principal():
     )
 
 
+def test_single_comma():
+    statements = [
+        {
+            "action": [
+                "s3:?et*",
+            ],
+            "resource":["arn:aws:s3:::testbucke?"],
+            "effect": "Allow",
+        },
+    ]
+    assert (True, False) == permission_relationships.evaluate_policy_for_permission(
+        statements, ["S3:GetObject"], "arn:aws:s3:::testbucket",
+    )
+
+
+def test_multiple_comma():
+    statements = [
+        {
+            "action": [
+                "s3:?et*",
+            ],
+            "resource":["arn:aws:s3:::????bucket"],
+            "effect": "Allow",
+        },
+    ]
+    assert (True, False) == permission_relationships.evaluate_policy_for_permission(
+        statements, ["S3:GetObject"], "arn:aws:s3:::testbucket",
+    )
+
+
 def test_permission_file_load():
     mapping = permission_relationships.parse_permission_relationship_file(
         "cartography/data/permission_relationships.yaml",

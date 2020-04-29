@@ -186,6 +186,10 @@ def parse_statement_node(node_group):
 
 def compile_regex(item):
     """ Compile a clause into a regex. Clause checking in AWS is case insensitive
+    The following regex symbols will be replaced to make AWS * and ? matching a regex
+    * -> .* (wildcard)
+    ? -> .? (single character wildcard)
+    . -> \\ (make period a literal period)
 
     Arguments:
         item {str} -- the item to create the regex for
@@ -196,7 +200,7 @@ def compile_regex(item):
     """
 
     if isinstance(item, str):
-        item = item.replace(".", "\\.").replace("*", ".*")
+        item = item.replace(".", "\\.").replace("*", ".*").replace("?", ".?")
         try:
             item = re.compile(item, flags=re.IGNORECASE)
         except re.error:
