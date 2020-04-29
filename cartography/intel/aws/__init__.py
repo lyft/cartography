@@ -9,6 +9,7 @@ from . import eks
 from . import elasticsearch
 from . import iam
 from . import organizations
+from . import permission_relationships
 from . import rds
 from . import resourcegroupstaggingapi
 from . import route53
@@ -49,6 +50,9 @@ def _sync_one_account(neo4j_session, boto3_session, account_id, sync_tag, common
     # NOTE clean up all DNS records, regardless of which job created them
     run_cleanup_job('aws_account_dns_cleanup.json', neo4j_session, common_job_parameters)
 
+    # MAP IAM permissions
+    permission_relationships.sync(neo4j_session, account_id, sync_tag, common_job_parameters)
+
     # AWS Tags - Must always be last.
     resourcegroupstaggingapi.sync(neo4j_session, boto3_session, regions, sync_tag, common_job_parameters)
 
@@ -69,6 +73,7 @@ def _sync_multiple_accounts(neo4j_session, accounts, sync_tag, common_job_parame
     # There may be orphan Principals which point outside of known AWS accounts. This job cleans
     # up those nodes after all AWS accounts have been synced.
     run_cleanup_job('aws_post_ingestion_principals_cleanup.json', neo4j_session, common_job_parameters)
+
     # There may be orphan DNS entries that point outside of known AWS zones. This job cleans
     # up those entries after all AWS accounts have been synced.
     run_cleanup_job('aws_post_ingestion_dns_cleanup.json', neo4j_session, common_job_parameters)
@@ -78,6 +83,7 @@ def _sync_multiple_accounts(neo4j_session, accounts, sync_tag, common_job_parame
 def start_aws_ingestion(neo4j_session, config):
     common_job_parameters = {
         "UPDATE_TAG": config.update_tag,
+        "permission_relationship_file": config.permission_relationships_file,
     }
     try:
         boto3_session = boto3.Session()

@@ -180,6 +180,15 @@ class CLI:
             ),
         )
         parser.add_argument(
+            '--permission-relationships-file',
+            type=str,
+            default="cartography/data/permission_relationships.yaml",
+            help=(
+                'The path to the permission relationships mapping file.'
+                'If omitted the default permission relationships will be created'
+            ),
+        )
+        parser.add_argument(
             '--statsd-enabled',
             action='store_true',
             help=(

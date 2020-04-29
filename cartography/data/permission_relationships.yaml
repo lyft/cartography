@@ -1,0 +1,18 @@
+# map principals who can read items in a S3Bucket
+- target_label: S3Bucket
+  permissions:
+  - S3:GetObject
+  relationship_name: CAN_READ
+# map principals who can write items in a S3Bucket
+- target_label: S3Bucket
+  permissions:
+  - S3:PutObject
+  relationship_name: CAN_WRITE
+# map principals retrieve data fron dynamodb
+- target_label: DynamoDBTable
+  permissions:
+  - dynamodb:BatchGetItem
+  - dynamodb:GetItem
+  - dynamodb:GetRecords
+  - dynamodb:Query
+  relationship_name: CAN_QUERY
