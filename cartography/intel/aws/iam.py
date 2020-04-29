@@ -430,7 +430,7 @@ def _transform_policy_statements(statements, policy_id):
 
 def transform_policy_data(policy_map, policy_type):
     for principal_arn, policy_list in policy_map.items():
-        logger.debug(f"Syncing IAM inline policies for principal {principal_arn}")
+        logger.debug(f"Syncing IAM {policy_type} policies for principal {principal_arn}")
         for policy_name, statements in policy_list.items():
             policy_id = transform_policy_id(principal_arn, policy_type, policy_name)
             statements = _transform_policy_statements(

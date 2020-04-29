@@ -22,8 +22,6 @@ def evaluate_clause(clause, match):
     Returns:
         [bool] -- True if the clause matched, False otherwise
     """
-    #
-
     result = compile_regex(clause).fullmatch(match)
     return result is not None
 
