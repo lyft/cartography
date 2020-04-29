@@ -42,36 +42,16 @@ LIST_GROUPS = {
     ],
 }
 
-
-LIST_POLICIES = {
-    "Policies": [
-        {
-            "PolicyName": "example-policy-0",
-            "PermissionsBoundaryUsageCount": 0,
-            "CreateDate": datetime.datetime(2019, 1, 1, 0, 0, 1),
-            "AttachmentCount": 0,
-            "IsAttachable": True,
-            "PolicyId": "ANPA00000000000000000",
-            "DefaultVersionId": "v1",
-            "Path": "/",
-            "Arn": "arn:aws:iam::173840052742:policy/example-policy-0",
-            "UpdateDate": datetime.datetime(2019, 1, 1, 0, 0, 1),
-        },
-        {
-            "PolicyName": "example-policy-1",
-            "PermissionsBoundaryUsageCount": 0,
-            "CreateDate": datetime.datetime(2019, 1, 1, 0, 0, 1),
-            "AttachmentCount": 0,
-            "IsAttachable": True,
-            "PolicyId": "ANPA00000000000000001",
-            "DefaultVersionId": "v1",
-            "Path": "/",
-            "Arn": "arn:aws:iam::173840052742:policy/example-policy-1",
-            "UpdateDate": datetime.datetime(2019, 1, 1, 0, 0, 1),
-        },
+INLINE_POLICY_STATEMENTS = [{
+    "id": "allow_all_policy",
+    "Action": [
+        "*",
     ],
-}
-
+    "Resource": [
+        "*",
+    ],
+    "Effect": "Allow",
+}]
 
 LIST_ROLES = {
     "Roles": [

@@ -6,7 +6,9 @@ CREATE INDEX ON :AWSDNSZone(zoneid);
 CREATE INDEX ON :AWSGroup(arn);
 CREATE INDEX ON :AWSIpv4CidrBlock(id);
 CREATE INDEX ON :AWSIpv6CidrBlock(id);
-CREATE INDEX ON :AWSPolicy(arn);
+CREATE INDEX ON :AWSPolicy(id);
+CREATE INDEX ON :AWSPolicy(name);
+CREATE INDEX ON :AWSPolicyStatement(id);
 CREATE INDEX ON :AWSPrincipal(arn);
 CREATE INDEX ON :AWSRole(arn);
 CREATE INDEX ON :AWSTag(id);
@@ -89,4 +91,5 @@ CREATE INDEX ON :ReplyUri(id)
 CREATE INDEX ON :S3Acl(id);
 CREATE INDEX ON :S3Bucket(id);
 CREATE INDEX ON :S3Bucket(name);
+CREATE INDEX ON :S3Bucket(arn);
 CREATE INDEX ON :User(arn);
