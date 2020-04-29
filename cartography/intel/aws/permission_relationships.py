@@ -189,7 +189,7 @@ def compile_regex(item):
     The following regex symbols will be replaced to make AWS * and ? matching a regex
     * -> .* (wildcard)
     ? -> .? (single character wildcard)
-    . -> \\ (make period a literal period)
+    . -> \. (make period a literal period)
 
     Arguments:
         item {str} -- the item to create the regex for
