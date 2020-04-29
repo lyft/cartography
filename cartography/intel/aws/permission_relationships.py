@@ -192,10 +192,18 @@ def compile_regex(item):
 
     Returns:
         [re.Pattern] -- The precompiled regex pattern.
+        If the pattern does not compile it will return an re.Pattern of empty string
     """
+
     if isinstance(item, str):
         item = item.replace(".", "\\.").replace("*", ".*")
-        item = re.compile(item, flags=re.IGNORECASE)
+        try:
+            item = re.compile(item, flags=re.IGNORECASE)
+        except re.error:
+            logger.warning(f"Regex did not compile for {item}")
+            # in this case it must still return a regex.
+            # So it will return an re.Pattern of empry stringm
+            item = re.compile("", flags=re.IGNORECASE)
     return item
 
 
