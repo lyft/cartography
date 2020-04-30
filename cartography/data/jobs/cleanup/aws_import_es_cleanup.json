@@ -8,7 +8,8 @@
   {
     "query": "MATCH (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(:ESDomain)<-[:DNS_POINTS_TO]-(n:DNSRecord) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
     "iterative": true,
-    "iterationsize": 100
+    "iterationsize": 100,
+    "__comment__": "Clean up DNSRecords pointing to ESDomains within the current AWS account"
   }],
   "name": "cleanup ESDomain|DNSRecord"
 }

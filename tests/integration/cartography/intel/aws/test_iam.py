@@ -1,13 +1,18 @@
 import cartography.intel.aws.iam
+import cartography.intel.aws.permission_relationships
 import tests.data.aws.iam
-
 
 TEST_ACCOUNT_ID = '000000000000'
 TEST_REGION = 'us-east-1'
 TEST_UPDATE_TAG = 123456789
 
 
+def _create_base_account(neo4j_session):
+    neo4j_session.run("MERGE (a:AWSAccount{id:{AccountId}})", AccountId=TEST_ACCOUNT_ID)
+
+
 def test_load_users(neo4j_session):
+    _create_base_account(neo4j_session)
     data = tests.data.aws.iam.LIST_USERS['Users']
 
     cartography.intel.aws.iam.load_users(
@@ -22,17 +27,6 @@ def test_load_groups(neo4j_session):
     data = tests.data.aws.iam.LIST_GROUPS['Groups']
 
     cartography.intel.aws.iam.load_groups(
-        neo4j_session,
-        data,
-        TEST_ACCOUNT_ID,
-        TEST_UPDATE_TAG,
-    )
-
-
-def test_load_policies(neo4j_session):
-    data = tests.data.aws.iam.LIST_POLICIES['Policies']
-
-    cartography.intel.aws.iam.load_policies(
         neo4j_session,
         data,
         TEST_ACCOUNT_ID,
@@ -81,3 +75,45 @@ def test_load_roles_creates_trust_relationships(neo4j_session):
     }
     # Compare our actual results to our expected results.
     assert actual == expected
+
+
+def test_load_inline_policy(neo4j_session):
+    cartography.intel.aws.iam.load_policy(
+        neo4j_session,
+        "arn:aws:iam::000000000000:group/example-group-0/example-group-0/inline_policy/group_inline_policy",
+        "group_inline_policy",
+        "inline",
+        "arn:aws:iam::000000000000:group/example-group-0",
+        TEST_UPDATE_TAG,
+    )
+
+
+def test_load_inline_policy_data(neo4j_session):
+    cartography.intel.aws.iam.load_policy_statements(
+        neo4j_session,
+        "arn:aws:iam::000000000000:group/example-group-0/example-group-0/inline_policy/group_inline_policy",
+        "group_inline_policy",
+        tests.data.aws.iam.INLINE_POLICY_STATEMENTS,
+        TEST_UPDATE_TAG,
+    )
+
+
+def test_map_permissions(neo4j_session):
+    # Insert an s3 bucket to map
+    neo4j_session.run(
+        """
+    MERGE (s3:S3Bucket{arn:'arn:aws:s3:::test_bucket'})<-[:RESOURCE]-(a:AWSAccount{id:{AccountId}})
+    """, AccountId=TEST_ACCOUNT_ID,
+    )
+
+    cartography.intel.aws.permission_relationships.sync(
+        neo4j_session,
+        TEST_ACCOUNT_ID,
+        TEST_UPDATE_TAG, {
+            "permission_relationship_file": "cartography/data/permission_relationships.yaml",
+        },
+    )
+    results = neo4j_session.run("MATCH ()-[r:CAN_READ]->() RETURN count(r) as rel_count")
+    assert results
+    for result in results:
+        assert result["rel_count"] == 1

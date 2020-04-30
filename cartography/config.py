@@ -20,6 +20,10 @@ class Config:
     :type oci_sync_all_profiles: bool
     :param oci_sync_all_profiles: If True, OCI sync will run for all non-default profiles in the OCI_CONFIG_FILE. If
         False (default), OCI sync will run using the default credentials only. Optional.
+    :type crxcavator_api_base_uri: str
+    :param crxcavator_api_base_uri: URI for CRXcavator API. Optional.
+    :type crxcavator_api_key: str
+    :param crxcavator_api_key: Auth key for CRXcavator API. Optional.
     :type analysis_job_directory: str
     :param analysis_job_directory: Path to a directory tree containing analysis jobs to run. Optional.
     :type okta_org_id: str
@@ -28,6 +32,16 @@ class Config:
     :param okta_api_key: Okta API key. Optional.
     :type okta_saml_role_regex: str
     :param okta_saml_role_regex: The regex used to map okta groups to AWS roles. Optional.
+    :type github_config: str
+    :param github_config: Base64 encoded config object for GitHub ingestion. Optional
+    :type permission_relationship_file: str
+    :param permission_relationship_file: File path for the resource permission relationships file. Optional
+    :type statsd_enabled: bool
+    :param statsd_enabled: Whether to collect statsd metrics such as sync execution times. Optional.
+    :type statsd_host: str
+    :param statsd_host: If statsd_enabled is True, send metrics to this host. Optional.
+    :type: statsd_port: int
+    :param statsd_port: If statsd_enabled is True, send metrics to this port on statsd_host. Optional.
     """
 
     def __init__(
@@ -39,9 +53,17 @@ class Config:
         aws_sync_all_profiles=False,
         oci_sync_all_profiles=False,
         analysis_job_directory=None,
+        crxcavator_api_base_uri=None,
+        crxcavator_api_key=None,
         okta_org_id=None,
         okta_api_key=None,
         okta_saml_role_regex=None,
+        github_config=None,
+        permission_relationship_file=None,
+        statsd_enabled=False,
+        statsd_prefix=None,
+        statsd_host=None,
+        statsd_port=None,
     ):
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user
@@ -50,6 +72,14 @@ class Config:
         self.aws_sync_all_profiles = aws_sync_all_profiles
         self.oci_sync_all_profiles = oci_sync_all_profiles
         self.analysis_job_directory = analysis_job_directory
+        self.crxcavator_api_base_uri = crxcavator_api_base_uri
+        self.crxcavator_api_key = crxcavator_api_key
         self.okta_org_id = okta_org_id
         self.okta_api_key = okta_api_key
         self.okta_saml_role_regex = okta_saml_role_regex
+        self.github_config = github_config
+        self.permission_relationship_file = permission_relationship_file
+        self.statsd_enabled = statsd_enabled
+        self.statsd_prefix = statsd_prefix
+        self.statsd_host = statsd_host
+        self.statsd_port = statsd_port

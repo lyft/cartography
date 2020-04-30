@@ -13,7 +13,7 @@ Drift-Detection is a Cartography module that allows you to track changes of quer
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 ## A Quick Example: Tracking internet-exposed EC2 instances
-The quickest way to get started using drift-detection is through an example.  We showed you [how we mark EC2 instances as internet-exposed with Cartography analysis jobs](https://github.com/lyft/cartography/blob/master/docs/writing-analysis-jobs.md#example-job-which-of-my-ec2-instances-is-accessible-to-any-host-on-the-internet), and now we can use drift-detection to monitor when these instances are added or removed from our accounts over time!
+The quickest way to get started using drift-detection is through an example.  We showed you [how we mark EC2 instances as internet-exposed with Cartography analysis jobs](https://github.com/lyft/cartography/blob/master/docs/dev/writing-analysis-jobs.md#example-job-which-of-my-ec2-instances-is-accessible-to-any-host-on-the-internet), and now we can use drift-detection to monitor when these instances are added or removed from our accounts over time!
 
 ### Setup
 1. **Specify a** `${DRIFT_DETECTION_DIRECTORY}` on the machine that runs `cartography`.  This can be any folder where you have read and write access to.

@@ -14,66 +14,72 @@
   - [Relationships](#relationships-2)
 - [AWSPolicy](#awspolicy)
   - [Relationships](#relationships-3)
-- [AWSPrincipal](#awsprincipal)
+- [AWSPolicyStatement](#awspolicystatement)
   - [Relationships](#relationships-4)
-- [AWSPrincipal::AWSUser](#awsprincipalawsuser)
+- [AWSPrincipal](#awsprincipal)
   - [Relationships](#relationships-5)
-- [AWSPrincipal::AWSRole](#awsprincipalawsrole)
+- [AWSPrincipal::AWSUser](#awsprincipalawsuser)
   - [Relationships](#relationships-6)
-- [AWSVpc](#awsvpc)
+- [AWSPrincipal::AWSRole](#awsprincipalawsrole)
   - [Relationships](#relationships-7)
-- [AccountAccessKey](#accountaccesskey)
+- [AWSVpc](#awsvpc)
   - [Relationships](#relationships-8)
-- [DBSubnetGroup](#dbsubnetgroup)
+- [Tag::AWSTag](#tagawstag)
   - [Relationships](#relationships-9)
-- [DNSRecord](#dnsrecord)
+- [AccountAccessKey](#accountaccesskey)
   - [Relationships](#relationships-10)
-- [DNSRecord::AWSDNSRecord](#dnsrecordawsdnsrecord)
+- [DBSubnetGroup](#dbsubnetgroup)
   - [Relationships](#relationships-11)
-- [DNSZone](#dnszone)
+- [DNSRecord](#dnsrecord)
   - [Relationships](#relationships-12)
-- [DNSZone::AWSDNSZone](#dnszoneawsdnszone)
+- [DNSRecord::AWSDNSRecord](#dnsrecordawsdnsrecord)
   - [Relationships](#relationships-13)
-- [DynamoDBTable](#dynamodbtable)
+- [DNSZone](#dnszone)
   - [Relationships](#relationships-14)
-- [EC2Instance](#ec2instance)
+- [DNSZone::AWSDNSZone](#dnszoneawsdnszone)
   - [Relationships](#relationships-15)
-- [EC2KeyPair](#ec2keypair)
+- [DynamoDBTable](#dynamodbtable)
   - [Relationships](#relationships-16)
-- [EC2Reservation](#ec2reservation)
+- [EC2Instance](#ec2instance)
   - [Relationships](#relationships-17)
-- [EC2SecurityGroup](#ec2securitygroup)
+- [EC2KeyPair](#ec2keypair)
   - [Relationships](#relationships-18)
-- [EC2Subnet](#ec2subnet)
+- [EC2Reservation](#ec2reservation)
   - [Relationships](#relationships-19)
-- [ESDomain](#esdomain)
+- [EC2SecurityGroup](#ec2securitygroup)
   - [Relationships](#relationships-20)
-- [Endpoint](#endpoint)
+- [EC2Subnet](#ec2subnet)
   - [Relationships](#relationships-21)
-- [Endpoint::ELBListener](#endpointelblistener)
+- [EKSCluster](#ekscluster)
   - [Relationships](#relationships-22)
-- [Endpoint::ELBV2Listener](#endpointelbv2listener)
+- [ESDomain](#esdomain)
   - [Relationships](#relationships-23)
-- [Ip](#ip)
+- [Endpoint](#endpoint)
   - [Relationships](#relationships-24)
-- [IpRule](#iprule)
+- [Endpoint::ELBListener](#endpointelblistener)
   - [Relationships](#relationships-25)
-- [IpRule::IpPermissionInbound](#ipruleippermissioninbound)
+- [Endpoint::ELBV2Listener](#endpointelbv2listener)
   - [Relationships](#relationships-26)
-- [LoadBalancer](#loadbalancer)
+- [Ip](#ip)
   - [Relationships](#relationships-27)
-- [LoadBalancerV2](#loadbalancerv2)
+- [IpRule](#iprule)
   - [Relationships](#relationships-28)
-- [Nameserver](#nameserver)
+- [IpRule::IpPermissionInbound](#ipruleippermissioninbound)
   - [Relationships](#relationships-29)
-- [NetworkInterface](#networkinterface)
+- [LoadBalancer](#loadbalancer)
   - [Relationships](#relationships-30)
-- [RDSInstance](#rdsinstance)
+- [LoadBalancerV2](#loadbalancerv2)
   - [Relationships](#relationships-31)
-- [S3Acl](#s3acl)
+- [Nameserver](#nameserver)
   - [Relationships](#relationships-32)
-- [S3Bucket](#s3bucket)
+- [NetworkInterface](#networkinterface)
   - [Relationships](#relationships-33)
+- [RDSInstance](#rdsinstance)
+  - [Relationships](#relationships-34)
+- [S3Acl](#s3acl)
+  - [Relationships](#relationships-35)
+- [S3Bucket](#s3bucket)
+  - [Relationships](#relationships-36)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -111,13 +117,13 @@ Representation of an AWS Account.
 - An `AWSPolicy` node is defined for an `AWSAccount`.
 
 	```
-	(AWSAccount)-[AWS_POLICY]->(AWSPolicy)
+	(AWSAccount)-[RESOURCE]->(AWSPolicy)
 	```
 
 - `AWSRole` nodes are defined in `AWSAccount` nodes.
 
 	```
-	(AWSAccount)-[AWS_ROLE]->(AWSRole)
+	(AWSAccount)-[RESOURCE]->(AWSRole)
 	```
 
 ## AWSCidrBlock
@@ -201,22 +207,48 @@ Representation of an [AWS Policy](https://docs.aws.amazon.com/IAM/latest/APIRefe
 |-------|-------------|
 | firstseen| Timestamp of when a sync job first discovered this node  |
 | lastupdated |  Timestamp of the last time the node was updated |
-|path | The path to the policy |
-| defaultversionid| The identifier for the version of the policy that is set as the default version |
-| isattachable | Specifies whether the policy can be attaced to an IAM user, group, or role |
-|updatedate | ISO 8601 date-time when the policy was last updated |
-| policyid | The stable and unique string identifying the policy, see the API docs above for specifics|
-| attachmentcount | Number of entities (users, groups, and roles) that the policy is attached to|
 | name | The friendly name (not ARN) identifying the policy |
 | createdate | ISO 8601 date-time when the policy was created|
-| **arn** | The AWS-unique identifier for this object |
+| type | "inline" or "managed" - the type of policy it is|
+| arn | The arn for this object |
+| **id** | The unique identifer for a policy. If the policy is managed this will be the Arn. If the policy is inline this will calculated as _AWSPrincipal_/inline_policy/_PolicyName_|
+
 
 ### Relationships
 
-- An `AWSPolicy` node is defined in an `AWSAccount`.
+- `AWSPrincipal` contains `AWSPolicy`
 
 	```
-	(AWSAccount)-[AWS_POLICY]->(AWSPolicy)
+	(AWSPrincipal)-[POLICY]->(AWSPolicy)
+	```
+
+- `AWSPolicy` contains `AWSPolicyStatement`
+
+	```
+	(AWSPolicy)-[STATEMENTS]->(AWSPolicyStatement)
+	```
+
+## AWSPolicyStatement
+
+Representation of an [AWS Policy Statement](https://docs.aws.amazon.com/IAM/latest/APIReference/API_Statement.html).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated | Timestamp of the last time the node was updated |
+| resources | (array) The resources the statement is applied to. Can contain wildcards |
+| actions | (array) The permissions allowed or denied by the statement. Can contain wildcards |
+| notactions | (array) The permission explicitly not matched by the statement |
+| effect | "Allow" or "Deny" - the effect of this statement |
+| **id** | The unique identifier for a statement. <br>If the statement has an Sid the id will be calculated as _AWSPolicy.id_/statements/_Sid_. <br>If the statement has no Sid the id will be calculated as  _AWSPolicy.id_/statements/_index of statement in statement list_ |
+
+
+### Relationships
+
+- `AWSPolicy` contains `AWSPolicyStatement`
+
+	```
+	(AWSPolicy)-[STATEMENTS]->(AWSPolicyStatement)
 	```
 
 
@@ -338,7 +370,7 @@ Representation of an AWS [IAM Role](https://docs.aws.amazon.com/IAM/latest/APIRe
 - AWS Roles are defined in AWS Accounts.
 
     ```
-    (AWSAccount)-[AWS_ROLE]->(AWSRole)
+    (AWSAccount)-[RESOURCE]->(AWSRole)
     ```
 
 ## AWSVpc
@@ -368,6 +400,30 @@ More information on https://docs.aws.amazon.com/cli/latest/reference/ec2/describ
   ```
   (AWSVpc)<-[MEMBER_OF_EC2_SECURITY_GROUP]-(EC2SecurityGroup)
   ```
+-  AWS VPCs can be tagged with AWSTags.
+    ```
+	(AWSVpc)-[TAGGED]->(AWSTag)
+	```
+
+
+## Tag::AWSTag
+
+Representation of an AWS [Tag](https://docs.aws.amazon.com/resourcegroupstagging/latest/APIReference/API_Tag.html). AWS Tags can be applied to many objects.
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | This tag's unique identifier of the format `{TagKey}:{TagValue}`. We fabricated this ID. |
+| key | One part of a key-value pair that makes up a tag.|
+| value | One part of a key-value pair that makes up a tag. |
+| region | The region where this tag was discovered.|
+
+### Relationships
+-  AWS VPCs, DB Subnet Groups, EC2 Instances, EC2 SecurityGroups, EC2 Subnets, EC2 Network Interfaces, RDS Instances, and S3 Buckets can be tagged with AWSTags.
+    ```
+	(AWSVpc, DBSubnetGroup, EC2Instance, EC2SecurityGroup, EC2Subnet, NetworkInterface, RDSInstance, S3Bucket)-[TAGGED]->(AWSTag)
+	```
 
 ## AccountAccessKey
 
@@ -415,6 +471,12 @@ Representation of an RDS [DB Subnet Group](https://docs.aws.amazon.com/AmazonRDS
     ```
     (DBSubnetGroup)-[:RESOURCE]->(EC2Subnet)
     ```
+
+-  DB Subnet Groups can be tagged with AWSTags.
+
+	```
+	(DBSubnetGroup)-[TAGGED]->(AWSTag)
+	```
 
 
 ## DNSRecord
@@ -484,7 +546,7 @@ Representation of an AWS DNS [ResourceRecordSet](https://docs.aws.amazon.com/Rou
 - AWSDNSRecords can point to LoadBalancers.
 
 	```
-	(AWSDNSRecord)-[DNS_POINTS_TO]->(LoadBalancer)
+	(AWSDNSRecord)-[DNS_POINTS_TO]->(LoadBalancer, ESDomain)
 	```
 
 
@@ -637,6 +699,12 @@ Our representation of an AWS [EC2 Instance](https://docs.aws.amazon.com/AWSEC2/l
 	(AWSAccount)-[RESOURCE]->(EC2Instance)
 	```
 
+-  EC2 Instances can be tagged with AWSTags.
+
+	```
+	(EC2Instance)-[TAGGED]->(AWSTag)
+	```
+
 
 ## EC2KeyPair
 
@@ -650,6 +718,9 @@ Representation of an AWS [EC2 Key Pair](https://docs.aws.amazon.com/AWSEC2/lates
 | keyfingerprint | The fingerprint of the public key |
 | region| The AWS region |
 | **arn** | AWS-unique identifier for this object |
+ id | same as `arn` |
+| user_uploaded | `user_uploaded` is set to `True` if the the KeyPair was uploaded to AWS. Uploaded KeyPairs will have 128-bit MD5 hashed `keyfingerprint`, and KeyPiars from AWS will have 160-bit SHA-1 hashed `keyfingerprint`s.
+| duplicate_keyfingerprint | `duplicate_keyfingerprint` is set to `True` if the KeyPair has the same `keyfingerprint` as another KeyPair.
 
 ### Relationships
 
@@ -663,6 +734,12 @@ Representation of an AWS [EC2 Key Pair](https://docs.aws.amazon.com/AWSEC2/lates
 
 	```
 	(EC2KeyPair)-[SSH_LOGIN_TO]->(EC2Instance)
+	```
+
+- EC2 key pairs have matching `keyfingerprint`.
+
+	```
+	(EC2KeyPair)-[MATCHING_FINGERPRINT]->(EC2KeyPair)
 	```
 
 
@@ -734,6 +811,12 @@ Representation of an AWS EC2 [Security Group](https://docs.aws.amazon.com/AWSEC2
 	(AWSAccount)-[RESOURCE]->(EC2SecurityGroup)
 	```
 
+-  EC2 SecurityGroups can be tagged with AWSTags.
+
+	```
+	(EC2SecurityGroup)-[TAGGED]->(AWSTag)
+	```
+
 
 ## EC2Subnet
 
@@ -774,6 +857,43 @@ Representation of an AWS EC2 [Subnet](https://docs.aws.amazon.com/AWSEC2/latest/
     (DBSubnetGroup)-[:RESOURCE]->(EC2Subnet)
     ```
 
+
+-  EC2 Subnets can be tagged with AWSTags.
+
+	```
+	(EC2Subnet)-[TAGGED]->(AWSTag)
+	```
+
+
+## EKSCluster
+
+Representation of an AWS [EKS Cluster](https://docs.aws.amazon.com/eks/latest/APIReference/API_Cluster.html).
+
+| Field            | Description                                                                                                 |
+| ---------------- | ----------------------------------------------------------------------------------------------------------- |
+| firstseen        | Timestamp of when a sync job first discovered this node                                                     |
+| lastupdated      | Timestamp of the last time the node was updated                                                             |
+| created_at       | The date and time the cluster was created                                                                   |
+| region           | The AWS region                                                                                              |
+| **arn**          | AWS-unique identifier for this object                                                                       |
+| id               | same as `arn`                                                                                               |
+| name             | Name of the EKS Cluster                                                                                     |
+| endpoint         | The endpoint for the Kubernetes API server.                                                                 |
+| endpoint_public_access | Indicates whether the Amazon EKS public API server endpoint is enabled                                |
+| exposed_internet | Set to True if the EKS Cluster public API server endpoint is enabled                                        |
+| rolearn          | The ARN of the IAM role that provides permissions for the Kubernetes control plane to make calls to AWS API |
+| version          | Kubernetes version running                                                                                  |
+| platform_version | Version of EKS                                                                                              |
+| status           | Status of the cluster. Valid Values: creating, active, deleting, failed, updating                           |
+| audit_logging    | Whether audit logging is enabled                                                                            |
+
+
+### Relationships
+
+- EKS Clusters belong to AWS Accounts.
+      ```
+      (AWSAccount)-[RESOURCE]->(EKSCluster)
+      ```
 
 
 ## ESDomain
@@ -1113,6 +1233,12 @@ Representation of a generic Network Interface.  Currently however, we only creat
 	(EC2Instance)-[NETWORK_INTERFACE]->(NetworkInterface)
 	```
 
+-  EC2 Network Interfaces can be tagged with AWSTags.
+
+	```
+	(NetworkInterface)-[TAGGED]->(AWSTag)
+	```
+
 
 ## RDSInstance
 
@@ -1179,6 +1305,12 @@ Representation of an AWS Relational Database Service [DBInstance](https://docs.a
     (RDSInstance)-[:MEMBER_OF_DB_SUBNET_GROUP]->(DBSubnetGroup)
     ```
 
+-  RDS Instances can be tagged with AWSTags.
+
+	```
+	(RDSInstance)-[TAGGED]->(AWSTag)
+	```
+
 ## S3Acl
 
 Representation of an AWS S3 [Access Control List](https://docs.aws.amazon.com/AmazonS3/latest/API/API_control_S3AccessControlList.html).
@@ -1230,4 +1362,10 @@ Representation of an AWS S3 [Bucket](https://docs.aws.amazon.com/AmazonS3/latest
 
 	```
 	(S3Acl)-[APPLIES_TO]->(S3Bucket)
+	```
+
+-  S3 Buckets can be tagged with AWSTags.
+
+	```
+	(S3Bucket)-[TAGGED]->(AWSTag)
 	```

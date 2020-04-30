@@ -1,10 +1,12 @@
 import logging
 
 from cartography.util import run_cleanup_job
+from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 
 
+@timeit
 def link_aws_resources(neo4j_session, update_tag):
     # find records that point to other records
     link_records = """
@@ -35,6 +37,7 @@ def link_aws_resources(neo4j_session, update_tag):
     neo4j_session.run(link_ec2, aws_update_tag=update_tag)
 
 
+@timeit
 def load_a_records(neo4j_session, records, update_tag):
     ingest_records = """
     UNWIND {records} as record
@@ -54,6 +57,7 @@ def load_a_records(neo4j_session, records, update_tag):
     )
 
 
+@timeit
 def load_alias_records(neo4j_session, records, update_tag):
     # create the DNSRecord nodes and link them to matching DNSZone and S3Bucket nodes
     ingest_records = """
@@ -74,6 +78,7 @@ def load_alias_records(neo4j_session, records, update_tag):
     )
 
 
+@timeit
 def load_cname_records(neo4j_session, records, update_tag):
     ingest_records = """
     UNWIND {records} as record
@@ -93,6 +98,7 @@ def load_cname_records(neo4j_session, records, update_tag):
     )
 
 
+@timeit
 def load_zone(neo4j_session, zone, current_aws_id, update_tag):
     ingest_z = """
     MERGE (zone:DNSZone:AWSDNSZone{zoneid:{ZoneId}})
@@ -115,6 +121,7 @@ def load_zone(neo4j_session, zone, current_aws_id, update_tag):
     )
 
 
+@timeit
 def load_ns_records(neo4j_session, records, zone_name, update_tag):
     ingest_records = """
     UNWIND {records} as record
@@ -159,6 +166,7 @@ def load_ns_records(neo4j_session, records, zone_name, update_tag):
             )
 
 
+@timeit
 def link_sub_zones(neo4j_session, update_tag):
     query = """
     match (z:AWSDNSZone)
@@ -179,7 +187,8 @@ def link_sub_zones(neo4j_session, update_tag):
     )
 
 
-def parse_record_set(record_set, zone_id, name):
+@timeit
+def transform_record_set(record_set, zone_id, name):
     # process CNAME, ALIAS and A records
     if record_set['Type'] == 'CNAME':
         if 'AliasTarget' in record_set:
@@ -192,7 +201,7 @@ def parse_record_set(record_set, zone_id, name):
                 "type": 'CNAME',
                 "zoneid": zone_id,
                 "value": value,
-                "id": _generate_id(zone_id, name, 'WEIGHTED_CNAME'),
+                "id": _create_dns_record_id(zone_id, name, 'WEIGHTED_CNAME'),
             }
         else:
             # This is a normal CNAME record
@@ -204,7 +213,7 @@ def parse_record_set(record_set, zone_id, name):
                 "type": 'CNAME',
                 "zoneid": zone_id,
                 "value": value,
-                "id": _generate_id(zone_id, name, 'CNAME'),
+                "id": _create_dns_record_id(zone_id, name, 'CNAME'),
             }
 
     elif record_set['Type'] == 'A':
@@ -216,7 +225,7 @@ def parse_record_set(record_set, zone_id, name):
                 "type": 'ALIAS',
                 "zoneid": zone_id,
                 "value": record_set['AliasTarget']['DNSName'][:-1],
-                "id": _generate_id(zone_id, name, 'ALIAS'),
+                "id": _create_dns_record_id(zone_id, name, 'ALIAS'),
             }
         else:
             # this is a real A record
@@ -232,24 +241,28 @@ def parse_record_set(record_set, zone_id, name):
                 "type": 'A',
                 "zoneid": zone_id,
                 "value": value[:-1],
-                "id": _generate_id(zone_id, name, 'A'),
+                "id": _create_dns_record_id(zone_id, name, 'A'),
             }
 
 
-def parse_ns_record_set(record_set, zone_id):
+@timeit
+def transform_ns_record_set(record_set, zone_id):
+
     if "ResourceRecords" in record_set:
-        servers = [record["Value"][:-1] for record in record_set["ResourceRecords"]]
+        # Sometimes the value records have a trailing period, sometimes they dont.
+        servers = [_normalize_dns_address(record["Value"]) for record in record_set["ResourceRecords"]]
         return {
             "zoneid": zone_id,
             "type": "NS",
             # looks like "name.some.fqdn.net.", so this removes the trailing comma.
-            "name": record_set["Name"][:-1],
+            "name": _normalize_dns_address(record_set["Name"]),
             "servers": servers,
-            "id": _generate_id(zone_id, record_set['Name'][:-1], 'NS'),
+            "id": _create_dns_record_id(zone_id, record_set['Name'][:-1], 'NS'),
         }
 
 
-def parse_zone(zone):
+@timeit
+def transform_zone(zone):
     # TODO simplify this
     if 'Comment' in zone['Config']:
         comment = zone['Config']['Comment']
@@ -265,19 +278,20 @@ def parse_zone(zone):
     }
 
 
+@timeit
 def load_dns_details(neo4j_session, dns_details, current_aws_id, update_tag):
     for zone, zone_record_sets in dns_details:
         zone_a_records = []
         zone_alias_records = []
         zone_cname_records = []
         zone_ns_records = []
-        parsed_zone = parse_zone(zone)
+        parsed_zone = transform_zone(zone)
 
         load_zone(neo4j_session, parsed_zone, current_aws_id, update_tag)
 
         for record_set in zone_record_sets:
             if record_set['Type'] == 'A' or record_set['Type'] == 'CNAME':
-                record = parse_record_set(record_set, zone['Id'], record_set['Name'][:-1])
+                record = transform_record_set(record_set, zone['Id'], record_set['Name'][:-1])
 
                 if record['type'] == 'A':
                     zone_a_records.append(record)
@@ -287,7 +301,7 @@ def load_dns_details(neo4j_session, dns_details, current_aws_id, update_tag):
                     zone_cname_records.append(record)
 
             if record_set['Type'] == 'NS':
-                record = parse_ns_record_set(record_set, zone['Id'])
+                record = transform_ns_record_set(record_set, zone['Id'])
                 zone_ns_records.append(record)
         if zone_a_records:
             load_a_records(neo4j_session, zone_a_records, update_tag)
@@ -302,6 +316,7 @@ def load_dns_details(neo4j_session, dns_details, current_aws_id, update_tag):
     link_aws_resources(neo4j_session, update_tag)
 
 
+@timeit
 def get_zone_record_sets(client, zone_id):
     resource_record_sets = []
     paginator = client.get_paginator('list_resource_record_sets')
@@ -311,6 +326,7 @@ def get_zone_record_sets(client, zone_id):
     return resource_record_sets
 
 
+@timeit
 def get_zones(client):
     paginator = client.get_paginator('list_hosted_zones')
     hosted_zones = []
@@ -324,10 +340,15 @@ def get_zones(client):
     return results
 
 
-def _generate_id(zoneid, name, record_type):
+def _create_dns_record_id(zoneid, name, record_type):
     return "/".join([zoneid, name, record_type])
 
 
+def _normalize_dns_address(address):
+    return address.rstrip('.')
+
+
+@timeit
 def cleanup_route53(neo4j_session, current_aws_id, update_tag):
     run_cleanup_job(
         'aws_dns_cleanup.json',
@@ -336,6 +357,7 @@ def cleanup_route53(neo4j_session, current_aws_id, update_tag):
     )
 
 
+@timeit
 def sync(neo4j_session, boto3_session, aws_id, update_tag):
     logger.info("Syncing Route53 for account '%s'.", aws_id)
     client = boto3_session.client('route53')

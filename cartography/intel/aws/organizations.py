@@ -4,6 +4,7 @@ import boto3
 import botocore.exceptions
 
 from cartography.util import run_cleanup_job
+from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +25,7 @@ def get_current_aws_account_id(boto3_session):
 
 def get_aws_account_default(boto3_session):
     try:
-        return {"default": get_current_aws_account_id(boto3_session)}
+        return {boto3_session.profile_name: get_current_aws_account_id(boto3_session)}
     except (botocore.exceptions.BotoCoreError, botocore.exceptions.ClientError) as e:
         logger.debug("Error occurred getting default AWS account number.", exc_info=True)
         logger.error(
@@ -113,6 +114,7 @@ def cleanup(neo4j_session, common_job_parameters):
     run_cleanup_job('aws_account_cleanup.json', neo4j_session, common_job_parameters)
 
 
+@timeit
 def sync(neo4j_session, accounts, aws_update_tag, common_job_parameters):
     load_aws_accounts(neo4j_session, accounts, aws_update_tag, common_job_parameters)
     cleanup(neo4j_session, common_job_parameters)

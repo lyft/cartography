@@ -5,6 +5,7 @@ import os
 import sys
 
 import cartography.sync
+import cartography.util
 
 
 logger = logging.getLogger(__name__)
@@ -121,6 +122,23 @@ class CLI:
                 'https://docs.cloud.oracle.com/iaas/Content/API/Concepts/sdkconfig.htm) and run the OCI sync '
                 'job for each profile not named "DEFAULT". If this parameter is not supplied, cartography will use the '
                 'default OCI credentials available in your environment to run the OCI sync once.'
+                 )
+        ),
+        parser.add_argument(
+            '--crxcavator-api-base-uri',
+            type=str,
+            default='https://api.crxcavator.io/v1',
+            help=(
+                'Base URI for the CRXcavator API. Defaults to public API endpoint.'
+            ),
+        )
+        parser.add_argument(
+            '--crxcavator-api-key-env-var',
+            type=str,
+            default=None,
+            help=(
+                'The name of an environment variable containing a key with which to auth to the CRXcavator API. '
+                'Required if you are using the CRXcavator intel module. Ignored otherwise.'
             ),
         )
         parser.add_argument(
@@ -163,6 +181,55 @@ class CLI:
                 'The regex must contain the {{role}} and {{accountid}} tags'
             ),
         )
+        parser.add_argument(
+            '--github-config-env-var',
+            type=str,
+            default=None,
+            help=(
+                'The name of an environment variable containing a Base64 encoded GitHub config object.'
+                'Required if you are using the GitHub intel module. Ignored otherwise.'
+            ),
+        )
+        parser.add_argument(
+            '--permission-relationships-file',
+            type=str,
+            default="cartography/data/permission_relationships.yaml",
+            help=(
+                'The path to the permission relationships mapping file.'
+                'If omitted the default permission relationships will be created'
+            ),
+        )
+        parser.add_argument(
+            '--statsd-enabled',
+            action='store_true',
+            help=(
+                'If set, enables sending metrics using statsd to a server of your choice.'
+            ),
+        )
+        parser.add_argument(
+            '--statsd-prefix',
+            type=str,
+            default='',
+            help=(
+                'The string to prefix statsd metrics with. Only used if --statsd-enabled is on. Default = empty string.'
+            ),
+        )
+        parser.add_argument(
+            '--statsd-host',
+            type=str,
+            default='127.0.0.1',
+            help=(
+                'The IP address of your statsd server. Only used if --statsd-enabled is on. Default = 127.0.0.1.'
+            ),
+        )
+        parser.add_argument(
+            '--statsd-port',
+            type=int,
+            default=8125,
+            help=(
+                'The port of your statsd server. Only used if --statsd-enabled is on. Default = UDP 8125.'
+            ),
+        )
         return parser
 
     def main(self, argv):
@@ -174,6 +241,7 @@ class CLI:
         """
         # TODO support parameter lookup in environment variables if not present on command line
         config = self.parser.parse_args(argv)
+        # Logging config
         if config.verbose:
             logging.getLogger('cartography').setLevel(logging.DEBUG)
         elif config.quiet:
@@ -181,6 +249,7 @@ class CLI:
         else:
             logging.getLogger('cartography').setLevel(logging.INFO)
         logger.debug("Launching cartography with CLI configuration: %r", vars(config))
+        # Neo4j config
         if config.neo4j_user:
             config.neo4j_password = None
             if config.neo4j_password_prompt:
@@ -197,10 +266,33 @@ class CLI:
                 logger.warning("Neo4j username was provided but a password could not be found.")
         else:
             config.neo4j_password = None
+
         # Okta config
         if config.okta_org_id and config.okta_api_key_env_var:
             logger.debug(f"Reading API key for Okta from environment variable {config.okta_api_key_env_var}")
             config.okta_api_key = os.environ.get(config.okta_api_key_env_var)
+        else:
+            config.okta_api_key = None
+
+        # CRXcavator config
+        if config.crxcavator_api_base_uri and config.crxcavator_api_key_env_var:
+            logger.debug(f"Reading API key for CRXcavator from env variable {config.crxcavator_api_key_env_var}.")
+            config.crxcavator_api_key = os.environ.get(config.crxcavator_api_key_env_var)
+        else:
+            config.crxcavator_api_key = None
+
+        # GitHub config
+        if config.github_config_env_var:
+            logger.debug(f"Reading config string for GitHub from environment variable {config.github_config_env_var}")
+            config.github_config = os.environ.get(config.github_config_env_var)
+        else:
+            config.github_config = None
+
+        if config.statsd_enabled:
+            logger.debug(
+                f'statsd enabled. Sending metrics to server {config.statsd_host}:{config.statsd_port}. '
+                f'Metrics have prefix "{config.statsd_prefix}".',
+            )
 
         # Run cartography
         try:

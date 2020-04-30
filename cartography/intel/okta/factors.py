@@ -4,10 +4,13 @@ import logging
 from okta import FactorsClient
 from okta.framework.OktaError import OktaError
 
+from cartography.util import timeit
+
 
 logger = logging.getLogger(__name__)
 
 
+@timeit
 def _create_factor_client(okta_org, okta_api_key):
     """
     Create Okta FactorsClient
@@ -25,6 +28,7 @@ def _create_factor_client(okta_org, okta_api_key):
     return factor_client
 
 
+@timeit
 def _get_factor_for_user_id(factor_client, user_id):
     """
     Get factor for user from the Okta server
@@ -46,6 +50,7 @@ def _get_factor_for_user_id(factor_client, user_id):
     return factor_results
 
 
+@timeit
 def transform_okta_user_factor_list(okta_factor_list):
     factors = []
 
@@ -55,6 +60,7 @@ def transform_okta_user_factor_list(okta_factor_list):
     return factors
 
 
+@timeit
 def transform_okta_user_factor(okta_factor_info):
     """
     Transform okta user factor into consumable data for the graph
@@ -82,6 +88,7 @@ def transform_okta_user_factor(okta_factor_info):
     return factor_props
 
 
+@timeit
 def _load_user_factors(neo4j_session, user_id, factors, okta_update_tag):
     """
     Add user factors into the graph
@@ -118,6 +125,7 @@ def _load_user_factors(neo4j_session, user_id, factors, okta_update_tag):
     )
 
 
+@timeit
 def sync_users_factors(neo4j_session, okta_org_id, okta_update_tag, okta_api_key, sync_state):
     """
     Sync user factors

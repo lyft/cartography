@@ -4,9 +4,12 @@ import logging
 import requests.auth
 from requests import exceptions
 
+from cartography.util import timeit
+
 logger = logging.getLogger(__name__)
 
 
+@timeit
 def get_extension_details(crxcavator_api_key, crxcavator_base_url, extension_id, version):
     """
     Get metadata for the specific extension_id and version number provided
@@ -20,6 +23,7 @@ def get_extension_details(crxcavator_api_key, crxcavator_base_url, extension_id,
     return call_crxcavator_api(f"/report/{extension_id}/{version}", crxcavator_api_key, crxcavator_base_url)
 
 
+@timeit
 def get_users_extensions(crxcavator_api_key, crxcavator_base_url):
     """
     Gets listing of all users who have installed each extension
@@ -31,6 +35,7 @@ def get_users_extensions(crxcavator_api_key, crxcavator_base_url):
     return call_crxcavator_api("/group/users/extensions", crxcavator_api_key, crxcavator_base_url)
 
 
+@timeit
 def call_crxcavator_api(api_and_parameters, crxcavator_api_key, crxcavator_base_url):
     """
     Perform the call requested to the CRXcavator API
@@ -52,6 +57,7 @@ def call_crxcavator_api(api_and_parameters, crxcavator_api_key, crxcavator_base_
     return data.json()
 
 
+@timeit
 def get_extensions(crxcavator_api_key, crxcavator_base_url, extensions_list):
     """
     Retrieves the detailed information for all the extension_id and version pairs
@@ -83,6 +89,7 @@ def get_extensions(crxcavator_api_key, crxcavator_base_url, extensions_list):
     return extensions_details
 
 
+@timeit
 def transform_extensions(extension_details):
     """
     Transforms the raw extensions JSON from the API into a list of extensions data
@@ -137,6 +144,7 @@ def transform_extensions(extension_details):
     return extensions
 
 
+@timeit
 def get_risk_data(data_dict, key):
     """
     Gets the total risk value from the provided key and returns the value else 0
@@ -149,6 +157,7 @@ def get_risk_data(data_dict, key):
     return data_score
 
 
+@timeit
 def load_extensions(extensions, session, update_tag):
     """
     Ingests the extension details into Neo4J
@@ -199,6 +208,7 @@ def load_extensions(extensions, session, update_tag):
     session.run(ingestion_cypher, ExtensionsData=extensions, UpdateTag=update_tag)
 
 
+@timeit
 def transform_user_extensions(user_extension_json):
     """
     Transforms the raw extensions JSON from the API into a list of extensions mapped to users
@@ -219,6 +229,9 @@ def transform_user_extensions(user_extension_json):
                 'name': details[1]['name'],
             })
             for user in details[1]['users']:
+                if user is None:
+                    logger.info(f'bad user for {extension_id}{version}')
+                    continue
                 users_set.add(user)
                 extensions_by_user.append({
                     'id': f"{extension_id}|{version}",
@@ -234,6 +247,7 @@ def transform_user_extensions(user_extension_json):
     return list(users_set), extensions, extensions_by_user
 
 
+@timeit
 def load_user_extensions(users, extensions_by_user, session, update_tag):
     """
     Ingests the extension to user mapping details into Neo4J
@@ -267,6 +281,7 @@ def load_user_extensions(users, extensions_by_user, session, update_tag):
     session.run(extension_ingestion_cypher, ExtensionsUsers=extensions_by_user, UpdateTag=update_tag)
 
 
+@timeit
 def sync_extensions(neo4j_session, common_job_parameters, crxcavator_api_key, crxcavator_base_url):
     """
     Performs the sequential tasks to collect, transform, and sync extension data

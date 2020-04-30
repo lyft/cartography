@@ -4,9 +4,12 @@ from googleapiclient.discovery import HttpError
 
 from cartography.intel.gcp import compute
 from cartography.util import run_cleanup_job
+from cartography.util import timeit
+
 logger = logging.getLogger(__name__)
 
 
+@timeit
 def get_gcp_buckets(storage, project_id):
     """
     Returns a list of storage objects within some given project
@@ -47,6 +50,7 @@ def get_gcp_buckets(storage, project_id):
             raise
 
 
+@timeit
 def transform_gcp_buckets(bucket_res):
     '''
     Transform the GCP Storage Bucket response object for Neo4j ingestion
@@ -87,6 +91,7 @@ def transform_gcp_buckets(bucket_res):
     return bucket_list
 
 
+@timeit
 def load_gcp_buckets(neo4j_session, buckets, gcp_update_tag):
     '''
     Ingest GCP Storage Buckets to Neo4j
@@ -117,7 +122,6 @@ def load_gcp_buckets(neo4j_session, buckets, gcp_update_tag):
     bucket.kind = {Kind},
     bucket.location = {Location},
     bucket.location_type = {LocationType},
-    bucket.labels = {Labels},
     bucket.meta_generation = {MetaGeneration},
     bucket.storage_class = {StorageClass},
     bucket.time_created = {TimeCreated},
@@ -141,7 +145,6 @@ def load_gcp_buckets(neo4j_session, buckets, gcp_update_tag):
             ProjectNumber=bucket['project_number'],
             BucketId=bucket['id'],
             SelfLink=bucket['self_link'],
-            Labels=bucket['labels'],
             Kind=bucket['kind'],
             Location=bucket['location'],
             LocationType=bucket['location_type'],
@@ -158,8 +161,42 @@ def load_gcp_buckets(neo4j_session, buckets, gcp_update_tag):
             DefaultKmsKeyName=bucket['default_kms_key_name'],
             gcp_update_tag=gcp_update_tag,
         )
+        _attach_gcp_bucket_labels(neo4j_session, bucket, gcp_update_tag)
 
 
+@timeit
+def _attach_gcp_bucket_labels(neo4j_session, bucket, gcp_update_tag):
+    """
+    Attach GCP bucket labels to the bucket.
+    :param neo4j_session: The neo4j session
+    :param bucket: The GCP bucket object
+    :param gcp_update_tag: The update tag for this sync
+    :return: Nothing
+    """
+    query = """
+    MERGE (l:Label:GCPBucketLabel{id: {BucketLabelId}})
+    ON CREATE SET l.firstseen = timestamp(),
+    l.key = {Key}
+    SET l.value = {Value},
+    l.lastupdated = {gcp_update_tag}
+    WITH l
+    MATCH (bucket:GCPBucket{id:{BucketId}})
+    MERGE (l)<-[r:LABELED]-(bucket)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}
+    """
+    for (key, val) in bucket.get('labels', []):
+        neo4j_session.run(
+            query,
+            BucketLabelId=f"GCPBucket_{key}",
+            Key=key,
+            Value=val,
+            BucketId=bucket['id'],
+            gcp_update_tag=gcp_update_tag,
+        )
+
+
+@timeit
 def cleanup_gcp_buckets(neo4j_session, common_job_parameters):
     """
     Delete out-of-date GCP Storage Bucket nodes and relationships
@@ -176,6 +213,7 @@ def cleanup_gcp_buckets(neo4j_session, common_job_parameters):
     run_cleanup_job('gcp_storage_bucket_cleanup.json', neo4j_session, common_job_parameters)
 
 
+@timeit
 def sync_gcp_buckets(neo4j_session, storage, project_id, gcp_update_tag, common_job_parameters):
     """
     Get GCP instances using the Storage resource object, ingest to Neo4j, and clean up old data.

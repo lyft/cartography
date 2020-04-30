@@ -1,19 +1,39 @@
 import logging
+from string import Template
 
 import dns.rdatatype
 import dns.resolver
 
+from cartography.util import timeit
+
 logger = logging.getLogger(__name__)
 
 
-def ingest_dns_record_by_fqdn(neo4j_session, update_tag, fqdn, points_to_record):
+@timeit
+def ingest_dns_record_by_fqdn(
+    neo4j_session, update_tag, fqdn, points_to_record, record_label,
+    dns_node_additional_label=None,
+):
     """
-    Ingest a new DNS record by it's FQDN
+    Creates a :DNSRecord node in the graph from the given FQDN and performs DNS resolution to connect it to its
+    associated IP addresses.
+    This also connects the new :DNSRecord to the node with ID `points_to_record` of label `record_label`.
+    Finally, the :DNSRecord node is also labeled with a specified `dns_node_additional_label`, e.g. `AWSDNSRecord`.
+
+    This results the following new nodes and relationships:
+    (:DNSRecord:$`dns_node_additional_label`)-[:DNS_POINTS_TO]->(:Ip)
+    (:DNSRecord:$`dns_node_additional_label`)-[:DNS_POINTS_TO]->(:$`record_label`)
+
+    Example usage in ElasticSearch sync:
+    ingest_dns_record_by_fqdn(neo4j_session, aws_update_tag, fqdn, node_id_of_the_ESDomain,
+                              dns_node_additional_label="ESDomain")
 
     :param neo4j_session: Neo4j session object
     :param update_tag: Update tag to set the node with and childs
     :param fqdn: the fqdn record to add
     :param points_to_record: parent record to set DNS_POINTS_TO relationship to. Can be None
+    :param record_label: the label of the node to attach to a DNS record, e.g. "ESDomain"
+    :param dns_node_additional_label: The specific label of the DNSRecord, e.g. AWSDNSRecord.
     :return: the graph node id for the new/merged record
     """
     fqdn_data = get_dns_resolution_by_fqdn(fqdn)
@@ -26,7 +46,10 @@ def ingest_dns_record_by_fqdn(neo4j_session, update_tag, fqdn, points_to_record)
             ip_list.append(ip)
 
         value = ",".join(ip_list)
-        record_id = ingest_dns_record(neo4j_session, fqdn, value, record_type, update_tag, points_to_record)
+        record_id = ingest_dns_record(
+            neo4j_session, fqdn, value, record_type, update_tag, points_to_record,
+            record_label, dns_node_additional_label,
+        )
         _link_ip_to_A_record(neo4j_session, update_tag, ip_list, record_id)
 
         return record_id
@@ -39,6 +62,7 @@ def ingest_dns_record_by_fqdn(neo4j_session, update_tag, fqdn, points_to_record)
         )
 
 
+@timeit
 def _link_ip_to_A_record(neo4j_session, update_tag, ip_list, parent_record):
     """
     Link A record to to its IP
@@ -69,7 +93,11 @@ def _link_ip_to_A_record(neo4j_session, update_tag, ip_list, parent_record):
     )
 
 
-def ingest_dns_record(neo4j_session, name, value, type, update_tag, points_to_record):
+@timeit
+def ingest_dns_record(
+    neo4j_session, name, value, type, update_tag, points_to_record, record_label,
+    dns_node_additional_label,
+):
     """
     Ingest a new DNS record
 
@@ -79,23 +107,25 @@ def ingest_dns_record(neo4j_session, name, value, type, update_tag, points_to_re
     :param type: record type
     :param update_tag: Update tag to set the node with and childs
     :param points_to_record: parent record to set DNS_POINTS_TO relationship to. Can be None
+    :param record_label: the label of the node to attach to a DNS record
+    :param dns_node_additional_label: The specific label of the DNSRecord, e.g. AWSDNSRecord.
     :return: the intel graph node id for the new/merged record
     """
-    ingest = """
-    MERGE (record:DNSRecord{id: {Id}})
+    template = Template("""
+    MERGE (record:DNSRecord:$dns_node_additional_label{id: {Id}})
     ON CREATE SET record.firstseen = timestamp(), record.name = {Name}, record.type = {Type}
     SET record.lastupdated = {update_tag}, record.value = {Value}
     WITH record
-    MATCH (n{id: {PointsToId}})
+    MATCH (n:$record_label{id: {PointsToId}})
     MERGE (record)-[r:DNS_POINTS_TO]->(n)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {update_tag}
-    """
+    """)
 
     record_id = f"{name}+{type}"
 
     neo4j_session.run(
-        ingest,
+        template.safe_substitute(record_label=record_label, dns_node_additional_label=dns_node_additional_label),
         Id=record_id,
         Name=name,
         Type=type,
@@ -107,6 +137,7 @@ def ingest_dns_record(neo4j_session, name, value, type, update_tag, points_to_re
     return record_id
 
 
+@timeit
 def get_dns_resolution_by_fqdn(fqdn):
     """
     Get dns resolution data for fqdn
