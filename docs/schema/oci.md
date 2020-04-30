@@ -1,3 +1,19 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [OCITenancy](#ocitenancy)
+  - [Relationships](#relationships)
+- [OCIUser](#ociuser)
+  - [Relationships\](#relationships%5C)
+- [OCIGroup](#ocigroup)
+  - [Relationships](#relationships-1)
+- [OCIPolicy](#ocipolicy)
+  - [Relationships](#relationships-2)
+- [OCIRegion](#ociregion)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 #Copyright (c) 2020, Oracle and/or its affiliates.
 
 ## OCITenancy
