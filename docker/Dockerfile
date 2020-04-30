@@ -12,4 +12,6 @@ WORKDIR /home/app
 COPY setup.py .
 RUN pip install -e .
 
+COPY docker/run_cartography.sh run_cartography.sh
+
 COPY . ./
