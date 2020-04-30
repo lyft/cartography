@@ -3,6 +3,7 @@
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
 - [Cartography Installation](#cartography-installation)
+  - [Docker Deploys](#docker-deploys)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -43,14 +44,3 @@ Time to set up the server that will run Cartography.  Cartography _should_ work 
 	    You can view a full list of Cartography's CLI arguments by running `cartography --help`
 
 		The sync will pull data from your configured accounts and ingest data to Neo4j!  This process might take a long time if your account has a lot of assets.
-
-## Docker Deploys
-1. Ensure that the docker daemon is installed in running.
-2. Ensure that the following environment variables are set in the shell
-	- AWS_ACCESS_KEY_ID
-	- AWS_SECRET_ACCESS_KEY
-	- AWS_SESSION_TOKEN
-	- NEO4J_USERNAME (If this is the first time you are deploying cartography, then this value must be `neo4j`.)
-	- NEO4J_PASSWORD
-3. Run `docker-compose build`
-4. Run `docker-compose up`

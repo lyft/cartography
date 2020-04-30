@@ -3,7 +3,7 @@ services:
   neo4j:
     environment:
       # The initial neo4j username MUST BE "neo4j" if a db user has not been previously created.
-      # The initial neo4j passworrd is tied to the docker volume
+      # The initial neo4j password is tied to the docker volume
       # If you want to update the password you must update the account in neo4j
       # Then, you need to relaunch cartography process so it has the updated password
       - NEO4J_AUTH=${NEO4J_USERNAME}/${NEO4J_PASSWORD}
@@ -26,8 +26,8 @@ services:
     container_name: cartography
     image: cartography
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ../
+      dockerfile: docker/Dockerfile
     depends_on:
       - neo4j
     command: "sh -c /home/app/run_cartography.sh"

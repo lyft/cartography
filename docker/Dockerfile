@@ -13,4 +13,3 @@ COPY setup.py .
 RUN pip install -e .
 
 COPY . ./
-RUN pip install -e .
