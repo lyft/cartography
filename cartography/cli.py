@@ -180,6 +180,15 @@ class CLI:
             ),
         )
         parser.add_argument(
+            '--permission-relationships-file',
+            type=str,
+            default="cartography/data/permission_relationships.yaml",
+            help=(
+                'The path to the permission relationships mapping file.'
+                'If omitted the default permission relationships will be created'
+            ),
+        )
+        parser.add_argument(
             '--statsd-enabled',
             action='store_true',
             help=(
@@ -251,10 +260,12 @@ class CLI:
         if config.okta_org_id and config.okta_api_key_env_var:
             logger.debug(f"Reading API key for Okta from environment variable {config.okta_api_key_env_var}")
             config.okta_api_key = os.environ.get(config.okta_api_key_env_var)
+        else:
+            config.okta_api_key = None
 
         # CRXcavator config
         if config.crxcavator_api_base_uri and config.crxcavator_api_key_env_var:
-            logger.debug("Reading API key for CRXcavator from environment variable '%s'.")
+            logger.debug(f"Reading API key for CRXcavator from env variable {config.crxcavator_api_key_env_var}.")
             config.crxcavator_api_key = os.environ.get(config.crxcavator_api_key_env_var)
         else:
             config.crxcavator_api_key = None
