@@ -12,7 +12,7 @@
 
 Follow these steps to analyze OCI assets with Cartography.
 
-### Single AWS Tenancy Setup
+### Single OCI Tenancy Setup
 
 1. If you're a OCI user, **prepare your OCI credential(s)**
 
