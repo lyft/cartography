@@ -52,6 +52,27 @@ def _sync_one_account(neo4j_session, boto3_session, account_id, sync_tag, common
     resourcegroupstaggingapi.sync(neo4j_session, boto3_session, regions, sync_tag, common_job_parameters)
 
 
+def _autodiscover_accounts(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters):
+    logger.info("Trying to autodiscover accounts.")
+    try:
+        # Fetch all accounts
+        client = boto3_session.client('organizations')
+        paginator = client.get_paginator('list_accounts')
+        accounts = []
+        for page in paginator.paginate():
+            accounts.extend(page['Accounts'])
+
+        # Filter out every account which is not in the ACTIVE status
+        # and select only the Id and Name fields
+        accounts = {x['Name']:x['Id'] for x in accounts if x['Status'] == 'ACTIVE'}
+
+        # Add them to the graph
+        logger.info("Loading autodiscovered accounts.")
+        organizations.load_aws_accounts(neo4j_session, accounts, sync_tag, common_job_parameters)
+    except:
+        logger.debug("The current account ({}) doesn't have enough permissions to perform autodiscovery.".format(account_id))
+
+
 def _sync_multiple_accounts(neo4j_session, accounts, sync_tag, common_job_parameters):
     logger.debug("Syncing AWS accounts: %s", ', '.join(accounts.values()))
     organizations.sync(neo4j_session, accounts, sync_tag, common_job_parameters)
@@ -61,22 +82,7 @@ def _sync_multiple_accounts(neo4j_session, accounts, sync_tag, common_job_parame
         common_job_parameters["AWS_ID"] = account_id
         boto3_session = boto3.Session(profile_name=profile_name)
 
-        #######
-        # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/organizations.html#Organizations.Client.list_accounts
-        # TODO: CHECK PAGINATION
-        # TODO: CHECK PERMISSIONS
-        # TODO: filter by 'Status': 'ACTIVE'
-        logger.info(">>>>> LOOK FOR ACCOUNTS")
-        try:
-            org = boto3_session.client('organizations')
-            response = org.list_accounts()
-            for el in response.get('Accounts'):
-                # {'Id': '', 'Arn': '', 'Email': '', 'Name': '', 'Status': '', 'JoinedMethod': '', 'JoinedTimestamp': datetime.datetime(2018, 1, 9, 17, 52, 12, 909000, tzinfo=tzlocal())}
-                print(">>>>>> {}".format(el))
-            print(">>>>>> {}".format(len(response.get('Accounts'))))
-        except:
-            logger.error(">>>> NO PERMISSIONS")
-        #######
+        _autodiscover_accounts(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters)
 
         _sync_one_account(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters)
 
