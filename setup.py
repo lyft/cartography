@@ -40,7 +40,6 @@ setup(
         "pyyaml>=5.3.1",
         "requests>=2.22.0",
         "statsd",
-        "multiprocessing-dag>=0.1.0",
         "multiprocessing-logging>=0.3.0",
     ],
     extras_require={

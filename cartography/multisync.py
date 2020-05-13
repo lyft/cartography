@@ -1,8 +1,9 @@
 import logging
+from time import sleep
 
-import multiprocessing_dag
 import multiprocessing_logging
 
+import lib.multiprocessing_dag as multiprocessing_dag
 import cartography.config
 import cartography.sync
 import cartography.intel.create_indexes
@@ -15,6 +16,13 @@ from cartography.intel.gsuite import start_gsuite_ingestion
 
 logger = logging.getLogger(__name__)
 
+def mock_sync_1(neo4j_session=None, config=None):
+    sleep(5)
+
+
+def mock_sync_2(neo4j_session=None, config=None):
+    sleep(10)
+
 
 class SyncStage:
     def __init__(self, name, func):
@@ -26,6 +34,7 @@ class SyncStage:
         self.logger.info("Starting sync stage '%s' with update tag '%d'", self.name, config.update_tag)
         with neo4j_driver.session() as neo4j_session:
             try:
+                # Note to self - this set of params _must_ be followed for all start_* funcs
                 self.func(neo4j_session, config)
             except (KeyboardInterrupt, SystemExit):
                 self.logger.warning("Sync stage '%s' interrupted", self.name)
@@ -88,14 +97,16 @@ def build_pipeline(config):
     task_aws = build_cartography_sync_task(
         config,
         'aws',
-        start_aws_ingestion,
+        mock_sync_1,
+        # start_aws_ingestion,
     )
     pipeline_multi.add(task_aws)
 
     task_gcp = build_cartography_sync_task(
         config,
         'gcp',
-        start_gcp_ingestion,
+        mock_sync_2,
+        # start_gcp_ingestion,
     )
     pipeline_multi.add(task_gcp)
 
@@ -118,17 +129,17 @@ def build_pipeline(config):
     # Sequential pipeline
     pipeline_sequential = multiprocessing_dag.Pipeline(name='sequential')
 
-    pipeline_sequential.add(
-        multiprocessing_dag.Task(
-            name='sequential',
-            commands=[
-                SyncCommand(
-                    build_mainline_sync(),
-                    config
-                )
-            ],
-        )
-    )
+    # pipeline_sequential.add(
+    #     multiprocessing_dag.Task(
+    #         name='sequential',
+    #         commands=[
+    #             SyncCommand(
+    #                 build_mainline_sync(),
+    #                 config
+    #             )
+    #         ],
+    #     )
+    # )
 
     pipeline.add(pipeline_sequential, upstreams=[pipeline_start, pipeline_multi])
 
