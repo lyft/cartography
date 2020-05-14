@@ -64,13 +64,13 @@ def _autodiscover_accounts(neo4j_session, boto3_session, account_id, sync_tag, c
 
         # Filter out every account which is not in the ACTIVE status
         # and select only the Id and Name fields
-        accounts = {x['Name']:x['Id'] for x in accounts if x['Status'] == 'ACTIVE'}
+        accounts = {x['Name']: x['Id'] for x in accounts if x['Status'] == 'ACTIVE'}
 
         # Add them to the graph
         logger.info("Loading autodiscovered accounts.")
         organizations.load_aws_accounts(neo4j_session, accounts, sync_tag, common_job_parameters)
-    except:
-        logger.debug("The current account ({}) doesn't have enough permissions to perform autodiscovery.".format(account_id))
+    except botocore.exceptions.ClientError:
+        logger.debug(f"The current account ({account_id}) doesn't have enough permissions to perform autodiscovery.")
 
 
 def _sync_multiple_accounts(neo4j_session, accounts, sync_tag, common_job_parameters):
