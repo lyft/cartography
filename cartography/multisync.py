@@ -169,7 +169,12 @@ if __name__ == '__main__':
     import sys
     logging.basicConfig(level=logging.DEBUG)
     multiprocessing_logging.install_mp_handler()
+    logging.basicConfig(
+        format='%(asctime)s %(levelname)-8s %(message)s',
+        level=logging.INFO,
+        datefmt='%Y-%m-%d %H:%M:%S')
     logging.getLogger('neo4j.bolt').setLevel(logging.WARNING)
+
     try:
         main()
     except Exception:
