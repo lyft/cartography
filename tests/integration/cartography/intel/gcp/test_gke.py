@@ -34,7 +34,7 @@ def test_load_eks_clusters_relationships(neo4j_session):
     # Create Test GCPProject
     neo4j_session.run(
         """
-        MERGE (gcp:GCPProject{projectnumber: {PROJECT_NUMBER}})
+        MERGE (gcp:GCPProject{id: {PROJECT_NUMBER}})
         ON CREATE SET gcp.firstseen = timestamp()
         SET gcp.lastupdated = {UPDATE_TAG}
         """,
@@ -58,12 +58,12 @@ def test_load_eks_clusters_relationships(neo4j_session):
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:GCPProject)-[:RESOURCE]->(n2:GKECluster) RETURN n1.projectnumber, n2.id;
+        MATCH (n1:GCPProject)-[:RESOURCE]->(n2:GKECluster) RETURN n1.id, n2.id;
         """
     )
 
     actual = {
-        (r['n1.projectnumber'], r['n2.id']) for r in result
+        (r['n1.id'], r['n2.id']) for r in result
     }
 
     assert actual == expected

@@ -1,10 +1,12 @@
 import logging
 
 from cartography.util import run_cleanup_job
+from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 
 
+@timeit
 def get_rds_instance_data(boto3_session, region):
     """
     Create an RDS boto3 client and grab all the DBInstances.
@@ -17,6 +19,7 @@ def get_rds_instance_data(boto3_session, region):
     return {'DBInstances': instances}
 
 
+@timeit
 def load_rds_instances(neo4j_session, data, region, current_aws_account_id, aws_update_tag):
     """
     Ingest the RDS instances to neo4j and link them to necessary nodes.
@@ -114,6 +117,7 @@ def load_rds_instances(neo4j_session, data, region, current_aws_account_id, aws_
     _attach_read_replicas(neo4j_session, read_replicas, aws_update_tag)
 
 
+@timeit
 def _attach_ec2_subnet_groups(neo4j_session, instance, region, current_aws_account_id, aws_update_tag):
     """
     Attach RDS instance to its EC2 subnets
@@ -148,6 +152,7 @@ def _attach_ec2_subnet_groups(neo4j_session, instance, region, current_aws_accou
         _attach_ec2_subnets_to_subnetgroup(neo4j_session, db_sng, region, current_aws_account_id, aws_update_tag)
 
 
+@timeit
 def _attach_ec2_subnets_to_subnetgroup(neo4j_session, db_subnet_group, region, current_aws_account_id, aws_update_tag):
     """
     Attach EC2Subnets to the DB Subnet Group.
@@ -179,6 +184,7 @@ def _attach_ec2_subnets_to_subnetgroup(neo4j_session, db_subnet_group, region, c
         )
 
 
+@timeit
 def _attach_ec2_security_groups(neo4j_session, instance, aws_update_tag):
     """
     Attach an RDS instance to its EC2SecurityGroups
@@ -199,6 +205,7 @@ def _attach_ec2_security_groups(neo4j_session, instance, aws_update_tag):
         )
 
 
+@timeit
 def _attach_read_replicas(neo4j_session, read_replicas, aws_update_tag):
     """
     Attach read replicas to their source instances
@@ -240,6 +247,7 @@ def _get_db_subnet_group_arn(region, current_aws_account_id, db_subnet_group_nam
     return f"arn:aws:rds:{region}:{current_aws_account_id}:subgrp:{db_subnet_group_name}"
 
 
+@timeit
 def cleanup_rds_instances_and_db_subnet_groups(neo4j_session, common_job_parameters):
     """
     Remove RDS graph nodes and DBSubnetGroups that were created from other ingestion runs
@@ -247,6 +255,7 @@ def cleanup_rds_instances_and_db_subnet_groups(neo4j_session, common_job_paramet
     run_cleanup_job('aws_import_rds_instances_cleanup.json', neo4j_session, common_job_parameters)
 
 
+@timeit
 def sync_rds_instances(
     neo4j_session, boto3_session, regions, current_aws_account_id, aws_update_tag,
     common_job_parameters,

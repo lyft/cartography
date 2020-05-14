@@ -2,6 +2,7 @@ import logging
 from string import Template
 
 from cartography.util import run_cleanup_job
+from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +48,7 @@ TAG_RESOURCE_TYPE_MAPPINGS = {
 }
 
 
+@timeit
 def get_tags(boto3_session, resource_types, region):
     """
     Create boto3 client and retrieve tag data.
@@ -63,6 +65,7 @@ def get_tags(boto3_session, resource_types, region):
     return resources
 
 
+@timeit
 def load_tags(neo4j_session, tag_data, resource_type, region, aws_update_tag):
     INGEST_TAG_TEMPLATE = Template("""
     MATCH (resource:$resource_label{$property:{ResourceId}})
@@ -92,6 +95,7 @@ def load_tags(neo4j_session, tag_data, resource_type, region, aws_update_tag):
             )
 
 
+@timeit
 def transform_tags(tag_data, resource_type):
     for tag_mapping in tag_data:
         tag_mapping['resource_id'] = compute_resource_id(tag_mapping, resource_type)
@@ -105,10 +109,12 @@ def compute_resource_id(tag_mapping, resource_type):
     return resource_id
 
 
+@timeit
 def cleanup(neo4j_session, common_job_parameters):
     run_cleanup_job('aws_import_tags_cleanup.json', neo4j_session, common_job_parameters)
 
 
+@timeit
 def sync(neo4j_session, boto3_session, regions, aws_update_tag, common_job_parameters):
     for region in regions:
         logger.info("Syncing AWS tags for region '%s'.", region)

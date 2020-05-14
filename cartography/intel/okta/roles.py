@@ -3,10 +3,12 @@ import json
 import logging
 
 from cartography.intel.okta.utils import create_api_client
+from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 
 
+@timeit
 def _get_user_roles(api_client, user_id, okta_org_id):
     """
     Get user roles from Okta
@@ -22,6 +24,7 @@ def _get_user_roles(api_client, user_id, okta_org_id):
     return response.text
 
 
+@timeit
 def _get_group_roles(api_client, group_id, okta_org_id):
     """
     Get user roles from Okta
@@ -37,6 +40,7 @@ def _get_group_roles(api_client, group_id, okta_org_id):
     return response.text
 
 
+@timeit
 def transform_user_roles_data(data, okta_org_id):
     """
     Transform user role data
@@ -59,6 +63,7 @@ def transform_user_roles_data(data, okta_org_id):
     return user_roles
 
 
+@timeit
 def transform_group_roles_data(data, okta_org_id):
     """
     Transform user role data
@@ -81,6 +86,7 @@ def transform_group_roles_data(data, okta_org_id):
     return user_roles
 
 
+@timeit
 def _load_user_role(neo4j_session, user_id, roles_data, okta_update_tag):
     ingest = """
     MATCH (user:OktaUser{id: {USER_ID}})<-[:RESOURCE]-(org:OktaOrganization)
@@ -107,6 +113,7 @@ def _load_user_role(neo4j_session, user_id, roles_data, okta_update_tag):
     )
 
 
+@timeit
 def _load_group_role(neo4j_session, group_id, roles_data, okta_update_tag):
     ingest = """
     MATCH (group:OktaGroup{id: {GROUP_ID}})<-[:RESOURCE]-(org:OktaOrganization)
@@ -133,6 +140,7 @@ def _load_group_role(neo4j_session, group_id, roles_data, okta_update_tag):
     )
 
 
+@timeit
 def sync_roles(neo4j_session, okta_org_id, okta_update_tag, okta_api_key, sync_state):
     """
     Sync okta roles

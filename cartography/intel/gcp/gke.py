@@ -4,9 +4,12 @@ from googleapiclient.discovery import HttpError
 
 from cartography.intel.gcp import compute
 from cartography.util import run_cleanup_job
+from cartography.util import timeit
+
 logger = logging.getLogger(__name__)
 
 
+@timeit
 def get_gke_clusters(container, project_id):
     """
     Returns a list of GKE clusters within some given project.
@@ -47,7 +50,8 @@ def get_gke_clusters(container, project_id):
             raise
 
 
-def load_gke_clusters(neo4j_session, gke_list, project_number, gcp_update_tag):
+@timeit
+def load_gke_clusters(neo4j_session, gke_list, project_id, gcp_update_tag):
     """
     Ingest GCP GKE Clusters to Neo4j
 
@@ -97,7 +101,7 @@ def load_gke_clusters(neo4j_session, gke_list, project_number, gcp_update_tag):
         cluster.masterauth_username = {ClusterMasterUsername},
         cluster.masterauth_password = {ClusterMasterPassword}
     WITH cluster
-    MATCH (owner:GCPProject{projectnumber:{ProjectNumber}})
+    MATCH (owner:GCPProject{id:{ProjectId}})
     MERGE (owner)-[r:RESOURCE]->(cluster)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {gcp_update_tag}
@@ -105,7 +109,7 @@ def load_gke_clusters(neo4j_session, gke_list, project_number, gcp_update_tag):
     for cluster in gke_list.get('clusters', []):
         neo4j_session.run(
             query,
-            ProjectNumber=project_number,
+            ProjectId=project_id,
             ClusterSelfLink=cluster['selfLink'],
             ClusterCreateTime=cluster['createTime'],
             ClusterName=cluster['name'],
@@ -149,6 +153,7 @@ def _process_network_policy(cluster):
     return False
 
 
+@timeit
 def cleanup_gke_clusters(neo4j_session, common_job_parameters):
     """
     Delete out-of-date GCP GKE Clusters nodes and relationships
@@ -165,6 +170,7 @@ def cleanup_gke_clusters(neo4j_session, common_job_parameters):
     run_cleanup_job('gcp_gke_cluster_cleanup.json', neo4j_session, common_job_parameters)
 
 
+@timeit
 def sync_gke_clusters(neo4j_session, container, project_id, gcp_update_tag, common_job_parameters):
     """
     Get GCP GKE Clusters using the Container resource object, ingest to Neo4j, and clean up old data.

@@ -2,6 +2,8 @@
 import logging
 import re
 
+from cartography.util import timeit
+
 
 logger = logging.getLogger(__name__)
 
@@ -10,6 +12,7 @@ def _parse_regex(regex_string):
     return regex_string.replace("{{accountid}}", "P<accountid>").replace("{{role}}", "P<role>").strip()
 
 
+@timeit
 def transform_okta_group_to_aws_role(group_id, group_name, mapping_regex):
     regex = _parse_regex(mapping_regex)
     matches = re.search(regex, group_name)
@@ -20,6 +23,7 @@ def transform_okta_group_to_aws_role(group_id, group_name, mapping_regex):
         return {"groupid": group_id, "role": role_arn}
 
 
+@timeit
 def query_for_okta_to_aws_role_mapping(neo4j_session, mapping_regex):
     """
     Query the graph for all groups associated with the amazon_aws application and map them to AWSRoles
@@ -47,6 +51,7 @@ def query_for_okta_to_aws_role_mapping(neo4j_session, mapping_regex):
     return group_to_role_mapping
 
 
+@timeit
 def _load_okta_group_to_aws_roles(neo4j_session, group_to_role, okta_update_tag):
     """
     Add the ALLOWED_BY relationship between OktaGroups and the AWSRoles they enable
@@ -72,6 +77,7 @@ def _load_okta_group_to_aws_roles(neo4j_session, group_to_role, okta_update_tag)
     )
 
 
+@timeit
 def _load_human_can_assume_role(neo4j_session, okta_update_tag):
     """
     Add the CAN_ASSUME_ROLE relationship between Humans and the AWSRoles they can assume
@@ -91,6 +97,7 @@ def _load_human_can_assume_role(neo4j_session, okta_update_tag):
     )
 
 
+@timeit
 def sync_okta_aws_saml(neo4j_session, mapping_regex, okta_update_tag):
     """
     Sync okta integration with saml. This will link OktaGroups to the AWSRoles they enable.

@@ -12,3 +12,4 @@ build/
 .idea/
 .coverage
 .mypy_cache
+*.vscode
