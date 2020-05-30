@@ -1,6 +1,6 @@
 import logging
 
-from cartography.intel.aws.ec2 import get_botocore_config
+from .util import get_botocore_config
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 

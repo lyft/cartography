@@ -1,15 +1,13 @@
 import logging
 
-import botocore.config
-
-from cartography.intel.aws.ec2.auto_scaling_groups import sync_ec2_auto_scaling_groups
-from cartography.intel.aws.ec2.instances import sync_ec2_instances
-from cartography.intel.aws.ec2.key_pairs import sync_ec2_key_pairs
-from cartography.intel.aws.ec2.load_balancer_v2s import sync_load_balancer_v2s
-from cartography.intel.aws.ec2.load_balancers import sync_load_balancers
-from cartography.intel.aws.ec2.security_groups import sync_ec2_security_groupinfo
-from cartography.intel.aws.ec2.vpc import sync_vpc
-from cartography.intel.aws.ec2.vpc_peering import sync_vpc_peering
+from .auto_scaling_groups import sync_ec2_auto_scaling_groups
+from .instances import sync_ec2_instances
+from .key_pairs import sync_ec2_key_pairs
+from .load_balancer_v2s import sync_load_balancer_v2s
+from .load_balancers import sync_load_balancers
+from .security_groups import sync_ec2_security_groupinfo
+from .vpc import sync_vpc
+from .vpc_peering import sync_vpc_peering
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -20,16 +18,6 @@ def get_ec2_regions(boto3_session):
     client = boto3_session.client('ec2')
     result = client.describe_regions()
     return [r['RegionName'] for r in result['Regions']]
-
-
-# TODO memoize this
-def get_botocore_config():
-    return botocore.config.Config(
-        read_timeout=360,
-        retries={
-            'max_attempts': 10,
-        },
-    )
 
 
 @timeit
