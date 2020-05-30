@@ -11,7 +11,9 @@ TEST_UPDATE_TAG = 123456789
 
 def _ensure_local_neo4j_has_test_ec2_instance_data(neo4j_session):
     data = tests.data.aws.ec2.instances.DESCRIBE_INSTANCES
-    cartography.intel.aws.ec2.load_ec2_instances(neo4j_session, data, TEST_REGION, TEST_ACCOUNT_ID, TEST_UPDATE_TAG)
+    cartography.intel.aws.ec2.instances.load_ec2_instances(
+        neo4j_session, data, TEST_REGION, TEST_ACCOUNT_ID, TEST_UPDATE_TAG,
+    )
 
 
 def test_transform_and_load_ec2_tags(neo4j_session):
