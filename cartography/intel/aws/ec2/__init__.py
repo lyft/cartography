@@ -32,6 +32,7 @@ def get_botocore_config():
     )
 
 
+@timeit
 def sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters):
     logger.info("Syncing EC2 for account '%s'.", account_id)
     sync_vpc(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
