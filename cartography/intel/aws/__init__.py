@@ -57,6 +57,27 @@ def _sync_one_account(neo4j_session, boto3_session, account_id, sync_tag, common
     resourcegroupstaggingapi.sync(neo4j_session, boto3_session, regions, sync_tag, common_job_parameters)
 
 
+def _autodiscover_accounts(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters):
+    logger.info("Trying to autodiscover accounts.")
+    try:
+        # Fetch all accounts
+        client = boto3_session.client('organizations')
+        paginator = client.get_paginator('list_accounts')
+        accounts = []
+        for page in paginator.paginate():
+            accounts.extend(page['Accounts'])
+
+        # Filter out every account which is not in the ACTIVE status
+        # and select only the Id and Name fields
+        accounts = {x['Name']: x['Id'] for x in accounts if x['Status'] == 'ACTIVE'}
+
+        # Add them to the graph
+        logger.info("Loading autodiscovered accounts.")
+        organizations.load_aws_accounts(neo4j_session, accounts, sync_tag, common_job_parameters)
+    except botocore.exceptions.ClientError:
+        logger.debug(f"The current account ({account_id}) doesn't have enough permissions to perform autodiscovery.")
+
+
 def _sync_multiple_accounts(neo4j_session, accounts, sync_tag, common_job_parameters):
     logger.debug("Syncing AWS accounts: %s", ', '.join(accounts.values()))
     organizations.sync(neo4j_session, accounts, sync_tag, common_job_parameters)
@@ -65,6 +86,8 @@ def _sync_multiple_accounts(neo4j_session, accounts, sync_tag, common_job_parame
         logger.info("Syncing AWS account with ID '%s' using configured profile '%s'.", account_id, profile_name)
         common_job_parameters["AWS_ID"] = account_id
         boto3_session = boto3.Session(profile_name=profile_name)
+
+        _autodiscover_accounts(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters)
 
         _sync_one_account(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters)
 

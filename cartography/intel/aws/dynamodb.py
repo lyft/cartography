@@ -11,9 +11,17 @@ def get_dynamodb_tables(boto3_session, region):
     client = boto3_session.client('dynamodb', region_name=region)
     paginator = client.get_paginator('list_tables')
     dynamodb_tables = []
-    for page in paginator.paginate():
-        for table_name in page['TableNames']:
-            dynamodb_tables.append(client.describe_table(TableName=table_name))
+    try:
+        for page in paginator.paginate():
+            for table_name in page['TableNames']:
+                dynamodb_tables.append(client.describe_table(TableName=table_name))
+    except client.exceptions.ClientError as e:
+        # The account is not authorized to use this service in this region
+        # so we can continue without raising an exception
+        if e.response['Error']['Code'] == 'UnrecognizedClientException':
+            logger.warn("{} in this region. Skipping...".format(e.response['Error']['Message']))
+        else:
+            raise
     return {'Tables': dynamodb_tables}
 
 
