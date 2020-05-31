@@ -22,64 +22,68 @@
   - [Relationships](#relationships-6)
 - [AWSPrincipal::AWSRole](#awsprincipalawsrole)
   - [Relationships](#relationships-7)
-- [AWSVpc](#awsvpc)
+- [AWSTransitGateway](#awstransitgateway)
   - [Relationships](#relationships-8)
-- [Tag::AWSTag](#tagawstag)
+- [AWSTransitGatewayAttachment](#awstransitgatewayattachment)
   - [Relationships](#relationships-9)
-- [AccountAccessKey](#accountaccesskey)
+- [AWSVpc](#awsvpc)
   - [Relationships](#relationships-10)
-- [DBSubnetGroup](#dbsubnetgroup)
+- [Tag::AWSTag](#tagawstag)
   - [Relationships](#relationships-11)
-- [DNSRecord](#dnsrecord)
+- [AccountAccessKey](#accountaccesskey)
   - [Relationships](#relationships-12)
-- [DNSRecord::AWSDNSRecord](#dnsrecordawsdnsrecord)
+- [DBSubnetGroup](#dbsubnetgroup)
   - [Relationships](#relationships-13)
-- [DNSZone](#dnszone)
+- [DNSRecord](#dnsrecord)
   - [Relationships](#relationships-14)
-- [DNSZone::AWSDNSZone](#dnszoneawsdnszone)
+- [DNSRecord::AWSDNSRecord](#dnsrecordawsdnsrecord)
   - [Relationships](#relationships-15)
-- [DynamoDBTable](#dynamodbtable)
+- [DNSZone](#dnszone)
   - [Relationships](#relationships-16)
-- [EC2Instance](#ec2instance)
+- [DNSZone::AWSDNSZone](#dnszoneawsdnszone)
   - [Relationships](#relationships-17)
-- [EC2KeyPair](#ec2keypair)
+- [DynamoDBTable](#dynamodbtable)
   - [Relationships](#relationships-18)
-- [EC2Reservation](#ec2reservation)
+- [EC2Instance](#ec2instance)
   - [Relationships](#relationships-19)
-- [EC2SecurityGroup](#ec2securitygroup)
+- [EC2KeyPair](#ec2keypair)
   - [Relationships](#relationships-20)
-- [EC2Subnet](#ec2subnet)
+- [EC2Reservation](#ec2reservation)
   - [Relationships](#relationships-21)
-- [EKSCluster](#ekscluster)
+- [EC2SecurityGroup](#ec2securitygroup)
   - [Relationships](#relationships-22)
-- [ESDomain](#esdomain)
+- [EC2Subnet](#ec2subnet)
   - [Relationships](#relationships-23)
-- [Endpoint](#endpoint)
+- [EKSCluster](#ekscluster)
   - [Relationships](#relationships-24)
-- [Endpoint::ELBListener](#endpointelblistener)
+- [ESDomain](#esdomain)
   - [Relationships](#relationships-25)
-- [Endpoint::ELBV2Listener](#endpointelbv2listener)
+- [Endpoint](#endpoint)
   - [Relationships](#relationships-26)
-- [Ip](#ip)
+- [Endpoint::ELBListener](#endpointelblistener)
   - [Relationships](#relationships-27)
-- [IpRule](#iprule)
+- [Endpoint::ELBV2Listener](#endpointelbv2listener)
   - [Relationships](#relationships-28)
-- [IpRule::IpPermissionInbound](#ipruleippermissioninbound)
+- [Ip](#ip)
   - [Relationships](#relationships-29)
-- [LoadBalancer](#loadbalancer)
+- [IpRule](#iprule)
   - [Relationships](#relationships-30)
-- [LoadBalancerV2](#loadbalancerv2)
+- [IpRule::IpPermissionInbound](#ipruleippermissioninbound)
   - [Relationships](#relationships-31)
-- [Nameserver](#nameserver)
+- [LoadBalancer](#loadbalancer)
   - [Relationships](#relationships-32)
-- [NetworkInterface](#networkinterface)
+- [LoadBalancerV2](#loadbalancerv2)
   - [Relationships](#relationships-33)
-- [RDSInstance](#rdsinstance)
+- [Nameserver](#nameserver)
   - [Relationships](#relationships-34)
-- [S3Acl](#s3acl)
+- [NetworkInterface](#networkinterface)
   - [Relationships](#relationships-35)
-- [S3Bucket](#s3bucket)
+- [RDSInstance](#rdsinstance)
   - [Relationships](#relationships-36)
+- [S3Acl](#s3acl)
+  - [Relationships](#relationships-37)
+- [S3Bucket](#s3bucket)
+  - [Relationships](#relationships-38)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -372,6 +376,53 @@ Representation of an AWS [IAM Role](https://docs.aws.amazon.com/IAM/latest/APIRe
     ```
     (AWSAccount)-[RESOURCE]->(AWSRole)
     ```
+
+## AWSTransitGateway
+Representation of an [AWS Transit Gateway](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_TransitGateway.html).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|owner\_id| The ID of the AWS account that owns the transit gateway 
+|**id**| Unique identifier of the Transit Gateway
+| **arn** | AWS-unique identifier for this object |
+
+### Relationships
+- `AWSAccount`
+```
+(AWSAccount)-[RESOURCE]->(AWSTransitGateway)
+```
+
+- `AWSTag`
+```
+(AWSTransitGateway)-[TAGGED]->(AWSTag)
+```
+
+## AWSTransitGatewayAttachment
+Representation of an [AWS Transit Gateway Attachment](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_TransitGatewayAttachment.html).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|resource\_type| can be one of `vpc | vpn | direct-connect-gateway | tgw-peering`
+|state| can be one of `initiating | pendingAcceptance | rollingBack | pending | available | modifying | deleting | deleted | failed | rejected | rejecting | failing`
+|**id**| Unique identifier of the Transit Gateway Attachment
+
+### Relationships
+- `AWSVpc` association for VPC attachments
+```
+(AWSVpc)<-[TGW_ASSOCIATION]-(AWSTransitGatewayAttachment {resource_type: 'vpc'})
+```
+- `AWSTransitGateway` attachment
+```
+(AWSTransitGateway)<-[ATTACHED_TO]-(AWSTransitGatewayAttachment)
+```
+- `AWSTag`
+```
+(AWSTransitGatewayAttachment)-[TAGGED]->(AWSTag)
+```
 
 ## AWSVpc
 Representation of an [AWS CidrBlock used in VPC configuration](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_VpcCidrBlockAssociation.html).
