@@ -130,6 +130,28 @@ def get_ec2_vpcs(boto3_session, region):
     # paginator not supported by boto
     return client.describe_vpcs()
 
+@timeit
+def get_transit_gateways(boto3_session, region):
+    client = boto3_session.client('ec2', region_name=region, config=_get_botocore_config())
+    return client.describe_transit_gateways()
+
+@timeit
+def get_tgw_attachments(boto3_session, region):
+    client = boto3_session.client('ec2', region_name=region, config=_get_botocore_config())
+    paginator = client.get_paginator('describe_transit_gateway_attachments')
+    tgw_attachments = []
+    for page in paginator.paginate():
+        tgw_attachments.extend(page['TransitGatewayAttachments'])
+    return {"TransitGatewayAttachments": tgw_attachments}
+
+@timeit
+def get_tgw_vpc_attachments(boto3_session, region):
+    client = boto3_session.client('ec2', region_name=region, config=_get_botocore_config())
+    paginator = client.get_paginator('describe_transit_gateway_vpc_attachments')
+    tgw_vpc_attachments = []
+    for page in paginator.paginate():
+        tgw_vpc_attachments.extend(page['TransitGatewayVpcAttachments'])
+    return {"TransitGatewayVpcAttachments": tgw_vpc_attachments}
 
 @timeit
 def load_ec2_key_pairs(neo4j_session, data, region, current_aws_account_id, aws_update_tag):
