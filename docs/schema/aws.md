@@ -385,13 +385,20 @@ Representation of an [AWS Transit Gateway](https://docs.aws.amazon.com/AWSEC2/la
 |firstseen| Timestamp of when a sync job discovered this node|
 |lastupdated| Timestamp of the last time the node was updated|
 |owner\_id| The ID of the AWS account that owns the transit gateway 
+|description| Transit Gateway description
+|state| Can be one of `pending | available | modifying | deleting | deleted`
 |**id**| Unique identifier of the Transit Gateway
 | **arn** | AWS-unique identifier for this object |
 
 ### Relationships
-- `AWSAccount`
+- Transit Gateways belong to one `AWSAccount`...
 ```
 (AWSAccount)-[RESOURCE]->(AWSTransitGateway)
+```
+
+- ... and can be shared with other accounts
+```
+(AWSAccount)<-[SHARED_WITH]-(AWSTransitGateway)
 ```
 
 - `AWSTag`
@@ -406,12 +413,16 @@ Representation of an [AWS Transit Gateway Attachment](https://docs.aws.amazon.co
 |-------|-------------|
 |firstseen| Timestamp of when a sync job discovered this node|
 |lastupdated| Timestamp of the last time the node was updated|
-|resource\_type| can be one of `vpc | vpn | direct-connect-gateway | tgw-peering`
-|state| can be one of `initiating | pendingAcceptance | rollingBack | pending | available | modifying | deleting | deleted | failed | rejected | rejecting | failing`
+|resource\_type| Can be one of `vpc | vpn | direct-connect-gateway | tgw-peering`
+|state| Can be one of `initiating | pendingAcceptance | rollingBack | pending | available | modifying | deleting | deleted | failed | rejected | rejecting | failing`
 |**id**| Unique identifier of the Transit Gateway Attachment
 
 ### Relationships
-- `AWSVpc` association for VPC attachments
+- `AWSAccount`
+```
+(AWSAccount)-[RESOURCE]->(AWSTransitGatewayAttachment)
+```
+- `AWSVpc` association (for VPC attachments)
 ```
 (AWSVpc)<-[TGW_ASSOCIATION]-(AWSTransitGatewayAttachment {resource_type: 'vpc'})
 ```
