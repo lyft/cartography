@@ -1322,6 +1322,9 @@ def cleanup_load_balancer_v2s(neo4j_session, common_job_parameters):
 def cleanup_ec2_vpcs(neo4j_session, common_job_parameters):
     run_cleanup_job('aws_import_vpc_cleanup.json', neo4j_session, common_job_parameters)
 
+@timeit
+def cleanup_transit_gateways(neo4j_session, common_job_parameters):
+    run_cleanup_job('aws_import_tgw_cleanup.json', neo4j_session, common_job_parameters)
 
 @timeit
 def cleanup_ec2_vpc_peering(neo4j_session, common_job_parameters):
