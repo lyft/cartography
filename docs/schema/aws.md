@@ -422,9 +422,9 @@ Representation of an [AWS Transit Gateway Attachment](https://docs.aws.amazon.co
 ```
 (AWSAccount)-[RESOURCE]->(AWSTransitGatewayAttachment)
 ```
-- `AWSVpc` association (for VPC attachments)
+- `AWSVpc` (for VPC attachments)
 ```
-(AWSVpc)<-[TGW_ASSOCIATION]-(AWSTransitGatewayAttachment {resource_type: 'vpc'})
+(AWSVpc)-[RESOURCE]->(AWSTransitGatewayAttachment {resource_type: 'vpc'})
 ```
 - `AWSTransitGateway` attachment
 ```
