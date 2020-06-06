@@ -1450,3 +1450,4 @@ def sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job
     sync_load_balancers(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     sync_load_balancer_v2s(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     sync_vpc_peering(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
+    sync_transit_gateways(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
