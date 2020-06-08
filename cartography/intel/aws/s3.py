@@ -17,7 +17,8 @@ logger = logging.getLogger(__name__)
 def get_s3_bucket_list(boto3_session):
     client = boto3_session.client('s3')
     bucket_data = client.list_buckets()
-    # Pull location constraint information
+    # Call get-bucket-location for each S3 bucket to check if location constraints exist.
+    # If so, update the bucket object with a 'LocationConstraint' field set to its region constraint.
     for bucket in bucket_data['Buckets']:
         location_data = client.get_bucket_location(Bucket=bucket['Name'])
         # Only set the bucket.LocationConstraint value if the bucket has a location constraint.
@@ -30,9 +31,6 @@ def get_s3_bucket_list(boto3_session):
 @timeit
 def transform_s3_bucket_list(bucket_list):
     """
-    Calls get-bucket-location for each S3 bucket to check if location constraints exist. If so, update the bucket object
-    with a 'LocationConstraint' field with its region constraint.
-
     Returns a dict of the shape dict['region'] = [ bucket_list_1, ..., bucket_list_N ] so that we minimize the number of
     times that we call boto.client() later on when retrieving s3 details.
     """
