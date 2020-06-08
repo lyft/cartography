@@ -33,7 +33,7 @@ def transform_s3_bucket_list(bucket_list):
     Calls get-bucket-location for each S3 bucket to check if location constraints exist. If so, update the bucket object
     with a 'LocationConstraint' field with its region constraint.
 
-    Returns a dict of the shape dict['region'] = [ bucket_dict_1, ..., bucket_dict_N ] so that we minimize the number of
+    Returns a dict of the shape dict['region'] = [ bucket_list_1, ..., bucket_list_N ] so that we minimize the number of
     times that we call boto.client() later on when retrieving s3 details.
     """
     # Sort the data by location constraint. 'NoConstraints' is needed because Python3 doesn't let us sort by `None`.
