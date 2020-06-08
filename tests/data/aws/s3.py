@@ -8,9 +8,11 @@ LIST_BUCKETS = {
         }, {
             'Name': 'bucket-2',
             'CreationDate': datetime.datetime(2015, 7, 24, 4, 8, 29),
+            'LocationConstraint': 'ap-east-1',
         }, {
             'Name': 'bucket-3',
             'CreationDate': datetime.datetime(2019, 9, 17, 1, 16, 19),
+            'LocationConstraint': 'eu-west-1',
         },
     ],
     'Owner': {

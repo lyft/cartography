@@ -9,7 +9,7 @@ TEST_UPDATE_TAG = 123456789
 
 def test_load_ec2_key_pairs(neo4j_session, *args):
     data = tests.data.aws.ec2.key_pairs.DESCRIBE_KEY_PAIRS
-    cartography.intel.aws.ec2.load_ec2_key_pairs(
+    cartography.intel.aws.ec2.key_pairs.load_ec2_key_pairs(
         neo4j_session,
         data,
         TEST_REGION,

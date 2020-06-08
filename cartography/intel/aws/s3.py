@@ -1,4 +1,5 @@
 import hashlib
+import itertools
 import json
 import logging
 
@@ -13,22 +14,52 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
-def get_s3_bucket_list(boto3_session, region):
-    client = boto3_session.client('s3', region_name=region)
-    # NOTE no paginator available for this operation
-    return client.list_buckets()
+def get_s3_bucket_list(boto3_session):
+    client = boto3_session.client('s3')
+    bucket_data = client.list_buckets()
+    # Pull location constraint information
+    for bucket in bucket_data['Buckets']:
+        location_data = client.get_bucket_location(Bucket=bucket['Name'])
+        # Only set the bucket.LocationConstraint value if the bucket has a location constraint.
+        constraint = location_data.get('LocationConstraint')
+        if constraint:
+            bucket['LocationConstraint'] = constraint
+    return bucket_data
 
 
 @timeit
-def get_s3_bucket_details(boto3_session, bucket_data, region):
+def transform_s3_bucket_list(bucket_list):
+    """
+    Calls get-bucket-location for each S3 bucket to check if location constraints exist. If so, update the bucket object
+    with a 'LocationConstraint' field with its region constraint.
+
+    Returns a dict of the shape dict['region'] = [ bucket_dict_1, ..., bucket_dict_N ] so that we minimize the number of
+    times that we call boto.client() later on when retrieving s3 details.
+    """
+    # Sort the data by location constraint. 'NoConstraints' is needed because Python3 doesn't let us sort by `None`.
+    sorted_data = sorted(bucket_list, key=lambda x: x.get('LocationConstraint', 'NoConstraints'))
+    bucket_groups = {}
+    for region_label, bucket_group in itertools.groupby(sorted_data, key=lambda x: x.get('LocationConstraint')):
+        # This ensures that `region` on an `:S3Bucket` node is set only if it has constraints.
+        if region_label == 'NoConstraints':
+            region_label = None
+        bucket_groups[region_label] = list(bucket_group)
+    return bucket_groups
+
+
+@timeit
+def get_s3_bucket_details(boto3_session, bucket_groups):
     """
     Iterates over all S3 buckets. Yields bucket name (string) and pairs of S3 bucket policies (JSON) and ACLs (JSON)
     """
-    client = boto3_session.client('s3', region_name=region)
-    for bucket in bucket_data['Buckets']:
-        acl = get_acl(bucket, client)
-        policy = get_policy(bucket, client)
-        yield bucket['Name'], acl, policy
+    for region in bucket_groups.keys():
+        client = boto3_session.client('s3', region_name=region)
+
+        bucket_list = bucket_groups[region]
+        for bucket in bucket_list:
+            acl = get_acl(bucket, client)
+            policy = get_policy(bucket, client)
+            yield bucket['Name'], acl, policy
 
 
 @timeit
@@ -292,11 +323,11 @@ def parse_acl(acl, bucket, aws_account_id):
 
 
 @timeit
-def load_s3_buckets(neo4j_session, data, region, current_aws_account_id, aws_update_tag):
+def load_s3_buckets(neo4j_session, bucket_groups, current_aws_account_id, aws_update_tag):
     ingest_bucket = """
     MERGE (bucket:S3Bucket{id:{BucketName}})
     ON CREATE SET bucket.firstseen = timestamp(), bucket.creationdate = {CreationDate}
-    SET bucket.name = {BucketName}, bucket.lastupdated = {aws_update_tag}, bucket.region = {Region}
+    SET bucket.name = {BucketName}, bucket.arn = {Arn}, bucket.lastupdated = {aws_update_tag}, bucket.region = {Region}
     WITH bucket
     MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
     MERGE (owner)-[r:RESOURCE]->(bucket)
@@ -307,16 +338,20 @@ def load_s3_buckets(neo4j_session, data, region, current_aws_account_id, aws_upd
     # The owner data returned by the API maps to the aws account nickname and not the IAM user
     # there doesn't seem to be a way to retreive the mapping but we can get the current context account
     # so we map to that directly
+    for region in bucket_groups.keys():
+        bucket_list = bucket_groups[region]
 
-    for bucket in data["Buckets"]:
-        neo4j_session.run(
-            ingest_bucket,
-            BucketName=bucket["Name"],
-            CreationDate=str(bucket["CreationDate"]),
-            AWS_ACCOUNT_ID=current_aws_account_id,
-            aws_update_tag=aws_update_tag,
-            Region=region,
-        )
+        for bucket in bucket_list:
+            arn = "arn:aws:s3:::" + bucket["Name"]
+            neo4j_session.run(
+                ingest_bucket,
+                BucketName=bucket["Name"],
+                Arn=arn,
+                CreationDate=str(bucket["CreationDate"]),
+                Region=region,
+                AWS_ACCOUNT_ID=current_aws_account_id,
+                aws_update_tag=aws_update_tag,
+            )
 
 
 @timeit
@@ -330,14 +365,16 @@ def cleanup_s3_bucket_acl_and_policy(neo4j_session, common_job_parameters):
 
 
 @timeit
-def sync(neo4j_session, boto3_session, regions, current_aws_account_id, aws_update_tag, common_job_parameters):
-    for region in regions:
-        logger.info("Syncing S3 for account '%s' in region '%s'.", current_aws_account_id, region)
-        bucket_data = get_s3_bucket_list(boto3_session, region)
+def sync(neo4j_session, boto3_session, current_aws_account_id, aws_update_tag, common_job_parameters):
+    logger.info("Syncing S3 for account '%s'.", current_aws_account_id)
 
-        load_s3_buckets(neo4j_session, bucket_data, region, current_aws_account_id, aws_update_tag)
-        cleanup_s3_buckets(neo4j_session, common_job_parameters)
+    # S3 buckets
+    bucket_data = get_s3_bucket_list(boto3_session)
+    bucket_groups = transform_s3_bucket_list(boto3_session, bucket_data['Buckets'])
+    load_s3_buckets(neo4j_session, bucket_groups, current_aws_account_id, aws_update_tag)
+    cleanup_s3_buckets(neo4j_session, common_job_parameters)
 
-        acl_and_policy_data_iter = get_s3_bucket_details(boto3_session, bucket_data, region)
-        load_s3_details(neo4j_session, acl_and_policy_data_iter, current_aws_account_id, aws_update_tag)
-        cleanup_s3_bucket_acl_and_policy(neo4j_session, common_job_parameters)
+    # S3 bucket details
+    acl_and_policy_data_iter = get_s3_bucket_details(boto3_session, bucket_groups)
+    load_s3_details(neo4j_session, acl_and_policy_data_iter, current_aws_account_id, aws_update_tag)
+    cleanup_s3_bucket_acl_and_policy(neo4j_session, common_job_parameters)

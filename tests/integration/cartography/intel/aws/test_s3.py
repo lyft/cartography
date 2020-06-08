@@ -7,12 +7,15 @@ TEST_REGION = 'us-east-1'
 TEST_UPDATE_TAG = 123456789
 
 
-def test_load_s3_buckets(neo4j_session, *args):
+def test_transform_and_load_s3_buckets(neo4j_session, *args):
     """
     Ensure that expected buckets get loaded with their key fields.
     """
     data = tests.data.aws.s3.LIST_BUCKETS
-    cartography.intel.aws.s3.load_s3_buckets(neo4j_session, data, TEST_REGION, TEST_ACCOUNT_ID, TEST_UPDATE_TAG)
+    bucket_groups = cartography.intel.aws.s3.transform_s3_bucket_list(data['Buckets'])
+    cartography.intel.aws.s3.load_s3_buckets(
+        neo4j_session, bucket_groups, TEST_ACCOUNT_ID, TEST_UPDATE_TAG,
+    )
 
     expected_nodes = {
         (
