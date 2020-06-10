@@ -11,7 +11,7 @@ def get_lambda_data(boto3_session, region):
     """
     Create an Lambda boto3 client and grab all the lambda functions.
     """
-    client = boto3.client('lambda', region_name=region)
+    client = boto3_sessionclient('lambda', region_name=region)
     paginator = client.get_paginator('list_functions')
     lambda_functions = []
     for page in paginator.paginate():
