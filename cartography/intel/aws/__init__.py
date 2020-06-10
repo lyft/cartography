@@ -14,6 +14,7 @@ from . import rds
 from . import resourcegroupstaggingapi
 from . import route53
 from . import s3
+from . import lambda_function
 from cartography.util import run_analysis_job
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -23,25 +24,25 @@ logger = logging.getLogger(__name__)
 
 def _sync_one_account(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters):
     iam.sync(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters)
-    s3.sync(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters)
+    # s3.sync(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters)
 
-    try:
-        regions = ec2.get_ec2_regions(boto3_session)
-    except botocore.exceptions.ClientError as e:
-        logger.debug("Error occurred getting EC2 regions.", exc_info=True)
-        logger.error(
-            (
-                "Failed to retrieve AWS region list, an error occurred: %s. Could not get regions for account %s."
-            ),
-            e,
-            account_id,
-        )
-        return
-
-    dynamodb.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-    ec2.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-    eks.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-    rds.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
+    # try:
+    #     regions = ec2.get_ec2_regions(boto3_session)
+    # except botocore.exceptions.ClientError as e:
+    #     logger.debug("Error occurred getting EC2 regions.", exc_info=True)
+    #     logger.error(
+    #         (
+    #             "Failed to retrieve AWS region list, an error occurred: %s. Could not get regions for account %s."
+    #         ),
+    #         e,
+    #         account_id,
+    #     )
+    #     return
+    lambda_function.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
+    # dynamodb.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
+    # ec2.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
+    # eks.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
+    # rds.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
 
     # NOTE each of the below will generate DNS records
     route53.sync(neo4j_session, boto3_session, account_id, sync_tag)
