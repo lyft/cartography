@@ -58,17 +58,12 @@ def get_gcp_projects(crm_v1):
     """
     try:
         projects = []
-        done = False
-
         req = crm_v1.projects().list()
-        while not done:
+        while req is not None:
             res = req.execute()
             page = res.get('projects', [])
-            projects.append(page)
-            if len(page) == 0:
-                done = True
-            else:
-                req = crm_v1.projects().list_next(previous_request=req, previous_response=res)
+            projects.extend(page)
+            req = crm_v1.projects().list_next(previous_request=req, previous_response=res)
         return projects
     except HttpError as e:
         logger.warning("HttpError occurred in crm.get_gcp_projects(), returning empty list. Details: %r", e)

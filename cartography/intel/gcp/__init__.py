@@ -1,5 +1,5 @@
-import logging
 import json
+import logging
 from collections import namedtuple
 
 import googleapiclient.discovery
@@ -129,7 +129,7 @@ def _services_enabled_on_project(serviceusage, project_id):
         logger.warning(
             f"HttpError when trying to get enabled services on project {project_id}. "
             f"Code: {http_error['error']['code']}, Message: {http_error['error']['message']}. "
-            f"Skipping."
+            f"Skipping.",
         )
         return {}
 
