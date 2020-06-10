@@ -14,6 +14,7 @@ from . import rds
 from . import resourcegroupstaggingapi
 from . import route53
 from . import s3
+from . import lambda_function
 from cartography.util import run_analysis_job
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -38,6 +39,7 @@ def _sync_one_account(neo4j_session, boto3_session, account_id, sync_tag, common
         )
         return
 
+    lambda_function.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     dynamodb.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     ec2.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     eks.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
