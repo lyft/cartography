@@ -24,8 +24,9 @@ def get_lambda_data(boto3_session, region):
 def load_lambda_functions(neo4j_session, data, region, current_aws_account_id, aws_update_tag):
     ingest_lambda_functions = """
     MERGE (lambda:AWSLambda{id: {Arn}})
-    ON CREATE SET lambda.firstseen = timestamp(), lambda.modifieddate = {LastModified}
+    ON CREATE SET lambda.firstseen = timestamp()
     SET lambda.name = {LambdaName}, 
+    lambda.modifieddate = {LastModified},
     lambda.arn = {Arn},
     lambda.runtime = {Runtime},
     lambda.description = {Description},
