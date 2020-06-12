@@ -234,7 +234,7 @@ def test_load_load_balancer_v2_subnets(neo4j_session, *args):
     nodes = neo4j_session.run(
         """
         MATCH (subnet:EC2Subnet) return subnet.subnetid, subnet.region, subnet.lastupdated
-        """
+        """,
     )
     actual_nodes = {
         (

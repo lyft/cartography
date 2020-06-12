@@ -32,7 +32,7 @@ def test_load_gcp_projects(neo4j_session):
     nodes = neo4j_session.run(
         """
         MATCH (d:GCPProject) return d.id
-        """
+        """,
     )
     actual_nodes = {(n['d.id']) for n in nodes}
     assert actual_nodes == expected_nodes
@@ -80,7 +80,7 @@ def test_load_gcp_projects_without_parent(neo4j_session):
     nodes = neo4j_session.run(
         """
         MATCH (d:GCPProject) WHERE NOT (d)<-[:RESOURCE]-() RETURN d.id
-        """
+        """,
     )
     actual_nodes = {(n['d.id']) for n in nodes}
     assert actual_nodes == expected_nodes

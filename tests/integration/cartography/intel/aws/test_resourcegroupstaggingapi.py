@@ -38,7 +38,7 @@ def test_transform_and_load_ec2_tags(neo4j_session):
     result = neo4j_session.run(
         """
         MATCH (n1:EC2Instance)-[:TAGGED]->(n2:AWSTag) RETURN n1.id, n2.id;
-        """
+        """,
     )
     actual = {
         (r['n1.id'], r['n2.id']) for r in result
