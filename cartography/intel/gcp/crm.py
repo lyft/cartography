@@ -57,9 +57,14 @@ def get_gcp_projects(crm_v1):
     :return: List of GCP projects. See https://cloud.google.com/resource-manager/reference/rest/v2/projects/list.
     """
     try:
+        projects = []
         req = crm_v1.projects().list()
-        res = req.execute()
-        return res.get('projects', [])
+        while req is not None:
+            res = req.execute()
+            page = res.get('projects', [])
+            projects.extend(page)
+            req = crm_v1.projects().list_next(previous_request=req, previous_response=res)
+        return projects
     except HttpError as e:
         logger.warning("HttpError occurred in crm.get_gcp_projects(), returning empty list. Details: %r", e)
         return []
