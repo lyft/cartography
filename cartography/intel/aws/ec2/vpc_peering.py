@@ -10,8 +10,17 @@ logger = logging.getLogger(__name__)
 @timeit
 def get_ec2_vpc_peering(boto3_session, region):
     client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
-    # paginator not supported by boto
-    return client.describe_vpc_peering_connections()
+    try:
+        # paginator not supported by boto
+        return client.describe_vpc_peering_connections()
+    except client.exceptions.ClientError as e:
+        # The account is not authorized to use this service in this region
+        # so we can continue without raising an exception
+        if e.response['Error']['Code'] == 'AuthFailure':
+            logger.warn("{} in this region. Skipping...".format(e.response['Error']['Message']))
+        else:
+            raise
+    return {'VpcPeeringConnections': []}
 
 
 @timeit

@@ -11,8 +11,18 @@ logger = logging.getLogger(__name__)
 def get_load_balancer_v2_listeners(client, load_balancer_arn):
     paginator = client.get_paginator('describe_listeners')
     listeners = []
-    for page in paginator.paginate(LoadBalancerArn=load_balancer_arn):
-        listeners.extend(page['Listeners'])
+    try:
+        for page in paginator.paginate(LoadBalancerArn=load_balancer_arn):
+            listeners.extend(page['Listeners'])
+    except client.exceptions.ClientError as e:
+        # The account is not authorized to use this service in this region
+        # so we can continue without raising an exception
+        if e.response['Error']['Code'] == 'InvalidClientTokenId' \
+                or e.response['Error']['Code'] == 'AuthFailure' \
+                or e.response['Error']['Code'] == 'UnrecognizedClientException':
+            logger.warn("{} in this region. Skipping...".format(e.response['Error']['Message']))
+        else:
+            raise
 
     return listeners
 
@@ -39,14 +49,23 @@ def get_loadbalancer_v2_data(boto3_session, region):
     client = boto3_session.client('elbv2', region_name=region, config=get_botocore_config())
     paginator = client.get_paginator('describe_load_balancers')
     elbv2s = []
-    for page in paginator.paginate():
-        elbv2s.extend(page['LoadBalancers'])
+    try:
+        for page in paginator.paginate():
+            elbv2s.extend(page['LoadBalancers'])
 
-    # Make extra calls to get listeners
-    for elbv2 in elbv2s:
-        elbv2['Listeners'] = get_load_balancer_v2_listeners(client, elbv2['LoadBalancerArn'])
-        elbv2['TargetGroups'] = get_load_balancer_v2_target_groups(client, elbv2['LoadBalancerArn'])
-
+        # Make extra calls to get listeners
+        for elbv2 in elbv2s:
+            elbv2['Listeners'] = get_load_balancer_v2_listeners(client, elbv2['LoadBalancerArn'])
+            elbv2['TargetGroups'] = get_load_balancer_v2_target_groups(client, elbv2['LoadBalancerArn'])
+    except client.exceptions.ClientError as e:
+        # The account is not authorized to use this service in this region
+        # so we can continue without raising an exception
+        if e.response['Error']['Code'] == 'InvalidClientTokenId' \
+            or e.response['Error']['Code'] == 'AuthFailure' \
+                or e.response['Error']['Code'] == 'UnrecognizedClientException':
+            logger.warn("{} in this region. Skipping...".format(e.response['Error']['Message']))
+        else:
+            raise
     return {'LoadBalancers': elbv2s}
 
 

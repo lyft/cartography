@@ -12,8 +12,18 @@ def get_ec2_auto_scaling_groups(boto3_session, region):
     client = boto3_session.client('autoscaling', region_name=region, config=get_botocore_config())
     paginator = client.get_paginator('describe_auto_scaling_groups')
     asgs = []
-    for page in paginator.paginate():
-        asgs.extend(page['AutoScalingGroups'])
+    try:
+        for page in paginator.paginate():
+            asgs.extend(page['AutoScalingGroups'])
+    except client.exceptions.ClientError as e:
+        # The account is not authorized to use this service in this region
+        # so we can continue without raising an exception
+        if e.response['Error']['Code'] == 'InvalidClientTokenId' \
+            or e.response['Error']['Code'] == 'AuthFailure' \
+                or e.response['Error']['Code'] == 'UnrecognizedClientException':
+            logger.warn("{} in this region. Skipping...".format(e.response['Error']['Message']))
+        else:
+            raise
     return {'AutoScalingGroups': asgs}
 
 

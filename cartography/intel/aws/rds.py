@@ -14,8 +14,18 @@ def get_rds_instance_data(boto3_session, region):
     client = boto3_session.client('rds', region_name=region)
     paginator = client.get_paginator('describe_db_instances')
     instances = []
-    for page in paginator.paginate():
-        instances.extend(page['DBInstances'])
+    try:
+        for page in paginator.paginate():
+            instances.extend(page['DBInstances'])
+    except client.exceptions.ClientError as e:
+        # The account is not authorized to use this service in this region
+        # so we can continue without raising an exception
+        if e.response['Error']['Code'] == 'InvalidClientTokenId' \
+            or e.response['Error']['Code'] == 'AccessDeniedException' \
+                or e.response['Error']['Code'] == 'UnrecognizedClientException':
+            logger.warn("{} in this region. Skipping...".format(e.response['Error']['Message']))
+        else:
+            raise
     return {'DBInstances': instances}
 
 

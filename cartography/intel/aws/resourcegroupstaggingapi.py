@@ -56,12 +56,21 @@ def get_tags(boto3_session, resource_types, region):
     client = boto3_session.client('resourcegroupstaggingapi', region_name=region)
     paginator = client.get_paginator('get_resources')
     resources = []
-    for page in paginator.paginate(
-        # Only ingest tags for resources that Cartography supports.
-        # This is just a starting list; there may be others supported by this API.
-        ResourceTypeFilters=resource_types,
-    ):
-        resources.extend(page['ResourceTagMappingList'])
+    try:
+        for page in paginator.paginate(
+            # Only ingest tags for resources that Cartography supports.
+            # This is just a starting list; there may be others supported by this API.
+            ResourceTypeFilters=resource_types,
+        ):
+            resources.extend(page['ResourceTagMappingList'])
+    except client.exceptions.ClientError as e:
+        # The account is not authorized to use this service in this region
+        # so we can continue without raising an exception
+        if e.response['Error']['Code'] == 'AuthFailure' \
+                or e.response['Error']['Code'] == 'UnrecognizedClientException':
+            logger.warn("{} in this region. Skipping...".format(e.response['Error']['Message']))
+        else:
+            raise
     return resources
 
 
