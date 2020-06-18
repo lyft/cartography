@@ -80,6 +80,8 @@
   - [Relationships](#relationships-35)
 - [S3Bucket](#s3bucket)
   - [Relationships](#relationships-36)
+- [AWSLambda](#awslambda)
+  - [Relationships](#relationships-37)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -1368,4 +1370,34 @@ Representation of an AWS S3 [Bucket](https://docs.aws.amazon.com/AmazonS3/latest
 
 	```
 	(S3Bucket)-[TAGGED]->(AWSTag)
+	```
+
+## AWSLambda
+
+Representation of an AWS [Lambda Function](https://docs.aws.amazon.com/lambda/latest/dg/API_FunctionConfiguration.html).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The arn of the lambda function|
+| name |  The name of the lambda function |
+| modifieddate |  Timestamp of the last time the function was last updated |
+| runtime |  The runtime environment for the Lambda function |
+| description |  The description of the Lambda function |
+| timeout |  The amount of time in seconds that Lambda allows a function to run before stopping it |
+| memory |  The memory that's allocated to the function |
+
+### Relationships
+
+- AWSLambda function are resources in an AWS Account.
+
+	```
+	(AWSAccount)-[RESOURCE]->(AWSLambda)
+	```
+
+- AWSLambda function assumes to roles as AWSPrincipal.
+
+	```
+	(AWSAccount)-[STS_ASSUME_ROLE_ALLOW]->(AWSPrincipal)
 	```

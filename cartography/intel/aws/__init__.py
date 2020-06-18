@@ -8,13 +8,13 @@ from . import ec2
 from . import eks
 from . import elasticsearch
 from . import iam
+from . import lambda_function
 from . import organizations
 from . import permission_relationships
 from . import rds
 from . import resourcegroupstaggingapi
 from . import route53
 from . import s3
-from . import lambda_function
 from cartography.util import run_analysis_job
 from cartography.util import run_cleanup_job
 from cartography.util import timeit

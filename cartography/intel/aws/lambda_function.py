@@ -11,7 +11,7 @@ def get_lambda_data(boto3_session, region):
     """
     Create an Lambda boto3 client and grab all the lambda functions.
     """
-    client = boto3_sessionclient('lambda', region_name=region)
+    client = boto3_session.client('lambda', region_name=region)
     paginator = client.get_paginator('list_functions')
     lambda_functions = []
     for page in paginator.paginate():
@@ -25,7 +25,7 @@ def load_lambda_functions(neo4j_session, data, region, current_aws_account_id, a
     ingest_lambda_functions = """
     MERGE (lambda:AWSLambda{id: {Arn}})
     ON CREATE SET lambda.firstseen = timestamp()
-    SET lambda.name = {LambdaName}, 
+    SET lambda.name = {LambdaName},
     lambda.modifieddate = {LastModified},
     lambda.arn = {Arn},
     lambda.runtime = {Runtime},
