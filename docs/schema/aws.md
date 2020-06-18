@@ -1396,8 +1396,8 @@ Representation of an AWS [Lambda Function](https://docs.aws.amazon.com/lambda/la
 	(AWSAccount)-[RESOURCE]->(AWSLambda)
 	```
 
-- AWSLambda function assumes to roles as AWSPrincipal.
+- AWSLambda functions may act as AWSPrincipals via role assumption.
 
 	```
-	(AWSAccount)-[STS_ASSUME_ROLE_ALLOW]->(AWSPrincipal)
+	(AWSLambda)-[STS_ASSUME_ROLE_ALLOW]->(AWSPrincipal)
 	```
