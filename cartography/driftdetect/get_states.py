@@ -126,12 +126,15 @@ def get_state(session, state):
     :return:
     """
 
+    # A neo4j Result object (https://neo4j.com/docs/api/python-driver/current/api.html#neo4j.Result)
     new_results = session.run(state.validation_query)
     logger.debug(f"Updating results for {state.name}")
 
     state.properties = new_results.keys()
     results = []
 
+    # take all the values and append it like `val1|val2|..\valN
+    # TODO - find a better way to serialize this
     for record in new_results:
         values = []
         for field in record.values():
