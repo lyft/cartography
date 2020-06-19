@@ -33,7 +33,7 @@ Follow these steps to analyze Github repos and other objects with Cartography.
        ```python
        import json
        import base64
-       str = json.dumps({"organization":[{"token":"faketoken","url":"https://api.github.com/graphql","name":"fakeorg"},{"token":"stillfake","url":"https://github.example.com/api/graphql","name":"fakeorg"}]})
-       base64.b64encode(str.encode())
+       auth_json = json.dumps({"organization":[{"token":"faketoken","url":"https://api.github.com/graphql","name":"fakeorg"},{"token":"stillfake","url":"https://github.example.com/api/graphql","name":"fakeorg"}]})
+       base64.b64encode(auth_json.encode())
        ```
        and the resulting environment variable would be ```eyJvcmdhbml6YXRpb24iOiBbeyJ0b2tlbiI6ICJmYWtldG9rZW4iLCAidXJsIjogImh0dHBzOi8vYXBpLmdpdGh1Yi5jb20vZ3JhcGhxbCIsICJuYW1lIjogImZha2VvcmcifSwgeyJ0b2tlbiI6ICJzdGlsbGZha2UiLCAidXJsIjogImh0dHBzOi8vZ2l0aHViLmV4YW1wbGUuY29tL2FwaS9ncmFwaHFsIiwgIm5hbWUiOiAiZmFrZW9yZyJ9XX0=```
