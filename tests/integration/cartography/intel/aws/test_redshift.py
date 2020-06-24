@@ -106,6 +106,34 @@ def test_load_redshift_cluster_and_iam_role(neo4j_session):
     assert actual == expected
 
 
+def test_load_redshift_cluster_and_vpc(neo4j_session):
+    # Create test IAM role
+    neo4j_session.run(
+        """
+        MERGE (aws:AWSVpc{id: {VpcId}})
+        ON CREATE SET aws.firstseen = timestamp()
+        SET aws.lastupdated = {aws_update_tag}
+        """,
+        VpcId='my_vpc',
+        aws_update_tag=TEST_UPDATE_TAG,
+    )
+    _ensure_local_neo4j_has_test_cluster_data(neo4j_session)
+
+    # Test that RedshiftCluster-to-IAM-role relationships exist
+    expected = {
+        ('my_vpc', 'arn:aws:redshift:us-east-1:1111:cluster:my-cluster'),
+    }
+    result = neo4j_session.run(
+        """
+        MATCH (n1:AWSVpc)<-[:MEMBER_OF_AWS_VPC]-(n2:RedshiftCluster) RETURN n1.id, n2.id;
+        """
+    )
+    actual = {
+        (r['n1.id'], r['n2.id']) for r in result
+    }
+    assert actual == expected
+
+
 def _ensure_local_neo4j_has_test_cluster_data(neo4j_session):
     """Pre-load the Neo4j instance with sample Redshift data"""
     clusters = tests.data.aws.redshift.CLUSTERS

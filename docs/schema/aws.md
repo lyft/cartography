@@ -295,6 +295,12 @@ Representation of an [AWSPrincipal](https://docs.aws.amazon.com/IAM/latest/APIRe
 	(AWSAccount)-[RESOURCE]->(AWSPrincipal)
 	```
 
+- Redshift clusters may assume IAM roles. See [this article](https://docs.aws.amazon.com/redshift/latest/mgmt/authorizing-redshift-service.html).
+
+    ```
+    (RedshiftCluster)-[STS_ASSUMEROLE_ALLOW]->(AWSPrincipal)
+    ```
+
 ## AWSPrincipal::AWSUser
 Representation of an [AWSUser](https://docs.aws.amazon.com/IAM/latest/APIReference/API_User.html).  An AWS User is a type of AWS Principal.
 
@@ -406,6 +412,10 @@ More information on https://docs.aws.amazon.com/cli/latest/reference/ec2/describ
     ```
 	(AWSVpc)-[TAGGED]->(AWSTag)
 	```
+- Redshift clusters can be members of AWSVpcs.
+    ```
+    (RedshiftCluster)-[MEMBER_OF_AWS_VPC]->(AWSVpc)
+    ```
 
 
 ## Tag::AWSTag
@@ -818,6 +828,12 @@ Representation of an AWS EC2 [Security Group](https://docs.aws.amazon.com/AWSEC2
 	```
 	(EC2SecurityGroup)-[TAGGED]->(AWSTag)
 	```
+
+- Redshift clusters can be members of EC2 Security Groups.
+
+    ```
+    (RedshiftCluster)-[MEMBER_OF_EC2_SECURITY_GROUP]->(EC2SecurityGroup)
+    ```
 
 
 ## EC2Subnet
@@ -1286,6 +1302,12 @@ Representation of an AWS [RedshiftCluster](https://docs.aws.amazon.com/redshift/
 
     ```
     (RedshiftCluster)-[STS_ASSUMEROLE_ALLOW]->(AWSPrincipal)
+    ```
+
+- Redshift clusters can be members of AWSVpcs.
+
+    ```
+    (RedshiftCluster)-[MEMBER_OF_AWS_VPC]->(AWSVpc)
     ```
 
 ## RDSInstance
