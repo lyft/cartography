@@ -74,12 +74,14 @@
   - [Relationships](#relationships-32)
 - [NetworkInterface](#networkinterface)
   - [Relationships](#relationships-33)
-- [RDSInstance](#rdsinstance)
+- [RedshiftCluster](#redshiftcluster)
   - [Relationships](#relationships-34)
-- [S3Acl](#s3acl)
+- [RDSInstance](#rdsinstance)
   - [Relationships](#relationships-35)
-- [S3Bucket](#s3bucket)
+- [S3Acl](#s3acl)
   - [Relationships](#relationships-36)
+- [S3Bucket](#s3bucket)
+  - [Relationships](#relationships-37)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -1239,6 +1241,45 @@ Representation of a generic Network Interface.  Currently however, we only creat
 	(NetworkInterface)-[TAGGED]->(AWSTag)
 	```
 
+
+## RedshiftCluster
+
+Representation of an AWS [RedshiftCluster](https://docs.aws.amazon.com/redshift/latest/APIReference/API_Cluster.html).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The Amazon Resource Name (ARN) for the Redshift cluster |
+| availability\_zone | Specifies the name of the Availability Zone the cluster is located in |
+| cluster\_create\_time | Provides the date and time the cluster was created |
+| **cluster\_identifier** | The unique identifier of the cluster. |
+| cluster_revision_number | The specific revision number of the database in the cluster. |
+| db_name | The name of the initial database that was created when the cluster was created. This same name is returned for the life of the cluster. If an initial database was not specified, a database named devdev was created by default. |
+| encrypted | Specifies whether the cluster has encryption enabled |
+| cluster\_status | The current state of the cluster. |
+| endpoint\_address | DNS name of the Redshift cluster endpoint |
+| endpoint\_port | The port that the Redshift cluster's endpoint is listening on  |
+| master\_username | The master user name for the cluster. This name is used to connect to the database that is specified in the DBName parameter. |
+| node_type | The node type for the nodes in the cluster. |
+| number\_of\_nodes | The number of compute nodes in the cluster. |
+| publicly_accessible | A boolean value that, if true, indicates that the cluster can be accessed from a public network. |
+| vpc_id | The identifier of the VPC the cluster is in, if the cluster is in a VPC. |
+
+
+### Relationships
+
+- Redshift clusters are part of AWS Accounts.
+
+	```
+	(AWSAccount)-[RESOURCE]->(RedshiftCluster)
+	```
+
+- Redshift clusters can be members of EC2 Security Groups.
+
+    ```
+    (RedshiftCluster)-[:MEMBER_OF_EC2_SECURITY_GROUP]->(EC2SecurityGroup)
+    ```
 
 ## RDSInstance
 
