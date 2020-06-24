@@ -31,7 +31,8 @@ def transform_redshift_cluster_data(clusters, region, current_aws_account_id):
 def load_redshift_cluster_data(neo4j_session, clusters, region, current_aws_account_id, aws_update_tag):
     ingest_cluster = """
     MERGE (cluster:RedshiftCluster{id: {Arn}})
-    ON CREATE SET cluster.firstseen = timestamp()
+    ON CREATE SET cluster.firstseen = timestamp(),
+    cluster.arn = {Arn}
     SET cluster.availability_zone = {AZ},
     cluster.cluster_create_time = {ClusterCreateTime},
     cluster.cluster_identifier = {ClusterIdentifier},

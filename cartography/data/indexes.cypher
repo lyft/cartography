@@ -86,7 +86,7 @@ CREATE INDEX ON :OktaAdministrationRole(id);
 CREATE INDEX ON :ProgrammingLanguage(id);
 CREATE INDEX ON :PublicIpAddress(ip);
 CREATE INDEX ON :RedshiftCluster(id);
-CREATE INDEX ON :RedshiftCluster(cluster_identifier);
+CREATE INDEX ON :RedshiftCluster(arn);
 CREATE INDEX ON :RDSInstance(db_instance_identifier);
 CREATE INDEX ON :RDSInstance(id);
 CREATE INDEX ON :ReplyUri(id)
