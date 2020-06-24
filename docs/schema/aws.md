@@ -1278,7 +1278,7 @@ Representation of an AWS [RedshiftCluster](https://docs.aws.amazon.com/redshift/
 - Redshift clusters can be members of EC2 Security Groups.
 
     ```
-    (RedshiftCluster)-[m:MEMBER_OF_EC2_SECURITY_GROUP]->(EC2SecurityGroup)
+    (RedshiftCluster)-[:MEMBER_OF_EC2_SECURITY_GROUP]->(EC2SecurityGroup)
     ```
 
 ## RDSInstance

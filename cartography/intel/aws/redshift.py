@@ -17,14 +17,14 @@ def get_redshift_cluster_data(boto3_session, region):
 
 
 def _make_redshift_cluster_arn(region, aws_account_id, cluster_identifier):
+    """Cluster ARN format: https://docs.aws.amazon.com/redshift/latest/mgmt/redshift-iam-access-control-overview.html"""
     return f'arn:aws:redshift:{region}:{aws_account_id}:cluster:{cluster_identifier}'
 
 
-@timeit
 def transform_redshift_cluster_data(clusters, region, current_aws_account_id):
     for cluster in clusters:
-        # Cluster ARN format https://docs.aws.amazon.com/redshift/latest/mgmt/redshift-iam-access-control-overview.html
         cluster['arn'] = _make_redshift_cluster_arn(region, current_aws_account_id, cluster["ClusterIdentifier"])
+        cluster['ClusterCreateTime'] = str(cluster['ClusterCreateTime']) if 'ClusterCreateTime' in cluster else None
 
 
 @timeit
@@ -55,12 +55,11 @@ def load_redshift_cluster_data(neo4j_session, clusters, region, current_aws_acco
     SET r.lastupdated = {aws_update_tag}
     """
     for cluster in clusters:
-        cluster_create_time = str(cluster['ClusterCreateTime']) if 'ClusterCreateTime' in cluster else None
         neo4j_session.run(
             ingest_cluster,
             Arn=cluster['arn'],
             AZ=cluster['AvailabilityZone'],
-            ClusterCreateTime=cluster_create_time,
+            ClusterCreateTime=cluster['ClusterCreateTime'],
             ClusterIdentifier=cluster['ClusterIdentifier'],
             ClusterRevisionNumber=cluster['ClusterRevisionNumber'],
             ClusterStatus=cluster['ClusterStatus'],
