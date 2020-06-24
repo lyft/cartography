@@ -78,9 +78,9 @@ def load_redshift_cluster_data(neo4j_session, clusters, region, current_aws_acco
             aws_update_tag=aws_update_tag,
         )
         _attach_ec2_security_groups(neo4j_session, cluster, aws_update_tag)
+        _attach_iam_roles(neo4j_session, cluster, aws_update_tag)
 
 
-@timeit
 def _attach_ec2_security_groups(neo4j_session, cluster, aws_update_tag):
     attach_cluster_to_group = """
     MATCH (c:RedshiftCluster{id:{ClusterArn}})
@@ -94,6 +94,23 @@ def _attach_ec2_security_groups(neo4j_session, cluster, aws_update_tag):
             attach_cluster_to_group,
             ClusterArn=cluster['arn'],
             GroupId=group['VpcSecurityGroupId'],
+            aws_update_tag=aws_update_tag,
+        )
+
+
+def _attach_iam_roles(neo4j_session, cluster, aws_update_tag):
+    attach_cluster_to_group = """
+    MATCH (c:RedshiftCluster{id:{ClusterArn}})
+    MERGE (p:AWSPrincipal{arn:{RoleArn}})
+    MERGE (c)-[s:STS_ASSUMEROLE_ALLOW]->(p)
+    ON CREATE SET s.firstseen = timestamp()
+    SET s.lastupdated = {aws_update_tag}
+    """
+    for role in cluster.get('IamRoles', []):
+        neo4j_session.run(
+            attach_cluster_to_group,
+            ClusterArn=cluster['arn'],
+            RoleArn=role['IamRoleArn'],
             aws_update_tag=aws_update_tag,
         )
 
