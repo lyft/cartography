@@ -107,7 +107,7 @@ def test_load_redshift_cluster_and_iam_role(neo4j_session):
 
 
 def test_load_redshift_cluster_and_vpc(neo4j_session):
-    # Create test IAM role
+    # Create test VPC
     neo4j_session.run(
         """
         MERGE (aws:AWSVpc{id: {VpcId}})
@@ -119,7 +119,7 @@ def test_load_redshift_cluster_and_vpc(neo4j_session):
     )
     _ensure_local_neo4j_has_test_cluster_data(neo4j_session)
 
-    # Test that RedshiftCluster-to-IAM-role relationships exist
+    # Test that RedshiftCluster-to-VPC relationships exist
     expected = {
         ('my_vpc', 'arn:aws:redshift:us-east-1:1111:cluster:my-cluster'),
     }
