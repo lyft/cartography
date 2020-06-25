@@ -189,6 +189,18 @@ class CLI:
             ),
         )
         parser.add_argument(
+            '--jamf-user',
+            type=str,
+            default=None,
+            help='A username with which to authenticate to Jamf.',
+        )
+        parser.add_argument(
+            '--jamf-password-env-var',
+            type=str,
+            default=None,
+            help='The name of an environment variable containing a password with which to authenticate to Jamf.',
+        )
+        parser.add_argument(
             '--statsd-enabled',
             action='store_true',
             help=(
@@ -276,6 +288,21 @@ class CLI:
             config.github_config = os.environ.get(config.github_config_env_var)
         else:
             config.github_config = None
+
+        # Jamf config
+        if config.jamf_user:
+            config.jamf_password = None
+            if config.jamf_password_env_var:
+                logger.debug(
+                    "Reading password for Jamf user '%s' from environment variable '%s'.",
+                    config.jamf_user,
+                    config.jamf_password_env_var,
+                )
+                config.jamf_password = os.environ.get(config.jamf_password_env_var)
+            if not config.jamf_password:
+                logger.warning("Jamf username was provided but a password could not be found.")
+        else:
+            config.jamf_password = None
 
         if config.statsd_enabled:
             logger.debug(
