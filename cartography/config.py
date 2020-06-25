@@ -33,6 +33,8 @@ class Config:
     :param github_config: Base64 encoded config object for GitHub ingestion. Optional.
     :type permission_relationship_file: str
     :param permission_relationship_file: File path for the resource permission relationships file. Optional.
+    :type jamf_base_uri: string
+    :param jamf_base_uri: Jamf data provider base URI, e.g. https://example.com/JSSResource. Optional.
     :type jamf_user: string
     :param jamf_user: User name used to authenticate to the Jamf data provider. Optional.
     :type jamf_password: string

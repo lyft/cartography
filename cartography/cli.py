@@ -189,6 +189,15 @@ class CLI:
             ),
         )
         parser.add_argument(
+            '--jamf-base-uri',
+            type=str,
+            default=None,
+            help=(
+                'Your Jamf base URI, e.g. https://hostname.com/JSSResource.'
+                'Required if you are using the Jamf intel module. Ignored otherwise.'
+            ),
+        )
+        parser.add_argument(
             '--jamf-user',
             type=str,
             default=None,
@@ -290,18 +299,22 @@ class CLI:
             config.github_config = None
 
         # Jamf config
-        if config.jamf_user:
-            config.jamf_password = None
-            if config.jamf_password_env_var:
-                logger.debug(
-                    "Reading password for Jamf user '%s' from environment variable '%s'.",
-                    config.jamf_user,
-                    config.jamf_password_env_var,
-                )
-                config.jamf_password = os.environ.get(config.jamf_password_env_var)
+        if config.jamf_base_uri:
+            if config.jamf_user:
+                config.jamf_password = None
+                if config.jamf_password_env_var:
+                    logger.debug(
+                        "Reading password for Jamf user '%s' from environment variable '%s'.",
+                        config.jamf_user,
+                        config.jamf_password_env_var,
+                    )
+                    config.jamf_password = os.environ.get(config.jamf_password_env_var)
+            if not config.jamf_user:
+                logger.warning("A Jamf base URI was provided but a user was not.")
             if not config.jamf_password:
-                logger.warning("Jamf username was provided but a password could not be found.")
+                logger.warning("A Jamf password could not be found.")
         else:
+            config.jamf_user = None
             config.jamf_password = None
 
         if config.statsd_enabled:
