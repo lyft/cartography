@@ -62,6 +62,7 @@ class Config:
         okta_saml_role_regex=None,
         github_config=None,
         permission_relationship_file=None,
+        jamf_base_uri=None,
         jamf_user=None,
         jamf_password=None,
         statsd_enabled=False,
@@ -82,6 +83,7 @@ class Config:
         self.okta_saml_role_regex = okta_saml_role_regex
         self.github_config = github_config
         self.permission_relationship_file = permission_relationship_file
+        self.jamf_base_uri = jamf_base_uri,
         self.jamf_user = jamf_user,
         self.jamf_password = jamf_password,
         self.statsd_enabled = statsd_enabled
