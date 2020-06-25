@@ -68,6 +68,7 @@ CREATE INDEX ON :IpPermissionInbound(ruleid);
 CREATE INDEX ON :IpPermissionsEgress(ruleid);
 CREATE INDEX ON :IpRange(id);
 CREATE INDEX ON :IpRule(ruleid);
+CREATE INDEX ON :JamfComputerGroup(id);
 CREATE INDEX ON :LoadBalancer(dnsname);
 CREATE INDEX ON :LoadBalancer(id);
 CREATE INDEX ON :LoadBalancerV2(dnsname);
