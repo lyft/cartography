@@ -31,7 +31,8 @@ def transform_redshift_cluster_data(clusters, region, current_aws_account_id):
 def load_redshift_cluster_data(neo4j_session, clusters, region, current_aws_account_id, aws_update_tag):
     ingest_cluster = """
     MERGE (cluster:RedshiftCluster{id: {Arn}})
-    ON CREATE SET cluster.firstseen = timestamp()
+    ON CREATE SET cluster.firstseen = timestamp(),
+    cluster.arn = {Arn}
     SET cluster.availability_zone = {AZ},
     cluster.cluster_create_time = {ClusterCreateTime},
     cluster.cluster_identifier = {ClusterIdentifier},
@@ -77,6 +78,8 @@ def load_redshift_cluster_data(neo4j_session, clusters, region, current_aws_acco
             aws_update_tag=aws_update_tag,
         )
         _attach_ec2_security_groups(neo4j_session, cluster, aws_update_tag)
+        _attach_iam_roles(neo4j_session, cluster, aws_update_tag)
+        _attach_aws_vpc(neo4j_session, cluster, aws_update_tag)
 
 
 @timeit
@@ -93,6 +96,42 @@ def _attach_ec2_security_groups(neo4j_session, cluster, aws_update_tag):
             attach_cluster_to_group,
             ClusterArn=cluster['arn'],
             GroupId=group['VpcSecurityGroupId'],
+            aws_update_tag=aws_update_tag,
+        )
+
+
+@timeit
+def _attach_iam_roles(neo4j_session, cluster, aws_update_tag):
+    attach_cluster_to_role = """
+    MATCH (c:RedshiftCluster{id:{ClusterArn}})
+    MERGE (p:AWSPrincipal{arn:{RoleArn}})
+    MERGE (c)-[s:STS_ASSUMEROLE_ALLOW]->(p)
+    ON CREATE SET s.firstseen = timestamp()
+    SET s.lastupdated = {aws_update_tag}
+    """
+    for role in cluster.get('IamRoles', []):
+        neo4j_session.run(
+            attach_cluster_to_role,
+            ClusterArn=cluster['arn'],
+            RoleArn=role['IamRoleArn'],
+            aws_update_tag=aws_update_tag,
+        )
+
+
+@timeit
+def _attach_aws_vpc(neo4j_session, cluster, aws_update_tag):
+    attach_cluster_to_vpc = """
+    MATCH (c:RedshiftCluster{id:{ClusterArn}})
+    MERGE (v:AWSVpc{id:{VpcId}})
+    MERGE (c)-[m:MEMBER_OF_AWS_VPC]->(v)
+    ON CREATE SET m.firstseen = timestamp()
+    SET m.lastupdated = {aws_update_tag}
+    """
+    if cluster.get('VpcId'):
+        neo4j_session.run(
+            attach_cluster_to_vpc,
+            ClusterArn=cluster['arn'],
+            VpcId=cluster['VpcId'],
             aws_update_tag=aws_update_tag,
         )
 
