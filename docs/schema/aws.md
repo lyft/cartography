@@ -295,6 +295,12 @@ Representation of an [AWSPrincipal](https://docs.aws.amazon.com/IAM/latest/APIRe
 	(AWSAccount)-[RESOURCE]->(AWSPrincipal)
 	```
 
+- Redshift clusters may assume IAM roles. See [this article](https://docs.aws.amazon.com/redshift/latest/mgmt/authorizing-redshift-service.html).
+
+    ```
+    (RedshiftCluster)-[STS_ASSUMEROLE_ALLOW]->(AWSPrincipal)
+    ```
+
 ## AWSPrincipal::AWSUser
 Representation of an [AWSUser](https://docs.aws.amazon.com/IAM/latest/APIReference/API_User.html).  An AWS User is a type of AWS Principal.
 
@@ -406,6 +412,10 @@ More information on https://docs.aws.amazon.com/cli/latest/reference/ec2/describ
     ```
 	(AWSVpc)-[TAGGED]->(AWSTag)
 	```
+- Redshift clusters can be members of AWSVpcs.
+    ```
+    (RedshiftCluster)-[MEMBER_OF_AWS_VPC]->(AWSVpc)
+    ```
 
 
 ## Tag::AWSTag
@@ -818,6 +828,12 @@ Representation of an AWS EC2 [Security Group](https://docs.aws.amazon.com/AWSEC2
 	```
 	(EC2SecurityGroup)-[TAGGED]->(AWSTag)
 	```
+
+- Redshift clusters can be members of EC2 Security Groups.
+
+    ```
+    (RedshiftCluster)-[MEMBER_OF_EC2_SECURITY_GROUP]->(EC2SecurityGroup)
+    ```
 
 
 ## EC2Subnet
@@ -1250,10 +1266,11 @@ Representation of an AWS [RedshiftCluster](https://docs.aws.amazon.com/redshift/
 |-------|-------------|
 | firstseen| Timestamp of when a sync job first discovered this node  |
 | lastupdated |  Timestamp of the last time the node was updated |
-| **id** | The Amazon Resource Name (ARN) for the Redshift cluster |
+| **arn** | The Amazon Resource Name (ARN) for the Redshift cluster |
+| **id** | Same as arn |
 | availability\_zone | Specifies the name of the Availability Zone the cluster is located in |
 | cluster\_create\_time | Provides the date and time the cluster was created |
-| **cluster\_identifier** | The unique identifier of the cluster. |
+| cluster\_identifier | The unique identifier of the cluster. |
 | cluster_revision_number | The specific revision number of the database in the cluster. |
 | db_name | The name of the initial database that was created when the cluster was created. This same name is returned for the life of the cluster. If an initial database was not specified, a database named devdev was created by default. |
 | encrypted | Specifies whether the cluster has encryption enabled |
@@ -1278,7 +1295,19 @@ Representation of an AWS [RedshiftCluster](https://docs.aws.amazon.com/redshift/
 - Redshift clusters can be members of EC2 Security Groups.
 
     ```
-    (RedshiftCluster)-[:MEMBER_OF_EC2_SECURITY_GROUP]->(EC2SecurityGroup)
+    (RedshiftCluster)-[MEMBER_OF_EC2_SECURITY_GROUP]->(EC2SecurityGroup)
+    ```
+
+- Redshift clusters may assume IAM roles. See [this article](https://docs.aws.amazon.com/redshift/latest/mgmt/authorizing-redshift-service.html).
+
+    ```
+    (RedshiftCluster)-[STS_ASSUMEROLE_ALLOW]->(AWSPrincipal)
+    ```
+
+- Redshift clusters can be members of AWSVpcs.
+
+    ```
+    (RedshiftCluster)-[MEMBER_OF_AWS_VPC]->(AWSVpc)
     ```
 
 ## RDSInstance
