@@ -9,9 +9,9 @@ def test_load_jamf_computer_group_data(neo4j_session):
 
     # Test that the Redshift cluster node was created
     expected_nodes = {
-        "123",
-        "234",
-        "345",
+        123,
+        234,
+        345,
     }
     nodes = neo4j_session.run(
         """
