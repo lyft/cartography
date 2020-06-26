@@ -2,8 +2,9 @@ import logging
 import time
 
 from .util import get_botocore_config
+from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
-from cartography.util import timeit, aws_handle_regions
+from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 

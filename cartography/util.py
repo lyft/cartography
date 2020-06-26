@@ -1,5 +1,6 @@
-import sys
 import logging
+import sys
+
 import botocore
 
 from cartography.graph.job import GraphJob
@@ -10,6 +11,7 @@ else:
     from importlib_resources import open_binary, read_text
 
 logger = logging.getLogger(__name__)
+
 
 def run_analysis_job(filename, neo4j_session, common_job_parameters):
     GraphJob.run_from_json(
@@ -68,7 +70,7 @@ def aws_handle_regions(func):
         'AccessDeniedException',
         'UnrecognizedClientException',
         'InvalidClientTokenId',
-        'AuthFailure'
+        'AuthFailure',
     ]
 
     def inner_function(*args, **kwargs):
