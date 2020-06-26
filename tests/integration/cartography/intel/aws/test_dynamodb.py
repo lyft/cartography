@@ -7,7 +7,7 @@ TEST_UPDATE_TAG = 123456789
 
 
 def test_load_dynamodb(neo4j_session):
-    data = tests.data.aws.dynamodb.LIST_DYNAMODB_TABLES
+    data = tests.data.aws.dynamodb.LIST_DYNAMODB_TABLES['Tables']
 
     cartography.intel.aws.dynamodb.load_dynamodb_tables(
         neo4j_session,
