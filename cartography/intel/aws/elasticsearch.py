@@ -6,7 +6,7 @@ from policyuniverse.policy import Policy
 
 from cartography.intel.dns import ingest_dns_record_by_fqdn
 from cartography.util import run_cleanup_job
-from cartography.util import timeit
+from cartography.util import timeit, aws_handle_regions
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +42,7 @@ def _get_botocore_config():
 
 
 @timeit
+@aws_handle_regions
 def _get_es_domains(client):
     """
     Get ES domains.

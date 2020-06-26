@@ -2,25 +2,16 @@ import logging
 
 from .util import get_botocore_config
 from cartography.util import run_cleanup_job
-from cartography.util import timeit
+from cartography.util import timeit, aws_handle_regions
 
 logger = logging.getLogger(__name__)
 
 
 @timeit
+@aws_handle_regions
 def get_ec2_vpc_peering(boto3_session, region):
     client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
-    try:
-        # paginator not supported by boto
-        return client.describe_vpc_peering_connections()
-    except client.exceptions.ClientError as e:
-        # The account is not authorized to use this service in this region
-        # so we can continue without raising an exception
-        if e.response['Error']['Code'] == 'AuthFailure':
-            logger.warn("{} in this region. Skipping...".format(e.response['Error']['Message']))
-        else:
-            raise
-    return {'VpcPeeringConnections': []}
+    return client.describe_vpc_peering_connections()['VpcPeeringConnections']
 
 
 @timeit
@@ -128,7 +119,7 @@ def load_ec2_vpc_peering(neo4j_session, data, aws_update_tag):
     r.expiration_time = {ExpirationTime},
     r.lastupdated = {aws_update_tag}
     """
-    for peering in data['VpcPeeringConnections']:
+    for peering in data:
         if peering["Status"]["Code"] == "active":
             neo4j_session.run(
                 ingest_peering,

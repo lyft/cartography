@@ -2,27 +2,18 @@ import logging
 
 from .util import get_botocore_config
 from cartography.util import run_cleanup_job
-from cartography.util import timeit
+from cartography.util import timeit, aws_handle_regions
 
 logger = logging.getLogger(__name__)
 
 
 @timeit
+@aws_handle_regions
 def get_load_balancer_v2_listeners(client, load_balancer_arn):
     paginator = client.get_paginator('describe_listeners')
     listeners = []
-    try:
-        for page in paginator.paginate(LoadBalancerArn=load_balancer_arn):
-            listeners.extend(page['Listeners'])
-    except client.exceptions.ClientError as e:
-        # The account is not authorized to use this service in this region
-        # so we can continue without raising an exception
-        if e.response['Error']['Code'] == 'InvalidClientTokenId' \
-                or e.response['Error']['Code'] == 'AuthFailure' \
-                or e.response['Error']['Code'] == 'UnrecognizedClientException':
-            logger.warn("{} in this region. Skipping...".format(e.response['Error']['Message']))
-        else:
-            raise
+    for page in paginator.paginate(LoadBalancerArn=load_balancer_arn):
+        listeners.extend(page['Listeners'])
 
     return listeners
 
@@ -45,28 +36,19 @@ def get_load_balancer_v2_target_groups(client, load_balancer_arn):
 
 
 @timeit
+@aws_handle_regions
 def get_loadbalancer_v2_data(boto3_session, region):
     client = boto3_session.client('elbv2', region_name=region, config=get_botocore_config())
     paginator = client.get_paginator('describe_load_balancers')
     elbv2s = []
-    try:
-        for page in paginator.paginate():
-            elbv2s.extend(page['LoadBalancers'])
+    for page in paginator.paginate():
+        elbv2s.extend(page['LoadBalancers'])
 
-        # Make extra calls to get listeners
-        for elbv2 in elbv2s:
-            elbv2['Listeners'] = get_load_balancer_v2_listeners(client, elbv2['LoadBalancerArn'])
-            elbv2['TargetGroups'] = get_load_balancer_v2_target_groups(client, elbv2['LoadBalancerArn'])
-    except client.exceptions.ClientError as e:
-        # The account is not authorized to use this service in this region
-        # so we can continue without raising an exception
-        if e.response['Error']['Code'] == 'InvalidClientTokenId' \
-            or e.response['Error']['Code'] == 'AuthFailure' \
-                or e.response['Error']['Code'] == 'UnrecognizedClientException':
-            logger.warn("{} in this region. Skipping...".format(e.response['Error']['Message']))
-        else:
-            raise
-    return {'LoadBalancers': elbv2s}
+    # Make extra calls to get listeners
+    for elbv2 in elbv2s:
+        elbv2['Listeners'] = get_load_balancer_v2_listeners(client, elbv2['LoadBalancerArn'])
+        elbv2['TargetGroups'] = get_load_balancer_v2_target_groups(client, elbv2['LoadBalancerArn'])
+    return elbv2s
 
 
 @timeit
@@ -84,7 +66,7 @@ def load_load_balancer_v2s(neo4j_session, data, region, current_aws_account_id, 
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {aws_update_tag}
     """
-    for lb in data['LoadBalancers']:
+    for lb in data:
         load_balancer_id = lb["DNSName"]
 
         neo4j_session.run(

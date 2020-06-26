@@ -2,7 +2,7 @@ import logging
 from string import Template
 
 from cartography.util import run_cleanup_job
-from cartography.util import timeit
+from cartography.util import timeit, aws_handle_regions
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +49,7 @@ TAG_RESOURCE_TYPE_MAPPINGS = {
 
 
 @timeit
+@aws_handle_regions
 def get_tags(boto3_session, resource_types, region):
     """
     Create boto3 client and retrieve tag data.
@@ -56,21 +57,12 @@ def get_tags(boto3_session, resource_types, region):
     client = boto3_session.client('resourcegroupstaggingapi', region_name=region)
     paginator = client.get_paginator('get_resources')
     resources = []
-    try:
-        for page in paginator.paginate(
-            # Only ingest tags for resources that Cartography supports.
-            # This is just a starting list; there may be others supported by this API.
-            ResourceTypeFilters=resource_types,
-        ):
-            resources.extend(page['ResourceTagMappingList'])
-    except client.exceptions.ClientError as e:
-        # The account is not authorized to use this service in this region
-        # so we can continue without raising an exception
-        if e.response['Error']['Code'] == 'AuthFailure' \
-                or e.response['Error']['Code'] == 'UnrecognizedClientException':
-            logger.warn("{} in this region. Skipping...".format(e.response['Error']['Message']))
-        else:
-            raise
+    for page in paginator.paginate(
+        # Only ingest tags for resources that Cartography supports.
+        # This is just a starting list; there may be others supported by this API.
+        ResourceTypeFilters=resource_types,
+    ):
+        resources.extend(page['ResourceTagMappingList'])
     return resources
 
 

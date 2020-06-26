@@ -1,12 +1,13 @@
 import logging
 
 from cartography.util import run_cleanup_job
-from cartography.util import timeit
+from cartography.util import timeit, aws_handle_regions
 
 logger = logging.getLogger(__name__)
 
 
 @timeit
+@aws_handle_regions
 def get_rds_instance_data(boto3_session, region):
     """
     Create an RDS boto3 client and grab all the DBInstances.
@@ -14,19 +15,10 @@ def get_rds_instance_data(boto3_session, region):
     client = boto3_session.client('rds', region_name=region)
     paginator = client.get_paginator('describe_db_instances')
     instances = []
-    try:
-        for page in paginator.paginate():
-            instances.extend(page['DBInstances'])
-    except client.exceptions.ClientError as e:
-        # The account is not authorized to use this service in this region
-        # so we can continue without raising an exception
-        if e.response['Error']['Code'] == 'InvalidClientTokenId' \
-            or e.response['Error']['Code'] == 'AccessDeniedException' \
-                or e.response['Error']['Code'] == 'UnrecognizedClientException':
-            logger.warn("{} in this region. Skipping...".format(e.response['Error']['Message']))
-        else:
-            raise
-    return {'DBInstances': instances}
+    for page in paginator.paginate():
+        instances.extend(page['DBInstances'])
+
+    return instances
 
 
 @timeit
@@ -76,7 +68,7 @@ def load_rds_instances(neo4j_session, data, region, current_aws_account_id, aws_
     """
     read_replicas = []
 
-    for rds in data.get('DBInstances', []):
+    for rds in data:
         instance_create_time = str(rds['InstanceCreateTime']) if 'InstanceCreateTime' in rds else None
         latest_restorable_time = str(rds['LatestRestorableTime']) if 'LatestRestorableTime' in rds else None
 

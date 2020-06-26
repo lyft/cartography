@@ -3,28 +3,20 @@ from string import Template
 
 from .util import get_botocore_config
 from cartography.util import run_cleanup_job
-from cartography.util import timeit
+from cartography.util import timeit, aws_handle_regions
 
 logger = logging.getLogger(__name__)
 
 
 @timeit
+@aws_handle_regions
 def get_ec2_security_group_data(boto3_session, region):
     client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
     paginator = client.get_paginator('describe_security_groups')
     security_groups = []
-    try:
-        for page in paginator.paginate():
-            security_groups.extend(page['SecurityGroups'])
-    except client.exceptions.ClientError as e:
-        # The account is not authorized to use this service in this region
-        # so we can continue without raising an exception
-        if e.response['Error']['Code'] == 'AuthFailure' \
-                or e.response['Error']['Code'] == 'UnrecognizedClientException':
-            logger.warn("{} in this region. Skipping...".format(e.response['Error']['Message']))
-        else:
-            raise
-    return {'SecurityGroups': security_groups}
+    for page in paginator.paginate():
+        security_groups.extend(page['SecurityGroups'])
+    return security_groups
 
 
 @timeit
@@ -120,7 +112,7 @@ def load_ec2_security_groupinfo(neo4j_session, data, region, current_aws_account
     ON CREATE SET rg.firstseen = timestamp()
     """
 
-    for group in data["SecurityGroups"]:
+    for group in data:
         group_id = group["GroupId"]
 
         neo4j_session.run(

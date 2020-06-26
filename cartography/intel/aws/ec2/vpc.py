@@ -3,25 +3,16 @@ from string import Template
 
 from .util import get_botocore_config
 from cartography.util import run_cleanup_job
-from cartography.util import timeit
+from cartography.util import timeit, aws_handle_regions
 
 logger = logging.getLogger(__name__)
 
 
 @timeit
+@aws_handle_regions
 def get_ec2_vpcs(boto3_session, region):
     client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
-    # paginator not supported by boto
-    try:
-        return client.describe_vpcs()
-    except client.exceptions.ClientError as e:
-        # The account is not authorized to use this service in this region
-        # so we can continue without raising an exception
-        if e.response['Error']['Code'] == 'AuthFailure':
-            logger.warn("{} in this region. Skipping...".format(e.response['Error']['Message']))
-        else:
-            raise
-    return {'Vpcs': []}
+    return client.describe_vpcs()['Vpcs']
 
 
 def _get_cidr_association_statement(block_type):
@@ -123,7 +114,7 @@ def load_ec2_vpcs(neo4j_session, data, region, current_aws_account_id, aws_updat
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {aws_update_tag}"""
 
-    for vpc in data['Vpcs']:
+    for vpc in data:
         vpc_id = vpc["VpcId"]  # fail if not present
 
         neo4j_session.run(
