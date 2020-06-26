@@ -1,4 +1,6 @@
 import sys
+import logging
+import botocore
 
 from cartography.graph.job import GraphJob
 
@@ -7,6 +9,7 @@ if sys.version_info >= (3, 7):
 else:
     from importlib_resources import open_binary, read_text
 
+logger = logging.getLogger(__name__)
 
 def run_analysis_job(filename, neo4j_session, common_job_parameters):
     GraphJob.run_from_json(
@@ -58,3 +61,25 @@ def timeit(method):
             return method(*args, **kwargs)
 
     return timed
+
+
+def aws_handle_regions(func):
+    ERROR_CODES = [
+        'AccessDeniedException',
+        'UnrecognizedClientException',
+        'InvalidClientTokenId',
+        'AuthFailure'
+    ]
+
+    def inner_function(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except botocore.exceptions.ClientError as e:
+            # The account is not authorized to use this service in this region
+            # so we can continue without raising an exception
+            if e.response['Error']['Code'] in ERROR_CODES:
+                logger.warn("{} in this region. Skipping...".format(e.response['Error']['Message']))
+                return []
+            else:
+                raise
+    return inner_function
