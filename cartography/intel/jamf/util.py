@@ -20,9 +20,9 @@ def call_jamf_api(api_and_parameters, jamf_base_uri, jamf_user, jamf_password):
             headers={'Accept': 'application/json'},
             timeout=_TIMEOUT,
         )
-    except requests.exceptions.Timeout as e:
+    except requests.exceptions.Timeout:
         # Add context and re-raise for callers to handle
-        logger.warning(f"requests.get('{uri}') timed out", e)
+        logger.warning(f"Jamf: requests.get('{uri}') timed out.")
         raise
     # if call failed, use requests library to raise an exception
     response.raise_for_status()
