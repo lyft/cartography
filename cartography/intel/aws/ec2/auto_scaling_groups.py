@@ -1,6 +1,7 @@
 import logging
 
 from .util import get_botocore_config
+from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
@@ -8,13 +9,14 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
+@aws_handle_regions
 def get_ec2_auto_scaling_groups(boto3_session, region):
     client = boto3_session.client('autoscaling', region_name=region, config=get_botocore_config())
     paginator = client.get_paginator('describe_auto_scaling_groups')
     asgs = []
     for page in paginator.paginate():
         asgs.extend(page['AutoScalingGroups'])
-    return {'AutoScalingGroups': asgs}
+    return asgs
 
 
 @timeit
@@ -58,7 +60,7 @@ def load_ec2_auto_scaling_groups(neo4j_session, data, region, current_aws_accoun
     SET r.lastupdated = {aws_update_tag}
     """
 
-    for group in data["AutoScalingGroups"]:
+    for group in data:
         name = group["AutoScalingGroupName"]
         createtime = group.get("CreatedTime", "")
         lauchconfig_name = group.get("LaunchConfigurationName", "")

@@ -1,6 +1,7 @@
 import logging
 from string import Template
 
+from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
@@ -50,6 +51,7 @@ TAG_RESOURCE_TYPE_MAPPINGS = {
 
 
 @timeit
+@aws_handle_regions
 def get_tags(boto3_session, resource_types, region):
     """
     Create boto3 client and retrieve tag data.
