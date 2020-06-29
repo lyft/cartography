@@ -13,6 +13,7 @@ def get_computer_groups(jamf_base_uri, jamf_user, jamf_password):
     return call_jamf_api("/computergroups", jamf_base_uri, jamf_user, jamf_password)
 
 
+@timeit
 def load_computer_groups(data, neo4j_session, update_tag):
     ingest_groups = """
     UNWIND {JsonData} as group
