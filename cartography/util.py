@@ -80,7 +80,7 @@ def aws_handle_regions(func):
             # The account is not authorized to use this service in this region
             # so we can continue without raising an exception
             if e.response['Error']['Code'] in ERROR_CODES:
-                logger.warn("{} in this region. Skipping...".format(e.response['Error']['Message']))
+                logger.warning("{} in this region. Skipping...".format(e.response['Error']['Message']))
                 return []
             else:
                 raise
