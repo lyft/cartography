@@ -1,6 +1,7 @@
 import logging
 
 from .util import get_botocore_config
+from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
@@ -8,10 +9,10 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
+@aws_handle_regions
 def get_ec2_key_pairs(boto3_session, region):
     client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
-    result = client.describe_key_pairs()
-    return result
+    return client.describe_key_pairs()['KeyPairs']
 
 
 @timeit
@@ -28,7 +29,7 @@ def load_ec2_key_pairs(neo4j_session, data, region, current_aws_account_id, aws_
     SET r.lastupdated = {aws_update_tag}
     """
 
-    for key_pair in data['KeyPairs']:
+    for key_pair in data:
         key_name = key_pair["KeyName"]
         key_fingerprint = key_pair.get("KeyFingerprint")
         key_pair_arn = f'arn:aws:ec2:{region}:{current_aws_account_id}:key-pair/{key_name}'

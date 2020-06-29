@@ -10,7 +10,7 @@ def test_load_ec2_instances(neo4j_session, *args):
     """
     Ensure that instances actually get loaded and have their key fields
     """
-    data = tests.data.aws.ec2.instances.DESCRIBE_INSTANCES
+    data = tests.data.aws.ec2.instances.DESCRIBE_INSTANCES['Reservations']
     cartography.intel.aws.ec2.instances.load_ec2_instances(
         neo4j_session, data, TEST_REGION, TEST_ACCOUNT_ID, TEST_UPDATE_TAG,
     )
@@ -53,7 +53,7 @@ def test_ec2_reservations_to_instances(neo4j_session, *args):
     """
     Ensure that instances are connected to their expected reservations
     """
-    data = tests.data.aws.ec2.instances.DESCRIBE_INSTANCES
+    data = tests.data.aws.ec2.instances.DESCRIBE_INSTANCES['Reservations']
     cartography.intel.aws.ec2.instances.load_ec2_instances(
         neo4j_session, data, TEST_REGION, TEST_ACCOUNT_ID, TEST_UPDATE_TAG,
     )

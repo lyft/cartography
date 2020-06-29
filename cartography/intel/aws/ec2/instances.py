@@ -2,6 +2,7 @@ import logging
 import time
 
 from .util import get_botocore_config
+from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
@@ -9,13 +10,14 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
+@aws_handle_regions
 def get_ec2_instances(boto3_session, region):
     client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
     paginator = client.get_paginator('describe_instances')
     reservations = []
     for page in paginator.paginate():
         reservations.extend(page['Reservations'])
-    return {'Reservations': reservations}
+    return reservations
 
 
 @timeit
@@ -146,7 +148,7 @@ def load_ec2_instances(neo4j_session, data, region, current_aws_account_id, aws_
     SET r.lastupdated = {aws_update_tag}
     """
 
-    for reservation in data['Reservations']:
+    for reservation in data:
         reservation_id = reservation["ReservationId"]
 
         neo4j_session.run(
