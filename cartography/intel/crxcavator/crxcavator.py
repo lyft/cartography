@@ -7,6 +7,8 @@ from requests import exceptions
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+# Connect and read timeouts of 60 seconds each; see https://requests.readthedocs.io/en/master/user/advanced/#timeouts
+_TIMEOUT = (60, 60)
 
 
 @timeit
@@ -45,13 +47,19 @@ def call_crxcavator_api(api_and_parameters, crxcavator_api_key, crxcavator_base_
     :return: Returns JSON text blob for the API called. API spec is at https://crxcavator.io/apidocs
     """
     uri = crxcavator_base_url + api_and_parameters
-    data = requests.get(
-        uri,
-        headers={
-            'Accept': 'application/json',
-            'API-Key': crxcavator_api_key,
-        },
-    )
+    try:
+        data = requests.get(
+            uri,
+            headers={
+                'Accept': 'application/json',
+                'API-Key': crxcavator_api_key,
+            },
+            timeout=_TIMEOUT,
+        )
+    except requests.exceptions.Timeout as e:
+        # Add context and re-raise for callers to handle
+        logger.warning(f"requests.get('{uri}') timed out", e)
+        raise
     # if call failed, use requests library to raise an exception
     data.raise_for_status()
     return data.json()
@@ -86,6 +94,9 @@ def get_extensions(crxcavator_api_key, crxcavator_base_url, extensions_list):
             extensions_details.append(details)
         except exceptions.RequestException as e:
             logger.info(f"API error retrieving details for extension {extension_id}", e)
+        except requests.exceptions.Timeout:
+            logger.info(f"Skipping {extension_id} due to timeout; continuing")
+            continue
     return extensions_details
 
 
@@ -292,7 +303,11 @@ def sync_extensions(neo4j_session, common_job_parameters, crxcavator_api_key, cr
     :return: None
     """
 
-    user_extensions_json = get_users_extensions(crxcavator_api_key, crxcavator_base_url)
+    try:
+        user_extensions_json = get_users_extensions(crxcavator_api_key, crxcavator_base_url)
+    except requests.exceptions.Timeout:
+        logger.warning(f"get_users_extensions() failed due to timeout. Skipping CRXcavator sync.")
+        return
     users, extensions_list, user_extensions = transform_user_extensions(user_extensions_json)
     extension_details = get_extensions(crxcavator_api_key, crxcavator_base_url, extensions_list)
     extensions = transform_extensions(extension_details)

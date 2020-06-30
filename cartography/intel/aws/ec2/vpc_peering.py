@@ -1,6 +1,7 @@
 import logging
 
 from .util import get_botocore_config
+from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
@@ -8,10 +9,10 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
+@aws_handle_regions
 def get_ec2_vpc_peering(boto3_session, region):
     client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
-    # paginator not supported by boto
-    return client.describe_vpc_peering_connections()
+    return client.describe_vpc_peering_connections()['VpcPeeringConnections']
 
 
 @timeit
@@ -119,7 +120,7 @@ def load_ec2_vpc_peering(neo4j_session, data, aws_update_tag):
     r.expiration_time = {ExpirationTime},
     r.lastupdated = {aws_update_tag}
     """
-    for peering in data['VpcPeeringConnections']:
+    for peering in data:
         if peering["Status"]["Code"] == "active":
             neo4j_session.run(
                 ingest_peering,

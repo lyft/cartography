@@ -30,9 +30,15 @@ class Config:
     :type okta_saml_role_regex: str
     :param okta_saml_role_regex: The regex used to map okta groups to AWS roles. Optional.
     :type github_config: str
-    :param github_config: Base64 encoded config object for GitHub ingestion. Optional
+    :param github_config: Base64 encoded config object for GitHub ingestion. Optional.
     :type permission_relationship_file: str
-    :param permission_relationship_file: File path for the resource permission relationships file. Optional
+    :param permission_relationship_file: File path for the resource permission relationships file. Optional.
+    :type jamf_base_uri: string
+    :param jamf_base_uri: Jamf data provider base URI, e.g. https://example.com/JSSResource. Optional.
+    :type jamf_user: string
+    :param jamf_user: User name used to authenticate to the Jamf data provider. Optional.
+    :type jamf_password: string
+    :param jamf_password: Password used to authenticate to the Jamf data provider. Optional.
     :type statsd_enabled: bool
     :param statsd_enabled: Whether to collect statsd metrics such as sync execution times. Optional.
     :type statsd_host: str
@@ -56,6 +62,9 @@ class Config:
         okta_saml_role_regex=None,
         github_config=None,
         permission_relationship_file=None,
+        jamf_base_uri=None,
+        jamf_user=None,
+        jamf_password=None,
         statsd_enabled=False,
         statsd_prefix=None,
         statsd_host=None,
@@ -74,6 +83,9 @@ class Config:
         self.okta_saml_role_regex = okta_saml_role_regex
         self.github_config = github_config
         self.permission_relationship_file = permission_relationship_file
+        self.jamf_base_uri = jamf_base_uri,
+        self.jamf_user = jamf_user,
+        self.jamf_password = jamf_password,
         self.statsd_enabled = statsd_enabled
         self.statsd_prefix = statsd_prefix
         self.statsd_host = statsd_host
