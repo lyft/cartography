@@ -225,7 +225,7 @@ def load_groups(neo4j_session, groups, current_aws_account_id, aws_update_tag):
 
 
 def _parse_principal_entries(principal):
-    """ 
+    """
     Returns a list of tuples of the form (principal_type, principal_value)
     e.g. [('AWS', 'example-role-name'), ('Service', 'example-service')]
     """

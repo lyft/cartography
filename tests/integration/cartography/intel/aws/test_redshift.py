@@ -16,7 +16,7 @@ def test_load_redshift_cluster_data(neo4j_session):
     nodes = neo4j_session.run(
         """
         MATCH (n:RedshiftCluster) RETURN n.id;
-        """
+        """,
     )
     actual_nodes = {n['n.id'] for n in nodes}
     assert actual_nodes == expected_nodes
@@ -42,7 +42,7 @@ def test_load_redshift_cluster_and_aws_account(neo4j_session):
     result = neo4j_session.run(
         """
         MATCH (n1:AWSAccount)-[:RESOURCE]->(n2:RedshiftCluster) RETURN n1.id, n2.id;
-        """
+        """,
     )
     actual = {
         (r['n1.id'], r['n2.id']) for r in result
@@ -70,7 +70,7 @@ def test_load_redshift_cluster_and_security_group(neo4j_session):
     result = neo4j_session.run(
         """
         MATCH (n1:EC2SecurityGroup)<-[:MEMBER_OF_EC2_SECURITY_GROUP]-(n2:RedshiftCluster) RETURN n1.id, n2.id;
-        """
+        """,
     )
     actual = {
         (r['n1.id'], r['n2.id']) for r in result
@@ -98,7 +98,7 @@ def test_load_redshift_cluster_and_iam_role(neo4j_session):
     result = neo4j_session.run(
         """
         MATCH (n1:AWSPrincipal)<-[:STS_ASSUMEROLE_ALLOW]-(n2:RedshiftCluster) RETURN n1.arn, n2.id;
-        """
+        """,
     )
     actual = {
         (r['n1.arn'], r['n2.id']) for r in result
@@ -126,7 +126,7 @@ def test_load_redshift_cluster_and_vpc(neo4j_session):
     result = neo4j_session.run(
         """
         MATCH (n1:AWSVpc)<-[:MEMBER_OF_AWS_VPC]-(n2:RedshiftCluster) RETURN n1.id, n2.id;
-        """
+        """,
     )
     actual = {
         (r['n1.id'], r['n2.id']) for r in result
