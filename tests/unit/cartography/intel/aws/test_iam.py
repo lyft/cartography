@@ -5,6 +5,8 @@ SINGLE_STATEMENT = {
     "Action": "*",
 }
 
+# Example principal field in an AWS policy statement
+# see: https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_principal.html
 SINGLE_PRINCIPAL = {
     "AWS": "test-role-1",
     "Service": ["test-service-1", "test-service-2"],
