@@ -12,6 +12,7 @@ from . import lambda_function
 from . import organizations
 from . import permission_relationships
 from . import rds
+from . import redshift
 from . import resourcegroupstaggingapi
 from . import route53
 from . import s3
@@ -44,6 +45,7 @@ def _sync_one_account(neo4j_session, boto3_session, account_id, sync_tag, common
     ec2.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     eks.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     rds.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
+    redshift.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
 
     # NOTE each of the below will generate DNS records
     route53.sync(neo4j_session, boto3_session, account_id, sync_tag)

@@ -2,6 +2,7 @@ import logging
 from string import Template
 
 from .util import get_botocore_config
+from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
@@ -9,10 +10,10 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
+@aws_handle_regions
 def get_ec2_vpcs(boto3_session, region):
     client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
-    # paginator not supported by boto
-    return client.describe_vpcs()
+    return client.describe_vpcs()['Vpcs']
 
 
 def _get_cidr_association_statement(block_type):
@@ -114,7 +115,7 @@ def load_ec2_vpcs(neo4j_session, data, region, current_aws_account_id, aws_updat
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {aws_update_tag}"""
 
-    for vpc in data['Vpcs']:
+    for vpc in data:
         vpc_id = vpc["VpcId"]  # fail if not present
 
         neo4j_session.run(
