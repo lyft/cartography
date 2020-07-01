@@ -34,7 +34,7 @@ def test_load_ec2_key_pairs(neo4j_session, *args):
     nodes = neo4j_session.run(
         """
         MATCH (k:EC2KeyPair) return k.arn, k.keyfingerprint
-        """
+        """,
     )
     actual_nodes = {
         (

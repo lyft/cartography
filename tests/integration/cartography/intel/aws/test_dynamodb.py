@@ -27,7 +27,7 @@ def test_load_dynamodb(neo4j_session):
     nodes = neo4j_session.run(
         """
         MATCH (d:DynamoDBTable) return d.arn, d.rows
-        """
+        """,
     )
     actual_nodes = {(n['d.arn'], n['d.rows']) for n in nodes}
     assert actual_nodes == expected_nodes

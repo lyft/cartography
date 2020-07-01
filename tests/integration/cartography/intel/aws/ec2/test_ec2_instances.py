@@ -37,7 +37,7 @@ def test_load_ec2_instances(neo4j_session, *args):
     nodes = neo4j_session.run(
         """
         MATCH (i:EC2Instance) return i.id, i.instanceid
-        """
+        """,
     )
     actual_nodes = {
         (
@@ -80,7 +80,7 @@ def test_ec2_reservations_to_instances(neo4j_session, *args):
     nodes = neo4j_session.run(
         """
     MATCH (r:EC2Reservation)<-[:MEMBER_OF_EC2_RESERVATION]-(i:EC2Instance) RETURN r.reservationid, i.id
-    """
+    """,
     )
     actual_nodes = {
         (

@@ -224,6 +224,21 @@ def load_groups(neo4j_session, groups, current_aws_account_id, aws_update_tag):
         )
 
 
+def _parse_principal_entries(principal):
+    """
+    Returns a list of tuples of the form (principal_type, principal_value)
+    e.g. [('AWS', 'example-role-name'), ('Service', 'example-service')]
+    """
+    principal_entries = []
+    for principal_type in principal:
+        principal_values = principal[principal_type]
+        if not isinstance(principal_values, list):
+            principal_values = [principal_values]
+        for principal_value in principal_values:
+            principal_entries.append((principal_type, principal_value))
+    return principal_entries
+
+
 @timeit
 def load_roles(neo4j_session, roles, current_aws_account_id, aws_update_tag):
     ingest_role = """
@@ -265,17 +280,8 @@ def load_roles(neo4j_session, roles, current_aws_account_id, aws_update_tag):
         )
 
         for statement in role["AssumeRolePolicyDocument"]["Statement"]:
-            principal = statement["Principal"]
-            principal_values = []
-            if 'AWS' in principal:
-                principal_type, principal_values = 'AWS', principal['AWS']
-            elif 'Service' in principal:
-                principal_type, principal_values = 'Service', principal['Service']
-            elif 'Federated' in principal:
-                principal_type, principal_values = 'Federated', principal['Federated']
-            if not isinstance(principal_values, list):
-                principal_values = [principal_values]
-            for principal_value in principal_values:
+            principal_entries = _parse_principal_entries(statement["Principal"])
+            for principal_type, principal_value in principal_entries:
                 neo4j_session.run(
                     ingest_policy_statement,
                     SpnArn=principal_value,

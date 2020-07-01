@@ -16,7 +16,7 @@ def test_load_jamf_computer_group_data(neo4j_session):
     nodes = neo4j_session.run(
         """
         MATCH (n:JamfComputerGroup) RETURN n.id;
-        """
+        """,
     )
     actual_nodes = {n['n.id'] for n in nodes}
     assert actual_nodes == expected_nodes
