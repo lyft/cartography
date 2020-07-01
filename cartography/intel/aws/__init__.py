@@ -8,6 +8,7 @@ from . import ec2
 from . import eks
 from . import elasticsearch
 from . import iam
+from . import lambda_function
 from . import organizations
 from . import permission_relationships
 from . import rds
@@ -39,6 +40,7 @@ def _sync_one_account(neo4j_session, boto3_session, account_id, sync_tag, common
         )
         return
 
+    lambda_function.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     dynamodb.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     ec2.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     eks.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
