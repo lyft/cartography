@@ -2,6 +2,7 @@ import logging
 from string import Template
 
 from .util import get_botocore_config
+from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
@@ -9,13 +10,14 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
+@aws_handle_regions
 def get_ec2_security_group_data(boto3_session, region):
     client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
     paginator = client.get_paginator('describe_security_groups')
     security_groups = []
     for page in paginator.paginate():
         security_groups.extend(page['SecurityGroups'])
-    return {'SecurityGroups': security_groups}
+    return security_groups
 
 
 @timeit
@@ -111,7 +113,7 @@ def load_ec2_security_groupinfo(neo4j_session, data, region, current_aws_account
     ON CREATE SET rg.firstseen = timestamp()
     """
 
-    for group in data["SecurityGroups"]:
+    for group in data:
         group_id = group["GroupId"]
 
         neo4j_session.run(

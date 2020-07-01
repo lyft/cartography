@@ -32,6 +32,7 @@ def _get_error_reason(http_error):
         else:
             reason = data[0]['error']['errors']['reason']
     except (UnicodeDecodeError, ValueError, KeyError):
+        logger.warning(f"HttpError: {data}")
         return ''
     return reason
 

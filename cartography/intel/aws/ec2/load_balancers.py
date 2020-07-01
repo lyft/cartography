@@ -1,6 +1,7 @@
 import logging
 
 from .util import get_botocore_config
+from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
@@ -8,13 +9,14 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
+@aws_handle_regions
 def get_loadbalancer_data(boto3_session, region):
     client = boto3_session.client('elb', region_name=region, config=get_botocore_config())
     paginator = client.get_paginator('describe_load_balancers')
     elbs = []
     for page in paginator.paginate():
         elbs.extend(page['LoadBalancerDescriptions'])
-    return {'LoadBalancerDescriptions': elbs}
+    return elbs
 
 
 @timeit
@@ -104,7 +106,7 @@ def load_load_balancers(neo4j_session, data, region, current_aws_account_id, aws
     SET r.lastupdated = {aws_update_tag}
     """
 
-    for lb in data['LoadBalancerDescriptions']:
+    for lb in data:
         load_balancer_id = lb["DNSName"]
 
         neo4j_session.run(
