@@ -1,5 +1,3 @@
-import datetime
-
 LIST_LAMBDA_FUNCTIONS = {
     "AWSLambda": [
         {
@@ -18,19 +16,19 @@ LIST_LAMBDA_FUNCTIONS = {
             "VpcConfig": {
                 "SubnetIds": [],
                 "SecurityGroupIds": [],
-                "VpcId": ""
+                "VpcId": "",
             },
             "Environment": {
                 "Variables": {
                     "db_region": "us-west-2",
                     "centralized_account_id": "000000000000",
-                    "region": "us-west-2"
-                }
+                    "region": "us-west-2",
+                },
             },
             "TracingConfig": {
-                "Mode": "PassThrough"
+                "Mode": "PassThrough",
             },
-            "RevisionId": "fd372ff7-0dd2-407c-b633-0a21d7ef7e53"
+            "RevisionId": "fd372ff7-0dd2-407c-b633-0a21d7ef7e53",
         },
         {
             "FunctionName": "sample-function-2",
@@ -39,35 +37,35 @@ LIST_LAMBDA_FUNCTIONS = {
             "Role": "arn:aws:iam::000000000000:role/service-role/sample-role",
             "Handler": "index.handler",
             "CodeSize": 2741,
-            "Description": "Sample Description", 
-            "Timeout": 10, 
-            "MemorySize": 512, 
-            "LastModified": "2019-10-17T22:58:32.279+0000", 
-            "CodeSha256": "n6sdSjaDTRrps3K9s=", 
-            "Version": "$LATEST", 
+            "Description": "Sample Description",
+            "Timeout": 10,
+            "MemorySize": 512,
+            "LastModified": "2019-10-17T22:58:32.279+0000",
+            "CodeSha256": "n6sdSjaDTRrps3K9s=",
+            "Version": "$LATEST",
             "VpcConfig": {
-                "SubnetIds": [], 
-                "SecurityGroupIds": [], 
-                "VpcId": ""
-            }, 
+                "SubnetIds": [],
+                "SecurityGroupIds": [],
+                "VpcId": "",
+            },
             "Environment": {
                 "Variables": {
                     "db_region": "us-west-2",
                     "centralized_account_id": "000000000000",
-                    "region": "us-west-2"
-                }
-            }, 
+                    "region": "us-west-2",
+                },
+            },
             "TracingConfig": {
-                "Mode": "PassThrough"
-            }, 
-            "RevisionId": "57f403c6-e199-4dda-8905-6108f36f4798"
-        }, 
+                "Mode": "PassThrough",
+            },
+            "RevisionId": "57f403c6-e199-4dda-8905-6108f36f4798",
+        },
         {
-            "FunctionName": "sample-function-3", 
-            "FunctionArn": "arn:aws:lambda:us-west-2:000000000000:function:sample-function-3", 
-            "Runtime": "dotnetcore2.1", 
-            "Role": "arn:aws:iam::000000000000:role/Lambda-Testing-Role", 
-            "Handler": "Security.Encryption.Check::Security.Encryption.Check.Lambda.EncryptionCheckerFunction::GetUnEncryptedResources", 
+            "FunctionName": "sample-function-3",
+            "FunctionArn": "arn:aws:lambda:us-west-2:000000000000:function:sample-function-3",
+            "Runtime": "dotnetcore2.1",
+            "Role": "arn:aws:iam::000000000000:role/Lambda-Testing-Role",
+            "Handler": "Security.Encryption.Check::Security.Encryption.Check.Lambda.Checker::GetUnEncryptedResources",
             "CodeSize": 1794723,
             "Description": "",
             "Timeout": 60,
@@ -79,13 +77,13 @@ LIST_LAMBDA_FUNCTIONS = {
                 "Variables": {
                     "db_region": "us-west-2",
                     "centralized_account_id": "000000000000",
-                    "region": "us-west-2"
-                }
+                    "region": "us-west-2",
+                },
             },
             "TracingConfig": {
-                "Mode": "PassThrough"
+                "Mode": "PassThrough",
             },
-            "RevisionId": "43b3eaa2-96a4-4070-a6b1-e7a2020d61f5"
+            "RevisionId": "43b3eaa2-96a4-4070-a6b1-e7a2020d61f5",
         },
         {
             "FunctionName": "sample-function-4",
@@ -103,25 +101,25 @@ LIST_LAMBDA_FUNCTIONS = {
             "VpcConfig": {
                 "SubnetIds": [],
                 "SecurityGroupIds": [],
-                "VpcId": ""
+                "VpcId": "",
             },
             "Environment": {
                 "Variables": {
                     "FLASHREGIONS": "us-east-1,us-west-1,us-west-2",
-                    "MAXRESP": "5"
-                }
+                    "MAXRESP": "5",
+                },
             },
             "TracingConfig": {
-                "Mode": "PassThrough"
+                "Mode": "PassThrough",
             },
-            "RevisionId": "5e56c7d0-6f2c-4343-b511-19fda4aa2a4d"
+            "RevisionId": "5e56c7d0-6f2c-4343-b511-19fda4aa2a4d",
         },
         {
             "FunctionName": "sample-function-5",
             "FunctionArn": "arn:aws:lambda:us-west-2:000000000000:function:sample-function-5",
             "Runtime": "dotnetcore2.1",
             "Role": "arn:aws:iam::000000000000:role/Lambda-Testing-Role",
-            "Handler": "Security.Encryption.Check::Security.Encryption.Check.Lambda.EncryptionCheckerFunction::GetUnEncryptedResources",
+            "Handler": "Security.Encryption.Check::Security.Encryption.Check.Lambda.Checker::GetUnEncryptedResources",
             "CodeSize": 1794723,
             "Description": "",
             "Timeout": 60,
@@ -131,13 +129,13 @@ LIST_LAMBDA_FUNCTIONS = {
             "Version": "$LATEST",
             "Environment": {
                 "Variables": {
-                    "TopicName": "InfoSecAlerts"
-                }
+                    "TopicName": "InfoSecAlerts",
+                },
             },
             "TracingConfig": {
-                "Mode": "PassThrough"
+                "Mode": "PassThrough",
             },
-            "RevisionId": "aba67a63-c1cb-48a6-bc76-45a766fea64a"
+            "RevisionId": "aba67a63-c1cb-48a6-bc76-45a766fea64a",
         },
         {
             "FunctionName": "sample-function-6",
@@ -155,19 +153,19 @@ LIST_LAMBDA_FUNCTIONS = {
             "VpcConfig": {
                 "SubnetIds": [],
                 "SecurityGroupIds": [],
-                "VpcId": ""
+                "VpcId": "",
             },
             "Environment": {
                 "Variables": {
                     "db_region": "us-west-2",
                     "centralized_account_id": "000000000000",
-                    "region": "us-west-2"
-                }
+                    "region": "us-west-2",
+                },
             },
             "TracingConfig": {
-                "Mode": "PassThrough"
+                "Mode": "PassThrough",
             },
-            "RevisionId": "df0eeb47-c36f-47c9-a719-d91281bc5f77"
+            "RevisionId": "df0eeb47-c36f-47c9-a719-d91281bc5f77",
         },
         {
             "FunctionName": "sample-function-7",
@@ -183,9 +181,9 @@ LIST_LAMBDA_FUNCTIONS = {
             "CodeSha256": "vLyig9kQUFVd3LYF0=",
             "Version": "$LATEST",
             "TracingConfig": {
-                "Mode": "PassThrough"
+                "Mode": "PassThrough",
             },
-            "RevisionId": "db0ef899-cd5a-4e59-875b-4beaa5832014"
+            "RevisionId": "db0ef899-cd5a-4e59-875b-4beaa5832014",
         },
         {
             "FunctionName": "sample-function-8",
@@ -203,19 +201,19 @@ LIST_LAMBDA_FUNCTIONS = {
             "VpcConfig": {
                 "SubnetIds": [],
                 "SecurityGroupIds": [],
-                "VpcId": ""
+                "VpcId": "",
             },
             "Environment": {
                 "Variables": {
                     "db_region": "us-west-2",
                     "centralized_account_id": "000000000000",
-                    "region": "us-west-2"
-                }
+                    "region": "us-west-2",
+                },
             },
             "TracingConfig": {
-                "Mode": "PassThrough"
+                "Mode": "PassThrough",
             },
-            "RevisionId": "08c8995d-2cdc-482b-9ed4-8f9164955934"
+            "RevisionId": "08c8995d-2cdc-482b-9ed4-8f9164955934",
         },
         {
             "FunctionName": "sample-function-9",
@@ -233,19 +231,19 @@ LIST_LAMBDA_FUNCTIONS = {
             "VpcConfig": {
                 "SubnetIds": [],
                 "SecurityGroupIds": [],
-                "VpcId": ""
+                "VpcId": "",
             },
             "Environment": {
                 "Variables": {
                     "db_region": "us-west-2",
                     "centralized_account_id": "000000000000",
-                    "region": "us-west-2"
-                }
+                    "region": "us-west-2",
+                },
             },
             "TracingConfig": {
-                "Mode": "PassThrough"
+                "Mode": "PassThrough",
             },
-            "RevisionId": "7d2e5d1a-95cf-4a04-8936-5bed46c5a88b"
+            "RevisionId": "7d2e5d1a-95cf-4a04-8936-5bed46c5a88b",
         },
         {
             "FunctionName": "sample-function-10",
@@ -263,19 +261,19 @@ LIST_LAMBDA_FUNCTIONS = {
             "VpcConfig": {
                 "SubnetIds": [],
                 "SecurityGroupIds": [],
-                "VpcId": ""
+                "VpcId": "",
             },
             "Environment": {
                 "Variables": {
                     "db_region": "us-west-2",
                     "centralized_account_id": "000000000000",
-                    "region": "us-west-2"
-                }
+                    "region": "us-west-2",
+                },
             },
             "TracingConfig": {
-                "Mode": "PassThrough"
+                "Mode": "PassThrough",
             },
-            "RevisionId": "8d44bdbc-9c39-4309-af5c-7d0f31fed90b"
-        }
-    ] 
+            "RevisionId": "8d44bdbc-9c39-4309-af5c-7d0f31fed90b",
+        },
+    ],
 }
