@@ -12,76 +12,78 @@
   - [Relationships](#relationships-1)
 - [AWSGroup](#awsgroup)
   - [Relationships](#relationships-2)
-- [AWSPolicy](#awspolicy)
+- [AWSLambda](#awslambda)
   - [Relationships](#relationships-3)
-- [AWSPolicyStatement](#awspolicystatement)
+- [AWSPolicy](#awspolicy)
   - [Relationships](#relationships-4)
-- [AWSPrincipal](#awsprincipal)
+- [AWSPolicyStatement](#awspolicystatement)
   - [Relationships](#relationships-5)
-- [AWSPrincipal::AWSUser](#awsprincipalawsuser)
+- [AWSPrincipal](#awsprincipal)
   - [Relationships](#relationships-6)
-- [AWSPrincipal::AWSRole](#awsprincipalawsrole)
+- [AWSPrincipal::AWSUser](#awsprincipalawsuser)
   - [Relationships](#relationships-7)
-- [AWSVpc](#awsvpc)
+- [AWSPrincipal::AWSRole](#awsprincipalawsrole)
   - [Relationships](#relationships-8)
-- [Tag::AWSTag](#tagawstag)
+- [AWSVpc](#awsvpc)
   - [Relationships](#relationships-9)
-- [AccountAccessKey](#accountaccesskey)
+- [Tag::AWSTag](#tagawstag)
   - [Relationships](#relationships-10)
-- [DBSubnetGroup](#dbsubnetgroup)
+- [AccountAccessKey](#accountaccesskey)
   - [Relationships](#relationships-11)
-- [DNSRecord](#dnsrecord)
+- [DBSubnetGroup](#dbsubnetgroup)
   - [Relationships](#relationships-12)
-- [DNSRecord::AWSDNSRecord](#dnsrecordawsdnsrecord)
+- [DNSRecord](#dnsrecord)
   - [Relationships](#relationships-13)
-- [DNSZone](#dnszone)
+- [DNSRecord::AWSDNSRecord](#dnsrecordawsdnsrecord)
   - [Relationships](#relationships-14)
-- [DNSZone::AWSDNSZone](#dnszoneawsdnszone)
+- [DNSZone](#dnszone)
   - [Relationships](#relationships-15)
-- [DynamoDBTable](#dynamodbtable)
+- [DNSZone::AWSDNSZone](#dnszoneawsdnszone)
   - [Relationships](#relationships-16)
-- [EC2Instance](#ec2instance)
+- [DynamoDBTable](#dynamodbtable)
   - [Relationships](#relationships-17)
-- [EC2KeyPair](#ec2keypair)
+- [EC2Instance](#ec2instance)
   - [Relationships](#relationships-18)
-- [EC2Reservation](#ec2reservation)
+- [EC2KeyPair](#ec2keypair)
   - [Relationships](#relationships-19)
-- [EC2SecurityGroup](#ec2securitygroup)
+- [EC2Reservation](#ec2reservation)
   - [Relationships](#relationships-20)
-- [EC2Subnet](#ec2subnet)
+- [EC2SecurityGroup](#ec2securitygroup)
   - [Relationships](#relationships-21)
-- [EKSCluster](#ekscluster)
+- [EC2Subnet](#ec2subnet)
   - [Relationships](#relationships-22)
-- [ESDomain](#esdomain)
+- [EKSCluster](#ekscluster)
   - [Relationships](#relationships-23)
-- [Endpoint](#endpoint)
+- [ESDomain](#esdomain)
   - [Relationships](#relationships-24)
-- [Endpoint::ELBListener](#endpointelblistener)
+- [Endpoint](#endpoint)
   - [Relationships](#relationships-25)
-- [Endpoint::ELBV2Listener](#endpointelbv2listener)
+- [Endpoint::ELBListener](#endpointelblistener)
   - [Relationships](#relationships-26)
-- [Ip](#ip)
+- [Endpoint::ELBV2Listener](#endpointelbv2listener)
   - [Relationships](#relationships-27)
-- [IpRule](#iprule)
+- [Ip](#ip)
   - [Relationships](#relationships-28)
-- [IpRule::IpPermissionInbound](#ipruleippermissioninbound)
+- [IpRule](#iprule)
   - [Relationships](#relationships-29)
-- [LoadBalancer](#loadbalancer)
+- [IpRule::IpPermissionInbound](#ipruleippermissioninbound)
   - [Relationships](#relationships-30)
-- [LoadBalancerV2](#loadbalancerv2)
+- [LoadBalancer](#loadbalancer)
   - [Relationships](#relationships-31)
-- [Nameserver](#nameserver)
+- [LoadBalancerV2](#loadbalancerv2)
   - [Relationships](#relationships-32)
-- [NetworkInterface](#networkinterface)
+- [Nameserver](#nameserver)
   - [Relationships](#relationships-33)
-- [RedshiftCluster](#redshiftcluster)
+- [NetworkInterface](#networkinterface)
   - [Relationships](#relationships-34)
-- [RDSInstance](#rdsinstance)
+- [RedshiftCluster](#redshiftcluster)
   - [Relationships](#relationships-35)
-- [S3Acl](#s3acl)
+- [RDSInstance](#rdsinstance)
   - [Relationships](#relationships-36)
-- [S3Bucket](#s3bucket)
+- [S3Acl](#s3acl)
   - [Relationships](#relationships-37)
+- [S3Bucket](#s3bucket)
+  - [Relationships](#relationships-38)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -200,6 +202,35 @@ Representation of AWS [IAM Groups](https://docs.aws.amazon.com/IAM/latest/APIRef
 	(AWSAccount)-[RESOURCE]->(AWSGroup)
 	```
 
+## AWSLambda
+
+Representation of an AWS [Lambda Function](https://docs.aws.amazon.com/lambda/latest/dg/API_FunctionConfiguration.html).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The arn of the lambda function|
+| name |  The name of the lambda function |
+| modifieddate |  Timestamp of the last time the function was last updated |
+| runtime |  The runtime environment for the Lambda function |
+| description |  The description of the Lambda function |
+| timeout |  The amount of time in seconds that Lambda allows a function to run before stopping it |
+| memory |  The memory that's allocated to the function |
+
+### Relationships
+
+- AWSLambda function are resources in an AWS Account.
+
+	```
+	(AWSAccount)-[RESOURCE]->(AWSLambda)
+	```
+
+- AWSLambda functions may act as AWSPrincipals via role assumption.
+
+	```
+	(AWSLambda)-[STS_ASSUME_ROLE_ALLOW]->(AWSPrincipal)
+	```
 
 ## AWSPolicy
 
