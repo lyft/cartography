@@ -1,5 +1,6 @@
 import logging
 
+from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
@@ -7,6 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
+@aws_handle_regions
 def get_lambda_data(boto3_session, region):
     """
     Create an Lambda boto3 client and grab all the lambda functions.
@@ -17,7 +19,7 @@ def get_lambda_data(boto3_session, region):
     for page in paginator.paginate():
         for each_function in page['Functions']:
             lambda_functions.append(each_function)
-    return ({'AWSLambda': lambda_functions})
+    return lambda_functions
 
 
 @timeit
@@ -40,7 +42,7 @@ def load_lambda_functions(neo4j_session, data, region, current_aws_account_id, a
     SET r.lastupdated = {aws_update_tag}
     """
 
-    for lambda_function in data["AWSLambda"]:
+    for lambda_function in data:
         neo4j_session.run(
             ingest_lambda_functions,
             LambdaName=lambda_function["FunctionName"],
