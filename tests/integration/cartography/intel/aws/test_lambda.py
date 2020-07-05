@@ -32,10 +32,10 @@ def test_load_lambda_functions(neo4j_session):
 
     nodes = neo4j_session.run(
         """
-        MATCH (r:AWSLambda) RETURN r.arn;
+        MATCH (r:AWSLambda) RETURN r.id;
         """,
     )
 
-    actual_nodes = {n['r.arn'] for n in nodes}
+    actual_nodes = {n['r.id'] for n in nodes}
 
     assert actual_nodes == expected_nodes
