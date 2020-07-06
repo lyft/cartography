@@ -45,9 +45,9 @@ def test_load_load_balancer_v2s(neo4j_session, *args):
     # (elbv2)->[RESOURCE]->(EC2Subnet)
     # also makes (relationship only, won't create SG)
     # (elbv2)->[MEMBER_OF_SECURITY_GROUP]->(EC2SecurityGroup)
-    cartography.intel.aws.ec2.load_load_balancer_v2s(
+    cartography.intel.aws.ec2.load_balancer_v2s.load_load_balancer_v2s(
         neo4j_session,
-        dict(LoadBalancers=load_balancer_data),
+        load_balancer_data,
         TEST_REGION,
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG,
@@ -99,7 +99,7 @@ def test_load_load_balancer_v2_listeners(neo4j_session, *args):
     )
 
     listener_data = tests.data.aws.ec2.load_balancers.LOAD_BALANCER_LISTENERS
-    cartography.intel.aws.ec2.load_load_balancer_v2_listeners(
+    cartography.intel.aws.ec2.load_balancer_v2s.load_load_balancer_v2_listeners(
         neo4j_session,
         load_balancer_id,
         listener_data,
@@ -159,7 +159,7 @@ def test_load_load_balancer_v2_target_groups(neo4j_session, *args):
         aws_update_tag=TEST_UPDATE_TAG,
     )
 
-    cartography.intel.aws.ec2.load_load_balancer_v2_target_groups(
+    cartography.intel.aws.ec2.load_balancer_v2s.load_load_balancer_v2_target_groups(
         neo4j_session,
         load_balancer_id,
         target_groups,
@@ -210,7 +210,7 @@ def test_load_load_balancer_v2_subnets(neo4j_session, *args):
         {'SubnetId': 'mysubnetIdA'},
         {'SubnetId': 'mysubnetIdB'},
     ]
-    cartography.intel.aws.ec2.load_load_balancer_v2_subnets(
+    cartography.intel.aws.ec2.load_balancer_v2s.load_load_balancer_v2_subnets(
         neo4j_session,
         load_balancer_id,
         az_data,
@@ -234,7 +234,7 @@ def test_load_load_balancer_v2_subnets(neo4j_session, *args):
     nodes = neo4j_session.run(
         """
         MATCH (subnet:EC2Subnet) return subnet.subnetid, subnet.region, subnet.lastupdated
-        """
+        """,
     )
     actual_nodes = {
         (

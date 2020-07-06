@@ -77,7 +77,7 @@ def test_load_and_cleanup_dnspointsto_relationships(neo4j_session):
         """
         MERGE (n1:AWSDNSRecord{id:"/hostedzone/HOSTED_ZONE/example.com/NS"})
         -[:DNS_POINTS_TO]->(:NewTestAsset{name:"hello"})
-        """
+        """,
     )
 
     # Verify that the expected AWS DNS records point to each other
@@ -85,7 +85,7 @@ def test_load_and_cleanup_dnspointsto_relationships(neo4j_session):
         """
         MATCH (n1:AWSDNSRecord{id:"/hostedzone/HOSTED_ZONE/example.com/NS"})-[:DNS_POINTS_TO]->(n2:AWSDNSRecord)
         RETURN n1.name, n2.id
-        """
+        """,
     )
     expected = {("example.com", "/hostedzone/HOSTED_ZONE/example.com/A")}
     actual = {(r['n1.name'], r['n2.id']) for r in result}
@@ -109,7 +109,7 @@ def test_load_and_cleanup_dnspointsto_relationships(neo4j_session):
         """
         MATCH (n1:AWSDNSRecord{id:"/hostedzone/HOSTED_ZONE/example.com/NS"})-[:DNS_POINTS_TO]->(n2:AWSDNSRecord)
         RETURN count(n2) as recordcount
-        """
+        """,
     )
     for r in result:
         assert r["recordcount"] == 0
@@ -119,7 +119,7 @@ def test_load_and_cleanup_dnspointsto_relationships(neo4j_session):
         """
         MATCH (n1:AWSDNSRecord{id:"/hostedzone/HOSTED_ZONE/example.com/NS"})-[:DNS_POINTS_TO]->(n2:NewTestAsset)
         RETURN n1.id, n2.name
-        """
+        """,
     )
     actual = {(r['n1.id'], r['n2.name']) for r in result}
     expected = {("/hostedzone/HOSTED_ZONE/example.com/NS", "hello")}

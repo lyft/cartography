@@ -12,78 +12,82 @@
   - [Relationships](#relationships-1)
 - [AWSGroup](#awsgroup)
   - [Relationships](#relationships-2)
-- [AWSPolicy](#awspolicy)
+- [AWSLambda](#awslambda)
   - [Relationships](#relationships-3)
-- [AWSPolicyStatement](#awspolicystatement)
+- [AWSPolicy](#awspolicy)
   - [Relationships](#relationships-4)
-- [AWSPrincipal](#awsprincipal)
+- [AWSPolicyStatement](#awspolicystatement)
   - [Relationships](#relationships-5)
-- [AWSPrincipal::AWSUser](#awsprincipalawsuser)
+- [AWSPrincipal](#awsprincipal)
   - [Relationships](#relationships-6)
-- [AWSPrincipal::AWSRole](#awsprincipalawsrole)
+- [AWSPrincipal::AWSUser](#awsprincipalawsuser)
   - [Relationships](#relationships-7)
-- [AWSTransitGateway](#awstransitgateway)
+- [AWSPrincipal::AWSRole](#awsprincipalawsrole)
   - [Relationships](#relationships-8)
-- [AWSTransitGatewayAttachment](#awstransitgatewayattachment)
+- [AWSTransitGateway](#awstransitgateway)
   - [Relationships](#relationships-9)
-- [AWSVpc](#awsvpc)
+- [AWSTransitGatewayAttachment](#awstransitgatewayattachment)
   - [Relationships](#relationships-10)
-- [Tag::AWSTag](#tagawstag)
+- [AWSVpc](#awsvpc)
   - [Relationships](#relationships-11)
-- [AccountAccessKey](#accountaccesskey)
+- [Tag::AWSTag](#tagawstag)
   - [Relationships](#relationships-12)
-- [DBSubnetGroup](#dbsubnetgroup)
+- [AccountAccessKey](#accountaccesskey)
   - [Relationships](#relationships-13)
-- [DNSRecord](#dnsrecord)
+- [DBSubnetGroup](#dbsubnetgroup)
   - [Relationships](#relationships-14)
-- [DNSRecord::AWSDNSRecord](#dnsrecordawsdnsrecord)
+- [DNSRecord](#dnsrecord)
   - [Relationships](#relationships-15)
-- [DNSZone](#dnszone)
+- [DNSRecord::AWSDNSRecord](#dnsrecordawsdnsrecord)
   - [Relationships](#relationships-16)
-- [DNSZone::AWSDNSZone](#dnszoneawsdnszone)
+- [DNSZone](#dnszone)
   - [Relationships](#relationships-17)
-- [DynamoDBTable](#dynamodbtable)
+- [DNSZone::AWSDNSZone](#dnszoneawsdnszone)
   - [Relationships](#relationships-18)
-- [EC2Instance](#ec2instance)
+- [DynamoDBTable](#dynamodbtable)
   - [Relationships](#relationships-19)
-- [EC2KeyPair](#ec2keypair)
+- [EC2Instance](#ec2instance)
   - [Relationships](#relationships-20)
-- [EC2Reservation](#ec2reservation)
+- [EC2KeyPair](#ec2keypair)
   - [Relationships](#relationships-21)
-- [EC2SecurityGroup](#ec2securitygroup)
+- [EC2Reservation](#ec2reservation)
   - [Relationships](#relationships-22)
-- [EC2Subnet](#ec2subnet)
+- [EC2SecurityGroup](#ec2securitygroup)
   - [Relationships](#relationships-23)
-- [EKSCluster](#ekscluster)
+- [EC2Subnet](#ec2subnet)
   - [Relationships](#relationships-24)
-- [ESDomain](#esdomain)
+- [EKSCluster](#ekscluster)
   - [Relationships](#relationships-25)
-- [Endpoint](#endpoint)
+- [ESDomain](#esdomain)
   - [Relationships](#relationships-26)
-- [Endpoint::ELBListener](#endpointelblistener)
+- [Endpoint](#endpoint)
   - [Relationships](#relationships-27)
-- [Endpoint::ELBV2Listener](#endpointelbv2listener)
+- [Endpoint::ELBListener](#endpointelblistener)
   - [Relationships](#relationships-28)
-- [Ip](#ip)
+- [Endpoint::ELBV2Listener](#endpointelbv2listener)
   - [Relationships](#relationships-29)
-- [IpRule](#iprule)
+- [Ip](#ip)
   - [Relationships](#relationships-30)
-- [IpRule::IpPermissionInbound](#ipruleippermissioninbound)
+- [IpRule](#iprule)
   - [Relationships](#relationships-31)
-- [LoadBalancer](#loadbalancer)
+- [IpRule::IpPermissionInbound](#ipruleippermissioninbound)
   - [Relationships](#relationships-32)
-- [LoadBalancerV2](#loadbalancerv2)
+- [LoadBalancer](#loadbalancer)
   - [Relationships](#relationships-33)
-- [Nameserver](#nameserver)
+- [LoadBalancerV2](#loadbalancerv2)
   - [Relationships](#relationships-34)
-- [NetworkInterface](#networkinterface)
+- [Nameserver](#nameserver)
   - [Relationships](#relationships-35)
-- [RDSInstance](#rdsinstance)
+- [NetworkInterface](#networkinterface)
   - [Relationships](#relationships-36)
-- [S3Acl](#s3acl)
+- [RedshiftCluster](#redshiftcluster)
   - [Relationships](#relationships-37)
-- [S3Bucket](#s3bucket)
+- [RDSInstance](#rdsinstance)
   - [Relationships](#relationships-38)
+- [S3Acl](#s3acl)
+  - [Relationships](#relationships-39)
+- [S3Bucket](#s3bucket)
+  - [Relationships](#relationships-40)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -202,6 +206,35 @@ Representation of AWS [IAM Groups](https://docs.aws.amazon.com/IAM/latest/APIRef
 	(AWSAccount)-[RESOURCE]->(AWSGroup)
 	```
 
+## AWSLambda
+
+Representation of an AWS [Lambda Function](https://docs.aws.amazon.com/lambda/latest/dg/API_FunctionConfiguration.html).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The arn of the lambda function|
+| name |  The name of the lambda function |
+| modifieddate |  Timestamp of the last time the function was last updated |
+| runtime |  The runtime environment for the Lambda function |
+| description |  The description of the Lambda function |
+| timeout |  The amount of time in seconds that Lambda allows a function to run before stopping it |
+| memory |  The memory that's allocated to the function |
+
+### Relationships
+
+- AWSLambda function are resources in an AWS Account.
+
+	```
+	(AWSAccount)-[RESOURCE]->(AWSLambda)
+	```
+
+- AWSLambda functions may act as AWSPrincipals via role assumption.
+
+	```
+	(AWSLambda)-[STS_ASSUME_ROLE_ALLOW]->(AWSPrincipal)
+	```
 
 ## AWSPolicy
 
@@ -296,6 +329,12 @@ Representation of an [AWSPrincipal](https://docs.aws.amazon.com/IAM/latest/APIRe
 	```
 	(AWSAccount)-[RESOURCE]->(AWSPrincipal)
 	```
+
+- Redshift clusters may assume IAM roles. See [this article](https://docs.aws.amazon.com/redshift/latest/mgmt/authorizing-redshift-service.html).
+
+    ```
+    (RedshiftCluster)-[STS_ASSUMEROLE_ALLOW]->(AWSPrincipal)
+    ```
 
 ## AWSPrincipal::AWSUser
 Representation of an [AWSUser](https://docs.aws.amazon.com/IAM/latest/APIReference/API_User.html).  An AWS User is a type of AWS Principal.
@@ -466,6 +505,10 @@ More information on https://docs.aws.amazon.com/cli/latest/reference/ec2/describ
     ```
 	(AWSVpc)-[TAGGED]->(AWSTag)
 	```
+- Redshift clusters can be members of AWSVpcs.
+    ```
+    (RedshiftCluster)-[MEMBER_OF_AWS_VPC]->(AWSVpc)
+    ```
 
 
 ## Tag::AWSTag
@@ -878,6 +921,12 @@ Representation of an AWS EC2 [Security Group](https://docs.aws.amazon.com/AWSEC2
 	```
 	(EC2SecurityGroup)-[TAGGED]->(AWSTag)
 	```
+
+- Redshift clusters can be members of EC2 Security Groups.
+
+    ```
+    (RedshiftCluster)-[MEMBER_OF_EC2_SECURITY_GROUP]->(EC2SecurityGroup)
+    ```
 
 
 ## EC2Subnet
@@ -1301,6 +1350,58 @@ Representation of a generic Network Interface.  Currently however, we only creat
 	(NetworkInterface)-[TAGGED]->(AWSTag)
 	```
 
+
+## RedshiftCluster
+
+Representation of an AWS [RedshiftCluster](https://docs.aws.amazon.com/redshift/latest/APIReference/API_Cluster.html).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **arn** | The Amazon Resource Name (ARN) for the Redshift cluster |
+| **id** | Same as arn |
+| availability\_zone | Specifies the name of the Availability Zone the cluster is located in |
+| cluster\_create\_time | Provides the date and time the cluster was created |
+| cluster\_identifier | The unique identifier of the cluster. |
+| cluster_revision_number | The specific revision number of the database in the cluster. |
+| db_name | The name of the initial database that was created when the cluster was created. This same name is returned for the life of the cluster. If an initial database was not specified, a database named devdev was created by default. |
+| encrypted | Specifies whether the cluster has encryption enabled |
+| cluster\_status | The current state of the cluster. |
+| endpoint\_address | DNS name of the Redshift cluster endpoint |
+| endpoint\_port | The port that the Redshift cluster's endpoint is listening on  |
+| master\_username | The master user name for the cluster. This name is used to connect to the database that is specified in the DBName parameter. |
+| node_type | The node type for the nodes in the cluster. |
+| number\_of\_nodes | The number of compute nodes in the cluster. |
+| publicly_accessible | A boolean value that, if true, indicates that the cluster can be accessed from a public network. |
+| vpc_id | The identifier of the VPC the cluster is in, if the cluster is in a VPC. |
+
+
+### Relationships
+
+- Redshift clusters are part of AWS Accounts.
+
+	```
+	(AWSAccount)-[RESOURCE]->(RedshiftCluster)
+	```
+
+- Redshift clusters can be members of EC2 Security Groups.
+
+    ```
+    (RedshiftCluster)-[MEMBER_OF_EC2_SECURITY_GROUP]->(EC2SecurityGroup)
+    ```
+
+- Redshift clusters may assume IAM roles. See [this article](https://docs.aws.amazon.com/redshift/latest/mgmt/authorizing-redshift-service.html).
+
+    ```
+    (RedshiftCluster)-[STS_ASSUMEROLE_ALLOW]->(AWSPrincipal)
+    ```
+
+- Redshift clusters can be members of AWSVpcs.
+
+    ```
+    (RedshiftCluster)-[MEMBER_OF_AWS_VPC]->(AWSVpc)
+    ```
 
 ## RDSInstance
 

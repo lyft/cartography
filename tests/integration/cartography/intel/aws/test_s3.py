@@ -32,7 +32,7 @@ def test_load_s3_buckets(neo4j_session, *args):
     nodes = neo4j_session.run(
         """
         MATCH (s:S3Bucket) return s.id, s.name
-        """
+        """,
     )
     actual_nodes = {
         (
