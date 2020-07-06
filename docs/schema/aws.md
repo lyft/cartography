@@ -423,7 +423,7 @@ Representation of an [AWS Transit Gateway](https://docs.aws.amazon.com/AWSEC2/la
 |-------|-------------|
 |firstseen| Timestamp of when a sync job discovered this node|
 |lastupdated| Timestamp of the last time the node was updated|
-|owner\_id| The ID of the AWS account that owns the transit gateway 
+|owner\_id| The ID of the AWS account that owns the transit gateway
 |description| Transit Gateway description
 |state| Can be one of `pending | available | modifying | deleting | deleted`
 |**id**| Unique identifier of the Transit Gateway
