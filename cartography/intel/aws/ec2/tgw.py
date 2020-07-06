@@ -1,8 +1,6 @@
 import logging
-import time
 
 from .util import get_botocore_config
-from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
@@ -141,7 +139,10 @@ def load_tgw_attachments(neo4j_session, data, region, current_aws_account_id, aw
 
 
 @timeit
-def _attach_tgw_vpc_attachment_to_vpc_subnets(neo4j_session, tgw_vpc_attachment, region, current_aws_account_id, aws_update_tag):
+def _attach_tgw_vpc_attachment_to_vpc_subnets(
+    neo4j_session, tgw_vpc_attachment, region,
+    current_aws_account_id, aws_update_tag,
+):
     """
     Attach a VPC Transit Gateway Attachment to the VPC and and subnets
     """
@@ -200,7 +201,10 @@ def sync_transit_gateways(
         tgws = get_transit_gateways(boto3_session, region)
         load_transit_gateways(neo4j_session, tgws, region, current_aws_account_id, aws_update_tag)
 
-        logger.debug("Syncing AWS Transit Gateway Attachments for region '%s' in account '%s'.", region, current_aws_account_id)
+        logger.debug(
+            "Syncing AWS Transit Gateway Attachments for region '%s' in account '%s'.",
+            region, current_aws_account_id,
+        )
         tgw_attachments = get_tgw_attachments(boto3_session, region)
         tgw_vpc_attachments = get_tgw_vpc_attachments(boto3_session, region)
         load_tgw_attachments(

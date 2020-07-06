@@ -42,7 +42,10 @@ TAG_RESOURCE_TYPE_MAPPINGS = {
     'ec2:subnet': {'label': 'EC2Subnet', 'property': 'subnetid', 'id_func': get_short_id_from_ec2_arn},
     'ec2:vpc': {'label': 'AWSVpc', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},
     'ec2:transit-gateway': {'label': 'AWSTransitGateway', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},
-    'ec2:transit-gateway-attachment': {'label': 'AWSTransitGatewayAttachment', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},
+    'ec2:transit-gateway-attachment': {
+        'label': 'AWSTransitGatewayAttachment', 'property': 'id',
+        'id_func': get_short_id_from_ec2_arn,
+    },
     'es:domain': {'label': 'ESDomain', 'property': 'id'},
     'redshift:cluster': {'label': 'RedshiftCluster', 'property': 'id'},
     'rds:db': {'label': 'RDSInstance', 'property': 'id'},
