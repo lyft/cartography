@@ -4,7 +4,7 @@ import logging
 
 from requests import exceptions
 
-from cartography.intel.github.github import sync_github
+import cartography.intel.github.repos
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
@@ -31,7 +31,7 @@ def start_github_ingestion(neo4j_session, config):
     # run sync for the provided github tokens
     for auth_data in auth_tokens['organization']:
         try:
-            sync_github(
+            cartography.intel.github.repos.sync(
                 neo4j_session,
                 common_job_parameters,
                 auth_data['token'],
