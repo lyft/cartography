@@ -1,5 +1,6 @@
 import logging
 
+from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
@@ -7,21 +8,13 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
+@aws_handle_regions
 def get_eks_clusters(boto3_session, region):
     client = boto3_session.client('eks', region_name=region)
     clusters = []
     paginator = client.get_paginator('list_clusters')
-    try:
-        for page in paginator.paginate():
-            clusters.extend(page['clusters'])
-    except client.exceptions.ClientError as e:
-        # The account is not authorized to use this service in this region
-        # so we can continue without raising an exception
-        if e.response['Error']['Code'] == 'AccessDeniedException' \
-                and 'not authorized to use this service' in e.response['Error']['Message']:
-            logger.warn("{} in this region. Skipping...".format(e.response['Error']['Message']))
-        else:
-            raise
+    for page in paginator.paginate():
+        clusters.extend(page['clusters'])
     return clusters
 
 

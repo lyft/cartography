@@ -7,7 +7,7 @@ TEST_UPDATE_TAG = 123456789
 
 
 def test_load_dynamodb(neo4j_session):
-    data = tests.data.aws.dynamodb.LIST_DYNAMODB_TABLES
+    data = tests.data.aws.dynamodb.LIST_DYNAMODB_TABLES['Tables']
 
     cartography.intel.aws.dynamodb.load_dynamodb_tables(
         neo4j_session,
@@ -27,7 +27,7 @@ def test_load_dynamodb(neo4j_session):
     nodes = neo4j_session.run(
         """
         MATCH (d:DynamoDBTable) return d.arn, d.rows
-        """
+        """,
     )
     actual_nodes = {(n['d.arn'], n['d.rows']) for n in nodes}
     assert actual_nodes == expected_nodes

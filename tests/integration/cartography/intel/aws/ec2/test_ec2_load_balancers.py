@@ -47,7 +47,7 @@ def test_load_load_balancer_v2s(neo4j_session, *args):
     # (elbv2)->[MEMBER_OF_SECURITY_GROUP]->(EC2SecurityGroup)
     cartography.intel.aws.ec2.load_balancer_v2s.load_load_balancer_v2s(
         neo4j_session,
-        dict(LoadBalancers=load_balancer_data),
+        load_balancer_data,
         TEST_REGION,
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG,
@@ -234,7 +234,7 @@ def test_load_load_balancer_v2_subnets(neo4j_session, *args):
     nodes = neo4j_session.run(
         """
         MATCH (subnet:EC2Subnet) return subnet.subnetid, subnet.region, subnet.lastupdated
-        """
+        """,
     )
     actual_nodes = {
         (

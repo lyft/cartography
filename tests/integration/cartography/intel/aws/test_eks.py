@@ -24,7 +24,7 @@ def test_load_eks_clusters_nodes(neo4j_session):
     nodes = neo4j_session.run(
         """
         MATCH (r:EKSCluster) RETURN r.arn;
-        """
+        """,
     )
     actual_nodes = {n['r.arn'] for n in nodes}
 
@@ -61,7 +61,7 @@ def test_load_eks_clusters_relationships(neo4j_session):
     result = neo4j_session.run(
         """
         MATCH (n1:AWSAccount)-[:RESOURCE]->(n2:EKSCluster) RETURN n1.id, n2.arn;
-        """
+        """,
     )
     actual = {
         (r['n1.id'], r['n2.arn']) for r in result
