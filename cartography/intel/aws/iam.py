@@ -181,7 +181,6 @@ def get_account_access_key_data(boto3_session, username):
     return access_keys
 
 
-
 @timeit
 def load_users(neo4j_session, users, current_aws_account_id, aws_update_tag):
     ingest_user = """
