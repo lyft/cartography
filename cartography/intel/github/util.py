@@ -4,6 +4,8 @@ import logging
 import requests
 
 logger = logging.getLogger(__name__)
+# Connect and read timeouts of 60 seconds each; see https://requests.readthedocs.io/en/master/user/advanced/#timeouts
+_TIMEOUT = (60, 60)
 
 
 def call_github_api(query, variables, token, api_url):
@@ -16,7 +18,17 @@ def call_github_api(query, variables, token, api_url):
     :return: query results json
     """
     headers = {'Authorization': f"token {token}"}
-    response = requests.post(api_url, json={'query': query, 'variables': variables}, headers=headers)
+    try:
+        response = requests.post(
+            api_url,
+            json={'query': query, 'variables': variables},
+            headers=headers,
+            timeout=_TIMEOUT,
+        )
+    except requests.exceptions.Timeout:
+        # Add context and re-raise for callers to handle
+        logger.warning(f"GitHub: requests.get('{api_url}') timed out.")
+        raise
     response.raise_for_status()
     return response.json()
 
@@ -60,7 +72,14 @@ def fetch_all(token, api_url, organization, query, resource_type, field_name):
     has_next_page = True
     data = []
     while has_next_page:
-        response = fetch_page(token, api_url, organization, query, cursor)
+        try:
+            response = fetch_page(token, api_url, organization, query, cursor)
+        except requests.exceptions.Timeout:
+            logger.warning(
+                f"GitHub: Could not retrieve page of resource `{resource_type}` due to API timeout;"
+                f"continuing with incomplete data",
+            )
+            break
         resource = response['data']['organization'][resource_type]
         data.extend(resource[field_name])
         cursor = resource['pageInfo']['endCursor']
