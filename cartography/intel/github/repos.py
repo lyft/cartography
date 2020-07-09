@@ -1,8 +1,8 @@
 import logging
 from string import Template
 
-from cartography.util import timeit
 from cartography.intel.github.util import fetch_all
+from cartography.util import timeit
 
 
 logger = logging.getLogger(__name__)

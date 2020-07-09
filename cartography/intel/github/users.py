@@ -1,7 +1,7 @@
 import logging
 
-from cartography.util import timeit
 from cartography.intel.github.util import fetch_all
+from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 
@@ -44,4 +44,3 @@ def get(token, api_url, organization):
       , ... ]
     """
     return fetch_all(token, api_url, organization, GITHUB_ORG_USERS_PAGINATED_GRAPHQL, 'membersWithRole', 'edges')
-
