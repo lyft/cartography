@@ -14,10 +14,10 @@ GITHUB_ORG_USERS_PAGINATED_GRAPHQL = """
                 edges {
                     hasTwoFactorEnabled
                     node {
+                        url
                         login
                         name
                         isSiteAdmin
-                        resourcePath
                     }
                     role
                 }

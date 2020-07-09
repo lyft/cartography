@@ -12,7 +12,7 @@
   - [Relationships](#relationships-2)
 - [GitHubBranch](#githubbranch)
   - [Relationships](#relationships-3)
-- [GitHubBranch](#githubbranch-1)
+- [ProgrammingLanguage](#programminglanguage)
   - [Relationships](#relationships-4)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -72,7 +72,7 @@ Representation of a single GitHubOrganization [organization object](https://deve
 |-------|--------------|
 | firstseen| Timestamp of when a sync job first created this node  |
 | lastupdated |  Timestamp of the last time the node was updated |
-| id | The GitHub organization id. These are not unique across GitHub instances, so are prepended with the API URL the id applies to |
+| id | The URL of the GitHub organization |
 | username | Name of the organization |
 
 
@@ -93,7 +93,7 @@ Representation of a single GitHubUser [user object](https://developer.github.com
 |-------|--------------|
 | firstseen| Timestamp of when a sync job first created this node  |
 | lastupdated |  Timestamp of the last time the node was updated |
-| id | The GitHub user id. These are not unique across GitHub instances, so are prepended with the API URL the id applies to |
+| id | The URL of the GitHub user |
 | username | Name of the user |
 
 
@@ -126,7 +126,7 @@ Representation of a single GitHubBranch [ref object](https://developer.github.co
     (GitHubBranch)<-[BRANCH]-(GitHubRepository)
     ```
 
-## GitHubBranch
+## ProgrammingLanguage
 
 Representation of a single Programming Language [language object](https://developer.github.com/v4/object/language). This node contains programming language information.
 
