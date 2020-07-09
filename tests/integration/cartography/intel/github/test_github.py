@@ -1,5 +1,5 @@
-import cartography.intel.github.github
-import tests.data.github.github
+import cartography.intel.github
+import tests.data.github.repos
 
 
 TEST_UPDATE_TAG = 123456789
@@ -7,26 +7,26 @@ TEST_GITHUB_URL = "https://fake.github.net/graphql/"
 
 
 def _ensure_local_neo4j_has_test_repositories_data(neo4j_session):
-    cartography.intel.github.github.load_github_repos(
+    cartography.intel.github.repos.load_github_repos(
         neo4j_session,
         TEST_UPDATE_TAG,
-        tests.data.github.github.TRANSFORMED_REPOS_DATA['repos'],
+        tests.data.github.repos.TRANSFORMED_REPOS_DATA['repos'],
     )
 
 
 def _ensure_local_neo4j_has_test_owners_data(neo4j_session):
-    cartography.intel.github.github.load_github_owners(
+    cartography.intel.github.repos.load_github_owners(
         neo4j_session,
         TEST_UPDATE_TAG,
-        tests.data.github.github.TRANSFORMED_REPOS_DATA['repo_owners'],
+        tests.data.github.repos.TRANSFORMED_REPOS_DATA['repo_owners'],
     )
 
 
 def _ensure_local_neo4j_has_test_languages_data(neo4j_session):
-    cartography.intel.github.github.load_github_languages(
+    cartography.intel.github.repos.load_github_languages(
         neo4j_session,
         TEST_UPDATE_TAG,
-        tests.data.github.github.TRANSFORMED_REPOS_DATA['repo_languages'],
+        tests.data.github.repos.TRANSFORMED_REPOS_DATA['repo_languages'],
     )
 
 
@@ -34,9 +34,9 @@ def test_transform_and_load_repositories(neo4j_session):
     """
     Test that we can correctly transform and load GitHubRepository nodes to Neo4j.
     """
-    repositories_res = tests.data.github.github.API_RESPONSE['data']['organization']['repositories']['nodes']
-    repos_data = cartography.intel.github.github.transform_github_repos(repositories_res, TEST_GITHUB_URL)
-    cartography.intel.github.github.load_github_repos(
+    repositories_res = tests.data.github.repos.API_RESPONSE['data']['organization']['repositories']['nodes']
+    repos_data = cartography.intel.github.repos.transform_github_repos(repositories_res, TEST_GITHUB_URL)
+    cartography.intel.github.repos.load_github_repos(
         neo4j_session,
         TEST_UPDATE_TAG,
         repos_data['repos'],
@@ -117,9 +117,9 @@ def test_transform_and_load_repository_owners(neo4j_session):
     """
     Ensure we can transform and load GitHub repository owner nodes.
     """
-    repositories_res = tests.data.github.github.API_RESPONSE['data']['organization']['repositories']['nodes']
-    repos_data = cartography.intel.github.github.transform_github_repos(repositories_res, TEST_GITHUB_URL)
-    cartography.intel.github.github.load_github_owners(
+    repositories_res = tests.data.github.repos.API_RESPONSE['data']['organization']['repositories']['nodes']
+    repos_data = cartography.intel.github.repos.transform_github_repos(repositories_res, TEST_GITHUB_URL)
+    cartography.intel.github.repos.load_github_owners(
         neo4j_session,
         TEST_UPDATE_TAG,
         repos_data['repo_owners'],
@@ -152,9 +152,9 @@ def test_transform_and_load_repository_languages(neo4j_session):
     """
     Ensure we can transform and load GitHub repository languages nodes.
     """
-    repositories_res = tests.data.github.github.API_RESPONSE['data']['organization']['repositories']['nodes']
-    repos_data = cartography.intel.github.github.transform_github_repos(repositories_res, TEST_GITHUB_URL)
-    cartography.intel.github.github.load_github_languages(
+    repositories_res = tests.data.github.repos.API_RESPONSE['data']['organization']['repositories']['nodes']
+    repos_data = cartography.intel.github.repos.transform_github_repos(repositories_res, TEST_GITHUB_URL)
+    cartography.intel.github.repos.load_github_languages(
         neo4j_session,
         TEST_UPDATE_TAG,
         repos_data['repo_languages'],
