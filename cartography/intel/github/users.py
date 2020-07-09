@@ -12,12 +12,12 @@ GITHUB_ORG_USERS_PAGINATED_GRAPHQL = """
         {
             membersWithRole(first:100, after: $cursor){
                 edges {
-                    cursor
                     hasTwoFactorEnabled
                     node {
                         login
                         name
                         isSiteAdmin
+                        resourcePath
                     }
                     role
                 }
@@ -44,3 +44,23 @@ def get(token, api_url, organization):
       , ... ]
     """
     return fetch_all(token, api_url, organization, GITHUB_ORG_USERS_PAGINATED_GRAPHQL, 'membersWithRole', 'edges')
+
+
+@timeit
+def load(neo4j_session, user_data, update_tag):
+    query = """
+    UNWIND {UserData} as user
+    MERGE (u:GitHubUser{id: user.node.resourcePath})
+    ON CREATE SET u.firstseen = timestamp()
+    SET u.name = user.node.name,
+    u.login = user.node.login,
+    u.has_2fa_enabled = user.hasTwoFactorEnabled,
+    u.role = user.role,
+    u.is_site_admin = user.node.isSiteAdmin,
+    u.lastupdated = {UpdateTag}"""
+
+    neo4j_session.run(
+        query,
+        UserData=user_data,
+        UpdateTag=update_tag,
+    )
