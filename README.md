@@ -18,6 +18,7 @@ Cartography is a Python tool that consolidates infrastructure assets and the rel
   - [Code of conduct](#code-of-conduct)
   - [Developing Cartography](#developing-cartography)
     - [Sign the Contributor License Agreement (CLA)](#sign-the-contributor-license-agreement-cla)
+- [Who uses Cartography?](#who-uses-cartography)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -72,3 +73,10 @@ Get started with our [developer documentation](docs/dev/developer-guide.md).
 We require a CLA for code contributions, so before we can accept a pull request
 we need to have a signed CLA. Please [visit our CLA service](https://oss.lyft.com/cla)
 and follow the instructions to sign the CLA.
+
+## Who uses Cartography?
+
+1. Lyft
+1. {Your company here} :-)
+
+If your organization uses Cartography, please file a PR and update this list. Say hi on Slack too!
