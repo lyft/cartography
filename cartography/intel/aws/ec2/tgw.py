@@ -1,36 +1,41 @@
 import logging
 
 from .util import get_botocore_config
+from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
+
 
 logger = logging.getLogger(__name__)
 
 
 @timeit
+@aws_handle_regions
 def get_transit_gateways(boto3_session, region):
     client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
-    return client.describe_transit_gateways()
+    return client.describe_transit_gateways()["TransitGateways"]
 
 
 @timeit
+@aws_handle_regions
 def get_tgw_attachments(boto3_session, region):
     client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
     paginator = client.get_paginator('describe_transit_gateway_attachments')
     tgw_attachments = []
     for page in paginator.paginate():
         tgw_attachments.extend(page['TransitGatewayAttachments'])
-    return {"TransitGatewayAttachments": tgw_attachments}
+    return tgw_attachments
 
 
 @timeit
+@aws_handle_regions
 def get_tgw_vpc_attachments(boto3_session, region):
     client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
     paginator = client.get_paginator('describe_transit_gateway_vpc_attachments')
     tgw_vpc_attachments = []
     for page in paginator.paginate():
         tgw_vpc_attachments.extend(page['TransitGatewayVpcAttachments'])
-    return {"TransitGatewayVpcAttachments": tgw_vpc_attachments}
+    return tgw_vpc_attachments
 
 
 @timeit
@@ -52,7 +57,7 @@ def load_transit_gateways(neo4j_session, data, region, current_aws_account_id, a
     SET r.lastupdated = {aws_update_tag}
     """
 
-    for tgw in data["TransitGateways"]:
+    for tgw in data:
         tgw_id = tgw["TransitGatewayId"]
 
         neo4j_session.run(
@@ -117,7 +122,7 @@ def load_tgw_attachments(neo4j_session, data, region, current_aws_account_id, aw
     SET attach.lastupdated = {aws_update_tag}
     """
 
-    for tgwa in data["TransitGatewayAttachments"]:
+    for tgwa in data:
         tgwa_id = tgwa["TransitGatewayAttachmentId"]
 
         neo4j_session.run(
@@ -132,10 +137,10 @@ def load_tgw_attachments(neo4j_session, data, region, current_aws_account_id, aw
             aws_update_tag=aws_update_tag,
         )
 
-    for vpc_tgwa in data["TransitGatewayVpcAttachments"]:
-        _attach_tgw_vpc_attachment_to_vpc_subnets(
-            neo4j_session, vpc_tgwa, region, current_aws_account_id, aws_update_tag,
-        )
+        if tgwa.get("VpcId"):  # only attach if the TGW attachment is a VPC TGW attachment
+            _attach_tgw_vpc_attachment_to_vpc_subnets(
+                neo4j_session, tgwa, region, current_aws_account_id, aws_update_tag,
+            )
 
 
 @timeit
@@ -208,7 +213,7 @@ def sync_transit_gateways(
         tgw_attachments = get_tgw_attachments(boto3_session, region)
         tgw_vpc_attachments = get_tgw_vpc_attachments(boto3_session, region)
         load_tgw_attachments(
-            neo4j_session, {**tgw_attachments, **tgw_vpc_attachments},
+            neo4j_session, tgw_attachments + tgw_vpc_attachments,
             region, current_aws_account_id, aws_update_tag,
         )
     cleanup_transit_gateways(neo4j_session, common_job_parameters)
