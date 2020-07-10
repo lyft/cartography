@@ -24,7 +24,6 @@ def start_github_ingestion(neo4j_session, config):
         logger.debug('GitHub import is not configured - skipping this module. See docs to configure.')
         return
 
-    # TODO - Document why b64 is used to allow for multiple organizations and multiple user:cred pairs
     auth_tokens = json.loads(base64.b64decode(config.github_config).decode())
     common_job_parameters = {
         "UPDATE_TAG": config.update_tag,
