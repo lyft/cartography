@@ -36,14 +36,13 @@ GITHUB_ORG_USERS_PAGINATED_GRAPHQL = """
 @timeit
 def get(token, api_url, organization):
     """
-    Retrieve a list of users from a Github organization as described in
+    Retrieve a list of users from the given GitHub organization as described in
     https://docs.github.com/en/graphql/reference/objects#organizationmemberedge.
     :param token: The Github API token as string.
     :param api_url: The Github v4 API endpoint as string.
     :param organization: The name of the target Github organization as string.
-    :return: A list of dicts representing users. Has shape
-    [ {'cursor': '...', 'hasTwoFactorEnabled': None, 'node': {'isSiteAdmin': False, 'login': 'name'}, 'role': 'MEMBER'}
-      , ... ]
+    :return: A 2-tuple containing 1. a list of dicts representing users - see tests.data.github.users.GITHUB_USER_DATA
+    for shape, and 2. data on the owning GitHub organization - see tests.data.github.users.GITHUB_ORG_DATA for shape.
     """
     users, org = fetch_all(token, api_url, organization, GITHUB_ORG_USERS_PAGINATED_GRAPHQL, 'membersWithRole', 'edges')
     return users, org
