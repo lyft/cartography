@@ -36,7 +36,7 @@ def call_github_api(query, variables, token, api_url):
 def fetch_page(token, api_url, organization, query, cursor=None):
     """
     Return a single page of max size 100 elements from the Github api_url using the given `query` and `cursor` params.
-    :param token: The API token as string. Must have repo:* and org:read permissions.
+    :param token: The API token as string. Must have permission for the object being paginated.
     :param api_url: The Github API endpoint as string.
     :param organization: The name of the target Github organization as string.
     :param query: The GraphQL query, e.g. `GITHUB_ORG_USERS_PAGINATED_GRAPHQL`
