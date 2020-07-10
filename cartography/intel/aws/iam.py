@@ -97,10 +97,15 @@ def get_user_managed_policy_data(boto3_session, user_list):
         name = user["UserName"]
         arn = user["Arn"]
         resource_user = resource_client.User(name)
-        policies[arn] = {
-            p.policy_name: p.default_version.document["Statement"]
-            for p in resource_user.attached_policies.all()
-        }
+        try:
+            policies[arn] = {
+                p.policy_name: p.default_version.document["Statement"]
+                for p in resource_user.attached_policies.all()
+            }
+        except resource_client.meta.client.exceptions.NoSuchEntityException:
+            logger.warning(
+                f"Could not get policies for user {name} due to NoSuchEntityException; skipping.",
+            )
     return policies
 
 
@@ -166,7 +171,14 @@ def get_role_list_data(boto3_session):
 def get_account_access_key_data(boto3_session, username):
     client = boto3_session.client('iam')
     # NOTE we can get away without using a paginator here because users are limited to two access keys
-    return client.list_access_keys(UserName=username)
+    access_keys = {}
+    try:
+        access_keys = client.list_access_keys(UserName=username)
+    except client.exceptions.NoSuchEntityException:
+        logger.warning(
+            f"Could not get access key for user {username} due to NoSuchEntityException; skipping.",
+        )
+    return access_keys
 
 
 @timeit
@@ -617,8 +629,11 @@ def sync_user_access_keys(neo4j_session, boto3_session, current_aws_account_id, 
     query = "MATCH (user:AWSUser)<-[:RESOURCE]-(AWSAccount{id: {AWS_ACCOUNT_ID}}) return user.name as name"
     result = neo4j_session.run(query, AWS_ACCOUNT_ID=current_aws_account_id)
     usernames = [r['name'] for r in result]
-    account_access_key = {name: get_account_access_key_data(boto3_session, name) for name in usernames}
-    load_user_access_keys(neo4j_session, account_access_key, aws_update_tag)
+    for name in usernames:
+        access_keys = get_account_access_key_data(boto3_session, name)
+        if access_keys:
+            account_access_keys = {name: access_keys}
+            load_user_access_keys(neo4j_session, account_access_keys, aws_update_tag)
     run_cleanup_job(
         'aws_import_account_access_key_cleanup.json',
         neo4j_session,
