@@ -45,13 +45,16 @@ def load_transit_gateways(neo4j_session, data, region, current_aws_account_id, a
     ON CREATE SET ownerAccount.firstseen = timestamp(), ownerAccount.foreign = true
     SET ownerAccount.lastupdated = {aws_update_tag}
 
-    MERGE (tgw:AWSTransitGateway {id: {TgwId}, arn: {ARN}})
+    MERGE (tgw:AWSTransitGateway {arn: {ARN}})
     ON CREATE SET tgw.firstseen = timestamp()
-    SET tgw.ownerid = {OwnerId}, tgw.state = {State},
+    SET tgw.id = {TgwId},
+    tgw.ownerid = {OwnerId},
+    tgw.state = {State},
     tgw.description = {Description},
     tgw.region = {Region},
     tgw.lastupdated = {aws_update_tag}
 
+    WITH tgw
     MERGE (ownerAccount)-[r:RESOURCE]->(tgw)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {aws_update_tag}
@@ -79,7 +82,7 @@ def load_transit_gateways(neo4j_session, data, region, current_aws_account_id, a
 @timeit
 def _attach_shared_transit_gateway(neo4j_session, tgw, region, current_aws_account_id, aws_update_tag):
     attach_tgw = """
-    MERGE (tgw:AWSTransitGateway {id: {TransitGatewayId}})
+    MERGE (tgw:AWSTransitGateway {arn: {ARN}})
     ON CREATE SET tgw.firstseen = timestamp()
     SET tgw.lastupdated = {aws_update_tag}
 
@@ -93,6 +96,7 @@ def _attach_shared_transit_gateway(neo4j_session, tgw, region, current_aws_accou
     if tgw["OwnerId"] != current_aws_account_id:
         neo4j_session.run(
             attach_tgw,
+            ARN=tgw["TransitGatewayArn"],
             TransitGatewayId=tgw["TransitGatewayId"],
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag,
