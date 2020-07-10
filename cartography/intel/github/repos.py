@@ -108,10 +108,15 @@ def _create_git_url_from_ssh_url(ssh_url):
 
 
 def _transform_repo_objects(input_repo_object, out_repo_list):
-    default_branch_id = _create_default_branch_id(input_repo_object['url'], input_repo_object['defaultBranchRef']['id'])
-    # Create a git:// URL from the given SSH URL
+    # Default branch name can be None sometimes
+    dbr = input_repo_object['defaultBranchRef']
+    default_branch_name = dbr['name'] if dbr else None
+    default_branch_id = _create_default_branch_id(input_repo_object['url'], dbr['id']) if dbr else None
+
+    # Create a git:// URL from the given SSH URL, if it exists.
     ssh_url = input_repo_object.get('sshUrl')
     git_url = _create_git_url_from_ssh_url(ssh_url) if ssh_url else None
+
     out_repo_list.append({
         'id': input_repo_object['url'],
         'createdat': input_repo_object['createdAt'],
@@ -120,7 +125,7 @@ def _transform_repo_objects(input_repo_object, out_repo_list):
         'description': input_repo_object['description'],
         'primarylanguage': input_repo_object['primaryLanguage'],
         'homepage': input_repo_object['homepageUrl'],
-        'defaultbranch': input_repo_object['defaultBranchRef']['name'],
+        'defaultbranch': default_branch_name,
         'defaultbranchid': default_branch_id,
         'private': input_repo_object['isPrivate'],
         'disabled': input_repo_object['isDisabled'],
@@ -189,17 +194,18 @@ def load_github_repos(session, update_tag, repo_data):
     repo.sshurl = repository.sshurl,
     repo.updatedat = repository.updatedat,
     repo.lastupdated = {UpdateTag}
-    WITH repo
 
+    WITH repo
+    WHERE repo.defaultbranch IS NOT NULL AND repo.defaultbranchid IS NOT NULL
     MERGE (branch:GitHubBranch{id: repo.defaultbranchid})
     ON CREATE SET branch.firstseen = timestamp()
-    SET branch.name = repo.defaultbranch, branch.lastupdated = {UpdateTag}
-    WITH repo, branch
+    SET branch.name = repo.defaultbranch,
+    branch.lastupdated = {UpdateTag}
 
     MERGE (repo)-[r:BRANCH]->(branch)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = r.UpdateTag;"""
-
+    SET r.lastupdated = r.UpdateTag
+    """
     session.run(
         ingest_repo,
         RepoData=repo_data,
@@ -281,6 +287,7 @@ def sync(neo4j_session, common_job_parameters, github_api_key, github_url, organ
     :param organization: The organization to query GitHub for
     :return: Nothing
     """
+    logger.debug("Syncing GitHub repos")
     repos_json = get(github_api_key, github_url, organization)
     repo_data = transform_github_repos(repos_json)
     load_github_repos(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data['repos'])

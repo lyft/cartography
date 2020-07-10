@@ -84,5 +84,6 @@ def load_organization_users(neo4j_session, user_data, org_data, update_tag):
 
 @timeit
 def sync(neo4j_session, common_job_parameters, github_api_key, github_url, organization):
+    logger.debug("Syncing GitHub users")
     user_data, org_data = get(github_api_key, github_url, organization)
     load_organization_users(neo4j_session, user_data, org_data, common_job_parameters['UPDATE_TAG'])
