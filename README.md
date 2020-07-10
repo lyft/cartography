@@ -76,7 +76,7 @@ and follow the instructions to sign the CLA.
 
 ## Who uses Cartography?
 
-1. Lyft
+1. [Lyft](https://www.lyft.com)
 1. {Your company here} :-)
 
 If your organization uses Cartography, please file a PR and update this list. Say hi on Slack too!
