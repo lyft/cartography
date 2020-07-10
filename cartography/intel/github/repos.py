@@ -11,6 +11,8 @@ GITHUB_ORG_REPOS_PAGINATED_GRAPHQL = """
     query($login: String!, $cursor: String) {
     organization(login: $login)
         {
+            url
+            login
             repositories(first: 100, after: $cursor){
                 pageInfo{
                     endCursor
@@ -64,7 +66,9 @@ def get(token, api_url, organization):
     :param organization: The name of the target Github organization as string.
     :return: A list of dicts representing repos. See tests.data.github.repos for data shape.
     """
-    return fetch_all(token, api_url, organization, GITHUB_ORG_REPOS_PAGINATED_GRAPHQL, 'repositories', 'nodes')
+    # TODO: link the Github organization to the repositories
+    repos, _ = fetch_all(token, api_url, organization, GITHUB_ORG_REPOS_PAGINATED_GRAPHQL, 'repositories', 'nodes')
+    return repos
 
 
 def transform_github_repos(repos_json):
@@ -130,6 +134,12 @@ def _transform_repo_objects(input_repo_object, out_repo_list):
 
 
 def _transform_repo_owners(owner_id, repo, repo_owners):
+    """
+    Helper function to transform repo owners
+    :param owner_id: The URL of the owner object (either of type Organization or User)
+    :param repo: The repo object
+    :param repo_owners: Output array to append transformed results to
+    """
     repo_owners.append({
         'repo_id': repo['url'],
         'owner': repo['owner']['login'],

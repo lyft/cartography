@@ -10,6 +10,8 @@ GITHUB_ORG_USERS_PAGINATED_GRAPHQL = """
     query($login: String!, $cursor: String) {
     organization(login: $login)
         {
+            url
+            login
             membersWithRole(first:100, after: $cursor){
                 edges {
                     hasTwoFactorEnabled
@@ -43,24 +45,44 @@ def get(token, api_url, organization):
     [ {'cursor': '...', 'hasTwoFactorEnabled': None, 'node': {'isSiteAdmin': False, 'login': 'name'}, 'role': 'MEMBER'}
       , ... ]
     """
-    return fetch_all(token, api_url, organization, GITHUB_ORG_USERS_PAGINATED_GRAPHQL, 'membersWithRole', 'edges')
+    users, org = fetch_all(token, api_url, organization, GITHUB_ORG_USERS_PAGINATED_GRAPHQL, 'membersWithRole', 'edges')
+    return users, org
 
 
 @timeit
-def load(neo4j_session, user_data, update_tag):
+def load_organization_users(neo4j_session, user_data, org_data, update_tag):
     query = """
+    MERGE (org:GitHubOrganization{id: {OrgUrl}})
+    ON CREATE SET org.firstseen = timestamp()
+    SET org.username = {OrgLogin},
+    org.lastupdated = {UpdateTag}
+    WITH org
+
     UNWIND {UserData} as user
-    MERGE (u:GitHubUser{id: user.node.resourcePath})
+
+    MERGE (u:GitHubUser{id: user.node.url})
     ON CREATE SET u.firstseen = timestamp()
-    SET u.name = user.node.name,
-    u.login = user.node.login,
+    SET u.fullname = user.node.name,
+    u.username = user.node.login,
     u.has_2fa_enabled = user.hasTwoFactorEnabled,
     u.role = user.role,
     u.is_site_admin = user.node.isSiteAdmin,
-    u.lastupdated = {UpdateTag}"""
+    u.lastupdated = {UpdateTag}
 
+    MERGE (u)-[r:MEMBER_OF]->(org)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {UpdateTag}
+    """
     neo4j_session.run(
         query,
+        OrgUrl=org_data['url'],
+        OrgLogin=org_data['login'],
         UserData=user_data,
         UpdateTag=update_tag,
     )
+
+
+@timeit
+def sync(neo4j_session, common_job_parameters, github_api_key, github_url, organization):
+    user_data, org_data = get(github_api_key, github_url, organization)
+    load_organization_users(neo4j_session, user_data, org_data, common_job_parameters['UPDATE_TAG'])

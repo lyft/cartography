@@ -56,7 +56,7 @@ def fetch_page(token, api_url, organization, query, cursor=None):
 def fetch_all(token, api_url, organization, query, resource_type, field_name):
     """
     Fetch and return all data items of the given `resource_type` and `field_name` from Github's paginated GraphQL API as
-    a list.
+    a list, along with information on the organization that they belong to.
     :param token: The Github API token as string.
     :param api_url: The Github v4 API endpoint as string.
     :param organization: The name of the target Github organization as string.
@@ -66,22 +66,24 @@ def fetch_all(token, api_url, organization, query, resource_type, field_name):
     list.
     :param field_name: The field name of the resource_type to append items from - this is usually "nodes" or "edges".
     See the field list in https://docs.github.com/en/graphql/reference/objects#repositoryconnection for other examples.
-    :return: A list of data items of the given `resource_type` and `field_name`.
+    :return: A 2-tuple containing 1. A list of data items of the given `resource_type` and `field_name`,  and 2. a dict
+    containing the `url` and the `login` fields of the organization that the items belong to.
     """
     cursor = None
     has_next_page = True
     data = []
     while has_next_page:
         try:
-            response = fetch_page(token, api_url, organization, query, cursor)
+            resp = fetch_page(token, api_url, organization, query, cursor)
         except requests.exceptions.Timeout:
             logger.warning(
                 f"GitHub: Could not retrieve page of resource `{resource_type}` due to API timeout;"
                 f"continuing with incomplete data",
             )
             break
-        resource = response['data']['organization'][resource_type]
+        resource = resp['data']['organization'][resource_type]
         data.extend(resource[field_name])
         cursor = resource['pageInfo']['endCursor']
         has_next_page = resource['pageInfo']['hasNextPage']
-    return data
+    org_data = {'url': resp['data']['organization']['url'], 'login': resp['data']['organization']['login']}
+    return data, org_data

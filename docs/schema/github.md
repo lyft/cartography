@@ -95,6 +95,10 @@ Representation of a single GitHubUser [user object](https://developer.github.com
 | lastupdated |  Timestamp of the last time the node was updated |
 | id | The URL of the GitHub user |
 | username | Name of the user |
+| fullname | The full name |
+| has_2fa_enabled | Whether the user has 2-factor authentication enabled |
+| role | Either 'ADMIN' (denoting that the user is an owner of a Github organization) or 'MEMBER' |
+| is_site_admin | Whether the user is a site admin |
 
 
 ### Relationships
