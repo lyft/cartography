@@ -71,10 +71,11 @@ def get(token, api_url, organization):
     return repos
 
 
-def transform_github_repos(repos_json):
+def transform(repos_json):
     """
     Parses the JSON returned from GitHub API to create data for graph ingestion
-    :param repos_json: the list of individual repository nodes from GitHub
+    :param repos_json: the list of individual repository nodes from GitHub. See tests.data.github.repos.GET_REPOS for
+    data shape.
     :return: Dict containing the repos, repo->language mapping, and owners->repo mapping
     """
     transformed_repo_list = []
@@ -94,7 +95,7 @@ def transform_github_repos(repos_json):
 
 def _create_default_branch_id(repo_url, default_branch_ref_id):
     """
-    Return a unique node id for the defaultBranchId using the given repo_url and default_branch_ref_id.
+    Return a unique node id for a repo's defaultBranchId using the given repo_url and default_branch_ref_id.
     This ensures that default branches for each GitHub repo are unique nodes in the graph.
     """
     return f"{repo_url}:{default_branch_ref_id}"
@@ -108,7 +109,14 @@ def _create_git_url_from_ssh_url(ssh_url):
 
 
 def _transform_repo_objects(input_repo_object, out_repo_list):
-    # Default branch name can be None sometimes
+    """
+    Performs data transforms including creating necessary IDs for unique nodes in the graph related to GitHub repos,
+    their default branches, and languages.
+    :param input_repo_object: A repository node from GitHub; see tests.data.github.repos.GET_REPOS for data shape.
+    :param out_repo_list: Out-param to append transformed repos to.
+    :return: Nothing
+    """
+    # Create a unique ID for a GitHubBranch node representing the default branch of this repo object.
     dbr = input_repo_object['defaultBranchRef']
     default_branch_name = dbr['name'] if dbr else None
     default_branch_id = _create_default_branch_id(input_repo_object['url'], dbr['id']) if dbr else None
@@ -140,10 +148,11 @@ def _transform_repo_objects(input_repo_object, out_repo_list):
 
 def _transform_repo_owners(owner_id, repo, repo_owners):
     """
-    Helper function to transform repo owners
-    :param owner_id: The URL of the owner object (either of type Organization or User)
-    :param repo: The repo object
-    :param repo_owners: Output array to append transformed results to
+    Helper function to transform repo owners.
+    :param owner_id: The URL of the owner object (either of type Organization or User).
+    :param repo: The repo object; see tests.data.github.repos.GET_REPOS for data shape.
+    :param repo_owners: Output array to append transformed results to.
+    :return: Nothing.
     """
     repo_owners.append({
         'repo_id': repo['url'],
@@ -154,6 +163,13 @@ def _transform_repo_owners(owner_id, repo, repo_owners):
 
 
 def _transform_repo_languages(repo_url, repo, repo_languages):
+    """
+    Helper function to transform the languages in a GitHub repo.
+    :param repo_url: The URL of the repo.
+    :param repo: The repo object; see tests.data.github.repos.GET_REPOS for data shape.
+    :param repo_languages: Output array to append transformed results to.
+    :return: Nothing.
+    """
     if repo['languages']['totalCount'] > 0:
         for language in repo['languages']['nodes']:
             repo_languages.append({
@@ -170,7 +186,7 @@ def load_github_repos(session, update_tag, repo_data):
     :param update_tag: Timestamp used to determine data freshness
     :param repo_data: repository data objects
     :return: None
-        """
+    """
     ingest_repo = """
     UNWIND {RepoData} as repository
 
@@ -289,7 +305,7 @@ def sync(neo4j_session, common_job_parameters, github_api_key, github_url, organ
     """
     logger.debug("Syncing GitHub repos")
     repos_json = get(github_api_key, github_url, organization)
-    repo_data = transform_github_repos(repos_json)
+    repo_data = transform(repos_json)
     load_github_repos(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data['repos'])
     load_github_owners(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data['repo_owners'])
     load_github_languages(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data['repo_languages'])
