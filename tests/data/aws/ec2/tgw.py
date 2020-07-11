@@ -22,8 +22,8 @@ TRANSIT_GATEWAYS = [
         'Tags': [{
             'Key': 'Name',
             'Value': 'test transit gateway',
-        }]
-    }
+        }],
+    },
 ]
 
 TRANSIT_GATEWAY_ATTACHMENTS = [
@@ -37,16 +37,16 @@ TRANSIT_GATEWAY_ATTACHMENTS = [
         'State': 'available',
         'Association': {
             'TransitGatewayRouteTableId': 'tgw-rtb-00000000000000000',
-            'State': 'associated'
+            'State': 'associated',
         },
         'CreationTime': datetime.datetime(2019, 6, 25, 14, 42, 44),
         'Tags': [
             {
                 'Key': 'Name',
-                'Value': 'tgw attachment test'
-            }
-        ]
-    }
+                'Value': 'tgw attachment test',
+            },
+        ],
+    },
 ]
 
 TGW_VPC_ATTACHMENTS = [
@@ -59,18 +59,18 @@ TGW_VPC_ATTACHMENTS = [
         'SubnetIds': [
             'subnet-62ddf961dc3c54bd3',
             'subnet-56ccdcb90a86e0ce8',
-            'subnet-3236c10861031f362'
+            'subnet-3236c10861031f362',
         ],
         'CreationTime': datetime.datetime(2019, 6, 25, 14, 42, 44),
         'Options': {
             'DnsSupport': 'enable',
-            'Ipv6Support': 'disable'
+            'Ipv6Support': 'disable',
         },
         'Tags': [
             {
                 'Key': 'Name',
-                'Value': 'tgw attachment test'
-            }
-        ]
-    }
+                'Value': 'tgw attachment test',
+            },
+        ],
+    },
 ]
