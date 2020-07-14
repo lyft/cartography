@@ -57,11 +57,11 @@ def load_ec2_instance_network_interfaces(neo4j_session, instance_data, aws_updat
             InstanceId=instance_id,
             NetworkId=interface["NetworkInterfaceId"],
             Status=interface["Status"],
-            MacAddress=interface.get("MacAddress", ""),
-            Description=interface.get("Description", ""),
-            PrivateDnsName=interface.get("PrivateDnsName", ""),
-            PrivateIpAddress=interface.get("PrivateIpAddress", ""),
-            SubnetId=interface.get("SubnetId", ""),
+            MacAddress=interface.get("MacAddress"),
+            Description=interface.get("Description"),
+            PrivateDnsName=interface.get("PrivateDnsName"),
+            PrivateIpAddress=interface.get("PrivateIpAddress"),
+            SubnetId=interface.get("SubnetId"),
             aws_update_tag=aws_update_tag,
         ).consume()  # TODO see issue 170
 
@@ -154,8 +154,8 @@ def load_ec2_instances(neo4j_session, data, region, current_aws_account_id, aws_
         neo4j_session.run(
             ingest_reservation,
             ReservationId=reservation_id,
-            OwnerId=reservation.get("OwnerId", ""),
-            RequesterId=reservation.get("RequesterId", ""),
+            OwnerId=reservation.get("OwnerId"),
+            RequesterId=reservation.get("RequesterId"),
             AWS_ACCOUNT_ID=current_aws_account_id,
             Region=region,
             aws_update_tag=aws_update_tag,
@@ -164,12 +164,12 @@ def load_ec2_instances(neo4j_session, data, region, current_aws_account_id, aws_
         for instance in reservation["Instances"]:
             instanceid = instance["InstanceId"]
 
-            monitoring_state = instance.get("Monitoring", {}).get("State", "")
+            monitoring_state = instance.get("Monitoring", {}).get("State")
 
-            instance_state = instance.get("State", {}).get("Name", "")
+            instance_state = instance.get("State", {}).get("Name")
 
             # NOTE this is a hack because we're using a version of Neo4j that doesn't support temporal data types
-            launch_time = instance.get("LaunchTime", "")
+            launch_time = instance.get("LaunchTime")
             if launch_time:
                 launch_time_unix = time.mktime(launch_time.timetuple())
             else:
@@ -178,12 +178,12 @@ def load_ec2_instances(neo4j_session, data, region, current_aws_account_id, aws_
             neo4j_session.run(
                 ingest_instance,
                 InstanceId=instanceid,
-                PublicDnsName=instance.get("PublicDnsName", ""),
-                PublicIpAddress=instance.get("PublicIpAddress", ""),
-                PrivateIpAddress=instance.get("PrivateIpAddress", ""),
-                ImageId=instance.get("ImageId", ""),
-                SubnetId=instance.get("SubnetId", ""),
-                InstanceType=instance.get("InstanceType", ""),
+                PublicDnsName=instance.get("PublicDnsName"),
+                PublicIpAddress=instance.get("PublicIpAddress"),
+                PrivateIpAddress=instance.get("PrivateIpAddress"),
+                ImageId=instance.get("ImageId"),
+                SubnetId=instance.get("SubnetId"),
+                InstanceType=instance.get("InstanceType"),
                 IamInstanceProfile=instance.get("IamInstanceProfile", {}).get("Arn"),
                 ReservationId=reservation_id,
                 MonitoringState=monitoring_state,
@@ -213,7 +213,7 @@ def load_ec2_instances(neo4j_session, data, region, current_aws_account_id, aws_
                     neo4j_session.run(
                         ingest_security_groups,
                         GroupId=group["GroupId"],
-                        GroupName=group.get("GroupName", ""),
+                        GroupName=group.get("GroupName"),
                         InstanceId=instanceid,
                         Region=region,
                         AWS_ACCOUNT_ID=current_aws_account_id,

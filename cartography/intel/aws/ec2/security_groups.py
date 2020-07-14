@@ -62,8 +62,8 @@ def load_ec2_security_group_rule(neo4j_session, group, rule_type, aws_update_tag
     if group.get(rule_type):
         for rule in group[rule_type]:
             protocol = rule.get("IpProtocol", "all")
-            from_port = rule.get("FromPort", "")
-            to_port = rule.get("ToPort", "")
+            from_port = rule.get("FromPort")
+            to_port = rule.get("ToPort")
 
             ruleid = f"{group_id}/{rule_type}/{from_port}{to_port}{protocol}"
             # NOTE Cypher query syntax is incompatible with Python string formatting, so we have to do this awkward
@@ -119,8 +119,8 @@ def load_ec2_security_groupinfo(neo4j_session, data, region, current_aws_account
         neo4j_session.run(
             ingest_security_group,
             GroupId=group_id,
-            GroupName=group.get("GroupName", ""),
-            Description=group.get("Description", ""),
+            GroupName=group.get("GroupName"),
+            Description=group.get("Description"),
             VpcId=group.get("VpcId", None),
             Region=region,
             AWS_ACCOUNT_ID=current_aws_account_id,
