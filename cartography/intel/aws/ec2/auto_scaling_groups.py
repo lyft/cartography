@@ -62,8 +62,8 @@ def load_ec2_auto_scaling_groups(neo4j_session, data, region, current_aws_accoun
 
     for group in data:
         name = group["AutoScalingGroupName"]
-        createtime = group.get("CreatedTime", "")
-        lauchconfig_name = group.get("LaunchConfigurationName", "")
+        createtime = group.get("CreatedTime")
+        lauchconfig_name = group.get("LaunchConfigurationName")
         group_arn = group["AutoScalingGroupARN"]
         max_size = group["MaxSize"]
 
