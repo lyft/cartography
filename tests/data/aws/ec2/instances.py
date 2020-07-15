@@ -84,7 +84,7 @@ DESCRIBE_INSTANCES = {
                     }],
                     'SourceDestCheck': True,
                     'Status': 'in-use',
-                    'SubnetId': 'SOME_SUBNET_1',
+                    'SubnetId': None,
                     'VpcId': 'SOME_VPC_ID',
                 }],
                 'Placement': {
