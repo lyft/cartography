@@ -423,11 +423,12 @@ Representation of an [AWS Transit Gateway](https://docs.aws.amazon.com/AWSEC2/la
 |-------|-------------|
 |firstseen| Timestamp of when a sync job discovered this node|
 |lastupdated| Timestamp of the last time the node was updated|
-|owner\_id| The ID of the AWS account that owns the transit gateway
-|description| Transit Gateway description
-|state| Can be one of `pending | available | modifying | deleting | deleted`
-|**id**| Unique identifier of the Transit Gateway
-| **arn** | AWS-unique identifier for this object |
+|owner\_id| The ID of the AWS account that owns the transit gateway|
+|description| Transit Gateway description|
+|state| Can be one of `pending | available | modifying | deleting | deleted`|
+|tgw_id| Unique identifier of the Transit Gateway|
+|**id**| Unique identifier of the Transit Gateway|
+| **arn** | AWS-unique identifier for this object (same as `id`) |
 
 ### Relationships
 - Transit Gateways belong to one `AWSAccount`...
