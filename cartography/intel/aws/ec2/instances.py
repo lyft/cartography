@@ -88,13 +88,6 @@ def load_ec2_instances(neo4j_session, data, region, current_aws_account_id, aws_
     instance.region = {Region}, instance.lastupdated = {aws_update_tag},
     instance.iaminstanceprofile = {IamInstanceProfile}
     WITH instance
-    MERGE (subnet:EC2Subnet{subnetid: {SubnetId}})
-    ON CREATE SET subnet.firstseen = timestamp()
-    SET subnet.region = {Region}, subnet.lastupdated = {aws_update_tag}
-    MERGE (instance)-[r:PART_OF_SUBNET]->(subnet)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
-    WITH instance
     MATCH (rez:EC2Reservation{reservationid: {ReservationId}})
     MERGE (instance)-[r:MEMBER_OF_EC2_RESERVATION]->(rez)
     ON CREATE SET r.firstseen = timestamp()
@@ -102,6 +95,17 @@ def load_ec2_instances(neo4j_session, data, region, current_aws_account_id, aws_
     WITH instance
     MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
     MERGE (aa)-[r:RESOURCE]->(instance)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {aws_update_tag}
+    """
+
+    ingest_subnet = """
+    MATCH (EC2Instance{id: {InstanceId}})
+    MERGE (subnet:EC2Subnet{subnetid: {SubnetId}})
+    ON CREATE SET subnet.firstseen = timestamp()
+    SET subnet.region = {Region},
+    subnet.lastupdated = {aws_update_tag}
+    MERGE (instance)-[r:PART_OF_SUBNET]->(subnet)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {aws_update_tag}
     """
@@ -172,7 +176,6 @@ def load_ec2_instances(neo4j_session, data, region, current_aws_account_id, aws_
                 PublicIpAddress=instance.get("PublicIpAddress"),
                 PrivateIpAddress=instance.get("PrivateIpAddress"),
                 ImageId=instance.get("ImageId"),
-                SubnetId=instance.get("SubnetId"),
                 InstanceType=instance.get("InstanceType"),
                 IamInstanceProfile=instance.get("IamInstanceProfile", {}).get("Arn"),
                 ReservationId=reservation_id,
@@ -184,6 +187,17 @@ def load_ec2_instances(neo4j_session, data, region, current_aws_account_id, aws_
                 Region=region,
                 aws_update_tag=aws_update_tag,
             ).consume()  # TODO see issue 170
+
+            # SubnetId can return None intermittently so attach only if non-None.
+            subnet_id = instance.get('SubnetId')
+            if subnet_id:
+                neo4j_session.run(
+                    ingest_subnet,
+                    InstanceId=instanceid,
+                    SubnetId=subnet_id,
+                    Region=region,
+                    aws_update_tag=aws_update_tag,
+                )
 
             if instance.get("KeyName"):
                 key_name = instance["KeyName"]
