@@ -250,24 +250,24 @@ def parse_acl(acl, bucket, aws_account_id):
         if grant['Grantee']['Type'] == 'CanonicalUser':
             parsed_acl = {
                 "bucket": bucket,
-                "owner": acl['Owner'].get('DisplayName', "none"),
-                "ownerid": acl['Owner'].get('ID', "none"),
+                "owner": acl['Owner'].get('DisplayName'),
+                "ownerid": acl['Owner'].get('ID'),
                 "type": grant['Grantee']['Type'],
-                "displayname": grant['Grantee'].get('DisplayName', "none"),
-                "granteeid": grant['Grantee'].get('ID', "none"),
-                "uri": "",
-                "permission": grant.get('Permission', "none"),
+                "displayname": grant['Grantee'].get('DisplayName'),
+                "granteeid": grant['Grantee'].get('ID'),
+                "uri": None,
+                "permission": grant.get('Permission'),
             }
         elif grant['Grantee']['Type'] == 'Group':
             parsed_acl = {
                 "bucket": bucket,
-                "owner": acl['Owner'].get('DisplayName', "none"),
-                "ownerid": acl['Owner'].get('ID', "none"),
+                "owner": acl['Owner'].get('DisplayName'),
+                "ownerid": acl['Owner'].get('ID'),
                 "type": grant['Grantee']['Type'],
-                "displayname": "",
-                "granteeid": "",
-                "uri": grant['Grantee'].get('URI', "none"),
-                "permission": grant.get('Permission', "none"),
+                "displayname": None,
+                "granteeid": None,
+                "uri": grant['Grantee'].get('URI'),
+                "permission": grant.get('Permission'),
             }
         else:
             logger.warning("Unexpected grant type: %s", grant['Grantee']['Type'])

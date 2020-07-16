@@ -22,56 +22,46 @@ def get_ec2_instances(boto3_session, region):
 
 @timeit
 def load_ec2_instance_network_interfaces(neo4j_session, instance_data, aws_update_tag):
-    ingest_network_interface = """
+    ingest_interfaces = """
     MATCH (instance:EC2Instance{instanceid: {InstanceId}})
-    MERGE (interface:NetworkInterface{id: {NetworkId}})
-    ON CREATE SET interface.firstseen = timestamp()
-    SET interface.status = {Status}, interface.mac_address = {MacAddress}, interface.description = {Description},
-    interface.private_dns_name = {PrivateDnsName}, interface.private_ip_address = {PrivateIpAddress},
-    interface.lastupdated = {aws_update_tag}
-    MERGE (instance)-[r:NETWORK_INTERFACE]->(interface)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
-    WITH interface
-    MERGE (subnet:EC2Subnet{subnetid: {SubnetId}})
-    ON CREATE SET subnet.firstseen = timestamp()
-    SET subnet.lastupdated = {aws_update_tag}
-    MERGE (interface)-[r:PART_OF_SUBNET]->(subnet)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
-    """
+    UNWIND {Interfaces} as interface
+        MERGE (nic:NetworkInterface{id: interface.NetworkInterfaceId})
+        ON CREATE SET nic.firstseen = timestamp()
+        SET nic.status = interface.Status,
+        nic.mac_address = interface.MacAddress,
+        nic.description = interface.Description,
+        nic.private_dns_name = interface.PrivateDnsName,
+        nic.private_ip_address = interface.PrivateIpAddress,
+        nic.lastupdated = {aws_update_tag}
 
-    ingest_network_group = """
-    MATCH (interface:NetworkInterface{id: {NetworkId}}),
-    (group:EC2SecurityGroup{groupid: {GroupId}})
-    MERGE (interface)-[r:MEMBER_OF_EC2_SECURITY_GROUP]->(group)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
-    """
+        MERGE (instance)-[r:NETWORK_INTERFACE]->(nic)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {aws_update_tag}
 
+        WITH nic, interface
+        WHERE interface.SubnetId IS NOT NULL
+        MERGE (subnet:EC2Subnet{subnetid: interface.SubnetId})
+        ON CREATE SET subnet.firstseen = timestamp()
+        SET subnet.lastupdated = {aws_update_tag}
+
+        MERGE (nic)-[r:PART_OF_SUBNET]->(subnet)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {aws_update_tag}
+
+        WITH nic, interface
+        UNWIND interface.Groups as group
+            MATCH (ec2group:EC2SecurityGroup{groupid: group.GroupId})
+            MERGE (nic)-[r:MEMBER_OF_EC2_SECURITY_GROUP]->(ec2group)
+            ON CREATE SET r.firstseen = timestamp()
+            SET r.lastupdated = {aws_update_tag}
+    """
     instance_id = instance_data["InstanceId"]
-
-    for interface in instance_data["NetworkInterfaces"]:
-        neo4j_session.run(
-            ingest_network_interface,
-            InstanceId=instance_id,
-            NetworkId=interface["NetworkInterfaceId"],
-            Status=interface["Status"],
-            MacAddress=interface.get("MacAddress", ""),
-            Description=interface.get("Description", ""),
-            PrivateDnsName=interface.get("PrivateDnsName", ""),
-            PrivateIpAddress=interface.get("PrivateIpAddress", ""),
-            SubnetId=interface.get("SubnetId", ""),
-            aws_update_tag=aws_update_tag,
-        ).consume()  # TODO see issue 170
-
-        for group in interface.get("Groups", []):
-            neo4j_session.run(
-                ingest_network_group,
-                NetworkId=interface["NetworkInterfaceId"],
-                GroupId=group["GroupId"],
-                aws_update_tag=aws_update_tag,
-            ).consume()  # TODO see issue 170
+    neo4j_session.run(
+        ingest_interfaces,
+        Interfaces=instance_data['NetworkInterfaces'],
+        InstanceId=instance_id,
+        aws_update_tag=aws_update_tag,
+    ).consume()  # TODO see issue 170
 
 
 @timeit
@@ -154,8 +144,8 @@ def load_ec2_instances(neo4j_session, data, region, current_aws_account_id, aws_
         neo4j_session.run(
             ingest_reservation,
             ReservationId=reservation_id,
-            OwnerId=reservation.get("OwnerId", ""),
-            RequesterId=reservation.get("RequesterId", ""),
+            OwnerId=reservation.get("OwnerId"),
+            RequesterId=reservation.get("RequesterId"),
             AWS_ACCOUNT_ID=current_aws_account_id,
             Region=region,
             aws_update_tag=aws_update_tag,
@@ -164,12 +154,12 @@ def load_ec2_instances(neo4j_session, data, region, current_aws_account_id, aws_
         for instance in reservation["Instances"]:
             instanceid = instance["InstanceId"]
 
-            monitoring_state = instance.get("Monitoring", {}).get("State", "")
+            monitoring_state = instance.get("Monitoring", {}).get("State")
 
-            instance_state = instance.get("State", {}).get("Name", "")
+            instance_state = instance.get("State", {}).get("Name")
 
             # NOTE this is a hack because we're using a version of Neo4j that doesn't support temporal data types
-            launch_time = instance.get("LaunchTime", "")
+            launch_time = instance.get("LaunchTime")
             if launch_time:
                 launch_time_unix = time.mktime(launch_time.timetuple())
             else:
@@ -178,12 +168,12 @@ def load_ec2_instances(neo4j_session, data, region, current_aws_account_id, aws_
             neo4j_session.run(
                 ingest_instance,
                 InstanceId=instanceid,
-                PublicDnsName=instance.get("PublicDnsName", ""),
-                PublicIpAddress=instance.get("PublicIpAddress", ""),
-                PrivateIpAddress=instance.get("PrivateIpAddress", ""),
-                ImageId=instance.get("ImageId", ""),
-                SubnetId=instance.get("SubnetId", ""),
-                InstanceType=instance.get("InstanceType", ""),
+                PublicDnsName=instance.get("PublicDnsName"),
+                PublicIpAddress=instance.get("PublicIpAddress"),
+                PrivateIpAddress=instance.get("PrivateIpAddress"),
+                ImageId=instance.get("ImageId"),
+                SubnetId=instance.get("SubnetId"),
+                InstanceType=instance.get("InstanceType"),
                 IamInstanceProfile=instance.get("IamInstanceProfile", {}).get("Arn"),
                 ReservationId=reservation_id,
                 MonitoringState=monitoring_state,
@@ -213,7 +203,7 @@ def load_ec2_instances(neo4j_session, data, region, current_aws_account_id, aws_
                     neo4j_session.run(
                         ingest_security_groups,
                         GroupId=group["GroupId"],
-                        GroupName=group.get("GroupName", ""),
+                        GroupName=group.get("GroupName"),
                         InstanceId=instanceid,
                         Region=region,
                         AWS_ACCOUNT_ID=current_aws_account_id,
