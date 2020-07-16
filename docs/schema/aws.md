@@ -1260,6 +1260,7 @@ Representation of a generic Network Interface.  Currently however, we only creat
 | **id** | The ID of the network interface.  (known as `networkInterfaceId` in EC2) |
 | private\_dns\_name| The private DNS name |
 | status | Status of the network interface.  Valid Values: `available | associated | attaching | in-use | detaching ` |
+| subnetid | The ID of the subnet |
 
 
 ### Relationships
