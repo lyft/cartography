@@ -46,8 +46,8 @@ def test_load_tgw_attachments(neo4j_session):
     }
 
     nodes = neo4j_session.run("""
-        MATCH (n:AWSTransitGatewayAttachment) RETURN n.id;
+        MATCH (tgwa:AWSTransitGatewayAttachment)-[:ATTACHED_TO]->(tgw:AWSTransitGateway) RETURN tgwa.id;
         """)
-    actual_nodes = {n['n.id'] for n in nodes}
+    actual_nodes = {n['tgwa.id'] for n in nodes}
 
     assert actual_nodes == expected_nodes
