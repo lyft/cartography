@@ -45,9 +45,9 @@ def load_transit_gateways(neo4j_session, data, region, current_aws_account_id, a
     ON CREATE SET ownerAccount.firstseen = timestamp(), ownerAccount.foreign = true
     SET ownerAccount.lastupdated = {aws_update_tag}
 
-    MERGE (tgw:AWSTransitGateway {arn: {ARN}})
-    ON CREATE SET tgw.firstseen = timestamp()
-    SET tgw.id = {TgwId},
+    MERGE (tgw:AWSTransitGateway {id: {ARN}})
+    ON CREATE SET tgw.firstseen = timestamp(), tgw.arn = {ARN}
+    SET tgw.tgw_id = {TgwId},
     tgw.ownerid = {OwnerId},
     tgw.state = {State},
     tgw.description = {Description},
@@ -82,7 +82,7 @@ def load_transit_gateways(neo4j_session, data, region, current_aws_account_id, a
 @timeit
 def _attach_shared_transit_gateway(neo4j_session, tgw, region, current_aws_account_id, aws_update_tag):
     attach_tgw = """
-    MERGE (tgw:AWSTransitGateway {arn: {ARN}})
+    MERGE (tgw:AWSTransitGateway {id: {ARN}})
     ON CREATE SET tgw.firstseen = timestamp()
     SET tgw.lastupdated = {aws_update_tag}
 
@@ -120,7 +120,7 @@ def load_tgw_attachments(neo4j_session, data, region, current_aws_account_id, aw
     SET r.lastupdated = {aws_update_tag}
 
     WITH tgwa
-    MATCH (tgw:AWSTransitGateway {id: {TransitGatewayId}})
+    MATCH (tgw:AWSTransitGateway {tgw_id: {TransitGatewayId}})
     MERGE (tgwa)-[attach:ATTACHED_TO]->(tgw)
     ON CREATE SET attach.firstseen = timestamp()
     SET attach.lastupdated = {aws_update_tag}
