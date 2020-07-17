@@ -36,6 +36,9 @@ def load_lambda_functions(neo4j_session, data, region, current_aws_account_id, a
     lambda.memory = {MemorySize},
     lambda.lastupdated = {aws_update_tag}
     WITH lambda
+    MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MERGE (owner)-[r:RESOURCE]->(lambda)
+    WITH lambda
     MATCH (role:AWSPrincipal{arn: {Role}})
     MERGE (lambda)-[r:STS_ASSUME_ROLE_ALLOW]->(role)
     ON CREATE SET r.firstseen = timestamp()
