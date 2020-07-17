@@ -14,6 +14,8 @@
   - [Relationships](#relationships-3)
 - [ProgrammingLanguage](#programminglanguage)
   - [Relationships](#relationships-4)
+- [Dependency::PythonLibrary](#dependencypythonlibrary)
+  - [Relationships](#relationships-5)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -149,4 +151,24 @@ Representation of a single Programming Language [language object](https://develo
 
     ```
     (ProgrammingLanguage)<-[LANGUAGE]-(GitHubRepository)
+    ```
+
+
+## Dependency::PythonLibrary
+
+Representation of a Python library as listed in a [requirements.txt](https://pip.pypa.io/en/stable/user_guide/#requirements-files) file.
+
+| Field | Description |
+|-------|-------------|
+|**id**|Concatenation of `{Requirement name}|{version number}`|
+|name|The name of the library|
+|version|Library version|
+|uri|URI of the library, if available|
+
+### Relationships
+
+- Software on Github repos can import Python libraries
+
+    ```
+    (GitHubRepository)-[:REQUIRES]->(PythonLibrary)
     ```

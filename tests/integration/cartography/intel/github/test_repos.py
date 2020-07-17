@@ -30,6 +30,14 @@ def _ensure_local_neo4j_has_test_languages_data(neo4j_session):
     )
 
 
+def _ensure_local_neo4j_has_test_python_lib_data(neo4j_session):
+    cartography.intel.github.repos.load_python_requirements(
+        neo4j_session,
+        TEST_UPDATE_TAG,
+        tests.data.github.repos.TRANSFORMED_REPOS_DATA['python_requirements'],
+    )
+
+
 def test_transform_and_load_repositories(neo4j_session):
     """
     Test that we can correctly transform and load GitHubRepository nodes to Neo4j.
@@ -189,4 +197,26 @@ def test_repository_to_languages(neo4j_session):
             'SampleRepo2',
         ),
     }
+    assert actual_nodes == expected_nodes
+
+
+def test_library_to_repo(neo4j_session):
+    """
+    Ensure that repositories are connected to Python libraries
+    """
+    # Create the path (:Repo1)-[:REQUIRES]->(:PythonLibrary{'Cartography'})<-[:REQUIRES]-(:Repo1),
+    # and test that exactly 2 repos are connected to the PythonLibrary.
+    _ensure_local_neo4j_has_test_repositories_data(neo4j_session)
+    _ensure_local_neo4j_has_test_python_lib_data(neo4j_session)
+    query = """
+    MATCH (repo:GitHubRepository)-[:REQUIRES]->(lib:PythonLibrary{id:'cartography|Unknown'})
+    RETURN count(repo) as repo_count
+    """
+    expected_repository_id = 'https://github.com/example_org/SampleRepo2'
+    nodes = neo4j_session.run(
+        query,
+        RepositoryId=expected_repository_id,
+    )
+    actual_nodes = {n['repo_count'] for n in nodes}
+    expected_nodes = {2}
     assert actual_nodes == expected_nodes

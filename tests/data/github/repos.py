@@ -30,6 +30,8 @@ GET_REPOS = [
             'login': 'example_org',
             '__typename': 'Organization',
         },
+        'requirements': {'text': 'cartography\nhttplib2>=0.7.0\njinja2\nlxml\n'},
+        'requirements3': None,
     }, {
         'name': 'SampleRepo2',
         'nameWithOwner': 'example_org/SampleRepo2',
@@ -60,6 +62,8 @@ GET_REPOS = [
             'url': 'https://github.com/example_org',
             'login': 'example_org', '__typename': 'Organization',
         },
+        'requirements': None,
+        'requirements3': {'text': 'cartography\nhttplib2>=0.7.0\njinja2\nlxml\n'},
     },
 ]
 
@@ -123,6 +127,57 @@ TRANSFORMED_REPOS_DATA = {
             'owner': 'example_org',
             'owner_id': 'https://github.com/example_org',
             'type': 'Organization',
+        },
+    ],
+    'python_requirements': [
+        {
+            'id': 'cartography|Unknown',
+            'name': 'cartography',
+            'repo_url': 'https://github.com/example_org/sample_repo',
+            'uri': None,
+            'version': 'Unknown',
+        }, {
+            'id': 'httplib2|0.7.0',
+            'name': 'httplib2',
+            'repo_url': 'https://github.com/example_org/sample_repo',
+            'uri': None,
+            'version': '0.7.0',
+        }, {
+            'id': 'jinja2|Unknown',
+            'name': 'jinja2',
+            'repo_url': 'https://github.com/example_org/sample_repo',
+            'uri': None,
+            'version': 'Unknown',
+        }, {
+            'id': 'lxml|Unknown',
+            'name': 'lxml',
+            'repo_url': 'https://github.com/example_org/sample_repo',
+            'uri': None,
+            'version': 'Unknown',
+        }, {
+            'id': 'cartography|Unknown',
+            'name': 'cartography',
+            'repo_url': 'https://github.com/example_org/SampleRepo2',
+            'uri': None,
+            'version': 'Unknown',
+        }, {
+            'id': 'httplib2|0.7.0',
+            'name': 'httplib2',
+            'repo_url': 'https://github.com/example_org/SampleRepo2',
+            'uri': None,
+            'version': '0.7.0',
+        }, {
+            'id': 'jinja2|Unknown',
+            'name': 'jinja2',
+            'repo_url': 'https://github.com/example_org/SampleRepo2',
+            'uri': None,
+            'version': 'Unknown',
+        }, {
+            'id': 'lxml|Unknown',
+            'name': 'lxml',
+            'repo_url': 'https://github.com/example_org/SampleRepo2',
+            'uri': None,
+            'version': 'Unknown',
         },
     ],
 }
