@@ -81,6 +81,12 @@ def fetch_all(token, api_url, organization, query, resource_type, field_name):
                 f"continuing with incomplete data",
             )
             break
+        except requests.exceptions.HTTPError as e:
+            logger.warning(
+                f"GitHub: Could not retrieve page of resource `{resource_type}` due to HTTP error."
+                f"Details: {e}; Continuing with incomplete data.",
+            )
+            break
         resource = resp['data']['organization'][resource_type]
         data.extend(resource[field_name])
         cursor = resource['pageInfo']['endCursor']

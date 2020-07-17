@@ -210,9 +210,20 @@ def _transform_python_requirements(repo_object, out_requirements_files):
             text_contents = req_file_contents['text']
             text_contents.replace('--no-binary ', '')
 
-            for req in requirements.parse(text_contents):
+            try:
+                parsed_list = requirements.parse(text_contents)
+            except ValueError as e:
+                logger.warning(
+                    f"Failed to parse {req_type}.txt in repo {repo_object['url']}, skipping."
+                    f"Details: {e}",
+                )
+                continue
+
+            for req in parsed_list:
                 if not req.name:
-                    logger.debug("Failed to parse req name {} for repo {}".format(req, repo_object['url']))
+                    logger.info(
+                        f"Could not get library name for an object in {repo_object['url']}'s {req_type}.txt, skipping.",
+                    )
                     continue
 
                 spec = 'Unknown'
