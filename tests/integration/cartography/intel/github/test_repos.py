@@ -212,11 +212,7 @@ def test_library_to_repo(neo4j_session):
     MATCH (repo:GitHubRepository)-[:REQUIRES]->(lib:PythonLibrary{id:'cartography|Unknown'})
     RETURN count(repo) as repo_count
     """
-    expected_repository_id = 'https://github.com/example_org/SampleRepo2'
-    nodes = neo4j_session.run(
-        query,
-        RepositoryId=expected_repository_id,
-    )
+    nodes = neo4j_session.run(query)
     actual_nodes = {n['repo_count'] for n in nodes}
     expected_nodes = {2}
     assert actual_nodes == expected_nodes
