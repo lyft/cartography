@@ -65,16 +65,16 @@ def test_load_lambda_relationships(neo4j_session):
     )
 
     expected_nodes = {
-        "arn:aws:lambda:us-west-2:000000000000:function:sample-function-1",
-        "arn:aws:lambda:us-west-2:000000000000:function:sample-function-2",
-        "arn:aws:lambda:us-west-2:000000000000:function:sample-function-3",
-        "arn:aws:lambda:us-west-2:000000000000:function:sample-function-4",
-        "arn:aws:lambda:us-west-2:000000000000:function:sample-function-5",
-        "arn:aws:lambda:us-west-2:000000000000:function:sample-function-6",
-        "arn:aws:lambda:us-west-2:000000000000:function:sample-function-7",
-        "arn:aws:lambda:us-west-2:000000000000:function:sample-function-8",
-        "arn:aws:lambda:us-west-2:000000000000:function:sample-function-9",
-        "arn:aws:lambda:us-west-2:000000000000:function:sample-function-10",
+        (TEST_ACCOUNT_ID, "arn:aws:lambda:us-west-2:000000000000:function:sample-function-1"),
+        (TEST_ACCOUNT_ID, "arn:aws:lambda:us-west-2:000000000000:function:sample-function-2"),
+        (TEST_ACCOUNT_ID, "arn:aws:lambda:us-west-2:000000000000:function:sample-function-3"),
+        (TEST_ACCOUNT_ID, "arn:aws:lambda:us-west-2:000000000000:function:sample-function-4"),
+        (TEST_ACCOUNT_ID, "arn:aws:lambda:us-west-2:000000000000:function:sample-function-5"),
+        (TEST_ACCOUNT_ID, "arn:aws:lambda:us-west-2:000000000000:function:sample-function-6"),
+        (TEST_ACCOUNT_ID, "arn:aws:lambda:us-west-2:000000000000:function:sample-function-7"),
+        (TEST_ACCOUNT_ID, "arn:aws:lambda:us-west-2:000000000000:function:sample-function-8"),
+        (TEST_ACCOUNT_ID, "arn:aws:lambda:us-west-2:000000000000:function:sample-function-9"),
+        (TEST_ACCOUNT_ID, "arn:aws:lambda:us-west-2:000000000000:function:sample-function-10"),
     }
 
     # Fetch relationships
