@@ -100,7 +100,7 @@ def load_ec2_instances(neo4j_session, data, region, current_aws_account_id, aws_
     """
 
     ingest_subnet = """
-    MATCH (EC2Instance{id: {InstanceId}})
+    MATCH (instance:EC2Instance{id: {InstanceId}})
     MERGE (subnet:EC2Subnet{subnetid: {SubnetId}})
     ON CREATE SET subnet.firstseen = timestamp()
     SET subnet.region = {Region},
