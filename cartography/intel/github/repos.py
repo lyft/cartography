@@ -9,7 +9,17 @@ from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 
-GITHUB_ORG_REPOS_PAGINATED_GRAPHQL = """
+# Add more to this list to retrieve and parse more blobs from GitHub repos
+
+
+def get_blob_expressions():
+    # This is a function and not only a static variable because we need function pointers and Python doesn't do hoisting
+    return [
+        ('requirements', 'HEAD:requirements.txt', _parse_python_requirements, ["version", "uri"]),
+    ]
+
+
+GITHUB_ORG_REPOS_PAGINATED_GRAPHQL = Template("""
     query($login: String!, $cursor: String) {
     organization(login: $login)
         {
@@ -51,18 +61,33 @@ GITHUB_ORG_REPOS_PAGINATED_GRAPHQL = """
                         login
                         __typename
                     }
-                    requirements:object(expression: "HEAD:requirements.txt") {
-                        ... on Blob {
-                            text
-                        }
-                    }
+                    $one_or_more_blob_expressions
                 }
             }
         }
     }
-    """
+    """)
 # Note: In the above query, `HEAD` references the default branch.
 # See https://stackoverflow.com/questions/48935381/github-graphql-api-default-branch-in-repository
+
+# This is now a single variable too because we also don't want to have too many copies of this running around in memory
+BLOB_EXPRESSIONS = get_blob_expressions()
+
+
+def _create_blob_expression(field_reference, git_revparse_expression):
+    template = Template("""
+                        $field_reference:object(expression: "$rev_expression") {
+                        ... on Blob {
+                            text
+                        }
+                    }
+    """)
+    return template.safe_substitute(field_reference=field_reference, rev_expression=git_revparse_expression)
+
+
+def _create_graphql():
+    expressions_as_str = "\n".join(f'{_create_blob_expression(expr[0], expr[1])}' for expr in BLOB_EXPRESSIONS)
+    return GITHUB_ORG_REPOS_PAGINATED_GRAPHQL.safe_substitute(one_or_more_blob_expressions=expressions_as_str)
 
 
 @timeit
@@ -76,7 +101,8 @@ def get(token, api_url, organization):
     :return: A list of dicts representing repos. See tests.data.github.repos for data shape.
     """
     # TODO: link the Github organization to the repositories
-    repos, _ = fetch_all(token, api_url, organization, GITHUB_ORG_REPOS_PAGINATED_GRAPHQL, 'repositories', 'nodes')
+    graphql_expression = _create_graphql()
+    repos, _ = fetch_all(token, api_url, organization, graphql_expression, 'repositories', 'nodes')
     return repos
 
 
@@ -135,10 +161,7 @@ def _transform_repo_objects(input_repo_object, out_repo_list):
     ssh_url = input_repo_object.get('sshUrl')
     git_url = _create_git_url_from_ssh_url(ssh_url) if ssh_url else None
 
-    python_requirements = []
-    _parse_python_requirements(input_repo_object, python_requirements)
-
-    out_repo_list.append({
+    processed_repo_object = {
         'id': input_repo_object['url'],
         'createdat': input_repo_object['createdAt'],
         'name': input_repo_object['name'],
@@ -156,8 +179,28 @@ def _transform_repo_objects(input_repo_object, out_repo_list):
         'url': input_repo_object['url'],
         'sshurl': ssh_url,
         'updatedat': input_repo_object['updatedAt'],
-        'python_requirements': python_requirements,
-    })
+    }
+
+    # Each repo blob gets its own key in `processed_repo_object` that points to a list of its own objects
+    processed_blob_objects = _process_blobs(input_repo_object)
+    for field_reference in processed_blob_objects.keys():
+        processed_repo_object[field_reference] = processed_blob_objects[field_reference]
+    out_repo_list.append(processed_repo_object)
+
+
+def _process_blobs(repo_object):
+    result = {}
+
+    for expr in BLOB_EXPRESSIONS:
+        # Handle blob-specific parsing, e.g. _parse_python_requirements
+        parse_func = expr[2]
+        out_parsed_blobs = []
+        parse_func(repo_object, out_parsed_blobs)
+
+        # E.g. `requirements`
+        field_reference = expr[0]
+        result[field_reference] = out_parsed_blobs
+    return result
 
 
 def _transform_repo_owners(owner_id, repo, repo_owners):
@@ -353,6 +396,31 @@ def load_github_owners(session, update_tag, repo_owners):
 
 
 @timeit
+def load_blobs(neo4j_session, update_tag, processed_blob_objects, blob_fields):
+    set_statement = "SET " + ', '.join(f'b.{field} = blob.{field}' for field in blob_fields)
+
+    query = Template("""
+    UNWIND {Blobs} AS blob
+        MERGE (b:$label:Dependency{id: blob.id})
+        ON CREATE SET b.firstseen = timestamp(),
+        $set_statement,
+        b.lastupdated = {UpdateTag}
+
+        WITH b, blob
+        MATCH (repo:GitHubRepository{id: blob.repo_url})
+        MERGE (repo)-[r:REQUIRES]->(b)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {UpdateTag}
+    """)
+
+    neo4j_session.run(
+        query.safe_substitute(set_statement=set_statement),
+        Requirements=processed_blob_objects,
+        UpdateTag=update_tag,
+    )
+
+
+@timeit
 def load_python_requirements(neo4j_session, update_tag, requirements_objects):
     query = """
     UNWIND {Requirements} AS req
@@ -376,8 +444,20 @@ def load_python_requirements(neo4j_session, update_tag, requirements_objects):
     )
 
 
+def load(common_job_parameters, neo4j_session, repo_data):
+    load_github_repos(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data['repos'])
+    load_github_owners(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data['repo_owners'])
+    load_github_languages(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data['repo_languages'])
+
+    # Load node data on blob objects in the repo you want to represent as nodes
+    for expr in BLOB_EXPRESSIONS:
+        field_expression = expr[0]
+        blob_fields = expr[3]
+        load_blobs(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data[field_expression], blob_fields)
+
+
 @timeit
-def sync(neo4j_session, common_job_parameters, github_api_key, github_url, organization, custom_graphql_field=None):
+def sync(neo4j_session, common_job_parameters, github_api_key, github_url, organization):
     """
     Performs the sequential tasks to collect, transform, and sync github data
     :param neo4j_session: Neo4J session for database interface
@@ -390,7 +470,4 @@ def sync(neo4j_session, common_job_parameters, github_api_key, github_url, organ
     logger.debug("Syncing GitHub repos")
     repos_json = get(github_api_key, github_url, organization)
     repo_data = transform(repos_json)
-    load_github_repos(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data['repos'])
-    load_github_owners(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data['repo_owners'])
-    load_github_languages(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data['repo_languages'])
-    load_python_requirements(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data['python_requirements'])
+    load(common_job_parameters, neo4j_session, repo_data)
