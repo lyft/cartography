@@ -304,15 +304,15 @@ def cleanup_rpr(neo4j_session, node_label, relationship_name, update_tag, curren
     statement.run(neo4j_session)
 
 
-def parse_permission_relationship_file(file):
+def parse_permission_relationships_file(file_path):
     try:
-        if not os.path.isabs(file):
-            file = os.path.join(os.getcwd(), file)
-        with open(file) as f:
+        if not os.path.isabs(file_path):
+            file_path = os.path.join(os.getcwd(), file_path)
+        with open(file_path) as f:
             relationship_mapping = yaml.load(f, Loader=yaml.FullLoader)
         return relationship_mapping
     except FileNotFoundError:
-        logger.warning(f"Permission relationshp mapping file {file} not found, skipping injestion ")
+        logger.warning(f"Permission relationships mapping file {file_path} not found, skipping ingestion")
         return []
 
 
@@ -328,7 +328,7 @@ def is_valid_rpr(rpr):
 def sync(neo4j_session, account_id, update_tag, common_job_parameters):
     logger.info("Syncing Permission Relationships for account '%s'.", account_id)
     principals = get_principals_for_account(neo4j_session, account_id)
-    relationship_mapping = parse_permission_relationship_file(common_job_parameters["permission_relationship_file"])
+    relationship_mapping = parse_permission_relationships_file(common_job_parameters["permission_relationships_file"])
     for rpr in relationship_mapping:
         if not is_valid_rpr(rpr):
             raise ValueError("""
