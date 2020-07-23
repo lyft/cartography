@@ -304,15 +304,15 @@ def cleanup_rpr(neo4j_session, node_label, relationship_name, update_tag, curren
     statement.run(neo4j_session)
 
 
-def parse_permission_relationship_file(file):
+def parse_permission_relationship_file(file_path):
     try:
-        if not os.path.isabs(file):
-            file = os.path.join(os.getcwd(), file)
-        with open(file) as f:
+        if not os.path.isabs(file_path):
+            file_path = os.path.join(os.getcwd(), file_path)
+        with open(file_path) as f:
             relationship_mapping = yaml.load(f, Loader=yaml.FullLoader)
         return relationship_mapping
     except FileNotFoundError:
-        logger.warning(f"Permission relationshp mapping file {file} not found, skipping injestion ")
+        logger.warning(f"Permission relationshp mapping file {file_path} not found, skipping ingestion ")
         return []
 
 
