@@ -35,7 +35,7 @@ def test_load_github_organization_users(neo4j_session):
         """
         MATCH(user:GitHubUser)-[:MEMBER_OF]->(org:GitHubOrganization)
         RETURN user.id, org.id
-        """
+        """,
     )
     actual_nodes = {
         (
