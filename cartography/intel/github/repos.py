@@ -56,11 +56,6 @@ GITHUB_ORG_REPOS_PAGINATED_GRAPHQL = """
                             text
                         }
                     }
-                    requirements3:object(expression: "HEAD:requirements3.txt") {
-                        ... on Blob {
-                            text
-                        }
-                    }
                 }
             }
         }
@@ -96,17 +91,14 @@ def transform(repos_json):
     transformed_repo_list = []
     transformed_repo_languages = []
     transformed_repo_owners = []
-    transformed_requirements_files = []
     for repo_object in repos_json:
         _transform_repo_languages(repo_object['url'], repo_object, transformed_repo_languages)
         _transform_repo_objects(repo_object, transformed_repo_list)
         _transform_repo_owners(repo_object['owner']['url'], repo_object, transformed_repo_owners)
-        _transform_python_requirements(repo_object, transformed_requirements_files)
     results = {
         'repos': transformed_repo_list,
         'repo_languages': transformed_repo_languages,
         'repo_owners': transformed_repo_owners,
-        'python_requirements': transformed_requirements_files,
     }
     return results
 
@@ -143,6 +135,9 @@ def _transform_repo_objects(input_repo_object, out_repo_list):
     ssh_url = input_repo_object.get('sshUrl')
     git_url = _create_git_url_from_ssh_url(ssh_url) if ssh_url else None
 
+    python_requirements = []
+    _parse_python_requirements(input_repo_object, python_requirements)
+
     out_repo_list.append({
         'id': input_repo_object['url'],
         'createdat': input_repo_object['createdAt'],
@@ -161,6 +156,7 @@ def _transform_repo_objects(input_repo_object, out_repo_list):
         'url': input_repo_object['url'],
         'sshurl': ssh_url,
         'updatedat': input_repo_object['updatedAt'],
+        'python_requirements': python_requirements,
     })
 
 
@@ -196,51 +192,50 @@ def _transform_repo_languages(repo_url, repo, repo_languages):
             })
 
 
-def _transform_python_requirements(repo_object, out_requirements_files):
+def _parse_python_requirements(repo_object, out_requirements_files):
     """
     Performs data transformations for the requirements.txt and requirements3.txt files in a GitHub repo, if available.
     :param repo_object: The repo object.
     :param out_requirements_files: Output array to append transformed results to.
     :return: Nothing.
     """
-    for req_type in ['requirements', 'requirements3']:
-        req_file_contents = repo_object[req_type]
-        if req_file_contents and req_file_contents.get('text'):
-            # Remove --no-binary tags if present
-            text_contents = req_file_contents['text']
-            text_contents.replace('--no-binary ', '')
+    req_file_contents = repo_object['requirements']
+    if req_file_contents and req_file_contents.get('text'):
+        # Remove --no-binary tags if present
+        text_contents = req_file_contents['text']
+        text_contents.replace('--no-binary ', '')
 
-            try:
-                parsed_list = requirements.parse(text_contents)
-            except ValueError as e:
-                logger.warning(
-                    f"Failed to parse {req_type}.txt in repo {repo_object['url']}, skipping."
-                    f"Details: {e}",
+        try:
+            parsed_list = requirements.parse(text_contents)
+        except ValueError as e:
+            logger.warning(
+                f"Failed to parse requirements.txt in repo {repo_object['url']}, skipping."
+                f"Details: {e}",
+            )
+            return
+
+        for req in parsed_list:
+            if not req.name:
+                logger.info(
+                    f"Could not get library name for an object in {repo_object['url']}'s requirements.txt, skipping.",
                 )
                 continue
 
-            for req in parsed_list:
-                if not req.name:
-                    logger.info(
-                        f"Could not get library name for an object in {repo_object['url']}'s {req_type}.txt, skipping.",
-                    )
-                    continue
+            spec = 'Unknown'
+            if len(req.specs) > 0:
+                # We only want the version number not the specifier
+                spec = req.specs[0][1]
+            elif req.revision:
+                # For dynamic imports get the version from the uri if possible
+                spec = req.revision
 
-                spec = 'Unknown'
-                if len(req.specs) > 0:
-                    # We only want the version number not the specifier
-                    spec = req.specs[0][1]
-                elif req.revision:
-                    # For dynamic imports get the version from the uri if possible
-                    spec = req.revision
-
-                out_requirements_files.append({
-                    "id": f"{req.name}|{spec}",
-                    "name": req.name,
-                    "version": spec,
-                    "uri": req.uri,
-                    "repo_url": repo_object['url'],
-                })
+            out_requirements_files.append({
+                "id": f"{req.name}|{spec}",
+                "name": req.name,
+                "version": spec,
+                "uri": req.uri,
+                "repo_url": repo_object['url'],
+            })
 
 
 @timeit
@@ -382,7 +377,7 @@ def load_python_requirements(neo4j_session, update_tag, requirements_objects):
 
 
 @timeit
-def sync(neo4j_session, common_job_parameters, github_api_key, github_url, organization):
+def sync(neo4j_session, common_job_parameters, github_api_key, github_url, organization, custom_graphql_field=None):
     """
     Performs the sequential tasks to collect, transform, and sync github data
     :param neo4j_session: Neo4J session for database interface

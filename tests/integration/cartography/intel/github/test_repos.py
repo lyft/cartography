@@ -204,8 +204,8 @@ def test_library_to_repo(neo4j_session):
     """
     Ensure that repositories are connected to Python libraries
     """
-    # Create the path (:Repo1)-[:REQUIRES]->(:PythonLibrary{'Cartography'})<-[:REQUIRES]-(:Repo1),
-    # and test that exactly 2 repos are connected to the PythonLibrary.
+    # Create the path (:Repo1)-[:REQUIRES]->(:PythonLibrary{'Cartography'}),
+    # and test that exactly 1 repo is connected to the PythonLibrary.
     _ensure_local_neo4j_has_test_repositories_data(neo4j_session)
     _ensure_local_neo4j_has_test_python_lib_data(neo4j_session)
     query = """
@@ -214,5 +214,5 @@ def test_library_to_repo(neo4j_session):
     """
     nodes = neo4j_session.run(query)
     actual_nodes = {n['repo_count'] for n in nodes}
-    expected_nodes = {2}
+    expected_nodes = {1}
     assert actual_nodes == expected_nodes
