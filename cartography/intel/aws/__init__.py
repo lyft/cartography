@@ -110,7 +110,7 @@ def _sync_multiple_accounts(neo4j_session, accounts, sync_tag, common_job_parame
 def start_aws_ingestion(neo4j_session, config):
     common_job_parameters = {
         "UPDATE_TAG": config.update_tag,
-        "permission_relationship_file": config.permission_relationship_file,
+        "permission_relationships_file": config.permission_relationships_file,
     }
     try:
         boto3_session = boto3.Session()

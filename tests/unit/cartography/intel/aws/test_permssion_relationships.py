@@ -442,12 +442,12 @@ def test_multiple_comma():
 
 
 def test_permission_file_load():
-    mapping = permission_relationships.parse_permission_relationship_file(
+    mapping = permission_relationships.parse_permission_relationships_file(
         "cartography/data/permission_relationships.yaml",
     )
     assert mapping
 
 
 def test_permission_file_load_exception():
-    mapping = permission_relationships.parse_permission_relationship_file("notarealfile")
+    mapping = permission_relationships.parse_permission_relationships_file("notarealfile")
     assert not mapping

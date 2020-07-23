@@ -110,7 +110,7 @@ def test_map_permissions(neo4j_session):
         neo4j_session,
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG, {
-            "permission_relationship_file": "cartography/data/permission_relationships.yaml",
+            "permission_relationships_file": "cartography/data/permission_relationships.yaml",
         },
     )
     results = neo4j_session.run("MATCH ()-[r:CAN_READ]->() RETURN count(r) as rel_count")
