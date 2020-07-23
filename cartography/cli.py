@@ -180,7 +180,7 @@ class CLI:
             ),
         )
         parser.add_argument(
-            '--permission-relationships-file',
+            '--permission-relationship-file',
             type=str,
             default="cartography/data/permission_relationships.yaml",
             help=(
