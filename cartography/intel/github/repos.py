@@ -222,7 +222,7 @@ def _parse_python_requirements(repo_object, out_requirements_files):
                 continue
 
             spec = 'Unknown'
-            if len(req.specs) > 0:
+            if len(req.specs) == 1 and req.specs[0][0] == '==':
                 # We only want the version number not the specifier
                 spec = req.specs[0][1]
             elif req.revision:
