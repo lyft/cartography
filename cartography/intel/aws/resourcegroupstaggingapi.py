@@ -88,7 +88,6 @@ def load_tags(neo4j_session, tag_data, resource_type, region, aws_update_tag):
             SET r.lastupdated = {UpdateTag},
             r.firstseen = timestamp()
     """)
-
     query = INGEST_TAG_TEMPLATE.safe_substitute(
         resource_label=TAG_RESOURCE_TYPE_MAPPINGS[resource_type]['label'],
         property=TAG_RESOURCE_TYPE_MAPPINGS[resource_type]['property'],
