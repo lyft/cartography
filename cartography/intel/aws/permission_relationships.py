@@ -312,7 +312,11 @@ def parse_permission_relationships_file(file_path):
             relationship_mapping = yaml.load(f, Loader=yaml.FullLoader)
         return relationship_mapping
     except FileNotFoundError:
-        logger.warning(f"Permission relationships mapping file {file_path} not found, skipping ingestion")
+        logger.warning(
+            f"Permission relationships mapping file {file_path} not found, skipping sync stage {__name__}. "
+            f"If you want to run this sync, please explicitly set a value for --permission-relationships-file in the "
+            f"command line interface.",
+        )
         return []
 
 
@@ -328,7 +332,14 @@ def is_valid_rpr(rpr):
 def sync(neo4j_session, account_id, update_tag, common_job_parameters):
     logger.info("Syncing Permission Relationships for account '%s'.", account_id)
     principals = get_principals_for_account(neo4j_session, account_id)
-    relationship_mapping = parse_permission_relationships_file(common_job_parameters["permission_relationships_file"])
+    pr_file = common_job_parameters["permission_relationships_file"]
+    if not pr_file:
+        logger.warning(
+            f"Permission relationships file was not specified, skipping. If this is not expected, please check your "
+            f"value of --permission-relationships-file",
+        )
+        return
+    relationship_mapping = parse_permission_relationships_file(pr_file)
     for rpr in relationship_mapping:
         if not is_valid_rpr(rpr):
             raise ValueError("""
