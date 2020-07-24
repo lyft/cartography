@@ -377,6 +377,14 @@ def load_python_requirements(neo4j_session, update_tag, requirements_objects):
 
 
 @timeit
+def load(common_job_parameters, neo4j_session, repo_data):
+    load_github_repos(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data['repos'])
+    load_github_owners(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data['repo_owners'])
+    load_github_languages(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data['repo_languages'])
+    load_python_requirements(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data['python_requirements'])
+
+
+@timeit
 def sync(neo4j_session, common_job_parameters, github_api_key, github_url, organization, custom_graphql_field=None):
     """
     Performs the sequential tasks to collect, transform, and sync github data
@@ -390,7 +398,4 @@ def sync(neo4j_session, common_job_parameters, github_api_key, github_url, organ
     logger.debug("Syncing GitHub repos")
     repos_json = get(github_api_key, github_url, organization)
     repo_data = transform(repos_json)
-    load_github_repos(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data['repos'])
-    load_github_owners(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data['repo_owners'])
-    load_github_languages(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data['repo_languages'])
-    load_python_requirements(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data['python_requirements'])
+    load(common_job_parameters, neo4j_session, repo_data)
