@@ -83,12 +83,6 @@ def load_organization_users(neo4j_session, user_data, org_data, update_tag):
 
 @timeit
 def sync(neo4j_session, common_job_parameters, github_api_key, github_url, organization):
-    logger.info("Syncing GitHub user and org data.")
+    logger.debug("Syncing GitHub users")
     user_data, org_data = get(github_api_key, github_url, organization)
-    if user_data and org_data['url']:
-        load_organization_users(neo4j_session, user_data, org_data, common_job_parameters['UPDATE_TAG'])
-    else:
-        logger.warning(
-            'Could not perform GitHub user and org sync due to missing data; continuing on. Please review log '
-            'messages to diagnose.',
-        )
+    load_organization_users(neo4j_session, user_data, org_data, common_job_parameters['UPDATE_TAG'])

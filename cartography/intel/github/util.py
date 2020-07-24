@@ -57,7 +57,6 @@ def fetch_all(token, api_url, organization, query, resource_type, field_name):
     """
     Fetch and return all data items of the given `resource_type` and `field_name` from Github's paginated GraphQL API as
     a list, along with information on the organization that they belong to.
-    If we get a Timeout or HTTPError, log a warning and continue the sync with partial data.
     :param token: The Github API token as string.
     :param api_url: The Github v4 API endpoint as string.
     :param organization: The name of the target Github organization as string.
@@ -72,8 +71,7 @@ def fetch_all(token, api_url, organization, query, resource_type, field_name):
     """
     cursor = None
     has_next_page = True
-    resource_data = []
-    resp = None
+    data = []
     while has_next_page:
         try:
             resp = fetch_page(token, api_url, organization, query, cursor)
@@ -90,11 +88,8 @@ def fetch_all(token, api_url, organization, query, resource_type, field_name):
             )
             break
         resource = resp['data']['organization'][resource_type]
-        resource_data.extend(resource[field_name])
+        data.extend(resource[field_name])
         cursor = resource['pageInfo']['endCursor']
         has_next_page = resource['pageInfo']['hasNextPage']
-    org_data = {
-        'url': resp['data']['organization']['url'] if resp else None,
-        'login': resp['data']['organization']['login'] if resp else None,
-    }
-    return resource_data, org_data
+    org_data = {'url': resp['data']['organization']['url'], 'login': resp['data']['organization']['login']}
+    return data, org_data
