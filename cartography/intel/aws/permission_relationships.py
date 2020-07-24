@@ -312,7 +312,11 @@ def parse_permission_relationships_file(file_path):
             relationship_mapping = yaml.load(f, Loader=yaml.FullLoader)
         return relationship_mapping
     except FileNotFoundError:
-        logger.warning(f"Permission relationships mapping file {file_path} not found, skipping ingestion")
+        logger.warning(
+            f"Permission relationships mapping file {file_path} not found, skipping ingestion. If the referenced file "
+            f"path does not exist, then please explicitly set a value for --permission-relationships-file in the "
+            f"command line interface.",
+        )
         return []
 
 

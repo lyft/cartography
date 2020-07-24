@@ -28,6 +28,12 @@ def test_permission_relationships_file_arguments():
     cli_parsed_output = cli_object.parser.parse_args(argv)
     assert cli_parsed_output.permission_relationships_file == '/some/test/file.yaml'
 
+    # Test that the default RPR file is set if --permission-relationships-file is not set in the CLI
+    argv = []
+    cli_object = CLI(build_default_sync(), prog='cartography')
+    cli_parsed_output = cli_object.parser.parse_args(argv)
+    assert cli_parsed_output.permission_relationships_file == 'cartography/data/permission_relationships.yaml'
+
 
 def _create_base_account(neo4j_session):
     neo4j_session.run("MERGE (a:AWSAccount{id:{AccountId}})", AccountId=TEST_ACCOUNT_ID)
