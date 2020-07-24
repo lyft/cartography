@@ -1,7 +1,7 @@
 import logging
 from string import Template
 
-import requirements
+from packaging.requirements import Requirement
 
 from cartography.intel.github.util import fetch_all
 from cartography.util import timeit
@@ -205,10 +205,10 @@ def _transform_python_requirements(repo_object, out_requirements_files):
         text_contents.replace('--no-binary ', '')
 
         try:
-            parsed_list = requirements.parse(text_contents)
+            parsed_list = [Requirement(line) for line in text_contents.split("\n") if line]
         except ValueError as e:
             logger.warning(
-                f"Failed to parse requirements.txt in repo {repo_object['url']}, skipping."
+                f"Failed to parse requirements.txt in repo {repo_object['url']}, skipping. "
                 f"Details: {e}",
             )
             return
@@ -220,19 +220,20 @@ def _transform_python_requirements(repo_object, out_requirements_files):
                 )
                 continue
 
-            spec = 'Unknown'
-            if len(req.specs) == 1 and req.specs[0][0] == '==':
-                # We only want the version number not the specifier
-                spec = req.specs[0][1]
-            elif req.revision:
-                # For dynamic imports get the version from the uri if possible
-                spec = req.revision
+            # Set `spec` to a default value. Example values for str(req.specifier): "<4.0,>=3.0" or "==1.0.0".
+            spec = str(req.specifier)
+
+            if len(req.specifier._specs) == 1:
+                # req.specifier._specs is a frozenset so to manipulate it we turn it into a list and get the 1st item.
+                spec_str = str(list(req.specifier._specs)[0])
+                # If the spec is pinned to 1 version with ==, we only want the version number, not the full specifier.
+                spec = spec_str.strip('==') if spec_str.startswith('==') else spec
 
             out_requirements_files.append({
                 "id": f"{req.name}|{spec}",
                 "name": req.name,
-                "version": spec,
-                "uri": req.uri,
+                "specifier": spec,
+                "url": req.url,
                 "repo_url": repo_object['url'],
             })
 
@@ -358,8 +359,8 @@ def load_python_requirements(neo4j_session, update_tag, requirements_objects):
         MERGE (lib:PythonLibrary:Dependency{id: req.id})
         ON CREATE SET lib.firstseen = timestamp(),
         lib.name = req.name
-        SET lib.version = req.version,
-        lib.uri = req.uri,
+        SET lib.specifier = req.specifier,
+        lib.url = req.url,
         lib.lastupdated = {UpdateTag}
 
         WITH lib, req

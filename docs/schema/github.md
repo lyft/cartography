@@ -163,7 +163,7 @@ Representation of a Python library as listed in a [requirements.txt](https://pip
 |**id**|Concatenation of `{Requirement name}|{version number}`|
 |name|The name of the library|
 |version|Library version|
-|uri|URI of the library, if available|
+|url|URL of the library, if available|
 
 ### Relationships
 

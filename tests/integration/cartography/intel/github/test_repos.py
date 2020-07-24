@@ -183,6 +183,13 @@ def test_library_to_repo(neo4j_session):
     # Create the path (:Repo1)-[:REQUIRES]->(:PythonLibrary{'Cartography'})<-[:REQUIRES]-(:Repo1),
     # and test that exactly 1 repo is connected to the PythonLibrary.
     _ensure_local_neo4j_has_test_data(neo4j_session)
+
+    nodes = neo4j_session.run("""
+    MATCH (repo:GitHubRepository)-[:REQUIRES]->(lib:PythonLibrary{name:'cartography'})
+    RETURN lib.id
+    """)
+    print(list(n['lib.id'] for n in nodes))
+
     query = """
     MATCH (repo:GitHubRepository)-[:REQUIRES]->(lib:PythonLibrary{id:'cartography|0.1.0'})
     RETURN count(repo) as repo_count
