@@ -160,9 +160,9 @@ Representation of a Python library as listed in a [requirements.txt](https://pip
 
 | Field | Description |
 |-------|-------------|
-|**id**|Concatenation of `{Requirement name}|{version number}`|
+|**id**|Concatenation of `{Requirement name}|{specifier}`|
 |name|The name of the library|
-|version|Library version|
+|specifier|A string describing this library's version. If of the form "x.y.z", then the version was pinned with a `==` operator. Otherwise this is a more complex string such as  "<4.0,>=3.0".|
 |url|URL of the library, if available|
 
 ### Relationships
