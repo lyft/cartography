@@ -1,10 +1,11 @@
 import logging
 
+import botocore.exceptions
+
 from .util import get_botocore_config
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
-
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +14,17 @@ logger = logging.getLogger(__name__)
 @aws_handle_regions
 def get_transit_gateways(boto3_session, region):
     client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
-    return client.describe_transit_gateways()["TransitGateways"]
+    data = []
+    try:
+        data = client.describe_transit_gateways()["TransitGateways"]
+    except botocore.exceptions.ClientError as e:
+        # https://boto3.amazonaws.com/v1/documentation/api/latest/guide/error-handling.html#parsing-error-responses-and-catching-exceptions-from-aws-services
+        logger.warning(
+            "Could not retrieve Transit Gateways due to boto3 error %s: %s. Skipping.",
+            e.response['Error']['Code'],
+            e.response['Error']['Message'],
+        )
+    return data
 
 
 @timeit
