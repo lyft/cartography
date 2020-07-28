@@ -57,9 +57,9 @@ def get_zones_in_project(project_id, compute, max_results=None):
     except HttpError as e:
         reason = _get_error_reason(e)
         if reason == 'accessNotConfigured':
-            logger.debug(
+            logger.info(
                 (
-                    "Google Compute Engine API access is not configured for project %s. "
+                    "Google Compute Engine API access is not configured for project %s; skipping. "
                     "Full details: %s"
                 ),
                 project_id,
@@ -67,10 +67,20 @@ def get_zones_in_project(project_id, compute, max_results=None):
             )
             return None
         elif reason == 'notFound':
-            logger.debug(
+            logger.info(
                 (
                     "Project %s returned a 404 not found error. "
                     "Full details: %s"
+                ),
+                project_id,
+                e,
+            )
+            return None
+        elif reason == 'forbidden':
+            logger.info(
+                (
+                    "Your GCP identity does not have the compute.zones.list permission for project %s; skipping "
+                    "compute sync for this project. Full details: %s"
                 ),
                 project_id,
                 e,
