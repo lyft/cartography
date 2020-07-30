@@ -27,7 +27,7 @@ def call_github_api(query, variables, token, api_url):
         )
     except requests.exceptions.Timeout:
         # Add context and re-raise for callers to handle
-        logger.warning(f"GitHub: requests.get('{api_url}') timed out.")
+        logger.warning("GitHub: requests.get('%s') timed out.", api_url)
         raise
     response.raise_for_status()
     return response.json()
@@ -77,8 +77,8 @@ def fetch_all(token, api_url, organization, query, resource_type, field_name):
             resp = fetch_page(token, api_url, organization, query, cursor)
         except requests.exceptions.Timeout:
             logger.warning(
-                f"GitHub: Could not retrieve page of resource `{resource_type}` due to API timeout;"
-                f"continuing with incomplete data",
+                "GitHub: Could not retrieve page of resource %s due to API timeout; continuing with incomplete data",
+                resource_type,
             )
             break
         resource = resp['data']['organization'][resource_type]
