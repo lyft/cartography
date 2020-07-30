@@ -4,7 +4,6 @@ from cartography.intel.github.util import fetch_all
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
-
 logger = logging.getLogger(__name__)
 
 
