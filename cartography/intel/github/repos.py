@@ -2,6 +2,7 @@ import logging
 from string import Template
 
 from cartography.intel.github.util import fetch_all
+from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 
@@ -179,10 +180,10 @@ def _transform_repo_languages(repo_url, repo, repo_languages):
 
 
 @timeit
-def load_github_repos(session, update_tag, repo_data):
+def load_github_repos(neo4j_session, update_tag, repo_data):
     """
     Ingest the GitHub repository information
-    :param session: Neo4J session object for server communication
+    :param neo4j_session: Neo4J session object for server communication
     :param update_tag: Timestamp used to determine data freshness
     :param repo_data: repository data objects
     :return: None
@@ -222,7 +223,7 @@ def load_github_repos(session, update_tag, repo_data):
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = r.UpdateTag
     """
-    session.run(
+    neo4j_session.run(
         ingest_repo,
         RepoData=repo_data,
         UpdateTag=update_tag,
@@ -230,10 +231,10 @@ def load_github_repos(session, update_tag, repo_data):
 
 
 @timeit
-def load_github_languages(session, update_tag, repo_languages):
+def load_github_languages(neo4j_session, update_tag, repo_languages):
     """
     Ingest the relationships for repo languages
-    :param session: Neo4J session object for server communication
+    :param neo4j_session: Neo4J session object for server communication
     :param update_tag: Timestamp used to determine data freshness
     :param repo_languages: list of language to repo mappings
     :return: Nothing
@@ -252,7 +253,7 @@ def load_github_languages(session, update_tag, repo_languages):
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = {UpdateTag}"""
 
-    session.run(
+    neo4j_session.run(
         ingest_languages,
         Languages=repo_languages,
         UpdateTag=update_tag,
@@ -260,10 +261,10 @@ def load_github_languages(session, update_tag, repo_languages):
 
 
 @timeit
-def load_github_owners(session, update_tag, repo_owners):
+def load_github_owners(neo4j_session, update_tag, repo_owners):
     """
     Ingest the relationships for repo owners
-    :param session: Neo4J session object for server communication
+    :param neo4j_session: Neo4J session object for server communication
     :param update_tag: Timestamp used to determine data freshness
     :param repo_owners: list of owner to repo mappings
     :return: Nothing
@@ -283,7 +284,7 @@ def load_github_owners(session, update_tag, repo_owners):
 
         account_type = {'User': "GitHubUser", 'Organization': "GitHubOrganization"}
 
-        session.run(
+        neo4j_session.run(
             ingest_owner_template.safe_substitute(account_type=account_type[owner['type']]),
             Id=owner['owner_id'],
             UserName=owner['owner'],
@@ -303,9 +304,10 @@ def sync(neo4j_session, common_job_parameters, github_api_key, github_url, organ
     :param organization: The organization to query GitHub for
     :return: Nothing
     """
-    logger.debug("Syncing GitHub repos")
+    logger.info("Syncing GitHub repos")
     repos_json = get(github_api_key, github_url, organization)
     repo_data = transform(repos_json)
     load_github_repos(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data['repos'])
     load_github_owners(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data['repo_owners'])
     load_github_languages(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data['repo_languages'])
+    run_cleanup_job('github_repos_cleanup.json', neo4j_session, common_job_parameters)

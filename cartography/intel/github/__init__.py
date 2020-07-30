@@ -6,7 +6,6 @@ from requests import exceptions
 
 import cartography.intel.github.repos
 import cartography.intel.github.users
-from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -21,7 +20,7 @@ def start_github_ingestion(neo4j_session, config):
     :return: None
     """
     if not config.github_config:
-        logger.debug('GitHub import is not configured - skipping this module. See docs to configure.')
+        logger.info('GitHub import is not configured - skipping this module. See docs to configure.')
         return
 
     auth_tokens = json.loads(base64.b64decode(config.github_config).decode())
@@ -47,8 +46,3 @@ def start_github_ingestion(neo4j_session, config):
             )
         except exceptions.RequestException as e:
             logger.error("Could not complete request to the GitHub API: {}", e)
-    run_cleanup_job(
-        'github_import_cleanup.json',
-        neo4j_session,
-        common_job_parameters,
-    )
