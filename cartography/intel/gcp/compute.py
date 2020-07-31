@@ -902,6 +902,7 @@ def sync_gcp_instances(neo4j_session, compute, project_id, zones, gcp_update_tag
     instance_responses = get_gcp_instance_responses(project_id, zones, compute)
     instance_list = transform_gcp_instances(instance_responses)
     load_gcp_instances(neo4j_session, instance_list, gcp_update_tag)
+    # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gcp_instances(neo4j_session, common_job_parameters)
 
 
@@ -919,6 +920,7 @@ def sync_gcp_vpcs(neo4j_session, compute, project_id, gcp_update_tag, common_job
     vpc_res = get_gcp_vpcs(project_id, compute)
     vpcs = transform_gcp_vpcs(vpc_res)
     load_gcp_vpcs(neo4j_session, vpcs, gcp_update_tag)
+    # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gcp_vpcs(neo4j_session, common_job_parameters)
 
 
@@ -928,6 +930,7 @@ def sync_gcp_subnets(neo4j_session, compute, project_id, regions, gcp_update_tag
         subnet_res = get_gcp_subnets(project_id, r, compute)
         subnets = transform_gcp_subnets(subnet_res)
         load_gcp_subnets(neo4j_session, subnets, gcp_update_tag)
+        # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
         cleanup_gcp_subnets(neo4j_session, common_job_parameters)
 
 
@@ -944,6 +947,7 @@ def sync_gcp_firewall_rules(neo4j_session, compute, project_id, gcp_update_tag, 
     fw_response = get_gcp_firewall_ingress_rules(project_id, compute)
     fw_list = transform_gcp_firewall(fw_response)
     load_gcp_ingress_firewalls(neo4j_session, fw_list, gcp_update_tag)
+    # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gcp_firewall_rules(neo4j_session, common_job_parameters)
 
 
