@@ -28,13 +28,12 @@ def get_gke_clusters(container, project_id):
         res = req.execute()
         return res
     except HttpError as e:
-        err_as_dict = json.loads(e.content.decode('utf-8'))
-        status = err_as_dict['error']['status']
-        if status == 'PERMISSION_DENIED':
+        err = json.loads(e.content.decode('utf-8'))['error']
+        if err['status'] == 'PERMISSION_DENIED':
             logger.warning(
                 (
                     "Could not retrieve GKE clusters on project %s due to permissions issue. Code: %s, Message: %s"
-                ), project_id, err_as_dict['error']['code'], err_as_dict['error']['message'],
+                ), project_id, err['code'], err['message'],
             )
             return {}
         else:
