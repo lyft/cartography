@@ -127,7 +127,8 @@ def _services_enabled_on_project(serviceusage, project_id):
     except googleapiclient.discovery.HttpError as http_error:
         http_error = json.loads(http_error.content.decode('utf-8'))
         # This is set to log-level `info` because Google creates many projects under the hood that cartography cannot
-        # audit (e.g. adding a script to a Google spreadsheet) and we don't need to emit a warning for these projects.
+        # audit (e.g. adding a script to a Google spreadsheet causes a project to get created) and we don't need to emit
+        # a warning for these projects.
         logger.info(
             f"HttpError when trying to get enabled services on project {project_id}. "
             f"Code: {http_error['error']['code']}, Message: {http_error['error']['message']}. "
