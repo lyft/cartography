@@ -384,7 +384,7 @@ def sync_assumerole_relationships(neo4j_session, current_aws_account_id, aws_upd
     potential_matches = [(r["source_arn"], r["target_arn"]) for r in results]
     for source_arn, target_arn in potential_matches:
         policies = get_policies_for_principal(neo4j_session, source_arn)
-        if principal_allowed_on_resource(policies, target_arn, "sts:AssumeRole"):
+        if principal_allowed_on_resource(policies, target_arn, ["sts:AssumeRole"]):
             neo4j_session.run(
                 ingest_policies_assume_role,
                 SourceArn=source_arn,
