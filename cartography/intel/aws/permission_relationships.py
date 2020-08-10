@@ -131,6 +131,8 @@ def principal_allowed_on_resource(policies, resource_arn, permissions):
     Returns:
         [bool] -- True if the policies allow the permission against the resource
     """
+    if not isinstance(permissions, list):
+        raise ValueError("permissions is not a list")
     granted = False
     for _, statements in policies.items():
         allowed, explicit_deny = evaluate_policy_for_permission(statements, permissions, resource_arn)
