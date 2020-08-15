@@ -43,8 +43,8 @@ def test_get_state_detectors(neo4j_session):
     shortcut_serializer = ShortcutSchema()
     storage = FileSystem
 
-    file_1 = "2019 - 01 - 01_00_00_02.json"
-    file_2 = "2019 - 01 - 01_00_00_01.json"
+    file_1 = "2019-01-01_00_00_02.json"
+    file_2 = "2019-01-01_00_00_01.json"
 
     get_query_state(neo4j_session, query_directory, state_serializer, storage, file_1)
     add_shortcut(FileSystem(), ShortcutSchema(), query_directory, "most-recent", file_1)
