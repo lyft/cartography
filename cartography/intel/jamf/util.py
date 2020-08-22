@@ -2,7 +2,7 @@ import logging
 
 import requests.auth
 
-from cartography.util import timeit
+from cartography.util.metrics import timeit
 
 logger = logging.getLogger(__name__)
 # Connect and read timeouts of 60 seconds each; see https://requests.readthedocs.io/en/master/user/advanced/#timeouts

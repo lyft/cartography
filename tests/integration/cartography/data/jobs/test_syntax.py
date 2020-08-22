@@ -2,7 +2,8 @@ import sys
 
 import pytest
 
-import cartography.util
+import cartography.util.jobs
+
 if sys.version_info >= (3, 7):
     from importlib.resources import contents
 else:
@@ -20,7 +21,7 @@ def test_analysis_jobs_cypher_syntax(neo4j_session):
         if not job_name.endswith('.json'):
             continue
         try:
-            cartography.util.run_analysis_job(job_name, neo4j_session, parameters)
+            cartography.util.jobs.run_analysis_job(job_name, neo4j_session, parameters)
         except Exception as e:
             pytest.fail(f"run_analysis_job failed for analysis job '{job_name}' with exception: {e}")
 
@@ -36,6 +37,6 @@ def test_cleanup_jobs_cypher_syntax(neo4j_session):
         if not job_name.endswith('.json'):
             continue
         try:
-            cartography.util.run_cleanup_job(job_name, neo4j_session, parameters)
+            cartography.util.jobs.run_cleanup_job(job_name, neo4j_session, parameters)
         except Exception as e:
             pytest.fail(f"run_cleanup_job failed for cleanup job '{job_name}' with exception: {e}")

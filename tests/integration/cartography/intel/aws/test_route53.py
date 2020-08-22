@@ -1,5 +1,5 @@
 import cartography.intel.aws.route53
-import cartography.util
+import cartography.util.jobs
 import tests.data.aws.route53
 
 TEST_UPDATE_TAG = 123456789
@@ -101,8 +101,8 @@ def test_load_and_cleanup_dnspointsto_relationships(neo4j_session):
     cartography.intel.aws.elasticsearch.cleanup(
         neo4j_session, update_tag=new_update_tag, aws_account_id=TEST_AWS_ACCOUNTID,
     )
-    cartography.util.run_cleanup_job('aws_account_dns_cleanup.json', neo4j_session, new_job_parameters)
-    cartography.util.run_cleanup_job('aws_post_ingestion_dns_cleanup.json', neo4j_session, new_job_parameters)
+    cartography.util.jobs.run_cleanup_job('aws_account_dns_cleanup.json', neo4j_session, new_job_parameters)
+    cartography.util.jobs.run_cleanup_job('aws_post_ingestion_dns_cleanup.json', neo4j_session, new_job_parameters)
 
     # Verify that the AWSDNSRecord-->AWSDNSRecord relationships don't exist anymore
     result = neo4j_session.run(

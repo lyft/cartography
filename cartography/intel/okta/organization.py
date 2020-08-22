@@ -1,7 +1,7 @@
 # Okta intel module - Organization
 import logging
 
-from cartography.util import timeit
+from cartography.util.metrics import timeit
 
 logger = logging.getLogger(__name__)
 

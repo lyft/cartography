@@ -2,7 +2,7 @@
 import logging
 import re
 
-from cartography.util import timeit
+from cartography.util.metrics import timeit
 
 
 logger = logging.getLogger(__name__)

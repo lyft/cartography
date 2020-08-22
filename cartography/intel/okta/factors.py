@@ -4,7 +4,7 @@ import logging
 from okta import FactorsClient
 from okta.framework.OktaError import OktaError
 
-from cartography.util import timeit
+from cartography.util.metrics import timeit
 
 
 logger = logging.getLogger(__name__)

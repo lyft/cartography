@@ -3,8 +3,8 @@ import logging
 import boto3
 import botocore.exceptions
 
-from cartography.util import run_cleanup_job
-from cartography.util import timeit
+from cartography.util.jobs import run_cleanup_job
+from cartography.util.metrics import timeit
 
 logger = logging.getLogger(__name__)
 

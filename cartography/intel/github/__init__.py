@@ -6,7 +6,7 @@ from requests import exceptions
 
 import cartography.intel.github.repos
 import cartography.intel.github.users
-from cartography.util import timeit
+from cartography.util.metrics import timeit
 
 logger = logging.getLogger(__name__)
 

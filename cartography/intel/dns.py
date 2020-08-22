@@ -4,7 +4,7 @@ from string import Template
 import dns.rdatatype
 import dns.resolver
 
-from cartography.util import timeit
+from cartography.util.metrics import timeit
 
 logger = logging.getLogger(__name__)
 

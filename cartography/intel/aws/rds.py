@@ -1,8 +1,8 @@
 import logging
 
-from cartography.util import aws_handle_regions
-from cartography.util import run_cleanup_job
-from cartography.util import timeit
+from cartography.intel.aws.util import aws_handle_regions
+from cartography.util.jobs import run_cleanup_job
+from cartography.util.metrics import timeit
 
 logger = logging.getLogger(__name__)
 

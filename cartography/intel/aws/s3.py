@@ -5,9 +5,9 @@ import logging
 from botocore.exceptions import ClientError
 from policyuniverse.policy import Policy
 
-from cartography.util import run_analysis_job
-from cartography.util import run_cleanup_job
-from cartography.util import timeit
+from cartography.util.jobs import run_analysis_job
+from cartography.util.jobs import run_cleanup_job
+from cartography.util.metrics import timeit
 
 logger = logging.getLogger(__name__)
 

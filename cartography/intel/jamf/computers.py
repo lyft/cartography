@@ -1,8 +1,8 @@
 import logging
 
 from cartography.intel.jamf.util import call_jamf_api
-from cartography.util import run_cleanup_job
-from cartography.util import timeit
+from cartography.util.jobs import run_cleanup_job
+from cartography.util.metrics import timeit
 
 
 logger = logging.getLogger(__name__)

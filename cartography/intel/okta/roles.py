@@ -3,7 +3,7 @@ import json
 import logging
 
 from cartography.intel.okta.utils import create_api_client
-from cartography.util import timeit
+from cartography.util.metrics import timeit
 
 logger = logging.getLogger(__name__)
 

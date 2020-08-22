@@ -10,8 +10,8 @@ from cartography.intel.gcp import compute
 from cartography.intel.gcp import crm
 from cartography.intel.gcp import gke
 from cartography.intel.gcp import storage
-from cartography.util import run_analysis_job
-from cartography.util import timeit
+from cartography.util.jobs import run_analysis_job
+from cartography.util.metrics import timeit
 
 logger = logging.getLogger(__name__)
 Resources = namedtuple('Resources', 'crm_v1 crm_v2 compute storage container serviceusage')

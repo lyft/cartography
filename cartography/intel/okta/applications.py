@@ -7,7 +7,7 @@ from okta.framework.OktaError import OktaError
 
 from cartography.intel.okta.utils import create_api_client
 from cartography.intel.okta.utils import is_last_page
-from cartography.util import timeit
+from cartography.util.metrics import timeit
 
 
 logger = logging.getLogger(__name__)

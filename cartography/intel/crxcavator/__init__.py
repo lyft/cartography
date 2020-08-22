@@ -3,8 +3,8 @@ import logging
 from requests import exceptions
 
 from cartography.intel.crxcavator.crxcavator import sync_extensions
-from cartography.util import run_cleanup_job
-from cartography.util import timeit
+from cartography.util.jobs import run_cleanup_job
+from cartography.util.metrics import timeit
 
 logger = logging.getLogger(__name__)
 

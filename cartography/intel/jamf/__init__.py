@@ -1,5 +1,5 @@
 from cartography.intel.jamf import computers
-from cartography.util import timeit
+from cartography.util.metrics import timeit
 
 
 @timeit
