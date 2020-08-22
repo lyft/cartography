@@ -50,6 +50,14 @@ GITHUB_ORG_REPOS_PAGINATED_GRAPHQL = """
                         login
                         __typename
                     }
+                    collaborators(affiliation: OUTSIDE, first: 100) {
+                        edges {
+                            permission
+                        }
+                        nodes {
+                            url
+                        }
+                    }
                 }
             }
         }
