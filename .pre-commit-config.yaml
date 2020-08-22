@@ -3,7 +3,7 @@ default_language_version:
     python: python3
 repos:
 -   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v2.3.0
+    rev: v3.2.0
     hooks:
     -   id: check-docstring-first
     -   id: check-executables-have-shebangs
