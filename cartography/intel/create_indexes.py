@@ -1,6 +1,6 @@
 import logging
 
-from cartography.util import load_resource_binary
+from cartography.util.jobs import load_resource_binary
 
 logger = logging.getLogger(__name__)
 
