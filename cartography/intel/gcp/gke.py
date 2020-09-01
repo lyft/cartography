@@ -1,8 +1,8 @@
+import json
 import logging
 
 from googleapiclient.discovery import HttpError
 
-from cartography.intel.gcp import compute
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 @timeit
 def get_gke_clusters(container, project_id):
     """
-    Returns a list of GKE clusters within some given project.
+    Returns a GCP response object containing a list of GKE clusters within the given project.
 
     :type container: The GCP Container resource object
     :param container: The Container resource object created by googleapiclient.discovery.build()
@@ -28,38 +28,28 @@ def get_gke_clusters(container, project_id):
         res = req.execute()
         return res
     except HttpError as e:
-        reason = compute._get_error_reason(e)
-        if reason == 'invalid':
+        err = json.loads(e.content.decode('utf-8'))['error']
+        if err['status'] == 'PERMISSION_DENIED':
             logger.warning(
                 (
-                    "The project %s is invalid - returned a 400 invalid error."
-                    "Full details: %s"
-                ),
-                project_id,
-                e,
+                    "Could not retrieve GKE clusters on project %s due to permissions issue. Code: %s, Message: %s"
+                ), project_id, err['code'], err['message'],
             )
-            return {}
-        elif reason == 'forbidden':
-            logger.warning(
-                (
-                    "You do not have container.projects.zones.clusters.list access to the project %s. "
-                    "Full details: %s"
-                ), project_id, e, )
             return {}
         else:
             raise
 
 
 @timeit
-def load_gke_clusters(neo4j_session, gke_list, project_id, gcp_update_tag):
+def load_gke_clusters(neo4j_session, cluster_resp, project_id, gcp_update_tag):
     """
     Ingest GCP GKE Clusters to Neo4j
 
     :type neo4j_session: Neo4j session object
     :param neo4j session: The Neo4j session object
 
-    :type gke_list: list
-    :param gke_list: List of GCP GKE Clusters to inject
+    :type cluster_resp: Dict
+    :param cluster_resp: A cluster response object from the GKE API
 
     :type gcp_update_tag: timestamp
     :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
@@ -106,7 +96,7 @@ def load_gke_clusters(neo4j_session, gke_list, project_id, gcp_update_tag):
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {gcp_update_tag}
     """
-    for cluster in gke_list.get('clusters', []):
+    for cluster in cluster_resp.get('clusters', []):
         neo4j_session.run(
             query,
             ProjectId=project_id,
@@ -196,4 +186,5 @@ def sync_gke_clusters(neo4j_session, container, project_id, gcp_update_tag, comm
     logger.info("Syncing Compute objects for project %s.", project_id)
     gke_res = get_gke_clusters(container, project_id)
     load_gke_clusters(neo4j_session, gke_res, project_id, gcp_update_tag)
+    # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gke_clusters(neo4j_session, common_job_parameters)

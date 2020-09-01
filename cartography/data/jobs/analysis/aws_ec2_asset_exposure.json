@@ -6,7 +6,7 @@
     "iterationsize": 1000
   },
   {
-    "query": "MATCH (:IpRange{id: '0.0.0.0/0'})-[:MEMBER_OF_IP_RULE]->(:IpPermissionInbound)-[:MEMBER_OF_EC2_SECURITY_GROUP]->(group:EC2SecurityGroup)<-[:MEMBER_OF_EC2_SECURITY_GROUP|NETWORK_INTERFACE*..2]-(instance:EC2Instance)\nWITH instance\nWHERE (EXISTS(instance.publicdnsname) AND instance.publicdnsname <> '') AND (NOT EXISTS(instance.exposed_internet_type)) OR (NOT 'direct' IN instance.exposed_internet_type)\nSET instance.exposed_internet = true, instance.exposed_internet_type = coalesce(instance.exposed_internet_type , []) + 'direct';",
+    "query": "MATCH (:IpRange{id: '0.0.0.0/0'})-[:MEMBER_OF_IP_RULE]->(:IpPermissionInbound)-[:MEMBER_OF_EC2_SECURITY_GROUP]->(group:EC2SecurityGroup)<-[:MEMBER_OF_EC2_SECURITY_GROUP|NETWORK_INTERFACE*..2]-(instance:EC2Instance)\nWITH instance\nWHERE (EXISTS(instance.publicipaddress)) AND (NOT EXISTS(instance.exposed_internet_type)) OR (NOT 'direct' IN instance.exposed_internet_type)\nSET instance.exposed_internet = true, instance.exposed_internet_type = coalesce(instance.exposed_internet_type , []) + 'direct';",
     "iterative": false
   },
   {

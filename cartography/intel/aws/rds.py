@@ -30,7 +30,8 @@ def load_rds_instances(neo4j_session, data, region, current_aws_account_id, aws_
     ingest_rds_instance = """
     MERGE (rds:RDSInstance{id: {DBInstanceArn}})
     ON CREATE SET rds.firstseen = timestamp()
-    SET rds.db_instance_identifier = {DBInstanceIdentifier},
+    SET rds.arn = {DBInstanceArn},
+    rds.db_instance_identifier = {DBInstanceIdentifier},
     rds.db_instance_class = {DBInstanceClass},
     rds.engine = {Engine},
     rds.master_username = {MasterUsername},
