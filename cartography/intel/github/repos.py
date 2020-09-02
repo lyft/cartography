@@ -214,7 +214,7 @@ def _transform_python_requirements(repo_object, out_requirements_files):
                     parsed_list.append(req)
             except ValueError as e:
                 logger.info(
-                    f"Failed to parse line [{line}] in repo {repo_object['url']}'s requirements.txt, skipping. "
+                    f"Failed to parse line \"{line}\" in repo {repo_object['url']}'s requirements.txt; skipping. "
                     f"Details: {e}.",
                 )
                 continue
