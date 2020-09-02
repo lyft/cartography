@@ -61,6 +61,8 @@ GET_REPOS = [
             'url': 'https://github.com/example_org',
             'login': 'example_org', '__typename': 'Organization',
         },
-        'requirements': {'text': 'cartography==0.1.0\nhttplib2>=0.7.0\njinja2\nlxml\n# This is a comment line and should be ignored\n'},
+        'requirements': {
+            'text': 'cartography==0.1.0\nhttplib2>=0.7.0\njinja2\nlxml\n# This is a comment line to be ignored\n',
+        },
     },
 ]
