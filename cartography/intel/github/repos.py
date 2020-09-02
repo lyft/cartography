@@ -205,14 +205,19 @@ def _transform_python_requirements(repo_object, out_requirements_files):
         text_contents = req_file_contents['text']
         text_contents.replace('--no-binary ', '')
 
-        try:
-            parsed_list = [Requirement(line) for line in text_contents.split("\n") if line]
-        except ValueError as e:
-            logger.warning(
-                f"Failed to parse requirements.txt in repo {repo_object['url']}, skipping. "
-                f"Details: {e}",
-            )
-            return
+        parsed_list = []
+        for line in text_contents.split("\n"):
+            try:
+                # Skip over empty lines
+                if line:
+                    req = Requirement(line)
+                    parsed_list.append(req)
+            except ValueError as e:
+                logger.info(
+                    f"Failed to parse line [{line}] in repo {repo_object['url']}'s requirements.txt, skipping. "
+                    f"Details: {e}.",
+                )
+                continue
 
         for req in parsed_list:
             if not req.name:
