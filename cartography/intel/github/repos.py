@@ -406,5 +406,5 @@ def sync(neo4j_session, common_job_parameters, github_api_key, github_url, organ
     load_github_repos(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data['repos'])
     load_github_owners(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data['repo_owners'])
     load_github_languages(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data['repo_languages'])
-    load_python_requirements(neo4j_session, common_job_parameters, repo_data['python_requirements'])
+    load_python_requirements(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data['python_requirements'])
     run_cleanup_job('github_repos_cleanup.json', neo4j_session, common_job_parameters)
