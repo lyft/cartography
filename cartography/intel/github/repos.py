@@ -340,7 +340,7 @@ def load_collaborators(neo4j_session, update_tag, collaborators):
 
     WITH u, user
     MATCH (repo:GitHubRepository{id: user.repo_url})
-    MERGE (repo)-[o:$rel_label]->(u)
+    MERGE (repo)<-[o:$rel_label]-(u)
     ON CREATE SET o.firstseen = timestamp()
     SET o.lastupdated = {UpdateTag}
     """)
