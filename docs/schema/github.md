@@ -54,10 +54,11 @@ Representation of a single GitHubRepository (repo) [repository object](https://d
     (GitHubOrganization)-[OWNER]->(GitHubRepository)
     ```
 
-- GitHubRepositories in an organization can have outside collaborators.
+- GitHubRepositories in an organization can have outside collaborators with different permissions, including ADMIN,
+WRITE, MAINTAIN, TRIAGE, and READ ([Reference](https://docs.github.com/en/graphql/reference/enums#repositorypermission)).
 
     ```
-    (GitHubUser)<-[:OUTSIDE_COLLABORATOR]-(GitHubRepository)
+    (GitHubUser)<-[:OUTSIDE_COLLAB_{ACTION}]-(GitHubRepository)
     ```
 
 - GitHubRepositories use ProgrammingLanguages
@@ -117,10 +118,11 @@ Representation of a single GitHubUser [user object](https://developer.github.com
     (GitHubUser)-[OWNER]->(GitHubRepository)
     ```
 
-- GitHubRepositories in an organization can have outside collaborators.
+- GitHubRepositories in an organization can have outside collaborators with different permissions, including ADMIN,
+WRITE, MAINTAIN, TRIAGE, and READ ([Reference](https://docs.github.com/en/graphql/reference/enums#repositorypermission)).
 
     ```
-    (GitHubUser)<-[:OUTSIDE_COLLABORATOR]-(GitHubRepository)
+    (GitHubUser)<-[:OUTSIDE_COLLAB_{ACTION}]-(GitHubRepository)
     ```
 
 ## GitHubBranch

@@ -93,7 +93,8 @@ def transform(repos_json):
     transformed_repo_list = []
     transformed_repo_languages = []
     transformed_repo_owners = []
-    transformed_collaborators = []
+    # See https://docs.github.com/en/graphql/reference/enums#repositorypermission
+    transformed_collaborators = {'ADMIN': [], 'MAINTAIN': [], 'READ': [], 'TRIAGE': [], 'WRITE': []}
     for repo_object in repos_json:
         _transform_repo_languages(repo_object['url'], repo_object, transformed_repo_languages)
         _transform_repo_objects(repo_object, transformed_repo_list)
@@ -199,15 +200,16 @@ def _transform_collaborators(collaborators, repo_url, transformed_collaborators)
     Output data shape = [{permission, repo_url, url (the user's URL), login, name}, ...]
     :param collaborators: See cartography.tests.data.github.repos for data shape.
     :param repo_url: The URL of the GitHub repo.
-    :param transformed_collaborators: Output array to append transformed results to.
+    :param transformed_collaborators: Output dict. Data shape =
+    {'ADMIN': [{ user }, ...], 'MAINTAIN': [{ user }, ...], 'READ': [ ... ], 'TRIAGE': [ ... ], 'WRITE': [ ... ]}
     :return: Nothing.
     """
     # `collaborators` is sometimes None
     if collaborators:
         for idx, user in enumerate(collaborators['nodes']):
-            user['permission'] = collaborators['edges'][idx]['permission']
+            user_permission = collaborators['edges'][idx]['permission']
             user['repo_url'] = repo_url
-            transformed_collaborators.append(user)
+            transformed_collaborators[user_permission].append(user)
 
 
 @timeit
@@ -326,7 +328,7 @@ def load_github_owners(neo4j_session, update_tag, repo_owners):
 
 @timeit
 def load_collaborators(neo4j_session, update_tag, collaborators):
-    query = """
+    query = Template("""
     UNWIND {UserData} as user
 
     MERGE (u:GitHubUser{id: user.url})
@@ -338,15 +340,17 @@ def load_collaborators(neo4j_session, update_tag, collaborators):
 
     WITH u, user
     MATCH (repo:GitHubRepository{id: user.repo_url})
-    MERGE (repo)-[o:OUTSIDE_COLLABORATOR]->(u)
+    MERGE (repo)-[o:$rel_label]->(u)
     ON CREATE SET o.firstseen = timestamp()
     SET o.lastupdated = {UpdateTag}
-    """
-    neo4j_session.run(
-        query,
-        UserData=collaborators,
-        UpdateTag=update_tag,
-    )
+    """)
+    for collab_type in collaborators.keys():
+        relationship_label = f"OUTSIDE_COLLAB_{collab_type}"
+        neo4j_session.run(
+            query.safe_substitute(rel_label=relationship_label),
+            UserData=collaborators[collab_type],
+            UpdateTag=update_tag,
+        )
 
 
 @timeit

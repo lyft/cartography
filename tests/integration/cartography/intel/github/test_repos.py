@@ -180,7 +180,7 @@ def test_repository_to_languages(neo4j_session):
 def test_repository_to_collaborators(neo4j_session):
     _ensure_local_neo4j_has_test_data(neo4j_session)
     nodes = neo4j_session.run("""
-    MATCH (repo:GitHubRepository{name:"cartography"})-[:OUTSIDE_COLLABORATOR]->(user:GitHubUser)
+    MATCH (repo:GitHubRepository{name:"cartography"})-[:OUTSIDE_COLLAB_WRITE]->(user:GitHubUser)
     RETURN count(user.username) as collab_count
     """)
     actual_nodes = {n['collab_count'] for n in nodes}
