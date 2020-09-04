@@ -58,7 +58,7 @@ Representation of a single GitHubRepository (repo) [repository object](https://d
 WRITE, MAINTAIN, TRIAGE, and READ ([Reference](https://docs.github.com/en/graphql/reference/enums#repositorypermission)).
 
     ```
-    (GitHubUser)<-[:OUTSIDE_COLLAB_{ACTION}]-(GitHubRepository)
+    (GitHubUser)-[:OUTSIDE_COLLAB_{ACTION}]->(GitHubRepository)
     ```
 
 - GitHubRepositories use ProgrammingLanguages
@@ -122,7 +122,7 @@ Representation of a single GitHubUser [user object](https://developer.github.com
 WRITE, MAINTAIN, TRIAGE, and READ ([Reference](https://docs.github.com/en/graphql/reference/enums#repositorypermission)).
 
     ```
-    (GitHubUser)<-[:OUTSIDE_COLLAB_{ACTION}]-(GitHubRepository)
+    (GitHubUser)-[:OUTSIDE_COLLAB_{ACTION}]->(GitHubRepository)
     ```
 
 ## GitHubBranch
