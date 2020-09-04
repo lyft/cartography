@@ -56,6 +56,8 @@ GITHUB_ORG_REPOS_PAGINATED_GRAPHQL = """
                         }
                         nodes {
                             url
+                            login
+                            name
                         }
                     }
                 }
@@ -85,19 +87,23 @@ def transform(repos_json):
     Parses the JSON returned from GitHub API to create data for graph ingestion
     :param repos_json: the list of individual repository nodes from GitHub. See tests.data.github.repos.GET_REPOS for
     data shape.
-    :return: Dict containing the repos, repo->language mapping, and owners->repo mapping
+    :return: Dict containing the repos, repo->language mapping, owners->repo mapping, and outside collaborators->repo
+    mapping.
     """
     transformed_repo_list = []
     transformed_repo_languages = []
     transformed_repo_owners = []
+    transformed_collaborators = []
     for repo_object in repos_json:
         _transform_repo_languages(repo_object['url'], repo_object, transformed_repo_languages)
         _transform_repo_objects(repo_object, transformed_repo_list)
         _transform_repo_owners(repo_object['owner']['url'], repo_object, transformed_repo_owners)
+        _transform_collaborators(repo_object['collaborators'], repo_object['url'], transformed_collaborators)
     results = {
         'repos': transformed_repo_list,
         'repo_languages': transformed_repo_languages,
         'repo_owners': transformed_repo_owners,
+        'repo_collaborators': transformed_collaborators,
     }
     return results
 
@@ -185,6 +191,23 @@ def _transform_repo_languages(repo_url, repo, repo_languages):
                 'repo_id': repo_url,
                 'language_name': language['name'],
             })
+
+
+def _transform_collaborators(collaborators, repo_url, transformed_collaborators):
+    """
+    Performs data adjustments for outside collaborators in a GitHub repo.
+    Output data shape = [{permission, repo_url, url (the user's URL), login, name}, ...]
+    :param collaborators: See cartography.tests.data.github.repos for data shape.
+    :param repo_url: The URL of the GitHub repo.
+    :param transformed_collaborators: Output array to append transformed results to.
+    :return: Nothing.
+    """
+    # `collaborators` is sometimes None
+    if collaborators:
+        for idx, user in enumerate(collaborators['nodes']):
+            user['permission'] = collaborators['edges'][idx]['permission']
+            user['repo_url'] = repo_url
+            transformed_collaborators.append(user)
 
 
 @timeit
@@ -302,6 +325,39 @@ def load_github_owners(neo4j_session, update_tag, repo_owners):
 
 
 @timeit
+def load_collaborators(neo4j_session, update_tag, collaborators):
+    query = """
+    UNWIND {UserData} as user
+
+    MERGE (u:GitHubUser{id: user.url})
+    ON CREATE SET u.firstseen = timestamp()
+    SET u.fullname = user.name,
+    u.username = user.login,
+    u.permission = user.permission,
+    u.lastupdated = {UpdateTag}
+
+    WITH u, user
+    MATCH (repo:GitHubRepository{id: user.repo_url})
+    MERGE (repo)-[o:OUTSIDE_COLLABORATOR]->(u)
+    ON CREATE SET o.firstseen = timestamp()
+    SET o.lastupdated = {UpdateTag}
+    """
+    neo4j_session.run(
+        query,
+        UserData=collaborators,
+        UpdateTag=update_tag,
+    )
+
+
+@timeit
+def load(neo4j_session, common_job_parameters, repo_data):
+    load_github_repos(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data['repos'])
+    load_github_owners(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data['repo_owners'])
+    load_github_languages(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data['repo_languages'])
+    load_collaborators(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data['repo_collaborators'])
+
+
+@timeit
 def sync(neo4j_session, common_job_parameters, github_api_key, github_url, organization):
     """
     Performs the sequential tasks to collect, transform, and sync github data
@@ -315,7 +371,5 @@ def sync(neo4j_session, common_job_parameters, github_api_key, github_url, organ
     logger.info("Syncing GitHub repos")
     repos_json = get(github_api_key, github_url, organization)
     repo_data = transform(repos_json)
-    load_github_repos(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data['repos'])
-    load_github_owners(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data['repo_owners'])
-    load_github_languages(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data['repo_languages'])
+    load(neo4j_session, common_job_parameters, repo_data)
     run_cleanup_job('github_repos_cleanup.json', neo4j_session, common_job_parameters)

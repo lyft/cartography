@@ -54,6 +54,12 @@ Representation of a single GitHubRepository (repo) [repository object](https://d
     (GitHubOrganization)-[OWNER]->(GitHubRepository)
     ```
 
+- GitHubRepositories in an organization can have outside collaborators.
+
+    ```
+    (GitHubUser)<-[:OUTSIDE_COLLABORATOR]-(GitHubRepository)
+    ```
+
 - GitHubRepositories use ProgrammingLanguages
     ```
    (GitHubRepository)-[:LANGUAGE]->(ProgrammingLanguage)
@@ -99,6 +105,8 @@ Representation of a single GitHubUser [user object](https://developer.github.com
 | has_2fa_enabled | Whether the user has 2-factor authentication enabled |
 | role | Either 'ADMIN' (denoting that the user is an owner of a Github organization) or 'MEMBER' |
 | is_site_admin | Whether the user is a site admin |
+| permission | Only present if the user is an [outside collaborator](https://docs.github.com/en/graphql/reference/objects#repositorycollaboratorconnection) of this repo.
+`permission` is either ADMIN, MAINTAIN, READ, TRIAGE, or WRITE ([ref](https://docs.github.com/en/graphql/reference/enums#repositorypermission)).
 
 
 ### Relationships
@@ -107,6 +115,12 @@ Representation of a single GitHubUser [user object](https://developer.github.com
 
     ```
     (GitHubUser)-[OWNER]->(GitHubRepository)
+    ```
+
+- GitHubRepositories in an organization can have outside collaborators.
+
+    ```
+    (GitHubUser)<-[:OUTSIDE_COLLABORATOR]-(GitHubRepository)
     ```
 
 ## GitHubBranch

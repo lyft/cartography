@@ -3,30 +3,16 @@ import tests.data.github.repos
 
 
 TEST_UPDATE_TAG = 123456789
+TEST_JOB_PARAMS = {'UPDATE_TAG': TEST_UPDATE_TAG}
 TEST_GITHUB_URL = "https://fake.github.net/graphql/"
 
 
-def _ensure_local_neo4j_has_test_repositories_data(neo4j_session):
-    cartography.intel.github.repos.load_github_repos(
+def _ensure_local_neo4j_has_test_data(neo4j_session):
+    repo_data = cartography.intel.github.repos.transform(tests.data.github.repos.GET_REPOS)
+    cartography.intel.github.repos.load(
         neo4j_session,
-        TEST_UPDATE_TAG,
-        tests.data.github.repos.TRANSFORMED_REPOS_DATA['repos'],
-    )
-
-
-def _ensure_local_neo4j_has_test_owners_data(neo4j_session):
-    cartography.intel.github.repos.load_github_owners(
-        neo4j_session,
-        TEST_UPDATE_TAG,
-        tests.data.github.repos.TRANSFORMED_REPOS_DATA['repo_owners'],
-    )
-
-
-def _ensure_local_neo4j_has_test_languages_data(neo4j_session):
-    cartography.intel.github.repos.load_github_languages(
-        neo4j_session,
-        TEST_UPDATE_TAG,
-        tests.data.github.repos.TRANSFORMED_REPOS_DATA['repo_languages'],
+        TEST_JOB_PARAMS,
+        repo_data,
     )
 
 
@@ -48,6 +34,7 @@ def test_transform_and_load_repositories(neo4j_session):
     expected_nodes = {
         "https://github.com/example_org/sample_repo",
         "https://github.com/example_org/SampleRepo2",
+        "https://github.com/lyft/cartography",
     }
     assert actual_nodes == expected_nodes
 
@@ -89,7 +76,7 @@ def test_transform_and_load_repository_languages(neo4j_session):
     )
     actual_nodes = {n['pl.id'] for n in nodes}
     expected_nodes = {
-        'Python',
+        'Python', 'Makefile',
     }
     assert actual_nodes == expected_nodes
 
@@ -98,8 +85,7 @@ def test_repository_to_owners(neo4j_session):
     """
     Ensure that repositories are connected to owners.
     """
-    _ensure_local_neo4j_has_test_repositories_data(neo4j_session)
-    _ensure_local_neo4j_has_test_owners_data(neo4j_session)
+    _ensure_local_neo4j_has_test_data(neo4j_session)
     query = """
     MATCH(owner:GitHubOrganization)<-[:OWNER]-(repo:GitHubRepository{id:{RepositoryId}})
     RETURN owner.username, repo.id, repo.name
@@ -131,7 +117,7 @@ def test_repository_to_branches(neo4j_session):
     """
     Ensure that repositories are connected to branches.
     """
-    _ensure_local_neo4j_has_test_repositories_data(neo4j_session)
+    _ensure_local_neo4j_has_test_data(neo4j_session)
     query = """
     MATCH(branch:GitHubBranch)<-[:BRANCH]-(repo:GitHubRepository{id:{RepositoryId}})
     RETURN branch.name, repo.id, repo.name
@@ -163,8 +149,7 @@ def test_repository_to_languages(neo4j_session):
     """
     Ensure that repositories are connected to languages.
     """
-    _ensure_local_neo4j_has_test_repositories_data(neo4j_session)
-    _ensure_local_neo4j_has_test_languages_data(neo4j_session)
+    _ensure_local_neo4j_has_test_data(neo4j_session)
     query = """
     MATCH(lang:ProgrammingLanguage)<-[:LANGUAGE]-(repo:GitHubRepository{id:{RepositoryId}})
     RETURN lang.name, repo.id, repo.name
@@ -189,4 +174,15 @@ def test_repository_to_languages(neo4j_session):
             'SampleRepo2',
         ),
     }
+    assert actual_nodes == expected_nodes
+
+
+def test_repository_to_collaborators(neo4j_session):
+    _ensure_local_neo4j_has_test_data(neo4j_session)
+    nodes = neo4j_session.run("""
+    MATCH (repo:GitHubRepository{name:"cartography"})-[:OUTSIDE_COLLABORATOR]->(user:GitHubUser)
+    RETURN count(user.username) as collab_count
+    """)
+    actual_nodes = {n['collab_count'] for n in nodes}
+    expected_nodes = {5}
     assert actual_nodes == expected_nodes
