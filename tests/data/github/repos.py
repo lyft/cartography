@@ -30,6 +30,7 @@ GET_REPOS = [
             'login': 'example_org',
             '__typename': 'Organization',
         },
+        'collaborators': {'edges': [], 'nodes': []},
     }, {
         'name': 'SampleRepo2',
         'nameWithOwner': 'example_org/SampleRepo2',
@@ -60,69 +61,70 @@ GET_REPOS = [
             'url': 'https://github.com/example_org',
             'login': 'example_org', '__typename': 'Organization',
         },
+        'collaborators': None,
+    },
+    {
+        'name': 'cartography',
+        'nameWithOwner': 'lyft/cartography',
+        'primaryLanguage': {'name': 'Python'},
+        'url': 'https://github.com/lyft/cartography',
+        'sshUrl': 'git@github.com:lyft/cartography.git',
+        'createdAt': '2019-02-27T00:16:29Z',
+        'description': 'One graph to rule them all',
+        'updatedAt': '2020-09-02T18:35:17Z',
+        'homepageUrl': '',
+        'languages': {
+            'totalCount': 2,
+            'nodes': [{'name': 'Python'}, {'name': 'Makefile'}],
+        },
+        'defaultBranchRef': {
+            'name': 'master',
+            'id': 'putsomethinghere',
+        },
+        'isPrivate': False,
+        'isArchived': False,
+        'isDisabled': False,
+        'isLocked': False,
+        'owner': {
+            'url': 'https://github.com/example_org',
+            'login': 'example_org',
+            '__typename': 'Organization',
+        },
+        'collaborators': {
+            'edges': [
+                {'permission': 'WRITE'},
+                {'permission': 'WRITE'},
+                {'permission': 'WRITE'},
+                {'permission': 'WRITE'},
+                {'permission': 'WRITE'},
+            ],
+            'nodes': [
+                {
+                    'url': 'https://github.com/marco-lancini',
+                    'login': 'marco-lancini',
+                    'name': 'Marco Lancini',
+                },
+                {
+                    'url': 'https://github.com/sachafaust',
+                    'login': 'sachafaust',
+                    'name': 'Sacha Faust',
+                },
+                {
+                    'url': 'https://github.com/SecPrez',
+                    'login': 'SecPrez',
+                    'name': 'SecPrez',
+                },
+                {
+                    'url': 'https://github.com/ramonpetgrave64',
+                    'login': 'ramonpetgrave64',
+                    'name': 'Ramon Petgrave',
+                },
+                {
+                    'url': 'https://github.com/roshinis78',
+                    'login': 'roshinis78',
+                    'name': 'Roshini Saravanakumar',
+                },
+            ],
+        },
     },
 ]
-
-TRANSFORMED_REPOS_DATA = {
-    'repos': [
-        {
-            'id': 'https://github.com/example_org/sample_repo',
-            'createdat': '2011-02-15T18:40:15Z',
-            'name': 'sample_repo',
-            'fullname': 'example_org/sample_repo',
-            'description': 'My description',
-            'primarylanguage': {'name': 'Python'},
-            'homepage': '',
-            'defaultbranch': 'master',
-            'defaultbranchid': 'https://github.com/example_org/sample_repo:branch_ref_id==',
-            'private': True,
-            'disabled': False,
-            'archived': False,
-            'locked': True,
-            'giturl': 'git://github.com:example_org:sample_repo.git',
-            'url': 'https://github.com/example_org/sample_repo',
-            'sshurl': 'git@github.com:example_org/sample_repo.git',
-            'updatedat': '2020-01-02T20:10:09Z',
-        }, {
-            'id': 'https://github.com/example_org/SampleRepo2',
-            'createdat': '2011-09-21T18:55:16Z',
-            'name': 'SampleRepo2',
-            'fullname': 'example_org/SampleRepo2',
-            'description': 'Some other description',
-            'primarylanguage': {'name': 'Python'},
-            'homepage': 'http://example.com/',
-            'defaultbranch': 'master',
-            'defaultbranchid': 'https://github.com/example_org/SampleRepo2:other_branch_ref_id==',
-            'private': False,
-            'disabled': False,
-            'archived': False,
-            'locked': False,
-            'giturl': 'git://github.com:example_org:SampleRepo2.git',
-            'url': 'https://github.com/example_org/SampleRepo2',
-            'sshurl': 'git@github.com:example_org/SampleRepo2.git',
-            'updatedat': '2020-07-03T00:25:25Z',
-        },
-    ],
-    'repo_languages': [
-        {
-            'repo_id': 'https://github.com/example_org/sample_repo',
-            'language_name': 'Python',
-        }, {
-            'repo_id': 'https://github.com/example_org/SampleRepo2',
-            'language_name': 'Python',
-        },
-    ],
-    'repo_owners': [
-        {
-            'repo_id': 'https://github.com/example_org/sample_repo',
-            'owner': 'example_org',
-            'owner_id': 'https://github.com/example_org',
-            'type': 'Organization',
-        }, {
-            'repo_id': 'https://github.com/example_org/SampleRepo2',
-            'owner': 'example_org',
-            'owner_id': 'https://github.com/example_org',
-            'type': 'Organization',
-        },
-    ],
-}
