@@ -58,6 +58,8 @@ GITHUB_ORG_REPOS_PAGINATED_GRAPHQL = """
                             url
                             login
                             name
+                            email
+                            company
                         }
                     }
                 }
@@ -336,6 +338,8 @@ def load_collaborators(neo4j_session, update_tag, collaborators):
     SET u.fullname = user.name,
     u.username = user.login,
     u.permission = user.permission,
+    u.email = user.email,
+    u.company = user.company,
     u.lastupdated = {UpdateTag}
 
     WITH u, user
