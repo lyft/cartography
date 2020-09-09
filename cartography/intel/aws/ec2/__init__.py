@@ -5,8 +5,8 @@ from .instances import sync_ec2_instances
 from .key_pairs import sync_ec2_key_pairs
 from .load_balancer_v2s import sync_load_balancer_v2s
 from .load_balancers import sync_load_balancers
-from .subnets import sync_subnets
 from .security_groups import sync_ec2_security_groupinfo
+from .subnets import sync_subnets
 from .tgw import sync_transit_gateways
 from .vpc import sync_vpc
 from .vpc_peering import sync_vpc_peering

@@ -25,7 +25,7 @@ def load_subnets(neo4j_session, data, region, current_aws_account_id, aws_update
     ON CREATE SET snet.firstseen = timestamp()
     SET snet.lastupdated = {aws_update_tag}, snet.name = {NAME}, snet.cidr_block = {CIDR_BLOCK},
     snet.availableipaddresscount = {AVAILABLE_IP_ADDRESS_COUNT}, snet.defaultforaz = {DEFAULT_FOR_AZ},
-    snet.mapcustomerownediponlaunch = {MAP_CUSTOMER_OWNED_IP_ON_LAUNCH}, 
+    snet.mapcustomerownediponlaunch = {MAP_CUSTOMER_OWNED_IP_ON_LAUNCH},
     snet.mappubliciponlaunch = {MAP_PUBLIC_IP_ONLAUNCH}, snet.subnetarn = {SUBNET_ARN},
     snet.availabilityzone = {AVAILABILITY_ZONE}, snet.availabilityzoneid = {AVAILABILITY_ZONE_ID},
     snet.subnetid = {SUBNET_ID}
@@ -50,16 +50,16 @@ def load_subnets(neo4j_session, data, region, current_aws_account_id, aws_update
             ingest_subnet,
             ID=subnet_id,
             NAME=subnet["CidrBlock"],
-            SUBNET_ID = subnet['SubnetId'],
-            CIDR_BLOCK = subnet["CidrBlock"],
-            AVAILABLE_IP_ADDRESS_COUNT = subnet["AvailableIpAddressCount"],
-            DEFAULT_FOR_AZ = subnet["DefaultForAz"],
-            MAP_CUSTOMER_OWNED_IP_ON_LAUNCH = subnet["MapCustomerOwnedIpOnLaunch"],
-            MAP_PUBLIC_IP_ONLAUNCH = subnet["MapPublicIpOnLaunch"],
-            SUBNET_ARN = subnet['SubnetArn'],
-            AVAILABILITY_ZONE = subnet["AvailabilityZone"],
-            AVAILABILITY_ZONE_ID = subnet["AvailabilityZoneId"],
-            AWS_VPC_ID = subnet["VpcId"],
+            SUBNET_ID=subnet['SubnetId'],
+            CIDR_BLOCK=subnet["CidrBlock"],
+            AVAILABLE_IP_ADDRESS_COUNT=subnet["AvailableIpAddressCount"],
+            DEFAULT_FOR_AZ=subnet["DefaultForAz"],
+            MAP_CUSTOMER_OWNED_IP_ON_LAUNCH=subnet["MapCustomerOwnedIpOnLaunch"],
+            MAP_PUBLIC_IP_ONLAUNCH=subnet["MapPublicIpOnLaunch"],
+            SUBNET_ARN=subnet['SubnetArn'],
+            AVAILABILITY_ZONE=subnet["AvailabilityZone"],
+            AVAILABILITY_ZONE_ID=subnet["AvailabilityZoneId"],
+            AWS_VPC_ID=subnet["VpcId"],
             AWS_ACCOUNT_ID=current_aws_account_id,
             Region=region,
             aws_update_tag=aws_update_tag,
@@ -70,8 +70,7 @@ def load_subnets(neo4j_session, data, region, current_aws_account_id, aws_update
             ID=subnet_id,
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag,
-        ) 
-
+        )
 
 
 @timeit
