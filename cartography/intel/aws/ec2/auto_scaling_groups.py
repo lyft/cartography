@@ -22,42 +22,42 @@ def get_ec2_auto_scaling_groups(boto3_session, region):
 @timeit
 def load_ec2_auto_scaling_groups(neo4j_session, data, region, current_aws_account_id, aws_update_tag):
     ingest_group = """
-    MERGE (group:AutoScalingGroup{arn: {ARN}})
-    ON CREATE SET group.firstseen = timestamp(), group.name = {Name}, group.createdtime = {CreatedTime}
-    SET group.lastupdated = {aws_update_tag}, group.launchconfigurationname = {LaunchConfigurationName},
-    group.maxsize = {MaxSize}, group.region={Region}
+    MERGE (group:AutoScalingGroup{arn: $ARN})
+    ON CREATE SET group.firstseen = timestamp(), group.name = $Name, group.createdtime = $CreatedTime
+    SET group.lastupdated = $aws_update_tag, group.launchconfigurationname = $LaunchConfigurationName,
+    group.maxsize = $MaxSize, group.region=$Region
     WITH group
-    MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (aa)-[r:RESOURCE]->(group)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
 
     ingest_vpc = """
-    MERGE (subnet:EC2Subnet{subnetid: {SubnetId}})
+    MERGE (subnet:EC2Subnet{subnetid: $SubnetId})
     ON CREATE SET subnet.firstseen = timestamp()
-    SET subnet.lastupdated = {aws_update_tag}
+    SET subnet.lastupdated = $aws_update_tag
     WITH subnet
-    MATCH (group:AutoScalingGroup{arn: {GROUPARN}})
+    MATCH (group:AutoScalingGroup{arn: $GROUPARN})
     MERGE (subnet)<-[r:VPC_IDENTIFIER]-(group)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
 
     ingest_instance = """
-    MERGE (instance:Instance:EC2Instance{id: {InstanceId}})
+    MERGE (instance:Instance:EC2Instance{id: $InstanceId})
     ON CREATE SET instance.firstseen = timestamp()
-    SET instance.instanceid = {InstanceId}, instance.lastupdated = {aws_update_tag}, instance.region={Region}
+    SET instance.instanceid = $InstanceId, instance.lastupdated = $aws_update_tag, instance.region=$Region
     WITH instance
-    MATCH (group:AutoScalingGroup{arn: {GROUPARN}})
+    MATCH (group:AutoScalingGroup{arn: $GROUPARN})
     MERGE (instance)-[r:MEMBER_AUTO_SCALE_GROUP]->(group)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     WITH instance
-    MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (aa)-[r:RESOURCE]->(instance)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
 
     for group in data:

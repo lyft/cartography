@@ -59,26 +59,26 @@ def load_gke_clusters(neo4j_session, cluster_resp, project_id, gcp_update_tag):
     """
 
     query = """
-    MERGE(cluster:GKECluster{id:{ClusterSelfLink}})
+    MERGE(cluster:GKECluster{id:$ClusterSelfLink})
     ON CREATE SET
         cluster.firstseen = timestamp(),
-        cluster.created_at = {ClusterCreateTime}
+        cluster.created_at = $ClusterCreateTime
     SET
-        cluster.name = {ClusterName},
-        cluster.self_link = {ClusterSelfLink},
-        cluster.description = {ClusterDescription},
-        cluster.logging_service = {ClusterLoggingService},
-        cluster.monitoring_service = {ClusterMonitoringService},
-        cluster.network = {ClusterNetwork},
-        cluster.subnetwork = {ClusterSubnetwork},
-        cluster.cluster_ipv4cidr = {ClusterIPv4Cidr},
-        cluster.zone = {ClusterZone},
-        cluster.location = {ClusterLocation},
-        cluster.endpoint = {ClusterEndpoint},
-        cluster.initial_version = {ClusterInitialVersion},
-        cluster.current_master_version = {ClusterMasterVersion},
-        cluster.status = {ClusterStatus},
-        cluster.services_ipv4cidr = {ClusterServicesIPv4Cidr},
+        cluster.name = $ClusterName,
+        cluster.self_link = $ClusterSelfLink,
+        cluster.description = $ClusterDescription,
+        cluster.logging_service = $ClusterLoggingService,
+        cluster.monitoring_service = $ClusterMonitoringService,
+        cluster.network = $ClusterNetwork,
+        cluster.subnetwork = $ClusterSubnetwork,
+        cluster.cluster_ipv4cidr = $ClusterIPv4Cidr,
+        cluster.zone = $ClusterZone,
+        cluster.location = $ClusterLocation,
+        cluster.endpoint = $ClusterEndpoint,
+        cluster.initial_version = $ClusterInitialVersion,
+        cluster.current_master_version = $ClusterMasterVersion,
+        cluster.status = $ClusterStatus,
+        cluster.services_ipv4cidr = $ClusterServicesIPv4Cidr,
         cluster.database_encryption = {ClusterDatabaseEncryption},
         cluster.network_policy = {ClusterNetworkPolicy},
         cluster.master_authorized_networks = {ClusterMasterAuthorizedNetworks},

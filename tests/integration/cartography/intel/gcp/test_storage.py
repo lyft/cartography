@@ -17,7 +17,7 @@ def test_transform_and_load_storage_buckets(neo4j_session):
     """
     _ensure_local_neo4j_has_test_storage_bucket_data(neo4j_session)
     query = """
-    MATCH(bucket:GCPBucket{id:{BucketId}})
+    MATCH(bucket:GCPBucket{id:$BucketId})
     RETURN bucket.id, bucket.project_number, bucket.kind
     """
     expected_id = 'bucket_name'
@@ -40,7 +40,7 @@ def test_attach_storage_bucket_labels(neo4j_session):
     """
     _ensure_local_neo4j_has_test_storage_bucket_data(neo4j_session)
     query = """
-    MATCH(bucket:GCPBucket{id:{BucketId}})-[r:LABELED]->(label:GCPBucketLabel)
+    MATCH(bucket:GCPBucket{id:$BucketId})-[r:LABELED]->(label:GCPBucketLabel)
     RETURN bucket.id, label.key, label.value
     ORDER BY label.key
     LIMIT 1

@@ -18,20 +18,20 @@ def get_ec2_vpcs(boto3_session, region):
 
 def _get_cidr_association_statement(block_type):
     INGEST_CIDR_TEMPLATE = Template("""
-    MATCH (vpc:AWSVpc{id: {VpcId}})
+    MATCH (vpc:AWSVpc{id: $VpcId})
     WITH vpc
-    UNWIND {CidrBlock} as block_data
-        MERGE (new_block:$block_label{id: {VpcId} + '|' + block_data.$block_cidr})
+    UNWIND $CidrBlock as block_data
+        MERGE (new_block:$block_label{id: $VpcId + '|' + block_data.$block_cidr})
         ON CREATE SET new_block.firstseen = timestamp()
         SET new_block.association_id = block_data.AssociationId,
         new_block.cidr_block = block_data.$block_cidr,
         new_block.block_state = block_data.$state_name.State,
         new_block.block_state_message = block_data.$state_name.StatusMessage,
-        new_block.lastupdated = {aws_update_tag}
+        new_block.lastupdated = $aws_update_tag
         WITH vpc, new_block
         MERGE (vpc)-[r:BLOCK_ASSOCIATION]->(new_block)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {aws_update_tag}""")
+        SET r.lastupdated = $aws_update_tag""")
 
     BLOCK_CIDR = "CidrBlock"
     STATE_NAME = "CidrBlockState"
@@ -100,10 +100,10 @@ def load_ec2_vpcs(neo4j_session, data, region, current_aws_account_id, aws_updat
     # }
 
     ingest_vpc = """
-    MERGE (new_vpc:AWSVpc{id: {VpcId}})
-    ON CREATE SET new_vpc.firstseen = timestamp(), new_vpc.vpcid ={VpcId}
-    SET new_vpc.instance_tenancy = {InstanceTenancy},
-    new_vpc.state = {State},
+    MERGE (new_vpc:AWSVpc{id: $VpcId})
+    ON CREATE SET new_vpc.firstseen = timestamp(), new_vpc.vpcid =$VpcId
+    SET new_vpc.instance_tenancy = $InstanceTenancy,
+    new_vpc.state = $State,
     new_vpc.is_default = {IsDefault},
     new_vpc.primary_cidr_block = {PrimaryCIDRBlock},
     new_vpc.dhcp_options_id = {DhcpOptionsId},

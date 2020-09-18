@@ -16,11 +16,11 @@ def test_load_load_balancer_v2s(neo4j_session, *args):
     # an ec2instance and AWSAccount must exist
     neo4j_session.run(
         """
-        MERGE (ec2:EC2Instance{instanceid: {ec2_instance_id}})
+        MERGE (ec2:EC2Instance{instanceid: $ec2_instance_id})
         ON CREATE SET ec2.firstseen = timestamp()
-        SET ec2.lastupdated = {aws_update_tag}
+        SET ec2.lastupdated = $aws_update_tag
 
-        MERGE (aws:AWSAccount{id: {aws_account_id}})
+        MERGE (aws:AWSAccount{id: $aws_account_id})
         ON CREATE SET aws.firstseen = timestamp()
         SET aws.lastupdated = {aws_update_tag}
 
