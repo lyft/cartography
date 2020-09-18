@@ -34,6 +34,7 @@ def test_transform_and_load_repositories(neo4j_session):
     expected_nodes = {
         "https://github.com/example_org/sample_repo",
         "https://github.com/example_org/SampleRepo2",
+        "https://github.com/lyft/cartography",
     }
     assert actual_nodes == expected_nodes
 
@@ -75,7 +76,7 @@ def test_transform_and_load_repository_languages(neo4j_session):
     )
     actual_nodes = {n['pl.id'] for n in nodes}
     expected_nodes = {
-        'Python',
+        'Python', 'Makefile',
     }
     assert actual_nodes == expected_nodes
 
@@ -173,6 +174,17 @@ def test_repository_to_languages(neo4j_session):
             'SampleRepo2',
         ),
     }
+    assert actual_nodes == expected_nodes
+
+
+def test_repository_to_collaborators(neo4j_session):
+    _ensure_local_neo4j_has_test_data(neo4j_session)
+    nodes = neo4j_session.run("""
+    MATCH (repo:GitHubRepository{name:"cartography"})<-[:OUTSIDE_COLLAB_WRITE]-(user:GitHubUser)
+    RETURN count(user.username) as collab_count
+    """)
+    actual_nodes = {n['collab_count'] for n in nodes}
+    expected_nodes = {5}
     assert actual_nodes == expected_nodes
 
 

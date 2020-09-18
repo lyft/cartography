@@ -52,6 +52,18 @@ GITHUB_ORG_REPOS_PAGINATED_GRAPHQL = """
                         login
                         __typename
                     }
+                    collaborators(affiliation: OUTSIDE, first: 100) {
+                        edges {
+                            permission
+                        }
+                        nodes {
+                            url
+                            login
+                            name
+                            email
+                            company
+                        }
+                    }
                     requirements:object(expression: "HEAD:requirements.txt") {
                         ... on Blob {
                             text
@@ -86,22 +98,26 @@ def transform(repos_json):
     Parses the JSON returned from GitHub API to create data for graph ingestion
     :param repos_json: the list of individual repository nodes from GitHub. See tests.data.github.repos.GET_REPOS for
     data shape.
-    :return: Dict containing the repos, repo->language mapping, owners->repo mapping, and Python requirements files (if
-    any) in a repo.
+    :return: Dict containing the repos, repo->language mapping, owners->repo mapping, outside collaborators->repo
+    mapping, and Python requirements files (if any) in a repo.
     """
     transformed_repo_list = []
     transformed_repo_languages = []
     transformed_repo_owners = []
+    # See https://docs.github.com/en/graphql/reference/enums#repositorypermission
+    transformed_collaborators = {'ADMIN': [], 'MAINTAIN': [], 'READ': [], 'TRIAGE': [], 'WRITE': []}
     transformed_requirements_files = []
     for repo_object in repos_json:
         _transform_repo_languages(repo_object['url'], repo_object, transformed_repo_languages)
         _transform_repo_objects(repo_object, transformed_repo_list)
         _transform_repo_owners(repo_object['owner']['url'], repo_object, transformed_repo_owners)
+        _transform_collaborators(repo_object['collaborators'], repo_object['url'], transformed_collaborators)
         _transform_python_requirements(repo_object, transformed_requirements_files)
     results = {
         'repos': transformed_repo_list,
         'repo_languages': transformed_repo_languages,
         'repo_owners': transformed_repo_owners,
+        'repo_collaborators': transformed_collaborators,
         'python_requirements': transformed_requirements_files,
     }
     return results
@@ -190,6 +206,24 @@ def _transform_repo_languages(repo_url, repo, repo_languages):
                 'repo_id': repo_url,
                 'language_name': language['name'],
             })
+
+
+def _transform_collaborators(collaborators, repo_url, transformed_collaborators):
+    """
+    Performs data adjustments for outside collaborators in a GitHub repo.
+    Output data shape = [{permission, repo_url, url (the user's URL), login, name}, ...]
+    :param collaborators: See cartography.tests.data.github.repos for data shape.
+    :param repo_url: The URL of the GitHub repo.
+    :param transformed_collaborators: Output dict. Data shape =
+    {'ADMIN': [{ user }, ...], 'MAINTAIN': [{ user }, ...], 'READ': [ ... ], 'TRIAGE': [ ... ], 'WRITE': [ ... ]}
+    :return: Nothing.
+    """
+    # `collaborators` is sometimes None
+    if collaborators:
+        for idx, user in enumerate(collaborators['nodes']):
+            user_permission = collaborators['edges'][idx]['permission']
+            user['repo_url'] = repo_url
+            transformed_collaborators[user_permission].append(user)
 
 
 def _transform_python_requirements(repo_object, out_requirements_files):
@@ -359,6 +393,44 @@ def load_github_owners(neo4j_session, update_tag, repo_owners):
 
 
 @timeit
+def load_collaborators(neo4j_session, update_tag, collaborators):
+    query = Template("""
+    UNWIND {UserData} as user
+
+    MERGE (u:GitHubUser{id: user.url})
+    ON CREATE SET u.firstseen = timestamp()
+    SET u.fullname = user.name,
+    u.username = user.login,
+    u.permission = user.permission,
+    u.email = user.email,
+    u.company = user.company,
+    u.lastupdated = {UpdateTag}
+
+    WITH u, user
+    MATCH (repo:GitHubRepository{id: user.repo_url})
+    MERGE (repo)<-[o:$rel_label]-(u)
+    ON CREATE SET o.firstseen = timestamp()
+    SET o.lastupdated = {UpdateTag}
+    """)
+    for collab_type in collaborators.keys():
+        relationship_label = f"OUTSIDE_COLLAB_{collab_type}"
+        neo4j_session.run(
+            query.safe_substitute(rel_label=relationship_label),
+            UserData=collaborators[collab_type],
+            UpdateTag=update_tag,
+        )
+
+
+@timeit
+def load(neo4j_session, common_job_parameters, repo_data):
+    load_github_repos(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data['repos'])
+    load_github_owners(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data['repo_owners'])
+    load_github_languages(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data['repo_languages'])
+    load_collaborators(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data['repo_collaborators'])
+    load_python_requirements(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data['python_requirements'])
+
+
+@timeit
 def load_python_requirements(neo4j_session, update_tag, requirements_objects):
     query = """
     UNWIND {Requirements} AS req
@@ -382,14 +454,6 @@ def load_python_requirements(neo4j_session, update_tag, requirements_objects):
     )
 
 
-@timeit
-def load(neo4j_session, common_job_parameters, repo_data):
-    load_github_repos(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data['repos'])
-    load_github_owners(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data['repo_owners'])
-    load_github_languages(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data['repo_languages'])
-    load_python_requirements(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data['python_requirements'])
-
-
 def sync(neo4j_session, common_job_parameters, github_api_key, github_url, organization):
     """
     Performs the sequential tasks to collect, transform, and sync github data
@@ -403,8 +467,5 @@ def sync(neo4j_session, common_job_parameters, github_api_key, github_url, organ
     logger.info("Syncing GitHub repos")
     repos_json = get(github_api_key, github_url, organization)
     repo_data = transform(repos_json)
-    load_github_repos(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data['repos'])
-    load_github_owners(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data['repo_owners'])
-    load_github_languages(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data['repo_languages'])
-    load_python_requirements(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data['python_requirements'])
+    load(neo4j_session, common_job_parameters, repo_data)
     run_cleanup_job('github_repos_cleanup.json', neo4j_session, common_job_parameters)
