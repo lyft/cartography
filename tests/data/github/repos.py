@@ -63,6 +63,7 @@ GET_REPOS = [
             'login': 'example_org', '__typename': 'Organization',
         },
         'collaborators': None,
+        'requirements': None,
     },
     {
         'name': 'cartography',
