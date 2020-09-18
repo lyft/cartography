@@ -110,15 +110,15 @@ def load_ec2_vpc_peering(neo4j_session, data, aws_update_tag):
     """
 
     ingest_peering_block = """
-    MATCH (accepter_block:AWSIpv4CidrBlock{id: {AccepterVpcId} + '|' + {AccepterCidrBlock}}),
-    (requestor_block:AWSCidrBlock:AWSIpv4CidrBlock{id: {RequestorVpcId} + '|' + {RequestorVpcCidrBlock}})
+    MATCH (accepter_block:AWSIpv4CidrBlock{id: $AccepterVpcId + '|' + $AccepterCidrBlock}),
+    (requestor_block:AWSCidrBlock:AWSIpv4CidrBlock{id: $RequestorVpcId + '|' + $RequestorVpcCidrBlock})
     MERGE (accepter_block)<-[r:VPC_PEERING]->(requestor_block)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.status_code = {StatusCode},
-    r.status_message = {StatusMessage},
-    r.connection_id = {ConnectionId},
-    r.expiration_time = {ExpirationTime},
-    r.lastupdated = {aws_update_tag}
+    SET r.status_code = $StatusCode,
+    r.status_message = $StatusMessage,
+    r.connection_id = $ConnectionId,
+    r.expiration_time = $ExpirationTime,
+    r.lastupdated = $aws_update_tag
     """
     for peering in data:
         if peering["Status"]["Code"] == "active":

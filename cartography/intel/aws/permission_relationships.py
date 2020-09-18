@@ -232,7 +232,7 @@ def compile_statement(statements):
 def get_principals_for_account(neo4j_session, account_id):
     get_policy_query = """
     MATCH
-    (acc:AWSAccount{id:{AccountId}})-[:RESOURCE]->
+    (acc:AWSAccount{id:$AccountId})-[:RESOURCE]->
     (principal:AWSPrincipal)-[:POLICY]->
     (policy:AWSPolicy)-[:STATEMENT]->
     (statements:AWSPolicyStatement)
@@ -256,7 +256,7 @@ def get_principals_for_account(neo4j_session, account_id):
 
 def get_resource_arns(neo4j_session, account_id, node_label):
     get_resource_query = Template("""
-    MATCH (acc:AWSAccount{id:{AccountId}})-[:RESOURCE]->(resource:$node_label)
+    MATCH (acc:AWSAccount{id:$AccountId})-[:RESOURCE]->(resource:$node_label)
     return resource.arn as arn
     """)
     get_resource_query = get_resource_query.safe_substitute(node_label=node_label)
@@ -270,11 +270,11 @@ def get_resource_arns(neo4j_session, account_id, node_label):
 
 def load_principal_mappings(neo4j_session, principal_mappings, node_label, relationship_name, update_tag):
     map_policy_query = Template("""
-    UNWIND {Mapping} as mapping
+    UNWIND $Mapping as mapping
     MATCH (principal:AWSPrincipal{arn:mapping.principal_arn})
     MATCH (resource:$node_label{arn:mapping.resource_arn})
     MERGE (principal)-[r:$relationship_name]->(resource)
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """)
     if not principal_mappings:
         return
@@ -292,10 +292,10 @@ def load_principal_mappings(neo4j_session, principal_mappings, node_label, relat
 def cleanup_rpr(neo4j_session, node_label, relationship_name, update_tag, current_aws_id):
     logger.info("Cleaning up relationship '%s' for node label '%s'", relationship_name, node_label)
     cleanup_rpr_query = Template("""
-        MATCH (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(principal:AWSPrincipal)-[r:$relationship_name]->
+        MATCH (:AWSAccount{id: $AWS_ID})-[:RESOURCE]->(principal:AWSPrincipal)-[r:$relationship_name]->
         (resource:$node_label)
-        WHERE r.lastupdated <> {UPDATE_TAG}
-        WITH r LIMIT {LIMIT_SIZE}  DELETE (r) return COUNT(*) as TotalCompleted
+        WHERE r.lastupdated <> $UPDATE_TAG
+        WITH r LIMIT $LIMIT_SIZE  DELETE (r) return COUNT(*) as TotalCompleted
     """)
     cleanup_rpr_query = cleanup_rpr_query.safe_substitute(
         node_label=node_label,

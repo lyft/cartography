@@ -73,19 +73,19 @@ def get_tags(boto3_session, resource_types, region):
 @timeit
 def load_tags(neo4j_session, tag_data, resource_type, region, aws_update_tag):
     INGEST_TAG_TEMPLATE = Template("""
-    UNWIND {TagData} as tag_mapping
+    UNWIND $TagData as tag_mapping
         UNWIND tag_mapping.Tags as input_tag
             MATCH (resource:$resource_label{$property:tag_mapping.resource_id})
             MERGE(aws_tag:AWSTag:Tag{id:input_tag.Key + ":" + input_tag.Value})
             ON CREATE SET aws_tag.firstseen = timestamp()
 
-            SET aws_tag.lastupdated = {UpdateTag},
+            SET aws_tag.lastupdated = $UpdateTag,
             aws_tag.key = input_tag.Key,
             aws_tag.value =  input_tag.Value,
-            aws_tag.region = {Region}
+            aws_tag.region = $Region
 
             MERGE (resource)-[r:TAGGED]->(aws_tag)
-            SET r.lastupdated = {UpdateTag},
+            SET r.lastupdated = $UpdateTag,
             r.firstseen = timestamp()
     """)
     query = INGEST_TAG_TEMPLATE.safe_substitute(

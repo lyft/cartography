@@ -40,7 +40,7 @@ def test_load_gcp_projects(neo4j_session):
     # Expect (GCPProject{project-232323})<-[:RESOURCE]-(GCPFolder{1414})
     #             <-[:RESOURCE]-(GCPOrganization{1337}) to be connected
     query = """
-    MATCH (p:GCPProject{id:{ProjectId}})<-[:RESOURCE]-(f:GCPFolder)<-[:RESOURCE]-(o:GCPOrganization)
+    MATCH (p:GCPProject{id:$ProjectId})<-[:RESOURCE]-(f:GCPFolder)<-[:RESOURCE]-(o:GCPOrganization)
     RETURN p.id, f.id, o.id
     """
     nodes = neo4j_session.run(

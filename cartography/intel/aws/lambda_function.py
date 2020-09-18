@@ -25,26 +25,26 @@ def get_lambda_data(boto3_session, region):
 @timeit
 def load_lambda_functions(neo4j_session, data, region, current_aws_account_id, aws_update_tag):
     ingest_lambda_functions = """
-    MERGE (lambda:AWSLambda{id: {Arn}})
+    MERGE (lambda:AWSLambda{id: $Arn})
     ON CREATE SET lambda.firstseen = timestamp()
-    SET lambda.name = {LambdaName},
-    lambda.modifieddate = {LastModified},
-    lambda.arn = {Arn},
-    lambda.runtime = {Runtime},
-    lambda.description = {Description},
-    lambda.timeout = {Timeout},
-    lambda.memory = {MemorySize},
-    lambda.lastupdated = {aws_update_tag}
+    SET lambda.name = $LambdaName,
+    lambda.modifieddate = $LastModified,
+    lambda.arn = $Arn,
+    lambda.runtime = $Runtime,
+    lambda.description = $Description,
+    lambda.timeout = $Timeout,
+    lambda.memory = $MemorySize,
+    lambda.lastupdated = $aws_update_tag
     WITH lambda
-    MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (owner)-[r:RESOURCE]->(lambda)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     WITH lambda
-    MATCH (role:AWSPrincipal{arn: {Role}})
+    MATCH (role:AWSPrincipal{arn: $Role})
     MERGE (lambda)-[r:STS_ASSUME_ROLE_ALLOW]->(role)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
 
     for lambda_function in data:

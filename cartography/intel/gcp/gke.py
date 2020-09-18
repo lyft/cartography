@@ -79,22 +79,22 @@ def load_gke_clusters(neo4j_session, cluster_resp, project_id, gcp_update_tag):
         cluster.current_master_version = $ClusterMasterVersion,
         cluster.status = $ClusterStatus,
         cluster.services_ipv4cidr = $ClusterServicesIPv4Cidr,
-        cluster.database_encryption = {ClusterDatabaseEncryption},
-        cluster.network_policy = {ClusterNetworkPolicy},
-        cluster.master_authorized_networks = {ClusterMasterAuthorizedNetworks},
-        cluster.legacy_abac = {ClusterAbac},
-        cluster.shielded_nodes = {ClusterShieldedNodes},
-        cluster.private_nodes = {ClusterPrivateNodes},
-        cluster.private_endpoint_enabled = {ClusterPrivateEndpointEnabled},
-        cluster.private_endpoint = {ClusterPrivateEndpoint},
-        cluster.public_endpoint = {ClusterPublicEndpoint},
-        cluster.masterauth_username = {ClusterMasterUsername},
-        cluster.masterauth_password = {ClusterMasterPassword}
+        cluster.database_encryption = $ClusterDatabaseEncryption,
+        cluster.network_policy = $ClusterNetworkPolicy,
+        cluster.master_authorized_networks = $ClusterMasterAuthorizedNetworks,
+        cluster.legacy_abac = $ClusterAbac,
+        cluster.shielded_nodes = $ClusterShieldedNodes,
+        cluster.private_nodes = $ClusterPrivateNodes,
+        cluster.private_endpoint_enabled = $ClusterPrivateEndpointEnabled,
+        cluster.private_endpoint = $ClusterPrivateEndpoint,
+        cluster.public_endpoint = $ClusterPublicEndpoint,
+        cluster.masterauth_username = $ClusterMasterUsername,
+        cluster.masterauth_password = $ClusterMasterPassword
     WITH cluster
-    MATCH (owner:GCPProject{id:{ProjectId}})
+    MATCH (owner:GCPProject{id:$ProjectId})
     MERGE (owner)-[r:RESOURCE]->(cluster)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """
     for cluster in cluster_resp.get('clusters', []):
         neo4j_session.run(

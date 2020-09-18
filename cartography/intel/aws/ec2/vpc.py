@@ -104,16 +104,16 @@ def load_ec2_vpcs(neo4j_session, data, region, current_aws_account_id, aws_updat
     ON CREATE SET new_vpc.firstseen = timestamp(), new_vpc.vpcid =$VpcId
     SET new_vpc.instance_tenancy = $InstanceTenancy,
     new_vpc.state = $State,
-    new_vpc.is_default = {IsDefault},
-    new_vpc.primary_cidr_block = {PrimaryCIDRBlock},
-    new_vpc.dhcp_options_id = {DhcpOptionsId},
-    new_vpc.region = {Region},
-    new_vpc.lastupdated = {aws_update_tag}
+    new_vpc.is_default = $IsDefault,
+    new_vpc.primary_cidr_block = $PrimaryCIDRBlock,
+    new_vpc.dhcp_options_id = $DhcpOptionsId,
+    new_vpc.region = $Region,
+    new_vpc.lastupdated = $aws_update_tag
     WITH new_vpc
-    MATCH (awsAccount:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MATCH (awsAccount:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (awsAccount)-[r:RESOURCE]->(new_vpc)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}"""
+    SET r.lastupdated = $aws_update_tag"""
 
     for vpc in data:
         vpc_id = vpc["VpcId"]  # fail if not present

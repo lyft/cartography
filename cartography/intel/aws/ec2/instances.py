@@ -23,8 +23,8 @@ def get_ec2_instances(boto3_session, region):
 @timeit
 def load_ec2_instance_network_interfaces(neo4j_session, instance_data, aws_update_tag):
     ingest_interfaces = """
-    MATCH (instance:EC2Instance{instanceid: {InstanceId}})
-    UNWIND {Interfaces} as interface
+    MATCH (instance:EC2Instance{instanceid: $InstanceId})
+    UNWIND $Interfaces as interface
         MERGE (nic:NetworkInterface{id: interface.NetworkInterfaceId})
         ON CREATE SET nic.firstseen = timestamp()
         SET nic.status = interface.Status,
@@ -32,28 +32,28 @@ def load_ec2_instance_network_interfaces(neo4j_session, instance_data, aws_updat
         nic.description = interface.Description,
         nic.private_dns_name = interface.PrivateDnsName,
         nic.private_ip_address = interface.PrivateIpAddress,
-        nic.lastupdated = {aws_update_tag}
+        nic.lastupdated = $aws_update_tag
 
         MERGE (instance)-[r:NETWORK_INTERFACE]->(nic)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {aws_update_tag}
+        SET r.lastupdated = $aws_update_tag
 
         WITH nic, interface
         WHERE interface.SubnetId IS NOT NULL
         MERGE (subnet:EC2Subnet{subnetid: interface.SubnetId})
         ON CREATE SET subnet.firstseen = timestamp()
-        SET subnet.lastupdated = {aws_update_tag}
+        SET subnet.lastupdated = $aws_update_tag
 
         MERGE (nic)-[r:PART_OF_SUBNET]->(subnet)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {aws_update_tag}
+        SET r.lastupdated = $aws_update_tag
 
         WITH nic, interface
         UNWIND interface.Groups as group
             MATCH (ec2group:EC2SecurityGroup{groupid: group.GroupId})
             MERGE (nic)-[r:MEMBER_OF_EC2_SECURITY_GROUP]->(ec2group)
             ON CREATE SET r.firstseen = timestamp()
-            SET r.lastupdated = {aws_update_tag}
+            SET r.lastupdated = $aws_update_tag
     """
     instance_id = instance_data["InstanceId"]
     neo4j_session.run(
@@ -67,79 +67,79 @@ def load_ec2_instance_network_interfaces(neo4j_session, instance_data, aws_updat
 @timeit
 def load_ec2_instances(neo4j_session, data, region, current_aws_account_id, aws_update_tag):
     ingest_reservation = """
-    MERGE (reservation:EC2Reservation{reservationid: {ReservationId}})
+    MERGE (reservation:EC2Reservation{reservationid: $ReservationId})
     ON CREATE SET reservation.firstseen = timestamp()
-    SET reservation.ownerid = {OwnerId}, reservation.requesterid = {RequesterId}, reservation.region = {Region},
-    reservation.lastupdated = {aws_update_tag}
+    SET reservation.ownerid = $OwnerId, reservation.requesterid = $RequesterId, reservation.region = $Region,
+    reservation.lastupdated = $aws_update_tag
     WITH reservation
-    MATCH (awsAccount:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MATCH (awsAccount:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (awsAccount)-[r:RESOURCE]->(reservation)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
 
     ingest_instance = """
-    MERGE (instance:Instance:EC2Instance{id: {InstanceId}})
+    MERGE (instance:Instance:EC2Instance{id: $InstanceId})
     ON CREATE SET instance.firstseen = timestamp()
-    SET instance.instanceid = {InstanceId}, instance.publicdnsname = {PublicDnsName},
-    instance.privateipaddress = {PrivateIpAddress}, instance.publicipaddress = {PublicIpAddress},
-    instance.imageid = {ImageId}, instance.instancetype = {InstanceType}, instance.monitoringstate = {MonitoringState},
-    instance.state = {State}, instance.launchtime = {LaunchTime}, instance.launchtimeunix = {LaunchTimeUnix},
-    instance.region = {Region}, instance.lastupdated = {aws_update_tag},
-    instance.iaminstanceprofile = {IamInstanceProfile}
+    SET instance.instanceid = $InstanceId, instance.publicdnsname = $PublicDnsName,
+    instance.privateipaddress = $PrivateIpAddress, instance.publicipaddress = $PublicIpAddress,
+    instance.imageid = $ImageId, instance.instancetype = $InstanceType, instance.monitoringstate = $MonitoringState,
+    instance.state = $State, instance.launchtime = $LaunchTime, instance.launchtimeunix = $LaunchTimeUnix,
+    instance.region = $Region, instance.lastupdated = $aws_update_tag,
+    instance.iaminstanceprofile = $IamInstanceProfile
     WITH instance
-    MATCH (rez:EC2Reservation{reservationid: {ReservationId}})
+    MATCH (rez:EC2Reservation{reservationid: $ReservationId})
     MERGE (instance)-[r:MEMBER_OF_EC2_RESERVATION]->(rez)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     WITH instance
-    MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (aa)-[r:RESOURCE]->(instance)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
 
     ingest_subnet = """
-    MATCH (instance:EC2Instance{id: {InstanceId}})
-    MERGE (subnet:EC2Subnet{subnetid: {SubnetId}})
+    MATCH (instance:EC2Instance{id: $InstanceId})
+    MERGE (subnet:EC2Subnet{subnetid: $SubnetId})
     ON CREATE SET subnet.firstseen = timestamp()
-    SET subnet.region = {Region},
-    subnet.lastupdated = {aws_update_tag}
+    SET subnet.region = $Region,
+    subnet.lastupdated = $aws_update_tag
     MERGE (instance)-[r:PART_OF_SUBNET]->(subnet)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
 
     ingest_key_pair = """
-    MERGE (keypair:KeyPair:EC2KeyPair{arn: {KeyPairARN}, id: {KeyPairARN}})
+    MERGE (keypair:KeyPair:EC2KeyPair{arn: $KeyPairARN, id: $KeyPairARN})
     ON CREATE SET keypair.firstseen = timestamp()
-    SET keypair.keyname = {KeyName}, keypair.region = {Region}, keypair.lastupdated = {aws_update_tag}
+    SET keypair.keyname = $KeyName, keypair.region = $Region, keypair.lastupdated = $aws_update_tag
     WITH keypair
-    MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (aa)-[r:RESOURCE]->(keypair)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     with keypair
-    MATCH (instance:EC2Instance{instanceid: {InstanceId}})
+    MATCH (instance:EC2Instance{instanceid: $InstanceId})
     MERGE (instance)<-[r:SSH_LOGIN_TO]-(keypair)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
 
     ingest_security_groups = """
-    MERGE (group:EC2SecurityGroup{id: {GroupId}})
-    ON CREATE SET group.firstseen = timestamp(), group.groupid = {GroupId}
-    SET group.name = {GroupName}, group.region = {Region}, group.lastupdated = {aws_update_tag}
+    MERGE (group:EC2SecurityGroup{id: $GroupId})
+    ON CREATE SET group.firstseen = timestamp(), group.groupid = $GroupId
+    SET group.name = $GroupName, group.region = $Region, group.lastupdated = $aws_update_tag
     WITH group
-    MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (aa)-[r:RESOURCE]->(group)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     WITH group
-    MATCH (instance:EC2Instance{instanceid: {InstanceId}})
+    MATCH (instance:EC2Instance{instanceid: $InstanceId})
     MERGE (instance)-[r:MEMBER_OF_EC2_SECURITY_GROUP]->(group)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
 
     for reservation in data:

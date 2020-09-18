@@ -54,13 +54,13 @@ def get(token, api_url, organization):
 @timeit
 def load_organization_users(neo4j_session, user_data, org_data, update_tag):
     query = """
-    MERGE (org:GitHubOrganization{id: {OrgUrl}})
+    MERGE (org:GitHubOrganization{id: $OrgUrl})
     ON CREATE SET org.firstseen = timestamp()
-    SET org.username = {OrgLogin},
-    org.lastupdated = {UpdateTag}
+    SET org.username = $OrgLogin,
+    org.lastupdated = $UpdateTag
     WITH org
 
-    UNWIND {UserData} as user
+    UNWIND $UserData as user
 
     MERGE (u:GitHubUser{id: user.node.url})
     ON CREATE SET u.firstseen = timestamp()
@@ -71,11 +71,11 @@ def load_organization_users(neo4j_session, user_data, org_data, update_tag):
     u.is_site_admin = user.node.isSiteAdmin,
     u.email = user.node.email,
     u.company = user.node.company,
-    u.lastupdated = {UpdateTag}
+    u.lastupdated = $UpdateTag
 
     MERGE (u)-[r:MEMBER_OF]->(org)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {UpdateTag}
+    SET r.lastupdated = $UpdateTag
     """
     neo4j_session.run(
         query,

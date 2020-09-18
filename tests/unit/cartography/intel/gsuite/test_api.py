@@ -104,10 +104,10 @@ def test_sync_gsuite_groups(all_groups, load_gsuite_groups, cleanup_gsuite_group
 
 def test_load_gsuite_groups():
     ingestion_qry = """
-        UNWIND {GroupData} as group
+        UNWIND $GroupData as group
         MERGE (g:GSuiteGroup{id: group.id})
         ON CREATE SET
-        g.firstseen = {UpdateTag}
+        g.firstseen = $UpdateTag
         ON MATCH SET
         g.group_id = group.id,
         g.admin_created = group.adminCreated,
@@ -117,7 +117,7 @@ def test_load_gsuite_groups():
         g.etag = group.etag,
         g.kind = group.kind,
         g.name = group.name,
-        g.lastupdated = {UpdateTag}
+        g.lastupdated = $UpdateTag
     """
     groups = []
     update_tag = 1
@@ -132,10 +132,10 @@ def test_load_gsuite_groups():
 
 def test_load_gsuite_users():
     ingestion_qry = """
-        UNWIND {UserData} as user
+        UNWIND $UserData as user
         MERGE (u:GSuiteUser{id: user.id})
         ON CREATE SET
-        u.firstseen = {UpdateTag}
+        u.firstseen = $UpdateTag
         ON MATCH SET
         u.user_id = user.id,
         u.agreed_to_terms = user.agreedToTerms,
@@ -162,7 +162,7 @@ def test_load_gsuite_users():
         u.suspended = user.suspended,
         u.thumbnail_photo_etag = user.thumbnailPhotoEtag,
         u.thumbnail_photo_url = user.thumbnailPhotoUrl,
-        u.lastupdated = {UpdateTag}
+        u.lastupdated = $UpdateTag
     """
     users = []
     update_tag = 1

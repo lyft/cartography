@@ -23,37 +23,37 @@ def get_ec2_security_group_data(boto3_session, region):
 @timeit
 def load_ec2_security_group_rule(neo4j_session, group, rule_type, aws_update_tag):
     INGEST_RULE_TEMPLATE = Template("""
-    MERGE (rule:$rule_label{ruleid: {RuleId}})
-    ON CREATE SET rule :IpRule, rule.firstseen = timestamp(), rule.fromport = {FromPort}, rule.toport = {ToPort},
-    rule.protocol = {Protocol}
-    SET rule.lastupdated = {aws_update_tag}
+    MERGE (rule:$rule_label{ruleid: $RuleId})
+    ON CREATE SET rule :IpRule, rule.firstseen = timestamp(), rule.fromport = $FromPort, rule.toport = $ToPort,
+    rule.protocol = $Protocol
+    SET rule.lastupdated = $aws_update_tag
     WITH rule
-    MATCH (group:EC2SecurityGroup{groupid: {GroupId}})
+    MATCH (group:EC2SecurityGroup{groupid: $GroupId})
     MERGE (group)<-[r:MEMBER_OF_EC2_SECURITY_GROUP]-(rule)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag};
+    SET r.lastupdated = $aws_update_tag;
     """)
 
     ingest_rule_group_pair = """
-    MERGE (group:EC2SecurityGroup{id: {GroupId}})
-    ON CREATE SET group.firstseen = timestamp(), group.groupid = {GroupId}
-    SET group.lastupdated = {aws_update_tag}
+    MERGE (group:EC2SecurityGroup{id: $GroupId})
+    ON CREATE SET group.firstseen = timestamp(), group.groupid = $GroupId
+    SET group.lastupdated = $aws_update_tag
     WITH group
-    MATCH (inbound:IpRule{ruleid: {RuleId}})
+    MATCH (inbound:IpRule{ruleid: $RuleId})
     MERGE (inbound)-[r:MEMBER_OF_EC2_SECURITY_GROUP]->(group)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
 
     ingest_range = """
-    MERGE (range:IpRange{id: {RangeId}})
-    ON CREATE SET range.firstseen = timestamp(), range.range = {RangeId}
-    SET range.lastupdated = {aws_update_tag}
+    MERGE (range:IpRange{id: $RangeId})
+    ON CREATE SET range.firstseen = timestamp(), range.range = $RangeId
+    SET range.lastupdated = $aws_update_tag
     WITH range
-    MATCH (rule:IpRule{ruleid: {RuleId}})
+    MATCH (rule:IpRule{ruleid: $RuleId})
     MERGE (rule)<-[r:MEMBER_OF_IP_RULE]-(range)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
 
     group_id = group["GroupId"]
@@ -98,17 +98,17 @@ def load_ec2_security_group_rule(neo4j_session, group, rule_type, aws_update_tag
 @timeit
 def load_ec2_security_groupinfo(neo4j_session, data, region, current_aws_account_id, aws_update_tag):
     ingest_security_group = """
-    MERGE (group:EC2SecurityGroup{id: {GroupId}})
-    ON CREATE SET group.firstseen = timestamp(), group.groupid = {GroupId}
-    SET group.name = {GroupName}, group.description = {Description}, group.region = {Region},
-    group.lastupdated = {aws_update_tag}
+    MERGE (group:EC2SecurityGroup{id: $GroupId})
+    ON CREATE SET group.firstseen = timestamp(), group.groupid = $GroupId
+    SET group.name = $GroupName, group.description = $Description, group.region = $Region,
+    group.lastupdated = $aws_update_tag
     WITH group
-    MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (aa)-[r:RESOURCE]->(group)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     WITH group
-    MATCH (vpc:AWSVpc{id: {VpcId}})
+    MATCH (vpc:AWSVpc{id: $VpcId})
     MERGE (vpc)-[rg:MEMBER_OF_EC2_SECURITY_GROUP]->(group)
     ON CREATE SET rg.firstseen = timestamp()
     """

@@ -34,9 +34,9 @@ def test_load_eks_clusters_relationships(neo4j_session):
     # Create Test GCPProject
     neo4j_session.run(
         """
-        MERGE (gcp:GCPProject{id: {PROJECT_NUMBER}})
+        MERGE (gcp:GCPProject{id: $PROJECT_NUMBER})
         ON CREATE SET gcp.firstseen = timestamp()
-        SET gcp.lastupdated = {UPDATE_TAG}
+        SET gcp.lastupdated = $UPDATE_TAG
         """,
         PROJECT_NUMBER=TEST_PROJECT_NUMBER,
         UPDATE_TAG=TEST_UPDATE_TAG,

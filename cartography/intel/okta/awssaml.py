@@ -62,12 +62,12 @@ def _load_okta_group_to_aws_roles(neo4j_session, group_to_role, okta_update_tag)
     """
     ingest_statement = """
 
-    UNWIND {GROUP_TO_ROLE} as app_data
+    UNWIND $GROUP_TO_ROLE as app_data
     MATCH (role:AWSRole{arn: app_data.role})
     MATCH (group:OktaGroup{id: app_data.groupid})
     MERGE (role)<-[r:ALLOWED_BY]-(group)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {okta_update_tag}
+    SET r.lastupdated = $okta_update_tag
     """
 
     neo4j_session.run(
@@ -88,7 +88,7 @@ def _load_human_can_assume_role(neo4j_session, okta_update_tag):
     ingest_statement = """
     MATCH (role:AWSRole)<-[:ALLOWED_BY]-(:OktaGroup)<-[:MEMBER_OF_OKTA_GROUP]-(:OktaUser)-[:IDENTITY_OKTA]-(human:Human)
     MERGE (human)-[r:CAN_ASSUME_ROLE]->(role)
-    SET r.lastupdated = {okta_update_tag}
+    SET r.lastupdated = $okta_update_tag
     """
 
     neo4j_session.run(

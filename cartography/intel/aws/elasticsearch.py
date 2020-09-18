@@ -72,10 +72,10 @@ def _load_es_domains(neo4j_session, domain_list, aws_account_id, aws_update_tag)
     :param domains: Domain list to ingest
     """
     ingest_records = """
-    UNWIND {Records} as record
+    UNWIND $Records as record
     MERGE (es:ESDomain{id: record.DomainId})
     ON CREATE SET es.firstseen = timestamp(), es.arn = record.ARN, es.domainid = record.DomainId
-    SET es.lastupdated = {aws_update_tag}, es.deleted = record.Deleted, es.created = record.created,
+    SET es.lastupdated = $aws_update_tag, es.deleted = record.Deleted, es.created = record.created,
     es.endpoint = record.Endpoint, es.elasticsearch_version = record.ElasticsearchVersion,
     es.elasticsearch_cluster_config_instancetype = record.ElasticsearchClusterConfig.InstanceType,
     es.elasticsearch_cluster_config_instancecount = record.ElasticsearchClusterConfig.InstanceCount,
@@ -92,10 +92,10 @@ def _load_es_domains(neo4j_session, domain_list, aws_account_id, aws_update_tag)
     es.log_publishing_options_cloudwatch_log_group_arn = record.LogPublishingOptions.CloudWatchLogsLogGroupArn,
     es.log_publishing_options_enabled = record.LogPublishingOptions.Enabled
     WITH es
-    MATCH (account:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MATCH (account:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (account)-[r:RESOURCE]->(es)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
 
     # TODO this is a hacky workaround -- neo4j doesn't accept datetime objects and this section of the object
@@ -148,23 +148,23 @@ def _link_es_domain_vpc(neo4j_session, domain_id, domain_data, aws_update_tag):
     :param domain_data: domain data
     """
     ingest_subnet = """
-    MATCH (es:ESDomain{id: {DomainId}})
+    MATCH (es:ESDomain{id: $DomainId})
     WITH es
-    UNWIND {SubnetList} as subnet_id
+    UNWIND $SubnetList as subnet_id
         MATCH (subnet_node:EC2Subnet{id: subnet_id})
         MERGE (es)-[r:PART_OF_SUBNET]->(subnet_node)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {aws_update_tag}
+        SET r.lastupdated = $aws_update_tag
     """
 
     ingest_sec_groups = """
-    MATCH (es:ESDomain{id: {DomainId}})
+    MATCH (es:ESDomain{id: $DomainId})
     WITH es
-    UNWIND {SecGroupList} as ecsecgroup_id
+    UNWIND $SecGroupList as ecsecgroup_id
         MATCH (group_node:EC2SecurityGroup{id: ecsecgroup_id})
         MERGE (es)-[r:MEMBER_OF_EC2_SECURITY_GROUP]->(group_node)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {aws_update_tag}
+        SET r.lastupdated = $aws_update_tag
     """
     # TODO we really shouldn't be sending full objects to Neo4j
     if domain_data.get("VPCOptions"):
@@ -199,7 +199,7 @@ def _process_access_policy(neo4j_session, domain_id, domain_data):
     :param domain_id: ES domain id
     :param domain_data: domain data
     """
-    tag_es = "MATCH (es:ESDomain{id: {DomainId}}) SET es.exposed_internet = {InternetExposed}"
+    tag_es = "MATCH (es:ESDomain{id: $DomainId}) SET es.exposed_internet = $InternetExposed"
 
     exposed_internet = False
 

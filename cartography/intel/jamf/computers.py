@@ -16,12 +16,12 @@ def get_computer_groups(jamf_base_uri, jamf_user, jamf_password):
 @timeit
 def load_computer_groups(data, neo4j_session, update_tag):
     ingest_groups = """
-    UNWIND {JsonData} as group
+    UNWIND $JsonData as group
     MERGE (g:JamfComputerGroup{id: group.id})
     ON CREATE SET g.name = group.name,
     g.firstseen = timestamp()
     SET g.is_smart = group.is_smart,
-    g.lastupdated = {UpdateTag}
+    g.lastupdated = $UpdateTag
     """
     groups = data.get("computer_groups")
     neo4j_session.run(ingest_groups, JsonData=groups, UpdateTag=update_tag)
