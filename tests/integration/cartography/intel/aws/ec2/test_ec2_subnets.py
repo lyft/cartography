@@ -25,10 +25,10 @@ def test_load_subnets(neo4j_session):
 
     nodes = neo4j_session.run(
         """
-        MATCH (s:EC2Subnet) RETURN s.subnetarn;
+        MATCH (s:EC2Subnet) RETURN s.subnet_arn;
         """,
     )
-    actual_nodes = {n['s.subnetarn'] for n in nodes}
+    actual_nodes = {n['s.subnet_arn'] for n in nodes}
 
     assert actual_nodes == expected_nodes
 
@@ -63,11 +63,11 @@ def test_load_subnet_relationships(neo4j_session):
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:AWSAccount)-[:RESOURCE]->(n2:EC2Subnet) RETURN n1.id, n2.subnetarn;
+        MATCH (n1:AWSAccount)-[:RESOURCE]->(n2:EC2Subnet) RETURN n1.id, n2.subnet_arn;
         """,
     )
     actual = {
-        (r['n1.id'], r['n2.subnetarn']) for r in result
+        (r['n1.id'], r['n2.subnet_arn']) for r in result
     }
 
     assert actual == expected_nodes

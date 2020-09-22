@@ -26,10 +26,10 @@ def load_subnets(neo4j_session, data, region, aws_account_id, aws_update_tag):
     MERGE (snet:EC2Subnet{subnetid: subnet.SubnetId})
     ON CREATE SET snet.firstseen = timestamp()
     SET snet.lastupdated = {aws_update_tag}, snet.name = subnet.CidrBlock, snet.cidr_block = subnet.CidrBlock,
-    snet.availableipaddresscount = subnet.AvailableIpAddressCount, snet.defaultforaz = subnet.DefaultForAz,
-    snet.mapcustomerownediponlaunch = subnet.MapCustomerOwnedIpOnLaunch,
-    snet.mappubliciponlaunch = subnet.MapPublicIpOnLaunch, snet.subnetarn = subnet.SubnetArn,
-    snet.availabilityzone = subnet.AvailabilityZone, snet.availabilityzoneid = subnet.AvailabilityZoneId,
+    snet.available_ip_address_count = subnet.AvailableIpAddressCount, snet.default_for_az = subnet.DefaultForAz,
+    snet.map_customer_owned_ip_on_launch = subnet.MapCustomerOwnedIpOnLaunch,
+    snet.map_public_ip_on_launch = subnet.MapPublicIpOnLaunch, snet.subnet_arn = subnet.SubnetArn,
+    snet.availability_zone = subnet.AvailabilityZone, snet.availability_zone_id = subnet.AvailabilityZoneId,
     snet.subnetid = subnet.SubnetId
     """
 
