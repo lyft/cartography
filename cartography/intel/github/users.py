@@ -21,6 +21,8 @@ GITHUB_ORG_USERS_PAGINATED_GRAPHQL = """
                         login
                         name
                         isSiteAdmin
+                        email
+                        company
                     }
                     role
                 }
@@ -67,6 +69,8 @@ def load_organization_users(neo4j_session, user_data, org_data, update_tag):
     u.has_2fa_enabled = user.hasTwoFactorEnabled,
     u.role = user.role,
     u.is_site_admin = user.node.isSiteAdmin,
+    u.email = user.node.email,
+    u.company = user.node.company,
     u.lastupdated = {UpdateTag}
 
     MERGE (u)-[r:MEMBER_OF]->(org)
