@@ -235,9 +235,7 @@ def _transform_python_requirements(repo_object, out_requirements_files):
     """
     req_file_contents = repo_object['requirements']
     if req_file_contents and req_file_contents.get('text'):
-        # Remove --no-binary tags if present
         text_contents = req_file_contents['text']
-        text_contents.replace('--no-binary ', '')
 
         parsed_list = []
         for line in text_contents.split("\n"):
