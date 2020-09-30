@@ -57,7 +57,7 @@ def load_ec2_security_group_rule(neo4j_session, group, rule_type, aws_update_tag
     """
 
     group_id = group["GroupId"]
-    rule_type_map = {"IpPermissions": "IpPermissionInbound", "IpPermissionEgress": "IpPermissionEgress"}
+    rule_type_map = {"IpPermissions": "IpPermissionInbound", "IpPermissionsEgress": "IpPermissionEgress"}
 
     if group.get(rule_type):
         for rule in group[rule_type]:
@@ -128,7 +128,7 @@ def load_ec2_security_groupinfo(neo4j_session, data, region, current_aws_account
         )
 
         load_ec2_security_group_rule(neo4j_session, group, "IpPermissions", aws_update_tag)
-        load_ec2_security_group_rule(neo4j_session, group, "IpPermissionEgress", aws_update_tag)
+        load_ec2_security_group_rule(neo4j_session, group, "IpPermissionsEgress", aws_update_tag)
 
 
 @timeit
