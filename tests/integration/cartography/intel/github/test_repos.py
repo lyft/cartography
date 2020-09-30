@@ -200,7 +200,6 @@ def test_library_to_repo(neo4j_session):
     MATCH (repo:GitHubRepository)-[:REQUIRES]->(lib:PythonLibrary{name:'cartography'})
     RETURN lib.id
     """)
-    print(list(n['lib.id'] for n in nodes))
 
     query = """
     MATCH (repo:GitHubRepository)-[:REQUIRES]->(lib:PythonLibrary{id:'cartography|0.1.0'})
