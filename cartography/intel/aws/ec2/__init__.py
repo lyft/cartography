@@ -5,6 +5,7 @@ from .instances import sync_ec2_instances
 from .key_pairs import sync_ec2_key_pairs
 from .load_balancer_v2s import sync_load_balancer_v2s
 from .load_balancers import sync_load_balancers
+from .network_interfaces import sync_network_interfaces
 from .security_groups import sync_ec2_security_groupinfo
 from .subnets import sync_subnets
 from .tgw import sync_transit_gateways
@@ -35,3 +36,4 @@ def sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job
     sync_load_balancer_v2s(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     sync_vpc_peering(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     sync_transit_gateways(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
+    sync_network_interfaces(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
