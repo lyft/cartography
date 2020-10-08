@@ -133,13 +133,14 @@ def load_network_interfaces(neo4j_session, data, region, aws_account_id, aws_upd
     ingest_private_ip_addresses = """
     UNWIND {network_interfaces} AS network_interface
     UNWIND network_interface.PrivateIpAddresses AS private_ip_address
-    MERGE (private_ip:EC2PrivateIp{id: network_interface.NetworkInterfaceId + ':'
+    MERGE (private_ip:Ip:EC2PrivateIp{id: network_interface.NetworkInterfaceId + ':'
         + private_ip_address.PrivateIpAddress})
     ON CREATE SET private_ip.firstseen = timestamp()
     SET private_ip.lastupdated = {aws_update_tag},
     private_ip.network_interface_id = network_interface.NetworkInterfaceId,
     private_ip.primary = private_ip_address.Primary,
     private_ip.private_ip_address = private_ip_address.PrivateIpAddress,
+    private_ip.address  = private_ip_address.PrivateIpAddress,
     private_ip.public_ip  = private_ip_address.Association.PublicIp,
     private_ip.ip_owner_id = private_ip_address.Association.IpOwnerId
     """
