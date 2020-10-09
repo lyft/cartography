@@ -50,44 +50,46 @@
   - [Relationships](#relationships-20)
 - [EC2KeyPair](#ec2keypair)
   - [Relationships](#relationships-21)
-- [EC2Reservation](#ec2reservation)
+- [EC2PrivateIp](#ec2privateip)
   - [Relationships](#relationships-22)
-- [EC2SecurityGroup](#ec2securitygroup)
+- [EC2Reservation](#ec2reservation)
   - [Relationships](#relationships-23)
-- [EC2Subnet](#ec2subnet)
+- [EC2SecurityGroup](#ec2securitygroup)
   - [Relationships](#relationships-24)
-- [EKSCluster](#ekscluster)
+- [EC2Subnet](#ec2subnet)
   - [Relationships](#relationships-25)
-- [ESDomain](#esdomain)
+- [EKSCluster](#ekscluster)
   - [Relationships](#relationships-26)
-- [Endpoint](#endpoint)
+- [ESDomain](#esdomain)
   - [Relationships](#relationships-27)
-- [Endpoint::ELBListener](#endpointelblistener)
+- [Endpoint](#endpoint)
   - [Relationships](#relationships-28)
-- [Endpoint::ELBV2Listener](#endpointelbv2listener)
+- [Endpoint::ELBListener](#endpointelblistener)
   - [Relationships](#relationships-29)
-- [Ip](#ip)
+- [Endpoint::ELBV2Listener](#endpointelbv2listener)
   - [Relationships](#relationships-30)
-- [IpRule](#iprule)
+- [Ip](#ip)
   - [Relationships](#relationships-31)
-- [IpRule::IpPermissionInbound](#ipruleippermissioninbound)
+- [IpRule](#iprule)
   - [Relationships](#relationships-32)
-- [LoadBalancer](#loadbalancer)
+- [IpRule::IpPermissionInbound](#ipruleippermissioninbound)
   - [Relationships](#relationships-33)
-- [LoadBalancerV2](#loadbalancerv2)
+- [LoadBalancer](#loadbalancer)
   - [Relationships](#relationships-34)
-- [Nameserver](#nameserver)
+- [LoadBalancerV2](#loadbalancerv2)
   - [Relationships](#relationships-35)
-- [NetworkInterface](#networkinterface)
+- [Nameserver](#nameserver)
   - [Relationships](#relationships-36)
-- [RedshiftCluster](#redshiftcluster)
+- [NetworkInterface](#networkinterface)
   - [Relationships](#relationships-37)
-- [RDSInstance](#rdsinstance)
+- [RedshiftCluster](#redshiftcluster)
   - [Relationships](#relationships-38)
-- [S3Acl](#s3acl)
+- [RDSInstance](#rdsinstance)
   - [Relationships](#relationships-39)
-- [S3Bucket](#s3bucket)
+- [S3Acl](#s3acl)
   - [Relationships](#relationships-40)
+- [S3Bucket](#s3bucket)
+  - [Relationships](#relationships-41)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -847,6 +849,26 @@ Representation of an AWS [EC2 Key Pair](https://docs.aws.amazon.com/AWSEC2/lates
         ```
         (EC2KeyPair)-[MATCHING_FINGERPRINT]->(EC2KeyPair)
         ```
+## EC2PrivateIp
+Representation of an AWS EC2 [InstancePrivateIpAddress](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_InstancePrivateIpAddress.html)
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| network_interface_id   | id of the network interface with which the IP is associated with  |
+| primary   |  Indicates whether this IPv4 address is the primary private IP address of the network interface.  |
+| private_ip_address   |  The private IPv4 address of the network interface. |
+| public_ip   |  The public IP address or Elastic IP address bound to the network interface. |
+| ip_owner_id  | Id of the owner, e.g. `amazon-elb` for ELBs  |
+
+### Relationships
+
+- EC2PrivateIps are connected with NetworkInterfaces.
+
+        ```
+        (NetworkInterface)-[PRIVATE_IP_ADDRESS]->(EC2PrivateIp)
+        ```
 
 
 ## EC2Reservation
@@ -1340,11 +1362,16 @@ Representation of a generic Network Interface.  Currently however, we only creat
 | lastupdated |  Timestamp of the last time the node was updated |
 | mac\_address| The MAC address of the network interface|
 | description |  Description of the network interface|
-| private\_ip\_address| The IPv4 address of the network interface within the subnet |
+| private\_ip\_address| The primary IPv4 address of the network interface within the subnet |
 | **id** | The ID of the network interface.  (known as `networkInterfaceId` in EC2) |
 | private\_dns\_name| The private DNS name |
 | status | Status of the network interface.  Valid Values: `available | associated | attaching | in-use | detaching ` |
 | subnetid | The ID of the subnet |
+| interface_type  |  Describes the type of network interface. Valid values: ` interface | efa ` |
+| requester_id  | Id of the requester, e.g. `amazon-elb` for ELBs |
+| requester_managed  |  Indicates whether the interface is managed by the requester |
+| source_dest_check   | Indicates whether to validate network traffic to or from this network interface.  |
+| public_ip   | Public IPv4 address attached to the interface  |
 
 
 ### Relationships
@@ -1367,6 +1394,22 @@ Representation of a generic Network Interface.  Currently however, we only creat
         (EC2Instance)-[NETWORK_INTERFACE]->(NetworkInterface)
         ```
 
+- LoadBalancers can have NetworkInterfaces connected to them.
+
+        ```
+        (LoadBalancer)-[NETWORK_INTERFACE]->(NetworkInterface)
+        ```
+
+- LoadBalancerV2s can have NetworkInterfaces connected to them.
+
+        ```
+        (LoadBalancerV2)-[NETWORK_INTERFACE]->(NetworkInterface)
+        ```
+- EC2PrivateIps are connected to a NetworkInterface.
+
+        ```
+        (NetworkInterface)-[PRIVATE_IP_ADDRESS]->(EC2PrivateIp)
+        ```
 -  EC2 Network Interfaces can be tagged with AWSTags.
 
         ```
