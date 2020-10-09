@@ -32,6 +32,7 @@ def test_load_network_interfaces(neo4j_session):
 
     assert actual_nodes == expected_nodes
 
+
 def test_ec2_private_ips(neo4j_session):
     data = tests.data.aws.ec2.network_interfaces.DESCRIBE_NETWORK_INTERFACES
     cartography.intel.aws.ec2.network_interfaces.load_network_interfaces(
@@ -46,7 +47,7 @@ def test_ec2_private_ips(neo4j_session):
         "eni-0e106a07c15ff7d14:10.0.4.180",
         "eni-0d9877f559c240362:10.0.4.96",
         "eni-04b4289e1be7634e4:10.0.4.5",
-        "eni-04b4289e1be7634e4:10.0.4.12"
+        "eni-04b4289e1be7634e4:10.0.4.12",
     }
 
     nodes = neo4j_session.run(
