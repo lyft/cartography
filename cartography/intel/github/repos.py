@@ -2,6 +2,7 @@ import logging
 from string import Template
 
 from packaging.requirements import Requirement
+from packaging.utils import canonicalize_name
 
 from cartography.intel.github.util import fetch_all
 from cartography.util import run_cleanup_job
@@ -267,9 +268,15 @@ def _transform_python_requirements(repo_object, out_requirements_files):
                 # If the spec is pinned to 1 version with ==, we only want the version number, not the full specifier.
                 spec = spec_str.strip('==') if spec_str.startswith('==') else spec
 
+            # Ingest `None` to the graph instead of empty string.
+            if spec == '':
+                spec = None
+
+            canon_name = canonicalize_name(req.name)
+
             out_requirements_files.append({
-                "id": f"{req.name}|{spec}",
-                "name": req.name,
+                "id": canon_name,
+                "name": canon_name,
                 "specifier": spec,
                 "url": req.url,
                 "repo_url": repo_object['url'],
@@ -435,15 +442,15 @@ def load_python_requirements(neo4j_session, update_tag, requirements_objects):
         MERGE (lib:PythonLibrary:Dependency{id: req.id})
         ON CREATE SET lib.firstseen = timestamp(),
         lib.name = req.name
-        SET lib.specifier = req.specifier,
-        lib.url = req.url,
+        SET lib.url = req.url,
         lib.lastupdated = {UpdateTag}
 
         WITH lib, req
         MATCH (repo:GitHubRepository{id: req.repo_url})
         MERGE (repo)-[r:REQUIRES]->(lib)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {UpdateTag}
+        SET r.lastupdated = {UpdateTag},
+        r.specifier = req.specifier
     """
     neo4j_session.run(
         query,

@@ -188,21 +188,39 @@ def test_repository_to_collaborators(neo4j_session):
     assert actual_nodes == expected_nodes
 
 
-def test_library_to_repo(neo4j_session):
+def test_pinned_python_library_to_repo(neo4j_session):
     """
-    Ensure that repositories are connected to Python libraries
+    Ensure that repositories are connected to pinned Python libraries.
+    Create the path (:RepoA)-[:REQUIRES{specifier:"0.1.0"}]->(:PythonLibrary{'Cartography'})<-[:REQUIRES]-(:RepoB),
+    and verify that exactly 1 repo is connected to the PythonLibrary with a specifier (RepoA).
     """
-    # Create the path (:Repo1)-[:REQUIRES]->(:PythonLibrary{'Cartography'})<-[:REQUIRES]-(:Repo1),
-    # and test that exactly 1 repo is connected to the PythonLibrary.
     _ensure_local_neo4j_has_test_data(neo4j_session)
 
-    nodes = neo4j_session.run("""
-    MATCH (repo:GitHubRepository)-[:REQUIRES]->(lib:PythonLibrary{name:'cartography'})
-    RETURN lib.id
-    """)
-
+    # Note: don't query for relationship attributes in code that needs to be fast.
     query = """
-    MATCH (repo:GitHubRepository)-[:REQUIRES]->(lib:PythonLibrary{id:'cartography|0.1.0'})
+    MATCH (repo:GitHubRepository)-[r:REQUIRES]->(lib:PythonLibrary{id:'cartography'})
+    WHERE r.specifier = "0.1.0"
+    RETURN count(repo) as repo_count
+    """
+    nodes = neo4j_session.run(query)
+    actual_nodes = {n['repo_count'] for n in nodes}
+    expected_nodes = {1}
+    assert actual_nodes == expected_nodes
+
+
+def test_upinned_python_library_to_repo(neo4j_session):
+    """
+    Ensure that repositories are connected to un-pinned Python libraries.
+    That is, create the path
+    (:RepoA)-[r:REQUIRES{specifier:"0.1.0"}]->(:PythonLibrary{'Cartography'})<-[:REQUIRES]-(:RepoB),
+    and verify that exactly 1 repo is connected to the PythonLibrary without using a pinned specifier (RepoB).
+    """
+    _ensure_local_neo4j_has_test_data(neo4j_session)
+
+    # Note: don't query for relationship attributes in code that needs to be fast.
+    query = """
+    MATCH (repo:GitHubRepository)-[r:REQUIRES]->(lib:PythonLibrary{id:'cartography'})
+    WHERE r.specifier is NULL
     RETURN count(repo) as repo_count
     """
     nodes = neo4j_session.run(query)

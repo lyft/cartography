@@ -178,15 +178,15 @@ Representation of a Python library as listed in a [requirements.txt](https://pip
 
 | Field | Description |
 |-------|-------------|
-|**id**|Concatenation of `{Requirement name}|{specifier}`|
-|name|The name of the library|
-|specifier|A string describing this library's version. If of the form "x.y.z", then the version was pinned with a `==` operator. Otherwise this is a more complex string such as  "<4.0,>=3.0".|
+|**id**|The [canonicalized](https://packaging.pypa.io/en/latest/utils/#packaging.utils.canonicalize_name) name of the library|
+|name|The [canonicalized](https://packaging.pypa.io/en/latest/utils/#packaging.utils.canonicalize_name) name of the library|
 |url|URL of the library, if available|
 
 ### Relationships
 
-- Software on Github repos can import Python libraries
+- Software on Github repos can import Python libraries by optionally specifying a version number.
 
     ```
-    (GitHubRepository)-[:REQUIRES]->(PythonLibrary)
+    (GitHubRepository)-[:REQUIRES{specifier}]->(PythonLibrary)
     ```
+    - specifier: A string describing this library's version. If of the form "x.y.z", then the version was pinned with a `==` operator. Otherwise this is a more complex string such as  "<4.0,>=3.0".
