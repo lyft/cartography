@@ -1,7 +1,7 @@
 from setuptools import find_packages
 from setuptools import setup
 
-__version__ = '0.9.0'
+__version__ = '0.28.0'
 
 
 setup(
@@ -16,6 +16,7 @@ setup(
     package_data={
         'cartography.data': [
             '*.cypher',
+            '*.yaml',
         ],
         'cartography.data.jobs.analysis': [
             '*.json',
@@ -29,14 +30,16 @@ setup(
         "boto3>=1.7.0",
         "botocore>=1.12.0",
         "dnspython>=1.15.0",
-        "neo4j-driver>=1.7.0",
-        "neobolt>=1.7.0",
+        "neo4j>=1.7.0,<4.0.0",
+        "neobolt>=1.7.0,<4.0.0",
         "policyuniverse>=1.1.0.0",
-        "python-dateutil>=2.7.0",
         "google-api-python-client>=1.7.8",
         "oauth2client>=4.1.3",
         "marshmallow>=3.0.0rc7",
+        "okta>=0.0.4",
+        "pyyaml>=5.3.1",
         "requests>=2.22.0",
+        "statsd",
     ],
     extras_require={
         ':python_version<"3.7"': [

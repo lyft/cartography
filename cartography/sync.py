@@ -3,14 +3,17 @@ import time
 from collections import OrderedDict
 
 import neobolt.exceptions
-from neo4j.v1 import GraphDatabase
+from neo4j import GraphDatabase
+from statsd import StatsClient
 
 import cartography.intel.analysis
 import cartography.intel.aws
 import cartography.intel.create_indexes
 import cartography.intel.crxcavator.crxcavator
 import cartography.intel.gcp
+import cartography.intel.github
 import cartography.intel.gsuite
+import cartography.intel.okta
 
 
 logger = logging.getLogger(__name__)
@@ -88,6 +91,14 @@ def run_with_config(sync, config):
     :type config: cartography.config.Config
     :param config: The configuration to use to run the sync task.
     """
+    # Initialize statsd client if enabled
+    if config.statsd_enabled:
+        cartography.util.stats_client = StatsClient(
+            host=config.statsd_host,
+            port=config.statsd_port,
+            prefix=config.statsd_prefix,
+        )
+
     neo4j_auth = None
     if config.neo4j_user or config.neo4j_password:
         neo4j_auth = (config.neo4j_user, config.neo4j_password)
@@ -148,6 +159,8 @@ def build_default_sync():
         ('gcp', cartography.intel.gcp.start_gcp_ingestion),
         ('gsuite', cartography.intel.gsuite.start_gsuite_ingestion),
         ('crxcavator', cartography.intel.crxcavator.start_extension_ingestion),
+        ('okta', cartography.intel.okta.start_okta_ingestion),
+        ('github', cartography.intel.github.start_github_ingestion),
         ('analysis', cartography.intel.analysis.run),
     ])
     return sync

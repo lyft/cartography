@@ -1,10 +1,14 @@
 import logging
 
+from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
+from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 
 
+@timeit
+@aws_handle_regions
 def get_rds_instance_data(boto3_session, region):
     """
     Create an RDS boto3 client and grab all the DBInstances.
@@ -14,9 +18,11 @@ def get_rds_instance_data(boto3_session, region):
     instances = []
     for page in paginator.paginate():
         instances.extend(page['DBInstances'])
-    return {'DBInstances': instances}
+
+    return instances
 
 
+@timeit
 def load_rds_instances(neo4j_session, data, region, current_aws_account_id, aws_update_tag):
     """
     Ingest the RDS instances to neo4j and link them to necessary nodes.
@@ -24,7 +30,8 @@ def load_rds_instances(neo4j_session, data, region, current_aws_account_id, aws_
     ingest_rds_instance = """
     MERGE (rds:RDSInstance{id: {DBInstanceArn}})
     ON CREATE SET rds.firstseen = timestamp()
-    SET rds.db_instance_identifier = {DBInstanceIdentifier},
+    SET rds.arn = {DBInstanceArn},
+    rds.db_instance_identifier = {DBInstanceIdentifier},
     rds.db_instance_class = {DBInstanceClass},
     rds.engine = {Engine},
     rds.master_username = {MasterUsername},
@@ -52,6 +59,8 @@ def load_rds_instances(neo4j_session, data, region, current_aws_account_id, aws_
     rds.endpoint_address = {EndpointAddress},
     rds.endpoint_hostedzoneid = {EndpointHostedZoneId},
     rds.endpoint_port = {EndpointPort},
+    rds.iam_database_authentication_enabled = {IAMDatabaseAuthenticationEnabled},
+    rds.auto_minor_version_upgrade = {AutoMinorVersionUpgrade},
     rds.lastupdated = {aws_update_tag}
     WITH rds
     MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
@@ -61,7 +70,7 @@ def load_rds_instances(neo4j_session, data, region, current_aws_account_id, aws_
     """
     read_replicas = []
 
-    for rds in data.get('DBInstances', []):
+    for rds in data:
         instance_create_time = str(rds['InstanceCreateTime']) if 'InstanceCreateTime' in rds else None
         latest_restorable_time = str(rds['LatestRestorableTime']) if 'LatestRestorableTime' in rds else None
 
@@ -101,6 +110,8 @@ def load_rds_instances(neo4j_session, data, region, current_aws_account_id, aws_
             EndpointAddress=ep.get('Address'),
             EndpointHostedZoneId=ep.get('HostedZoneId'),
             EndpointPort=ep.get('Port'),
+            IAMDatabaseAuthenticationEnabled=rds.get('IAMDatabaseAuthenticationEnabled'),
+            AutoMinorVersionUpgrade=rds.get('AutoMinorVersionUpgrade'),
             Region=region,
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag,
@@ -110,6 +121,7 @@ def load_rds_instances(neo4j_session, data, region, current_aws_account_id, aws_
     _attach_read_replicas(neo4j_session, read_replicas, aws_update_tag)
 
 
+@timeit
 def _attach_ec2_subnet_groups(neo4j_session, instance, region, current_aws_account_id, aws_update_tag):
     """
     Attach RDS instance to its EC2 subnets
@@ -144,6 +156,7 @@ def _attach_ec2_subnet_groups(neo4j_session, instance, region, current_aws_accou
         _attach_ec2_subnets_to_subnetgroup(neo4j_session, db_sng, region, current_aws_account_id, aws_update_tag)
 
 
+@timeit
 def _attach_ec2_subnets_to_subnetgroup(neo4j_session, db_subnet_group, region, current_aws_account_id, aws_update_tag):
     """
     Attach EC2Subnets to the DB Subnet Group.
@@ -175,6 +188,7 @@ def _attach_ec2_subnets_to_subnetgroup(neo4j_session, db_subnet_group, region, c
         )
 
 
+@timeit
 def _attach_ec2_security_groups(neo4j_session, instance, aws_update_tag):
     """
     Attach an RDS instance to its EC2SecurityGroups
@@ -195,6 +209,7 @@ def _attach_ec2_security_groups(neo4j_session, instance, aws_update_tag):
         )
 
 
+@timeit
 def _attach_read_replicas(neo4j_session, read_replicas, aws_update_tag):
     """
     Attach read replicas to their source instances
@@ -236,6 +251,7 @@ def _get_db_subnet_group_arn(region, current_aws_account_id, db_subnet_group_nam
     return f"arn:aws:rds:{region}:{current_aws_account_id}:subgrp:{db_subnet_group_name}"
 
 
+@timeit
 def cleanup_rds_instances_and_db_subnet_groups(neo4j_session, common_job_parameters):
     """
     Remove RDS graph nodes and DBSubnetGroups that were created from other ingestion runs
@@ -243,6 +259,7 @@ def cleanup_rds_instances_and_db_subnet_groups(neo4j_session, common_job_paramet
     run_cleanup_job('aws_import_rds_instances_cleanup.json', neo4j_session, common_job_parameters)
 
 
+@timeit
 def sync_rds_instances(
     neo4j_session, boto3_session, regions, current_aws_account_id, aws_update_tag,
     common_job_parameters,

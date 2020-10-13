@@ -1,0 +1,9 @@
+{
+  "statements": [{
+    "query": "MATCH (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(:AWSVpc)<-[r:MEMBER_OF_AWS_VPC]-(n:EC2Subnet) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+    "iterative": true,
+    "iterationsize": 100
+  }
+  ],
+  "name": "cleanup Subnet"
+}

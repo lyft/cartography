@@ -1,3 +1,4 @@
+import json
 import logging
 from collections import namedtuple
 
@@ -7,10 +8,22 @@ from oauth2client.client import GoogleCredentials
 
 from cartography.intel.gcp import compute
 from cartography.intel.gcp import crm
+from cartography.intel.gcp import gke
+from cartography.intel.gcp import storage
 from cartography.util import run_analysis_job
+from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
-Resources = namedtuple('Resources', 'crm_v1 crm_v2 compute')
+Resources = namedtuple('Resources', 'crm_v1 crm_v2 compute storage container serviceusage')
+
+# Mapping of service short names to their full names as in docs. See https://developers.google.com/apis-explorer,
+# and https://cloud.google.com/service-usage/docs/reference/rest/v1/services#ServiceConfig
+Services = namedtuple('Services', 'compute storage gke')
+service_names = Services(
+    compute='compute.googleapis.com',
+    storage='storage.googleapis.com',
+    gke='container.googleapis.com',
+)
 
 
 def _get_crm_resource_v1(credentials):
@@ -45,6 +58,40 @@ def _get_compute_resource(credentials):
     return googleapiclient.discovery.build('compute', 'v1', credentials=credentials, cache_discovery=False)
 
 
+def _get_storage_resource(credentials):
+    """
+    Instantiates a Google Cloud Storage resource object to call the Storage API.
+    This is used to pull bucket metadata and IAM Policies
+    as well as list buckets in a specified project.
+    See https://cloud.google.com/storage/docs/json_api/.
+    :param credentials: The GoogleCredentials object
+    :return: A Storage resource object
+    """
+    return googleapiclient.discovery.build('storage', 'v1', credentials=credentials, cache_discovery=False)
+
+
+def _get_container_resource(credentials):
+    """
+    Instantiates a Google Cloud Container resource object to call the
+    Container API. See: https://cloud.google.com/kubernetes-engine/docs/reference/rest/v1/.
+
+    :param credentials: The GoogleCredentials object
+    :return: A Container resource object
+    """
+    return googleapiclient.discovery.build('container', 'v1', credentials=credentials, cache_discovery=False)
+
+
+def _get_serviceusage_resource(credentials):
+    """
+    Instantiates a serviceusage resource object.
+    See: https://cloud.google.com/service-usage/docs/reference/rest/v1/operations/list.
+
+    :param credentials: The GoogleCredentials object
+    :return: A serviceusage resource object
+    """
+    return googleapiclient.discovery.build('serviceusage', 'v1', credentials=credentials, cache_discovery=False)
+
+
 def _initialize_resources(credentials):
     """
     Create namedtuple of all resource objects necessary for GCP data gathering.
@@ -55,7 +102,39 @@ def _initialize_resources(credentials):
         crm_v1=_get_crm_resource_v1(credentials),
         crm_v2=_get_crm_resource_v2(credentials),
         compute=_get_compute_resource(credentials),
+        storage=_get_storage_resource(credentials),
+        container=_get_container_resource(credentials),
+        serviceusage=_get_serviceusage_resource(credentials),
     )
+
+
+def _services_enabled_on_project(serviceusage, project_id):
+    """
+    Return a list of all Google API services that are enabled on the given project ID.
+    See https://cloud.google.com/service-usage/docs/reference/rest/v1/services/list for data shape.
+    :param serviceusage: the serviceusage resource provider. See https://cloud.google.com/service-usage/docs/overview.
+    :param project_id: The project ID number to sync.  See  the `projectId` field in
+    https://cloud.google.com/resource-manager/reference/rest/v1/projects
+    :return: A set of services that are enabled on the project
+    """
+    try:
+        req = serviceusage.services().list(parent=f'projects/{project_id}', filter='state:ENABLED')
+        res = req.execute()
+        if 'services' in res:
+            return {svc['config']['name'] for svc in res['services']}
+        else:
+            return {}
+    except googleapiclient.discovery.HttpError as http_error:
+        http_error = json.loads(http_error.content.decode('utf-8'))
+        # This is set to log-level `info` because Google creates many projects under the hood that cartography cannot
+        # audit (e.g. adding a script to a Google spreadsheet causes a project to get created) and we don't need to emit
+        # a warning for these projects.
+        logger.info(
+            f"HttpError when trying to get enabled services on project {project_id}. "
+            f"Code: {http_error['error']['code']}, Message: {http_error['error']['message']}. "
+            f"Skipping.",
+        )
+        return {}
 
 
 def _sync_single_project(neo4j_session, resources, project_id, gcp_update_tag, common_job_parameters):
@@ -69,7 +148,14 @@ def _sync_single_project(neo4j_session, resources, project_id, gcp_update_tag, c
     :param common_job_parameters: Other parameters sent to Neo4j
     :return: Nothing
     """
-    compute.sync(neo4j_session, resources.compute, project_id, gcp_update_tag, common_job_parameters)
+    # Determine the resources available on the project.
+    enabled_services = _services_enabled_on_project(resources.serviceusage, project_id)
+    if service_names.compute in enabled_services:
+        compute.sync(neo4j_session, resources.compute, project_id, gcp_update_tag, common_job_parameters)
+    if service_names.storage in enabled_services:
+        storage.sync_gcp_buckets(neo4j_session, resources.storage, project_id, gcp_update_tag, common_job_parameters)
+    if service_names.gke in enabled_services:
+        gke.sync_gke_clusters(neo4j_session, resources.container, project_id, gcp_update_tag, common_job_parameters)
 
 
 def _sync_multiple_projects(neo4j_session, resources, projects, gcp_update_tag, common_job_parameters):
@@ -85,7 +171,7 @@ def _sync_multiple_projects(neo4j_session, resources, projects, gcp_update_tag, 
     :param common_job_parameters: Other parameters sent to Neo4j
     :return: Nothing
     """
-    logger.debug("Syncing %d GCP projects.", len(projects))
+    logger.info("Syncing %d GCP projects.", len(projects))
     crm.sync_gcp_projects(neo4j_session, projects, gcp_update_tag, common_job_parameters)
 
     for project in projects:
@@ -94,6 +180,7 @@ def _sync_multiple_projects(neo4j_session, resources, projects, gcp_update_tag, 
         _sync_single_project(neo4j_session, resources, project_id, gcp_update_tag, common_job_parameters)
 
 
+@timeit
 def start_gcp_ingestion(neo4j_session, config):
     """
     Starts the GCP ingestion process by initializing Google Application Default Credentials, creating the necessary
@@ -135,6 +222,18 @@ def start_gcp_ingestion(neo4j_session, config):
 
     run_analysis_job(
         'gcp_compute_asset_inet_exposure.json',
+        neo4j_session,
+        common_job_parameters,
+    )
+
+    run_analysis_job(
+        'gcp_gke_asset_exposure.json',
+        neo4j_session,
+        common_job_parameters,
+    )
+
+    run_analysis_job(
+        'gcp_gke_basic_auth.json',
         neo4j_session,
         common_job_parameters,
     )

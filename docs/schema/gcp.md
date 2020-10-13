@@ -7,7 +7,9 @@
 - [GCPOrganization](#gcporganization)
   - [Relationships](#relationships)
   - [Relationships](#relationships-1)
+- [GCPBucket](#gcpbucket)
   - [Relationships](#relationships-2)
+- [Label: GCPBucketLabel](#label-gcpbucketlabel)
 - [GCPInstance](#gcpinstance)
   - [Relationships](#relationships-3)
 - [GCPNetworkTag](#gcpnetworktag)
@@ -22,8 +24,10 @@
   - [Relationships](#relationships-8)
 - [GCPFirewall](#gcpfirewall)
   - [Relationships](#relationships-9)
-- [IpRule::IpPermissionInbound::GCPIpRule](#ipruleippermissioninboundgcpiprule)
+- [GKECluster](#gkecluster)
   - [Relationships](#relationships-10)
+- [IpRule::IpPermissionInbound::GCPIpRule](#ipruleippermissioninboundgcpiprule)
+  - [Relationships](#relationships-11)
 - [IpRange](#iprange)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -92,13 +96,14 @@ Representation of a GCP [Organization](https://cloud.google.com/resource-manager
 
  Representation of a GCP [Project](https://cloud.google.com/resource-manager/reference/rest/v1/projects).  An additional helpful reference is the [Google Compute Platform resource hierarchy](https://cloud.google.com/resource-manager/docs/cloud-platform-resource-hierarchy).
 
-| Field | Description |
-|-------|--------------|
-| firstseen| Timestamp of when a sync job first discovered this node  |
-| lastupdated |  Timestamp of the last time the node was updated |
-| id | The ID of the project, e.g. "sys-12345"|
-| displayname | A friendly name of the project, e.g. "MyProject".
-| lifecyclestate | The project's current lifecycle state. Assigned by the server.  See the [official docs](https://cloud.google.com/resource-manager/reference/rest/v1/projects#LifecycleState).
+ | Field | Description |
+ |-------|--------------|
+ | firstseen| Timestamp of when a sync job first discovered this node  |
+ | lastupdated |  Timestamp of the last time the node was updated |
+ | id | The ID of the project, e.g. "sys-12345"|
+ | projectnumber | The number uniquely identifying the project, e.g. '987654'|
+ | displayname | A friendly name of the project, e.g. "MyProject".
+ | lifecyclestate | The project's current lifecycle state. Assigned by the server.  See the [official docs](https://cloud.google.com/resource-manager/reference/rest/v1/projects#LifecycleState).
 
  ### Relationships
 
@@ -121,6 +126,64 @@ Representation of a GCP [Organization](https://cloud.google.com/resource-manager
     ```
 
 
+ ## GCPBucket
+ Representation of a GCP [Storage Bucket](https://cloud.google.com/storage/docs/json_api/v1/buckets).
+
+ | Field | Description |
+ |-------|--------------|
+ | firstseen| Timestamp of when a sync job first discovered this node  |
+ | lastupdated |  Timestamp of the last time the node was updated |
+ | id | The ID of the storage bucket, e.g. "bucket-12345"|
+ | projectnumber | The number uniquely identifying the project associated with the storage bucket, e.g. '987654' |
+ | self_link | The URI of the storage bucket |
+ | kind | The kind of item this is. For storage buckets, this is always storage#bucket |
+ | location | The location of the bucket. Object data for objects in the bucket resides in physical storage within this region. Defaults to US. See [Cloud Storage bucket locations](https://cloud.google.com/storage/docs/locations) for the authoritative list. |
+ | location_type | The type of location that the bucket resides in, as determined by the `location` property |
+ | meta_generation | The metadata generation of this bucket |
+ | storage_class | The bucket's default storage class, used whenever no `storageClass` is specified for a newly-created object. For more information, see [storage classes](https://cloud.google.com/storage/docs/storage-classes) |
+ | time_created | The creation time of the bucket in RFC 3339 format |
+ | retention_period | The period of time, in seconds, that objects in the bucket must be retained and cannot be deleted, overwritten, or archived |
+ | iam_config_bucket_policy_only | The bucket's [Bucket Policy Only](https://cloud.google.com/storage/docs/bucket-policy-only) configuration |
+ | owner_entity | The entity, in the form `project-owner-projectId` |
+ | owner_entity_id | The ID for the entity |
+ | versioning_enabled | The bucket's versioning configuration (if set to `True`, versioning is fully enabled for this bucket) |
+ | log_bucket | The destination bucket where the current bucket's logs should be placed |
+ | requester_pays | The bucket's billing configuration (if set to true, Requester Pays is enabled for this bucket) |
+ | default_kms_key_name | A Cloud KMS key that will be used to encrypt objects inserted into this bucket, if no encryption method is specified |
+
+ ### Relationships
+
+
+- GCPBuckets are part of GCPProjects.
+
+    ```
+    (GCPProject)-[RESOURCE]->(GCPBucket)
+    ```
+
+- GCPBuckets can be labelled with GCPBucketLabels.
+
+    ```
+    (GCPBucket)<-[LABELLED]-(GCPBucketLabels)
+    ```
+
+## Label: GCPBucketLabel
+Representation of a GCP [Storage Bucket Label](https://cloud.google.com/storage/docs/key-terms#bucket-labels).  This node contains a key-value pair.
+
+ | Field | Description |
+ |-------|--------------|
+ | firstseen| Timestamp of when a sync job first discovered this node  |
+ | lastupdated |  Timestamp of the last time the node was updated |
+ | id | The ID of the bucket label.  Takes the form "GCPBucketLabel_{key}."|
+ | key| The key of the bucket label. |
+ | value | The value of the bucket label. |
+
+- GCPBuckets can be labeled with GCPBucketLabels.
+
+    ```
+    (GCPBucket)<-[LABELED]-(GCPBucketLabels)
+    ```
+
+
  ## GCPInstance
 
  Representation of a GCP [Instance](https://cloud.google.com/compute/docs/reference/rest/v1/instances).  Additional references can be found in the [official documentation]( https://cloud.google.com/compute/docs/concepts).
@@ -135,7 +198,7 @@ Representation of a GCP [Organization](https://cloud.google.com/resource-manager
 | instancename | The name of the instance, e.g. "my-instance" |
 | zone_name | The zone that the instance is installed on |
 | hostname | If present, the hostname of the instance |
-| internet_exposed | Set to True  with `exposed_internet_type = 'direct'` if there is an 'allow' IPRule attached to one of the instance's ingress firewalls with the following conditions:  The 'allow' IpRule allows traffic from one or more TCP ports, and the 'allow' IpRule is not superceded by a 'deny' IPRule (in GCP, a firewall rule of priority 1 gets applied ahead of a firewall rule of priority 100, and 'deny' rules of the same priority are applied ahead of 'allow' rules) |
+| exposed_internet | Set to True  with `exposed_internet_type = 'direct'` if there is an 'allow' IPRule attached to one of the instance's ingress firewalls with the following conditions:  The 'allow' IpRule allows traffic from one or more TCP ports, and the 'allow' IpRule is not superceded by a 'deny' IPRule (in GCP, a firewall rule of priority 1 gets applied ahead of a firewall rule of priority 100, and 'deny' rules of the same priority are applied ahead of 'allow' rules) |
 | status | The [GCP Instance Lifecycle](https://cloud.google.com/compute/docs/instances/instance-life-cycle) state of the instance |
 
 ### Relationships
@@ -421,6 +484,53 @@ Representation of a GCP [Firewall](https://cloud.google.com/compute/docs/referen
     MATCH (fw:GCPFirewall{direction: 'INGRESS', has_target_service_accounts: False}})
     WHERE NOT (fw)-[TARGET_TAG]->(GCPNetworkTag)
     MATCH (GCPInstance)-[MEMBER_OF_GCP_VPC]->(GCPVpc)-[RESOURCE]->(fw)
+    ```
+
+
+## GKECluster
+
+Representation of a GCP [GKE Cluster](https://cloud.google.com/kubernetes-engine/docs/reference/rest/v1/).
+
+| Field                    | Description                                                                                                                                  |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| basic_auth | Set to `True` if both `masterauth_username` and `masterauth_password` are set |
+| created_at               | The date and time the cluster was created                                                                                                    |
+| cluster_ipv4cidr         | The IP address range of the container pods in the cluster                                                                                    |
+| current_master_version   | The current software version of the master endpoint                                                                                          |
+| database_encryption      | Configuration of etcd encryption                                                                                                             |
+| description              | An optional description of the cluster                                                                                                       |
+| endpoint                 | The IP address of the cluster's master endpoint. The endpoint can be accessed from the internet at https://username:password@endpoint/       |
+| exposed_internet | Set to `True` if at least among `private_nodes`, `private_endpoint_enabled`, or `master_authorized_networks` are disabled |
+| firstseen                | Timestamp of when a sync job first discovered this node                                                                                      |
+| **id**                   | Same as `self_link`                                                                                                                          |
+| initial_version          | The initial Kubernetes version for the cluster                                                                                               |
+| location                 | The name of the Google Compute Engine zone or region in which the cluster resides                                                            |
+| logging_service          | The logging service used to write logs. Available options: `logging.googleapis.com/kubernetes`, `logging.googleapis.com`, `none`             |
+|master_authorized_networks | If enabled, it disallows all external traffic to access Kubernetes master through HTTPS except traffic from the given CIDR blocks, Google Compute Engine Public IPs and Google Prod IPs |
+masterauth_username |The username to use for HTTP basic authentication to the master endpoint. For clusters v1.6.0 and later, basic authentication can be disabled by leaving username unspecified (or setting it to the empty string) |
+masterauth_password | The password to use for HTTP basic authentication to the master endpoint. If a password is provided for cluster creation, username must be non-empty |
+| monitoring_service       | The monitoring service used to write metrics. Available options: `monitoring.googleapis.com/kubernetes`, `monitoring.googleapis.com`, `none` |
+| name                     | The name of the cluster                                                                                                                      |
+| network                  | The name of the Google Compute Engine network to which the cluster is connected                                                              |
+| network_policy           | Set to `True` if a network policy provider has been enabled                                                                                  |
+| private_endpoint_enabled | Whether the master's internal IP address is used as the cluster endpoint                                                                     |
+| private_endpoint         | The internal IP address of the cluster's master endpoint                                                                                     |
+| private_nodes            | If enabled, all nodes are given only private addresses and communicate with the master via private networking                                |
+| public_endpoint          | The external IP address of the cluster's master endpoint                                                                                     |
+| **self_link**            | Server-defined URL for the resource                                                                                                          |
+| services_ipv4cidr        | The IP address range of the Kubernetes services in the cluster                                                                               |
+| shielded_nodes           | Whether Shielded Nodes are enabled                                                                                                           |
+| status                   | The current status of the cluster                                                                                                            |
+| subnetwork               | The name of the Google Compute Engine subnetwork to which the cluster is connected                                                           |
+| zone                     | The name of the Google Compute Engine zone in which the cluster resides                                                                      |
+
+
+### Relationships
+
+- GKEClusters are resources of GCPProjects.
+
+    ```
+    (GCPProject)-[RESOURCE]->(GKECluster)
     ```
 
 
