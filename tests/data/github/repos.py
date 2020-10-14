@@ -31,7 +31,7 @@ GET_REPOS = [
             '__typename': 'Organization',
         },
         'collaborators': {'edges': [], 'nodes': []},
-        'requirements': {'text': 'cartography\nhttplib2>=0.7.0\njinja2\nlxml\n'},
+        'requirements': {'text': 'cartography\nhttplib2>=0.7.0\njinja2\nlxml\n-e git+https://example.com#egg=foobar\nhttps://example.com/foobar.tar.gz\n'},  # noqa
     }, {
         'name': 'SampleRepo2',
         'nameWithOwner': 'example_org/SampleRepo2',

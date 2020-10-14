@@ -1,6 +1,7 @@
 import logging
 from string import Template
 
+from packaging.requirements import InvalidRequirement
 from packaging.requirements import Requirement
 from packaging.utils import canonicalize_name
 
@@ -241,11 +242,11 @@ def _transform_python_requirements(repo_object, out_requirements_files):
         parsed_list = []
         for line in text_contents.split("\n"):
             try:
-                # Skip over empty lines
-                if line:
-                    req = Requirement(line)
-                    parsed_list.append(req)
-            except ValueError as e:
+                # Remove trailing comments and extra whitespace
+                line = line.partition('#')[0].strip()
+                req = Requirement(line)
+                parsed_list.append(req)
+            except InvalidRequirement as e:
                 logger.info(
                     f"Failed to parse line \"{line}\" in repo {repo_object['url']}'s requirements.txt; skipping. "
                     f"Details: {e}.",
@@ -259,6 +260,7 @@ def _transform_python_requirements(repo_object, out_requirements_files):
                 )
                 continue
 
+            pinned_version = None
             # Set `spec` to a default value. Example values for str(req.specifier): "<4.0,>=3.0" or "==1.0.0".
             spec = str(req.specifier)
 
@@ -266,19 +268,22 @@ def _transform_python_requirements(repo_object, out_requirements_files):
                 # req.specifier._specs is a frozenset so to manipulate it we turn it into a list and get the 1st item.
                 spec_str = str(list(req.specifier._specs)[0])
                 # If the spec is pinned to 1 version with ==, we only want the version number, not the full specifier.
-                spec = spec_str.strip('==') if spec_str.startswith('==') else spec
+                if spec_str.startswith('=='):
+                    spec = spec_str.strip('==')
+                    pinned_version = spec
 
             # Ingest `None` to the graph instead of empty string.
             if spec == '':
                 spec = None
 
             canon_name = canonicalize_name(req.name)
+            requirement_id = f"{canon_name}|{pinned_version}" if pinned_version else canon_name
 
             out_requirements_files.append({
-                "id": canon_name,
+                "id": requirement_id,
                 "name": canon_name,
                 "specifier": spec,
-                "url": req.url,
+                "version": pinned_version,
                 "repo_url": repo_object['url'],
             })
 
@@ -442,8 +447,8 @@ def load_python_requirements(neo4j_session, update_tag, requirements_objects):
         MERGE (lib:PythonLibrary:Dependency{id: req.id})
         ON CREATE SET lib.firstseen = timestamp(),
         lib.name = req.name
-        SET lib.url = req.url,
-        lib.lastupdated = {UpdateTag}
+        SET lib.lastupdated = {UpdateTag},
+        lib.version = req.version
 
         WITH lib, req
         MATCH (repo:GitHubRepository{id: req.repo_url})

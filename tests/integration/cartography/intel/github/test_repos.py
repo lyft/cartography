@@ -198,8 +198,8 @@ def test_pinned_python_library_to_repo(neo4j_session):
 
     # Note: don't query for relationship attributes in code that needs to be fast.
     query = """
-    MATCH (repo:GitHubRepository)-[r:REQUIRES]->(lib:PythonLibrary{id:'cartography'})
-    WHERE r.specifier = "0.1.0"
+    MATCH (repo:GitHubRepository)-[r:REQUIRES]->(lib:PythonLibrary{id:'cartography|0.1.0'})
+    WHERE lib.version = "0.1.0" and r.specifier = "0.1.0"
     RETURN count(repo) as repo_count
     """
     nodes = neo4j_session.run(query)
