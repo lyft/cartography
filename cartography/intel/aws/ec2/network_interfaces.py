@@ -24,16 +24,24 @@ def get_network_interface_data(boto3_session, region):
 def load_network_interfaces(neo4j_session, data, region, aws_account_id, aws_update_tag):
 
     elb_associations = []
+    elb_associations_v2 = []
     instance_associations = []
 
     for network_interface in data:
-
-        matchObj = re.match(r'^ELB (.*)', network_interface.get('Description', ''))
+        # https://aws.amazon.com/premiumsupport/knowledge-center/elb-find-load-balancer-IP/
+        matchObj = re.match(r'^ELB (?:net|app)/([^\/]+)\/(.*)', network_interface.get('Description', ''))
         if matchObj:
-            elb_associations.append({
+            elb_associations_v2.append({
                 'netinf_id': network_interface['NetworkInterfaceId'],
-                'elb_name': matchObj[1],
+                'elb_id': '{}-{}.elb.{}.amazonaws.com'.format(matchObj[1], matchObj[2], region),
             })
+        else:
+            matchObj = re.match(r'^ELB (.*)', network_interface.get('Description', ''))
+            if matchObj:
+                elb_associations.append({
+                    'netinf_id': network_interface['NetworkInterfaceId'],
+                    'elb_name': matchObj[1],
+                })
 
         if 'Attachment' in network_interface and 'InstanceId' in network_interface['Attachment']:
             instance_associations.append({
@@ -120,14 +128,14 @@ def load_network_interfaces(neo4j_session, data, region, aws_account_id, aws_upd
     ingest_network_interface_elb2_relations = """
     UNWIND {elb_associations} AS elb_association
     MATCH (netinf:NetworkInterface{id: elb_association.netinf_id}),
-        (elb:LoadBalancerV2{name: elb_association.elb_name})
+        (elb:LoadBalancerV2{id: elb_association.elb_id})
     MERGE (elb)-[r:NETWORK_INTERFACE]->(netinf)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {aws_update_tag}
     """
 
     neo4j_session.run(
-        ingest_network_interface_elb2_relations, elb_associations=elb_associations,
+        ingest_network_interface_elb2_relations, elb_associations=elb_associations_v2,
         aws_update_tag=aws_update_tag, region=region, aws_account_id=aws_account_id,
     )
 
@@ -163,6 +171,39 @@ def load_network_interfaces(neo4j_session, data, region, aws_account_id, aws_upd
     neo4j_session.run(
         ingest_private_ip_addresses_network_interface_relations, network_interfaces=data,
         aws_update_tag=aws_update_tag, region=region, aws_account_id=aws_account_id,
+    )
+
+    ingest_network_interface_instance_relations = """
+    MATCH (i:EC2Instance)-[:NETWORK_INTERFACE]-(interface:NetworkInterface)-[:PART_OF_SUBNET]-(s:EC2Subnet)
+    MERGE (i)-[r:PART_OF_SUBNET]->(s)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {aws_update_tag}
+    """
+
+    neo4j_session.run(
+        ingest_network_interface_instance_relations, aws_update_tag=aws_update_tag,
+    )
+
+    ingest_network_interface_loadbalancer_relations = """
+    MATCH (i:LoadBalancer)-[:NETWORK_INTERFACE]-(interface:NetworkInterface)-[:PART_OF_SUBNET]-(s:EC2Subnet)
+    MERGE (i)-[r:PART_OF_SUBNET]->(s)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {aws_update_tag}
+    """
+
+    neo4j_session.run(
+        ingest_network_interface_loadbalancer_relations, aws_update_tag=aws_update_tag,
+    )
+
+    ingest_network_interface_loadbalancerv2_relations = """
+    MATCH (i:LoadBalancerV2)-[:NETWORK_INTERFACE]-(interface:NetworkInterface)-[:PART_OF_SUBNET]-(s:EC2Subnet)
+    MERGE (i)-[r:PART_OF_SUBNET]->(s)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {aws_update_tag}
+    """
+
+    neo4j_session.run(
+        ingest_network_interface_loadbalancerv2_relations, aws_update_tag=aws_update_tag,
     )
 
 

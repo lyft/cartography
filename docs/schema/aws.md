@@ -988,11 +988,25 @@ Representation of an AWS EC2 [Subnet](https://docs.aws.amazon.com/AWSEC2/latest/
         (EC2Instance)-[PART_OF_SUBNET]->(EC2Subnet)
         ```
 
-- A load balancer can be part of an EC2 Subnet.
+- A LoadBalancer can be part of an EC2 Subnet.
 
         ```
         (LoadBalancer)-[SUBNET]->(EC2Subnet)
+
         ```
+
+- A LoadBalancer can be part of an EC2 Subnet.
+
+        ```
+        (LoadBalancer)-[PART_OF_SUBNET]->(EC2Subnet)
+        ```
+
+- A LoadBalancerV2 can be part of an EC2 Subnet.
+
+        ```
+        (LoadBalancerV2)-[PART_OF_SUBNET]->(EC2Subnet)
+        ```
+
 
 - DB Subnet Groups consist of EC2 Subnets
     ```
@@ -1271,6 +1285,13 @@ Represents an AWS Elastic Load Balancer.  See [spec for details](https://docs.aw
         (LoadBalancer)-[SUBNET]->(EC2Subnet)
         ```
 
+
+- LoadBalancers can be part of EC2 Subnets
+
+        ```
+        (LoadBalancer)-[PART_OF_SUBNET]->(EC2Subnet)
+        ```
+
 - LoadBalancers can have listeners configured to accept connections from clients ([good introduction](https://docs.aws.amazon.com/elasticloadbalancing/2012-06-01/APIReference/Welcome.html)).
 
         ```
@@ -1327,6 +1348,12 @@ Represents an Elastic Load Balancer V2 ([Application Load Balancer](https://docs
 
         ```
         (LoadBalancerV2)-[SUBNET]->(EC2Subnet)
+        ```
+
+- LoadBalancerV2's can be part of EC2 Subnets
+
+        ```
+        (LoadBalancerV2)-[PART_OF_SUBNET]->(EC2Subnet)
         ```
 
 - LoadBalancerV2's have [listeners](https://docs.aws.amazon.com/elasticloadbalancing/latest/APIReference/API_Listener.html):
