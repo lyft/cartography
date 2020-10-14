@@ -20,12 +20,13 @@ def get_network_interface_data(boto3_session, region):
     return subnets
 
 
+@timeit
 def load_network_interfaces(neo4j_session, data, region, aws_account_id, aws_update_tag):
 
     elb_associations = []
     instance_associations = []
 
-    for n_idx, network_interface in enumerate(data):
+    for network_interface in data:
 
         matchObj = re.match(r'^ELB (.*)', network_interface.get('Description', ''))
         if matchObj:
