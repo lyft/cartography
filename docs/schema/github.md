@@ -178,9 +178,10 @@ Representation of a Python library as listed in a [requirements.txt](https://pip
 
 | Field | Description |
 |-------|-------------|
-|**id**|The [canonicalized](https://packaging.pypa.io/en/latest/utils/#packaging.utils.canonicalize_name) name of the library|
+|**id**|The [canonicalized](https://packaging.pypa.io/en/latest/utils/#packaging.utils.canonicalize_name) name of the library. If the library was pinned in a requirements file, then `id` has the form `{canonical name}|{pinned_version}`|
 |name|The [canonicalized](https://packaging.pypa.io/en/latest/utils/#packaging.utils.canonicalize_name) name of the library|
 |url|URL of the library, if available|
+|version|The version of the library. This field is only available if the library was pinned in a requirements file|
 
 ### Relationships
 

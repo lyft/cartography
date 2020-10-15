@@ -254,12 +254,6 @@ def _transform_python_requirements(repo_object, out_requirements_files):
                 continue
 
         for req in parsed_list:
-            if not req.name:
-                logger.info(
-                    f"Could not get library name for an object in {repo_object['url']}'s requirements.txt, skipping.",
-                )
-                continue
-
             pinned_version = None
             # Set `spec` to a default value. Example values for str(req.specifier): "<4.0,>=3.0" or "==1.0.0".
             spec = str(req.specifier)
