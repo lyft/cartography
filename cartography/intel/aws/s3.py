@@ -45,6 +45,9 @@ def get_policy(bucket, client):
         elif "AccessDenied" in e.args[0]:
             logger.warning("Access denied trying to retrieve S3 bucket {} policy".format(bucket['Name']))
             policy = None
+        elif "NoSuchBucket" in e.args[0]:
+            logger.warning("get_bucket_policy({}) threw NoSuchBucket exception, skipping".format(bucket['Name']))
+            policy = None
         else:
             raise
     return policy
