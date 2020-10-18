@@ -1,0 +1,24 @@
+{
+  "statements": [
+  {
+    "query": "MATCH (n:AWSTransitGateway)-[r:RESOURCE|SHARED_WITH]-() WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DETACH DELETE (r) return COUNT(*) as TotalCompleted",
+    "iterative": true,
+    "iterationsize": 100
+  },
+  {
+    "query": "MATCH (n:AWSTransitGatewayAttachment)-[r:RESOURCE|ATTACHED_TO]-() WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+    "iterative": true,
+    "iterationsize": 100
+  },
+  {
+    "query": "MATCH (n:AWSTransitGateway)-[r:RESOURCE|SHARED_WITH]-() WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+    "iterative": true,
+    "iterationsize": 100
+  },
+  {
+    "query": "MATCH (n:AWSTransitGatewayAttachment)-[r:RESOURCE|ATTACHED_TO]-() WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DELETE (n) return COUNT(*) as TotalCompleted",
+    "iterative": true,
+    "iterationsize": 100
+  }],
+  "name": "cleanup AWS Transit Gateway information"
+}

@@ -84,7 +84,9 @@ DESCRIBE_INSTANCES = {
                     }],
                     'SourceDestCheck': True,
                     'Status': 'in-use',
-                    'SubnetId': 'SOME_SUBNET_1',
+                    # SubnetId is set to None intentionally on this NIC.
+                    # The AWS APIs return None on subnetids intermittently.
+                    'SubnetId': None,
                     'VpcId': 'SOME_VPC_ID',
                 }],
                 'Placement': {
@@ -114,7 +116,8 @@ DESCRIBE_INSTANCES = {
                     'Name': 'running',
                 },
                 'StateTransitionReason': '',
-                'SubnetId': 'SOME_SUBNET_1',
+                # SubnetId is set to None intentionally on this instance.
+                'SubnetId': None,
                 'Tags': [
                     {
                         'Key': 'aws:autoscaling:groupName',

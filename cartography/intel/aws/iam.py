@@ -80,7 +80,12 @@ def get_user_policy_data(boto3_session, user_list):
         name = user["UserName"]
         arn = user["Arn"]
         resource_user = resource_client.User(name)
-        policies[arn] = {p.name: p.policy_document["Statement"] for p in resource_user.policies.all()}
+        try:
+            policies[arn] = {p.name: p.policy_document["Statement"] for p in resource_user.policies.all()}
+        except resource_client.meta.client.exceptions.NoSuchEntityException:
+            logger.warning(
+                f"Could not get policies for user {name} due to NoSuchEntityException; skipping.",
+            )
     return policies
 
 
@@ -92,10 +97,15 @@ def get_user_managed_policy_data(boto3_session, user_list):
         name = user["UserName"]
         arn = user["Arn"]
         resource_user = resource_client.User(name)
-        policies[arn] = {
-            p.policy_name: p.default_version.document["Statement"]
-            for p in resource_user.attached_policies.all()
-        }
+        try:
+            policies[arn] = {
+                p.policy_name: p.default_version.document["Statement"]
+                for p in resource_user.attached_policies.all()
+            }
+        except resource_client.meta.client.exceptions.NoSuchEntityException:
+            logger.warning(
+                f"Could not get policies for user {name} due to NoSuchEntityException; skipping.",
+            )
     return policies
 
 
@@ -107,7 +117,12 @@ def get_role_policy_data(boto3_session, role_list):
         name = role["RoleName"]
         arn = role["Arn"]
         resource_role = resource_client.Role(name)
-        policies[arn] = {p.name: p.policy_document["Statement"] for p in resource_role.policies.all()}
+        try:
+            policies[arn] = {p.name: p.policy_document["Statement"] for p in resource_role.policies.all()}
+        except resource_client.meta.client.exceptions.NoSuchEntityException:
+            logger.warning(
+                f"Could not get policies for role {name} due to NoSuchEntityException; skipping.",
+            )
     return policies
 
 
@@ -119,10 +134,15 @@ def get_role_managed_policy_data(boto3_session, role_list):
         name = role["RoleName"]
         arn = role["Arn"]
         resource_role = resource_client.Role(name)
-        policies[arn] = {
-            p.policy_name: p.default_version.document["Statement"]
-            for p in resource_role.attached_policies.all()
-        }
+        try:
+            policies[arn] = {
+                p.policy_name: p.default_version.document["Statement"]
+                for p in resource_role.attached_policies.all()
+            }
+        except resource_client.meta.client.exceptions.NoSuchEntityException:
+            logger.warning(
+                f"Could not get policies for role {name} due to NoSuchEntityException; skipping.",
+            )
     return policies
 
 
@@ -161,7 +181,14 @@ def get_role_list_data(boto3_session):
 def get_account_access_key_data(boto3_session, username):
     client = boto3_session.client('iam')
     # NOTE we can get away without using a paginator here because users are limited to two access keys
-    return client.list_access_keys(UserName=username)
+    access_keys = {}
+    try:
+        access_keys = client.list_access_keys(UserName=username)
+    except client.exceptions.NoSuchEntityException:
+        logger.warning(
+            f"Could not get access key for user {username} due to NoSuchEntityException; skipping.",
+        )
+    return access_keys
 
 
 @timeit
@@ -219,6 +246,21 @@ def load_groups(neo4j_session, groups, current_aws_account_id, aws_update_tag):
         )
 
 
+def _parse_principal_entries(principal):
+    """
+    Returns a list of tuples of the form (principal_type, principal_value)
+    e.g. [('AWS', 'example-role-name'), ('Service', 'example-service')]
+    """
+    principal_entries = []
+    for principal_type in principal:
+        principal_values = principal[principal_type]
+        if not isinstance(principal_values, list):
+            principal_values = [principal_values]
+        for principal_value in principal_values:
+            principal_entries.append((principal_type, principal_value))
+    return principal_entries
+
+
 @timeit
 def load_roles(neo4j_session, roles, current_aws_account_id, aws_update_tag):
     ingest_role = """
@@ -260,17 +302,8 @@ def load_roles(neo4j_session, roles, current_aws_account_id, aws_update_tag):
         )
 
         for statement in role["AssumeRolePolicyDocument"]["Statement"]:
-            principal = statement["Principal"]
-            principal_values = []
-            if 'AWS' in principal:
-                principal_type, principal_values = 'AWS', principal['AWS']
-            elif 'Service' in principal:
-                principal_type, principal_values = 'Service', principal['Service']
-            elif 'Federated' in principal:
-                principal_type, principal_values = 'Federated', principal['Federated']
-            if not isinstance(principal_values, list):
-                principal_values = [principal_values]
-            for principal_value in principal_values:
+            principal_entries = _parse_principal_entries(statement["Principal"])
+            for principal_type, principal_value in principal_entries:
                 neo4j_session.run(
                     ingest_policy_statement,
                     SpnArn=principal_value,
@@ -356,7 +389,7 @@ def sync_assumerole_relationships(neo4j_session, current_aws_account_id, aws_upd
     potential_matches = [(r["source_arn"], r["target_arn"]) for r in results]
     for source_arn, target_arn in potential_matches:
         policies = get_policies_for_principal(neo4j_session, source_arn)
-        if principal_allowed_on_resource(policies, target_arn, "sts:AssumeRole"):
+        if principal_allowed_on_resource(policies, target_arn, ["sts:AssumeRole"]):
             neo4j_session.run(
                 ingest_policies_assume_role,
                 SourceArn=source_arn,
@@ -588,7 +621,7 @@ def sync_role_inline_policies(current_aws_account_id, boto3_session, data, neo4j
 @timeit
 def sync_group_memberships(neo4j_session, boto3_session, current_aws_account_id, aws_update_tag, common_job_parameters):
     logger.debug("Syncing IAM group membership for account '%s'.", current_aws_account_id)
-    query = "MATCH (group:AWSGroup)<-[:RESOURCE]-(AWSAccount{id: {AWS_ACCOUNT_ID}}) " \
+    query = "MATCH (group:AWSGroup)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ACCOUNT_ID}}) " \
             "return group.name as name, group.arn as arn;"
     groups = neo4j_session.run(query, AWS_ACCOUNT_ID=current_aws_account_id)
     groups_membership = {group["arn"]: get_group_membership_data(boto3_session, group["name"]) for group in groups}
@@ -603,11 +636,14 @@ def sync_group_memberships(neo4j_session, boto3_session, current_aws_account_id,
 @timeit
 def sync_user_access_keys(neo4j_session, boto3_session, current_aws_account_id, aws_update_tag, common_job_parameters):
     logger.debug("Syncing IAM user access keys for account '%s'.", current_aws_account_id)
-    query = "MATCH (user:AWSUser)<-[:RESOURCE]-(AWSAccount{id: {AWS_ACCOUNT_ID}}) return user.name as name"
+    query = "MATCH (user:AWSUser)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ACCOUNT_ID}}) return user.name as name"
     result = neo4j_session.run(query, AWS_ACCOUNT_ID=current_aws_account_id)
     usernames = [r['name'] for r in result]
-    account_access_key = {name: get_account_access_key_data(boto3_session, name) for name in usernames}
-    load_user_access_keys(neo4j_session, account_access_key, aws_update_tag)
+    for name in usernames:
+        access_keys = get_account_access_key_data(boto3_session, name)
+        if access_keys:
+            account_access_keys = {name: access_keys}
+            load_user_access_keys(neo4j_session, account_access_keys, aws_update_tag)
     run_cleanup_job(
         'aws_import_account_access_key_cleanup.json',
         neo4j_session,

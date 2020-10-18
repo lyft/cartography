@@ -1,6 +1,7 @@
 import logging
 from string import Template
 
+from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
@@ -40,7 +41,10 @@ TAG_RESOURCE_TYPE_MAPPINGS = {
     'ec2:security-group': {'label': 'EC2SecurityGroup', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},
     'ec2:subnet': {'label': 'EC2Subnet', 'property': 'subnetid', 'id_func': get_short_id_from_ec2_arn},
     'ec2:vpc': {'label': 'AWSVpc', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},
+    'ec2:transit-gateway': {'label': 'AWSTransitGateway', 'property': 'id'},
+    'ec2:transit-gateway-attachment': {'label': 'AWSTransitGatewayAttachment', 'property': 'id'},
     'es:domain': {'label': 'ESDomain', 'property': 'id'},
+    'redshift:cluster': {'label': 'RedshiftCluster', 'property': 'id'},
     'rds:db': {'label': 'RDSInstance', 'property': 'id'},
     'rds:subgrp': {'label': 'DBSubnetGroup', 'property': 'id'},
     # Buckets are the only objects in the S3 service: https://docs.aws.amazon.com/AmazonS3/latest/dev/s3-arn-format.html
@@ -49,6 +53,7 @@ TAG_RESOURCE_TYPE_MAPPINGS = {
 
 
 @timeit
+@aws_handle_regions
 def get_tags(boto3_session, resource_types, region):
     """
     Create boto3 client and retrieve tag data.
@@ -68,31 +73,31 @@ def get_tags(boto3_session, resource_types, region):
 @timeit
 def load_tags(neo4j_session, tag_data, resource_type, region, aws_update_tag):
     INGEST_TAG_TEMPLATE = Template("""
-    MATCH (resource:$resource_label{$property:{ResourceId}})
-    MERGE(aws_tag:AWSTag:Tag{id:{TagId}})
-    ON CREATE SET aws_tag.firstseen = timestamp()
-    SET aws_tag.lastupdated = {UpdateTag},
-        aws_tag.key = {TagKey},
-        aws_tag.value =  {TagValue},
-        aws_tag.region = {Region}
-    MERGE (resource)-[r:TAGGED]->(aws_tag)
-    SET r.lastupdated = {UpdateTag},
-        r.firstseen = timestamp()
+    UNWIND {TagData} as tag_mapping
+        UNWIND tag_mapping.Tags as input_tag
+            MATCH (resource:$resource_label{$property:tag_mapping.resource_id})
+            MERGE(aws_tag:AWSTag:Tag{id:input_tag.Key + ":" + input_tag.Value})
+            ON CREATE SET aws_tag.firstseen = timestamp()
+
+            SET aws_tag.lastupdated = {UpdateTag},
+            aws_tag.key = input_tag.Key,
+            aws_tag.value =  input_tag.Value,
+            aws_tag.region = {Region}
+
+            MERGE (resource)-[r:TAGGED]->(aws_tag)
+            SET r.lastupdated = {UpdateTag},
+            r.firstseen = timestamp()
     """)
-    for tag_mapping in tag_data:
-        for tag in tag_mapping['Tags']:
-            neo4j_session.run(
-                INGEST_TAG_TEMPLATE.safe_substitute(
-                    resource_label=TAG_RESOURCE_TYPE_MAPPINGS[resource_type]['label'],
-                    property=TAG_RESOURCE_TYPE_MAPPINGS[resource_type]['property'],
-                ),
-                ResourceId=tag_mapping['resource_id'],
-                TagId=f'{tag["Key"]}:{tag["Value"]}',
-                UpdateTag=aws_update_tag,
-                TagKey=tag['Key'],
-                TagValue=tag['Value'],
-                Region=region,
-            )
+    query = INGEST_TAG_TEMPLATE.safe_substitute(
+        resource_label=TAG_RESOURCE_TYPE_MAPPINGS[resource_type]['label'],
+        property=TAG_RESOURCE_TYPE_MAPPINGS[resource_type]['property'],
+    )
+    neo4j_session.run(
+        query,
+        TagData=tag_data,
+        UpdateTag=aws_update_tag,
+        Region=region,
+    )
 
 
 @timeit

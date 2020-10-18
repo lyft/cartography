@@ -1,5 +1,6 @@
 import logging
 
+from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
@@ -7,6 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
+@aws_handle_regions
 def get_rds_instance_data(boto3_session, region):
     """
     Create an RDS boto3 client and grab all the DBInstances.
@@ -16,7 +18,8 @@ def get_rds_instance_data(boto3_session, region):
     instances = []
     for page in paginator.paginate():
         instances.extend(page['DBInstances'])
-    return {'DBInstances': instances}
+
+    return instances
 
 
 @timeit
@@ -27,7 +30,8 @@ def load_rds_instances(neo4j_session, data, region, current_aws_account_id, aws_
     ingest_rds_instance = """
     MERGE (rds:RDSInstance{id: {DBInstanceArn}})
     ON CREATE SET rds.firstseen = timestamp()
-    SET rds.db_instance_identifier = {DBInstanceIdentifier},
+    SET rds.arn = {DBInstanceArn},
+    rds.db_instance_identifier = {DBInstanceIdentifier},
     rds.db_instance_class = {DBInstanceClass},
     rds.engine = {Engine},
     rds.master_username = {MasterUsername},
@@ -66,7 +70,7 @@ def load_rds_instances(neo4j_session, data, region, current_aws_account_id, aws_
     """
     read_replicas = []
 
-    for rds in data.get('DBInstances', []):
+    for rds in data:
         instance_create_time = str(rds['InstanceCreateTime']) if 'InstanceCreateTime' in rds else None
         latest_restorable_time = str(rds['LatestRestorableTime']) if 'LatestRestorableTime' in rds else None
 

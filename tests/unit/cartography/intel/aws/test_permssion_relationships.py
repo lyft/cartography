@@ -442,12 +442,25 @@ def test_multiple_comma():
 
 
 def test_permission_file_load():
-    mapping = permission_relationships.parse_permission_relationship_file(
+    mapping = permission_relationships.parse_permission_relationships_file(
         "cartography/data/permission_relationships.yaml",
     )
     assert mapping
 
 
 def test_permission_file_load_exception():
-    mapping = permission_relationships.parse_permission_relationship_file("notarealfile")
+    mapping = permission_relationships.parse_permission_relationships_file("notarealfile")
     assert not mapping
+
+
+def test_permissions_list():
+    ###
+    # Tests that the an exception is thrown if the permissions is not a list
+    ###
+    try:
+        assert not permission_relationships.principal_allowed_on_resource(
+            GET_OBJECT_LOWERCASE_RESOURCE_WILDCARD, "arn:aws:s3:::testbucket", "S3:GetObject",
+        )
+        assert False
+    except ValueError:
+        assert True

@@ -12,74 +12,82 @@
   - [Relationships](#relationships-1)
 - [AWSGroup](#awsgroup)
   - [Relationships](#relationships-2)
-- [AWSPolicy](#awspolicy)
+- [AWSLambda](#awslambda)
   - [Relationships](#relationships-3)
-- [AWSPolicyStatement](#awspolicystatement)
+- [AWSPolicy](#awspolicy)
   - [Relationships](#relationships-4)
-- [AWSPrincipal](#awsprincipal)
+- [AWSPolicyStatement](#awspolicystatement)
   - [Relationships](#relationships-5)
-- [AWSPrincipal::AWSUser](#awsprincipalawsuser)
+- [AWSPrincipal](#awsprincipal)
   - [Relationships](#relationships-6)
-- [AWSPrincipal::AWSRole](#awsprincipalawsrole)
+- [AWSPrincipal::AWSUser](#awsprincipalawsuser)
   - [Relationships](#relationships-7)
-- [AWSVpc](#awsvpc)
+- [AWSPrincipal::AWSRole](#awsprincipalawsrole)
   - [Relationships](#relationships-8)
-- [Tag::AWSTag](#tagawstag)
+- [AWSTransitGateway](#awstransitgateway)
   - [Relationships](#relationships-9)
-- [AccountAccessKey](#accountaccesskey)
+- [AWSTransitGatewayAttachment](#awstransitgatewayattachment)
   - [Relationships](#relationships-10)
-- [DBSubnetGroup](#dbsubnetgroup)
+- [AWSVpc](#awsvpc)
   - [Relationships](#relationships-11)
-- [DNSRecord](#dnsrecord)
+- [Tag::AWSTag](#tagawstag)
   - [Relationships](#relationships-12)
-- [DNSRecord::AWSDNSRecord](#dnsrecordawsdnsrecord)
+- [AccountAccessKey](#accountaccesskey)
   - [Relationships](#relationships-13)
-- [DNSZone](#dnszone)
+- [DBSubnetGroup](#dbsubnetgroup)
   - [Relationships](#relationships-14)
-- [DNSZone::AWSDNSZone](#dnszoneawsdnszone)
+- [DNSRecord](#dnsrecord)
   - [Relationships](#relationships-15)
-- [DynamoDBTable](#dynamodbtable)
+- [DNSRecord::AWSDNSRecord](#dnsrecordawsdnsrecord)
   - [Relationships](#relationships-16)
-- [EC2Instance](#ec2instance)
+- [DNSZone](#dnszone)
   - [Relationships](#relationships-17)
-- [EC2KeyPair](#ec2keypair)
+- [DNSZone::AWSDNSZone](#dnszoneawsdnszone)
   - [Relationships](#relationships-18)
-- [EC2Reservation](#ec2reservation)
+- [DynamoDBTable](#dynamodbtable)
   - [Relationships](#relationships-19)
-- [EC2SecurityGroup](#ec2securitygroup)
+- [EC2Instance](#ec2instance)
   - [Relationships](#relationships-20)
-- [EC2Subnet](#ec2subnet)
+- [EC2KeyPair](#ec2keypair)
   - [Relationships](#relationships-21)
-- [EKSCluster](#ekscluster)
+- [EC2Reservation](#ec2reservation)
   - [Relationships](#relationships-22)
-- [ESDomain](#esdomain)
+- [EC2SecurityGroup](#ec2securitygroup)
   - [Relationships](#relationships-23)
-- [Endpoint](#endpoint)
+- [EC2Subnet](#ec2subnet)
   - [Relationships](#relationships-24)
-- [Endpoint::ELBListener](#endpointelblistener)
+- [EKSCluster](#ekscluster)
   - [Relationships](#relationships-25)
-- [Endpoint::ELBV2Listener](#endpointelbv2listener)
+- [ESDomain](#esdomain)
   - [Relationships](#relationships-26)
-- [Ip](#ip)
+- [Endpoint](#endpoint)
   - [Relationships](#relationships-27)
-- [IpRule](#iprule)
+- [Endpoint::ELBListener](#endpointelblistener)
   - [Relationships](#relationships-28)
-- [IpRule::IpPermissionInbound](#ipruleippermissioninbound)
+- [Endpoint::ELBV2Listener](#endpointelbv2listener)
   - [Relationships](#relationships-29)
-- [LoadBalancer](#loadbalancer)
+- [Ip](#ip)
   - [Relationships](#relationships-30)
-- [LoadBalancerV2](#loadbalancerv2)
+- [IpRule](#iprule)
   - [Relationships](#relationships-31)
-- [Nameserver](#nameserver)
+- [IpRule::IpPermissionInbound](#ipruleippermissioninbound)
   - [Relationships](#relationships-32)
-- [NetworkInterface](#networkinterface)
+- [LoadBalancer](#loadbalancer)
   - [Relationships](#relationships-33)
-- [RDSInstance](#rdsinstance)
+- [LoadBalancerV2](#loadbalancerv2)
   - [Relationships](#relationships-34)
-- [S3Acl](#s3acl)
+- [Nameserver](#nameserver)
   - [Relationships](#relationships-35)
-- [S3Bucket](#s3bucket)
+- [NetworkInterface](#networkinterface)
   - [Relationships](#relationships-36)
+- [RedshiftCluster](#redshiftcluster)
+  - [Relationships](#relationships-37)
+- [RDSInstance](#rdsinstance)
+  - [Relationships](#relationships-38)
+- [S3Acl](#s3acl)
+  - [Relationships](#relationships-39)
+- [S3Bucket](#s3bucket)
+  - [Relationships](#relationships-40)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -98,8 +106,8 @@ Representation of an AWS Account.
 ### Relationships
 - Many node types belong to an `AWSAccount`.
 
-	```
-	(AWSAccount)-[RESOURCE]->(AWSDNSZone,
+        ```
+        (AWSAccount)-[RESOURCE]->(AWSDNSZone,
                               AWSGroup,
                               AWSPrincipal,
                               AWSUser,
@@ -112,19 +120,19 @@ Representation of an AWS Account.
                               ESDomain,
                               LoadBalancer,
                               AWSVpc)
-	```
+        ```
 
 - An `AWSPolicy` node is defined for an `AWSAccount`.
 
-	```
-	(AWSAccount)-[RESOURCE]->(AWSPolicy)
-	```
+        ```
+        (AWSAccount)-[RESOURCE]->(AWSPolicy)
+        ```
 
 - `AWSRole` nodes are defined in `AWSAccount` nodes.
 
-	```
-	(AWSAccount)-[RESOURCE]->(AWSRole)
-	```
+        ```
+        (AWSAccount)-[RESOURCE]->(AWSRole)
+        ```
 
 ## AWSCidrBlock
 ### AWSIpv4CidrBlock
@@ -182,22 +190,51 @@ Representation of AWS [IAM Groups](https://docs.aws.amazon.com/IAM/latest/APIRef
 ### Relationships
 - Objects part of an AWSGroup may assume AWSRoles.
 
-	```
-	(AWSGroup)-[STS_ASSUMEROLE_ALLOW]->(AWSRole)
-	```
+        ```
+        (AWSGroup)-[STS_ASSUMEROLE_ALLOW]->(AWSRole)
+        ```
 
 - AWSUsers and AWSPrincipals can be members of AWSGroups.
 
-	```
-	(AWSUser, AWSPrincipal)-[MEMBER_AWS_GROUP]->(AWSGroup)
-	```
+        ```
+        (AWSUser, AWSPrincipal)-[MEMBER_AWS_GROUP]->(AWSGroup)
+        ```
 
 - AWSGroups belong to AWSAccounts.
 
-	```
-	(AWSAccount)-[RESOURCE]->(AWSGroup)
-	```
+        ```
+        (AWSAccount)-[RESOURCE]->(AWSGroup)
+        ```
 
+## AWSLambda
+
+Representation of an AWS [Lambda Function](https://docs.aws.amazon.com/lambda/latest/dg/API_FunctionConfiguration.html).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The arn of the lambda function|
+| name |  The name of the lambda function |
+| modifieddate |  Timestamp of the last time the function was last updated |
+| runtime |  The runtime environment for the Lambda function |
+| description |  The description of the Lambda function |
+| timeout |  The amount of time in seconds that Lambda allows a function to run before stopping it |
+| memory |  The memory that's allocated to the function |
+
+### Relationships
+
+- AWSLambda function are resources in an AWS Account.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(AWSLambda)
+        ```
+
+- AWSLambda functions may act as AWSPrincipals via role assumption.
+
+        ```
+        (AWSLambda)-[STS_ASSUME_ROLE_ALLOW]->(AWSPrincipal)
+        ```
 
 ## AWSPolicy
 
@@ -218,15 +255,15 @@ Representation of an [AWS Policy](https://docs.aws.amazon.com/IAM/latest/APIRefe
 
 - `AWSPrincipal` contains `AWSPolicy`
 
-	```
-	(AWSPrincipal)-[POLICY]->(AWSPolicy)
-	```
+        ```
+        (AWSPrincipal)-[POLICY]->(AWSPolicy)
+        ```
 
 - `AWSPolicy` contains `AWSPolicyStatement`
 
-	```
-	(AWSPolicy)-[STATEMENTS]->(AWSPolicyStatement)
-	```
+        ```
+        (AWSPolicy)-[STATEMENTS]->(AWSPolicyStatement)
+        ```
 
 ## AWSPolicyStatement
 
@@ -247,9 +284,9 @@ Representation of an [AWS Policy Statement](https://docs.aws.amazon.com/IAM/late
 
 - `AWSPolicy` contains `AWSPolicyStatement`
 
-	```
-	(AWSPolicy)-[STATEMENTS]->(AWSPolicyStatement)
-	```
+        ```
+        (AWSPolicy)-[STATEMENTS]->(AWSPolicyStatement)
+        ```
 
 
 ## AWSPrincipal
@@ -271,15 +308,15 @@ Representation of an [AWSPrincipal](https://docs.aws.amazon.com/IAM/latest/APIRe
 
 - AWS Principals can be members of AWS Groups.
 
-	```
-	(AWSPrincipal)-[MEMBER_AWS_GROUP]->(AWSGroup)
-	```
+        ```
+        (AWSPrincipal)-[MEMBER_AWS_GROUP]->(AWSGroup)
+        ```
 
 - This AccountAccessKey is used to authenticate to this AWSPrincipal.
 
-	```
-	(AWSPrincipal)-[AWS_ACCESS_KEY]->(AccountAccessKey)
-	```
+        ```
+        (AWSPrincipal)-[AWS_ACCESS_KEY]->(AccountAccessKey)
+        ```
 
 - AWS Roles can trust AWS Principals.
 
@@ -289,9 +326,15 @@ Representation of an [AWSPrincipal](https://docs.aws.amazon.com/IAM/latest/APIRe
 
 - AWS Accounts contain AWS Principals.
 
-	```
-	(AWSAccount)-[RESOURCE]->(AWSPrincipal)
-	```
+        ```
+        (AWSAccount)-[RESOURCE]->(AWSPrincipal)
+        ```
+
+- Redshift clusters may assume IAM roles. See [this article](https://docs.aws.amazon.com/redshift/latest/mgmt/authorizing-redshift-service.html).
+
+    ```
+    (RedshiftCluster)-[STS_ASSUMEROLE_ALLOW]->(AWSPrincipal)
+    ```
 
 ## AWSPrincipal::AWSUser
 Representation of an [AWSUser](https://docs.aws.amazon.com/IAM/latest/APIReference/API_User.html).  An AWS User is a type of AWS Principal.
@@ -310,27 +353,27 @@ Representation of an [AWSUser](https://docs.aws.amazon.com/IAM/latest/APIReferen
 ### Relationships
 - AWS Users can be members of AWS Groups.
 
-	```
-	(AWSUser)-[MEMBER_AWS_GROUP]->(AWSGroup)
-	```
+        ```
+        (AWSUser)-[MEMBER_AWS_GROUP]->(AWSGroup)
+        ```
 
 - AWS Users can assume AWS Roles.
 
-	```
-	(AWSUser)-[STS_ASSUMEROLE_ALLOW]->(AWSRole)
-	```
+        ```
+        (AWSUser)-[STS_ASSUMEROLE_ALLOW]->(AWSRole)
+        ```
 
 - This AccountAccessKey is used to authenticate to this AWSUser
 
-	```
-	(AWSUser)-[AWS_ACCESS_KEY]->(AccountAccessKey)
-	```
+        ```
+        (AWSUser)-[AWS_ACCESS_KEY]->(AccountAccessKey)
+        ```
 
 - AWS Accounts contain AWS Users.
 
-	```
-	(AWSAccount)-[RESOURCE]->(AWSUser)
-	```
+        ```
+        (AWSAccount)-[RESOURCE]->(AWSUser)
+        ```
 
 
 ## AWSPrincipal::AWSRole
@@ -373,6 +416,65 @@ Representation of an AWS [IAM Role](https://docs.aws.amazon.com/IAM/latest/APIRe
     (AWSAccount)-[RESOURCE]->(AWSRole)
     ```
 
+## AWSTransitGateway
+Representation of an [AWS Transit Gateway](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_TransitGateway.html).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|owner\_id| The ID of the AWS account that owns the transit gateway|
+|description| Transit Gateway description|
+|state| Can be one of `pending | available | modifying | deleting | deleted`|
+|tgw_id| Unique identifier of the Transit Gateway|
+|**id**| Unique identifier of the Transit Gateway|
+| **arn** | AWS-unique identifier for this object (same as `id`) |
+
+### Relationships
+- Transit Gateways belong to one `AWSAccount`...
+```
+(AWSAccount)-[RESOURCE]->(AWSTransitGateway)
+```
+
+- ... and can be shared with other accounts
+```
+(AWSAccount)<-[SHARED_WITH]-(AWSTransitGateway)
+```
+
+- `AWSTag`
+```
+(AWSTransitGateway)-[TAGGED]->(AWSTag)
+```
+
+## AWSTransitGatewayAttachment
+Representation of an [AWS Transit Gateway Attachment](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_TransitGatewayAttachment.html).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|resource\_type| Can be one of `vpc | vpn | direct-connect-gateway | tgw-peering`
+|state| Can be one of `initiating | pendingAcceptance | rollingBack | pending | available | modifying | deleting | deleted | failed | rejected | rejecting | failing`
+|**id**| Unique identifier of the Transit Gateway Attachment
+
+### Relationships
+- `AWSAccount`
+```
+(AWSAccount)-[RESOURCE]->(AWSTransitGatewayAttachment)
+```
+- `AWSVpc` (for VPC attachments)
+```
+(AWSVpc)-[RESOURCE]->(AWSTransitGatewayAttachment {resource_type: 'vpc'})
+```
+- `AWSTransitGateway` attachment
+```
+(AWSTransitGateway)<-[ATTACHED_TO]-(AWSTransitGatewayAttachment)
+```
+- `AWSTag`
+```
+(AWSTransitGatewayAttachment)-[TAGGED]->(AWSTag)
+```
+
 ## AWSVpc
 Representation of an [AWS CidrBlock used in VPC configuration](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_VpcCidrBlockAssociation.html).
 More information on https://docs.aws.amazon.com/cli/latest/reference/ec2/describe-vpcs.html
@@ -402,8 +504,12 @@ More information on https://docs.aws.amazon.com/cli/latest/reference/ec2/describ
   ```
 -  AWS VPCs can be tagged with AWSTags.
     ```
-	(AWSVpc)-[TAGGED]->(AWSTag)
-	```
+        (AWSVpc)-[TAGGED]->(AWSTag)
+        ```
+- Redshift clusters can be members of AWSVpcs.
+    ```
+    (RedshiftCluster)-[MEMBER_OF_AWS_VPC]->(AWSVpc)
+    ```
 
 
 ## Tag::AWSTag
@@ -422,8 +528,8 @@ Representation of an AWS [Tag](https://docs.aws.amazon.com/resourcegroupstagging
 ### Relationships
 -  AWS VPCs, DB Subnet Groups, EC2 Instances, EC2 SecurityGroups, EC2 Subnets, EC2 Network Interfaces, RDS Instances, and S3 Buckets can be tagged with AWSTags.
     ```
-	(AWSVpc, DBSubnetGroup, EC2Instance, EC2SecurityGroup, EC2Subnet, NetworkInterface, RDSInstance, S3Bucket)-[TAGGED]->(AWSTag)
-	```
+        (AWSVpc, DBSubnetGroup, EC2Instance, EC2SecurityGroup, EC2Subnet, NetworkInterface, RDSInstance, S3Bucket)-[TAGGED]->(AWSTag)
+        ```
 
 ## AccountAccessKey
 
@@ -440,9 +546,9 @@ Representation of an AWS [Access Key](https://docs.aws.amazon.com/IAM/latest/API
 ### Relationships
 - Account Access Keys may authenticate AWS Users and AWS Principal objects.
 
-	```
-	(AWSUser, AWSPrincipal)-[AWS_ACCESS_KEY]->(AccountAccessKey)
-	```
+        ```
+        (AWSUser, AWSPrincipal)-[AWS_ACCESS_KEY]->(AccountAccessKey)
+        ```
 
 
 ## DBSubnetGroup
@@ -474,9 +580,9 @@ Representation of an RDS [DB Subnet Group](https://docs.aws.amazon.com/AmazonRDS
 
 -  DB Subnet Groups can be tagged with AWSTags.
 
-	```
-	(DBSubnetGroup)-[TAGGED]->(AWSTag)
-	```
+        ```
+        (DBSubnetGroup)-[TAGGED]->(AWSTag)
+        ```
 
 
 ## DNSRecord
@@ -496,30 +602,30 @@ Representation of a generic DNSRecord.
 
 - DNSRecords can point to IP addresses.
 
-	```
-	(DNSRecord)-[DNS_POINTS_TO]->(Ip)
-	```
+        ```
+        (DNSRecord)-[DNS_POINTS_TO]->(Ip)
+        ```
 
 
 - DNSRecords/AWSDNSRecords can point to each other.
 
-	```
-	(AWSDNSRecord, DNSRecord)-[DNS_POINTS_TO]->(AWSDNSRecord, DNSRecord)
-	```
+        ```
+        (AWSDNSRecord, DNSRecord)-[DNS_POINTS_TO]->(AWSDNSRecord, DNSRecord)
+        ```
 
 
 - DNSRecords can point to LoadBalancers.
 
-	```
-	(DNSRecord)-[DNS_POINTS_TO]->(LoadBalancer)
-	```
+        ```
+        (DNSRecord)-[DNS_POINTS_TO]->(LoadBalancer)
+        ```
 
 
 - DNSRecords can be members of DNSZones.
 
-	```
-	(DNSRecord)-[MEMBER_OF_DNS_ZONE]->(DNSZone)
-	```
+        ```
+        (DNSRecord)-[MEMBER_OF_DNS_ZONE]->(DNSZone)
+        ```
 
 
 ## DNSRecord::AWSDNSRecord
@@ -538,23 +644,23 @@ Representation of an AWS DNS [ResourceRecordSet](https://docs.aws.amazon.com/Rou
 ### Relationships
 - DNSRecords/AWSDNSRecords can point to each other.
 
-	```
-	(AWSDNSRecord, DNSRecord)-[DNS_POINTS_TO]->(AWSDNSRecord, DNSRecord)
-	```
+        ```
+        (AWSDNSRecord, DNSRecord)-[DNS_POINTS_TO]->(AWSDNSRecord, DNSRecord)
+        ```
 
 
 - AWSDNSRecords can point to LoadBalancers.
 
-	```
-	(AWSDNSRecord)-[DNS_POINTS_TO]->(LoadBalancer, ESDomain)
-	```
+        ```
+        (AWSDNSRecord)-[DNS_POINTS_TO]->(LoadBalancer, ESDomain)
+        ```
 
 
 - AWSDNSRecords can be members of AWSDNSZones.
 
-	```
-	(AWSDNSRecord)-[MEMBER_OF_DNS_ZONE]->(AWSDNSZone)
-	```
+        ```
+        (AWSDNSRecord)-[MEMBER_OF_DNS_ZONE]->(AWSDNSZone)
+        ```
 
 
 ## DNSZone
@@ -572,9 +678,9 @@ Representation of a generic DNS Zone.
 
 - DNSRecords can be members of DNSZones.
 
-	```
-	(DNSRecord)-[MEMBER_OF_DNS_ZONE]->(DNSZone)
-	```
+        ```
+        (DNSRecord)-[MEMBER_OF_DNS_ZONE]->(DNSZone)
+        ```
 
 
 ## DNSZone::AWSDNSZone
@@ -594,19 +700,19 @@ Representation of an AWS DNS [HostedZone](https://docs.aws.amazon.com/Route53/la
 
 - AWSDNSZones and DNSZones can be part of AWSAccounts.
 
-	```
-	(AWSAccount)-[RESOURCE]->(AWSDNSZone)
-	```
+        ```
+        (AWSAccount)-[RESOURCE]->(AWSDNSZone)
+        ```
 
 - AWSDNSRecords can be members of AWSDNSZones.
 
-	```
-	(AWSDNSRecord)-[MEMBER_OF_DNS_ZONE]->(AWSDNSZone)
-	```
+        ```
+        (AWSDNSRecord)-[MEMBER_OF_DNS_ZONE]->(AWSDNSZone)
+        ```
 - AWSDNSZone can have subzones hosted by another AWSDNSZone
-	```
-	(AWSDNSZone)<-[SUBZONE]-(AWSDNSZone)
-	```
+        ```
+        (AWSDNSZone)<-[SUBZONE]-(AWSDNSZone)
+        ```
 
 
 ## DynamoDBTable
@@ -625,9 +731,9 @@ Representation of an AWS [DynamoDBTable](https://docs.aws.amazon.com/amazondynam
 ### Relationships
 - DynamoDBTables belong to AWS Accounts.
 
-	```
-	(AWSAccount)-[RESOURCE]->(DynamoDBTable)
-	```
+        ```
+        (AWSAccount)-[RESOURCE]->(DynamoDBTable)
+        ```
 
 
 ## EC2Instance
@@ -659,51 +765,51 @@ Our representation of an AWS [EC2 Instance](https://docs.aws.amazon.com/AWSEC2/l
 
 - EC2 Instances can be part of subnets
 
-	```
-	(EC2Instance)-[PART_OF_SUBNET]->(EC2Subnet)
-	```
+        ```
+        (EC2Instance)-[PART_OF_SUBNET]->(EC2Subnet)
+        ```
 
 - EC2 Instances can have NetworkInterfaces connected to them
 
-	```
-	(EC2Instance)-[NETWORK_INTERFACE]->(NetworkInterface)
-	```
+        ```
+        (EC2Instance)-[NETWORK_INTERFACE]->(NetworkInterface)
+        ```
 
 - EC2 Instances may be members of EC2 Reservations
 
-	```
-	(EC2Instance)-[MEMBER_OF_EC2_RESERVATION]->(EC2Reservation)
-	```
+        ```
+        (EC2Instance)-[MEMBER_OF_EC2_RESERVATION]->(EC2Reservation)
+        ```
 
 - EC2 Instances can be part of EC2 Security Groups
 
-	```
-	(EC2Instance)-[MEMBER_OF_EC2_SECURITY_GROUP]->(EC2SecurityGroup)
-	```
+        ```
+        (EC2Instance)-[MEMBER_OF_EC2_SECURITY_GROUP]->(EC2SecurityGroup)
+        ```
 
 - Load Balancers can expose (be connected to) EC2 Instances
 
-	```
-	(LoadBalancer)-[EXPOSE]->(EC2Instance)
-	```
+        ```
+        (LoadBalancer)-[EXPOSE]->(EC2Instance)
+        ```
 
 - Package and Dependency nodes can be deployed in EC2 Instances.
 
-	```
-	(Package, Dependency)-[DEPLOYED]->(EC2Instance)
-	```
+        ```
+        (Package, Dependency)-[DEPLOYED]->(EC2Instance)
+        ```
 
 - AWS Accounts contain EC2 Instances.
 
-	```
-	(AWSAccount)-[RESOURCE]->(EC2Instance)
-	```
+        ```
+        (AWSAccount)-[RESOURCE]->(EC2Instance)
+        ```
 
 -  EC2 Instances can be tagged with AWSTags.
 
-	```
-	(EC2Instance)-[TAGGED]->(AWSTag)
-	```
+        ```
+        (EC2Instance)-[TAGGED]->(AWSTag)
+        ```
 
 
 ## EC2KeyPair
@@ -726,21 +832,21 @@ Representation of an AWS [EC2 Key Pair](https://docs.aws.amazon.com/AWSEC2/lates
 
 - EC2 key pairs are contained in AWS Accounts.
 
-	```
-	(AWSAccount)-[RESOURCE]->(EC2KeyPair)
-	```
+        ```
+        (AWSAccount)-[RESOURCE]->(EC2KeyPair)
+        ```
 
 - EC2 key pairs can be used to log in to AWS EC2 isntances.
 
-	```
-	(EC2KeyPair)-[SSH_LOGIN_TO]->(EC2Instance)
-	```
+        ```
+        (EC2KeyPair)-[SSH_LOGIN_TO]->(EC2Instance)
+        ```
 
 - EC2 key pairs have matching `keyfingerprint`.
 
-	```
-	(EC2KeyPair)-[MATCHING_FINGERPRINT]->(EC2KeyPair)
-	```
+        ```
+        (EC2KeyPair)-[MATCHING_FINGERPRINT]->(EC2KeyPair)
+        ```
 
 
 ## EC2Reservation
@@ -759,15 +865,15 @@ Representation of an AWS EC2 [Reservation](https://docs.aws.amazon.com/AWSEC2/la
 
 - EC2 reservations are contained in AWS Accounts.
 
-	```
-	(AWSAccount)-[RESOURCE]->(EC2Reservation)
-	```
+        ```
+        (AWSAccount)-[RESOURCE]->(EC2Reservation)
+        ```
 
 - EC2 Instances are members of EC2 reservations.
 
-	```
-	(EC2Instance)-[MEMBER_OF_EC2_RESERVATION]->(EC2Reservation)
-	```
+        ```
+        (EC2Instance)-[MEMBER_OF_EC2_RESERVATION]->(EC2Reservation)
+        ```
 
 
 ## EC2SecurityGroup
@@ -788,34 +894,40 @@ Representation of an AWS EC2 [Security Group](https://docs.aws.amazon.com/AWSEC2
 
 - EC2 Instances, Network Interfaces, Load Balancers, Elastic Search Domains, IP Rules, IP Permission Inbound nodes, and RDS Instances can be members of EC2 Security Groups.
 
-	```
-	(EC2Instance,
-	 NetworkInterface,
-	 LoadBalancer,
-	 ESDomain,
-	 IpRule,
-	 IpPermissionInbound,
-	 RDSInstance,
-	 AWSVpc)-[MEMBER_OF_EC2_SECURITY_GROUP]->(EC2SecurityGroup)
-	```
+        ```
+        (EC2Instance,
+         NetworkInterface,
+         LoadBalancer,
+         ESDomain,
+         IpRule,
+         IpPermissionInbound,
+         RDSInstance,
+         AWSVpc)-[MEMBER_OF_EC2_SECURITY_GROUP]->(EC2SecurityGroup)
+        ```
 
 - Load balancers can define inbound [Source Security Groups](https://docs.aws.amazon.com/elasticloadbalancing/latest/classic/elb-security-groups.html).
 
-	```
-	(LoadBalancer)-[SOURCE_SECURITY_GROUP]->(EC2SecurityGroup)
-	```
+        ```
+        (LoadBalancer)-[SOURCE_SECURITY_GROUP]->(EC2SecurityGroup)
+        ```
 
 - AWS Accounts contain EC2 Security Groups.
 
-	```
-	(AWSAccount)-[RESOURCE]->(EC2SecurityGroup)
-	```
+        ```
+        (AWSAccount)-[RESOURCE]->(EC2SecurityGroup)
+        ```
 
 -  EC2 SecurityGroups can be tagged with AWSTags.
 
-	```
-	(EC2SecurityGroup)-[TAGGED]->(AWSTag)
-	```
+        ```
+        (EC2SecurityGroup)-[TAGGED]->(AWSTag)
+        ```
+
+- Redshift clusters can be members of EC2 Security Groups.
+
+    ```
+    (RedshiftCluster)-[MEMBER_OF_EC2_SECURITY_GROUP]->(EC2SecurityGroup)
+    ```
 
 
 ## EC2Subnet
@@ -829,40 +941,61 @@ Representation of an AWS EC2 [Subnet](https://docs.aws.amazon.com/AWSEC2/latest/
 | **subnetid** | The ID of the subnet|
 | **id** | same as subnetid |
 | region| The AWS region the subnet is installed on|
-|availability_zone| (If available) the AZ this subnet is installed on |
+| name | The IPv4 CIDR block assigned to the subnet|
+| cidr_block | The IPv4 CIDR block assigned to the subnet|
+| available_ip_address_count | The number of unused private IPv4 addresses in the subnet. The IPv4 addresses for any stopped instances are considered unavailable |
+| default_for_az | Indicates whether this is the default subnet for the Availability Zone. |
+| map_customer_owned_ip_on_launch | Indicates whether a network interface created in this subnet (including a network interface created by RunInstances ) receives a customer-owned IPv4 address |
+| map_public_ip_on_launch | Indicates whether instances launched in this subnet receive a public IPv4 address |
+| subnet_arn | The Amazon Resource Name (ARN) of the subnet |
+| availability_zone | The Availability Zone of the subnet |
+| availability_zone_id | The AZ ID of the subnet |
 
 
 ### Relationships
 
 - A Network Interface can be part of an EC2 Subnet.
 
-	```
-	(NetworkInterface)-[PART_OF_SUBNET]->(EC2Subnet)
-	```
+        ```
+        (NetworkInterface)-[PART_OF_SUBNET]->(EC2Subnet)
+        ```
 
 - An EC2 Instance can be part of an EC2 Subnet.
 
-	```
-	(EC2Instance)-[PART_OF_SUBNET]->(EC2Subnet)
-	```
+        ```
+        (EC2Instance)-[PART_OF_SUBNET]->(EC2Subnet)
+        ```
 
 - A load balancer can be part of an EC2 Subnet.
 
-	```
-	(LoadBalancer)-[SUBNET]->(EC2Subnet)
-	```
+        ```
+        (LoadBalancer)-[SUBNET]->(EC2Subnet)
+        ```
 
 - DB Subnet Groups consist of EC2 Subnets
     ```
-    (DBSubnetGroup)-[:RESOURCE]->(EC2Subnet)
+    (DBSubnetGroup)-[RESOURCE]->(EC2Subnet)
     ```
 
 
 -  EC2 Subnets can be tagged with AWSTags.
 
-	```
-	(EC2Subnet)-[TAGGED]->(AWSTag)
-	```
+        ```
+        (EC2Subnet)-[TAGGED]->(AWSTag)
+        ```
+
+-  EC2 Subnets are member of a VPC.
+
+        ```
+        (EC2Subnet)-[MEMBER_OF_AWS_VPC]->(AWSVpc)
+        ```
+
+-  EC2 Subnets belong to AWS Accounts
+
+        ```
+        (AWSAccount)-[RESOURCE]->(EC2Subnet)
+        ```
+
 
 
 ## EKSCluster
@@ -921,21 +1054,21 @@ Representation of an AWS [ElasticSearch Domain](https://docs.aws.amazon.com/elas
 
 - Elastic Search domains can be members of EC2 Security Groups.
 
-	```
-	(ESDomain)-[MEMBER_OF_EC2_SECURITY_GROUP]->(EC2SecurityGroup)
-	```
+        ```
+        (ESDomain)-[MEMBER_OF_EC2_SECURITY_GROUP]->(EC2SecurityGroup)
+        ```
 
--	Elastic Search domains belong to AWS Accounts.
+-       Elastic Search domains belong to AWS Accounts.
 
-	```
-	(AWSAccount)-[RESOURCE]->(ESDomain)
-	```
+        ```
+        (AWSAccount)-[RESOURCE]->(ESDomain)
+        ```
 
 - DNS Records can point to Elastic Search domains.
 
-	```
-	(DNSRecord)-[DNS_POINTS_TO]->(ESDomain)
-	```
+        ```
+        (DNSRecord)-[DNS_POINTS_TO]->(ESDomain)
+        ```
 
 ## Endpoint
 
@@ -953,9 +1086,9 @@ Representation of a generic network endpoint.
 
 - Endpoints can be installed load balancers, though more specifically we would refer to these Endpoint nodes as [ELBListeners](#endpoint::elblistener).
 
-	```
-	(LoadBalancer)-[ELB_LISTENER]->(Endpoint)
-	```
+        ```
+        (LoadBalancer)-[ELB_LISTENER]->(Endpoint)
+        ```
 
 
 ## Endpoint::ELBListener
@@ -977,9 +1110,9 @@ Representation of an AWS Elastic Load Balancer [Listener](https://docs.aws.amazo
 
 - A ELBListener is installed on a load balancer.
 
-	```
-	(LoadBalancer)-[ELB_LISTENER]->(ELBListener)
-	```
+        ```
+        (LoadBalancer)-[ELB_LISTENER]->(ELBListener)
+        ```
 
 ## Endpoint::ELBV2Listener
 
@@ -998,9 +1131,9 @@ Representation of an AWS Elastic Load Balancer V2 [Listener](https://docs.aws.am
 
 - A ELBV2Listener is installed on a LoadBalancerV2.
 
-	```
-	(elbv2)-[r:ELBV2_LISTENER]->(ELBV2Listener)
-	```
+        ```
+        (elbv2)-[r:ELBV2_LISTENER]->(ELBV2Listener)
+        ```
 
 
 ## Ip
@@ -1019,9 +1152,9 @@ Represents a generic IP address.
 
 - DNSRecords can point to IP addresses.
 
-	```
-	(DNSRecord)-[DNS_POINTS_TO]->(Ip)
-	```
+        ```
+        (DNSRecord)-[DNS_POINTS_TO]->(Ip)
+        ```
 
 
 ## IpRule
@@ -1043,9 +1176,9 @@ Represents a generic IP rule.  The creation of this node is currently derived fr
 
 - IpRules are defined from EC2SecurityGroups.
 
-	```
-	(IpRule, IpPermissionInbound)-[MEMBER_OF_EC2_SECURITY_GROUP]->(EC2SecurityGroup)
-	```
+        ```
+        (IpRule, IpPermissionInbound)-[MEMBER_OF_EC2_SECURITY_GROUP]->(EC2SecurityGroup)
+        ```
 
 
 ## IpRule::IpPermissionInbound
@@ -1066,9 +1199,9 @@ An IpPermissionInbound node is a specific type of IpRule.  It represents a gener
 
 - IpPermissionInbound rules are defined from EC2SecurityGroups.
 
-	```
-	(IpRule, IpPermissionInbound)-[MEMBER_OF_EC2_SECURITY_GROUP]->(EC2SecurityGroup)
-	```
+        ```
+        (IpRule, IpPermissionInbound)-[MEMBER_OF_EC2_SECURITY_GROUP]->(EC2SecurityGroup)
+        ```
 
 
 ## LoadBalancer
@@ -1094,45 +1227,45 @@ Represents an AWS Elastic Load Balancer.  See [spec for details](https://docs.aw
 
 - LoadBalancers can be connected to EC2Instances and therefore expose them.
 
-	```
-	(LoadBalancer)-[EXPOSE]->(EC2Instance)
-	```
+        ```
+        (LoadBalancer)-[EXPOSE]->(EC2Instance)
+        ```
 
 - LoadBalancers can have [source security groups](https://docs.aws.amazon.com/elasticloadbalancing/latest/classic/elb-security-groups.html) configured.
 
-	```
-	(LoadBalancer)-[SOURCE_SECURITY_GROUP]->(EC2SecurityGroup)
-	```
+        ```
+        (LoadBalancer)-[SOURCE_SECURITY_GROUP]->(EC2SecurityGroup)
+        ```
 
 - LoadBalancers can be part of EC2SecurityGroups.
 
-	```
-	(LoadBalancer)-[MEMBER_OF_EC2_SECURITY_GROUP]->(EC2SecurityGroup)
-	```
+        ```
+        (LoadBalancer)-[MEMBER_OF_EC2_SECURITY_GROUP]->(EC2SecurityGroup)
+        ```
 
 - LoadBalancers can be part of EC2 Subnets
 
-	```
-	(LoadBalancer)-[SUBNET]->(EC2Subnet)
-	```
+        ```
+        (LoadBalancer)-[SUBNET]->(EC2Subnet)
+        ```
 
 - LoadBalancers can have listeners configured to accept connections from clients ([good introduction](https://docs.aws.amazon.com/elasticloadbalancing/2012-06-01/APIReference/Welcome.html)).
 
-	```
-	(LoadBalancer)-[ELB_LISTENER]->(Endpoint, ELBListener)
-	```
+        ```
+        (LoadBalancer)-[ELB_LISTENER]->(Endpoint, ELBListener)
+        ```
 
 - LoadBalancers are part of AWSAccounts.
 
-	```
-	(AWSAccount)-[RESOURCE]->(LoadBalancer)
-	```
+        ```
+        (AWSAccount)-[RESOURCE]->(LoadBalancer)
+        ```
 
 - AWSDNSRecords and DNSRecords point to LoadBalancers.
 
-	```
-	(AWSDNSRecord, DNSRecord)-[DNS_POINTS_TO]->(LoadBalancer)
-	```
+        ```
+        (AWSDNSRecord, DNSRecord)-[DNS_POINTS_TO]->(LoadBalancer)
+        ```
 
 ## LoadBalancerV2
 
@@ -1158,27 +1291,27 @@ Represents an Elastic Load Balancer V2 ([Application Load Balancer](https://docs
 
 - LoadBalancerV2's can be connected to EC2Instances and therefore expose them.
 
-	```
-	(LoadBalancerV2)-[EXPOSE]->(EC2Instance)
-	```
+        ```
+        (LoadBalancerV2)-[EXPOSE]->(EC2Instance)
+        ```
 
 - LoadBalancerV2's can be part of EC2SecurityGroups.
 
-	```
-	(LoadBalancerV2)-[MEMBER_OF_EC2_SECURITY_GROUP]->(EC2SecurityGroup)
-	```
+        ```
+        (LoadBalancerV2)-[MEMBER_OF_EC2_SECURITY_GROUP]->(EC2SecurityGroup)
+        ```
 
 - LoadBalancerV2's can be part of EC2 Subnets
 
-	```
-	(LoadBalancerV2)-[SUBNET]->(EC2Subnet)
-	```
+        ```
+        (LoadBalancerV2)-[SUBNET]->(EC2Subnet)
+        ```
 
 - LoadBalancerV2's have [listeners](https://docs.aws.amazon.com/elasticloadbalancing/latest/APIReference/API_Listener.html):
 
-	```
-	(LoadBalancerV2)-[ELBV2_LISTENER]->(ELBV2Listener)
-	```
+        ```
+        (LoadBalancerV2)-[ELBV2_LISTENER]->(ELBV2Listener)
+        ```
 ## Nameserver
 
 Represents a DNS nameserver.
@@ -1193,9 +1326,9 @@ Represents a DNS nameserver.
 
 - Nameservers are nameservers for to DNSZone.
 
-	```
-	(Nameserver)-[NAMESERVER]->(DNSZone)
-	```
+        ```
+        (Nameserver)-[NAMESERVER]->(DNSZone)
+        ```
 
 ## NetworkInterface
 
@@ -1211,34 +1344,87 @@ Representation of a generic Network Interface.  Currently however, we only creat
 | **id** | The ID of the network interface.  (known as `networkInterfaceId` in EC2) |
 | private\_dns\_name| The private DNS name |
 | status | Status of the network interface.  Valid Values: `available | associated | attaching | in-use | detaching ` |
+| subnetid | The ID of the subnet |
 
 
 ### Relationships
 
 - Network interfaces can be connected to EC2Subnets.
 
-	```
-	(NetworkInterface)-[PART_OF_SUBNET]->(EC2Subnet)
-	```
+        ```
+        (NetworkInterface)-[PART_OF_SUBNET]->(EC2Subnet)
+        ```
 
 - Network interfaces can be members of EC2SecurityGroups.
 
-	```
-	(NetworkInterface)-[MEMBER_OF_EC2_SECURITY_GROUP]->(EC2SecurityGroup)
-	```
+        ```
+        (NetworkInterface)-[MEMBER_OF_EC2_SECURITY_GROUP]->(EC2SecurityGroup)
+        ```
 
 - EC2Instances can have NetworkInterfaces connected to them.
 
-	```
-	(EC2Instance)-[NETWORK_INTERFACE]->(NetworkInterface)
-	```
+        ```
+        (EC2Instance)-[NETWORK_INTERFACE]->(NetworkInterface)
+        ```
 
 -  EC2 Network Interfaces can be tagged with AWSTags.
 
-	```
-	(NetworkInterface)-[TAGGED]->(AWSTag)
-	```
+        ```
+        (NetworkInterface)-[TAGGED]->(AWSTag)
+        ```
 
+
+## RedshiftCluster
+
+Representation of an AWS [RedshiftCluster](https://docs.aws.amazon.com/redshift/latest/APIReference/API_Cluster.html).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **arn** | The Amazon Resource Name (ARN) for the Redshift cluster |
+| **id** | Same as arn |
+| availability\_zone | Specifies the name of the Availability Zone the cluster is located in |
+| cluster\_create\_time | Provides the date and time the cluster was created |
+| cluster\_identifier | The unique identifier of the cluster. |
+| cluster_revision_number | The specific revision number of the database in the cluster. |
+| db_name | The name of the initial database that was created when the cluster was created. This same name is returned for the life of the cluster. If an initial database was not specified, a database named devdev was created by default. |
+| encrypted | Specifies whether the cluster has encryption enabled |
+| cluster\_status | The current state of the cluster. |
+| endpoint\_address | DNS name of the Redshift cluster endpoint |
+| endpoint\_port | The port that the Redshift cluster's endpoint is listening on  |
+| master\_username | The master user name for the cluster. This name is used to connect to the database that is specified in the DBName parameter. |
+| node_type | The node type for the nodes in the cluster. |
+| number\_of\_nodes | The number of compute nodes in the cluster. |
+| publicly_accessible | A boolean value that, if true, indicates that the cluster can be accessed from a public network. |
+| vpc_id | The identifier of the VPC the cluster is in, if the cluster is in a VPC. |
+
+
+### Relationships
+
+- Redshift clusters are part of AWS Accounts.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(RedshiftCluster)
+        ```
+
+- Redshift clusters can be members of EC2 Security Groups.
+
+    ```
+    (RedshiftCluster)-[MEMBER_OF_EC2_SECURITY_GROUP]->(EC2SecurityGroup)
+    ```
+
+- Redshift clusters may assume IAM roles. See [this article](https://docs.aws.amazon.com/redshift/latest/mgmt/authorizing-redshift-service.html).
+
+    ```
+    (RedshiftCluster)-[STS_ASSUMEROLE_ALLOW]->(AWSPrincipal)
+    ```
+
+- Redshift clusters can be members of AWSVpcs.
+
+    ```
+    (RedshiftCluster)-[MEMBER_OF_AWS_VPC]->(AWSVpc)
+    ```
 
 ## RDSInstance
 
@@ -1248,7 +1434,8 @@ Representation of an AWS Relational Database Service [DBInstance](https://docs.a
 |-------|-------------|
 | firstseen| Timestamp of when a sync job first discovered this node  |
 | lastupdated |  Timestamp of the last time the node was updated |
-| **id**                               | The Amazon Resource Name (ARN) for the DB instance. |
+| **id** | Same as ARN |
+| **arn** | The Amazon Resource Name (ARN) for the DB instance. |
 | **db\_instance_identifier**           | Contains a user-supplied database identifier. This identifier is the unique key that identifies a DB instance.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | availability\_zone                | Specifies the name of the Availability Zone the DB instance is located in.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | backup\_retention\_period          | Specifies the number of days for which automatic DB snapshots are retained.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
@@ -1283,9 +1470,9 @@ Representation of an AWS Relational Database Service [DBInstance](https://docs.a
 
 - RDS Instances are part of AWS Accounts.
 
-	```
-	(AWSAccount)-[RESOURCE]->(RDSInstance)
-	```
+        ```
+        (AWSAccount)-[RESOURCE]->(RDSInstance)
+        ```
 
 - Some RDS instances are Read Replicas.
 
@@ -1307,9 +1494,9 @@ Representation of an AWS Relational Database Service [DBInstance](https://docs.a
 
 -  RDS Instances can be tagged with AWSTags.
 
-	```
-	(RDSInstance)-[TAGGED]->(AWSTag)
-	```
+        ```
+        (RDSInstance)-[TAGGED]->(AWSTag)
+        ```
 
 ## S3Acl
 
@@ -1332,9 +1519,9 @@ Representation of an AWS S3 [Access Control List](https://docs.aws.amazon.com/Am
 
 - S3 Access Control Lists apply to S3 buckets.
 
-	```
-	(S3Acl)-[APPLIES_TO]->(S3Bucket)
-	```
+        ```
+        (S3Acl)-[APPLIES_TO]->(S3Bucket)
+        ```
 
 ## S3Bucket
 
@@ -1354,18 +1541,18 @@ Representation of an AWS S3 [Bucket](https://docs.aws.amazon.com/AmazonS3/latest
 
 - S3Buckets are resources in an AWS Account.
 
-	```
-	(AWSAccount)-[RESOURCE]->(S3Bucket)
-	```
+        ```
+        (AWSAccount)-[RESOURCE]->(S3Bucket)
+        ```
 
 - S3 Access Control Lists apply to S3 buckets.
 
-	```
-	(S3Acl)-[APPLIES_TO]->(S3Bucket)
-	```
+        ```
+        (S3Acl)-[APPLIES_TO]->(S3Bucket)
+        ```
 
 -  S3 Buckets can be tagged with AWSTags.
 
-	```
-	(S3Bucket)-[TAGGED]->(AWSTag)
-	```
+        ```
+        (S3Bucket)-[TAGGED]->(AWSTag)
+        ```

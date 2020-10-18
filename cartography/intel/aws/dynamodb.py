@@ -1,5 +1,6 @@
 import logging
 
+from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
@@ -7,6 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
+@aws_handle_regions
 def get_dynamodb_tables(boto3_session, region):
     client = boto3_session.client('dynamodb', region_name=region)
     paginator = client.get_paginator('list_tables')
@@ -14,7 +16,7 @@ def get_dynamodb_tables(boto3_session, region):
     for page in paginator.paginate():
         for table_name in page['TableNames']:
             dynamodb_tables.append(client.describe_table(TableName=table_name))
-    return {'Tables': dynamodb_tables}
+    return dynamodb_tables
 
 
 @timeit
@@ -33,7 +35,7 @@ def load_dynamodb_tables(neo4j_session, data, region, current_aws_account_id, aw
     SET r.lastupdated = {aws_update_tag}
     """
 
-    for table in data["Tables"]:
+    for table in data:
         neo4j_session.run(
             ingest_table,
             Arn=table['Table']['TableArn'],

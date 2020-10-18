@@ -22,7 +22,7 @@ def test_load_gke_clusters(neo4j_session):
     nodes = neo4j_session.run(
         """
         MATCH (r:GKECluster) RETURN r.id;
-        """
+        """,
     )
 
     actual_nodes = {n['r.id'] for n in nodes}
@@ -59,7 +59,7 @@ def test_load_eks_clusters_relationships(neo4j_session):
     result = neo4j_session.run(
         """
         MATCH (n1:GCPProject)-[:RESOURCE]->(n2:GKECluster) RETURN n1.id, n2.id;
-        """
+        """,
     )
 
     actual = {

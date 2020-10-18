@@ -1,4 +1,3 @@
-import datetime
 import os
 
 import neobolt.exceptions
@@ -44,8 +43,8 @@ def test_get_state_detectors(neo4j_session):
     shortcut_serializer = ShortcutSchema()
     storage = FileSystem
 
-    file_1 = str(datetime.datetime(2019, 1, 1, 0, 0, 2)) + ".json"
-    file_2 = str(datetime.datetime(2019, 1, 1, 0, 0, 1)) + ".json"
+    file_1 = "2019-01-01_00_00_02.json"
+    file_2 = "2019-01-01_00_00_01.json"
 
     get_query_state(neo4j_session, query_directory, state_serializer, storage, file_1)
     add_shortcut(FileSystem(), ShortcutSchema(), query_directory, "most-recent", file_1)
@@ -99,7 +98,7 @@ def test_faulty_queries(neo4j_session):
     state_serializer = StateSchema()
     storage = FileSystem
 
-    file_1 = str(datetime.datetime(2019, 1, 1, 0, 0, 2)) + ".json"
+    file_1 = "2019 - 01 - 01_00_00_02.json"
     with pytest.raises(neobolt.exceptions.CypherSyntaxError):
         get_query_state(neo4j_session, query_directory, state_serializer, storage, file_1)
 
