@@ -29,11 +29,11 @@ logger = logging.getLogger(__name__)
 def build_aws_pipeline(aws_sync_config):
     """
     Sets up AWS DAG pipeline. Looks like this:
-             Tags
-               ^   (DNS)
-               |    ^
-               |   /
-    (Resources)---------->(Perm rels)
+
+                  (DNS)
+                   ^
+                  /
+    (Resources)---------->PermRels, Tags
                           ^
                         /
     IAM-----------------
@@ -88,7 +88,7 @@ def build_aws_pipeline(aws_sync_config):
     task_tags = build_cartography_sync_task(aws_sync_config, 'resourcegroupstaggingapi.sync',
                                             resourcegroupstaggingapi.sync)
     pipeline_tags.add(task_tags)
-    pipeline_main.add(pipeline_tags, upstreams=[pipeline_resources])
+    pipeline_main.add(pipeline_tags, upstreams=[pipeline_resources, pipeline_iam])
     return pipeline_main
 
 
