@@ -331,7 +331,11 @@ def is_valid_rpr(rpr):
     return True
 
 
-def sync(neo4j_session, account_id, update_tag, common_job_parameters):
+def sync(neo4j_session, aws_sync_config):
+    account_id = aws_sync_config['account_id']
+    update_tag = aws_sync_config['sync_tag']
+    common_job_parameters = aws_sync_config['common_job_parameters']
+
     logger.info("Syncing Permission Relationships for account '%s'.", account_id)
     principals = get_principals_for_account(neo4j_session, account_id)
     pr_file = common_job_parameters["permission_relationships_file"]

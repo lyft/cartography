@@ -23,7 +23,13 @@ def get_ec2_regions(boto3_session):
 
 
 @timeit
-def sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters):
+def sync(neo4j_session, aws_sync_config):
+    boto3_session = aws_sync_config['boto3_session']
+    regions = aws_sync_config['regions']
+    account_id = aws_sync_config['account_id']
+    sync_tag = aws_sync_config['sync_tag']
+    common_job_parameters = aws_sync_config['common_job_parameters']
+
     logger.info("Syncing EC2 for account '%s'.", account_id)
     sync_vpc(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     sync_ec2_security_groupinfo(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)

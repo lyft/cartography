@@ -99,10 +99,10 @@ def sync_dynamodb_tables(
 
 
 def sync(
-        neo4j_session, boto3_session, regions, current_aws_account_id, aws_update_tag,
-        common_job_parameters,
+        neo4j_session, aws_sync_config,
 ):
     sync_dynamodb_tables(
-        neo4j_session, boto3_session, regions, current_aws_account_id, aws_update_tag,
-        common_job_parameters,
+        neo4j_session, aws_sync_config['boto3_session'], aws_sync_config['regions'],
+        aws_sync_config['current_aws_account_id'], aws_sync_config['aws_update_tag'],
+        aws_sync_config['common_job_parameters'],
     )

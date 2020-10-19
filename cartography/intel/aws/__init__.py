@@ -19,16 +19,15 @@ from . import s3
 from cartography.util import run_analysis_job
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
+import lib.multiprocessing_dag as multiprocessing_dag
+from cartography.multisync import build_cartography_sync_task
 
 logger = logging.getLogger(__name__)
 
 
-def _sync_one_account(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters):
-    iam.sync(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters)
-    s3.sync(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters)
-
+def _sync_one_account(neo4j_session, aws_sync_config):
     try:
-        regions = ec2.get_ec2_regions(boto3_session)
+        aws_sync_config['regions'] = ec2.get_ec2_regions(aws_sync_config['boto3_session'])
     except botocore.exceptions.ClientError as e:
         logger.debug("Error occurred getting EC2 regions.", exc_info=True)
         logger.error(
@@ -36,29 +35,43 @@ def _sync_one_account(neo4j_session, boto3_session, account_id, sync_tag, common
                 "Failed to retrieve AWS region list, an error occurred: %s. Could not get regions for account %s."
             ),
             e,
-            account_id,
+            aws_sync_config['account_id'],
         )
         return
 
-    dynamodb.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-    ec2.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-    eks.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-    lambda_function.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-    rds.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-    redshift.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
+    pipeline = multiprocessing_dag.Pipeline(name='pipeline_aws_one_account')
+
+    # Initialization pipeline -- all subsequent pipelines should have this upstream.
+    pipeline_start = multiprocessing_dag.Pipeline(name='pipeline_aws_one_account_init')
+    # TODO - adapt IAM and S3 syncs to use the region data
+    for func in [iam.sync, s3.sync, dynamodb.sync, ec2.sync, eks.sync, lambda_function.sync, rds.sync, redshift.sync]:
+        task = build_cartography_sync_task(aws_sync_config, func.__name__, func)
+        pipeline_start.add(task)
+    pipeline.add(pipeline_start)
 
     # NOTE each of the below will generate DNS records
-    route53.sync(neo4j_session, boto3_session, account_id, sync_tag)
-    elasticsearch.sync(neo4j_session, boto3_session, account_id, sync_tag)
+    route53.sync(neo4j_session, aws_sync_config)
+    elasticsearch.sync(neo4j_session, aws_sync_config)
 
+    # TODO put this in a stage somehow
     # NOTE clean up all DNS records, regardless of which job created them
-    run_cleanup_job('aws_account_dns_cleanup.json', neo4j_session, common_job_parameters)
+    run_cleanup_job('aws_account_dns_cleanup.json', neo4j_session, aws_sync_config['common_job_parameters'])
 
-    # MAP IAM permissions
-    permission_relationships.sync(neo4j_session, account_id, sync_tag, common_job_parameters)
+    pipeline_rpr = multiprocessing_dag.Pipeline(name='pipeline_aws_one_account_rpr')
+    rpr_task = build_cartography_sync_task(aws_sync_config, 'permission_relationships.sync',
+                                           permission_relationships.sync)
+    pipeline_rpr.add(rpr_task)
+    pipeline.add(pipeline_rpr, upstreams=[pipeline_start])
 
-    # AWS Tags - Must always be last.
-    resourcegroupstaggingapi.sync(neo4j_session, boto3_session, regions, sync_tag, common_job_parameters)
+    pipeline_tags = multiprocessing_dag.Pipeline(name='pipeline_aws_one_account_tags')
+    tag_task = build_cartography_sync_task(aws_sync_config, 'resourcegroupstaggingapi.sync',
+                                           resourcegroupstaggingapi.sync)
+    pipeline_tags.add(tag_task)
+    pipeline.add(pipeline_tags, upstreams=[pipeline_start])
+
+    # TODO - do I need to add a pipeline_sequential here?
+    runner = multiprocessing_dag.Runner()
+    return runner.run(pipeline)
 
 
 def _autodiscover_accounts(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters):
@@ -92,8 +105,13 @@ def _sync_multiple_accounts(neo4j_session, accounts, sync_tag, common_job_parame
         boto3_session = boto3.Session(profile_name=profile_name)
 
         _autodiscover_accounts(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters)
-
-        _sync_one_account(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters)
+        aws_sync_config = {
+            'boto3_session': boto3_session,
+            'account_id': account_id,
+            'sync_tag': sync_tag,
+            'common_job_parameters': common_job_parameters,
+        }
+        _sync_one_account(neo4j_session, aws_sync_config)
 
     del common_job_parameters["AWS_ID"]
 

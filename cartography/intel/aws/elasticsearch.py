@@ -221,7 +221,13 @@ def cleanup(neo4j_session, update_tag, aws_account_id):
 
 
 @timeit
-def sync(neo4j_session, boto3_session, aws_account_id, update_tag):
+def sync(neo4j_session, aws_sync_config):
+    boto3_session = aws_sync_config['boto3_session']
+    # TODO - are we ready to remove the hardcoded list above? I'm scared to change this behavior.
+    # es_regions = aws_sync_config['regions']
+    aws_account_id = aws_sync_config['account_id']
+    update_tag = aws_sync_config['sync_tag']
+
     for region in es_regions:
         logger.info("Syncing Elasticsearch Service for region '%s' in account '%s'.", region, aws_account_id)
         client = boto3_session.client('es', region_name=region, config=_get_botocore_config())

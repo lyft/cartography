@@ -82,10 +82,13 @@ def sync_lambda_functions(
     cleanup_lambda(neo4j_session, common_job_parameters)
 
 
-def sync(
-        neo4j_session, boto3_session, regions, current_aws_account_id, aws_update_tag,
-        common_job_parameters,
-):
+def sync(neo4j_session, aws_sync_config):
+    boto3_session = aws_sync_config['boto3_session']
+    regions = aws_sync_config['regions']
+    current_aws_account_id = aws_sync_config['account_id']
+    aws_update_tag = aws_sync_config['sync_tag']
+    common_job_parameters = aws_sync_config['common_job_parameters']
+
     sync_lambda_functions(
         neo4j_session, boto3_session, regions, current_aws_account_id, aws_update_tag,
         common_job_parameters,

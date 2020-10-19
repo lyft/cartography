@@ -652,7 +652,12 @@ def sync_user_access_keys(neo4j_session, boto3_session, current_aws_account_id, 
 
 
 @timeit
-def sync(neo4j_session, boto3_session, account_id, update_tag, common_job_parameters):
+def sync(neo4j_session, aws_sync_config):
+    boto3_session = aws_sync_config['boto3_session']
+    account_id = aws_sync_config['account_id']
+    update_tag = aws_sync_config['sync_tag']
+    common_job_parameters = aws_sync_config['common_job_parameters']
+
     logger.info("Syncing IAM for account '%s'.", account_id)
     # This module only syncs IAM information that is in use.
     # As such only policies that are attached to a user, role or group are synced

@@ -120,7 +120,12 @@ def cleanup(neo4j_session, common_job_parameters):
 
 
 @timeit
-def sync(neo4j_session, boto3_session, regions, aws_update_tag, common_job_parameters):
+def sync(neo4j_session, aws_sync_config):
+    boto3_session = aws_sync_config['boto3_session']
+    regions = aws_sync_config['regions']
+    aws_update_tag = aws_sync_config['sync_tag']
+    common_job_parameters = aws_sync_config['common_job_parameters']
+
     for region in regions:
         logger.info("Syncing AWS tags for region '%s'.", region)
         for resource_type in TAG_RESOURCE_TYPE_MAPPINGS.keys():
