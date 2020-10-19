@@ -21,9 +21,80 @@ from cartography.util import run_cleanup_job
 from cartography.util import timeit
 import lib.multiprocessing_dag as multiprocessing_dag
 from cartography.multisync import build_cartography_sync_task
+import multiprocessing_logging
+
 
 logger = logging.getLogger(__name__)
 
+def build_aws_pipeline(aws_sync_config):
+    """
+    Sets up AWS DAG pipeline. Looks like this:
+             Tags
+               ^   (DNS)
+               |    ^
+               |   /
+    (Resources)---------->(Perm rels)
+                          ^
+                        /
+    IAM-----------------
+    """
+    pipeline_main = multiprocessing_dag.Pipeline(name='pipeline_aws_main')
+
+    # IAM sync can run at any time
+    task_iam = build_cartography_sync_task(aws_sync_config, 'iam', iam.sync)
+    pipeline_iam = multiprocessing_dag.Pipeline(name="pipeline_aws_iam")
+    pipeline_iam.add(task_iam)
+    pipeline_main.add(pipeline_iam)
+
+    pipeline_resources = multiprocessing_dag.Pipeline(name='pipeline_aws_resources')
+    # TODO - adapt IAM and S3 syncs to use the region data
+    # Put the AWS resource syncs here
+    resource_syncs = [
+        ('s3', s3.sync), ('dynamodb', dynamodb.sync), ('ec2', ec2.sync), ('eks', eks.sync),
+        ('lambda', lambda_function.sync), ('rds', rds.sync), ('redshift', redshift.sync)
+    ]
+    for fname, func in resource_syncs:
+        task = build_cartography_sync_task(aws_sync_config, fname, func)
+        pipeline_resources.add(task)
+    pipeline_main.add(pipeline_resources)
+
+    # Route53 sync must occur after the resource syncs
+    task_route53 = build_cartography_sync_task(aws_sync_config, 'route53', route53.sync)
+    pipeline_route53 = multiprocessing_dag.Pipeline(name='pipeline_aws_route53')
+    pipeline_route53.add(task_route53)
+    pipeline_main.add(pipeline_route53, upstreams=[pipeline_resources])
+
+    # ES sync must occur after the resource syncs and the route53 sync
+    task_elasticsearch = build_cartography_sync_task(aws_sync_config, 'es', elasticsearch.sync)
+    pipeline_es = multiprocessing_dag.Pipeline(name='pipeline_aws_elasticsearch')
+    pipeline_es.add(task_elasticsearch)
+    pipeline_main.add(pipeline_es, upstreams=[pipeline_resources, pipeline_route53])
+
+    # DNS cleanup must occur after resource syncs, route 53, and the ES sync
+    task_dns_cleanup = build_cartography_sync_task(aws_sync_config, 'dns_cleanup', dns_cleanup)
+    pipeline_dns_cleanup = multiprocessing_dag.Pipeline(name='aws_dns_cleanup')
+    pipeline_dns_cleanup.add(task_dns_cleanup)
+    pipeline_main.add(pipeline_dns_cleanup, upstreams=[pipeline_resources, pipeline_route53, pipeline_es])
+
+    # Resource permissions must come after IAM and the resource syncs
+    pipeline_rpr = multiprocessing_dag.Pipeline(name='pipeline_aws_one_account_rpr')
+    task_rpr = build_cartography_sync_task(aws_sync_config, 'permission_relationships.sync',
+                                           permission_relationships.sync)
+    pipeline_rpr.add(task_rpr)
+    pipeline_main.add(pipeline_rpr, upstreams=[pipeline_resources, pipeline_iam])
+
+    # Tags must be applied after resources
+    pipeline_tags = multiprocessing_dag.Pipeline(name='pipeline_aws_tags')
+    task_tags = build_cartography_sync_task(aws_sync_config, 'resourcegroupstaggingapi.sync',
+                                            resourcegroupstaggingapi.sync)
+    pipeline_tags.add(task_tags)
+    pipeline_main.add(pipeline_tags, upstreams=[pipeline_resources])
+    return pipeline_main
+
+
+def dns_cleanup(neo4j_session, aws_sync_config):
+    # NOTE clean up all DNS records, regardless of which job created them
+    run_cleanup_job('aws_account_dns_cleanup.json', neo4j_session, aws_sync_config['common_job_parameters'])
 
 def _sync_one_account(neo4j_session, aws_sync_config):
     try:
@@ -57,19 +128,7 @@ def _sync_one_account(neo4j_session, aws_sync_config):
     # NOTE clean up all DNS records, regardless of which job created them
     run_cleanup_job('aws_account_dns_cleanup.json', neo4j_session, aws_sync_config['common_job_parameters'])
 
-    pipeline_rpr = multiprocessing_dag.Pipeline(name='pipeline_aws_one_account_rpr')
-    rpr_task = build_cartography_sync_task(aws_sync_config, 'permission_relationships.sync',
-                                           permission_relationships.sync)
-    pipeline_rpr.add(rpr_task)
-    pipeline.add(pipeline_rpr, upstreams=[pipeline_start])
-
-    pipeline_tags = multiprocessing_dag.Pipeline(name='pipeline_aws_one_account_tags')
-    tag_task = build_cartography_sync_task(aws_sync_config, 'resourcegroupstaggingapi.sync',
-                                           resourcegroupstaggingapi.sync)
-    pipeline_tags.add(tag_task)
-    pipeline.add(pipeline_tags, upstreams=[pipeline_start])
-
-    # TODO - do I need to add a pipeline_sequential here?
+    pipeline = build_aws_pipeline(aws_sync_config)
     runner = multiprocessing_dag.Runner()
     return runner.run(pipeline)
 
@@ -126,6 +185,7 @@ def _sync_multiple_accounts(neo4j_session, accounts, sync_tag, common_job_parame
 
 @timeit
 def start_aws_ingestion(neo4j_session, config):
+    multiprocessing_logging.install_mp_handler()
     common_job_parameters = {
         "UPDATE_TAG": config.update_tag,
         "permission_relationships_file": config.permission_relationships_file,

@@ -8,11 +8,16 @@ import cartography.config
 import cartography.sync
 import cartography.intel.create_indexes
 from cartography.intel.github import start_github_ingestion
-from cartography.intel.aws import start_aws_ingestion
+# from cartography.intel.aws import start_aws_ingestion
 from cartography.intel.gcp import start_gcp_ingestion
 from cartography.intel.gsuite import start_gsuite_ingestion
 
 
+# The hierarchy: a pipeline has one or more sync-tasks which don't depend on each other. a pipeline also can specify
+#               another pipeline as an upstream dependency.
+#                sync tasks are not a classes; they take arg for a start_*(neo4jsession,config) func -has-a-single->
+#                [ SyncStage -has-1-or-more-> SyncCommands -> 1 sync object and 1 config object ]
+# Task: find a way to put multiple sub syncs into a pipeline
 
 logger = logging.getLogger(__name__)
 
@@ -105,8 +110,8 @@ def build_pipeline(config):
     task_gcp = build_cartography_sync_task(
         config,
         'gcp',
-        mock_sync_2,
-        # start_gcp_ingestion,
+        # mock_sync_2,
+        start_gcp_ingestion,
     )
     pipeline_multi.add(task_gcp)
 

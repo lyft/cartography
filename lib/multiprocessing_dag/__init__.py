@@ -161,7 +161,7 @@ class Pipeline(Node):
             means that pipeline_init must execute successfully before pipeline_subjob can start.
         """
         if node.name in self.nodes:
-            raise ValueError()  # TODO better epxception
+            raise ValueError(f'A node named "{node.name}"" already exists in pipeline {self.name}.')
 
         node.parent = self
         self.nodes[node.name] = node
