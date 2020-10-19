@@ -46,17 +46,28 @@ def build_aws_pipeline(aws_sync_config):
     pipeline_iam.add(task_iam)
     pipeline_main.add(pipeline_iam)
 
-    pipeline_resources = multiprocessing_dag.Pipeline(name='pipeline_aws_resources')
-    # TODO - adapt IAM and S3 syncs to use the region data
     # Put the AWS resource syncs here
     resource_syncs = [
         ('s3', s3.sync), ('dynamodb', dynamodb.sync), ('ec2', ec2.sync), ('eks', eks.sync),
         ('lambda', lambda_function.sync), ('rds', rds.sync), ('redshift', redshift.sync)
     ]
-    for fname, func in resource_syncs:
-        task = build_cartography_sync_task(aws_sync_config, fname, func)
-        pipeline_resources.add(task)
-    pipeline_main.add(pipeline_resources)
+    resource_pipes = []
+    pipeline_resources = multiprocessing_dag.Pipeline(name='pipeline_aws_resources')
+    for funcname, func in resource_syncs:
+        # Build a sync task object around each sync entrypoint
+        task = build_cartography_sync_task(aws_sync_config, funcname, func)
+
+        # Make a wrapper pipe for each sync task
+        current_pipeline = multiprocessing_dag.Pipeline(name=funcname)
+        current_pipeline.add(task)
+
+        # Keep track of all wrapper pipes in a list of references
+        resource_pipes.append(current_pipeline)
+
+        # Add the current sync task pipe to the resources pipeline
+        pipeline_resources.add(current_pipeline)
+    # Add the resources pipeline to the main pipeline. It is considered done when all upstream resources have synced.
+    pipeline_main.add(pipeline_resources, upstreams=[task_pipe for task_pipe in resource_pipes])
 
     # Route53 sync must occur after the resource syncs
     task_route53 = build_cartography_sync_task(aws_sync_config, 'route53', route53.sync)
