@@ -255,18 +255,14 @@ def _transform_python_requirements(repo_object, out_requirements_files):
 
         for req in parsed_list:
             pinned_version = None
+            if len(req.specifier) == 1:
+                specifier = next(iter(req.specifier))
+                if specifier.operator == '==':
+                    pinned_version = specifier.version
+
             # Set `spec` to a default value. Example values for str(req.specifier): "<4.0,>=3.0" or "==1.0.0".
             spec = str(req.specifier)
-
-            if len(req.specifier._specs) == 1:
-                # req.specifier._specs is a frozenset so to manipulate it we turn it into a list and get the 1st item.
-                spec_str = str(list(req.specifier._specs)[0])
-                # If the spec is pinned to 1 version with ==, we only want the version number, not the full specifier.
-                if spec_str.startswith('=='):
-                    spec = spec_str.strip('==')
-                    pinned_version = spec
-
-            # Ingest `None` to the graph instead of empty string.
+            # Ingest `None` to the graph instead of empty string. #TODO - words
             if spec == '':
                 spec = None
 

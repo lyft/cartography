@@ -178,10 +178,9 @@ Representation of a Python library as listed in a [requirements.txt](https://pip
 
 | Field | Description |
 |-------|-------------|
-|**id**|The [canonicalized](https://packaging.pypa.io/en/latest/utils/#packaging.utils.canonicalize_name) name of the library. If the library was pinned in a requirements file, then `id` has the form `{canonical name}|{pinned_version}`|
-|name|The [canonicalized](https://packaging.pypa.io/en/latest/utils/#packaging.utils.canonicalize_name) name of the library|
-|url|URL of the library, if available|
-|version|The version of the library. This field is only available if the library was pinned in a requirements file|
+|**id**|The [canonicalized](https://packaging.pypa.io/en/latest/utils/#packaging.utils.canonicalize_name) name of the library. If the library was pinned in a requirements file, then `id` has the form `{canonical name}|{pinned_version}`.|
+|name|The [canonicalized](https://packaging.pypa.io/en/latest/utils/#packaging.utils.canonicalize_name) name of the library.|
+|version|The version of the library. This field is only available if the library was pinned in a requirements file.|
 
 ### Relationships
 
@@ -190,4 +189,4 @@ Representation of a Python library as listed in a [requirements.txt](https://pip
     ```
     (GitHubRepository)-[:REQUIRES{specifier}]->(PythonLibrary)
     ```
-    - specifier: A string describing this library's version. If of the form "x.y.z", then the version was pinned with a `==` operator. Otherwise this is a more complex string such as  "<4.0,>=3.0".
+    - specifier: A string describing this library's version. If of the form "x.y.z", then the version was pinned with a `==` operator. Otherwise this is a more complex string such as  "<4.0,>=3.0". # TODO wordsmith, when is this defined(arb specifier/couldl be pinned) or not

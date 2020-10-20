@@ -31,7 +31,7 @@ GET_REPOS = [
             '__typename': 'Organization',
         },
         'collaborators': {'edges': [], 'nodes': []},
-        'requirements': {'text': 'cartography\nhttplib2>=0.7.0\njinja2\nlxml\n-e git+https://example.com#egg=foobar\nhttps://example.com/foobar.tar.gz\n'},  # noqa
+        'requirements': {'text': 'cartography\nhttplib2>=0.7.0\njinja2\nlxml\n-e git+https://example.com#egg=foobar\nhttps://example.com/foobar.tar.gz\npip @ https://github.com/pypa/pip/archive/1.3.1.zip#sha1=da9234ee9982d4bbb3c72346a6de940a148ea686\n'}, # noqa
     }, {
         'name': 'SampleRepo2',
         'nameWithOwner': 'example_org/SampleRepo2',
