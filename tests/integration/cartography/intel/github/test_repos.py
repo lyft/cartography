@@ -199,7 +199,7 @@ def test_pinned_python_library_to_repo(neo4j_session):
     # Note: don't query for relationship attributes in code that needs to be fast.
     query = """
     MATCH (repo:GitHubRepository)-[r:REQUIRES]->(lib:PythonLibrary{id:'cartography|0.1.0'})
-    WHERE lib.version = "0.1.0" and r.specifier = "0.1.0"
+    WHERE lib.version = "0.1.0"
     RETURN count(repo) as repo_count
     """
     nodes = neo4j_session.run(query)
@@ -227,5 +227,3 @@ def test_upinned_python_library_to_repo(neo4j_session):
     actual_nodes = {n['repo_count'] for n in nodes}
     expected_nodes = {1}
     assert actual_nodes == expected_nodes
-
-# TODO - if have time add test case for range
