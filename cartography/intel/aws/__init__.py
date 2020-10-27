@@ -5,6 +5,7 @@ import botocore.exceptions
 
 from . import dynamodb
 from . import ec2
+from . import ecr
 from . import eks
 from . import elasticsearch
 from . import iam
@@ -42,6 +43,7 @@ def _sync_one_account(neo4j_session, boto3_session, account_id, sync_tag, common
 
     dynamodb.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     ec2.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
+    ecr.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     eks.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     lambda_function.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     rds.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
