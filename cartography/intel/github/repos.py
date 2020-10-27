@@ -263,7 +263,8 @@ def _transform_python_requirements(repo_object, out_requirements_files):
 
             # Set `spec` to a default value. Example values for str(req.specifier): "<4.0,>=3.0" or "==1.0.0".
             spec = str(req.specifier)
-            # Ingest `None` to the graph instead of empty string. #TODO - words
+            # Set spec to `None` instead of empty string so that the Neo4j driver will leave the library.specifier field
+            # undefined. As convention, we prefer undefined values over empty strings in the graph.
             if spec == '':
                 spec = None
 
