@@ -6,16 +6,32 @@ TEST_REGION = 'us-east-1'
 TEST_UPDATE_TAG = 123456789
 
 
-def test_load_ecr_repositories(neo4j_session):
-    data = tests.data.aws.ecr.DESCRIBE_REPOSITORIES
-
+def _ensure_local_neo4j_has_test_ecr_repo_data(neo4j_session):
+    repo_data = tests.data.aws.ecr.DESCRIBE_REPOSITORIES
     cartography.intel.aws.ecr.load_ecr_repositories(
         neo4j_session,
-        data,
+        repo_data['repositories'],
         TEST_REGION,
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG,
     )
+
+
+def _ensure_local_neo4j_has_test_repo_and_image_data(neo4j_session):
+    _ensure_local_neo4j_has_test_ecr_repo_data(neo4j_session)
+
+    data = tests.data.aws.ecr.LIST_REPOSITORY_IMAGES
+    cartography.intel.aws.ecr.load_ecr_repository_images(
+        neo4j_session,
+        data,
+        TEST_REGION,
+        TEST_UPDATE_TAG,
+    )
+
+
+def test_load_ecr_repositories(neo4j_session):
+    _ensure_local_neo4j_has_test_ecr_repo_data(neo4j_session)
+
     expected_nodes = {
         "arn:aws:ecr:us-east-1:000000000000:repository/example-repository",
         "arn:aws:ecr:us-east-1:000000000000:repository/sample-repository",
@@ -32,18 +48,12 @@ def test_load_ecr_repositories(neo4j_session):
 
 
 def test_load_ecr_repository_images(neo4j_session):
-    repo_data = tests.data.aws.ecr.DESCRIBE_REPOSITORIES
-
-    cartography.intel.aws.ecr.load_ecr_repositories(
-        neo4j_session,
-        repo_data,
-        TEST_REGION,
-        TEST_ACCOUNT_ID,
-        TEST_UPDATE_TAG,
-    )
+    """
+    Ensure the connection (:ECRRepository)-[:REPO_IMAGE]->(:ECRRepositoryImage) exists.
+    """
+    _ensure_local_neo4j_has_test_ecr_repo_data(neo4j_session)
 
     data = tests.data.aws.ecr.LIST_REPOSITORY_IMAGES
-
     cartography.intel.aws.ecr.load_ecr_repository_images(
         neo4j_session,
         data,
@@ -51,45 +61,94 @@ def test_load_ecr_repository_images(neo4j_session):
         TEST_UPDATE_TAG,
     )
 
-    # TODO it's possible to have the same image in multiple repositories -- current code doesn't represent that in the
-    #      graph well
+    # Tuples of form (repo ARN, image tag)
     expected_nodes = {
         (
             'arn:aws:ecr:us-east-1:000000000000:repository/example-repository',
-            'sha256:0000000000000000000000000000000000000000000000000000000000000000',
             '1',
         ),
         (
             'arn:aws:ecr:us-east-1:000000000000:repository/example-repository',
-            'sha256:0000000000000000000000000000000000000000000000000000000000000001',
             '2',
-        ),
-        (
-            'arn:aws:ecr:us-east-1:000000000000:repository/sample-repository',
-            'sha256:0000000000000000000000000000000000000000000000000000000000000000',
-            '1',
-        ),
-        (
-            'arn:aws:ecr:us-east-1:000000000000:repository/sample-repository',
-            'sha256:0000000000000000000000000000000000000000000000000000000000000011',
-            '2',
-        ),
-        (
-            'arn:aws:ecr:us-east-1:000000000000:repository/test-repository',
-            'sha256:0000000000000000000000000000000000000000000000000000000000000000',
-            '1234567890',
-        ),
-        (
-            'arn:aws:ecr:us-east-1:000000000000:repository/test-repository',
-            'sha256:0000000000000000000000000000000000000000000000000000000000000021',
-            '1',
         ),
     }
 
     nodes = neo4j_session.run(
         """
-        MATCH (repo:ECRRepository)-[:IMAGE]->(image:ECRImage) RETURN repo.arn, image.digest, image.tag;
+        MATCH (repo:ECRRepository{id:"arn:aws:ecr:us-east-1:000000000000:repository/example-repository"})
+        -[:REPO_IMAGE]->(image:ECRRepositoryImage)
+        RETURN repo.arn, image.tag;
         """
     )
-    actual_nodes = {(n['repo.arn'], n['image.digest'], n['image.tag']) for n in nodes}
+    actual_nodes = {(n['repo.arn'], n['image.tag']) for n in nodes}
+    assert actual_nodes == expected_nodes
+
+
+def test_load_ecr_images(neo4j_session):
+    """
+    Ensure the connection (:ECRRepositoryImage)-[:IMAGE]->(:ECRImage) exists.
+    A single ECRImage may be referenced by many ECRRepositoryImages.
+    """
+    _ensure_local_neo4j_has_test_ecr_repo_data(neo4j_session)
+
+    data = tests.data.aws.ecr.LIST_REPOSITORY_IMAGES
+    cartography.intel.aws.ecr.load_ecr_repository_images(
+        neo4j_session,
+        data,
+        TEST_REGION,
+        TEST_UPDATE_TAG,
+    )
+
+    # Tuples of form (repo image ARN, image SHA)
+    expected_nodes = {
+        (
+            "000000000000.dkr.ecr.us-east-1/test-repository:1234567890",
+            "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+        ),
+        (
+            "000000000000.dkr.ecr.us-east-1/sample-repository:1",
+            "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+        ),
+        (
+            "000000000000.dkr.ecr.us-east-1/example-repository:1",
+            "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+        ),
+    }
+
+    nodes = neo4j_session.run(
+        """
+        MATCH (repo_image:ECRRepositoryImage)-[:IMAGE]->
+        (image:ECRImage{digest:"sha256:0000000000000000000000000000000000000000000000000000000000000000"})
+        RETURN repo_image.id, image.digest;
+        """
+    )
+    actual_nodes = {(n['repo_image.id'], n['image.digest']) for n in nodes}
+    assert actual_nodes == expected_nodes
+
+
+def test_load_ecr_image_vulns(neo4j_session):
+    """
+    Ensure the connection (:Risk)-[:AFFECTS]->(pkg:Package)-[:DEPLOYED]->(:ECRImage) exists.
+    """
+    _ensure_local_neo4j_has_test_repo_and_image_data(neo4j_session)
+
+    image_vuln_data = tests.data.aws.ecr.GET_ECR_REPOSITORY_IMAGE_VULNS
+    transformed_data = cartography.intel.aws.ecr.transform_ecr_repository_image_vulns(image_vuln_data)
+    cartography.intel.aws.ecr.load_ecr_image_vulns(neo4j_session, transformed_data, TEST_UPDATE_TAG)
+
+    expected_nodes = {
+        (
+            "CVE-1234-12345",
+            "some_name",
+            "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+        ),
+    }
+    nodes = neo4j_session.run(
+        """
+        MATCH (risk:Risk)-[:AFFECTS]->(pkg:Package)-[:DEPLOYED]->(img:ECRImage)
+        RETURN risk.id, pkg.name, img.digest
+        """
+    )
+    actual_nodes = {(n['risk.id'], n['pkg.name'], n['img.digest']) for n in nodes}
+
     assert actual_nodes == expected_nodes

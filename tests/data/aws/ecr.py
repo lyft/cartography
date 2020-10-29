@@ -62,3 +62,25 @@ LIST_REPOSITORY_IMAGES = {
         },
     ],
 }
+
+GET_ECR_REPOSITORY_IMAGE_VULNS = {
+    'imageDigest': 'sha256:0000000000000000000000000000000000000000000000000000000000000000',
+    'findings_count': {
+        'HIGH': 1, 'INFORMATIONAL': 13, 'LOW': 43, 'MEDIUM': 19,
+    },
+    'findings': [{
+        'attributes': [
+            {
+                'key': 'package_version',
+                'value': '1.2.3',
+            }, {
+                'key': 'package_name',
+                'value': 'some_name',
+            },
+        ],
+        'name': 'CVE-1234-12345',
+        'severity': 'HIGH',
+        'uri': 'http://example.com',
+    }],
+    'scan_completed_at': 'abcd',
+}

@@ -23,7 +23,7 @@ def get_ecr_repository_images(boto3_session, region, repository_name):
     return ecr_repository_images
 
 
-def get_repository_images_vulns(boto3_session, region, repository_name, repository_images):
+def get_ecr_repository_image_vulns(boto3_session, region, repository_name, repository_images):
     """
     Returned data shape = {
         'imageDigest': 'sha256:1234',
@@ -75,12 +75,13 @@ def get_repository_images_vulns(boto3_session, region, repository_name, reposito
     return image_vuln_dict
 
 
-def transform_repository_images_vulns_findings(vuln_data):
+def transform_ecr_repository_image_vulns(vuln_data):
     """
-    Transforms each finding returned from `get_repository_images_vulns()` so that we flatten the  `attributes` list to
-    make it easier to load to the graph. This transformation occurs in place.
+    Transforms each finding returned from `get_ecr_repository_image_vulns()` so that we flatten the  `attributes` list
+    to make it easier to load to the graph.
     """
-    for finding in vuln_data.get('findings'):
+    working_copy = vuln_data.copy()
+    for finding in working_copy.get('findings'):
         for attrib in finding.get('attributes'):
             if attrib['key'] == 'package_version':
                 finding['package_version'] = attrib['value']
@@ -88,6 +89,7 @@ def transform_repository_images_vulns_findings(vuln_data):
                 finding['package_name'] = attrib['value']
             elif attrib['key'] == 'CVSS2_SCORE':
                 finding['CVSS2_SCORE'] = attrib['value']
+    return working_copy
 
 
 def load_ecr_repositories(neo4j_session, data, region, current_aws_account_id, aws_update_tag):
@@ -157,7 +159,7 @@ def load_ecr_image_vulns(neo4j_session, data, aws_update_tag):
     """
     Creates the path (:Risk:CVE:ECRScanFinding)-[:AFFECTS]->(:Package)-[:DEPLOYED]->(:ECRImage)
     :param neo4j_session: The Neo4j session object
-    :param data: A dict that has been run through transform_repository_images_vulns_findings().
+    :param data: A dict that has been run through transform_ecr_repository_image_vulns().
     :param aws_update_tag: The AWS update tag
     """
     query = """
@@ -208,10 +210,10 @@ def sync(neo4j_session, boto3_session, regions, current_aws_account_id, aws_upda
         vuln_list = []
         for repo in repository_data:
             image_data[repo['repositoryUri']] = get_ecr_repository_images(boto3_session, region, repo['repositoryName'])
-            image_vulns = get_repository_images_vulns(
+            image_vulns = get_ecr_repository_image_vulns(
                 boto3_session, region, repo['repositoryName'], image_data[repo['repositoryUri']],
             )
-            transform_repository_images_vulns_findings(image_vulns)
+            transform_ecr_repository_image_vulns(image_vulns)
             vuln_list.append(image_vulns)
         load_ecr_repositories(neo4j_session, repository_data, region, current_aws_account_id, aws_update_tag)
         load_ecr_repository_images(neo4j_session, image_data, region, aws_update_tag)
