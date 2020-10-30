@@ -58,38 +58,48 @@
   - [Relationships](#relationships-24)
 - [EC2Subnet](#ec2subnet)
   - [Relationships](#relationships-25)
-- [EKSCluster](#ekscluster)
+- [ECRRepository](#ecrrepository)
   - [Relationships](#relationships-26)
-- [ESDomain](#esdomain)
+- [ECRRepositoryImage](#ecrrepositoryimage)
   - [Relationships](#relationships-27)
-- [Endpoint](#endpoint)
+- [ECRImage](#ecrimage)
   - [Relationships](#relationships-28)
-- [Endpoint::ELBListener](#endpointelblistener)
+- [Package](#package)
   - [Relationships](#relationships-29)
-- [Endpoint::ELBV2Listener](#endpointelbv2listener)
+- [ECRScanFinding (:Risk:CVE)](#ecrscanfinding-riskcve)
   - [Relationships](#relationships-30)
-- [Ip](#ip)
+- [EKSCluster](#ekscluster)
   - [Relationships](#relationships-31)
-- [IpRule](#iprule)
+- [ESDomain](#esdomain)
   - [Relationships](#relationships-32)
-- [IpRule::IpPermissionInbound](#ipruleippermissioninbound)
+- [Endpoint](#endpoint)
   - [Relationships](#relationships-33)
-- [LoadBalancer](#loadbalancer)
+- [Endpoint::ELBListener](#endpointelblistener)
   - [Relationships](#relationships-34)
-- [LoadBalancerV2](#loadbalancerv2)
+- [Endpoint::ELBV2Listener](#endpointelbv2listener)
   - [Relationships](#relationships-35)
-- [Nameserver](#nameserver)
+- [Ip](#ip)
   - [Relationships](#relationships-36)
-- [NetworkInterface](#networkinterface)
+- [IpRule](#iprule)
   - [Relationships](#relationships-37)
-- [RedshiftCluster](#redshiftcluster)
+- [IpRule::IpPermissionInbound](#ipruleippermissioninbound)
   - [Relationships](#relationships-38)
-- [RDSInstance](#rdsinstance)
+- [LoadBalancer](#loadbalancer)
   - [Relationships](#relationships-39)
-- [S3Acl](#s3acl)
+- [LoadBalancerV2](#loadbalancerv2)
   - [Relationships](#relationships-40)
-- [S3Bucket](#s3bucket)
+- [Nameserver](#nameserver)
   - [Relationships](#relationships-41)
+- [NetworkInterface](#networkinterface)
+  - [Relationships](#relationships-42)
+- [RedshiftCluster](#redshiftcluster)
+  - [Relationships](#relationships-43)
+- [RDSInstance](#rdsinstance)
+  - [Relationships](#relationships-44)
+- [S3Acl](#s3acl)
+  - [Relationships](#relationships-45)
+- [S3Bucket](#s3bucket)
+  - [Relationships](#relationships-46)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -1031,6 +1041,123 @@ Representation of an AWS EC2 [Subnet](https://docs.aws.amazon.com/AWSEC2/latest/
         ```
         (AWSAccount)-[RESOURCE]->(EC2Subnet)
         ```
+
+
+
+## ECRRepository
+
+Representation of an AWS Elastic Container Registry [Repository](https://docs.aws.amazon.com/AmazonECR/latest/APIReference/API_Repository.html).
+
+| Field | Description |
+|--------|-----------|
+| **id** | Same as ARN |
+| arn | The ARN of the repository |
+| name | The name of the repository |
+| region | The region of the repository |
+| created_at | Date and time when the repository was created |
+
+### Relationships
+
+- An ECRRepository contains ECRRepositoryImages:
+    ```
+    (:ECRRepository)-[:REPO_IMAGE]->(:ECRRepositoryImage)
+    ```
+
+
+## ECRRepositoryImage
+
+An ECR image may be referenced and tagged by more than one ECR Repository. To best represent this, we've created an
+`ECRRepositoryImage` node as a layer of indirection between the repo and the image.
+
+More concretely explained, we run
+[`ecr.list_images()`](https://docs.aws.amazon.com/AmazonECR/latest/APIReference/API_ImageIdentifier.html), and then
+store the image tag on an `ECRRepositoryImage` node and the image digest hash on a separate `ECRImage` node.
+
+This way, more than one `ECRRepositoryImage` can reference/be connected to the same `ECRImage`.
+
+| Field | Description |
+|--------|-----------|
+| tag | The tag applied to the repository image, e.g. "latest" |
+| uri | The URI where the repository image is stored |
+| **id** | same as uri |
+
+### Relationships
+
+- An ECRRepository contains ECRRepositoryImages:
+    ```
+    (:ECRRepository)-[:REPO_IMAGE]->(:ECRRepositoryImage)
+    ```
+
+- ECRRepositoryImages reference ECRImages
+    ```
+    (:ECRRepositoryImage)-[:IMAGE]->(:ECRImage)
+    ```
+
+
+## ECRImage
+
+Representation of an ECR image identified by its digest (e.g. a SHA hash). Specifically, this is the "digest part" of
+[`ecr.list_images()`](https://docs.aws.amazon.com/AmazonECR/latest/APIReference/API_ImageIdentifier.html). Also see
+ECRRepositoryImage.
+
+| Field | Description |
+|--------|-----------|
+| digest | The hash of this ECR image |
+| **id** | Same as digest |
+
+### Relationships
+
+- ECRRepositoryImages reference ECRImages
+    ```
+    (:ECRRepositoryImage)-[:IMAGE]->(:ECRImage)
+    ```
+
+- Software packages are a part of ECR Images
+    ```
+    (:Package)-[:DEPLOYED]->(:ECRImage)
+    ```
+
+
+## Package
+
+Representation of a software package, as found by an AWS ECR vulnerability scan.
+
+| Field | Description |
+|-------|-------------|
+| **id** | Concatenation of `{version}|{name}` |
+| version | The version of the package, includes the Linux distro that it was built for |
+| name | The name of the package |
+
+### Relationships
+
+- Software packages are a part of ECR Images
+    ```
+    (:Package)-[:DEPLOYED]->(:ECRImage)
+    ```
+
+- AWS ECR scans yield ECRScanFindings that affect software packages
+    ```
+    (:ECRScanFindings)-[:AFFECTS]->(:Package)
+    ```
+
+
+## ECRScanFinding (:Risk:CVE)
+
+Representation of a scan finding from AWS ECR.
+
+| Field | Description |
+|--------|-----------|
+| name | The name of the ECR scan finding, e.g. a CVE name |
+| **id** | Same as name |
+| severity | The severity of the risk |
+| uri | A URI link to a descriptive article on the risk |
+
+### Relationships
+
+- AWS ECR scans yield ECRScanFindings that affect software packages
+    ```
+    (:ECRScanFindings)-[:AFFECTS]->(:Package)
+    ```
 
 
 

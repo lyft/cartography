@@ -128,7 +128,7 @@ def load_ecr_repository_images(neo4j_session, data, region, aws_update_tag):
 
     MERGE (image:ECRImage{id: {ImageDigest}})
     ON CREATE SET image.firstseen = timestamp(), image.digest = {ImageDigest}
-    SET image.last_updated = {aws_update_tag}
+    SET image.lastupdated = {aws_update_tag}
     WITH repo_image, image
     MERGE (repo_image)-[r1:IMAGE]->(image)
     ON CREATE SET r1.firstseen = timestamp()
@@ -169,7 +169,7 @@ def load_ecr_image_vulns(neo4j_session, data, aws_update_tag):
         ON CREATE SET pkg.firstseen = timestamp(),
         pkg.name = risk.package_name,
         pkg.version = risk.package_version
-        SET pkg.last_updated = {aws_update_tag}
+        SET pkg.lastupdated = {aws_update_tag}
         WITH image, risk, pkg
 
         MERGE (pkg)-[r1:DEPLOYED]->(image)
@@ -181,7 +181,7 @@ def load_ecr_image_vulns(neo4j_session, data, aws_update_tag):
         ON CREATE SET r.firstseen = timestamp(),
         r.name = risk.name,
         r.severity = risk.severity
-        SET r.last_updated = {aws_update_tag},
+        SET r.lastupdated = {aws_update_tag},
         r.uri = risk.uri
 
         MERGE (r)-[a:AFFECTS]->(pkg)
