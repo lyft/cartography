@@ -1,8 +1,8 @@
 import logging
 
 from cartography.util import aws_handle_regions
-from cartography.util import timeit
 from cartography.util import run_cleanup_job
+from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 
@@ -64,8 +64,8 @@ def get_ecr_image_scan_findings(boto3_session, region, repository_name, reposito
             describe_images_resp = client.describe_images(
                 repositoryName=repository_name,
                 imageIds=[{
-                        'imageDigest': image['imageDigest'],
-                        'imageTag': image_tag,
+                    'imageDigest': image['imageDigest'],
+                    'imageTag': image_tag,
                 }],
             )
             if describe_images_resp['imageDetails'][0].get('imageScanStatus', {}).get('status', None) == "COMPLETE":
