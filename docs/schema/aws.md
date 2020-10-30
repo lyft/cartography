@@ -1143,7 +1143,7 @@ Representation of a software package, as found by an AWS ECR vulnerability scan.
 
 ## ECRScanFinding (:Risk:CVE)
 
-Representation of a scan finding from AWS ECR.
+Representation of a scan finding from AWS ECR. This is the result output of [`ecr.describe_image_scan_findings()`](https://docs.aws.amazon.com/AmazonECR/latest/APIReference/API_DescribeImageScanFindings.html).
 
 | Field | Description |
 |--------|-----------|

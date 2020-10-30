@@ -133,8 +133,8 @@ def test_load_ecr_image_vulns(neo4j_session):
     _ensure_local_neo4j_has_test_repo_and_image_data(neo4j_session)
 
     image_vuln_data = tests.data.aws.ecr.GET_ECR_REPOSITORY_IMAGE_VULNS
-    transformed_data = cartography.intel.aws.ecr.transform_ecr_repository_image_vulns(image_vuln_data)
-    cartography.intel.aws.ecr.load_ecr_image_vulns(neo4j_session, transformed_data, TEST_UPDATE_TAG)
+    transformed_data = cartography.intel.aws.ecr.transform_ecr_scan_finding_attributes(image_vuln_data)
+    cartography.intel.aws.ecr.load_ecr_image_scan_findings(neo4j_session, transformed_data, TEST_UPDATE_TAG)
 
     expected_nodes = {
         (

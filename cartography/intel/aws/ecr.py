@@ -1,10 +1,14 @@
 import logging
 
+from cartography.util import aws_handle_regions
+from cartography.util import timeit
 from cartography.util import run_cleanup_job
 
 logger = logging.getLogger(__name__)
 
 
+@timeit
+@aws_handle_regions
 def get_ecr_repositories(boto3_session, region):
     client = boto3_session.client('ecr', region_name=region)
     paginator = client.get_paginator('describe_repositories')
@@ -14,6 +18,8 @@ def get_ecr_repositories(boto3_session, region):
     return ecr_repositories
 
 
+@timeit
+@aws_handle_regions
 def get_ecr_repository_images(boto3_session, region, repository_name):
     client = boto3_session.client('ecr', region_name=region)
     paginator = client.get_paginator('list_images')
@@ -23,9 +29,12 @@ def get_ecr_repository_images(boto3_session, region, repository_name):
     return ecr_repository_images
 
 
-def get_ecr_repository_image_vulns(boto3_session, region, repository_name, repository_images):
+@timeit
+@aws_handle_regions
+def get_ecr_image_scan_findings(boto3_session, region, repository_name, repository_images):
     """
-    Returned data shape = {
+    Returned data shape = [{
+        'image_tag': 'TAG',
         'imageDigest': 'sha256:1234',
         'findings_count': {
             'HIGH': 1, 'INFORMATIONAL': 13, 'LOW': 43, 'MEDIUM': 19,
@@ -43,55 +52,60 @@ def get_ecr_repository_image_vulns(boto3_session, region, repository_name, repos
             'uri': 'http://example.com',
         }],
         'scan_completed_at': 'abcd',
-}
+    }]
     """
     client = boto3_session.client('ecr', region_name=region)
-    image_vuln_dict = {}
+    image_finding_list = []
     for image in repository_images:
         image_tag = image.get('imageTag', None)
-        if image_tag and image_tag not in image_vuln_dict:
-            image_vuln_dict[image_tag] = {}
-            response = client.describe_images(
+
+        # We can't call ecr.describe_images() unless we have a tag from the
+        if image_tag:
+            describe_images_resp = client.describe_images(
                 repositoryName=repository_name,
-                imageIds=[{'imageDigest': image['imageDigest'], 'imageTag': image['imageTag']}],
+                imageIds=[{
+                        'imageDigest': image['imageDigest'],
+                        'imageTag': image_tag,
+                }],
             )
-
-            if response['imageDetails'][0].get('imageScanStatus', {}).get('status', None) == "COMPLETE":
-                response = client.describe_image_scan_findings(
+            if describe_images_resp['imageDetails'][0].get('imageScanStatus', {}).get('status', None) == "COMPLETE":
+                image_vuln = {}
+                image_vuln['image_tag'] = image_tag
+                describe_image_scan_resp = client.describe_image_scan_findings(
                     repositoryName=repository_name,
-                    imageId={'imageDigest': image['imageDigest'], 'imageTag': image['imageTag']},
+                    imageId={
+                        'imageDigest': image['imageDigest'],
+                        'imageTag': image_tag,
+                    },
                 )
-                image_vuln_dict[image_tag]['findings'] = response.get('imageScanFindings', {}).get('findings', [])
-                image_vuln_dict[image_tag]['scan_completed_at'] = response.get(
-                    'imageScanFindings', {},
-                ).get(
-                    'imageScanCompletedAt', [],
-                )
-                image_vuln_dict[image_tag]['findings_count'] = response.get(
-                    'imageScanFindings', {},
-                ).get(
-                    'findingSeverityCounts', [],
-                )
-    return image_vuln_dict
+                image_vuln['findings'] = describe_image_scan_resp.get('imageScanFindings', {}).get('findings', [])
+                image_vuln['scan_completed_at'] = describe_image_scan_resp.get('imageScanFindings', {}) \
+                                                                          .get('imageScanCompletedAt', [])
+                image_vuln['findings_count'] = describe_image_scan_resp.get('imageScanFindings', {}) \
+                                                                       .get('findingSeverityCounts', [])
+                image_finding_list.append(image_vuln)
+    return image_finding_list
 
 
-def transform_ecr_repository_image_vulns(vuln_data):
+def transform_ecr_scan_finding_attributes(vuln_data):
     """
-    Transforms each finding returned from `get_ecr_repository_image_vulns()` so that we flatten the  `attributes` list
+    Transforms each finding returned from `get_ecr_image_scan_findings()` so that we flatten the  `attributes` list
     to make it easier to load to the graph.
     """
     working_copy = vuln_data.copy()
-    for finding in working_copy.get('findings'):
+    for finding in working_copy.get('findings', []):
         for attrib in finding.get('attributes'):
             if attrib['key'] == 'package_version':
                 finding['package_version'] = attrib['value']
             elif attrib['key'] == 'package_name':
                 finding['package_name'] = attrib['value']
+            # TODO add CVSS score to the graph node
             elif attrib['key'] == 'CVSS2_SCORE':
                 finding['CVSS2_SCORE'] = attrib['value']
     return working_copy
 
 
+@timeit
 def load_ecr_repositories(neo4j_session, data, region, current_aws_account_id, aws_update_tag):
     query = """
     MERGE (repo:ECRRepository{id: {RepositoryArn}})
@@ -118,6 +132,7 @@ def load_ecr_repositories(neo4j_session, data, region, current_aws_account_id, a
         )
 
 
+@timeit
 def load_ecr_repository_images(neo4j_session, data, region, aws_update_tag):
     query = """
     MERGE (repo_image:ECRRepositoryImage{id: {RepositoryImageUri}})
@@ -128,7 +143,8 @@ def load_ecr_repository_images(neo4j_session, data, region, aws_update_tag):
 
     MERGE (image:ECRImage{id: {ImageDigest}})
     ON CREATE SET image.firstseen = timestamp(), image.digest = {ImageDigest}
-    SET image.lastupdated = {aws_update_tag}
+    SET image.lastupdated = {aws_update_tag},
+    image.region = {Region}
     WITH repo_image, image
     MERGE (repo_image)-[r1:IMAGE]->(image)
     ON CREATE SET r1.firstseen = timestamp()
@@ -144,7 +160,8 @@ def load_ecr_repository_images(neo4j_session, data, region, aws_update_tag):
     for repo_uri, repo_images in data.items():
         for repo_image in repo_images:
             image_tag = repo_image.get('imageTag', '')
-            repo_image_uri = f"{repo_uri}:{image_tag}"  # TODO this assumes image tags and uris are immutable
+            # TODO this assumes image tags and uris are immutable
+            repo_image_uri = f"{repo_uri}:{image_tag}" if image_tag else repo_uri
             neo4j_session.run(
                 query,
                 RepositoryImageUri=repo_image_uri,
@@ -152,14 +169,16 @@ def load_ecr_repository_images(neo4j_session, data, region, aws_update_tag):
                 ImageTag=image_tag,
                 RepositoryUri=repo_uri,
                 aws_update_tag=aws_update_tag,
+                Region=region,
             )
 
 
-def load_ecr_image_vulns(neo4j_session, data, aws_update_tag):
+@timeit
+def load_ecr_image_scan_findings(neo4j_session, data, aws_update_tag):
     """
     Creates the path (:Risk:CVE:ECRScanFinding)-[:AFFECTS]->(:Package)-[:DEPLOYED]->(:ECRImage)
     :param neo4j_session: The Neo4j session object
-    :param data: A dict that has been run through transform_ecr_repository_image_vulns().
+    :param data: A dict that has been run through transform_ecr_scan_finding_attributes().
     :param aws_update_tag: The AWS update tag
     """
     query = """
@@ -196,27 +215,35 @@ def load_ecr_image_vulns(neo4j_session, data, aws_update_tag):
     )
 
 
-# TODO update cleanup
 def cleanup(neo4j_session, common_job_parameters):
     run_cleanup_job('aws_import_ecr_cleanup.json', neo4j_session, common_job_parameters)
 
 
-# TODO - actually test this
+@timeit
 def sync(neo4j_session, boto3_session, regions, current_aws_account_id, aws_update_tag, common_job_parameters):
     for region in regions:
         logger.info("Syncing ECR for region '%s' in account '%s'.", region, current_aws_account_id)
         repository_data = get_ecr_repositories(boto3_session, region)
+
         image_data = {}
-        vuln_list = []
+        images_with_vulns = []
         for repo in repository_data:
-            image_data[repo['repositoryUri']] = get_ecr_repository_images(boto3_session, region, repo['repositoryName'])
-            image_vulns = get_ecr_repository_image_vulns(
-                boto3_session, region, repo['repositoryName'], image_data[repo['repositoryUri']],
+            repo_image_obj = get_ecr_repository_images(boto3_session, region, repo['repositoryName'])
+
+            image_data[repo['repositoryUri']] = repo_image_obj
+            image_vulns = get_ecr_image_scan_findings(
+                boto3_session, region, repo['repositoryName'], repo_image_obj,
             )
-            transform_ecr_repository_image_vulns(image_vulns)
-            vuln_list.append(image_vulns)
+            if image_vulns:
+                logger.warning('transforming vulns')
+                logger.warning(image_vulns)
+                transformed_vulns = transform_ecr_scan_finding_attributes(image_vulns)
+                images_with_vulns.append(transformed_vulns)
+
         load_ecr_repositories(neo4j_session, repository_data, region, current_aws_account_id, aws_update_tag)
         load_ecr_repository_images(neo4j_session, image_data, region, aws_update_tag)
-        for vuln in vuln_list:
-            load_ecr_image_vulns(neo4j_session, vuln, aws_update_tag)
+        for image_vuln_data in images_with_vulns:
+            logger.warning('loading vulns')
+            logger.warning(image_vuln_data)
+            load_ecr_image_scan_findings(neo4j_session, image_vuln_data, aws_update_tag)
     cleanup(neo4j_session, common_job_parameters)
