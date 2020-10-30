@@ -1,6 +1,10 @@
 import logging
 from string import Template
 
+from packaging.requirements import InvalidRequirement
+from packaging.requirements import Requirement
+from packaging.utils import canonicalize_name
+
 from cartography.intel.github.util import fetch_all
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -62,11 +66,18 @@ GITHUB_ORG_REPOS_PAGINATED_GRAPHQL = """
                             company
                         }
                     }
+                    requirements:object(expression: "HEAD:requirements.txt") {
+                        ... on Blob {
+                            text
+                        }
+                    }
                 }
             }
         }
     }
     """
+# Note: In the above query, `HEAD` references the default branch.
+# See https://stackoverflow.com/questions/48935381/github-graphql-api-default-branch-in-repository
 
 
 @timeit
@@ -89,24 +100,27 @@ def transform(repos_json):
     Parses the JSON returned from GitHub API to create data for graph ingestion
     :param repos_json: the list of individual repository nodes from GitHub. See tests.data.github.repos.GET_REPOS for
     data shape.
-    :return: Dict containing the repos, repo->language mapping, owners->repo mapping, and outside collaborators->repo
-    mapping.
+    :return: Dict containing the repos, repo->language mapping, owners->repo mapping, outside collaborators->repo
+    mapping, and Python requirements files (if any) in a repo.
     """
     transformed_repo_list = []
     transformed_repo_languages = []
     transformed_repo_owners = []
     # See https://docs.github.com/en/graphql/reference/enums#repositorypermission
     transformed_collaborators = {'ADMIN': [], 'MAINTAIN': [], 'READ': [], 'TRIAGE': [], 'WRITE': []}
+    transformed_requirements_files = []
     for repo_object in repos_json:
         _transform_repo_languages(repo_object['url'], repo_object, transformed_repo_languages)
         _transform_repo_objects(repo_object, transformed_repo_list)
         _transform_repo_owners(repo_object['owner']['url'], repo_object, transformed_repo_owners)
         _transform_collaborators(repo_object['collaborators'], repo_object['url'], transformed_collaborators)
+        _transform_python_requirements(repo_object, transformed_requirements_files)
     results = {
         'repos': transformed_repo_list,
         'repo_languages': transformed_repo_languages,
         'repo_owners': transformed_repo_owners,
         'repo_collaborators': transformed_collaborators,
+        'python_requirements': transformed_requirements_files,
     }
     return results
 
@@ -212,6 +226,58 @@ def _transform_collaborators(collaborators, repo_url, transformed_collaborators)
             user_permission = collaborators['edges'][idx]['permission']
             user['repo_url'] = repo_url
             transformed_collaborators[user_permission].append(user)
+
+
+def _transform_python_requirements(repo_object, out_requirements_files):
+    """
+    Performs data transformations for the requirements.txt files in a GitHub repo, if available.
+    :param repo_object: The repo object.
+    :param out_requirements_files: Output array to append transformed results to.
+    :return: Nothing.
+    """
+    req_file_contents = repo_object['requirements']
+    if req_file_contents and req_file_contents.get('text'):
+        text_contents = req_file_contents['text']
+
+        parsed_list = []
+        for line in text_contents.split("\n"):
+            try:
+                # Remove trailing comments and extra whitespace
+                line = line.partition('#')[0].strip()
+                req = Requirement(line)
+                parsed_list.append(req)
+            except InvalidRequirement as e:
+                logger.info(
+                    f"Failed to parse line \"{line}\" in repo {repo_object['url']}'s requirements.txt; skipping line. "
+                    f"Details: {e}. This is probably ok since we don't support all ways to specify Python "
+                    f"requirements.",
+                )
+                continue
+
+        for req in parsed_list:
+            pinned_version = None
+            if len(req.specifier) == 1:
+                specifier = next(iter(req.specifier))
+                if specifier.operator == '==':
+                    pinned_version = specifier.version
+
+            # Set `spec` to a default value. Example values for str(req.specifier): "<4.0,>=3.0" or "==1.0.0".
+            spec = str(req.specifier)
+            # Set spec to `None` instead of empty string so that the Neo4j driver will leave the library.specifier field
+            # undefined. As convention, we prefer undefined values over empty strings in the graph.
+            if spec == '':
+                spec = None
+
+            canon_name = canonicalize_name(req.name)
+            requirement_id = f"{canon_name}|{pinned_version}" if pinned_version else canon_name
+
+            out_requirements_files.append({
+                "id": requirement_id,
+                "name": canon_name,
+                "specifier": spec,
+                "version": pinned_version,
+                "repo_url": repo_object['url'],
+            })
 
 
 @timeit
@@ -363,9 +429,33 @@ def load(neo4j_session, common_job_parameters, repo_data):
     load_github_owners(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data['repo_owners'])
     load_github_languages(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data['repo_languages'])
     load_collaborators(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data['repo_collaborators'])
+    load_python_requirements(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data['python_requirements'])
 
 
 @timeit
+def load_python_requirements(neo4j_session, update_tag, requirements_objects):
+    query = """
+    UNWIND {Requirements} AS req
+        MERGE (lib:PythonLibrary:Dependency{id: req.id})
+        ON CREATE SET lib.firstseen = timestamp(),
+        lib.name = req.name
+        SET lib.lastupdated = {UpdateTag},
+        lib.version = req.version
+
+        WITH lib, req
+        MATCH (repo:GitHubRepository{id: req.repo_url})
+        MERGE (repo)-[r:REQUIRES]->(lib)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {UpdateTag},
+        r.specifier = req.specifier
+    """
+    neo4j_session.run(
+        query,
+        Requirements=requirements_objects,
+        UpdateTag=update_tag,
+    )
+
+
 def sync(neo4j_session, common_job_parameters, github_api_key, github_url, organization):
     """
     Performs the sequential tasks to collect, transform, and sync github data

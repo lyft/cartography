@@ -68,8 +68,6 @@ to make it easier to ingest to the graph.  We have some best practices on handli
 
 #### Handling required versus optional fields
 
-TL;DR: Use `my_dict['someField']` when accessing important fields, and use `my_dict.get('someField')` for less important ones.
-
 We should directly access dicts in cases where not having the data should cause a sync to fail.
 For example, if we are transforming AWS data, we definitely need an AWS object's ARN field because it uniquely
 identifies the object.  Therefore, we should access an object's ARN using `data['arn']` as opposed to
@@ -81,6 +79,8 @@ it is better to fail a sync than to add malformed data.
 
 On the other hand, we should use `data.get('SomeField')` if `SomeField` is something optional that can afford to be
 `None`.
+
+For the sake of consistency, if a field does not exist, set it to `None` and not `""`.
 
 
 ### Load

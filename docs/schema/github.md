@@ -14,6 +14,8 @@
   - [Relationships](#relationships-3)
 - [ProgrammingLanguage](#programminglanguage)
   - [Relationships](#relationships-4)
+- [Dependency::PythonLibrary](#dependencypythonlibrary)
+  - [Relationships](#relationships-5)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -168,3 +170,23 @@ Representation of a single Programming Language [language object](https://develo
     ```
     (ProgrammingLanguage)<-[LANGUAGE]-(GitHubRepository)
     ```
+
+
+## Dependency::PythonLibrary
+
+Representation of a Python library as listed in a [requirements.txt](https://pip.pypa.io/en/stable/user_guide/#requirements-files) file.
+
+| Field | Description |
+|-------|-------------|
+|**id**|The [canonicalized](https://packaging.pypa.io/en/latest/utils/#packaging.utils.canonicalize_name) name of the library. If the library was pinned in a requirements file using the `==` operator, then `id` has the form `{canonical name}|{pinned_version}`.|
+|name|The [canonicalized](https://packaging.pypa.io/en/latest/utils/#packaging.utils.canonicalize_name) name of the library.|
+|version|The exact version of the library. This field is only present if the library was pinned in a requirements file using the `==` operator.|
+
+### Relationships
+
+- Software on Github repos can import Python libraries by optionally specifying a version number.
+
+    ```
+    (GitHubRepository)-[:REQUIRES{specifier}]->(PythonLibrary)
+    ```
+    - specifier: A string describing this library's version e.g. "<4.0,>=3.0" or "==1.0.2". This field is only present on the `:REQUIRES` edge if the repo's requirements file provided a version pin.

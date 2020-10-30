@@ -15,6 +15,11 @@
     "iterationsize": 100
   },
   {
+    "query": "MATCH (n:PythonLibrary) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+    "iterative": true,
+    "iterationsize": 100
+  },
+  {
     "query": "MATCH (:GitHubBranch)-[r:BRANCH]->(:GitHubRepository) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
     "iterative": true,
     "iterationsize": 100
@@ -26,6 +31,11 @@
   },
   {
     "query": "MATCH (:GitHubRepository)-[r:LANGUAGE]->(:ProgrammingLanguage) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+    "iterative": true,
+    "iterationsize": 100
+  },
+  {
+    "query": "MATCH (:GitHubRepository)-[r:REQUIRES]->(:PythonLibrary) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
     "iterative": true,
     "iterationsize": 100
   }],
