@@ -59,7 +59,7 @@ def get_ecr_image_scan_findings(boto3_session, region, repository_name, reposito
     for image in repository_images:
         image_tag = image.get('imageTag', None)
 
-        # We can't call ecr.describe_images() unless we have a tag from the
+        # We can't call ecr.describe_images() on the image unless it has a tag.
         if image_tag:
             describe_images_resp = client.describe_images(
                 repositoryName=repository_name,
@@ -99,7 +99,6 @@ def transform_ecr_scan_finding_attributes(vuln_data):
                 finding['package_version'] = attrib['value']
             elif attrib['key'] == 'package_name':
                 finding['package_name'] = attrib['value']
-            # TODO add CVSS score to the graph node
             elif attrib['key'] == 'CVSS2_SCORE':
                 finding['CVSS2_SCORE'] = attrib['value']
     return working_copy
@@ -201,7 +200,8 @@ def load_ecr_image_scan_findings(neo4j_session, data, aws_update_tag):
         r.name = risk.name,
         r.severity = risk.severity
         SET r.lastupdated = {aws_update_tag},
-        r.uri = risk.uri
+        r.uri = risk.uri,
+        r.cvss2_score = risk.CVSS2_SCORE
 
         MERGE (r)-[a:AFFECTS]->(pkg)
         ON CREATE SET a.firstseen = timestamp()

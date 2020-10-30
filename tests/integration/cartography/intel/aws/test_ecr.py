@@ -139,16 +139,23 @@ def test_load_ecr_image_vulns(neo4j_session):
     expected_nodes = {
         (
             "CVE-1234-12345",
+            None,
             "some_name",
+            "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+        ),
+        (
+            "CVE-9876-1212",
+            '2',
+            "my_software",
             "sha256:0000000000000000000000000000000000000000000000000000000000000000",
         ),
     }
     nodes = neo4j_session.run(
         """
         MATCH (risk:Risk)-[:AFFECTS]->(pkg:Package)-[:DEPLOYED]->(img:ECRImage)
-        RETURN risk.id, pkg.name, img.digest
+        RETURN risk.id, risk.cvss2_score, pkg.name, img.digest
         """
     )
-    actual_nodes = {(n['risk.id'], n['pkg.name'], n['img.digest']) for n in nodes}
+    actual_nodes = {(n['risk.id'], n['risk.cvss2_score'], n['pkg.name'], n['img.digest']) for n in nodes}
 
     assert actual_nodes == expected_nodes
