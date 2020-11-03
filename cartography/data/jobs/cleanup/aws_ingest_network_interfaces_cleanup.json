@@ -6,7 +6,7 @@
       "iterationsize": 100
     },
     {
-      "query": "MATCH (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(:AWSVpc)<-[:MEMBER_OF_AWS_VPC]-(:EC2Subnet)<-[:PART_OF_SUBNET]-(:NetworkInterface)-[r:PRIVATE_IP_ADDRESS]->(:EC2PrivateIp) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE DELETE (r) return COUNT(*) as TotalCompleted",
+      "query": "MATCH (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(:AWSVpc)<-[:MEMBER_OF_AWS_VPC]-(:EC2Subnet)<-[:PART_OF_SUBNET]-(:NetworkInterface)-[r:PRIVATE_IP_ADDRESS]->(:EC2PrivateIp) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
       "iterative": true,
       "iterationsize": 100
     },
