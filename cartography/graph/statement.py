@@ -83,7 +83,7 @@ class GraphStatement:
     def _run_iter_core(self, session):
         """
         Reruns the statement until TotalCompleted returns 0 using a backoff strategy and retry time limit.
-        :return: None
+        :return: True if TotalComplete is 0, False otherwise.
         """
         total_completed = self._run(session).single()['TotalCompleted']
         return total_completed == 0
