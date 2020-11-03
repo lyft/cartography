@@ -235,15 +235,11 @@ def sync(neo4j_session, boto3_session, regions, current_aws_account_id, aws_upda
                 boto3_session, region, repo['repositoryName'], repo_image_obj,
             )
             if image_vulns:
-                logger.warning('transforming vulns')
-                logger.warning(image_vulns)
                 transformed_vulns = transform_ecr_scan_finding_attributes(image_vulns)
                 images_with_vulns.append(transformed_vulns)
 
         load_ecr_repositories(neo4j_session, repository_data, region, current_aws_account_id, aws_update_tag)
         load_ecr_repository_images(neo4j_session, image_data, region, aws_update_tag)
         for image_vuln_data in images_with_vulns:
-            logger.warning('loading vulns')
-            logger.warning(image_vuln_data)
             load_ecr_image_scan_findings(neo4j_session, image_vuln_data, aws_update_tag)
     cleanup(neo4j_session, common_job_parameters)

@@ -19,6 +19,7 @@ def get_subnet_data(boto3_session, region):
     return subnets
 
 
+@timeit
 def load_subnets(neo4j_session, data, region, aws_account_id, aws_update_tag):
 
     ingest_subnets = """
