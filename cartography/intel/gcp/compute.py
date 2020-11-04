@@ -136,6 +136,19 @@ def get_gcp_vpcs(projectid, compute):
 
 
 @timeit
+def get_gcp_forwarding_rules(project_id, region, compute):
+    """
+    Return list of all forwarding rules in the given project_id and region
+    :param project_id: The project ID
+    :param region: The region to pull forwarding rules from
+    :param compute: The compute resource object created by googleapiclient.discovery.build()
+    :return: Response object containing data on all GCP forwarding rules for a given project
+    """
+    req = compute.forwardingRules().list(project=project_id, region=region)
+    return req.execute()
+
+
+@timeit
 def get_gcp_firewall_ingress_rules(project_id, compute):
     """
     Get ingress Firewall data for a given project
@@ -272,6 +285,51 @@ def transform_gcp_subnets(subnet_res):
 
         subnet_list.append(subnet)
     return subnet_list
+
+@timeit
+def transform_gcp_forwarding_rules(fwd_response):
+    """
+    Add additional fields to the forwarding rule object to make it easier to process in `load_gcp_subnets()`.
+    :param fwd_response: The response object returned from compute.forwardRules.list()
+    :return: A transformed fwd_response
+    """
+
+    fwd_list = []
+    prefix = fwd_response['id']
+    project_id = prefix.split('/')[1]
+    for fwd in fwd_response.get('items', []):
+        forward_rule = {}
+
+        fwd_partial_uri = f"{prefix}/{fwd['name']}"
+        # forward_rule['id'] = fwd_partial_uri
+        forward_rule['partial_uri'] = fwd_partial_uri
+
+        forward_rule['project_id'] = project_id
+        # Region looks like "https://www.googleapis.com/compute/v1/projects/{project}/regions/{region name}"
+        forward_rule['region'] = fwd['region'].split('/')[-1]
+        forward_rule['ip'] = fwd['IPAddress']
+        forward_rule['ip_protocol'] = fwd['IPProtocol']
+        # forward_rule['all_ports'] = fwd.get('allPorts', None)
+        forward_rule['allow_global_access'] = fwd.get('allowGlobalAccess', None)
+
+        forward_rule['load_balancing_scheme'] = fwd['loadBalancingScheme']
+        forward_rule['name'] = fwd['name']
+        forward_rule['port_range'] = fwd.get('portRange', None)
+        forward_rule['ports'] = fwd.get('ports', None)
+        forward_rule['self_link'] = fwd['selfLink']
+
+        network = fwd.get('network', None)
+        if network:
+            forward_rule['network'] = network
+            forward_rule['network_partial_uri'] = _parse_compute_full_uri_to_partial_uri(network)
+
+        subnetwork = fwd.get('subnetwork', None)
+        if subnetwork:
+            forward_rule['subnetwork'] = subnetwork
+            forward_rule['subnetwork_partial_uri'] = _parse_compute_full_uri_to_partial_uri(subnetwork)
+
+        fwd_list.append(forward_rule)
+    return fwd_list
 
 
 @timeit
@@ -549,6 +607,72 @@ def load_gcp_subnets(neo4j_session, subnets, gcp_update_tag):
             GatewayAddress=s['gateway_address'],
             IpCidrRange=s['ip_cidr_range'],
             PrivateIpGoogleAccess=s['private_ip_google_access'],
+            gcp_update_tag=gcp_update_tag,
+        )
+
+
+@timeit
+def load_gcp_forwarding_rules(neo4j_session, fwd_rules, gcp_update_tag):
+    """
+    Ingest GCP forwarding rules data to Neo4j
+    :param neo4j_session: The Neo4j session
+    :param fwd_rules: List of the forwarding rules
+    :param gcp_update_tag: The timestamp to set these Neo4j nodes with
+    :return: Nothing
+    """
+
+    query = """
+        MERGE(vpc:GCPVpc{id:{NetworkPartialUri}})
+        ON CREATE SET vpc.firstseen = timestamp(),
+        vpc.partial_uri = {NetworkPartialUri}
+        
+        MERGE (subnet:GCPSubnet{id:{SubNetworkPartialUri}})
+        ON CREATE SET subnet.firstseen = timestamp(),
+        subnet.partial_uri = {SubNetworkPartialUri}
+        SET subnet.lastupdated = {gcp_update_tag}
+    
+        MERGE(fwd:GCPForwardRule{id:{PartialUri}})
+        ON CREATE SET fwd.firstseen = timestamp(),
+        fwd.partial_uri = {PartialUri}
+        SET fwd.ip_address = {IPAddress},
+        fwd.ip_protocol = {IPProtocol},
+        fwd.load_balancing_scheme = {LoadBalancingScheme},
+        fwd.name = {Name},
+        fwd.network = {Network},
+        fwd.port_range = {PortRange},
+        fwd.ports = {Ports},
+        fwd.project_id = {ProjectId},
+        fwd.region = {Region},
+        fwd.self_link = {SelfLink},
+        fwd.subnetwork = {SubNetwork},
+        fwd.lastupdated = {gcp_update_tag}
+        
+        MERGE (vpc)-[r:RESOURCE]->(fwd)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {gcp_update_tag}
+        
+        MERGE (nic)-[p:PART_OF_SUBNET]->(fwd)
+        ON CREATE SET p.firstseen = timestamp()
+        SET p.lastupdated = {gcp_update_tag}
+    """
+
+    for fwd in fwd_rules:
+        neo4j_session.run(
+            query,
+            PartialUri=fwd['partial_uri'],
+            IPAddress=fwd['ip_address'],
+            IPProtocol=fwd['ip_protocol'],
+            LoadBalancingScheme=fwd['load_balancing_scheme'],
+            Name=fwd['name'],
+            Network=fwd.get('network', None),
+            NetworkPartialUri=fwd.get('network_partial_uri', None),
+            PortRange=fwd.get('port_range', None),
+            Ports=fwd.get('ports', None),
+            ProjectId=fwd['project_id'],
+            Region=fwd.get('region', None),
+            SelfLink=fwd['self_link'],
+            SubNetwork=fwd.get('subnetwork', None),
+            SubNetworkPartialUri=fwd.get('subnetwork_partial_uri', None),
             gcp_update_tag=gcp_update_tag,
         )
 
@@ -875,6 +999,17 @@ def cleanup_gcp_subnets(neo4j_session, common_job_parameters):
 
 
 @timeit
+def cleanup_gcp_forwarding_rules(neo4j_session, common_job_parameters):
+    """
+    Delete out-of-date GCP VPC forwarding rules and relationships
+    :param neo4j_session: The Neo4j session
+    :param common_job_parameters: dict of other job parameters to pass to Neo4j
+    :return: Nothing
+    """
+    run_cleanup_job('gcp_compute_forwarding_rules_cleanup.json', neo4j_session, common_job_parameters)
+
+
+@timeit
 def cleanup_gcp_firewall_rules(neo4j_session, common_job_parameters):
     """
     Delete out of date GCP firewalls and their relationships
@@ -933,6 +1068,13 @@ def sync_gcp_subnets(neo4j_session, compute, project_id, regions, gcp_update_tag
         # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
         cleanup_gcp_subnets(neo4j_session, common_job_parameters)
 
+@timeit
+def sync_gcp_forwarding_rules(neo4j_session, compute, project_id, regions, gcp_update_tag, common_job_parameters):
+    for r in regions:
+        fwd_response = get_gcp_forwarding_rules(project_id, r, compute)
+        forwarding_rules = transform_gcp_forwarding_rules(fwd_response)
+        load_gcp_forwarding_rules(neo4j_session, forwarding_rules, gcp_update_tag)
+        cleanup_gcp_forwarding_rules(neo4j_session, common_job_parameters)
 
 @timeit
 def sync_gcp_firewall_rules(neo4j_session, compute, project_id, gcp_update_tag, common_job_parameters):
