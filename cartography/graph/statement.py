@@ -11,10 +11,6 @@ CLEANUP_MAX_RETRY_TIME = 1200
 REPEAT_DELAY = .025
 
 
-def _is_not_zero_p(value):
-    return value != 0
-
-
 class GraphStatementJSONEncoder(json.JSONEncoder):
     """
     Support JSON serialization for GraphStatement instances.
