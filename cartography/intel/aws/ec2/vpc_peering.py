@@ -163,7 +163,7 @@ def sync_vpc_peering(
         common_job_parameters,
 ):
     for region in regions:
-        logger.debug("Syncing EC2 VPC peering for region '%s' in account '%s'.", region, current_aws_account_id)
+        logger.info("Syncing EC2 VPC peering for region '%s' in account '%s'.", region, current_aws_account_id)
         data = get_ec2_vpc_peering(boto3_session, region)
         load_ec2_vpc_peering(neo4j_session, data, aws_update_tag)
     cleanup_ec2_vpc_peering(neo4j_session, common_job_parameters)

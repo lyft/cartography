@@ -19,6 +19,7 @@ def get_subnet_data(boto3_session, region):
     return subnets
 
 
+@timeit
 def load_subnets(neo4j_session, data, region, aws_account_id, aws_update_tag):
 
     ingest_subnets = """
@@ -74,7 +75,7 @@ def sync_subnets(
     common_job_parameters,
 ):
     for region in regions:
-        logger.debug("Syncing EC2 subnets for region '%s' in account '%s'.", region, current_aws_account_id)
+        logger.info("Syncing EC2 subnets for region '%s' in account '%s'.", region, current_aws_account_id)
         data = get_subnet_data(boto3_session, region)
         load_subnets(neo4j_session, data, region, current_aws_account_id, aws_update_tag)
     cleanup_subnets(neo4j_session, common_job_parameters)
