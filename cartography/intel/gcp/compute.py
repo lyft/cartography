@@ -286,6 +286,7 @@ def transform_gcp_subnets(subnet_res):
         subnet_list.append(subnet)
     return subnet_list
 
+
 @timeit
 def transform_gcp_forwarding_rules(fwd_response):
     """
@@ -307,7 +308,7 @@ def transform_gcp_forwarding_rules(fwd_response):
         forward_rule['project_id'] = project_id
         # Region looks like "https://www.googleapis.com/compute/v1/projects/{project}/regions/{region name}"
         forward_rule['region'] = fwd['region'].split('/')[-1]
-        forward_rule['ip'] = fwd['IPAddress']
+        forward_rule['ip_address'] = fwd['IPAddress']
         forward_rule['ip_protocol'] = fwd['IPProtocol']
         # forward_rule['all_ports'] = fwd.get('allPorts', None)
         forward_rule['allow_global_access'] = fwd.get('allowGlobalAccess', None)
@@ -622,15 +623,6 @@ def load_gcp_forwarding_rules(neo4j_session, fwd_rules, gcp_update_tag):
     """
 
     query = """
-        MERGE(vpc:GCPVpc{id:{NetworkPartialUri}})
-        ON CREATE SET vpc.firstseen = timestamp(),
-        vpc.partial_uri = {NetworkPartialUri}
-        
-        MERGE (subnet:GCPSubnet{id:{SubNetworkPartialUri}})
-        ON CREATE SET subnet.firstseen = timestamp(),
-        subnet.partial_uri = {SubNetworkPartialUri}
-        SET subnet.lastupdated = {gcp_update_tag}
-    
         MERGE(fwd:GCPForwardingRule{id:{PartialUri}})
         ON CREATE SET fwd.firstseen = timestamp(),
         fwd.partial_uri = {PartialUri}
@@ -646,17 +638,12 @@ def load_gcp_forwarding_rules(neo4j_session, fwd_rules, gcp_update_tag):
         fwd.self_link = {SelfLink},
         fwd.subnetwork = {SubNetwork},
         fwd.lastupdated = {gcp_update_tag}
-        
-        MERGE (vpc)-[r:RESOURCE]->(fwd)
-        ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {gcp_update_tag}
-        
-        MERGE (subnet)-[p:RESOURCE]->(fwd)
-        ON CREATE SET p.firstseen = timestamp()
-        SET p.lastupdated = {gcp_update_tag}
     """
 
     for fwd in fwd_rules:
+        network = fwd.get('network', None)
+        subnetwork = fwd.get('subnetwork', None)
+
         neo4j_session.run(
             query,
             PartialUri=fwd['partial_uri'],
@@ -664,18 +651,68 @@ def load_gcp_forwarding_rules(neo4j_session, fwd_rules, gcp_update_tag):
             IPProtocol=fwd['ip_protocol'],
             LoadBalancingScheme=fwd['load_balancing_scheme'],
             Name=fwd['name'],
-            Network=fwd.get('network', None),
+            Network=network,
             NetworkPartialUri=fwd.get('network_partial_uri', None),
             PortRange=fwd.get('port_range', None),
             Ports=fwd.get('ports', None),
             ProjectId=fwd['project_id'],
             Region=fwd.get('region', None),
             SelfLink=fwd['self_link'],
-            SubNetwork=fwd.get('subnetwork', None),
+            SubNetwork=subnetwork,
             SubNetworkPartialUri=fwd.get('subnetwork_partial_uri', None),
             gcp_update_tag=gcp_update_tag,
         )
 
+        if network:
+            _attach_fwd_rule_to_vpc(neo4j_session, fwd, gcp_update_tag)
+
+        if subnetwork:
+            _attach_fwd_rule_to_subnet(neo4j_session, fwd, gcp_update_tag)
+
+@timeit
+def _attach_fwd_rule_to_subnet(neo4j_session, fwd, gcp_update_tag):
+    query = """
+        MERGE(subnet:GCPSubnet{id:{SubNetworkPartialUri}})
+        ON CREATE SET subnet.firstseen = timestamp(),
+        subnet.partial_uri = {SubNetworkPartialUri}
+        SET subnet.lastupdated = {gcp_update_tag}
+        
+        WITH subnet
+        MATCH(fwd:GCPForwardingRule{id:{PartialUri}})
+        
+        MERGE(subnet)-[p:RESOURCE]->(fwd)
+        ON CREATE SET p.firstseen = timestamp()
+        SET p.lastupdated = {gcp_update_tag}
+    """
+
+    neo4j_session.run(
+        query,
+        PartialUri=fwd['partial_uri'],
+        SubNetworkPartialUri=fwd.get('subnetwork_partial_uri', None),
+        gcp_update_tag=gcp_update_tag,
+    )\
+
+@timeit
+def _attach_fwd_rule_to_vpc(neo4j_session, fwd, gcp_update_tag):
+    query = """
+        MERGE (vpc:GCPVpc{id:{NetworkPartialUri}})
+        ON CREATE SET vpc.firstseen = timestamp(),
+        vpc.partial_uri = {NetworkPartialUri}
+        
+        WITH vpc
+        MATCH (fwd:GCPForwardingRule{id:{PartialUri}})
+        
+        MERGE (vpc)-[r:RESOURCE]->(fwd)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {gcp_update_tag}
+    """
+
+    neo4j_session.run(
+        query,
+        PartialUri=fwd['partial_uri'],
+        NetworkPartialUri=fwd.get('network_partial_uri', None),
+        gcp_update_tag=gcp_update_tag,
+    )
 
 @timeit
 def _attach_instance_tags(neo4j_session, instance, gcp_update_tag):
@@ -1068,6 +1105,7 @@ def sync_gcp_subnets(neo4j_session, compute, project_id, regions, gcp_update_tag
         # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
         cleanup_gcp_subnets(neo4j_session, common_job_parameters)
 
+
 @timeit
 def sync_gcp_forwarding_rules(neo4j_session, compute, project_id, regions, gcp_update_tag, common_job_parameters):
     for r in regions:
@@ -1075,6 +1113,7 @@ def sync_gcp_forwarding_rules(neo4j_session, compute, project_id, regions, gcp_u
         forwarding_rules = transform_gcp_forwarding_rules(fwd_response)
         load_gcp_forwarding_rules(neo4j_session, forwarding_rules, gcp_update_tag)
         cleanup_gcp_forwarding_rules(neo4j_session, common_job_parameters)
+
 
 @timeit
 def sync_gcp_firewall_rules(neo4j_session, compute, project_id, gcp_update_tag, common_job_parameters):
@@ -1130,3 +1169,4 @@ def sync(neo4j_session, compute, project_id, gcp_update_tag, common_job_paramete
         sync_gcp_firewall_rules(neo4j_session, compute, project_id, gcp_update_tag, common_job_parameters)
         sync_gcp_subnets(neo4j_session, compute, project_id, regions, gcp_update_tag, common_job_parameters)
         sync_gcp_instances(neo4j_session, compute, project_id, zones, gcp_update_tag, common_job_parameters)
+        sync_gcp_forwarding_rules(neo4j_session, compute, project_id, regions, gcp_update_tag, common_job_parameters)
