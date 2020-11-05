@@ -631,7 +631,7 @@ def load_gcp_forwarding_rules(neo4j_session, fwd_rules, gcp_update_tag):
         subnet.partial_uri = {SubNetworkPartialUri}
         SET subnet.lastupdated = {gcp_update_tag}
     
-        MERGE(fwd:GCPForwardRule{id:{PartialUri}})
+        MERGE(fwd:GCPForwardingRule{id:{PartialUri}})
         ON CREATE SET fwd.firstseen = timestamp(),
         fwd.partial_uri = {PartialUri}
         SET fwd.ip_address = {IPAddress},
@@ -651,7 +651,7 @@ def load_gcp_forwarding_rules(neo4j_session, fwd_rules, gcp_update_tag):
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = {gcp_update_tag}
         
-        MERGE (nic)-[p:PART_OF_SUBNET]->(fwd)
+        MERGE (subnet)-[p:RESOURCE]->(fwd)
         ON CREATE SET p.firstseen = timestamp()
         SET p.lastupdated = {gcp_update_tag}
     """
