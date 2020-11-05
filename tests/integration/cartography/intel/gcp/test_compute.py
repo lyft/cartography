@@ -120,12 +120,10 @@ def test_transform_and_load_gcp_forwarding_rules(neo4j_session):
             o['f.ip_protocol'],
             o['f.load_balancing_scheme'],
             o['f.name'],
-            o.get('f.network', None),
             o.get('f.port_range', None),
             ','.join(o.get('f.ports', None)) if o.get('f.ports', None) else None,
             o['f.project_id'],
             o['f.region'],
-            o.get('f.subnetwork', None),
         ) for o in objects
     }
 
@@ -136,12 +134,10 @@ def test_transform_and_load_gcp_forwarding_rules(neo4j_session):
             'TCP',
             'INTERNAL',
             'internal-service-1111',
-            'https://www.googleapis.com/compute/v1/projects/project-abc/global/networks/default',
             None,
             '80',
             'project-abc',
-            'europe-west2',
-            'https://www.googleapis.com/compute/v1/projects/project-abc/regions/europe-west2/subnetworks/default'
+            'europe-west2'
         ),
         (
             'projects/project-abc/regions/europe-west2/forwardingRules/public-ingress-controller-1234567',
@@ -149,12 +145,10 @@ def test_transform_and_load_gcp_forwarding_rules(neo4j_session):
             'TCP',
             'EXTERNAL',
             'public-ingress-controller-1234567',
-            None,
             '80-443',
             None,
             'project-abc',
-            'europe-west2',
-            None
+            'europe-west2'
         ),
         (
             'projects/project-abc/regions/europe-west2/forwardingRules/shard-server-22222',
@@ -162,12 +156,10 @@ def test_transform_and_load_gcp_forwarding_rules(neo4j_session):
             'TCP',
             'INTERNAL',
             'shard-server-22222',
-            'https://www.googleapis.com/compute/v1/projects/project-abc/global/networks/default',
             None,
             '10203',
             'project-abc',
-            'europe-west2',
-            'https://www.googleapis.com/compute/v1/projects/project-abc/regions/europe-west2/subnetworks/default'
+            'europe-west2'
         )
     }
 
