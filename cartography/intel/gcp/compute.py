@@ -630,13 +630,11 @@ def load_gcp_forwarding_rules(neo4j_session, fwd_rules, gcp_update_tag):
         fwd.ip_protocol = {IPProtocol},
         fwd.load_balancing_scheme = {LoadBalancingScheme},
         fwd.name = {Name},
-        fwd.network = {Network},
         fwd.port_range = {PortRange},
         fwd.ports = {Ports},
         fwd.project_id = {ProjectId},
         fwd.region = {Region},
         fwd.self_link = {SelfLink},
-        fwd.subnetwork = {SubNetwork},
         fwd.lastupdated = {gcp_update_tag}
     """
 
