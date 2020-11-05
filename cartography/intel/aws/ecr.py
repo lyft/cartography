@@ -128,7 +128,7 @@ def load_ecr_repositories(neo4j_session, data, region, current_aws_account_id, a
             Region=region,
             aws_update_tag=aws_update_tag,
             AWS_ACCOUNT_ID=current_aws_account_id,
-        )
+        ).consume()  # See issue #440
 
 
 @timeit
@@ -169,7 +169,7 @@ def load_ecr_repository_images(neo4j_session, data, region, aws_update_tag):
                 RepositoryUri=repo_uri,
                 aws_update_tag=aws_update_tag,
                 Region=region,
-            )
+            ).consume()  # See issue #440
 
 
 @timeit
@@ -212,7 +212,7 @@ def load_ecr_image_scan_findings(neo4j_session, data, aws_update_tag):
         Risks=data['findings'],
         ImageDigest=data['imageDigest'],
         aws_update_tag=aws_update_tag,
-    )
+    ).consume()  # See issue #440
 
 
 def cleanup(neo4j_session, common_job_parameters):
