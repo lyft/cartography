@@ -218,7 +218,7 @@ def sync_network_interfaces(
     common_job_parameters,
 ):
     for region in regions:
-        logger.debug("Syncing EC2 network interfaces for region '%s' in account '%s'.", region, current_aws_account_id)
+        logger.info("Syncing EC2 network interfaces for region '%s' in account '%s'.", region, current_aws_account_id)
         data = get_network_interface_data(boto3_session, region)
         load_network_interfaces(neo4j_session, data, region, current_aws_account_id, aws_update_tag)
     cleanup_network_interfaces(neo4j_session, common_job_parameters)
