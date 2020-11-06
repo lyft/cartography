@@ -92,6 +92,7 @@
   - [Relationships](#relationships-41)
 - [NetworkInterface](#networkinterface)
   - [Relationships](#relationships-42)
+- [PeeringConnection](#peeringconnection)
 - [RedshiftCluster](#redshiftcluster)
   - [Relationships](#relationships-43)
 - [RDSInstance](#rdsinstance)
@@ -167,19 +168,21 @@ type for `AWSIpv4CidrBlock` and `AWSIpv6CidrBlock`
   ```
   (AWSVpc)-[BLOCK_ASSOCIATION]->(AWSCidrBlock)
   ```
-- VPC peering where two `AWSCidrBlock` have peering between them
+- Peering connection where `AWSCidrBlock` is an accepter or requester cidr.
   ```
-  (AWSCidrBlock)<-[VPC_PEERING]-(AWSCidrBlock)
+  (AWSCidrBlock)<-[REQUESTER_CIDR]-(PeeringConnection)
+  (AWSCidrBlock)<-[ACCEPTER_CIDR]-(PeeringConnection)
   ```
+
   Example of high level view of peering (without security group permissions)
   ```
-  MATCH p=(:AWSAccount)-[:RESOURCE|BLOCK_ASSOCIATION*..]->(:AWSCidrBlock)<-[r:VPC_PEERING]->(:AWSCidrBlock)<-[:RESOURCE|BLOCK_ASSOCIATION*..]-(:AWSAccount)
+  MATCH p=(:AWSAccount)-[:RESOURCE|BLOCK_ASSOCIATION*..]->(:AWSCidrBlock)<-[:ACCEPTER_CIDR]-(:PeeringConnection)-[:REQUESTER_CIDR]->(:AWSCidrBlock)<-[:RESOURCE|BLOCK_ASSOCIATION*..]-(:AWSAccount)
   RETURN p
   ```
 
   Exploring detailed inbound peering rules
   ```
-  MATCH (outbound_account:AWSAccount)-[:RESOURCE|BLOCK_ASSOCIATION*..]->(:AWSCidrBlock)<-[r:VPC_PEERING]->(inbound_block:AWSCidrBlock)<-[:BLOCK_ASSOCIATION]-(inbound_vpc:AWSVpc)<-[:RESOURCE]-(inbound_account:AWSAccount)
+  MATCH (outbound_account:AWSAccount)-[:RESOURCE|BLOCK_ASSOCIATION*..]->(:AWSCidrBlock)<-[:ACCEPTER_CIDR]-(:PeeringConnection)-[:REQUESTER_CIDR]->(inbound_block:AWSCidrBlock)<-[:BLOCK_ASSOCIATION]-(inbound_vpc:AWSVpc)<-[:RESOURCE]-(inbound_account:AWSAccount)
   WITH inbound_vpc, inbound_block, outbound_account, inbound_account
   MATCH (inbound_range:IpRange{id: inbound_block.cidr_block})-[:MEMBER_OF_IP_RULE]->(inbound_rule:IpPermissionInbound)-[:MEMBER_OF_EC2_SECURITY_GROUP]->(inbound_group:EC2SecurityGroup)<-[:MEMBER_OF_EC2_SECURITY_GROUP]-(inbound_vpc)
   RETURN outbound_account.name, inbound_account.name, inbound_range.range, inbound_rule.fromport, inbound_rule.toport, inbound_rule.protocol, inbound_group.name, inbound_vpc.id
@@ -506,22 +509,32 @@ More information on https://docs.aws.amazon.com/cli/latest/reference/ec2/describ
   ```
   (AWSAccount)-[RESOURCE]->(AWSVpc)
   ```
+
 - `AWSVpc` and `AWSCidrBlock` association
   ```
   (AWSVpc)-[BLOCK_ASSOCIATION]->(AWSCidrBlock)
   ```
+
 - `AWSVpc` and `EC2SecurityGroup` membership association
   ```
   (AWSVpc)<-[MEMBER_OF_EC2_SECURITY_GROUP]-(EC2SecurityGroup)
   ```
--  AWS VPCs can be tagged with AWSTags.
-    ```
+
+- AWS VPCs can be tagged with AWSTags.
+  ```
         (AWSVpc)-[TAGGED]->(AWSTag)
-        ```
+  ```
+
 - Redshift clusters can be members of AWSVpcs.
-    ```
+  ```
     (RedshiftCluster)-[MEMBER_OF_AWS_VPC]->(AWSVpc)
-    ```
+  ```
+
+- Peering connection where `AWSVpc` is an accepter or requester vpc.
+  ```
+  (AWSVpc)<-[REQUESTER_VPC]-(PeeringConnection)
+  (AWSVpc)<-[ACCEPTER_VPC]-(PeeringConnection)
+  ```
 
 
 ## Tag::AWSTag
@@ -1569,6 +1582,35 @@ Representation of a generic Network Interface.  Currently however, we only creat
         ```
         (NetworkInterface)-[TAGGED]->(AWSTag)
         ```
+
+## PeeringConnection
+
+Representation of an AWS [PeeringConnection](https://docs.aws.amazon.com/vpc/latest/peering/what-is-vpc-peering.html)
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | vpcPeeringConnectionId, The ID of the VPC peering connection. |
+| allow_dns_resolution_from_remote_vpc | Indicates whether a local VPC can resolve public DNS hostnames to private IP addresses when queried from instances in a peer VPC. |
+| allow_egress_from_local_classic_link_to_remote_vpc | Indicates whether a local ClassicLink connection can communicate with the peer VPC over the VPC peering connection.  |
+| allow_egress_from_local_vpc_to_remote_classic_link | Indicates whether a local VPC can communicate with a ClassicLink connection in the peer VPC over the VPC peering connection. |
+| requester_region | Peering requester region |
+| accepter_region | Peering accepter region |
+| status_code | The status of the VPC peering connection. |
+| status_message | A message that provides more information about the status, if applicable. |
+
+- `AWSVpc` is an accepter or requester vpc.
+  ```
+  (AWSVpc)<-[REQUESTER_VPC]-(PeeringConnection)
+  (AWSVpc)<-[ACCEPTER_VPC]-(PeeringConnection)
+  ```
+
+- `AWSCidrBlock` is an accepter or requester cidr.
+  ```
+  (AWSCidrBlock)<-[REQUESTER_CIDR]-(PeeringConnection)
+  (AWSCidrBlock)<-[ACCEPTER_CIDR]-(PeeringConnection)
+  ```
 
 
 ## RedshiftCluster
