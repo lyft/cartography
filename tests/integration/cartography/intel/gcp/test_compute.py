@@ -137,7 +137,7 @@ def test_transform_and_load_gcp_forwarding_rules(neo4j_session):
             None,
             '80',
             'project-abc',
-            'europe-west2'
+            'europe-west2',
         ),
         (
             'projects/project-abc/regions/europe-west2/forwardingRules/public-ingress-controller-1234567',
@@ -148,7 +148,7 @@ def test_transform_and_load_gcp_forwarding_rules(neo4j_session):
             '80-443',
             None,
             'project-abc',
-            'europe-west2'
+            'europe-west2',
         ),
         (
             'projects/project-abc/regions/europe-west2/forwardingRules/shard-server-22222',
@@ -159,8 +159,8 @@ def test_transform_and_load_gcp_forwarding_rules(neo4j_session):
             None,
             '10203',
             'project-abc',
-            'europe-west2'
-        )
+            'europe-west2',
+        ),
     }
 
     assert actual_nodes == expected_nodes

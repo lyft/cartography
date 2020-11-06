@@ -661,11 +661,11 @@ def load_gcp_forwarding_rules(neo4j_session, fwd_rules, gcp_update_tag):
             gcp_update_tag=gcp_update_tag,
         )
 
-        if network:
-            _attach_fwd_rule_to_vpc(neo4j_session, fwd, gcp_update_tag)
-
         if subnetwork:
             _attach_fwd_rule_to_subnet(neo4j_session, fwd, gcp_update_tag)
+        elif network:
+            _attach_fwd_rule_to_vpc(neo4j_session, fwd, gcp_update_tag)
+
 
 @timeit
 def _attach_fwd_rule_to_subnet(neo4j_session, fwd, gcp_update_tag):
@@ -674,10 +674,10 @@ def _attach_fwd_rule_to_subnet(neo4j_session, fwd, gcp_update_tag):
         ON CREATE SET subnet.firstseen = timestamp(),
         subnet.partial_uri = {SubNetworkPartialUri}
         SET subnet.lastupdated = {gcp_update_tag}
-        
+
         WITH subnet
         MATCH(fwd:GCPForwardingRule{id:{PartialUri}})
-        
+
         MERGE(subnet)-[p:RESOURCE]->(fwd)
         ON CREATE SET p.firstseen = timestamp()
         SET p.lastupdated = {gcp_update_tag}
@@ -690,16 +690,18 @@ def _attach_fwd_rule_to_subnet(neo4j_session, fwd, gcp_update_tag):
         gcp_update_tag=gcp_update_tag,
     )\
 
+
+
 @timeit
 def _attach_fwd_rule_to_vpc(neo4j_session, fwd, gcp_update_tag):
     query = """
         MERGE (vpc:GCPVpc{id:{NetworkPartialUri}})
         ON CREATE SET vpc.firstseen = timestamp(),
         vpc.partial_uri = {NetworkPartialUri}
-        
+
         WITH vpc
         MATCH (fwd:GCPForwardingRule{id:{PartialUri}})
-        
+
         MERGE (vpc)-[r:RESOURCE]->(fwd)
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = {gcp_update_tag}
@@ -711,6 +713,7 @@ def _attach_fwd_rule_to_vpc(neo4j_session, fwd, gcp_update_tag):
         NetworkPartialUri=fwd.get('network_partial_uri', None),
         gcp_update_tag=gcp_update_tag,
     )
+
 
 @timeit
 def _attach_instance_tags(neo4j_session, instance, gcp_update_tag):
@@ -1110,6 +1113,7 @@ def sync_gcp_forwarding_rules(neo4j_session, compute, project_id, regions, gcp_u
         fwd_response = get_gcp_forwarding_rules(project_id, r, compute)
         forwarding_rules = transform_gcp_forwarding_rules(fwd_response)
         load_gcp_forwarding_rules(neo4j_session, forwarding_rules, gcp_update_tag)
+        # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
         cleanup_gcp_forwarding_rules(neo4j_session, common_job_parameters)
 
 

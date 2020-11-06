@@ -46,6 +46,7 @@ CREATE INDEX ON :ESDomain(arn);
 CREATE INDEX ON :ESDomain(id);
 CREATE INDEX ON :ESDomain(name);
 CREATE INDEX ON :GCPFolder(id);
+CREATE INDEX ON :GCPForwardingRule(id);
 CREATE INDEX ON :GCPInstance(id);
 CREATE INDEX ON :GCPNetworkInterface(id);
 CREATE INDEX ON :GCPNetworkTag(id);
