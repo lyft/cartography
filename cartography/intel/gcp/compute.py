@@ -290,7 +290,7 @@ def transform_gcp_subnets(subnet_res):
 @timeit
 def transform_gcp_forwarding_rules(fwd_response):
     """
-    Add additional fields to the forwarding rule object to make it easier to process in `load_gcp_subnets()`.
+    Add additional fields to the forwarding rule object to make it easier to process in `load_gcp_forwarding_rules()`.
     :param fwd_response: The response object returned from compute.forwardRules.list()
     :return: A transformed fwd_response
     """
@@ -302,7 +302,6 @@ def transform_gcp_forwarding_rules(fwd_response):
         forward_rule = {}
 
         fwd_partial_uri = f"{prefix}/{fwd['name']}"
-        # forward_rule['id'] = fwd_partial_uri
         forward_rule['partial_uri'] = fwd_partial_uri
 
         forward_rule['project_id'] = project_id
@@ -310,7 +309,6 @@ def transform_gcp_forwarding_rules(fwd_response):
         forward_rule['region'] = fwd['region'].split('/')[-1]
         forward_rule['ip_address'] = fwd['IPAddress']
         forward_rule['ip_protocol'] = fwd['IPProtocol']
-        # forward_rule['all_ports'] = fwd.get('allPorts', None)
         forward_rule['allow_global_access'] = fwd.get('allowGlobalAccess', None)
 
         forward_rule['load_balancing_scheme'] = fwd['loadBalancingScheme']
