@@ -20,23 +20,33 @@ def load_ec2_vpc_peering(neo4j_session, data, region, aws_account_id, aws_update
 
     ingest_vpc_peerings = """
     UNWIND {vpc_peerings} AS vpc_peering
+
     MERGE (pcx:PeeringConnection{id: vpc_peering.VpcPeeringConnectionId})
     ON CREATE SET pcx.firstseen = timestamp()
-    SET pcx.lastupdated = {aws_update_tag}, 
-    pcx.allow_dns_resolution_from_remote_vpc = vpc_peering.AllowDnsResolutionFromRemoteVpc,
-    pcx.allow_egress_from_local_classic_link_to_remote_vpc = vpc_peering.AllowEgressFromLocalClassicLinkToRemoteVpc,
-    pcx.allow_egress_from_local_vpc_to_remote_classic_link = vpc_peering.AllowEgressFromLocalVpcToRemoteClassicLink,
-    pcx.region = vpc_peering.Region
+    SET pcx.lastupdated = {aws_update_tag},
+    pcx.allow_dns_resolution_from_remote_vpc =
+        vpc_peering.RequesterVpcInfo.PeeringOptions.AllowDnsResolutionFromRemoteVpc,
+    pcx.allow_egress_from_local_classic_link_to_remote_vpc =
+        vpc_peering.RequesterVpcInfo.PeeringOptions.AllowEgressFromLocalClassicLinkToRemoteVpc,
+    pcx.allow_egress_from_local_vpc_to_remote_classic_link =
+        vpc_peering.RequesterVpcInfo.PeeringOptions.AllowEgressFromLocalVpcToRemoteClassicLink,
+    pcx.requester_region = vpc_peering.RequesterVpcInfo.Region,
+    pcx.accepter_region = vpc_peering.AccepterVpcInfo.Region,
+    pcx.status_code = vpc_peering.Status.Code,
+    pcx.status_message = vpc_peering.Status.Message
+
     MERGE (avpc:AWSVpc{id: vpc_peering.AccepterVpcInfo.VpcId})
     ON CREATE SET avpc.firstseen = timestamp()
     SET avpc.lastupdated = {aws_update_tag}, avpc.vpcid = vpc_peering.AccepterVpcInfo.VpcId
+
     MERGE (rvpc:AWSVpc{id: vpc_peering.RequesterVpcInfo.VpcId})
     ON CREATE SET rvpc.firstseen = timestamp()
     SET rvpc.lastupdated = {aws_update_tag}, rvpc.vpcid = vpc_peering.RequesterVpcInfo.VpcId
-    
+
     MERGE (aaccount:AWSAccount{id: vpc_peering.AccepterVpcInfo.OwnerId})
     ON CREATE SET aaccount.firstseen = timestamp()
     SET aaccount.lastupdated = {aws_update_tag}
+
     MERGE (raccount:AWSAccount{id: vpc_peering.RequesterVpcInfo.OwnerId})
     ON CREATE SET raccount.firstseen = timestamp()
     SET raccount.lastupdated = {aws_update_tag}
@@ -51,15 +61,19 @@ def load_ec2_vpc_peering(neo4j_session, data, region, aws_account_id, aws_update
 
     ingest_accepter_vpc = """
     UNWIND {vpc_peerings} AS vpc_peering
-    MATCH (pcx:PeeringConnection{id: vpc_peering.VpcPeeringConnectionId}), (vpc:AWSVpc{id: vpc_peering.AccepterVpcInfo.VpcId})
+
+    MATCH (pcx:PeeringConnection{id: vpc_peering.VpcPeeringConnectionId}),
+        (vpc:AWSVpc{id: vpc_peering.AccepterVpcInfo.VpcId})
     MERGE (pcx)-[r:ACCEPTER_VPC]->(vpc)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {aws_update_tag}
+
     WITH vpc_peering
-    MATCH (avpc:AWSVpc{id: vpc_peering.AccepterVpcInfo.VpcId}), (aaccount:AWSAccount{id: vpc_peering.AccepterVpcInfo.OwnerId})
-    MERGE (aaccount)-[r:RESOURCE]->(avpc)   
+    MATCH (avpc:AWSVpc{id: vpc_peering.AccepterVpcInfo.VpcId}),
+        (aaccount:AWSAccount{id: vpc_peering.AccepterVpcInfo.OwnerId})
+    MERGE (aaccount)-[r:RESOURCE]->(avpc)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}        
+    SET r.lastupdated = {aws_update_tag}
     """
 
     neo4j_session.run(
@@ -67,41 +81,44 @@ def load_ec2_vpc_peering(neo4j_session, data, region, aws_account_id, aws_update
         region=region, aws_account_id=aws_account_id,
     )
 
-
     ingest_requester_vpc = """
     UNWIND {vpc_peerings} AS vpc_peering
-    MATCH (pcx:PeeringConnection{id: vpc_peering.VpcPeeringConnectionId}), (vpc:AWSVpc{id: vpc_peering.RequesterVpcInfo.VpcId})
+
+    MATCH (pcx:PeeringConnection{id: vpc_peering.VpcPeeringConnectionId}),
+        (vpc:AWSVpc{id: vpc_peering.RequesterVpcInfo.VpcId})
     MERGE (pcx)-[r:REQUESTER_VPC]->(vpc)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {aws_update_tag}
+
     WITH vpc_peering
-    MATCH (rvpc:AWSVpc{id: vpc_peering.RequesterVpcInfo.VpcId}), (raccount:AWSAccount{id: vpc_peering.RequesterVpcInfo.OwnerId})
-    MERGE (raccount)-[r:RESOURCE]->(rvpc)   
+    MATCH (rvpc:AWSVpc{id: vpc_peering.RequesterVpcInfo.VpcId}),
+        (raccount:AWSAccount{id: vpc_peering.RequesterVpcInfo.OwnerId})
+    MERGE (raccount)-[r:RESOURCE]->(rvpc)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}    
+    SET r.lastupdated = {aws_update_tag}
     """
 
     neo4j_session.run(
         ingest_requester_vpc, vpc_peerings=data, aws_update_tag=aws_update_tag,
         region=region, aws_account_id=aws_account_id,
     )
- 
+
     ingest_accepter_cidr = """
     UNWIND {vpc_peerings} AS vpc_peering
-    UNWIND vpc_peering.AccepterVpcInfo.CidrBlockSet AS cidr_block
-    
-    MERGE (acidr_block:AWSCidrBlock:AWSIpv4CidrBlock{id: vpc_peering.AccepterVpcInfo.VpcId + '|' + cidr_block.CidrBlock})
-    ON CREATE SET acidr_block.firstseen = timestamp()
-    SET acidr_block.lastupdated = {aws_update_tag}, acidr_block.cidr_block  =  cidr_block.CidrBlock
-    
-    WITH vpc_peering, acidr_block
-    MATCH (pcx:PeeringConnection{id: vpc_peering.VpcPeeringConnectionId}), (cb:AWSCidrBlock{id: acidr_block.id})
+    UNWIND vpc_peering.AccepterVpcInfo.CidrBlockSet AS c_b
+
+    MERGE (ac_b:AWSCidrBlock:AWSIpv4CidrBlock{id: vpc_peering.AccepterVpcInfo.VpcId + '|' + c_b.CidrBlock})
+    ON CREATE SET ac_b.firstseen = timestamp()
+    SET ac_b.lastupdated = {aws_update_tag}, ac_b.cidr_block  =  c_b.CidrBlock
+
+    WITH vpc_peering, ac_b
+    MATCH (pcx:PeeringConnection{id: vpc_peering.VpcPeeringConnectionId}), (cb:AWSCidrBlock{id: ac_b.id})
     MERGE (pcx)-[r:ACCEPTER_CIDR]->(cb)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {aws_update_tag}
-    
-    WITH vpc_peering, acidr_block
-    MATCH (vpc:AWSVpc{id: vpc_peering.AccepterVpcInfo.VpcId}), (cb:AWSCidrBlock{id: acidr_block.id})
+
+    WITH vpc_peering, ac_b
+    MATCH (vpc:AWSVpc{id: vpc_peering.AccepterVpcInfo.VpcId}), (cb:AWSCidrBlock{id: ac_b.id})
     MERGE (vpc)-[r:BLOCK_ASSOCIATION]->(cb)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {aws_update_tag}
@@ -112,23 +129,22 @@ def load_ec2_vpc_peering(neo4j_session, data, region, aws_account_id, aws_update
         region=region, aws_account_id=aws_account_id,
     )
 
-
     ingest_requester_cidr = """
     UNWIND {vpc_peerings} AS vpc_peering
-    UNWIND vpc_peering.RequesterVpcInfo.CidrBlockSet AS cidr_block
-    
-    MERGE (rcidr_block:AWSCidrBlock:AWSIpv4CidrBlock{id: vpc_peering.RequesterVpcInfo.VpcId + '|' + cidr_block.CidrBlock})
-    ON CREATE SET rcidr_block.firstseen = timestamp()
-    SET rcidr_block.lastupdated = {aws_update_tag}, rcidr_block.cidr_block  =  cidr_block.CidrBlock
-    
-    WITH vpc_peering, rcidr_block
-    MATCH (pcx:PeeringConnection{id: vpc_peering.VpcPeeringConnectionId}), (cb:AWSCidrBlock{id: rcidr_block.id})
+    UNWIND vpc_peering.RequesterVpcInfo.CidrBlockSet AS c_b
+
+    MERGE (rc_b:AWSCidrBlock:AWSIpv4CidrBlock{id: vpc_peering.RequesterVpcInfo.VpcId + '|' + c_b.CidrBlock})
+    ON CREATE SET rc_b.firstseen = timestamp()
+    SET rc_b.lastupdated = {aws_update_tag}, rc_b.cidr_block  =  c_b.CidrBlock
+
+    WITH vpc_peering, rc_b
+    MATCH (pcx:PeeringConnection{id: vpc_peering.VpcPeeringConnectionId}), (cb:AWSCidrBlock{id: rc_b.id})
     MERGE (pcx)-[r:REQUESTER_CIDR]->(cb)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {aws_update_tag}
-    
-    WITH vpc_peering, rcidr_block
-    MATCH (vpc:AWSVpc{id: vpc_peering.RequesterVpcInfo.VpcId}), (cb:AWSCidrBlock{id: rcidr_block.id})
+
+    WITH vpc_peering, rc_b
+    MATCH (vpc:AWSVpc{id: vpc_peering.RequesterVpcInfo.VpcId}), (cb:AWSCidrBlock{id: rc_b.id})
     MERGE (vpc)-[r:BLOCK_ASSOCIATION]->(cb)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {aws_update_tag}
@@ -143,7 +159,6 @@ def load_ec2_vpc_peering(neo4j_session, data, region, aws_account_id, aws_update
 @timeit
 def cleanup_ec2_vpc_peering(neo4j_session, common_job_parameters):
     run_cleanup_job('aws_import_vpc_peering_cleanup.json', neo4j_session, common_job_parameters)
-    
 
 
 @timeit
