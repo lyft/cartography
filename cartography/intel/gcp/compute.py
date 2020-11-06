@@ -617,7 +617,7 @@ def load_gcp_forwarding_rules(neo4j_session, fwd_rules, gcp_update_tag):
     """
     Ingest GCP forwarding rules data to Neo4j
     :param neo4j_session: The Neo4j session
-    :param fwd_rules: List of the forwarding rules
+    :param fwd_rules: List of forwarding rules
     :param gcp_update_tag: The timestamp to set these Neo4j nodes with
     :return: Nothing
     """
@@ -630,11 +630,13 @@ def load_gcp_forwarding_rules(neo4j_session, fwd_rules, gcp_update_tag):
         fwd.ip_protocol = {IPProtocol},
         fwd.load_balancing_scheme = {LoadBalancingScheme},
         fwd.name = {Name},
+        fwd.network = {NetworkPartialUri},
         fwd.port_range = {PortRange},
         fwd.ports = {Ports},
         fwd.project_id = {ProjectId},
         fwd.region = {Region},
         fwd.self_link = {SelfLink},
+        fwd.subnetwork = {SubNetworkPartialUri},
         fwd.lastupdated = {gcp_update_tag}
     """
 
