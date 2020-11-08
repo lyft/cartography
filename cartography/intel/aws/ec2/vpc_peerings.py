@@ -10,13 +10,13 @@ logger = logging.getLogger(__name__)
 
 @timeit
 @aws_handle_regions
-def get_ec2_vpc_peering(boto3_session, region):
+def get_vpc_peerings(boto3_session, region):
     client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
     return client.describe_vpc_peering_connections()['VpcPeeringConnections']
 
 
 @timeit
-def load_ec2_vpc_peering(neo4j_session, data, region, aws_account_id, aws_update_tag):
+def load_vpc_peerings(neo4j_session, data, region, aws_account_id, aws_update_tag):
 
     ingest_vpc_peerings = """
     UNWIND {vpc_peerings} AS vpc_peering
@@ -157,17 +157,17 @@ def load_ec2_vpc_peering(neo4j_session, data, region, aws_account_id, aws_update
 
 
 @timeit
-def cleanup_ec2_vpc_peering(neo4j_session, common_job_parameters):
+def cleanup_vpc_peerings(neo4j_session, common_job_parameters):
     run_cleanup_job('aws_import_vpc_peering_cleanup.json', neo4j_session, common_job_parameters)
 
 
 @timeit
-def sync_vpc_peering(
+def sync_vpc_peerings(
         neo4j_session, boto3_session, regions, current_aws_account_id, aws_update_tag,
         common_job_parameters,
 ):
     for region in regions:
         logger.debug("Syncing EC2 VPC peering for region '%s' in account '%s'.", region, current_aws_account_id)
-        data = get_ec2_vpc_peering(boto3_session, region)
-        load_ec2_vpc_peering(neo4j_session, data, region, current_aws_account_id, aws_update_tag)
-    cleanup_ec2_vpc_peering(neo4j_session, common_job_parameters)
+        data = get_vpc_peerings(boto3_session, region)
+        load_vpc_peerings(neo4j_session, data, region, current_aws_account_id, aws_update_tag)
+    cleanup_vpc_peerings(neo4j_session, common_job_parameters)
