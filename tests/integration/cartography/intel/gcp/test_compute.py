@@ -110,7 +110,7 @@ def test_transform_and_load_gcp_forwarding_rules(neo4j_session):
     fwd_query = """
     MATCH(f:GCPForwardingRule)
     RETURN f.id, f.partial_uri, f.ip_address, f.ip_protocol, f.load_balancing_scheme, f.name, f.network, f.port_range,
-    f.ports, f.project_id, f.region, f.self_link, f.subnetwork
+    f.ports, f.project_id, f.region, f.self_link, f.subnetwork, f.target
     """
     objects = neo4j_session.run(fwd_query)
     actual_nodes = {
@@ -124,6 +124,7 @@ def test_transform_and_load_gcp_forwarding_rules(neo4j_session):
             ','.join(o.get('f.ports', None)) if o.get('f.ports', None) else None,
             o['f.project_id'],
             o['f.region'],
+            o['f.target'],
         ) for o in objects
     }
 
@@ -138,6 +139,7 @@ def test_transform_and_load_gcp_forwarding_rules(neo4j_session):
             '80',
             'project-abc',
             'europe-west2',
+            'projects/project-abc/regions/europe-west2/targetPools/node-pool-12345',
         ),
         (
             'projects/project-abc/regions/europe-west2/forwardingRules/public-ingress-controller-1234567',
@@ -149,6 +151,7 @@ def test_transform_and_load_gcp_forwarding_rules(neo4j_session):
             None,
             'project-abc',
             'europe-west2',
+            'projects/project-abc/regions/europe-west2/targetVpnGateways/vpn-12345',
         ),
         (
             'projects/project-abc/regions/europe-west2/forwardingRules/shard-server-22222',
@@ -160,6 +163,7 @@ def test_transform_and_load_gcp_forwarding_rules(neo4j_session):
             '10203',
             'project-abc',
             'europe-west2',
+            'projects/project-abc/regions/europe-west2/targetPools/node-pool-234567',
         ),
     }
 

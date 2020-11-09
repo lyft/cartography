@@ -328,6 +328,7 @@ def transform_gcp_forwarding_rules(fwd_response):
         forward_rule['port_range'] = fwd.get('portRange', None)
         forward_rule['ports'] = fwd.get('ports', None)
         forward_rule['self_link'] = fwd['selfLink']
+        forward_rule['target'] = _parse_compute_full_uri_to_partial_uri(fwd['target'])
 
         network = fwd.get('network', None)
         if network:
@@ -647,6 +648,7 @@ def load_gcp_forwarding_rules(neo4j_session, fwd_rules, gcp_update_tag):
         fwd.region = {Region},
         fwd.self_link = {SelfLink},
         fwd.subnetwork = {SubNetworkPartialUri},
+        fwd.target = {TargetPartialUri},
         fwd.lastupdated = {gcp_update_tag}
     """
 
@@ -670,6 +672,7 @@ def load_gcp_forwarding_rules(neo4j_session, fwd_rules, gcp_update_tag):
             SelfLink=fwd['self_link'],
             SubNetwork=subnetwork,
             SubNetworkPartialUri=fwd.get('subnetwork_partial_uri', None),
+            TargetPartialUri=fwd['target'],
             gcp_update_tag=gcp_update_tag,
         )
 
