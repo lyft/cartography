@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 @timeit
 @aws_handle_regions
 def get_ecr_repositories(boto3_session, region):
-    logger.debug("Getting ECR repositories for region '%s'.", region)
+    logger.info("Getting ECR repositories for region '%s'.", region)
     client = boto3_session.client('ecr', region_name=region)
     paginator = client.get_paginator('describe_repositories')
     ecr_repositories = []
@@ -22,7 +22,7 @@ def get_ecr_repositories(boto3_session, region):
 @timeit
 @aws_handle_regions
 def get_ecr_repository_images(boto3_session, region, repository_name):
-    logger.debug("Getting ECR images in repository '%s' for region '%s'.", repository_name, region)
+    logger.info("Getting ECR images in repository '%s' for region '%s'.", repository_name, region)
     client = boto3_session.client('ecr', region_name=region)
     paginator = client.get_paginator('list_images')
     ecr_repository_images = []
@@ -56,7 +56,7 @@ def get_ecr_image_scan_findings(boto3_session, region, repository_name, reposito
         'scan_completed_at': 'abcd',
     }]
     """
-    logger.debug("Getting ECR image scan findings in repository '%s' for region '%s'.", repository_name, region)
+    logger.info("Getting ECR image scan findings in repository '%s' for region '%s'.", repository_name, region)
     client = boto3_session.client('ecr', region_name=region)
     image_finding_list = []
     for image in repository_images:
@@ -95,7 +95,7 @@ def transform_ecr_scan_finding_attributes(vuln_data):
     Transforms each finding returned from `get_ecr_image_scan_findings()` so that we flatten the  `attributes` list
     to make it easier to load to the graph.
     """
-    logger.debug("Transforming ECR image scan findings.")
+    logger.info("Transforming ECR image scan findings.")
     working_copy = vuln_data.copy()
     for finding in working_copy.get('findings', []):
         for attrib in finding.get('attributes'):
@@ -121,7 +121,7 @@ def load_ecr_repositories(neo4j_session, data, region, current_aws_account_id, a
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {aws_update_tag}
     """
-    logger.debug("Loading ECR repositories for region '%s' into graph.", region)
+    logger.info("Loading ECR repositories for region '%s' into graph.", region)
     for repo in data:
         neo4j_session.run(
             query,
@@ -159,7 +159,7 @@ def load_ecr_repository_images(neo4j_session, data, region, aws_update_tag):
     ON CREATE SET r2.firstseen = timestamp()
     SET r2.lastupdated = {aws_update_tag}
     """
-    logger.debug("Loading ECR repository images for region '%s' into graph.", region)
+    logger.info("Loading ECR repository images for region '%s' into graph.", region)
     for repo_uri, repo_images in data.items():
         for repo_image in repo_images:
             image_tag = repo_image.get('imageTag', '')
@@ -211,7 +211,7 @@ def load_ecr_image_scan_findings(neo4j_session, data, aws_update_tag):
         ON CREATE SET a.firstseen = timestamp()
         SET r.lastupdated = {aws_update_tag}
         """
-    logger.debug("Loading ECR image scan findings into graph.")
+    logger.info("Loading ECR image scan findings into graph.")
     neo4j_session.run(
         query,
         Risks=data['findings'],
@@ -221,7 +221,7 @@ def load_ecr_image_scan_findings(neo4j_session, data, aws_update_tag):
 
 
 def cleanup(neo4j_session, common_job_parameters):
-    logger.debug("Running ECR cleanup job.")
+    logger.info("Running ECR cleanup job.")
     run_cleanup_job('aws_import_ecr_cleanup.json', neo4j_session, common_job_parameters)
 
 
