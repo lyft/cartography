@@ -328,7 +328,8 @@ def transform_gcp_forwarding_rules(fwd_response):
         forward_rule['port_range'] = fwd.get('portRange', None)
         forward_rule['ports'] = fwd.get('ports', None)
         forward_rule['self_link'] = fwd['selfLink']
-        forward_rule['target'] = _parse_compute_full_uri_to_partial_uri(fwd['target'])
+        target = fwd.get('target', None)
+        forward_rule['target'] = _parse_compute_full_uri_to_partial_uri(target) if target else None
 
         network = fwd.get('network', None)
         if network:
