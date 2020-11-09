@@ -136,15 +136,27 @@ def get_gcp_vpcs(projectid, compute):
 
 
 @timeit
-def get_gcp_forwarding_rules(project_id, region, compute):
+def get_gcp_regional_forwarding_rules(project_id, region, compute):
     """
-    Return list of all forwarding rules in the given project_id and region
+    Return list of all regional forwarding rules in the given project_id and region
     :param project_id: The project ID
     :param region: The region to pull forwarding rules from
     :param compute: The compute resource object created by googleapiclient.discovery.build()
     :return: Response object containing data on all GCP forwarding rules for a given project
     """
     req = compute.forwardingRules().list(project=project_id, region=region)
+    return req.execute()
+
+
+@timeit
+def get_gcp_global_forwarding_rules(project_id, compute):
+    """
+    Return list of all global forwarding rules in the given project_id and region
+    :param project_id: The project ID
+    :param compute: The compute resource object created by googleapiclient.discovery.build()
+    :return: Response object containing data on all GCP forwarding rules for a given project
+    """
+    req = compute.globalForwardingRules().list(project=project_id)
     return req.execute()
 
 
@@ -294,7 +306,6 @@ def transform_gcp_forwarding_rules(fwd_response):
     :param fwd_response: The response object returned from compute.forwardRules.list()
     :return: A transformed fwd_response
     """
-
     fwd_list = []
     prefix = fwd_response['id']
     project_id = prefix.split('/')[1]
@@ -306,7 +317,8 @@ def transform_gcp_forwarding_rules(fwd_response):
 
         forward_rule['project_id'] = project_id
         # Region looks like "https://www.googleapis.com/compute/v1/projects/{project}/regions/{region name}"
-        forward_rule['region'] = fwd['region'].split('/')[-1]
+        region = fwd.get('region', None)
+        forward_rule['region'] = region.split('/')[-1] if region else None
         forward_rule['ip_address'] = fwd['IPAddress']
         forward_rule['ip_protocol'] = fwd['IPProtocol']
         forward_rule['allow_global_access'] = fwd.get('allowGlobalAccess', None)
@@ -1039,7 +1051,7 @@ def cleanup_gcp_subnets(neo4j_session, common_job_parameters):
 @timeit
 def cleanup_gcp_forwarding_rules(neo4j_session, common_job_parameters):
     """
-    Delete out-of-date GCP VPC forwarding rules and relationships
+    Delete out-of-date GCP forwarding rules and relationships
     :param neo4j_session: The Neo4j session
     :param common_job_parameters: dict of other job parameters to pass to Neo4j
     :return: Nothing
@@ -1109,8 +1121,24 @@ def sync_gcp_subnets(neo4j_session, compute, project_id, regions, gcp_update_tag
 
 @timeit
 def sync_gcp_forwarding_rules(neo4j_session, compute, project_id, regions, gcp_update_tag, common_job_parameters):
+    """
+    Sync GCP Both Global and Regional Forwarding Rules, ingest to Neo4j, and clean up old data.
+    :param neo4j_session: The Neo4j session
+    :param compute: The GCP Compute resource object
+    :param project_id: The project ID to sync
+    :param regions: List of regions.
+    :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
+    :param common_job_parameters: dict of other job parameters to pass to Neo4j
+    :return: Nothing
+    """
+    global_fwd_response = get_gcp_global_forwarding_rules(project_id, compute)
+    forwarding_rules = transform_gcp_forwarding_rules(global_fwd_response)
+    load_gcp_forwarding_rules(neo4j_session, forwarding_rules, gcp_update_tag)
+    # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
+    cleanup_gcp_forwarding_rules(neo4j_session, common_job_parameters)
+
     for r in regions:
-        fwd_response = get_gcp_forwarding_rules(project_id, r, compute)
+        fwd_response = get_gcp_regional_forwarding_rules(project_id, r, compute)
         forwarding_rules = transform_gcp_forwarding_rules(fwd_response)
         load_gcp_forwarding_rules(neo4j_session, forwarding_rules, gcp_update_tag)
         # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
