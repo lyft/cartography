@@ -42,13 +42,19 @@ def test_vpc_peering_relationships_vpc(neo4j_session):
     )
 
     expected_nodes = {
-        ('vpc-055d355d6d2e498fa', 'pcx-09969456d9ec69ab6', 'vpc-0015dc961e537676a'),
+        (
+            'vpc-055d355d6d2e498fa',
+            'pcx-09969456d9ec69ab6',
+            'vpc-0015dc961e537676a',
+        ),
     }
 
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (rvpc:AWSVpc)-[:REQUESTER_VPC]-(pcx:PeeringConnection)-[:ACCEPTER_VPC]-(avpc:AWSVpc) RETURN rvpc.id, pcx.id, avpc.id;
+        MATCH
+        (rvpc:AWSVpc)-[:REQUESTER_VPC]-(pcx:PeeringConnection)-[:ACCEPTER_VPC]-(avpc:AWSVpc)
+        RETURN rvpc.id, pcx.id, avpc.id;
         """,
     )
     actual = {
@@ -56,6 +62,7 @@ def test_vpc_peering_relationships_vpc(neo4j_session):
     }
 
     assert actual == expected_nodes
+
 
 def test_vpc_peering_relationships_cidr(neo4j_session):
     data = tests.data.aws.ec2.vpc_peerings.DESCRIBE_VPC_PEERINGS
@@ -68,17 +75,23 @@ def test_vpc_peering_relationships_cidr(neo4j_session):
     )
 
     expected_nodes = {
-        ('vpc-055d355d6d2e498fa|10.1.0.0/16', 'pcx-09969456d9ec69ab6', 'vpc-0015dc961e537676a|10.0.0.0/16'),
+        (
+            'vpc-055d355d6d2e498fa|10.1.0.0/16',
+            'pcx-09969456d9ec69ab6',
+            'vpc-0015dc961e537676a|10.0.0.0/16',
+        ),
     }
 
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (rcidr:AWSIpv4CidrBlock)-[:REQUESTER_CIDR]-(pcx:PeeringConnection)-[:ACCEPTER_CIDR]-(acidr:AWSIpv4CidrBlock) RETURN rcidr.id, pcx.id, acidr.id;
+        MATCH
+        (r:AWSIpv4CidrBlock)-[:REQUESTER_CIDR]-(p:PeeringConnection)-[]-(a:AWSIpv4CidrBlock)
+        RETURN r.id, p.id, a.id;
         """,
     )
     actual = {
-        (r['rcidr.id'], r['pcx.id'], r['acidr.id']) for r in result
+        (r['r.id'], r['p.id'], r['a.id']) for r in result
     }
 
     assert actual == expected_nodes
