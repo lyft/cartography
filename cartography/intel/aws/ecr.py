@@ -68,13 +68,18 @@ def get_ecr_image_scan_findings(boto3_session, region, repository_name, reposito
 
         # We can't call ecr.describe_images() on the image unless it has a tag.
         if image_tag:
-            describe_images_resp = client.describe_images(
-                repositoryName=repository_name,
-                imageIds=[{
-                    'imageDigest': image['imageDigest'],
-                    'imageTag': image_tag,
-                }],
-            )
+            describe_images_resp: Dict = {}
+            try:
+                describe_images_resp = client.describe_images(
+                    repositoryName=repository_name,
+                    imageIds=[{
+                        'imageDigest': image['imageDigest'],
+                        'imageTag': image_tag,
+                    }],
+                )
+            except boto3_session.client.exceptions.ImageNotFoundException:
+                logger.warning("Image not found: %s", str(json.loads(image)))
+                continue
             if describe_images_resp['imageDetails'][0].get('imageScanStatus', {}).get('status', None) == "COMPLETE":
                 image_vuln = {}
                 image_vuln['image_tag'] = image_tag
@@ -93,6 +98,7 @@ def get_ecr_image_scan_findings(boto3_session, region, repository_name, reposito
                 yield image_vuln
         else:
             logger.warning("Image does not have tag: %s", str(json.loads(image)))
+            continue
 
 
 def transform_ecr_scan_finding_attributes(vuln_data) -> Dict:
