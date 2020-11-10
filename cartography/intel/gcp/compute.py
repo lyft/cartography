@@ -310,38 +310,39 @@ def transform_gcp_forwarding_rules(fwd_response):
     prefix = fwd_response['id']
     project_id = prefix.split('/')[1]
     for fwd in fwd_response.get('items', []):
-        forward_rule = {}
+        forwarding_rule = {}
 
         fwd_partial_uri = f"{prefix}/{fwd['name']}"
-        forward_rule['partial_uri'] = fwd_partial_uri
+        forwarding_rule['id'] = fwd_partial_uri
+        forwarding_rule['partial_uri'] = fwd_partial_uri
 
-        forward_rule['project_id'] = project_id
+        forwarding_rule['project_id'] = project_id
         # Region looks like "https://www.googleapis.com/compute/v1/projects/{project}/regions/{region name}"
         region = fwd.get('region', None)
-        forward_rule['region'] = region.split('/')[-1] if region else None
-        forward_rule['ip_address'] = fwd['IPAddress']
-        forward_rule['ip_protocol'] = fwd['IPProtocol']
-        forward_rule['allow_global_access'] = fwd.get('allowGlobalAccess', None)
+        forwarding_rule['region'] = region.split('/')[-1] if region else None
+        forwarding_rule['ip_address'] = fwd['IPAddress']
+        forwarding_rule['ip_protocol'] = fwd['IPProtocol']
+        forwarding_rule['allow_global_access'] = fwd.get('allowGlobalAccess', None)
 
-        forward_rule['load_balancing_scheme'] = fwd['loadBalancingScheme']
-        forward_rule['name'] = fwd['name']
-        forward_rule['port_range'] = fwd.get('portRange', None)
-        forward_rule['ports'] = fwd.get('ports', None)
-        forward_rule['self_link'] = fwd['selfLink']
+        forwarding_rule['load_balancing_scheme'] = fwd['loadBalancingScheme']
+        forwarding_rule['name'] = fwd['name']
+        forwarding_rule['port_range'] = fwd.get('portRange', None)
+        forwarding_rule['ports'] = fwd.get('ports', None)
+        forwarding_rule['self_link'] = fwd['selfLink']
         target = fwd.get('target', None)
-        forward_rule['target'] = _parse_compute_full_uri_to_partial_uri(target) if target else None
+        forwarding_rule['target'] = _parse_compute_full_uri_to_partial_uri(target) if target else None
 
         network = fwd.get('network', None)
         if network:
-            forward_rule['network'] = network
-            forward_rule['network_partial_uri'] = _parse_compute_full_uri_to_partial_uri(network)
+            forwarding_rule['network'] = network
+            forwarding_rule['network_partial_uri'] = _parse_compute_full_uri_to_partial_uri(network)
 
         subnetwork = fwd.get('subnetwork', None)
         if subnetwork:
-            forward_rule['subnetwork'] = subnetwork
-            forward_rule['subnetwork_partial_uri'] = _parse_compute_full_uri_to_partial_uri(subnetwork)
+            forwarding_rule['subnetwork'] = subnetwork
+            forwarding_rule['subnetwork_partial_uri'] = _parse_compute_full_uri_to_partial_uri(subnetwork)
 
-        fwd_list.append(forward_rule)
+        fwd_list.append(forwarding_rule)
     return fwd_list
 
 

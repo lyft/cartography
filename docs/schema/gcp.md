@@ -487,6 +487,43 @@ Representation of a GCP [Firewall](https://cloud.google.com/compute/docs/referen
     ```
 
 
+## GCPForwardingRule
+
+Representation of GCP [Forwarding Rules](https://cloud.google.com/compute/docs/reference/rest/v1/forwardingRules/list) and [Global Forwarding Rules](https://cloud.google.com/compute/docs/reference/rest/v1/globalForwardingRules/list).
+
+| Field | Description |
+| ----- | ----------- |
+| firstseen | Timestamp of when a sync job first discovered this node |
+| lastupdated |  Timestamp of the last time the node was updated |
+| id | A partial resource URI representing this Forwarding Rule |
+| partial_uri | Same as `id` |
+| ip_address | IP address that this Forwarding Rule serves |
+| ip_protocol | IP protocol to which this rule applies |
+| load_balancing_scheme | Specifies the Forwarding Rule type |
+| name | Name of the Forwarding Rule |
+| network | A partial resource URI of the network this Forwarding Rule belongs to |
+| port_range | Port range used in conjunction with a target resource. Only packets addressed to ports in the specified range will be forwarded to target configured |
+| ports | Ports to forward to a backend service. Only packets addressed to these ports are forwarded to the backend services configured |
+| project_id | The project ID that this Forwarding Rule belongs to |
+| region | The region of this Forwarding Rule |
+| self_link | Server-defined URL for the resource |
+| subnetwork | A partial resource URI of the subnetwork this Forwarding Rule belongs to |
+| target | A partial resource URI of the target resource to receive the traffic |
+
+### Relationships
+
+- GCPForwardingRules can be a resource of a GCPVpc.
+
+    ```
+    (GCPVpc)-[RESOURCE]->(GCPForwardingRule)
+    ```
+
+- GCPForwardingRules can be a resource of a GCPSubnet.
+
+    ```
+    (GCPSubnet)-[RESOURCE]->(GCPForwardingRule)
+    ```
+
 ## GKECluster
 
 Representation of a GCP [GKE Cluster](https://cloud.google.com/kubernetes-engine/docs/reference/rest/v1/).
