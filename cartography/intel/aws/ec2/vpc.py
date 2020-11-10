@@ -156,7 +156,7 @@ def cleanup_ec2_vpcs(neo4j_session, common_job_parameters):
 @timeit
 def sync_vpc(neo4j_session, boto3_session, regions, current_aws_account_id, aws_update_tag, common_job_parameters):
     for region in regions:
-        logger.debug("Syncing EC2 VPC for region '%s' in account '%s'.", region, current_aws_account_id)
+        logger.info("Syncing EC2 VPC for region '%s' in account '%s'.", region, current_aws_account_id)
         data = get_ec2_vpcs(boto3_session, region)
         load_ec2_vpcs(neo4j_session, data, region, current_aws_account_id, aws_update_tag)
     cleanup_ec2_vpcs(neo4j_session, common_job_parameters)
