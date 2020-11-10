@@ -97,8 +97,7 @@ def transform_ecr_scan_finding_attributes(vuln_data):
     to make it easier to load to the graph.
     """
     logger.info("Transforming ECR image scan findings.")
-    working_copy = vuln_data.copy()
-    for finding in working_copy.get('findings', []):
+    for finding in vuln_data.get('findings', []):
         for attrib in finding.get('attributes'):
             if attrib['key'] == 'package_version':
                 finding['package_version'] = attrib['value']
@@ -106,7 +105,7 @@ def transform_ecr_scan_finding_attributes(vuln_data):
                 finding['package_name'] = attrib['value']
             elif attrib['key'] == 'CVSS2_SCORE':
                 finding['CVSS2_SCORE'] = attrib['value']
-    return working_copy
+    return vuln_data
 
 
 @timeit
