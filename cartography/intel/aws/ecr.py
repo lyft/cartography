@@ -1,4 +1,5 @@
 import logging
+from itertools import chain
 
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
@@ -232,7 +233,7 @@ def sync(neo4j_session, boto3_session, regions, current_aws_account_id, aws_upda
         repository_data = get_ecr_repositories(boto3_session, region)
 
         image_data = {}
-        images_with_vulns = []
+        images_with_vulns = iter(())
         for repo in repository_data:
             repo_image_obj = get_ecr_repository_images(boto3_session, region, repo['repositoryName'])
 
@@ -240,8 +241,11 @@ def sync(neo4j_session, boto3_session, regions, current_aws_account_id, aws_upda
             image_vulns = get_ecr_image_scan_findings(
                 boto3_session, region, repo['repositoryName'], repo_image_obj,
             )
-            transformed_attrs = [transform_ecr_scan_finding_attributes(v) for v in image_vulns] if image_vulns else []
-            images_with_vulns.extend(transformed_attrs)
+            transformed_attrs = (
+                transform_ecr_scan_finding_attributes(v)
+                for v in image_vulns
+            ) if image_vulns else iter(())
+            images_with_vulns = chain(images_with_vulns, transformed_attrs)
 
         load_ecr_repositories(neo4j_session, repository_data, region, current_aws_account_id, aws_update_tag)
         load_ecr_repository_images(neo4j_session, image_data, region, aws_update_tag)
