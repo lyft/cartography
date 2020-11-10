@@ -24,10 +24,12 @@
   - [Relationships](#relationships-8)
 - [GCPFirewall](#gcpfirewall)
   - [Relationships](#relationships-9)
-- [GKECluster](#gkecluster)
+- [GCPForwardingRule](#gcpforwardingrule)
   - [Relationships](#relationships-10)
-- [IpRule::IpPermissionInbound::GCPIpRule](#ipruleippermissioninboundgcpiprule)
+- [GKECluster](#gkecluster)
   - [Relationships](#relationships-11)
+- [IpRule::IpPermissionInbound::GCPIpRule](#ipruleippermissioninboundgcpiprule)
+  - [Relationships](#relationships-12)
 - [IpRange](#iprange)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
