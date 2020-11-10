@@ -1,4 +1,5 @@
 import cartography.intel.aws.ec2
+import cartography.util
 import tests.data.aws.ec2.network_interfaces
 
 
@@ -88,3 +89,48 @@ def test_network_interface_relationships(neo4j_session):
     }
 
     assert actual == expected_nodes
+
+
+def test_network_interface_cleanup(neo4j_session):
+    # Load fake data with update tag of 12345
+    for i in range(3):
+        neo4j_session.run(
+            """
+            MERGE (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(:AWSVpc{id:"a"})<-[:MEMBER_OF_AWS_VPC]-
+            (:EC2Subnet{id:"e"})<-[:PART_OF_SUBNET]-(n:NetworkInterface{id:{NicId}})
+            SET n.lastupdated=12345;
+            """,
+            AWS_ID=TEST_ACCOUNT_ID,
+            NicId=f"eni-{i}",
+        )
+
+    # Load more fake data with given test update tag
+    for i in range(3, 10):
+        neo4j_session.run(
+            """
+            MERGE (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(:AWSVpc{id:"a"})<-[:MEMBER_OF_AWS_VPC]-
+            (:EC2Subnet{id:"e"})<-[:PART_OF_SUBNET]-(n:NetworkInterface{id:{NicId}})
+            SET n.lastupdated={UPDATE_TAG};
+            """,
+            AWS_ID=TEST_ACCOUNT_ID,
+            UPDATE_TAG=TEST_UPDATE_TAG,
+            NicId=f"eni-{i}",
+        )
+
+    parameters = {
+        'AWS_ID': TEST_ACCOUNT_ID,
+        'UPDATE_TAG': TEST_UPDATE_TAG,
+    }
+    cartography.util.run_cleanup_job('aws_ingest_network_interfaces_cleanup.json', neo4j_session, parameters)
+
+    result = neo4j_session.run(
+        """
+        MATCH (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(:AWSVpc)<-[:MEMBER_OF_AWS_VPC]-
+        (:EC2Subnet)<-[:PART_OF_SUBNET]-(n:NetworkInterface})
+        return count(distinct n) as num_nics
+        """,
+        AWS_ID=TEST_ACCOUNT_ID,
+    )
+    actual_nic_count = result.single()['num_nics']
+    expected_nic_count = 7
+    assert actual_nic_count == expected_nic_count

@@ -1,14 +1,7 @@
 import json
 import logging
 
-import tenacity
-
 logger = logging.getLogger(__name__)
-
-# Maximum time in seconds to allow cleanup jobs to run
-CLEANUP_MAX_RETRY_TIME = 1200
-# Time in seconds to delay between running iterative cleanup jobs. 0.01s = 10ms.
-REPEAT_DELAY = .025
 
 
 class GraphStatementJSONEncoder(json.JSONEncoder):
@@ -79,20 +72,9 @@ class GraphStatement:
         https://neo4j.com/developer/kb/large-delete-transaction-best-practices-in-neo4j/
         """
         self.parameters["LIMIT_SIZE"] = self.iterationsize
-        self._run_iter_core(session)
-
-    @tenacity.retry(
-        retry=tenacity.retry_if_result(lambda x: x != 0),
-        wait=tenacity.wait_fixed(REPEAT_DELAY),
-        stop=tenacity.stop_after_delay(CLEANUP_MAX_RETRY_TIME),
-    )
-    def _run_iter_core(self, session):
-        """
-        Reruns the statement until TotalCompleted returns 0 using a backoff strategy and retry time limit.
-        :return: True if TotalComplete is 0, False otherwise.
-        """
-        total_completed = self._run(session).single()['TotalCompleted']
-        return total_completed
+        total_completed = -1
+        while total_completed != 0:
+            total_completed = self._run(session).single()['TotalCompleted']
 
     @classmethod
     def create_from_json(cls, json_obj):

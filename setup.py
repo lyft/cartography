@@ -41,7 +41,6 @@ setup(
         "requests>=2.22.0",
         "statsd",
         "packaging",
-        "tenacity",
     ],
     extras_require={
         ':python_version<"3.7"': [
