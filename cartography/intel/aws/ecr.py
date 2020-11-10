@@ -83,6 +83,11 @@ def get_ecr_image_scan_findings(boto3_session, region, repository_name, reposito
             if describe_images_resp['imageDetails'][0].get('imageScanStatus', {}).get('status', None) == "COMPLETE":
                 image_vuln = {}
                 image_vuln['image_tag'] = image_tag
+                if 'imageDigest' in image:
+                    image_vuln['imageDigest'] = image['imageDigest']
+                else:
+                    logger.warning("Image does not have 'imageDigest': %s", str(json.loads(image)))
+                    continue
                 describe_image_scan_resp = client.describe_image_scan_findings(
                     repositoryName=repository_name,
                     imageId={
