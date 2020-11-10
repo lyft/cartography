@@ -1,4 +1,3 @@
-import json
 import logging
 from itertools import chain
 from typing import Dict
@@ -78,7 +77,7 @@ def get_ecr_image_scan_findings(boto3_session, region, repository_name, reposito
                     }],
                 )
             except boto3_session.client.exceptions.ImageNotFoundException:
-                logger.warning("Image not found: %s", str(json.loads(image)))
+                logger.warning("Image not found: %s", str(image))
                 continue
             if describe_images_resp['imageDetails'][0].get('imageScanStatus', {}).get('status', None) == "COMPLETE":
                 image_vuln = {}
@@ -86,7 +85,7 @@ def get_ecr_image_scan_findings(boto3_session, region, repository_name, reposito
                 if 'imageDigest' in image:
                     image_vuln['imageDigest'] = image['imageDigest']
                 else:
-                    logger.warning("Image does not have 'imageDigest': %s", str(json.loads(image)))
+                    logger.warning("Image does not have 'imageDigest': %s", str(image))
                     continue
                 describe_image_scan_resp = client.describe_image_scan_findings(
                     repositoryName=repository_name,
@@ -102,7 +101,7 @@ def get_ecr_image_scan_findings(boto3_session, region, repository_name, reposito
                                                                        .get('findingSeverityCounts', [])
                 yield image_vuln
         else:
-            logger.warning("Image does not have tag: %s", str(json.loads(image)))
+            logger.warning("Image does not have tag: %s", str(image))
             continue
 
 
