@@ -41,7 +41,7 @@ def test_load_ecr_repositories(neo4j_session):
     nodes = neo4j_session.run(
         """
         MATCH (r:ECRRepository) RETURN r.arn;
-        """,
+        """
     )
     actual_nodes = {n['r.arn'] for n in nodes}
     assert actual_nodes == expected_nodes

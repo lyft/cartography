@@ -705,7 +705,7 @@ def _attach_fwd_rule_to_subnet(neo4j_session, fwd, gcp_update_tag):
         PartialUri=fwd['partial_uri'],
         SubNetworkPartialUri=fwd.get('subnetwork_partial_uri', None),
         gcp_update_tag=gcp_update_tag,
-    )\
+    )
 
 
 
