@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 @timeit
 @aws_handle_regions
 def get_ecr_repositories(boto3_session, region) -> List[Dict]:
-    logger.info("Getting ECR repositories for region '%s'.", region)
+    logger.debug("Getting ECR repositories for region '%s'.", region)
     client = boto3_session.client('ecr', region_name=region)
     paginator = client.get_paginator('describe_repositories')
     ecr_repositories: List[Dict] = []
@@ -26,7 +26,7 @@ def get_ecr_repositories(boto3_session, region) -> List[Dict]:
 @timeit
 @aws_handle_regions
 def get_ecr_repository_images(boto3_session, region, repository_name) -> List[Dict]:
-    logger.info("Getting ECR images in repository '%s' for region '%s'.", repository_name, region)
+    logger.debug("Getting ECR images in repository '%s' for region '%s'.", repository_name, region)
     client = boto3_session.client('ecr', region_name=region)
     paginator = client.get_paginator('list_images')
     ecr_repository_images: List[Dict] = []
@@ -60,7 +60,7 @@ def get_ecr_image_scan_findings(boto3_session, region, repository_name, reposito
         'scan_completed_at': 'abcd',
     }]
     """
-    logger.info("Getting ECR image scan findings in repository '%s' for region '%s'.", repository_name, region)
+    logger.debug("Getting ECR image scan findings in repository '%s' for region '%s'.", repository_name, region)
     client = boto3_session.client('ecr', region_name=region)
     for image in repository_images:
         image_tag = image.get('imageTag', None)
@@ -76,7 +76,7 @@ def get_ecr_image_scan_findings(boto3_session, region, repository_name, reposito
                         'imageTag': image_tag,
                     }],
                 )
-            except boto3_session.client.exceptions.ImageNotFoundException:
+            except client.exceptions.ImageNotFoundException:
                 logger.warning("Image not found: %s", str(image), exc_info=True)
                 continue
             if describe_images_resp['imageDetails'][0].get('imageScanStatus', {}).get('status', None) == "COMPLETE":
@@ -110,7 +110,7 @@ def transform_ecr_scan_finding_attributes(vuln_data) -> Dict:
     Transforms each finding returned from `get_ecr_image_scan_findings()` so that we flatten the  `attributes` list
     to make it easier to load to the graph.
     """
-    logger.info("Transforming ECR image scan findings.")
+    logger.debug("Transforming ECR image scan findings.")
     for finding in vuln_data.get('findings', []):
         for attrib in finding.get('attributes'):
             if attrib['key'] == 'package_version':
@@ -135,7 +135,7 @@ def load_ecr_repositories(neo4j_session, data, region, current_aws_account_id, a
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {aws_update_tag}
     """
-    logger.info("Loading ECR repositories for region '%s' into graph.", region)
+    logger.debug("Loading ECR repositories for region '%s' into graph.", region)
     for repo in data:
         neo4j_session.run(
             query,
@@ -173,7 +173,7 @@ def load_ecr_repository_images(neo4j_session, repo_data, region, aws_update_tag)
     ON CREATE SET r2.firstseen = timestamp()
     SET r2.lastupdated = {aws_update_tag}
     """
-    logger.info("Loading ECR repository images for region '%s' into graph.", region)
+    logger.debug("Loading ECR repository images for region '%s' into graph.", region)
     for repo_uri, repo_images in repo_data.items():
         for repo_image in repo_images:
             image_tag = repo_image.get('imageTag', '')
@@ -225,7 +225,7 @@ def load_ecr_image_scan_findings(neo4j_session, data, aws_update_tag):
         ON CREATE SET a.firstseen = timestamp()
         SET r.lastupdated = {aws_update_tag}
         """
-    logger.info("Loading ECR image scan findings into graph.")
+    logger.debug("Loading ECR image scan findings into graph.")
     neo4j_session.run(
         query,
         Risks=data['findings'],
@@ -235,7 +235,7 @@ def load_ecr_image_scan_findings(neo4j_session, data, aws_update_tag):
 
 
 def cleanup(neo4j_session, common_job_parameters):
-    logger.info("Running ECR cleanup job.")
+    logger.debug("Running ECR cleanup job.")
     run_cleanup_job('aws_import_ecr_cleanup.json', neo4j_session, common_job_parameters)
 
 
