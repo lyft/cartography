@@ -134,7 +134,7 @@ Representation of a [Okta Group](https://developer.okta.com/docs/reference/api/g
 
 ### Relationships
 
-  - OktaOrganizations contain OktaGroups
+ - OktaOrganizations contain OktaGroups
     ```
     (OktaGroup)<-[RESOURCE]->(OkOrganization)
     ```
@@ -154,7 +154,7 @@ Representation of a [Okta Group](https://developer.okta.com/docs/reference/api/g
 
 ## OktaApplication
 
-Representation of a Okta Application (https://developer.okta.com/docs/reference/api/apps/).
+Representation of a [Okta Application](https://developer.okta.com/docs/reference/api/apps/#application-object).
 
 | Field | Description |
 |-------|--------------|
@@ -193,7 +193,7 @@ Representation of a Okta Application (https://developer.okta.com/docs/reference/
     ```
 ## OktaUserFactor
 
-Representation of Okta user authentication factors (https://developer.okta.com/docs/reference/api/factors/).
+Representation of Okta User authentication [Factors](https://developer.okta.com/docs/reference/api/factors/#factor-object).
 
 | Field | Description |
 |-------|--------------|
@@ -208,14 +208,14 @@ Representation of Okta user authentication factors (https://developer.okta.com/d
 
 ### Relationships
 
- - OktaUser can have authentication Factors
+ - OktaUsers can have authentication Factors
      ```
     (OktaUser)-[FACTOR]->(OktaUserFactor)
     ```
 
 ## OktaTrustedOrigin
 
-Representation of a Okta trusted origin for login/logout or recovery operations. For more information visit Okta documentation at https://developer.okta.com/docs/reference/api/trusted-origins
+Representation of a [Okta Trusted Origin](https://developer.okta.com/docs/reference/api/trusted-origins/#trusted-origin-object) for login/logout or recovery operations.
 
 | Field | Description |
 |-------|--------------|
@@ -240,7 +240,7 @@ Representation of a Okta trusted origin for login/logout or recovery operations.
 
 ## OktaAdministrationRole
 
-Representation of Okta administration roles. For more information, visit Okta documentation https://developer.okta.com/docs/reference/api/roles/
+Representation of a [Okta Administration Role](https://developer.okta.com/docs/reference/api/roles/#role-object).
 
 | Field | Description |
 |-------|--------------|
@@ -268,7 +268,7 @@ Representation of Okta administration roles. For more information, visit Okta do
 
 ## Reply Uri
 
-Representation of Okta application ReplyUri. For more information, visit Okta documentation https://developer.okta.com/docs/reference/api/apps/
+Representation of [Okta Application ReplyUri](https://developer.okta.com/docs/reference/api/apps/).
 
 | Field | Description |
 |-------|--------------|
