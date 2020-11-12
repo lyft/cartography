@@ -25,7 +25,7 @@
 
 ## OktaOrganization
 
-Representation of a Okta [Organization](https://developer.okta.com/docs/concepts/okta-organizations/).
+Representation of a [Okta Organization](https://developer.okta.com/docs/concepts/okta-organizations/).
 
 
 | Field | Description |
@@ -66,7 +66,7 @@ Representation of a Okta [Organization](https://developer.okta.com/docs/concepts
 
 ## OktaUser
 
-Representation of a Okta User (https://github.com/okta/okta-sdk-python/blob/master/okta/models/user/User.py).
+Representation of a [Okta User](https://developer.okta.com/docs/reference/api/users/#user-object).
 
 | Field | Description |
 |-------|--------------|
@@ -118,7 +118,7 @@ Representation of a Okta User (https://github.com/okta/okta-sdk-python/blob/mast
 
 ## OktaGroup
 
-Representation of a OktaGroup (https://github.com/okta/okta-sdk-python/blob/master/okta/models/usergroup/UserGroup.py).
+Representation of a [Okta Group](https://developer.okta.com/docs/reference/api/groups/#group-object).
 
 | Field | Description |
 |-------|--------------|
