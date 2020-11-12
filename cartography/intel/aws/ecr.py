@@ -76,7 +76,7 @@ def get_ecr_image_scan_findings(boto3_session, region, repository_name, reposito
                         'imageTag': image_tag,
                     }],
                 )
-            except boto3_session.client.exceptions.ImageNotFoundException:
+            except client.exceptions.ImageNotFoundException:
                 logger.warning("Image not found: %s", str(image), exc_info=True)
                 continue
             if describe_images_resp['imageDetails'][0].get('imageScanStatus', {}).get('status', None) == "COMPLETE":
