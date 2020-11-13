@@ -29,3 +29,6 @@ deploy:
     tags: true
     distributions: sdist bdist_wheel
     repo: lyft/cartography
+  edge:
+    source: 'native/api/dpl'
+    branch: 'pip_fix_upgrade_deps'
