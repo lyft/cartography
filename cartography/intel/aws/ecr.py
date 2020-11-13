@@ -4,6 +4,8 @@ from typing import Dict
 from typing import Iterator
 from typing import List
 
+from botocore.exceptions import ClientError
+
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -79,6 +81,17 @@ def get_ecr_image_scan_findings(boto3_session, region, repository_name, reposito
             except client.exceptions.ImageNotFoundException:
                 logger.warning("Image not found: %s", str(image), exc_info=True)
                 continue
+            except ClientError as e:
+                if 'AccessDeniedException' in e.args[0]:
+                    logger.warning(
+                        "AccessDenied calling DescribeImages on repo = {}, image_tag = {}. Skipping.".format(
+                            repository_name,
+                            image_tag,
+                        )
+                    )
+                    continue
+                else:
+                    raise
             if describe_images_resp['imageDetails'][0].get('imageScanStatus', {}).get('status', None) == "COMPLETE":
                 image_vuln = {}
                 image_vuln['image_tag'] = image_tag
