@@ -25,7 +25,7 @@
 
 ## OktaOrganization
 
-Representation of a [Okta Organization](https://developer.okta.com/docs/concepts/okta-organizations/).
+Representation of an [Okta Organization](https://developer.okta.com/docs/concepts/okta-organizations/).
 
 
 | Field | Description |
@@ -66,7 +66,7 @@ Representation of a [Okta Organization](https://developer.okta.com/docs/concepts
 
 ## OktaUser
 
-Representation of a [Okta User](https://developer.okta.com/docs/reference/api/users/#user-object).
+Representation of an [Okta User](https://developer.okta.com/docs/reference/api/users/#user-object).
 
 | Field | Description |
 |-------|--------------|
@@ -103,7 +103,7 @@ Representation of a [Okta User](https://developer.okta.com/docs/reference/api/us
     ```
     (OktaUser)<-[IDENTITY_OKTA]-(Human)
     ```
- - An OktaUser can be a member of a OktaGroup
+ - An OktaUser can be a member of an OktaGroup
      ```
     (OktaUser)-[MEMBER_OF_OKTA_GROUP]->(OktaGroup)
     ```
@@ -118,7 +118,7 @@ Representation of a [Okta User](https://developer.okta.com/docs/reference/api/us
 
 ## OktaGroup
 
-Representation of a [Okta Group](https://developer.okta.com/docs/reference/api/groups/#group-object).
+Representation of an [Okta Group](https://developer.okta.com/docs/reference/api/groups/#group-object).
 
 | Field | Description |
 |-------|--------------|
@@ -154,7 +154,7 @@ Representation of a [Okta Group](https://developer.okta.com/docs/reference/api/g
 
 ## OktaApplication
 
-Representation of a [Okta Application](https://developer.okta.com/docs/reference/api/apps/#application-object).
+Representation of an [Okta Application](https://developer.okta.com/docs/reference/api/apps/#application-object).
 
 | Field | Description |
 |-------|--------------|
@@ -215,7 +215,7 @@ Representation of Okta User authentication [Factors](https://developer.okta.com/
 
 ## OktaTrustedOrigin
 
-Representation of a [Okta Trusted Origin](https://developer.okta.com/docs/reference/api/trusted-origins/#trusted-origin-object) for login/logout or recovery operations.
+Representation of an [Okta Trusted Origin](https://developer.okta.com/docs/reference/api/trusted-origins/#trusted-origin-object) for login/logout or recovery operations.
 
 | Field | Description |
 |-------|--------------|
@@ -240,7 +240,7 @@ Representation of a [Okta Trusted Origin](https://developer.okta.com/docs/refere
 
 ## OktaAdministrationRole
 
-Representation of a [Okta Administration Role](https://developer.okta.com/docs/reference/api/roles/#role-object).
+Representation of an [Okta Administration Role](https://developer.okta.com/docs/reference/api/roles/#role-object).
 
 | Field | Description |
 |-------|--------------|
