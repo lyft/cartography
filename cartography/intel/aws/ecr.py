@@ -87,7 +87,7 @@ def get_ecr_image_scan_findings(boto3_session, region, repository_name, reposito
                         "AccessDenied calling DescribeImages on repo = {}, image_tag = {}. Skipping.".format(
                             repository_name,
                             image_tag,
-                        )
+                        ),
                     )
                     continue
                 else:
