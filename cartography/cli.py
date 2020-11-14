@@ -241,11 +241,6 @@ class CLI:
             ),
         )
         parser.add_argument(
-            '--forever',
-            action='store_true',
-            help='If set, run the cartography sync forever (unless we have an unhandled exception).',
-        )
-        parser.add_argument(
             '--never-give-up',
             action='store_true',
             help='If set, do not crash cartography when we have an unhandled exception; keep going anyway.',
