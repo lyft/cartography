@@ -240,6 +240,16 @@ class CLI:
                 'The port of your statsd server. Only used if --statsd-enabled is on. Default = UDP 8125.'
             ),
         )
+        parser.add_argument(
+            '--forever',
+            action='store_true',
+            help='If set, run the cartography sync forever (unless we have an unhandled exception).',
+        )
+        parser.add_argument(
+            '--never-give-up',
+            action='store_true',
+            help='If set, do not crash cartography when we have an unhandled exception; keep going anyway.',
+        )
         return parser
 
     def main(self, argv):

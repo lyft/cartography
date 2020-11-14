@@ -45,6 +45,11 @@ class Config:
     :param statsd_host: If statsd_enabled is True, send metrics to this host. Optional.
     :type: statsd_port: int
     :param statsd_port: If statsd_enabled is True, send metrics to this port on statsd_host. Optional.
+    :type: forever: bool
+    :param forever: If True, runs cartography over and over again (unless we have an unhandled exception). Default =
+    False.
+    :type: never_give_up: bool
+    :param never_give_up: If True, continues execution even after unhandled exceptions. Default = False.
     """
 
     def __init__(
@@ -69,6 +74,8 @@ class Config:
         statsd_prefix=None,
         statsd_host=None,
         statsd_port=None,
+        forever=False,
+        never_give_up=False,
     ):
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user
@@ -90,3 +97,5 @@ class Config:
         self.statsd_prefix = statsd_prefix
         self.statsd_host = statsd_host
         self.statsd_port = statsd_port
+        self.forever = forever
+        self.never_give_up = never_give_up

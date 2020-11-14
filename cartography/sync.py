@@ -63,20 +63,28 @@ class Sync:
         :type config: cartography.config.Config
         :param config: Configuration for the sync run.
         """
-        logger.info("Starting sync with update tag '%d'", config.update_tag)
         with neo4j_driver.session() as neo4j_session:
-            for stage_name, stage_func in self._stages.items():
-                logger.info("Starting sync stage '%s'", stage_name)
-                try:
-                    stage_func(neo4j_session, config)
-                except (KeyboardInterrupt, SystemExit):
-                    logger.warning("Sync interrupted during stage '%s'.", stage_name)
-                    raise
-                except Exception:
-                    logger.exception("Unhandled exception during sync stage '%s'", stage_name)
-                    raise  # TODO this should be configurable
-                logger.info("Finishing sync stage '%s'", stage_name)
-        logger.info("Finishing sync with update tag '%d'", config.update_tag)
+            while True:
+                logger.info("Starting sync with update tag '%d'", config.update_tag)
+                for stage_name, stage_func in self._stages.items():
+                    logger.info("Starting sync stage '%s'", stage_name)
+                    try:
+                        stage_func(neo4j_session, config)
+                    except (KeyboardInterrupt, SystemExit):
+                        logger.warning("Sync interrupted during stage '%s'.", stage_name)
+                        raise
+                    except Exception:
+                        logger.exception("Unhandled exception during sync stage '%s'", stage_name)
+                        if config.never_give_up:
+                            logger.warning("Not giving up!")
+                            continue
+                        else:
+                            raise
+                    logger.info("Finishing sync stage '%s'", stage_name)
+                logger.info("Finishing sync with update tag '%d'", config.update_tag)
+                if not config.forever:
+                    return
+                config.update_tag = int(time.time())
 
 
 def run_with_config(sync, config):
