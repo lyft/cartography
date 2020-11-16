@@ -98,10 +98,11 @@ def sync_dynamodb_tables(
     cleanup_dynamodb_tables(neo4j_session, common_job_parameters)
 
 
-def sync(
-        neo4j_session, boto3_session, regions, current_aws_account_id, aws_update_tag,
-        common_job_parameters,
-):
+def sync(neo4j_session, common_job_parameters, aws_stage_config):
+    current_aws_account_id = aws_stage_config['account_id']
+    boto3_session = aws_stage_config['boto3_session']
+    regions = aws_stage_config['regions']
+    aws_update_tag = common_job_parameters['UPDATE_TAG']
     sync_dynamodb_tables(
         neo4j_session, boto3_session, regions, current_aws_account_id, aws_update_tag,
         common_job_parameters,

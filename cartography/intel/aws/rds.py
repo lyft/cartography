@@ -274,5 +274,10 @@ def sync_rds_instances(
     cleanup_rds_instances_and_db_subnet_groups(neo4j_session, common_job_parameters)
 
 
-def sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters):
-    sync_rds_instances(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
+def sync(neo4j_session, common_job_parameters, aws_stage_config):
+    account_id = common_job_parameters['AWS_ID']
+    boto3_session = aws_stage_config['boto3_session']
+    regions = aws_stage_config['regions']
+    aws_update_tag = common_job_parameters['UPDATE_TAG']
+
+    sync_rds_instances(neo4j_session, boto3_session, regions, account_id, aws_update_tag, common_job_parameters)

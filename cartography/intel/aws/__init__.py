@@ -24,10 +24,9 @@ from cartography.util import timeit
 logger = logging.getLogger(__name__)
 
 
-def _sync_one_account(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters):
-    iam.sync(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters)
-    s3.sync(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters)
-
+def _sync_one_account(neo4j_session, common_job_parameters, aws_stage_config):
+    boto3_session = aws_stage_config['boto3_session']
+    account_id = aws_stage_config['account_id']
     try:
         regions = ec2.get_ec2_regions(boto3_session)
     except botocore.exceptions.ClientError as e:
@@ -41,26 +40,29 @@ def _sync_one_account(neo4j_session, boto3_session, account_id, sync_tag, common
         )
         return
 
-    dynamodb.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-    ec2.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-    ecr.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-    eks.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-    lambda_function.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-    rds.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-    redshift.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
+    aws_stage_config['regions'] = regions
+    iam.sync(neo4j_session, common_job_parameters, aws_stage_config)
+    s3.sync(neo4j_session, common_job_parameters, aws_stage_config)
+    dynamodb.sync(neo4j_session, common_job_parameters, aws_stage_config)
+    ec2.sync(neo4j_session, common_job_parameters, aws_stage_config)
+    ecr.sync(neo4j_session, common_job_parameters, aws_stage_config)
+    eks.sync(neo4j_session, common_job_parameters, aws_stage_config)
+    lambda_function.sync(neo4j_session, common_job_parameters, aws_stage_config)
+    rds.sync(neo4j_session, common_job_parameters, aws_stage_config)
+    redshift.sync(neo4j_session, common_job_parameters, aws_stage_config)
 
     # NOTE each of the below will generate DNS records
-    route53.sync(neo4j_session, boto3_session, account_id, sync_tag)
-    elasticsearch.sync(neo4j_session, boto3_session, account_id, sync_tag)
+    route53.sync(neo4j_session, common_job_parameters, aws_stage_config)
+    elasticsearch.sync(neo4j_session, common_job_parameters, aws_stage_config)
 
     # NOTE clean up all DNS records, regardless of which job created them
     run_cleanup_job('aws_account_dns_cleanup.json', neo4j_session, common_job_parameters)
 
     # MAP IAM permissions
-    permission_relationships.sync(neo4j_session, account_id, sync_tag, common_job_parameters)
+    permission_relationships.sync(neo4j_session, common_job_parameters, aws_stage_config)
 
     # AWS Tags - Must always be last.
-    resourcegroupstaggingapi.sync(neo4j_session, boto3_session, regions, sync_tag, common_job_parameters)
+    resourcegroupstaggingapi.sync(neo4j_session, common_job_parameters, aws_stage_config)
 
 
 def _autodiscover_accounts(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters):
@@ -84,18 +86,20 @@ def _autodiscover_accounts(neo4j_session, boto3_session, account_id, sync_tag, c
         logger.debug(f"The current account ({account_id}) doesn't have enough permissions to perform autodiscovery.")
 
 
-def _sync_multiple_accounts(neo4j_session, accounts, sync_tag, common_job_parameters):
+def _sync_multiple_accounts(neo4j_session, common_job_parameters, aws_stage_config):
+    accounts = aws_stage_config['aws_accounts']
+    aws_update_tag = common_job_parameters['UPDATE_TAG']
+
     logger.debug("Syncing AWS accounts: %s", ', '.join(accounts.values()))
-    organizations.sync(neo4j_session, accounts, sync_tag, common_job_parameters)
+    organizations.sync(neo4j_session, accounts, aws_update_tag, common_job_parameters)
 
     for profile_name, account_id in accounts.items():
         logger.info("Syncing AWS account with ID '%s' using configured profile '%s'.", account_id, profile_name)
         common_job_parameters["AWS_ID"] = account_id
         boto3_session = boto3.Session(profile_name=profile_name)
+        _autodiscover_accounts(neo4j_session, boto3_session, account_id, aws_update_tag, common_job_parameters)
 
-        _autodiscover_accounts(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters)
-
-        _sync_one_account(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters)
+        _sync_one_account(neo4j_session, common_job_parameters, aws_stage_config)
 
     del common_job_parameters["AWS_ID"]
 
@@ -112,7 +116,6 @@ def _sync_multiple_accounts(neo4j_session, accounts, sync_tag, common_job_parame
 def start_aws_ingestion(neo4j_session, config):
     common_job_parameters = {
         "UPDATE_TAG": config.update_tag,
-        "permission_relationships_file": config.permission_relationships_file,
     }
     try:
         boto3_session = boto3.Session()
@@ -147,7 +150,15 @@ def start_aws_ingestion(neo4j_session, config):
             ),
         )
 
-    _sync_multiple_accounts(neo4j_session, aws_accounts, config.update_tag, common_job_parameters)
+    aws_stage_config = {
+        'boto3_session': boto3_session,
+        "permission_relationships_file": config.permission_relationships_file,
+        'aws_accounts': aws_accounts,
+        'regions': [],
+        'current_aws_account_id': None,
+    }
+
+    _sync_multiple_accounts(neo4j_session, common_job_parameters, aws_stage_config)
 
     run_analysis_job(
         'aws_ec2_asset_exposure.json',

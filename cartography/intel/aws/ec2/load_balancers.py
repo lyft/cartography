@@ -164,10 +164,12 @@ def cleanup_load_balancers(neo4j_session, common_job_parameters):
 
 
 @timeit
-def sync_load_balancers(
-    neo4j_session, boto3_session, regions, current_aws_account_id, aws_update_tag,
-    common_job_parameters,
-):
+def sync_load_balancers(neo4j_session, common_job_parameters, aws_stage_config):
+    current_aws_account_id = common_job_parameters['AWS_ID']
+    boto3_session = aws_stage_config['boto3_session']
+    regions = aws_stage_config['regions']
+    aws_update_tag = common_job_parameters['UPDATE_TAG']
+
     for region in regions:
         logger.info("Syncing EC2 load balancers for region '%s' in account '%s'.", region, current_aws_account_id)
         data = get_loadbalancer_data(boto3_session, region)

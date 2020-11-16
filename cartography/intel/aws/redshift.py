@@ -151,8 +151,13 @@ def sync_redshift_clusters(neo4j_session, boto3_session, region, current_aws_acc
 
 
 @timeit
-def sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters):
+def sync(neo4j_session, common_job_parameters, aws_stage_config):
+    account_id = common_job_parameters['AWS_ID']
+    boto3_session = aws_stage_config['boto3_session']
+    regions = aws_stage_config['regions']
+    aws_update_tag = common_job_parameters['UPDATE_TAG']
+
     for region in regions:
         logger.info("Syncing Redshift clusters for region '%s' in account '%s'.", region, account_id)
-        sync_redshift_clusters(neo4j_session, boto3_session, region, account_id, sync_tag)
+        sync_redshift_clusters(neo4j_session, boto3_session, region, account_id, aws_update_tag)
     cleanup(neo4j_session, common_job_parameters)

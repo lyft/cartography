@@ -253,7 +253,12 @@ def cleanup(neo4j_session, common_job_parameters):
 
 
 @timeit
-def sync(neo4j_session, boto3_session, regions, current_aws_account_id, aws_update_tag, common_job_parameters):
+def sync(neo4j_session, common_job_parameters, aws_stage_config):
+    current_aws_account_id = common_job_parameters['AWS_ID']
+    boto3_session = aws_stage_config['boto3_session']
+    regions = aws_stage_config['regions']
+    aws_update_tag = common_job_parameters['UPDATE_TAG']
+
     for region in regions:
         logger.info("Syncing ECR for region '%s' in account '%s'.", region, current_aws_account_id)
         image_data = {}
