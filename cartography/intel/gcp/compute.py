@@ -708,7 +708,6 @@ def _attach_fwd_rule_to_subnet(neo4j_session, fwd, gcp_update_tag):
     )
 
 
-
 @timeit
 def _attach_fwd_rule_to_vpc(neo4j_session, fwd, gcp_update_tag):
     query = """
