@@ -13,7 +13,7 @@ LIST_BUCKETS = {
         }, {
             'Name': 'bucket-3',
             'CreationDate': datetime.datetime(2019, 9, 17, 1, 16, 19),
-            'Region': None
+            'Region': None,
         },
     ],
     'Owner': {

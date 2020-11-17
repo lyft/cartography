@@ -18,17 +18,17 @@ def test_load_s3_buckets(neo4j_session, *args):
         (
             "bucket-1",
             "bucket-1",
-            "eu-west-1"
+            "eu-west-1",
         ),
         (
             "bucket-2",
             "bucket-2",
-            "me-south-1"
+            "me-south-1",
         ),
         (
             "bucket-3",
             "bucket-3",
-            None
+            None,
         ),
     }
 
@@ -41,7 +41,7 @@ def test_load_s3_buckets(neo4j_session, *args):
         (
             n['s.id'],
             n['s.name'],
-            n['s.region']
+            n['s.region'],
         )
         for n in nodes
     }
