@@ -16,7 +16,11 @@ logger = logging.getLogger(__name__)
 def get_s3_bucket_list(boto3_session):
     client = boto3_session.client('s3')
     # NOTE no paginator available for this operation
-    return client.list_buckets()
+
+    buckets = client.list_buckets()
+    for bucket in buckets['Buckets']:
+        bucket['Region'] = client.get_bucket_location(Bucket=bucket['Name'])['LocationConstraint']
+    return buckets
 
 
 @timeit
@@ -24,12 +28,15 @@ def get_s3_bucket_details(boto3_session, bucket_data):
     """
     Iterates over all S3 buckets. Yields bucket name (string) and pairs of S3 bucket policies (JSON) and ACLs (JSON)
     """
-    client = boto3_session.client('s3')
+    # client = boto3_session.client('s3')
     for bucket in bucket_data['Buckets']:
+        # Use us-east-1 region if no region was recognized for buckets
+        # It was found that client.get_bucket_location does not return a region for buckets
+        # in us-east-1 region
+        client = boto3_session.client('s3', bucket['Region'] or 'us-east-1')
         acl = get_acl(bucket, client)
         policy = get_policy(bucket, client)
         yield bucket['Name'], acl, policy
-
 
 @timeit
 def get_policy(bucket, client):
@@ -47,6 +54,10 @@ def get_policy(bucket, client):
             policy = None
         elif "NoSuchBucket" in e.args[0]:
             logger.warning("get_bucket_policy({}) threw NoSuchBucket exception, skipping".format(bucket['Name']))
+            policy = None
+        elif "AllAccessDisabled" in e.args[0]:
+            # Catches the following error : "An error occurred (AllAccessDisabled) when calling the GetBucketAcl operation: All access to this object has been disabled"
+            logger.warning("Failed to retrieve S3 bucket {} policies - Bucket is disabled".format(bucket['Name']))
             policy = None
         else:
             raise
@@ -66,6 +77,9 @@ def get_acl(bucket, client):
             return None
         elif "NoSuchBucket" in e.args[0]:
             logger.warning("Failed to retrieve S3 bucket {} ACL - No Such Bucket".format(bucket['Name']))
+            return None
+        elif "AllAccessDisabled" in e.args[0]:
+            logger.warning("Failed to retrieve S3 bucket {} ACL - Bucket is disabled".format(bucket['Name']))
             return None
         else:
             raise
