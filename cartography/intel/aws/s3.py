@@ -38,6 +38,7 @@ def get_s3_bucket_details(boto3_session, bucket_data):
         policy = get_policy(bucket, client)
         yield bucket['Name'], acl, policy
 
+
 @timeit
 def get_policy(bucket, client):
     """
@@ -56,7 +57,8 @@ def get_policy(bucket, client):
             logger.warning("get_bucket_policy({}) threw NoSuchBucket exception, skipping".format(bucket['Name']))
             policy = None
         elif "AllAccessDisabled" in e.args[0]:
-            # Catches the following error : "An error occurred (AllAccessDisabled) when calling the GetBucketAcl operation: All access to this object has been disabled"
+            # Catches the following error : "An error occurred (AllAccessDisabled) when calling the 
+            # GetBucketAcl operation: All access to this object has been disabled"
             logger.warning("Failed to retrieve S3 bucket {} policies - Bucket is disabled".format(bucket['Name']))
             policy = None
         else:
@@ -313,7 +315,7 @@ def load_s3_buckets(neo4j_session, data, current_aws_account_id, aws_update_tag)
     ingest_bucket = """
     MERGE (bucket:S3Bucket{id:{BucketName}})
     ON CREATE SET bucket.firstseen = timestamp(), bucket.creationdate = {CreationDate}
-    SET bucket.name = {BucketName}, bucket.arn = {Arn}, bucket.lastupdated = {aws_update_tag}
+    SET bucket.name = {BucketName}, bucket.region = {BucketRegion}, bucket.arn = {Arn}, bucket.lastupdated = {aws_update_tag}
     WITH bucket
     MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
     MERGE (owner)-[r:RESOURCE]->(bucket)
@@ -330,6 +332,7 @@ def load_s3_buckets(neo4j_session, data, current_aws_account_id, aws_update_tag)
         neo4j_session.run(
             ingest_bucket,
             BucketName=bucket["Name"],
+            BucketRegion=bucket["Name"] or 'us-east-1',
             Arn=arn,
             CreationDate=str(bucket["CreationDate"]),
             AWS_ACCOUNT_ID=current_aws_account_id,
