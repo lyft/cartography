@@ -33,7 +33,7 @@ def get_s3_bucket_details(boto3_session, bucket_data):
         # Use us-east-1 region if no region was recognized for buckets
         # It was found that client.get_bucket_location does not return a region for buckets
         # in us-east-1 region
-        client = boto3_session.client('s3', bucket['Region'] or 'us-east-1')
+        client = boto3_session.client('s3', bucket['Region'])
         acl = get_acl(bucket, client)
         policy = get_policy(bucket, client)
         yield bucket['Name'], acl, policy
@@ -333,7 +333,7 @@ def load_s3_buckets(neo4j_session, data, current_aws_account_id, aws_update_tag)
         neo4j_session.run(
             ingest_bucket,
             BucketName=bucket["Name"],
-            BucketRegion=bucket["Region"] or 'us-east-1',
+            BucketRegion=bucket["Region"],
             Arn=arn,
             CreationDate=str(bucket["CreationDate"]),
             AWS_ACCOUNT_ID=current_aws_account_id,
