@@ -99,6 +99,77 @@ def test_transform_and_load_subnets(neo4j_session):
     assert actual_nodes == expected_nodes
 
 
+def test_transform_and_load_gcp_forwarding_rules(neo4j_session):
+    """
+    Ensure that we can correctly transform and load GCP Forwarding Rules
+    """
+    fwd_res = tests.data.gcp.compute.LIST_FORWARDING_RULES_RESPONSE
+    fwd_list = cartography.intel.gcp.compute.transform_gcp_forwarding_rules(fwd_res)
+    cartography.intel.gcp.compute.load_gcp_forwarding_rules(neo4j_session, fwd_list, TEST_UPDATE_TAG)
+
+    fwd_query = """
+    MATCH(f:GCPForwardingRule)
+    RETURN f.id, f.partial_uri, f.ip_address, f.ip_protocol, f.load_balancing_scheme, f.name, f.network, f.port_range,
+    f.ports, f.project_id, f.region, f.self_link, f.subnetwork, f.target
+    """
+    objects = neo4j_session.run(fwd_query)
+    actual_nodes = {
+        (
+            o['f.id'],
+            o['f.ip_address'],
+            o['f.ip_protocol'],
+            o['f.load_balancing_scheme'],
+            o['f.name'],
+            o.get('f.port_range', None),
+            ','.join(o.get('f.ports', None)) if o.get('f.ports', None) else None,
+            o['f.project_id'],
+            o['f.region'],
+            o['f.target'],
+        ) for o in objects
+    }
+
+    expected_nodes = {
+        (
+            'projects/project-abc/regions/europe-west2/forwardingRules/internal-service-1111',
+            '10.0.0.10',
+            'TCP',
+            'INTERNAL',
+            'internal-service-1111',
+            None,
+            '80',
+            'project-abc',
+            'europe-west2',
+            'projects/project-abc/regions/europe-west2/targetPools/node-pool-12345',
+        ),
+        (
+            'projects/project-abc/regions/europe-west2/forwardingRules/public-ingress-controller-1234567',
+            '1.2.3.11',
+            'TCP',
+            'EXTERNAL',
+            'public-ingress-controller-1234567',
+            '80-443',
+            None,
+            'project-abc',
+            'europe-west2',
+            'projects/project-abc/regions/europe-west2/targetVpnGateways/vpn-12345',
+        ),
+        (
+            'projects/project-abc/regions/europe-west2/forwardingRules/shard-server-22222',
+            '10.0.0.20',
+            'TCP',
+            'INTERNAL',
+            'shard-server-22222',
+            None,
+            '10203',
+            'project-abc',
+            'europe-west2',
+            'projects/project-abc/regions/europe-west2/targetPools/node-pool-234567',
+        ),
+    }
+
+    assert actual_nodes == expected_nodes
+
+
 def test_transform_and_load_gcp_instances_and_nics(neo4j_session):
     """
     Ensure that we can correctly transform and load GCP instances.

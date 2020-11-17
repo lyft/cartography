@@ -136,6 +136,31 @@ def get_gcp_vpcs(projectid, compute):
 
 
 @timeit
+def get_gcp_regional_forwarding_rules(project_id, region, compute):
+    """
+    Return list of all regional forwarding rules in the given project_id and region
+    :param project_id: The project ID
+    :param region: The region to pull forwarding rules from
+    :param compute: The compute resource object created by googleapiclient.discovery.build()
+    :return: Response object containing data on all GCP forwarding rules for a given project
+    """
+    req = compute.forwardingRules().list(project=project_id, region=region)
+    return req.execute()
+
+
+@timeit
+def get_gcp_global_forwarding_rules(project_id, compute):
+    """
+    Return list of all global forwarding rules in the given project_id and region
+    :param project_id: The project ID
+    :param compute: The compute resource object created by googleapiclient.discovery.build()
+    :return: Response object containing data on all GCP forwarding rules for a given project
+    """
+    req = compute.globalForwardingRules().list(project=project_id)
+    return req.execute()
+
+
+@timeit
 def get_gcp_firewall_ingress_rules(project_id, compute):
     """
     Get ingress Firewall data for a given project
@@ -272,6 +297,53 @@ def transform_gcp_subnets(subnet_res):
 
         subnet_list.append(subnet)
     return subnet_list
+
+
+@timeit
+def transform_gcp_forwarding_rules(fwd_response):
+    """
+    Add additional fields to the forwarding rule object to make it easier to process in `load_gcp_forwarding_rules()`.
+    :param fwd_response: The response object returned from compute.forwardRules.list()
+    :return: A transformed fwd_response
+    """
+    fwd_list = []
+    prefix = fwd_response['id']
+    project_id = prefix.split('/')[1]
+    for fwd in fwd_response.get('items', []):
+        forwarding_rule = {}
+
+        fwd_partial_uri = f"{prefix}/{fwd['name']}"
+        forwarding_rule['id'] = fwd_partial_uri
+        forwarding_rule['partial_uri'] = fwd_partial_uri
+
+        forwarding_rule['project_id'] = project_id
+        # Region looks like "https://www.googleapis.com/compute/v1/projects/{project}/regions/{region name}"
+        region = fwd.get('region', None)
+        forwarding_rule['region'] = region.split('/')[-1] if region else None
+        forwarding_rule['ip_address'] = fwd['IPAddress']
+        forwarding_rule['ip_protocol'] = fwd['IPProtocol']
+        forwarding_rule['allow_global_access'] = fwd.get('allowGlobalAccess', None)
+
+        forwarding_rule['load_balancing_scheme'] = fwd['loadBalancingScheme']
+        forwarding_rule['name'] = fwd['name']
+        forwarding_rule['port_range'] = fwd.get('portRange', None)
+        forwarding_rule['ports'] = fwd.get('ports', None)
+        forwarding_rule['self_link'] = fwd['selfLink']
+        target = fwd.get('target', None)
+        forwarding_rule['target'] = _parse_compute_full_uri_to_partial_uri(target) if target else None
+
+        network = fwd.get('network', None)
+        if network:
+            forwarding_rule['network'] = network
+            forwarding_rule['network_partial_uri'] = _parse_compute_full_uri_to_partial_uri(network)
+
+        subnetwork = fwd.get('subnetwork', None)
+        if subnetwork:
+            forwarding_rule['subnetwork'] = subnetwork
+            forwarding_rule['subnetwork_partial_uri'] = _parse_compute_full_uri_to_partial_uri(subnetwork)
+
+        fwd_list.append(forwarding_rule)
+    return fwd_list
 
 
 @timeit
@@ -551,6 +623,112 @@ def load_gcp_subnets(neo4j_session, subnets, gcp_update_tag):
             PrivateIpGoogleAccess=s['private_ip_google_access'],
             gcp_update_tag=gcp_update_tag,
         )
+
+
+@timeit
+def load_gcp_forwarding_rules(neo4j_session, fwd_rules, gcp_update_tag):
+    """
+    Ingest GCP forwarding rules data to Neo4j
+    :param neo4j_session: The Neo4j session
+    :param fwd_rules: List of forwarding rules
+    :param gcp_update_tag: The timestamp to set these Neo4j nodes with
+    :return: Nothing
+    """
+
+    query = """
+        MERGE(fwd:GCPForwardingRule{id:{PartialUri}})
+        ON CREATE SET fwd.firstseen = timestamp(),
+        fwd.partial_uri = {PartialUri}
+        SET fwd.ip_address = {IPAddress},
+        fwd.ip_protocol = {IPProtocol},
+        fwd.load_balancing_scheme = {LoadBalancingScheme},
+        fwd.name = {Name},
+        fwd.network = {NetworkPartialUri},
+        fwd.port_range = {PortRange},
+        fwd.ports = {Ports},
+        fwd.project_id = {ProjectId},
+        fwd.region = {Region},
+        fwd.self_link = {SelfLink},
+        fwd.subnetwork = {SubNetworkPartialUri},
+        fwd.target = {TargetPartialUri},
+        fwd.lastupdated = {gcp_update_tag}
+    """
+
+    for fwd in fwd_rules:
+        network = fwd.get('network', None)
+        subnetwork = fwd.get('subnetwork', None)
+
+        neo4j_session.run(
+            query,
+            PartialUri=fwd['partial_uri'],
+            IPAddress=fwd['ip_address'],
+            IPProtocol=fwd['ip_protocol'],
+            LoadBalancingScheme=fwd['load_balancing_scheme'],
+            Name=fwd['name'],
+            Network=network,
+            NetworkPartialUri=fwd.get('network_partial_uri', None),
+            PortRange=fwd.get('port_range', None),
+            Ports=fwd.get('ports', None),
+            ProjectId=fwd['project_id'],
+            Region=fwd.get('region', None),
+            SelfLink=fwd['self_link'],
+            SubNetwork=subnetwork,
+            SubNetworkPartialUri=fwd.get('subnetwork_partial_uri', None),
+            TargetPartialUri=fwd['target'],
+            gcp_update_tag=gcp_update_tag,
+        )
+
+        if subnetwork:
+            _attach_fwd_rule_to_subnet(neo4j_session, fwd, gcp_update_tag)
+        elif network:
+            _attach_fwd_rule_to_vpc(neo4j_session, fwd, gcp_update_tag)
+
+
+@timeit
+def _attach_fwd_rule_to_subnet(neo4j_session, fwd, gcp_update_tag):
+    query = """
+        MERGE(subnet:GCPSubnet{id:{SubNetworkPartialUri}})
+        ON CREATE SET subnet.firstseen = timestamp(),
+        subnet.partial_uri = {SubNetworkPartialUri}
+        SET subnet.lastupdated = {gcp_update_tag}
+
+        WITH subnet
+        MATCH(fwd:GCPForwardingRule{id:{PartialUri}})
+
+        MERGE(subnet)-[p:RESOURCE]->(fwd)
+        ON CREATE SET p.firstseen = timestamp()
+        SET p.lastupdated = {gcp_update_tag}
+    """
+
+    neo4j_session.run(
+        query,
+        PartialUri=fwd['partial_uri'],
+        SubNetworkPartialUri=fwd.get('subnetwork_partial_uri', None),
+        gcp_update_tag=gcp_update_tag,
+    )
+
+
+@timeit
+def _attach_fwd_rule_to_vpc(neo4j_session, fwd, gcp_update_tag):
+    query = """
+        MERGE (vpc:GCPVpc{id:{NetworkPartialUri}})
+        ON CREATE SET vpc.firstseen = timestamp(),
+        vpc.partial_uri = {NetworkPartialUri}
+
+        WITH vpc
+        MATCH (fwd:GCPForwardingRule{id:{PartialUri}})
+
+        MERGE (vpc)-[r:RESOURCE]->(fwd)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {gcp_update_tag}
+    """
+
+    neo4j_session.run(
+        query,
+        PartialUri=fwd['partial_uri'],
+        NetworkPartialUri=fwd.get('network_partial_uri', None),
+        gcp_update_tag=gcp_update_tag,
+    )
 
 
 @timeit
@@ -875,6 +1053,17 @@ def cleanup_gcp_subnets(neo4j_session, common_job_parameters):
 
 
 @timeit
+def cleanup_gcp_forwarding_rules(neo4j_session, common_job_parameters):
+    """
+    Delete out-of-date GCP forwarding rules and relationships
+    :param neo4j_session: The Neo4j session
+    :param common_job_parameters: dict of other job parameters to pass to Neo4j
+    :return: Nothing
+    """
+    run_cleanup_job('gcp_compute_forwarding_rules_cleanup.json', neo4j_session, common_job_parameters)
+
+
+@timeit
 def cleanup_gcp_firewall_rules(neo4j_session, common_job_parameters):
     """
     Delete out of date GCP firewalls and their relationships
@@ -935,6 +1124,32 @@ def sync_gcp_subnets(neo4j_session, compute, project_id, regions, gcp_update_tag
 
 
 @timeit
+def sync_gcp_forwarding_rules(neo4j_session, compute, project_id, regions, gcp_update_tag, common_job_parameters):
+    """
+    Sync GCP Both Global and Regional Forwarding Rules, ingest to Neo4j, and clean up old data.
+    :param neo4j_session: The Neo4j session
+    :param compute: The GCP Compute resource object
+    :param project_id: The project ID to sync
+    :param regions: List of regions.
+    :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
+    :param common_job_parameters: dict of other job parameters to pass to Neo4j
+    :return: Nothing
+    """
+    global_fwd_response = get_gcp_global_forwarding_rules(project_id, compute)
+    forwarding_rules = transform_gcp_forwarding_rules(global_fwd_response)
+    load_gcp_forwarding_rules(neo4j_session, forwarding_rules, gcp_update_tag)
+    # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
+    cleanup_gcp_forwarding_rules(neo4j_session, common_job_parameters)
+
+    for r in regions:
+        fwd_response = get_gcp_regional_forwarding_rules(project_id, r, compute)
+        forwarding_rules = transform_gcp_forwarding_rules(fwd_response)
+        load_gcp_forwarding_rules(neo4j_session, forwarding_rules, gcp_update_tag)
+        # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
+        cleanup_gcp_forwarding_rules(neo4j_session, common_job_parameters)
+
+
+@timeit
 def sync_gcp_firewall_rules(neo4j_session, compute, project_id, gcp_update_tag, common_job_parameters):
     """
     Sync GCP firewalls
@@ -988,3 +1203,4 @@ def sync(neo4j_session, compute, project_id, gcp_update_tag, common_job_paramete
         sync_gcp_firewall_rules(neo4j_session, compute, project_id, gcp_update_tag, common_job_parameters)
         sync_gcp_subnets(neo4j_session, compute, project_id, regions, gcp_update_tag, common_job_parameters)
         sync_gcp_instances(neo4j_session, compute, project_id, zones, gcp_update_tag, common_job_parameters)
+        sync_gcp_forwarding_rules(neo4j_session, compute, project_id, regions, gcp_update_tag, common_job_parameters)
