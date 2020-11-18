@@ -1,26 +1,6 @@
 {
   "statements": [
   {
-    "query": "MATCH (n:Risk)-[:AFFECTS]->(:Package)-[:DEPLOYED]->(:ECRImage)<-[:IMAGE]-(:ECRRepositoryImage)<-[:REPO_IMAGE]-(:ECRRepository)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
-    "iterative": true,
-    "iterationsize": 100
-  },
-  {
-    "query": "MATCH (:Risk)-[r:AFFECTS]->(:Package)-[:DEPLOYED]->(:ECRImage)<-[:IMAGE]-(:ECRRepositoryImage)<-[:REPO_IMAGE]-(:ECRRepository)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
-    "iterative": true,
-    "iterationsize": 100
-  },
-  {
-    "query": "MATCH (:Risk)-[:AFFECTS]->(n:Package)-[:DEPLOYED]->(:ECRImage)<-[:IMAGE]-(:ECRRepositoryImage)<-[:REPO_IMAGE]-(:ECRRepository)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
-    "iterative": true,
-    "iterationsize": 100
-  },
-  {
-    "query": "MATCH (:Risk)-[:AFFECTS]->(:Package)-[r:DEPLOYED]->(img:ECRImage)<-[:IMAGE]-(:ECRRepositoryImage)<-[:REPO_IMAGE]-(:ECRRepository)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
-    "iterative": true,
-    "iterationsize": 100
-  },
-  {
     "query": "MATCH (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(:ECRRepository)-[:REPO_IMAGE]->(:ECRRepositoryImage)-[:IMAGE]->(n:ECRImage) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
     "iterative": true,
     "iterationsize": 100

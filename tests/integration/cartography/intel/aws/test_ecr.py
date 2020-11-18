@@ -78,7 +78,7 @@ def test_load_ecr_repository_images(neo4j_session):
         MATCH (repo:ECRRepository{id:"arn:aws:ecr:us-east-1:000000000000:repository/example-repository"})
         -[:REPO_IMAGE]->(image:ECRRepositoryImage)
         RETURN repo.arn, image.tag;
-        """
+        """,
     )
     actual_nodes = {(n['repo.arn'], n['image.tag']) for n in nodes}
     assert actual_nodes == expected_nodes
@@ -120,42 +120,7 @@ def test_load_ecr_images(neo4j_session):
         MATCH (repo_image:ECRRepositoryImage)-[:IMAGE]->
         (image:ECRImage{digest:"sha256:0000000000000000000000000000000000000000000000000000000000000000"})
         RETURN repo_image.id, image.digest;
-        """
+        """,
     )
     actual_nodes = {(n['repo_image.id'], n['image.digest']) for n in nodes}
-    assert actual_nodes == expected_nodes
-
-
-def test_load_ecr_image_vulns(neo4j_session):
-    """
-    Ensure the connection (:Risk)-[:AFFECTS]->(pkg:Package)-[:DEPLOYED]->(:ECRImage) exists.
-    """
-    _ensure_local_neo4j_has_test_repo_and_image_data(neo4j_session)
-
-    image_vuln_data = tests.data.aws.ecr.GET_ECR_REPOSITORY_IMAGE_VULNS
-    transformed_data = cartography.intel.aws.ecr.transform_ecr_scan_finding_attributes(image_vuln_data)
-    cartography.intel.aws.ecr.load_ecr_image_scan_findings(neo4j_session, transformed_data, TEST_UPDATE_TAG)
-
-    expected_nodes = {
-        (
-            "CVE-1234-12345",
-            None,
-            "some_name",
-            "sha256:0000000000000000000000000000000000000000000000000000000000000000",
-        ),
-        (
-            "CVE-9876-1212",
-            '2',
-            "my_software",
-            "sha256:0000000000000000000000000000000000000000000000000000000000000000",
-        ),
-    }
-    nodes = neo4j_session.run(
-        """
-        MATCH (risk:Risk)-[:AFFECTS]->(pkg:Package)-[:DEPLOYED]->(img:ECRImage)
-        RETURN risk.id, risk.cvss2_score, pkg.name, img.digest
-        """
-    )
-    actual_nodes = {(n['risk.id'], n['risk.cvss2_score'], n['pkg.name'], n['img.digest']) for n in nodes}
-
     assert actual_nodes == expected_nodes
