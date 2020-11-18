@@ -56,7 +56,7 @@ def sync_ec2_key_pairs(
     common_job_parameters,
 ):
     for region in regions:
-        logger.debug("Syncing EC2 key pairs for region '%s' in account '%s'.", region, current_aws_account_id)
+        logger.info("Syncing EC2 key pairs for region '%s' in account '%s'.", region, current_aws_account_id)
         data = get_ec2_key_pairs(boto3_session, region)
         load_ec2_key_pairs(neo4j_session, data, region, current_aws_account_id, aws_update_tag)
     cleanup_ec2_key_pairs(neo4j_session, common_job_parameters)
