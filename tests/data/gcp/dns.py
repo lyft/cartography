@@ -9,16 +9,16 @@ DNS_ZONES = [
             'ns-cloud-e1.googledomains.com.',
             'ns-cloud-e2.googledomains.com.',
             'ns-cloud-e3.googledomains.com.',
-            'ns-cloud-e4.googledomains.com.'
+            'ns-cloud-e4.googledomains.com.',
         ],
         'creationTime': '2020-04-02T14:00:00.0000Z',
         'dnssecConfig': {
             'state': 'on',
             'nonExistence': 'test',
-            'kind': 'dns#managedZoneDnsSecConfig'
+            'kind': 'dns#managedZoneDnsSecConfig',
         },
         'visibility': 'public',
-        'kind': 'dns#managedZone'
+        'kind': 'dns#managedZone',
     },
     {
         'name': 'test-zone-2',
@@ -29,17 +29,17 @@ DNS_ZONES = [
             'ns-cloud-e1.googledomains.com.',
             'ns-cloud-e2.googledomains.com.',
             'ns-cloud-e3.googledomains.com.',
-            'ns-cloud-e4.googledomains.com.'
+            'ns-cloud-e4.googledomains.com.',
         ],
         'creationTime': '2020-04-02T14:00:00.0000Z',
         'dnssecConfig': {
             'state': 'on',
             'nonExistence': 'test',
-            'kind': 'dns#managedZoneDnsSecConfig'
+            'kind': 'dns#managedZoneDnsSecConfig',
         },
         'visibility': 'public',
-        'kind': 'dns#managedZone'
-    }
+        'kind': 'dns#managedZone',
+    },
 ]
 
 DNS_RRS = [
@@ -51,7 +51,7 @@ DNS_RRS = [
             ['"test=test"'],
         'signatureRrdatas': [],
         'kind': 'dns#resourceRecordSet',
-        'zone': '111111111111111111111'
+        'zone': '111111111111111111111',
     },
     {
         'name': 'b.zone-1.example.com.',
@@ -61,7 +61,7 @@ DNS_RRS = [
             ['"test=test"'],
         'signatureRrdatas': [],
         'kind': 'dns#resourceRecordSet',
-        'zone': '111111111111111111111'
+        'zone': '111111111111111111111',
     },
     {
         'name': 'a.zone-2.example.com.',
@@ -71,6 +71,6 @@ DNS_RRS = [
             ['"test=test"'],
         'signatureRrdatas': [],
         'kind': 'dns#resourceRecordSet',
-        'zone': '2222222222222222222'
-    }
+        'zone': '2222222222222222222',
+    },
 ]
