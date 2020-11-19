@@ -6,10 +6,10 @@ DNS_ZONES = [
         'description': 'A test zone',
         'id': '111111111111111111111',
         'nameServers': [
-                'ns-cloud-e1.googledomains.com.',
-                'ns-cloud-e2.googledomains.com.',
-                'ns-cloud-e3.googledomains.com.',
-                'ns-cloud-e4.googledomains.com.'
+            'ns-cloud-e1.googledomains.com.',
+            'ns-cloud-e2.googledomains.com.',
+            'ns-cloud-e3.googledomains.com.',
+            'ns-cloud-e4.googledomains.com.'
         ],
         'creationTime': '2020-04-02T14:00:00.0000Z',
         'dnssecConfig': {
@@ -26,10 +26,10 @@ DNS_ZONES = [
         'description': 'A test zone',
         'id': '2222222222222222222',
         'nameServers': [
-                'ns-cloud-e1.googledomains.com.',
-                'ns-cloud-e2.googledomains.com.',
-                'ns-cloud-e3.googledomains.com.',
-                'ns-cloud-e4.googledomains.com.'
+            'ns-cloud-e1.googledomains.com.',
+            'ns-cloud-e2.googledomains.com.',
+            'ns-cloud-e3.googledomains.com.',
+            'ns-cloud-e4.googledomains.com.'
         ],
         'creationTime': '2020-04-02T14:00:00.0000Z',
         'dnssecConfig': {
@@ -50,7 +50,7 @@ DNS_RRS = [
         'rrdatas':
             ['"test=test"'],
         'signatureRrdatas': [],
-        'kind': 'dns#resourceRecordSet'
+        'kind': 'dns#resourceRecordSet',
         'zone': '111111111111111111111'
     },
     {
@@ -60,7 +60,7 @@ DNS_RRS = [
         'rrdatas':
             ['"test=test"'],
         'signatureRrdatas': [],
-        'kind': 'dns#resourceRecordSet'
+        'kind': 'dns#resourceRecordSet',
         'zone': '111111111111111111111'
     },
     {
@@ -70,7 +70,7 @@ DNS_RRS = [
         'rrdatas':
             ['"test=test"'],
         'signatureRrdatas': [],
-        'kind': 'dns#resourceRecordSet'
+        'kind': 'dns#resourceRecordSet',
         'zone': '2222222222222222222'
     }
 ]
