@@ -17,7 +17,7 @@ def test_load_dns_zones(neo4j_session):
     expected_nodes = {
         # flake8: noqa
         "111111111111111111111",
-        "2222222222222222222"
+        "2222222222222222222",
     }
 
     nodes = neo4j_session.run(
@@ -44,7 +44,7 @@ def test_load_rrs(neo4j_session):
         # flake8: noqa
         "a.zone-1.example.com.",
         "b.zone-1.example.com.",
-        "a.zone-2.example.com."
+        "a.zone-2.example.com.",
     }
 
     nodes = neo4j_session.run(
@@ -56,8 +56,6 @@ def test_load_rrs(neo4j_session):
     actual_nodes = {n['r.id'] for n in nodes}
 
     assert actual_nodes == expected_nodes
-
-
 
 
 def test_zones_relationships(neo4j_session):
@@ -83,7 +81,7 @@ def test_zones_relationships(neo4j_session):
 
     expected = {
         (TEST_PROJECT_NUMBER, "111111111111111111111"),
-        (TEST_PROJECT_NUMBER, "2222222222222222222")
+        (TEST_PROJECT_NUMBER, "2222222222222222222"),
     }
 
     # Fetch relationships
@@ -98,8 +96,6 @@ def test_zones_relationships(neo4j_session):
     }
 
     assert actual == expected
-
-
 
 
 def test_rrs_relationships(neo4j_session):
@@ -121,11 +117,10 @@ def test_rrs_relationships(neo4j_session):
         TEST_UPDATE_TAG,
     )
 
-
     expected = {
         ("111111111111111111111", "a.zone-1.example.com."),
         ("111111111111111111111", "b.zone-1.example.com."),
-        ("2222222222222222222", "a.zone-2.example.com.")
+        ("2222222222222222222", "a.zone-2.example.com."),
     }
 
     # Fetch relationships
