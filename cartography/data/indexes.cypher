@@ -51,6 +51,8 @@ CREATE INDEX ON :Endpoint(id);
 CREATE INDEX ON :ESDomain(arn);
 CREATE INDEX ON :ESDomain(id);
 CREATE INDEX ON :ESDomain(name);
+CREATE INDEX ON :GCPDNSZone(id);
+CREATE INDEX ON :GCPRecordSet(id);
 CREATE INDEX ON :GCPFolder(id);
 CREATE INDEX ON :GCPForwardingRule(id);
 CREATE INDEX ON :GCPInstance(id);
