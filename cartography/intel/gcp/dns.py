@@ -46,62 +46,6 @@ def get_dns_zones(dns, project_id):
 
 
 @timeit
-def load_dns_zones(neo4j_session, dns_zones, project_id, gcp_update_tag):
-    """
-    Ingest GCP DNS Zones into Neo4j
-
-    :type neo4j_session: Neo4j session object
-    :param neo4j session: The Neo4j session object
-
-    :type dns_resp: Dict
-    :param dns_resp: A DNS response object from the GKE API
-
-    :type project_id: str
-    :param project_id: Current Google Project Id
-
-    :type gcp_update_tag: timestamp
-    :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
-
-    :rtype: NoneType
-    :return: Nothing
-    """
-
-    query = """
-    MERGE(zone:GCPDNSZone{id:{ZoneId}})
-    ON CREATE SET
-        zone.firstseen = timestamp(),
-        zone.created_at = {ZoneCreateTime}
-    SET
-        zone.name = {ZoneName},
-        zone.dns_name = {ZoneDNSName},
-        zone.description = {ZoneDescription},
-        zone.visibility = {ZoneVisibility},
-        zone.kind = {ZoneKind},
-        zone.nameservers = {ZoneNameServer}
-    WITH zone
-    MATCH (owner:GCPProject{id:{ProjectId}})
-    MERGE (owner)-[r:RESOURCE]->(zone)
-    ON CREATE SET
-        r.firstseen = timestamp(),
-        r.lastupdated = {gcp_update_tag}
-    """
-    for zone in dns_zones:
-        neo4j_session.run(
-            query,
-            ProjectId=project_id,
-            ZoneId=zone['id'],
-            ZoneCreateTime=zone['creationTime'],
-            ZoneName=zone['name'],
-            ZoneDNSName=zone['dnsName'],
-            ZoneDescription=zone.get('description'),
-            ZoneVisibility=zone.get('visibility'),
-            ZoneKind=zone.get('kind'),
-            ZoneNameServer=zone.get('nameServers'),
-            gcp_update_tag=gcp_update_tag,
-        )
-
-
-@timeit
 def get_dns_rrs(dns, dns_zones, project_id):
     """
     Returns a list of DNS Resource Record Sets within the given project.
@@ -144,6 +88,55 @@ def get_dns_rrs(dns, dns_zones, project_id):
 
 
 @timeit
+def load_dns_zones(neo4j_session, dns_zones, project_id, gcp_update_tag):
+    """
+    Ingest GCP DNS Zones into Neo4j
+
+    :type neo4j_session: Neo4j session object
+    :param neo4j session: The Neo4j session object
+
+    :type dns_resp: Dict
+    :param dns_resp: A DNS response object from the GKE API
+
+    :type project_id: str
+    :param project_id: Current Google Project Id
+
+    :type gcp_update_tag: timestamp
+    :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
+
+    :rtype: NoneType
+    :return: Nothing
+    """
+
+    ingest_records = """
+    UNWIND {records} as record
+    MERGE(zone:GCPDNSZone{id:record.id})
+    ON CREATE SET
+        zone.firstseen = timestamp(),
+        zone.created_at = record.creationTime
+    SET
+        zone.name = record.name,
+        zone.dns_name = record.dnsName,
+        zone.description = record.description,
+        zone.visibility = record.visibility,
+        zone.kind = record.kind,
+        zone.nameservers = record.nameServers
+    WITH zone
+    MATCH (owner:GCPProject{id:{ProjectId}})
+    MERGE (owner)-[r:RESOURCE]->(zone)
+    ON CREATE SET
+        r.firstseen = timestamp(),
+        r.lastupdated = {gcp_update_tag}
+    """
+    neo4j_session.run(
+        ingest_records,
+        records=dns_zones,
+        ProjectId=project_id,
+        gcp_update_tag=gcp_update_tag,
+    )
+
+
+@timeit
 def load_rrs(neo4j_session, dns_rrs, project_id, gcp_update_tag):
     """
     Ingest GCP RRS into Neo4j
@@ -164,33 +157,28 @@ def load_rrs(neo4j_session, dns_rrs, project_id, gcp_update_tag):
     :return: Nothing
     """
 
-    query = """
-    MERGE(rrs:GCPRecordSet{id:{RRSName}})
+    ingest_records = """
+    UNWIND {records} as record
+    MERGE(rrs:GCPRecordSet{id:record.name})
     ON CREATE SET
         rrs.firstseen = timestamp()
     SET
-        rrs.name = {RRSName},
-        rrs.type = {RRSType},
-        rrs.ttl = {RRSTTL},
-        rrs.data = {RRSData}
-    WITH rrs
-    MATCH (zone:GCPDNSZone{id:{ZoneId}})
+        rrs.name = record.name,
+        rrs.type = record.type,
+        rrs.ttl = record.ttl,
+        rrs.data = record.rrdatas
+    WITH rrs, record
+    MATCH (zone:GCPDNSZone{id:record.zone})
     MERGE (zone)-[r:HAS_RECORD]->(rrs)
     ON CREATE SET
         r.firstseen = timestamp(),
         r.lastupdated = {gcp_update_tag}
     """
-    for rrs in dns_rrs:
-        neo4j_session.run(
-            query,
-            ProjectId=project_id,
-            RRSName=rrs['name'],
-            RRSType=rrs['type'],
-            RRSTTL=rrs['ttl'],
-            RRSData=rrs['rrdatas'],
-            ZoneId=rrs['zone'],
-            gcp_update_tag=gcp_update_tag,
-        )
+    neo4j_session.run(
+        ingest_records,
+        records=dns_rrs,
+        gcp_update_tag=gcp_update_tag,
+    )
 
 
 @timeit
