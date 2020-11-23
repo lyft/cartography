@@ -72,7 +72,11 @@ def transform_ecr_repository_images(repo_data):
             if 'imageDigest' in img and img['imageDigest']:
                 filtered_imgs.append(img)
             else:
-                logger.warning("Repo %s has an image that has no imageDigest; skipping.", repo_uri)
+                logger.warning(
+                    "Repo %s has an image that has no imageDigest. Its tag is %s. Continuing on.",
+                    repo_uri,
+                    img.get('imageTag'),
+                )
 
         repo_images_list.append({
             'repo_uri': repo_uri,
