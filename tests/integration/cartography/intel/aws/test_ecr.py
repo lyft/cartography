@@ -17,18 +17,6 @@ def _ensure_local_neo4j_has_test_ecr_repo_data(neo4j_session):
     )
 
 
-def _ensure_local_neo4j_has_test_repo_and_image_data(neo4j_session):
-    _ensure_local_neo4j_has_test_ecr_repo_data(neo4j_session)
-
-    data = tests.data.aws.ecr.LIST_REPOSITORY_IMAGES
-    cartography.intel.aws.ecr.load_ecr_repository_images(
-        neo4j_session,
-        data,
-        TEST_REGION,
-        TEST_UPDATE_TAG,
-    )
-
-
 def test_load_ecr_repositories(neo4j_session):
     _ensure_local_neo4j_has_test_ecr_repo_data(neo4j_session)
 
@@ -54,9 +42,10 @@ def test_load_ecr_repository_images(neo4j_session):
     _ensure_local_neo4j_has_test_ecr_repo_data(neo4j_session)
 
     data = tests.data.aws.ecr.LIST_REPOSITORY_IMAGES
+    repo_images_list = cartography.intel.aws.ecr.transform_ecr_repository_images(data)
     cartography.intel.aws.ecr.load_ecr_repository_images(
         neo4j_session,
-        data,
+        repo_images_list,
         TEST_REGION,
         TEST_UPDATE_TAG,
     )
@@ -92,9 +81,10 @@ def test_load_ecr_images(neo4j_session):
     _ensure_local_neo4j_has_test_ecr_repo_data(neo4j_session)
 
     data = tests.data.aws.ecr.LIST_REPOSITORY_IMAGES
+    repo_images_list = cartography.intel.aws.ecr.transform_ecr_repository_images(data)
     cartography.intel.aws.ecr.load_ecr_repository_images(
         neo4j_session,
-        data,
+        repo_images_list,
         TEST_REGION,
         TEST_UPDATE_TAG,
     )
