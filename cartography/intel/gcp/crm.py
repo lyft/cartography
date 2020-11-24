@@ -58,7 +58,7 @@ def get_gcp_projects(crm_v1):
     """
     try:
         projects = []
-        req = crm_v1.projects().list()
+        req = crm_v1.projects().list(filter="lifecycleState:ACTIVE")
         while req is not None:
             res = req.execute()
             page = res.get('projects', [])
