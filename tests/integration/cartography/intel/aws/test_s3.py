@@ -45,5 +45,4 @@ def test_load_s3_buckets(neo4j_session, *args):
         )
         for n in nodes
     }
-    print(actual_nodes)
     assert actual_nodes == expected_nodes
