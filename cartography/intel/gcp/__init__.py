@@ -162,6 +162,8 @@ def _sync_single_project(neo4j_session, resources, project_id, gcp_update_tag, c
     :param common_job_parameters: Other parameters sent to Neo4j
     :return: Nothing
     """
+    common_job_parameters['GCP_PROJECT_ID'] = project_id
+
     # Determine the resources available on the project.
     enabled_services = _services_enabled_on_project(resources.serviceusage, project_id)
     if service_names.compute in enabled_services:
