@@ -37,10 +37,9 @@ def get_s3_bucket_details(boto3_session, bucket_data):
         # It was found that client.get_bucket_location does not return a region for buckets
         # in us-east-1 region
         client = s3_regional_clients.get(bucket['Region'])
-        if(client == None):
+        if(client is None):
             client = boto3_session.client('s3', bucket['Region'])
-            s3_regional_clients[bucket['Region']] = client   
-        
+            s3_regional_clients[bucket['Region']] = client
         acl = get_acl(bucket, client)
         policy = get_policy(bucket, client)
         yield bucket['Name'], acl, policy
