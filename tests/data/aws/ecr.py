@@ -60,5 +60,13 @@ LIST_REPOSITORY_IMAGES = {
             'imageDigest': 'sha256:0000000000000000000000000000000000000000000000000000000000000021',
             'imageTag': '1',
         },
+        # Item without an imageDigest: will get filtered out and not ingested.
+        {
+            'imageTag': '1',
+        },
+        # Item without an imageTag
+        {
+            'imageDigest': 'sha256:0000000000000000000000000000000000000000000000000000000000000031',
+        },
     ],
 }
