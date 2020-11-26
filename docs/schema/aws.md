@@ -92,7 +92,7 @@
   - [Relationships](#relationships-41)
 - [NetworkInterface](#networkinterface)
   - [Relationships](#relationships-42)
-- [PeeringConnection](#peeringconnection)
+- [PeeringConnection:AWSPeeringConnection](#peeringconnectionawspeeringconnection)
 - [RedshiftCluster](#redshiftcluster)
   - [Relationships](#relationships-43)
 - [RDSInstance](#rdsinstance)
