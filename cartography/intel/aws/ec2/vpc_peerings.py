@@ -21,7 +21,7 @@ def load_vpc_peerings(neo4j_session, data, region, aws_account_id, aws_update_ta
     ingest_vpc_peerings = """
     UNWIND {vpc_peerings} AS vpc_peering
 
-    MERGE (pcx:PeeringConnection{id: vpc_peering.VpcPeeringConnectionId})
+    MERGE (pcx:PeeringConnection:AWSPeeringConnection{id: vpc_peering.VpcPeeringConnectionId})
     ON CREATE SET pcx.firstseen = timestamp()
     SET pcx.lastupdated = {aws_update_tag},
     pcx.allow_dns_resolution_from_remote_vpc =
