@@ -44,7 +44,7 @@ def load_vpc_peerings(neo4j_session, data, region, aws_account_id, aws_update_ta
     SET rvpc.lastupdated = {aws_update_tag}, rvpc.vpcid = vpc_peering.RequesterVpcInfo.VpcId
 
     MERGE (aaccount:AWSAccount{id: vpc_peering.AccepterVpcInfo.OwnerId})
-    ON CREATE SET aaccount.firstseen = timestamp()
+    ON CREATE SET aaccount.firstseen = timestamp(), aaccount.foreign = true
     SET aaccount.lastupdated = {aws_update_tag}
 
     MERGE (raccount:AWSAccount{id: vpc_peering.RequesterVpcInfo.OwnerId})
