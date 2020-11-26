@@ -5,7 +5,12 @@
     "iterationsize": 100
   },
   {
-    "query": "MATCH (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(:AWSVpc)<-[:REQESTER_VPC]-(n:PeeringConnection) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+  "query": "MATCH (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(n:AWSVpc) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+  "iterative": true,
+  "iterationsize": 100
+  },
+  {
+    "query": "MATCH (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(:AWSVpc)<-[:REQUESTER_VPC]-(n:PeeringConnection) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
     "iterative": true,
     "iterationsize": 100
   },
