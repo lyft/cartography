@@ -1585,7 +1585,7 @@ Representation of a generic Network Interface.  Currently however, we only creat
 
 ## PeeringConnection
 
-Representation of an AWS [PeeringConnection](https://docs.aws.amazon.com/vpc/latest/peering/what-is-vpc-peering.html)
+Representation of an AWS [PeeringConnection](https://docs.aws.amazon.com/vpc/latest/peering/what-is-vpc-peering.html) implementing an AWS [VpcPeeringConnection](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_VpcPeeringConnection.html) object.
 
 | Field | Description |
 |-------|-------------|
