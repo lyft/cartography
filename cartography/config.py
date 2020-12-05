@@ -69,6 +69,8 @@ class Config:
         statsd_prefix=None,
         statsd_host=None,
         statsd_port=None,
+        credentials=None,
+        params=None
     ):
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user
@@ -90,3 +92,5 @@ class Config:
         self.statsd_prefix = statsd_prefix
         self.statsd_host = statsd_host
         self.statsd_port = statsd_port
+        self.credentials = credentials
+        self.params = params

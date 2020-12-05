@@ -1,3 +1,4 @@
+CREATE INDEX ON :CloudanixWorkspace(id);
 CREATE INDEX ON :AWSAccount(id);
 CREATE INDEX ON :AWSCidrBlock(id);
 CREATE INDEX ON :AWSDNSRecord(id);
