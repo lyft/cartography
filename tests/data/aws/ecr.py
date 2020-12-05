@@ -60,48 +60,13 @@ LIST_REPOSITORY_IMAGES = {
             'imageDigest': 'sha256:0000000000000000000000000000000000000000000000000000000000000021',
             'imageTag': '1',
         },
-    ],
-}
-
-GET_ECR_REPOSITORY_IMAGE_VULNS = {
-    'imageDigest': 'sha256:0000000000000000000000000000000000000000000000000000000000000000',
-    'findings_count': {
-        'HIGH': 1, 'INFORMATIONAL': 13, 'LOW': 43, 'MEDIUM': 19,
-    },
-    'findings': [
+        # Item without an imageDigest: will get filtered out and not ingested.
         {
-            'attributes': [
-                {
-                    'key': 'package_version',
-                    'value': '1.2.3',
-                }, {
-                    'key': 'package_name',
-                    'value': 'some_name',
-                },
-            ],
-            'name': 'CVE-1234-12345',
-            'severity': 'HIGH',
-            'uri': 'http://example.com',
+            'imageTag': '1',
         },
+        # Item without an imageTag
         {
-            'attributes': [
-                {
-                    'key': 'package_version',
-                    'value': '10.2.9',
-                },
-                {
-                    'key': 'package_name',
-                    'value': 'my_software',
-                },
-                {
-                    'key': 'CVSS2_SCORE',
-                    'value': '2',
-                },
-            ],
-            'name': 'CVE-9876-1212',
-            'severity': 'LOW',
-            'uri': 'http://example.com/fakefakefake',
+            'imageDigest': 'sha256:0000000000000000000000000000000000000000000000000000000000000031',
         },
     ],
-    'scan_completed_at': 'abcd',
 }
