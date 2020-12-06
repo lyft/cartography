@@ -8,21 +8,23 @@ from oauth2client.client import GoogleCredentials
 
 from cartography.intel.gcp import compute
 from cartography.intel.gcp import crm
+from cartography.intel.gcp import dns
 from cartography.intel.gcp import gke
 from cartography.intel.gcp import storage
 from cartography.util import run_analysis_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
-Resources = namedtuple('Resources', 'crm_v1 crm_v2 compute storage container serviceusage')
+Resources = namedtuple('Resources', 'compute container crm_v1 crm_v2 dns storage serviceusage')
 
 # Mapping of service short names to their full names as in docs. See https://developers.google.com/apis-explorer,
 # and https://cloud.google.com/service-usage/docs/reference/rest/v1/services#ServiceConfig
-Services = namedtuple('Services', 'compute storage gke')
+Services = namedtuple('Services', 'compute storage gke dns')
 service_names = Services(
     compute='compute.googleapis.com',
     storage='storage.googleapis.com',
     gke='container.googleapis.com',
+    dns='dns.googleapis.com',
 )
 
 
@@ -81,6 +83,17 @@ def _get_container_resource(credentials):
     return googleapiclient.discovery.build('container', 'v1', credentials=credentials, cache_discovery=False)
 
 
+def _get_dns_resource(credentials):
+    """
+    Instantiates a Google Cloud DNS resource object to call the
+    Container API. See: https://cloud.google.com/dns/docs/reference/v1/.
+
+    :param credentials: The GoogleCredentials object
+    :return: A DNS resource object
+    """
+    return googleapiclient.discovery.build('dns', 'v1', credentials=credentials, cache_discovery=False)
+
+
 def _get_serviceusage_resource(credentials):
     """
     Instantiates a serviceusage resource object.
@@ -105,6 +118,7 @@ def _initialize_resources(credentials):
         storage=_get_storage_resource(credentials),
         container=_get_container_resource(credentials),
         serviceusage=_get_serviceusage_resource(credentials),
+        dns=_get_dns_resource(credentials),
     )
 
 
@@ -156,6 +170,8 @@ def _sync_single_project(neo4j_session, resources, project_id, gcp_update_tag, c
         storage.sync_gcp_buckets(neo4j_session, resources.storage, project_id, gcp_update_tag, common_job_parameters)
     if service_names.gke in enabled_services:
         gke.sync_gke_clusters(neo4j_session, resources.container, project_id, gcp_update_tag, common_job_parameters)
+    if service_names.dns in enabled_services:
+        dns.sync(neo4j_session, resources.dns, project_id, gcp_update_tag, common_job_parameters)
 
 
 def _sync_multiple_projects(neo4j_session, resources, projects, gcp_update_tag, common_job_parameters):
