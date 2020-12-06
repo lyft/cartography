@@ -34,7 +34,7 @@ def get_dns_zones(dns, project_id):
         return zones
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
-        if err.get('status', '') == 'PERMISSION_DENIED':
+        if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
             logger.warning(
                 (
                     "Could not retrieve DNS zones on project %s due to permissions issues. Code: %s, Message: %s"
@@ -75,7 +75,7 @@ def get_dns_rrs(dns, dns_zones, project_id):
         return rrs
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
-        if err.get('status', '') == 'PERMISSION_DENIED':
+        if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
             logger.warning(
                 (
                     "Could not retrieve DNS RRS on project %s due to permissions issues. Code: %s, Message: %s"
