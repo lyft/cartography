@@ -9,6 +9,17 @@ TEST_ACCOUNT_ID = '000000000000'
 TEST_REGION = 'us-east-1'
 TEST_UPDATE_TAG = 123456789
 
+aws_stage_config = {
+    'boto3_session': None,
+    "permission_relationships_file": "cartography/data/permission_relationships.yaml",
+    'aws_accounts': [TEST_ACCOUNT_ID],
+    'regions': [],
+    'current_aws_account_id': TEST_ACCOUNT_ID,
+}
+common_job_parameters = {
+    "UPDATE_TAG": TEST_UPDATE_TAG,
+}
+
 
 def test_permission_relationships_file_arguments():
     """
@@ -136,10 +147,8 @@ def test_map_permissions(neo4j_session):
 
     cartography.intel.aws.permission_relationships.sync(
         neo4j_session,
-        TEST_ACCOUNT_ID,
-        TEST_UPDATE_TAG, {
-            "permission_relationships_file": "cartography/data/permission_relationships.yaml",
-        },
+        common_job_parameters,
+        aws_stage_config,
     )
     results = neo4j_session.run("MATCH ()-[r:CAN_READ]->() RETURN count(r) as rel_count")
     assert results
