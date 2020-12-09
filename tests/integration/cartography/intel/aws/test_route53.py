@@ -81,6 +81,19 @@ def test_load_and_cleanup_dnspointsto_relationships(neo4j_session):
     # EC2 resources must be loaded first; it's the Route53 module that links DNS to EC2 resources.
     _ensure_local_neo4j_has_test_ec2_records(neo4j_session)
     _ensure_local_neo4j_has_test_route53_records(neo4j_session)
+    
+    # Verify that the expected DNS record points to the expected ELBv2
+    result = neo4j_session.run(
+        """
+        MATCH (n:AWSDNSRecord{id:"/hostedzone/HOSTED_ZONE/elbv2.example.com/ALIAS"})
+        -[:DNS_POINTS_TO]->(l:LoadBalancerV2{id:"myawesomeloadbalancer.amazonaws.com"})
+        return n.name, l.name
+        """,
+    )
+    expected = {("elbv2.example.com", "myawesomeloadbalancer")}
+    actual = {(r['n.name'], r['l.name']) for r in result}
+    assert actual == expected
+
     # Now, have one DNS record point to another object.
     # This is to simulate having a DNS record pointing to a node that was synced in another module.
     neo4j_session.run(
