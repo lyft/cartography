@@ -6,7 +6,7 @@ TEST_UPDATE_TAG = 123456789
 TEST_ZONE_ID = "TESTZONEID"
 TEST_ZONE_NAME = "TESTZONENAME"
 TEST_AWS_ACCOUNTID = "AWSID"
-TEST_AWS_REGION = "us-east-1" 
+TEST_AWS_REGION = "us-east-1"
 
 
 def _ensure_local_neo4j_has_test_route53_records(neo4j_session):
@@ -81,7 +81,7 @@ def test_load_and_cleanup_dnspointsto_relationships(neo4j_session):
     # EC2 resources must be loaded first; it's the Route53 module that links DNS to EC2 resources.
     _ensure_local_neo4j_has_test_ec2_records(neo4j_session)
     _ensure_local_neo4j_has_test_route53_records(neo4j_session)
-    
+
     # Verify that the expected DNS record points to the expected ELBv2
     result = neo4j_session.run(
         """
