@@ -6,6 +6,7 @@ TEST_UPDATE_TAG = 123456789
 TEST_ZONE_ID = "TESTZONEID"
 TEST_ZONE_NAME = "TESTZONENAME"
 TEST_AWS_ACCOUNTID = "AWSID"
+TEST_AWS_REGION = "us-east-1" 
 
 
 def _ensure_local_neo4j_has_test_route53_records(neo4j_session):
@@ -14,6 +15,13 @@ def _ensure_local_neo4j_has_test_route53_records(neo4j_session):
         TEST_AWS_ACCOUNTID, TEST_UPDATE_TAG,
     )
     cartography.intel.aws.route53.link_sub_zones(neo4j_session, TEST_UPDATE_TAG)
+
+
+def _ensure_local_neo4j_has_test_ec2_records(neo4j_session):
+    cartography.intel.aws.ec2.load_balancer_v2s.load_load_balancer_v2s(
+        neo4j_session, tests.data.aws.ec2.load_balancers.LOAD_BALANCER_DATA,
+        TEST_AWS_REGION, TEST_AWS_ACCOUNTID, TEST_UPDATE_TAG,
+    )
 
 
 def test_transform_and_load_ns(neo4j_session):
@@ -64,12 +72,14 @@ def test_transform_and_load_ns_records(neo4j_session):
 
 def test_load_and_cleanup_dnspointsto_relationships(neo4j_session):
     """
-    1. Load DNS resources
+    1. Load DNS and EC2 resources
     2. Link them together
     3. Ensure that the expected :DNS_POINTS_TO relationships have been created
     4. Assume that these nodes are now stale and perform cleanup
     5. Ensure that the :DNS_POINTS_TO relationships have been deleted
     """
+    # EC2 resources must be loaded first; it's the Route53 module that links DNS to EC2 resources.
+    _ensure_local_neo4j_has_test_ec2_records(neo4j_session)
     _ensure_local_neo4j_has_test_route53_records(neo4j_session)
     # Now, have one DNS record point to another object.
     # This is to simulate having a DNS record pointing to a node that was synced in another module.
