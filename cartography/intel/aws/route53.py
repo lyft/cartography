@@ -10,8 +10,9 @@ logger = logging.getLogger(__name__)
 def link_aws_resources(neo4j_session, update_tag):
     # find records that point to other records
     link_records = """
-    MATCH (n:AWSDNSRecord) WITH n MATCH (v:AWSDNSRecord{value: n.name})
-    WHERE NOT n = v
+    MATCH (n:AWSDNSRecord)
+    MATCH (v:AWSDNSRecord)
+    WHERE toLower(n.name) = toLower(v.value) AND NOT n = v
     MERGE (v)-[p:DNS_POINTS_TO]->(n)
     ON CREATE SET p.firstseen = timestamp()
     SET p.lastupdated = {aws_update_tag}
@@ -20,7 +21,9 @@ def link_aws_resources(neo4j_session, update_tag):
 
     # find records that point to AWS LoadBalancers
     link_elb = """
-    MATCH (n:AWSDNSRecord) WITH n MATCH (l:LoadBalancer{dnsname: n.value})
+    MATCH (n:AWSDNSRecord)
+    MATCH (l:LoadBalancer)
+    WHERE toLower(n.value) = toLower(l.dnsname)
     MERGE (n)-[p:DNS_POINTS_TO]->(l)
     ON CREATE SET p.firstseen = timestamp()
     SET p.lastupdated = {aws_update_tag}
@@ -29,7 +32,9 @@ def link_aws_resources(neo4j_session, update_tag):
 
     # find records that point to AWS EC2 Instances
     link_ec2 = """
-    MATCH (n:AWSDNSRecord) WITH n MATCH (e:EC2Instance{publicdnsname: n.value})
+    MATCH (n:AWSDNSRecord)
+    MATCH (e:EC2Instance)
+    WHERE toLower(n.value) = toLower(e.publicdnsname)
     MERGE (n)-[p:DNS_POINTS_TO]->(e)
     ON CREATE SET p.firstseen = timestamp()
     SET p.lastupdated = {aws_update_tag}
