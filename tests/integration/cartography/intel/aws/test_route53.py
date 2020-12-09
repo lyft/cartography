@@ -70,13 +70,10 @@ def test_transform_and_load_ns_records(neo4j_session):
         assert r["recordcount"] == 2
 
 
-def test_load_and_cleanup_dnspointsto_relationships(neo4j_session):
+def test_load_dnspointsto_ec2_relationships(neo4j_session):
     """
     1. Load DNS and EC2 resources
-    2. Link them together
-    3. Ensure that the expected :DNS_POINTS_TO relationships have been created
-    4. Assume that these nodes are now stale and perform cleanup
-    5. Ensure that the :DNS_POINTS_TO relationships have been deleted
+    2. Ensure that the expected :DNS_POINTS_TO relationships have been created
     """
     # EC2 resources must be loaded first; it's the Route53 module that links DNS to EC2 resources.
     _ensure_local_neo4j_has_test_ec2_records(neo4j_session)
@@ -94,6 +91,16 @@ def test_load_and_cleanup_dnspointsto_relationships(neo4j_session):
     actual = {(r['n.name'], r['l.name']) for r in result}
     assert actual == expected
 
+
+def test_load_and_cleanup_dnspointsto_relationships(neo4j_session):
+    """
+    1. Load DNS resources
+    2. Link them together
+    3. Ensure that the expected :DNS_POINTS_TO relationships have been created
+    4. Assume that these nodes are now stale and perform cleanup
+    5. Ensure that the :DNS_POINTS_TO relationships have been deleted
+    """
+    _ensure_local_neo4j_has_test_route53_records(neo4j_session)
     # Now, have one DNS record point to another object.
     # This is to simulate having a DNS record pointing to a node that was synced in another module.
     neo4j_session.run(
