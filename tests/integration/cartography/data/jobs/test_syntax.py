@@ -12,6 +12,7 @@ else:
 def test_analysis_jobs_cypher_syntax(neo4j_session):
     parameters = {
         'AWS_ID': None,
+        'OCI_TENANCY_ID': None,
         'UPDATE_TAG': None,
         'OKTA_ORG_ID': None,
     }
@@ -28,6 +29,7 @@ def test_analysis_jobs_cypher_syntax(neo4j_session):
 def test_cleanup_jobs_cypher_syntax(neo4j_session):
     parameters = {
         'AWS_ID': None,
+        'OCI_TENANCY_ID': None,
         'UPDATE_TAG': None,
         'OKTA_ORG_ID': None,
     }
