@@ -538,9 +538,9 @@ Representation of an AWS [Tag](https://docs.aws.amazon.com/resourcegroupstagging
 | region | The region where this tag was discovered.|
 
 ### Relationships
--  AWS VPCs, DB Subnet Groups, EC2 Instances, EC2 SecurityGroups, EC2 Subnets, EC2 Network Interfaces, RDS Instances, and S3 Buckets can be tagged with AWSTags.
+-  AWS VPCs, DB Subnet Groups, DynamoDB tables EC2 Instances, EC2 SecurityGroups, EC2 Subnets, EC2 Network Interfaces, RDS Instances, and S3 Buckets can be tagged with AWSTags.
     ```
-        (AWSVpc, DBSubnetGroup, EC2Instance, EC2SecurityGroup, EC2Subnet, NetworkInterface, RDSInstance, S3Bucket)-[TAGGED]->(AWSTag)
+        (AWSVpc, DBSubnetGroup, DynamoDBTable, EC2Instance, EC2SecurityGroup, EC2Subnet, NetworkInterface, RDSInstance, S3Bucket)-[TAGGED]->(AWSTag)
         ```
 
 ## AccountAccessKey
@@ -746,6 +746,11 @@ Representation of an AWS [DynamoDBTable](https://docs.aws.amazon.com/amazondynam
         ```
         (AWSAccount)-[RESOURCE]->(DynamoDBTable)
         ```
+        
+-  DynamoDBTables can be tagged with AWSTags.
+
+        (DynamoDBTable)-[TAGGED]->(AWSTag)
+
 
 
 ## EC2Instance
