@@ -91,7 +91,15 @@ def _sync_multiple_accounts(neo4j_session, accounts, sync_tag, common_job_parame
     for profile_name, account_id in accounts.items():
         logger.info("Syncing AWS account with ID '%s' using configured profile '%s'.", account_id, profile_name)
         common_job_parameters["AWS_ID"] = account_id
-        boto3_session = boto3.Session(profile_name=profile_name)
+
+        boto3_session = None
+        try:
+            boto3_session = boto3.Session(profile_name=profile_name)
+        except botocore.exceptions.ProfileNotFound:
+            logger.info("profile error '%s', trying to intitialize session without explicit profile.", profile_name)
+
+        if not boto3_session:
+            boto3_session = boto3.Session()
 
         _autodiscover_accounts(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters)
 
