@@ -26,6 +26,12 @@ def get_s3_bucket_list(boto3_session):
                 logger.warning("get_bucket_location(bucket='{}') AccessDenied, skipping.".format(bucket['Name']))
                 bucket['Region'] = None
                 continue
+            elif "NoSuchBucket" in e.args[0]:
+                logger.warning("get_bucket_location({}) threw NoSuchBucket exception, skipping".format(bucket['Name']))
+                bucket['Region'] = None
+                continue
+            elif "AllAccessDisabled" in e.args[0]:
+                logger.warning("get_bucket_location({}) failed - bucket is disabled, skipping".format(bucket['Name']))
             else:
                 raise
     return buckets
