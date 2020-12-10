@@ -44,6 +44,7 @@ TAG_RESOURCE_TYPE_MAPPINGS = {
     'ec2:transit-gateway': {'label': 'AWSTransitGateway', 'property': 'id'},
     'ec2:transit-gateway-attachment': {'label': 'AWSTransitGatewayAttachment', 'property': 'id'},
     'es:domain': {'label': 'ESDomain', 'property': 'id'},
+    'dynamodb:table': {'label': 'DynamoDBTable', 'property': 'id'},
     'redshift:cluster': {'label': 'RedshiftCluster', 'property': 'id'},
     'rds:db': {'label': 'RDSInstance', 'property': 'id'},
     'rds:subgrp': {'label': 'DBSubnetGroup', 'property': 'id'},
