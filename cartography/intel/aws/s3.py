@@ -18,7 +18,16 @@ def get_s3_bucket_list(boto3_session):
     # NOTE no paginator available for this operation
     buckets = client.list_buckets()
     for bucket in buckets['Buckets']:
-        bucket['Region'] = client.get_bucket_location(Bucket=bucket['Name'])['LocationConstraint']
+        try:
+            bucket['Region'] = client.get_bucket_location(Bucket=bucket['Name'])['LocationConstraint']
+        except ClientError as e:
+            if "AccessDenied" in e.args[0]:
+                # If we don't have perms to call get_bucket_location(), set region to None and keep going
+                logger.warning("get_bucket_location(bucket='{}') AccessDenied, skipping.".format(bucket['Name']))
+                bucket['Region'] = None
+                continue
+            else:
+                raise
     return buckets
 
 
@@ -31,11 +40,11 @@ def get_s3_bucket_details(boto3_session, bucket_data):
     s3_regional_clients = {}
 
     for bucket in bucket_data['Buckets']:
-        # Use us-east-1 region if no region was recognized for buckets
-        # It was found that client.get_bucket_location does not return a region for buckets
+        # Note: bucket['Region'] is sometimes None because
+        # client.get_bucket_location() does not return a location constraint for buckets
         # in us-east-1 region
         client = s3_regional_clients.get(bucket['Region'])
-        if(not client):
+        if not client:
             client = boto3_session.client('s3', bucket['Region'])
             s3_regional_clients[bucket['Region']] = client
         acl = get_acl(bucket, client)
@@ -53,6 +62,7 @@ def get_policy(bucket, client):
     except ClientError as e:
         # no policy is defined for this bucket
         if "NoSuchBucketPolicy" in e.args[0]:
+            logger.warning("get_bucket_policy({}) failed because the bucket no longer exists".format(bucket['Name']))
             policy = None
         elif "AccessDenied" in e.args[0]:
             logger.warning("Access denied trying to retrieve S3 bucket {} policy".format(bucket['Name']))
