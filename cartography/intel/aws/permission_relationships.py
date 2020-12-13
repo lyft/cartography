@@ -6,6 +6,7 @@ from string import Template
 import yaml
 
 from cartography.graph.statement import GraphStatement
+from cartography.intel.aws.stage_config import AwsStageConfig
 
 logger = logging.getLogger(__name__)
 
@@ -331,10 +332,10 @@ def is_valid_rpr(rpr):
     return True
 
 
-def sync(neo4j_session, common_job_parameters, aws_stage_config):
-    current_aws_account_id = aws_stage_config['account_id']
-    pr_file = aws_stage_config["permission_relationships_file"]
-    aws_update_tag = common_job_parameters['UPDATE_TAG']
+def sync(neo4j_session, aws_stage_config: AwsStageConfig):
+    current_aws_account_id = aws_stage_config.current_aws_account_id
+    pr_file = aws_stage_config.permission_relationships_file
+    aws_update_tag = aws_stage_config.graph_job_parameters['UPDATE_TAG']
 
     logger.info("Syncing Permission Relationships for account '%s'.", current_aws_account_id)
     principals = get_principals_for_account(neo4j_session, current_aws_account_id)
@@ -360,6 +361,6 @@ def sync(neo4j_session, common_job_parameters, aws_stage_config):
         allowed_mappings = calculate_permission_relationships(principals, resource_arns, permissions)
         load_principal_mappings(
             neo4j_session, allowed_mappings,
-            target_label, relationship_name, current_aws_account_id,
+            target_label, relationship_name, aws_update_tag,
         )
         cleanup_rpr(neo4j_session, target_label, relationship_name, aws_update_tag, current_aws_account_id)

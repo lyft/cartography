@@ -17,13 +17,14 @@ from . import redshift
 from . import resourcegroupstaggingapi
 from . import route53
 from . import s3
-from  .stage_config import AwsStageConfig
+from .stage_config import AwsStageConfig
+from cartography.config import Config
 from cartography.util import run_analysis_job
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
-from cartography.config import Config
 
 logger = logging.getLogger(__name__)
+
 
 def _sync_one_account(neo4j_session, aws_stage_config: AwsStageConfig):
     try:
@@ -82,11 +83,12 @@ def _autodiscover_accounts(neo4j_session, aws_stage_config: AwsStageConfig):
         logger.info("Loading autodiscovered accounts.")
         organizations.load_aws_accounts(
             neo4j_session, accounts, aws_stage_config.graph_job_parameters['UPDATE_TAG'],
-            aws_stage_config.graph_job_parameters)
+            aws_stage_config.graph_job_parameters,
+        )
     except botocore.exceptions.ClientError:
         logger.debug(
             f"The current account ({aws_stage_config.current_aws_account_id}) doesn't have enough permissions to "
-            f"perform autodiscovery."
+            f"perform autodiscovery.",
         )
 
 
@@ -154,12 +156,11 @@ def start_aws_ingestion(neo4j_session, config: Config):
 
     aws_stage_config = AwsStageConfig(
         boto3_session=None,
-        current_aws_account_id=None,
+        current_aws_account_id='',
         current_aws_account_regions=[],
         graph_job_parameters=graph_job_parameters,
         permission_relationships_file=config.permission_relationships_file,
         aws_accounts=aws_accounts,
-
     )
 
     _sync_multiple_accounts(neo4j_session, aws_stage_config)

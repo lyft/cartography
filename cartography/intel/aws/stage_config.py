@@ -2,6 +2,7 @@ from typing import Any
 from typing import Dict
 from typing import List
 
+
 class AwsStageConfig:
     def __init__(
         self,

@@ -3,22 +3,25 @@ import cartography.intel.aws.permission_relationships
 import tests.data.aws.iam
 from cartography.cli import CLI
 from cartography.config import Config
+from cartography.intel.aws.stage_config import AwsStageConfig
 from cartography.sync import build_default_sync
 
 TEST_ACCOUNT_ID = '000000000000'
 TEST_REGION = 'us-east-1'
 TEST_UPDATE_TAG = 123456789
 
-aws_stage_config = {
-    'boto3_session': None,
-    "permission_relationships_file": "cartography/data/permission_relationships.yaml",
-    'aws_accounts': [TEST_ACCOUNT_ID],
-    'regions': [],
-    'current_aws_account_id': TEST_ACCOUNT_ID,
-}
-common_job_parameters = {
+graph_job_parameters = {
     "UPDATE_TAG": TEST_UPDATE_TAG,
 }
+
+aws_stage_config = AwsStageConfig(
+    boto3_session=None,
+    current_aws_account_id=TEST_ACCOUNT_ID,
+    current_aws_account_regions=[TEST_REGION],
+    graph_job_parameters=graph_job_parameters,
+    permission_relationships_file='cartography/data/permission_relationships.yaml',
+    aws_accounts=[TEST_ACCOUNT_ID],
+)
 
 
 def test_permission_relationships_file_arguments():
@@ -145,11 +148,7 @@ def test_map_permissions(neo4j_session):
     """, AccountId=TEST_ACCOUNT_ID,
     )
 
-    cartography.intel.aws.permission_relationships.sync(
-        neo4j_session,
-        common_job_parameters,
-        aws_stage_config,
-    )
+    cartography.intel.aws.permission_relationships.sync(neo4j_session, aws_stage_config)
     results = neo4j_session.run("MATCH ()-[r:CAN_READ]->() RETURN count(r) as rel_count")
     assert results
     for result in results:
