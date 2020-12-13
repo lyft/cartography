@@ -16,7 +16,25 @@ logger = logging.getLogger(__name__)
 def get_s3_bucket_list(boto3_session):
     client = boto3_session.client('s3')
     # NOTE no paginator available for this operation
-    return client.list_buckets()
+    buckets = client.list_buckets()
+    for bucket in buckets['Buckets']:
+        try:
+            bucket['Region'] = client.get_bucket_location(Bucket=bucket['Name'])['LocationConstraint']
+        except ClientError as e:
+            if "AccessDenied" in e.args[0]:
+                # If we don't have perms to call get_bucket_location(), set region to None and keep going
+                logger.warning("get_bucket_location(bucket='{}') AccessDenied, skipping.".format(bucket['Name']))
+                bucket['Region'] = None
+                continue
+            elif "NoSuchBucket" in e.args[0]:
+                logger.warning("get_bucket_location({}) threw NoSuchBucket exception, skipping".format(bucket['Name']))
+                bucket['Region'] = None
+                continue
+            elif "AllAccessDisabled" in e.args[0]:
+                logger.warning("get_bucket_location({}) failed - bucket is disabled, skipping".format(bucket['Name']))
+            else:
+                raise
+    return buckets
 
 
 @timeit
@@ -24,8 +42,17 @@ def get_s3_bucket_details(boto3_session, bucket_data):
     """
     Iterates over all S3 buckets. Yields bucket name (string) and pairs of S3 bucket policies (JSON) and ACLs (JSON)
     """
-    client = boto3_session.client('s3')
+    # a local store for s3 clients so that we may re-use clients for an AWS region
+    s3_regional_clients = {}
+
     for bucket in bucket_data['Buckets']:
+        # Note: bucket['Region'] is sometimes None because
+        # client.get_bucket_location() does not return a location constraint for buckets
+        # in us-east-1 region
+        client = s3_regional_clients.get(bucket['Region'])
+        if not client:
+            client = boto3_session.client('s3', bucket['Region'])
+            s3_regional_clients[bucket['Region']] = client
         acl = get_acl(bucket, client)
         policy = get_policy(bucket, client)
         yield bucket['Name'], acl, policy
@@ -41,12 +68,18 @@ def get_policy(bucket, client):
     except ClientError as e:
         # no policy is defined for this bucket
         if "NoSuchBucketPolicy" in e.args[0]:
+            logger.warning("get_bucket_policy({}) failed because the bucket no longer exists".format(bucket['Name']))
             policy = None
         elif "AccessDenied" in e.args[0]:
             logger.warning("Access denied trying to retrieve S3 bucket {} policy".format(bucket['Name']))
             policy = None
         elif "NoSuchBucket" in e.args[0]:
             logger.warning("get_bucket_policy({}) threw NoSuchBucket exception, skipping".format(bucket['Name']))
+            policy = None
+        elif "AllAccessDisabled" in e.args[0]:
+            # Catches the following error : "An error occurred (AllAccessDisabled) when calling the
+            # GetBucketAcl operation: All access to this object has been disabled"
+            logger.warning("Failed to retrieve S3 bucket {} policies - Bucket is disabled".format(bucket['Name']))
             policy = None
         else:
             raise
@@ -66,6 +99,9 @@ def get_acl(bucket, client):
             return None
         elif "NoSuchBucket" in e.args[0]:
             logger.warning("Failed to retrieve S3 bucket {} ACL - No Such Bucket".format(bucket['Name']))
+            return None
+        elif "AllAccessDisabled" in e.args[0]:
+            logger.warning("Failed to retrieve S3 bucket {} ACL - Bucket is disabled".format(bucket['Name']))
             return None
         else:
             raise
@@ -299,7 +335,8 @@ def load_s3_buckets(neo4j_session, data, current_aws_account_id, aws_update_tag)
     ingest_bucket = """
     MERGE (bucket:S3Bucket{id:{BucketName}})
     ON CREATE SET bucket.firstseen = timestamp(), bucket.creationdate = {CreationDate}
-    SET bucket.name = {BucketName}, bucket.arn = {Arn}, bucket.lastupdated = {aws_update_tag}
+    SET bucket.name = {BucketName}, bucket.region = {BucketRegion}, bucket.arn = {Arn},
+    bucket.lastupdated = {aws_update_tag}
     WITH bucket
     MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
     MERGE (owner)-[r:RESOURCE]->(bucket)
@@ -316,6 +353,7 @@ def load_s3_buckets(neo4j_session, data, current_aws_account_id, aws_update_tag)
         neo4j_session.run(
             ingest_bucket,
             BucketName=bucket["Name"],
+            BucketRegion=bucket["Region"],
             Arn=arn,
             CreationDate=str(bucket["CreationDate"]),
             AWS_ACCOUNT_ID=current_aws_account_id,

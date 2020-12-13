@@ -79,6 +79,7 @@ and follow the instructions to sign the CLA.
 1. [Lyft](https://www.lyft.com)
 1. [Thought Machine](https://thoughtmachine.net/)
 1. [MessageBird](https://messagebird.com)
+1. [Cloudanix](https://www.cloudanix.com/)
 1. {Your company here} :-)
 
 If your organization uses Cartography, please file a PR and update this list. Say hi on Slack too!
