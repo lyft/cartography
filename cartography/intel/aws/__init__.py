@@ -21,10 +21,11 @@ from  .stage_config import AwsStageConfig
 from cartography.util import run_analysis_job
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
+from cartography.config import Config
 
 logger = logging.getLogger(__name__)
 
-def _sync_one_account(neo4j_session, aws_stage_config):
+def _sync_one_account(neo4j_session, aws_stage_config: AwsStageConfig):
     try:
         regions = ec2.get_ec2_regions(aws_stage_config.boto3_session)
     except botocore.exceptions.ClientError as e:
@@ -114,7 +115,7 @@ def _sync_multiple_accounts(neo4j_session, aws_stage_config: AwsStageConfig):
 
 
 @timeit
-def start_aws_ingestion(neo4j_session, config):
+def start_aws_ingestion(neo4j_session, config: Config):
     graph_job_parameters = {
         "UPDATE_TAG": config.update_tag,
     }
