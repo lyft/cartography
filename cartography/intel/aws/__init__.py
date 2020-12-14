@@ -95,14 +95,14 @@ def _sync_multiple_accounts(neo4j_session, accounts, config, common_job_paramete
 
         if config.credentials['type'] == 'self':
             boto3_session = boto3.Session(
-                profile_name=profile_name,
+                # profile_name=profile_name,
                 aws_access_key_id=config.credentials['aws_access_key_id'],
                 aws_secret_access_key=config.credentials['aws_secret_access_key'],
             )
 
         elif config.credentials['type'] == 'assumerole':
             boto3_session = boto3.Session(
-                profile_name=profile_name,
+                # profile_name=profile_name,
                 aws_access_key_id=config.credentials['aws_access_key_id'],
                 aws_secret_access_key=config.credentials['aws_secret_access_key'],
                 aws_session_token=config.credentials['session_token']
