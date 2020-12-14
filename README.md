@@ -36,7 +36,7 @@ Start [here](docs/setup/install.md).
 
 ## Supported platforms
 - [Amazon Web Services](docs/setup/config/aws.md) -  EC2, Elasticsearch, Elastic Kubernetes Service, DynamoDB, IAM, Lambda, RDS, Redshift, Route53, S3, STS, Tags
-- [Google Cloud Platform](docs/setup/config/gcp.md) - Cloud Resource Manager, Compute, Storage, Google Kubernetes Engine
+- [Google Cloud Platform](docs/setup/config/gcp.md) - Cloud Resource Manager, Compute, DNS, Storage, Google Kubernetes Engine
 - [Google GSuite](docs/setup/config/gsuite.md) - users, groups
 - [Duo CRXcavator](docs/setup/config/crxcavator.md) - Chrome extensions, GSuite users
 - [Okta](docs/setup/config/okta.md) - users, groups, organizations, roles, applications, factors, trusted origins, reply URIs
@@ -78,6 +78,8 @@ and follow the instructions to sign the CLA.
 
 1. [Lyft](https://www.lyft.com)
 1. [Thought Machine](https://thoughtmachine.net/)
+1. [MessageBird](https://messagebird.com)
+1. [Cloudanix](https://www.cloudanix.com/)
 1. {Your company here} :-)
 
 If your organization uses Cartography, please file a PR and update this list. Say hi on Slack too!
