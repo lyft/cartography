@@ -1,6 +1,10 @@
 import logging
+from typing import Any
+from typing import Dict
+from typing import List
 
 from .util import get_botocore_config
+from cartography.intel.aws.stage_config import AwsStageConfig
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -10,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 @timeit
 @aws_handle_regions
-def get_subnet_data(boto3_session, region):
+def get_subnet_data(boto3_session, region: str) -> List[Dict[str, Any]]:
     client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
     paginator = client.get_paginator('describe_subnets')
     subnets = []
@@ -20,7 +24,9 @@ def get_subnet_data(boto3_session, region):
 
 
 @timeit
-def load_subnets(neo4j_session, data, region, aws_account_id, aws_update_tag):
+def load_subnets(
+    neo4j_session, data: List[Dict[str, Any]], region: str, aws_account_id: str, aws_update_tag: int,
+) -> None:
 
     ingest_subnets = """
     UNWIND {subnets} as subnet
@@ -65,19 +71,22 @@ def load_subnets(neo4j_session, data, region, aws_account_id, aws_update_tag):
 
 
 @timeit
-def cleanup_subnets(neo4j_session, common_job_parameters):
-    run_cleanup_job('aws_ingest_subnets_cleanup.json', neo4j_session, common_job_parameters)
+def cleanup_subnets(neo4j_session, graph_job_parameters: Dict[str, Any]) -> None:
+    run_cleanup_job('aws_ingest_subnets_cleanup.json', neo4j_session, graph_job_parameters)
 
 
 @timeit
-def sync_subnets(neo4j_session, common_job_parameters, aws_stage_config):
-    current_aws_account_id = common_job_parameters['AWS_ID']
-    boto3_session = aws_stage_config['boto3_session']
-    regions = aws_stage_config['regions']
-    aws_update_tag = common_job_parameters['UPDATE_TAG']
-
-    for region in regions:
-        logger.info("Syncing EC2 subnets for region '%s' in account '%s'.", region, current_aws_account_id)
-        data = get_subnet_data(boto3_session, region)
-        load_subnets(neo4j_session, data, region, current_aws_account_id, aws_update_tag)
-    cleanup_subnets(neo4j_session, common_job_parameters)
+def sync_subnets(neo4j_session, aws_stage_config: AwsStageConfig) -> None:
+    for region in aws_stage_config.current_aws_account_regions:
+        logger.info(
+            "Syncing EC2 subnets for region '%s' in account '%s'.", region, aws_stage_config.current_aws_account_id,
+        )
+        data = get_subnet_data(aws_stage_config.boto3_session, region)
+        load_subnets(
+            neo4j_session,
+            data,
+            region,
+            aws_stage_config.current_aws_account_id,
+            aws_stage_config.graph_job_parameters['UPDATE_TAG'],
+        )
+    cleanup_subnets(neo4j_session, aws_stage_config.graph_job_parameters)

@@ -1,8 +1,12 @@
 import logging
+from typing import Any
+from typing import Dict
+from typing import List
 
 import botocore.exceptions
 
 from .util import get_botocore_config
+from cartography.intel.aws.stage_config import AwsStageConfig
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -12,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 @timeit
 @aws_handle_regions
-def get_transit_gateways(boto3_session, region):
+def get_transit_gateways(boto3_session, region: str) -> List[Dict[str, Any]]:
     client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
     data = []
     try:
@@ -29,7 +33,7 @@ def get_transit_gateways(boto3_session, region):
 
 @timeit
 @aws_handle_regions
-def get_tgw_attachments(boto3_session, region):
+def get_tgw_attachments(boto3_session, region: str) -> List[Dict[str, Any]]:
     client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
     tgw_attachments = []
     try:
@@ -47,7 +51,7 @@ def get_tgw_attachments(boto3_session, region):
 
 @timeit
 @aws_handle_regions
-def get_tgw_vpc_attachments(boto3_session, region):
+def get_tgw_vpc_attachments(boto3_session, region: str) -> List[Dict[str, Any]]:
     client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
     tgw_vpc_attachments = []
     try:
@@ -64,7 +68,9 @@ def get_tgw_vpc_attachments(boto3_session, region):
 
 
 @timeit
-def load_transit_gateways(neo4j_session, data, region, current_aws_account_id, aws_update_tag):
+def load_transit_gateways(
+    neo4j_session, data: List[Dict[str, Any]], region: str, current_aws_account_id: str, aws_update_tag: int,
+) -> None:
     ingest_transit_gateway = """
     MERGE (ownerAccount:AWSAccount {id: {OwnerId}})
     ON CREATE SET ownerAccount.firstseen = timestamp(), ownerAccount.foreign = true
@@ -105,7 +111,9 @@ def load_transit_gateways(neo4j_session, data, region, current_aws_account_id, a
 
 
 @timeit
-def _attach_shared_transit_gateway(neo4j_session, tgw, region, current_aws_account_id, aws_update_tag):
+def _attach_shared_transit_gateway(
+    neo4j_session, tgw: Dict[str, Any], region: str, current_aws_account_id: str, aws_update_tag: int,
+) -> None:
     attach_tgw = """
     MERGE (tgw:AWSTransitGateway {id: {ARN}})
     ON CREATE SET tgw.firstseen = timestamp()
@@ -129,7 +137,13 @@ def _attach_shared_transit_gateway(neo4j_session, tgw, region, current_aws_accou
 
 
 @timeit
-def load_tgw_attachments(neo4j_session, data, region, current_aws_account_id, aws_update_tag):
+def load_tgw_attachments(
+    neo4j_session,
+    data: List[Dict[str, Any]],
+    region: str,
+    current_aws_account_id: str,
+    aws_update_tag: int,
+) -> None:
     ingest_transit_gateway = """
     MERGE (tgwa:AWSTransitGatewayAttachment{id: {TgwAttachmentId}})
     ON CREATE SET tgwa.firstseen = timestamp()
@@ -174,9 +188,12 @@ def load_tgw_attachments(neo4j_session, data, region, current_aws_account_id, aw
 
 @timeit
 def _attach_tgw_vpc_attachment_to_vpc_subnets(
-    neo4j_session, tgw_vpc_attachment, region,
-    current_aws_account_id, aws_update_tag,
-):
+    neo4j_session,
+    tgw_vpc_attachment: Dict[str, Any],
+    region: str,
+    current_aws_account_id: str,
+    aws_update_tag: int,
+) -> None:
     """
     Attach a VPC Transit Gateway Attachment to the VPC and and subnets
     """
@@ -221,30 +238,34 @@ def _attach_tgw_vpc_attachment_to_vpc_subnets(
 
 
 @timeit
-def cleanup_transit_gateways(neo4j_session, common_job_parameters):
-    run_cleanup_job('aws_import_tgw_cleanup.json', neo4j_session, common_job_parameters)
+def cleanup_transit_gateways(neo4j_session, graph_job_parameters: Dict[str, Any]):
+    run_cleanup_job('aws_import_tgw_cleanup.json', neo4j_session, graph_job_parameters)
 
 
 @timeit
-def sync_transit_gateways(neo4j_session, common_job_parameters, aws_stage_config):
-    current_aws_account_id = common_job_parameters['AWS_ID']
-    boto3_session = aws_stage_config['boto3_session']
-    regions = aws_stage_config['regions']
-    aws_update_tag = common_job_parameters['UPDATE_TAG']
+def sync_transit_gateways(neo4j_session, aws_stage_config: AwsStageConfig) -> None:
+    aws_update_tag = aws_stage_config.graph_job_parameters['UPDATE_TAG']
 
-    for region in regions:
-        logger.info("Syncing AWS Transit Gateways for region '%s' in account '%s'.", region, current_aws_account_id)
-        tgws = get_transit_gateways(boto3_session, region)
-        load_transit_gateways(neo4j_session, tgws, region, current_aws_account_id, aws_update_tag)
+    for region in aws_stage_config.current_aws_account_regions:
+        logger.info(
+            "Syncing AWS Transit Gateways for region '%s' in account '%s'.",
+            region,
+            aws_stage_config.current_aws_account_id,
+        )
+        tgws = get_transit_gateways(aws_stage_config.boto3_session, region)
+        load_transit_gateways(neo4j_session, tgws, region, aws_stage_config.current_aws_account_id, aws_update_tag)
 
         logger.debug(
             "Syncing AWS Transit Gateway Attachments for region '%s' in account '%s'.",
-            region, current_aws_account_id,
+            region, aws_stage_config.current_aws_account_id,
         )
-        tgw_attachments = get_tgw_attachments(boto3_session, region)
-        tgw_vpc_attachments = get_tgw_vpc_attachments(boto3_session, region)
+        tgw_attachments = get_tgw_attachments(aws_stage_config.boto3_session, region)
+        tgw_vpc_attachments = get_tgw_vpc_attachments(aws_stage_config.boto3_session, region)
         load_tgw_attachments(
-            neo4j_session, tgw_attachments + tgw_vpc_attachments,
-            region, current_aws_account_id, aws_update_tag,
+            neo4j_session,
+            tgw_attachments + tgw_vpc_attachments,
+            region,
+            aws_stage_config.current_aws_account_id,
+            aws_update_tag,
         )
-    cleanup_transit_gateways(neo4j_session, common_job_parameters)
+    cleanup_transit_gateways(neo4j_session, aws_stage_config.graph_job_parameters)

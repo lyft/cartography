@@ -1,7 +1,11 @@
 import logging
 from string import Template
+from typing import Any
+from typing import Dict
+from typing import List
 
 from .util import get_botocore_config
+from cartography.intel.aws.stage_config import AwsStageConfig
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -11,12 +15,12 @@ logger = logging.getLogger(__name__)
 
 @timeit
 @aws_handle_regions
-def get_ec2_vpcs(boto3_session, region):
+def get_ec2_vpcs(boto3_session, region: str) -> List[Dict[str, Any]]:
     client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
     return client.describe_vpcs()['Vpcs']
 
 
-def _get_cidr_association_statement(block_type):
+def _get_cidr_association_statement(block_type: str) -> str:
     INGEST_CIDR_TEMPLATE = Template("""
     MATCH (vpc:AWSVpc{id: {VpcId}})
     WITH vpc
@@ -52,7 +56,9 @@ def _get_cidr_association_statement(block_type):
 
 
 @timeit
-def load_cidr_association_set(neo4j_session, vpc_id, vpc_data, block_type, aws_update_tag):
+def load_cidr_association_set(
+    neo4j_session, vpc_id: str, vpc_data: Dict[str, Any], block_type: str, aws_update_tag: int,
+) -> None:
     ingest_statement = _get_cidr_association_statement(block_type)
 
     if block_type == "ipv6":
@@ -69,7 +75,9 @@ def load_cidr_association_set(neo4j_session, vpc_id, vpc_data, block_type, aws_u
 
 
 @timeit
-def load_ec2_vpcs(neo4j_session, data, region, current_aws_account_id, aws_update_tag):
+def load_ec2_vpcs(
+    neo4j_session, data: List[Dict[str, Any]], region: str, current_aws_account_id: str, aws_update_tag: int,
+) -> None:
     # https://docs.aws.amazon.com/cli/latest/reference/ec2/describe-vpcs.html
     # {
     #     "Vpcs": [
@@ -149,19 +157,19 @@ def load_ec2_vpcs(neo4j_session, data, region, current_aws_account_id, aws_updat
 
 
 @timeit
-def cleanup_ec2_vpcs(neo4j_session, common_job_parameters):
-    run_cleanup_job('aws_import_vpc_cleanup.json', neo4j_session, common_job_parameters)
+def cleanup_ec2_vpcs(neo4j_session, graph_job_parameters: Dict[str, Any]) -> None:
+    run_cleanup_job('aws_import_vpc_cleanup.json', neo4j_session, graph_job_parameters)
 
 
 @timeit
-def sync_vpc(neo4j_session, common_job_parameters, aws_stage_config):
-    current_aws_account_id = common_job_parameters['AWS_ID']
-    boto3_session = aws_stage_config['boto3_session']
-    regions = aws_stage_config['regions']
-    aws_update_tag = common_job_parameters['UPDATE_TAG']
-
-    for region in regions:
-        logger.info("Syncing EC2 VPC for region '%s' in account '%s'.", region, current_aws_account_id)
-        data = get_ec2_vpcs(boto3_session, region)
-        load_ec2_vpcs(neo4j_session, data, region, current_aws_account_id, aws_update_tag)
-    cleanup_ec2_vpcs(neo4j_session, common_job_parameters)
+def sync_vpc(neo4j_session, aws_stage_config: AwsStageConfig) -> None:
+    for region in aws_stage_config.current_aws_account_regions:
+        logger.info("Syncing EC2 VPC for region '%s' in account '%s'.", region, aws_stage_config.current_aws_account_id)
+        data = get_ec2_vpcs(aws_stage_config.boto3_session, region)
+        load_ec2_vpcs(
+            neo4j_session,
+            data,
+            region,
+            aws_stage_config.current_aws_account_id, aws_stage_config.graph_job_parameters['UPDATE_TAG'],
+        )
+    cleanup_ec2_vpcs(neo4j_session, aws_stage_config.graph_job_parameters)
