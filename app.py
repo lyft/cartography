@@ -89,7 +89,32 @@ def process_request(config, logger, args):
     }
 
     resp = cartography.cli.run(body)
+
+    publish_response(config, logger, body, resp)
+
     return resp
+
+
+def publish_response(config, logger, req, resp):
+    if os.environ['LAMBDA_APP_ENV'] != 'production':
+        try:
+            with open('response.json', 'w') as outfile:
+                json.dump(resp, outfile, indent=2)
+
+        except Exception as e:
+            logger.error(f'Failed to write to file: {str(e)}')
+
+    else:
+        body = {
+            "status": "success",
+            "params": req['params'],
+            "response": resp
+        }
+
+        sns_helper = SNSLibrary(config['sns'], logger)
+        status = sns_helper.publish(json.dumps(body), config['sns']['resultTopic'])
+
+        logger.info(f'result published to SNS with status: {status}')
 
 
 def get_auth_creds(config, logger, args):
@@ -171,20 +196,6 @@ def load_cartography(event, context):
     response = process_request(config, logger, params)
 
     logger.info(f'inventory sync aws response from worker: {json.dumps(response)}')
-
-    if os.environ['LAMBDA_APP_ENV'] != 'production':
-        try:
-            with open('response.json', 'w') as outfile:
-                json.dump(response, outfile, indent=2)
-
-        except Exception as e:
-            logger.error(f'Failed to write to file: {str(e)}')
-
-    else:
-        sns_helper = SNSLibrary(config['sns'], logger)
-        status = sns_helper.publish(json.dumps(response), config['sns']['resultTopic'])
-
-        logger.info(f'result published to SNS with status: {status}')
 
     return {
         'statusCode': 200,
