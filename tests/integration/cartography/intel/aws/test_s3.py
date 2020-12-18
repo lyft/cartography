@@ -18,26 +18,30 @@ def test_load_s3_buckets(neo4j_session, *args):
         (
             "bucket-1",
             "bucket-1",
+            "eu-west-1",
         ),
         (
             "bucket-2",
             "bucket-2",
+            "me-south-1",
         ),
         (
             "bucket-3",
             "bucket-3",
+            None,
         ),
     }
 
     nodes = neo4j_session.run(
         """
-        MATCH (s:S3Bucket) return s.id, s.name
+        MATCH (s:S3Bucket) return s.id, s.name, s.region
         """,
     )
     actual_nodes = {
         (
             n['s.id'],
             n['s.name'],
+            n['s.region'],
         )
         for n in nodes
     }
