@@ -108,6 +108,7 @@ CREATE INDEX ON :RDSInstance(db_instance_identifier);
 CREATE INDEX ON :RDSInstance(id);
 CREATE INDEX ON :RDSInstance(arn);
 CREATE INDEX ON :ReplyUri(id)
+CREATE INDEX ON :RestAPI(id)
 CREATE INDEX ON :Risk(id);
 CREATE INDEX ON :S3Acl(id);
 CREATE INDEX ON :S3Bucket(id);
