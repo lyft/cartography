@@ -3,7 +3,8 @@
     {
       "query": "MATCH (n:AWSAccount) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
       "iterative": true,
-      "iterationsize": 100
+      "iterationsize": 100,
+      "skip_on_keep_unseen_accounts": true
   }],
   "name": "cleanup AWS Accounts"
 }
