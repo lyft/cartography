@@ -114,6 +114,14 @@ class CLI:
             ),
         )
         parser.add_argument(
+            '--aws-keep-unseen-accounts',
+            action='store_true',
+            help=(
+                'Keep AWS account data in the database which are not synced in the actual run. This is useful if you'
+                'want to run the sync job in parallel for multiple AWS accounts.'
+            ),
+        )
+        parser.add_argument(
             '--crxcavator-api-base-uri',
             type=str,
             default='https://api.crxcavator.io/v1',
