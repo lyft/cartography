@@ -1,6 +1,46 @@
 {
   "statements": [
     {
+      "query": "MATCH (n:Certificate)-[:CERTIFICATE_OF]->(:Stage)-[:STAGE_OF]->(:RestAPI)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (:Certificate)-[r:CERTIFICATE_OF]->(:Stage)-[:STAGE_OF]->(:RestAPI)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (n:MethodSettings)-[:METHOD_SETTINGS_OF]->(:Stage)-[:STAGE_OF]->(:RestAPI)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (:MethodSettings)-[r:METHOD_SETTINGS_OF]->(:Stage)-[:STAGE_OF]->(:RestAPI)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (n:Stage)-[:STAGE_OF]->(:RestAPI)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (:Stage)-[r:STAGE_OF]->(:RestAPI)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (n:Resource)-[:REST_API_RESOURCE]->(:RestAPI)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (:Resource)-[r:REST_API_RESOURCE]->(:RestAPI)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
       "query": "MATCH (n:RestAPI)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
       "iterative": true,
       "iterationsize": 100
@@ -9,47 +49,7 @@
       "query": "MATCH (:RestAPI)<-[r:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
       "iterative": true,
       "iterationsize": 100
-    },    
-    {
-      "query": "MATCH (n:Stage)-[:BELONGS_TO]->(:RestAPI)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
-      "iterative": true,
-      "iterationsize": 100
-    },
-    {
-      "query": "MATCH (:Stage)-[r:BELONGS_TO]->(:RestAPI)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
-      "iterative": true,
-      "iterationsize": 100
-    },
-    {
-      "query": "MATCH (n:Resource)-[:RESOURCE_OF]->(:RestAPI)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
-      "iterative": true,
-      "iterationsize": 100
-    },
-    {
-      "query": "MATCH (:Resource)-[r:RESOURCE_OF]->(:RestAPI)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
-      "iterative": true,
-      "iterationsize": 100
-    },
-    {
-      "query": "MATCH (n:Certificate)-[:CERTIFICATE_OF]->(:Stage)-[:BELONGS_TO]->(:RestAPI)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
-      "iterative": true,
-      "iterationsize": 100
-    },
-    {
-      "query": "MATCH (:Certificate)-[r:CERTIFICATE_OF]->(:Stage)-[:BELONGS_TO]->(:RestAPI)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
-      "iterative": true,
-      "iterationsize": 100
-    },
-    {
-      "query": "MATCH (n:MethodSettings)-[:BELONGING_TO]->(:Stage)-[:BELONGS_TO]->(:RestAPI)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
-      "iterative": true,
-      "iterationsize": 100
-    },
-    {
-      "query": "MATCH (:MethodSettings)-[r:BELONGING_TO]->(:Stage)-[:BELONGS_TO]->(:RestAPI)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
-      "iterative": true,
-      "iterationsize": 100
-    }
+    }  
   ],
   "name": "cleanup APIGateway"
 }

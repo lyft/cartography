@@ -110,6 +110,8 @@ def load_apigateway_rest_apis(neo4j_session, data, region, current_aws_account_i
             # endpointConfiguration=api('endpointConfiguration'),
             disableExecuteApiEndpoint=str(api.get('disableExecuteApiEndpoint')),
             aws_update_tag=aws_update_tag,
+            # Uncomment above after testing
+            # aws_update_tag=(aws_update_tag-1) if api['id'] in ['tf68zeus49', 'wpv18drjq4', '2kem5rdq5j'] else aws_update_tag,
             Region=region,
             AWS_ACCOUNT_ID=current_aws_account_id,
         )
@@ -160,7 +162,7 @@ def _load_apigateway_stages(neo4j_session, stages, update_tag, api_id, certifica
     s.lastupdated = {UpdateTag}
     WITH s 
     MATCH (rest_api:RestAPI{id:{RestApiId}})
-    MERGE (s)-[r:BELONGS_TO]->(rest_api)
+    MERGE (s)-[r:STAGE_OF]->(rest_api)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {UpdateTag}
     """
@@ -176,7 +178,9 @@ def _load_apigateway_stages(neo4j_session, stages, update_tag, api_id, certifica
             CacheClusterStatus=stage.get('cacheClusterStatus'),
             TracingEnabled=str(stage.get('tracingEnabled')),
             WebAclArn=stage.get('webAclArn'),
-            UpdateTag=update_tag,
+            # UpdateTag=update_tag,
+            # Uncomment above after testing
+            UpdateTag=(update_tag-1) if stage['stageName']=='prod' else update_tag,
             RestApiId=api_id
         )
         
@@ -198,13 +202,17 @@ def _load_stage_methodsettings(neo4j_session, stage, update_tag, api_id):
     m.cachettlinseconds = {CacheTtlInSeconds},
     m.cacheDataEncrypted = {CacheDataEncrypted},
     m.requireauthorizationforcachecontrol = {RequireAuthorizationForCacheControl},
-    m.unauthorizedcachecontrolheaderstrategy = {UnauthorizedCacheControlHeaderStrategy}
+    m.unauthorizedcachecontrolheaderstrategy = {UnauthorizedCacheControlHeaderStrategy},
+    m.lastupdated = {UpdateTag}
     WITH m
     MATCH (stage:Stage{id: {StageName}})
-    MERGE (m)-[r:BELONGING_TO]->(stage)
+    MERGE (m)-[r:METHOD_SETTINGS_OF]->(stage)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {UpdateTag}
     """
+    # TODO UpdateTags must be mentioned for both, the node and the relationship
+    # Also, in cleanup, use the bottom up approach for deletion first
+    # i.e. ClientCertificate/MethodSettings -> Stages/Resources -> RestAPIs
     
     for key, value in stage['methodSettings'].items():
         neo4j_session.run(
@@ -221,7 +229,9 @@ def _load_stage_methodsettings(neo4j_session, stage, update_tag, api_id):
             RequireAuthorizationForCacheControl=str(value.get('requireAuthorizationForCacheControl')),
             UnauthorizedCacheControlHeaderStrategy=value.get('unauthorizedCacheControlHeaderStrategy'),
             StageName=stage['stageName'],
-            UpdateTag=update_tag
+            # UpdateTag=update_tag
+            # Uncomment above after testing
+            UpdateTag=(update_tag-1) if str(key)=="*/*" else update_tag
         )
         
         
@@ -255,10 +265,13 @@ def _load_apigateway_resources(neo4j_session, resources, update_tag, api_id):
     ingest_resources = """
     MERGE (s:Resource{id: {ResourceId}})
     ON CREATE SET s.firstseen = timestamp()
-    SET s.path = {Path}, s.pathpart = {PathPart}, s.parentid = {ParentId}
+    SET s.path = {Path}, 
+    s.pathpart = {PathPart}, 
+    s.parentid = {ParentId},
+    s.lastupdated ={UpdateTag}
     WITH s
     MATCH (rest_api:RestAPI{id:{RestApiId}})
-    MERGE (s)-[r:RESOURCE_OF]->(rest_api)
+    MERGE (s)-[r:REST_API_RESOURCE]->(rest_api)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {UpdateTag}
     """
@@ -271,7 +284,9 @@ def _load_apigateway_resources(neo4j_session, resources, update_tag, api_id):
             PathPart=resource.get('pathPart'),
             ParentId=resource.get('parentId'),
             RestApiId=api_id,
-            UpdateTag=update_tag
+            # UpdateTag=update_tag
+            # Uncomment above after testing
+            UpdateTag=(update_tag-1) if resource['id'] in ['kv5ckt09z6', 'h5zjwb', '53x0svb8fd', 'hyweinlq0m'] else update_tag
         )
 
 
