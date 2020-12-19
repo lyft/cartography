@@ -79,7 +79,6 @@ def load_transit_gateways(neo4j_session, data, region, current_aws_account_id, a
     tgw.region = {Region},
     tgw.lastupdated = {aws_update_tag}
 
-    WITH tgw
     MERGE (ownerAccount)-[r:RESOURCE]->(tgw)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {aws_update_tag}
