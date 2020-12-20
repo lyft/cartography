@@ -22,6 +22,9 @@ def get_network_interface_data(boto3_session, region):
 
 @timeit
 def load_network_interfaces(neo4j_session, data, region, aws_account_id, aws_update_tag):
+    """
+    Creates (:NetworkInterface)
+    """
     ingest_network_interfaces = """
     UNWIND {network_interfaces} AS network_interface
         MERGE (netinf:NetworkInterface{id: network_interface.NetworkInterfaceId})
@@ -47,9 +50,10 @@ def load_network_interfaces(neo4j_session, data, region, aws_account_id, aws_upd
 
 
 @timeit
-def load_network_interface_security_group_relations(
-    neo4j_session, data, region, aws_account_id, aws_update_tag,
-):
+def load_network_interface_security_group_relations(neo4j_session, data, region, aws_account_id, aws_update_tag):
+    """
+    Creates (:NetworkInterface)-[:MEMBER_OF_EC2_SECURITY_GROUP]->(:EC2SecurityGroup)
+    """
     ingest_network_interface_security_group_relations = """
     UNWIND {network_interfaces} AS network_interface
         UNWIND network_interface.Groups AS security_group
@@ -67,6 +71,9 @@ def load_network_interface_security_group_relations(
 
 @timeit
 def load_network_interface_subnet_relations(neo4j_session, data, region, aws_account_id, aws_update_tag):
+    """
+    Creates (:NetworkInterface)-[:PART_OF_SUBNET]->(:EC2Subnet)
+    """
     ingest_network_interface_subnet_relations = """
     UNWIND {network_interfaces} AS network_interface
         MATCH (netinf:NetworkInterface{id: network_interface.NetworkInterfaceId}),
@@ -85,6 +92,9 @@ def load_network_interface_subnet_relations(neo4j_session, data, region, aws_acc
 def load_network_interface_instance_relations(
     neo4j_session, instance_associations, region, aws_account_id, aws_update_tag,
 ):
+    """
+    Creates (:EC2Instance)-[:NETWORK_INTERFACE]->(:NetworkInterface)
+    """
     ingest_network_interface_instance_relations = """
     UNWIND {instance_associations} AS instance_association
         MATCH (netinf:NetworkInterface{id: instance_association.netinf_id}),
@@ -101,6 +111,9 @@ def load_network_interface_instance_relations(
 
 @timeit
 def load_network_interface_elb_relations(neo4j_session, elb_associations, region, aws_account_id, aws_update_tag):
+    """
+    Creates (:LoadBalancer)-[:NETWORK_INTERFACE]->(:NetworkInterface)
+    """
     ingest_network_interface_elb_relations = """
     UNWIND {elb_associations} AS elb_association
         MATCH (netinf:NetworkInterface{id: elb_association.netinf_id}),
@@ -117,6 +130,9 @@ def load_network_interface_elb_relations(neo4j_session, elb_associations, region
 
 @timeit
 def load_network_interface_elbv2_relations(neo4j_session, elb_associations_v2, region, aws_account_id, aws_update_tag):
+    """
+    Creates (:LoadBalancerV2)-[:NETWORK_INTERFACE]->(:NetworkInterface)
+    """
     ingest_network_interface_elb2_relations = """
     UNWIND {elb_associations} AS elb_association
         MATCH (netinf:NetworkInterface{id: elb_association.netinf_id}),
@@ -133,6 +149,9 @@ def load_network_interface_elbv2_relations(neo4j_session, elb_associations_v2, r
 
 @timeit
 def load_private_ip_addresses(neo4j_session, data, region, aws_account_id, aws_update_tag):
+    """
+    Creates (:PrivateIpAddress) and (:NetworkInterface)-[:PRIVATE_IP_ADDRESS]->(:PrivateIpAddress)
+    """
     ingest_private_ip_addresses = """
     UNWIND {network_interfaces} AS network_interface
         UNWIND network_interface.PrivateIpAddresses AS private_ip_address
@@ -169,6 +188,9 @@ def load_private_ip_addresses(neo4j_session, data, region, aws_account_id, aws_u
 
 @timeit
 def load_network_interface_instance_to_subnet_relations(neo4j_session, aws_update_tag):
+    """
+    Creates (:EC2Instance)-[:PART_OF_SUBNET]->(:EC2Subnet)
+    """
     ingest_network_interface_instance_relations = """
     MATCH (i:EC2Instance)-[:NETWORK_INTERFACE]-(interface:NetworkInterface)-[:PART_OF_SUBNET]-(s:EC2Subnet)
     MERGE (i)-[r:PART_OF_SUBNET]->(s)
@@ -182,6 +204,9 @@ def load_network_interface_instance_to_subnet_relations(neo4j_session, aws_updat
 
 @timeit
 def load_network_interface_load_balancer_relations(neo4j_session, aws_update_tag):
+    """
+    Creates (:LoadBalancer)-[:PART_OF_SUBNET]->(:EC2Subnet)
+    """
     ingest_network_interface_loadbalancer_relations = """
     MATCH (i:LoadBalancer)-[:NETWORK_INTERFACE]-(interface:NetworkInterface)-[:PART_OF_SUBNET]-(s:EC2Subnet)
     MERGE (i)-[r:PART_OF_SUBNET]->(s)
@@ -195,6 +220,9 @@ def load_network_interface_load_balancer_relations(neo4j_session, aws_update_tag
 
 @timeit
 def load_network_interface_load_balancer_v2_relations(neo4j_session, aws_update_tag):
+    """
+    Creates (:LoadBalancerV2)-[:PART_OF_SUBNET]->(:EC2Subnet)
+    """
     ingest_network_interface_loadbalancerv2_relations = """
     MATCH (i:LoadBalancerV2)-[:NETWORK_INTERFACE]-(interface:NetworkInterface)-[:PART_OF_SUBNET]-(s:EC2Subnet)
     MERGE (i)-[r:PART_OF_SUBNET]->(s)

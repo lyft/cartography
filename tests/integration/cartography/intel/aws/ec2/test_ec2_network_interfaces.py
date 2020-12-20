@@ -62,7 +62,7 @@ def test_ec2_private_ips(neo4j_session):
 
 def test_network_interface_relationships(neo4j_session):
     data = tests.data.aws.ec2.network_interfaces.DESCRIBE_NETWORK_INTERFACES
-    cartography.intel.aws.ec2.network_interfaces.load_network_interfaces(
+    cartography.intel.aws.ec2.network_interfaces.load(
         neo4j_session,
         data,
         TEST_REGION,
