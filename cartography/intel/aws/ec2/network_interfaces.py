@@ -25,6 +25,7 @@ def load_network_interfaces(neo4j_session, data, region, aws_account_id, aws_upd
     """
     Creates (:NetworkInterface)
     """
+    # TODO - attach to an aws account
     ingest_network_interfaces = """
     UNWIND {network_interfaces} AS network_interface
         MERGE (netinf:NetworkInterface{id: network_interface.NetworkInterfaceId})
@@ -43,6 +44,7 @@ def load_network_interfaces(neo4j_session, data, region, aws_account_id, aws_upd
             netinf.requester_id = network_interface.RequesterId,
             netinf.public_ip = network_interface.Association.PublicIp
     """
+    logger.debug("Loading %d network interfaces in %s.", len(data), region)
     neo4j_session.run(
         ingest_network_interfaces, network_interfaces=data, aws_update_tag=aws_update_tag,
         region=region, aws_account_id=aws_account_id,
@@ -54,6 +56,7 @@ def load_network_interface_security_group_relations(neo4j_session, data, region,
     """
     Creates (:NetworkInterface)-[:MEMBER_OF_EC2_SECURITY_GROUP]->(:EC2SecurityGroup)
     """
+    # TODO if there is no match on the sec group, the netinf will be orphaned
     ingest_network_interface_security_group_relations = """
     UNWIND {network_interfaces} AS network_interface
         UNWIND network_interface.Groups AS security_group
@@ -82,6 +85,7 @@ def load_network_interface_subnet_relations(neo4j_session, data, region, aws_acc
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = {aws_update_tag}
     """
+    # TODO if there is no match on the subnet, the netinf will be orphaned
     neo4j_session.run(
         ingest_network_interface_subnet_relations, network_interfaces=data, aws_update_tag=aws_update_tag,
         region=region, aws_account_id=aws_account_id,
@@ -103,6 +107,7 @@ def load_network_interface_instance_relations(
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = {aws_update_tag}
     """
+    logger.debug("Attaching %d EC2 instances to network interfaces in %s.", len(instance_associations), region)
     neo4j_session.run(
         ingest_network_interface_instance_relations, instance_associations=instance_associations,
         aws_update_tag=aws_update_tag, region=region, aws_account_id=aws_account_id,
@@ -122,6 +127,7 @@ def load_network_interface_elb_relations(neo4j_session, elb_associations, region
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = {aws_update_tag}
     """
+    logger.debug("Attaching %d ELBs to network interfaces in %s.", len(elb_associations), region)
     neo4j_session.run(
         ingest_network_interface_elb_relations, elb_associations=elb_associations,
         aws_update_tag=aws_update_tag, region=region, aws_account_id=aws_account_id,
@@ -189,8 +195,10 @@ def load_private_ip_addresses(neo4j_session, data, region, aws_account_id, aws_u
 @timeit
 def load_network_interface_instance_to_subnet_relations(neo4j_session, aws_update_tag):
     """
-    Creates (:EC2Instance)-[:PART_OF_SUBNET]->(:EC2Subnet)
+    Creates (:EC2Instance)-[:PART_OF_SUBNET]->(:EC2Subnet) if
+    (:EC2Instance)--(:NetworkInterface)--(:EC2Subnet).
     """
+    # TODO - cleanup?
     ingest_network_interface_instance_relations = """
     MATCH (i:EC2Instance)-[:NETWORK_INTERFACE]-(interface:NetworkInterface)-[:PART_OF_SUBNET]-(s:EC2Subnet)
     MERGE (i)-[r:PART_OF_SUBNET]->(s)
@@ -205,8 +213,10 @@ def load_network_interface_instance_to_subnet_relations(neo4j_session, aws_updat
 @timeit
 def load_network_interface_load_balancer_relations(neo4j_session, aws_update_tag):
     """
-    Creates (:LoadBalancer)-[:PART_OF_SUBNET]->(:EC2Subnet)
+    Creates (:LoadBalancer)-[:PART_OF_SUBNET]->(:EC2Subnet) if
+    (:LoadBalancer)--(:NetworkInterface)--(:EC2Subnet).
     """
+    #  TODO - cleanup?
     ingest_network_interface_loadbalancer_relations = """
     MATCH (i:LoadBalancer)-[:NETWORK_INTERFACE]-(interface:NetworkInterface)-[:PART_OF_SUBNET]-(s:EC2Subnet)
     MERGE (i)-[r:PART_OF_SUBNET]->(s)
@@ -221,7 +231,8 @@ def load_network_interface_load_balancer_relations(neo4j_session, aws_update_tag
 @timeit
 def load_network_interface_load_balancer_v2_relations(neo4j_session, aws_update_tag):
     """
-    Creates (:LoadBalancerV2)-[:PART_OF_SUBNET]->(:EC2Subnet)
+    Creates (:LoadBalancerV2)-[:PART_OF_SUBNET]->(:EC2Subnet) if
+    (:LoadBalancerV2)--(:NetworkInterface)--(:EC2Subnet).
     """
     ingest_network_interface_loadbalancerv2_relations = """
     MATCH (i:LoadBalancerV2)-[:NETWORK_INTERFACE]-(interface:NetworkInterface)-[:PART_OF_SUBNET]-(s:EC2Subnet)
