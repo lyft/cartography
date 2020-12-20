@@ -51,16 +51,21 @@ def load_network_interfaces(neo4j_session, data, region, aws_account_id, aws_upd
 
     ingest_network_interfaces = """
     UNWIND {network_interfaces} AS network_interface
-    MERGE (netinf:NetworkInterface{id: network_interface.NetworkInterfaceId})
-    ON CREATE SET netinf.firstseen = timestamp()
-    SET netinf.lastupdated = {aws_update_tag},  netinf.mac_address = network_interface.MacAddress,
-    netinf.description = network_interface.Description, netinf.private_ip_address = network_interface.PrivateIpAddress,
-    netinf.id = network_interface.NetworkInterfaceId, netinf.private_dns_name = network_interface.PrivateDnsName,
-    netinf.status = network_interface.Status, netinf.subnetid = network_interface.SubnetId,
-    netinf.interface_type = network_interface.InterfaceType,
-    netinf.requester_managed = network_interface.RequesterManaged,
-    netinf.source_dest_check = network_interface.SourceDestCheck,
-    netinf.requester_id = network_interface.RequesterId, netinf.public_ip = network_interface.Association.PublicIp
+        MERGE (netinf:NetworkInterface{id: network_interface.NetworkInterfaceId})
+        ON CREATE SET netinf.firstseen = timestamp()
+        SET netinf.lastupdated = {aws_update_tag},
+            netinf.mac_address = network_interface.MacAddress,
+            netinf.description = network_interface.Description,
+            netinf.private_ip_address = network_interface.PrivateIpAddress,
+            netinf.id = network_interface.NetworkInterfaceId,
+            netinf.private_dns_name = network_interface.PrivateDnsName,
+            netinf.status = network_interface.Status,
+            netinf.subnetid = network_interface.SubnetId,
+            netinf.interface_type = network_interface.InterfaceType,
+            netinf.requester_managed = network_interface.RequesterManaged,
+            netinf.source_dest_check = network_interface.SourceDestCheck,
+            netinf.requester_id = network_interface.RequesterId,
+            netinf.public_ip = network_interface.Association.PublicIp
     """
 
     neo4j_session.run(
@@ -70,12 +75,12 @@ def load_network_interfaces(neo4j_session, data, region, aws_account_id, aws_upd
 
     ingest_network_interface_security_group_relations = """
     UNWIND {network_interfaces} AS network_interface
-    UNWIND network_interface.Groups AS security_group
-    MATCH (netinf:NetworkInterface{id: network_interface.NetworkInterfaceId}),
-        (sg:EC2SecurityGroup{id: security_group.GroupId})
-    MERGE (netinf)-[r:MEMBER_OF_EC2_SECURITY_GROUP]->(sg)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+        UNWIND network_interface.Groups AS security_group
+            MATCH (netinf:NetworkInterface{id: network_interface.NetworkInterfaceId}),
+                (sg:EC2SecurityGroup{id: security_group.GroupId})
+            MERGE (netinf)-[r:MEMBER_OF_EC2_SECURITY_GROUP]->(sg)
+            ON CREATE SET r.firstseen = timestamp()
+            SET r.lastupdated = {aws_update_tag}
     """
 
     neo4j_session.run(
@@ -85,11 +90,11 @@ def load_network_interfaces(neo4j_session, data, region, aws_account_id, aws_upd
 
     ingest_network_interface_subnet_relations = """
     UNWIND {network_interfaces} AS network_interface
-    MATCH (netinf:NetworkInterface{id: network_interface.NetworkInterfaceId}),
-        (snet:EC2Subnet{subnetid: network_interface.SubnetId})
-    MERGE (netinf)-[r:PART_OF_SUBNET]->(snet)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+        MATCH (netinf:NetworkInterface{id: network_interface.NetworkInterfaceId}),
+            (snet:EC2Subnet{subnetid: network_interface.SubnetId})
+        MERGE (netinf)-[r:PART_OF_SUBNET]->(snet)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {aws_update_tag}
     """
 
     neo4j_session.run(
@@ -99,11 +104,11 @@ def load_network_interfaces(neo4j_session, data, region, aws_account_id, aws_upd
 
     ingest_network_interface_instance_relations = """
     UNWIND {instance_associations} AS instance_association
-    MATCH (netinf:NetworkInterface{id: instance_association.netinf_id}),
-        (instance:EC2Instance{id: instance_association.instance_id})
-    MERGE (instance)-[r:NETWORK_INTERFACE]->(netinf)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+        MATCH (netinf:NetworkInterface{id: instance_association.netinf_id}),
+            (instance:EC2Instance{id: instance_association.instance_id})
+        MERGE (instance)-[r:NETWORK_INTERFACE]->(netinf)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {aws_update_tag}
     """
 
     neo4j_session.run(
@@ -113,11 +118,11 @@ def load_network_interfaces(neo4j_session, data, region, aws_account_id, aws_upd
 
     ingest_network_interface_elb_relations = """
     UNWIND {elb_associations} AS elb_association
-    MATCH (netinf:NetworkInterface{id: elb_association.netinf_id}),
-        (elb:LoadBalancer{name: elb_association.elb_name})
-    MERGE (elb)-[r:NETWORK_INTERFACE]->(netinf)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+        MATCH (netinf:NetworkInterface{id: elb_association.netinf_id}),
+            (elb:LoadBalancer{name: elb_association.elb_name})
+        MERGE (elb)-[r:NETWORK_INTERFACE]->(netinf)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {aws_update_tag}
     """
 
     neo4j_session.run(
@@ -127,11 +132,11 @@ def load_network_interfaces(neo4j_session, data, region, aws_account_id, aws_upd
 
     ingest_network_interface_elb2_relations = """
     UNWIND {elb_associations} AS elb_association
-    MATCH (netinf:NetworkInterface{id: elb_association.netinf_id}),
-        (elb:LoadBalancerV2{id: elb_association.elb_id})
-    MERGE (elb)-[r:NETWORK_INTERFACE]->(netinf)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+        MATCH (netinf:NetworkInterface{id: elb_association.netinf_id}),
+            (elb:LoadBalancerV2{id: elb_association.elb_id})
+        MERGE (elb)-[r:NETWORK_INTERFACE]->(netinf)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {aws_update_tag}
     """
 
     neo4j_session.run(
@@ -141,16 +146,16 @@ def load_network_interfaces(neo4j_session, data, region, aws_account_id, aws_upd
 
     ingest_private_ip_addresses = """
     UNWIND {network_interfaces} AS network_interface
-    UNWIND network_interface.PrivateIpAddresses AS private_ip_address
-    MERGE (private_ip:EC2PrivateIp{id: network_interface.NetworkInterfaceId + ':'
-        + private_ip_address.PrivateIpAddress})
-    ON CREATE SET private_ip.firstseen = timestamp()
-    SET private_ip.lastupdated = {aws_update_tag},
-    private_ip.network_interface_id = network_interface.NetworkInterfaceId,
-    private_ip.primary = private_ip_address.Primary,
-    private_ip.private_ip_address = private_ip_address.PrivateIpAddress,
-    private_ip.public_ip  = private_ip_address.Association.PublicIp,
-    private_ip.ip_owner_id = private_ip_address.Association.IpOwnerId
+        UNWIND network_interface.PrivateIpAddresses AS private_ip_address
+            MERGE (private_ip:EC2PrivateIp{id: network_interface.NetworkInterfaceId + ':'
+                + private_ip_address.PrivateIpAddress})
+            ON CREATE SET private_ip.firstseen = timestamp()
+            SET private_ip.lastupdated = {aws_update_tag},
+                private_ip.network_interface_id = network_interface.NetworkInterfaceId,
+                private_ip.primary = private_ip_address.Primary,
+                private_ip.private_ip_address = private_ip_address.PrivateIpAddress,
+                private_ip.public_ip = private_ip_address.Association.PublicIp,
+                private_ip.ip_owner_id = private_ip_address.Association.IpOwnerId
     """
 
     neo4j_session.run(
@@ -160,12 +165,13 @@ def load_network_interfaces(neo4j_session, data, region, aws_account_id, aws_upd
 
     ingest_private_ip_addresses_network_interface_relations = """
     UNWIND {network_interfaces} AS network_interface
-    UNWIND network_interface.PrivateIpAddresses AS private_ip_address
-    MATCH (private_ip:EC2PrivateIp{id: network_interface.NetworkInterfaceId + ':'
-        + private_ip_address.PrivateIpAddress}), (netinf:NetworkInterface{id: network_interface.NetworkInterfaceId})
-    MERGE (netinf)-[r:PRIVATE_IP_ADDRESS]->(private_ip)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+        UNWIND network_interface.PrivateIpAddresses AS private_ip_address
+            MATCH (private_ip:EC2PrivateIp{id: network_interface.NetworkInterfaceId + ':'
+                + private_ip_address.PrivateIpAddress}),
+                (netinf:NetworkInterface{id: network_interface.NetworkInterfaceId})
+            MERGE (netinf)-[r:PRIVATE_IP_ADDRESS]->(private_ip)
+            ON CREATE SET r.firstseen = timestamp()
+            SET r.lastupdated = {aws_update_tag}
     """
 
     neo4j_session.run(
@@ -218,7 +224,7 @@ def sync_network_interfaces(
     common_job_parameters,
 ):
     for region in regions:
-        logger.info("Syncing EC2 network interfaces for region '%s' in account '%s'.", region, current_aws_account_id)
-        data = get_network_interface_data(boto3_session, region)
-        load_network_interfaces(neo4j_session, data, region, current_aws_account_id, aws_update_tag)
+       logger.info("Syncing EC2 network interfaces for region '%s' in account '%s'.", region, current_aws_account_id)
+       data = get_network_interface_data(boto3_session, region)
+       load_network_interfaces(neo4j_session, data, region, current_aws_account_id, aws_update_tag)
     cleanup_network_interfaces(neo4j_session, common_job_parameters)
