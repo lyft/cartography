@@ -147,6 +147,7 @@ def load_network_interface_elbv2_relations(neo4j_session, elb_associations_v2, r
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = {aws_update_tag}
     """
+    logger.debug("Attaching %d ELB V2s to network interfaces in %s.", len(elb_associations_v2), region)
     neo4j_session.run(
         ingest_network_interface_elb2_relations, elb_associations=elb_associations_v2,
         aws_update_tag=aws_update_tag, region=region, aws_account_id=aws_account_id,
