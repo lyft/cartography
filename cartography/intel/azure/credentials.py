@@ -2,7 +2,7 @@ import logging
 import requests
 from datetime import datetime, timedelta
 
-from azure.common.credentials import ServicePrincipalCredentials
+from azure.common.credentials import ServicePrincipalCredentials, get_azure_cli_credentials, get_cli_profile
 from msrestazure.azure_active_directory import AADTokenCredentials
 import adal
 
@@ -13,7 +13,35 @@ AUTHORITY_HOST_URI = 'https://login.microsoftonline.com'
 
 class Authenticator:
 
-    def authenticate(self, tenant_id=None, client_id=None, client_secret=None):
+    def authenticate_cli(self):
+        """
+        Implements authentication for the Azure provider
+        """
+        try:
+
+            # Set logging level to error for libraries as otherwise generates a lot of warnings
+            logging.getLogger('adal-python').setLevel(logging.ERROR)
+            logging.getLogger('msrest').setLevel(logging.ERROR)
+            logging.getLogger('msrestazure.azure_active_directory').setLevel(logging.ERROR)
+            logging.getLogger('urllib3').setLevel(logging.ERROR)
+
+            arm_credentials, subscription_id, tenant_id = get_azure_cli_credentials(with_tenant=True)
+            aad_graph_credentials, placeholder_1, placeholder_2 = get_azure_cli_credentials(with_tenant=True, resource='https://graph.windows.net')
+
+            profile = get_cli_profile()
+
+            return Credentials(arm_credentials, aad_graph_credentials, tenant_id, profile.get_current_account_user)
+
+        except Exception as e:
+            if ', AdalError: Unsupported wstrust endpoint version. ' \
+                    'Current support version is wstrust2005 or wstrust13.' in e.args:
+                raise Exception(
+                    'You are likely authenticating with a Microsoft Account. '
+                    'This authentication mode only support Azure Active Directory principal authentication.')
+
+            raise Exception(e)
+
+    def authenticate_sp(self, tenant_id=None, client_id=None, client_secret=None):
         """
         Implements authentication for the Azure provider
         """
@@ -38,7 +66,9 @@ class Authenticator:
                 resource='https://graph.windows.net'
             )
 
-            return Credentials(arm_credentials, aad_graph_credentials, tenant_id)
+            profile = get_cli_profile()
+
+            return Credentials(arm_credentials, aad_graph_credentials, tenant_id, profile.get_current_account_user)
 
         except Exception as e:
             if ', AdalError: Unsupported wstrust endpoint version. ' \
@@ -52,13 +82,17 @@ class Authenticator:
 
 class Credentials:
 
-    def __init__(self, arm_credentials, aad_graph_credentials, tenant_id=None, subscription_id=None, context=None):
+    def __init__(self, arm_credentials, aad_graph_credentials, tenant_id=None, subscription_id=None, context=None, current_user=None):
 
         self.arm_credentials = arm_credentials  # Azure Resource Manager API credentials
         self.aad_graph_credentials = aad_graph_credentials  # Azure AD Graph API credentials
         self.tenant_id = tenant_id
         self.subscription_id = subscription_id
         self.context = context
+        self.current_user = current_user
+
+    def get_curret_user(self):
+        return self.current_user
 
     def get_tenant_id(self):
         if self.tenant_id:

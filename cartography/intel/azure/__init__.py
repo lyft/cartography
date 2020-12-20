@@ -16,9 +16,9 @@ def _sync_one_subscription(neo4j_session, credentials, subscription_id, sync_tag
     compute.sync(neo4j_session, credentials, subscription_id, sync_tag, common_job_parameters)
 
 
-def _sync_tenant(neo4j_session, tenant_id, sync_tag, common_job_parameters):
+def _sync_tenant(neo4j_session, tenant_id, current_user, sync_tag, common_job_parameters):
     logger.debug("Syncing Azure Tenant: %s", tenant_id)
-    tenant.sync(neo4j_session, tenant_id, sync_tag, common_job_parameters)
+    tenant.sync(neo4j_session, tenant_id, current_user, sync_tag, common_job_parameters)
 
 
 def _sync_multiple_subscriptions(neo4j_session, credentials, tenant_id, subscriptions, sync_tag, common_job_parameters):
@@ -40,7 +40,10 @@ def start_azure_ingestion(neo4j_session, config):
     }
 
     try:
-        credentials = Authenticator().authenticate(config.tenant_id, config.client_id, config.client_secret)
+        if config.azure_sp_auth:
+            credentials = Authenticator().authenticate_sp(config.tenant_id, config.client_id, config.client_secret)
+        else:
+            credentials = Authenticator().authenticate_cli()
     except Exception as e:
         logger.debug("Error occurred calling Authenticator.authenticate().", exc_info=True)
         logger.error(
@@ -52,7 +55,7 @@ def start_azure_ingestion(neo4j_session, config):
         )
         return
 
-    _sync_tenant(neo4j_session, config.tenant_id, config.update_tag, common_job_parameters)
+    _sync_tenant(neo4j_session, credentials.get_tenant_id(), credentials.current_user(), config.update_tag, common_job_parameters)
 
     if config.azure_sync_all_subscriptions:
         subscriptions = subscription.get_all_azure_subscriptions(credentials)
