@@ -285,7 +285,6 @@ def load_kms_keys(neo4j_session, data, region, current_aws_account_id, aws_updat
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {aws_update_tag}
     """
-    # TODO: Gives error for following values that may contain NULL.
 
     # The owner data returned by the API maps to the aws account nickname and not the IAM user
     # there doesn't seem to be a way to retreive the mapping but we can get the current context account
