@@ -31,8 +31,6 @@ def load_network_interfaces(neo4j_session, data, region, aws_account_id, aws_upd
     (:NetworkInterface)-[:PRIVATE_IP_ADDRESS]->(:PrivateIpAddress)
     """
     logger.debug("Loading %d network interfaces in %s.", len(data), region)
-    # neo4j_session.write_transaction(_load_netinf_tx, data, region, aws_account_id, aws_update_tag)
-
     ingest_network_interfaces = """
     UNWIND {network_interfaces} AS network_interface
         MERGE (netinf:NetworkInterface{id: network_interface.NetworkInterfaceId})
@@ -70,18 +68,24 @@ def load_network_interfaces(neo4j_session, data, region, aws_account_id, aws_upd
 
         UNWIND network_interface.Groups AS security_group
             MERGE (sg:EC2SecurityGroup{id: security_group.GroupId})
+            ON CREATE SET sg.firstseen = timestamp()
+            SET sg.lastupdated = {aws_update_tag}
             MERGE (netinf)-[r:MEMBER_OF_EC2_SECURITY_GROUP]->(sg)
             ON CREATE SET r.firstseen = timestamp()
             SET r.lastupdated = {aws_update_tag}
         WITH network_interface, netinf
 
         MERGE (acc:AWSAccount{id: {aws_account_id}})
+        ON CREATE SET acc.firstseen = timestamp()
+        SET acc.lastupdated = {aws_update_tag}
         MERGE (acc)-[r:RESOURCE]->(netinf)
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = {aws_update_tag}
         WITH network_interface, netinf
 
         MERGE (snet:EC2Subnet{subnetid: network_interface.SubnetId})
+        ON CREATE SET snet.firstseen = timestamp()
+        SET snet.lastupdated = {aws_update_tag}
         MERGE (netinf)-[r:PART_OF_SUBNET]->(snet)
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = {aws_update_tag}
