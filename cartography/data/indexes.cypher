@@ -102,6 +102,7 @@ CREATE INDEX ON :Package(name);
 CREATE INDEX ON :ProgrammingLanguage(id);
 CREATE INDEX ON :PublicIpAddress(ip);
 CREATE INDEX ON :PythonLibrary(id);
+CREATE INDEX ON :PeeringConnection(id);
 CREATE INDEX ON :RedshiftCluster(id);
 CREATE INDEX ON :RedshiftCluster(arn);
 CREATE INDEX ON :RDSInstance(db_instance_identifier);
