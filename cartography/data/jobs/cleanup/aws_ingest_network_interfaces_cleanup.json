@@ -19,6 +19,16 @@
       "query": "MATCH (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(:AWSVpc)<-[:MEMBER_OF_AWS_VPC]-(:EC2Subnet)<-[r:PART_OF_SUBNET]-(:NetworkInterface) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
       "iterationsize": 100,
       "iterative": true
+    },
+    {
+      "query": "MATCH (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(:EC2Instance)-[r:PART_OF_SUBNET]->(:EC2Subnet) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+      "iterationsize": 100,
+      "iterative": true
+    },
+    {
+      "query": "MATCH (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(:LoadBalancer)-[r:PART_OF_SUBNET]->(:EC2Subnet) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+      "iterationsize": 100,
+      "iterative": true
     }
   ],
   "name": "cleanup NetworkInterface"

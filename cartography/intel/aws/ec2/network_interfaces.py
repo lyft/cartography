@@ -152,7 +152,6 @@ def load_network_interface_instance_to_subnet_relations(neo4j_session, aws_updat
     Creates (:EC2Instance)-[:PART_OF_SUBNET]->(:EC2Subnet) if
     (:EC2Instance)--(:NetworkInterface)--(:EC2Subnet).
     """
-    # TODO - cleanup?
     ingest_network_interface_instance_relations = """
     MATCH (i:EC2Instance)-[:NETWORK_INTERFACE]-(interface:NetworkInterface)-[:PART_OF_SUBNET]-(s:EC2Subnet)
     MERGE (i)-[r:PART_OF_SUBNET]->(s)
@@ -171,7 +170,6 @@ def load_network_interface_load_balancer_relations(neo4j_session, aws_update_tag
     Creates (:LoadBalancer)-[:PART_OF_SUBNET]->(:EC2Subnet) if
     (:LoadBalancer)--(:NetworkInterface)--(:EC2Subnet).
     """
-    #  TODO - cleanup?
     ingest_network_interface_loadbalancer_relations = """
     MATCH (i:LoadBalancer)-[:NETWORK_INTERFACE]-(interface:NetworkInterface)-[:PART_OF_SUBNET]-(s:EC2Subnet)
     MERGE (i)-[r:PART_OF_SUBNET]->(s)
