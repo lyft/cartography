@@ -51,6 +51,21 @@ def load_vpc_peerings(neo4j_session, data, region, aws_account_id, aws_update_ta
     ON CREATE SET raccount.firstseen = timestamp(), raccount.foreign = true
     SET raccount.lastupdated = {aws_update_tag}
 
+    MERGE (pcx)-[rav:ACCEPTER_VPC]->(avpc)
+    ON CREATE SET rav.firstseen = timestamp()
+    SET rav.lastupdated = {aws_update_tag}
+
+    MERGE (aaccount)-[ra:RESOURCE]->(avpc)
+    ON CREATE SET ra.firstseen = timestamp()
+    SET ra.lastupdated = {aws_update_tag}
+
+    MERGE (pcx)-[rrv:REQUESTER_VPC]->(rvpc)
+    ON CREATE SET rrv.firstseen = timestamp()
+    SET rrv.lastupdated = {aws_update_tag}
+
+    MERGE (raccount)-[rr:RESOURCE]->(rvpc)
+    ON CREATE SET rr.firstseen = timestamp()
+    SET rr.lastupdated = {aws_update_tag}
 
     """
 
@@ -59,49 +74,9 @@ def load_vpc_peerings(neo4j_session, data, region, aws_account_id, aws_update_ta
         region=region, aws_account_id=aws_account_id,
     )
 
-    ingest_accepter_vpc = """
-    UNWIND {vpc_peerings} AS vpc_peering
 
-    MATCH (pcx:PeeringConnection{id: vpc_peering.VpcPeeringConnectionId}),
-        (vpc:AWSVpc{id: vpc_peering.AccepterVpcInfo.VpcId})
-    MERGE (pcx)-[r:ACCEPTER_VPC]->(vpc)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
-
-    WITH vpc_peering
-    MATCH (avpc:AWSVpc{id: vpc_peering.AccepterVpcInfo.VpcId}),
-        (aaccount:AWSAccount{id: vpc_peering.AccepterVpcInfo.OwnerId})
-    MERGE (aaccount)-[r:RESOURCE]->(avpc)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
-    """
-
-    neo4j_session.run(
-        ingest_accepter_vpc, vpc_peerings=data, aws_update_tag=aws_update_tag,
-        region=region, aws_account_id=aws_account_id,
-    )
-
-    ingest_requester_vpc = """
-    UNWIND {vpc_peerings} AS vpc_peering
-
-    MATCH (pcx:PeeringConnection{id: vpc_peering.VpcPeeringConnectionId}),
-        (vpc:AWSVpc{id: vpc_peering.RequesterVpcInfo.VpcId})
-    MERGE (pcx)-[r:REQUESTER_VPC]->(vpc)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
-
-    WITH vpc_peering
-    MATCH (rvpc:AWSVpc{id: vpc_peering.RequesterVpcInfo.VpcId}),
-        (raccount:AWSAccount{id: vpc_peering.RequesterVpcInfo.OwnerId})
-    MERGE (raccount)-[r:RESOURCE]->(rvpc)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
-    """
-
-    neo4j_session.run(
-        ingest_requester_vpc, vpc_peerings=data, aws_update_tag=aws_update_tag,
-        region=region, aws_account_id=aws_account_id,
-    )
+@timeit
+def load_accepter_cidrs(neo4j_session, data, region, aws_account_id, aws_update_tag):
 
     ingest_accepter_cidr = """
     UNWIND {vpc_peerings} AS vpc_peering
@@ -128,6 +103,10 @@ def load_vpc_peerings(neo4j_session, data, region, aws_account_id, aws_update_ta
         ingest_accepter_cidr, vpc_peerings=data, aws_update_tag=aws_update_tag,
         region=region, aws_account_id=aws_account_id,
     )
+
+
+@timeit
+def load_requester_cidrs(neo4j_session, data, region, aws_account_id, aws_update_tag):
 
     ingest_requester_cidr = """
     UNWIND {vpc_peerings} AS vpc_peering
@@ -170,4 +149,6 @@ def sync_vpc_peerings(
         logger.debug("Syncing EC2 VPC peering for region '%s' in account '%s'.", region, current_aws_account_id)
         data = get_vpc_peerings(boto3_session, region)
         load_vpc_peerings(neo4j_session, data, region, current_aws_account_id, aws_update_tag)
+        load_accepter_cidrs(neo4j_session, data, region, current_aws_account_id, aws_update_tag)
+        load_requester_cidrs(neo4j_session, data, region, current_aws_account_id, aws_update_tag)
     cleanup_vpc_peerings(neo4j_session, common_job_parameters)

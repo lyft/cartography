@@ -73,6 +73,20 @@ def test_vpc_peering_relationships_cidr(neo4j_session):
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG,
     )
+    cartography.intel.aws.ec2.vpc_peerings.load_accepter_cidrs(
+        neo4j_session,
+        data,
+        TEST_REGION,
+        TEST_ACCOUNT_ID,
+        TEST_UPDATE_TAG,
+    )
+    cartography.intel.aws.ec2.vpc_peerings.load_requester_cidrs(
+        neo4j_session,
+        data,
+        TEST_REGION,
+        TEST_ACCOUNT_ID,
+        TEST_UPDATE_TAG,
+    )
 
     expected_nodes = {
         (
