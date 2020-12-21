@@ -97,8 +97,6 @@ def load_apigateway_rest_apis(neo4j_session, data, region, current_aws_account_i
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {aws_update_tag}
     """
-    # should this be added ->
-    # rest_api.endpointconfiguration = {endpointConfiguration},
     
     for api in data:
         neo4j_session.run(
@@ -110,8 +108,6 @@ def load_apigateway_rest_apis(neo4j_session, data, region, current_aws_account_i
             # endpointConfiguration=api('endpointConfiguration'),
             disableExecuteApiEndpoint=str(api.get('disableExecuteApiEndpoint')),
             aws_update_tag=aws_update_tag,
-            # Uncomment above after testing
-            # aws_update_tag=(aws_update_tag-1) if api['id'] in ['tf68zeus49', 'wpv18drjq4', '2kem5rdq5j'] else aws_update_tag,
             Region=region,
             AWS_ACCOUNT_ID=current_aws_account_id,
         )
@@ -178,9 +174,7 @@ def _load_apigateway_stages(neo4j_session, stages, update_tag, api_id, certifica
             CacheClusterStatus=stage.get('cacheClusterStatus'),
             TracingEnabled=str(stage.get('tracingEnabled')),
             WebAclArn=stage.get('webAclArn'),
-            # UpdateTag=update_tag,
-            # Uncomment above after testing
-            UpdateTag=(update_tag-1) if stage['stageName']=='prod' else update_tag,
+            UpdateTag=update_tag,
             RestApiId=api_id
         )
         
@@ -210,9 +204,6 @@ def _load_stage_methodsettings(neo4j_session, stage, update_tag, api_id):
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {UpdateTag}
     """
-    # TODO UpdateTags must be mentioned for both, the node and the relationship
-    # Also, in cleanup, use the bottom up approach for deletion first
-    # i.e. ClientCertificate/MethodSettings -> Stages/Resources -> RestAPIs
     
     for key, value in stage['methodSettings'].items():
         neo4j_session.run(
@@ -229,9 +220,7 @@ def _load_stage_methodsettings(neo4j_session, stage, update_tag, api_id):
             RequireAuthorizationForCacheControl=str(value.get('requireAuthorizationForCacheControl')),
             UnauthorizedCacheControlHeaderStrategy=value.get('unauthorizedCacheControlHeaderStrategy'),
             StageName=stage['stageName'],
-            # UpdateTag=update_tag
-            # Uncomment above after testing
-            UpdateTag=(update_tag-1) if str(key)=="*/*" else update_tag
+            UpdateTag=update_tag
         )
         
         
@@ -284,9 +273,7 @@ def _load_apigateway_resources(neo4j_session, resources, update_tag, api_id):
             PathPart=resource.get('pathPart'),
             ParentId=resource.get('parentId'),
             RestApiId=api_id,
-            # UpdateTag=update_tag
-            # Uncomment above after testing
-            UpdateTag=(update_tag-1) if resource['id'] in ['kv5ckt09z6', 'h5zjwb', '53x0svb8fd', 'hyweinlq0m'] else update_tag
+            UpdateTag=update_tag
         )
 
 
@@ -297,7 +284,6 @@ def load_rest_api_details(neo4j_session, stages_certificate_resources, region, a
     resources = []
     policies = []
     apiId = ""
-    #TODO use debugger to see how values are stored here ->
     for api_id, stage, certificate, resource, policy in stages_certificate_resources:
         apiId = api_id
         parsed_policy = parse_policy(api_id, policy)
@@ -326,7 +312,7 @@ def load_rest_api_details(neo4j_session, stages_certificate_resources, region, a
 @timeit
 def parse_policy(api_id, policy):
     if policy is not None:
-        policy = Policy(json.loads(policy['Policy'])) #TODO verify if 'Policy' index is needed
+        policy = Policy(json.loads(policy))
         if policy.is_internet_accessible():
             return {
                 "api_id": api_id,
