@@ -94,6 +94,15 @@ GET_ZONES_SAMPLE_RESPONSE = [(
             'TTL': 300,
             'Type': 'CNAME',
         }, {
+            'Name': 'elbv2.example.com.',
+            'AliasTarget': {
+                'HostedZoneId': 'HOSTED_ZONE_2',
+                'DNSName': 'myawesomeloadbalancer.amazonaws.com.',
+                'EvaluateTargetHealth': False,
+            },
+            'TTL': 60,
+            'Type': 'A',
+        }, {
             'AliasTarget': {
                 'DNSName': 'hello.what.example.com',
                 'EvaluateTargetHealth': False,
