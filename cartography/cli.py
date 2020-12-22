@@ -114,6 +114,21 @@ class CLI:
             ),
         )
         parser.add_argument(
+            '--azure-sync-all-subscriptions',
+            action='store_true',
+            help=(
+                'Enable Azure sync for all discovered profiles. When this parameter is supplied cartography will '
+                'discover all configured Azure profiles.'
+            ),
+        )
+        parser.add_argument(
+            '--azure-sp-auth',
+            action='store_true',
+            help=(
+                'Use Service Principal authentication for Azure sync.'
+            ),
+        )
+        parser.add_argument(
             '--crxcavator-api-base-uri',
             type=str,
             default='https://api.crxcavator.io/v1',
