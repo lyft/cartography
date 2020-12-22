@@ -27,7 +27,7 @@ def _sync_multiple_subscriptions(neo4j_session, credentials, tenant_id, subscrip
     subscription.sync(neo4j_session, tenant_id, subscriptions, sync_tag, common_job_parameters)
 
     for sub in subscriptions:
-        logger.info("Syncing Azure Subscription with ID '%s' using configured profile '%s'.", sub['subscriptionId'])
+        logger.info("Syncing Azure Subscription with ID '%s'", sub['subscriptionId'])
 
         _sync_one_subscription(neo4j_session, credentials, sync_tag, common_job_parameters)
 
