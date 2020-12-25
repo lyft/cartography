@@ -1,0 +1,78 @@
+# serverless.yml
+
+service: cartography-service
+
+provider:
+  name: aws
+  runtime: python3.8
+  stage: prod
+  region: us-east-2
+  memorySize: 256
+  profile: cloudanix-serverless-admin
+  apiGateway:
+    shouldStartNameWithService: true
+
+functions:
+  # cartographyListener:
+  #   handler: app.read_cartography
+
+  #   role: arn:aws:iam::774118602354:role/cloudanix-lambda-role
+
+  #   environment:
+  #     LAMBDA_APP_ENV: production
+  #     AWS_CONFIG_FILE: /var/tasks/config
+
+  #   events:
+  #     - http:
+  #         path: /cartographyListener
+  #         method: post
+
+  cartographyService:
+    handler: app.load_cartography
+    timeout: 900 # optional, in seconds, default is 30
+
+    role: arn:aws:iam::774118602354:role/cloudanix-lambda-role
+
+    environment:
+      LAMBDA_APP_ENV: production
+      # AWS_CONFIG_FILE: /var/tasks/config
+
+    events:
+      - sns:
+          arn: arn:aws:sns:us-east-2:774118602354:inventory-sync-aws-requests
+
+plugins:
+  - serverless-python-requirements
+  - serverless-offline
+  - serverless-offline-python
+  - serverless-offline-sns
+custom:
+  pythonRequirements:
+    dockerizePip: non-linux
+  serverless-offline:
+    port: 5000
+  serverless-offline-sns:
+    port: 5002 # a free port for the sns server to run on
+    debug: true
+  mySnsTopic: "inventory-sync-aws-requests"
+  mySnsTopicArn: "arn:aws:sns:us-east-2:774118602354:inventory-sync-aws-requests"
+
+package:
+  exclude:
+    - .serverless
+    - .vscode
+    - misc/**
+    - node_modules/**
+    - tests/**
+    - venv/**
+    - .gitignore
+    - LICENSE
+    - README.md
+    - package.json
+    - package-lock.json
+    - requirements.txt
+    - serverless.yml
+    - setupenv.sh
+    - deploy.sh
+    - output.json
+    - __main__.py

@@ -15,6 +15,8 @@ import cartography.intel.github
 import cartography.intel.gsuite
 import cartography.intel.okta
 
+import cloudanix
+
 
 logger = logging.getLogger(__name__)
 
@@ -163,4 +165,23 @@ def build_default_sync():
         ('github', cartography.intel.github.start_github_ingestion),
         ('analysis', cartography.intel.analysis.run),
     ])
+
+    return sync
+
+
+def build_aws_sync():
+    """
+    Build the aws cartography sync, which runs all intelligence modules shipped with the cartography package.
+
+    :rtype: cartography.sync.Sync
+    :return: The aws cartography sync object.
+    """
+    sync = Sync()
+    sync.add_stages([
+        ('create-indexes', cartography.intel.create_indexes.run),
+        ('cloudanix-workspace', cloudanix.run),
+        ('aws', cartography.intel.aws.start_aws_ingestion),
+        ('analysis', cartography.intel.analysis.run),
+    ])
+
     return sync

@@ -1,0 +1,9 @@
+{
+  "statements": [
+    {
+      "query": "MATCH (w:CloudanixWorkspace) WHERE w.lastupdated <> {UPDATE_TAG} WITH w LIMIT {LIMIT_SIZE} DETACH DELETE (w) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+  }],
+  "name": "cleanup Cloudanix Workspaces"
+}

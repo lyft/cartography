@@ -6,7 +6,7 @@ import sys
 
 import cartography.sync
 import cartography.util
-
+from cartography.config import Config
 
 logger = logging.getLogger(__name__)
 
@@ -329,6 +329,37 @@ class CLI:
         except KeyboardInterrupt:
             return 130
 
+    def process(self, config):
+        # Logging config
+        if config.verbose:
+            logging.getLogger('cartography').setLevel(logging.DEBUG)
+        elif config.quiet:
+            logging.getLogger('cartography').setLevel(logging.WARNING)
+        else:
+            logging.getLogger('cartography').setLevel(logging.INFO)
+        logger.debug("Launching cartography with CLI configuration: %r", vars(config))
+
+        # Run cartography
+        try:
+            output = cartography.sync.run_with_config(self.sync, config)
+
+            return {
+                "status": "success",
+                "message": f"output - {output}"
+            }
+
+        except KeyboardInterrupt:
+            # return 130
+            return {
+                "status": "failure",
+                "message": "keyboard interuption"
+            }
+        except Exception as e:
+            return {
+                "status": "failure",
+                "message": f"error with: {str(e)}"
+            }
+
 
 def main(argv=None):
     """
@@ -346,3 +377,26 @@ def main(argv=None):
     argv = argv if argv is not None else sys.argv[1:]
     default_sync = cartography.sync.build_default_sync()
     return CLI(default_sync, prog='cartography').main(argv)
+
+
+def run(request):
+    logging.basicConfig(level=logging.INFO)
+    logging.getLogger('botocore').setLevel(logging.WARNING)
+    logging.getLogger('neo4j.bolt').setLevel(logging.WARNING)
+
+    default_sync = cartography.sync.build_aws_sync()
+
+    # TODO: Define config and pass it forward
+    config = Config(request['neo4j']['uri'],
+                    neo4j_user=request['neo4j']['user'],
+                    neo4j_password=request['neo4j']['pwd'],
+                    credentials=request['credentials'],
+                    params=request['params']
+                    )
+
+    if request['logging']['mode'] == "verbose":
+        config.verbose = True
+    elif request['logging']['mode'] == "quiet":
+        config.quiet = True
+
+    return CLI(default_sync, prog='cartography').process(config)
