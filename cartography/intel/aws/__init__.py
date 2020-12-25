@@ -52,11 +52,11 @@ def _sync_one_account(neo4j_session, boto3_session, account_id, sync_tag, common
     
     apigateway.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
 
-    # # NOTE each of the below will generate DNS records
+    # NOTE each of the below will generate DNS records
     route53.sync(neo4j_session, boto3_session, account_id, sync_tag)
     elasticsearch.sync(neo4j_session, boto3_session, account_id, sync_tag)
 
-    # # NOTE clean up all DNS records, regardless of which job created them
+    # NOTE clean up all DNS records, regardless of which job created them
     run_cleanup_job('aws_account_dns_cleanup.json', neo4j_session, common_job_parameters)
 
     # MAP IAM permissions
