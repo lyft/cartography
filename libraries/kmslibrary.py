@@ -3,48 +3,45 @@
 # https://github.com/awsdocs/aws-doc-sdk-examples/blob/master/python/example_code/kms/encrypt_decrypt_file.py
 
 import base64
-
 import boto3
 from botocore.exceptions import ClientError
-
 from utils.errors import classify_error
 
 
 class KMSLibrary:
-    def __init__(self, config, logger):
-        self.config = config
-        self.logger = logger
+    def __init__(self, context):
+        self.context = context
 
-    # create_key is not tested. use it carefully
-    def create_key(self, key_id):
+    # create_key is tested and verified
+    def create_key(self, key_desc, tags):
         # Create the KMS client
-        kms_client = boto3.client('kms', self.config['region'])
+        kms_client = boto3.client('kms', self.context.region)
 
         try:
-            response = kms_client.generate_data_key(KeyId=key_id)
+            response = kms_client.create_key(Description=key_desc, Tags=tags)
 
         except ClientError as e:
-            raise classify_error(self.logger, e, 'Failed to create key')
+            raise classify_error(self.context.logger, e, 'Failed to create key')
 
         # Return the encrypted and plaintext data key
-        return response['CiphertextBlob'], base64.b64encode(response['Plaintext'])
+        return response['KeyMetadata']['KeyId']
 
-    # encrypt is not tested. use it carefully
+    # encrypt is tested and verified
     def encrypt(self, key_id, plain_text):
         # Generate bytes from plain_text
         text_bytes = plain_text.encode('utf-8')
 
         # Create the KMS client
-        kms_client = boto3.client('kms', self.config['region'])
+        kms_client = boto3.client('kms', self.context.region)
 
-        # kms_client = boto3.client('kms')
         try:
             # Encrypt the data plain_text with key_id
             response = kms_client.encrypt(
                 KeyId=key_id,
                 Plaintext=text_bytes)
+
         except ClientError as e:
-            raise classify_error(self.logger, e, 'Failed to encrypt data with key')
+            raise classify_error(self.context.logger, e, 'Failed to encrypt data with key')
 
         # Generate base64 bytes from CiphertextBlob
         base64_bytes = base64.b64encode((response['CiphertextBlob']))
@@ -52,6 +49,7 @@ class KMSLibrary:
         # Generate utf-8 string from base64_byte
         return base64_bytes.decode('utf-8')
 
+    # decrypt is tested and verified
     def decrypt(self, cipher):
         # Generate bytes from cipher
         cipher_bytes = cipher.encode('utf-8')
@@ -60,16 +58,15 @@ class KMSLibrary:
         base64_bytes = base64.b64decode(cipher_bytes)
 
         # Create the KMS client
-        kms_client = boto3.client('kms', self.config['region'])
+        kms_client = boto3.client('kms', self.context.region)
 
-        # kms_client = boto3.client('kms')
         try:
             # Decrypt the cipher
             response = kms_client.decrypt(
                 CiphertextBlob=base64_bytes)
 
         except ClientError as e:
-            raise classify_error(self.logger, e, 'Failed to decrypt cipher')
+            raise classify_error(self.context.logger, e, 'Failed to decrypt cipher')
 
         # Return plaintext decoded in utf-8
         return response['Plaintext'].decode('utf-8')

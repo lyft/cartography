@@ -1,7 +1,7 @@
-# Set environment (LAMBDA_APP_ENV variable) before importing logger.py
+# Set environment (CLOUDANIX_APP_ENV variable) before importing logger.py
 # For e.g.:
 # import os
-# os.environ['LAMBDA_APP_ENV'] = 'debug'
+# os.environ['CLOUDANIX_APP_ENV'] = 'debug'
 
 import logging
 import sys
@@ -22,7 +22,7 @@ class Logger():
         # https://docs.python.org/3/library/logging.html#logrecord-attributes
 
         # Simplify log output for Production
-        if os.getenv('LAMBDA_APP_ENV') == 'production':
+        if os.getenv('CLOUDANIX_APP_ENV') == 'production':
             formatter = logging.Formatter('%(levelname)-s - %(filename)s - Line:%(lineno)d - %(message)s - %(context)s', '%Y-%m-%d %H:%M:%S')
 
         else:
@@ -134,24 +134,3 @@ def get_logger(config):
     log_client = Logger(config) if not log_client else log_client
 
     return log_client
-
-# Legacy Code
-# logger = logging.getLogger(__name__)
-# # logger.setLevel(logging.INFO)
-#
-# # Add logging handler to print the log statement to standard output device
-# handler = logging.StreamHandler(sys.stdout)
-# handler.setLevel(logging.INFO)
-#
-# # https://stackoverflow.com/questions/533048/how-to-log-source-file-name-and-line-number-in-python
-# # https://docs.python.org/3/library/logging.html#logrecord-attributes
-#
-# # Simplify log output for Production
-# if os.getenv('LAMBDA_APP_ENV') == 'production':
-# 	formatter = logging.Formatter('%(levelname)-s - %(filename)s - Line:%(lineno)d - %(message)s - %(context)s','%Y-%m-%d %H:%M:%S')
-#
-# else:
-# 	formatter = logging.Formatter('[%(asctime)s] %(levelname)-s - %(filename)s - {%(funcName)s:%(lineno)d} - %(message)s - %(context)s','%Y-%m-%d %H:%M:%S')
-#
-# handler.setFormatter(formatter)
-# logger.addHandler(handler)

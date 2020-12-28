@@ -10,20 +10,16 @@ from utils.errors import classify_error
 
 
 class AuthLibrary:
-    def __init__(self, config, logger):
-        self.config = config
-        self.logger = logger
-
-    def session_duration(self):
-        return self.config['aws']['sessionDuration']
+    def __init__(self, context):
+        self.context = context
 
     def get_assume_role_access_key(self):
-        kms_helper = KMSLibrary(self.config['kms'], self.logger)
-        return kms_helper.decrypt(self.config['kms']['assumeRoleAccessKeyCipher'])
+        kms_helper = KMSLibrary(self.context)
+        return kms_helper.decrypt(self.context.assume_role_access_key_cipher)
 
     def get_assume_role_access_secret(self):
-        kms_helper = KMSLibrary(self.config['kms'], self.logger)
-        return kms_helper.decrypt(self.config['kms']['assumeRoleAccessSecretCipher'])
+        kms_helper = KMSLibrary(self.context)
+        return kms_helper.decrypt(self.context.assume_role_access_secret_cipher)
 
     def assume_role(self, args):
         # Create a Session with the credentials passed
@@ -35,21 +31,20 @@ class AuthLibrary:
         try:
             sts_client = session.client(
                 'sts',
-                region_name=self.config['kms']['region']
+                region_name=self.context.region
             )
         except ClientError as e:
-            raise classify_error(self.logger, e, 'Failed to create STS client')
+            raise classify_error(self.context.logger, e, 'Failed to create STS client')
 
         try:
             response = sts_client.assume_role(
-                DurationSeconds=self.session_duration(),
                 ExternalId=args['external_id'],
                 RoleArn=args['role_arn'],
                 RoleSessionName=args['role_session_name'],
             )
 
         except ClientError as e:
-            raise classify_error(self.logger, e, 'Failed to assume role')
+            raise classify_error(self.context.logger, e, 'Failed to assume role')
 
         return {
             'aws_access_key_id': response['Credentials']['AccessKeyId'],

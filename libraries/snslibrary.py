@@ -11,9 +11,8 @@ from utils.errors import classify_error
 
 
 class SNSLibrary:
-    def __init__(self, config, logger):
-        self.config = config
-        self.logger = logger
+    def __init__(self, context):
+        self.context = context
 
         # Create a Session with the credentials passed
         session = Session()
@@ -21,17 +20,17 @@ class SNSLibrary:
         # if it's an offline test, use offline SNS
         if os.getenv('IS_OFFLINE'):
             try:
-                self.sns_client = session.client('sns', region_name=self.config['region'], endpoint_url=self.config['offlineURL'])
+                self.sns_client = session.client('sns', region_name=self.context.region, endpoint_url=self.context.offline_url)
 
             except ClientError as e:
-                raise classify_error(self.logger, e, 'Failed to create SNS client')
+                raise classify_error(self.context.logger, e, 'Failed to create SNS client')
 
         else:
-            self.sns_client = session.client('sns', region_name=self.config['region'])
+            self.sns_client = session.client('sns', region_name=self.context.region)
 
     def publish(self, message, topic):
         try:
-            if os.environ['LAMBDA_APP_ENV'] == 'production':
+            if self.context.app_env == 'production':
                 self.sns_client.publish(
                     Message=message,
                     TopicArn=topic)
@@ -39,8 +38,8 @@ class SNSLibrary:
                 return True
 
             else:
-                self.logger.info('SNS Publish -> Non-Production environment')
+                self.context.logger.info('SNS Publish -> Non-Production environment')
                 return True
 
         except ClientError as e:
-            raise classify_error(self.logger, e, 'Failed to publish message', {'topic': topic})
+            raise classify_error(self.context.logger, e, 'Failed to publish message', {'topic': topic})

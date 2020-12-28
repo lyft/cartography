@@ -1,12 +1,10 @@
 import neobolt.exceptions
 from neo4j import GraphDatabase
-import json
 
 
 class GraphLibrary:
-    def __init__(self, logger, config):
-        self.logger = logger
-        self.config = config
+    def __init__(self, context):
+        self.context = context
         self.driver = None
 
         self.connect()
@@ -16,36 +14,36 @@ class GraphLibrary:
 
     def connect(self):
         neo4j_auth = None
-        if self.config['neo4j']['user'] or self.config['neo4j']['pwd']:
+        if self.context.neo4j_user or self.context.neo4j_pwd:
             neo4j_auth = (
-                self.config['neo4j']['user'],
-                self.config['neo4j']['pwd']
+                self.context.neo4j_user,
+                self.context.neo4j_pwd
             )
 
         try:
             self.driver = GraphDatabase.driver(
-                self.config['neo4j']['uri'],
+                self.context.neo4j_uri,
                 auth=neo4j_auth,
             )
 
         except neobolt.exceptions.ServiceUnavailable as e:
-            self.logger.debug(
+            self.context.logger.debug(
                 "Error occurred during Neo4j connect.", exc_info=True)
-            self.logger.error(
+            self.context.logger.error(
                 (
                     "Unable to connect to Neo4j using the provided URI '%s', an error occurred: '%s'. Make sure the Neo4j "
                     "server is running and accessible from your network."
                 ),
-                self.config['neo4j']['uri'],
+                self.context.neo4j_uri,
                 e,
             )
             return
 
         except neobolt.exceptions.AuthError as e:
-            self.logger.debug(
+            self.context.logger.debug(
                 "Error occurred during Neo4j auth.", exc_info=True)
             if not neo4j_auth:
-                self.logger.error(
+                self.context.logger.error(
                     (
                         "Unable to auth to Neo4j, an error occurred: '%s'. lambda attempted to connect to Neo4j "
                         "without any auth. Check your Neo4j server settings to see if auth is required and, if it is, "
@@ -54,7 +52,7 @@ class GraphLibrary:
                     e,
                 )
             else:
-                self.logger.error(
+                self.context.logger.error(
                     (
                         "Unable to auth to Neo4j, an error occurred: '%s'. lambda attempted to connect to Neo4j with "
                         "a username and password. Check your Neo4j server settings to see if the username and password "

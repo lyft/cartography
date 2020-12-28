@@ -11,31 +11,18 @@ provider:
   profile: cloudanix-serverless-admin
   apiGateway:
     shouldStartNameWithService: true
+  environment:
+    CLOUDANIX_DEFAULT_REGION: ${env:CLOUDANIX_DEFAULT_REGION}
+    CLOUDANIX_DEFAULT_LOG_LEVEL: ${env:CLOUDANIX_DEFAULT_LOG_LEVEL}
+    CLOUDANIX_APP_ENV: ${env:CLOUDANIX_APP_ENV}
+    CLOUDANIX_CONFIG: ${ssm:/CLOUDANIX_CONFIG}
 
 functions:
-  # cartographyListener:
-  #   handler: app.read_cartography
-
-  #   role: arn:aws:iam::774118602354:role/cloudanix-lambda-role
-
-  #   environment:
-  #     LAMBDA_APP_ENV: production
-  #     AWS_CONFIG_FILE: /var/tasks/config
-
-  #   events:
-  #     - http:
-  #         path: /cartographyListener
-  #         method: post
-
   cartographyService:
     handler: app.load_cartography
     timeout: 900 # optional, in seconds, default is 30
 
     role: arn:aws:iam::774118602354:role/cloudanix-lambda-role
-
-    environment:
-      LAMBDA_APP_ENV: production
-      # AWS_CONFIG_FILE: /var/tasks/config
 
     events:
       - sns:
@@ -59,20 +46,39 @@ custom:
 
 package:
   exclude:
-    - .serverless
-    - .vscode
-    - misc/**
-    - node_modules/**
-    - tests/**
-    - venv/**
+    - .git/**
+    - .github/**
     - .gitignore
+    - .DS_Store
+    - npm-debug.log
+    - .serverless/**
+    - .serverless_plugins/**
+    - node_modules/**
+    - __pycache__/**
+    - .vscode/**
+    - venv/**
+    - build/**
+    - misc/**
+    - tests/**
+    - cloudformation/**
+    - docs/**
     - LICENSE
     - README.md
     - package.json
     - package-lock.json
-    - requirements.txt
     - serverless.yml
-    - setupenv.sh
+    - .pre-commit-config.yaml
+    - CODE_OF_CONDUCT.md
+    - config
+    - Dockerfile
+    - Makefile
+    - NOTICE
+    - setup.cfg
+    - setup.py
+    - setup.sh
+    - test-requirements.txt
     - deploy.sh
-    - output.json
     - __main__.py
+    - requirements.txt
+    - .env.development.json
+    - .env.production.json

@@ -17,3 +17,4 @@ build/
 dist/
 node_modules
 .serverless
+.env.production.json

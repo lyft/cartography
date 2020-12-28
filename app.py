@@ -1,82 +1,89 @@
-import json
 import os
-from flask import Flask, jsonify, request
+import json
 import cartography.cli
-import requests
-from requests.exceptions import RequestException
-from settings.config import get_config
 from utils.logger import get_logger
 from libraries.authlibrary import AuthLibrary
 from libraries.snslibrary import SNSLibrary
-
-# Connect and read timeouts of 60 seconds each; see https://requests.readthedocs.io/en/master/user/advanced/#timeouts
-_TIMEOUT = (60, 60)
-
-app = Flask(__name__)
-# app.config["DEBUG"] = True
-
-
-@app.route('/', methods=["GET"])
-def index():
-    return jsonify({"message": "Welcome to Cartography!"})
+from libraries.kmslibrary import KMSLibrary
+from utils.context import AppContext
+# import requests
+# from requests.exceptions import RequestException
+# from flask import Flask, jsonify, request
 
 
-@app.route("/sync", methods=["POST"])
-def initiate_sync():
-    req = request.get_json()
-
-    isAuthorized = False
-    config = get_config()
-    if 'Authorization' in request.headers:
-        if request.headers['Authorization'] == config['authorization']['value']:
-            isAuthorized = True
-
-    if not isAuthorized:
-        return jsonify({
-            "status": "failure",
-            "message": "Invalid Authorization Code"
-        })
-
-    resp = cartography.cli.run(req)
-
-    send_response_to_lambda(config, req, resp)
-
-    return jsonify(resp)
+lambda_init = None
+context = None
 
 
-def send_response_to_lambda(config, req, resp):
-    headers = {
-        'Authorization': config['lambda']['authorization'],
-        'content-type': 'application/json'
-    }
+def init_lambda():
+    global lambda_init, context
 
-    body = {
-        "status": "success",
-        "params": req['params'],
-        "response": resp
-    }
+    context = AppContext(
+        region=os.environ['CLOUDANIX_DEFAULT_REGION'],
+        log_level=os.environ['CLOUDANIX_DEFAULT_LOG_LEVEL'],
+        app_env=os.environ['CLOUDANIX_APP_ENV'],
+    )
+    context.logger = get_logger(context.log_level)
 
-    r = ""
+    config = os.environ['CLOUDANIX_CONFIG']
+
+    kms_library = KMSLibrary(context)
+    decrypted_value = kms_library.decrypt(config)
+
+    config = json.loads(decrypted_value)
+    context.parse_config(config)
+
+    lambda_init = True
+
+
+def load_cartography(event, ctx):
+    global lambda_init, context
+    if not lambda_init:
+        init_lambda()
+
+    # params = json.loads(event['body'])
+
+    # context.logger.info(f'request: {params}')
+
+    context.logger.info('inventory sync aws worker request received via SNS')
+
+    record = event['Records'][0]
+    message = record['Sns']['Message']
+
+    # context.logger.info(f'message from SNS: {message}')
     try:
-        r = requests.post(
-            req['callbackURL'],
-            data=json.dumps(body),
-            headers=headers,
-            timeout=_TIMEOUT,
-        )
+        params = json.loads(message)
 
-        print(f"response from processor: {r.status_code} - {r.content}")
+    except Exception as e:
+        context.logger.error(f'error while parsing inventory sync aws request json: ${e}')
 
-    except RequestException as e:
-        print(f"failed to publish results to lambda: {str(e)}")
+        return {
+            "status": 'failure',
+            "message": 'unable to parse request'
+        }
+
+    response = process_request(context, params)
+
+    context.logger.info(f'inventory sync aws response from worker: {json.dumps(response)}')
+
+    return {
+        'statusCode': 200,
+        'body': json.dumps({
+            "status": 'success'
+        })
+    }
 
 
-def process_request(config, logger, args):
-    creds = get_auth_creds(config, logger, args)
+def process_request(context, args):
+    creds = get_auth_creds(context, args)
 
     body = {
         "credentials": creds,
-        "neo4j": config['neo4j'],
+        "neo4j": {
+            "uri": context.neo4j_uri,
+            "user": context.neo4j_user,
+            "pwd": context.neo4j_pwd
+        },
         "logging": {
             "mode": "verbose",
         },
@@ -90,19 +97,19 @@ def process_request(config, logger, args):
 
     resp = cartography.cli.run(body)
 
-    publish_response(config, logger, body, resp)
+    publish_response(context, body, resp)
 
     return resp
 
 
-def publish_response(config, logger, req, resp):
-    if os.environ['LAMBDA_APP_ENV'] != 'production':
+def publish_response(context, req, resp):
+    if context.app_env != 'production':
         try:
             with open('response.json', 'w') as outfile:
                 json.dump(resp, outfile, indent=2)
 
         except Exception as e:
-            logger.error(f'Failed to write to file: {str(e)}')
+            context.logger.error(f'Failed to write to file: {str(e)}')
 
     else:
         body = {
@@ -111,17 +118,16 @@ def publish_response(config, logger, req, resp):
             "response": resp
         }
 
-        sns_helper = SNSLibrary(config['sns'], logger)
-        status = sns_helper.publish(json.dumps(body), config['sns']['resultTopic'])
+        sns_helper = SNSLibrary(context)
+        status = sns_helper.publish(json.dumps(body), context.inventory_sync_result_topic)
 
-        logger.info(f'result published to SNS with status: {status}')
+        context.logger.info(f'result published to SNS with status: {status}')
 
 
-def get_auth_creds(config, logger, args):
-    auth_helper = AuthLibrary(config, logger)
+def get_auth_creds(context, args):
+    auth_helper = AuthLibrary(context)
 
-    # TODO: implement debug option for test without assume role creds
-    if os.environ['LAMBDA_APP_ENV'] == 'production' or os.environ['LAMBDA_APP_ENV'] == 'debug':
+    if context.app_env == 'production' or context.app_env == 'debug':
         auth_params = {
             'aws_access_key_id': auth_helper.get_assume_role_access_key(),
             'aws_secret_access_key': auth_helper.get_assume_role_access_secret(),
@@ -142,69 +148,69 @@ def get_auth_creds(config, logger, args):
 
     return auth_creds
 
+# Flask code starts here
+# # Connect and read timeouts of 60 seconds each; see https://requests.readthedocs.io/en/master/user/advanced/#timeouts
+# _TIMEOUT = (60, 60)
 
-def read_cartography(event, context):
-    print('inside read cartography')
-
-    config = get_config()
-    logger = get_logger(config)
-
-    params = json.loads(event['body'])
-
-    logger.info(f'request: {params}')
-
-    for k, v in sorted(os.environ.items()):
-        print(k + ':', v)
-
-    print('\n')
-    # list elements in path environment variable
-    [print(item) for item in os.environ['PATH'].split(';')]
-
-    return {
-        'statusCode': 200,
-        'body': json.dumps({
-            "status": 'success'
-        })
-    }
+# app = Flask(__name__)
+# # app.config["DEBUG"] = True
 
 
-def load_cartography(event, context):
-    config = get_config()
-    logger = get_logger(config)
-
-    # params = json.loads(event['body'])
-
-    # logger.info(f'request: {params}')
-
-    logger.info('inventory sync aws worker request received via SNS')
-
-    record = event['Records'][0]
-    message = record['Sns']['Message']
-
-    # logger.info(f'message from SNS: {message}')
-    try:
-        params = json.loads(message)
-
-    except Exception as e:
-        logger.error(f'error while parsing inventory sync aws request json: ${e}')
-
-        return {
-            "status": 'failure',
-            "message": 'unable to parse request'
-        }
-
-    response = process_request(config, logger, params)
-
-    logger.info(f'inventory sync aws response from worker: {json.dumps(response)}')
-
-    return {
-        'statusCode': 200,
-        'body': json.dumps({
-            "status": 'success'
-        })
-    }
+# @app.route('/', methods=["GET"])
+# def index():
+#     return jsonify({"message": "Welcome to Cartography!"})
 
 
-if __name__ == "__main__":
-    # sys.exit(process_request())
-    app.run(host="0.0.0.0", port=7000)
+# @app.route("/sync", methods=["POST"])
+# def initiate_sync():
+#     req = request.get_json()
+
+#     isAuthorized = False
+#     config = get_config()
+#     if 'Authorization' in request.headers:
+#         if request.headers['Authorization'] == config['authorization']['value']:
+#             isAuthorized = True
+
+#     if not isAuthorized:
+#         return jsonify({
+#             "status": "failure",
+#             "message": "Invalid Authorization Code"
+#         })
+
+#     resp = cartography.cli.run(req)
+
+#     send_response_to_lambda(config, req, resp)
+
+#     return jsonify(resp)
+
+
+# def send_response_to_lambda(config, req, resp):
+#     headers = {
+#         'Authorization': config['lambda']['authorization'],
+#         'content-type': 'application/json'
+#     }
+
+#     body = {
+#         "status": "success",
+#         "params": req['params'],
+#         "response": resp
+#     }
+
+#     r = ""
+#     try:
+#         r = requests.post(
+#             req['callbackURL'],
+#             data=json.dumps(body),
+#             headers=headers,
+#             timeout=_TIMEOUT,
+#         )
+
+#         print(f"response from processor: {r.status_code} - {r.content}")
+
+#     except RequestException as e:
+#         print(f"failed to publish results to lambda: {str(e)}")
+
+
+# if __name__ == "__main__":
+#     # sys.exit(process_request())
+#     app.run(host="0.0.0.0", port=7000)
