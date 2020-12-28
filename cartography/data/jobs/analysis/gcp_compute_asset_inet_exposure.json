@@ -30,6 +30,11 @@
     "query": "MATCH (ac:GCPNicAccessConfig)<-[:RESOURCE]-(:GCPNetworkInterface)<-[:NETWORK_INTERFACE]-(n:GCPInstance)<-[:FIREWALL_INGRESS]-(firewall_a:GCPFirewall)<-[:ALLOWED_BY]-(allow_rule:GCPIpRule{protocol:'udp'})<-[:MEMBER_OF_IP_RULE]-(:IpRange{id:\"0.0.0.0/0\"})\nOPTIONAL MATCH (n)<-[:FIREWALL_INGRESS]-(firewall_b:GCPFirewall)<-[:DENIED_BY]-(deny_rule:GCPIpRule{protocol:'udp'})\nWHERE exists(ac.public_ip) and (\n\tdeny_rule is NULL\n\tOR firewall_b.priority > firewall_a.priority\n\tOR NOT allow_rule.fromport IN RANGE(deny_rule.fromport, deny_rule.toport)\n\tOR NOT allow_rule.toport IN RANGE(deny_rule.fromport, deny_rule.toport)\n)\nSET n.exposed_internet = True, n.exposed_internet_type='direct'\nRETURN count(*) as TotalCompleted",
     "iterative": false,
     "__comment__": "Mark a GCP instance with exposed_internet = True and exposed_internet_type = 'direct' if its attached firewalls and UDP rules expose it to the internet."
+  },
+  {
+    "query": "MATCH (ac:GCPNicAccessConfig)<-[:RESOURCE]-(:GCPNetworkInterface)<-[:NETWORK_INTERFACE]-(n:GCPInstance)<-[:FIREWALL_INGRESS]-(firewall_a:GCPFirewall)<-[:ALLOWED_BY]-(allow_rule:GCPIpRule{protocol:'all'})<-[:MEMBER_OF_IP_RULE]-(:IpRange{id:\"0.0.0.0/0\"})\nOPTIONAL MATCH (n)<-[:FIREWALL_INGRESS]-(firewall_b:GCPFirewall)<-[:DENIED_BY]-(deny_rule:GCPIpRule{protocol:'all'})\nWHERE exists(ac.public_ip) and (\n\tdeny_rule is NULL\n\tOR firewall_b.priority > firewall_a.priority\n\tOR NOT allow_rule.fromport IN RANGE(deny_rule.fromport, deny_rule.toport)\n\tOR NOT allow_rule.toport IN RANGE(deny_rule.fromport, deny_rule.toport)\n)\nSET n.exposed_internet = True, n.exposed_internet_type='direct'\nRETURN count(*) as TotalCompleted",
+    "iterative": false,
+    "__comment__": "Mark a GCP instance with exposed_internet = True and exposed_internet_type = 'direct' if its attached firewalls and ALL rules expose it to the internet."
   }
 ],
   "name": "GCP asset internet exposure"
