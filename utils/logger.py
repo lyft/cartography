@@ -1,18 +1,12 @@
-# Set environment (CLOUDANIX_APP_ENV variable) before importing logger.py
-# For e.g.:
-# import os
-# os.environ['CLOUDANIX_APP_ENV'] = 'debug'
-
 import logging
 import sys
 import os
 
 
 class Logger():
-    def __init__(self, config):
-        self.config = config
+    def __init__(self, logLevel):
         self.logger = logging.getLogger(__name__)
-        self.logger.setLevel(self.config['aws']['logLevel'])
+        self.setLevel(logLevel)
 
         # Add logging handler to print the log statement to standard output device
         handler = logging.StreamHandler(sys.stdout)
@@ -32,6 +26,9 @@ class Logger():
 
         handler.setFormatter(formatter)
         self.logger.addHandler(handler)
+
+    def setLevel(self, logLevel):
+        self.logger.setLevel(logLevel)
 
     def debug(self, msg, *args, extra=None, **kwargs):
         """
@@ -127,10 +124,10 @@ class Logger():
 log_client = None
 
 
-def get_logger(config):
+def get_logger(logLevel):
     global log_client
 
     """Call this method just once. To create a new logger."""
-    log_client = Logger(config) if not log_client else log_client
+    log_client = Logger(logLevel) if not log_client else log_client
 
     return log_client
