@@ -119,7 +119,7 @@ def publish_response(context, req, resp):
         }
 
         sns_helper = SNSLibrary(context)
-        status = sns_helper.publish(json.dumps(body), context.inventory_sync_result_topic)
+        status = sns_helper.publish(json.dumps(body), context.aws_inventory_sync_result_topic)
 
         context.logger.info(f'result published to SNS with status: {status}')
 
