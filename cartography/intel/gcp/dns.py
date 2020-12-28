@@ -40,7 +40,7 @@ def get_dns_zones(dns, project_id):
                     "Could not retrieve DNS zones on project %s due to permissions issues. Code: %s, Message: %s"
                 ), project_id, err['code'], err['message'],
             )
-            return {}
+            return []
         else:
             raise
 
@@ -81,7 +81,7 @@ def get_dns_rrs(dns, dns_zones, project_id):
                     "Could not retrieve DNS RRS on project %s due to permissions issues. Code: %s, Message: %s"
                 ), project_id, err['code'], err['message'],
             )
-            return {}
+            return []
         else:
             raise
         raise e
