@@ -39,16 +39,17 @@ def get_current_azure_subscription(credentials, subscription_id):
     # client._client.config.add_user_agent(get_user_agent())
 
     # Get all the accessible subscriptions
-    sub = list(client.subscriptions.get(subscription_id))
+    sub = client.subscriptions.get(subscription_id)
+    print(sub)
 
     if not sub:
         raise Exception(f'The provided credentials do not have access to this subscription: {subscription_id}')
 
     return [{
-            'id': sub['id'],
-            'subscriptionId': sub['subscriptionId'],
-            'displayName': sub['displayName'],
-            'state': sub['state']
+            'id': sub.id,
+            'subscriptionId': sub.subscription_id,
+            'displayName': sub.display_name,
+            'state': sub.state
             }]
 
 
@@ -79,7 +80,7 @@ def load_azure_subscriptions(neo4j_session, tenant_id, subscriptions, azure_upda
 
 
 def cleanup(neo4j_session, common_job_parameters):
-    run_cleanup_job('aws_account_cleanup.json', neo4j_session, common_job_parameters)
+    run_cleanup_job('azure_subscriptions_cleanup.json', neo4j_session, common_job_parameters)
 
 
 @timeit
