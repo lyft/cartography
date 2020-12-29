@@ -1,9 +1,16 @@
 import json
 import logging
+from typing import Any
+from typing import Dict
+from typing import List
 
+import botocore.client
 import botocore.config
+import neo4j
 from policyuniverse.policy import Policy
 
+from cartography.intel.aws.util import AwsStageConfig
+from cartography.intel.aws.util import GraphJobParameters
 from cartography.intel.dns import ingest_dns_record_by_fqdn
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
@@ -34,7 +41,7 @@ es_regions = [
 
 
 # TODO memoize this
-def _get_botocore_config():
+def _get_botocore_config() -> botocore.config.Config:
     return botocore.config.Config(
         retries={
             'max_attempts': 8,
@@ -44,7 +51,7 @@ def _get_botocore_config():
 
 @timeit
 @aws_handle_regions
-def _get_es_domains(client):
+def _get_es_domains(client: botocore.client.BaseClient) -> List[Dict[str, Any]]:
     """
     Get ES domains.
 
@@ -63,7 +70,9 @@ def _get_es_domains(client):
 
 
 @timeit
-def _load_es_domains(neo4j_session, domain_list, aws_account_id, aws_update_tag):
+def _load_es_domains(
+    neo4j_session: neo4j.Session, domain_list: List[Dict[str, Any]], aws_account_id: str, aws_update_tag: int,
+) -> None:
     """
     Ingest Elastic Search domains
 
@@ -118,7 +127,9 @@ def _load_es_domains(neo4j_session, domain_list, aws_account_id, aws_update_tag)
 
 
 @timeit
-def _link_es_domains_to_dns(neo4j_session, domain_id, domain_data, aws_update_tag):
+def _link_es_domains_to_dns(
+    neo4j_session: neo4j.Session, domain_id: str, domain_data: Dict[str, Any], aws_update_tag: int,
+) -> None:
     """
     Link the ES domain to its DNS FQDN endpoint and create associated nodes in the graph
     if needed
@@ -138,7 +149,9 @@ def _link_es_domains_to_dns(neo4j_session, domain_id, domain_data, aws_update_ta
 
 
 @timeit
-def _link_es_domain_vpc(neo4j_session, domain_id, domain_data, aws_update_tag):
+def _link_es_domain_vpc(
+    neo4j_session: neo4j.Session, domain_id: str, domain_data: Dict[str, Any], aws_update_tag: int,
+) -> None:
     """
     Link the ES domain to its DNS FQDN endpoint and create associated nodes in the graph
     if needed
@@ -190,7 +203,7 @@ def _link_es_domain_vpc(neo4j_session, domain_id, domain_data, aws_update_tag):
 
 
 @timeit
-def _process_access_policy(neo4j_session, domain_id, domain_data):
+def _process_access_policy(neo4j_session: neo4j.Session, domain_id: str, domain_data: Dict[str, Any]) -> None:
     """
     Link the ES domain to its DNS FQDN endpoint and create associated nodes in the graph
     if needed
@@ -212,24 +225,24 @@ def _process_access_policy(neo4j_session, domain_id, domain_data):
 
 
 @timeit
-def cleanup(neo4j_session, update_tag, aws_account_id):
+def cleanup(neo4j_session: neo4j.Session, graph_job_parameters: GraphJobParameters) -> None:
     run_cleanup_job(
         'aws_import_es_cleanup.json',
         neo4j_session,
-        {'UPDATE_TAG': update_tag, 'AWS_ID': aws_account_id},
+        graph_job_parameters,
     )
 
 
 @timeit
-def sync(neo4j_session, common_job_parameters, aws_stage_config):
-    current_aws_account_id = aws_stage_config['account_id']
-    boto3_session = aws_stage_config['boto3_session']
-    aws_update_tag = common_job_parameters['UPDATE_TAG']
+def sync(neo4j_session: neo4j.Session, aws_stage_config: AwsStageConfig) -> None:
+    current_aws_account_id = aws_stage_config.current_aws_account_id
+    boto3_session = aws_stage_config.boto3_session
+    aws_update_tag = aws_stage_config.graph_job_parameters['UPDATE_TAG']
 
     for region in es_regions:
         logger.info("Syncing Elasticsearch Service for region '%s' in account '%s'.", region, current_aws_account_id)
         client = boto3_session.client('es', region_name=region, config=_get_botocore_config())
         data = _get_es_domains(client)
-        _load_es_domains(neo4j_session, data, current_aws_account_id, aws_update_tag)
+        _load_es_domains(neo4j_session, data, aws_stage_config.graph_job_parameters)
 
     cleanup(neo4j_session, aws_update_tag, current_aws_account_id)
