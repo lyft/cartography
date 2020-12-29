@@ -36,6 +36,15 @@ def link_aws_resources(neo4j_session: neo4j.Session, update_tag: int):
     """
     neo4j_session.run(link_elb, aws_update_tag=update_tag)
 
+    # find records that point to AWS LoadBalancersV2
+    link_elbv2 = """
+    MATCH (n:AWSDNSRecord) WITH n MATCH (l:LoadBalancerV2{dnsname: n.value})
+    MERGE (n)-[p:DNS_POINTS_TO]->(l)
+    ON CREATE SET p.firstseen = timestamp()
+    SET p.lastupdated = {aws_update_tag}
+    """
+    neo4j_session.run(link_elbv2, aws_update_tag=update_tag)
+
     # find records that point to AWS EC2 Instances
     link_ec2 = """
     MATCH (n:AWSDNSRecord) WITH n MATCH (e:EC2Instance{publicdnsname: n.value})
