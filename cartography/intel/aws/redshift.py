@@ -3,7 +3,6 @@ from typing import Any
 from typing import cast
 from typing import Dict
 from typing import List
-from typing import Union
 
 import boto3.session
 import neo4j
@@ -33,7 +32,7 @@ def _make_redshift_cluster_arn(region: str, aws_account_id: str, cluster_identif
 
 
 def transform_redshift_cluster_data(
-    clusters: List[Dict[str, Union[Any, Dict[str, Any], None]]], region: str, current_aws_account_id: str,
+    clusters: List[Dict[str, Any]], region: str, current_aws_account_id: str,
 ) -> None:
     for cluster in clusters:
         cluster['arn'] = _make_redshift_cluster_arn(region, current_aws_account_id, str(cluster["ClusterIdentifier"]))
@@ -42,7 +41,7 @@ def transform_redshift_cluster_data(
 
 @timeit
 def load_redshift_cluster_data(
-    neo4j_session: neo4j.Session, clusters: List[Dict[str, Union[None, Any, Dict[str, Any]]]], region: str,
+    neo4j_session: neo4j.Session, clusters: List[Dict[str, Any]], region: str,
     current_aws_account_id: str, aws_update_tag: str,
 ) -> None:
     ingest_cluster = """
