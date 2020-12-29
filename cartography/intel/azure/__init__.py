@@ -59,6 +59,7 @@ def start_azure_ingestion(neo4j_session, config):
 
     if config.azure_sync_all_subscriptions:
         subscriptions = subscription.get_all_azure_subscriptions(credentials)
+
     else:
         subscriptions = subscription.get_current_azure_subscription(credentials)
 
