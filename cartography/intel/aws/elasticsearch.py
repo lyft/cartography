@@ -62,7 +62,7 @@ def _get_es_domains(client: botocore.client.BaseClient) -> List[Dict[str, Any]]:
     domain_names = [d['DomainName'] for d in data.get('DomainNames', [])]
     # NOTE describe_elasticsearch_domains takes at most 5 domain names
     domain_name_chunks = [domain_names[i:i + 5] for i in range(0, len(domain_names), 5)]
-    domains = []
+    domains: List[Dict[str, Any]] = []
     for domain_name_chunk in domain_name_chunks:
         chunk_data = client.describe_elasticsearch_domains(DomainNames=domain_name_chunk)
         domains.extend(chunk_data['DomainStatusList'])

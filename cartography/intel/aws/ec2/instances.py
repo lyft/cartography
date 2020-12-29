@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 def get_ec2_instances(boto3_session, region: str) -> List[Dict[str, Any]]:
     client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
     paginator = client.get_paginator('describe_instances')
-    reservations = []
+    reservations: List[Dict[str, Any]] = []
     for page in paginator.paginate():
         reservations.extend(page['Reservations'])
     return reservations

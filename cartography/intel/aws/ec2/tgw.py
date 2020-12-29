@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 @aws_handle_regions
 def get_transit_gateways(boto3_session, region: str) -> List[Dict[str, Any]]:
     client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
-    data = []
+    data: List[Dict[str, Any]] = []
     try:
         data = client.describe_transit_gateways()["TransitGateways"]
     except botocore.exceptions.ClientError as e:
@@ -35,7 +35,7 @@ def get_transit_gateways(boto3_session, region: str) -> List[Dict[str, Any]]:
 @aws_handle_regions
 def get_tgw_attachments(boto3_session, region: str) -> List[Dict[str, Any]]:
     client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
-    tgw_attachments = []
+    tgw_attachments: List[Dict[str, Any]] = []
     try:
         paginator = client.get_paginator('describe_transit_gateway_attachments')
         for page in paginator.paginate():
@@ -53,7 +53,7 @@ def get_tgw_attachments(boto3_session, region: str) -> List[Dict[str, Any]]:
 @aws_handle_regions
 def get_tgw_vpc_attachments(boto3_session, region: str) -> List[Dict[str, Any]]:
     client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
-    tgw_vpc_attachments = []
+    tgw_vpc_attachments: List[Dict[str, Any]] = []
     try:
         paginator = client.get_paginator('describe_transit_gateway_vpc_attachments')
         for page in paginator.paginate():

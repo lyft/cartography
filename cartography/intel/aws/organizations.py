@@ -1,29 +1,34 @@
 import logging
+from typing import Any
+from typing import Dict
 
 import boto3
 import botocore.exceptions
+import neo4j
 
+from cartography.intel.aws.util import AwsStageConfig
+from cartography.intel.aws.util import GraphJobParameters
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 
 
-def get_account_from_arn(arn):
+def get_account_from_arn(arn: str) -> str:
     # TODO use policyuniverse to parse ARN?
     return arn.split(":")[4]
 
 
-def get_caller_identity(boto3_session):
+def get_caller_identity(boto3_session: boto3.session.Session) -> Dict[str, str]:
     client = boto3_session.client('sts')
     return client.get_caller_identity()
 
 
-def get_current_aws_account_id(boto3_session):
+def get_current_aws_account_id(boto3_session: boto3.session.Session) -> str:
     return get_caller_identity(boto3_session)['Account']
 
 
-def get_aws_account_default(boto3_session):
+def get_aws_account_default(boto3_session: boto3.session.Session) -> Dict[str, str]:
     try:
         return {boto3_session.profile_name: get_current_aws_account_id(boto3_session)}
     except (botocore.exceptions.BotoCoreError, botocore.exceptions.ClientError) as e:
@@ -39,8 +44,8 @@ def get_aws_account_default(boto3_session):
         return {}
 
 
-def get_aws_accounts_from_botocore_config(boto3_session):
-    d = {}
+def get_aws_accounts_from_botocore_config(boto3_session: boto3.session.Session) -> Dict[str, str]:
+    d: Dict[str, str] = {}
     for profile_name in boto3_session.available_profiles:
         if profile_name == 'default':
             logger.debug("Skipping AWS profile 'default'.")
@@ -85,7 +90,7 @@ def get_aws_accounts_from_botocore_config(boto3_session):
     return d
 
 
-def load_aws_accounts(neo4j_session, aws_accounts, aws_update_tag, common_job_parameters):
+def load_aws_accounts(neo4j_session: neo4j.Session, aws_accounts: Dict[str, Any], aws_update_tag: int) -> None:
     query = """
     MERGE (aa:AWSAccount{id: {ACCOUNT_ID}})
     ON CREATE SET aa.firstseen = timestamp()
@@ -110,11 +115,11 @@ def load_aws_accounts(neo4j_session, aws_accounts, aws_update_tag, common_job_pa
         )
 
 
-def cleanup(neo4j_session, common_job_parameters):
-    run_cleanup_job('aws_account_cleanup.json', neo4j_session, common_job_parameters)
+def cleanup(neo4j_session: neo4j.Session, graph_job_parameters: GraphJobParameters) -> None:
+    run_cleanup_job('aws_account_cleanup.json', neo4j_session, graph_job_parameters)
 
 
 @timeit
-def sync(neo4j_session, accounts, aws_update_tag, common_job_parameters):
-    load_aws_accounts(neo4j_session, accounts, aws_update_tag, common_job_parameters)
-    cleanup(neo4j_session, common_job_parameters)
+def sync(neo4j_session: neo4j.Session, aws_stage_config: AwsStageConfig) -> None:
+    load_aws_accounts(neo4j_session, aws_stage_config.aws_accounts, aws_stage_config.graph_job_parameters['UPDATE_TAG'])
+    cleanup(neo4j_session, aws_stage_config.graph_job_parameters)

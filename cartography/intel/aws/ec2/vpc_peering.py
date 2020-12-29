@@ -1,7 +1,14 @@
 import logging
+from typing import Any
+from typing import Dict
+from typing import List
+
+import boto3.session
+import neo4j
 
 from .util import get_botocore_config
 from cartography.intel.aws.util import AwsStageConfig
+from cartography.intel.aws.util import GraphJobParameters
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -11,13 +18,13 @@ logger = logging.getLogger(__name__)
 
 @timeit
 @aws_handle_regions
-def get_ec2_vpc_peering(boto3_session, region):
+def get_ec2_vpc_peering(boto3_session: boto3.session.Session, region: str) -> List[Dict[str, Any]]:
     client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
     return client.describe_vpc_peering_connections()['VpcPeeringConnections']
 
 
 @timeit
-def load_ec2_vpc_peering(neo4j_session, data, aws_update_tag):
+def load_ec2_vpc_peering(neo4j_session: neo4j.Session, data: List[Dict[str, Any]], aws_update_tag: int):
     # https://docs.aws.amazon.com/cli/latest/reference/ec2/describe-vpc-peering-connections.html
     # {
     #     "VpcPeeringConnections": [
@@ -154,12 +161,12 @@ def load_ec2_vpc_peering(neo4j_session, data, aws_update_tag):
 
 
 @timeit
-def cleanup_ec2_vpc_peering(neo4j_session, common_job_parameters):
-    run_cleanup_job('aws_import_vpc_peering_cleanup.json', neo4j_session, common_job_parameters)
+def cleanup_ec2_vpc_peering(neo4j_session: neo4j.Session, graph_job_parameters: GraphJobParameters) -> None:
+    run_cleanup_job('aws_import_vpc_peering_cleanup.json', neo4j_session, graph_job_parameters)
 
 
 @timeit
-def sync_vpc_peering(neo4j_session, aws_stage_config: AwsStageConfig) -> None:
+def sync_vpc_peering(neo4j_session: neo4j.Session, aws_stage_config: AwsStageConfig) -> None:
     for region in aws_stage_config.current_aws_account_regions:
         logger.info(
             "Syncing EC2 VPC peering for region '%s' in account '%s'.", region, aws_stage_config.current_aws_account_id,

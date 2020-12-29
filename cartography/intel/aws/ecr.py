@@ -1,8 +1,13 @@
 import logging
+from typing import Any
 from typing import Dict
 from typing import List
 
+import boto3.session
+import neo4j
+
 from cartography.intel.aws.util import AwsStageConfig
+from cartography.intel.aws.util import GraphJobParameters
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -12,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 @timeit
 @aws_handle_regions
-def get_ecr_repositories(boto3_session, region) -> List[Dict]:
+def get_ecr_repositories(boto3_session: boto3.session.Session, region: str) -> List[Dict[str, Any]]:
     logger.debug("Getting ECR repositories for region '%s'.", region)
     client = boto3_session.client('ecr', region_name=region)
     paginator = client.get_paginator('describe_repositories')
@@ -24,7 +29,9 @@ def get_ecr_repositories(boto3_session, region) -> List[Dict]:
 
 @timeit
 @aws_handle_regions
-def get_ecr_repository_images(boto3_session, region, repository_name) -> List[Dict]:
+def get_ecr_repository_images(
+    boto3_session: boto3.session.Session, region: str, repository_name: str,
+) -> List[Dict[str, Any]]:
     logger.debug("Getting ECR images in repository '%s' for region '%s'.", repository_name, region)
     client = boto3_session.client('ecr', region_name=region)
     paginator = client.get_paginator('list_images')
@@ -35,7 +42,10 @@ def get_ecr_repository_images(boto3_session, region, repository_name) -> List[Di
 
 
 @timeit
-def load_ecr_repositories(neo4j_session, data, region, current_aws_account_id, aws_update_tag):
+def load_ecr_repositories(
+    neo4j_session: neo4j.Session, data: List[Dict[str, Any]], region: str, current_aws_account_id: str,
+    aws_update_tag: int,
+) -> None:
     query = """
     MERGE (repo:ECRRepository{id: {RepositoryArn}})
     ON CREATE SET repo.firstseen = timestamp(), repo.arn = {RepositoryArn}, repo.name = {RepositoryName},
@@ -62,11 +72,11 @@ def load_ecr_repositories(neo4j_session, data, region, current_aws_account_id, a
 
 
 @timeit
-def transform_ecr_repository_images(repo_data):
+def transform_ecr_repository_images(repo_data: Dict[str, Any]) -> List[Dict[str, Any]]:
     """
     Ensure that we only load ECRImage nodes to the graph if they have a defined imageDigest field.
     """
-    repo_images_list = []
+    repo_images_list: List[Dict[str, Any]] = []
     for repo_uri, repo_images in repo_data.items():
         filtered_imgs = []
         for img in repo_images:
@@ -87,7 +97,9 @@ def transform_ecr_repository_images(repo_data):
 
 
 @timeit
-def load_ecr_repository_images(neo4j_session, repo_images_list, region, aws_update_tag):
+def load_ecr_repository_images(
+    neo4j_session: neo4j.Session, repo_images_list: List[Dict[str, Any]], region: str, aws_update_tag: int,
+) -> None:
     query = """
     UNWIND {RepoList} as repo_item
         UNWIND repo_item.repo_images as repo_img
@@ -125,13 +137,13 @@ def load_ecr_repository_images(neo4j_session, repo_images_list, region, aws_upda
 
 
 @timeit
-def cleanup(neo4j_session, graph_job_parameters):
+def cleanup(neo4j_session: neo4j.Session, graph_job_parameters: GraphJobParameters):
     logger.debug("Running ECR cleanup job.")
     run_cleanup_job('aws_import_ecr_cleanup.json', neo4j_session, graph_job_parameters)
 
 
 @timeit
-def sync(neo4j_session, aws_stage_config: AwsStageConfig):
+def sync(neo4j_session: neo4j.Session, aws_stage_config: AwsStageConfig) -> None:
     current_aws_account_id = aws_stage_config.current_aws_account_id
     boto3_session = aws_stage_config.boto3_session
     regions = aws_stage_config.current_aws_account_regions
@@ -139,7 +151,7 @@ def sync(neo4j_session, aws_stage_config: AwsStageConfig):
 
     for region in regions:
         logger.info("Syncing ECR for region '%s' in account '%s'.", region, current_aws_account_id)
-        image_data = {}
+        image_data: Dict[str, Any] = {}
         repositories = get_ecr_repositories(boto3_session, region)
         for repo in repositories:
             repo_image_obj = get_ecr_repository_images(boto3_session, region, repo['repositoryName'])

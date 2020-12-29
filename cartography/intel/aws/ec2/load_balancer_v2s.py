@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 @aws_handle_regions
 def get_load_balancer_v2_listeners(client, load_balancer_arn: str) -> List[Dict[str, Any]]:
     paginator = client.get_paginator('describe_listeners')
-    listeners = []
+    listeners: List[Dict[str, Any]] = []
     for page in paginator.paginate(LoadBalancerArn=load_balancer_arn):
         listeners.extend(page['Listeners'])
 
@@ -26,7 +26,7 @@ def get_load_balancer_v2_listeners(client, load_balancer_arn: str) -> List[Dict[
 @timeit
 def get_load_balancer_v2_target_groups(client, load_balancer_arn: str) -> List[Dict[str, Any]]:
     paginator = client.get_paginator('describe_target_groups')
-    target_groups = []
+    target_groups: List[Dict[str, Any]] = []
     for page in paginator.paginate(LoadBalancerArn=load_balancer_arn):
         target_groups.extend(page['TargetGroups'])
 
@@ -45,7 +45,7 @@ def get_load_balancer_v2_target_groups(client, load_balancer_arn: str) -> List[D
 def get_loadbalancer_v2_data(boto3_session, region: str) -> List[Dict[str, Any]]:
     client = boto3_session.client('elbv2', region_name=region, config=get_botocore_config())
     paginator = client.get_paginator('describe_load_balancers')
-    elbv2s = []
+    elbv2s: List[Dict[str, Any]] = []
     for page in paginator.paginate():
         elbv2s.extend(page['LoadBalancers'])
 

@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 def get_ec2_auto_scaling_groups(boto3_session, region: str) -> List[Dict[str, Any]]:
     client = boto3_session.client('autoscaling', region_name=region, config=get_botocore_config())
     paginator = client.get_paginator('describe_auto_scaling_groups')
-    asgs = []
+    asgs: List[Dict[str, Any]] = []
     for page in paginator.paginate():
         asgs.extend(page['AutoScalingGroups'])
     return asgs

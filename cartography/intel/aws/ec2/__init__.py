@@ -1,4 +1,5 @@
 import logging
+from typing import List
 
 from .auto_scaling_groups import sync_ec2_auto_scaling_groups
 from .instances import sync_ec2_instances
@@ -18,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
-def get_ec2_regions(boto3_session):
+def get_ec2_regions(boto3_session) -> List[str]:
     client = boto3_session.client('ec2')
     result = client.describe_regions()
     return [r['RegionName'] for r in result['Regions']]

@@ -1,4 +1,3 @@
-from typing import Any
 from typing import Dict
 from typing import List
 
@@ -16,7 +15,7 @@ class AwsStageConfig:
         current_aws_account_regions: List[str],
         graph_job_parameters: GraphJobParameters,
         permission_relationships_file: str,
-        aws_accounts: Dict[str, Any],
+        aws_accounts: Dict[str, str],
     ):
         self.boto3_session = boto3_session
         self.current_aws_account_id = current_aws_account_id

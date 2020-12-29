@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 def get_loadbalancer_data(boto3_session, region: str) -> List[Dict[str, Any]]:
     client = boto3_session.client('elb', region_name=region, config=get_botocore_config())
     paginator = client.get_paginator('describe_load_balancers')
-    elbs = []
+    elbs: List[Dict[str, Any]] = []
     for page in paginator.paginate():
         elbs.extend(page['LoadBalancerDescriptions'])
     return elbs

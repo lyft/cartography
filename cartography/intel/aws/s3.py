@@ -5,8 +5,8 @@ from typing import Any
 from typing import Dict
 from typing import Iterator
 from typing import List
+from typing import Optional
 from typing import Tuple
-from typing import Union
 
 from botocore.exceptions import ClientError
 from policyuniverse.policy import Policy
@@ -97,7 +97,7 @@ def get_policy(bucket: Dict[str, Any], client) -> Dict[str, Any]:
 
 
 @timeit
-def get_acl(bucket: Dict[str, Any], client) -> Union[Dict[str, Any], None]:
+def get_acl(bucket: Dict[str, Any], client) -> Optional[Dict[str, Any]]:
     """
     Gets the S3 bucket ACL. Returns ACL string
     """
@@ -193,7 +193,7 @@ def load_s3_details(
     """
     Create dictionaries for all bucket ACLs and all bucket policies so we can import them in a single query for each
     """
-    acls = []
+    acls: List[Dict[str, Any]] = []
     policies = []
     for bucket, acl, policy in s3_details_iter:
         if acl is None:
@@ -220,7 +220,7 @@ def load_s3_details(
 
 
 @timeit
-def parse_policy(bucket: str, policy: Policy) -> Union[Dict[str, Any], None]:
+def parse_policy(bucket: str, policy: Policy) -> Optional[Dict[str, Any]]:
     """
     Uses PolicyUniverse to parse S3 policies and returns the internet accessibility results
     """

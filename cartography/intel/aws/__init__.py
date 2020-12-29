@@ -1,4 +1,7 @@
 import logging
+from typing import Any
+from typing import Dict
+from typing import List
 
 import boto3
 import botocore.exceptions
@@ -73,7 +76,7 @@ def _autodiscover_accounts(neo4j_session: neo4j.Session, aws_stage_config: AwsSt
         # Fetch all accounts
         client = aws_stage_config.boto3_session.client('organizations')
         paginator = client.get_paginator('list_accounts')
-        account_list = []
+        account_list: List[Dict[str, Any]] = []
         for page in paginator.paginate():
             account_list.extend(page['Accounts'])
 
@@ -85,7 +88,6 @@ def _autodiscover_accounts(neo4j_session: neo4j.Session, aws_stage_config: AwsSt
         logger.info("Loading autodiscovered accounts.")
         organizations.load_aws_accounts(
             neo4j_session, accounts, aws_stage_config.graph_job_parameters['UPDATE_TAG'],
-            aws_stage_config.graph_job_parameters,
         )
     except botocore.exceptions.ClientError:
         logger.debug(

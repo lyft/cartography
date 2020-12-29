@@ -16,13 +16,13 @@ logger = logging.getLogger(__name__)
 
 @timeit
 @aws_handle_regions
-def get_rds_instance_data(boto3_session: boto3.session.Session, region: str):
+def get_rds_instance_data(boto3_session: boto3.session.Session, region: str) -> List[Dict[str, Any]]:
     """
     Create an RDS boto3 client and grab all the DBInstances.
     """
     client = boto3_session.client('rds', region_name=region)
     paginator = client.get_paginator('describe_db_instances')
-    instances = []
+    instances: List[Dict[str, Any]] = []
     for page in paginator.paginate():
         instances.extend(page['DBInstances'])
 

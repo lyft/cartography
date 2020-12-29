@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 def get_subnet_data(boto3_session, region: str) -> List[Dict[str, Any]]:
     client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
     paginator = client.get_paginator('describe_subnets')
-    subnets = []
+    subnets: List[Dict[str, Any]] = []
     for page in paginator.paginate():
         subnets.extend(page['Subnets'])
     return subnets

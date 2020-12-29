@@ -342,7 +342,7 @@ def load_dns_details(
 
 @timeit
 def get_zone_record_sets(client: botocore.client.BaseClient, zone_id: str) -> List[Dict[str, Any]]:
-    resource_record_sets = []
+    resource_record_sets: List[Dict[str, Any]] = []
     paginator = client.get_paginator('list_resource_record_sets')
     pages = paginator.paginate(HostedZoneId=zone_id)
     for page in pages:
@@ -353,7 +353,7 @@ def get_zone_record_sets(client: botocore.client.BaseClient, zone_id: str) -> Li
 @timeit
 def get_zones(client: botocore.client.BaseClient) -> List[Tuple[Dict[str, Any], List[Dict[str, Any]]]]:
     paginator = client.get_paginator('list_hosted_zones')
-    hosted_zones = []
+    hosted_zones: List[Dict[str, Any]] = []
     for page in paginator.paginate():
         hosted_zones.extend(page['HostedZones'])
 

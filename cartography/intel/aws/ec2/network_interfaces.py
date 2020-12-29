@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 def get_network_interface_data(boto3_session: boto3.session.Session, region: str) -> List[Dict[str, Any]]:
     client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
     paginator = client.get_paginator('describe_network_interfaces')
-    subnets = []
+    subnets: List[Dict[str, Any]] = []
     for page in paginator.paginate():
         subnets.extend(page['NetworkInterfaces'])
     return subnets

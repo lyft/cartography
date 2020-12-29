@@ -1,6 +1,13 @@
 import logging
+from typing import Any
+from typing import Dict
+from typing import List
+
+import boto3.session
+import neo4j
 
 from cartography.intel.aws.util import AwsStageConfig
+from cartography.intel.aws.util import GraphJobParameters
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -10,9 +17,9 @@ logger = logging.getLogger(__name__)
 
 @timeit
 @aws_handle_regions
-def get_eks_clusters(boto3_session, region):
+def get_eks_clusters(boto3_session: boto3.session.Session, region: str) -> List[Dict[str, Any]]:
     client = boto3_session.client('eks', region_name=region)
-    clusters = []
+    clusters: List[Dict[str, Any]] = []
     paginator = client.get_paginator('list_clusters')
     for page in paginator.paginate():
         clusters.extend(page['clusters'])
@@ -20,14 +27,17 @@ def get_eks_clusters(boto3_session, region):
 
 
 @timeit
-def get_eks_describe_cluster(boto3_session, region, cluster_name):
+def get_eks_describe_cluster(boto3_session: boto3.session.Session, region: str, cluster_name: str) -> Dict[str, Any]:
     client = boto3_session.client('eks', region_name=region)
     response = client.describe_cluster(name=cluster_name)
     return response['cluster']
 
 
 @timeit
-def load_eks_clusters(neo4j_session, cluster_data, region, current_aws_account_id, aws_update_tag):
+def load_eks_clusters(
+    neo4j_session: neo4j.Session, cluster_data: Dict[str, Any], region: str, current_aws_account_id: str,
+    aws_update_tag: int,
+) -> None:
     query = """
     MERGE (cluster:EKSCluster{id: {ClusterArn}})
     ON CREATE SET cluster.firstseen = timestamp(),
@@ -83,12 +93,12 @@ def _process_logging(cluster):
 
 
 @timeit
-def cleanup(neo4j_session, common_job_parameters):
-    run_cleanup_job('aws_import_eks_cleanup.json', neo4j_session, common_job_parameters)
+def cleanup(neo4j_session: neo4j.Session, graph_job_parameters: GraphJobParameters) -> None:
+    run_cleanup_job('aws_import_eks_cleanup.json', neo4j_session, graph_job_parameters)
 
 
 @timeit
-def sync(neo4j_session, aws_stage_config: AwsStageConfig) -> None:
+def sync(neo4j_session: neo4j.Session, aws_stage_config: AwsStageConfig) -> None:
     current_aws_account_id = aws_stage_config.current_aws_account_id
     boto3_session = aws_stage_config.boto3_session
     regions = aws_stage_config.current_aws_account_regions

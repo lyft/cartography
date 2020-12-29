@@ -3,7 +3,11 @@ from typing import Any
 from typing import Dict
 from typing import List
 
+import boto3.session
+import neo4j
+
 from cartography.intel.aws.util import AwsStageConfig
+from cartography.intel.aws.util import GraphJobParameters
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -13,10 +17,10 @@ logger = logging.getLogger(__name__)
 
 @timeit
 @aws_handle_regions
-def get_dynamodb_tables(boto3_session, region: str):
+def get_dynamodb_tables(boto3_session: boto3.session.Session, region: str) -> List[Dict[str, Any]]:
     client = boto3_session.client('dynamodb', region_name=region)
     paginator = client.get_paginator('list_tables')
-    dynamodb_tables = []
+    dynamodb_tables: List[Dict[str, Any]] = []
     for page in paginator.paginate():
         for table_name in page['TableNames']:
             dynamodb_tables.append(client.describe_table(TableName=table_name))
@@ -25,7 +29,8 @@ def get_dynamodb_tables(boto3_session, region: str):
 
 @timeit
 def load_dynamodb_tables(
-    neo4j_session, data: List[Dict[str, Any]], region: str, current_aws_account_id: str, aws_update_tag: int,
+    neo4j_session: neo4j.Session, data: List[Dict[str, Any]], region: str, current_aws_account_id: str,
+    aws_update_tag: int,
 ) -> None:
     ingest_table = """
     MERGE (table:DynamoDBTable{id: {Arn}})
@@ -59,7 +64,7 @@ def load_dynamodb_tables(
 
 @timeit
 def load_gsi(
-    neo4j_session, table: Dict[str, Any], region: str, current_aws_account_id: str, aws_update_tag: int,
+    neo4j_session: neo4j.Session, table: Dict[str, Any], region: str, current_aws_account_id: str, aws_update_tag: int,
 ) -> None:
     ingest_gsi = """
     MERGE (gsi:DynamoDBGlobalSecondaryIndex{id: {Arn}})
@@ -90,18 +95,18 @@ def load_gsi(
 
 
 @timeit
-def cleanup_dynamodb_tables(neo4j_session, graph_job_parameters: Dict[str, Any]) -> None:
+def cleanup_dynamodb_tables(neo4j_session: neo4j.Session, graph_job_parameters: Dict[str, Any]) -> None:
     run_cleanup_job('aws_import_dynamodb_tables_cleanup.json', neo4j_session, graph_job_parameters)
 
 
 @timeit
 def sync_dynamodb_tables(
-    neo4j_session,
-    boto3_session,
+    neo4j_session: neo4j.Session,
+    boto3_session: boto3.session.Session,
     regions: List[str],
     current_aws_account_id: str,
     aws_update_tag: int,
-    graph_job_parameters: Dict[str, Any],
+    graph_job_parameters: GraphJobParameters,
 ) -> None:
     for region in regions:
         logger.info("Syncing DynamoDB for region in '%s' in account '%s'.", region, current_aws_account_id)
@@ -110,7 +115,7 @@ def sync_dynamodb_tables(
     cleanup_dynamodb_tables(neo4j_session, graph_job_parameters)
 
 
-def sync(neo4j_session, aws_stage_config: AwsStageConfig) -> None:
+def sync(neo4j_session: neo4j.Session, aws_stage_config: AwsStageConfig) -> None:
     sync_dynamodb_tables(
         neo4j_session,
         aws_stage_config.boto3_session,

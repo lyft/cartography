@@ -17,10 +17,10 @@ logger = logging.getLogger(__name__)
 
 @timeit
 @aws_handle_regions
-def get_redshift_cluster_data(boto3_session: boto3.session.Session, region: str):
+def get_redshift_cluster_data(boto3_session: boto3.session.Session, region: str) -> List[Dict[str, Any]]:
     client = boto3_session.client('redshift', region_name=region)
     paginator = client.get_paginator('describe_clusters')
-    clusters = []
+    clusters: List[Dict[str, Any]] = []
     for page in paginator.paginate():
         clusters.extend(page['Clusters'])
     return clusters
