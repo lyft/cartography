@@ -3,6 +3,9 @@ from typing import Dict
 from typing import List
 
 import boto3.session
+from typing_extensions import TypedDict
+
+GraphJobParameters = TypedDict('GraphJobParameters', {'AWS_ID': str, 'UPDATE_TAG': int}, total=False)
 
 
 class AwsStageConfig:
@@ -11,7 +14,7 @@ class AwsStageConfig:
         boto3_session: boto3.session.Session,
         current_aws_account_id: str,
         current_aws_account_regions: List[str],
-        graph_job_parameters: Dict[str, Any],
+        graph_job_parameters: GraphJobParameters,
         permission_relationships_file: str,
         aws_accounts: Dict[str, Any],
     ):

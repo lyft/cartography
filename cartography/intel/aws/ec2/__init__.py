@@ -11,7 +11,7 @@ from .subnets import sync_subnets
 from .tgw import sync_transit_gateways
 from .vpc import sync_vpc
 from .vpc_peering import sync_vpc_peering
-from cartography.intel.aws.stage_config import AwsStageConfig
+from cartography.intel.aws.util import AwsStageConfig
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)

@@ -18,7 +18,8 @@ from . import redshift
 from . import resourcegroupstaggingapi
 from . import route53
 from . import s3
-from .stage_config import AwsStageConfig
+from .util import AwsStageConfig
+from .util import GraphJobParameters
 from cartography.config import Config
 from cartography.util import run_analysis_job
 from cartography.util import run_cleanup_job
@@ -27,7 +28,7 @@ from cartography.util import timeit
 logger = logging.getLogger(__name__)
 
 
-def _sync_one_account(neo4j_session, aws_stage_config: AwsStageConfig):
+def _sync_one_account(neo4j_session: neo4j.Session, aws_stage_config: AwsStageConfig) -> None:
     try:
         regions = ec2.get_ec2_regions(aws_stage_config.boto3_session)
     except botocore.exceptions.ClientError as e:
@@ -66,7 +67,7 @@ def _sync_one_account(neo4j_session, aws_stage_config: AwsStageConfig):
     resourcegroupstaggingapi.sync(neo4j_session, aws_stage_config)
 
 
-def _autodiscover_accounts(neo4j_session, aws_stage_config: AwsStageConfig):
+def _autodiscover_accounts(neo4j_session: neo4j.Session, aws_stage_config: AwsStageConfig) -> None:
     logger.info("Trying to autodiscover accounts.")
     try:
         # Fetch all accounts
@@ -93,7 +94,7 @@ def _autodiscover_accounts(neo4j_session, aws_stage_config: AwsStageConfig):
         )
 
 
-def _sync_multiple_accounts(neo4j_session, aws_stage_config: AwsStageConfig):
+def _sync_multiple_accounts(neo4j_session: neo4j.Session, aws_stage_config: AwsStageConfig) -> None:
     logger.debug("Syncing AWS accounts: %s", ', '.join(aws_stage_config.aws_accounts.values()))
     organizations.sync(neo4j_session, aws_stage_config)
 
@@ -118,10 +119,7 @@ def _sync_multiple_accounts(neo4j_session, aws_stage_config: AwsStageConfig):
 
 
 @timeit
-def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config):
-    graph_job_parameters = {
-        "UPDATE_TAG": config.update_tag,
-    }
+def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
     try:
         boto3_session = boto3.Session()
     except (botocore.exceptions.BotoCoreError, botocore.exceptions.ClientError) as e:
@@ -159,7 +157,7 @@ def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config):
         boto3_session=None,
         current_aws_account_id='',
         current_aws_account_regions=[],
-        graph_job_parameters=graph_job_parameters,
+        graph_job_parameters=GraphJobParameters(UPDATE_TAG=config.update_tag),
         permission_relationships_file=config.permission_relationships_file,
         aws_accounts=aws_accounts,
     )

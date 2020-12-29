@@ -1,7 +1,7 @@
 import logging
 
 from .util import get_botocore_config
-from cartography.intel.aws.stage_config import AwsStageConfig
+from cartography.intel.aws.util import AwsStageConfig
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit

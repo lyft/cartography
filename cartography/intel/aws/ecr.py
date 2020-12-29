@@ -2,6 +2,7 @@ import logging
 from typing import Dict
 from typing import List
 
+from cartography.intel.aws.util import AwsStageConfig
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -124,17 +125,17 @@ def load_ecr_repository_images(neo4j_session, repo_images_list, region, aws_upda
 
 
 @timeit
-def cleanup(neo4j_session, common_job_parameters):
+def cleanup(neo4j_session, graph_job_parameters):
     logger.debug("Running ECR cleanup job.")
-    run_cleanup_job('aws_import_ecr_cleanup.json', neo4j_session, common_job_parameters)
+    run_cleanup_job('aws_import_ecr_cleanup.json', neo4j_session, graph_job_parameters)
 
 
 @timeit
-def sync(neo4j_session, common_job_parameters, aws_stage_config):
-    current_aws_account_id = common_job_parameters['AWS_ID']
-    boto3_session = aws_stage_config['boto3_session']
-    regions = aws_stage_config['regions']
-    aws_update_tag = common_job_parameters['UPDATE_TAG']
+def sync(neo4j_session, aws_stage_config: AwsStageConfig):
+    current_aws_account_id = aws_stage_config.current_aws_account_id
+    boto3_session = aws_stage_config.boto3_session
+    regions = aws_stage_config.current_aws_account_regions
+    aws_update_tag = aws_stage_config.graph_job_parameters['UPDATE_TAG']
 
     for region in regions:
         logger.info("Syncing ECR for region '%s' in account '%s'.", region, current_aws_account_id)
@@ -146,4 +147,4 @@ def sync(neo4j_session, common_job_parameters, aws_stage_config):
         load_ecr_repositories(neo4j_session, repositories, region, current_aws_account_id, aws_update_tag)
         repo_images_list = transform_ecr_repository_images(image_data)
         load_ecr_repository_images(neo4j_session, repo_images_list, region, aws_update_tag)
-    cleanup(neo4j_session, common_job_parameters)
+    cleanup(neo4j_session, aws_stage_config.graph_job_parameters)

@@ -6,7 +6,7 @@ from typing import List
 import boto3.session
 import neo4j
 
-from cartography.intel.aws.stage_config import AwsStageConfig
+from cartography.intel.aws.util import AwsStageConfig
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 @timeit
 @aws_handle_regions
-def get_lambda_data(boto3_session: boto3.session.Session, region: str):
+def get_lambda_data(boto3_session: boto3.session.Session, region: str) -> List[Dict[str, Any]]:
     """
     Create an Lambda boto3 client and grab all the lambda functions.
     """
@@ -75,7 +75,7 @@ def load_lambda_functions(
 
 
 @timeit
-def cleanup_lambda(neo4j_session: neo4j.Session, graph_job_parameters: Dict[str, Any]):
+def cleanup_lambda(neo4j_session: neo4j.Session, graph_job_parameters: Dict[str, Any]) -> None:
     run_cleanup_job('aws_import_lambda_cleanup.json', neo4j_session, graph_job_parameters)
 
 
@@ -83,7 +83,7 @@ def cleanup_lambda(neo4j_session: neo4j.Session, graph_job_parameters: Dict[str,
 def sync_lambda_functions(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
     aws_update_tag: str, graph_job_parameters: Dict[str, Any],
-):
+) -> None:
     for region in regions:
         logger.info("Syncing Lambda for region in '%s' in account '%s'.", region, current_aws_account_id)
         data = get_lambda_data(boto3_session, region)
@@ -92,7 +92,7 @@ def sync_lambda_functions(
     cleanup_lambda(neo4j_session, graph_job_parameters)
 
 
-def sync(neo4j_session: neo4j.Session, aws_stage_config: AwsStageConfig):
+def sync(neo4j_session: neo4j.Session, aws_stage_config: AwsStageConfig) -> None:
     current_aws_account_id = aws_stage_config.current_aws_account_id
     boto3_session = aws_stage_config.boto3_session
     regions = aws_stage_config.current_aws_account_regions

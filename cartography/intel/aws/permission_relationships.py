@@ -6,7 +6,7 @@ from string import Template
 import yaml
 
 from cartography.graph.statement import GraphStatement
-from cartography.intel.aws.stage_config import AwsStageConfig
+from cartography.intel.aws.util import AwsStageConfig
 
 logger = logging.getLogger(__name__)
 

@@ -4,7 +4,7 @@ import logging
 
 from cartography.intel.aws.permission_relationships import parse_statement_node
 from cartography.intel.aws.permission_relationships import principal_allowed_on_resource
-from cartography.intel.aws.stage_config import AwsStageConfig
+from cartography.intel.aws.util import AwsStageConfig
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 logger = logging.getLogger(__name__)

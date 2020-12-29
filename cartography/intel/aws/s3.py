@@ -11,7 +11,7 @@ from typing import Union
 from botocore.exceptions import ClientError
 from policyuniverse.policy import Policy
 
-from cartography.intel.aws.stage_config import AwsStageConfig
+from cartography.intel.aws.util import AwsStageConfig
 from cartography.util import run_analysis_job
 from cartography.util import run_cleanup_job
 from cartography.util import timeit

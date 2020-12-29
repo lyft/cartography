@@ -1,5 +1,6 @@
 import logging
 
+from cartography.intel.aws.util import AwsStageConfig
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -87,11 +88,11 @@ def cleanup(neo4j_session, common_job_parameters):
 
 
 @timeit
-def sync(neo4j_session, common_job_parameters, aws_stage_config):
-    current_aws_account_id = common_job_parameters['AWS_ID']
-    boto3_session = aws_stage_config['boto3_session']
-    regions = aws_stage_config['regions']
-    aws_update_tag = common_job_parameters['UPDATE_TAG']
+def sync(neo4j_session, aws_stage_config: AwsStageConfig) -> None:
+    current_aws_account_id = aws_stage_config.current_aws_account_id
+    boto3_session = aws_stage_config.boto3_session
+    regions = aws_stage_config.current_aws_account_regions
+    aws_update_tag = aws_stage_config.graph_job_parameters['UPDATE_TAG']
 
     for region in regions:
         logger.info("Syncing EKS for region '%s' in account '%s'.", region, current_aws_account_id)
@@ -104,4 +105,4 @@ def sync(neo4j_session, common_job_parameters, aws_stage_config):
 
         load_eks_clusters(neo4j_session, cluster_data, region, current_aws_account_id, aws_update_tag)
 
-    cleanup(neo4j_session, common_job_parameters)
+    cleanup(neo4j_session, aws_stage_config.graph_job_parameters)
