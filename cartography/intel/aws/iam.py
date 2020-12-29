@@ -630,7 +630,7 @@ def sync_role_inline_policies(current_aws_account_id, boto3_session, data, neo4j
 
 
 @timeit
-def sync_group_memberships(neo4j_session, aws_stage_config: AwsStageConfig):
+def sync_group_memberships(neo4j_session, aws_stage_config: AwsStageConfig) -> None:
     logger.debug("Syncing IAM group membership for account '%s'.", aws_stage_config.current_aws_account_id)
     aws_update_tag = aws_stage_config.graph_job_parameters['UPDATE_TAG']
 
@@ -649,7 +649,7 @@ def sync_group_memberships(neo4j_session, aws_stage_config: AwsStageConfig):
 
 
 @timeit
-def sync_user_access_keys(neo4j_session, aws_stage_config: AwsStageConfig):
+def sync_user_access_keys(neo4j_session, aws_stage_config: AwsStageConfig) -> None:
     logger.debug("Syncing IAM user access keys for account '%s'.", aws_stage_config.current_aws_account_id)
     query = "MATCH (user:AWSUser)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ACCOUNT_ID}}) return user.name as name"
     result = neo4j_session.run(query, AWS_ACCOUNT_ID=aws_stage_config.current_aws_account_id)
@@ -669,7 +669,7 @@ def sync_user_access_keys(neo4j_session, aws_stage_config: AwsStageConfig):
 
 
 @timeit
-def sync(neo4j_session, aws_stage_config: AwsStageConfig):
+def sync(neo4j_session, aws_stage_config: AwsStageConfig) -> None:
     logger.info("Syncing IAM for account '%s'.", aws_stage_config.current_aws_account_id)
     # This module only syncs IAM information that is in use.
     # As such only policies that are attached to a user, role or group are synced

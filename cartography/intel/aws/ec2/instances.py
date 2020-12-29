@@ -173,7 +173,7 @@ def load_ec2_instances(
             # NOTE this is a hack because we're using a version of Neo4j that doesn't support temporal data types
             launch_time = instance.get("LaunchTime")
             if launch_time:
-                launch_time_unix = time.mktime(launch_time.timetuple())
+                launch_time_unix = str(time.mktime(launch_time.timetuple()))
             else:
                 launch_time_unix = ""
 

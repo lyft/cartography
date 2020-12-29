@@ -6,6 +6,7 @@ from typing import Dict
 from typing import Iterator
 from typing import List
 from typing import Tuple
+from typing import Union
 
 from botocore.exceptions import ClientError
 from policyuniverse.policy import Policy
@@ -52,7 +53,7 @@ def get_s3_bucket_details(
     Iterates over all S3 buckets. Yields bucket name (string) and pairs of S3 bucket policies (JSON) and ACLs (JSON)
     """
     # a local store for s3 clients so that we may re-use clients for an AWS region
-    s3_regional_clients = {}
+    s3_regional_clients: Dict[str, Any] = {}
 
     for bucket in bucket_data['Buckets']:
         # Note: bucket['Region'] is sometimes None because
@@ -96,7 +97,7 @@ def get_policy(bucket: Dict[str, Any], client) -> Dict[str, Any]:
 
 
 @timeit
-def get_acl(bucket: Dict[str, Any], client) -> Dict[str, Any]:
+def get_acl(bucket: Dict[str, Any], client) -> Union[Dict[str, Any], None]:
     """
     Gets the S3 bucket ACL. Returns ACL string
     """
@@ -219,7 +220,7 @@ def load_s3_details(
 
 
 @timeit
-def parse_policy(bucket: str, policy: Dict[str, Any]) -> Dict[str, Any]:
+def parse_policy(bucket: str, policy: Policy) -> Union[Dict[str, Any], None]:
     """
     Uses PolicyUniverse to parse S3 policies and returns the internet accessibility results
     """

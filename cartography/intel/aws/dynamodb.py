@@ -25,7 +25,7 @@ def get_dynamodb_tables(boto3_session, region: str):
 
 @timeit
 def load_dynamodb_tables(
-    neo4j_session, data: Dict[str, Any], region: str, current_aws_account_id: str, aws_update_tag: int,
+    neo4j_session, data: List[Dict[str, Any]], region: str, current_aws_account_id: str, aws_update_tag: int,
 ) -> None:
     ingest_table = """
     MERGE (table:DynamoDBTable{id: {Arn}})

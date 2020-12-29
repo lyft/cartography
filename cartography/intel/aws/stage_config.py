@@ -2,16 +2,18 @@ from typing import Any
 from typing import Dict
 from typing import List
 
+import boto3.session
+
 
 class AwsStageConfig:
     def __init__(
         self,
-        boto3_session,
+        boto3_session: boto3.session.Session,
         current_aws_account_id: str,
         current_aws_account_regions: List[str],
         graph_job_parameters: Dict[str, Any],
         permission_relationships_file: str,
-        aws_accounts: List[str],
+        aws_accounts: Dict[str, Any],
     ):
         self.boto3_session = boto3_session
         self.current_aws_account_id = current_aws_account_id

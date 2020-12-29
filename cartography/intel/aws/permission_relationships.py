@@ -342,8 +342,8 @@ def sync(neo4j_session, aws_stage_config: AwsStageConfig):
 
     if not pr_file:
         logger.warning(
-            f"Permission relationships file was not specified, skipping. If this is not expected, please check your "
-            f"value of --permission-relationships-file",
+            "Permission relationships file was not specified, skipping. If this is not expected, please check your "
+            "value of --permission-relationships-file",
         )
         return
     relationship_mapping = parse_permission_relationships_file(pr_file)

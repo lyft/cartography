@@ -1,5 +1,14 @@
 import logging
+from typing import Any
+from typing import cast
+from typing import Dict
+from typing import List
+from typing import Union
 
+import boto3.session
+import neo4j
+
+from cartography.intel.aws.stage_config import AwsStageConfig
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -9,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 @timeit
 @aws_handle_regions
-def get_redshift_cluster_data(boto3_session, region):
+def get_redshift_cluster_data(boto3_session: boto3.session.Session, region: str):
     client = boto3_session.client('redshift', region_name=region)
     paginator = client.get_paginator('describe_clusters')
     clusters = []
@@ -18,19 +27,24 @@ def get_redshift_cluster_data(boto3_session, region):
     return clusters
 
 
-def _make_redshift_cluster_arn(region, aws_account_id, cluster_identifier):
+def _make_redshift_cluster_arn(region: str, aws_account_id: str, cluster_identifier: str):
     """Cluster ARN format: https://docs.aws.amazon.com/redshift/latest/mgmt/redshift-iam-access-control-overview.html"""
     return f'arn:aws:redshift:{region}:{aws_account_id}:cluster:{cluster_identifier}'
 
 
-def transform_redshift_cluster_data(clusters, region, current_aws_account_id):
+def transform_redshift_cluster_data(
+    clusters: List[Dict[str, Union[Any, Dict[str, Any], None]]], region: str, current_aws_account_id: str,
+) -> None:
     for cluster in clusters:
-        cluster['arn'] = _make_redshift_cluster_arn(region, current_aws_account_id, cluster["ClusterIdentifier"])
+        cluster['arn'] = _make_redshift_cluster_arn(region, current_aws_account_id, str(cluster["ClusterIdentifier"]))
         cluster['ClusterCreateTime'] = str(cluster['ClusterCreateTime']) if 'ClusterCreateTime' in cluster else None
 
 
 @timeit
-def load_redshift_cluster_data(neo4j_session, clusters, region, current_aws_account_id, aws_update_tag):
+def load_redshift_cluster_data(
+    neo4j_session: neo4j.Session, clusters: List[Dict[str, Union[None, Any, Dict[str, Any]]]], region: str,
+    current_aws_account_id: str, aws_update_tag: str,
+) -> None:
     ingest_cluster = """
     MERGE (cluster:RedshiftCluster{id: {Arn}})
     ON CREATE SET cluster.firstseen = timestamp(),
@@ -58,6 +72,8 @@ def load_redshift_cluster_data(neo4j_session, clusters, region, current_aws_acco
     SET r.lastupdated = {aws_update_tag}
     """
     for cluster in clusters:
+        # mypy with heterogeneous dicts is messy. This coercion is mostly to make the type linter happy.
+        endpoint: Dict[str, Any] = cast(Dict[str, Any], cluster.get('Endpoint', {}))
         neo4j_session.run(
             ingest_cluster,
             Arn=cluster['arn'],
@@ -68,8 +84,8 @@ def load_redshift_cluster_data(neo4j_session, clusters, region, current_aws_acco
             ClusterStatus=cluster['ClusterStatus'],
             DBName=cluster['DBName'],
             Encrypted=cluster['Encrypted'],
-            EndpointAddress=cluster.get('Endpoint').get('Address'),
-            EndpointPort=cluster.get('Endpoint').get('Port'),
+            EndpointAddress=endpoint.get('Address'),
+            EndpointPort=endpoint.get('Port'),
             MasterUsername=cluster['MasterUsername'],
             NodeType=cluster['NodeType'],
             NumberOfNodes=cluster['NumberOfNodes'],
@@ -84,8 +100,8 @@ def load_redshift_cluster_data(neo4j_session, clusters, region, current_aws_acco
         _attach_aws_vpc(neo4j_session, cluster, aws_update_tag)
 
 
-@timeit
-def _attach_ec2_security_groups(neo4j_session, cluster, aws_update_tag):
+@ timeit
+def _attach_ec2_security_groups(neo4j_session: neo4j.Session, cluster: Dict[str, Any], aws_update_tag: str) -> None:
     attach_cluster_to_group = """
     MATCH (c:RedshiftCluster{id:{ClusterArn}})
     MERGE (sg:EC2SecurityGroup{id:{GroupId}})
@@ -102,8 +118,8 @@ def _attach_ec2_security_groups(neo4j_session, cluster, aws_update_tag):
         )
 
 
-@timeit
-def _attach_iam_roles(neo4j_session, cluster, aws_update_tag):
+@ timeit
+def _attach_iam_roles(neo4j_session: neo4j.Session, cluster: Dict[str, Any], aws_update_tag: str) -> None:
     attach_cluster_to_role = """
     MATCH (c:RedshiftCluster{id:{ClusterArn}})
     MERGE (p:AWSPrincipal{arn:{RoleArn}})
@@ -120,8 +136,8 @@ def _attach_iam_roles(neo4j_session, cluster, aws_update_tag):
         )
 
 
-@timeit
-def _attach_aws_vpc(neo4j_session, cluster, aws_update_tag):
+@ timeit
+def _attach_aws_vpc(neo4j_session: neo4j.Session, cluster: Dict[str, Any], aws_update_tag: str):
     attach_cluster_to_vpc = """
     MATCH (c:RedshiftCluster{id:{ClusterArn}})
     MERGE (v:AWSVpc{id:{VpcId}})
@@ -138,26 +154,29 @@ def _attach_aws_vpc(neo4j_session, cluster, aws_update_tag):
         )
 
 
-@timeit
-def cleanup(neo4j_session, common_job_parameters):
-    run_cleanup_job('aws_import_redshift_clusters_cleanup.json', neo4j_session, common_job_parameters)
+@ timeit
+def cleanup(neo4j_session: neo4j.Session, graph_job_parameters: Dict[str, Any]):
+    run_cleanup_job('aws_import_redshift_clusters_cleanup.json', neo4j_session, graph_job_parameters)
 
 
-@timeit
-def sync_redshift_clusters(neo4j_session, boto3_session, region, current_aws_account_id, aws_update_tag):
+@ timeit
+def sync_redshift_clusters(
+    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, region: str, current_aws_account_id: str,
+    aws_update_tag: str,
+) -> None:
     data = get_redshift_cluster_data(boto3_session, region)
     transform_redshift_cluster_data(data, region, current_aws_account_id)
     load_redshift_cluster_data(neo4j_session, data, region, current_aws_account_id, aws_update_tag)
 
 
-@timeit
-def sync(neo4j_session, common_job_parameters, aws_stage_config):
-    account_id = common_job_parameters['AWS_ID']
-    boto3_session = aws_stage_config['boto3_session']
-    regions = aws_stage_config['regions']
-    aws_update_tag = common_job_parameters['UPDATE_TAG']
+@ timeit
+def sync(neo4j_session: neo4j.Session, aws_stage_config: AwsStageConfig):
+    account_id = aws_stage_config.current_aws_account_id
+    boto3_session = aws_stage_config.boto3_session
+    regions = aws_stage_config.current_aws_account_regions
+    aws_update_tag = aws_stage_config.graph_job_parameters['UPDATE_TAG']
 
     for region in regions:
         logger.info("Syncing Redshift clusters for region '%s' in account '%s'.", region, account_id)
         sync_redshift_clusters(neo4j_session, boto3_session, region, account_id, aws_update_tag)
-    cleanup(neo4j_session, common_job_parameters)
+    cleanup(neo4j_session, aws_stage_config.graph_job_parameters)

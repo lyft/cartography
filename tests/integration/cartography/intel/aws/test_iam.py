@@ -6,6 +6,7 @@ from cartography.config import Config
 from cartography.intel.aws.stage_config import AwsStageConfig
 from cartography.sync import build_default_sync
 
+TEST_ACCOUNT_NAME = 'account-name-123'
 TEST_ACCOUNT_ID = '000000000000'
 TEST_REGION = 'us-east-1'
 TEST_UPDATE_TAG = 123456789
@@ -20,7 +21,7 @@ aws_stage_config = AwsStageConfig(
     current_aws_account_regions=[TEST_REGION],
     graph_job_parameters=graph_job_parameters,
     permission_relationships_file='cartography/data/permission_relationships.yaml',
-    aws_accounts=[TEST_ACCOUNT_ID],
+    aws_accounts={TEST_ACCOUNT_NAME: TEST_ACCOUNT_ID},
 )
 
 

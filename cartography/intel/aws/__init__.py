@@ -2,6 +2,7 @@ import logging
 
 import boto3
 import botocore.exceptions
+import neo4j
 
 from . import dynamodb
 from . import ec2
@@ -71,13 +72,13 @@ def _autodiscover_accounts(neo4j_session, aws_stage_config: AwsStageConfig):
         # Fetch all accounts
         client = aws_stage_config.boto3_session.client('organizations')
         paginator = client.get_paginator('list_accounts')
-        accounts = []
+        account_list = []
         for page in paginator.paginate():
-            accounts.extend(page['Accounts'])
+            account_list.extend(page['Accounts'])
 
         # Filter out every account which is not in the ACTIVE status
         # and select only the Id and Name fields
-        accounts = {x['Name']: x['Id'] for x in accounts if x['Status'] == 'ACTIVE'}
+        accounts = {x['Name']: x['Id'] for x in account_list if x['Status'] == 'ACTIVE'}
 
         # Add them to the graph
         logger.info("Loading autodiscovered accounts.")
@@ -117,7 +118,7 @@ def _sync_multiple_accounts(neo4j_session, aws_stage_config: AwsStageConfig):
 
 
 @timeit
-def start_aws_ingestion(neo4j_session, config: Config):
+def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config):
     graph_job_parameters = {
         "UPDATE_TAG": config.update_tag,
     }
