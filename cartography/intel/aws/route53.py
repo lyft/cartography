@@ -1,5 +1,14 @@
 import logging
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Tuple
 
+import botocore.client
+import neo4j
+
+from cartography.intel.aws.util import AwsStageConfig
+from cartography.intel.aws.util import GraphJobParameters
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
@@ -7,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
-def link_aws_resources(neo4j_session, update_tag):
+def link_aws_resources(neo4j_session: neo4j.Session, update_tag: int):
     # find records that point to other records
     link_records = """
     MATCH (n:AWSDNSRecord) WITH n MATCH (v:AWSDNSRecord{value: n.name})
@@ -38,7 +47,7 @@ def link_aws_resources(neo4j_session, update_tag):
 
 
 @timeit
-def load_a_records(neo4j_session, records, update_tag):
+def load_a_records(neo4j_session: neo4j.Session, records: List[Dict[str, Any]], update_tag: int):
     ingest_records = """
     UNWIND {records} as record
     MERGE (a:DNSRecord:AWSDNSRecord{id: record.id})
@@ -58,7 +67,7 @@ def load_a_records(neo4j_session, records, update_tag):
 
 
 @timeit
-def load_alias_records(neo4j_session, records, update_tag):
+def load_alias_records(neo4j_session: neo4j.Session, records: List[Dict[str, Any]], update_tag: int) -> None:
     # create the DNSRecord nodes and link them to matching DNSZone and S3Bucket nodes
     ingest_records = """
     UNWIND {records} as record
@@ -79,7 +88,7 @@ def load_alias_records(neo4j_session, records, update_tag):
 
 
 @timeit
-def load_cname_records(neo4j_session, records, update_tag):
+def load_cname_records(neo4j_session: neo4j.Session, records: List[Dict[str, Any]], update_tag: int) -> None:
     ingest_records = """
     UNWIND {records} as record
     MERGE (a:DNSRecord:AWSDNSRecord{id: record.id})
@@ -99,7 +108,7 @@ def load_cname_records(neo4j_session, records, update_tag):
 
 
 @timeit
-def load_zone(neo4j_session, zone, current_aws_id, update_tag):
+def load_zone(neo4j_session: neo4j.Session, zone: Dict[str, Any], current_aws_id: str, update_tag: int) -> None:
     ingest_z = """
     MERGE (zone:DNSZone:AWSDNSZone{zoneid:{ZoneId}})
     ON CREATE SET zone.firstseen = timestamp(), zone.name = {ZoneName}
@@ -122,7 +131,9 @@ def load_zone(neo4j_session, zone, current_aws_id, update_tag):
 
 
 @timeit
-def load_ns_records(neo4j_session, records, zone_name, update_tag):
+def load_ns_records(
+    neo4j_session: neo4j.Session, records: List[Dict[str, Any]], zone_name: str, update_tag: int,
+) -> None:
     ingest_records = """
     UNWIND {records} as record
     MERGE (a:DNSRecord:AWSDNSRecord{id: record.id})
@@ -167,7 +178,7 @@ def load_ns_records(neo4j_session, records, zone_name, update_tag):
 
 
 @timeit
-def link_sub_zones(neo4j_session, update_tag):
+def link_sub_zones(neo4j_session: neo4j.Session, update_tag: int) -> None:
     query = """
     match (z:AWSDNSZone)
     <-[:MEMBER_OF_DNS_ZONE]-
@@ -188,7 +199,7 @@ def link_sub_zones(neo4j_session, update_tag):
 
 
 @timeit
-def transform_record_set(record_set, zone_id, name):
+def transform_record_set(record_set: Dict[str, Any], zone_id: str, name: str) -> Dict[str, Any]:
     # process CNAME, ALIAS and A records
     if record_set['Type'] == 'CNAME':
         if 'AliasTarget' in record_set:
@@ -215,7 +226,6 @@ def transform_record_set(record_set, zone_id, name):
                 "value": value,
                 "id": _create_dns_record_id(zone_id, name, 'CNAME'),
             }
-
     elif record_set['Type'] == 'A':
         if 'AliasTarget' in record_set:
             # this is an ALIAS record
@@ -243,10 +253,12 @@ def transform_record_set(record_set, zone_id, name):
                 "value": value[:-1],
                 "id": _create_dns_record_id(zone_id, name, 'A'),
             }
+    else:
+        raise ValueError(f"aws.route53.transform_record_set: unrecognized DNS record type {record_set.get('Type')}")
 
 
 @timeit
-def transform_ns_record_set(record_set, zone_id):
+def transform_ns_record_set(record_set: Dict[str, Any], zone_id: str):
 
     if "ResourceRecords" in record_set:
         # Sometimes the value records have a trailing period, sometimes they dont.
@@ -262,7 +274,7 @@ def transform_ns_record_set(record_set, zone_id):
 
 
 @timeit
-def transform_zone(zone):
+def transform_zone(zone: Dict[str, Any]) -> Dict[str, Any]:
     # TODO simplify this
     if 'Comment' in zone['Config']:
         comment = zone['Config']['Comment']
@@ -279,7 +291,10 @@ def transform_zone(zone):
 
 
 @timeit
-def load_dns_details(neo4j_session, dns_details, current_aws_id, update_tag):
+def load_dns_details(
+    neo4j_session: neo4j.Session, dns_details: List[Tuple[Dict[str, Any], List[Dict[str, Any]]]], current_aws_id: str,
+    update_tag: int,
+) -> None:
     for zone, zone_record_sets in dns_details:
         zone_a_records = []
         zone_alias_records = []
@@ -317,7 +332,7 @@ def load_dns_details(neo4j_session, dns_details, current_aws_id, update_tag):
 
 
 @timeit
-def get_zone_record_sets(client, zone_id):
+def get_zone_record_sets(client: botocore.client.BaseClient, zone_id: str) -> List[Dict[str, Any]]:
     resource_record_sets = []
     paginator = client.get_paginator('list_resource_record_sets')
     pages = paginator.paginate(HostedZoneId=zone_id)
@@ -327,7 +342,7 @@ def get_zone_record_sets(client, zone_id):
 
 
 @timeit
-def get_zones(client):
+def get_zones(client: botocore.client.BaseClient) -> List[Tuple[Dict[str, Any], List[Dict[str, Any]]]]:
     paginator = client.get_paginator('list_hosted_zones')
     hosted_zones = []
     for page in paginator.paginate():
@@ -340,32 +355,32 @@ def get_zones(client):
     return results
 
 
-def _create_dns_record_id(zoneid, name, record_type):
+def _create_dns_record_id(zoneid: str, name: str, record_type: str) -> str:
     return "/".join([zoneid, name, record_type])
 
 
-def _normalize_dns_address(address):
+def _normalize_dns_address(address: str) -> str:
     return address.rstrip('.')
 
 
 @timeit
-def cleanup_route53(neo4j_session, current_aws_id, update_tag):
+def cleanup_route53(neo4j_session: neo4j.Session, graph_job_parameters: GraphJobParameters) -> None:
     run_cleanup_job(
         'aws_dns_cleanup.json',
         neo4j_session,
-        {'UPDATE_TAG': update_tag, 'AWS_ID': current_aws_id},
+        graph_job_parameters,
     )
 
 
 @timeit
-def sync(neo4j_session, common_job_parameters, aws_stage_config):
-    current_aws_account_id = aws_stage_config['account_id']
-    boto3_session = aws_stage_config['boto3_session']
-    aws_update_tag = common_job_parameters['UPDATE_TAG']
+def sync(neo4j_session: neo4j.Session, aws_stage_config: AwsStageConfig) -> None:
+    current_aws_account_id = aws_stage_config.current_aws_account_id
+    boto3_session = aws_stage_config.boto3_session
+    aws_update_tag = aws_stage_config.graph_job_parameters['UPDATE_TAG']
 
     logger.info("Syncing Route53 for account '%s'.", current_aws_account_id)
     client = boto3_session.client('route53')
     zones = get_zones(client)
     load_dns_details(neo4j_session, zones, current_aws_account_id, aws_update_tag)
     link_sub_zones(neo4j_session, aws_update_tag)
-    cleanup_route53(neo4j_session, current_aws_account_id, aws_update_tag)
+    cleanup_route53(neo4j_session, aws_stage_config.graph_job_parameters)
