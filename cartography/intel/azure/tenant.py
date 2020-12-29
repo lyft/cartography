@@ -18,11 +18,11 @@ def load_azure_tenant(neo4j_session, tenant_id, current_user, azure_update_tag, 
     WITH at
     MERGE (ap:AzurePrincipal{email: {CURRENT_USER}})
     ON CREATE SET ap.firstseen = timestamp(), ap.type = 'AZURE'
-    SET ap.lastupdated = {aws_update_tag}
+    SET ap.lastupdated = {azure_update_tag}
     WITH at, ap
     MERGE (at)-[r:RESOURCE]->(ap)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag};
+    SET r.lastupdated = {azure_update_tag};
     """
     neo4j_session.run(
         query,
@@ -37,6 +37,6 @@ def cleanup(neo4j_session, common_job_parameters):
 
 
 @timeit
-def sync(neo4j_session, tenant_id, azure_update_tag, common_job_parameters):
-    load_azure_tenant(neo4j_session, tenant_id, azure_update_tag, common_job_parameters)
+def sync(neo4j_session, tenant_id, current_user, azure_update_tag, common_job_parameters):
+    load_azure_tenant(neo4j_session, tenant_id, current_user, azure_update_tag, common_job_parameters)
     cleanup(neo4j_session, common_job_parameters)
