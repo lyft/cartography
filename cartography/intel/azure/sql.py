@@ -19,7 +19,7 @@ def get_server_list(credentials, subscription_id):
         server_list = list(client.servers.list())
 
     except Exception as e:
-        print(f'Failed to retrieve servers : {e}')
+        logger.warning("Error while retrieving servers - {}".format(e))
         return []
 
     for server in server_list:
@@ -90,7 +90,7 @@ def get_dns_aliases(credentials, subscription_id, server):
         dns_aliases = list(client.server_dns_aliases.list_by_server(server['resourceGroup'], server['name']))
 
     except Exception as e:
-        print(f'Failed to retrieve server DNS Aliases : {e}')
+        logger.warning("Error while retrieving Azure Server DNS Aliases - {}".format(e))
         return []
 
     return dns_aliases
@@ -103,7 +103,7 @@ def get_ad_admins(credentials, subscription_id, server):
         ad_admins = list(client.server_azure_ad_administrators.list_by_server(server['resourceGroup'], server['name']))
 
     except Exception as e:
-        print(f'Failed to retrieve server azure AD Administrators : {e}')
+        logger.warning("Error while retrieving server azure AD Administrators - {}".format(e))
         return []
 
     return ad_admins
@@ -116,7 +116,7 @@ def get_recoverable_databases(credentials, subscription_id, server):
         recoverable_databases = list(client.recoverable_databases.list_by_server(server['resourceGroup'], server['name']))
 
     except Exception as e:
-        print(f'Failed to retrieve recoverable databases : {e}')
+        logger.warning("Error while retrieving recoverable databases - {}".format(e))
         return []
 
     return recoverable_databases
@@ -129,7 +129,7 @@ def get_restorable_dropped_databases(credentials, subscription_id, server):
         restorable_dropped_databases = list(client.restorable_dropped_databases.list_by_server(server['resourceGroup'], server['name']))
 
     except Exception as e:
-        print(f'Failed to retrieve restorable dropped databases : {e}')
+        logger.warning("Error while retrieving restorable dropped databases - {}".format(e))
         return []
 
     return restorable_dropped_databases
@@ -142,7 +142,7 @@ def get_failover_groups(credentials, subscription_id, server):
         failover_groups = list(client.failover_groups.list_by_server(server['resourceGroup'], server['name']))
 
     except Exception as e:
-        print(f'Failed to retrieve failover groups : {e}')
+        logger.warning("Error while retrieving failover groups - {}".format(e))
         return []
 
     return failover_groups
@@ -155,7 +155,7 @@ def get_elastic_pools(credentials, subscription_id, server):
         elastic_pools = list(client.elastic_pools.list_by_server(server['resourceGroup'], server['name']))
 
     except Exception as e:
-        print(f'Failed to retrieve elastic pools : {e}')
+        logger.warning("Error while retrieving elastic pools - {}".format(e))
         return []
 
     return elastic_pools
@@ -168,7 +168,7 @@ def get_databases(credentials, subscription_id, server):
         databases = list(client.databases.list_by_server(server['resourceGroup'], server['name']))
 
     except Exception as e:
-        print(f'Failed to retrieve databases : {e}')
+        logger.warning("Error while retrieving databases - {}".format(e))
         return []
 
     return databases
@@ -220,13 +220,6 @@ def load_server_details(neo4j_session, credentials, subscription_id, details, up
             database['server_id'] = server_id
             database['resource_group_name'] = resourceGroup
             databases.extend(database)
-
-    # # cleanup existing policy properties
-    # run_cleanup_job(
-    #     'aws_kms_details.json',
-    #     neo4j_session,
-    #     {'UPDATE_TAG': update_tag, 'AWS_ID': aws_account_id},
-    # )
 
     _load_server_dns_aliases(neo4j_session, dns_aliases, update_tag)
     _load_server_ad_admins(neo4j_session, ad_admins, update_tag)
@@ -500,7 +493,7 @@ def get_replication_links(credentials, subscription_id, database):
         replication_links = list(client.replication_links.list_by_database(database['resource_group_name'], database['server_name'], database['name']))
 
     except Exception as e:
-        print(f'Failed to retrieve replication links : {e}')
+        logger.warning("Error while retrieving replication links - {}".format(e))
         return []
 
     return replication_links
@@ -512,7 +505,7 @@ def get_db_threat_detection_policies(credentials, subscription_id, database):
         client = get_client(credentials, subscription_id)
         db_threat_detection_policies = client.database_threat_detection_policies.get(database['resource_group_name'], database['server_name'], database['name'], 'default')
     except Exception as e:
-        print(f'Failed to retrieve database threat detection policies : {e}')
+        logger.warning("Error while retrieving database threat detection policies - {}".format(e))
         return []
 
     return db_threat_detection_policies
@@ -525,7 +518,7 @@ def get_restore_points(credentials, subscription_id, database):
         restore_points_list = list(client.restore_points.list_by_database(database['resource_group_name'], database['server_name'], database['name']))
 
     except Exception as e:
-        print(f'Failed to retrieve restore points : {e}')
+        logger.warning("Error while retrieving restore points - {}".format(e))
         return []
 
     return restore_points_list
@@ -537,7 +530,7 @@ def get_transparent_data_encryptions(credentials, subscription_id, database):
         client = get_client(credentials, subscription_id)
         transparent_data_encryptions_list = client.transparent_data_encryptions.get(database['resource_group_name'], database['server_name'], database['name'], 'current')
     except Exception as e:
-        print(f'Failed to retrieve transparent data encryptions : {e}')
+        logger.warning("Error while retrieving transparent data encryptions - {}".format(e))
         return []
 
     return transparent_data_encryptions_list
