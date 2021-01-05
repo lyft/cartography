@@ -11,7 +11,6 @@ from . import ec2
 from . import ecr
 from . import eks
 from . import elasticsearch
-from . import iam
 from . import lambda_function
 from . import organizations
 from . import permission_relationships
@@ -19,8 +18,9 @@ from . import rds
 from . import redshift
 from . import resourcegroupstaggingapi
 from . import route53
-from . import s3
 from .dynamodb import DynamoDB
+from .iam import IAM
+from .s3 import S3
 from .util import AwsStageConfig
 from .util import GraphJobParameters
 from cartography.config import Config
@@ -48,10 +48,9 @@ def _sync_one_account(neo4j_session: neo4j.Session, aws_stage_config: AwsStageCo
         return
 
     aws_stage_config.current_aws_account_regions = regions
-    iam.sync(neo4j_session, aws_stage_config)
-    s3.sync(neo4j_session, aws_stage_config)
-    for cls in [DynamoDB()]:
-        Sync(cls, neo4j_session, aws_stage_config)
+    sync = Sync()
+    for cls in [IAM(), S3(), DynamoDB()]:  # we can put all classes with sync() here
+        sync.run_sync(cls, neo4j_session, aws_stage_config)
     ec2.sync(neo4j_session, aws_stage_config)
     ecr.sync(neo4j_session, aws_stage_config)
     eks.sync(neo4j_session, aws_stage_config)

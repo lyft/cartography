@@ -667,16 +667,16 @@ def sync_user_access_keys(neo4j_session, aws_stage_config: AwsStageConfig) -> No
         aws_stage_config.graph_job_parameters,
     )
 
-
-@timeit
-def sync(neo4j_session, aws_stage_config: AwsStageConfig) -> None:
-    logger.info("Syncing IAM for account '%s'.", aws_stage_config.current_aws_account_id)
-    # This module only syncs IAM information that is in use.
-    # As such only policies that are attached to a user, role or group are synced
-    sync_users(neo4j_session, aws_stage_config)
-    sync_groups(neo4j_session, aws_stage_config)
-    sync_roles(neo4j_session, aws_stage_config)
-    sync_group_memberships(neo4j_session, aws_stage_config)
-    sync_assumerole_relationships(neo4j_session, aws_stage_config)
-    sync_user_access_keys(neo4j_session, aws_stage_config)
-    run_cleanup_job('aws_import_principals_cleanup.json', neo4j_session, aws_stage_config.graph_job_parameters)
+class IAM:
+    @timeit
+    def sync(neo4j_session, aws_stage_config: AwsStageConfig) -> None:
+        logger.info("Syncing IAM for account '%s'.", aws_stage_config.current_aws_account_id)
+        # This module only syncs IAM information that is in use.
+        # As such only policies that are attached to a user, role or group are synced
+        sync_users(neo4j_session, aws_stage_config)
+        sync_groups(neo4j_session, aws_stage_config)
+        sync_roles(neo4j_session, aws_stage_config)
+        sync_group_memberships(neo4j_session, aws_stage_config)
+        sync_assumerole_relationships(neo4j_session, aws_stage_config)
+        sync_user_access_keys(neo4j_session, aws_stage_config)
+        run_cleanup_job('aws_import_principals_cleanup.json', neo4j_session, aws_stage_config.graph_job_parameters)
