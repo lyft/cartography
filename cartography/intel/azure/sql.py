@@ -576,7 +576,7 @@ def load_database_details(neo4j_session, details, update_tag):
 @timeit
 def _load_replication_links(neo4j_session, replication_links, update_tag):
     ingest_replication_links = """
-    MERGE (rl:ReplicationLink{id: {LinkId}})
+    MERGE (rl:AzureReplicationLink{id: {LinkId}})
     ON CREATE SET rl.firstseen = timestamp(), rl.lastupdated = {azure_update_tag}
     SET rl.name = {Name},
     rl.location = {Location},
@@ -622,7 +622,7 @@ def _load_replication_links(neo4j_session, replication_links, update_tag):
 @timeit
 def _load_db_threat_detection_policies(neo4j_session, threat_detection_policies, update_tag):
     ingest_threat_detection_policies = """
-    MERGE (policy:DatabaseThreatDetectionPolicy{id: {PolicyId}})
+    MERGE (policy:AzureDatabaseThreatDetectionPolicy{id: {PolicyId}})
     ON CREATE SET policy.firstseen = timestamp(), policy.lastupdated = {azure_update_tag}
     SET policy.name = {Name},
     policy.location = {Location},
@@ -664,7 +664,7 @@ def _load_db_threat_detection_policies(neo4j_session, threat_detection_policies,
 @timeit
 def _load_restore_points(neo4j_session, restore_points, update_tag):
     ingest_restore_points = """
-    MERGE (point:RestorePoint{id: {PointId}})
+    MERGE (point:AzureRestorePoint{id: {PointId}})
     ON CREATE SET point.firstseen = timestamp(), point.lastupdated = {azure_update_tag}
     SET point.name = {Name},
     point.location = {Location},
@@ -696,7 +696,7 @@ def _load_restore_points(neo4j_session, restore_points, update_tag):
 @timeit
 def _load_transparent_data_encryptions(neo4j_session, encryptions_list, update_tag):
     ingest_data_encryptions = """
-    MERGE (tae:TransparentDataEncryption{id: {TAEId}})
+    MERGE (tae:AzureTransparentDataEncryption{id: {TAEId}})
     ON CREATE SET tae.firstseen = timestamp(), tae.lastupdated = {azure_update_tag}
     SET tae.name = {Name},
     tae.location = {Location},
