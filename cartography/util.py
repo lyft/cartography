@@ -2,8 +2,11 @@ import logging
 import sys
 
 import botocore
+import neo4j
+from typing_extensions import Protocol
 
 from cartography.graph.job import GraphJob
+from cartography.intel.aws.util import AwsStageConfig
 
 if sys.version_info >= (3, 7):
     from importlib.resources import open_binary, read_text
@@ -85,3 +88,8 @@ def aws_handle_regions(func):
             else:
                 raise
     return inner_function
+
+
+class Sync(Protocol):
+    def sync(neo4j_session: neo4j.Session, aws_stage_config: AwsStageConfig) -> None:
+        "Sync class"

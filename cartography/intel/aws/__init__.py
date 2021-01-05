@@ -7,7 +7,6 @@ import boto3
 import botocore.exceptions
 import neo4j
 
-from . import dynamodb
 from . import ec2
 from . import ecr
 from . import eks
@@ -21,12 +20,15 @@ from . import redshift
 from . import resourcegroupstaggingapi
 from . import route53
 from . import s3
+from .dynamodb import DynamoDB
 from .util import AwsStageConfig
 from .util import GraphJobParameters
 from cartography.config import Config
 from cartography.util import run_analysis_job
 from cartography.util import run_cleanup_job
+from cartography.util import Sync
 from cartography.util import timeit
+
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +50,8 @@ def _sync_one_account(neo4j_session: neo4j.Session, aws_stage_config: AwsStageCo
     aws_stage_config.current_aws_account_regions = regions
     iam.sync(neo4j_session, aws_stage_config)
     s3.sync(neo4j_session, aws_stage_config)
-    dynamodb.sync(neo4j_session, aws_stage_config)
+    for cls in [DynamoDB()]:
+        Sync(cls, neo4j_session, aws_stage_config)
     ec2.sync(neo4j_session, aws_stage_config)
     ecr.sync(neo4j_session, aws_stage_config)
     eks.sync(neo4j_session, aws_stage_config)

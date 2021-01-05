@@ -115,12 +115,13 @@ def sync_dynamodb_tables(
     cleanup_dynamodb_tables(neo4j_session, graph_job_parameters)
 
 
-def sync(neo4j_session: neo4j.Session, aws_stage_config: AwsStageConfig) -> None:
-    sync_dynamodb_tables(
-        neo4j_session,
-        aws_stage_config.boto3_session,
-        aws_stage_config.current_aws_account_regions,
-        aws_stage_config.current_aws_account_id,
-        aws_stage_config.graph_job_parameters['UPDATE_TAG'],
-        aws_stage_config.graph_job_parameters,
-    )
+class DynamoDB:
+    def sync(neo4j_session: neo4j.Session, aws_stage_config: AwsStageConfig) -> None:
+        sync_dynamodb_tables(
+            neo4j_session,
+            aws_stage_config.boto3_session,
+            aws_stage_config.current_aws_account_regions,
+            aws_stage_config.current_aws_account_id,
+            aws_stage_config.graph_job_parameters['UPDATE_TAG'],
+            aws_stage_config.graph_job_parameters,
+        )
