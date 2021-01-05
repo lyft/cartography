@@ -92,4 +92,4 @@ def aws_handle_regions(func):
 
 class Sync(Protocol):
     def sync(neo4j_session: neo4j.Session, aws_stage_config: AwsStageConfig) -> None:
-        "Sync class"
+        "The Sync Protocol"
