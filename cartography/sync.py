@@ -14,7 +14,7 @@ import cartography.intel.gcp
 import cartography.intel.github
 import cartography.intel.gsuite
 import cartography.intel.okta
-import cartography.intel.azure
+# import cartography.intel.azure
 
 import cloudanix
 
@@ -159,7 +159,7 @@ def build_default_sync():
     sync.add_stages([
         ('create-indexes', cartography.intel.create_indexes.run),
         ('aws', cartography.intel.aws.start_aws_ingestion),
-        ('azure', cartography.intel.azure.start_azure_ingestion),
+        # ('azure', cartography.intel.azure.start_azure_ingestion),
         ('gcp', cartography.intel.gcp.start_gcp_ingestion),
         ('gsuite', cartography.intel.gsuite.start_gsuite_ingestion),
         ('crxcavator', cartography.intel.crxcavator.start_extension_ingestion),
