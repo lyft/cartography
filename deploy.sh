@@ -7,7 +7,7 @@ echo "Begin Set Environment Variables"
 # Parse Arguments
 # Parse Arguments
 ENV=${1-}
-filename=".env.${ENV}.json"
+file_name=".env.aws.${ENV}.json"
 
 if [[ $ENV == "" ]]
 then
@@ -16,14 +16,14 @@ then
 	exit
 fi
 
-region=$(cat $filename | jq -r '.region')
+region=$(cat $file_name | jq -r '.region')
 export CLOUDANIX_DEFAULT_REGION=$region
 
-logLevel=$(cat $filename | jq -r '.logLevel')
-export CLOUDANIX_DEFAULT_LOG_LEVEL=$logLevel
+log_level=$(cat $file_name | jq -r '.logLevel')
+export CLOUDANIX_DEFAULT_LOG_LEVEL=$log_level
 
-appEnv=$(cat $filename | jq -r '.appEnv')
-export CLOUDANIX_APP_ENV=$appEnv
+app_env=$(cat $file_name | jq -r '.appEnv')
+export CLOUDANIX_APP_ENV=$app_env
 
 echo "End Set Environment Variables"
 

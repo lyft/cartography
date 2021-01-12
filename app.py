@@ -15,7 +15,7 @@ lambda_init = None
 context = None
 
 
-def init_lambda():
+def init_lambda(ctx):
     global lambda_init, context
 
     context = AppContext(
@@ -30,8 +30,9 @@ def init_lambda():
     kms_library = KMSLibrary(context)
     decrypted_value = kms_library.decrypt(config)
 
-    config = json.loads(decrypted_value)
-    context.parse_config(config)
+    # Cloudanix AWS AccountID
+    context.aws_account_id = ctx.invoked_function_arn.split(":")[4]
+    context.parse(decrypted_value)
 
     lambda_init = True
 
@@ -39,7 +40,7 @@ def init_lambda():
 def load_cartography(event, ctx):
     global lambda_init, context
     if not lambda_init:
-        init_lambda()
+        init_lambda(ctx)
 
     # params = json.loads(event['body'])
 
@@ -55,7 +56,7 @@ def load_cartography(event, ctx):
         params = json.loads(message)
 
     except Exception as e:
-        context.logger.error(f'error while parsing inventory sync aws request json: ${e}')
+        context.logger.error(f'error while parsing inventory sync aws request json: {e}')
 
         return {
             "status": 'failure',
@@ -109,7 +110,7 @@ def publish_response(context, req, resp):
                 json.dump(resp, outfile, indent=2)
 
         except Exception as e:
-            context.logger.error(f'Failed to write to file: {str(e)}')
+            context.logger.error(f'Failed to write to file: {e}')
 
     else:
         body = {
@@ -121,7 +122,7 @@ def publish_response(context, req, resp):
         context.logger.info(f'response from cartography: {body}')
 
         sns_helper = SNSLibrary(context)
-        status = sns_helper.publish(json.dumps(body), context.aws_inventory_sync_result_topic)
+        status = sns_helper.publish(json.dumps(body), context.aws_inventory_sync_response_topic)
 
         context.logger.info(f'result published to SNS with status: {status}')
 
@@ -210,7 +211,7 @@ def get_auth_creds(context, args):
 #         print(f"response from processor: {r.status_code} - {r.content}")
 
 #     except RequestException as e:
-#         print(f"failed to publish results to lambda: {str(e)}")
+#         print(f"failed to publish results to lambda: {e}")
 
 
 # if __name__ == "__main__":

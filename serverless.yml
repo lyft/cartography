@@ -15,7 +15,7 @@ provider:
     CLOUDANIX_DEFAULT_REGION: ${env:CLOUDANIX_DEFAULT_REGION}
     CLOUDANIX_DEFAULT_LOG_LEVEL: ${env:CLOUDANIX_DEFAULT_LOG_LEVEL}
     CLOUDANIX_APP_ENV: ${env:CLOUDANIX_APP_ENV}
-    CLOUDANIX_CONFIG: ${ssm:/CLOUDANIX_CONFIG}
+    CLOUDANIX_CONFIG: ${ssm:/CLOUDANIX_CARTOGRAPHY_CONFIG}
 
 functions:
   cartographyService:
@@ -82,3 +82,5 @@ package:
     - requirements.txt
     - .env.development.json
     - .env.production.json
+    - .env.aws.development.json
+    - .env.aws.production.json
