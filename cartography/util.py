@@ -1,3 +1,4 @@
+import json
 import logging
 import sys
 
@@ -25,14 +26,49 @@ def run_analysis_job(filename, neo4j_session, common_job_parameters):
 
 
 def run_cleanup_job(filename, neo4j_session, common_job_parameters):
+
+    job_text = read_text(
+        'cartography.data.jobs.cleanup',
+        filename,
+    )
+    job = json.loads(job_text)
+
+    new_job = {
+        'name': job.get('name', 'Neo4j job'),
+        'statements': [],
+    }
+
+    for statement in job['statements']:
+        logger.debug('Running cleanup job {}'.format(statement['query']))
+
+        logger.debug(
+            'skip_on_syncing_single_account',
+            ' {}'.format(statement.get('skip_on_syncing_single_account', False)),
+            'common_job_parameters.aws_sync_all_profiles',
+            ' {}'.format(common_job_parameters.get('aws_sync_all_profiles', False)),
+        )
+
+        if statement.get('skip_on_syncing_single_account', False) and \
+                not common_job_parameters.get('aws_sync_all_profiles', False):
+            logger.debug('Skipping...')
+            continue
+
+        new_job['statements'].append(statement)
+
     GraphJob.run_from_json(
         neo4j_session,
-        read_text(
-            'cartography.data.jobs.cleanup',
-            filename,
-        ),
+        json.dumps(new_job),
         common_job_parameters,
     )
+
+    if logger.level == logging.DEBUG:
+        results = neo4j_session.run('match (n:AWSAccount) return count(n) as c')
+        for record in results:
+            logger.debug('AWS account count {}'.format(record['c']))
+
+        results = neo4j_session.run('match (n) return count(n) as c')
+        for record in results:
+            logger.debug('Total count {}'.format(record['c']))
 
 
 def load_resource_binary(package, resource_name):
