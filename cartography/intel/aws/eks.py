@@ -1,6 +1,6 @@
 import logging
-import typing.cast
 from typing import Any
+from typing import cast
 from typing import Dict
 from typing import List
 
@@ -83,7 +83,7 @@ def load_eks_clusters(
 
 def _audit_logging_enabled(cluster_logging_field: object) -> bool:
     # Ugly cast hack to get mypy to work
-    logging_field = typing.cast(Dict[str, Any], cluster_logging_field)
+    logging_field = cast(Dict[str, Any], cluster_logging_field)
     return 'audit' in logging_field['types'] and logging_field['enabled']
 
 
