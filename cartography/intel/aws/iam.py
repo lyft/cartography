@@ -152,7 +152,7 @@ def get_user_list_data(boto3_session: boto3.session.Session) -> Dict[str, List[D
     client = boto3_session.client('iam')
 
     paginator = client.get_paginator('list_users')
-    users = []
+    users: List[Dict[str, Any]] = []
     for page in paginator.paginate():
         users.extend(page['Users'])
     return {'Users': users}
@@ -162,7 +162,7 @@ def get_user_list_data(boto3_session: boto3.session.Session) -> Dict[str, List[D
 def get_group_list_data(boto3_session: boto3.session.Session) -> Dict[str, List[Dict[str, Any]]]:
     client = boto3_session.client('iam')
     paginator = client.get_paginator('list_groups')
-    groups = []
+    groups: List[Dict[str, Any]] = []
     for page in paginator.paginate():
         groups.extend(page['Groups'])
     return {'Groups': groups}
@@ -172,7 +172,7 @@ def get_group_list_data(boto3_session: boto3.session.Session) -> Dict[str, List[
 def get_role_list_data(boto3_session: boto3.session.Session) -> Dict[str, List[Dict[str, Any]]]:
     client = boto3_session.client('iam')
     paginator = client.get_paginator('list_roles')
-    roles = []
+    roles: List[Dict[str, Any]] = []
     for page in paginator.paginate():
         roles.extend(page['Roles'])
     return {'Roles': roles}
@@ -182,7 +182,7 @@ def get_role_list_data(boto3_session: boto3.session.Session) -> Dict[str, List[D
 def get_account_access_key_data(boto3_session: boto3.session.Session, username: str) -> Dict[str, Any]:
     client = boto3_session.client('iam')
     # NOTE we can get away without using a paginator here because users are limited to two access keys
-    access_keys = {}
+    access_keys: Dict[str, Any] = {}
     try:
         access_keys = client.list_access_keys(UserName=username)
     except client.exceptions.NoSuchEntityException:
