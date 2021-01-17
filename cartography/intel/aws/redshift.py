@@ -7,6 +7,7 @@ from typing import List
 import boto3.session
 import neo4j
 
+from cartography.intel.aws.util import AwsGraphJobParameters
 from cartography.intel.aws.util import AwsStageConfig
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
@@ -26,7 +27,7 @@ def get_redshift_cluster_data(boto3_session: boto3.session.Session, region: str)
     return clusters
 
 
-def _make_redshift_cluster_arn(region: str, aws_account_id: str, cluster_identifier: str):
+def _make_redshift_cluster_arn(region: str, aws_account_id: str, cluster_identifier: str) -> str:
     """Cluster ARN format: https://docs.aws.amazon.com/redshift/latest/mgmt/redshift-iam-access-control-overview.html"""
     return f'arn:aws:redshift:{region}:{aws_account_id}:cluster:{cluster_identifier}'
 
@@ -42,7 +43,7 @@ def transform_redshift_cluster_data(
 @timeit
 def load_redshift_cluster_data(
     neo4j_session: neo4j.Session, clusters: List[Dict[str, Any]], region: str,
-    current_aws_account_id: str, aws_update_tag: str,
+    current_aws_account_id: str, aws_update_tag: int,
 ) -> None:
     ingest_cluster = """
     MERGE (cluster:RedshiftCluster{id: {Arn}})
@@ -100,7 +101,7 @@ def load_redshift_cluster_data(
 
 
 @ timeit
-def _attach_ec2_security_groups(neo4j_session: neo4j.Session, cluster: Dict[str, Any], aws_update_tag: str) -> None:
+def _attach_ec2_security_groups(neo4j_session: neo4j.Session, cluster: Dict[str, Any], aws_update_tag: int) -> None:
     attach_cluster_to_group = """
     MATCH (c:RedshiftCluster{id:{ClusterArn}})
     MERGE (sg:EC2SecurityGroup{id:{GroupId}})
@@ -118,7 +119,7 @@ def _attach_ec2_security_groups(neo4j_session: neo4j.Session, cluster: Dict[str,
 
 
 @ timeit
-def _attach_iam_roles(neo4j_session: neo4j.Session, cluster: Dict[str, Any], aws_update_tag: str) -> None:
+def _attach_iam_roles(neo4j_session: neo4j.Session, cluster: Dict[str, Any], aws_update_tag: int) -> None:
     attach_cluster_to_role = """
     MATCH (c:RedshiftCluster{id:{ClusterArn}})
     MERGE (p:AWSPrincipal{arn:{RoleArn}})
@@ -136,7 +137,7 @@ def _attach_iam_roles(neo4j_session: neo4j.Session, cluster: Dict[str, Any], aws
 
 
 @ timeit
-def _attach_aws_vpc(neo4j_session: neo4j.Session, cluster: Dict[str, Any], aws_update_tag: str):
+def _attach_aws_vpc(neo4j_session: neo4j.Session, cluster: Dict[str, Any], aws_update_tag: int) -> None:
     attach_cluster_to_vpc = """
     MATCH (c:RedshiftCluster{id:{ClusterArn}})
     MERGE (v:AWSVpc{id:{VpcId}})
@@ -154,7 +155,7 @@ def _attach_aws_vpc(neo4j_session: neo4j.Session, cluster: Dict[str, Any], aws_u
 
 
 @ timeit
-def cleanup(neo4j_session: neo4j.Session, graph_job_parameters: Dict[str, Any]):
+def cleanup(neo4j_session: neo4j.Session, graph_job_parameters: AwsGraphJobParameters) -> None:
     run_cleanup_job('aws_import_redshift_clusters_cleanup.json', neo4j_session, graph_job_parameters)
 
 
@@ -169,7 +170,7 @@ def sync_redshift_clusters(
 
 
 @ timeit
-def sync(neo4j_session: neo4j.Session, aws_stage_config: AwsStageConfig):
+def sync(neo4j_session: neo4j.Session, aws_stage_config: AwsStageConfig) -> None:
     account_id = aws_stage_config.current_aws_account_id
     boto3_session = aws_stage_config.boto3_session
     regions = aws_stage_config.current_aws_account_regions

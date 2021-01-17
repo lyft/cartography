@@ -1,7 +1,7 @@
 import cartography.intel.aws.route53
 import cartography.util
 import tests.data.aws.route53
-from cartography.intel.aws.util import GraphJobParameters
+from cartography.intel.aws.util import AwsGraphJobParameters
 
 TEST_UPDATE_TAG = 123456789
 TEST_ZONE_ID = "TESTZONEID"
@@ -123,7 +123,7 @@ def test_load_and_cleanup_dnspointsto_relationships(neo4j_session):
     assert actual == expected
 
     new_update_tag = 1337
-    new_job_parameters = GraphJobParameters(UPDATE_TAG=new_update_tag, AWS_ID=TEST_AWS_ACCOUNTID)
+    new_job_parameters = AwsGraphJobParameters(UPDATE_TAG=new_update_tag, AWS_ID=TEST_AWS_ACCOUNTID)
     # Run all cleanup jobs where DNS_POINTS_TO is mentioned in the AWS sync.
     cartography.intel.aws.route53.cleanup_route53(neo4j_session, new_job_parameters)
     cartography.intel.aws.elasticsearch.cleanup(neo4j_session, new_job_parameters)

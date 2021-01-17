@@ -6,8 +6,8 @@ from typing import List
 import boto3.session
 import neo4j
 
+from cartography.intel.aws.util import AwsGraphJobParameters
 from cartography.intel.aws.util import AwsStageConfig
-from cartography.intel.aws.util import GraphJobParameters
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -106,7 +106,7 @@ def sync_dynamodb_tables(
     regions: List[str],
     current_aws_account_id: str,
     aws_update_tag: int,
-    graph_job_parameters: GraphJobParameters,
+    graph_job_parameters: AwsGraphJobParameters,
 ) -> None:
     for region in regions:
         logger.info("Syncing DynamoDB for region in '%s' in account '%s'.", region, current_aws_account_id)

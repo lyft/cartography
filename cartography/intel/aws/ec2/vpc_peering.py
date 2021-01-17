@@ -7,8 +7,8 @@ import boto3.session
 import neo4j
 
 from .util import get_botocore_config
+from cartography.intel.aws.util import AwsGraphJobParameters
 from cartography.intel.aws.util import AwsStageConfig
-from cartography.intel.aws.util import GraphJobParameters
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -161,7 +161,7 @@ def load_ec2_vpc_peering(neo4j_session: neo4j.Session, data: List[Dict[str, Any]
 
 
 @timeit
-def cleanup_ec2_vpc_peering(neo4j_session: neo4j.Session, graph_job_parameters: GraphJobParameters) -> None:
+def cleanup_ec2_vpc_peering(neo4j_session: neo4j.Session, graph_job_parameters: AwsGraphJobParameters) -> None:
     run_cleanup_job('aws_import_vpc_peering_cleanup.json', neo4j_session, graph_job_parameters)
 
 

@@ -3,7 +3,11 @@ from typing import Any
 from typing import Dict
 from typing import List
 
+import boto3
+import neo4j
+
 from .util import get_botocore_config
+from cartography.intel.aws.util import AwsGraphJobParameters
 from cartography.intel.aws.util import AwsStageConfig
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
@@ -14,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 @timeit
 @aws_handle_regions
-def get_loadbalancer_data(boto3_session, region: str) -> List[Dict[str, Any]]:
+def get_loadbalancer_data(boto3_session: boto3.session.Session, region: str) -> List[Dict[str, Any]]:
     client = boto3_session.client('elb', region_name=region, config=get_botocore_config())
     paginator = client.get_paginator('describe_load_balancers')
     elbs: List[Dict[str, Any]] = []
@@ -25,7 +29,7 @@ def get_loadbalancer_data(boto3_session, region: str) -> List[Dict[str, Any]]:
 
 @timeit
 def load_load_balancer_listeners(
-    neo4j_session, load_balancer_id: str, listener_data: List[Dict[str, Any]], aws_update_tag: int,
+    neo4j_session: neo4j.Session, load_balancer_id: str, listener_data: List[Dict[str, Any]], aws_update_tag: int,
 ) -> None:
     ingest_listener = """
     MATCH (elb:LoadBalancer{id: {LoadBalancerId}})
@@ -53,7 +57,7 @@ def load_load_balancer_listeners(
 
 @timeit
 def load_load_balancer_subnets(
-    neo4j_session, load_balancer_id: str, subnets_data: List[str], aws_update_tag: int,
+    neo4j_session: neo4j.Session, load_balancer_id: str, subnets_data: List[str], aws_update_tag: int,
 ) -> None:
     ingest_load_balancer_subnet = """
     MATCH (elb:LoadBalancer{id: {ID}}), (subnet:EC2Subnet{subnetid: {SUBNET_ID}})
@@ -73,7 +77,8 @@ def load_load_balancer_subnets(
 
 @timeit
 def load_load_balancers(
-    neo4j_session, data: List[Dict[str, Any]], region: str, current_aws_account_id: str, aws_update_tag: int,
+    neo4j_session: neo4j.Session, data: List[Dict[str, Any]], region: str, current_aws_account_id: str,
+    aws_update_tag: int,
 ) -> None:
     ingest_load_balancer = """
     MERGE (elb:LoadBalancer{id: {ID}})
@@ -169,12 +174,12 @@ def load_load_balancers(
 
 
 @timeit
-def cleanup_load_balancers(neo4j_session, graph_job_parameters: Dict[str, Any]) -> None:
+def cleanup_load_balancers(neo4j_session: neo4j.Session, graph_job_parameters: AwsGraphJobParameters) -> None:
     run_cleanup_job('aws_ingest_load_balancers_cleanup.json', neo4j_session, graph_job_parameters)
 
 
 @timeit
-def sync_load_balancers(neo4j_session, aws_stage_config: AwsStageConfig):
+def sync_load_balancers(neo4j_session: neo4j.Session, aws_stage_config: AwsStageConfig):
     for region in aws_stage_config.current_aws_account_regions:
         logger.info(
             "Syncing EC2 load balancers for region '%s' in account '%s'.",

@@ -3,7 +3,12 @@ from typing import Any
 from typing import Dict
 from typing import List
 
+import boto3
+import botocore.client
+import neo4j
+
 from .util import get_botocore_config
+from cartography.intel.aws.util import AwsGraphJobParameters
 from cartography.intel.aws.util import AwsStageConfig
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
@@ -14,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 @timeit
 @aws_handle_regions
-def get_load_balancer_v2_listeners(client, load_balancer_arn: str) -> List[Dict[str, Any]]:
+def get_load_balancer_v2_listeners(client: botocore.client.BaseClient, load_balancer_arn: str) -> List[Dict[str, Any]]:
     paginator = client.get_paginator('describe_listeners')
     listeners: List[Dict[str, Any]] = []
     for page in paginator.paginate(LoadBalancerArn=load_balancer_arn):
@@ -24,7 +29,9 @@ def get_load_balancer_v2_listeners(client, load_balancer_arn: str) -> List[Dict[
 
 
 @timeit
-def get_load_balancer_v2_target_groups(client, load_balancer_arn: str) -> List[Dict[str, Any]]:
+def get_load_balancer_v2_target_groups(
+    client: botocore.client.BaseClient, load_balancer_arn: str,
+) -> List[Dict[str, Any]]:
     paginator = client.get_paginator('describe_target_groups')
     target_groups: List[Dict[str, Any]] = []
     for page in paginator.paginate(LoadBalancerArn=load_balancer_arn):
@@ -42,7 +49,7 @@ def get_load_balancer_v2_target_groups(client, load_balancer_arn: str) -> List[D
 
 @timeit
 @aws_handle_regions
-def get_loadbalancer_v2_data(boto3_session, region: str) -> List[Dict[str, Any]]:
+def get_loadbalancer_v2_data(boto3_session: boto3.session.Session, region: str) -> List[Dict[str, Any]]:
     client = boto3_session.client('elbv2', region_name=region, config=get_botocore_config())
     paginator = client.get_paginator('describe_load_balancers')
     elbv2s: List[Dict[str, Any]] = []
@@ -58,7 +65,8 @@ def get_loadbalancer_v2_data(boto3_session, region: str) -> List[Dict[str, Any]]
 
 @timeit
 def load_load_balancer_v2s(
-    neo4j_session, data: List[Dict[str, Any]], region: str, current_aws_account_id: str, aws_update_tag: str,
+    neo4j_session: neo4j.Session, data: List[Dict[str, Any]], region: str, current_aws_account_id: str,
+    aws_update_tag: str,
 ) -> None:
     ingest_load_balancer_v2 = """
     MERGE (elbv2:LoadBalancerV2{id: {ID}})
@@ -129,7 +137,8 @@ def load_load_balancer_v2s(
 
 @timeit
 def load_load_balancer_v2_subnets(
-    neo4j_session, load_balancer_id: str, az_data: List[Dict[str, Any]], region: str, aws_update_tag: int,
+    neo4j_session: neo4j.Session, load_balancer_id: str, az_data: List[Dict[str, Any]], region: str,
+    aws_update_tag: int,
 ) -> None:
     ingest_load_balancer_subnet = """
     MATCH (elbv2:LoadBalancerV2{id: {ID}})
@@ -153,8 +162,8 @@ def load_load_balancer_v2_subnets(
 
 @timeit
 def load_load_balancer_v2_target_groups(
-    neo4j_session, load_balancer_id: str, target_groups: List[Dict[str, Any]], current_aws_account_id: str,
-    aws_update_tag,
+    neo4j_session: neo4j.Session, load_balancer_id: str, target_groups: List[Dict[str, Any]],
+    current_aws_account_id: str, aws_update_tag: int,
 ) -> None:
     ingest_instances = """
     MATCH (elbv2:LoadBalancerV2{id: {ID}}), (instance:EC2Instance{instanceid: {INSTANCE_ID}})
@@ -185,7 +194,7 @@ def load_load_balancer_v2_target_groups(
 
 @timeit
 def load_load_balancer_v2_listeners(
-    neo4j_session, load_balancer_id: str, listener_data: List[Dict[str, Any]], aws_update_tag: int,
+    neo4j_session: neo4j.Session, load_balancer_id: str, listener_data: List[Dict[str, Any]], aws_update_tag: int,
 ) -> None:
     ingest_listener = """
     MATCH (elbv2:LoadBalancerV2{id: {LoadBalancerId}})
@@ -210,13 +219,13 @@ def load_load_balancer_v2_listeners(
 
 
 @timeit
-def cleanup_load_balancer_v2s(neo4j_session, graph_job_parameters: Dict[str, Any]) -> None:
+def cleanup_load_balancer_v2s(neo4j_session: neo4j.Session, graph_job_parameters: AwsGraphJobParameters) -> None:
     """Delete elbv2's and dependent resources in the DB without the most recent lastupdated tag."""
     run_cleanup_job('aws_ingest_load_balancers_v2_cleanup.json', neo4j_session, graph_job_parameters)
 
 
 @timeit
-def sync_load_balancer_v2s(neo4j_session, aws_stage_config: AwsStageConfig) -> None:
+def sync_load_balancer_v2s(neo4j_session: neo4j.Session, aws_stage_config: AwsStageConfig) -> None:
     for region in aws_stage_config.current_aws_account_regions:
         logger.info(
             "Syncing EC2 load balancers v2 for region '%s' in account '%s'.",

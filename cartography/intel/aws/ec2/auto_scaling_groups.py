@@ -3,7 +3,11 @@ from typing import Any
 from typing import Dict
 from typing import List
 
+import boto3.session
+import neo4j
+
 from .util import get_botocore_config
+from cartography.intel.aws.util import AwsGraphJobParameters
 from cartography.intel.aws.util import AwsStageConfig
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
@@ -14,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 @timeit
 @aws_handle_regions
-def get_ec2_auto_scaling_groups(boto3_session, region: str) -> List[Dict[str, Any]]:
+def get_ec2_auto_scaling_groups(boto3_session: boto3.session.Session, region: str) -> List[Dict[str, Any]]:
     client = boto3_session.client('autoscaling', region_name=region, config=get_botocore_config())
     paginator = client.get_paginator('describe_auto_scaling_groups')
     asgs: List[Dict[str, Any]] = []
@@ -25,7 +29,8 @@ def get_ec2_auto_scaling_groups(boto3_session, region: str) -> List[Dict[str, An
 
 @timeit
 def load_ec2_auto_scaling_groups(
-    neo4j_session, data: List[Dict[str, Any]], region: str, current_aws_account_id: str, aws_update_tag: int,
+    neo4j_session: neo4j.Session, data: List[Dict[str, Any]], region: str, current_aws_account_id: str,
+    aws_update_tag: int,
 ) -> None:
     ingest_group = """
     MERGE (group:AutoScalingGroup{arn: {ARN}})
@@ -109,7 +114,7 @@ def load_ec2_auto_scaling_groups(
 
 
 @timeit
-def cleanup_ec2_auto_scaling_groups(neo4j_session, graph_job_parameters: Dict[str, Any]) -> None:
+def cleanup_ec2_auto_scaling_groups(neo4j_session: neo4j.Session, graph_job_parameters: AwsGraphJobParameters) -> None:
     run_cleanup_job(
         'aws_ingest_ec2_auto_scaling_groups_cleanup.json',
         neo4j_session,
@@ -118,7 +123,7 @@ def cleanup_ec2_auto_scaling_groups(neo4j_session, graph_job_parameters: Dict[st
 
 
 @timeit
-def sync_ec2_auto_scaling_groups(neo4j_session, aws_stage_config: AwsStageConfig):
+def sync_ec2_auto_scaling_groups(neo4j_session: neo4j.Session, aws_stage_config: AwsStageConfig):
     for region in aws_stage_config.current_aws_account_regions:
         logger.debug(
             "Syncing auto scaling groups for region '%s' in account '%s'.",

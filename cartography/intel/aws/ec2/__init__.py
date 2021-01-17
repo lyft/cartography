@@ -1,6 +1,9 @@
 import logging
 from typing import List
 
+import boto3.session
+import neo4j
+
 from .auto_scaling_groups import sync_ec2_auto_scaling_groups
 from .instances import sync_ec2_instances
 from .key_pairs import sync_ec2_key_pairs
@@ -19,14 +22,14 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
-def get_ec2_regions(boto3_session) -> List[str]:
+def get_ec2_regions(boto3_session: boto3.session.Session) -> List[str]:
     client = boto3_session.client('ec2')
     result = client.describe_regions()
     return [r['RegionName'] for r in result['Regions']]
 
 
 @timeit
-def sync(neo4j_session, aws_stage_config: AwsStageConfig) -> None:
+def sync(neo4j_session: neo4j.Session, aws_stage_config: AwsStageConfig) -> None:
     logger.info("Syncing EC2 for account '%s'.", aws_stage_config.current_aws_account_id)
     sync_vpc(neo4j_session, aws_stage_config)
     sync_ec2_security_groupinfo(neo4j_session, aws_stage_config)

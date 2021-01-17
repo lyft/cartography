@@ -21,8 +21,8 @@ from . import redshift
 from . import resourcegroupstaggingapi
 from . import route53
 from . import s3
+from .util import AwsGraphJobParameters
 from .util import AwsStageConfig
-from .util import GraphJobParameters
 from cartography.config import Config
 from cartography.util import run_analysis_job
 from cartography.util import run_cleanup_job
@@ -159,7 +159,7 @@ def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
         boto3_session=None,
         current_aws_account_id='',
         current_aws_account_regions=[],
-        graph_job_parameters=GraphJobParameters(UPDATE_TAG=config.update_tag),
+        graph_job_parameters=AwsGraphJobParameters(UPDATE_TAG=config.update_tag),
         permission_relationships_file=config.permission_relationships_file,
         aws_accounts=aws_accounts,
     )

@@ -3,8 +3,8 @@ import cartography.intel.aws.permission_relationships
 import tests.data.aws.iam
 from cartography.cli import CLI
 from cartography.config import Config
+from cartography.intel.aws.util import AwsGraphJobParameters
 from cartography.intel.aws.util import AwsStageConfig
-from cartography.intel.aws.util import GraphJobParameters
 from cartography.sync import build_default_sync
 
 TEST_ACCOUNT_NAME = 'account-name-123'
@@ -16,7 +16,7 @@ aws_stage_config = AwsStageConfig(
     boto3_session=None,
     current_aws_account_id=TEST_ACCOUNT_ID,
     current_aws_account_regions=[TEST_REGION],
-    graph_job_parameters=GraphJobParameters(UPDATE_TAG=TEST_UPDATE_TAG, AWS_ID=TEST_ACCOUNT_ID),
+    graph_job_parameters=AwsGraphJobParameters(UPDATE_TAG=TEST_UPDATE_TAG, AWS_ID=TEST_ACCOUNT_ID),
     permission_relationships_file='cartography/data/permission_relationships.yaml',
     aws_accounts={TEST_ACCOUNT_NAME: TEST_ACCOUNT_ID},
 )

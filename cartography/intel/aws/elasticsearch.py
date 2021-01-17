@@ -9,8 +9,8 @@ import botocore.config
 import neo4j
 from policyuniverse.policy import Policy
 
+from cartography.intel.aws.util import AwsGraphJobParameters
 from cartography.intel.aws.util import AwsStageConfig
-from cartography.intel.aws.util import GraphJobParameters
 from cartography.intel.dns import ingest_dns_record_by_fqdn
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
@@ -225,7 +225,7 @@ def _process_access_policy(neo4j_session: neo4j.Session, domain_id: str, domain_
 
 
 @timeit
-def cleanup(neo4j_session: neo4j.Session, graph_job_parameters: GraphJobParameters) -> None:
+def cleanup(neo4j_session: neo4j.Session, graph_job_parameters: AwsGraphJobParameters) -> None:
     run_cleanup_job(
         'aws_import_es_cleanup.json',
         neo4j_session,

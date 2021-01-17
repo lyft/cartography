@@ -7,8 +7,8 @@ from typing import Tuple
 import botocore.client
 import neo4j
 
+from cartography.intel.aws.util import AwsGraphJobParameters
 from cartography.intel.aws.util import AwsStageConfig
-from cartography.intel.aws.util import GraphJobParameters
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
@@ -373,7 +373,7 @@ def _normalize_dns_address(address: str) -> str:
 
 
 @timeit
-def cleanup_route53(neo4j_session: neo4j.Session, graph_job_parameters: GraphJobParameters) -> None:
+def cleanup_route53(neo4j_session: neo4j.Session, graph_job_parameters: AwsGraphJobParameters) -> None:
     run_cleanup_job(
         'aws_dns_cleanup.json',
         neo4j_session,

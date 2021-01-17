@@ -1,4 +1,5 @@
 import logging
+import typing.cast
 from typing import Any
 from typing import Dict
 from typing import List
@@ -6,8 +7,8 @@ from typing import List
 import boto3.session
 import neo4j
 
+from cartography.intel.aws.util import AwsGraphJobParameters
 from cartography.intel.aws.util import AwsStageConfig
-from cartography.intel.aws.util import GraphJobParameters
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -80,20 +81,26 @@ def load_eks_clusters(
         )
 
 
-def _process_logging(cluster):
+def _audit_logging_enabled(cluster_logging_field: object) -> bool:
+    # Ugly cast hack to get mypy to work
+    logging_field = typing.cast(Dict[str, Any], cluster_logging_field)
+    return 'audit' in logging_field['types'] and logging_field['enabled']
+
+
+def _process_logging(cluster: Dict[str, Any]) -> bool:
     """
     Parse cluster.logging.clusterLogging to verify if
     at least one entry has audit logging set to Enabled.
     """
     logging = False
-    cluster_logging = cluster.get('logging', {}).get('clusterLogging')
-    if cluster_logging:
-        logging = any(filter(lambda x: 'audit' in x['types'] and x['enabled'], cluster_logging))
+    cluster_logging_field: Dict[str, Any] = cluster.get('logging', {}).get('clusterLogging')
+    if cluster_logging_field:
+        logging = any(filter(_audit_logging_enabled, cluster_logging_field))
     return logging
 
 
 @timeit
-def cleanup(neo4j_session: neo4j.Session, graph_job_parameters: GraphJobParameters) -> None:
+def cleanup(neo4j_session: neo4j.Session, graph_job_parameters: AwsGraphJobParameters) -> None:
     run_cleanup_job('aws_import_eks_cleanup.json', neo4j_session, graph_job_parameters)
 
 

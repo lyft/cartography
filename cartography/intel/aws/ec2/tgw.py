@@ -3,9 +3,12 @@ from typing import Any
 from typing import Dict
 from typing import List
 
+import boto3.session
 import botocore.exceptions
+import neo4j
 
 from .util import get_botocore_config
+from cartography.intel.aws.util import AwsGraphJobParameters
 from cartography.intel.aws.util import AwsStageConfig
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
@@ -16,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 @timeit
 @aws_handle_regions
-def get_transit_gateways(boto3_session, region: str) -> List[Dict[str, Any]]:
+def get_transit_gateways(boto3_session: boto3.session.Session, region: str) -> List[Dict[str, Any]]:
     client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
     data: List[Dict[str, Any]] = []
     try:
@@ -33,7 +36,7 @@ def get_transit_gateways(boto3_session, region: str) -> List[Dict[str, Any]]:
 
 @timeit
 @aws_handle_regions
-def get_tgw_attachments(boto3_session, region: str) -> List[Dict[str, Any]]:
+def get_tgw_attachments(boto3_session: boto3.session.Session, region: str) -> List[Dict[str, Any]]:
     client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
     tgw_attachments: List[Dict[str, Any]] = []
     try:
@@ -51,7 +54,7 @@ def get_tgw_attachments(boto3_session, region: str) -> List[Dict[str, Any]]:
 
 @timeit
 @aws_handle_regions
-def get_tgw_vpc_attachments(boto3_session, region: str) -> List[Dict[str, Any]]:
+def get_tgw_vpc_attachments(boto3_session: boto3.session.Session, region: str) -> List[Dict[str, Any]]:
     client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
     tgw_vpc_attachments: List[Dict[str, Any]] = []
     try:
@@ -69,7 +72,8 @@ def get_tgw_vpc_attachments(boto3_session, region: str) -> List[Dict[str, Any]]:
 
 @timeit
 def load_transit_gateways(
-    neo4j_session, data: List[Dict[str, Any]], region: str, current_aws_account_id: str, aws_update_tag: int,
+    neo4j_session: neo4j.Session, data: List[Dict[str, Any]], region: str, current_aws_account_id: str,
+    aws_update_tag: int,
 ) -> None:
     ingest_transit_gateway = """
     MERGE (ownerAccount:AWSAccount {id: {OwnerId}})
@@ -112,7 +116,7 @@ def load_transit_gateways(
 
 @timeit
 def _attach_shared_transit_gateway(
-    neo4j_session, tgw: Dict[str, Any], region: str, current_aws_account_id: str, aws_update_tag: int,
+    neo4j_session: neo4j.Session, tgw: Dict[str, Any], region: str, current_aws_account_id: str, aws_update_tag: int,
 ) -> None:
     attach_tgw = """
     MERGE (tgw:AWSTransitGateway {id: {ARN}})
@@ -138,7 +142,7 @@ def _attach_shared_transit_gateway(
 
 @timeit
 def load_tgw_attachments(
-    neo4j_session,
+    neo4j_session: neo4j.Session,
     data: List[Dict[str, Any]],
     region: str,
     current_aws_account_id: str,
@@ -188,7 +192,7 @@ def load_tgw_attachments(
 
 @timeit
 def _attach_tgw_vpc_attachment_to_vpc_subnets(
-    neo4j_session,
+    neo4j_session: neo4j.Session,
     tgw_vpc_attachment: Dict[str, Any],
     region: str,
     current_aws_account_id: str,
@@ -238,12 +242,12 @@ def _attach_tgw_vpc_attachment_to_vpc_subnets(
 
 
 @timeit
-def cleanup_transit_gateways(neo4j_session, graph_job_parameters: Dict[str, Any]):
+def cleanup_transit_gateways(neo4j_session: neo4j.Session, graph_job_parameters: AwsGraphJobParameters):
     run_cleanup_job('aws_import_tgw_cleanup.json', neo4j_session, graph_job_parameters)
 
 
 @timeit
-def sync_transit_gateways(neo4j_session, aws_stage_config: AwsStageConfig) -> None:
+def sync_transit_gateways(neo4j_session: neo4j.Session, aws_stage_config: AwsStageConfig) -> None:
     aws_update_tag = aws_stage_config.graph_job_parameters['UPDATE_TAG']
 
     for region in aws_stage_config.current_aws_account_regions:

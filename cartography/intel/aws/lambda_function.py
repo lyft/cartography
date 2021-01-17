@@ -32,7 +32,7 @@ def get_lambda_data(boto3_session: boto3.session.Session, region: str) -> List[D
 @timeit
 def load_lambda_functions(
     neo4j_session: neo4j.Session, data: List[Dict[str, Any]], region: str, current_aws_account_id: str,
-    aws_update_tag: str,
+    aws_update_tag: int,
 ) -> None:
     ingest_lambda_functions = """
     MERGE (lambda:AWSLambda{id: {Arn}})
@@ -82,7 +82,7 @@ def cleanup_lambda(neo4j_session: neo4j.Session, graph_job_parameters: Dict[str,
 @timeit
 def sync_lambda_functions(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
-    aws_update_tag: str, graph_job_parameters: Dict[str, Any],
+    aws_update_tag: int, graph_job_parameters: Dict[str, Any],
 ) -> None:
     for region in regions:
         logger.info("Syncing Lambda for region in '%s' in account '%s'.", region, current_aws_account_id)

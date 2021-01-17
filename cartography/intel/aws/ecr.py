@@ -6,8 +6,8 @@ from typing import List
 import boto3.session
 import neo4j
 
+from cartography.intel.aws.util import AwsGraphJobParameters
 from cartography.intel.aws.util import AwsStageConfig
-from cartography.intel.aws.util import GraphJobParameters
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -137,7 +137,7 @@ def load_ecr_repository_images(
 
 
 @timeit
-def cleanup(neo4j_session: neo4j.Session, graph_job_parameters: GraphJobParameters):
+def cleanup(neo4j_session: neo4j.Session, graph_job_parameters: AwsGraphJobParameters) -> None:
     logger.debug("Running ECR cleanup job.")
     run_cleanup_job('aws_import_ecr_cleanup.json', neo4j_session, graph_job_parameters)
 

@@ -8,9 +8,12 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 
+import boto3.session
+import neo4j
 from botocore.exceptions import ClientError
 from policyuniverse.policy import Policy
 
+from cartography.intel.aws.util import AwsGraphJobParameters
 from cartography.intel.aws.util import AwsStageConfig
 from cartography.util import run_analysis_job
 from cartography.util import run_cleanup_job
@@ -20,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
-def get_s3_bucket_list(boto3_session):
+def get_s3_bucket_list(boto3_session: boto3.session.Session) -> List[Dict[str, Any]]:
     client = boto3_session.client('s3')
     # NOTE no paginator available for this operation
     buckets = client.list_buckets()
@@ -46,7 +49,7 @@ def get_s3_bucket_list(boto3_session):
 
 @timeit
 def get_s3_bucket_details(
-    boto3_session,
+    boto3_session: boto3.session.Session,
     bucket_data: Dict[str, Any],
 ) -> Iterator[Tuple[str, Dict[str, Any], Dict[str, Any]]]:
     """
@@ -119,7 +122,9 @@ def get_acl(bucket: Dict[str, Any], client) -> Optional[Dict[str, Any]]:
 
 
 @timeit
-def _load_s3_acls(neo4j_session, acls: List[Dict[str, Any]], aws_account_id: str, update_tag: int) -> None:
+def _load_s3_acls(
+    neo4j_session: neo4j.Session, acls: List[Dict[str, Any]], aws_account_id: str, update_tag: int,
+) -> None:
     """
     Ingest S3 ACL into neo4j.
     """
@@ -151,7 +156,7 @@ def _load_s3_acls(neo4j_session, acls: List[Dict[str, Any]], aws_account_id: str
 
 
 @timeit
-def _load_s3_policies(neo4j_session, policies: List[Dict[str, Any]], update_tag: int) -> None:
+def _load_s3_policies(neo4j_session: neo4j.Session, policies: List[Dict[str, Any]], update_tag: int) -> None:
     """
     Ingest S3 policy results into neo4j.
     """
@@ -171,7 +176,7 @@ def _load_s3_policies(neo4j_session, policies: List[Dict[str, Any]], update_tag:
     )
 
 
-def _set_default_values(neo4j_session, aws_account_id: str) -> None:
+def _set_default_values(neo4j_session: neo4j.Session, aws_account_id: str) -> None:
     set_defaults = """
     MATCH (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(s:S3Bucket) where NOT EXISTS(s.anonymous_actions)
     SET s.anonymous_access = false, s.anonymous_actions = []
@@ -185,7 +190,7 @@ def _set_default_values(neo4j_session, aws_account_id: str) -> None:
 
 @timeit
 def load_s3_details(
-    neo4j_session,
+    neo4j_session: neo4j.Session,
     s3_details_iter: Iterator[Tuple[str, Dict[str, Any], Dict[str, Any]]],
     aws_account_id: str,
     update_tag: int,
@@ -346,7 +351,9 @@ def parse_acl(acl: Dict[str, Any], bucket: str, aws_account_id: str) -> List[Dic
 
 
 @timeit
-def load_s3_buckets(neo4j_session, data: Dict[str, Any], current_aws_account_id: str, aws_update_tag: int) -> None:
+def load_s3_buckets(
+    neo4j_session: neo4j.Session, data: Dict[str, Any], current_aws_account_id: str, aws_update_tag: int,
+) -> None:
     ingest_bucket = """
     MERGE (bucket:S3Bucket{id:{BucketName}})
     ON CREATE SET bucket.firstseen = timestamp(), bucket.creationdate = {CreationDate}
@@ -377,17 +384,17 @@ def load_s3_buckets(neo4j_session, data: Dict[str, Any], current_aws_account_id:
 
 
 @timeit
-def cleanup_s3_buckets(neo4j_session, graph_job_parameters: Dict[str, Any]) -> None:
+def cleanup_s3_buckets(neo4j_session: neo4j.Session, graph_job_parameters: AwsGraphJobParameters) -> None:
     run_cleanup_job('aws_import_s3_buckets_cleanup.json', neo4j_session, graph_job_parameters)
 
 
 @timeit
-def cleanup_s3_bucket_acl_and_policy(neo4j_session, graph_job_parameters: Dict[str, Any]) -> None:
+def cleanup_s3_bucket_acl_and_policy(neo4j_session: neo4j.Session, graph_job_parameters: AwsGraphJobParameters) -> None:
     run_cleanup_job('aws_import_s3_acl_cleanup.json', neo4j_session, graph_job_parameters)
 
 
 @timeit
-def sync(neo4j_session, aws_stage_config: AwsStageConfig) -> None:
+def sync(neo4j_session: neo4j.Session, aws_stage_config: AwsStageConfig) -> None:
     aws_update_tag = aws_stage_config.graph_job_parameters['UPDATE_TAG']
 
     logger.info("Syncing S3 for account '%s'.", aws_stage_config.current_aws_account_id)
