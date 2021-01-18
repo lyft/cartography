@@ -19,4 +19,4 @@ node_modules
 .serverless
 .env.production.json
 .env.aws.production.json
-eks/
+deploy_eks/
