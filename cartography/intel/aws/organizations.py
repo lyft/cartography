@@ -109,7 +109,7 @@ def load_aws_accounts(neo4j_session, aws_accounts, aws_update_tag, common_job_pa
         root_arn = f'arn:aws:iam::{account_id}:root'
         neo4j_session.run(
             query,
-            WORKSPACE_ID=common_job_parameters['workspace_id_string'],
+            WORKSPACE_ID=common_job_parameters['WORKSPACE_ID'],
             ACCOUNT_ID=account_id,
             ACCOUNT_NAME=account_name,
             RootArn=root_arn,

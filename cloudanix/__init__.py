@@ -6,7 +6,7 @@ from cartography.util import timeit
 def run(neo4j_session, config):
     common_job_parameters = {
         "UPDATE_TAG": config.update_tag,
-        "workspace_id_string": config.params['workspace']['id_string'],
+        "WORKSPACE_ID": config.params['workspace']['id_string'],
         "workspace_name": config.params['workspace']['name'],
         "workspace_account_id": config.params['workspace']['account_id'],
     }
@@ -26,7 +26,7 @@ def load_cloudanix_workspace(neo4j_session, update_tag, common_job_parameters):
 
     neo4j_session.run(
         query,
-        WORKSPACE_ID=common_job_parameters['workspace_id_string'],
+        WORKSPACE_ID=common_job_parameters['WORKSPACE_ID'],
         WORKSPACE_NAME=common_job_parameters['workspace_name'],
         WORKSPACE_ACCOUNT_ID=common_job_parameters['workspace_account_id'],
         UPDATE_TAG=update_tag,
