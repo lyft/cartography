@@ -7,7 +7,7 @@ import botocore.exceptions
 import neo4j
 
 from cartography.intel.aws.util import AwsGraphJobParameters
-from cartography.intel.aws.util import AwsStageConfig
+from cartography.intel.aws.util import AwsStageContext
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
@@ -120,6 +120,6 @@ def cleanup(neo4j_session: neo4j.Session, graph_job_parameters: AwsGraphJobParam
 
 
 @timeit
-def sync(neo4j_session: neo4j.Session, aws_stage_config: AwsStageConfig) -> None:
-    load_aws_accounts(neo4j_session, aws_stage_config.aws_accounts, aws_stage_config.graph_job_parameters['UPDATE_TAG'])
-    cleanup(neo4j_session, aws_stage_config.graph_job_parameters)
+def sync(neo4j_session: neo4j.Session, aws_stage_ctx: AwsStageContext) -> None:
+    load_aws_accounts(neo4j_session, aws_stage_ctx.aws_accounts, aws_stage_ctx.graph_job_parameters['UPDATE_TAG'])
+    cleanup(neo4j_session, aws_stage_ctx.graph_job_parameters)

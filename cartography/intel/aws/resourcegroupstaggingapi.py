@@ -8,7 +8,7 @@ import boto3.session
 import neo4j
 
 from cartography.intel.aws.util import AwsGraphJobParameters
-from cartography.intel.aws.util import AwsStageConfig
+from cartography.intel.aws.util import AwsStageContext
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -130,10 +130,10 @@ def cleanup(neo4j_session: neo4j.Session, graph_job_parameters: AwsGraphJobParam
 
 
 @timeit
-def sync(neo4j_session: neo4j.Session, aws_stage_config: AwsStageConfig) -> None:
-    boto3_session = aws_stage_config.boto3_session
-    regions = aws_stage_config.current_aws_account_regions
-    aws_update_tag = aws_stage_config.graph_job_parameters['UPDATE_TAG']
+def sync(neo4j_session: neo4j.Session, aws_stage_ctx: AwsStageContext) -> None:
+    boto3_session = aws_stage_ctx.boto3_session
+    regions = aws_stage_ctx.current_aws_account_regions
+    aws_update_tag = aws_stage_ctx.graph_job_parameters['UPDATE_TAG']
 
     for region in regions:
         logger.info("Syncing AWS tags for region '%s'.", region)
@@ -141,4 +141,4 @@ def sync(neo4j_session: neo4j.Session, aws_stage_config: AwsStageConfig) -> None
             tag_data = get_tags(boto3_session, [resource_type], region)
             transform_tags(tag_data, resource_type)
             load_tags(neo4j_session, tag_data, resource_type, region, aws_update_tag)
-    cleanup(neo4j_session, aws_stage_config.graph_job_parameters)
+    cleanup(neo4j_session, aws_stage_ctx.graph_job_parameters)

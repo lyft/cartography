@@ -8,7 +8,7 @@ import botocore.client
 import neo4j
 
 from cartography.intel.aws.util import AwsGraphJobParameters
-from cartography.intel.aws.util import AwsStageConfig
+from cartography.intel.aws.util import AwsStageContext
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
@@ -382,14 +382,14 @@ def cleanup_route53(neo4j_session: neo4j.Session, graph_job_parameters: AwsGraph
 
 
 @timeit
-def sync(neo4j_session: neo4j.Session, aws_stage_config: AwsStageConfig) -> None:
-    current_aws_account_id = aws_stage_config.current_aws_account_id
-    boto3_session = aws_stage_config.boto3_session
-    aws_update_tag = aws_stage_config.graph_job_parameters['UPDATE_TAG']
+def sync(neo4j_session: neo4j.Session, aws_stage_ctx: AwsStageContext) -> None:
+    current_aws_account_id = aws_stage_ctx.current_aws_account_id
+    boto3_session = aws_stage_ctx.boto3_session
+    aws_update_tag = aws_stage_ctx.graph_job_parameters['UPDATE_TAG']
 
     logger.info("Syncing Route53 for account '%s'.", current_aws_account_id)
     client = boto3_session.client('route53')
     zones = get_zones(client)
     load_dns_details(neo4j_session, zones, current_aws_account_id, aws_update_tag)
     link_sub_zones(neo4j_session, aws_update_tag)
-    cleanup_route53(neo4j_session, aws_stage_config.graph_job_parameters)
+    cleanup_route53(neo4j_session, aws_stage_ctx.graph_job_parameters)

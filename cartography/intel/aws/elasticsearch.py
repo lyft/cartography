@@ -10,7 +10,7 @@ import neo4j
 from policyuniverse.policy import Policy
 
 from cartography.intel.aws.util import AwsGraphJobParameters
-from cartography.intel.aws.util import AwsStageConfig
+from cartography.intel.aws.util import AwsStageContext
 from cartography.intel.dns import ingest_dns_record_by_fqdn
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
@@ -234,15 +234,15 @@ def cleanup(neo4j_session: neo4j.Session, graph_job_parameters: AwsGraphJobParam
 
 
 @timeit
-def sync(neo4j_session: neo4j.Session, aws_stage_config: AwsStageConfig) -> None:
-    current_aws_account_id = aws_stage_config.current_aws_account_id
-    boto3_session = aws_stage_config.boto3_session
-    aws_update_tag = aws_stage_config.graph_job_parameters['UPDATE_TAG']
+def sync(neo4j_session: neo4j.Session, aws_stage_ctx: AwsStageContext) -> None:
+    current_aws_account_id = aws_stage_ctx.current_aws_account_id
+    boto3_session = aws_stage_ctx.boto3_session
+    aws_update_tag = aws_stage_ctx.graph_job_parameters['UPDATE_TAG']
 
     for region in es_regions:
         logger.info("Syncing Elasticsearch Service for region '%s' in account '%s'.", region, current_aws_account_id)
         client = boto3_session.client('es', region_name=region, config=_get_botocore_config())
         data = _get_es_domains(client)
-        _load_es_domains(neo4j_session, data, aws_stage_config.graph_job_parameters)
+        _load_es_domains(neo4j_session, data, aws_stage_ctx.graph_job_parameters)
 
     cleanup(neo4j_session, aws_update_tag, current_aws_account_id)

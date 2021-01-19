@@ -15,7 +15,7 @@ from .subnets import sync_subnets
 from .tgw import sync_transit_gateways
 from .vpc import sync_vpc
 from .vpc_peering import sync_vpc_peering
-from cartography.intel.aws.util import AwsStageConfig
+from cartography.intel.aws.util import AwsStageContext
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -29,16 +29,16 @@ def get_ec2_regions(boto3_session: boto3.session.Session) -> List[str]:
 
 
 @timeit
-def sync(neo4j_session: neo4j.Session, aws_stage_config: AwsStageConfig) -> None:
-    logger.info("Syncing EC2 for account '%s'.", aws_stage_config.current_aws_account_id)
-    sync_vpc(neo4j_session, aws_stage_config)
-    sync_ec2_security_groupinfo(neo4j_session, aws_stage_config)
-    sync_ec2_key_pairs(neo4j_session, aws_stage_config)
-    sync_ec2_instances(neo4j_session, aws_stage_config)
-    sync_ec2_auto_scaling_groups(neo4j_session, aws_stage_config)
-    sync_load_balancers(neo4j_session, aws_stage_config)
-    sync_subnets(neo4j_session, aws_stage_config)
-    sync_load_balancer_v2s(neo4j_session, aws_stage_config)
-    sync_vpc_peering(neo4j_session, aws_stage_config)
-    sync_transit_gateways(neo4j_session, aws_stage_config)
-    sync_network_interfaces(neo4j_session, aws_stage_config)
+def sync(neo4j_session: neo4j.Session, aws_stage_ctx: AwsStageContext) -> None:
+    logger.info("Syncing EC2 for account '%s'.", aws_stage_ctx.current_aws_account_id)
+    sync_vpc(neo4j_session, aws_stage_ctx)
+    sync_ec2_security_groupinfo(neo4j_session, aws_stage_ctx)
+    sync_ec2_key_pairs(neo4j_session, aws_stage_ctx)
+    sync_ec2_instances(neo4j_session, aws_stage_ctx)
+    sync_ec2_auto_scaling_groups(neo4j_session, aws_stage_ctx)
+    sync_load_balancers(neo4j_session, aws_stage_ctx)
+    sync_subnets(neo4j_session, aws_stage_ctx)
+    sync_load_balancer_v2s(neo4j_session, aws_stage_ctx)
+    sync_vpc_peering(neo4j_session, aws_stage_ctx)
+    sync_transit_gateways(neo4j_session, aws_stage_ctx)
+    sync_network_interfaces(neo4j_session, aws_stage_ctx)

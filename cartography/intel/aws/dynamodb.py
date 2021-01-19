@@ -7,7 +7,7 @@ import boto3.session
 import neo4j
 
 from cartography.intel.aws.util import AwsGraphJobParameters
-from cartography.intel.aws.util import AwsStageConfig
+from cartography.intel.aws.util import AwsStageContext
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -115,12 +115,12 @@ def sync_dynamodb_tables(
     cleanup_dynamodb_tables(neo4j_session, graph_job_parameters)
 
 
-def sync(neo4j_session: neo4j.Session, aws_stage_config: AwsStageConfig) -> None:
+def sync(neo4j_session: neo4j.Session, aws_stage_ctx: AwsStageContext) -> None:
     sync_dynamodb_tables(
         neo4j_session,
-        aws_stage_config.boto3_session,
-        aws_stage_config.current_aws_account_regions,
-        aws_stage_config.current_aws_account_id,
-        aws_stage_config.graph_job_parameters['UPDATE_TAG'],
-        aws_stage_config.graph_job_parameters,
+        aws_stage_ctx.boto3_session,
+        aws_stage_ctx.current_aws_account_regions,
+        aws_stage_ctx.current_aws_account_id,
+        aws_stage_ctx.graph_job_parameters['UPDATE_TAG'],
+        aws_stage_ctx.graph_job_parameters,
     )

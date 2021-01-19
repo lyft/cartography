@@ -22,7 +22,7 @@ from . import resourcegroupstaggingapi
 from . import route53
 from . import s3
 from .util import AwsGraphJobParameters
-from .util import AwsStageConfig
+from .util import AwsStageContext
 from cartography.config import Config
 from cartography.util import run_analysis_job
 from cartography.util import run_cleanup_job
@@ -31,9 +31,9 @@ from cartography.util import timeit
 logger = logging.getLogger(__name__)
 
 
-def _sync_one_account(neo4j_session: neo4j.Session, aws_stage_config: AwsStageConfig) -> None:
+def _sync_one_account(neo4j_session: neo4j.Session, aws_stage_ctx: AwsStageContext) -> None:
     try:
-        regions = ec2.get_ec2_regions(aws_stage_config.boto3_session)
+        regions = ec2.get_ec2_regions(aws_stage_ctx.boto3_session)
     except botocore.exceptions.ClientError as e:
         logger.debug("Error occurred getting EC2 regions.", exc_info=True)
         logger.error(
@@ -41,40 +41,40 @@ def _sync_one_account(neo4j_session: neo4j.Session, aws_stage_config: AwsStageCo
                 "Failed to retrieve AWS region list, an error occurred: %s. Could not get regions for account %s."
             ),
             e,
-            aws_stage_config.current_aws_account_id,
+            aws_stage_ctx.current_aws_account_id,
         )
         return
 
-    aws_stage_config.current_aws_account_regions = regions
-    iam.sync(neo4j_session, aws_stage_config)
-    s3.sync(neo4j_session, aws_stage_config)
-    dynamodb.sync(neo4j_session, aws_stage_config)
-    ec2.sync(neo4j_session, aws_stage_config)
-    ecr.sync(neo4j_session, aws_stage_config)
-    eks.sync(neo4j_session, aws_stage_config)
-    lambda_function.sync(neo4j_session, aws_stage_config)
-    rds.sync(neo4j_session, aws_stage_config)
-    redshift.sync(neo4j_session, aws_stage_config)
+    aws_stage_ctx.current_aws_account_regions = regions
+    iam.sync(neo4j_session, aws_stage_ctx)
+    s3.sync(neo4j_session, aws_stage_ctx)
+    dynamodb.sync(neo4j_session, aws_stage_ctx)
+    ec2.sync(neo4j_session, aws_stage_ctx)
+    ecr.sync(neo4j_session, aws_stage_ctx)
+    eks.sync(neo4j_session, aws_stage_ctx)
+    lambda_function.sync(neo4j_session, aws_stage_ctx)
+    rds.sync(neo4j_session, aws_stage_ctx)
+    redshift.sync(neo4j_session, aws_stage_ctx)
 
     # NOTE each of the below will generate DNS records
-    route53.sync(neo4j_session, aws_stage_config)
-    elasticsearch.sync(neo4j_session, aws_stage_config)
+    route53.sync(neo4j_session, aws_stage_ctx)
+    elasticsearch.sync(neo4j_session, aws_stage_ctx)
 
     # NOTE clean up all DNS records, regardless of which job created them
-    run_cleanup_job('aws_account_dns_cleanup.json', neo4j_session, aws_stage_config.graph_job_parameters)
+    run_cleanup_job('aws_account_dns_cleanup.json', neo4j_session, aws_stage_ctx.graph_job_parameters)
 
     # MAP IAM permissions
-    permission_relationships.sync(neo4j_session, aws_stage_config)
+    permission_relationships.sync(neo4j_session, aws_stage_ctx)
 
     # AWS Tags - Must always be last.
-    resourcegroupstaggingapi.sync(neo4j_session, aws_stage_config)
+    resourcegroupstaggingapi.sync(neo4j_session, aws_stage_ctx)
 
 
-def _autodiscover_accounts(neo4j_session: neo4j.Session, aws_stage_config: AwsStageConfig) -> None:
+def _autodiscover_accounts(neo4j_session: neo4j.Session, aws_stage_ctx: AwsStageContext) -> None:
     logger.info("Trying to autodiscover accounts.")
     try:
         # Fetch all accounts
-        client = aws_stage_config.boto3_session.client('organizations')
+        client = aws_stage_ctx.boto3_session.client('organizations')
         paginator = client.get_paginator('list_accounts')
         account_list: List[Dict[str, Any]] = []
         for page in paginator.paginate():
@@ -87,37 +87,37 @@ def _autodiscover_accounts(neo4j_session: neo4j.Session, aws_stage_config: AwsSt
         # Add them to the graph
         logger.info("Loading autodiscovered accounts.")
         organizations.load_aws_accounts(
-            neo4j_session, accounts, aws_stage_config.graph_job_parameters['UPDATE_TAG'],
+            neo4j_session, accounts, aws_stage_ctx.graph_job_parameters['UPDATE_TAG'],
         )
     except botocore.exceptions.ClientError:
         logger.debug(
-            f"The current account ({aws_stage_config.current_aws_account_id}) doesn't have enough permissions to "
+            f"The current account ({aws_stage_ctx.current_aws_account_id}) doesn't have enough permissions to "
             f"perform autodiscovery.",
         )
 
 
-def _sync_multiple_accounts(neo4j_session: neo4j.Session, aws_stage_config: AwsStageConfig) -> None:
-    logger.debug("Syncing AWS accounts: %s", ', '.join(aws_stage_config.aws_accounts.values()))
-    organizations.sync(neo4j_session, aws_stage_config)
+def _sync_multiple_accounts(neo4j_session: neo4j.Session, aws_stage_ctx: AwsStageContext) -> None:
+    logger.debug("Syncing AWS accounts: %s", ', '.join(aws_stage_ctx.aws_accounts.values()))
+    organizations.sync(neo4j_session, aws_stage_ctx)
 
-    for profile_name, account_id in aws_stage_config.aws_accounts.items():
+    for profile_name, account_id in aws_stage_ctx.aws_accounts.items():
         logger.info("Syncing AWS account with ID '%s' using configured profile '%s'.", account_id, profile_name)
-        aws_stage_config.current_aws_account_id = account_id
-        aws_stage_config.graph_job_parameters["AWS_ID"] = account_id
-        aws_stage_config.boto3_session = boto3.Session(profile_name=profile_name)
-        _autodiscover_accounts(neo4j_session, aws_stage_config)
+        aws_stage_ctx.current_aws_account_id = account_id
+        aws_stage_ctx.graph_job_parameters["AWS_ID"] = account_id
+        aws_stage_ctx.boto3_session = boto3.Session(profile_name=profile_name)
+        _autodiscover_accounts(neo4j_session, aws_stage_ctx)
 
-        _sync_one_account(neo4j_session, aws_stage_config)
+        _sync_one_account(neo4j_session, aws_stage_ctx)
 
-    del aws_stage_config.graph_job_parameters["AWS_ID"]
+    del aws_stage_ctx.graph_job_parameters["AWS_ID"]
 
     # There may be orphan Principals which point outside of known AWS accounts. This job cleans
     # up those nodes after all AWS accounts have been synced.
-    run_cleanup_job('aws_post_ingestion_principals_cleanup.json', neo4j_session, aws_stage_config.graph_job_parameters)
+    run_cleanup_job('aws_post_ingestion_principals_cleanup.json', neo4j_session, aws_stage_ctx.graph_job_parameters)
 
     # There may be orphan DNS entries that point outside of known AWS zones. This job cleans
     # up those entries after all AWS accounts have been synced.
-    run_cleanup_job('aws_post_ingestion_dns_cleanup.json', neo4j_session, aws_stage_config.graph_job_parameters)
+    run_cleanup_job('aws_post_ingestion_dns_cleanup.json', neo4j_session, aws_stage_ctx.graph_job_parameters)
 
 
 @timeit
@@ -155,7 +155,7 @@ def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
             ),
         )
 
-    aws_stage_config = AwsStageConfig(
+    aws_stage_ctx = AwsStageContext(
         boto3_session=None,
         current_aws_account_id='',
         current_aws_account_regions=[],
@@ -164,22 +164,22 @@ def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
         aws_accounts=aws_accounts,
     )
 
-    _sync_multiple_accounts(neo4j_session, aws_stage_config)
+    _sync_multiple_accounts(neo4j_session, aws_stage_ctx)
 
     run_analysis_job(
         'aws_ec2_asset_exposure.json',
         neo4j_session,
-        aws_stage_config.graph_job_parameters,
+        aws_stage_ctx.graph_job_parameters,
     )
 
     run_analysis_job(
         'aws_ec2_keypair_analysis.json',
         neo4j_session,
-        aws_stage_config.graph_job_parameters,
+        aws_stage_ctx.graph_job_parameters,
     )
 
     run_analysis_job(
         'aws_eks_asset_exposure.json',
         neo4j_session,
-        aws_stage_config.graph_job_parameters,
+        aws_stage_ctx.graph_job_parameters,
     )

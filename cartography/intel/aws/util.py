@@ -8,7 +8,7 @@ from typing_extensions import TypedDict
 AwsGraphJobParameters = TypedDict('AwsGraphJobParameters', {'AWS_ID': str, 'UPDATE_TAG': int}, total=False)
 
 
-class AwsStageConfig:
+class AwsStageContext:
     def __init__(
         self,
         boto3_session: Optional[boto3.session.Session],

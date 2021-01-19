@@ -4,7 +4,7 @@ import tests.data.aws.iam
 from cartography.cli import CLI
 from cartography.config import Config
 from cartography.intel.aws.util import AwsGraphJobParameters
-from cartography.intel.aws.util import AwsStageConfig
+from cartography.intel.aws.util import AwsStageContext
 from cartography.sync import build_default_sync
 
 TEST_ACCOUNT_NAME = 'account-name-123'
@@ -12,7 +12,7 @@ TEST_ACCOUNT_ID = '000000000000'
 TEST_REGION = 'us-east-1'
 TEST_UPDATE_TAG = 12345678
 
-aws_stage_config = AwsStageConfig(
+aws_stage_config = AwsStageContext(
     boto3_session=None,
     current_aws_account_id=TEST_ACCOUNT_ID,
     current_aws_account_regions=[TEST_REGION],

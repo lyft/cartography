@@ -8,7 +8,7 @@ import neo4j
 
 from .util import get_botocore_config
 from cartography.intel.aws.util import AwsGraphJobParameters
-from cartography.intel.aws.util import AwsStageConfig
+from cartography.intel.aws.util import AwsStageContext
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -80,17 +80,17 @@ def cleanup_subnets(neo4j_session: neo4j.Session, graph_job_parameters: AwsGraph
 
 
 @timeit
-def sync_subnets(neo4j_session: neo4j.Session, aws_stage_config: AwsStageConfig) -> None:
-    for region in aws_stage_config.current_aws_account_regions:
+def sync_subnets(neo4j_session: neo4j.Session, aws_stage_ctx: AwsStageContext) -> None:
+    for region in aws_stage_ctx.current_aws_account_regions:
         logger.info(
-            "Syncing EC2 subnets for region '%s' in account '%s'.", region, aws_stage_config.current_aws_account_id,
+            "Syncing EC2 subnets for region '%s' in account '%s'.", region, aws_stage_ctx.current_aws_account_id,
         )
-        data = get_subnet_data(aws_stage_config.boto3_session, region)
+        data = get_subnet_data(aws_stage_ctx.boto3_session, region)
         load_subnets(
             neo4j_session,
             data,
             region,
-            aws_stage_config.current_aws_account_id,
-            aws_stage_config.graph_job_parameters['UPDATE_TAG'],
+            aws_stage_ctx.current_aws_account_id,
+            aws_stage_ctx.graph_job_parameters['UPDATE_TAG'],
         )
-    cleanup_subnets(neo4j_session, aws_stage_config.graph_job_parameters)
+    cleanup_subnets(neo4j_session, aws_stage_ctx.graph_job_parameters)

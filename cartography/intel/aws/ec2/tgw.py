@@ -9,7 +9,7 @@ import neo4j
 
 from .util import get_botocore_config
 from cartography.intel.aws.util import AwsGraphJobParameters
-from cartography.intel.aws.util import AwsStageConfig
+from cartography.intel.aws.util import AwsStageContext
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -247,29 +247,29 @@ def cleanup_transit_gateways(neo4j_session: neo4j.Session, graph_job_parameters:
 
 
 @timeit
-def sync_transit_gateways(neo4j_session: neo4j.Session, aws_stage_config: AwsStageConfig) -> None:
-    aws_update_tag = aws_stage_config.graph_job_parameters['UPDATE_TAG']
+def sync_transit_gateways(neo4j_session: neo4j.Session, aws_stage_ctx: AwsStageContext) -> None:
+    aws_update_tag = aws_stage_ctx.graph_job_parameters['UPDATE_TAG']
 
-    for region in aws_stage_config.current_aws_account_regions:
+    for region in aws_stage_ctx.current_aws_account_regions:
         logger.info(
             "Syncing AWS Transit Gateways for region '%s' in account '%s'.",
             region,
-            aws_stage_config.current_aws_account_id,
+            aws_stage_ctx.current_aws_account_id,
         )
-        tgws = get_transit_gateways(aws_stage_config.boto3_session, region)
-        load_transit_gateways(neo4j_session, tgws, region, aws_stage_config.current_aws_account_id, aws_update_tag)
+        tgws = get_transit_gateways(aws_stage_ctx.boto3_session, region)
+        load_transit_gateways(neo4j_session, tgws, region, aws_stage_ctx.current_aws_account_id, aws_update_tag)
 
         logger.debug(
             "Syncing AWS Transit Gateway Attachments for region '%s' in account '%s'.",
-            region, aws_stage_config.current_aws_account_id,
+            region, aws_stage_ctx.current_aws_account_id,
         )
-        tgw_attachments = get_tgw_attachments(aws_stage_config.boto3_session, region)
-        tgw_vpc_attachments = get_tgw_vpc_attachments(aws_stage_config.boto3_session, region)
+        tgw_attachments = get_tgw_attachments(aws_stage_ctx.boto3_session, region)
+        tgw_vpc_attachments = get_tgw_vpc_attachments(aws_stage_ctx.boto3_session, region)
         load_tgw_attachments(
             neo4j_session,
             tgw_attachments + tgw_vpc_attachments,
             region,
-            aws_stage_config.current_aws_account_id,
+            aws_stage_ctx.current_aws_account_id,
             aws_update_tag,
         )
-    cleanup_transit_gateways(neo4j_session, aws_stage_config.graph_job_parameters)
+    cleanup_transit_gateways(neo4j_session, aws_stage_ctx.graph_job_parameters)

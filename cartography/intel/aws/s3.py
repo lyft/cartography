@@ -14,7 +14,7 @@ from botocore.exceptions import ClientError
 from policyuniverse.policy import Policy
 
 from cartography.intel.aws.util import AwsGraphJobParameters
-from cartography.intel.aws.util import AwsStageConfig
+from cartography.intel.aws.util import AwsStageContext
 from cartography.util import run_analysis_job
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -394,15 +394,15 @@ def cleanup_s3_bucket_acl_and_policy(neo4j_session: neo4j.Session, graph_job_par
 
 
 @timeit
-def sync(neo4j_session: neo4j.Session, aws_stage_config: AwsStageConfig) -> None:
-    aws_update_tag = aws_stage_config.graph_job_parameters['UPDATE_TAG']
+def sync(neo4j_session: neo4j.Session, aws_stage_ctx: AwsStageContext) -> None:
+    aws_update_tag = aws_stage_ctx.graph_job_parameters['UPDATE_TAG']
 
-    logger.info("Syncing S3 for account '%s'.", aws_stage_config.current_aws_account_id)
-    bucket_data = get_s3_bucket_list(aws_stage_config.boto3_session)
+    logger.info("Syncing S3 for account '%s'.", aws_stage_ctx.current_aws_account_id)
+    bucket_data = get_s3_bucket_list(aws_stage_ctx.boto3_session)
 
-    load_s3_buckets(neo4j_session, bucket_data, aws_stage_config.current_aws_account_id, aws_update_tag)
-    cleanup_s3_buckets(neo4j_session, aws_stage_config.graph_job_parameters)
+    load_s3_buckets(neo4j_session, bucket_data, aws_stage_ctx.current_aws_account_id, aws_update_tag)
+    cleanup_s3_buckets(neo4j_session, aws_stage_ctx.graph_job_parameters)
 
-    acl_and_policy_data_iter = get_s3_bucket_details(aws_stage_config.boto3_session, bucket_data)
-    load_s3_details(neo4j_session, acl_and_policy_data_iter, aws_stage_config.current_aws_account_id, aws_update_tag)
-    cleanup_s3_bucket_acl_and_policy(neo4j_session, aws_stage_config.graph_job_parameters)
+    acl_and_policy_data_iter = get_s3_bucket_details(aws_stage_ctx.boto3_session, bucket_data)
+    load_s3_details(neo4j_session, acl_and_policy_data_iter, aws_stage_ctx.current_aws_account_id, aws_update_tag)
+    cleanup_s3_bucket_acl_and_policy(neo4j_session, aws_stage_ctx.graph_job_parameters)

@@ -8,7 +8,7 @@ import neo4j
 
 from .util import get_botocore_config
 from cartography.intel.aws.util import AwsGraphJobParameters
-from cartography.intel.aws.util import AwsStageConfig
+from cartography.intel.aws.util import AwsStageContext
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -179,19 +179,19 @@ def cleanup_load_balancers(neo4j_session: neo4j.Session, graph_job_parameters: A
 
 
 @timeit
-def sync_load_balancers(neo4j_session: neo4j.Session, aws_stage_config: AwsStageConfig):
-    for region in aws_stage_config.current_aws_account_regions:
+def sync_load_balancers(neo4j_session: neo4j.Session, aws_stage_ctx: AwsStageContext):
+    for region in aws_stage_ctx.current_aws_account_regions:
         logger.info(
             "Syncing EC2 load balancers for region '%s' in account '%s'.",
             region,
-            aws_stage_config.current_aws_account_id,
+            aws_stage_ctx.current_aws_account_id,
         )
-        data = get_loadbalancer_data(aws_stage_config.boto3_session, region)
+        data = get_loadbalancer_data(aws_stage_ctx.boto3_session, region)
         load_load_balancers(
             neo4j_session,
             data,
             region,
-            aws_stage_config.current_aws_account_id,
-            aws_stage_config.graph_job_parameters['UPDATE_TAG'],
+            aws_stage_ctx.current_aws_account_id,
+            aws_stage_ctx.graph_job_parameters['UPDATE_TAG'],
         )
-    cleanup_load_balancers(neo4j_session, aws_stage_config.graph_job_parameters)
+    cleanup_load_balancers(neo4j_session, aws_stage_ctx.graph_job_parameters)

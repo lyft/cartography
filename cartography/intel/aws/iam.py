@@ -12,7 +12,7 @@ import neo4j
 
 from cartography.intel.aws.permission_relationships import parse_statement_node
 from cartography.intel.aws.permission_relationships import principal_allowed_on_resource
-from cartography.intel.aws.util import AwsStageConfig
+from cartography.intel.aws.util import AwsStageContext
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 logger = logging.getLogger(__name__)
@@ -368,10 +368,10 @@ def get_policies_for_principal(neo4j_session: neo4j.Session, principal_arn: str)
 
 
 @timeit
-def sync_assumerole_relationships(neo4j_session: neo4j.Session, aws_stage_config: AwsStageConfig) -> None:
+def sync_assumerole_relationships(neo4j_session: neo4j.Session, aws_stage_ctx: AwsStageContext) -> None:
     # Must be called after load_role
     # Computes and syncs the STS_ASSUME_ROLE allow relationship
-    logger.debug("Syncing assume role for account '%s'.", aws_stage_config.current_aws_account_id)
+    logger.debug("Syncing assume role for account '%s'.", aws_stage_ctx.current_aws_account_id)
     query_potential_matches = """
     MATCH (:AWSAccount{id:{AccountId}})-[:RESOURCE]->(target:AWSRole)-[:TRUSTS_AWS_PRINCIPAL]->(source:AWSPrincipal)
     WHERE NOT source.arn ENDS WITH 'root'
@@ -393,7 +393,7 @@ def sync_assumerole_relationships(neo4j_session: neo4j.Session, aws_stage_config
 
     results = neo4j_session.run(
         query_potential_matches,
-        AccountId=aws_stage_config.current_aws_account_id,
+        AccountId=aws_stage_ctx.current_aws_account_id,
     )
     potential_matches = [(r["source_arn"], r["target_arn"]) for r in results]
     for source_arn, target_arn in potential_matches:
@@ -403,12 +403,12 @@ def sync_assumerole_relationships(neo4j_session: neo4j.Session, aws_stage_config
                 ingest_policies_assume_role,
                 SourceArn=source_arn,
                 TargetArn=target_arn,
-                aws_update_tag=aws_stage_config.graph_job_parameters['UPDATE_TAG'],
+                aws_update_tag=aws_stage_ctx.graph_job_parameters['UPDATE_TAG'],
             )
     run_cleanup_job(
         'aws_import_roles_policy_cleanup.json',
         neo4j_session,
-        aws_stage_config.graph_job_parameters,
+        aws_stage_ctx.graph_job_parameters,
     )
 
 
@@ -559,18 +559,18 @@ def load_policy_data(
 
 
 @timeit
-def sync_users(neo4j_session: neo4j.Session, aws_stage_config: AwsStageConfig) -> None:
-    logger.debug("Syncing IAM users for account '%s'.", aws_stage_config.current_aws_account_id)
-    aws_update_tag = aws_stage_config.graph_job_parameters['UPDATE_TAG']
+def sync_users(neo4j_session: neo4j.Session, aws_stage_ctx: AwsStageContext) -> None:
+    logger.debug("Syncing IAM users for account '%s'.", aws_stage_ctx.current_aws_account_id)
+    aws_update_tag = aws_stage_ctx.graph_job_parameters['UPDATE_TAG']
 
-    data = get_user_list_data(aws_stage_config.boto3_session)
-    load_users(neo4j_session, data['Users'], aws_stage_config.current_aws_account_id, aws_update_tag)
+    data = get_user_list_data(aws_stage_ctx.boto3_session)
+    load_users(neo4j_session, data['Users'], aws_stage_ctx.current_aws_account_id, aws_update_tag)
 
-    sync_user_inline_policies(aws_stage_config.boto3_session, data, neo4j_session, aws_update_tag)
+    sync_user_inline_policies(aws_stage_ctx.boto3_session, data, neo4j_session, aws_update_tag)
 
-    sync_user_managed_policies(aws_stage_config.boto3_session, data, neo4j_session, aws_update_tag)
+    sync_user_managed_policies(aws_stage_ctx.boto3_session, data, neo4j_session, aws_update_tag)
 
-    run_cleanup_job('aws_import_users_cleanup.json', neo4j_session, aws_stage_config.graph_job_parameters)
+    run_cleanup_job('aws_import_users_cleanup.json', neo4j_session, aws_stage_ctx.graph_job_parameters)
 
 
 @timeit
@@ -592,18 +592,18 @@ def sync_user_inline_policies(
 
 
 @timeit
-def sync_groups(neo4j_session: neo4j.Session, aws_stage_config: AwsStageConfig) -> None:
-    logger.debug("Syncing IAM groups for account '%s'.", aws_stage_config.current_aws_account_id)
-    aws_update_tag = aws_stage_config.graph_job_parameters['UPDATE_TAG']
+def sync_groups(neo4j_session: neo4j.Session, aws_stage_ctx: AwsStageContext) -> None:
+    logger.debug("Syncing IAM groups for account '%s'.", aws_stage_ctx.current_aws_account_id)
+    aws_update_tag = aws_stage_ctx.graph_job_parameters['UPDATE_TAG']
 
-    data = get_group_list_data(aws_stage_config.boto3_session)
-    load_groups(neo4j_session, data['Groups'], aws_stage_config.current_aws_account_id, aws_update_tag)
+    data = get_group_list_data(aws_stage_ctx.boto3_session)
+    load_groups(neo4j_session, data['Groups'], aws_stage_ctx.current_aws_account_id, aws_update_tag)
 
-    sync_groups_inline_policies(aws_stage_config.boto3_session, data, neo4j_session, aws_update_tag)
+    sync_groups_inline_policies(aws_stage_ctx.boto3_session, data, neo4j_session, aws_update_tag)
 
-    sync_group_managed_policies(aws_stage_config.boto3_session, data, neo4j_session, aws_update_tag)
+    sync_group_managed_policies(aws_stage_ctx.boto3_session, data, neo4j_session, aws_update_tag)
 
-    run_cleanup_job('aws_import_groups_cleanup.json', neo4j_session, aws_stage_config.graph_job_parameters)
+    run_cleanup_job('aws_import_groups_cleanup.json', neo4j_session, aws_stage_ctx.graph_job_parameters)
 
 
 def sync_group_managed_policies(
@@ -623,22 +623,22 @@ def sync_groups_inline_policies(
 
 
 @timeit
-def sync_roles(neo4j_session: neo4j.Session, aws_stage_config: AwsStageConfig) -> None:
-    aws_update_tag = aws_stage_config.graph_job_parameters['UPDATE_TAG']
+def sync_roles(neo4j_session: neo4j.Session, aws_stage_ctx: AwsStageContext) -> None:
+    aws_update_tag = aws_stage_ctx.graph_job_parameters['UPDATE_TAG']
 
-    logger.debug("Syncing IAM roles for account '%s'.", aws_stage_config.current_aws_account_id)
-    data = get_role_list_data(aws_stage_config.boto3_session)
-    load_roles(neo4j_session, data['Roles'], aws_stage_config.current_aws_account_id, aws_update_tag)
+    logger.debug("Syncing IAM roles for account '%s'.", aws_stage_ctx.current_aws_account_id)
+    data = get_role_list_data(aws_stage_ctx.boto3_session)
+    load_roles(neo4j_session, data['Roles'], aws_stage_ctx.current_aws_account_id, aws_update_tag)
 
     sync_role_inline_policies(
-        aws_stage_config.current_aws_account_id, aws_stage_config.boto3_session, data, neo4j_session, aws_update_tag,
+        aws_stage_ctx.current_aws_account_id, aws_stage_ctx.boto3_session, data, neo4j_session, aws_update_tag,
     )
 
     sync_role_managed_policies(
-        aws_stage_config.current_aws_account_id, aws_stage_config.boto3_session, data, neo4j_session, aws_update_tag,
+        aws_stage_ctx.current_aws_account_id, aws_stage_ctx.boto3_session, data, neo4j_session, aws_update_tag,
     )
 
-    run_cleanup_job('aws_import_roles_cleanup.json', neo4j_session, aws_stage_config.graph_job_parameters)
+    run_cleanup_job('aws_import_roles_cleanup.json', neo4j_session, aws_stage_ctx.graph_job_parameters)
 
 
 def sync_role_managed_policies(
@@ -662,53 +662,53 @@ def sync_role_inline_policies(
 
 
 @timeit
-def sync_group_memberships(neo4j_session: neo4j.Session, aws_stage_config: AwsStageConfig) -> None:
-    logger.debug("Syncing IAM group membership for account '%s'.", aws_stage_config.current_aws_account_id)
-    aws_update_tag = aws_stage_config.graph_job_parameters['UPDATE_TAG']
+def sync_group_memberships(neo4j_session: neo4j.Session, aws_stage_ctx: AwsStageContext) -> None:
+    logger.debug("Syncing IAM group membership for account '%s'.", aws_stage_ctx.current_aws_account_id)
+    aws_update_tag = aws_stage_ctx.graph_job_parameters['UPDATE_TAG']
 
     query = "MATCH (group:AWSGroup)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ACCOUNT_ID}}) " \
             "return group.name as name, group.arn as arn;"
-    groups = neo4j_session.run(query, AWS_ACCOUNT_ID=aws_stage_config.current_aws_account_id)
+    groups = neo4j_session.run(query, AWS_ACCOUNT_ID=aws_stage_ctx.current_aws_account_id)
     groups_membership = {
-        group["arn"]: get_group_membership_data(aws_stage_config.boto3_session, group["name"]) for group in groups
+        group["arn"]: get_group_membership_data(aws_stage_ctx.boto3_session, group["name"]) for group in groups
     }
     load_group_memberships(neo4j_session, groups_membership, aws_update_tag)
     run_cleanup_job(
         'aws_import_groups_membership_cleanup.json',
         neo4j_session,
-        aws_stage_config.graph_job_parameters,
+        aws_stage_ctx.graph_job_parameters,
     )
 
 
 @timeit
-def sync_user_access_keys(neo4j_session: neo4j.Session, aws_stage_config: AwsStageConfig) -> None:
-    logger.debug("Syncing IAM user access keys for account '%s'.", aws_stage_config.current_aws_account_id)
+def sync_user_access_keys(neo4j_session: neo4j.Session, aws_stage_ctx: AwsStageContext) -> None:
+    logger.debug("Syncing IAM user access keys for account '%s'.", aws_stage_ctx.current_aws_account_id)
     query = "MATCH (user:AWSUser)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ACCOUNT_ID}}) return user.name as name"
-    result = neo4j_session.run(query, AWS_ACCOUNT_ID=aws_stage_config.current_aws_account_id)
+    result = neo4j_session.run(query, AWS_ACCOUNT_ID=aws_stage_ctx.current_aws_account_id)
     usernames = [r['name'] for r in result]
     for name in usernames:
-        access_keys = get_account_access_key_data(aws_stage_config.boto3_session, name)
+        access_keys = get_account_access_key_data(aws_stage_ctx.boto3_session, name)
         if access_keys:
             account_access_keys = {name: access_keys}
             load_user_access_keys(
-                neo4j_session, account_access_keys, aws_stage_config.graph_job_parameters['UPDATE_TAG'],
+                neo4j_session, account_access_keys, aws_stage_ctx.graph_job_parameters['UPDATE_TAG'],
             )
     run_cleanup_job(
         'aws_import_account_access_key_cleanup.json',
         neo4j_session,
-        aws_stage_config.graph_job_parameters,
+        aws_stage_ctx.graph_job_parameters,
     )
 
 
 @timeit
-def sync(neo4j_session: neo4j.Session, aws_stage_config: AwsStageConfig) -> None:
-    logger.info("Syncing IAM for account '%s'.", aws_stage_config.current_aws_account_id)
+def sync(neo4j_session: neo4j.Session, aws_stage_ctx: AwsStageContext) -> None:
+    logger.info("Syncing IAM for account '%s'.", aws_stage_ctx.current_aws_account_id)
     # This module only syncs IAM information that is in use.
     # As such only policies that are attached to a user, role or group are synced
-    sync_users(neo4j_session, aws_stage_config)
-    sync_groups(neo4j_session, aws_stage_config)
-    sync_roles(neo4j_session, aws_stage_config)
-    sync_group_memberships(neo4j_session, aws_stage_config)
-    sync_assumerole_relationships(neo4j_session, aws_stage_config)
-    sync_user_access_keys(neo4j_session, aws_stage_config)
-    run_cleanup_job('aws_import_principals_cleanup.json', neo4j_session, aws_stage_config.graph_job_parameters)
+    sync_users(neo4j_session, aws_stage_ctx)
+    sync_groups(neo4j_session, aws_stage_ctx)
+    sync_roles(neo4j_session, aws_stage_ctx)
+    sync_group_memberships(neo4j_session, aws_stage_ctx)
+    sync_assumerole_relationships(neo4j_session, aws_stage_ctx)
+    sync_user_access_keys(neo4j_session, aws_stage_ctx)
+    run_cleanup_job('aws_import_principals_cleanup.json', neo4j_session, aws_stage_ctx.graph_job_parameters)
