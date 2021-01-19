@@ -27,6 +27,8 @@ def _get_cidr_association_statement(block_type):
         new_block.cidr_block = block_data.$block_cidr,
         new_block.block_state = block_data.$state_name.State,
         new_block.block_state_message = block_data.$state_name.StatusMessage,
+        new_block.ipv6_pool = block_data.Ipv6Pool,
+        new_block.network_border_group = block_data.NetworkBorderGroup,
         new_block.lastupdated = {aws_update_tag}
         WITH vpc, new_block
         MERGE (vpc)-[r:BLOCK_ASSOCIATION]->(new_block)
