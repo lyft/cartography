@@ -76,6 +76,8 @@ def load_cartography(event, ctx):
 
 
 def process_request(context, args):
+    context.logger.info(f'{args["templateType"]} request received - {args["eventId"]}')
+
     creds = get_auth_creds(context, args)
 
     body = {
