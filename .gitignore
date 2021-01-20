@@ -17,6 +17,5 @@ build/
 dist/
 node_modules
 .serverless
-.env.production.json
 .env.aws.production.json
 deploy_eks/

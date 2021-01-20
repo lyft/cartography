@@ -121,7 +121,7 @@ def publish_response(context, req, resp):
             "response": resp
         }
 
-        context.logger.info(f'response from cartography: {body}')
+        # context.logger.info(f'response from cartography: {body}')
 
         sns_helper = SNSLibrary(context)
         status = sns_helper.publish(json.dumps(body), context.aws_inventory_sync_response_topic)
