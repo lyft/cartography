@@ -32,6 +32,7 @@ def get_kms_key_list(boto3_session, region):
 
     return described_key_list
 
+
 @timeit
 def get_kms_key_details(boto3_session, kms_key_data, region):
     """
@@ -183,7 +184,7 @@ def load_kms_key_details(neo4j_session, policy_alias_grants_data, region, aws_ac
     for key, policy, alias, grant in policy_alias_grants_data:
         parsed_policy = parse_policy(key, policy)
         if parsed_policy is not None:
-            policies.extend(parsed_policy)
+            policies.append(parsed_policy)
         if len(alias) > 0:
             aliases.extend(alias)
         if len(grants) > 0:
