@@ -158,6 +158,8 @@ type for `AWSIpv4CidrBlock` and `AWSIpv6CidrBlock`
 |firstseen| Timestamp of when a sync job discovered this node|
 |cidr\_block| The CIDR block|
 |block\_state| The state of the block|
+|ipv6\_pool| The ID of the IPv6 address pool from which the IPv6 CIDR block is allocated|
+|network\_border\_group| The name of the unique set of Availability Zones, Local Zones, or Wavelength Zones from which AWS advertises IP addresses|
 |association\_id| the association id if the block is associated to a VPC
 |lastupdated| Timestamp of the last time the node was updated|
 |**id**| Unique identifier defined with the VPC association and the cidr\_block
