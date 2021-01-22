@@ -88,7 +88,8 @@ def get_storage_account_details(credentials, subscription_id, storage_account_li
     for storage_account in storage_account_list:
         queue_services = get_queue_services(credentials, subscription_id, storage_account)
         table_services = get_table_services(credentials, subscription_id, storage_account)
-        yield storage_account['id'], storage_account['name'], storage_account['resourceGroup'], queue_services, table_services
+        file_services = get_file_services(credentials, subscription_id, storage_account)
+        yield storage_account['id'], storage_account['name'], storage_account['resourceGroup'], queue_services, table_services, file_services
 
 
 @timeit
@@ -118,11 +119,25 @@ def get_table_services(credentials, subscription_id, storage_account):
 
 
 @timeit
+def get_file_services(credentials, subscription_id, storage_account):
+    try:
+        client = get_client(credentials, subscription_id)
+        file_service_list = client.file_services.list(storage_account['resourceGroup'], storage_account['name']).as_dict()['value']
+
+    except Exception as e:
+        logger.warning("Error while retrieving file services list - {}".format(e))
+        return []
+
+    return file_service_list
+
+
+@timeit
 def load_storage_account_details(neo4j_session, credentials, subscription_id, details, update_tag):
     queue_services = []
     table_services = []
+    file_services = []
 
-    for account_id, name, resourceGroup, queue_service, table_service in details:
+    for account_id, name, resourceGroup, queue_service, table_service, file_service in details:
         if len(queue_service) > 0:
             for service in queue_service:
                 service['storage_account_name'] = name
@@ -137,11 +152,20 @@ def load_storage_account_details(neo4j_session, credentials, subscription_id, de
                 service['resource_group_name'] = resourceGroup
             table_services.extend(table_service)
 
+        if len(file_service) > 0:
+            for service in file_service:
+                service['storage_account_name'] = name
+                service['storage_account_id'] = account_id
+                service['resource_group_name'] = resourceGroup
+            file_services.extend(file_service)
+
     _load_queue_services(neo4j_session, queue_services, update_tag)
     _load_table_services(neo4j_session, table_services, update_tag)
+    _load_file_services(neo4j_session, file_services, update_tag)
 
     sync_queue_services_details(neo4j_session, credentials, subscription_id, queue_services, update_tag)
     sync_table_services_details(neo4j_session, credentials, subscription_id, table_services, update_tag)
+    sync_file_services_details(neo4j_session, credentials, subscription_id, file_services, update_tag)
 
 
 @timeit
@@ -187,6 +211,31 @@ def _load_table_services(neo4j_session, table_services, update_tag):
         neo4j_session.run(
             ingest_table_services,
             TableServiceId=service['id'],
+            Name=service['name'],
+            Type=service['type'],
+            StorageAccountId=service['storage_account_id'],
+            azure_update_tag=update_tag,
+        )
+
+
+@timeit
+def _load_file_services(neo4j_session, file_services, update_tag):
+    ingest_file_services = """
+    MERGE (fs:AzureStorageFileService{id: {FileServiceId}})
+    ON CREATE SET fs.firstseen = timestamp(), fs.lastupdated = {azure_update_tag}
+    SET fs.name = {Name},
+    fs.type = {Type}
+    WITH fs
+    MATCH (s:AzureStorageAccount{id: {StorageAccountId}})
+    MERGE (s)-[r:USES]->(fs)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {azure_update_tag}
+    """
+
+    for service in file_services:
+        neo4j_session.run(
+            ingest_file_services,
+            FileServiceId=service['id'],
             Name=service['name'],
             Type=service['type'],
             StorageAccountId=service['storage_account_id'],
@@ -307,7 +356,7 @@ def _load_tables(neo4j_session, tables, update_tag):
     t.tablename = {TableName}
     WITH t
     MATCH (ts:AzureStorageTableService{id: {ServiceId}})
-    MERGE (qs)-[r:CONTAINS]->(t)
+    MERGE (ts)-[r:CONTAINS]->(t)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {azure_update_tag}
     """
@@ -320,6 +369,93 @@ def _load_tables(neo4j_session, tables, update_tag):
             Type=table['type'],
             TableName=table['properties']['tableName'],
             ServiceId=table['service_id'],
+            azure_update_tag=update_tag,
+        )
+
+
+@timeit
+def sync_file_services_details(neo4j_session, credentials, subscription_id, file_services, update_tag):
+    file_services_details = get_file_services_details(credentials, subscription_id, file_services)
+    load_file_services_details(neo4j_session, file_services_details, update_tag)
+
+
+@timeit
+def get_file_services_details(credentials, subscription_id, file_services):
+    for file_service in file_services:
+        shares = get_files(credentials, subscription_id, file_service)
+        yield file_service['id'], shares
+
+
+@timeit
+def get_files(credentials, subscription_id, file_service):
+    try:
+        client = get_client(credentials, subscription_id)
+        shares = list(client.file_shares.list(file_service['resource_group_name'], file_service['storage_account_name']))
+
+    except Exception as e:
+        logger.warning("Error while retrieving file shares - {}".format(e))
+        return []
+
+    return shares
+
+
+@timeit
+def load_file_services_details(neo4j_session, details, update_tag):
+    shares = []
+
+    for file_service_id, share in details:
+        if len(share) > 0:
+            for s in share:
+                s['service_id'] = file_service_id
+            shares.extend(share)
+
+    _load_shares(neo4j_session, shares, update_tag)
+
+
+@timeit
+def _load_shares(neo4j_session, shares, update_tag):
+    ingest_shares = """
+    MERGE (share:AzureStorageFileShare{id: {ShareId}})
+    ON CREATE SET share.firstseen = timestamp(), share.lastupdated = {azure_update_tag}
+    SET share.name = {Name},
+    share.type = {Type},
+    share.tablename = {TableName},
+    share.lastmodifiedtime = {LastModifiedTime},
+    share.sharequota = {ShareQuota},
+    share.accesstier = {AccessTier},
+    share.deleted = {Deleted},
+    share.accesstierchangetime = {AccessTierChangeTime},
+    share.accesstierstatus = {AccessTierStatus},
+    share.deletedtime = {DeletedTime},
+    share.enabledProtocols = {EnabledProtocols},
+    share.remainingretentiondays = {RemainingRetentionDays},
+    share.shareusagebytes = {ShareUsageBytes},
+    share.version = {Version}
+    WITH share
+    MATCH (fs:AzureStorageFileService{id: {ServiceId}})
+    MERGE (fs)-[r:CONTAINS]->(share)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {azure_update_tag}
+    """
+
+    for share in shares:
+        neo4j_session.run(
+            ingest_shares,
+            ShareId=share['id'],
+            Name=share['name'],
+            Type=share['type'],
+            LastModifiedTime=share['properties']['lastModifiedTime'],
+            ShareQuota=share['properties']['shareQuota'],
+            AccessTier=share['properties']['accessTier'],
+            Deleted=share['properties']['deleted'],
+            AccessTierChangeTime=share['properties']['accessTierChangeTime'],
+            AccessTierStatus=share['properties']['accessTierStatus'],
+            DeletedTime=share['properties']['deletedTime'],
+            EnabledProtocols=share['properties']['enabledProtocols'],
+            RemainingRetentionDays=share['properties']['remainingRetentionDays'],
+            ShareUsageBytes=share['properties']['shareUsageBytes'],
+            Version=share['properties']['version'],
+            ServiceId=share['service_id'],
             azure_update_tag=update_tag,
         )
 
