@@ -597,10 +597,10 @@ def _load_blob_containers(neo4j_session, blob_containers, update_tag):
         )
 
 
-# @timeit
-# def cleanup_azure_sql_servers(neo4j_session, subscription_id, common_job_parameters):
-#     common_job_parameters['AZURE_SUBSCRIPTION_ID'] = subscription_id
-#     run_cleanup_job('azure_sql_server_cleanup.json', neo4j_session, common_job_parameters)
+@timeit
+def cleanup_azure_storage_accounts(neo4j_session, subscription_id, common_job_parameters):
+    common_job_parameters['AZURE_SUBSCRIPTION_ID'] = subscription_id
+    run_cleanup_job('azure_storage_account_cleanup.json', neo4j_session, common_job_parameters)
 
 
 @timeit
@@ -609,4 +609,4 @@ def sync(neo4j_session, credentials, subscription_id, sync_tag, common_job_param
     storage_account_list = get_storage_account_list(credentials, subscription_id)
     load_storage_account_data(neo4j_session, subscription_id, storage_account_list, sync_tag)
     sync_storage_account_details(neo4j_session, credentials, subscription_id, storage_account_list, sync_tag)
-    # cleanup_azure_sql_servers(neo4j_session, subscription_id, common_job_parameters)
+    cleanup_azure_storage_accounts(neo4j_session, subscription_id, common_job_parameters)
