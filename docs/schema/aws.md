@@ -90,16 +90,20 @@
   - [Relationships](#relationships-40)
 - [Nameserver](#nameserver)
   - [Relationships](#relationships-41)
-- [NetworkInterface](#networkinterface)
+- [NetworkAcl](#networkacl)
   - [Relationships](#relationships-42)
-- [RedshiftCluster](#redshiftcluster)
+- [NetworkAclRule](#networkaclrule)
   - [Relationships](#relationships-43)
-- [RDSInstance](#rdsinstance)
+- [NetworkInterface](#networkinterface)
   - [Relationships](#relationships-44)
-- [S3Acl](#s3acl)
+- [RedshiftCluster](#redshiftcluster)
   - [Relationships](#relationships-45)
-- [S3Bucket](#s3bucket)
+- [RDSInstance](#rdsinstance)
   - [Relationships](#relationships-46)
+- [S3Acl](#s3acl)
+  - [Relationships](#relationships-47)
+- [S3Bucket](#s3bucket)
+  - [Relationships](#relationships-48)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -1504,6 +1508,75 @@ Represents a DNS nameserver.
 
         ```
         (Nameserver)-[NAMESERVER]->(DNSZone)
+        ```
+
+## NetworkAcl
+
+Representation of a generic Network Acl.  The spec for an AWS EC2 network acl is [here](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_NetworkAcl.html).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| is\_default | Indicates whether this is the default network ACL for the VPC |
+| vpc\_id | The ID of the VPC for the network ACL |
+| network\_acl\_id | The ID of the network ACL |
+| region | The region of the network acl |
+| **id** | The ID of the network acl |
+
+
+### Relationships
+
+-  EC2 Network Acls belong to AWS accounts.
+
+        (NetworkAcl)<-[:RESOURCE]->(:AWSAccount)
+
+- Network Acls can be associated with EC2Subnets.
+
+        ```
+        (NetworkAcl)<-[SUBNET_ASSOCIATION]-(EC2Subnet)
+        ```
+
+- Network Acls have multiple rules.
+
+        ```
+        (NetworkAcl)<-[RULE_OF_NETWORK_ACL]-(NetworkAclRule)
+        ```
+
+-  EC2 Network Acls can be tagged with AWSTags.
+
+        ```
+        (NetworkAcl)-[TAGGED]->(AWSTag)
+        ```
+
+
+## NetworkAclRule
+
+Representation of a rule of Network Acl. The spec for an AWS EC2 network interface is [here](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_NetworkAclEntry.html).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| cidr_block | The IPv4 network range to allow or deny, in CIDR notation |
+| ipv6_cidr_block | The IPv6 network range to allow or deny, in CIDR notation |
+| egress | Indicates whether the rule is an egress rule (applied to traffic leaving the subnet) |
+| protocol | The protocol number. A value of "-1" means all protocols |
+| rule_action | Indicates whether to allow or deny the traffic that matches the rule |
+| rule_number | The rule number for the entry. ACL entries are processed in ascending order by rule number |
+| icmp_code | ICMP protocol: The ICMP type |
+| icmp_type | ICMP protocol: The ICMP code |
+| port_range_from | TCP or UDP protocols: The from part of the range of ports the rule applies to |
+| port_range_to |  TCP or UDP protocols: The to part of the range of ports the rule applies to  |
+| **id** | Unique identifier defined with the NetworkAcl association, egress and rule_number |
+
+
+### Relationships
+
+- Network Acl Rules are rules of Network Acl.
+
+        ```
+        (NetworkAclRule)-[RULE_OF_NETWORK_ACL]->(NetworkAcl)
         ```
 
 ## NetworkInterface
