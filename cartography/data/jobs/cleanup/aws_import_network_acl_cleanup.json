@@ -1,0 +1,21 @@
+{
+    "statements": [
+    {
+      "query": "MATCH (n:NetworkAclRule)-[:RULE_OF_NETWORK_ACL]->(:NetworkAcl)-[r:MEMBER_OF_AWS_VPC]->(:AWSVpc)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(:AWSVpc)<-[:MEMBER_OF_AWS_VPC]-(n:NetworkAcl)<-[r:SUBNET_ASSOCIATION]-(:EC2Subnet) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(:AWSVpc)<-[r:MEMBER_OF_AWS_VPC]-(n:NetworkAcl) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    }
+    ],
+    "name": "cleanup Network Acl"
+  }
+  
