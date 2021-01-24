@@ -1558,16 +1558,16 @@ Representation of a rule of Network Acl. The spec for an AWS EC2 network interfa
 |-------|-------------|
 | firstseen| Timestamp of when a sync job first discovered this node  |
 | lastupdated |  Timestamp of the last time the node was updated |
-| cidr_block | The IPv4 network range to allow or deny, in CIDR notation |
-| ipv6_cidr_block | The IPv6 network range to allow or deny, in CIDR notation |
+| cidr\_block | The IPv4 network range to allow or deny, in CIDR notation |
+| ipv6\_cidr\_block | The IPv6 network range to allow or deny, in CIDR notation |
 | egress | Indicates whether the rule is an egress rule (applied to traffic leaving the subnet) |
 | protocol | The protocol number. A value of "-1" means all protocols |
-| rule_action | Indicates whether to allow or deny the traffic that matches the rule |
-| rule_number | The rule number for the entry. ACL entries are processed in ascending order by rule number |
-| icmp_code | ICMP protocol: The ICMP type |
-| icmp_type | ICMP protocol: The ICMP code |
-| port_range_from | TCP or UDP protocols: The from part of the range of ports the rule applies to |
-| port_range_to |  TCP or UDP protocols: The to part of the range of ports the rule applies to  |
+| rule\_action | Indicates whether to allow or deny the traffic that matches the rule |
+| rule\_number | The rule number for the entry. ACL entries are processed in ascending order by rule number |
+| icmp\_code | ICMP protocol: The ICMP type |
+| icmp\_type | ICMP protocol: The ICMP code |
+| port\_range\_from | TCP or UDP protocols: The from part of the range of ports the rule applies to |
+| port\_range\_to |  TCP or UDP protocols: The to part of the range of ports the rule applies to  |
 | **id** | Unique identifier defined with the NetworkAcl association, egress and rule_number |
 
 
