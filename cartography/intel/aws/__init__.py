@@ -17,6 +17,8 @@ from . import redshift
 from . import resourcegroupstaggingapi
 from . import route53
 from . import s3
+from . import apigateway
+from . import kms
 from cartography.util import run_analysis_job
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -48,6 +50,8 @@ def _sync_one_account(neo4j_session, boto3_session, account_id, sync_tag, common
     lambda_function.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     rds.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     redshift.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
+    apigateway.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
+    kms.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
 
     # NOTE each of the below will generate DNS records
     route53.sync(neo4j_session, boto3_session, account_id, sync_tag)
@@ -84,18 +88,33 @@ def _autodiscover_accounts(neo4j_session, boto3_session, account_id, sync_tag, c
         logger.debug(f"The current account ({account_id}) doesn't have enough permissions to perform autodiscovery.")
 
 
-def _sync_multiple_accounts(neo4j_session, accounts, sync_tag, common_job_parameters):
+def _sync_multiple_accounts(neo4j_session, accounts, config, common_job_parameters):
     logger.debug("Syncing AWS accounts: %s", ', '.join(accounts.values()))
-    organizations.sync(neo4j_session, accounts, sync_tag, common_job_parameters)
+    organizations.sync(neo4j_session, accounts, config.update_tag, common_job_parameters)
 
     for profile_name, account_id in accounts.items():
         logger.info("Syncing AWS account with ID '%s' using configured profile '%s'.", account_id, profile_name)
         common_job_parameters["AWS_ID"] = account_id
-        boto3_session = boto3.Session(profile_name=profile_name)
+        # boto3_session = boto3.Session(profile_name=profile_name)
 
-        _autodiscover_accounts(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters)
+        if config.credentials['type'] == 'self':
+            boto3_session = boto3.Session(
+                # profile_name=profile_name,
+                aws_access_key_id=config.credentials['aws_access_key_id'],
+                aws_secret_access_key=config.credentials['aws_secret_access_key'],
+            )
 
-        _sync_one_account(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters)
+        elif config.credentials['type'] == 'assumerole':
+            boto3_session = boto3.Session(
+                # profile_name=profile_name,
+                aws_access_key_id=config.credentials['aws_access_key_id'],
+                aws_secret_access_key=config.credentials['aws_secret_access_key'],
+                aws_session_token=config.credentials['session_token']
+            )
+
+        _autodiscover_accounts(neo4j_session, boto3_session, account_id, config.update_tag, common_job_parameters)
+
+        _sync_one_account(neo4j_session, boto3_session, account_id, config.update_tag, common_job_parameters)
 
     del common_job_parameters["AWS_ID"]
 
@@ -113,9 +132,24 @@ def start_aws_ingestion(neo4j_session, config):
     common_job_parameters = {
         "UPDATE_TAG": config.update_tag,
         "permission_relationships_file": config.permission_relationships_file,
+        "WORKSPACE_ID": config.params['workspace']['id_string']
     }
     try:
-        boto3_session = boto3.Session()
+        # boto3_session = boto3.Session()
+
+        if config.credentials['type'] == 'self':
+            boto3_session = boto3.Session(
+                aws_access_key_id=config.credentials['aws_access_key_id'],
+                aws_secret_access_key=config.credentials['aws_secret_access_key']
+            )
+
+        elif config.credentials['type'] == 'assumerole':
+            boto3_session = boto3.Session(
+                aws_access_key_id=config.credentials['aws_access_key_id'],
+                aws_secret_access_key=config.credentials['aws_secret_access_key'],
+                aws_session_token=config.credentials['session_token']
+            )
+
     except (botocore.exceptions.BotoCoreError, botocore.exceptions.ClientError) as e:
         logger.debug("Error occurred calling boto3.Session().", exc_info=True)
         logger.error(
@@ -147,7 +181,7 @@ def start_aws_ingestion(neo4j_session, config):
             ),
         )
 
-    _sync_multiple_accounts(neo4j_session, aws_accounts, config.update_tag, common_job_parameters)
+    _sync_multiple_accounts(neo4j_session, aws_accounts, config, common_job_parameters)
 
     run_analysis_job(
         'aws_ec2_asset_exposure.json',

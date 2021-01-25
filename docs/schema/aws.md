@@ -1530,6 +1530,10 @@ Representation of a generic Network Interface.  Currently however, we only creat
 
 ### Relationships
 
+-  EC2 Network Interfaces belong to AWS accounts.
+
+        (NetworkInterface)<-[:RESOURCE]->(:AWSAccount)
+
 - Network interfaces can be connected to EC2Subnets.
 
         ```

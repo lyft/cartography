@@ -1,0 +1,10 @@
+{
+  "statements": [
+    {
+      "query": "MATCH (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(s:RestAPI) WHERE EXISTS(s.anonymous_access)\n WITH s LIMIT {LIMIT_SIZE}\nREMOVE s.anonymous_access, s.anonymous_actions return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    }
+  ],
+  "name": "AWS APIGateway Exposure Details"
+}
