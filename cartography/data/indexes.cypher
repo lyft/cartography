@@ -87,6 +87,7 @@ CREATE INDEX ON :LoadBalancer(dnsname);
 CREATE INDEX ON :LoadBalancer(id);
 CREATE INDEX ON :LoadBalancerV2(dnsname);
 CREATE INDEX ON :LoadBalancerV2(id);
+CREATE INDEX ON :NetworkAcl(id);
 CREATE INDEX ON :NetworkInterface(id);
 CREATE INDEX ON :NameServer(id);
 CREATE INDEX ON :OktaOrganization(id);
