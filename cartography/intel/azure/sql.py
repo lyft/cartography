@@ -16,7 +16,7 @@ def get_client(credentials, subscription_id):
 def get_server_list(credentials, subscription_id):
     try:
         client = get_client(credentials, subscription_id)
-        server_list = list(client.servers.list())
+        server_list = list(map(lambda x: x.as_dict(), client.servers.list()))
 
     except Exception as e:
         logger.warning("Error while retrieving servers - {}".format(e))
@@ -49,16 +49,15 @@ def load_server_data(neo4j_session, subscription_id, server_list, azure_update_t
     """
 
     for server in server_list:
-        data = server.as_dict()
         neo4j_session.run(
             ingest_server,
-            ServerId=data['id'],
-            ResourceGroup=data['resourceGroup'],
-            Name=data['name'],
-            Location=data['location'],
-            Kind=data['kind'],
-            State=data['properties']['state'],
-            Version=data['properties']['version'],
+            ServerId=server['id'],
+            ResourceGroup=server['resourceGroup'],
+            Name=server['name'],
+            Location=server['location'],
+            Kind=server['kind'],
+            State=server['state'],
+            Version=server['version'],
             AZURE_SUBSCRIPTION_ID=subscription_id,
             azure_update_tag=azure_update_tag,
         )
@@ -87,7 +86,7 @@ def get_server_details(credentials, subscription_id, server_list):
 def get_dns_aliases(credentials, subscription_id, server):
     try:
         client = get_client(credentials, subscription_id)
-        dns_aliases = list(client.server_dns_aliases.list_by_server(server['resourceGroup'], server['name']))
+        dns_aliases = list(map(lambda x: x.as_dict(), client.server_dns_aliases.list_by_server(server['resourceGroup'], server['name'])))
 
     except Exception as e:
         logger.warning("Error while retrieving Azure Server DNS Aliases - {}".format(e))
@@ -100,7 +99,7 @@ def get_dns_aliases(credentials, subscription_id, server):
 def get_ad_admins(credentials, subscription_id, server):
     try:
         client = get_client(credentials, subscription_id)
-        ad_admins = list(client.server_azure_ad_administrators.list_by_server(server['resourceGroup'], server['name']))
+        ad_admins = list(map(lambda x: x.as_dict(), client.server_azure_ad_administrators.list_by_server(server['resourceGroup'], server['name'])))
 
     except Exception as e:
         logger.warning("Error while retrieving server azure AD Administrators - {}".format(e))
@@ -113,7 +112,7 @@ def get_ad_admins(credentials, subscription_id, server):
 def get_recoverable_databases(credentials, subscription_id, server):
     try:
         client = get_client(credentials, subscription_id)
-        recoverable_databases = list(client.recoverable_databases.list_by_server(server['resourceGroup'], server['name']))
+        recoverable_databases = list(map(lambda x: x.as_dict(), client.recoverable_databases.list_by_server(server['resourceGroup'], server['name'])))
 
     except Exception as e:
         logger.warning("Error while retrieving recoverable databases - {}".format(e))
@@ -126,7 +125,7 @@ def get_recoverable_databases(credentials, subscription_id, server):
 def get_restorable_dropped_databases(credentials, subscription_id, server):
     try:
         client = get_client(credentials, subscription_id)
-        restorable_dropped_databases = list(client.restorable_dropped_databases.list_by_server(server['resourceGroup'], server['name']))
+        restorable_dropped_databases = list(map(lambda x: x.as_dict(), client.restorable_dropped_databases.list_by_server(server['resourceGroup'], server['name'])))
 
     except Exception as e:
         logger.warning("Error while retrieving restorable dropped databases - {}".format(e))
@@ -139,7 +138,7 @@ def get_restorable_dropped_databases(credentials, subscription_id, server):
 def get_failover_groups(credentials, subscription_id, server):
     try:
         client = get_client(credentials, subscription_id)
-        failover_groups = list(client.failover_groups.list_by_server(server['resourceGroup'], server['name']))
+        failover_groups = list(map(lambda x: x.as_dict(), client.failover_groups.list_by_server(server['resourceGroup'], server['name'])))
 
     except Exception as e:
         logger.warning("Error while retrieving failover groups - {}".format(e))
@@ -152,7 +151,7 @@ def get_failover_groups(credentials, subscription_id, server):
 def get_elastic_pools(credentials, subscription_id, server):
     try:
         client = get_client(credentials, subscription_id)
-        elastic_pools = list(client.elastic_pools.list_by_server(server['resourceGroup'], server['name']))
+        elastic_pools = list(map(lambda x: x.as_dict(), client.elastic_pools.list_by_server(server['resourceGroup'], server['name'])))
 
     except Exception as e:
         logger.warning("Error while retrieving elastic pools - {}".format(e))
@@ -165,7 +164,7 @@ def get_elastic_pools(credentials, subscription_id, server):
 def get_databases(credentials, subscription_id, server):
     try:
         client = get_client(credentials, subscription_id)
-        databases = list(client.databases.list_by_server(server['resourceGroup'], server['name']))
+        databases = list(map(lambda x: x.as_dict(), client.databases.list_by_server(server['resourceGroup'], server['name'])))
 
     except Exception as e:
         logger.warning("Error while retrieving databases - {}".format(e))
@@ -186,40 +185,47 @@ def load_server_details(neo4j_session, credentials, subscription_id, details, up
 
     for server_id, name, resourceGroup, dns_alias, ad_admin, r_database, rd_database, failover_group, elastic_pool, database in details:
         if len(dns_alias) > 0:
-            dns_alias['server_name'] = name
-            dns_alias['server_id'] = server_id
-            dns_aliases.extend(dns_alias)
+            for alias in dns_alias:
+                alias['server_name'] = name
+                alias['server_id'] = server_id
+                dns_aliases.append(alias)
 
         if len(ad_admin) > 0:
-            ad_admin['server_name'] = name
-            ad_admin['server_id'] = server_id
-            ad_admins.extend(ad_admin)
+            for admin in ad_admin:
+                admin['server_name'] = name
+                admin['server_id'] = server_id
+                ad_admins.append(admin)
 
         if len(r_database) > 0:
-            r_database['server_name'] = name
-            r_database['server_id'] = server_id
-            recoverable_databases.extend(r_database)
+            for rdb in r_database:
+                rdb['server_name'] = name
+                rdb['server_id'] = server_id
+                recoverable_databases.append(rdb)
 
         if len(rd_database) > 0:
-            rd_database['server_name'] = name
-            rd_database['server_id'] = server_id
-            restorable_dropped_databases.extend(rd_database)
+            for rddb in rd_database:
+                rddb['server_name'] = name
+                rddb['server_id'] = server_id
+                restorable_dropped_databases.append(rddb)
 
         if len(failover_group) > 0:
-            failover_group['server_name'] = name
-            failover_group['server_id'] = server_id
-            failover_groups.extend(failover_group)
+            for group in failover_group:
+                group['server_name'] = name
+                group['server_id'] = server_id
+                failover_groups.append(group)
 
         if len(elastic_pool) > 0:
-            elastic_pool['server_name'] = name
-            elastic_pool['server_id'] = server_id
-            elastic_pools.extend(elastic_pool)
+            for pool in elastic_pool:
+                pool['server_name'] = name
+                pool['server_id'] = server_id
+                elastic_pools.append(pool)
 
         if len(database) > 0:
-            database['server_name'] = name
-            database['server_id'] = server_id
-            database['resource_group_name'] = resourceGroup
-            databases.extend(database)
+            for db in database:
+                db['server_name'] = name
+                db['server_id'] = server_id
+                db['resource_group_name'] = resourceGroup
+                databases.append(db)
 
     _load_server_dns_aliases(neo4j_session, dns_aliases, update_tag)
     _load_server_ad_admins(neo4j_session, ad_admins, update_tag)
@@ -246,13 +252,12 @@ def _load_server_dns_aliases(neo4j_session, dns_aliases, update_tag):
     SET r.lastupdated = {azure_update_tag}
     """
 
-    for alias in dns_aliases:
-        data = alias.as_dict()
+    for data in dns_aliases:
         neo4j_session.run(
             ingest_dns_aliases,
             DNSAliasId=data['id'],
             Name=data['name'],
-            AzureDNSRecord=data['properties']['azureDnsRecord'],
+            AzureDNSRecord=data.get('azure_dns_record'),
             ServerId=data['server_id'],
             azure_update_tag=update_tag,
         )
@@ -273,14 +278,13 @@ def _load_server_ad_admins(neo4j_session, ad_admins, update_tag):
     SET r.lastupdated = {azure_update_tag}
     """
 
-    for ad_admin in ad_admins:
-        data = ad_admin.as_dict()
+    for data in ad_admins:
         neo4j_session.run(
             ingest_ad_admins,
             AdAdminId=data['id'],
             Name=data['name'],
-            AdministratorType=data['properties']['administratorType'],
-            Login=data['properties']['login'],
+            AdministratorType=data['administrator_type'],
+            Login=data['login'],
             ServerId=data['server_id'],
             azure_update_tag=update_tag,
         )
@@ -302,13 +306,12 @@ def _load_recoverable_databases(neo4j_session, recoverable_databases, update_tag
     SET r.lastupdated = {azure_update_tag}
     """
 
-    for database in recoverable_databases:
-        data = database.as_dict()
+    for data in recoverable_databases:
         neo4j_session.run(
             ingest_recoverable_databases,
             DatabaseId=data['id'],
             Name=data['name'],
-            Edition=data['properties']['edition'],
+            Edition=data['edition'],
             ServiceLevelObjective=data['properties']['serviceLevelObjective'],
             BackupDate=data['properties']['lastAvailableBackupDate'],
             ServerId=data['server_id'],
@@ -337,8 +340,7 @@ def _load_restorable_dropped_databases(neo4j_session, restorable_dropped_databas
     SET r.lastupdated = {azure_update_tag}
     """
 
-    for database in restorable_dropped_databases:
-        data = database.as_dict()
+    for data in restorable_dropped_databases:
         neo4j_session.run(
             ingest_restorable_dropped_databases,
             DatabaseId=data['id'],
@@ -373,15 +375,14 @@ def _load_failover_groups(neo4j_session, failover_groups, update_tag):
     """
 
     for group in failover_groups:
-        data = group.as_dict()
         neo4j_session.run(
             ingest_failover_groups,
-            GroupId=data['id'],
-            Name=data['name'],
-            Location=data['location'],
-            Role=data['properties']['replicationRole'],
-            State=data['properties']['replicationState'],
-            ServerId=data['server_id'],
+            GroupId=group['id'],
+            Name=group['name'],
+            Location=group['location'],
+            Role=group['properties']['replicationRole'],
+            State=group['properties']['replicationState'],
+            ServerId=group['server_id'],
             azure_update_tag=update_tag,
         )
 
@@ -406,18 +407,17 @@ def _load_elastic_pools(neo4j_session, elastic_pools, update_tag):
     """
 
     for elastic_pool in elastic_pools:
-        data = elastic_pool.as_dict()
         neo4j_session.run(
             ingest_elastic_pools,
-            PoolId=data['id'],
-            Name=data['name'],
-            Location=data['location'],
-            CreationDate=data['properties']['creationDate'],
-            State=data['properties']['state'],
-            MaxSizeBytes=data['properties']['maxSizeBytes'],
-            LicenseType=data['properties']['licenseType'],
-            ZoneRedundant=data['properties']['zoneRedundant'],
-            ServerId=data['server_id'],
+            PoolId=elastic_pool['id'],
+            Name=elastic_pool['name'],
+            Location=elastic_pool['location'],
+            CreationDate=elastic_pool['properties']['creationDate'],
+            State=elastic_pool['properties']['state'],
+            MaxSizeBytes=elastic_pool['properties']['maxSizeBytes'],
+            LicenseType=elastic_pool['properties']['licenseType'],
+            ZoneRedundant=elastic_pool['properties']['zoneRedundant'],
+            ServerId=elastic_pool['server_id'],
             azure_update_tag=update_tag,
         )
 
@@ -448,24 +448,23 @@ def _load_databases(neo4j_session, databases, update_tag):
     """
 
     for database in databases:
-        data = database.as_dict()
         neo4j_session.run(
             ingest_databases,
-            Id=data['id'],
-            Name=data['name'],
-            Location=data['location'],
-            Kind=data['kind'],
-            CreationDate=data['properties']['creationDate'],
-            DatabaseId=data['properties']['databaseId'],
-            MaxSizeBytes=data['properties']['maxSizeBytes'],
-            LicenseType=data['properties']['licenseType'],
-            SecondaryLocation=data['properties']['defaultSecondaryLocation'],
-            ElasticPoolId=data['properties']['elasticPoolId'],
-            Collation=data['properties']['collation'],
-            FailoverGroupId=data['properties']['failoverGroupId'],
-            RDDId=data['properties']['restorableDroppedDatabaseId'],
-            RecoverableDbId=data['properties']['recoverableDatabaseId'],
-            ServerId=data['server_id'],
+            Id=database['id'],
+            Name=database['name'],
+            Location=database['location'],
+            Kind=database['kind'],
+            CreationDate=database['creation_date'],
+            DatabaseId=database['database_id'],
+            MaxSizeBytes=database['max_size_bytes'],
+            LicenseType=database.get('licenseType'),
+            SecondaryLocation=database['default_secondary_location'],
+            ElasticPoolId=database.get('elasticPoolId'),
+            Collation=database['collation'],
+            FailoverGroupId=database.get('failoverGroupId'),
+            RDDId=database.get('restorableDroppedDatabaseId'),
+            RecoverableDbId=database.get('recoverableDatabaseId'),
+            ServerId=database['server_id'],
             azure_update_tag=update_tag,
         )
 
@@ -490,7 +489,7 @@ def get_database_details(credentials, subscription_id, databases):
 def get_replication_links(credentials, subscription_id, database):
     try:
         client = get_client(credentials, subscription_id)
-        replication_links = list(client.replication_links.list_by_database(database['resource_group_name'], database['server_name'], database['name']))
+        replication_links = list(map(lambda x: x.as_dict(), client.replication_links.list_by_database(database['resource_group_name'], database['server_name'], database['name'])))
 
     except Exception as e:
         logger.warning("Error while retrieving replication links - {}".format(e))
@@ -503,6 +502,7 @@ def get_replication_links(credentials, subscription_id, database):
 def get_db_threat_detection_policies(credentials, subscription_id, database):
     try:
         client = get_client(credentials, subscription_id)
+        # TODO: Debug error - dictionary update sequence element #0 has length 1; 2 is required
         db_threat_detection_policies = client.database_threat_detection_policies.get(database['resource_group_name'], database['server_name'], database['name'], 'default')
     except Exception as e:
         logger.warning("Error while retrieving database threat detection policies - {}".format(e))
@@ -515,7 +515,7 @@ def get_db_threat_detection_policies(credentials, subscription_id, database):
 def get_restore_points(credentials, subscription_id, database):
     try:
         client = get_client(credentials, subscription_id)
-        restore_points_list = list(client.restore_points.list_by_database(database['resource_group_name'], database['server_name'], database['name']))
+        restore_points_list = list(map(lambda x: x.as_dict(), client.restore_points.list_by_database(database['resource_group_name'], database['server_name'], database['name'])))
 
     except Exception as e:
         logger.warning("Error while retrieving restore points - {}".format(e))
@@ -528,6 +528,7 @@ def get_restore_points(credentials, subscription_id, database):
 def get_transparent_data_encryptions(credentials, subscription_id, database):
     try:
         client = get_client(credentials, subscription_id)
+        # TODO: Debug error - dictionary update sequence element #0 has length 1; 2 is required
         transparent_data_encryptions_list = client.transparent_data_encryptions.get(database['resource_group_name'], database['server_name'], database['name'], 'current')
     except Exception as e:
         logger.warning("Error while retrieving transparent data encryptions - {}".format(e))
@@ -545,27 +546,22 @@ def load_database_details(neo4j_session, details, update_tag):
 
     for databaseId, replication_link, db_threat_detection_policy, restore_point, transparent_data_encryption in details:
         if len(replication_link) > 0:
-            replication_link['database_id'] = databaseId
-            replication_links.extend(replication_link)
+            for link in replication_link:
+                link['database_id'] = databaseId
+                replication_links.append(link)
 
         if len(db_threat_detection_policy) > 0:
             db_threat_detection_policy['database_id'] = databaseId
-            threat_detection_policies.extend(db_threat_detection_policy)
+            threat_detection_policies.append(db_threat_detection_policy)
 
         if len(restore_point) > 0:
-            restore_point['database_id'] = databaseId
-            restore_points.extend(restore_point)
+            for point in restore_point:
+                point['database_id'] = databaseId
+                restore_points.append(point)
 
         if len(transparent_data_encryption) > 0:
             transparent_data_encryption['database_id'] = databaseId
-            encryptions_list.extend(transparent_data_encryption)
-
-    # # cleanup existing policy properties
-    # run_cleanup_job(
-    #     'aws_kms_details.json',
-    #     neo4j_session,
-    #     {'UPDATE_TAG': update_tag, 'AWS_ID': aws_account_id},
-    # )
+            encryptions_list.append(transparent_data_encryption)
 
     _load_replication_links(neo4j_session, replication_links, update_tag)
     _load_db_threat_detection_policies(neo4j_session, threat_detection_policies, update_tag)
@@ -597,8 +593,7 @@ def _load_replication_links(neo4j_session, replication_links, update_tag):
     SET r.lastupdated = {azure_update_tag}
     """
 
-    for link in replication_links:
-        data = link.as_dict()
+    for data in replication_links:
         neo4j_session.run(
             ingest_replication_links,
             LinkId=data['id'],
@@ -642,21 +637,20 @@ def _load_db_threat_detection_policies(neo4j_session, threat_detection_policies,
     """
 
     for policy in threat_detection_policies:
-        data = policy.as_dict()
         neo4j_session.run(
             ingest_threat_detection_policies,
-            PolicyId=data['id'],
-            Name=data['name'],
-            Location=data['location'],
-            Kind=data['kind'],
-            EmailAdmins=data['properties']['emailAccountAdmins'],
-            EmailAddresses=data['properties']['emailAddresses'],
-            RetentionDays=data['properties']['retentionDays'],
-            State=data['properties']['state'],
-            StorageEndpoint=data['properties']['storageEndpoint'],
-            UseServerDefault=data['properties']['useServerDefault'],
-            DisabledAlerts=data['properties']['disabledAlerts'],
-            DatabaseId=data['database_id'],
+            PolicyId=policy['id'],
+            Name=policy['name'],
+            Location=policy['location'],
+            Kind=policy['kind'],
+            EmailAdmins=policy['properties']['emailAccountAdmins'],
+            EmailAddresses=policy['properties']['emailAddresses'],
+            RetentionDays=policy['properties']['retentionDays'],
+            State=policy['properties']['state'],
+            StorageEndpoint=policy['properties']['storageEndpoint'],
+            UseServerDefault=policy['properties']['useServerDefault'],
+            DisabledAlerts=policy['properties']['disabledAlerts'],
+            DatabaseId=policy['database_id'],
             azure_update_tag=update_tag,
         )
 
@@ -679,16 +673,15 @@ def _load_restore_points(neo4j_session, restore_points, update_tag):
     """
 
     for point in restore_points:
-        data = point.as_dict()
         neo4j_session.run(
             ingest_restore_points,
-            PointId=data['id'],
-            Name=data['name'],
-            Location=data['location'],
-            RestoreDate=data['properties']['earliestRestoreDate'],
-            RestorePointType=data['properties']['restorePointType'],
-            CreationDate=data['properties']['restorePointCreationDate'],
-            DatabaseId=data['database_id'],
+            PointId=point['id'],
+            Name=point['name'],
+            Location=point['location'],
+            RestoreDate=point['earliest_restore_date'],
+            RestorePointType=point['restore_point_type'],
+            CreationDate=point.get('restore_point_creation_date'),
+            DatabaseId=point['database_id'],
             azure_update_tag=update_tag,
         )
 
@@ -709,20 +702,20 @@ def _load_transparent_data_encryptions(neo4j_session, encryptions_list, update_t
     """
 
     for encryption in encryptions_list:
-        data = encryption.as_dict()
         neo4j_session.run(
             ingest_data_encryptions,
-            TAEId=data['id'],
-            Name=data['name'],
-            Location=data['location'],
-            Status=data['properties']['status'],
-            DatabaseId=data['database_id'],
+            TAEId=encryption['id'],
+            Name=encryption['name'],
+            Location=encryption['location'],
+            Status=encryption['properties']['status'],
+            DatabaseId=encryption['database_id'],
             azure_update_tag=update_tag,
         )
 
 
 @timeit
-def cleanup_azure_sql_servers(neo4j_session, common_job_parameters):
+def cleanup_azure_sql_servers(neo4j_session, subscription_id, common_job_parameters):
+    common_job_parameters['AZURE_SUBSCRIPTION_ID'] = subscription_id
     run_cleanup_job('azure_sql_server_cleanup.json', neo4j_session, common_job_parameters)
 
 
@@ -732,4 +725,4 @@ def sync(neo4j_session, credentials, subscription_id, sync_tag, common_job_param
     server_list = get_server_list(credentials, subscription_id)
     load_server_data(neo4j_session, subscription_id, server_list, sync_tag)
     sync_server_details(neo4j_session, credentials, subscription_id, server_list, sync_tag)
-    cleanup_azure_sql_servers(neo4j_session, common_job_parameters)
+    cleanup_azure_sql_servers(neo4j_session, subscription_id, common_job_parameters)
