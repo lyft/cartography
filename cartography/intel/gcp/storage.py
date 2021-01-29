@@ -100,7 +100,7 @@ def load_gcp_buckets(neo4j_session, buckets, gcp_update_tag):
     :param neo4j session: The Neo4j session object
 
     :type buckets: list
-    :param buckets: List of GCP Storage Buckets to injest
+    :param buckets: List of GCP Storage Buckets to ingest
 
     :type gcp_update_tag: timestamp
     :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
