@@ -136,7 +136,9 @@ def get_file_services(credentials, subscription_id, storage_account):
 def get_blob_services(credentials, subscription_id, storage_account):
     try:
         client = get_client(credentials, subscription_id)
-        blob_service_list = client.blob_services.list(storage_account['resourceGroup'], storage_account['name']).as_dict()['value']
+        blob_service_list = list(map(lambda x: x.as_dict(), client.blob_services.list(storage_account['resourceGroup'], storage_account['name'])))
+
+        # blob_service_list = client.blob_services.list(storage_account['resourceGroup'], storage_account['name']).as_dict()['value']
 
     except Exception as e:
         logger.warning("Error while retrieving blob services list - {}".format(e))
@@ -309,7 +311,7 @@ def get_queue_services_details(credentials, subscription_id, queue_services):
 def get_queues(credentials, subscription_id, queue_service):
     try:
         client = get_client(credentials, subscription_id)
-        queues = list(client.queue.list(queue_service['resource_group_name'], queue_service['storage_account_name']))
+        queues = list(map(lambda x: x.as_dict(), client.queue.list(queue_service['resource_group_name'], queue_service['storage_account_name'])))
 
     except Exception as e:
         logger.warning("Error while retrieving queues - {}".format(e))
@@ -373,7 +375,7 @@ def get_table_services_details(credentials, subscription_id, table_services):
 def get_tables(credentials, subscription_id, table_service):
     try:
         client = get_client(credentials, subscription_id)
-        tables = list(client.table.list(table_service['resource_group_name'], table_service['storage_account_name']))
+        tables = list(map(lambda x: x.as_dict(), client.table.list(table_service['resource_group_name'], table_service['storage_account_name'])))
 
     except Exception as e:
         logger.warning("Error while retrieving tables - {}".format(e))
@@ -439,7 +441,7 @@ def get_file_services_details(credentials, subscription_id, file_services):
 def get_shares(credentials, subscription_id, file_service):
     try:
         client = get_client(credentials, subscription_id)
-        shares = list(client.file_shares.list(file_service['resource_group_name'], file_service['storage_account_name']))
+        shares = list(map(lambda x: x.as_dict(), client.file_shares.list(file_service['resource_group_name'], file_service['storage_account_name'])))
 
     except Exception as e:
         logger.warning("Error while retrieving file shares - {}".format(e))
@@ -526,7 +528,7 @@ def get_blob_services_details(credentials, subscription_id, blob_services):
 def get_blob_containers(credentials, subscription_id, blob_service):
     try:
         client = get_client(credentials, subscription_id)
-        blob_containers = list(client.blob_containers.list(blob_service['resource_group_name'], blob_service['storage_account_name']))
+        blob_containers = list(map(lambda x: x.as_dict(), client.blob_containers.list(blob_service['resource_group_name'], blob_service['storage_account_name'])))
 
     except Exception as e:
         logger.warning("Error while retrieving blob_containers - {}".format(e))
@@ -564,7 +566,7 @@ def _load_blob_containers(neo4j_session, blob_containers, update_tag):
     bc.lastmodifiedtime = {LastModifiedTime},
     bc.remainingretentiondays = {RemainingRetentionDays},
     bc.version = {Version},
-    bc.immutabilitypolicystate = {ImmutatbilityPolicyState},
+    bc.immutabilitypolicy = {HasImmutatbilityPolicy},
     bc.haslegalhold = {HasLegalHold},
     bc.leaseduration = {LeaseDuration}
     WITH bc
@@ -580,18 +582,18 @@ def _load_blob_containers(neo4j_session, blob_containers, update_tag):
             ContainerId=container['id'],
             Name=container['name'],
             Type=container['type'],
-            Deleted=container['properties']['deleted'],
-            DeletedTime=container['properties']['deletedTime'],
-            DefaultEncryptionScope=container['properties']['defaultEncryptionScope'],
-            PublicAccess=container['properties']['publicAccess'],
-            LeaseStatus=container['properties']['leaseStatus'],
-            LeaseState=container['properties']['leaseState'],
-            LastModifiedTime=container['properties']['lastModifiedTime'],
-            RemainingRetentionDays=container['properties']['remainingRetentionDays'],
-            Version=container['properties']['version'],
-            ImmutatbilityPolicyState=container['properties']['immutabilityPolicy']['state'],
-            HasLegalHold=container['properties']['hasLegalHold'],
-            LeaseDuration=container['properties']['leaseDuration'],
+            Deleted=container['deleted'],
+            DeletedTime=container.get('deletedTime'),
+            DefaultEncryptionScope=container['default_encryption_scope'],
+            PublicAccess=container['public_access'],
+            LeaseStatus=container['lease_status'],
+            LeaseState=container['lease_state'],
+            LastModifiedTime=container['last_modified_time'],
+            RemainingRetentionDays=container['remaining_retention_days'],
+            Version=container.get('version'),
+            HasImmutatbilityPolicy=container['has_immutability_policy'],
+            HasLegalHold=container['has_legal_hold'],
+            LeaseDuration=container.get('leaseDuration'),
             ServiceId=container['service_id'],
             azure_update_tag=update_tag,
         )
