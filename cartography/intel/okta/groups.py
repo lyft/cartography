@@ -167,9 +167,9 @@ def _load_okta_groups(neo4j_session, okta_org_id, group_list, okta_update_tag):
     :return: Nothing
     """
     ingest_statement = """
-    MATCH (org:OktaOrganization{id: {ORG_ID}})
+    MATCH (org:OktaOrganization{id: $ORG_ID})
     WITH org
-    UNWIND {GROUP_LIST} as group_data
+    UNWIND $GROUP_LIST as group_data
     MERGE (new_group:OktaGroup{id: group_data.id})
     ON CREATE SET new_group.firstseen = timestamp()
     SET new_group.name = group_data.name,
@@ -178,11 +178,11 @@ def _load_okta_groups(neo4j_session, okta_org_id, group_list, okta_update_tag):
     new_group.dn = group_data.dn,
     new_group.windows_domain_qualified_name = group_data.windows_domain_qualified_name,
     new_group.external_id = group_data.external_id,
-    new_group.lastupdated = {okta_update_tag}
+    new_group.lastupdated = $okta_update_tag
     WITH new_group, org
     MERGE (org)-[org_r:RESOURCE]->(new_group)
     ON CREATE SET org_r.firstseen = timestamp()
-    SET org_r.lastupdated = {okta_update_tag}
+    SET org_r.lastupdated = $okta_update_tag
     """
 
     neo4j_session.run(
@@ -204,14 +204,14 @@ def _load_okta_group_members(neo4j_session, group_id, member_list, okta_update_t
     :return: Nothing
     """
     ingest = """
-    MATCH (group:OktaGroup{id: {GROUP_ID}})
+    MATCH (group:OktaGroup{id: $GROUP_ID})
     WITH group
-    UNWIND {MEMBER_LIST} as member_id
+    UNWIND $MEMBER_LIST as member_id
     MATCH (user:OktaUser{id: member_id})
     WITH group, user
     MERGE (user)-[r:MEMBER_OF_OKTA_GROUP]->(group)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {okta_update_tag}
+    SET r.lastupdated = $okta_update_tag
     """
 
     neo4j_session.run(

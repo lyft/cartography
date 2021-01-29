@@ -36,7 +36,7 @@ def test_permission_relationships_file_arguments():
 
 
 def _create_base_account(neo4j_session):
-    neo4j_session.run("MERGE (a:AWSAccount{id:{AccountId}})", AccountId=TEST_ACCOUNT_ID)
+    neo4j_session.run("MERGE (a:AWSAccount{id:$AccountId})", AccountId=TEST_ACCOUNT_ID)
 
 
 def test_load_users(neo4j_session):
@@ -130,7 +130,7 @@ def test_map_permissions(neo4j_session):
     # Insert an s3 bucket to map
     neo4j_session.run(
         """
-    MERGE (s3:S3Bucket{arn:'arn:aws:s3:::test_bucket'})<-[:RESOURCE]-(a:AWSAccount{id:{AccountId}})
+    MERGE (s3:S3Bucket{arn:'arn:aws:s3:::test_bucket'})<-[:RESOURCE]-(a:AWSAccount{id:$AccountId})
     """, AccountId=TEST_ACCOUNT_ID,
     )
 

@@ -91,7 +91,7 @@ def test_network_interface_relationships(neo4j_session):
 
 
 def test_network_interface_to_account(neo4j_session):
-    neo4j_session.run('MERGE (:AWSAccount{id:{ACC_ID}})', ACC_ID=TEST_ACCOUNT_ID)
+    neo4j_session.run('MERGE (:AWSAccount{id:$ACC_ID})', ACC_ID=TEST_ACCOUNT_ID)
 
     data = tests.data.aws.ec2.network_interfaces.DESCRIBE_NETWORK_INTERFACES
     cartography.intel.aws.ec2.network_interfaces.load(

@@ -114,15 +114,15 @@ def _load_s3_acls(neo4j_session, acls, aws_account_id, update_tag):
     Ingest S3 ACL into neo4j.
     """
     ingest_acls = """
-    UNWIND {acls} AS acl
+    UNWIND $acls AS acl
     MERGE (a:S3Acl{id: acl.id})
     ON CREATE SET a.firstseen = timestamp(), a.owner = acl.owner, a.ownerid = acl.ownerid, a.type = acl.type,
     a.displayname = acl.displayname, a.granteeid = acl.granteeid, a.uri = acl.uri, a.permission = acl.permission
-    SET a.lastupdated = {UpdateTag}
+    SET a.lastupdated = $UpdateTag
     WITH a,acl MATCH (s3:S3Bucket{id: acl.bucket})
     MERGE (a)-[r:APPLIES_TO]->(s3)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {UpdateTag}
+    SET r.lastupdated = $UpdateTag
     """
 
     neo4j_session.run(
@@ -147,11 +147,11 @@ def _load_s3_policies(neo4j_session, policies, update_tag):
     """
     # NOTE we use the coalesce function so appending works when the value is null initially
     ingest_policies = """
-    UNWIND {policies} AS policy
+    UNWIND $policies AS policy
     MATCH (s:S3Bucket) where s.name = policy.bucket
     SET s.anonymous_access = (coalesce(s.anonymous_access, false) OR policy.internet_accessible),
     s.anonymous_actions = coalesce(s.anonymous_actions, []) + policy.accessible_actions,
-    s.lastupdated = {UpdateTag}
+    s.lastupdated = $UpdateTag
     """
 
     neo4j_session.run(
@@ -163,7 +163,7 @@ def _load_s3_policies(neo4j_session, policies, update_tag):
 
 def _set_default_values(neo4j_session, aws_account_id):
     set_defaults = """
-    MATCH (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(s:S3Bucket) where NOT EXISTS(s.anonymous_actions)
+    MATCH (:AWSAccount{id: $AWS_ID})-[:RESOURCE]->(s:S3Bucket) where NOT EXISTS(s.anonymous_actions)
     SET s.anonymous_access = false, s.anonymous_actions = []
     """
 
@@ -333,15 +333,15 @@ def parse_acl(acl, bucket, aws_account_id):
 @timeit
 def load_s3_buckets(neo4j_session, data, current_aws_account_id, aws_update_tag):
     ingest_bucket = """
-    MERGE (bucket:S3Bucket{id:{BucketName}})
-    ON CREATE SET bucket.firstseen = timestamp(), bucket.creationdate = {CreationDate}
-    SET bucket.name = {BucketName}, bucket.region = {BucketRegion}, bucket.arn = {Arn},
-    bucket.lastupdated = {aws_update_tag}
+    MERGE (bucket:S3Bucket{id:$BucketName})
+    ON CREATE SET bucket.firstseen = timestamp(), bucket.creationdate = $CreationDate
+    SET bucket.name = $BucketName, bucket.region = $BucketRegion, bucket.arn = $Arn,
+    bucket.lastupdated = $aws_update_tag
     WITH bucket
-    MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (owner)-[r:RESOURCE]->(bucket)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
 
     # The owner data returned by the API maps to the aws account nickname and not the IAM user

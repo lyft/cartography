@@ -32,10 +32,10 @@ def load_network_interfaces(neo4j_session, data, region, aws_account_id, aws_upd
     """
     logger.debug("Loading %d network interfaces in %s.", len(data), region)
     ingest_network_interfaces = """
-    UNWIND {network_interfaces} AS network_interface
+    UNWIND $network_interfaces AS network_interface
         MERGE (netinf:NetworkInterface{id: network_interface.NetworkInterfaceId})
         ON CREATE SET netinf.firstseen = timestamp()
-        SET netinf.lastupdated = {aws_update_tag},
+        SET netinf.lastupdated = $aws_update_tag,
             netinf.mac_address = network_interface.MacAddress,
             netinf.description = network_interface.Description,
             netinf.private_ip_address = network_interface.PrivateIpAddress,
@@ -54,7 +54,7 @@ def load_network_interfaces(neo4j_session, data, region, aws_account_id, aws_upd
             MERGE (private_ip:EC2PrivateIp{id: network_interface.NetworkInterfaceId + ':'
                 + private_ip_address.PrivateIpAddress})
             ON CREATE SET private_ip.firstseen = timestamp()
-            SET private_ip.lastupdated = {aws_update_tag},
+            SET private_ip.lastupdated = $aws_update_tag,
                 private_ip.network_interface_id = network_interface.NetworkInterfaceId,
                 private_ip.primary = private_ip_address.Primary,
                 private_ip.private_ip_address = private_ip_address.PrivateIpAddress,
@@ -63,32 +63,32 @@ def load_network_interfaces(neo4j_session, data, region, aws_account_id, aws_upd
 
             MERGE (netinf)-[r:PRIVATE_IP_ADDRESS]->(private_ip)
             ON CREATE SET r.firstseen = timestamp()
-            SET r.lastupdated = {aws_update_tag}
+            SET r.lastupdated = $aws_update_tag
         WITH network_interface, netinf
 
         UNWIND network_interface.Groups AS security_group
             MERGE (sg:EC2SecurityGroup{id: security_group.GroupId})
             ON CREATE SET sg.firstseen = timestamp()
-            SET sg.lastupdated = {aws_update_tag}
+            SET sg.lastupdated = $aws_update_tag
             MERGE (netinf)-[r:MEMBER_OF_EC2_SECURITY_GROUP]->(sg)
             ON CREATE SET r.firstseen = timestamp()
-            SET r.lastupdated = {aws_update_tag}
+            SET r.lastupdated = $aws_update_tag
         WITH network_interface, netinf
 
-        MERGE (acc:AWSAccount{id: {aws_account_id}})
+        MERGE (acc:AWSAccount{id: $aws_account_id})
         ON CREATE SET acc.firstseen = timestamp()
-        SET acc.lastupdated = {aws_update_tag}
+        SET acc.lastupdated = $aws_update_tag
         MERGE (acc)-[r:RESOURCE]->(netinf)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {aws_update_tag}
+        SET r.lastupdated = $aws_update_tag
         WITH network_interface, netinf
 
         MERGE (snet:EC2Subnet{subnetid: network_interface.SubnetId})
         ON CREATE SET snet.firstseen = timestamp()
-        SET snet.lastupdated = {aws_update_tag}
+        SET snet.lastupdated = $aws_update_tag
         MERGE (netinf)-[r:PART_OF_SUBNET]->(snet)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {aws_update_tag}
+        SET r.lastupdated = $aws_update_tag
     """
     neo4j_session.run(
         ingest_network_interfaces, network_interfaces=data, aws_update_tag=aws_update_tag,
@@ -104,12 +104,12 @@ def load_network_interface_instance_relations(
     Creates (:EC2Instance)-[:NETWORK_INTERFACE]->(:NetworkInterface)
     """
     ingest_network_interface_instance_relations = """
-    UNWIND {instance_associations} AS instance_association
+    UNWIND $instance_associations AS instance_association
         MATCH (netinf:NetworkInterface{id: instance_association.netinf_id}),
             (instance:EC2Instance{id: instance_association.instance_id})
         MERGE (instance)-[r:NETWORK_INTERFACE]->(netinf)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {aws_update_tag}
+        SET r.lastupdated = $aws_update_tag
     """
     logger.debug("Attaching %d EC2 instances to network interfaces in %s.", len(instance_associations), region)
     neo4j_session.run(
@@ -124,12 +124,12 @@ def load_network_interface_elb_relations(neo4j_session, elb_associations, region
     Creates (:LoadBalancer)-[:NETWORK_INTERFACE]->(:NetworkInterface)
     """
     ingest_network_interface_elb_relations = """
-    UNWIND {elb_associations} AS elb_association
+    UNWIND $elb_associations AS elb_association
         MATCH (netinf:NetworkInterface{id: elb_association.netinf_id}),
             (elb:LoadBalancer{name: elb_association.elb_name})
         MERGE (elb)-[r:NETWORK_INTERFACE]->(netinf)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {aws_update_tag}
+        SET r.lastupdated = $aws_update_tag
     """
     logger.debug("Attaching %d ELBs to network interfaces in %s.", len(elb_associations), region)
     neo4j_session.run(
@@ -144,12 +144,12 @@ def load_network_interface_elbv2_relations(neo4j_session, elb_associations_v2, r
     Creates (:LoadBalancerV2)-[:NETWORK_INTERFACE]->(:NetworkInterface)
     """
     ingest_network_interface_elb2_relations = """
-    UNWIND {elb_associations} AS elb_association
+    UNWIND $elb_associations AS elb_association
         MATCH (netinf:NetworkInterface{id: elb_association.netinf_id}),
             (elb:LoadBalancerV2{id: elb_association.elb_id})
         MERGE (elb)-[r:NETWORK_INTERFACE]->(netinf)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {aws_update_tag}
+        SET r.lastupdated = $aws_update_tag
     """
     logger.debug("Attaching %d ELB V2s to network interfaces in %s.", len(elb_associations_v2), region)
     neo4j_session.run(
@@ -168,7 +168,7 @@ def load_network_interface_instance_to_subnet_relations(neo4j_session, aws_updat
     MATCH (i:EC2Instance)-[:NETWORK_INTERFACE]-(interface:NetworkInterface)-[:PART_OF_SUBNET]-(s:EC2Subnet)
     MERGE (i)-[r:PART_OF_SUBNET]->(s)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
     logger.debug("-> Instance to subnet")
     neo4j_session.run(
@@ -186,7 +186,7 @@ def load_network_interface_load_balancer_relations(neo4j_session, aws_update_tag
     MATCH (i:LoadBalancer)-[:NETWORK_INTERFACE]-(interface:NetworkInterface)-[:PART_OF_SUBNET]-(s:EC2Subnet)
     MERGE (i)-[r:PART_OF_SUBNET]->(s)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
     logger.debug("-> ELB to subnet")
     neo4j_session.run(
@@ -204,7 +204,7 @@ def load_network_interface_load_balancer_v2_relations(neo4j_session, aws_update_
     MATCH (i:LoadBalancerV2)-[:NETWORK_INTERFACE]-(interface:NetworkInterface)-[:PART_OF_SUBNET]-(s:EC2Subnet)
     MERGE (i)-[r:PART_OF_SUBNET]->(s)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
     logger.debug("-> ELBv2 to subnet")
     neo4j_session.run(

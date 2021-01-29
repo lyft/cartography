@@ -1,6 +1,6 @@
 import os
 
-import neobolt.exceptions
+import neo4j.exceptions
 import pytest
 from marshmallow import ValidationError
 
@@ -23,9 +23,9 @@ def test_get_state_detectors(neo4j_session):
         ["36", "37", ["38", "39", "40"]],
     ]
     ingest_nodes = """
-        MERGE (person:Person{test: {test}})
-        SET person.test2 = {test2},
-        person.test3 = {test3}
+        MERGE (person:Person{test: $test})
+        SET person.test2 = $test2,
+        person.test3 = $test3
         """
     for node in data:
         test = node[0]
@@ -79,9 +79,9 @@ def test_faulty_queries(neo4j_session):
         ["36", "37", ["38", "39", "40"]],
     ]
     ingest_nodes = """
-            MERGE (person:Person{test: {test}})
-            SET person.test2 = {test2},
-            person.test3 = {test3}
+            MERGE (person:Person{test: $test})
+            SET person.test2 = $test2,
+            person.test3 = $test3
             """
     for node in data:
         test = node[0]
@@ -99,7 +99,7 @@ def test_faulty_queries(neo4j_session):
     storage = FileSystem
 
     file_1 = "2019 - 01 - 01_00_00_02.json"
-    with pytest.raises(neobolt.exceptions.CypherSyntaxError):
+    with pytest.raises(neo4j.exceptions.CypherSyntaxError):
         get_query_state(neo4j_session, query_directory, state_serializer, storage, file_1)
 
     query_directory = "tests/data/test_update_detectors/invalid_template"

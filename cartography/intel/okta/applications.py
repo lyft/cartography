@@ -244,9 +244,9 @@ def _load_okta_applications(neo4j_session, okta_org_id, app_list, okta_update_ta
     :return: Nothing
     """
     ingest_statement = """
-    MATCH (org:OktaOrganization{id: {ORG_ID}})
+    MATCH (org:OktaOrganization{id: $ORG_ID})
     WITH org
-    UNWIND {APP_LIST} as app_data
+    UNWIND $APP_LIST as app_data
     MERGE (new_app:OktaApplication{id: app_data.id})
     ON CREATE SET new_app.firstseen = timestamp()
     SET new_app.name = app_data.name,
@@ -257,11 +257,11 @@ def _load_okta_applications(neo4j_session, okta_org_id, app_list, okta_update_ta
     new_app.activated = app_data.activated,
     new_app.features = app_data.features,
     new_app.sign_on_mode = app_data.sign_on_mode,
-    new_app.lastupdated = {okta_update_tag}
+    new_app.lastupdated = $okta_update_tag
     WITH org, new_app
     MERGE (org)-[org_r:RESOURCE]->(new_app)
     ON CREATE SET org_r.firstseen = timestamp()
-    SET org_r.lastupdated = {okta_update_tag}
+    SET org_r.lastupdated = $okta_update_tag
     """
 
     neo4j_session.run(
@@ -283,14 +283,14 @@ def _load_application_user(neo4j_session, app_id, user_list, okta_update_tag):
     :return: Nothing
     """
     ingest = """
-    MATCH (app:OktaApplication{id: {APP_ID}})
+    MATCH (app:OktaApplication{id: $APP_ID})
     WITH app
-    UNWIND {USER_LIST} as user_id
+    UNWIND $USER_LIST as user_id
     MATCH (user:OktaUser{id: user_id})
     WITH app, user
     MERGE (user)-[r:APPLICATION]->(app)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {okta_update_tag}
+    SET r.lastupdated = $okta_update_tag
     """
 
     neo4j_session.run(
@@ -312,14 +312,14 @@ def _load_application_group(neo4j_session, app_id, group_list, okta_update_tag):
     :return: Nothing
     """
     ingest = """
-    MATCH (app:OktaApplication{id: {APP_ID}})
+    MATCH (app:OktaApplication{id: $APP_ID})
     WITH app
-    UNWIND {GROUP_LIST} as group_id
+    UNWIND $GROUP_LIST as group_id
     MATCH (group:OktaGroup{id: group_id})
     WITH app, group
     MERGE (group)-[r:APPLICATION]->(app)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {okta_update_tag}
+    SET r.lastupdated = $okta_update_tag
     """
 
     neo4j_session.run(
@@ -343,17 +343,17 @@ def _load_application_reply_urls(neo4j_session, app_id, reply_urls, okta_update_
     if not reply_urls:
         return
     ingest = """
-    MATCH (app:OktaApplication{id: {APP_ID}})
+    MATCH (app:OktaApplication{id: $APP_ID})
     WITH app
-    UNWIND {URL_LIST} as url_list
+    UNWIND $URL_LIST as url_list
     MERGE (uri:ReplyUri{id: url_list})
     ON CREATE SET uri.firstseen = timestamp()
     SET uri.uri = url_list,
-    uri.lastupdated = {okta_update_tag}
+    uri.lastupdated = $okta_update_tag
     WITH app, uri
     MERGE (uri)<-[r:REPLYURI]-(app)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {okta_update_tag}
+    SET r.lastupdated = $okta_update_tag
     """
 
     neo4j_session.run(

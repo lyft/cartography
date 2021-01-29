@@ -46,7 +46,7 @@ def test_transform_and_load_vpcs(neo4j_session):
     cartography.intel.gcp.compute.load_gcp_vpcs(neo4j_session, vpc_list, TEST_UPDATE_TAG)
 
     query = """
-    MATCH(vpc:GCPVpc{id:{VpcId}})
+    MATCH(vpc:GCPVpc{id:$VpcId})
     RETURN vpc.id, vpc.partial_uri, vpc.auto_create_subnetworks
     """
     expected_vpc_id = 'projects/project-abc/global/networks/default'
@@ -283,7 +283,7 @@ def test_vpc_to_subnets(neo4j_session):
     _ensure_local_neo4j_has_test_vpc_data(neo4j_session)
     _ensure_local_neo4j_has_test_subnet_data(neo4j_session)
     query = """
-    MATCH(vpc:GCPVpc{id:{VpcId}})-[:RESOURCE]->(subnet:GCPSubnet)
+    MATCH(vpc:GCPVpc{id:$VpcId})-[:RESOURCE]->(subnet:GCPSubnet)
     RETURN vpc.id, subnet.id, subnet.region, subnet.gateway_address, subnet.ip_cidr_range,
     subnet.private_ip_google_access
     """
@@ -347,7 +347,7 @@ def test_nic_to_subnets(neo4j_session):
     _ensure_local_neo4j_has_test_subnet_data(neo4j_session)
     _ensure_local_neo4j_has_test_instance_data(neo4j_session)
     subnet_query = """
-    MATCH (nic:GCPNetworkInterface{id:{NicId}})-[:PART_OF_SUBNET]->(subnet:GCPSubnet)
+    MATCH (nic:GCPNetworkInterface{id:$NicId})-[:PART_OF_SUBNET]->(subnet:GCPSubnet)
     return nic.nic_id, nic.private_ip, subnet.id, subnet.gateway_address, subnet.ip_cidr_range
     """
     nodes = neo4j_session.run(
@@ -379,7 +379,7 @@ def test_instance_to_vpc(neo4j_session):
     _ensure_local_neo4j_has_test_instance_data(neo4j_session)
     instance_id1 = 'projects/project-abc/zones/europe-west2-b/instances/instance-1-test'
     query = """
-    MATCH (i:GCPInstance{id:{InstanceId}})-[r:MEMBER_OF_GCP_VPC]->(v:GCPVpc)
+    MATCH (i:GCPInstance{id:$InstanceId})-[r:MEMBER_OF_GCP_VPC]->(v:GCPVpc)
     RETURN i.id, v.id
     """
     nodes = neo4j_session.run(

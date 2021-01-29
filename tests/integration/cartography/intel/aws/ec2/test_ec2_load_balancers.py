@@ -16,21 +16,21 @@ def test_load_load_balancer_v2s(neo4j_session, *args):
     # an ec2instance and AWSAccount must exist
     neo4j_session.run(
         """
-        MERGE (ec2:EC2Instance{instanceid: {ec2_instance_id}})
+        MERGE (ec2:EC2Instance{instanceid: $ec2_instance_id})
         ON CREATE SET ec2.firstseen = timestamp()
-        SET ec2.lastupdated = {aws_update_tag}
+        SET ec2.lastupdated = $aws_update_tag
 
-        MERGE (aws:AWSAccount{id: {aws_account_id}})
+        MERGE (aws:AWSAccount{id: $aws_account_id})
         ON CREATE SET aws.firstseen = timestamp()
-        SET aws.lastupdated = {aws_update_tag}
+        SET aws.lastupdated = $aws_update_tag
 
-        MERGE (group:EC2SecurityGroup{groupid: {GROUP_ID_1}})
+        MERGE (group:EC2SecurityGroup{groupid: $GROUP_ID_1})
         ON CREATE SET group.firstseen = timestamp()
-        SET group.last_updated = {aws_update_tag}
+        SET group.last_updated = $aws_update_tag
 
-        MERGE (group2:EC2SecurityGroup{groupid: {GROUP_ID_2}})
+        MERGE (group2:EC2SecurityGroup{groupid: $GROUP_ID_2})
         ON CREATE SET group2.firstseen = timestamp()
-        SET group2.last_updated = {aws_update_tag}
+        SET group2.last_updated = $aws_update_tag
         """,
         ec2_instance_id=ec2_instance_id,
         aws_account_id=TEST_ACCOUNT_ID,
@@ -56,9 +56,9 @@ def test_load_load_balancer_v2s(neo4j_session, *args):
     # verify the db has (aa)-[r:RESOURCE]->(elbv2)-[r:ELBV2_LISTENER]->(l)
     nodes = neo4j_session.run(
         """
-        MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
-            -[r1:RESOURCE]->(elbv2:LoadBalancerV2{id: {ID}})
-            -[r2:ELBV2_LISTENER]->(l:ELBV2Listener{id: {LISTENER_ARN}})
+        MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
+            -[r1:RESOURCE]->(elbv2:LoadBalancerV2{id: $ID})
+            -[r2:ELBV2_LISTENER]->(l:ELBV2Listener{id: $LISTENER_ARN})
         RETURN aa.id, elbv2.id, l.id
         """,
         AWS_ACCOUNT_ID=TEST_ACCOUNT_ID,
@@ -90,9 +90,9 @@ def test_load_load_balancer_v2_listeners(neo4j_session, *args):
     load_balancer_id = 'asadfmyloadbalancerid'
     neo4j_session.run(
         """
-        MERGE (elbv2:LoadBalancerV2{id: {ID}})
+        MERGE (elbv2:LoadBalancerV2{id: $ID})
         ON CREATE SET elbv2.firstseen = timestamp()
-        SET elbv2.lastupdated = {aws_udpate_tag}
+        SET elbv2.lastupdated = $aws_udpate_tag
         """,
         ID=load_balancer_id,
         aws_udpate_tag=TEST_UPDATE_TAG,
@@ -109,7 +109,7 @@ def test_load_load_balancer_v2_listeners(neo4j_session, *args):
     # verify the db has (elbv2)-[r:ELBV2_LISTENER]->(l)
     nodes = neo4j_session.run(
         """
-        MATCH (elbv2:LoadBalancerV2{id: {ID}})-[r:ELBV2_LISTENER]->(l:ELBV2Listener{id: {LISTENER_ARN}})
+        MATCH (elbv2:LoadBalancerV2{id: $ID})-[r:ELBV2_LISTENER]->(l:ELBV2Listener{id: $LISTENER_ARN})
         RETURN elbv2.id, l.id
         """,
         ID=load_balancer_id,
@@ -141,17 +141,17 @@ def test_load_load_balancer_v2_target_groups(neo4j_session, *args):
     # an elbv2, ec2instance, and AWSAccount must exist or nothing will match
     neo4j_session.run(
         """
-        MERGE (elbv2:LoadBalancerV2{id: {load_balancer_id}})
+        MERGE (elbv2:LoadBalancerV2{id: $load_balancer_id})
         ON CREATE SET elbv2.firstseen = timestamp()
-        SET elbv2.lastupdated = {aws_update_tag}
+        SET elbv2.lastupdated = $aws_update_tag
 
-        MERGE (ec2:EC2Instance{instanceid: {ec2_instance_id}})
+        MERGE (ec2:EC2Instance{instanceid: $ec2_instance_id})
         ON CREATE SET ec2.firstseen = timestamp()
-        SET ec2.lastupdated = {aws_update_tag}
+        SET ec2.lastupdated = $aws_update_tag
 
-        MERGE (aws:AWSAccount{id: {aws_account_id}})
+        MERGE (aws:AWSAccount{id: $aws_account_id})
         ON CREATE SET aws.firstseen = timestamp()
-        SET aws.lastupdated = {aws_update_tag}
+        SET aws.lastupdated = $aws_update_tag
         """,
         load_balancer_id=load_balancer_id,
         ec2_instance_id=ec2_instance_id,
@@ -170,7 +170,7 @@ def test_load_load_balancer_v2_target_groups(neo4j_session, *args):
     # verify the db has (load_balancer_id)-[r:EXPOSE]->(instance)
     nodes = neo4j_session.run(
         """
-        MATCH (elbv2:LoadBalancerV2{id: {ID}})-[r:EXPOSE]->(instance:EC2Instance{instanceid: {INSTANCE_ID}})
+        MATCH (elbv2:LoadBalancerV2{id: $ID})-[r:EXPOSE]->(instance:EC2Instance{instanceid: $INSTANCE_ID})
         RETURN elbv2.id, instance.instanceid
         """,
         ID=load_balancer_id,
@@ -198,9 +198,9 @@ def test_load_load_balancer_v2_subnets(neo4j_session, *args):
     load_balancer_id = 'asadfmyloadbalancerid'
     neo4j_session.run(
         """
-        MERGE (elbv2:LoadBalancerV2{id: {ID}})
+        MERGE (elbv2:LoadBalancerV2{id: $ID})
         ON CREATE SET elbv2.firstseen = timestamp()
-        SET elbv2.lastupdated = {aws_udpate_tag}
+        SET elbv2.lastupdated = $aws_udpate_tag
         """,
         ID=load_balancer_id,
         aws_udpate_tag=TEST_UPDATE_TAG,

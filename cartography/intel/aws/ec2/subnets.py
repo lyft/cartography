@@ -23,10 +23,10 @@ def get_subnet_data(boto3_session, region):
 def load_subnets(neo4j_session, data, region, aws_account_id, aws_update_tag):
 
     ingest_subnets = """
-    UNWIND {subnets} as subnet
+    UNWIND $subnets as subnet
     MERGE (snet:EC2Subnet{subnetid: subnet.SubnetId})
     ON CREATE SET snet.firstseen = timestamp()
-    SET snet.lastupdated = {aws_update_tag}, snet.name = subnet.CidrBlock, snet.cidr_block = subnet.CidrBlock,
+    SET snet.lastupdated = $aws_update_tag, snet.name = subnet.CidrBlock, snet.cidr_block = subnet.CidrBlock,
     snet.available_ip_address_count = subnet.AvailableIpAddressCount, snet.default_for_az = subnet.DefaultForAz,
     snet.map_customer_owned_ip_on_launch = subnet.MapCustomerOwnedIpOnLaunch,
     snet.map_public_ip_on_launch = subnet.MapPublicIpOnLaunch, snet.subnet_arn = subnet.SubnetArn,
@@ -35,19 +35,19 @@ def load_subnets(neo4j_session, data, region, aws_account_id, aws_update_tag):
     """
 
     ingest_subnet_vpc_relations = """
-    UNWIND {subnets} as subnet
+    UNWIND $subnets as subnet
     MATCH (snet:EC2Subnet{subnetid: subnet.SubnetId}), (vpc:AWSVpc{id: subnet.VpcId})
     MERGE (snet)-[r:MEMBER_OF_AWS_VPC]->(vpc)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
 
     ingest_subnet_aws_account_relations = """
-    UNWIND {subnets} as subnet
-    MATCH (snet:EC2Subnet{subnetid: subnet.SubnetId}), (aws:AWSAccount{id: {aws_account_id}})
+    UNWIND $subnets as subnet
+    MATCH (snet:EC2Subnet{subnetid: subnet.SubnetId}), (aws:AWSAccount{id: $aws_account_id})
     MERGE (aws)-[r:RESOURCE]->(snet)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
 
     neo4j_session.run(

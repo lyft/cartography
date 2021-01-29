@@ -120,9 +120,9 @@ def _load_okta_users(neo4j_session, okta_org_id, user_list, okta_update_tag):
     """
 
     ingest_statement = """
-    MATCH (org:OktaOrganization{id: {ORG_ID}})
+    MATCH (org:OktaOrganization{id: $ORG_ID})
     WITH org
-    UNWIND {USER_LIST} as user_data
+    UNWIND $USER_LIST as user_data
     MERGE (new_user:OktaUser{id: user_data.id})
     ON CREATE SET new_user.firstseen = timestamp()
     SET new_user.first_name = user_data.first_name,
@@ -137,18 +137,18 @@ def _load_okta_users(neo4j_session, okta_org_id, user_list, okta_update_tag):
     new_user.okta_last_updated = user_data.okta_last_updated,
     new_user.password_changed = user_data.password_changed,
     new_user.transition_to_status = user_data.transition_to_status,
-    new_user.lastupdated = {okta_update_tag}
+    new_user.lastupdated = $okta_update_tag
     WITH new_user, org
     MERGE (org)-[org_r:RESOURCE]->(new_user)
     ON CREATE SET org_r.firstseen = timestamp()
-    SET org_r.lastupdated = {okta_update_tag}
+    SET org_r.lastupdated = $okta_update_tag
     WITH new_user
     MERGE (h:Human{email: new_user.email})
     ON CREATE SET new_user.firstseen = timestamp()
-    SET h.lastupdated = {okta_update_tag}
+    SET h.lastupdated = $okta_update_tag
     MERGE (h)-[r:IDENTITY_OKTA]->(new_user)
     ON CREATE SET new_user.firstseen = timestamp()
-    SET h.lastupdated = {okta_update_tag}
+    SET h.lastupdated = $okta_update_tag
     """
 
     neo4j_session.run(

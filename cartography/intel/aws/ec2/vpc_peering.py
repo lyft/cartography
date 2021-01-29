@@ -78,47 +78,47 @@ def load_ec2_vpc_peering(neo4j_session, data, aws_update_tag):
     #
     # We skip the region field here as we may not know which one it's related to in case of foreign VPC
     ingest_peering = """
-    MATCH (accepter_block:AWSIpv4CidrBlock{id: {AccepterVpcId} + '|' + {AccepterCidrBlock}})
+    MATCH (accepter_block:AWSIpv4CidrBlock{id: $AccepterVpcId + '|' + $AccepterCidrBlock})
     WITH accepter_block
-    MERGE (requestor_account:AWSAccount{id: {RequesterOwnerId}})
+    MERGE (requestor_account:AWSAccount{id: $RequesterOwnerId})
     ON CREATE SET requestor_account.firstseen = timestamp(), requestor_account.foreign = true
-    SET requestor_account.lastupdated = {aws_update_tag}
+    SET requestor_account.lastupdated = $aws_update_tag
     WITH accepter_block, requestor_account
-    MERGE (requestor_vpc:AWSVpc{id: {RequestorVpcId}})
-    ON CREATE SET requestor_vpc.firstseen = timestamp(), requestor_vpc.vpcid = {RequestorVpcId}
-    SET requestor_vpc.lastupdated = {aws_update_tag}
+    MERGE (requestor_vpc:AWSVpc{id: $RequestorVpcId})
+    ON CREATE SET requestor_vpc.firstseen = timestamp(), requestor_vpc.vpcid = $RequestorVpcId
+    SET requestor_vpc.lastupdated = $aws_update_tag
     WITH accepter_block, requestor_account, requestor_vpc
     MERGE (requestor_account)-[resource:RESOURCE]->(requestor_vpc)
     ON CREATE SET resource.firstseen = timestamp()
-    SET resource.lastupdated = {aws_update_tag}
+    SET resource.lastupdated = $aws_update_tag
     WITH accepter_block, requestor_vpc
-    MERGE (requestor_block:AWSCidrBlock:AWSIpv4CidrBlock{id: {RequestorVpcId} + '|' + {RequestorVpcCidrBlock}})
-    ON CREATE SET requestor_block.firstseen = timestamp(), requestor_block.cidr_block = {RequestorVpcCidrBlock}
-    SET requestor_block.lastupdated = {aws_update_tag}
+    MERGE (requestor_block:AWSCidrBlock:AWSIpv4CidrBlock{id: $RequestorVpcId + '|' + $RequestorVpcCidrBlock})
+    ON CREATE SET requestor_block.firstseen = timestamp(), requestor_block.cidr_block = $RequestorVpcCidrBlock
+    SET requestor_block.lastupdated = $aws_update_tag
     WITH accepter_block, requestor_vpc, requestor_block
     MERGE (requestor_vpc)-[r:BLOCK_ASSOCIATION]->(requestor_block)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     WITH accepter_block, requestor_block
     MERGE (accepter_block)<-[r2:VPC_PEERING]->(requestor_block)
     ON CREATE SET r2.firstseen = timestamp()
-    SET r2.status_code = {StatusCode},
-    r2.status_message = {StatusMessage},
-    r2.connection_id = {ConnectionId},
-    r2.expiration_time = {ExpirationTime},
-    r2.lastupdated = {aws_update_tag}
+    SET r2.status_code = $StatusCode,
+    r2.status_message = $StatusMessage,
+    r2.connection_id = $ConnectionId,
+    r2.expiration_time = $ExpirationTime,
+    r2.lastupdated = $aws_update_tag
     """
 
     ingest_peering_block = """
-    MATCH (accepter_block:AWSIpv4CidrBlock{id: {AccepterVpcId} + '|' + {AccepterCidrBlock}}),
-    (requestor_block:AWSCidrBlock:AWSIpv4CidrBlock{id: {RequestorVpcId} + '|' + {RequestorVpcCidrBlock}})
+    MATCH (accepter_block:AWSIpv4CidrBlock{id: $AccepterVpcId + '|' + $AccepterCidrBlock}),
+    (requestor_block:AWSCidrBlock:AWSIpv4CidrBlock{id: $RequestorVpcId + '|' + $RequestorVpcCidrBlock})
     MERGE (accepter_block)<-[r:VPC_PEERING]->(requestor_block)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.status_code = {StatusCode},
-    r.status_message = {StatusMessage},
-    r.connection_id = {ConnectionId},
-    r.expiration_time = {ExpirationTime},
-    r.lastupdated = {aws_update_tag}
+    SET r.status_code = $StatusCode,
+    r.status_message = $StatusMessage,
+    r.connection_id = $ConnectionId,
+    r.expiration_time = $ExpirationTime,
+    r.lastupdated = $aws_update_tag
     """
     for peering in data:
         if peering["Status"]["Code"] == "active":

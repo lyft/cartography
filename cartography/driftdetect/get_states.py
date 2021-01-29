@@ -2,9 +2,11 @@ import logging
 import os.path
 import time
 
-import neobolt.exceptions
 from marshmallow import ValidationError
 from neo4j import GraphDatabase
+from neo4j.exceptions import AuthError
+from neo4j.exceptions import CypherSyntaxError
+from neo4j.exceptions import ServiceUnavailable
 
 from cartography.driftdetect.add_shortcut import add_shortcut
 from cartography.driftdetect.serializers import ShortcutSchema
@@ -34,7 +36,7 @@ def run_get_states(config):
             config.neo4j_uri,
             auth=neo4j_auth,
         )
-    except neobolt.exceptions.ServiceUnavailable as e:
+    except ServiceUnavailable as e:
         logger.debug("Error occurred during Neo4j connect.", exc_info=True)
         logger.error(
             (
@@ -45,7 +47,7 @@ def run_get_states(config):
             e,
         )
         return
-    except neobolt.exceptions.AuthError as e:
+    except AuthError as e:
         logger.debug("Error occurred during Neo4j auth.", exc_info=True)
         if not neo4j_auth:
             logger.error(
@@ -86,7 +88,7 @@ def run_get_states(config):
                 logger.exception(msg)
             except FileNotFoundError as err:
                 logger.exception(err)
-            except neobolt.exceptions.CypherSyntaxError as err:
+            except CypherSyntaxError as err:
                 logger.exception(err)
 
 

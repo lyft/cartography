@@ -28,45 +28,45 @@ def load_rds_instances(neo4j_session, data, region, current_aws_account_id, aws_
     Ingest the RDS instances to neo4j and link them to necessary nodes.
     """
     ingest_rds_instance = """
-    MERGE (rds:RDSInstance{id: {DBInstanceArn}})
+    MERGE (rds:RDSInstance{id: $DBInstanceArn})
     ON CREATE SET rds.firstseen = timestamp()
-    SET rds.arn = {DBInstanceArn},
-    rds.db_instance_identifier = {DBInstanceIdentifier},
-    rds.db_instance_class = {DBInstanceClass},
-    rds.engine = {Engine},
-    rds.master_username = {MasterUsername},
-    rds.db_name = {DBName},
-    rds.instance_create_time = {InstanceCreateTime},
-    rds.availability_zone = {AvailabilityZone},
-    rds.multi_az = {MultiAZ},
-    rds.engine_version = {EngineVersion},
-    rds.publicly_accessible = {PubliclyAccessible},
-    rds.db_cluster_identifier = {DBClusterIdentifier},
-    rds.storage_encrypted = {StorageEncrypted},
-    rds.kms_key_id = {KmsKeyId},
-    rds.dbi_resource_id = {DbiResourceId},
-    rds.ca_certificate_identifier = {CACertificateIdentifier},
-    rds.enhanced_monitoring_resource_arn = {EnhancedMonitoringResourceArn},
-    rds.monitoring_role_arn = {MonitoringRoleArn},
-    rds.performance_insights_enabled = {PerformanceInsightsEnabled},
-    rds.performance_insights_kms_key_id = {PerformanceInsightsKMSKeyId},
-    rds.region = {Region},
-    rds.deletion_protection = {DeletionProtection},
-    rds.preferred_backup_window = {PreferredBackupWindow},
-    rds.latest_restorable_time = {LatestRestorableTime},
-    rds.preferred_maintenance_window = {PreferredMaintenanceWindow},
-    rds.backup_retention_period = {BackupRetentionPeriod},
-    rds.endpoint_address = {EndpointAddress},
-    rds.endpoint_hostedzoneid = {EndpointHostedZoneId},
-    rds.endpoint_port = {EndpointPort},
-    rds.iam_database_authentication_enabled = {IAMDatabaseAuthenticationEnabled},
-    rds.auto_minor_version_upgrade = {AutoMinorVersionUpgrade},
-    rds.lastupdated = {aws_update_tag}
+    SET rds.arn = $DBInstanceArn,
+    rds.db_instance_identifier = $DBInstanceIdentifier,
+    rds.db_instance_class = $DBInstanceClass,
+    rds.engine = $Engine,
+    rds.master_username = $MasterUsername,
+    rds.db_name = $DBName,
+    rds.instance_create_time = $InstanceCreateTime,
+    rds.availability_zone = $AvailabilityZone,
+    rds.multi_az = $MultiAZ,
+    rds.engine_version = $EngineVersion,
+    rds.publicly_accessible = $PubliclyAccessible,
+    rds.db_cluster_identifier = $DBClusterIdentifier,
+    rds.storage_encrypted = $StorageEncrypted,
+    rds.kms_key_id = $KmsKeyId,
+    rds.dbi_resource_id = $DbiResourceId,
+    rds.ca_certificate_identifier = $CACertificateIdentifier,
+    rds.enhanced_monitoring_resource_arn = $EnhancedMonitoringResourceArn,
+    rds.monitoring_role_arn = $MonitoringRoleArn,
+    rds.performance_insights_enabled = $PerformanceInsightsEnabled,
+    rds.performance_insights_kms_key_id = $PerformanceInsightsKMSKeyId,
+    rds.region = $Region,
+    rds.deletion_protection = $DeletionProtection,
+    rds.preferred_backup_window = $PreferredBackupWindow,
+    rds.latest_restorable_time = $LatestRestorableTime,
+    rds.preferred_maintenance_window = $PreferredMaintenanceWindow,
+    rds.backup_retention_period = $BackupRetentionPeriod,
+    rds.endpoint_address = $EndpointAddress,
+    rds.endpoint_hostedzoneid = $EndpointHostedZoneId,
+    rds.endpoint_port = $EndpointPort,
+    rds.iam_database_authentication_enabled = $IAMDatabaseAuthenticationEnabled,
+    rds.auto_minor_version_upgrade = $AutoMinorVersionUpgrade,
+    rds.lastupdated = $aws_update_tag
     WITH rds
-    MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (aa)-[r:RESOURCE]->(rds)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
     read_replicas = []
 
@@ -127,18 +127,18 @@ def _attach_ec2_subnet_groups(neo4j_session, instance, region, current_aws_accou
     Attach RDS instance to its EC2 subnets
     """
     attach_rds_to_subnet_group = """
-    MERGE(sng:DBSubnetGroup{id:{sng_arn}})
+    MERGE(sng:DBSubnetGroup{id:$sng_arn})
     ON CREATE SET sng.firstseen = timestamp()
-    SET sng.name = {DBSubnetGroupName},
-    sng.vpc_id = {VpcId},
-    sng.description = {DBSubnetGroupDescription},
-    sng.status = {DBSubnetGroupStatus},
-    sng.lastupdated = {aws_update_tag}
+    SET sng.name = $DBSubnetGroupName,
+    sng.vpc_id = $VpcId,
+    sng.description = $DBSubnetGroupDescription,
+    sng.status = $DBSubnetGroupStatus,
+    sng.lastupdated = $aws_update_tag
     WITH sng
-    MATCH(rds:RDSInstance{id:{DBInstanceArn}})
+    MATCH(rds:RDSInstance{id:$DBInstanceArn})
     MERGE(rds)-[r:MEMBER_OF_DB_SUBNET_GROUP]->(sng)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
     if 'DBSubnetGroup' in instance:
         db_sng = instance['DBSubnetGroup']
@@ -167,14 +167,14 @@ def _attach_ec2_subnets_to_subnetgroup(neo4j_session, db_subnet_group, region, c
     Availability Zone to select a subnet and an IP address within that subnet to associate with your DB instance.`
     """
     attach_subnets_to_sng = """
-    MATCH(sng:DBSubnetGroup{id:{sng_arn}})
-    MERGE(subnet:EC2Subnet{subnetid:{SubnetIdentifier}})
+    MATCH(sng:DBSubnetGroup{id:$sng_arn})
+    MERGE(subnet:EC2Subnet{subnetid:$SubnetIdentifier})
     ON CREATE SET subnet.firstseen = timestamp()
     MERGE(sng)-[r:RESOURCE]->(subnet)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag},
-    subnet.availability_zone = {SubnetAvailabilityZone},
-    subnet.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag,
+    subnet.availability_zone = $SubnetAvailabilityZone,
+    subnet.lastupdated = $aws_update_tag
     """
     for sn in db_subnet_group.get('Subnets', []):
         subnet_id = sn.get('SubnetIdentifier')
@@ -194,11 +194,11 @@ def _attach_ec2_security_groups(neo4j_session, instance, aws_update_tag):
     Attach an RDS instance to its EC2SecurityGroups
     """
     attach_rds_to_group = """
-    MATCH (rds:RDSInstance{id:{RdsArn}})
-    MERGE (sg:EC2SecurityGroup{id:{GroupId}})
+    MATCH (rds:RDSInstance{id:$RdsArn})
+    MERGE (sg:EC2SecurityGroup{id:$GroupId})
     MERGE (rds)-[m:MEMBER_OF_EC2_SECURITY_GROUP]->(sg)
     ON CREATE SET m.firstseen = timestamp()
-    SET m.lastupdated = {aws_update_tag}
+    SET m.lastupdated = $aws_update_tag
     """
     for group in instance.get('VpcSecurityGroups', []):
         neo4j_session.run(
@@ -215,11 +215,11 @@ def _attach_read_replicas(neo4j_session, read_replicas, aws_update_tag):
     Attach read replicas to their source instances
     """
     attach_replica_to_source = """
-    MATCH (replica:RDSInstance{id:{ReplicaArn}}),
-    (source:RDSInstance{db_instance_identifier:{SourceInstanceIdentifier}})
+    MATCH (replica:RDSInstance{id:$ReplicaArn}),
+    (source:RDSInstance{db_instance_identifier:$SourceInstanceIdentifier})
     MERGE (replica)-[r:IS_READ_REPLICA_OF]->(source)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
     for replica in read_replicas:
         neo4j_session.run(

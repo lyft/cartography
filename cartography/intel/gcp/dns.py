@@ -109,7 +109,7 @@ def load_dns_zones(neo4j_session, dns_zones, project_id, gcp_update_tag):
     """
 
     ingest_records = """
-    UNWIND {records} as record
+    UNWIND $records as record
     MERGE(zone:GCPDNSZone{id:record.id})
     ON CREATE SET
         zone.firstseen = timestamp(),
@@ -122,11 +122,11 @@ def load_dns_zones(neo4j_session, dns_zones, project_id, gcp_update_tag):
         zone.kind = record.kind,
         zone.nameservers = record.nameServers
     WITH zone
-    MATCH (owner:GCPProject{id:{ProjectId}})
+    MATCH (owner:GCPProject{id:$ProjectId})
     MERGE (owner)-[r:RESOURCE]->(zone)
     ON CREATE SET
         r.firstseen = timestamp(),
-        r.lastupdated = {gcp_update_tag}
+        r.lastupdated = $gcp_update_tag
     """
     neo4j_session.run(
         ingest_records,
@@ -158,7 +158,7 @@ def load_rrs(neo4j_session, dns_rrs, project_id, gcp_update_tag):
     """
 
     ingest_records = """
-    UNWIND {records} as record
+    UNWIND $records as record
     MERGE(rrs:GCPRecordSet{id:record.name})
     ON CREATE SET
         rrs.firstseen = timestamp()
@@ -172,7 +172,7 @@ def load_rrs(neo4j_session, dns_rrs, project_id, gcp_update_tag):
     MERGE (zone)-[r:HAS_RECORD]->(rrs)
     ON CREATE SET
         r.firstseen = timestamp(),
-        r.lastupdated = {gcp_update_tag}
+        r.lastupdated = $gcp_update_tag
     """
     neo4j_session.run(
         ingest_records,
