@@ -2,13 +2,33 @@ name: Pull Request
 on: [pull_request, push]
 
 jobs:
-  linter-and-full-test-suite:
+  linter:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+
       - uses: actions/setup-python@v2
-        with:
-          python-version: "3.6"
+          with:
+            python-version: "3.6"
+
+      # Cache our pip dir for efficiency; see https://medium.com/ai2-blog/python-caching-in-github-actions-e9452698e98d.
+      - uses: actions/cache@v2
+          with:
+            path: ~/.cache/pip
+            key: ${{ hashFiles('setup.py') }}-${{ hashFiles('test-requirements.txt') }}
+
+      - name: Install cartography
+        run: |
+          pip install -e .
+          pip install -r test-requirements.txt
+
+      - name: make test_lint
+        run: make test_lint
+
+  unit-and-integration-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
 
       # See https://debian.neo4j.com/
       - name: Neo4j setup
@@ -25,10 +45,23 @@ jobs:
           sudo sed -i 's/#dbms.security.auth_enabled=false/dbms.security.auth_enabled=false/g' /etc/neo4j/neo4j.conf
           sudo service neo4j restart
 
+      - uses: actions/setup-python@v2
+        with:
+          python-version: "3.6"
+
+      # Cache our pip dir for efficiency; see https://medium.com/ai2-blog/python-caching-in-github-actions-e9452698e98d.
+      - uses: actions/cache@v2
+        with:
+          path: ~/.cache/pip
+          key: ${{ hashFiles('setup.py') }}-${{ hashFiles('test-requirements.txt') }}
+
       - name: Install cartography
         run: |
           pip install -e .
           pip install -r test-requirements.txt
 
-      - name: make test
-        run: make test
+      - name: make test_unit
+        run: make test_unit
+
+      - name: make test_integration
+        run: make test_integration
