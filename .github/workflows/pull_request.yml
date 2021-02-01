@@ -2,7 +2,7 @@ name: Pull Request
 on: [pull_request, push]
 
 jobs:
-  make_test:
+  linter-and-full-test-suite:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -23,7 +23,7 @@ jobs:
       - name: Disable auth for neo4j
         run: |
           sudo sed -i 's/#dbms.security.auth_enabled=false/dbms.security.auth_enabled=false/g' /etc/neo4j/neo4j.conf
-          sudo service restart neo4j
+          sudo service neo4j restart
 
       - name: Install cartography
         run: |
