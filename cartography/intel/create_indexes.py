@@ -1,5 +1,7 @@
 import logging
 
+from neo4j.exceptions import ClientError
+
 from cartography.util import load_resource_binary
 
 logger = logging.getLogger(__name__)
@@ -19,4 +21,8 @@ def run(neo4j_session, config):
     logger.info("Creating indexes for cartography node types.")
     for statement in get_index_statements():
         logger.debug("Executing statement: %s", statement)
-        neo4j_session.run(statement)
+        try:
+            neo4j_session.run(statement)
+        except ClientError as e:
+            if not e.code == "Neo.ClientError.Schema.EquivalentSchemaRuleAlreadyExists":
+                raise e
