@@ -1,5 +1,6 @@
 import logging
 import sys
+from itertools import islice
 
 import botocore
 
@@ -85,3 +86,14 @@ def aws_handle_regions(func):
             else:
                 raise
     return inner_function
+
+
+def into_batches(items, batch_size):
+    """
+    Take the given items and chunk them into batches of the given batch size.
+    Returns a new iterator of tuples over the provided items.
+
+    See also: https://stackoverflow.com/a/22045226
+    """
+    items_iter = iter(items)
+    return iter(lambda: list(islice(items_iter, batch_size)), ())

@@ -3,6 +3,7 @@ from typing import Dict
 from typing import List
 
 from cartography.util import aws_handle_regions
+from cartography.util import into_batches
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
@@ -117,12 +118,14 @@ def load_ecr_repository_images(neo4j_session, repo_images_list, region, aws_upda
             SET r2.lastupdated = {aws_update_tag}
     """
     logger.debug("Loading ECR repository images for region '%s' into graph.", region)
-    neo4j_session.run(
-        query,
-        RepoList=repo_images_list,
-        aws_update_tag=aws_update_tag,
-        Region=region,
-    ).consume()  # See issue #440
+
+    for batch in into_batches(repo_images_list, 500):
+        neo4j_session.run(
+            query,
+            RepoList=batch,
+            aws_update_tag=aws_update_tag,
+            Region=region,
+        ).consume()  # See issue #440
 
 
 @timeit
