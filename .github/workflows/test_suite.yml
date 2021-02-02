@@ -15,17 +15,9 @@ jobs:
       - uses: actions/setup-python@v2
         with:
           python-version: "3.6"
-      # Cache our pip dir for efficiency; see https://medium.com/ai2-blog/python-caching-in-github-actions-e9452698e98d.
-      - uses: actions/cache@v2
+      - uses: pre-commit/action@v2.0.0
         with:
-          path: ~/.cache/pip
-          key: ${{ hashFiles('setup.py') }}-${{ hashFiles('test-requirements.txt') }}
-      - name: Install cartography
-        run: |
-          pip install -e .
-          pip install -r test-requirements.txt
-      - name: make test_lint
-        run: make test_lint
+          extra_args: --all-files --show-diff-on-failure
 
   unit-and-integration-tests:
     runs-on: ubuntu-latest
