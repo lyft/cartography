@@ -95,5 +95,8 @@ def into_batches(items, batch_size):
 
     See also: https://stackoverflow.com/a/22045226
     """
+    if len(items) <= batch_size:
+        return items
+
     items_iter = iter(items)
     return iter(lambda: list(islice(items_iter, batch_size)), ())
