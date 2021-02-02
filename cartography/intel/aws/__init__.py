@@ -17,6 +17,7 @@ from . import redshift
 from . import resourcegroupstaggingapi
 from . import route53
 from . import s3
+from . import api_gateway
 from cartography.util import run_analysis_job
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -48,6 +49,7 @@ def _sync_one_account(neo4j_session, boto3_session, account_id, sync_tag, common
     lambda_function.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     rds.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     redshift.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
+    api_gateway.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
 
     # NOTE each of the below will generate DNS records
     route53.sync(neo4j_session, boto3_session, account_id, sync_tag)
