@@ -1,0 +1,10 @@
+{
+  "statements": [
+    {
+      "query": "MATCH (:AzureAccount{id: {AZURE_SUBSCRIPTION_ID}})-[:RESOURCE]->(:AzureDatabaseAccount{id: {DATABASE_ACCOUNT_ID}})-[:CONTAINS]->(corspolicy:AzureCosmosDBCorsPolicy) WHERE EXISTS(corspolicy.allowedorigins)\n WITH corspolicy LIMIT {LIMIT_SIZE}\nREMOVE corspolicy.allowedorigins, corspolicy.allowedmethods, corspolicy.allowedheaders, corspolicy.exposedheaders, corspolicy.maxageinseconds return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    }
+  ],
+  "name": "Azure CosmosDB Cors Policy Details Cleanup"
+}

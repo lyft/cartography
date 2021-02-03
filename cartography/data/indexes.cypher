@@ -118,3 +118,8 @@ CREATE INDEX ON :AzureTenant(id);
 CREATE INDEX ON :AzurePrincipal(email);
 CREATE INDEX ON :AzureSubscription(id);
 CREATE INDEX ON :AzureDatabaseAccount(id);
+CREATE INDEX ON :AzureCosmosDBEnabledLocation(id);
+CREATE INDEX ON :AzureCosmosDBCorsPolicy(id);
+CREATE INDEX ON :AzureDatabaseAccountFailoverPolicy(id);
+CREATE INDEX ON :AzureCosmosDBPrivateEndpointConnection(id);
+CREATE INDEX ON :AzureCosmosDBVirtualNetworkRule(id);

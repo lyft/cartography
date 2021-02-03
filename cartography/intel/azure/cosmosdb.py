@@ -1,4 +1,5 @@
 import logging
+import uuid
 from azure.mgmt.cosmosdb import CosmosDBManagementClient
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -8,12 +9,18 @@ logger = logging.getLogger(__name__)
 
 @timeit
 def get_client(credentials, subscription_id):
+    """
+    Getting the CosmosDB client
+    """
     client = CosmosDBManagementClient(credentials, subscription_id)
     return client
 
 
 @timeit
 def get_database_account_list(credentials, subscription_id):
+    """
+    Get a list of all database accounts.
+    """
     try:
         client = get_client(credentials, subscription_id)
         database_account_list = list(map(lambda x: x.as_dict(), client.database_accounts.list()))
@@ -31,7 +38,9 @@ def get_database_account_list(credentials, subscription_id):
 
 @timeit
 def load_database_account_data(neo4j_session, subscription_id, database_account_list, azure_update_tag):
-
+    """
+    Ingest data of all database accounts into neo4j.
+    """
     ingest_database_account = """
     MERGE (d:AzureDatabaseAccount{id: {AccountId}})
     ON CREATE SET d.firstseen = timestamp(),
@@ -40,22 +49,24 @@ def load_database_account_data(neo4j_session, subscription_id, database_account_
     SET d.lastupdated = {azure_update_tag},
     d.kind = {Kind},
     d.type = {Type},
-    d.documentEndpoint = {DocumentEndpoint},
-    d.virtualNetworkFilterEnabled = {VirtualNetworkFilterEnabled},
-    d.enableAutomaticFailover = {EnableAutomaticFailover},
-    d.provisioningState = {ProvisioningState},
-    d.multipleWriteLocations = {MultipleWriteLocations},
-    d.accountOfferType = {AccountOfferType},
-    d.publicNetworkAccess = {PublicNetworkAccess},
-    d.enableCassandraConnector = {EnableCassandraConnector},
-    d.connectorOffer = {ConnectorOffer},
-    d.disableKeyBasedMetadataWriteAccess = {DisableKeyBasedMetadataWriteAccess},
-    d.keyVaultUri = {KeyVaultUri},
-    d.enableFreeTier = {EnableFreeTier},
-    d.enableAnalyticalStorage = {EnableAnalyticalStorage},
-    d.defaultConsistencyLevel = {DefaultConsistencyLevel},
-    d.maxStalenessPrefix = {MaxStalenessPrefix},
-    d.maxIntervalInSeconds = {MaxIntervalInSeconds}
+    d.ipranges = coalesce(d.ipranges, []) + {IpRanges},
+    d.capabilities = {Capabilities},
+    d.documentendpoint = {DocumentEndpoint},
+    d.virtualnetworkfilterenabled = {VirtualNetworkFilterEnabled},
+    d.enableautomaticfailover = {EnableAutomaticFailover},
+    d.provisioningstate = {ProvisioningState},
+    d.multiplewritelocations = {MultipleWriteLocations},
+    d.accountoffertype = {AccountOfferType},
+    d.publicnetworkaccess = {PublicNetworkAccess},
+    d.enablecassandraconnector = {EnableCassandraConnector},
+    d.connectoroffer = {ConnectorOffer},
+    d.disablekeybasedmetadatawriteaccess = {DisableKeyBasedMetadataWriteAccess},
+    d.keyvaulturi = {KeyVaultUri},
+    d.enablefreetier = {EnableFreeTier},
+    d.enableanalyticalstorage = {EnableAnalyticalStorage},
+    d.defaultconsistencylevel = {DefaultConsistencyLevel},
+    d.maxstalenessprefix = {MaxStalenessPrefix},
+    d.maxintervalinseconds = {MaxIntervalInSeconds}
     WITH d
     MATCH (owner:AzureAccount{id: {AZURE_SUBSCRIPTION_ID}})
     MERGE (owner)-[r:RESOURCE]->(d)
@@ -64,6 +75,9 @@ def load_database_account_data(neo4j_session, subscription_id, database_account_
     """
 
     for database_account in database_account_list:
+        capabilities = []
+        if 'capabilities' in database_account and len(database_account['capabilities']) > 0:
+            capabilities = database_account['capabilities'].values()
         neo4j_session.run(
             ingest_database_account,
             AccountId=database_account['id'],
@@ -72,6 +86,8 @@ def load_database_account_data(neo4j_session, subscription_id, database_account_
             Location=database_account['location'],
             Kind=database_account['kind'],
             Type=database_account['type'],
+            IpRanges=database_account.get('ip_rules'),
+            Capabilities=capabilities,
             DocumentEndpoint=database_account['document_endpoint'],
             VirtualNetworkFilterEnabled=database_account['is_virtual_network_filter_enabled'],
             EnableAutomaticFailover=database_account['enable_automatic_failover'],
@@ -91,6 +107,14 @@ def load_database_account_data(neo4j_session, subscription_id, database_account_
             MaxIntervalInSeconds=database_account.get('consistency_policy').get('max_interval_in_seconds'),
             AZURE_SUBSCRIPTION_ID=subscription_id,
             azure_update_tag=azure_update_tag,
+        )
+
+        # cleanup existing cors policy properties
+        # TODO: Take a look at the JSON code
+        run_cleanup_job(
+            'azure_cosmosdb_cors_details.json',
+            neo4j_session,
+            {'UPDATE_TAG': azure_update_tag, 'AZURE_SUBSCRIPTION_ID': subscription_id, 'DATABASE_ACCOUNT_ID': database_account['id']},
         )
 
         if 'cors' in database_account and len(database_account['cors']) > 0:
@@ -120,6 +144,9 @@ def load_database_account_data(neo4j_session, subscription_id, database_account_
 
 @timeit
 def _load_database_account_locations(neo4j_session, database_account, locations, azure_update_tag):
+    """
+    Getting locations enabled with read/write permissions for the database account.
+    """
     database_account_id = database_account['id']
     for loc in locations:
         if 'write_locations' in database_account and loc in database_account['write_locations']:
@@ -132,14 +159,17 @@ def _load_database_account_locations(neo4j_session, database_account, locations,
 
 @timeit
 def _load_database_account_write_locations(neo4j_session, database_account_id, loc, azure_update_tag):
+    """
+    Ingest the details of location with write permission enabled.
+    """
     ingest_write_location = """
-    MERGE (loc:AzureCosmosDBEnabledLocations{id: {LocationId}})
-    ON CREATE SET loc.firstseen = timestamp(), loc.locationName = {Name}
+    MERGE (loc:AzureCosmosDBEnabledLocation{id: {LocationId}})
+    ON CREATE SET loc.firstseen = timestamp(), loc.locationname = {Name}
     SET loc.lastupdated = {azure_update_tag},
-    loc.documentEndpoint = {DocumentEndpoint},
-    loc.provisioningState = {ProvisioningState},
-    loc.failoverPriority = {FailoverPriority},
-    loc.isZoneRedundant = {IsZoneRedundant}
+    loc.documentendpoint = {DocumentEndpoint},
+    loc.provisioningstate = {ProvisioningState},
+    loc.failoverpriority = {FailoverPriority},
+    loc.iszoneredundant = {IsZoneRedundant}
     WITH loc
     MATCH (d:AzureDatabaseAccount{id: {DatabaseAccountId}})
     MERGE (d)-[r:WRITE_PERMISSIONS_FROM]->(loc)
@@ -162,14 +192,17 @@ def _load_database_account_write_locations(neo4j_session, database_account_id, l
 
 @timeit
 def _load_database_account_read_locations(neo4j_session, database_account_id, loc, azure_update_tag):
+    """
+    Ingest the details of location with read permission enabled.
+    """
     ingest_read_location = """
-    MERGE (loc:AzureCosmosDBEnabledLocations{id: {LocationId}})
-    ON CREATE SET loc.firstseen = timestamp(), loc.locationName = {Name}
+    MERGE (loc:AzureCosmosDBEnabledLocation{id: {LocationId}})
+    ON CREATE SET loc.firstseen = timestamp(), loc.locationname = {Name}
     SET loc.lastupdated = {azure_update_tag},
-    loc.documentEndpoint = {DocumentEndpoint},
-    loc.provisioningState = {ProvisioningState},
-    loc.failoverPriority = {FailoverPriority},
-    loc.isZoneRedundant = {IsZoneRedundant}
+    loc.documentendpoint = {DocumentEndpoint},
+    loc.provisioningstate = {ProvisioningState},
+    loc.failoverpriority = {FailoverPriority},
+    loc.iszoneredundant = {IsZoneRedundant}
     WITH loc
     MATCH (d:AzureDatabaseAccount{id: {DatabaseAccountId}})
     MERGE (d)-[r:READ_PERMISSIONS_FROM]->(loc)
@@ -192,14 +225,17 @@ def _load_database_account_read_locations(neo4j_session, database_account_id, lo
 
 @timeit
 def _load_database_account_associated_locations(neo4j_session, database_account_id, loc, azure_update_tag):
+    """
+    Ingest the details of enabled location for the database account.
+    """
     ingest_associated_location = """
-    MERGE (loc:AzureCosmosDBEnabledLocations{id: {LocationId}})
-    ON CREATE SET loc.firstseen = timestamp(), loc.locationName = {Name}
+    MERGE (loc:AzureCosmosDBEnabledLocation{id: {LocationId}})
+    ON CREATE SET loc.firstseen = timestamp(), loc.locationname = {Name}
     SET loc.lastupdated = {azure_update_tag},
-    loc.documentEndpoint = {DocumentEndpoint},
-    loc.provisioningState = {ProvisioningState},
-    loc.failoverPriority = {FailoverPriority},
-    loc.isZoneRedundant = {IsZoneRedundant}
+    loc.documentendpoint = {DocumentEndpoint},
+    loc.provisioningstate = {ProvisioningState},
+    loc.failoverpriority = {FailoverPriority},
+    loc.iszoneredundant = {IsZoneRedundant}
     WITH loc
     MATCH (d:AzureDatabaseAccount{id: {DatabaseAccountId}})
     MERGE (d)-[r:ASSOCIATED_WITH]->(loc)
@@ -222,15 +258,20 @@ def _load_database_account_associated_locations(neo4j_session, database_account_
 
 @timeit
 def _load_cosmosdb_cors_policy(neo4j_session, database_account, azure_update_tag):
+    """
+    Ingest the details of the Cors Policy of the database account.
+    """
     database_account_id = database_account['id']
+    cors_policy_unique_id = uuid.uuid4()
+
     ingest_cors_policy = """
-    MERGE (corspolicy:AzureCosmosDBCorsPolicy{allowed_origins: {AllowedOrigins}})
-    ON CREATE SET corspolicy.firstseen = timestamp()
+    MERGE (corspolicy:AzureCosmosDBCorsPolicy{id: {PolicyUniqueId}})
+    ON CREATE SET corspolicy.firstseen = timestamp(), corspolicy.allowedorigins = {AllowedOrigins}
     SET corspolicy.lastupdated = {azure_update_tag},
-    corspolicy.allowedMethods = {AllowedMethods},
-    corspolicy.allowedHeaders = {AllowedHeaders},
-    corspolicy.exposedHeaders = {ExposedHeaders},
-    corspolicy.maxAgeInSeconds = {MaxAgeInSeconds}
+    corspolicy.allowedmethods = {AllowedMethods},
+    corspolicy.allowedheaders = {AllowedHeaders},
+    corspolicy.exposedheaders = {ExposedHeaders},
+    corspolicy.maxageinseconds = {MaxAgeInSeconds}
     WITH corspolicy
     MATCH (d:AzureDatabaseAccount{id: {DatabaseAccountId}})
     MERGE (d)-[r:CONTAINS]->(corspolicy)
@@ -241,6 +282,7 @@ def _load_cosmosdb_cors_policy(neo4j_session, database_account, azure_update_tag
     for policy in database_account['cors']:
         neo4j_session.run(
             ingest_cors_policy,
+            PolicyUniqueId=cors_policy_unique_id,
             AllowedOrigins=policy['allowed_origins'],
             AllowedMethods=policy.get('allowed_methods'),
             AllowedHeaders=policy.get('allowed_headers'),
@@ -253,13 +295,16 @@ def _load_cosmosdb_cors_policy(neo4j_session, database_account, azure_update_tag
 
 @timeit
 def _load_cosmosdb_failover_policies(neo4j_session, database_account, azure_update_tag):
+    """
+    Ingest the details of the Failover Policies of the database account.
+    """
     database_account_id = database_account['id']
     ingest_failover_policies = """
     MERGE (fpolicy:AzureDatabaseAccountFailoverPolicy{id: {FailoverPolicyId}})
     ON CREATE SET fpolicy.firstseen = timestamp()
     SET fpolicy.lastupdated = {azure_update_tag},
-    fpolicy.locationName = {LocationName},
-    fpolicy.failoverPriority = {FailoverPriority}
+    fpolicy.locationname = {LocationName},
+    fpolicy.failoverpriority = {FailoverPriority}
     WITH fpolicy
     MATCH (d:AzureDatabaseAccount{id: {DatabaseAccountId}})
     MERGE (d)-[r:CONTAINS]->(fpolicy)
@@ -280,15 +325,18 @@ def _load_cosmosdb_failover_policies(neo4j_session, database_account, azure_upda
 
 @timeit
 def _load_cosmosdb_private_endpoint_connections(neo4j_session, database_account, azure_update_tag):
+    """
+    Ingest the details of the Private Endpoint Connections of the database account.
+    """
     database_account_id = database_account['id']
     ingest_private_endpoint_connections = """
     MERGE (pec:AzureCosmosDBPrivateEndpointConnection{id: {PrivateEndpointConnectionId}})
     ON CREATE SET pec.firstseen = timestamp()
     SET pec.lastupdated = {azure_update_tag},
     pec.name = {Name},
-    pec.privateEndpointId = {PrivateEndpointId},
+    pec.privateendpointid = {PrivateEndpointId},
     pec.status = {Status},
-    pec.actionRequired = {ActionRequired}
+    pec.actionrequired = {ActionRequired}
     WITH pec
     MATCH (d:AzureDatabaseAccount{id: {DatabaseAccountId}})
     MERGE (d)-[r:CONFIGURED_WITH]->(pec)
@@ -310,12 +358,15 @@ def _load_cosmosdb_private_endpoint_connections(neo4j_session, database_account,
 
 @timeit
 def _load_cosmosdb_virtual_network_rules(neo4j_session, database_account, azure_update_tag):
+    """
+    Ingest the details of the Virtual Network Rules of the database account.
+    """
     database_account_id = database_account['id']
     ingest_virtual_network_rules = """
-    MERGE (rules:AzureCosmosDBVirtualNetworkRules{id: {VirtualNetworkRuleId}})
+    MERGE (rules:AzureCosmosDBVirtualNetworkRule{id: {VirtualNetworkRuleId}})
     ON CREATE SET rules.firstseen = timestamp()
     SET rules.lastupdated = {azure_update_tag},
-    rules.ignoreMissingVNetServiceEndpoint = {IgnoreMissingVNetServiceEndpoint}
+    rules.ignoremissingvnetserviceendpoint = {IgnoreMissingVNetServiceEndpoint}
     WITH rules
     MATCH (d:AzureDatabaseAccount{id: {DatabaseAccountId}})
     MERGE (d)-[r:CONFIGURED_WITH]->(rules)
