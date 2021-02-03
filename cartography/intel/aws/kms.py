@@ -23,7 +23,7 @@ def get_kms_key_list(boto3_session, region):
         try:
             response = client.describe_key(KeyId=key["KeyId"])['KeyMetadata']
         except ClientError as e:
-            logger.warning("Failed to describe key with key id - {}".format(key["KeyId"]))
+            logger.warning("Failed to describe key with key id - {}. Error - {}".format(key["KeyId"], e))
             raise
 
         described_key_list.append(response)
@@ -53,7 +53,7 @@ def get_policy(key, client):
         policy = client.get_key_policy(KeyId=key["KeyId"], PolicyName='default')
     except ClientError as e:
         policy = None
-        logger.warning("Failed to retrieve Key Policy for key id - {}".format(key["KeyId"]))
+        logger.warning("Failed to retrieve Key Policy for key id - {}. Error - {}".format(key["KeyId"], e))
         raise
 
     return policy
