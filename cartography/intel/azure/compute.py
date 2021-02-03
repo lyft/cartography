@@ -1,5 +1,6 @@
 import logging
 from azure.mgmt.compute import ComputeManagementClient
+from cartography.util import get_optional_value
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
@@ -12,51 +13,92 @@ def get_client(credentials, subscription_id):
 
 
 def get_vm_list(credentials, subscription_id):
-
     try:
-
         client = get_client(credentials, subscription_id)
+        vm_list = list(map(lambda x: x.as_dict(), client.virtual_machines.list_all()))
 
-        VM_List = client.virtual_machines.list_all()
-
-        return VM_List
+        return vm_list
 
     except Exception as e:
-
-        print(f'Failed to retrieve virtual machine: {e}')
-
+        logger.warning("Error while retrieving virtual machines - {}".format(e))
         return []
 
 
-def load_vm_data(neo4j_session, subscription_id, VM_group, azer_updated_tag, common_job_parameters):
-
+def load_vm_data(neo4j_session, subscription_id, vm_list, azure_updated_tag, common_job_parameters):
     ingest_vm = """
-
-    MERGE (Machines:VirtualMachine{id: {Vm_id}})
-    ON CREATE SET Machines.firstseen = timestamp(), Machines.id = {id}, Machines.name = {name},
-    Machines.location = {location},
-    SET Machines.lastupdated = {azer_updated_tag}, Machines.type = {type}, Machines.size = {size},
-    Machines.Vm_disk_OS_size = {osSize},
-    Machines.Vm_disk_OS_type = {osType}
-    WITH Machines
-    MATCH (owner:AzureAccount{id: {AZURE_SUBSCRIPTION_ID}})
-    MERGE (owner)-[r:RESOURCE]->(Machines)
+    MERGE (machine:VirtualMachine{id: {id}})
+    ON CREATE SET machine.firstseen = timestamp(),
+    machine.type = {type}, machine.location = {location},
+    SET machine.lastupdated = {azure_updated_tag}, machine.name = {name},
+    machine.plan = {plan}, machine.size = {size},
+    machine.license_type={licenseType}, machine.computer_name={computerName},
+    machine.identity_type={identityType}, machine.zones={zones},
+    machine.ultra_ssd_enabled={ultraSSDEnabled}, machine.encryption_at_host={encryptionAtHost},
+    machine.priority={priority}, machine.eviction_policy={evictionPolicy}
+    WITH machine
+    MATCH (owner:AzureSubscription{id: {subscription_id}})
+    MERGE (owner)-[r:RESOURCE]->(machine)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {azer_updated_tag}
+    SET r.lastupdated = {azure_updated_tag}
     """
 
-    for data in VM_group:
-        neo4j_session.run(ingest_vm,
-                          osSize=data['properties']["storageProfile"]['osDisk']['diskSizeGB'],
-                          osType=data['properties']["storageProfile"]['osDisk']['osType'],
-                          size=data['properties']['hardwareProfile']["vmSize"],
-                          type=data['type'],
-                          location=data['location'],
-                          id=data['id'],
-                          name=data['name'],
-                          AZURE_SUBSCRIPTION_ID=subscription_id,
-                          azure_update_tag=azer_updated_tag,
-                          ).azure_update_tag = azer_updated_tag
+    for vm in vm_list:
+        neo4j_session.run(
+            ingest_vm,
+            id=vm['id'],
+            name=vm['name'],
+            type=vm['type'],
+            location=vm['location'],
+            plan=get_optional_value(vm, ['plan', 'product']),
+            size=get_optional_value(vm, ['hardware_profile', 'vm_size']),
+            licenseType=get_optional_value(vm, 'license_type'),
+            computerName=get_optional_value(vm, ['os_profile', 'computer_name']),
+            identityType=get_optional_value(vm, ['identity', 'type']),
+            zones=get_optional_value(vm, ['zones']),
+            ultraSSDEnabled=get_optional_value(vm, ['additional_capabilities', 'ultra_ssd_enabled']),
+            encryptionAtHost=get_optional_value(vm, ['storage_profile', 'encryption_at_host']),
+            priority=get_optional_value(vm, ['priority']),
+            evictionPolicy=get_optional_value(vm, ['eviction_policy']),
+            subscription_id=subscription_id,
+            azure_update_tag=azure_updated_tag
+        )
+
+        if 'storage_profile' in vm:
+            if 'data_disks' in vm['storage_profile']:
+                load_vm_data_disks(neo4j_session, vm['id'], vm['storage_profile'].get('data_disks'), azure_updated_tag, common_job_parameters)
+
+
+def load_vm_data_disks(neo4j_session, vm_id, data_disks, azure_updated_tag, common_job_parameters):
+    ingest_data_disk = """
+    MERGE (disk:AzureDataDisk{id: {id}})
+    ON CREATE SET disk.firstseen = timestamp(), disk.lun = {lun},
+    SET disk.lastupdated = {azure_updated_tag}, disk.name = {name},
+    disk.vhd = {vhd}, disk.image = {image}, disk.size = {size},
+    disk.caching = {caching}, disk.create_option = {createOption},
+    disk.write_accelerator_enabled={writeAcceleratorEnabled},disk.managed_disk_storage_type={managedDiskStorageType}
+    WITH disk
+    MATCH (owner:VirtualMachine{id: {vm_id}})
+    MERGE (owner)-[r:ATTACHED_TO]->(disk)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {azure_updated_tag}
+    """
+
+    for disk in data_disks:
+        neo4j_session.run(
+            ingest_data_disk,
+            id=vm_id + str(disk['lun']),
+            lun=disk['lun'],
+            name=get_optional_value(disk, ['name']),
+            vhd=get_optional_value(disk, ['vhd', 'uri']),
+            image=get_optional_value(disk, ['image', 'uri']),
+            size=get_optional_value(disk, ['disk_size_gb']),
+            caching=get_optional_value(disk, ['caching']),
+            createOption=get_optional_value(disk, ['create_option']),
+            writeAcceleratorEnabled=get_optional_value(disk, ['write_accelerator_enabled']),
+            managedDiskStorageType=get_optional_value(disk, ['managed_disk', 'storage_account_type']),
+            vm_id=vm_id,
+            azure_update_tag=azure_updated_tag
+        )
 
 
 def cleanup_virtual_machine(neo4j_session, common_job_parameters):
@@ -80,7 +122,7 @@ def load_security_group_info(neo4j_session, subscription_id, groups, azure_updat
     MERGE (aa)-[r:RESOURCE]->(group)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {azure_update_tag}
-   
+
     """
 
     for group in groups:
@@ -116,7 +158,7 @@ def load_virtual_network_data(neo4j_session, credentials, virtualNetworkList, su
     virtualNetwork.etag= {etag},
     virtualNetwork.lastupdated = {azure_update_tag}
     WITH virtualNetwork
-    MATCH (owner:AzureAccount{id: {subscription_id}})
+    MATCH (owner:AzureSubscription{id: {subscription_id}})
     MERGE (owner)-[r:RESOURCE]->(virtualNetwork)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {azure_update_tag}"""
@@ -158,7 +200,7 @@ def load_network_interface_data(neo4j_session, subscription_id, networkInterface
     NetworkInterface.networkSecurityGroupId={networkSecurityGroupId}
     NetworkInterface.lastupdated = {azure_update_tag}
     WITH NetworkInterface
-    MATCH (owner:AzureAccount{id: {subscription_id}})
+    MATCH (owner:AzureSubscription{id: {subscription_id}})
     MERGE (owner)-[r:RESOURCE]->(NetworkInterface)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {azure_update_tag}"""
@@ -204,7 +246,7 @@ def loadDisksData(neo4j_session, subscription_id, diskList, azure_update_tag, co
     Disks.diskState={diskState},
     Disks.diskTier={diskTier}
     WITH Disks
-    MATCH (owner:AzureAccount{id: {subscription_id}})
+    MATCH (owner:AzureSubscription{id: {subscription_id}})
     MERGE (owner)-[r:RESOURCE]->(Disks)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {azure_update_tag}"""
@@ -249,7 +291,7 @@ def load_snapshotData(neo4j_session, subscription_id, snapshotList, azure_update
     Snapshot.diskSize={diskSize},
     Snapshot.timeCreated={timeCreated},
     WITH Disks
-    MATCH (owner:AzureAccount{id: {subscription_id}})
+    MATCH (owner:AzureSubscription{id: {subscription_id}})
     MERGE (owner)-[r:RESOURCE]->(Disks)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {azure_update_tag}"""
@@ -312,10 +354,8 @@ def sync_virtual_machine(neo4j_session, credentials, subscription_id, sync_tag, 
     cleanup_virtual_machine(neo4j_session, common_job_parameters)
 
 
-@timeit
+@ timeit
 def sync(neo4j_session, credentials, location, subscription_id, sync_tag, common_job_parameters):
-    # TODO: start Azure VM's sync
-    # print('inside azure vm sync')
     logger.info("Syncing VM for subscription '%s'.", subscription_id)
 
     sync_virtual_machine(neo4j_session, credentials, subscription_id, sync_tag, common_job_parameters)
