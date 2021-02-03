@@ -9,6 +9,7 @@ from . import ecr
 from . import eks
 from . import elasticsearch
 from . import iam
+from . import kms
 from . import lambda_function
 from . import organizations
 from . import permission_relationships
@@ -17,7 +18,6 @@ from . import redshift
 from . import resourcegroupstaggingapi
 from . import route53
 from . import s3
-from . import kms
 from cartography.util import run_analysis_job
 from cartography.util import run_cleanup_job
 from cartography.util import timeit

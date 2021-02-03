@@ -119,7 +119,7 @@ def _load_kms_key_grants(neo4j_session, grants_list, update_tag):
     MERGE (g:KMSGrant{id: {GrantId}})
     ON CREATE SET g.firstseen = timestamp(), g.granteeprincipal = {GranteePrincipal}, g.creationdate = {CreationDate}
     SET g.name = {GrantName}, g.lastupdated = {UpdateTag}
-    WITH g 
+    WITH g
     MATCH (kmskey:KMSKey{id: {TargetKeyId}})
     MERGE (g)-[r:APPLIED_ON]->(kmskey)
     ON CREATE SET r.firstseen = timestamp()
@@ -174,7 +174,7 @@ def _set_default_values(neo4j_session, aws_account_id):
 @timeit
 def load_kms_key_details(neo4j_session, policy_alias_grants_data, region, aws_account_id, update_tag):
     """
-    Create dictionaries for all bucket ACLs and all bucket policies so we can import them in a single query for each
+    Create dictionaries for all KMS key policies, aliases and grants so we can import them in a single query for each
     """
     policies = []
     aliases = []
@@ -269,8 +269,7 @@ def load_kms_keys(neo4j_session, data, region, current_aws_account_id, aws_updat
     MERGE (kmskey:KMSKey{id:{KeyId}})
     ON CREATE SET kmskey.firstseen = timestamp(),
     kmskey.arn = {Arn}, kmskey.creationdate = {CreationDate}
-    SET kmskey.id = {KeyId}, 
-    kmskey.deletiondate = {DeletionDate},
+    SET kmskey.deletiondate = {DeletionDate},
     kmskey.validto = {ValidTo},
     kmskey.enabled = {Enabled},
     kmskey.keystate = {KeyState},
