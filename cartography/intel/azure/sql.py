@@ -8,12 +8,18 @@ logger = logging.getLogger(__name__)
 
 @timeit
 def get_client(credentials, subscription_id):
+    """
+    Getting the Azure SQL client
+    """
     client = SqlManagementClient(credentials, subscription_id)
     return client
 
 
 @timeit
 def get_server_list(credentials, subscription_id):
+    """
+    Returning the list of servers.
+    """
     try:
         client = get_client(credentials, subscription_id)
         server_list = list(map(lambda x: x.as_dict(), client.servers.list()))
@@ -31,7 +37,9 @@ def get_server_list(credentials, subscription_id):
 
 @timeit
 def load_server_data(neo4j_session, subscription_id, server_list, azure_update_tag):
-
+    """
+    Ingest the server details into neo4j.
+    """
     ingest_server = """
     MERGE (s:AzureServer{id: {ServerId}})
     ON CREATE SET s.firstseen = timestamp(), 
@@ -42,7 +50,7 @@ def load_server_data(neo4j_session, subscription_id, server_list, azure_update_t
     s.state = {State},
     s.version = {Version}
     WITH s
-    MATCH (owner:AzureAccount{id: {AZURE_SUBSCRIPTION_ID}})
+    MATCH (owner:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}})
     MERGE (owner)-[r:RESOURCE]->(s)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {azure_update_tag}
@@ -71,6 +79,9 @@ def sync_server_details(neo4j_session, credentials, subscription_id, server_list
 
 @timeit
 def get_server_details(credentials, subscription_id, server_list):
+    """
+    Iterate over each servers to get it's resource details.
+    """
     for server in server_list:
         dns_alias = get_dns_aliases(credentials, subscription_id, server)
         ad_admins = get_ad_admins(credentials, subscription_id, server)
@@ -84,6 +95,9 @@ def get_server_details(credentials, subscription_id, server_list):
 
 @timeit
 def get_dns_aliases(credentials, subscription_id, server):
+    """
+    Returns details of DNS aliases in a server.
+    """
     try:
         client = get_client(credentials, subscription_id)
         dns_aliases = list(map(lambda x: x.as_dict(), client.server_dns_aliases.list_by_server(server['resourceGroup'], server['name'])))
@@ -97,6 +111,9 @@ def get_dns_aliases(credentials, subscription_id, server):
 
 @timeit
 def get_ad_admins(credentials, subscription_id, server):
+    """
+    Returns details of Server AD Administrators in a server.
+    """
     try:
         client = get_client(credentials, subscription_id)
         ad_admins = list(map(lambda x: x.as_dict(), client.server_azure_ad_administrators.list_by_server(server['resourceGroup'], server['name'])))
@@ -110,6 +127,9 @@ def get_ad_admins(credentials, subscription_id, server):
 
 @timeit
 def get_recoverable_databases(credentials, subscription_id, server):
+    """
+    Returns details of Recoverable databases in a server.
+    """
     try:
         client = get_client(credentials, subscription_id)
         recoverable_databases = list(map(lambda x: x.as_dict(), client.recoverable_databases.list_by_server(server['resourceGroup'], server['name'])))
@@ -123,6 +143,9 @@ def get_recoverable_databases(credentials, subscription_id, server):
 
 @timeit
 def get_restorable_dropped_databases(credentials, subscription_id, server):
+    """
+    Returns details of Restorable Dropped Databases in a server.
+    """
     try:
         client = get_client(credentials, subscription_id)
         restorable_dropped_databases = list(map(lambda x: x.as_dict(), client.restorable_dropped_databases.list_by_server(server['resourceGroup'], server['name'])))
@@ -136,6 +159,9 @@ def get_restorable_dropped_databases(credentials, subscription_id, server):
 
 @timeit
 def get_failover_groups(credentials, subscription_id, server):
+    """
+    Returns details of Failover groups in a server.
+    """
     try:
         client = get_client(credentials, subscription_id)
         failover_groups = list(map(lambda x: x.as_dict(), client.failover_groups.list_by_server(server['resourceGroup'], server['name'])))
@@ -149,6 +175,9 @@ def get_failover_groups(credentials, subscription_id, server):
 
 @timeit
 def get_elastic_pools(credentials, subscription_id, server):
+    """
+    Returns details of Elastic Pools in a server.
+    """
     try:
         client = get_client(credentials, subscription_id)
         elastic_pools = list(map(lambda x: x.as_dict(), client.elastic_pools.list_by_server(server['resourceGroup'], server['name'])))
@@ -162,6 +191,9 @@ def get_elastic_pools(credentials, subscription_id, server):
 
 @timeit
 def get_databases(credentials, subscription_id, server):
+    """
+    Returns details of Databases in a server.
+    """
     try:
         client = get_client(credentials, subscription_id)
         databases = list(map(lambda x: x.as_dict(), client.databases.list_by_server(server['resourceGroup'], server['name'])))
@@ -175,6 +207,9 @@ def get_databases(credentials, subscription_id, server):
 
 @timeit
 def load_server_details(neo4j_session, credentials, subscription_id, details, update_tag):
+    """
+    Create dictionaries for every resource in the server so we can import them in a single query
+    """
     dns_aliases = []
     ad_admins = []
     recoverable_databases = []
@@ -240,6 +275,9 @@ def load_server_details(neo4j_session, credentials, subscription_id, details, up
 
 @timeit
 def _load_server_dns_aliases(neo4j_session, dns_aliases, update_tag):
+    """
+    Ingest the DNS Alias details into neo4j.
+    """
     ingest_dns_aliases = """
     MERGE (alias:AzureServerDNSAlias{id: {DNSAliasId}})
     ON CREATE SET alias.firstseen = timestamp(), alias.lastupdated = {azure_update_tag}
@@ -265,6 +303,9 @@ def _load_server_dns_aliases(neo4j_session, dns_aliases, update_tag):
 
 @timeit
 def _load_server_ad_admins(neo4j_session, ad_admins, update_tag):
+    """
+    Ingest the Server AD Administrators details into neo4j.
+    """
     ingest_ad_admins = """
     MERGE (a:AzureServerADAdministrator{id: {AdAdminId}})
     ON CREATE SET a.firstseen = timestamp(), a.lastupdated = {azure_update_tag}
@@ -292,6 +333,9 @@ def _load_server_ad_admins(neo4j_session, ad_admins, update_tag):
 
 @timeit
 def _load_recoverable_databases(neo4j_session, recoverable_databases, update_tag):
+    """
+    Ingest the recoverable database details into neo4j.
+    """
     ingest_recoverable_databases = """
     MERGE (rd:AzureRecoverableDatabase{id: {DatabaseId}})
     ON CREATE SET rd.firstseen = timestamp(), rd.lastupdated = {azure_update_tag}
@@ -321,6 +365,9 @@ def _load_recoverable_databases(neo4j_session, recoverable_databases, update_tag
 
 @timeit
 def _load_restorable_dropped_databases(neo4j_session, restorable_dropped_databases, update_tag):
+    """
+    Ingest the restorable dropped database details into neo4j.
+    """
     ingest_restorable_dropped_databases = """
     MERGE (rdd:AzureRestorableDroppedDatabase{id: {DatabaseId}})
     ON CREATE SET rdd.firstseen = timestamp(), rdd.lastupdated = {azure_update_tag}
@@ -360,6 +407,9 @@ def _load_restorable_dropped_databases(neo4j_session, restorable_dropped_databas
 
 @timeit
 def _load_failover_groups(neo4j_session, failover_groups, update_tag):
+    """
+    Ingest the failover groups details into neo4j.
+    """
     ingest_failover_groups = """
     MERGE (f:AzureFailoverGroup{id: {GroupId}})
     ON CREATE SET f.firstseen = timestamp(), f.lastupdated = {azure_update_tag}
@@ -389,6 +439,9 @@ def _load_failover_groups(neo4j_session, failover_groups, update_tag):
 
 @timeit
 def _load_elastic_pools(neo4j_session, elastic_pools, update_tag):
+    """
+    Ingest the elastic pool details into neo4j.
+    """
     ingest_elastic_pools = """
     MERGE (e:AzureElasticPool{id: {PoolId}})
     ON CREATE SET e.firstseen = timestamp(), e.lastupdated = {azure_update_tag}
@@ -424,6 +477,9 @@ def _load_elastic_pools(neo4j_session, elastic_pools, update_tag):
 
 @timeit
 def _load_databases(neo4j_session, databases, update_tag):
+    """
+    Ingest the database details into neo4j.
+    """
     ingest_databases = """
     MERGE (d:AzureDatabase{id: {Id}})
     ON CREATE SET d.firstseen = timestamp(), d.lastupdated = {azure_update_tag}
@@ -477,6 +533,9 @@ def sync_database_details(neo4j_session, credentials, subscription_id, databases
 
 @timeit
 def get_database_details(credentials, subscription_id, databases):
+    """
+    Iterate over the databases to get the details of resources in it.
+    """
     for database in databases:
         replication_links_list = get_replication_links(credentials, subscription_id, database)
         db_threat_detection_policies = get_db_threat_detection_policies(credentials, subscription_id, database)
@@ -487,6 +546,9 @@ def get_database_details(credentials, subscription_id, databases):
 
 @timeit
 def get_replication_links(credentials, subscription_id, database):
+    """
+    Returns the details of replication links in a database.
+    """
     try:
         client = get_client(credentials, subscription_id)
         replication_links = list(map(lambda x: x.as_dict(), client.replication_links.list_by_database(database['resource_group_name'], database['server_name'], database['name'])))
@@ -500,6 +562,9 @@ def get_replication_links(credentials, subscription_id, database):
 
 @timeit
 def get_db_threat_detection_policies(credentials, subscription_id, database):
+    """
+    Returns the threat detection policy of a database.
+    """
     try:
         client = get_client(credentials, subscription_id)
         # TODO: Debug error - dictionary update sequence element #0 has length 1; 2 is required
@@ -513,6 +578,9 @@ def get_db_threat_detection_policies(credentials, subscription_id, database):
 
 @timeit
 def get_restore_points(credentials, subscription_id, database):
+    """
+    Returns the details of restore points in a database.
+    """
     try:
         client = get_client(credentials, subscription_id)
         restore_points_list = list(map(lambda x: x.as_dict(), client.restore_points.list_by_database(database['resource_group_name'], database['server_name'], database['name'])))
@@ -526,6 +594,9 @@ def get_restore_points(credentials, subscription_id, database):
 
 @timeit
 def get_transparent_data_encryptions(credentials, subscription_id, database):
+    """
+    Returns the details of transparent data encryptions in a database.
+    """
     try:
         client = get_client(credentials, subscription_id)
         # TODO: Debug error - dictionary update sequence element #0 has length 1; 2 is required
@@ -539,6 +610,9 @@ def get_transparent_data_encryptions(credentials, subscription_id, database):
 
 @timeit
 def load_database_details(neo4j_session, details, update_tag):
+    """
+    Create dictionaries for every resource in a database so we can import them in a single query
+    """
     replication_links = []
     threat_detection_policies = []
     restore_points = []
@@ -571,6 +645,9 @@ def load_database_details(neo4j_session, details, update_tag):
 
 @timeit
 def _load_replication_links(neo4j_session, replication_links, update_tag):
+    """
+    Ingest replication links into neo4j.
+    """
     ingest_replication_links = """
     MERGE (rl:AzureReplicationLink{id: {LinkId}})
     ON CREATE SET rl.firstseen = timestamp(), rl.lastupdated = {azure_update_tag}
@@ -616,6 +693,9 @@ def _load_replication_links(neo4j_session, replication_links, update_tag):
 
 @timeit
 def _load_db_threat_detection_policies(neo4j_session, threat_detection_policies, update_tag):
+    """
+    Ingest threat detection policy into neo4j.
+    """
     ingest_threat_detection_policies = """
     MERGE (policy:AzureDatabaseThreatDetectionPolicy{id: {PolicyId}})
     ON CREATE SET policy.firstseen = timestamp(), policy.lastupdated = {azure_update_tag}
@@ -657,6 +737,9 @@ def _load_db_threat_detection_policies(neo4j_session, threat_detection_policies,
 
 @timeit
 def _load_restore_points(neo4j_session, restore_points, update_tag):
+    """
+    Ingest restore points into neo4j.
+    """
     ingest_restore_points = """
     MERGE (point:AzureRestorePoint{id: {PointId}})
     ON CREATE SET point.firstseen = timestamp(), point.lastupdated = {azure_update_tag}
@@ -688,6 +771,9 @@ def _load_restore_points(neo4j_session, restore_points, update_tag):
 
 @timeit
 def _load_transparent_data_encryptions(neo4j_session, encryptions_list, update_tag):
+    """
+    Ingest transparent data encryptions into neo4j.
+    """
     ingest_data_encryptions = """
     MERGE (tae:AzureTransparentDataEncryption{id: {TAEId}})
     ON CREATE SET tae.firstseen = timestamp(), tae.lastupdated = {azure_update_tag}
