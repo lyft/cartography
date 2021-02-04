@@ -8,12 +8,18 @@ logger = logging.getLogger(__name__)
 
 @timeit
 def get_client(credentials, subscription_id):
+    """
+    Getting the Azure Storage client
+    """
     client = StorageManagementClient(credentials, subscription_id)
     return client
 
 
 @timeit
 def get_storage_account_list(credentials, subscription_id):
+    """
+    Getting the list of storage accounts
+    """
     try:
         client = get_client(credentials, subscription_id)
         storage_account_list = list(map(lambda x: x.as_dict(), client.storage_accounts.list()))
@@ -31,7 +37,9 @@ def get_storage_account_list(credentials, subscription_id):
 
 @timeit
 def load_storage_account_data(neo4j_session, subscription_id, storage_account_list, azure_update_tag):
-
+    """
+    Ingest Storage Account details into neo4j.
+    """
     ingest_storage_account = """
     MERGE (s:AzureStorageAccount{id: {AccountId}})
     ON CREATE SET s.firstseen = timestamp(),
@@ -40,14 +48,14 @@ def load_storage_account_data(neo4j_session, subscription_id, storage_account_li
     SET s.lastupdated = {azure_update_tag},
     s.kind = {Kind},
     s.type = {Type},
-    s.creationTime = {CreationTime},
-    s.hnsEnabled = {HnsEnabled},
-    s.primaryLocation = {PrimaryLocation},
-    s.secondaryLocation = {SecondaryLocation},
-    s.provisioningState = {ProvisioningState},
-    s.statusOfPrimary = {StatusOfPrimary},
-    s.statusOfSecondary = {StatusOfSecondary},
-    s.supportsHttpsTrafficOnly = {SupportsHttpsTrafficOnly}
+    s.creationtime = {CreationTime},
+    s.hnsenabled = {HnsEnabled},
+    s.primarylocation = {PrimaryLocation},
+    s.secondarylocation = {SecondaryLocation},
+    s.provisioningstate = {ProvisioningState},
+    s.statusofprimary = {StatusOfPrimary},
+    s.statusofsecondary = {StatusOfSecondary},
+    s.supportshttpstrafficonly = {SupportsHttpsTrafficOnly}
     WITH s
     MATCH (owner:AzureAccount{id: {AZURE_SUBSCRIPTION_ID}})
     MERGE (owner)-[r:RESOURCE]->(s)
@@ -85,6 +93,9 @@ def sync_storage_account_details(neo4j_session, credentials, subscription_id, st
 
 @timeit
 def get_storage_account_details(credentials, subscription_id, storage_account_list):
+    """
+    Iterates over all Storage Accounts to get the different storage services.
+    """
     for storage_account in storage_account_list:
         queue_services = get_queue_services(credentials, subscription_id, storage_account)
         table_services = get_table_services(credentials, subscription_id, storage_account)
@@ -95,6 +106,9 @@ def get_storage_account_details(credentials, subscription_id, storage_account_li
 
 @timeit
 def get_queue_services(credentials, subscription_id, storage_account):
+    """
+    Gets the list of queue services.
+    """
     try:
         client = get_client(credentials, subscription_id)
         queue_service_list = client.queue_services.list(storage_account['resourceGroup'], storage_account['name']).as_dict()['value']
@@ -108,6 +122,9 @@ def get_queue_services(credentials, subscription_id, storage_account):
 
 @timeit
 def get_table_services(credentials, subscription_id, storage_account):
+    """
+    Gets the list of table services.
+    """
     try:
         client = get_client(credentials, subscription_id)
         table_service_list = client.table_services.list(storage_account['resourceGroup'], storage_account['name']).as_dict()['value']
@@ -121,6 +138,9 @@ def get_table_services(credentials, subscription_id, storage_account):
 
 @timeit
 def get_file_services(credentials, subscription_id, storage_account):
+    """
+    Gets the list of file services.
+    """
     try:
         client = get_client(credentials, subscription_id)
         file_service_list = client.file_services.list(storage_account['resourceGroup'], storage_account['name']).as_dict()['value']
@@ -134,9 +154,12 @@ def get_file_services(credentials, subscription_id, storage_account):
 
 @timeit
 def get_blob_services(credentials, subscription_id, storage_account):
+    """
+    Gets the list of blob services.
+    """
     try:
         client = get_client(credentials, subscription_id)
-        blob_service_list = client.blob_services.list(storage_account['resourceGroup'], storage_account['name']).as_dict()['value']
+        blob_service_list = list(map(lambda x: x.as_dict(), client.blob_services.list(storage_account['resourceGroup'], storage_account['name'])))
 
     except Exception as e:
         logger.warning("Error while retrieving blob services list - {}".format(e))
@@ -147,6 +170,9 @@ def get_blob_services(credentials, subscription_id, storage_account):
 
 @timeit
 def load_storage_account_details(neo4j_session, credentials, subscription_id, details, update_tag):
+    """
+    Create dictionaries for every Azure storage service so we can import them in a single query
+    """
     queue_services = []
     table_services = []
     file_services = []
@@ -194,6 +220,9 @@ def load_storage_account_details(neo4j_session, credentials, subscription_id, de
 
 @timeit
 def _load_queue_services(neo4j_session, queue_services, update_tag):
+    """
+    Ingest Queue Service details into neo4j.
+    """
     ingest_queue_services = """
     MERGE (qs:AzureStorageQueueService{id: {QueueServiceId}})
     ON CREATE SET qs.firstseen = timestamp(), qs.lastupdated = {azure_update_tag}
@@ -219,6 +248,9 @@ def _load_queue_services(neo4j_session, queue_services, update_tag):
 
 @timeit
 def _load_table_services(neo4j_session, table_services, update_tag):
+    """
+    Ingest Table Service details into neo4j.
+    """
     ingest_table_services = """
     MERGE (ts:AzureStorageTableService{id: {TableServiceId}})
     ON CREATE SET ts.firstseen = timestamp(), ts.lastupdated = {azure_update_tag}
@@ -244,6 +276,9 @@ def _load_table_services(neo4j_session, table_services, update_tag):
 
 @timeit
 def _load_file_services(neo4j_session, file_services, update_tag):
+    """
+    Ingest File Service details into neo4j.
+    """
     ingest_file_services = """
     MERGE (fs:AzureStorageFileService{id: {FileServiceId}})
     ON CREATE SET fs.firstseen = timestamp(), fs.lastupdated = {azure_update_tag}
@@ -269,6 +304,9 @@ def _load_file_services(neo4j_session, file_services, update_tag):
 
 @timeit
 def _load_blob_services(neo4j_session, blob_services, update_tag):
+    """
+    Ingest Blob Service details into neo4j.
+    """
     ingest_blob_services = """
     MERGE (bs:AzureStorageBlobService{id: {BlobServiceId}})
     ON CREATE SET bs.firstseen = timestamp(), bs.lastupdated = {azure_update_tag}
@@ -300,6 +338,9 @@ def sync_queue_services_details(neo4j_session, credentials, subscription_id, que
 
 @timeit
 def get_queue_services_details(credentials, subscription_id, queue_services):
+    """
+    Returning the queues with their respective queue service id.
+    """
     for queue_service in queue_services:
         queues = get_queues(credentials, subscription_id, queue_service)
         yield queue_service['id'], queues
@@ -307,9 +348,12 @@ def get_queue_services_details(credentials, subscription_id, queue_services):
 
 @timeit
 def get_queues(credentials, subscription_id, queue_service):
+    """
+    Getting the queues from the queue service.
+    """
     try:
         client = get_client(credentials, subscription_id)
-        queues = list(client.queue.list(queue_service['resource_group_name'], queue_service['storage_account_name']))
+        queues = list(map(lambda x: x.as_dict(), client.queue.list(queue_service['resource_group_name'], queue_service['storage_account_name'])))
 
     except Exception as e:
         logger.warning("Error while retrieving queues - {}".format(e))
@@ -320,6 +364,9 @@ def get_queues(credentials, subscription_id, queue_service):
 
 @timeit
 def load_queue_services_details(neo4j_session, details, update_tag):
+    """
+    Create dictionary for the queue so we can import them in a single query
+    """
     queues = []
 
     for queue_service_id, queue in details:
@@ -333,6 +380,9 @@ def load_queue_services_details(neo4j_session, details, update_tag):
 
 @timeit
 def _load_queues(neo4j_session, queues, update_tag):
+    """
+    Ingest Queue details into neo4j.
+    """
     ingest_queues = """
     MERGE (q:AzureStorageQueue{id: {QueueId}})
     ON CREATE SET q.firstseen = timestamp(), q.lastupdated = {azure_update_tag}
@@ -364,6 +414,9 @@ def sync_table_services_details(neo4j_session, credentials, subscription_id, tab
 
 @timeit
 def get_table_services_details(credentials, subscription_id, table_services):
+    """
+    Returning the tables with their respective table service id.
+    """
     for table_service in table_services:
         tables = get_tables(credentials, subscription_id, table_service)
         yield table_service['id'], tables
@@ -371,9 +424,12 @@ def get_table_services_details(credentials, subscription_id, table_services):
 
 @timeit
 def get_tables(credentials, subscription_id, table_service):
+    """
+    Getting the tables from the table service.
+    """
     try:
         client = get_client(credentials, subscription_id)
-        tables = list(client.table.list(table_service['resource_group_name'], table_service['storage_account_name']))
+        tables = list(map(lambda x: x.as_dict(), client.table.list(table_service['resource_group_name'], table_service['storage_account_name'])))
 
     except Exception as e:
         logger.warning("Error while retrieving tables - {}".format(e))
@@ -384,6 +440,9 @@ def get_tables(credentials, subscription_id, table_service):
 
 @timeit
 def load_table_services_details(neo4j_session, details, update_tag):
+    """
+    Create dictionary for the table so we can import them in a single query
+    """
     tables = []
 
     for table_service_id, table in details:
@@ -397,6 +456,9 @@ def load_table_services_details(neo4j_session, details, update_tag):
 
 @timeit
 def _load_tables(neo4j_session, tables, update_tag):
+    """
+    Ingest Table details into neo4j.
+    """
     ingest_tables = """
     MERGE (t:AzureStorageTable{id: {TableId}})
     ON CREATE SET t.firstseen = timestamp(), t.lastupdated = {azure_update_tag}
@@ -430,6 +492,9 @@ def sync_file_services_details(neo4j_session, credentials, subscription_id, file
 
 @timeit
 def get_file_services_details(credentials, subscription_id, file_services):
+    """
+    Returning the shares with their respective file service id.
+    """
     for file_service in file_services:
         shares = get_shares(credentials, subscription_id, file_service)
         yield file_service['id'], shares
@@ -437,9 +502,12 @@ def get_file_services_details(credentials, subscription_id, file_services):
 
 @timeit
 def get_shares(credentials, subscription_id, file_service):
+    """
+    Getting the shares from the file service.
+    """
     try:
         client = get_client(credentials, subscription_id)
-        shares = list(client.file_shares.list(file_service['resource_group_name'], file_service['storage_account_name']))
+        shares = list(map(lambda x: x.as_dict(), client.file_shares.list(file_service['resource_group_name'], file_service['storage_account_name'])))
 
     except Exception as e:
         logger.warning("Error while retrieving file shares - {}".format(e))
@@ -450,6 +518,9 @@ def get_shares(credentials, subscription_id, file_service):
 
 @timeit
 def load_file_services_details(neo4j_session, details, update_tag):
+    """
+    Create dictionary for the shares so we can import them in a single query
+    """
     shares = []
 
     for file_service_id, share in details:
@@ -463,6 +534,9 @@ def load_file_services_details(neo4j_session, details, update_tag):
 
 @timeit
 def _load_shares(neo4j_session, shares, update_tag):
+    """
+    Ingest Share details into neo4j.
+    """
     ingest_shares = """
     MERGE (share:AzureStorageFileShare{id: {ShareId}})
     ON CREATE SET share.firstseen = timestamp(), share.lastupdated = {azure_update_tag}
@@ -517,6 +591,9 @@ def sync_blob_services_details(neo4j_session, credentials, subscription_id, blob
 
 @timeit
 def get_blob_services_details(credentials, subscription_id, blob_services):
+    """
+    Returning the blob containers with their respective blob service id.
+    """
     for blob_service in blob_services:
         blob_containers = get_blob_containers(credentials, subscription_id, blob_service)
         yield blob_service['id'], blob_containers
@@ -524,9 +601,12 @@ def get_blob_services_details(credentials, subscription_id, blob_services):
 
 @timeit
 def get_blob_containers(credentials, subscription_id, blob_service):
+    """
+    Getting the blob containers from the blob service.
+    """
     try:
         client = get_client(credentials, subscription_id)
-        blob_containers = list(client.blob_containers.list(blob_service['resource_group_name'], blob_service['storage_account_name']))
+        blob_containers = list(map(lambda x: x.as_dict(), client.blob_containers.list(blob_service['resource_group_name'], blob_service['storage_account_name'])))
 
     except Exception as e:
         logger.warning("Error while retrieving blob_containers - {}".format(e))
@@ -537,6 +617,9 @@ def get_blob_containers(credentials, subscription_id, blob_service):
 
 @timeit
 def load_blob_services_details(neo4j_session, details, update_tag):
+    """
+    Create dictionary for the blob containers so we can import them in a single query
+    """
     blob_containers = []
 
     for blob_service_id, container in details:
@@ -550,21 +633,24 @@ def load_blob_services_details(neo4j_session, details, update_tag):
 
 @timeit
 def _load_blob_containers(neo4j_session, blob_containers, update_tag):
+    """
+    Ingest Blob Container details into neo4j.
+    """
     ingest_blob_containers = """
     MERGE (bc:AzureStorageBlobContainer{id: {ContainerId}})
     ON CREATE SET bc.firstseen = timestamp(), bc.lastupdated = {azure_update_tag}
     SET bc.name = {Name},
     bc.type = {Type},
     bc.deleted = {Deleted},
-    bc.deletedTime = {DeletedTime},
+    bc.deletedtime = {DeletedTime},
     bc.defaultencryptionscope = {DefaultEncryptionScope},
     bc.publicaccess = {PublicAccess},
-    bc.leaseStatus = {LeaseStatus},
+    bc.leasestatus = {LeaseStatus},
     bc.leasestate = {LeaseState},
     bc.lastmodifiedtime = {LastModifiedTime},
     bc.remainingretentiondays = {RemainingRetentionDays},
     bc.version = {Version},
-    bc.immutabilitypolicystate = {ImmutatbilityPolicyState},
+    bc.immutabilitypolicy = {HasImmutatbilityPolicy},
     bc.haslegalhold = {HasLegalHold},
     bc.leaseduration = {LeaseDuration}
     WITH bc
@@ -580,18 +666,18 @@ def _load_blob_containers(neo4j_session, blob_containers, update_tag):
             ContainerId=container['id'],
             Name=container['name'],
             Type=container['type'],
-            Deleted=container['properties']['deleted'],
-            DeletedTime=container['properties']['deletedTime'],
-            DefaultEncryptionScope=container['properties']['defaultEncryptionScope'],
-            PublicAccess=container['properties']['publicAccess'],
-            LeaseStatus=container['properties']['leaseStatus'],
-            LeaseState=container['properties']['leaseState'],
-            LastModifiedTime=container['properties']['lastModifiedTime'],
-            RemainingRetentionDays=container['properties']['remainingRetentionDays'],
-            Version=container['properties']['version'],
-            ImmutatbilityPolicyState=container['properties']['immutabilityPolicy']['state'],
-            HasLegalHold=container['properties']['hasLegalHold'],
-            LeaseDuration=container['properties']['leaseDuration'],
+            Deleted=container['deleted'],
+            DeletedTime=container.get('deletedTime'),
+            DefaultEncryptionScope=container['default_encryption_scope'],
+            PublicAccess=container['public_access'],
+            LeaseStatus=container['lease_status'],
+            LeaseState=container['lease_state'],
+            LastModifiedTime=container['last_modified_time'],
+            RemainingRetentionDays=container['remaining_retention_days'],
+            Version=container.get('version'),
+            HasImmutatbilityPolicy=container['has_immutability_policy'],
+            HasLegalHold=container['has_legal_hold'],
+            LeaseDuration=container.get('leaseDuration'),
             ServiceId=container['service_id'],
             azure_update_tag=update_tag,
         )
