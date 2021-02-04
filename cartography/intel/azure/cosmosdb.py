@@ -1,6 +1,7 @@
 import logging
 import uuid
 from azure.mgmt.cosmosdb import CosmosDBManagementClient
+from cartography.util import get_optional_value
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
@@ -68,7 +69,7 @@ def load_database_account_data(neo4j_session, subscription_id, database_account_
     d.maxstalenessprefix = {MaxStalenessPrefix},
     d.maxintervalinseconds = {MaxIntervalInSeconds}
     WITH d
-    MATCH (owner:AzureAccount{id: {AZURE_SUBSCRIPTION_ID}})
+    MATCH (owner:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}})
     MERGE (owner)-[r:RESOURCE]->(d)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {azure_update_tag}
@@ -110,11 +111,10 @@ def load_database_account_data(neo4j_session, subscription_id, database_account_
         )
 
         # cleanup existing cors policy properties
-        # TODO: Take a look at the JSON code
         run_cleanup_job(
             'azure_cosmosdb_cors_details.json',
             neo4j_session,
-            {'UPDATE_TAG': azure_update_tag, 'AZURE_SUBSCRIPTION_ID': subscription_id, 'DATABASE_ACCOUNT_ID': database_account['id']},
+            {'UPDATE_TAG': azure_update_tag, 'AZURE_SUBSCRIPTION_ID': subscription_id},
         )
 
         if 'cors' in database_account and len(database_account['cors']) > 0:
@@ -384,48 +384,59 @@ def _load_cosmosdb_virtual_network_rules(neo4j_session, database_account, azure_
         )
 
 
-# @timeit
-# def sync_storage_account_details(neo4j_session, credentials, subscription_id, storage_account_list, sync_tag):
-#     details = get_storage_account_details(credentials, subscription_id, storage_account_list)
-#     load_storage_account_details(neo4j_session, credentials, subscription_id, details, sync_tag)
-#
-#
-# @timeit
-# def get_storage_account_details(credentials, subscription_id, storage_account_list):
-#     for storage_account in storage_account_list:
-#         queue_services = get_queue_services(credentials, subscription_id, storage_account)
-#         table_services = get_table_services(credentials, subscription_id, storage_account)
-#         file_services = get_file_services(credentials, subscription_id, storage_account)
-#         blob_services = get_blob_services(credentials, subscription_id, storage_account)
-#         yield storage_account['id'], storage_account['name'], storage_account['resourceGroup'], queue_services, table_services, file_services, blob_services
-#
-#
-# @timeit
-# def get_queue_services(credentials, subscription_id, storage_account):
-#     try:
-#         client = get_client(credentials, subscription_id)
-#         queue_service_list = client.queue_services.list(storage_account['resourceGroup'], storage_account['name']).as_dict()['value']
-#
-#     except Exception as e:
-#         logger.warning("Error while retrieving queue services list - {}".format(e))
-#         return []
-#
-#     return queue_service_list
-#
-#
-# @timeit
-# def get_table_services(credentials, subscription_id, storage_account):
-#     try:
-#         client = get_client(credentials, subscription_id)
-#         table_service_list = client.table_services.list(storage_account['resourceGroup'], storage_account['name']).as_dict()['value']
-#
-#     except Exception as e:
-#         logger.warning("Error while retrieving table services list - {}".format(e))
-#         return []
-#
-#     return table_service_list
-#
-#
+@timeit
+def sync_database_account_details(neo4j_session, credentials, subscription_id, database_account_list, sync_tag):
+    details = get_database_account_details(credentials, subscription_id, database_account_list)
+    load_database_account_details(neo4j_session, credentials, subscription_id, details, sync_tag)
+
+
+@timeit
+def get_database_account_details(credentials, subscription_id, database_account_list):
+    """
+    Iterate over the database accounts and return the list of SQL databases, Cassandra keyspaces associated with each database account.
+    """
+    for database_account in database_account_list:
+        sql_databases = get_sql_databases(credentials, subscription_id, database_account)
+        cassandra_keyspaces = get_cassandra_keyspaces(credentials, subscription_id, database_account)
+        # file_services = get_file_services(credentials, subscription_id, storage_account)
+        # blob_services = get_blob_services(credentials, subscription_id, storage_account)
+        yield database_account['id'], database_account['name'], database_account['resourceGroup'], sql_databases, cassandra_keyspaces
+
+
+@timeit
+def get_sql_databases(credentials, subscription_id, database_account):
+    """
+    Return the list of SQL Database in a database account.
+    """
+    try:
+        client = get_client(credentials, subscription_id)
+        # TODO: Check the below line of code
+        sql_database_list = client.sql_resources.list_sql_databases(database_account['resourceGroup'], database_account['name']).as_dict()['value']
+
+    except Exception as e:
+        logger.warning("Error while retrieving SQL Database list - {}".format(e))
+        return []
+
+    return sql_database_list
+
+
+@timeit
+def get_cassandra_keyspaces(credentials, subscription_id, database_account):
+    """
+    Return the list of Cassandra Keyspaces in a database account.
+    """
+    try:
+        client = get_client(credentials, subscription_id)
+        # TODO: Check the below line of code
+        cassandra_keyspace_list = client.cassandra_resources.list_cassandra_keyspaces(database_account['resourceGroup'], database_account['name']).as_dict()['value']
+
+    except Exception as e:
+        logger.warning("Error while retrieving Cassandra keyspaces list - {}".format(e))
+        return []
+
+    return cassandra_keyspace_list
+
+
 # @timeit
 # def get_file_services(credentials, subscription_id, storage_account):
 #     try:
@@ -454,103 +465,104 @@ def _load_cosmosdb_virtual_network_rules(neo4j_session, database_account, azure_
 #     return blob_service_list
 #
 #
-# @timeit
-# def load_storage_account_details(neo4j_session, credentials, subscription_id, details, update_tag):
-#     queue_services = []
-#     table_services = []
-#     file_services = []
-#     blob_services = []
-#
-#     for account_id, name, resourceGroup, queue_service, table_service, file_service, blob_service in details:
-#         if len(queue_service) > 0:
-#             for service in queue_service:
-#                 service['storage_account_name'] = name
-#                 service['storage_account_id'] = account_id
-#                 service['resource_group_name'] = resourceGroup
-#             queue_services.extend(queue_service)
-#
-#         if len(table_service) > 0:
-#             for service in table_service:
-#                 service['storage_account_name'] = name
-#                 service['storage_account_id'] = account_id
-#                 service['resource_group_name'] = resourceGroup
-#             table_services.extend(table_service)
-#
-#         if len(file_service) > 0:
-#             for service in file_service:
-#                 service['storage_account_name'] = name
-#                 service['storage_account_id'] = account_id
-#                 service['resource_group_name'] = resourceGroup
-#             file_services.extend(file_service)
-#
-#         if len(blob_service) > 0:
-#             for service in blob_service:
-#                 service['storage_account_name'] = name
-#                 service['storage_account_id'] = account_id
-#                 service['resource_group_name'] = resourceGroup
-#             blob_services.extend(blob_service)
-#
-#     _load_queue_services(neo4j_session, queue_services, update_tag)
-#     _load_table_services(neo4j_session, table_services, update_tag)
-#     _load_file_services(neo4j_session, file_services, update_tag)
-#     _load_blob_services(neo4j_session, blob_services, update_tag)
-#
-#     sync_queue_services_details(neo4j_session, credentials, subscription_id, queue_services, update_tag)
-#     sync_table_services_details(neo4j_session, credentials, subscription_id, table_services, update_tag)
-#     sync_file_services_details(neo4j_session, credentials, subscription_id, file_services, update_tag)
-#     sync_blob_services_details(neo4j_session, credentials, subscription_id, blob_services, update_tag)
-#
-#
-# @timeit
-# def _load_queue_services(neo4j_session, queue_services, update_tag):
-#     ingest_queue_services = """
-#     MERGE (qs:AzureStorageQueueService{id: {QueueServiceId}})
-#     ON CREATE SET qs.firstseen = timestamp(), qs.lastupdated = {azure_update_tag}
-#     SET qs.name = {Name},
-#     qs.type = {Type}
-#     WITH qs
-#     MATCH (s:AzureStorageAccount{id: {StorageAccountId}})
-#     MERGE (s)-[r:USES]->(qs)
-#     ON CREATE SET r.firstseen = timestamp()
-#     SET r.lastupdated = {azure_update_tag}
-#     """
-#
-#     for service in queue_services:
-#         neo4j_session.run(
-#             ingest_queue_services,
-#             QueueServiceId=service['id'],
-#             Name=service['name'],
-#             Type=service['type'],
-#             StorageAccountId=service['storage_account_id'],
-#             azure_update_tag=update_tag,
-#         )
-#
-#
-# @timeit
-# def _load_table_services(neo4j_session, table_services, update_tag):
-#     ingest_table_services = """
-#     MERGE (ts:AzureStorageTableService{id: {TableServiceId}})
-#     ON CREATE SET ts.firstseen = timestamp(), ts.lastupdated = {azure_update_tag}
-#     SET ts.name = {Name},
-#     ts.type = {Type}
-#     WITH ts
-#     MATCH (s:AzureStorageAccount{id: {StorageAccountId}})
-#     MERGE (s)-[r:USES]->(ts)
-#     ON CREATE SET r.firstseen = timestamp()
-#     SET r.lastupdated = {azure_update_tag}
-#     """
-#
-#     for service in table_services:
-#         neo4j_session.run(
-#             ingest_table_services,
-#             TableServiceId=service['id'],
-#             Name=service['name'],
-#             Type=service['type'],
-#             StorageAccountId=service['storage_account_id'],
-#             azure_update_tag=update_tag,
-#         )
-#
-#
+@timeit
+def load_database_account_details(neo4j_session, credentials, subscription_id, details, update_tag):
+    """
+    Create dictionaries for SQL Databases, Cassandra Keyspaces
+    """
+    sql_databases = []
+    cassandra_keyspaces = []
+
+    for account_id, name, resourceGroup, sql_database, cassandra_keyspace in details:
+        if len(sql_database) > 0:
+            for db in sql_database:
+                db['database_account_name'] = name
+                db['database_account_id'] = account_id
+                db['resource_group_name'] = resourceGroup
+            sql_databases.extend(sql_database)
+
+        if len(cassandra_keyspace) > 0:
+            for keyspace in cassandra_keyspace:
+                keyspace['database_account_name'] = name
+                keyspace['database_account_id'] = account_id
+                keyspace['resource_group_name'] = resourceGroup
+            cassandra_keyspaces.extend(cassandra_keyspace)
+
+    _load_sql_databases(neo4j_session, sql_databases, update_tag)
+    _load_cassandra_keyspaces(neo4j_session, cassandra_keyspaces, update_tag)
+
+    sync_sql_database_details(neo4j_session, credentials, subscription_id, sql_databases, update_tag)
+    sync_cassandra_keyspace_details(neo4j_session, credentials, subscription_id, cassandra_keyspaces, update_tag)
+
+
+@timeit
+def _load_sql_databases(neo4j_session, sql_databases, update_tag):
+    """
+    Ingest SQL Databases into neo4j.
+    """
+    ingest_sql_databases = """
+    MERGE (sdb:AzureCosmosDBSqlDatabase{id: {SQLDatabaseId}})
+    ON CREATE SET sdb.firstseen = timestamp(), sdb.lastupdated = {azure_update_tag}
+    SET sdb.name = {Name},
+    sdb.type = {Type},
+    sdb.location = {Location},
+    sdb.throughput = {Throughput},
+    sdb.maxthroughput = {MaxThroughput}
+    WITH sdb
+    MATCH (d:AzureDatabaseAccount{id: {DatabaseAccountId}})
+    MERGE (d)-[r:CONTAINS]->(sdb)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {azure_update_tag}
+    """
+
+    for database in sql_databases:
+        neo4j_session.run(
+            ingest_sql_databases,
+            SQLDatabaseId=database['id'],
+            Name=database['name'],
+            Type=database['type'],
+            Location=database['location'],
+            Throughput=database['options']['throughput'],
+            MaxThroughput=database['options']['autoscale_setting']['max_throughput'],
+            DatabaseAccountId=database['database_account_id'],
+            azure_update_tag=update_tag,
+        )
+
+
+@timeit
+def _load_cassandra_keyspaces(neo4j_session, cassandra_keyspaces, update_tag):
+    """
+    Ingest Cassandra keyspaces into neo4j.
+    """
+    ingest_cassandra_keyspaces = """
+    MERGE (ck:AzureCosmosDBCassandraKeyspace{id: {KeyspaceId}})
+    ON CREATE SET ck.firstseen = timestamp(), ck.lastupdated = {azure_update_tag}
+    SET ck.name = {Name},
+    ck.type = {Type},
+    ck.location = {Location},
+    ck.throughput = {Throughput},
+    ck.maxthroughput = {MaxThroughput}
+    WITH ck
+    MATCH (d:AzureDatabaseAccount{id: {DatabaseAccountId}})
+    MERGE (d)-[r:CONTAINS]->(ck)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {azure_update_tag}
+    """
+
+    for keyspace in cassandra_keyspaces:
+        neo4j_session.run(
+            ingest_cassandra_keyspaces,
+            KeyspaceId=keyspace['id'],
+            Name=keyspace['name'],
+            Type=keyspace['type'],
+            Location=keyspace['location'],
+            Throughput=keyspace['options']['throughput'],
+            MaxThroughput=keyspace['options']['autoscale_setting']['max_throughput'],
+            DatabaseAccountId=keyspace['database_account_id'],
+            azure_update_tag=update_tag,
+        )
+
+
 # @timeit
 # def _load_file_services(neo4j_session, file_services, update_tag):
 #     ingest_file_services = """
@@ -601,136 +613,190 @@ def _load_cosmosdb_virtual_network_rules(neo4j_session, database_account, azure_
 #         )
 #
 #
-# @timeit
-# def sync_queue_services_details(neo4j_session, credentials, subscription_id, queue_services, update_tag):
-#     queue_services_details = get_queue_services_details(credentials, subscription_id, queue_services)
-#     load_queue_services_details(neo4j_session, queue_services_details, update_tag)
-#
-#
-# @timeit
-# def get_queue_services_details(credentials, subscription_id, queue_services):
-#     for queue_service in queue_services:
-#         queues = get_queues(credentials, subscription_id, queue_service)
-#         yield queue_service['id'], queues
-#
-#
-# @timeit
-# def get_queues(credentials, subscription_id, queue_service):
-#     try:
-#         client = get_client(credentials, subscription_id)
-#         queues = list(map(lambda x: x.as_dict(), client.queue.list(queue_service['resource_group_name'], queue_service['storage_account_name'])))
-#
-#     except Exception as e:
-#         logger.warning("Error while retrieving queues - {}".format(e))
-#         return []
-#
-#     return queues
-#
-#
-# @timeit
-# def load_queue_services_details(neo4j_session, details, update_tag):
-#     queues = []
-#
-#     for queue_service_id, queue in details:
-#         if len(queue) > 0:
-#             for q in queue:
-#                 q['service_id'] = queue_service_id
-#             queues.extend(queue)
-#
-#     _load_queues(neo4j_session, queues, update_tag)
-#
-#
-# @timeit
-# def _load_queues(neo4j_session, queues, update_tag):
-#     ingest_queues = """
-#     MERGE (q:AzureStorageQueue{id: {QueueId}})
-#     ON CREATE SET q.firstseen = timestamp(), q.lastupdated = {azure_update_tag}
-#     SET q.name = {Name},
-#     q.type = {Type}
-#     WITH q
-#     MATCH (qs:AzureStorageQueueService{id: {ServiceId}})
-#     MERGE (qs)-[r:CONTAINS]->(q)
-#     ON CREATE SET r.firstseen = timestamp()
-#     SET r.lastupdated = {azure_update_tag}
-#     """
-#
-#     for queue in queues:
-#         neo4j_session.run(
-#             ingest_queues,
-#             QueueId=queue['id'],
-#             Name=queue['name'],
-#             Type=queue['type'],
-#             ServiceId=queue['service_id'],
-#             azure_update_tag=update_tag,
-#         )
-#
-#
-# @timeit
-# def sync_table_services_details(neo4j_session, credentials, subscription_id, table_services, update_tag):
-#     table_services_details = get_table_services_details(credentials, subscription_id, table_services)
-#     load_table_services_details(neo4j_session, table_services_details, update_tag)
-#
-#
-# @timeit
-# def get_table_services_details(credentials, subscription_id, table_services):
-#     for table_service in table_services:
-#         tables = get_tables(credentials, subscription_id, table_service)
-#         yield table_service['id'], tables
-#
-#
-# @timeit
-# def get_tables(credentials, subscription_id, table_service):
-#     try:
-#         client = get_client(credentials, subscription_id)
-#         tables = list(map(lambda x: x.as_dict(), client.table.list(table_service['resource_group_name'], table_service['storage_account_name'])))
-#
-#     except Exception as e:
-#         logger.warning("Error while retrieving tables - {}".format(e))
-#         return []
-#
-#     return tables
-#
-#
-# @timeit
-# def load_table_services_details(neo4j_session, details, update_tag):
-#     tables = []
-#
-#     for table_service_id, table in details:
-#         if len(table) > 0:
-#             for t in table:
-#                 t['service_id'] = table_service_id
-#             tables.extend(table)
-#
-#     _load_tables(neo4j_session, tables, update_tag)
-#
-#
-# @timeit
-# def _load_tables(neo4j_session, tables, update_tag):
-#     ingest_tables = """
-#     MERGE (t:AzureStorageTable{id: {TableId}})
-#     ON CREATE SET t.firstseen = timestamp(), t.lastupdated = {azure_update_tag}
-#     SET t.name = {Name},
-#     t.type = {Type},
-#     t.tablename = {TableName}
-#     WITH t
-#     MATCH (ts:AzureStorageTableService{id: {ServiceId}})
-#     MERGE (ts)-[r:CONTAINS]->(t)
-#     ON CREATE SET r.firstseen = timestamp()
-#     SET r.lastupdated = {azure_update_tag}
-#     """
-#
-#     for table in tables:
-#         neo4j_session.run(
-#             ingest_tables,
-#             TableId=table['id'],
-#             Name=table['name'],
-#             Type=table['type'],
-#             TableName=table['properties']['tableName'],
-#             ServiceId=table['service_id'],
-#             azure_update_tag=update_tag,
-#         )
-#
-#
+@timeit
+def sync_sql_database_details(neo4j_session, credentials, subscription_id, sql_databases, update_tag):
+    sql_database_details = get_sql_database_details(credentials, subscription_id, sql_databases)
+    load_sql_database_details(neo4j_session, sql_database_details, update_tag)
+
+
+@timeit
+def get_sql_database_details(credentials, subscription_id, sql_databases):
+    """
+    Iterate over the SQL databases to retrieve the SQL containers in them.
+    """
+    for database in sql_databases:
+        containers = get_sql_containers(credentials, subscription_id, database)
+        yield database['id'], containers
+
+
+@timeit
+def get_sql_containers(credentials, subscription_id, database):
+    """
+    Returns the list of SQL containers in a database.
+    """
+    try:
+        client = get_client(credentials, subscription_id)
+        # TODO : test this below line of code
+        containers = list(map(lambda x: x.as_dict(), client.sql_resources.list_sql_containers(database['resource_group_name'], database['database_account_name'], database['name'])))
+
+    except Exception as e:
+        logger.warning("Error while retrieving SQL Containers - {}".format(e))
+        return []
+
+    return containers
+
+
+@timeit
+def load_sql_database_details(neo4j_session, details, update_tag):
+    """
+    Create dictionary for SQL Containers
+    """
+    containers = []
+
+    for database_id, container in details:
+        if len(container) > 0:
+            for c in container:
+                c['database_id'] = database_id
+            containers.extend(container)
+
+    _load_sql_containers(neo4j_session, containers, update_tag)
+
+
+@timeit
+def _load_sql_containers(neo4j_session, containers, update_tag):
+    """
+    Ingest SQL Container details into neo4j.
+    """
+    ingest_containers = """
+    MERGE (c:AzureCosmosDBSqlContainer{id: {ResourceId}})
+    ON CREATE SET c.firstseen = timestamp(), c.lastupdated = {azure_update_tag}
+    SET c.name = {Name},
+    c.type = {Type},
+    c.location = {Location},
+    c.throughput = {Throughput},
+    c.maxthroughput = {MaxThroughput},
+    c.container = {ContainerId},
+    c.defaultttl = {DefaultTimeToLive},
+    c.analyticalttl = {AnalyticalTTL},
+    c.isautomaticindexingpolicy = {IsAutomaticIndexingPolicy},
+    c.indexingmode = {IndexingMode},
+    c.conflictresolutionpolicymode = {ConflictResolutionPolicyMode}
+    WITH c
+    MATCH (sdb:AzureCosmosDBSqlDatabase{id: {SQLDatabaseId}})
+    MERGE (sdb)-[r:CONTAINS]->(c)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {azure_update_tag}
+    """
+
+    for container in containers:
+        neo4j_session.run(
+            ingest_containers,
+            ResourceId=container['id'],
+            Name=container['name'],
+            Type=container['type'],
+            Location=container['location'],
+            Throughput=container['options']['throughput'],
+            MaxThroughput=container['options']['autoscale_settings']['max_throughput'],
+            ContainerId=container['resource']['id'],
+            DefaultTimeToLive=container['resource']['default_ttl'],
+            AnalyticalTTL=container['resource']['analytical_storage_ttl'],
+            IsAutomaticIndexingPolicy=container['resource']['indexing_policy']['automatic'],
+            IndexingMode=container['resource']['indexing_policy']['indexing_mode'],
+            ConflictResolutionPolicyMode=container['resource']['conflict_resolution_policy']['mode'],
+            SQLDatabaseId=container['database_id'],
+            azure_update_tag=update_tag,
+        )
+
+
+@timeit
+def sync_cassandra_keyspace_details(neo4j_session, credentials, subscription_id, cassandra_keyspaces, update_tag):
+    cassandra_keyspace_details = get_cassandra_keyspace_details(credentials, subscription_id, cassandra_keyspaces)
+    load_cassandra_keyspace_details(neo4j_session, cassandra_keyspace_details, update_tag)
+
+
+@timeit
+def get_cassandra_keyspace_details(credentials, subscription_id, cassandra_keyspaces):
+    """
+    Iterate through the Cassandra keyspaces to get the list of tables in each keyspace.
+    """
+    for keyspace in cassandra_keyspaces:
+        tables = get_cassandra_tables(credentials, subscription_id, keyspace)
+        yield keyspace['id'], tables
+
+
+@timeit
+def get_cassandra_tables(credentials, subscription_id, keyspace):
+    """
+    Returns the list of tables in a Cassandra Keyspace.
+    """
+    try:
+        client = get_client(credentials, subscription_id)
+        # TODO: Test the below line of code
+        tables = list(map(lambda x: x.as_dict(), client.cassandra_resources.list_cassandra_tables(keyspace['resource_group_name'], keyspace['database_account_name'], keyspace['name'])))
+
+    except Exception as e:
+        logger.warning("Error while retrieving Cassandra tables - {}".format(e))
+        return []
+
+    return tables
+
+
+@timeit
+def load_cassandra_keyspace_details(neo4j_session, details, update_tag):
+    """
+    Create a dictionary for Cassandra tables.
+    """
+    tables = []
+
+    for keyspace_id, table in details:
+        if len(table) > 0:
+            for t in table:
+                t['keyspace_id'] = keyspace_id
+            tables.extend(table)
+
+    _load_cassandra_tables(neo4j_session, tables, update_tag)
+
+
+@timeit
+def _load_cassandra_tables(neo4j_session, tables, update_tag):
+    """
+    Ingest Cassandra Tables into neo4j.
+    """
+    ingest_cassandra_tables = """
+    MERGE (ct:AzureCosmosDBCassandraTable{id: {ResourceId}})
+    ON CREATE SET ct.firstseen = timestamp(), ct.lastupdated = {azure_update_tag}
+    SET ct.name = {Name},
+    ct.type = {Type},
+    ct.location = {Location},
+    ct.throughput = {Throughput},
+    ct.maxthroughput = {MaxThroughput},
+    ct.container = {TableId},
+    ct.defaultttl = {DefaultTimeToLive},
+    ct.analyticalttl = {AnalyticalTTL}
+    WITH ct
+    MATCH (ck:AzureCosmosDBCassandraKeyspace{id: {KeyspaceId}})
+    MERGE (ck)-[r:CONTAINS]->(ct)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {azure_update_tag}
+    """
+
+    for table in tables:
+        neo4j_session.run(
+            ingest_cassandra_tables,
+            ResourceId=table['id'],
+            Name=table['name'],
+            Type=table['type'],
+            Location=table['location'],
+            Throughput=table['options']['throughput'],
+            MaxThroughput=table['options']['autoscale_settings']['max_throughput'],
+            TableId=table['resource']['id'],
+            DefaultTimeToLive=table['resource']['default_ttl'],
+            AnalyticalTTL=table['resource']['analytical_storage_ttl'],
+            KeyspaceId=table['keyspace_id'],
+            azure_update_tag=update_tag,
+        )
+
+
 # @timeit
 # def sync_file_services_details(neo4j_session, credentials, subscription_id, file_services, update_tag):
 #     file_services_details = get_file_services_details(credentials, subscription_id, file_services)
@@ -917,5 +983,5 @@ def sync(neo4j_session, credentials, subscription_id, sync_tag, common_job_param
     logger.info("Syncing Azure CosmosDB for subscription '%s'.", subscription_id)
     database_account_list = get_database_account_list(credentials, subscription_id)
     load_database_account_data(neo4j_session, subscription_id, database_account_list, sync_tag)
-    # sync_storage_account_details(neo4j_session, credentials, subscription_id, storage_account_list, sync_tag)
+    sync_database_account_details(neo4j_session, credentials, subscription_id, database_account_list, sync_tag)
     # cleanup_azure_storage_accounts(neo4j_session, subscription_id, common_job_parameters)
