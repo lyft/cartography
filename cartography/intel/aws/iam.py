@@ -691,7 +691,7 @@ def sync_service_access_data(neo4j_session, access_data, principal_arn, principa
         su.lastauthenticatedretion = {LAST_AUTHENTICATED_REGION}, su.totalauthenticatedentities = {TOTAL_AUTHENTICATED_ENTITIES},
         su.lastupdated = {aws_update_tag}
         WITH su
-        MATCH (ap:AWSGroupr{arn: {PRINCIPAL_ARN}})
+        MATCH (ap:AWSGroup{arn: {PRINCIPAL_ARN}})
         MERGE (ap)-[r:HAS_ACCESSED]->(su)
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = {aws_update_tag}
