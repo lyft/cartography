@@ -57,7 +57,7 @@ def load_storage_account_data(neo4j_session, subscription_id, storage_account_li
     s.statusofsecondary = {StatusOfSecondary},
     s.supportshttpstrafficonly = {SupportsHttpsTrafficOnly}
     WITH s
-    MATCH (owner:AzureAccount{id: {AZURE_SUBSCRIPTION_ID}})
+    MATCH (owner:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}})
     MERGE (owner)-[r:RESOURCE]->(s)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {azure_update_tag}
