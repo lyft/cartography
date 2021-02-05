@@ -399,7 +399,8 @@ def get_database_account_details(credentials, subscription_id, database_account_
         sql_databases = get_sql_databases(credentials, subscription_id, database_account)
         cassandra_keyspaces = get_cassandra_keyspaces(credentials, subscription_id, database_account)
         mongodb_databases = get_mongodb_databases(credentials, subscription_id, database_account)
-        yield database_account['id'], database_account['name'], database_account['resourceGroup'], sql_databases, cassandra_keyspaces, mongodb_databases
+        table_resources = get_table_resources(credentials, subscription_id, database_account)
+        yield database_account['id'], database_account['name'], database_account['resourceGroup'], sql_databases, cassandra_keyspaces, mongodb_databases, table_resources
 
 
 @timeit
@@ -454,6 +455,23 @@ def get_mongodb_databases(credentials, subscription_id, database_account):
 
 
 @timeit
+def get_table_resources(credentials, subscription_id, database_account):
+    """
+    Return the list of Table Resources in a database account.
+    """
+    try:
+        client = get_client(credentials, subscription_id)
+        # TODO: Check the below line of code
+        table_resources_list = client.table_resources.list_tables(database_account['resourceGroup'], database_account['name']).as_dict()['value']
+
+    except Exception as e:
+        logger.warning("Error while retrieving table resources list - {}".format(e))
+        return []
+
+    return table_resources_list
+
+
+@timeit
 def load_database_account_details(neo4j_session, credentials, subscription_id, details, update_tag):
     """
     Create dictionaries for SQL Databases, Cassandra Keyspaces, MongoDB Databases and table resources.
@@ -461,8 +479,9 @@ def load_database_account_details(neo4j_session, credentials, subscription_id, d
     sql_databases = []
     cassandra_keyspaces = []
     mongodb_databases = []
+    table_resources = []
 
-    for account_id, name, resourceGroup, sql_database, cassandra_keyspace, mongodb_database in details:
+    for account_id, name, resourceGroup, sql_database, cassandra_keyspace, mongodb_database, table in details:
         if len(sql_database) > 0:
             for db in sql_database:
                 db['database_account_name'] = name
@@ -484,9 +503,15 @@ def load_database_account_details(neo4j_session, credentials, subscription_id, d
                 db['resource_group_name'] = resourceGroup
             mongodb_databases.extend(mongodb_database)
 
+        if len(table) > 0:
+            for t in table:
+                t['database_account_id'] = account_id
+            table_resources.extend(table)
+
     _load_sql_databases(neo4j_session, sql_databases, update_tag)
     _load_cassandra_keyspaces(neo4j_session, cassandra_keyspaces, update_tag)
     _load_mongodb_databases(neo4j_session, mongodb_databases, update_tag)
+    _load_table_resources(neo4j_session, table_resources, update_tag)
 
     sync_sql_database_details(neo4j_session, credentials, subscription_id, sql_databases, update_tag)
     sync_cassandra_keyspace_details(neo4j_session, credentials, subscription_id, cassandra_keyspaces, update_tag)
@@ -591,6 +616,40 @@ def _load_mongodb_databases(neo4j_session, mongodb_databases, update_tag):
             Throughput=database['options']['throughput'],
             MaxThroughput=database['options']['autoscale_setting']['max_throughput'],
             DatabaseAccountId=database['database_account_id'],
+            azure_update_tag=update_tag,
+        )
+
+
+@timeit
+def _load_table_resources(neo4j_session, table_resources, update_tag):
+    """
+    Ingest Table resources into neo4j.
+    """
+    ingest_tables = """
+    MERGE (tr:AzureCosmosDBTableResource{id: {ResourceId}})
+    ON CREATE SET tr.firstseen = timestamp(), tr.lastupdated = {azure_update_tag}
+    SET tr.name = {Name},
+    tr.type = {Type},
+    tr.location = {Location},
+    tr.throughput = {Throughput},
+    tr.maxthroughput = {MaxThroughput}
+    WITH tr
+    MATCH (d:AzureDatabaseAccount{id: {DatabaseAccountId}})
+    MERGE (d)-[r:CONTAINS]->(tr)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {azure_update_tag}
+    """
+
+    for table in table_resources:
+        neo4j_session.run(
+            ingest_tables,
+            ResourceId=table['id'],
+            Name=table['name'],
+            Type=table['type'],
+            Location=table['location'],
+            Throughput=table['options']['throughput'],
+            MaxThroughput=table['options']['autoscale_setting']['max_throughput'],
+            DatabaseAccountId=table['database_account_id'],
             azure_update_tag=update_tag,
         )
 

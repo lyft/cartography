@@ -125,5 +125,8 @@ CREATE INDEX ON :AzureCosmosDBPrivateEndpointConnection(id);
 CREATE INDEX ON :AzureCosmosDBVirtualNetworkRule(id);
 CREATE INDEX ON :AzureCosmosDBSqlDatabase(id);
 CREATE INDEX ON :AzureCosmosDBCassandraKeyspace(id);
+CREATE INDEX ON :AzureCosmosDBMongoDBDatabase(id);
+CREATE INDEX ON :AzureCosmosDBTableResource(id);
 CREATE INDEX ON :AzureCosmosDBSqlContainer(id);
 CREATE INDEX ON :AzureCosmosDBCassandraTable(id);
+CREATE INDEX ON :AzureCosmosDBMongoDBCollection(id);
