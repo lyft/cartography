@@ -13,3 +13,10 @@ build/
 .coverage
 .mypy_cache
 *.vscode
+
+dist/
+node_modules
+.serverless
+.env.aws.development.json
+.env.aws.production.json
+deploy_eks/

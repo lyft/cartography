@@ -1,6 +1,11 @@
 import enum
+import hashlib
 import json
 import logging
+import time
+import pytz
+import maya
+from datetime import datetime, timedelta
 
 from cartography.intel.aws.permission_relationships import parse_statement_node
 from cartography.intel.aws.permission_relationships import principal_allowed_on_resource
@@ -15,6 +20,12 @@ logger = logging.getLogger(__name__)
 class PolicyType(enum.Enum):
     managed = 'managed'
     inline = 'inline'
+
+
+class PrincipalType(enum.Enum):
+    user = 'AWSUser'
+    group = 'AWSGroup'
+    role = 'AWSRole'
 
 
 @timeit
@@ -267,7 +278,8 @@ def load_roles(neo4j_session, roles, current_aws_account_id, aws_update_tag):
     MERGE (rnode:AWSRole{arn: {Arn}})
     ON CREATE SET rnode:AWSPrincipal, rnode.roleid = {RoleId}, rnode.firstseen = timestamp(),
     rnode.createdate = {CreateDate}
-    ON MATCH SET rnode.name = {RoleName}, rnode.path = {Path}
+    ON MATCH SET rnode.name = {RoleName}, rnode.path = {Path},
+    rnode.lastuseddate = {LastUsedDate}, rnode.lastusedregion = {LastUsedRegion}
     SET rnode.lastupdated = {aws_update_tag}
     WITH rnode
     MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
@@ -297,6 +309,8 @@ def load_roles(neo4j_session, roles, current_aws_account_id, aws_update_tag):
             CreateDate=str(role["CreateDate"]),
             RoleName=role["RoleName"],
             Path=role["Path"],
+            LastUsedDate=role["RoleLastUsed"].get('LastUsedDate') if 'RoleLastUsed' in role else None,
+            LastUsedRegion=role["RoleLastUsed"].get('Region') if 'RoleLastUsed' in role else None,
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag,
         )
@@ -477,7 +491,7 @@ def transform_policy_id(principal_arn, policy_type, name):
 
 @timeit
 def load_policy(neo4j_session, policy_id, policy_name, policy_type, principal_arn, aws_update_tag):
-    injest_policy = """
+    ingest_policy = """
     MERGE (policy:AWSPolicy{id: {PolicyId}})
     ON CREATE SET
     policy.firstseen = timestamp(),
@@ -491,7 +505,7 @@ def load_policy(neo4j_session, policy_id, policy_name, policy_type, principal_ar
     SET r.lastupdated = {aws_update_tag}
     """
     neo4j_session.run(
-        injest_policy,
+        ingest_policy,
         PolicyId=policy_id,
         PolicyName=policy_name,
         PolicyType=policy_type,
@@ -502,7 +516,7 @@ def load_policy(neo4j_session, policy_id, policy_name, policy_type, principal_ar
 
 @timeit
 def load_policy_statements(neo4j_session, policy_id, policy_name, statements, aws_update_tag):
-    injest_policy_statement = """
+    ingest_policy_statement = """
         MATCH (policy:AWSPolicy{id: {PolicyId}})
         WITH policy
         UNWIND {Statements} as statement_data
@@ -521,7 +535,7 @@ def load_policy_statements(neo4j_session, policy_id, policy_name, statements, aw
         SET r.lastupdated = {aws_update_tag}
         """
     neo4j_session.run(
-        injest_policy_statement,
+        ingest_policy_statement,
         PolicyId=policy_id,
         PolicyName=policy_name,
         Statements=statements,
@@ -549,7 +563,168 @@ def sync_users(neo4j_session, boto3_session, current_aws_account_id, aws_update_
 
     sync_user_managed_policies(boto3_session, data, neo4j_session, aws_update_tag)
 
+    sync_user_service_access_details(boto3_session, data['Users'], neo4j_session, aws_update_tag)
+
     run_cleanup_job('aws_import_users_cleanup.json', neo4j_session, common_job_parameters)
+
+
+@timeit
+def sync_user_service_access_details(boto3_session, users, neo4j_session, aws_update_tag):
+    for user in users:
+        logger.debug(f"Syncing IAM service access details for user {user['Arn']}")
+        service_access_data = get_service_access_details(boto3_session, user['Arn'])
+        filtered_access_data = transform_service_access_data(service_access_data, user['Arn'])
+        sync_service_access_data(neo4j_session, filtered_access_data, user['Arn'], PrincipalType.user.value, aws_update_tag)
+
+
+@timeit
+def sync_group_service_access_details(boto3_session, groups, neo4j_session, aws_update_tag):
+    for group in groups:
+        logger.debug(f"Syncing IAM service access details for group {group['Arn']}")
+        service_access_data = get_service_access_details(boto3_session, group['Arn'])
+        filtered_access_data = transform_service_access_data(service_access_data, group['Arn'])
+        sync_service_access_data(neo4j_session, filtered_access_data, group['Arn'], PrincipalType.user.value, aws_update_tag)
+
+
+@timeit
+def sync_role_service_access_details(boto3_session, roles, neo4j_session, aws_update_tag):
+    for role in roles:
+        logger.debug(f"Syncing IAM service access details for role {role['Arn']}")
+        service_access_data = get_service_access_details(boto3_session, role['Arn'])
+        filtered_access_data = transform_service_access_data(service_access_data, role['Arn'])
+        sync_service_access_data(neo4j_session, filtered_access_data, role['Arn'], PrincipalType.role.value, aws_update_tag)
+
+
+@timeit
+def get_service_access_details(both3_session, arn):
+    try:
+        iam_client = both3_session.client('iam')
+
+        job = iam_client.generate_service_last_accessed_details(Arn=arn)
+
+        response = iam_client.get_service_last_accessed_details(JobId=job['JobId'])
+
+        cnt = 0  # the "throttling" limit so we can only ping so many requests at a time
+        while response['JobStatus'] != 'COMPLETED':
+            # alternately, we can use this to increase the intervals for checking
+            time.sleep(30.0)
+            response = iam_client.get_service_last_accessed_details(JobId=job['JobId'])
+            cnt = cnt + 1
+            if cnt > 5:
+                break  # to ensure we are not stuck in an infinite loop
+
+        if response['JobStatus'] != 'COMPLETED':  # credential generation could not be completed
+            logger.warning("failed to get service access details after few iterations")
+            return []
+
+        access_data = response['ServicesLastAccessed']
+        while response['IsTruncated']:
+            response = iam_client.get_service_last_accessed_details(JobId=job['JobId'], Marker=response['Marker'])
+
+            if 'ServicesLastAccessed':
+                access_data.extend(response['ServicesLastAccessed'])
+
+        return access_data
+
+    except Exception as e:
+        logger.warning("failed to get service access details: %s", e)
+
+    return []
+
+
+@timeit
+def transform_service_access_data(service_access_data, arn):
+    accesses = []
+    for service_access in service_access_data:
+        if 'LastAuthenticated' not in service_access:
+            break
+
+        last_authenticated = maya.parse(service_access['LastAuthenticated']).datetime()
+        if pytz.utc.localize(datetime.now() - timedelta(days=90)) > last_authenticated:
+            break
+
+        access = list(filter(lambda s: s['ServiceName'] == service_access['ServiceName'], accesses))
+        if len(access) == 0:
+            accesses.append({
+                'Id': hashlib.md5((arn + service_access['ServiceName']).encode("UTF-8")).hexdigest(),
+                'ServiceName': service_access['ServiceName'],
+                'ServiceNamespace': service_access['ServiceNamespace'],
+                'LastAuthenticated': service_access['LastAuthenticated'],
+                'LastAuthenticatedEntity': service_access['LastAuthenticatedEntity'],
+                'LastAuthenticatedRegion': service_access['LastAuthenticatedRegion'],
+                'TotalAuthenticatedEntities': service_access['TotalAuthenticatedEntities'],
+            })
+
+        else:
+            last_authenticated = maya.parse(service_access['LastAuthenticated']).datetime()
+            access_last_authenticated = maya.parse(access[0]['LastAuthenticated']).datetime()
+
+            if access_last_authenticated < last_authenticated:
+                access[0]['LastAuthenticated'] = service_access['LastAuthenticated']
+
+    return accesses
+
+
+@timeit
+def sync_service_access_data(neo4j_session, access_data, principal_arn, principal_type, aws_update_tag):
+    logger.debug(f"Inserting IAM service access details for principal {principal_type} {principal_arn}")
+
+    if principal_type == PrincipalType.user.value:
+        ingest_service_usage = """
+        MERGE (su:AWSServiceUsage{id: {ID}})
+        ON CREATE SET su.service = {SERVICE}, su.namespace= {SERVICE_NAMESPACE}, su.firstseen = timestamp()
+        SET su.lastauthenticateddate = {LAST_AUTHENTICATED_DATE}, su.lastauthenticatedentity = {LAST_AUTHENTICATED_ENTITY},
+        su.lastauthenticatedretion = {LAST_AUTHENTICATED_REGION}, su.totalauthenticatedentities = {TOTAL_AUTHENTICATED_ENTITIES},
+        su.lastupdated = {aws_update_tag}
+        WITH su
+        MATCH (ap:AWSUser{arn: {PRINCIPAL_ARN}})
+        MERGE (ap)-[r:HAS_ACCESSED]->(su)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {aws_update_tag}
+        """
+
+    elif principal_type == PrincipalType.group.value:
+        ingest_service_usage = """
+        MERGE (su:AWSServiceUsage{id: {ID}})
+        ON CREATE SET su.service = {SERVICE}, su.namespace= {SERVICE_NAMESPACE}, su.firstseen = timestamp()
+        SET su.lastauthenticateddate = {LAST_AUTHENTICATED_DATE}, su.lastauthenticatedentity = {LAST_AUTHENTICATED_ENTITY},
+        su.lastauthenticatedretion = {LAST_AUTHENTICATED_REGION}, su.totalauthenticatedentities = {TOTAL_AUTHENTICATED_ENTITIES},
+        su.lastupdated = {aws_update_tag}
+        WITH su
+        MATCH (ap:AWSGroup{arn: {PRINCIPAL_ARN}})
+        MERGE (ap)-[r:HAS_ACCESSED]->(su)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {aws_update_tag}
+        """
+
+    elif principal_type == PrincipalType.role.value:
+        ingest_service_usage = """
+        MERGE (su:AWSServiceUsage{id: {ID}})
+        ON CREATE SET su.service = {SERVICE}, su.namespace= {SERVICE_NAMESPACE}, su.firstseen = timestamp()
+        SET su.lastauthenticateddate = {LAST_AUTHENTICATED_DATE}, su.lastauthenticatedentity = {LAST_AUTHENTICATED_ENTITY},
+        su.lastauthenticatedretion = {LAST_AUTHENTICATED_REGION}, su.totalauthenticatedentities = {TOTAL_AUTHENTICATED_ENTITIES},
+        su.lastupdated = {aws_update_tag}
+        WITH su
+        MATCH (ap:AWSRole{arn: {PRINCIPAL_ARN}})
+        MERGE (ap)-[r:HAS_ACCESSED]->(su)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {aws_update_tag}
+        """
+
+    for access in access_data:
+        neo4j_session.run(
+            ingest_service_usage,
+            ID=access["Id"],
+            SERVICE=access["ServiceName"],
+            SERVICE_NAMESPACE=access["ServiceNamespace"],
+            LAST_AUTHENTICATED_DATE=access["LastAuthenticated"],
+            LAST_AUTHENTICATED_ENTITY=access["LastAuthenticatedEntity"],
+            LAST_AUTHENTICATED_REGION=access["LastAuthenticatedRegion"],
+            TOTAL_AUTHENTICATED_ENTITIES=access["TotalAuthenticatedEntities"],
+            PRINCIPAL_TYPE=principal_type,
+            PRINCIPAL_ARN=principal_arn,
+            aws_update_tag=aws_update_tag,
+        )
 
 
 @timeit
@@ -576,6 +751,8 @@ def sync_groups(neo4j_session, boto3_session, current_aws_account_id, aws_update
 
     sync_group_managed_policies(boto3_session, data, neo4j_session, aws_update_tag)
 
+    sync_group_service_access_details(boto3_session, data['Groups'], neo4j_session, aws_update_tag)
+
     run_cleanup_job('aws_import_groups_cleanup.json', neo4j_session, common_job_parameters)
 
 
@@ -600,6 +777,8 @@ def sync_roles(neo4j_session, boto3_session, current_aws_account_id, aws_update_
     sync_role_inline_policies(current_aws_account_id, boto3_session, data, neo4j_session, aws_update_tag)
 
     sync_role_managed_policies(current_aws_account_id, boto3_session, data, neo4j_session, aws_update_tag)
+
+    sync_role_service_access_details(boto3_session, data['Roles'], neo4j_session, aws_update_tag)
 
     run_cleanup_job('aws_import_roles_cleanup.json', neo4j_session, common_job_parameters)
 
@@ -663,3 +842,13 @@ def sync(neo4j_session, boto3_session, account_id, update_tag, common_job_parame
     sync_assumerole_relationships(neo4j_session, account_id, update_tag, common_job_parameters)
     sync_user_access_keys(neo4j_session, boto3_session, account_id, update_tag, common_job_parameters)
     run_cleanup_job('aws_import_principals_cleanup.json', neo4j_session, common_job_parameters)
+
+
+# https://docs.aws.amazon.com/cli/latest/reference/iam/generate-service-last-accessed-details.html
+#
+#
+# Steps to get access details:
+# 1.generate service last accessed details by ARN (or overall?)
+# 2.
+#
+#
