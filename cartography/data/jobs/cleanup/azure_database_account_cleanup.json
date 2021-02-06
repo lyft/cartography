@@ -1,0 +1,155 @@
+{
+  "statements": [
+    {
+      "query": "MATCH (n:AzureDatabaseAccount)<-[:RESOURCE]-(:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (:AzureDatabaseAccount)<-[r:RESOURCE]-(:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (n:AzureCosmosDBLocation)<-[:WRITE_PERMISSIONS_FROM]-(:AzureDatabaseAccount)<-[:RESOURCE]-(:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (:AzureCosmosDBLocation)<-[r:WRITE_PERMISSIONS_FROM]-(:AzureDatabaseAccount)<-[:RESOURCE]-(:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (n:AzureCosmosDBLocation)<-[:READ_PERMISSIONS_FROM]-(:AzureDatabaseAccount)<-[:RESOURCE]-(:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (:AzureCosmosDBLocation)<-[r:READ_PERMISSIONS_FROM]-(:AzureDatabaseAccount)<-[:RESOURCE]-(:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (n:AzureCosmosDBLocation)<-[:ASSOCIATED_WITH]-(:AzureDatabaseAccount)<-[:RESOURCE]-(:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (:AzureCosmosDBLocation)<-[r:ASSOCIATED_WITH]-(:AzureDatabaseAccount)<-[:RESOURCE]-(:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (n:AzureCosmosDBCorsPolicy)<-[:CONTAINS]-(:AzureDatabaseAccount)<-[:RESOURCE]-(:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (:AzureCosmosDBCorsPolicy)<-[r:CONTAINS]-(:AzureDatabaseAccount)<-[:RESOURCE]-(:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (n:AzureDatabaseAccountFailoverPolicy)<-[:CONTAINS]-(:AzureDatabaseAccount)<-[:RESOURCE]-(:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (:AzureDatabaseAccountFailoverPolicy)<-[r:CONTAINS]-(:AzureDatabaseAccount)<-[:RESOURCE]-(:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (n:AzureCosmosDBPrivateEndpointConnection)<-[:CONFIGURED_WITH]-(:AzureDatabaseAccount)<-[:RESOURCE]-(:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (:AzureCosmosDBPrivateEndpointConnection)<-[r:CONFIGURED_WITH]-(:AzureDatabaseAccount)<-[:RESOURCE]-(:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (n:AzureCosmosDBVirtualNetworkRule)<-[:CONFIGURED_WITH]-(:AzureDatabaseAccount)<-[:RESOURCE]-(:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (:AzureCosmosDBVirtualNetworkRule)<-[r:CONFIGURED_WITH]-(:AzureDatabaseAccount)<-[:RESOURCE]-(:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (n:AzureCosmosDBSqlDatabase)<-[:CONTAINS]-(:AzureDatabaseAccount)<-[:RESOURCE]-(:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (:AzureCosmosDBSqlDatabase)<-[r:CONTAINS]-(:AzureDatabaseAccount)<-[:RESOURCE]-(:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (n:AzureCosmosDBCassandraKeyspace)<-[:CONTAINS]-(:AzureDatabaseAccount)<-[:RESOURCE]-(:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (:AzureCosmosDBCassandraKeyspace)<-[r:CONTAINS]-(:AzureDatabaseAccount)<-[:RESOURCE]-(:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (n:AzureCosmosDBMongoDBDatabase)<-[:CONTAINS]-(:AzureDatabaseAccount)<-[:RESOURCE]-(:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (:AzureCosmosDBMongoDBDatabase)<-[r:CONTAINS]-(:AzureDatabaseAccount)<-[:RESOURCE]-(:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (n:AzureCosmosDBTableResource)<-[:CONTAINS]-(:AzureDatabaseAccount)<-[:RESOURCE]-(:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (:AzureCosmosDBTableResource)<-[r:CONTAINS]-(:AzureDatabaseAccount)<-[:RESOURCE]-(:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (n:AzureCosmosDBSqlContainer)<-[:CONTAINS]-(:AzureCosmosDBSqlDatabase)<-[:CONTAINS]-(:AzureDatabaseAccount)<-[:RESOURCE]-(:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (:AzureCosmosDBSqlContainer)<-[:CONTAINS]-(:AzureCosmosDBSqlDatabase)<-[r:CONTAINS]-(:AzureDatabaseAccount)<-[:RESOURCE]-(:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (n:AzureCosmosDBCassandraTable)<-[:CONTAINS]-(:AzureCosmosDBCassandraKeyspace)<-[:CONTAINS]-(:AzureDatabaseAccount)<-[:RESOURCE]-(:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (:AzureCosmosDBCassandraTable)<-[:CONTAINS]-(:AzureCosmosDBCassandraKeyspace)<-[r:CONTAINS]-(:AzureDatabaseAccount)<-[:RESOURCE]-(:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (n:AzureCosmosDBMongoDBCollection)<-[:CONTAINS]-(:AzureCosmosDBMongoDBDatabase)<-[:CONTAINS]-(:AzureDatabaseAccount)<-[:RESOURCE]-(:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (:AzureCosmosDBMongoDBCollection)<-[:CONTAINS]-(:AzureCosmosDBMongoDBDatabase)<-[r:CONTAINS]-(:AzureDatabaseAccount)<-[:RESOURCE]-(:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    }
+  ],
+  "name": "cleanup Azure CosmosDB"
+}

@@ -5,6 +5,7 @@ from cartography.intel.azure.credentials import Authenticator
 from . import tenant
 from . import subscription
 from . import compute
+from . import cosmosdb
 from . import storage
 from . import sql
 from cartography.util import run_analysis_job
@@ -16,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 def _sync_one_subscription(neo4j_session, credentials, subscription_id, sync_tag, common_job_parameters):
     # compute.sync(neo4j_session, credentials.arm_credentials, subscription_id, sync_tag, common_job_parameters)
+    cosmosdb.sync(neo4j_session, credentials.arm_credentials, subscription_id, sync_tag, common_job_parameters)
     storage.sync(neo4j_session, credentials.arm_credentials, subscription_id, sync_tag, common_job_parameters)
     sql.sync(neo4j_session, credentials.arm_credentials, subscription_id, sync_tag, common_job_parameters)
 
