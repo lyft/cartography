@@ -163,7 +163,7 @@ def _load_database_account_write_locations(neo4j_session, database_account_id, l
     Ingest the details of location with write permission enabled.
     """
     ingest_write_location = """
-    MERGE (loc:AzureCosmosDBEnabledLocation{id: {LocationId}})
+    MERGE (loc:AzureCosmosDBLocation{id: {LocationId}})
     ON CREATE SET loc.firstseen = timestamp(), loc.locationname = {Name}
     SET loc.lastupdated = {azure_update_tag},
     loc.documentendpoint = {DocumentEndpoint},
@@ -196,7 +196,7 @@ def _load_database_account_read_locations(neo4j_session, database_account_id, lo
     Ingest the details of location with read permission enabled.
     """
     ingest_read_location = """
-    MERGE (loc:AzureCosmosDBEnabledLocation{id: {LocationId}})
+    MERGE (loc:AzureCosmosDBLocation{id: {LocationId}})
     ON CREATE SET loc.firstseen = timestamp(), loc.locationname = {Name}
     SET loc.lastupdated = {azure_update_tag},
     loc.documentendpoint = {DocumentEndpoint},
@@ -229,7 +229,7 @@ def _load_database_account_associated_locations(neo4j_session, database_account_
     Ingest the details of enabled location for the database account.
     """
     ingest_associated_location = """
-    MERGE (loc:AzureCosmosDBEnabledLocation{id: {LocationId}})
+    MERGE (loc:AzureCosmosDBLocation{id: {LocationId}})
     ON CREATE SET loc.firstseen = timestamp(), loc.locationname = {Name}
     SET loc.lastupdated = {azure_update_tag},
     loc.documentendpoint = {DocumentEndpoint},
