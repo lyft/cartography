@@ -1,5 +1,5 @@
-# AWS_PROFILE=cloudanix-qa-admin python3 . --neo4j-uri bolt://127.0.0.1:7687 -v --neo4j-user neo4j --neo4j-password-env-var NEO4J_PWD
-#
+# AWS_PROFILE=cloudanix-qa-admin && python3 . --neo4j-uri bolt://127.0.0.1:7687 -v --neo4j-user neo4j --neo4j-password-env-var NEO4J_PWD
+# export GOOGLE_APPLICATION_CREDENTIALS=~/.gcloud/cloudanix-qa-cartography-service.json && python3 . --neo4j-uri bolt://127.0.0.1:7687 -v --neo4j-user neo4j --neo4j-password-env-var NEO4J_PWD
 
 
 import sys
