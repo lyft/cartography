@@ -1,11 +1,9 @@
-import hashlib
 import json
 import logging
 
 from botocore.exceptions import ClientError
 from policyuniverse.policy import Policy
 
-from cartography.util import run_analysis_job
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
@@ -21,17 +19,18 @@ def get_apigateway_rest_apis(boto3_session, region):
         apis.extend(page['items'])
     return apis
 
+
 def transform_apigateway_rest_apis(apis, region, current_aws_account_id):
     for api in apis:
-        api['CreatedDate']= str(api['createdDate']) if 'createdDate' in api else None
+        api['CreatedDate'] = str(api['createdDate']) if 'createdDate' in api else None
 
 
 @timeit
 def get_rest_api_details(boto3_session, rest_apis, region):
     client = boto3_session.client('apigateway', region_name=region)
-    for api in rest_apis: 
+    for api in rest_apis:
         stages = get_rest_api_stages(api, client)
-        certificate = get_rest_api_client_certificate(stages, client) #clientcertificate id is given by the api stage
+        certificate = get_rest_api_client_certificate(stages, client)  # clientcertificate id is given by the api stage
         resources = get_rest_api_resources(api, client)
         policy = get_rest_api_policy(api, client)
         yield api['id'], stages, certificate, resources, policy
@@ -42,23 +41,25 @@ def get_rest_api_stages(api, client):
     try:
         stages = client.get_stages(restApiId=api['id'])
     except ClientError as e:
-        logger.warning(f"Failed to retrieve Stages for Api Id - {api['id']}")
+        logger.warning(f'Failed to retrieve Stages for Api Id - {api["id"]} - {e}')
         raise
-    
+
     return stages['item']
+
 
 @timeit
 def get_rest_api_client_certificate(stages, client):
+    response = None
     for stage in stages:
         if 'clientCertificateId' in stage:
             try:
                 response = client.get_client_certificate(clientCertificateId=stage['clientCertificateId'])
             except ClientError as e:
-                logger.warning(f"Failed to retrive Client Certificate for Stage {stage['stageName']}")
+                logger.warning(f"Failed to retrive Client Certificate for Stage {stage['stageName']} - {e}")
                 raise
         else:
             return None
-            
+
     return response
 
 
@@ -69,16 +70,16 @@ def get_rest_api_resources(api, client):
     response_iterator = paginator.paginate(restApiId=api['id'])
     for page in response_iterator:
         resources.extend(page['items'])
-        
+
     return resources
+
 
 @timeit
 def get_rest_api_policy(api, client):
     policy = api['policy'] if 'policy' in api and api['policy'] else None
     return policy
 
-    
-    
+
 @timeit
 def load_apigateway_rest_apis(neo4j_session, data, region, current_aws_account_id, aws_update_tag):
     ingest_rest_apis = """
@@ -97,7 +98,7 @@ def load_apigateway_rest_apis(neo4j_session, data, region, current_aws_account_i
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {aws_update_tag}
     """
-    
+
     for api in data:
         neo4j_session.run(
             ingest_rest_apis,
@@ -111,8 +112,8 @@ def load_apigateway_rest_apis(neo4j_session, data, region, current_aws_account_i
             Region=region,
             AWS_ACCOUNT_ID=current_aws_account_id,
         )
-        
-        
+
+
 @timeit
 def _load_apigateway_policies(neo4j_session, policies, update_tag):
     ingest_policies = """
@@ -122,14 +123,13 @@ def _load_apigateway_policies(neo4j_session, policies, update_tag):
     r.anonymous_actions = coalesce(r.anonymous_actions, []) + policy.accessible_actions,
     r.lastupdated = {UpdateTag}
     """
-    
+
     neo4j_session.run(
         ingest_policies,
         policies=policies,
         UpdateTag=update_tag,
     )
-    
-    
+
 
 def _set_default_values(neo4j_session, aws_account_id):
     set_defaults = """
@@ -142,8 +142,7 @@ def _set_default_values(neo4j_session, aws_account_id):
         AWS_ID=aws_account_id,
     )
 
-    
-    
+
 @timeit
 def _load_apigateway_stages(neo4j_session, stages, update_tag, api_id, certificates):
     ingest_stages = """
@@ -156,13 +155,13 @@ def _load_apigateway_stages(neo4j_session, stages, update_tag, api_id, certifica
     s.tracingenabled = {TracingEnabled},
     s.webaclarn = {WebAclArn},
     s.lastupdated = {UpdateTag}
-    WITH s 
+    WITH s
     MATCH (rest_api:RestAPI{id:{RestApiId}})
     MERGE (s)-[r:STAGE_OF]->(rest_api)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {UpdateTag}
     """
-    
+
     for stage in stages:
         neo4j_session.run(
             ingest_stages,
@@ -177,11 +176,11 @@ def _load_apigateway_stages(neo4j_session, stages, update_tag, api_id, certifica
             UpdateTag=update_tag,
             RestApiId=api_id
         )
-        
+
         _load_apigateway_certificates(neo4j_session, certificates, update_tag, stage['stageName'])
         _load_stage_methodsettings(neo4j_session, stage, update_tag, api_id)
-        
-        
+
+
 @timeit
 def _load_stage_methodsettings(neo4j_session, stage, update_tag, api_id):
     ingest_methodsettings = """
@@ -204,7 +203,7 @@ def _load_stage_methodsettings(neo4j_session, stage, update_tag, api_id):
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {UpdateTag}
     """
-    
+
     for key, value in stage['methodSettings'].items():
         neo4j_session.run(
             ingest_methodsettings,
@@ -222,9 +221,8 @@ def _load_stage_methodsettings(neo4j_session, stage, update_tag, api_id):
             StageName=stage['stageName'],
             UpdateTag=update_tag
         )
-        
-        
-        
+
+
 @timeit
 def _load_apigateway_certificates(neo4j_session, certificates, update_tag, stage_name):
     ingest_certificates = """
@@ -237,7 +235,7 @@ def _load_apigateway_certificates(neo4j_session, certificates, update_tag, stage
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {UpdateTag}
     """
-    
+
     for certificate in certificates:
         neo4j_session.run(
             ingest_certificates,
@@ -245,17 +243,17 @@ def _load_apigateway_certificates(neo4j_session, certificates, update_tag, stage
             CreatedDate=str(certificate['createdDate']),
             ExpirationDate=str(certificate.get('expirationDate')),
             StageName=stage_name,
-            UpdateTag = update_tag
+            UpdateTag=update_tag
         )
-        
-        
+
+
 @timeit
 def _load_apigateway_resources(neo4j_session, resources, update_tag, api_id):
     ingest_resources = """
     MERGE (s:Resource{id: {ResourceId}})
     ON CREATE SET s.firstseen = timestamp()
-    SET s.path = {Path}, 
-    s.pathpart = {PathPart}, 
+    SET s.path = {Path},
+    s.pathpart = {PathPart},
     s.parentid = {ParentId},
     s.lastupdated ={UpdateTag}
     WITH s
@@ -264,7 +262,7 @@ def _load_apigateway_resources(neo4j_session, resources, update_tag, api_id):
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {UpdateTag}
     """
-    
+
     for resource in resources:
         neo4j_session.run(
             ingest_resources,
@@ -289,14 +287,14 @@ def load_rest_api_details(neo4j_session, stages_certificate_resources, region, a
         parsed_policy = parse_policy(api_id, policy)
         if parsed_policy is not None:
             policies.extend(parsed_policy)
-        if len(stage)>0:
+        if len(stage) > 0:
             stages.extend(stage)
-        if len(resource)>0:
+        if len(resource) > 0:
             resources.extend(resource)
         if certificate:
             certificates.extend(certificate)
-            
-    #cleanup existing properties
+
+    # cleanup existing properties
     run_cleanup_job(
         'aws_apigateway_details.json',
         neo4j_session,
@@ -307,8 +305,8 @@ def load_rest_api_details(neo4j_session, stages_certificate_resources, region, a
     _load_apigateway_stages(neo4j_session, stages, update_tag, apiId, certificates)
     _load_apigateway_resources(neo4j_session, resources, update_tag, apiId)
     _set_default_values(neo4j_session, aws_account_id)
-    
-    
+
+
 @timeit
 def parse_policy(api_id, policy):
     if policy is not None:
@@ -335,7 +333,7 @@ def sync_apigateway_rest_apis(neo4j_session, boto3_session, region, current_aws_
     rest_apis = get_apigateway_rest_apis(boto3_session, region)
     transform_apigateway_rest_apis(rest_apis, region, current_aws_account_id)
     load_apigateway_rest_apis(neo4j_session, rest_apis, region, current_aws_account_id, aws_update_tag)
-    
+
     stages_certificate_resources = get_rest_api_details(boto3_session, rest_apis, region)
     load_rest_api_details(neo4j_session, stages_certificate_resources, region, current_aws_account_id, aws_update_tag)
 
@@ -346,4 +344,3 @@ def sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job
         logger.info(f"Syncing APIGateway Rest APIs for region '{region}' in account '{account_id}'.")
         sync_apigateway_rest_apis(neo4j_session, boto3_session, region, account_id, sync_tag)
     cleanup(neo4j_session, common_job_parameters)
-    
