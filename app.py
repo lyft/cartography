@@ -63,9 +63,7 @@ def load_cartography(event, ctx):
             "message": 'unable to parse request'
         }
 
-    response = process_request(context, params)
-
-    context.logger.info(f'inventory sync aws response from worker: {json.dumps(response)}')
+    process_request(context, params)
 
     return {
         'statusCode': 200,
@@ -102,7 +100,7 @@ def process_request(context, args):
 
     publish_response(context, body, resp)
 
-    return resp
+    context.logger.info(f'inventory sync aws response - {args["eventId"]}: {json.dumps(resp)}')
 
 
 def publish_response(context, req, resp):
