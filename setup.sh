@@ -2,13 +2,8 @@
 
 # https://docs.python.org/3/tutorial/venv.html
 
-virtualenv venv
+python3 -m venv venv
 
-source venv/bin/activate
+. venv/bin/activate
 
-# python3 setup.py install
-
-#pip install
-#pip freeze > requirements.txt
-
-# pip install -r requirements.txt
+pip install -r requirements.txt --upgrade
