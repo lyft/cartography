@@ -98,6 +98,12 @@ def process_request(context, args):
 
     resp = cartography.cli.run(body)
 
+    if 'status' in resp and resp['status'] == 'success':
+        context.logger.info(f'successfully processed cartography: {resp}')
+
+    else:
+        context.logger.info(f'failed to process cartography: {resp["message"]}')
+
     publish_response(context, body, resp)
 
     context.logger.info(f'inventory sync aws response - {args["eventId"]}: {json.dumps(resp)}')
@@ -114,7 +120,7 @@ def publish_response(context, req, resp):
 
     else:
         body = {
-            "status": "success",
+            "status": resp['status'],
             "params": req['params'],
             "response": resp
         }
