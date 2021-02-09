@@ -273,7 +273,7 @@ class CLI:
             logging.getLogger('cartography').setLevel(logging.WARNING)
         else:
             logging.getLogger('cartography').setLevel(logging.INFO)
-        logger.debug("Launching cartography with CLI configuration: %r", vars(config))
+        # logger.debug("Launching cartography with CLI configuration: %r", vars(config))
         # Neo4j config
         if config.neo4j_user:
             config.neo4j_password = None
@@ -352,7 +352,7 @@ class CLI:
             logging.getLogger('cartography').setLevel(logging.WARNING)
         else:
             logging.getLogger('cartography').setLevel(logging.INFO)
-        logger.debug("Launching cartography with CLI configuration: %r", vars(config))
+        # logger.debug("Launching cartography with CLI configuration: %r", vars(config))
 
         # Run cartography
         try:
