@@ -563,7 +563,7 @@ def sync_users(neo4j_session, boto3_session, current_aws_account_id, aws_update_
 
     sync_user_managed_policies(boto3_session, data, neo4j_session, aws_update_tag)
 
-    sync_user_service_access_details(boto3_session, data['Users'], neo4j_session, aws_update_tag)
+    # sync_user_service_access_details(boto3_session, data['Users'], neo4j_session, aws_update_tag)
 
     run_cleanup_job('aws_import_users_cleanup.json', neo4j_session, common_job_parameters)
 
@@ -751,7 +751,7 @@ def sync_groups(neo4j_session, boto3_session, current_aws_account_id, aws_update
 
     sync_group_managed_policies(boto3_session, data, neo4j_session, aws_update_tag)
 
-    sync_group_service_access_details(boto3_session, data['Groups'], neo4j_session, aws_update_tag)
+    # sync_group_service_access_details(boto3_session, data['Groups'], neo4j_session, aws_update_tag)
 
     run_cleanup_job('aws_import_groups_cleanup.json', neo4j_session, common_job_parameters)
 
@@ -778,7 +778,7 @@ def sync_roles(neo4j_session, boto3_session, current_aws_account_id, aws_update_
 
     sync_role_managed_policies(current_aws_account_id, boto3_session, data, neo4j_session, aws_update_tag)
 
-    sync_role_service_access_details(boto3_session, data['Roles'], neo4j_session, aws_update_tag)
+    # sync_role_service_access_details(boto3_session, data['Roles'], neo4j_session, aws_update_tag)
 
     run_cleanup_job('aws_import_roles_cleanup.json', neo4j_session, common_job_parameters)
 
