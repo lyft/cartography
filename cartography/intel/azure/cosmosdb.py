@@ -77,8 +77,11 @@ def load_database_account_data(neo4j_session, subscription_id, database_account_
 
     for database_account in database_account_list:
         capabilities = []
+        iprules = []
         if 'capabilities' in database_account and len(database_account['capabilities']) > 0:
-            capabilities = database_account['capabilities'].values()
+            capabilities = [x['name'] for x in database_account['capabilities']]
+        if 'ip_rules' in database_account and len(database_account['ip_rules']) > 0:
+            iprules = [x['ip_address_or_range'] for x in database_account['ip_rules']]
         neo4j_session.run(
             ingest_database_account,
             AccountId=database_account['id'],
@@ -87,7 +90,7 @@ def load_database_account_data(neo4j_session, subscription_id, database_account_
             Location=database_account['location'],
             Kind=database_account['kind'],
             Type=database_account['type'],
-            IpRanges=database_account.get('ip_rules'),
+            IpRanges=iprules,
             Capabilities=capabilities,
             DocumentEndpoint=database_account['document_endpoint'],
             VirtualNetworkFilterEnabled=database_account['is_virtual_network_filter_enabled'],
@@ -96,16 +99,16 @@ def load_database_account_data(neo4j_session, subscription_id, database_account_
             MultipleWriteLocations=database_account['enable_multiple_write_locations'],
             AccountOfferType=database_account['database_account_offer_type'],
             PublicNetworkAccess=database_account['public_network_access'],
-            EnableCassandraConnector=database_account['enable_cassandra_connector'],
-            ConnectorOffer=database_account['connector_offer'],
+            EnableCassandraConnector=get_optional_value(database_account, ['enable_cassandra_connector']),
+            ConnectorOffer=get_optional_value(database_account, ['connector_offer']),
             DisableKeyBasedMetadataWriteAccess=database_account['disable_key_based_metadata_write_access'],
-            KeyVaultUri=database_account['key_vault_key_uri'],
+            KeyVaultUri=get_optional_value(database_account, ['key_vault_key_uri']),
             EnableFreeTier=database_account['enable_free_tier'],
             EnableAnalyticalStorage=database_account['enable_analytical_storage'],
-            ServerVersion=database_account['api_properties']['server_version'],
-            DefaultConsistencyLevel=database_account.get('consistency_policy').get('default_consistency_level'),
-            MaxStalenessPrefix=database_account.get('consistency_policy').get('max_staleness_prefix'),
-            MaxIntervalInSeconds=database_account.get('consistency_policy').get('max_interval_in_seconds'),
+            ServerVersion=get_optional_value(database_account, ['api_properties', 'server_version']),
+            DefaultConsistencyLevel=database_account['consistency_policy']['default_consistency_level'],
+            MaxStalenessPrefix=database_account['consistency_policy']['max_staleness_prefix'],
+            MaxIntervalInSeconds=database_account['consistency_policy']['max_interval_in_seconds'],
             AZURE_SUBSCRIPTION_ID=subscription_id,
             azure_update_tag=azure_update_tag,
         )
@@ -180,11 +183,11 @@ def _load_database_account_write_locations(neo4j_session, database_account_id, l
     neo4j_session.run(
         ingest_write_location,
         LocationId=loc['id'],
-        Name=loc.get('location_name'),
-        DocumentEndpoint=loc.get('document_endpoint'),
-        ProvisioningState=loc.get('provisioning_state'),
-        FailoverPriority=loc.get('failover_priority'),
-        IsZoneRedundant=loc.get('is_zone_redundant'),
+        Name=loc['location_name'],
+        DocumentEndpoint=loc['document_endpoint'],
+        ProvisioningState=loc['provisioning_state'],
+        FailoverPriority=loc['failover_priority'],
+        IsZoneRedundant=loc['is_zone_redundant'],
         DatabaseAccountId=database_account_id,
         azure_update_tag=azure_update_tag,
     )
@@ -214,10 +217,10 @@ def _load_database_account_read_locations(neo4j_session, database_account_id, lo
         ingest_read_location,
         LocationId=loc['id'],
         Name=loc['location_name'],
-        DocumentEndpoint=loc.get('document_endpoint'),
-        ProvisioningState=loc.get('provisioning_state'),
-        FailoverPriority=loc.get('failover_priority'),
-        IsZoneRedundant=loc.get('is_zone_redundant'),
+        DocumentEndpoint=loc['document_endpoint'],
+        ProvisioningState=loc['provisioning_state'],
+        FailoverPriority=loc['failover_priority'],
+        IsZoneRedundant=loc['is_zone_redundant'],
         DatabaseAccountId=database_account_id,
         azure_update_tag=azure_update_tag,
     )
@@ -247,10 +250,10 @@ def _load_database_account_associated_locations(neo4j_session, database_account_
         ingest_associated_location,
         LocationId=loc['id'],
         Name=loc['location_name'],
-        DocumentEndpoint=loc.get('document_endpoint'),
-        ProvisioningState=loc.get('provisioning_state'),
-        FailoverPriority=loc.get('failover_priority'),
-        IsZoneRedundant=loc.get('is_zone_redundant'),
+        DocumentEndpoint=loc['document_endpoint'],
+        ProvisioningState=loc['provisioning_state'],
+        FailoverPriority=loc['failover_priority'],
+        IsZoneRedundant=loc['is_zone_redundant'],
         DatabaseAccountId=database_account_id,
         azure_update_tag=azure_update_tag,
     )
@@ -316,8 +319,8 @@ def _load_cosmosdb_failover_policies(neo4j_session, database_account, azure_upda
         neo4j_session.run(
             ingest_failover_policies,
             FailoverPolicyId=policy['id'],
-            LocationName=policy.get('location_name'),
-            FailoverPriority=policy.get('failover_priority'),
+            LocationName=policy['location_name'],
+            FailoverPriority=policy['failover_priority'],
             DatabaseAccountId=database_account_id,
             azure_update_tag=azure_update_tag,
         )
@@ -348,9 +351,9 @@ def _load_cosmosdb_private_endpoint_connections(neo4j_session, database_account,
         neo4j_session.run(
             ingest_private_endpoint_connections,
             PrivateEndpointConnectionId=endpoint['id'],
-            Name=endpoint.get('name'),
-            Status=endpoint.get('private_link_service_connection_state').get('status'),
-            ActionRequired=endpoint.get('private_link_service_connection_state').get('actions_required'),
+            Name=endpoint['name'],
+            Status=get_optional_value(endpoint, ['private_link_service_connection_state', 'status']),
+            ActionRequired=get_optional_value(endpoint, ['private_link_service_connection_state', 'actions_required']),
             DatabaseAccountId=database_account_id,
             azure_update_tag=azure_update_tag,
         )
@@ -410,8 +413,7 @@ def get_sql_databases(credentials, subscription_id, database_account):
     """
     try:
         client = get_client(credentials, subscription_id)
-        # TODO: Check the below line of code
-        sql_database_list = client.sql_resources.list_sql_databases(database_account['resourceGroup'], database_account['name']).as_dict()['value']
+        sql_database_list = list(map(lambda x: x.as_dict(), client.sql_resources.list_sql_databases(database_account['resourceGroup'], database_account['name'])))
 
     except Exception as e:
         logger.warning("Error while retrieving SQL Database list - {}".format(e))
@@ -427,8 +429,7 @@ def get_cassandra_keyspaces(credentials, subscription_id, database_account):
     """
     try:
         client = get_client(credentials, subscription_id)
-        # TODO: Check the below line of code
-        cassandra_keyspace_list = client.cassandra_resources.list_cassandra_keyspaces(database_account['resourceGroup'], database_account['name']).as_dict()['value']
+        cassandra_keyspace_list = list(map(lambda x: x.as_dict(), client.cassandra_resources.list_cassandra_keyspaces(database_account['resourceGroup'], database_account['name'])))
 
     except Exception as e:
         logger.warning("Error while retrieving Cassandra keyspaces list - {}".format(e))
@@ -444,8 +445,7 @@ def get_mongodb_databases(credentials, subscription_id, database_account):
     """
     try:
         client = get_client(credentials, subscription_id)
-        # TODO: Check the below line of code
-        mongodb_database_list = client.mongo_db_resources.list_mongo_db_databases(database_account['resourceGroup'], database_account['name']).as_dict()['value']
+        mongodb_database_list = list(map(lambda x: x.as_dict(), client.mongo_db_resources.list_mongo_db_databases(database_account['resourceGroup'], database_account['name'])))
 
     except Exception as e:
         logger.warning("Error while retrieving MongoDB Database list - {}".format(e))
@@ -461,8 +461,7 @@ def get_table_resources(credentials, subscription_id, database_account):
     """
     try:
         client = get_client(credentials, subscription_id)
-        # TODO: Check the below line of code
-        table_resources_list = client.table_resources.list_tables(database_account['resourceGroup'], database_account['name']).as_dict()['value']
+        table_resources_list = list(map(lambda x: x.as_dict(), client.table_resources.list_tables(database_account['resourceGroup'], database_account['name'])))
 
     except Exception as e:
         logger.warning("Error while retrieving table resources list - {}".format(e))
@@ -571,16 +570,17 @@ def _load_cassandra_keyspaces(neo4j_session, cassandra_keyspaces, update_tag):
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {azure_update_tag}
     """
-
+    # TODO: 1) How is location optional? O/p in debugger didn't return location.
+    # TODO: 2) Throughput and max_throughput were not present in o/p even though explicitly stated in terraform.
     for keyspace in cassandra_keyspaces:
         neo4j_session.run(
             ingest_cassandra_keyspaces,
             KeyspaceId=keyspace['id'],
             Name=keyspace['name'],
             Type=keyspace['type'],
-            Location=keyspace['location'],
-            Throughput=keyspace['options']['throughput'],
-            MaxThroughput=keyspace['options']['autoscale_setting']['max_throughput'],
+            Location=get_optional_value(keyspace, ['location']),
+            Throughput=get_optional_value(keyspace, ['options', 'throughput']),
+            MaxThroughput=get_optional_value(keyspace, ['options', 'autoscale_setting', 'max_throughput']),
             DatabaseAccountId=keyspace['database_account_id'],
             azure_update_tag=update_tag,
         )
@@ -639,16 +639,17 @@ def _load_table_resources(neo4j_session, table_resources, update_tag):
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {azure_update_tag}
     """
-
+    # TODO: 1) How is location optional? O/p in debugger didn't return location.
+    # TODO: 2) Throughput and max_throughput were not present in o/p even though explicitly stated in terraform.
     for table in table_resources:
         neo4j_session.run(
             ingest_tables,
             ResourceId=table['id'],
             Name=table['name'],
             Type=table['type'],
-            Location=table['location'],
-            Throughput=table['options']['throughput'],
-            MaxThroughput=table['options']['autoscale_setting']['max_throughput'],
+            Location=get_optional_value(table, ['location']),
+            Throughput=get_optional_value(table, ['options', 'throughput']),
+            MaxThroughput=get_optional_value(table, ['options', 'autoscale_setting', 'max_throughput']),
             DatabaseAccountId=table['database_account_id'],
             azure_update_tag=update_tag,
         )
@@ -772,7 +773,6 @@ def get_cassandra_tables(credentials, subscription_id, keyspace):
     """
     try:
         client = get_client(credentials, subscription_id)
-        # TODO: Test the below line of code
         tables = list(map(lambda x: x.as_dict(), client.cassandra_resources.list_cassandra_tables(keyspace['resource_group_name'], keyspace['database_account_name'], keyspace['name'])))
 
     except Exception as e:
@@ -827,12 +827,12 @@ def _load_cassandra_tables(neo4j_session, tables, update_tag):
             ResourceId=table['id'],
             Name=table['name'],
             Type=table['type'],
-            Location=table['location'],
-            Throughput=table['options']['throughput'],
-            MaxThroughput=table['options']['autoscale_settings']['max_throughput'],
-            TableId=table['resource']['id'],
-            DefaultTimeToLive=table['resource']['default_ttl'],
-            AnalyticalTTL=table['resource']['analytical_storage_ttl'],
+            Location=get_optional_value(table, ['location']),
+            Throughput=get_optional_value(table, ['options', 'throughput']),
+            MaxThroughput=get_optional_value(table, ['options', 'autoscale_setting', 'max_throughput']),
+            TableId=get_optional_value(table, ['resource', 'id']),
+            DefaultTimeToLive=get_optional_value(table, ['resource', 'default_ttl']),
+            AnalyticalTTL=get_optional_value(table, ['resource', 'analytical_storage_ttl']),
             KeyspaceId=table['keyspace_id'],
             azure_update_tag=update_tag,
         )
