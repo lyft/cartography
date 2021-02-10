@@ -118,13 +118,14 @@ def _sync_multiple_accounts(neo4j_session, accounts, config, common_job_paramete
 
     del common_job_parameters["AWS_ID"]
 
-    # There may be orphan Principals which point outside of known AWS accounts. This job cleans
-    # up those nodes after all AWS accounts have been synced.
-    run_cleanup_job('aws_post_ingestion_principals_cleanup.json', neo4j_session, common_job_parameters)
+    # Commented this out to support multi-account setup
+    # # There may be orphan Principals which point outside of known AWS accounts. This job cleans
+    # # up those nodes after all AWS accounts have been synced.
+    # run_cleanup_job('aws_post_ingestion_principals_cleanup.json', neo4j_session, common_job_parameters)
 
-    # There may be orphan DNS entries that point outside of known AWS zones. This job cleans
-    # up those entries after all AWS accounts have been synced.
-    run_cleanup_job('aws_post_ingestion_dns_cleanup.json', neo4j_session, common_job_parameters)
+    # # There may be orphan DNS entries that point outside of known AWS zones. This job cleans
+    # # up those entries after all AWS accounts have been synced.
+    # run_cleanup_job('aws_post_ingestion_dns_cleanup.json', neo4j_session, common_job_parameters)
 
 
 @timeit
