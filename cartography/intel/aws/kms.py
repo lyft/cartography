@@ -4,6 +4,7 @@ import logging
 from botocore.exceptions import ClientError
 from policyuniverse.policy import Policy
 
+from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
@@ -11,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
+@aws_handle_regions
 def get_kms_key_list(boto3_session, region):
     client = boto3_session.client('kms', region_name=region)
     paginator = client.get_paginator('list_keys')
@@ -32,6 +34,7 @@ def get_kms_key_list(boto3_session, region):
 
 
 @timeit
+@aws_handle_regions
 def get_kms_key_details(boto3_session, kms_key_data, region):
     """
     Iterates over all KMS Keys.
