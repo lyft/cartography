@@ -326,7 +326,6 @@ def sync_kms_keys(neo4j_session, boto3_session, region, current_aws_account_id, 
 
 @timeit
 def sync(neo4j_session, boto3_session, regions, current_aws_account_id, aws_update_tag, common_job_parameters):
-    logger.info("Inside KMS")
     for region in regions:
         logger.info("Syncing KMS for region %s in account '%s'.", region, current_aws_account_id)
         sync_kms_keys(neo4j_session, boto3_session, region, current_aws_account_id, aws_update_tag)
