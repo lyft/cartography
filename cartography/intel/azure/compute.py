@@ -26,23 +26,27 @@ def get_vm_list(credentials, subscription_id):
 
 def load_vm_data(neo4j_session, subscription_id, vm_list, azure_updated_tag, common_job_parameters):
     ingest_vm = """
-    MERGE (machine:VirtualMachine{id: {id}})
-    ON CREATE SET machine.firstseen = timestamp(),
-    machine.type = {type}, machine.location = {location},
-    SET machine.lastupdated = {azure_updated_tag}, machine.name = {name},
-    machine.plan = {plan}, machine.size = {size},
-    machine.license_type={licenseType}, machine.computer_name={computerName},
-    machine.identity_type={identityType}, machine.zones={zones},
-    machine.ultra_ssd_enabled={ultraSSDEnabled}, machine.encryption_at_host={encryptionAtHost},
-    machine.priority={priority}, machine.eviction_policy={evictionPolicy}
-    WITH machine
-    MATCH (owner:AzureSubscription{id: {subscription_id}})
-    MERGE (owner)-[r:RESOURCE]->(machine)
+    MERGE (vm:VirtualMachine{id: {id}})
+    ON CREATE SET vm.firstseen = timestamp(),
+    vm.type = {type}, vm.location = {location},
+    SET vm.lastupdated = {azure_updated_tag}, vm.name = {name},
+    vm.plan = {plan}, vm.size = {size},
+    vm.license_type={licenseType}, vm.computer_name={computerName},
+    vm.identity_type={identityType}, vm.zones={zones},
+    vm.ultra_ssd_enabled={ultraSSDEnabled}, vm.encryption_at_host={encryptionAtHost},
+    vm.priority={priority}, vm.eviction_policy={evictionPolicy}
+    WITH vm
+    MATCH (owner:AzureSubscription{id: {SUBSCRIPTION_ID}})
+    MERGE (owner)-[r:RESOURCE]->(vm)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {azure_updated_tag}
     """
 
     for vm in vm_list:
+        # TODO: Populate Resource Group
+        # x = vm['id'].split('/')
+        # vm['resourceGroup'] = x[x.index('resourceGroups')+1]
+
         neo4j_session.run(
             ingest_vm,
             id=vm['id'],
@@ -59,7 +63,7 @@ def load_vm_data(neo4j_session, subscription_id, vm_list, azure_updated_tag, com
             encryptionAtHost=get_optional_value(vm, ['storage_profile', 'encryption_at_host']),
             priority=get_optional_value(vm, ['priority']),
             evictionPolicy=get_optional_value(vm, ['eviction_policy']),
-            subscription_id=subscription_id,
+            SUBSCRIPTION_ID=subscription_id,
             azure_update_tag=azure_updated_tag
         )
 
@@ -77,13 +81,17 @@ def load_vm_data_disks(neo4j_session, vm_id, data_disks, azure_updated_tag, comm
     disk.caching = {caching}, disk.create_option = {createOption},
     disk.write_accelerator_enabled={writeAcceleratorEnabled},disk.managed_disk_storage_type={managedDiskStorageType}
     WITH disk
-    MATCH (owner:VirtualMachine{id: {vm_id}})
+    MATCH (owner:VirtualMachine{id: {VM_ID}})
     MERGE (owner)-[r:ATTACHED_TO]->(disk)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {azure_updated_tag}
     """
 
     for disk in data_disks:
+        # TODO: Populate Resource Group
+        # x = disk['id'].split('/')
+        # disk['resourceGroup'] = x[x.index('resourceGroups')+1]
+
         neo4j_session.run(
             ingest_data_disk,
             id=vm_id + str(disk['lun']),
@@ -96,7 +104,7 @@ def load_vm_data_disks(neo4j_session, vm_id, data_disks, azure_updated_tag, comm
             createOption=get_optional_value(disk, ['create_option']),
             writeAcceleratorEnabled=get_optional_value(disk, ['write_accelerator_enabled']),
             managedDiskStorageType=get_optional_value(disk, ['managed_disk', 'storage_account_type']),
-            vm_id=vm_id,
+            VM_ID=vm_id,
             azure_update_tag=azure_updated_tag
         )
 
@@ -105,247 +113,120 @@ def cleanup_virtual_machine(neo4j_session, common_job_parameters):
     run_cleanup_job('azure_import_virtual_machine_cleanup.json', neo4j_session, common_job_parameters)
 
 
-def get_security_group_list(credentials, subscription_id):
-    client = get_client(credentials, subscription_id)
-    security_groups = list(client.network_security_group.list_all())
-    return security_groups
+def get_disks(credentials, subscription_id):
+    try:
+        client = get_client(credentials, subscription_id)
+        disk_list = list(map(lambda x: x.as_dict(), client.disks.list()))
+
+        return disk_list
+
+    except Exception as e:
+        logger.warning("Error while retrieving disks - {}".format(e))
+        return []
 
 
-def load_security_group_info(neo4j_session, subscription_id, groups, azure_update_tag, common_job_parameters):
-    ingest_security_group = """
-    MERGE (group:Network_SecurityGroup{id: {GroupId}})
-    ON CREATE SET group.firstseen = timestamp(), group.groupid = {GroupId}
-    SET group.name = {GroupName}, group.location = {location},
-    group.lastupdated = {azure_update_tag}
-    WITH group
-    MATCH (aa:zureSubscription{id: {AZURE_SUBSCRIPTION_ID}})
-    MERGE (aa)-[r:RESOURCE]->(group)
+def load_disks(neo4j_session, subscription_id, disk_list, azure_update_tag, common_job_parameters):
+    ingest_disks = """
+    MERGE (disk:AzureDisk{id: {id}})
+    ON CREATE SET disk.firstseen = timestamp(),
+    disk.type = {type}, disk.location = {location},
+    SET disk.name = {name}, disk.type = {type},
+    disk.location = {location}, disk.lastupdated = {azure_update_tag},
+    disk.createoption = {createOption}, disk.disksizegb = {diskSize},
+    disk.encryption = {encryption}, disk.maxshares = {maxShares},
+    disk.network_access_policy = {accessPolicy},
+    disk.osType = {osType}, disk.tier = {tier},
+    disk.sku = {sku}, disk.zones = {zones}
+    WITH disk
+    MATCH (owner:AzureSubscription{id: {SUBSCRIPTION_ID}})
+    MERGE (owner)-[r:RESOURCE]->(disk)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {azure_update_tag}
+    SET r.lastupdated = {azure_update_tag}"""
 
-    """
-
-    for group in groups:
-        group_id = group["id"]
+    for disk in disk_list:
+        # TODO: Populate Resource Group
+        # x = disk['id'].split('/')
+        # disk['resourceGroup'] = x[x.index('resourceGroups')+1]
 
         neo4j_session.run(
-            ingest_security_group,
-            GroupId=group_id,
-            GroupName=group.get("name"),
-            location=group.get('location'),
-            AZURE_SUBSCRIPTION_ID=subscription_id,
+            ingest_disks,
+            id=disk['id'],
+            name=disk['name'],
+            type=disk['type'],
+            location=disk['location'],
+            createOption=get_optional_value(disk, ['creation_data', 'create_option']),
+            diskSize=get_optional_value(disk, ['disk_size_gb']),
+            encryption=get_optional_value(disk, ['encryption_settings_collection', 'enabled']),
+            maxShares=get_optional_value(disk, ['max_shares']),
+            accessPolicy=get_optional_value(disk, ['network_access_policy']),
+            osType=get_optional_value(disk, ['os_type']),
+            tier=get_optional_value(disk, ['tier']),
+            sku=get_optional_value(disk, ['sku']),
+            zones=get_optional_value(disk, ['zones']),
+            SUBSCRIPTION_ID=subscription_id,
             azure_update_tag=azure_update_tag,
         )
 
 
-def cleanup_network_security_group(neo4j_session, common_job_parameters):
-    run_cleanup_job('azure_import_network_security_group_cleanup.json', neo4j_session, common_job_parameters)
-
-
-def get_virtual_network_group(credentials, subscription_id):
-    client = get_client(credentials, subscription_id)
-    virtual_networks = list(client.virtual_network.list_all())
-    return virtual_networks
-
-
-def load_virtual_network_data(neo4j_session, credentials, virtualNetworkList, subscription_id, azure_update_tag, common_job_parameters):
-    ingest_virtual_network = """
-    MERGE (virtualNetwork:Azure_virtualnetwork{id: {id}})
-    ON CREATE SET virtualNetwork.firstseen = timestamp(), virtualNetwork.vpcid ={id}
-    SET virtualNetwork.name= {name},
-    virtualNetwork.type = {type},
-    virtualNetwork.location = {location},
-    virtualNetwork.etag= {etag},
-    virtualNetwork.lastupdated = {azure_update_tag}
-    WITH virtualNetwork
-    MATCH (owner:AzureSubscription{id: {subscription_id}})
-    MERGE (owner)-[r:RESOURCE]->(virtualNetwork)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {azure_update_tag}"""
-
-    for virtualNetwork in virtualNetworkList:
-
-        neo4j_session.run(ingest_virtual_network,
-                          name=virtualNetwork.get('name'),
-                          id=virtualNetwork.get('id'),
-                          type=virtualNetwork.get('type'),
-                          location=virtualNetwork.get('location'),
-                          etag=virtualNetwork.get('etag'),
-                          virtualNetworkPeerings=virtualNetwork['properties']['virtualNetworkPeerings'],
-                          AZURE_SUBSCRIPTION_ID=subscription_id,
-                          azure_update_tag=azure_update_tag,
-                          )
-
-
-def cleanup_virtual_network(neo4j_session, common_job_parameters):
-    run_cleanup_job('azure_import_virtual_network_cleanup.json', neo4j_session, common_job_parameters)
-
-
-def get_network_interface_group(credentials, subscription_id):
-    client = get_client(credentials, subscription_id)
-    networkInterfaceList = list(client.network_interface.list_all())
-    return networkInterfaceList
-
-
-def load_network_interface_data(neo4j_session, subscription_id, networkInterfaceGroup, azure_update_tag, common_job_parameters):
-
-    ingest_network_interface = """
-    MERGE (NetworkInterface:Azure_networkInterface{id: {id}})
-    ON CREATE SET NetworkInterface.firstseen = timestamp(), virtualNetwork.id ={id}
-    SET NetworkInterface.name= {name},
-    NetworkInterface.type = {type},
-    NetworkInterface.location = {location},
-    NetworkInterface.etag= {etag},
-    NetworkInterface.macAddress= {macAddress},
-    NetworkInterface.networkSecurityGroupId={networkSecurityGroupId}
-    NetworkInterface.lastupdated = {azure_update_tag}
-    WITH NetworkInterface
-    MATCH (owner:AzureSubscription{id: {subscription_id}})
-    MERGE (owner)-[r:RESOURCE]->(NetworkInterface)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {azure_update_tag}"""
-
-    for networkInterface in networkInterfaceGroup:
-
-        neo4j_session.run(ingest_network_interface,
-                          name=networkInterface.get('name'),
-                          id=networkInterface.get('id'),
-                          type=networkInterface.get('type'),
-                          location=networkInterface.get('location'),
-                          etag=networkInterface.get('etag'),
-                          macAddress=networkInterface.get('macAddress'),
-                          networkSecurityGroupId=networkInterface['properties']['macAddress']['networkSecurityGroup']['id'],
-                          AZURE_SUBSCRIPTION_ID=subscription_id,
-                          azure_update_tag=azure_update_tag,
-
-                          )
-
-
-def cleanup_network_interface(neo4j_session, common_job_parameters):
-    run_cleanup_job('azure_import_network_interface_cleanup.json', neo4j_session, common_job_parameters)
-
-
-def get_disks(credentials, subscription_id):
-    client = get_client(credentials, subscription_id)
-    diskList = list(client.disks.list_all())
-    return diskList
-
-
-def loadDisksData(neo4j_session, subscription_id, diskList, azure_update_tag, common_job_parameters):
-
-    ingest_compute_disks = """
-    MERGE (Disks:Compute_disk{id: {id}})
-    ON CREATE SET Disks.firstseen = timestamp(), Disks.id ={id}
-    SET Disks.name= {name},
-    Disks.type = {type},
-    Disks.location = {location},
-    Disks.lastupdated = {azure_update_tag},
-    Disks.skuName={skuName},
-    Disks.osType={osType},
-    Disks.diskSize={diskSize},
-    Disks.diskState={diskState},
-    Disks.diskTier={diskTier}
-    WITH Disks
-    MATCH (owner:AzureSubscription{id: {subscription_id}})
-    MERGE (owner)-[r:RESOURCE]->(Disks)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {azure_update_tag}"""
-
-    for disk in diskList:
-        neo4j_session.run(ingest_compute_disks,
-                          name=disk.get('name'),
-                          id=disk.get('id'),
-                          type=disk.get('type'),
-                          location=disk.get('location'),
-                          skuName=disk['sku']['name'],
-                          osType=disk['properties']['osType'],
-                          diskSize=disk['properties']['diskSizeGB'],
-                          diskState=disk['properties']['diskState'],
-                          diskTier=disk['properties']['tier'],
-                          AZURE_SUBSCRIPTION_ID=subscription_id,
-                          azure_update_tag=azure_update_tag,
-
-                          )
-
-
-def cleanup_Disks(neo4j_session, common_job_parameters):
+def cleanup_disks(neo4j_session, common_job_parameters):
     run_cleanup_job('azure_import_compute_disks_cleanup.json', neo4j_session, common_job_parameters)
 
 
-def getSnaoshotList(credentials, subscription_id):
-    client = get_client(credentials, subscription_id)
-    snapshotList = list(client.snapshots.list())
-    return snapshotList
+def get_snapshots_list(credentials, subscription_id):
+    try:
+        client = get_client(credentials, subscription_id)
+        snapshot_list = list(map(lambda x: x.as_dict(), client.snapshots.list()))
+
+        return snapshot_list
+
+    except Exception as e:
+        logger.warning("Error while retrieving disks - {}".format(e))
+        return []
 
 
-def load_snapshotData(neo4j_session, subscription_id, snapshotList, azure_update_tag, common_job_parameters):
-
-    ingest_compute_disks = """
-    MERGE (Snapshot:Compute_snapshot{id: {id}})
-    ON CREATE SET Snapshot.firstseen = timestamp(), Disks.id ={id}
-    SET Snapshot.name= {name},
-    Snapshot.type = {type},
-    Snapshot.location = {location},
-    Snapshot.lastupdated = {azure_update_tag},
-    Snapshot.osType={osType},
-    Snapshot.diskSize={diskSize},
-    Snapshot.timeCreated={timeCreated},
-    WITH Disks
-    MATCH (owner:AzureSubscription{id: {subscription_id}})
-    MERGE (owner)-[r:RESOURCE]->(Disks)
+def load_snapshots(neo4j_session, subscription_id, snapshot_list, azure_update_tag, common_job_parameters):
+    ingest_snapshots = """
+    MERGE (snapshot:AzureSnapshot{id: {id}})
+    ON CREATE SET snapshot.firstseen = timestamp(),
+    SET snapshot.name= {name},snapshot.type = {type},
+    snapshot.location = {location}, snapshot.lastupdated = {azure_update_tag},
+    snapshot.createoption = {createOption}, snapshot.disksizegb = {diskSize},
+    snapshot.encryption = {encryption}, snapshot.incremental = {incremental},
+    snapshot.network_access_policy = {accessPolicy},
+    snapshot.osType = {osType}, snapshot.tier = {tier},
+    snapshot.sku = {sku}
+    WITH snapshot
+    MATCH (owner:AzureSubscription{id: {SUBSCRIPTION_ID}})
+    MERGE (owner)-[r:RESOURCE]->(snapshot)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {azure_update_tag}"""
 
-    for snapshot in snapshotList:
-        neo4j_session.run(ingest_compute_disks,
-                          name=snapshot.get('name'),
-                          id=snapshot.get('id'),
-                          type=snapshot.get('type'),
-                          location=snapshot.get('location'),
-                          osType=snapshot['properties']['osType'],
-                          diskSize=snapshot['properties']['diskSizeGB'],
-                          timeCreated=snapshot['properties']['timeCreated'],
-                          AZURE_SUBSCRIPTION_ID=subscription_id,
-                          azure_update_tag=azure_update_tag,
+    for snapshot in snapshot_list:
+        # TODO: Populate Resource Group
+        # x = snapshot['id'].split('/')
+        # snapshot['resourceGroup'] = x[x.index('resourceGroups')+1]
 
-                          )
+        neo4j_session.run(
+            ingest_snapshots,
+            id=snapshot['id'],
+            name=snapshot['name'],
+            type=snapshot['type'],
+            location=snapshot['location'],
+            createOption=get_optional_value(snapshot, ['creation_data', 'create_option']),
+            diskSize=get_optional_value(snapshot, ['disk_size_gb']),
+            encryption=get_optional_value(snapshot, ['encryption_settings_collection', 'enabled']),
+            incremental=get_optional_value(snapshot, ['incremental']),
+            accessPolicy=get_optional_value(snapshot, ['network_access_policy']),
+            osType=get_optional_value(snapshot, ['os_type']),
+            tier=get_optional_value(snapshot, ['tier']),
+            sku=get_optional_value(snapshot, ['sku']),
+            SUBSCRIPTION_ID=subscription_id,
+            azure_update_tag=azure_update_tag,
+        )
 
 
 def cleanup_snapshot(neo4j_session, common_job_parameters):
     run_cleanup_job('azure_import_snapshot_cleanup.json', neo4j_session, common_job_parameters)
-
-
-def sync_snapshot(neo4j_session, credentials, subscription_id, sync_tag, common_job_parameters):
-
-    snapshotList = getSnaoshotList(credentials, subscription_id)
-    load_snapshotData(neo4j_session, subscription_id, snapshotList, sync_tag, common_job_parameters)
-    cleanup_snapshot(neo4j_session, common_job_parameters)
-
-
-def sync_disk(neo4j_session, credentials, subscription_id, sync_tag, common_job_parameters):
-
-    diskList = get_disks(credentials, subscription_id)
-    loadDisksData(neo4j_session, subscription_id, diskList, sync_tag, common_job_parameters)
-    cleanup_network_interface(neo4j_session, common_job_parameters)
-
-
-def sync_network_interface(neo4j_session, credentials, subscription_id, sync_tag, common_job_parameters):
-    networkInterfaceGroup = get_network_interface_group(credentials, subscription_id)
-    load_network_interface_data(neo4j_session, subscription_id, networkInterfaceGroup, sync_tag, common_job_parameters)
-    cleanup_network_interface(neo4j_session, common_job_parameters)
-
-
-def sync_virtual_network(neo4j_session, credentials, subscription_id, sync_tag, common_job_parameters):
-
-    virtualNetworkList = get_virtual_network_group(credentials, subscription_id)
-    load_virtual_network_data(neo4j_session, credentials, virtualNetworkList, subscription_id, sync_tag, common_job_parameters)
-    cleanup_virtual_network(neo4j_session, common_job_parameters)
-
-
-def sync_network_security_group(neo4j_session, credentials, subscription_id, sync_tag, common_job_parameters):
-    groups = get_security_group_list(credentials, subscription_id)
-    load_security_group_info(neo4j_session, subscription_id, groups, sync_tag, common_job_parameters)
-    cleanup_network_security_group(neo4j_session, common_job_parameters)
 
 
 def sync_virtual_machine(neo4j_session, credentials, subscription_id, sync_tag, common_job_parameters):
@@ -354,13 +235,22 @@ def sync_virtual_machine(neo4j_session, credentials, subscription_id, sync_tag, 
     cleanup_virtual_machine(neo4j_session, common_job_parameters)
 
 
-@ timeit
+def sync_disk(neo4j_session, credentials, subscription_id, sync_tag, common_job_parameters):
+    disk_list = get_disks(credentials, subscription_id)
+    load_disks(neo4j_session, subscription_id, disk_list, sync_tag, common_job_parameters)
+    cleanup_disks(neo4j_session, common_job_parameters)
+
+
+def sync_snapshot(neo4j_session, credentials, subscription_id, sync_tag, common_job_parameters):
+    snapshot_list = get_snapshots_list(credentials, subscription_id)
+    load_snapshots(neo4j_session, subscription_id, snapshot_list, sync_tag, common_job_parameters)
+    cleanup_snapshot(neo4j_session, common_job_parameters)
+
+
+@timeit
 def sync(neo4j_session, credentials, location, subscription_id, sync_tag, common_job_parameters):
     logger.info("Syncing VM for subscription '%s'.", subscription_id)
 
     sync_virtual_machine(neo4j_session, credentials, subscription_id, sync_tag, common_job_parameters)
-    sync_virtual_network(neo4j_session, credentials, subscription_id, sync_tag, common_job_parameters)
-    sync_network_interface(neo4j_session, credentials, subscription_id, sync_tag, common_job_parameters)
-    sync_network_security_group(neo4j_session, credentials, subscription_id, sync_tag, common_job_parameters)
     sync_disk(neo4j_session, credentials, subscription_id, sync_tag, common_job_parameters)
     sync_snapshot(neo4j_session, credentials, subscription_id, sync_tag, common_job_parameters)
