@@ -14,6 +14,7 @@ import cartography.intel.gcp
 import cartography.intel.github
 import cartography.intel.gsuite
 import cartography.intel.okta
+import cartography.intel.digitalocean
 
 
 logger = logging.getLogger(__name__)
@@ -161,6 +162,7 @@ def build_default_sync():
         ('crxcavator', cartography.intel.crxcavator.start_extension_ingestion),
         ('okta', cartography.intel.okta.start_okta_ingestion),
         ('github', cartography.intel.github.start_github_ingestion),
+        ('digitalocean', cartography.intel.digitalocean.start_digitalocean_ingestion),
         ('analysis', cartography.intel.analysis.run),
     ])
     return sync
