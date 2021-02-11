@@ -388,9 +388,9 @@ def _load_cosmosdb_virtual_network_rules(neo4j_session, database_account, azure_
 
 
 @timeit
-def sync_database_account_details(neo4j_session, credentials, subscription_id, database_account_list, sync_tag):
+def sync_database_account_details(neo4j_session, credentials, subscription_id, database_account_list, sync_tag, common_job_parameters):
     details = get_database_account_details(credentials, subscription_id, database_account_list)
-    load_database_account_details(neo4j_session, credentials, subscription_id, details, sync_tag)
+    load_database_account_details(neo4j_session, credentials, subscription_id, details, sync_tag, common_job_parameters)
 
 
 @timeit
@@ -471,7 +471,7 @@ def get_table_resources(credentials, subscription_id, database_account):
 
 
 @timeit
-def load_database_account_details(neo4j_session, credentials, subscription_id, details, update_tag):
+def load_database_account_details(neo4j_session, credentials, subscription_id, details, update_tag, common_job_parameters):
     """
     Create dictionaries for SQL Databases, Cassandra Keyspaces, MongoDB Databases and table resources.
     """
@@ -507,14 +507,16 @@ def load_database_account_details(neo4j_session, credentials, subscription_id, d
                 t['database_account_id'] = account_id
             table_resources.extend(table)
 
+    _load_table_resources(neo4j_session, table_resources, update_tag)
+    cleanup_table_resources(neo4j_session, subscription_id, common_job_parameters)
+
     _load_sql_databases(neo4j_session, sql_databases, update_tag)
     _load_cassandra_keyspaces(neo4j_session, cassandra_keyspaces, update_tag)
     _load_mongodb_databases(neo4j_session, mongodb_databases, update_tag)
-    _load_table_resources(neo4j_session, table_resources, update_tag)
 
-    sync_sql_database_details(neo4j_session, credentials, subscription_id, sql_databases, update_tag)
-    sync_cassandra_keyspace_details(neo4j_session, credentials, subscription_id, cassandra_keyspaces, update_tag)
-    sync_mongodb_database_details(neo4j_session, credentials, subscription_id, mongodb_databases, update_tag)
+    sync_sql_database_details(neo4j_session, credentials, subscription_id, sql_databases, update_tag, common_job_parameters)
+    sync_cassandra_keyspace_details(neo4j_session, credentials, subscription_id, cassandra_keyspaces, update_tag, common_job_parameters)
+    sync_mongodb_database_details(neo4j_session, credentials, subscription_id, mongodb_databases, update_tag, common_job_parameters)
 
 
 @timeit
@@ -543,9 +545,9 @@ def _load_sql_databases(neo4j_session, sql_databases, update_tag):
             SQLDatabaseId=database['id'],
             Name=database['name'],
             Type=database['type'],
-            Location=database['location'],
-            Throughput=database['options']['throughput'],
-            MaxThroughput=database['options']['autoscale_setting']['max_throughput'],
+            Location=get_optional_value(database, ['location']),
+            Throughput=get_optional_value(database, ['options', 'throughput']),
+            MaxThroughput=get_optional_value(database, ['options', 'autoscale_setting', 'max_throughput']),
             DatabaseAccountId=database['database_account_id'],
             azure_update_tag=update_tag,
         )
@@ -570,8 +572,7 @@ def _load_cassandra_keyspaces(neo4j_session, cassandra_keyspaces, update_tag):
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {azure_update_tag}
     """
-    # TODO: 1) How is location optional? O/p in debugger didn't return location.
-    # TODO: 2) Throughput and max_throughput were not present in o/p even though explicitly stated in terraform.
+
     for keyspace in cassandra_keyspaces:
         neo4j_session.run(
             ingest_cassandra_keyspaces,
@@ -612,9 +613,9 @@ def _load_mongodb_databases(neo4j_session, mongodb_databases, update_tag):
             DatabaseId=database['id'],
             Name=database['name'],
             Type=database['type'],
-            Location=database['location'],
-            Throughput=database['options']['throughput'],
-            MaxThroughput=database['options']['autoscale_setting']['max_throughput'],
+            Location=get_optional_value(database, ['location']),
+            Throughput=get_optional_value(database, ['options', 'throughput']),
+            MaxThroughput=get_optional_value(database, ['options', 'autoscale_setting', 'max_throughput']),
             DatabaseAccountId=database['database_account_id'],
             azure_update_tag=update_tag,
         )
@@ -639,8 +640,7 @@ def _load_table_resources(neo4j_session, table_resources, update_tag):
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {azure_update_tag}
     """
-    # TODO: 1) How is location optional? O/p in debugger didn't return location.
-    # TODO: 2) Throughput and max_throughput were not present in o/p even though explicitly stated in terraform.
+
     for table in table_resources:
         neo4j_session.run(
             ingest_tables,
@@ -656,9 +656,10 @@ def _load_table_resources(neo4j_session, table_resources, update_tag):
 
 
 @timeit
-def sync_sql_database_details(neo4j_session, credentials, subscription_id, sql_databases, update_tag):
+def sync_sql_database_details(neo4j_session, credentials, subscription_id, sql_databases, update_tag, common_job_parameters):
     sql_database_details = get_sql_database_details(credentials, subscription_id, sql_databases)
     load_sql_database_details(neo4j_session, sql_database_details, update_tag)
+    cleanup_sql_database_details(neo4j_session, subscription_id, common_job_parameters)
 
 
 @timeit
@@ -678,7 +679,6 @@ def get_sql_containers(credentials, subscription_id, database):
     """
     try:
         client = get_client(credentials, subscription_id)
-        # TODO : test this below line of code
         containers = list(map(lambda x: x.as_dict(), client.sql_resources.list_sql_containers(database['resource_group_name'], database['database_account_name'], database['name'])))
 
     except Exception as e:
@@ -736,24 +736,25 @@ def _load_sql_containers(neo4j_session, containers, update_tag):
             ResourceId=container['id'],
             Name=container['name'],
             Type=container['type'],
-            Location=container['location'],
-            Throughput=container['options']['throughput'],
-            MaxThroughput=container['options']['autoscale_settings']['max_throughput'],
-            ContainerId=container['resource']['id'],
-            DefaultTimeToLive=container['resource']['default_ttl'],
-            AnalyticalTTL=container['resource']['analytical_storage_ttl'],
-            IsAutomaticIndexingPolicy=container['resource']['indexing_policy']['automatic'],
-            IndexingMode=container['resource']['indexing_policy']['indexing_mode'],
-            ConflictResolutionPolicyMode=container['resource']['conflict_resolution_policy']['mode'],
+            Location=get_optional_value(container, ['location']),
+            Throughput=get_optional_value(container, ['options', 'throughput']),
+            MaxThroughput=get_optional_value(container, ['options', 'autoscale_setting', 'max_throughput']),
+            ContainerId=get_optional_value(container, ['resource', 'id']),
+            DefaultTimeToLive=get_optional_value(container, ['resource', 'default_ttl']),
+            AnalyticalTTL=get_optional_value(container, ['resource', 'analytical_storage_ttl']),
+            IsAutomaticIndexingPolicy=get_optional_value(container, ['resource', 'indexing_policy', 'automatic']),
+            IndexingMode=get_optional_value(container, ['resource', 'indexing_policy', 'indexing_mode']),
+            ConflictResolutionPolicyMode=get_optional_value(container['resource', 'conflict_resolution_policy', 'mode']),
             SQLDatabaseId=container['database_id'],
             azure_update_tag=update_tag,
         )
 
 
 @timeit
-def sync_cassandra_keyspace_details(neo4j_session, credentials, subscription_id, cassandra_keyspaces, update_tag):
+def sync_cassandra_keyspace_details(neo4j_session, credentials, subscription_id, cassandra_keyspaces, update_tag, common_job_parameters):
     cassandra_keyspace_details = get_cassandra_keyspace_details(credentials, subscription_id, cassandra_keyspaces)
     load_cassandra_keyspace_details(neo4j_session, cassandra_keyspace_details, update_tag)
+    cleanup_cassandra_keyspace_details(neo4j_session, subscription_id, common_job_parameters)
 
 
 @timeit
@@ -762,8 +763,8 @@ def get_cassandra_keyspace_details(credentials, subscription_id, cassandra_keysp
     Iterate through the Cassandra keyspaces to get the list of tables in each keyspace.
     """
     for keyspace in cassandra_keyspaces:
-        tables = get_cassandra_tables(credentials, subscription_id, keyspace)
-        yield keyspace['id'], tables
+        cassandra_tables = get_cassandra_tables(credentials, subscription_id, keyspace)
+        yield keyspace['id'], cassandra_tables
 
 
 @timeit
@@ -773,13 +774,13 @@ def get_cassandra_tables(credentials, subscription_id, keyspace):
     """
     try:
         client = get_client(credentials, subscription_id)
-        tables = list(map(lambda x: x.as_dict(), client.cassandra_resources.list_cassandra_tables(keyspace['resource_group_name'], keyspace['database_account_name'], keyspace['name'])))
+        cassandra_tables = list(map(lambda x: x.as_dict(), client.cassandra_resources.list_cassandra_tables(keyspace['resource_group_name'], keyspace['database_account_name'], keyspace['name'])))
 
     except Exception as e:
         logger.warning("Error while retrieving Cassandra tables - {}".format(e))
         return []
 
-    return tables
+    return cassandra_tables
 
 
 @timeit
@@ -787,19 +788,19 @@ def load_cassandra_keyspace_details(neo4j_session, details, update_tag):
     """
     Create a dictionary for Cassandra tables.
     """
-    tables = []
+    cassandra_tables = []
 
-    for keyspace_id, table in details:
-        if len(table) > 0:
-            for t in table:
+    for keyspace_id, cassandra_table in details:
+        if len(cassandra_table) > 0:
+            for t in cassandra_table:
                 t['keyspace_id'] = keyspace_id
-            tables.extend(table)
+            cassandra_tables.extend(cassandra_table)
 
-    _load_cassandra_tables(neo4j_session, tables, update_tag)
+    _load_cassandra_tables(neo4j_session, cassandra_tables, update_tag)
 
 
 @timeit
-def _load_cassandra_tables(neo4j_session, tables, update_tag):
+def _load_cassandra_tables(neo4j_session, cassandra_tables, update_tag):
     """
     Ingest Cassandra Tables into neo4j.
     """
@@ -821,7 +822,7 @@ def _load_cassandra_tables(neo4j_session, tables, update_tag):
     SET r.lastupdated = {azure_update_tag}
     """
 
-    for table in tables:
+    for table in cassandra_tables:
         neo4j_session.run(
             ingest_cassandra_tables,
             ResourceId=table['id'],
@@ -839,9 +840,10 @@ def _load_cassandra_tables(neo4j_session, tables, update_tag):
 
 
 @timeit
-def sync_mongodb_database_details(neo4j_session, credentials, subscription_id, mongodb_databases, update_tag):
+def sync_mongodb_database_details(neo4j_session, credentials, subscription_id, mongodb_databases, update_tag, common_job_parameters):
     mongodb_databases_details = get_mongodb_databases_details(credentials, subscription_id, mongodb_databases)
     load_mongodb_databases_details(neo4j_session, mongodb_databases_details, update_tag)
+    cleanup_mongodb_database_details(neo4j_session, subscription_id, common_job_parameters)
 
 
 @timeit
@@ -861,7 +863,6 @@ def get_mongodb_collections(credentials, subscription_id, database):
     """
     try:
         client = get_client(credentials, subscription_id)
-        # TODO: Test the below line of code
         collections = list(map(lambda x: x.as_dict(), client.mongo_db_resources.list_mongo_db_collections(database['resource_group_name'], database['database_account_name'], database['name'])))
 
     except Exception as e:
@@ -915,11 +916,11 @@ def _load_collections(neo4j_session, collections, update_tag):
             ResourceId=collection['id'],
             Name=collection['name'],
             Type=collection['type'],
-            Location=collection['location'],
-            Throughput=collection['options']['throughput'],
-            MaxThroughput=collection['options']['autoscale_settings']['max_throughput'],
-            CollectionName=collection['resource']['id'],
-            AnalyticalTTL=collection['resource']['analytical_storage_ttl'],
+            Location=get_optional_value(collection, ['location']),
+            Throughput=get_optional_value(collection, ['options', 'throughput']),
+            MaxThroughput=get_optional_value(collection, ['options', 'autoscale_setting', 'max_throughput']),
+            CollectionName=get_optional_value(collection, ['resource', 'id']),
+            AnalyticalTTL=get_optional_value(collection, ['resource', 'analytical_storage_ttl']),
             DatabaseId=collection['database_id'],
             azure_update_tag=update_tag,
         )
@@ -932,9 +933,33 @@ def cleanup_azure_database_accounts(neo4j_session, subscription_id, common_job_p
 
 
 @timeit
+def cleanup_sql_database_details(neo4j_session, subscription_id, common_job_parameters):
+    common_job_parameters['AZURE_SUBSCRIPTION_ID'] = subscription_id
+    run_cleanup_job('azure_cosmosdb_sql_database_cleanup.json', neo4j_session, common_job_parameters)
+
+
+@timeit
+def cleanup_cassandra_keyspace_details(neo4j_session, subscription_id, common_job_parameters):
+    common_job_parameters['AZURE_SUBSCRIPTION_ID'] = subscription_id
+    run_cleanup_job('azure_cosmosdb_cassandra_keyspace_cleanup.json', neo4j_session, common_job_parameters)
+
+
+@timeit
+def cleanup_mongodb_database_details(neo4j_session, subscription_id, common_job_parameters):
+    common_job_parameters['AZURE_SUBSCRIPTION_ID'] = subscription_id
+    run_cleanup_job('azure_cosmosdb_mongodb_database_cleanup.json', neo4j_session, common_job_parameters)
+
+
+@timeit
+def cleanup_table_resources(neo4j_session, subscription_id, common_job_parameters):
+    common_job_parameters['AZURE_SUBSCRIPTION_ID'] = subscription_id
+    run_cleanup_job('azure_cosmosdb_table_resources_cleanup.json', neo4j_session, common_job_parameters)
+
+
+@timeit
 def sync(neo4j_session, credentials, subscription_id, sync_tag, common_job_parameters):
     logger.info("Syncing Azure CosmosDB for subscription '%s'.", subscription_id)
     database_account_list = get_database_account_list(credentials, subscription_id)
     load_database_account_data(neo4j_session, subscription_id, database_account_list, sync_tag)
-    sync_database_account_details(neo4j_session, credentials, subscription_id, database_account_list, sync_tag)
+    sync_database_account_details(neo4j_session, credentials, subscription_id, database_account_list, sync_tag, common_job_parameters)
     cleanup_azure_database_accounts(neo4j_session, subscription_id, common_job_parameters)
