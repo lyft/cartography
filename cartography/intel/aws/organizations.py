@@ -116,12 +116,14 @@ def load_aws_accounts(neo4j_session, aws_accounts, aws_update_tag, common_job_pa
             UPDATE_TAG=aws_update_tag,
         )
 
+        cleanup(neo4j_session, account_id, common_job_parameters)
 
-def cleanup(neo4j_session, common_job_parameters):
+
+def cleanup(neo4j_session, account_id, common_job_parameters):
+    common_job_parameters['AWS_ACCOUNT_ID'] = account_id
     run_cleanup_job('aws_account_cleanup.json', neo4j_session, common_job_parameters)
 
 
 @timeit
 def sync(neo4j_session, accounts, aws_update_tag, common_job_parameters):
     load_aws_accounts(neo4j_session, accounts, aws_update_tag, common_job_parameters)
-    cleanup(neo4j_session, common_job_parameters)
