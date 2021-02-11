@@ -24,12 +24,13 @@ def get_vm_list(credentials, subscription_id):
         return []
 
 
-def load_vm_data(neo4j_session, subscription_id, vm_list, azure_updated_tag, common_job_parameters):
+def load_vm_data(neo4j_session, subscription_id, vm_list, azure_update_tag, common_job_parameters):
     ingest_vm = """
     MERGE (vm:VirtualMachine{id: {id}})
     ON CREATE SET vm.firstseen = timestamp(),
     vm.type = {type}, vm.location = {location},
-    SET vm.lastupdated = {azure_updated_tag}, vm.name = {name},
+    vm.resourcegroup = {resourceGroup}
+    SET vm.lastupdated = {azure_update_tag}, vm.name = {name},
     vm.plan = {plan}, vm.size = {size},
     vm.license_type={licenseType}, vm.computer_name={computerName},
     vm.identity_type={identityType}, vm.zones={zones},
@@ -39,13 +40,12 @@ def load_vm_data(neo4j_session, subscription_id, vm_list, azure_updated_tag, com
     MATCH (owner:AzureSubscription{id: {SUBSCRIPTION_ID}})
     MERGE (owner)-[r:RESOURCE]->(vm)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {azure_updated_tag}
+    SET r.lastupdated = {azure_update_tag}
     """
 
     for vm in vm_list:
-        # TODO: Populate Resource Group
-        # x = vm['id'].split('/')
-        # vm['resourceGroup'] = x[x.index('resourceGroups')+1]
+        x = vm['id'].split('/')
+        vm['resource_group'] = x[x.index('resourceGroups') + 1]
 
         neo4j_session.run(
             ingest_vm,
@@ -53,6 +53,7 @@ def load_vm_data(neo4j_session, subscription_id, vm_list, azure_updated_tag, com
             name=vm['name'],
             type=vm['type'],
             location=vm['location'],
+            resourceGroup=vm['resource_group'],
             plan=get_optional_value(vm, ['plan', 'product']),
             size=get_optional_value(vm, ['hardware_profile', 'vm_size']),
             licenseType=get_optional_value(vm, 'license_type'),
@@ -64,19 +65,19 @@ def load_vm_data(neo4j_session, subscription_id, vm_list, azure_updated_tag, com
             priority=get_optional_value(vm, ['priority']),
             evictionPolicy=get_optional_value(vm, ['eviction_policy']),
             SUBSCRIPTION_ID=subscription_id,
-            azure_update_tag=azure_updated_tag
+            azure_update_tag=azure_update_tag
         )
 
         if 'storage_profile' in vm:
             if 'data_disks' in vm['storage_profile']:
-                load_vm_data_disks(neo4j_session, vm['id'], vm['storage_profile'].get('data_disks'), azure_updated_tag, common_job_parameters)
+                load_vm_data_disks(neo4j_session, vm['id'], vm['storage_profile'].get('data_disks'), azure_update_tag, common_job_parameters)
 
 
-def load_vm_data_disks(neo4j_session, vm_id, data_disks, azure_updated_tag, common_job_parameters):
+def load_vm_data_disks(neo4j_session, vm_id, data_disks, azure_update_tag, common_job_parameters):
     ingest_data_disk = """
     MERGE (disk:AzureDataDisk{id: {id}})
-    ON CREATE SET disk.firstseen = timestamp(), disk.lun = {lun},
-    SET disk.lastupdated = {azure_updated_tag}, disk.name = {name},
+    ON CREATE SET disk.firstseen = timestamp(), disk.lun = {lun}
+    SET disk.lastupdated = {azure_update_tag}, disk.name = {name},
     disk.vhd = {vhd}, disk.image = {image}, disk.size = {size},
     disk.caching = {caching}, disk.create_option = {createOption},
     disk.write_accelerator_enabled={writeAcceleratorEnabled},disk.managed_disk_storage_type={managedDiskStorageType}
@@ -84,14 +85,10 @@ def load_vm_data_disks(neo4j_session, vm_id, data_disks, azure_updated_tag, comm
     MATCH (owner:VirtualMachine{id: {VM_ID}})
     MERGE (owner)-[r:ATTACHED_TO]->(disk)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {azure_updated_tag}
+    SET r.lastupdated = {azure_update_tag}
     """
 
     for disk in data_disks:
-        # TODO: Populate Resource Group
-        # x = disk['id'].split('/')
-        # disk['resourceGroup'] = x[x.index('resourceGroups')+1]
-
         neo4j_session.run(
             ingest_data_disk,
             id=vm_id + str(disk['lun']),
@@ -105,12 +102,12 @@ def load_vm_data_disks(neo4j_session, vm_id, data_disks, azure_updated_tag, comm
             writeAcceleratorEnabled=get_optional_value(disk, ['write_accelerator_enabled']),
             managedDiskStorageType=get_optional_value(disk, ['managed_disk', 'storage_account_type']),
             VM_ID=vm_id,
-            azure_update_tag=azure_updated_tag
+            azure_update_tag=azure_update_tag
         )
 
 
 def cleanup_virtual_machine(neo4j_session, common_job_parameters):
-    run_cleanup_job('azure_import_virtual_machine_cleanup.json', neo4j_session, common_job_parameters)
+    run_cleanup_job('azure_import_virtual_machines_cleanup.json', neo4j_session, common_job_parameters)
 
 
 def get_disks(credentials, subscription_id):
@@ -130,6 +127,7 @@ def load_disks(neo4j_session, subscription_id, disk_list, azure_update_tag, comm
     MERGE (disk:AzureDisk{id: {id}})
     ON CREATE SET disk.firstseen = timestamp(),
     disk.type = {type}, disk.location = {location},
+    disk.resourcegroup = {resourceGroup}
     SET disk.name = {name}, disk.type = {type},
     disk.location = {location}, disk.lastupdated = {azure_update_tag},
     disk.createoption = {createOption}, disk.disksizegb = {diskSize},
@@ -144,9 +142,8 @@ def load_disks(neo4j_session, subscription_id, disk_list, azure_update_tag, comm
     SET r.lastupdated = {azure_update_tag}"""
 
     for disk in disk_list:
-        # TODO: Populate Resource Group
-        # x = disk['id'].split('/')
-        # disk['resourceGroup'] = x[x.index('resourceGroups')+1]
+        x = disk['id'].split('/')
+        disk['resource_group'] = x[x.index('resourceGroups') + 1]
 
         neo4j_session.run(
             ingest_disks,
@@ -154,6 +151,7 @@ def load_disks(neo4j_session, subscription_id, disk_list, azure_update_tag, comm
             name=disk['name'],
             type=disk['type'],
             location=disk['location'],
+            resourceGroup=disk['resource_group'],
             createOption=get_optional_value(disk, ['creation_data', 'create_option']),
             diskSize=get_optional_value(disk, ['disk_size_gb']),
             encryption=get_optional_value(disk, ['encryption_settings_collection', 'enabled']),
@@ -161,7 +159,7 @@ def load_disks(neo4j_session, subscription_id, disk_list, azure_update_tag, comm
             accessPolicy=get_optional_value(disk, ['network_access_policy']),
             osType=get_optional_value(disk, ['os_type']),
             tier=get_optional_value(disk, ['tier']),
-            sku=get_optional_value(disk, ['sku']),
+            sku=get_optional_value(disk, ['sku', 'name']),
             zones=get_optional_value(disk, ['zones']),
             SUBSCRIPTION_ID=subscription_id,
             azure_update_tag=azure_update_tag,
@@ -169,7 +167,7 @@ def load_disks(neo4j_session, subscription_id, disk_list, azure_update_tag, comm
 
 
 def cleanup_disks(neo4j_session, common_job_parameters):
-    run_cleanup_job('azure_import_compute_disks_cleanup.json', neo4j_session, common_job_parameters)
+    run_cleanup_job('azure_import_disks_cleanup.json', neo4j_session, common_job_parameters)
 
 
 def get_snapshots_list(credentials, subscription_id):
@@ -188,6 +186,7 @@ def load_snapshots(neo4j_session, subscription_id, snapshot_list, azure_update_t
     ingest_snapshots = """
     MERGE (snapshot:AzureSnapshot{id: {id}})
     ON CREATE SET snapshot.firstseen = timestamp(),
+    snapshot.resourcegroup = {resourceGroup}
     SET snapshot.name= {name},snapshot.type = {type},
     snapshot.location = {location}, snapshot.lastupdated = {azure_update_tag},
     snapshot.createoption = {createOption}, snapshot.disksizegb = {diskSize},
@@ -202,9 +201,8 @@ def load_snapshots(neo4j_session, subscription_id, snapshot_list, azure_update_t
     SET r.lastupdated = {azure_update_tag}"""
 
     for snapshot in snapshot_list:
-        # TODO: Populate Resource Group
-        # x = snapshot['id'].split('/')
-        # snapshot['resourceGroup'] = x[x.index('resourceGroups')+1]
+        x = snapshot['id'].split('/')
+        snapshot['resource_group'] = x[x.index('resourceGroups') + 1]
 
         neo4j_session.run(
             ingest_snapshots,
@@ -212,6 +210,7 @@ def load_snapshots(neo4j_session, subscription_id, snapshot_list, azure_update_t
             name=snapshot['name'],
             type=snapshot['type'],
             location=snapshot['location'],
+            resourceGroup=snapshot['resource_group'],
             createOption=get_optional_value(snapshot, ['creation_data', 'create_option']),
             diskSize=get_optional_value(snapshot, ['disk_size_gb']),
             encryption=get_optional_value(snapshot, ['encryption_settings_collection', 'enabled']),
@@ -219,14 +218,14 @@ def load_snapshots(neo4j_session, subscription_id, snapshot_list, azure_update_t
             accessPolicy=get_optional_value(snapshot, ['network_access_policy']),
             osType=get_optional_value(snapshot, ['os_type']),
             tier=get_optional_value(snapshot, ['tier']),
-            sku=get_optional_value(snapshot, ['sku']),
+            sku=get_optional_value(snapshot, ['sku', 'name']),
             SUBSCRIPTION_ID=subscription_id,
             azure_update_tag=azure_update_tag,
         )
 
 
 def cleanup_snapshot(neo4j_session, common_job_parameters):
-    run_cleanup_job('azure_import_snapshot_cleanup.json', neo4j_session, common_job_parameters)
+    run_cleanup_job('azure_import_snapshots_cleanup.json', neo4j_session, common_job_parameters)
 
 
 def sync_virtual_machine(neo4j_session, credentials, subscription_id, sync_tag, common_job_parameters):
@@ -248,7 +247,7 @@ def sync_snapshot(neo4j_session, credentials, subscription_id, sync_tag, common_
 
 
 @timeit
-def sync(neo4j_session, credentials, location, subscription_id, sync_tag, common_job_parameters):
+def sync(neo4j_session, credentials, subscription_id, sync_tag, common_job_parameters):
     logger.info("Syncing VM for subscription '%s'.", subscription_id)
 
     sync_virtual_machine(neo4j_session, credentials, subscription_id, sync_tag, common_job_parameters)
