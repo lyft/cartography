@@ -1530,6 +1530,10 @@ Representation of a generic Network Interface.  Currently however, we only creat
 
 ### Relationships
 
+-  EC2 Network Interfaces belong to AWS accounts.
+
+        (NetworkInterface)<-[:RESOURCE]->(:AWSAccount)
+
 - Network interfaces can be connected to EC2Subnets.
 
         ```
@@ -1733,6 +1737,7 @@ Representation of an AWS S3 [Bucket](https://docs.aws.amazon.com/AmazonS3/latest
 | name | The name of the bucket.  This is guaranteed to be [globally unique](https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3.html#S3.Client.list_buckets) |
 | anonymous\_actions |  List of anonymous internet accessible actions that may be run on the bucket.  This list is taken by running [policyuniverse](https://github.com/Netflix-Skunkworks/policyuniverse#internet-accessible-policy) on the policy that applies to the bucket.   |
 | anonymous\_access | True if this bucket has a policy applied to it that allows anonymous access or if it is open to the internet.  These policy determinations are made by using the [policyuniverse](https://github.com/Netflix-Skunkworks/policyuniverse) library.  |
+| region | The region that the bucket is in. Only defined if the S3 bucket has a [location constraint](https://docs.aws.amazon.com/AmazonS3/latest/dev/UsingBucket.html#access-bucket-intro) |
 
 ### Relationships
 
