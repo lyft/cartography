@@ -1,8 +1,8 @@
 import logging
 from azure.mgmt.sql import SqlManagementClient
+from cartography.util import get_optional_value
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
-from cartography.util import get_optional_value
 
 logger = logging.getLogger(__name__)
 
@@ -43,10 +43,10 @@ def load_server_data(neo4j_session, subscription_id, server_list, azure_update_t
     """
     ingest_server = """
     MERGE (s:AzureServer{id: {ServerId}})
-    ON CREATE SET s.firstseen = timestamp(), 
-    s.id = {ServerId}, s.name = {Name}, 
+    ON CREATE SET s.firstseen = timestamp(),
+    s.id = {ServerId}, s.name = {Name},
     s.resourcegroup = {ResourceGroup}, s.location = {Location}
-    SET s.lastupdated = {azure_update_tag}, 
+    SET s.lastupdated = {azure_update_tag},
     s.kind = {Kind},
     s.state = {State},
     s.version = {Version}
