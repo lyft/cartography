@@ -2,6 +2,7 @@ import logging
 from azure.mgmt.sql import SqlManagementClient
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
+from cartography.util import get_optional_value
 
 logger = logging.getLogger(__name__)
 
@@ -135,6 +136,8 @@ def get_recoverable_databases(credentials, subscription_id, server):
         recoverable_databases = list(map(lambda x: x.as_dict(), client.recoverable_databases.list_by_server(server['resourceGroup'], server['name'])))
 
     except Exception as e:
+        if e.status_code == 404:  # The API returns a 404 Not Found Error if no recoverable databases are present.
+            return []
         logger.warning("Error while retrieving recoverable databases - {}".format(e))
         return []
 
@@ -295,7 +298,7 @@ def _load_server_dns_aliases(neo4j_session, dns_aliases, update_tag):
             ingest_dns_aliases,
             DNSAliasId=data['id'],
             Name=data['name'],
-            AzureDNSRecord=data.get('azure_dns_record'),
+            AzureDNSRecord=get_optional_value(data, ['azure_dns_record']),
             ServerId=data['server_id'],
             azure_update_tag=update_tag,
         )
@@ -356,8 +359,8 @@ def _load_recoverable_databases(neo4j_session, recoverable_databases, update_tag
             DatabaseId=data['id'],
             Name=data['name'],
             Edition=data['edition'],
-            ServiceLevelObjective=data['properties']['serviceLevelObjective'],
-            BackupDate=data['properties']['lastAvailableBackupDate'],
+            ServiceLevelObjective=data['service_level_objective'],
+            BackupDate=data['last_available_backup_date'],
             ServerId=data['server_id'],
             azure_update_tag=update_tag,
         )
@@ -393,13 +396,13 @@ def _load_restorable_dropped_databases(neo4j_session, restorable_dropped_databas
             DatabaseId=data['id'],
             Name=data['name'],
             Location=data['location'],
-            DatabaseName=data['properties']['databaseName'],
-            CreationDate=data['properties']['creationDate'],
-            DeletionDate=data['properties']['deletionDate'],
-            RestoreDate=data['properties']['earliestRestoreDate'],
-            Edition=data['properties']['edition'],
-            ServiceLevelObjective=data['properties']['serviceLevelObjective'],
-            MaxSizeBytes=data['properties']['maxSizeBytes'],
+            DatabaseName=data['database_name'],
+            CreationDate=data['creation_date'],
+            DeletionDate=get_optional_value(data, ['deletion_date']),
+            RestoreDate=data['earliest_restore_date'],
+            Edition=data['edition'],
+            ServiceLevelObjective=data['service_level_objective'],
+            MaxSizeBytes=data['max_size_bytes'],
             ServerId=data['server_id'],
             azure_update_tag=update_tag,
         )
@@ -430,8 +433,8 @@ def _load_failover_groups(neo4j_session, failover_groups, update_tag):
             GroupId=group['id'],
             Name=group['name'],
             Location=group['location'],
-            Role=group['properties']['replicationRole'],
-            State=group['properties']['replicationState'],
+            Role=group['replication_role'],
+            State=group['replication_state'],
             ServerId=group['server_id'],
             azure_update_tag=update_tag,
         )
@@ -447,6 +450,7 @@ def _load_elastic_pools(neo4j_session, elastic_pools, update_tag):
     ON CREATE SET e.firstseen = timestamp(), e.lastupdated = {azure_update_tag}
     SET e.name = {Name},
     e.location = {Location},
+    e.kind = {Kind},
     e.creationdate = {CreationDate},
     e.state = {State},
     e.maxsizebytes = {MaxSizeBytes},
@@ -465,11 +469,12 @@ def _load_elastic_pools(neo4j_session, elastic_pools, update_tag):
             PoolId=elastic_pool['id'],
             Name=elastic_pool['name'],
             Location=elastic_pool['location'],
-            CreationDate=elastic_pool['properties']['creationDate'],
-            State=elastic_pool['properties']['state'],
-            MaxSizeBytes=elastic_pool['properties']['maxSizeBytes'],
-            LicenseType=elastic_pool['properties']['licenseType'],
-            ZoneRedundant=elastic_pool['properties']['zoneRedundant'],
+            Kind=elastic_pool['kind'],
+            CreationDate=elastic_pool['creation_date'],
+            State=elastic_pool['state'],
+            MaxSizeBytes=elastic_pool['max_size_bytes'],
+            LicenseType=get_optional_value(elastic_pool, ['license_type']),
+            ZoneRedundant=elastic_pool['zone_redundant'],
             ServerId=elastic_pool['server_id'],
             azure_update_tag=update_tag,
         )
@@ -513,13 +518,13 @@ def _load_databases(neo4j_session, databases, update_tag):
             CreationDate=database['creation_date'],
             DatabaseId=database['database_id'],
             MaxSizeBytes=database['max_size_bytes'],
-            LicenseType=database.get('licenseType'),
-            SecondaryLocation=database['default_secondary_location'],
-            ElasticPoolId=database.get('elasticPoolId'),
+            LicenseType=get_optional_value(database, ['licenseType']),
+            SecondaryLocation=get_optional_value(database, ['default_secondary_location']),
+            ElasticPoolId=get_optional_value(database, ['elasticPoolId']),
             Collation=database['collation'],
-            FailoverGroupId=database.get('failoverGroupId'),
-            RDDId=database.get('restorableDroppedDatabaseId'),
-            RecoverableDbId=database.get('recoverableDatabaseId'),
+            FailoverGroupId=get_optional_value(database, ['failoverGroupId']),
+            RDDId=get_optional_value(database, ['restorableDroppedDatabaseId']),
+            RecoverableDbId=get_optional_value(database, ['recoverableDatabaseId']),
             ServerId=database['server_id'],
             azure_update_tag=update_tag,
         )
@@ -567,8 +572,7 @@ def get_db_threat_detection_policies(credentials, subscription_id, database):
     """
     try:
         client = get_client(credentials, subscription_id)
-        # TODO: Debug error - dictionary update sequence element #0 has length 1; 2 is required
-        db_threat_detection_policies = client.database_threat_detection_policies.get(database['resource_group_name'], database['server_name'], database['name'], 'default')
+        db_threat_detection_policies = client.database_threat_detection_policies.get(database['resource_group_name'], database['server_name'], database['name']).as_dict()
     except Exception as e:
         logger.warning("Error while retrieving database threat detection policies - {}".format(e))
         return []
@@ -599,8 +603,7 @@ def get_transparent_data_encryptions(credentials, subscription_id, database):
     """
     try:
         client = get_client(credentials, subscription_id)
-        # TODO: Debug error - dictionary update sequence element #0 has length 1; 2 is required
-        transparent_data_encryptions_list = client.transparent_data_encryptions.get(database['resource_group_name'], database['server_name'], database['name'], 'current')
+        transparent_data_encryptions_list = client.transparent_data_encryptions.get(database['resource_group_name'], database['server_name'], database['name']).as_dict()
     except Exception as e:
         logger.warning("Error while retrieving transparent data encryptions - {}".format(e))
         return []
@@ -676,16 +679,16 @@ def _load_replication_links(neo4j_session, replication_links, update_tag):
             LinkId=data['id'],
             Name=data['name'],
             Location=data['location'],
-            PartnerDatabase=data['properties']['partnerDatabase'],
-            PartnerLocation=data['properties']['partnerLocation'],
-            PartnerRole=data['properties']['partnerRole'],
-            PartnerServer=data['properties']['partnerServer'],
-            Mode=data['properties']['replicationMode'],
-            State=data['properties']['replicationState'],
-            PercentComplete=data['properties']['percentComplete'],
-            Role=data['properties']['role'],
-            StartTime=data['properties']['startTime'],
-            IsTerminationAllowed=data['properties']['isTerminationAllowed'],
+            PartnerDatabase=data['partner_database'],
+            PartnerLocation=data['partner_location'],
+            PartnerRole=data['partner_role'],
+            PartnerServer=data['partner_server'],
+            Mode=data['replication_mode'],
+            State=data['replication_state'],
+            PercentComplete=get_optional_value(data, ['percent_complete']),
+            Role=data['role'],
+            StartTime=data['start_time'],
+            IsTerminationAllowed=data['is_termination_allowed'],
             DatabaseId=data['database_id'],
             azure_update_tag=update_tag,
         )
@@ -722,14 +725,14 @@ def _load_db_threat_detection_policies(neo4j_session, threat_detection_policies,
             PolicyId=policy['id'],
             Name=policy['name'],
             Location=policy['location'],
-            Kind=policy['kind'],
-            EmailAdmins=policy['properties']['emailAccountAdmins'],
-            EmailAddresses=policy['properties']['emailAddresses'],
-            RetentionDays=policy['properties']['retentionDays'],
-            State=policy['properties']['state'],
-            StorageEndpoint=policy['properties']['storageEndpoint'],
-            UseServerDefault=policy['properties']['useServerDefault'],
-            DisabledAlerts=policy['properties']['disabledAlerts'],
+            Kind=get_optional_value(policy, ['kind']),
+            EmailAdmins=policy['email_account_admins'],
+            EmailAddresses=policy['email_addresses'],
+            RetentionDays=policy['retention_days'],
+            State=policy['state'],
+            StorageEndpoint=policy['storage_endpoint'],
+            UseServerDefault=policy['use_server_default'],
+            DisabledAlerts=policy['disabled_alerts'],
             DatabaseId=policy['database_id'],
             azure_update_tag=update_tag,
         )
@@ -763,7 +766,7 @@ def _load_restore_points(neo4j_session, restore_points, update_tag):
             Location=point['location'],
             RestoreDate=point['earliest_restore_date'],
             RestorePointType=point['restore_point_type'],
-            CreationDate=point.get('restore_point_creation_date'),
+            CreationDate=get_optional_value(point, ['restore_point_creation_date']),
             DatabaseId=point['database_id'],
             azure_update_tag=update_tag,
         )
@@ -793,7 +796,7 @@ def _load_transparent_data_encryptions(neo4j_session, encryptions_list, update_t
             TAEId=encryption['id'],
             Name=encryption['name'],
             Location=encryption['location'],
-            Status=encryption['properties']['status'],
+            Status=encryption['status'],
             DatabaseId=encryption['database_id'],
             azure_update_tag=update_tag,
         )
