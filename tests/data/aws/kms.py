@@ -23,7 +23,7 @@ DESCRIBE_KEYS = [
         ],
         'SigningAlgorithms': [
             'RSASSA_PSS_SHA_512',
-        ]
+        ],
     },
     {
         'AWSAccountId': '000000000000',
@@ -41,12 +41,12 @@ DESCRIBE_KEYS = [
         'KeyManager': 'AWS',
         'CustomerMasterKeySpec': 'RSA_2048',
         'EncryptionAlgorithms': [
-            'SYMMETRIC_DEFAULT'
+            'SYMMETRIC_DEFAULT',
         ],
         'SigningAlgorithms': [
             'RSASSA_PSS_SHA_256'
-        ]
-    }
+        ],
+    },
 ]
 
 DESCRIBE_ALIASES = [
@@ -55,15 +55,15 @@ DESCRIBE_ALIASES = [
         'AliasArn': 'arn:aws:kms:eu-west-1:000000000000:alias/key2-cartography',
         'TargetKeyId': '9a1ad414-6e3b-47ce-8366-6b8f26ba467d',
         'CreationDate': datetime.datetime(2019, 1, 1, 0, 0, 1),
-        'LastUpdatedDate': datetime.datetime(2019, 1, 1, 0, 0, 1)
+        'LastUpdatedDate': datetime.datetime(2019, 1, 1, 0, 0, 1),
     },
     {
         'AliasName': 'Prod-Testing',
         'AliasArn': 'arn:aws:kms:eu-west-1:000000000000:alias/key2-testing',
         'TargetKeyId': '9a1ad414-6e3b-47ce-8366-6b8f26ba467d',
         'CreationDate': datetime.datetime(2019, 1, 1, 0, 0, 1),
-        'LastUpdatedDate': datetime.datetime(2019, 1, 1, 0, 0, 1)
-    }
+        'LastUpdatedDate': datetime.datetime(2019, 1, 1, 0, 0, 1),
+    },
 ]
 
 DESCRIBE_GRANTS = [
@@ -76,6 +76,6 @@ DESCRIBE_GRANTS = [
         'IssuingAccount': '000000000000',
         'Operations': [
             'Encrypt',
-        ]
-    }
+        ],
+    },
 ]
