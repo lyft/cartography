@@ -1,5 +1,6 @@
 import logging
 from azure.mgmt.storage import StorageManagementClient
+from cartography.util import get_optional_value
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
@@ -73,12 +74,12 @@ def load_storage_account_data(neo4j_session, subscription_id, storage_account_li
             Kind=storage_account['kind'],
             Type=storage_account['type'],
             CreationTime=storage_account['creation_time'],
-            HnsEnabled=storage_account.get("is_hns_enabled"),
+            HnsEnabled=get_optional_value(storage_account, ["is_hns_enabled"]),
             PrimaryLocation=storage_account['primary_location'],
-            SecondaryLocation=storage_account.get("secondary_location"),
+            SecondaryLocation=get_optional_value(storage_account, ["secondary_location"]),
             ProvisioningState=storage_account['provisioning_state'],
             StatusOfPrimary=storage_account['status_of_primary'],
-            StatusOfSecondary=storage_account.get("status_of_secondary"),
+            StatusOfSecondary=get_optional_value(storage_account, ["status_of_secondary"]),
             SupportsHttpsTrafficOnly=storage_account['enable_https_traffic_only'],
             AZURE_SUBSCRIPTION_ID=subscription_id,
             azure_update_tag=azure_update_tag,
@@ -463,8 +464,7 @@ def _load_tables(neo4j_session, tables, update_tag):
     MERGE (t:AzureStorageTable{id: {TableId}})
     ON CREATE SET t.firstseen = timestamp(), t.lastupdated = {azure_update_tag}
     SET t.name = {Name},
-    t.type = {Type},
-    t.tablename = {TableName}
+    t.type = {Type}
     WITH t
     MATCH (ts:AzureStorageTableService{id: {ServiceId}})
     MERGE (ts)-[r:CONTAINS]->(t)
@@ -478,7 +478,6 @@ def _load_tables(neo4j_session, tables, update_tag):
             TableId=table['id'],
             Name=table['name'],
             Type=table['type'],
-            TableName=table['properties']['tableName'],
             ServiceId=table['service_id'],
             azure_update_tag=update_tag,
         )
@@ -542,7 +541,6 @@ def _load_shares(neo4j_session, shares, update_tag):
     ON CREATE SET share.firstseen = timestamp(), share.lastupdated = {azure_update_tag}
     SET share.name = {Name},
     share.type = {Type},
-    share.tablename = {TableName},
     share.lastmodifiedtime = {LastModifiedTime},
     share.sharequota = {ShareQuota},
     share.accesstier = {AccessTier},
@@ -567,17 +565,17 @@ def _load_shares(neo4j_session, shares, update_tag):
             ShareId=share['id'],
             Name=share['name'],
             Type=share['type'],
-            LastModifiedTime=share['properties']['lastModifiedTime'],
-            ShareQuota=share['properties']['shareQuota'],
-            AccessTier=share['properties']['accessTier'],
-            Deleted=share['properties']['deleted'],
-            AccessTierChangeTime=share['properties']['accessTierChangeTime'],
-            AccessTierStatus=share['properties']['accessTierStatus'],
-            DeletedTime=share['properties']['deletedTime'],
-            EnabledProtocols=share['properties']['enabledProtocols'],
-            RemainingRetentionDays=share['properties']['remainingRetentionDays'],
-            ShareUsageBytes=share['properties']['shareUsageBytes'],
-            Version=share['properties']['version'],
+            LastModifiedTime=share['last_modified_time'],
+            ShareQuota=share['share_quota'],
+            AccessTier=share['access_tier'],
+            Deleted=get_optional_value(share, ['deleted']),
+            AccessTierChangeTime=share['access_tier_change_time'],
+            AccessTierStatus=get_optional_value(share, ['access_tier_status']),
+            DeletedTime=get_optional_value(share, ['deleted_time']),
+            EnabledProtocols=get_optional_value(share, ['enabled_protocols']),
+            RemainingRetentionDays=get_optional_value(share, ['remaining_retention_days']),
+            ShareUsageBytes=get_optional_value(share, ['share_usage_bytes']),
+            Version=get_optional_value(share, ['version']),
             ServiceId=share['service_id'],
             azure_update_tag=update_tag,
         )
@@ -667,17 +665,17 @@ def _load_blob_containers(neo4j_session, blob_containers, update_tag):
             Name=container['name'],
             Type=container['type'],
             Deleted=container['deleted'],
-            DeletedTime=container.get('deletedTime'),
+            DeletedTime=get_optional_value(container, ['deleted_time']),
             DefaultEncryptionScope=container['default_encryption_scope'],
             PublicAccess=container['public_access'],
             LeaseStatus=container['lease_status'],
             LeaseState=container['lease_state'],
             LastModifiedTime=container['last_modified_time'],
             RemainingRetentionDays=container['remaining_retention_days'],
-            Version=container.get('version'),
+            Version=get_optional_value(container, ['version']),
             HasImmutatbilityPolicy=container['has_immutability_policy'],
             HasLegalHold=container['has_legal_hold'],
-            LeaseDuration=container.get('leaseDuration'),
+            LeaseDuration=get_optional_value(container, ['leaseDuration']),
             ServiceId=container['service_id'],
             azure_update_tag=update_tag,
         )
