@@ -113,10 +113,14 @@ def test_load_kms_key_aliases_relationships(neo4j_session):
     )
 
     expected = {
-        ('arn:aws:kms:eu-west-1:000000000000:alias/key2-cartography',
-         'arn:aws:kms:eu-west-1:000000000000:key/9a1ad414-6e3b-47ce-8366-6b8f26ba467d'),
-        ('arn:aws:kms:eu-west-1:000000000000:alias/key2-testing',
-         'arn:aws:kms:eu-west-1:000000000000:key/9a1ad414-6e3b-47ce-8366-6b8f26ba467d'),
+        (
+            'arn:aws:kms:eu-west-1:000000000000:alias/key2-cartography',
+            'arn:aws:kms:eu-west-1:000000000000:key/9a1ad414-6e3b-47ce-8366-6b8f26ba467d',
+        ),
+        (
+            'arn:aws:kms:eu-west-1:000000000000:alias/key2-testing',
+            'arn:aws:kms:eu-west-1:000000000000:key/9a1ad414-6e3b-47ce-8366-6b8f26ba467d',
+        ),
     }
 
     # Fetch relationships
