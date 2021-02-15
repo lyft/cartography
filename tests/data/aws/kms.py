@@ -44,7 +44,7 @@ DESCRIBE_KEYS = [
             'SYMMETRIC_DEFAULT',
         ],
         'SigningAlgorithms': [
-            'RSASSA_PSS_SHA_256'
+            'RSASSA_PSS_SHA_256',
         ],
     },
 ]
