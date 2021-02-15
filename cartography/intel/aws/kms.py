@@ -120,7 +120,7 @@ def _load_kms_key_grants(neo4j_session, grants_list, update_tag):
     ingest_grants = """
     UNWIND {grants} AS grant
     MERGE (g:KMSGrant{id: grant.GrantId})
-    ON CREATE SET g.firstseen = timestamp(), g.granteeprincipal = grant.GranteePrincipal, 
+    ON CREATE SET g.firstseen = timestamp(), g.granteeprincipal = grant.GranteePrincipal,
     g.creationdate = grant.CreationDate
     SET g.name = grant.GrantName, g.lastupdated = {UpdateTag}
     WITH g, grant
