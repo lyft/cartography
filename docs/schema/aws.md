@@ -1778,6 +1778,8 @@ Representation of an AWS [KMS Key](https://docs.aws.amazon.com/kms/latest/APIRef
 | description |  The description of the key |
 | enabled |  Whether the key is enabled |
 | region | The region where key is created|
+| anonymous\_actions |  List of anonymous internet accessible actions that may be run on the key. |
+| anonymous\_access | True if this key has a policy applied to it that allows anonymous access or if it is open to the internet. |
 
 ### Relationships
 
