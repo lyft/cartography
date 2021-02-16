@@ -1,20 +1,22 @@
 import logging
-from typing import Any, Dict, List
+from typing import Any
+from typing import Dict
+from typing import List
 
 import boto3
 import botocore.exceptions
 import neo4j
 
+from . import ec2
+from . import organizations
 from . import permission_relationships
 from . import resourcegroupstaggingapi
+from .resources import RESOURCE_FUNCTIONS
 from cartography.util import run_analysis_job
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
-
-
-from .resources import RESOURCE_FUNCTIONS
 
 
 def _build_aws_sync_kwargs(
@@ -47,10 +49,14 @@ def _sync_one_account(
         neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters,
     )
 
-    # First run the syncs that don't require any order
     for func_name in aws_requested_syncs:
         if func_name in RESOURCE_FUNCTIONS:
-            RESOURCE_FUNCTIONS[func_name](**sync_args)
+            if func_name == 'permission_relationships' or func_name == 'resourcegroupstaggingapi':
+                # Skip permission relationships and tags for now because they rely on data already being in the graph
+                continue
+            else:
+                # Run the sync func!
+                RESOURCE_FUNCTIONS[func_name](**sync_args)
         else:
             logger.error('AWS sync function "%s" was specified but does not exist. Did you misspell it?', func_name)
             return

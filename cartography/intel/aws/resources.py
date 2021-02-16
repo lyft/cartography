@@ -1,23 +1,20 @@
 from . import dynamodb
-from . import ec2
 from . import ecr
 from . import eks
 from . import elasticsearch
 from . import iam
 from . import lambda_function
-from . import organizations
 from . import permission_relationships
 from . import rds
 from . import redshift
 from . import resourcegroupstaggingapi
 from . import route53
 from . import s3
-
 from .ec2.auto_scaling_groups import sync_ec2_auto_scaling_groups
 from .ec2.instances import sync_ec2_instances
 from .ec2.key_pairs import sync_ec2_key_pairs
-from .ec2.load_balancers import sync_load_balancers
 from .ec2.load_balancer_v2s import sync_load_balancer_v2s
+from .ec2.load_balancers import sync_load_balancers
 from .ec2.network_interfaces import sync_network_interfaces
 from .ec2.security_groups import sync_ec2_security_groupinfo
 from .ec2.subnets import sync_subnets
@@ -33,8 +30,6 @@ RESOURCE_FUNCTIONS = {
     'ec2:autoscalinggroup': sync_ec2_auto_scaling_groups,
     'ec2:instance': sync_ec2_instances,
     'ec2:keypair': sync_ec2_key_pairs,
-    # TODO - find a way to allow this in here without running EC2 twice in _sync_one_account() - Don't call everything in this lookup table (do we need a separate data structure for this?)
-    # 'ec2': ec2.sync,
     'ec2:load_balancer': sync_load_balancers,
     'ec2:load_balancer_v2': sync_load_balancer_v2s,
     'ec2:network_interface': sync_network_interfaces,

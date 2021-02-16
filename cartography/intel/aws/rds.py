@@ -275,4 +275,4 @@ def sync_rds_instances(
 
 
 def sync(neo4j_session, boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters):
-    sync_rds_instances(neo4j_session, boto3_session, regions, account_id, update_tag, common_job_parameters)
+    sync_rds_instances(neo4j_session, boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters)
