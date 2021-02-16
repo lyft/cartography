@@ -2,6 +2,7 @@ import logging
 from typing import Any
 from typing import Dict
 from typing import List
+from typing import Iterable
 
 import boto3
 import botocore.exceptions
@@ -40,7 +41,7 @@ def _sync_one_account(
     sync_tag: int,
     common_job_parameters: Dict[str, Any],
     regions: List[str] = [],
-    aws_requested_syncs: List[str] = RESOURCE_FUNCTIONS.keys(),
+    aws_requested_syncs: Iterable[str] = RESOURCE_FUNCTIONS.keys(),
 ) -> None:
     if not regions:
         regions = _autodiscover_account_regions(boto3_session, account_id)
@@ -74,7 +75,7 @@ def _sync_one_account(
 
 
 def _autodiscover_account_regions(boto3_session: boto3.session.Session, account_id: str) -> List[str]:
-    regions = []
+    regions: List[str] = []
     try:
         regions = ec2.get_ec2_regions(boto3_session)
     except botocore.exceptions.ClientError as e:
@@ -116,7 +117,7 @@ def _sync_multiple_accounts(
     accounts: Dict[str, str],
     sync_tag: int,
     common_job_parameters: Dict[str, Any],
-    aws_requested_syncs: List[str] = RESOURCE_FUNCTIONS.keys(),
+    aws_requested_syncs: Iterable[str] = RESOURCE_FUNCTIONS.keys(),
 ) -> None:
     logger.debug("Syncing AWS accounts: %s", ', '.join(accounts.values()))
     organizations.sync(neo4j_session, accounts, sync_tag, common_job_parameters)
@@ -192,12 +193,15 @@ def start_aws_ingestion(neo4j_session, config):
             ),
         )
 
+    requested_syncs: List[str] = []
+    if config.aws_requested_syncs:
+        requested_syncs = _parse_aws_requested_syncs(config.aws_requested_syncs)
     _sync_multiple_accounts(
         neo4j_session,
         aws_accounts,
         config.update_tag,
         common_job_parameters,
-        _parse_aws_requested_syncs(config.aws_requested_syncs),
+        requested_syncs,
     )
 
     run_analysis_job(
