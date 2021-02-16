@@ -332,8 +332,8 @@ def is_valid_rpr(rpr):
 
 
 def sync(neo4j_session, current_aws_account_id, update_tag, common_job_parameters):
-    logger.info("Syncing Permission Relationships for account '%s'.", account_id)
-    principals = get_principals_for_account(neo4j_session, account_id)
+    logger.info("Syncing Permission Relationships for account '%s'.", current_aws_account_id)
+    principals = get_principals_for_account(neo4j_session, current_aws_account_id)
     pr_file = common_job_parameters["permission_relationships_file"]
     if not pr_file:
         logger.warning(

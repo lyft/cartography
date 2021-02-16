@@ -18,14 +18,14 @@ from .resources import RESOURCE_FUNCTIONS
 
 
 def _build_aws_sync_kwargs(
-    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], account_id: str,
+    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
     sync_tag: int, common_job_parameters: Dict[str, Any],
 ) -> Dict[str, Any]:
     return {
         'neo4j_session': neo4j_session,
         'boto3_session': boto3_session,
         'regions': regions,
-        'account_id': account_id,
+        'current_aws_account_id': current_aws_account_id,
         'update_tag': sync_tag,
         'common_job_parameters': common_job_parameters,
     }
