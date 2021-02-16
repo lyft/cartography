@@ -83,10 +83,8 @@ def sync_lambda_functions(
 
 
 def sync(
-        neo4j_session, boto3_session, regions, current_aws_account_id, aws_update_tag,
-        common_job_parameters,
+    neo4j_session, boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters,
 ):
     sync_lambda_functions(
-        neo4j_session, boto3_session, regions, current_aws_account_id, aws_update_tag,
-        common_job_parameters,
+        neo4j_session, boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters,
     )

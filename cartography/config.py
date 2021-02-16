@@ -17,6 +17,8 @@ class Config:
     :type aws_sync_all_profiles: bool
     :param aws_sync_all_profiles: If True, AWS sync will run for all non-default profiles in the AWS_CONFIG_FILE. If
         False (default), AWS sync will run using the default credentials only. Optional.
+    :type aws_requested_syncs: str
+    :param aws_requested_syncs: Comma-separated list of AWS resources to sync. Optional.
     :type crxcavator_api_base_uri: str
     :param crxcavator_api_base_uri: URI for CRXcavator API. Optional.
     :type crxcavator_api_key: str
@@ -54,6 +56,7 @@ class Config:
         neo4j_password=None,
         update_tag=None,
         aws_sync_all_profiles=False,
+        aws_requested_syncs=None,
         analysis_job_directory=None,
         crxcavator_api_base_uri=None,
         crxcavator_api_key=None,
@@ -75,6 +78,7 @@ class Config:
         self.neo4j_password = neo4j_password
         self.update_tag = update_tag
         self.aws_sync_all_profiles = aws_sync_all_profiles
+        self.aws_requested_syncs = aws_requested_syncs
         self.analysis_job_directory = analysis_job_directory
         self.crxcavator_api_base_uri = crxcavator_api_base_uri
         self.crxcavator_api_key = crxcavator_api_key

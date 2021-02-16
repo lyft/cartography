@@ -132,7 +132,7 @@ def cleanup(neo4j_session, common_job_parameters):
 
 
 @timeit
-def sync(neo4j_session, boto3_session, regions, current_aws_account_id, aws_update_tag, common_job_parameters):
+def sync(neo4j_session, boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters):
     for region in regions:
         logger.info("Syncing ECR for region '%s' in account '%s'.", region, current_aws_account_id)
         image_data = {}
@@ -140,7 +140,7 @@ def sync(neo4j_session, boto3_session, regions, current_aws_account_id, aws_upda
         for repo in repositories:
             repo_image_obj = get_ecr_repository_images(boto3_session, region, repo['repositoryName'])
             image_data[repo['repositoryUri']] = repo_image_obj
-        load_ecr_repositories(neo4j_session, repositories, region, current_aws_account_id, aws_update_tag)
+        load_ecr_repositories(neo4j_session, repositories, region, current_aws_account_id, update_tag)
         repo_images_list = transform_ecr_repository_images(image_data)
-        load_ecr_repository_images(neo4j_session, repo_images_list, region, aws_update_tag)
+        load_ecr_repository_images(neo4j_session, repo_images_list, region, update_tag)
     cleanup(neo4j_session, common_job_parameters)

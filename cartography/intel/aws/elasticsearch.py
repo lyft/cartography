@@ -221,11 +221,11 @@ def cleanup(neo4j_session, update_tag, aws_account_id):
 
 
 @timeit
-def sync(neo4j_session, boto3_session, aws_account_id, update_tag):
+def sync(neo4j_session, boto3_session, current_aws_account_id, update_tag):
     for region in es_regions:
-        logger.info("Syncing Elasticsearch Service for region '%s' in account '%s'.", region, aws_account_id)
+        logger.info("Syncing Elasticsearch Service for region '%s' in account '%s'.", region, current_aws_account_id)
         client = boto3_session.client('es', region_name=region, config=_get_botocore_config())
         data = _get_es_domains(client)
-        _load_es_domains(neo4j_session, data, aws_account_id, update_tag)
+        _load_es_domains(neo4j_session, data, current_aws_account_id, update_tag)
 
-    cleanup(neo4j_session, update_tag, aws_account_id)
+    cleanup(neo4j_session, update_tag, current_aws_account_id)

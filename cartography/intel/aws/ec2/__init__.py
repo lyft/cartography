@@ -24,16 +24,30 @@ def get_ec2_regions(boto3_session):
 
 
 @timeit
-def sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters):
-    logger.info("Syncing EC2 for account '%s'.", account_id)
-    sync_vpc(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-    sync_ec2_security_groupinfo(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-    sync_ec2_key_pairs(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-    sync_ec2_instances(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-    sync_ec2_auto_scaling_groups(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-    sync_load_balancers(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-    sync_subnets(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-    sync_load_balancer_v2s(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-    sync_vpc_peering(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-    sync_transit_gateways(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-    sync_network_interfaces(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
+def sync(neo4j_session, boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters):
+    logger.info("Syncing EC2 for account '%s'.", current_aws_account_id)
+    sync_vpc(
+        neo4j_session, boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters,
+    )
+    sync_ec2_security_groupinfo(
+        neo4j_session, boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters,
+    )
+    sync_ec2_key_pairs(neo4j_session, boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters)
+    sync_ec2_instances(neo4j_session, boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters)
+    sync_ec2_auto_scaling_groups(
+        neo4j_session, boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters,
+    )
+    sync_load_balancers(
+        neo4j_session, boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters,
+    )
+    sync_subnets(neo4j_session, boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters)
+    sync_load_balancer_v2s(
+        neo4j_session, boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters,
+    )
+    sync_vpc_peering(neo4j_session, boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters)
+    sync_transit_gateways(
+        neo4j_session, boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters,
+    )
+    sync_network_interfaces(
+        neo4j_session, boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters,
+    )
