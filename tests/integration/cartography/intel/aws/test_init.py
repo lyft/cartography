@@ -20,17 +20,19 @@ GRAPH_JOB_PARAMETERS = {'UPDATE_TAG': TEST_UPDATE_TAG}
 def test_sync_multiple_accounts(
     mock_cleanup, mock_autodiscover, mock_sync_one, mock_boto3_session, mock_sync_orgs, neo4j_session,
 ):
-    cartography.intel.aws._sync_multiple_accounts(neo4j_session, TEST_ACCOUNTS, TEST_UPDATE_TAG, GRAPH_JOB_PARAMETERS)
+    func_names = cartography.intel.aws.resources.RESOURCE_FUNCTIONS.keys()
+    cartography.intel.aws._sync_multiple_accounts(
+        neo4j_session, TEST_ACCOUNTS, TEST_UPDATE_TAG, GRAPH_JOB_PARAMETERS,)
 
     # Ensure we call _sync_one_account on all accounts in our list.
     mock_sync_one.assert_any_call(
-        neo4j_session, mock_boto3_session(), '000000000000', TEST_UPDATE_TAG, GRAPH_JOB_PARAMETERS,
+        neo4j_session, mock_boto3_session(), '000000000000', TEST_UPDATE_TAG, GRAPH_JOB_PARAMETERS, [], func_names,
     )
     mock_sync_one.assert_any_call(
-        neo4j_session, mock_boto3_session(), '000000000001', TEST_UPDATE_TAG, GRAPH_JOB_PARAMETERS,
+        neo4j_session, mock_boto3_session(), '000000000001', TEST_UPDATE_TAG, GRAPH_JOB_PARAMETERS, [], func_names,
     )
     mock_sync_one.assert_any_call(
-        neo4j_session, mock_boto3_session(), '000000000002', TEST_UPDATE_TAG, GRAPH_JOB_PARAMETERS,
+        neo4j_session, mock_boto3_session(), '000000000002', TEST_UPDATE_TAG, GRAPH_JOB_PARAMETERS, [], func_names,
     )
 
     # Ensure _sync_one_account and _autodiscover is called once for each account
