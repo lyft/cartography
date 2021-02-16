@@ -1,8 +1,8 @@
 import logging
 from typing import Any
 from typing import Dict
-from typing import List
 from typing import Iterable
+from typing import List
 
 import boto3
 import botocore.exceptions
