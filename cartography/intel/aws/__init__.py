@@ -26,7 +26,7 @@ def _build_aws_sync_kwargs(
         'boto3_session': boto3_session,
         'regions': regions,
         'account_id': account_id,
-        'aws_update_tag': sync_tag,
+        'update_tag': sync_tag,
         'common_job_parameters': common_job_parameters,
     }
 

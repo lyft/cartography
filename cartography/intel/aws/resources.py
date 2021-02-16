@@ -33,7 +33,7 @@ RESOURCE_FUNCTIONS = {
     'ec2:autoscalinggroup': sync_ec2_auto_scaling_groups,
     'ec2:instance': sync_ec2_instances,
     'ec2:keypair': sync_ec2_key_pairs,
-    # TODO - find a way to allow this in here without running EC2 twice in _sync_one_account().
+    # TODO - find a way to allow this in here without running EC2 twice in _sync_one_account() - Don't call everything in this lookup table (do we need a separate data structure for this?)
     # 'ec2': ec2.sync,
     'ec2:load_balancer': sync_load_balancers,
     'ec2:load_balancer_v2': sync_load_balancer_v2s,
