@@ -34,8 +34,11 @@ def _sync_multiple_subscriptions(neo4j_session, credentials, tenant_id, subscrip
 
     for sub in subscriptions:
         logger.info("Syncing Azure Subscription with ID '%s'", sub['subscriptionId'])
+        common_job_parameters['AZURE_SUBSCRIPTION_ID'] = sub['subscriptionId']
 
         _sync_one_subscription(neo4j_session, credentials, sub['subscriptionId'], sync_tag, common_job_parameters)
+
+    del common_job_parameters["AZURE_SUBSCRIPTION_ID"]
 
 
 @timeit
