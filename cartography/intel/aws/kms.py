@@ -296,10 +296,6 @@ def load_kms_keys(neo4j_session, data, region, current_aws_account_id, aws_updat
         key['DeletionDate'] = str(key.get('DeletionDate'))
         key['ValidTo'] = str(key.get('ValidTo'))
 
-    # The owner data returned by the API maps to the aws account nickname and not the IAM user
-    # there doesn't seem to be a way to retreive the mapping but we can get the current context account
-    # so we map to that directly
-
     neo4j_session.run(
         ingest_keys,
         key_list=data,
