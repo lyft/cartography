@@ -9,6 +9,7 @@ from . import ecr
 from . import eks
 from . import elasticsearch
 from . import iam
+from . import kms
 from . import lambda_function
 from . import organizations
 from . import permission_relationships
@@ -49,8 +50,9 @@ def _sync_one_account(neo4j_session, boto3_session, account_id, sync_tag, common
     lambda_function.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     rds.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
     redshift.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-    
+
     apigateway.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
+    kms.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
 
     # NOTE each of the below will generate DNS records
     route53.sync(neo4j_session, boto3_session, account_id, sync_tag)
