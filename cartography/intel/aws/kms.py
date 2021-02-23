@@ -1,11 +1,10 @@
-import hashlib
 import json
 import logging
 
 from botocore.exceptions import ClientError
 from policyuniverse.policy import Policy
 
-from cartography.util import run_analysis_job
+from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
@@ -13,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
+@aws_handle_regions
 def get_kms_key_list(boto3_session, region):
     client = boto3_session.client('kms', region_name=region)
     paginator = client.get_paginator('list_keys')
@@ -25,7 +25,7 @@ def get_kms_key_list(boto3_session, region):
         try:
             response = client.describe_key(KeyId=key["KeyId"])['KeyMetadata']
         except ClientError as e:
-            logger.warning("Failed to describe key with key id - {}".format(key["KeyId"]))
+            logger.warning("Failed to describe key with key id - {}. Error - {}".format(key["KeyId"], e))
             raise
 
         described_key_list.append(response)
@@ -34,6 +34,7 @@ def get_kms_key_list(boto3_session, region):
 
 
 @timeit
+@aws_handle_regions
 def get_kms_key_details(boto3_session, kms_key_data, region):
     """
     Iterates over all KMS Keys.
@@ -55,7 +56,7 @@ def get_policy(key, client):
         policy = client.get_key_policy(KeyId=key["KeyId"], PolicyName='default')
     except ClientError as e:
         policy = None
-        logger.warning("Failed to retrieve Key Policy for key id - {}".format(key["KeyId"]))
+        logger.warning("Failed to retrieve Key Policy for key id - {}. Error - {}".format(key["KeyId"], e))
         raise
 
     return policy
@@ -93,23 +94,22 @@ def _load_kms_key_aliases(neo4j_session, aliases, update_tag):
     Ingest KMS Aliases into neo4j.
     """
     ingest_aliases = """
-    MERGE (a:KMSAlias{id: {AliasArn}})
-    ON CREATE SET a.firstseen = timestamp(), a.targetkeyid = {TargetKeyId}
-    SET a.aliasname = {AliasName}, a.lastupdated = {UpdateTag}
-    WITH a MATCH (kmskey:KMSKey{id: {TargetKeyId}})
+    UNWIND {alias_list} AS alias
+    MERGE (a:KMSAlias{id: alias.AliasArn})
+    ON CREATE SET a.firstseen = timestamp(), a.targetkeyid = alias.TargetKeyId
+    SET a.aliasname = alias.AliasName, a.lastupdated = {UpdateTag}
+    WITH a, alias
+    MATCH (kmskey:KMSKey{id: alias.TargetKeyId})
     MERGE (a)-[r:KNOWN_AS]->(kmskey)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {UpdateTag}
     """
 
-    for alias in aliases:
-        neo4j_session.run(
-            ingest_aliases,
-            AliasArn=alias["AliasArn"],
-            AliasName=alias.get("AliasName"),
-            TargetKeyId=alias["TargetKeyId"],
-            UpdateTag=update_tag,
-        )
+    neo4j_session.run(
+        ingest_aliases,
+        alias_list=aliases,
+        UpdateTag=update_tag,
+    )
 
 
 @timeit
@@ -118,26 +118,28 @@ def _load_kms_key_grants(neo4j_session, grants_list, update_tag):
     Ingest KMS Key Grants into neo4j.
     """
     ingest_grants = """
-    MERGE (g:KMSGrant{id: {GrantId}})
-    ON CREATE SET g.firstseen = timestamp(), g.granteeprincipal = {GranteePrincipal}, g.creationdate = {CreationDate}
-    SET g.name = {GrantName}, g.lastupdated = {UpdateTag}
-    WITH g 
-    MATCH (kmskey:KMSKey{id: {TargetKeyId}})
+    UNWIND {grants} AS grant
+    MERGE (g:KMSGrant{id: grant.GrantId})
+    ON CREATE SET g.firstseen = timestamp(), g.granteeprincipal = grant.GranteePrincipal,
+    g.creationdate = grant.CreationDate
+    SET g.name = grant.GrantName, g.lastupdated = {UpdateTag}
+    WITH g, grant
+    MATCH (kmskey:KMSKey{id: grant.KeyId})
     MERGE (g)-[r:APPLIED_ON]->(kmskey)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {UpdateTag}
     """
 
+    # neo4j does not accept datetime objects and values. This loop is used to convert
+    # these values to string.
     for grant in grants_list:
-        neo4j_session.run(
-            ingest_grants,
-            GrantId=grant["GrantId"],
-            GrantName=grant.get("Name"),
-            GranteePrincipal=grant.get("GranteePrincipal"),
-            CreationDate=grant["CreationDate"],
-            TargetKeyId=grant["KeyId"],
-            UpdateTag=update_tag,
-        )
+        grant['CreationDate'] = str(grant['CreationDate'])
+
+    neo4j_session.run(
+        ingest_grants,
+        grants=grants_list,
+        UpdateTag=update_tag,
+    )
 
 
 @timeit
@@ -176,7 +178,7 @@ def _set_default_values(neo4j_session, aws_account_id):
 @timeit
 def load_kms_key_details(neo4j_session, policy_alias_grants_data, region, aws_account_id, update_tag):
     """
-    Create dictionaries for all bucket ACLs and all bucket policies so we can import them in a single query for each
+    Create dictionaries for all KMS key policies, aliases and grants so we can import them in a single query for each
     """
     policies = []
     aliases = []
@@ -206,7 +208,7 @@ def load_kms_key_details(neo4j_session, policy_alias_grants_data, region, aws_ac
 @timeit
 def parse_policy(key, policy):
     """
-    Uses PolicyUniverse to parse S3 policies and returns the internet accessibility results
+    Uses PolicyUniverse to parse KMS key policies and returns the internet accessibility results
     """
     # policy is not required, so may be None
     # policy JSON format. Note condition can be any JSON statement so will need to import as-is
@@ -268,16 +270,16 @@ def parse_policy(key, policy):
 @timeit
 def load_kms_keys(neo4j_session, data, region, current_aws_account_id, aws_update_tag):
     ingest_keys = """
-    MERGE (kmskey:KMSKey{id:{KeyId}})
+    UNWIND {key_list} AS k
+    MERGE (kmskey:KMSKey{id:k.KeyId})
     ON CREATE SET kmskey.firstseen = timestamp(),
-    kmskey.arn = {Arn}, kmskey.creationdate = {CreationDate}
-    SET kmskey.id = {KeyId}, 
-    kmskey.deletiondate = {DeletionDate},
-    kmskey.validto = {ValidTo},
-    kmskey.enabled = {Enabled},
-    kmskey.keystate = {KeyState},
-    kmskey.customkeystoreid = {CustomKeyStoreId},
-    kmskey.cloudhsmclusterid = {CloudHsmClusterId},
+    kmskey.arn = k.Arn, kmskey.creationdate = k.CreationDate
+    SET kmskey.deletiondate = k.DeletionDate,
+    kmskey.validto = k.ValidTo,
+    kmskey.enabled = k.Enabled,
+    kmskey.keystate = k.KeyState,
+    kmskey.customkeystoreid = k.CustomKeyStoreId,
+    kmskey.cloudhsmclusterid = k.CloudHsmClusterId,
     kmskey.lastupdated = {aws_update_tag},
     kmskey.region = {Region}
     WITH kmskey
@@ -287,26 +289,20 @@ def load_kms_keys(neo4j_session, data, region, current_aws_account_id, aws_updat
     SET r.lastupdated = {aws_update_tag}
     """
 
-    # The owner data returned by the API maps to the aws account nickname and not the IAM user
-    # there doesn't seem to be a way to retreive the mapping but we can get the current context account
-    # so we map to that directly
+    # neo4j does not accept datetime objects and values. This loop is used to convert
+    # these values to string.
+    for key in data:
+        key['CreationDate'] = str(key['CreationDate'])
+        key['DeletionDate'] = str(key.get('DeletionDate'))
+        key['ValidTo'] = str(key.get('ValidTo'))
 
-    for kms_key in data:
-        neo4j_session.run(
-            ingest_keys,
-            KeyId=kms_key["KeyId"],
-            Arn=kms_key["Arn"],
-            CreationDate=str(kms_key["CreationDate"]),
-            DeletionDate=str(kms_key.get("DeletionDate")),
-            ValidTo=str(kms_key.get("ValidTo")),
-            Enabled=kms_key["Enabled"],
-            KeyState=kms_key["KeyState"],
-            CustomKeyStoreId=kms_key.get("CustomKeyStoreId"),
-            CloudHsmClusterId=kms_key.get("CloudHsmClusterId"),
-            Region=region,
-            AWS_ACCOUNT_ID=current_aws_account_id,
-            aws_update_tag=aws_update_tag,
-        )
+    neo4j_session.run(
+        ingest_keys,
+        key_list=data,
+        Region=region,
+        AWS_ACCOUNT_ID=current_aws_account_id,
+        aws_update_tag=aws_update_tag,
+    )
 
 
 @timeit
@@ -326,7 +322,6 @@ def sync_kms_keys(neo4j_session, boto3_session, region, current_aws_account_id, 
 
 @timeit
 def sync(neo4j_session, boto3_session, regions, current_aws_account_id, aws_update_tag, common_job_parameters):
-    logger.info("Inside KMS")
     for region in regions:
         logger.info("Syncing KMS for region %s in account '%s'.", region, current_aws_account_id)
         sync_kms_keys(neo4j_session, boto3_session, region, current_aws_account_id, aws_update_tag)

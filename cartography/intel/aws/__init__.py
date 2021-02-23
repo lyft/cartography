@@ -9,6 +9,7 @@ from . import ecr
 from . import eks
 from . import elasticsearch
 from . import iam
+from . import kms
 from . import lambda_function
 from . import organizations
 from . import permission_relationships
