@@ -112,7 +112,7 @@ def _sync_multiple_accounts(neo4j_session, accounts, sync_tag, common_job_parame
     # jobs below can only be run if all accounts have been synced
     # (we cannot decide if we face orphans or resoures for unsynced acccounts)
 
-    if common_job_parameters['aws_sync_all_profiles']:
+    if common_job_parameters.get('aws_sync_all_profiles', False):
 
         # There may be orphan Principals which point outside of known AWS accounts. This job cleans
         # up those nodes after all AWS accounts have been synced.
