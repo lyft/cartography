@@ -100,6 +100,12 @@
   - [Relationships](#relationships-45)
 - [S3Bucket](#s3bucket)
   - [Relationships](#relationships-46)
+- [KMSKey](#kmskey)
+  - [Relationships](#relationships-47)
+- [KMSAlias](#kmsalias)
+  - [Relationships](#relationships-48)
+- [KMSGrant](#kmsgrant)
+  - [Relationships](#relationships-49)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -1757,4 +1763,81 @@ Representation of an AWS S3 [Bucket](https://docs.aws.amazon.com/AmazonS3/latest
 
         ```
         (S3Bucket)-[TAGGED]->(AWSTag)
+        ```
+
+## KMSKey
+
+Representation of an AWS [KMS Key](https://docs.aws.amazon.com/kms/latest/APIReference/API_KeyListEntry.html).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The id of the key|
+| name |  The name of the key |
+| description |  The description of the key |
+| enabled |  Whether the key is enabled |
+| region | The region where key is created|
+| anonymous\_actions |  List of anonymous internet accessible actions that may be run on the key. |
+| anonymous\_access | True if this key has a policy applied to it that allows anonymous access or if it is open to the internet. |
+
+### Relationships
+
+- AWS KMS Keys are resources in an AWS Account.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(KMSKey)
+        ```
+
+- AWS KMS Key may also be refered as KMSAlias via aliases.
+
+        ```
+        (KMSKey)-[KNOWN_AS]->(KMSAlias)
+        ```
+
+- AWS KMS Key may also have KMSGrant based on grants.
+
+        ```
+        (KMSGrant)-[APPLIED_ON]->(KMSKey)
+        ```
+
+## KMSAlias
+
+Representation of an AWS [KMS Key Alias](https://docs.aws.amazon.com/kms/latest/APIReference/API_AliasListEntry.html).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The arn of the alias|
+| aliasname |  The name of the alias |
+| targetkeyid |  The kms key id associated via this alias |
+
+### Relationships
+
+- AWS KMS Key may also be refered as KMSAlias via aliases.
+
+        ```
+        (KMSKey)-[KNOWN_AS]->(KMSAlias)
+        ```
+
+## KMSGrant
+
+Representation of an AWS [KMS Key Grant](https://docs.aws.amazon.com/kms/latest/APIReference/API_GrantListEntry.html).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The id of the key grant|
+| name |  The name of the key grant |
+| granteeprincipal |  The principal associated with the key grant |
+| creationdate | ISO 8601 date-time string when the grant was created |
+
+### Relationships
+
+- AWS KMS Key may also have KMSGrant based on grants.
+
+        ```
+        (KMSGrant)-[APPLIED_ON]->(KMSKey)
         ```

@@ -114,7 +114,7 @@ def transform(repos_json):
         _transform_repo_objects(repo_object, transformed_repo_list)
         _transform_repo_owners(repo_object['owner']['url'], repo_object, transformed_repo_owners)
         _transform_collaborators(repo_object['collaborators'], repo_object['url'], transformed_collaborators)
-        _transform_python_requirements(repo_object, transformed_requirements_files)
+        _transform_python_requirements(repo_object['requirements'], repo_object['url'], transformed_requirements_files)
     results = {
         'repos': transformed_repo_list,
         'repo_languages': transformed_repo_languages,
@@ -228,14 +228,14 @@ def _transform_collaborators(collaborators, repo_url, transformed_collaborators)
             transformed_collaborators[user_permission].append(user)
 
 
-def _transform_python_requirements(repo_object, out_requirements_files):
+def _transform_python_requirements(req_file_contents, repo_url, out_requirements_files):
     """
     Performs data transformations for the requirements.txt files in a GitHub repo, if available.
-    :param repo_object: The repo object.
+    :param req_file_contents: str: The text contents of the requirements file.
+    :param repo_url: str: The URL of the GitHub repo.
     :param out_requirements_files: Output array to append transformed results to.
     :return: Nothing.
     """
-    req_file_contents = repo_object['requirements']
     if req_file_contents and req_file_contents.get('text'):
         text_contents = req_file_contents['text']
 
@@ -248,7 +248,7 @@ def _transform_python_requirements(repo_object, out_requirements_files):
                 parsed_list.append(req)
             except InvalidRequirement as e:
                 logger.info(
-                    f"Failed to parse line \"{line}\" in repo {repo_object['url']}'s requirements.txt; skipping line. "
+                    f"Failed to parse line \"{line}\" in repo {repo_url}'s requirements.txt; skipping line. "
                     f"Details: {e}. This is probably ok since we don't support all ways to specify Python "
                     f"requirements.",
                 )
@@ -276,7 +276,7 @@ def _transform_python_requirements(repo_object, out_requirements_files):
                 "name": canon_name,
                 "specifier": spec,
                 "version": pinned_version,
-                "repo_url": repo_object['url'],
+                "repo_url": repo_url,
             })
 
 
