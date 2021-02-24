@@ -20,11 +20,13 @@ def get_emr_clusters(boto3_session, region) -> List[Dict]:
         clusters.extend(cluster)
     return clusters
 
+
 @timeit
 def get_emr_describe_cluster(boto3_session, region, cluster_id) -> Dict:
     client = boto3_session.client('emr', region_name=region)
     response = client.describe_cluster(ClusterId=cluster_id)
     return response['Cluster']
+
 
 @timeit
 def load_emr_clusters(neo4j_session, cluster_data, region, current_aws_account_id, aws_update_tag):
@@ -55,6 +57,7 @@ def load_emr_clusters(neo4j_session, cluster_data, region, current_aws_account_i
         AWS_ACCOUNT_ID=current_aws_account_id,
     ).consume()
 
+
 @timeit
 def cleanup(neo4j_session, common_job_parameters):
     logger.debug("Running EMR cleanup job.")
@@ -62,17 +65,17 @@ def cleanup(neo4j_session, common_job_parameters):
 
 
 @timeit
-def sync(neo4j_session, boto3_session, regions, current_aws_account_id: str, aws_update_tag: int, common_job_parameters):
+def sync(neo4j_session, boto3_session, regions, current_aws_account_id: str, aws_update_tag, common_job_parameters):
     for region in regions:
-        logger.info("Syncing EMR for region '%s' in account '%s'.", reggion, current_aws_account_id)
-        
+        logger.info("Syncing EMR for region '%s' in account '%s'.", region, current_aws_account_id)
+
         clusters = get_emr_clusters(boto3_session, region)
 
         cluster_data: List[Dict] = []
         for cluster in clusters:
             cluster_id = cluster['Id']
             cluster_data += [get_emr_describe_cluster(boto3_session, region, cluster_id)]
-        
-        load_emr_clusters(neo4j_session, cluster_data,  region, current_aws_account_id, aws_update_tag)
-    
+
+        load_emr_clusters(neo4j_session, cluster_data, region, current_aws_account_id, aws_update_tag)
+
     cleanup(neo4j_session, common_job_parameters)

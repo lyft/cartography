@@ -30,6 +30,7 @@ def test_load_emr_clusters_nodes(neo4j_session):
 
     assert actual_nodes == expected_nodes
 
+
 def test_load_emr_clusters_relationships(neo4j_session):
     # Create Test AWSAccount
     neo4j_session.run(
@@ -43,8 +44,8 @@ def test_load_emr_clusters_relationships(neo4j_session):
     )
 
     # Load Test EMR Clusters
-    data = tests.data.aws.eks.DESCRIBE_CLUSTERS
-    cartography.intel.aws.eks.load_eks_clusters(
+    data = tests.data.aws.emr.DESCRIBE_CLUSTERS
+    cartography.intel.aws.emr.load_emr_clusters(
         neo4j_session,
         data,
         TEST_REGION,
@@ -66,6 +67,4 @@ def test_load_emr_clusters_relationships(neo4j_session):
         (r['n1.id'], r['n2.arn']) for r in result
     }
 
-    # assert actual == expected
-    print("actual:", actual)
-    assert  False
+    assert actual == expected
