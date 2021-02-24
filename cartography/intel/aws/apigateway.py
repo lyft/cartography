@@ -69,6 +69,7 @@ def get_rest_api_client_certificate(stages, client):
         if 'clientCertificateId' in stage:
             try:
                 response = client.get_client_certificate(clientCertificateId=stage['clientCertificateId'])
+                response['stageName'] = stage['stageName']
             except ClientError as e:
                 logger.warning(f"Failed to retrive Client Certificate for Stage {stage['stageName']} - {e}")
                 raise
@@ -166,7 +167,7 @@ def _set_default_values(neo4j_session, aws_account_id):
 
 
 @timeit
-def _load_apigateway_stages(neo4j_session, stages, update_tag, api_id, certificates):
+def _load_apigateway_stages(neo4j_session, stages, update_tag):
     """
     Ingest the Stage resource details into neo4j.
     """
@@ -181,9 +182,9 @@ def _load_apigateway_stages(neo4j_session, stages, update_tag, api_id, certifica
     s.tracingenabled = stage.tracingEnabled,
     s.webaclarn = stage.webAclArn,
     s.lastupdated = {UpdateTag}
-    WITH s
-    MATCH (rest_api:RestAPI{id:{RestApiId}})
-    MERGE (s)-[r:STAGE_OF]->(rest_api)
+    WITH s, stage
+    MATCH (rest_api:RestAPI{id: stage.apiId})
+    MERGE (rest_api)-[r:ASSOCIATED_WITH]->(s)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {UpdateTag}
     """
@@ -196,17 +197,12 @@ def _load_apigateway_stages(neo4j_session, stages, update_tag, api_id, certifica
     neo4j_session.run(
         ingest_stages,
         stages_list=stages,
-        UpdateTag=update_tag,
-        RestApiId=api_id
+        UpdateTag=update_tag
     )
-
-    for stage in stages:
-        _load_apigateway_certificates(neo4j_session, certificates, update_tag, stage['stageName'])
-        _load_stage_methodsettings(neo4j_session, stage, update_tag, api_id)
 
 
 @timeit
-def _load_stage_methodsettings(neo4j_session, stage, update_tag, api_id):
+def _load_stage_methodsettings(neo4j_session, stage, update_tag):  # TODO: How to handle this and it's unit test?
     """
     Ingest the Stage Method Settings details into neo4j.
     """
@@ -251,7 +247,7 @@ def _load_stage_methodsettings(neo4j_session, stage, update_tag, api_id):
 
 
 @timeit
-def _load_apigateway_certificates(neo4j_session, certificates, update_tag, stage_name):
+def _load_apigateway_certificates(neo4j_session, certificates, update_tag):
     """
     Ingest the API Gateway Client Certificate details into neo4j.
     """
@@ -260,9 +256,9 @@ def _load_apigateway_certificates(neo4j_session, certificates, update_tag, stage
     MERGE (c:Certificate{id: certificate.clientCertificateId})
     ON CREATE SET c.firstseen = timestamp(), c.createddate = certificate.createdDate
     SET c.lastupdated = {UpdateTag}, c.expirationdate = certificate.expirationDate
-    WITH c
-    MATCH (stage:Stage{id: {StageName}})
-    MERGE (c)-[r:CERTIFICATE_OF]->(stage)
+    WITH c, certificate
+    MATCH (stage:Stage{id: certificate.stageName})
+    MERGE (stage)-[r:HAS_CERTIFICATE]->(c)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {UpdateTag}
     """
@@ -276,13 +272,12 @@ def _load_apigateway_certificates(neo4j_session, certificates, update_tag, stage
     neo4j_session.run(
         ingest_certificates,
         certificates_list=certificates,
-        StageName=stage_name,
         UpdateTag=update_tag
     )
 
 
 @timeit
-def _load_apigateway_resources(neo4j_session, resources, update_tag, api_id):
+def _load_apigateway_resources(neo4j_session, resources, update_tag):
     ingest_resources = """
     UNWIND {resources_list} AS res
     MERGE (s:Resource{id: res.id})
@@ -291,9 +286,9 @@ def _load_apigateway_resources(neo4j_session, resources, update_tag, api_id):
     s.pathpart = res.pathPart,
     s.parentid = res.parentId,
     s.lastupdated ={UpdateTag}
-    WITH s
-    MATCH (rest_api:RestAPI{id:{RestApiId}})
-    MERGE (s)-[r:REST_API_RESOURCE]->(rest_api)
+    WITH s, res
+    MATCH (rest_api:RestAPI{id: res.apiId})
+    MERGE (rest_api)-[r:RESOURCE]->(s)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {UpdateTag}
     """
@@ -301,7 +296,6 @@ def _load_apigateway_resources(neo4j_session, resources, update_tag, api_id):
     neo4j_session.run(
         ingest_resources,
         resources_list=resources,
-        RestApiId=api_id,
         UpdateTag=update_tag
     )
 
@@ -317,13 +311,16 @@ def load_rest_api_details(neo4j_session, stages_certificate_resources, aws_accou
     policies = []
     apiId = ""
     for api_id, stage, certificate, resource, policy in stages_certificate_resources:
-        apiId = api_id
         parsed_policy = parse_policy(api_id, policy)
         if parsed_policy is not None:
             policies.extend(parsed_policy)
         if len(stage) > 0:
+            for s in stage:
+                s['apiId'] = api_id
             stages.extend(stage)
         if len(resource) > 0:
+            for r in resource:
+                r['apiId'] = api_id
             resources.extend(resource)
         if certificate:
             certificates.extend(certificate)
@@ -336,8 +333,11 @@ def load_rest_api_details(neo4j_session, stages_certificate_resources, aws_accou
     )
 
     _load_apigateway_policies(neo4j_session, policies, update_tag)
-    _load_apigateway_stages(neo4j_session, stages, update_tag, apiId, certificates)
-    _load_apigateway_resources(neo4j_session, resources, update_tag, apiId)
+    _load_apigateway_stages(neo4j_session, stages, update_tag)
+    for stage in stages:
+        _load_stage_methodsettings(neo4j_session, stage, update_tag)
+    _load_apigateway_certificates(neo4j_session, certificates, update_tag)
+    _load_apigateway_resources(neo4j_session, resources, update_tag)
     _set_default_values(neo4j_session, aws_account_id)
 
 
