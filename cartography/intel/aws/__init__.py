@@ -19,7 +19,6 @@ from . import resourcegroupstaggingapi
 from . import route53
 from . import s3
 from . import apigateway
-from . import kms
 from cartography.util import run_analysis_job
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
