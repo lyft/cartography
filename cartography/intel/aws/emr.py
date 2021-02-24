@@ -15,7 +15,7 @@ def get_emr_clusters(boto3_session, region) -> List[Dict]:
     client = boto3_session.client('emr', region_name=region)
     clusters: List[Dict] = []
     paginator = client.get_paginator('list_clusters')
-    for page in paginator:
+    for page in paginator.paginate():
         cluster = page['Clusters']
         clusters.extend(cluster)
     return clusters
