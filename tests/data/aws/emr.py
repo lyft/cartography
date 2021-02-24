@@ -1,6 +1,3 @@
-import cartography.intel.aws.emr
-import tests.data.aws.emr
-
 clusterId1 = "j-awesome"
 clusterId2 = "j-meh"
 
@@ -13,8 +10,8 @@ DESCRIBE_CLUSTERS = [
             },
             "State": "WAITING",
             "StateChangeReason": {
-                "Message": "Waiting for steps to run"
-            }
+                "Message": "Waiting for steps to run",
+            },
         },
         "Ec2InstanceAttributes": {
             "ServiceAccessSecurityGroup": "sg-xxxxxxxx",
@@ -22,7 +19,7 @@ DESCRIBE_CLUSTERS = [
             "IamInstanceProfile": "EMR_EC2_DefaultRole",
             "Ec2KeyName": "myKey",
             "Ec2AvailabilityZone": "us-east-1c",
-            "EmrManagedSlaveSecurityGroup": "sg-yyyyyyyyy"
+            "EmrManagedSlaveSecurityGroup": "sg-yyyyyyyyy",
         },
         "Name": "I am the walrus",
         "Id": clusterId1,
@@ -39,12 +36,12 @@ DESCRIBE_CLUSTERS = [
                     "Timeline": {
                         "ReadyDateTime": 1436475074.245,
                         "CreationDateTime": 1436474656.564,
-                        "EndDateTime": 1436638158.387
+                        "EndDateTime": 1436638158.387,
                     },
                     "State": "RUNNING",
                     "StateChangeReason": {
                         "Message": "",
-                    }
+                    },
                 },
                 "Name": "CORE",
                 "InstanceGroupType": "CORE",
@@ -52,7 +49,7 @@ DESCRIBE_CLUSTERS = [
                 "Configurations": [],
                 "InstanceType": "m3.large",
                 "Market": "ON_DEMAND",
-                "RunningInstanceCount": 2
+                "RunningInstanceCount": 2,
             },
             {
                 "RequestedInstanceCount": 1,
@@ -60,12 +57,12 @@ DESCRIBE_CLUSTERS = [
                     "Timeline": {
                         "ReadyDateTime": 1436475074.245,
                         "CreationDateTime": 1436474656.564,
-                        "EndDateTime": 1436638158.387
+                        "EndDateTime": 1436638158.387,
                     },
                     "State": "RUNNING",
                     "StateChangeReason": {
                         "Message": "",
-                    }
+                    },
                 },
                 "Name": "MASTER",
                 "InstanceGroupType": "MASTER",
@@ -73,13 +70,13 @@ DESCRIBE_CLUSTERS = [
                 "Configurations": [],
                 "InstanceType": "m3.large",
                 "Market": "ON_DEMAND",
-                "RunningInstanceCount": 1
-            }
+                "RunningInstanceCount": 1,
+            },
         ],
         "Applications": [
             {
-                "Name": "Hadoop"
-            }
+                "Name": "Hadoop",
+            },
         ],
         "VisibleToAllUsers": True,
         "BootstrapActions": [],
@@ -91,11 +88,11 @@ DESCRIBE_CLUSTERS = [
                     "fs.s3.consistent.retryPeriodSeconds": "20",
                     "fs.s3.enableServerSideEncryption": "true",
                     "fs.s3.consistent": "false",
-                    "fs.s3.consistent.retryCount": "2"
+                    "fs.s3.consistent.retryCount": "2",
                 },
-                "Classification": "emrfs-site"
-            }
-        ]
+                "Classification": "emrfs-site",
+            },
+        ],
     },
     {
         "Status": {
@@ -105,8 +102,8 @@ DESCRIBE_CLUSTERS = [
             },
             "State": "WAITING",
             "StateChangeReason": {
-                "Message": "Waiting for steps to run"
-            }
+                "Message": "Waiting for steps to run",
+            },
         },
         "Ec2InstanceAttributes": {
             "ServiceAccessSecurityGroup": "sg-zzzzzzzz",
@@ -114,7 +111,7 @@ DESCRIBE_CLUSTERS = [
             "IamInstanceProfile": "EMR_EC2_DefaultRole",
             "Ec2KeyName": "myKey",
             "Ec2AvailabilityZone": "us-east-1c",
-            "EmrManagedSlaveSecurityGroup": "sg-yyyyyyyyy"
+            "EmrManagedSlaveSecurityGroup": "sg-yyyyyyyyy",
         },
         "Name": "You're out of your element!",
         "Id": clusterId2,
@@ -131,12 +128,12 @@ DESCRIBE_CLUSTERS = [
                     "Timeline": {
                         "ReadyDateTime": 1436475074.245,
                         "CreationDateTime": 1436474656.564,
-                        "EndDateTime": 1436638158.387
+                        "EndDateTime": 1436638158.387,
                     },
                     "State": "RUNNING",
                     "StateChangeReason": {
                         "Message": "",
-                    }
+                    },
                 },
                 "Name": "CORE",
                 "InstanceGroupType": "CORE",
@@ -144,7 +141,7 @@ DESCRIBE_CLUSTERS = [
                 "Configurations": [],
                 "InstanceType": "m3.xlarge",
                 "Market": "ON_DEMAND",
-                "RunningInstanceCount": 1
+                "RunningInstanceCount": 1,
             },
             {
                 "RequestedInstanceCount": 1,
@@ -152,12 +149,12 @@ DESCRIBE_CLUSTERS = [
                     "Timeline": {
                         "ReadyDateTime": 1436475074.245,
                         "CreationDateTime": 1436474656.564,
-                        "EndDateTime": 1436638158.387
+                        "EndDateTime": 1436638158.387,
                     },
                     "State": "RUNNING",
                     "StateChangeReason": {
                         "Message": "",
-                    }
+                    },
                 },
                 "Name": "MASTER",
                 "InstanceGroupType": "MASTER",
@@ -165,13 +162,13 @@ DESCRIBE_CLUSTERS = [
                 "Configurations": [],
                 "InstanceType": "m3.xlarge",
                 "Market": "ON_DEMAND",
-                "RunningInstanceCount": 1
-            }
+                "RunningInstanceCount": 1,
+            },
         ],
         "Applications": [
             {
-                "Name": "Hadoop"
-            }
+                "Name": "Hadoop",
+            },
         ],
         "VisibleToAllUsers": True,
         "BootstrapActions": [],
@@ -183,10 +180,10 @@ DESCRIBE_CLUSTERS = [
                     "fs.s3.consistent.retryPeriodSeconds": "20",
                     "fs.s3.enableServerSideEncryption": "true",
                     "fs.s3.consistent": "false",
-                    "fs.s3.consistent.retryCount": "2"
+                    "fs.s3.consistent.retryCount": "2",
                 },
-                "Classification": "emrfs-site"
-            }
-        ]
-    }
+                "Classification": "emrfs-site",
+            },
+        ],
+    },
 ]
