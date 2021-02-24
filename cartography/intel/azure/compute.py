@@ -79,7 +79,7 @@ def load_vm_data_disks(neo4j_session, vm_id, data_disks, azure_update_tag, commo
     ON CREATE SET disk.firstseen = timestamp(), disk.lun = {lun}
     SET disk.lastupdated = {azure_update_tag}, disk.name = {name},
     disk.vhd = {vhd}, disk.image = {image}, disk.size = {size},
-    disk.caching = {caching}, disk.create_option = {createOption},
+    disk.caching = {caching}, disk.createoption = {createOption},
     disk.write_accelerator_enabled={writeAcceleratorEnabled},disk.managed_disk_storage_type={managedDiskStorageType}
     WITH disk
     MATCH (owner:VirtualMachine{id: {VM_ID}})
@@ -133,7 +133,7 @@ def load_disks(neo4j_session, subscription_id, disk_list, azure_update_tag, comm
     disk.createoption = {createOption}, disk.disksizegb = {diskSize},
     disk.encryption = {encryption}, disk.maxshares = {maxShares},
     disk.network_access_policy = {accessPolicy},
-    disk.osType = {osType}, disk.tier = {tier},
+    disk.ostype = {osType}, disk.tier = {tier},
     disk.sku = {sku}, disk.zones = {zones}
     WITH disk
     MATCH (owner:AzureSubscription{id: {SUBSCRIPTION_ID}})
@@ -192,7 +192,7 @@ def load_snapshots(neo4j_session, subscription_id, snapshot_list, azure_update_t
     snapshot.createoption = {createOption}, snapshot.disksizegb = {diskSize},
     snapshot.encryption = {encryption}, snapshot.incremental = {incremental},
     snapshot.network_access_policy = {accessPolicy},
-    snapshot.osType = {osType}, snapshot.tier = {tier},
+    snapshot.ostype = {osType}, snapshot.tier = {tier},
     snapshot.sku = {sku}
     WITH snapshot
     MATCH (owner:AzureSubscription{id: {SUBSCRIPTION_ID}})
