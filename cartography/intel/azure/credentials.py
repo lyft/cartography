@@ -30,7 +30,7 @@ class Authenticator:
 
             profile = get_cli_profile()
 
-            return Credentials(arm_credentials, aad_graph_credentials, tenant_id=tenant_id, current_user=profile.get_current_account_user(), subscription_id=subscription_id)
+            return Credentials(arm_credentials, aad_graph_credentials, tenant_id=tenant_id, current_user={'email': profile.get_current_account_user()}, subscription_id=subscription_id)
 
         except Exception as e:
             if ', AdalError: Unsupported wstrust endpoint version. ' \
@@ -68,7 +68,7 @@ class Authenticator:
 
             profile = get_cli_profile()
 
-            return Credentials(arm_credentials, aad_graph_credentials, tenant_id=tenant_id, current_user=profile.get_current_account_user())
+            return Credentials(arm_credentials, aad_graph_credentials, tenant_id=tenant_id, current_user={'email': profile.get_current_account_user()})
 
         except Exception as e:
             if ', AdalError: Unsupported wstrust endpoint version. ' \

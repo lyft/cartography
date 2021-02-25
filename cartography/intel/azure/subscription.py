@@ -55,13 +55,13 @@ def get_current_azure_subscription(credentials, subscription_id):
 
 def load_azure_subscriptions(neo4j_session, tenant_id, subscriptions, azure_update_tag, common_job_parameters):
     query = """
-    MERGE (at:AzureTenant{id: {TENANT_ID}})
+    MERGE (at:AzureTenant{id: {tenantID}})
     ON CREATE SET at.firstseen = timestamp()
     SET at.lastupdated = {azure_update_tag}
     WITH at
-    MERGE (as:AzureSubscription{id: {SUBSCRIPTION_ID}})
-    ON CREATE SET as.firstseen = timestamp(), as.path = {SUBSCRIPTION_PATH}
-    SET as.lastupdated = {azure_update_tag}, as.name = {SUBSCRIPTION_NAME}, as.state = {SUBSCRIPTION_STATE}
+    MERGE (as:AzureSubscription{id: {id}})
+    ON CREATE SET as.firstseen = timestamp(), as.path = {path}
+    SET as.lastupdated = {azure_update_tag}, as.name = {name}, as.state = {state}
     WITH as, at
     MERGE (at)-[r:RESOURCE]->(as)
     ON CREATE SET r.firstseen = timestamp()
@@ -70,11 +70,11 @@ def load_azure_subscriptions(neo4j_session, tenant_id, subscriptions, azure_upda
     for sub in subscriptions:
         neo4j_session.run(
             query,
-            TENANT_ID=tenant_id,
-            SUBSCRIPTION_ID=sub['subscriptionId'],
-            SUBSCRIPTION_PATH=sub['id'],
-            SUBSCRIPTION_NAME=sub['displayName'],
-            SUBSCRIPTION_STATE=sub['state'],
+            tenantID=tenant_id,
+            id=sub['subscriptionId'],
+            path=sub['id'],
+            name=sub['displayName'],
+            state=sub['state'],
             azure_update_tag=azure_update_tag,
         )
 
