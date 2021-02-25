@@ -78,13 +78,14 @@ class GraphStatement:
         """
         self.parameters["LIMIT_SIZE"] = self.iterationsize
 
-        total_deleted = -1
-        while total_deleted != 0:
+        total_completed = -1
+        while total_completed != 0:
             result: neo4j.StatementResult = self._run(tx)
 
             record: neo4j.Record = result.single()
-            total_deleted = int(record['TotalCompleted'])
-            logger.debug("Deleted %d items", total_deleted)
+            # TODO: use the BoltStatementResultSummary object to determine the number of items processed
+            total_completed = int(record['TotalCompleted'])
+            logger.debug("Processed %d items", total_completed)
 
             # Ensure network buffers are cleared
             result.consume()
