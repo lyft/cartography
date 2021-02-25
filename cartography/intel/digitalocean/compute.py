@@ -50,6 +50,10 @@ def transform_droplets(droplets_res: list, account_id):
 @timeit
 def load_droplets(neo4j_session, data, digitalocean_update_tag):
     query = """
+        MERGE (a:DOAccount{id:{AccountId}})
+        ON CREATE SET a.firstseen = timestamp()
+        SET a.lastupdated = {digitalocean_update_tag}
+        
         MERGE (d:DODroplet{id:{DropletId}})
         ON CREATE SET d.firstseen = timestamp()
         SET d.account_id = {AccountId}, 
@@ -69,6 +73,11 @@ def load_droplets(neo4j_session, data, digitalocean_update_tag):
         d.volumes = {Volumes},
         d.vpc_uuid = {VpcUuid},
         d.lastupdated = {digitalocean_update_tag}
+        WITH d, a
+
+        MERGE (a)-[r:RESOURCE]->(d)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {digitalocean_update_tag}
         """
     for droplet in data:
         neo4j_session.run(
