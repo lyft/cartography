@@ -77,9 +77,14 @@ class GraphStatement:
 
         total_deleted = -1
         while total_deleted != 0:
-            result: neo4j.Record = self._run(session).single()
+            result: neo4j.BoltStatementResult = self._run(session)\
+
+            record: neo4j.Record = result.single()
             total_deleted = int(result['TotalCompleted'])
             logger.debug("Deleted %d items", total_deleted)
+
+            # Ensure network buffers are cleared
+            result.consume()
 
     @classmethod
     def create_from_json(cls, json_obj):
