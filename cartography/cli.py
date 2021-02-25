@@ -90,10 +90,10 @@ class CLI:
         parser.add_argument(
             '--neo4j-max-connection-lifetime',
             type=int,
-            default=None,
+            default=3600,
             help=(
-                'Time in seconds for the Neo4j driver to consider a TCP connection alive. cartography default = None, '
-                'which results in the neo4j driver picking a default value of 3600s (1 hour). See '
+                'Time in seconds for the Neo4j driver to consider a TCP connection alive. cartography default = 3600, '
+                'which is the same as the Neo4j driver default. See '
                 'https://neo4j.com/docs/driver-manual/1.7/client-applications/#driver-config-connection-pool-management'
                 '.'
             ),
