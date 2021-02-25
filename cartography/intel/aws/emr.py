@@ -10,8 +10,8 @@ from cartography.util import timeit
 logger = logging.getLogger(__name__)
 
 # EMR API is subject to aggressive throttling, so we need to sleep a second between each call.
-list_sleep = 1
-describe_sleep = 1
+LIST_SLEEP = 1
+DESCRIBE_SLEEP = 1
 
 
 @timeit
@@ -23,7 +23,7 @@ def get_emr_clusters(boto3_session, region) -> List[Dict]:
     for page in paginator.paginate():
         cluster = page['Clusters']
         clusters.extend(cluster)
-        time.sleep(list_sleep)
+        time.sleep(LIST_SLEEP)
     return clusters
 
 
@@ -54,7 +54,7 @@ def load_emr_clusters(neo4j_session, cluster_data, region, current_aws_account_i
         SET r.lastupdated               = {aws_update_tag}
     """
 
-    logger.debug("Loading EMR clusters for region '%s' into graph.", region)
+    logger.info("Loading EMR %d clusters for region '%s' into graph.", len(cluster_data), region)
     neo4j_session.run(
         query,
         Clusters=cluster_data,
@@ -81,7 +81,7 @@ def sync(neo4j_session, boto3_session, regions, current_aws_account_id: str, aws
         for cluster in clusters:
             cluster_id = cluster['Id']
             cluster_data += [get_emr_describe_cluster(boto3_session, region, cluster_id)]
-            time.sleep(describe_sleep)
+            time.sleep(DESCRIBE_SLEEP)
 
         load_emr_clusters(neo4j_session, cluster_data, region, current_aws_account_id, aws_update_tag)
 
