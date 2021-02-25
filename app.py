@@ -97,7 +97,7 @@ def process_request(context, args):
         }
     }
 
-    resp = cartography.cli.run(body)
+    resp = cartography.cli.run_aws(body)
 
     if 'status' in resp and resp['status'] == 'success':
         context.logger.info(f'successfully processed cartography: {resp}')

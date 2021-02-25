@@ -394,7 +394,7 @@ def main(argv=None):
     return CLI(default_sync, prog='cartography').main(argv)
 
 
-def run(request):
+def run_aws(request):
     logging.basicConfig(level=logging.INFO)
     logging.getLogger('botocore').setLevel(logging.WARNING)
     logging.getLogger('neo4j.bolt').setLevel(logging.WARNING)
