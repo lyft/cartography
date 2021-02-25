@@ -87,6 +87,17 @@ class CLI:
                 'supersedes other methods of supplying a Neo4j password.'
             ),
         )
+        parser.add_argument(
+            '--neo4j-max-connection-lifetime',
+            type=int,
+            default=None,
+            help=(
+                'Time in seconds for the Neo4j driver to consider a TCP connection alive. cartography default = None, '
+                'which results in the neo4j driver picking a default value of 3600s (1 hour). See '
+                'https://neo4j.com/docs/driver-manual/1.7/client-applications/#driver-config-connection-pool-management'
+                '.'
+            ),
+        )
         # TODO add the below parameters to a 'sync' subparser
         parser.add_argument(
             '--update-tag',
