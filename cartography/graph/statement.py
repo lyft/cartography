@@ -1,6 +1,8 @@
 import json
 import logging
 
+import neo4j
+
 logger = logging.getLogger(__name__)
 
 
@@ -63,9 +65,9 @@ class GraphStatement:
         """
         Non-iterative statement execution.
         """
-        return session.run(self.query, self.parameters).consume()
+        return session.run(self.query, self.parameters)
 
-    def _run_iterative(self, session):
+    def _run_iterative(self, session: neo4j.Session) -> None:
         """
         Iterative statement execution.
 
@@ -73,17 +75,11 @@ class GraphStatement:
         """
         self.parameters["LIMIT_SIZE"] = self.iterationsize
 
-        # TODO improve this
-        done = False
-        while not done:
-            results = self._run(session)
-            for r in results:
-                total_deleted = int(r['TotalCompleted'])
-                logger.debug("Deleted %d items", total_deleted)
-                if total_deleted == 0:
-                    done = True
-
-                break
+        total_deleted = -1
+        while total_deleted != 0:
+            result: neo4j.Record = self._run(session).single()
+            total_deleted = int(result['TotalCompleted'])
+            logger.debug("Deleted %d items", total_deleted)
 
     @classmethod
     def create_from_json(cls, json_obj):
