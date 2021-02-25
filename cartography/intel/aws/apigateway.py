@@ -173,7 +173,7 @@ def _load_apigateway_stages(neo4j_session, stages, update_tag):
     """
     ingest_stages = """
     UNWIND {stages_list} AS stage
-    MERGE (s:Stage{id: stage.stageName})
+    MERGE (s:APIGatewayStage{id: stage.stageName})
     ON CREATE SET s.firstseen = timestamp(), s.createddate = stage.createdDate
     SET s.deploymentid = stage.deploymentId,
     s.clientcertificateid = stage.clientCertificateId,
@@ -202,62 +202,17 @@ def _load_apigateway_stages(neo4j_session, stages, update_tag):
 
 
 @timeit
-def _load_stage_methodsettings(neo4j_session, stage, update_tag):  # TODO: How to handle this and it's unit test?
-    """
-    Ingest the Stage Method Settings details into neo4j.
-    """
-    ingest_methodsettings = """
-    MERGE (m:MethodSettings{id: {SettingsKey}})
-    ON CREATE SET m.firstseen = timestamp()
-    SET m.metricsenabled = {MetricsEnabled},
-    m.logginglevel = {LoggingLevel},
-    m.datatraceenabled = {DataTraceEnabled},
-    m.throttlingburstlimit = {ThrottlingBurstLimit},
-    m.throttlingratelimit = {ThrottlingRateLimit},
-    m.cachingenabled = {CachingEnabled},
-    m.cachettlinseconds = {CacheTtlInSeconds},
-    m.cacheDataEncrypted = {CacheDataEncrypted},
-    m.requireauthorizationforcachecontrol = {RequireAuthorizationForCacheControl},
-    m.unauthorizedcachecontrolheaderstrategy = {UnauthorizedCacheControlHeaderStrategy},
-    m.lastupdated = {UpdateTag}
-    WITH m
-    MATCH (stage:Stage{id: {StageName}})
-    MERGE (m)-[r:METHOD_SETTINGS_OF]->(stage)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {UpdateTag}
-    """
-
-    for key, value in stage['methodSettings'].items():
-        neo4j_session.run(
-            ingest_methodsettings,
-            SettingsKey=str(key),
-            MetricsEnabled=str(value.get('metricsEnabled')),
-            LoggingLevel=value.get('loggingLevel'),
-            DataTraceEnabled=str(value.get('dataTraceEnabled')),
-            ThrottlingBurstLimit=str(value.get('throttlingBurstLimit')),
-            ThrottlingRateLimit=str(value.get('throttlingRateLimit')),
-            CachingEnabled=str(value.get('cachingEnabled')),
-            CacheTtlInSeconds=str(value.get('cacheTtlInSeconds')),
-            CacheDataEncrypted=str(value.get('cacheDataEncrypted')),
-            RequireAuthorizationForCacheControl=str(value.get('requireAuthorizationForCacheControl')),
-            UnauthorizedCacheControlHeaderStrategy=value.get('unauthorizedCacheControlHeaderStrategy'),
-            StageName=stage['stageName'],
-            UpdateTag=update_tag
-        )
-
-
-@timeit
 def _load_apigateway_certificates(neo4j_session, certificates, update_tag):
     """
     Ingest the API Gateway Client Certificate details into neo4j.
     """
     ingest_certificates = """
     UNWIND {certificates_list} as certificate
-    MERGE (c:Certificate{id: certificate.clientCertificateId})
+    MERGE (c:APIGatewayClientCertificate{id: certificate.clientCertificateId})
     ON CREATE SET c.firstseen = timestamp(), c.createddate = certificate.createdDate
     SET c.lastupdated = {UpdateTag}, c.expirationdate = certificate.expirationDate
     WITH c, certificate
-    MATCH (stage:Stage{id: certificate.stageName})
+    MATCH (stage:APIGatewayStage{id: certificate.stageName})
     MERGE (stage)-[r:HAS_CERTIFICATE]->(c)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {UpdateTag}
@@ -280,7 +235,7 @@ def _load_apigateway_certificates(neo4j_session, certificates, update_tag):
 def _load_apigateway_resources(neo4j_session, resources, update_tag):
     ingest_resources = """
     UNWIND {resources_list} AS res
-    MERGE (s:Resource{id: res.id})
+    MERGE (s:APIGatewayResource{id: res.id})
     ON CREATE SET s.firstseen = timestamp()
     SET s.path = res.path,
     s.pathpart = res.pathPart,
@@ -334,8 +289,6 @@ def load_rest_api_details(neo4j_session, stages_certificate_resources, aws_accou
 
     _load_apigateway_policies(neo4j_session, policies, update_tag)
     _load_apigateway_stages(neo4j_session, stages, update_tag)
-    for stage in stages:
-        _load_stage_methodsettings(neo4j_session, stage, update_tag)
     _load_apigateway_certificates(neo4j_session, certificates, update_tag)
     _load_apigateway_resources(neo4j_session, resources, update_tag)
     _set_default_values(neo4j_session, aws_account_id)
