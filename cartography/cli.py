@@ -415,3 +415,31 @@ def run_aws(request):
         config.quiet = True
 
     return CLI(default_sync, prog='cartography').process(config)
+
+
+def run_azure(request):
+    logging.basicConfig(level=logging.INFO)
+    logging.getLogger('botocore').setLevel(logging.WARNING)
+    logging.getLogger('neo4j.bolt').setLevel(logging.WARNING)
+
+    default_sync = cartography.sync.build_azure_sync()
+
+    # TODO: Define config and pass it forward
+    config = Config(request['neo4j']['uri'],
+                    neo4j_user=request['neo4j']['user'],
+                    neo4j_password=request['neo4j']['pwd'],
+                    client_id=request['azure']['client_id'],
+                    client_secret=request['azure']['client_secret'],
+                    redirect_uri=request['azure']['redirect_uri'],
+                    subscription_id=request['azure']['subscription_id'],
+                    refresh_token=request['azure']['refresh_token'],
+                    graph_scope=request['azure']['graph_scope'],
+                    azure_scope=request['azure']['azure_scope']
+                    )
+
+    if request['logging']['mode'] == "verbose":
+        config.verbose = True
+    elif request['logging']['mode'] == "quiet":
+        config.quiet = True
+
+    return CLI(default_sync, prog='cartography').process(config)
