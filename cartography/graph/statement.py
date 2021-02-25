@@ -78,17 +78,18 @@ class GraphStatement:
         """
         self.parameters["LIMIT_SIZE"] = self.iterationsize
 
-        total_completed = -1
-        while total_completed != 0:
+        while True:
             result: neo4j.StatementResult = self._run(tx)
-
             record: neo4j.Record = result.single()
+
             # TODO: use the BoltStatementResultSummary object to determine the number of items processed
             total_completed = int(record['TotalCompleted'])
             logger.debug("Processed %d items", total_completed)
 
             # Ensure network buffers are cleared
             result.consume()
+            if total_completed == 0:
+                break
 
     @classmethod
     def create_from_json(cls, json_obj):
