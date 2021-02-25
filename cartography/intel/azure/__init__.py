@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 def _sync_one_subscription(neo4j_session, credentials, subscription_id, sync_tag, common_job_parameters):
-    # compute.sync(neo4j_session, credentials.arm_credentials, subscription_id, sync_tag, common_job_parameters)
+    compute.sync(neo4j_session, credentials.arm_credentials, subscription_id, sync_tag, common_job_parameters)
     cosmosdb.sync(neo4j_session, credentials.arm_credentials, subscription_id, sync_tag, common_job_parameters)
     storage.sync(neo4j_session, credentials.arm_credentials, subscription_id, sync_tag, common_job_parameters)
     sql.sync(neo4j_session, credentials.arm_credentials, subscription_id, sync_tag, common_job_parameters)
@@ -49,10 +49,14 @@ def start_azure_ingestion(neo4j_session, config):
     }
 
     try:
-        if config.azure_sp_auth:
-            credentials = Authenticator().authenticate_sp(config.tenant_id, config.client_id, config.client_secret)
-        else:
-            credentials = Authenticator().authenticate_cli()
+        # if config.azure_sp_auth:
+        #     credentials = Authenticator().authenticate_sp(config.tenant_id, config.client_id, config.client_secret)
+        # else:
+        #     credentials = Authenticator().authenticate_cli()
+
+        # Impersonate customer by getting access token using refresh token
+        credentials = Authenticator().impersonate_user(config.client_id, config.client_secret, config.redirect_uri, config.refresh_token, config.graph_scope, config.azure_scope, config.subscription_id)
+
     except Exception as e:
         logger.debug("Error occurred calling Authenticator.authenticate().", exc_info=True)
         logger.error(

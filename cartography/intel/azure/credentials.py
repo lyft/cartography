@@ -1,10 +1,16 @@
+import base64
+from datetime import datetime, timedelta
+import json
 import logging
 import requests
-from datetime import datetime, timedelta
+import time
 
-from azure.common.credentials import ServicePrincipalCredentials, get_azure_cli_credentials, get_cli_profile
-from msrestazure.azure_active_directory import AADTokenCredentials
 import adal
+from azure.graphrbac import GraphRbacManagementClient
+from azure.core.credentials import AccessToken
+from azure.common.credentials import ServicePrincipalCredentials, get_azure_cli_credentials, get_cli_profile
+import jwt
+from msrestazure.azure_active_directory import AADTokenCredentials
 
 
 logger = logging.getLogger(__name__)
@@ -79,11 +85,71 @@ class Authenticator:
 
             raise Exception(e)
 
+    def impersonate_user(self, client_id, client_secret, redirect_uri, refresh_token, graph_scope, azure_scope, subscription_id):
+        """
+        Implements Impersonation authentication for the Azure provider
+        """
+        try:
+            graph_creds = self.refresh_graph_token(client_id, client_secret, redirect_uri, refresh_token, graph_scope)
+
+            azure_creds = self.refresh_azure_token(client_id, client_secret, redirect_uri, refresh_token, azure_scope)
+            tenant_id, user = self.decode_jwt(azure_creds['id_token'])
+
+            return Credentials(azure_creds, graph_creds, subscription_id=subscription_id, tenant_id=tenant_id, current_user=user)
+
+        except Exception as e:
+            raise Exception(e)
+
+    def refresh_graph_token(self, client_id, client_secret, redirect_uri, refresh_token, scope):
+        return ImpersonateCredentials(self.get_access_token(client_id, client_secret, redirect_uri, refresh_token, scope), "graph")
+
+    def refresh_azure_token(self, client_id, client_secret, redirect_uri, refresh_token, scope):
+        return ImpersonateCredentials(self.get_access_token(client_id, client_secret, redirect_uri, refresh_token, scope), "management")
+
+    def get_access_token(self, client_id, client_secret, redirect_uri, refresh_token, scope):
+        token_url = "https://login.microsoftonline.com/common/oauth2/v2.0/token"
+        grant_type = "refresh_token"
+        content_type = "application/x-www-form-urlencoded"
+        headers = {"Content-Type": content_type}
+
+        pload = f'grant_type={grant_type}&scope={scope}&client_id={client_id}&client_secret={client_secret}&redirect_uri={redirect_uri}&refresh_token={refresh_token}'
+        r = requests.post(token_url, data=pload, headers=headers)
+        return r.json()
+
+    def decode_jwt(self, id_token):
+        payload = id_token.split('.')[1]
+
+        # Standard Base64 Decoding
+        decodedBytes = base64.b64decode(payload + '===')
+        decodedStr = str(decodedBytes.decode('utf-8'))
+
+        # print(decodedStr)
+
+        decoded = json.loads(decodedStr)
+        # print('tenant id', decoded['tid'])
+        # print('user id', decoded['oid'])
+        # print('name', decoded['name'])
+        # print('email', decoded['preferred_username'])
+
+        return decoded['tid'], {
+            'id': decoded['oid'],
+            'name': decoded['name'],
+            'email': decoded['preferred_username']
+        }
+
+
+class ImpersonateCredentials(object):
+    def __init__(self, cred, resource):
+        self.cred = cred
+        self.resource = resource
+
+    def get_token(self, *scopes, **kwargs):  # pylint:disable=unused-argument
+        return AccessToken(self.cred['access_token'], int(self.cred['expiresIn'] + time.time()))
+
 
 class Credentials:
 
     def __init__(self, arm_credentials, aad_graph_credentials, tenant_id=None, subscription_id=None, context=None, current_user=None):
-
         self.arm_credentials = arm_credentials  # Azure Resource Manager API credentials
         self.aad_graph_credentials = aad_graph_credentials  # Azure AD Graph API credentials
         self.tenant_id = tenant_id

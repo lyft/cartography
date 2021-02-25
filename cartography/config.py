@@ -62,6 +62,13 @@ class Config:
         aws_sync_all_profiles=False,
         azure_sync_all_subscriptions=False,
         azure_sp_auth=None,
+        client_id=None,
+        client_secret=None,
+        redirect_uri=None,
+        subscription_id=None,
+        refresh_token=None,
+        graph_scope=None,
+        azure_scope=None,
         analysis_job_directory=None,
         crxcavator_api_base_uri=None,
         crxcavator_api_key=None,
@@ -87,6 +94,13 @@ class Config:
         self.aws_sync_all_profiles = aws_sync_all_profiles
         self.azure_sync_all_subscriptions = azure_sync_all_subscriptions
         self.azure_sp_auth = azure_sp_auth
+        self.client_id = client_id
+        self.client_secret = client_secret
+        self.redirect_uri = redirect_uri
+        self.subscription_id = subscription_id
+        self.refresh_token = refresh_token
+        self.graph_scope = graph_scope
+        self.azure_scope = azure_scope
         self.analysis_job_directory = analysis_job_directory
         self.crxcavator_api_base_uri = crxcavator_api_base_uri
         self.crxcavator_api_key = crxcavator_api_key
