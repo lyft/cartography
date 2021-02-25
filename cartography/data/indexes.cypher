@@ -26,6 +26,7 @@ CREATE INDEX ON :Dependency(id);
 CREATE INDEX ON :DBGroup(name);
 CREATE INDEX ON :DNSRecord(id);
 CREATE INDEX ON :DNSZone(name);
+CREATE INDEX ON :DODroplet(id);
 CREATE INDEX ON :DynamoDBGlobalSecondaryIndex(id);
 CREATE INDEX ON :DynamoDBTable(arn);
 CREATE INDEX ON :DynamoDBTable(id);
