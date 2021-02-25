@@ -41,14 +41,17 @@ class GraphStatement:
         tmp.update(parameters)
         self.parameters = tmp
 
-    def run(self, session):
+    def run(self, session) -> None:
         """
         Run the statement. This will execute the query against the graph.
         """
+        tx: neo4j.Transaction = session.begin_transaction()
         if self.iterative:
-            self._run_iterative(session)
+            self._run_iterative(tx)
         else:
-            self._run(session)
+            data: neo4j.StatementResult = self._run(tx)
+            data.consume()
+        tx.commit()
 
     def as_dict(self):
         """
@@ -61,13 +64,13 @@ class GraphStatement:
             "iterationsize": self.iterationsize,
         }
 
-    def _run(self, session):
+    def _run(self, tx: neo4j.Transaction) -> neo4j.StatementResult:
         """
         Non-iterative statement execution.
         """
-        return session.run(self.query, self.parameters)
+        return tx.run(self.query, self.parameters)
 
-    def _run_iterative(self, session: neo4j.Session) -> None:
+    def _run_iterative(self, tx: neo4j.Transaction) -> None:
         """
         Iterative statement execution.
 
@@ -77,7 +80,7 @@ class GraphStatement:
 
         total_deleted = -1
         while total_deleted != 0:
-            result: neo4j.BoltStatementResult = self._run(session)
+            result: neo4j.StatementResult = self._run(tx)
 
             record: neo4j.Record = result.single()
             total_deleted = int(record['TotalCompleted'])
