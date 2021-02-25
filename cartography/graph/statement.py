@@ -63,7 +63,7 @@ class GraphStatement:
         """
         Non-iterative statement execution.
         """
-        return session.run(self.query, self.parameters)
+        return session.run(self.query, self.parameters).consume()
 
     def _run_iterative(self, session):
         """
@@ -77,9 +77,10 @@ class GraphStatement:
         done = False
         while not done:
             results = self._run(session)
-            done = False
             for r in results:
-                if int(r['TotalCompleted']) == 0:
+                total_deleted = int(r['TotalCompleted'])
+                logger.debug("Deleted %d items", total_deleted)
+                if total_deleted == 0:
                     done = True
 
                 break
