@@ -1,6 +1,15 @@
 import json
 import logging
+from typing import Any
+from typing import Dict
+from typing import Generator
+from typing import List
+from typing import Optional
+from typing import Tuple
 
+import boto3
+import botocore
+import neo4j
 from botocore.exceptions import ClientError
 from policyuniverse.policy import Policy
 
@@ -13,10 +22,10 @@ logger = logging.getLogger(__name__)
 
 @timeit
 @aws_handle_regions
-def get_kms_key_list(boto3_session, region):
+def get_kms_key_list(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
     client = boto3_session.client('kms', region_name=region)
     paginator = client.get_paginator('list_keys')
-    key_list = []
+    key_list: List[Any] = []
     for page in paginator.paginate():
         key_list.extend(page['Keys'])
 
@@ -35,7 +44,9 @@ def get_kms_key_list(boto3_session, region):
 
 @timeit
 @aws_handle_regions
-def get_kms_key_details(boto3_session, kms_key_data, region):
+def get_kms_key_details(
+    boto3_session: boto3.session.Session, kms_key_data: Dict, region: str,
+) -> Generator[Any, Any, Any]:
     """
     Iterates over all KMS Keys.
     """
@@ -48,7 +59,7 @@ def get_kms_key_details(boto3_session, kms_key_data, region):
 
 
 @timeit
-def get_policy(key, client):
+def get_policy(key: Dict, client: botocore.client.BaseClient) -> Any:
     """
     Gets the KMS Key policy. Returns policy string or None if no policy
     """
@@ -63,33 +74,33 @@ def get_policy(key, client):
 
 
 @timeit
-def get_aliases(key, client):
+def get_aliases(key: str, client: botocore.client.BaseClient) -> List[Any]:
     """
     Gets the KMS Key Aliases.
     """
-    aliases = []
+    aliases: List[Any] = []
     paginator = client.get_paginator('list_aliases')
-    for page in paginator.paginate(KeyId=key['KeyId']):
+    for page in paginator.paginate(KeyId=key['KeyId']):   # type: ignore
         aliases.extend(page['Aliases'])
 
     return aliases
 
 
 @timeit
-def get_grants(key, client):
+def get_grants(key: str, client: botocore.client.BaseClient) -> List[Any]:
     """
     Gets the KMS Key Grants.
     """
-    grants = []
+    grants: List[Any] = []
     paginator = client.get_paginator('list_grants')
-    for page in paginator.paginate(KeyId=key['KeyId']):
+    for page in paginator.paginate(KeyId=key['KeyId']):   # type: ignore
         grants.extend(page['Grants'])
 
     return grants
 
 
 @timeit
-def _load_kms_key_aliases(neo4j_session, aliases, update_tag):
+def _load_kms_key_aliases(neo4j_session: neo4j.Session, aliases: List[Dict], update_tag: int) -> None:
     """
     Ingest KMS Aliases into neo4j.
     """
@@ -113,7 +124,7 @@ def _load_kms_key_aliases(neo4j_session, aliases, update_tag):
 
 
 @timeit
-def _load_kms_key_grants(neo4j_session, grants_list, update_tag):
+def _load_kms_key_grants(neo4j_session: neo4j.Session, grants_list: List[Dict], update_tag: int) -> None:
     """
     Ingest KMS Key Grants into neo4j.
     """
@@ -143,7 +154,7 @@ def _load_kms_key_grants(neo4j_session, grants_list, update_tag):
 
 
 @timeit
-def _load_kms_key_policies(neo4j_session, policies, update_tag):
+def _load_kms_key_policies(neo4j_session: neo4j.Session, policies: List[Dict], update_tag: int) -> None:
     """
     Ingest KMS Key policy results into neo4j.
     """
@@ -163,7 +174,7 @@ def _load_kms_key_policies(neo4j_session, policies, update_tag):
     )
 
 
-def _set_default_values(neo4j_session, aws_account_id):
+def _set_default_values(neo4j_session: neo4j.Session, aws_account_id: str) -> None:
     set_defaults = """
     MATCH (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(kmskey:KMSKey) where NOT EXISTS(kmskey.anonymous_actions)
     SET kmskey.anonymous_access = false, kmskey.anonymous_actions = []
@@ -176,13 +187,16 @@ def _set_default_values(neo4j_session, aws_account_id):
 
 
 @timeit
-def load_kms_key_details(neo4j_session, policy_alias_grants_data, region, aws_account_id, update_tag):
+def load_kms_key_details(
+        neo4j_session: neo4j.Session, policy_alias_grants_data: List[Tuple[Any, Any, Any, Any]], region: str,
+        aws_account_id: str, update_tag: int,
+) -> None:
     """
     Create dictionaries for all KMS key policies, aliases and grants so we can import them in a single query for each
     """
     policies = []
-    aliases = []
-    grants = []
+    aliases: List[str] = []
+    grants: List[str] = []
     for key, policy, alias, grant in policy_alias_grants_data:
         parsed_policy = parse_policy(key, policy)
         if parsed_policy is not None:
@@ -206,7 +220,7 @@ def load_kms_key_details(neo4j_session, policy_alias_grants_data, region, aws_ac
 
 
 @timeit
-def parse_policy(key, policy):
+def parse_policy(key: str, policy: Policy) -> Optional[Dict[Any, Any]]:
     """
     Uses PolicyUniverse to parse KMS key policies and returns the internet accessibility results
     """
@@ -268,7 +282,10 @@ def parse_policy(key, policy):
 
 
 @timeit
-def load_kms_keys(neo4j_session, data, region, current_aws_account_id, aws_update_tag):
+def load_kms_keys(
+    neo4j_session: neo4j.Session, data: Dict, region: str, current_aws_account_id: str,
+    aws_update_tag: int,
+) -> None:
     ingest_keys = """
     UNWIND {key_list} AS k
     MERGE (kmskey:KMSKey{id:k.KeyId})
@@ -306,12 +323,15 @@ def load_kms_keys(neo4j_session, data, region, current_aws_account_id, aws_updat
 
 
 @timeit
-def cleanup_kms(neo4j_session, common_job_parameters):
+def cleanup_kms(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('aws_import_kms_cleanup.json', neo4j_session, common_job_parameters)
 
 
 @timeit
-def sync_kms_keys(neo4j_session, boto3_session, region, current_aws_account_id, aws_update_tag):
+def sync_kms_keys(
+    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, region: str, current_aws_account_id: str,
+    aws_update_tag: int,
+) -> None:
     kms_keys = get_kms_key_list(boto3_session, region)
 
     load_kms_keys(neo4j_session, kms_keys, region, current_aws_account_id, aws_update_tag)
@@ -321,7 +341,10 @@ def sync_kms_keys(neo4j_session, boto3_session, region, current_aws_account_id, 
 
 
 @timeit
-def sync(neo4j_session, boto3_session, regions, current_aws_account_id, aws_update_tag, common_job_parameters):
+def sync(
+    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
+    aws_update_tag: int, common_job_parameters: Dict,
+) -> None:
     for region in regions:
         logger.info("Syncing KMS for region %s in account '%s'.", region, current_aws_account_id)
         sync_kms_keys(neo4j_session, boto3_session, region, current_aws_account_id, aws_update_tag)

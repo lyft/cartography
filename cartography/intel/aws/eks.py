@@ -97,7 +97,7 @@ def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
 
 @timeit
 def sync(
-    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: str, current_aws_account_id: str,
+    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
     aws_update_tag: int, common_job_parameters: Dict,
 ) -> None:
     for region in regions:
