@@ -12,6 +12,9 @@ class Config:
     :param neo4j_user: User name for a Neo4j graph database service. Optional.
     :type neo4j_password: string
     :param neo4j_password: Password for a Neo4j graph database service. Optional.
+    :type neo4j_max_connection_lifetime: int
+    :param neo4j_max_connection_lifetime: Time in seconds for Neo4j driver to consider a TCP connection alive.
+        See https://neo4j.com/docs/driver-manual/1.7/client-applications/. Optional.
     :type update_tag: int
     :param update_tag: Update tag for a cartography sync run. Optional.
     :type aws_sync_all_profiles: bool
@@ -54,6 +57,7 @@ class Config:
         neo4j_uri,
         neo4j_user=None,
         neo4j_password=None,
+        neo4j_max_connection_lifetime=None,
         update_tag=None,
         aws_sync_all_profiles=False,
         aws_requested_syncs=None,
@@ -76,6 +80,7 @@ class Config:
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user
         self.neo4j_password = neo4j_password
+        self.neo4j_max_connection_lifetime = neo4j_max_connection_lifetime
         self.update_tag = update_tag
         self.aws_sync_all_profiles = aws_sync_all_profiles
         self.aws_requested_syncs = aws_requested_syncs

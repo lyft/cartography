@@ -9,6 +9,7 @@ import botocore.exceptions
 import neo4j
 
 from . import ec2
+from . import kms
 from . import organizations
 from . import permission_relationships
 from . import resourcegroupstaggingapi
