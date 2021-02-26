@@ -34,7 +34,7 @@ def get_eks_describe_cluster(boto3_session: boto3.session.Session, region: str, 
 @timeit
 def load_eks_clusters(
     neo4j_session: neo4j.Session, cluster_data: Dict, region: str, current_aws_account_id: str,
-    aws_update_tag: str,
+    aws_update_tag: int,
 ) -> None:
     query: str = """
     MERGE (cluster:EKSCluster{id: {ClusterArn}})
