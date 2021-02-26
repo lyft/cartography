@@ -3,6 +3,9 @@ import time
 from typing import Dict
 from typing import List
 
+import boto3
+import neo4j
+
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -16,7 +19,7 @@ DESCRIBE_SLEEP = 1
 
 @timeit
 @aws_handle_regions
-def get_emr_clusters(boto3_session, region) -> List[Dict]:
+def get_emr_clusters(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
     client = boto3_session.client('emr', region_name=region)
     clusters: List[Dict] = []
     paginator = client.get_paginator('list_clusters')
@@ -28,14 +31,17 @@ def get_emr_clusters(boto3_session, region) -> List[Dict]:
 
 
 @timeit
-def get_emr_describe_cluster(boto3_session, region, cluster_id) -> Dict:
+def get_emr_describe_cluster(boto3_session: boto3.session.Session, region: str, cluster_id: str) -> Dict:
     client = boto3_session.client('emr', region_name=region)
     response = client.describe_cluster(ClusterId=cluster_id)
     return response['Cluster']
 
 
 @timeit
-def load_emr_clusters(neo4j_session, cluster_data, region, current_aws_account_id, aws_update_tag):
+def load_emr_clusters(
+    neo4j_session: neo4j.Session, cluster_data: List[Dict], region: str, current_aws_account_id: str,
+    aws_update_tag: int,
+) -> None:
     query = """
     UNWIND {Clusters} as emr_cluster
         MERGE (cluster:EMRCluster{id: emr_cluster.Name})
@@ -65,13 +71,16 @@ def load_emr_clusters(neo4j_session, cluster_data, region, current_aws_account_i
 
 
 @timeit
-def cleanup(neo4j_session, common_job_parameters):
+def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     logger.debug("Running EMR cleanup job.")
     run_cleanup_job('aws_import_emr_cleanup.json', neo4j_session, common_job_parameters)
 
 
 @timeit
-def sync(neo4j_session, boto3_session, regions, current_aws_account_id: str, aws_update_tag, common_job_parameters):
+def sync(
+    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: str, current_aws_account_id: str,
+    aws_update_tag: int, common_job_parameters: Dict,
+) -> None:
     for region in regions:
         logger.info("Syncing EMR for region '%s' in account '%s'.", region, current_aws_account_id)
 
