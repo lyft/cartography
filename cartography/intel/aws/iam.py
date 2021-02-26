@@ -7,7 +7,6 @@ from typing import List
 from typing import Tuple
 
 import boto3
-import botocore
 import neo4j
 
 from cartography.intel.aws.permission_relationships import parse_statement_node
@@ -37,8 +36,8 @@ def get_group_policies(boto3_session: boto3.session.Session, group_name: str) ->
 
 @timeit
 def get_group_policy_info(
-    boto3_session: boto3.session.Session, group_name: str, policy_name: str,
-) -> botocore.client.GroupPolicy:
+        boto3_session: boto3.session.Session, group_name: str, policy_name: str,
+) -> Any:
     client = boto3_session.client('iam')
     return client.get_group_policy(GroupName=group_name, PolicyName=policy_name)
 
