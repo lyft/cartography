@@ -22,7 +22,8 @@ def test_sync_multiple_accounts(
 ):
     func_names = cartography.intel.aws.resources.RESOURCE_FUNCTIONS.keys()
     cartography.intel.aws._sync_multiple_accounts(
-        neo4j_session, TEST_ACCOUNTS, TEST_UPDATE_TAG, GRAPH_JOB_PARAMETERS,)
+        neo4j_session, TEST_ACCOUNTS, TEST_UPDATE_TAG, GRAPH_JOB_PARAMETERS,
+    )
 
     # Ensure we call _sync_one_account on all accounts in our list.
     mock_sync_one.assert_any_call(
