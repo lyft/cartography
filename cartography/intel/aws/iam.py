@@ -710,7 +710,7 @@ def sync_user_access_keys(
 
 @timeit
 def sync(
-    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: str, account_id: str,
+    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], account_id: str,
     update_tag: int, common_job_parameters: Dict,
 ) -> None:
     logger.info("Syncing IAM for account '%s'.", account_id)
