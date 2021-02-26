@@ -48,7 +48,7 @@ def _get_botocore_config() -> botocore.config.Config:
 
 @timeit
 @aws_handle_regions
-def _get_es_domains(client: boto3.session.Client) -> List[Dict]:
+def _get_es_domains(client: botocore.client.BaseClient) -> List[Dict]:
     """
     Get ES domains.
 
