@@ -4,7 +4,6 @@ from typing import Dict
 from typing import List
 
 import boto3
-import boto3_session
 import botocore.config
 import neo4j
 from policyuniverse.policy import Policy
@@ -49,7 +48,7 @@ def _get_botocore_config() -> botocore.config.Config:
 
 @timeit
 @aws_handle_regions
-def _get_es_domains(client: boto3_session.Client) -> List[Dict]:
+def _get_es_domains(client: boto3.session.Client) -> List[Dict]:
     """
     Get ES domains.
 
