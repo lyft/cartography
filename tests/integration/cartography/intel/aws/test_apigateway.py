@@ -23,7 +23,7 @@ def test_load_apigateway_rest_apis(neo4j_session):
 
     nodes = neo4j_session.run(
         """
-        MATCH (r:RestAPI) RETURN r.id;
+        MATCH (r:APIGatewayRestAPI) RETURN r.id;
         """,
     )
     actual_nodes = {n['r.id'] for n in nodes}
@@ -60,7 +60,7 @@ def test_load_apigateway_rest_apis_relationships(neo4j_session):
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:AWSAccount)-[:RESOURCE]->(n2:RestAPI) RETURN n1.id, n2.id;
+        MATCH (n1:AWSAccount)-[:RESOURCE]->(n2:APIGatewayRestAPI) RETURN n1.id, n2.id;
         """,
     )
     actual = {
@@ -124,7 +124,7 @@ def test_load_apigateway_stages_relationships(neo4j_session):
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:RestAPI)-[:ASSOCIATED_WITH]->(n2:APIGatewayStage) RETURN n1.id, n2.id;
+        MATCH (n1:APIGatewayRestAPI)-[:ASSOCIATED_WITH]->(n2:APIGatewayStage) RETURN n1.id, n2.id;
         """,
     )
     actual = {
@@ -246,7 +246,7 @@ def test_load_apigateway_resources_relationships(neo4j_session):
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:RestAPI)-[:RESOURCE]->(n2:APIGatewayResource) RETURN n1.id, n2.id;
+        MATCH (n1:APIGatewayRestAPI)-[:RESOURCE]->(n2:APIGatewayResource) RETURN n1.id, n2.id;
         """,
     )
     actual = {

@@ -110,7 +110,7 @@ def load_apigateway_rest_apis(neo4j_session, rest_apis, region, current_aws_acco
     """
     ingest_rest_apis = """
     UNWIND {rest_apis_list} AS r
-    MERGE (rest_api:RestAPI{id:r.id})
+    MERGE (rest_api:APIGatewayRestAPI{id:r.id})
     ON CREATE SET rest_api.firstseen = timestamp(),
     rest_api.createddate = r.createdDate
     SET rest_api.version = r.version,
@@ -141,7 +141,7 @@ def _load_apigateway_policies(neo4j_session, policies, update_tag):
     """
     ingest_policies = """
     UNWIND {policies} as policy
-    MATCH (r:RestAPI) where r.name = policy.api_id
+    MATCH (r:APIGatewayRestAPI) where r.name = policy.api_id
     SET r.anonymous_access = (coalesce(r.anonymous_access, false) OR policy.internet_accessible),
     r.anonymous_actions = coalesce(r.anonymous_actions, []) + policy.accessible_actions,
     r.lastupdated = {UpdateTag}
@@ -156,7 +156,7 @@ def _load_apigateway_policies(neo4j_session, policies, update_tag):
 
 def _set_default_values(neo4j_session, aws_account_id):
     set_defaults = """
-    MATCH (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(restApi:RestAPI) where NOT EXISTS(restApi.anonymous_actions)
+    MATCH (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(restApi:APIGatewayRestAPI) where NOT EXISTS(restApi.anonymous_actions)
     SET restApi.anonymous_access = false, restApi.anonymous_actions = []
     """
 
@@ -183,7 +183,7 @@ def _load_apigateway_stages(neo4j_session, stages, update_tag):
     s.webaclarn = stage.webAclArn,
     s.lastupdated = {UpdateTag}
     WITH s, stage
-    MATCH (rest_api:RestAPI{id: stage.apiId})
+    MATCH (rest_api:APIGatewayRestAPI{id: stage.apiId})
     MERGE (rest_api)-[r:ASSOCIATED_WITH]->(s)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {UpdateTag}
@@ -242,7 +242,7 @@ def _load_apigateway_resources(neo4j_session, resources, update_tag):
     s.parentid = res.parentId,
     s.lastupdated ={UpdateTag}
     WITH s, res
-    MATCH (rest_api:RestAPI{id: res.apiId})
+    MATCH (rest_api:APIGatewayRestAPI{id: res.apiId})
     MERGE (rest_api)-[r:RESOURCE]->(s)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {UpdateTag}
