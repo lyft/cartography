@@ -151,7 +151,7 @@ def _sync_multiple_accounts(
 
 
 def _parse_aws_requested_syncs(aws_requested_syncs: str) -> List[str]:
-    return aws_requested_syncs.split(',')
+    return [x.strip() for x in aws_requested_syncs.split(',')]
 
 
 @timeit
