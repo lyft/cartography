@@ -2,6 +2,9 @@ import logging
 from typing import Dict
 from typing import List
 
+import boto3
+import neo4j
+
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -11,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 @timeit
 @aws_handle_regions
-def get_ecr_repositories(boto3_session, region) -> List[Dict]:
+def get_ecr_repositories(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
     logger.debug("Getting ECR repositories for region '%s'.", region)
     client = boto3_session.client('ecr', region_name=region)
     paginator = client.get_paginator('describe_repositories')
@@ -23,7 +26,7 @@ def get_ecr_repositories(boto3_session, region) -> List[Dict]:
 
 @timeit
 @aws_handle_regions
-def get_ecr_repository_images(boto3_session, region, repository_name) -> List[Dict]:
+def get_ecr_repository_images(boto3_session: boto3.session.Session, region: str, repository_name: str) -> List[Dict]:
     logger.debug("Getting ECR images in repository '%s' for region '%s'.", repository_name, region)
     client = boto3_session.client('ecr', region_name=region)
     paginator = client.get_paginator('list_images')
@@ -34,7 +37,10 @@ def get_ecr_repository_images(boto3_session, region, repository_name) -> List[Di
 
 
 @timeit
-def load_ecr_repositories(neo4j_session, repos, region, current_aws_account_id, aws_update_tag):
+def load_ecr_repositories(
+    neo4j_session: neo4j.Session, repos: List[Dict], region: str, current_aws_account_id: str,
+    aws_update_tag: int,
+) -> None:
     query = """
     UNWIND {Repositories} as ecr_repo
         MERGE (repo:ECRRepository{id: ecr_repo.repositoryArn})
@@ -63,7 +69,7 @@ def load_ecr_repositories(neo4j_session, repos, region, current_aws_account_id, 
 
 
 @timeit
-def transform_ecr_repository_images(repo_data):
+def transform_ecr_repository_images(repo_data: Dict) -> List[Dict]:
     """
     Ensure that we only load ECRImage nodes to the graph if they have a defined imageDigest field.
     """
@@ -88,7 +94,9 @@ def transform_ecr_repository_images(repo_data):
 
 
 @timeit
-def load_ecr_repository_images(neo4j_session, repo_images_list, region, aws_update_tag):
+def load_ecr_repository_images(
+        neo4j_session: neo4j.Session, repo_images_list: List[Dict], region: str, aws_update_tag: int,
+) -> None:
     query = """
     UNWIND {RepoList} as repo_item
         UNWIND repo_item.repo_images as repo_img
@@ -126,13 +134,16 @@ def load_ecr_repository_images(neo4j_session, repo_images_list, region, aws_upda
 
 
 @timeit
-def cleanup(neo4j_session, common_job_parameters):
+def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     logger.debug("Running ECR cleanup job.")
     run_cleanup_job('aws_import_ecr_cleanup.json', neo4j_session, common_job_parameters)
 
 
 @timeit
-def sync(neo4j_session, boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters):
+def sync(
+    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
+    update_tag: int, common_job_parameters: Dict,
+) -> None:
     for region in regions:
         logger.info("Syncing ECR for region '%s' in account '%s'.", region, current_aws_account_id)
         image_data = {}

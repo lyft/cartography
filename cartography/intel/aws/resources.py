@@ -2,6 +2,7 @@ from . import dynamodb
 from . import ecr
 from . import eks
 from . import elasticsearch
+from . import emr
 from . import iam
 from . import kms
 from . import lambda_function
@@ -41,6 +42,7 @@ RESOURCE_FUNCTIONS = {
     'ec2:vpc_peering': sync_vpc_peering,
     'ecr': ecr.sync,
     'eks': eks.sync,
+    'emr': emr.sync,
     'lambda_function': lambda_function.sync,
     'kms': kms.sync,
     'rds': rds.sync,
