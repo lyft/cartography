@@ -4,8 +4,10 @@ import logging
 import os
 import sys
 
+import cartography.config
 import cartography.sync
 import cartography.util
+from cartography.intel.aws.util.common import parse_and_validate_aws_requested_syncs
 
 
 logger = logging.getLogger(__name__)
@@ -271,7 +273,7 @@ class CLI:
         :param argv: The parameters supplied to the command line program.
         """
         # TODO support parameter lookup in environment variables if not present on command line
-        config = self.parser.parse_args(argv)
+        config: cartography.config.Config = self.parser.parse_args(argv)
         # Logging config
         if config.verbose:
             logging.getLogger('cartography').setLevel(logging.DEBUG)
@@ -297,6 +299,11 @@ class CLI:
                 logger.warning("Neo4j username was provided but a password could not be found.")
         else:
             config.neo4j_password = None
+
+        # AWS config
+        if config.aws_requested_syncs:
+            # No need to store the returned value; we're using this for input validation.
+            parse_and_validate_aws_requested_syncs(config.aws_requested_syncs)
 
         # Okta config
         if config.okta_org_id and config.okta_api_key_env_var:

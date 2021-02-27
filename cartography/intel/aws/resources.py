@@ -3,6 +3,7 @@ from . import ecr
 from . import eks
 from . import elasticsearch
 from . import iam
+from . import kms
 from . import lambda_function
 from . import permission_relationships
 from . import rds
@@ -41,6 +42,7 @@ RESOURCE_FUNCTIONS = {
     'ecr': ecr.sync,
     'eks': eks.sync,
     'lambda_function': lambda_function.sync,
+    'kms': kms.sync,
     'rds': rds.sync,
     'redshift': redshift.sync,
     'route53': route53.sync,
