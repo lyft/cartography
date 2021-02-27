@@ -1,4 +1,5 @@
 import pytest
+
 from cartography.intel.aws.util.common import parse_and_validate_aws_requested_syncs
 
 

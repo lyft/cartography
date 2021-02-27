@@ -13,11 +13,9 @@ def parse_and_validate_aws_requested_syncs(aws_requested_syncs: str) -> List[str
         else:
             valid_syncs: str = ', '.join(RESOURCE_FUNCTIONS.keys())
             raise ValueError(
-                (
-                    f'Error parsing `aws-requested-syncs`. You specified "{aws_requested_syncs}". '
-                    f'Please check that your string is formatted properly. '
-                    f'Example valid input looks like "s3,iam,rds" or "s3, ec2:instance, dynamodb". '
-                    f'Our full list of valid values is: {valid_syncs}.'
-                )
+                f'Error parsing `aws-requested-syncs`. You specified "{aws_requested_syncs}". '
+                f'Please check that your string is formatted properly. '
+                f'Example valid input looks like "s3,iam,rds" or "s3, ec2:instance, dynamodb". '
+                f'Our full list of valid values is: {valid_syncs}.',
             )
     return validated_resources
