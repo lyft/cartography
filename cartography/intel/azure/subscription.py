@@ -9,48 +9,42 @@ logger = logging.getLogger(__name__)
 
 
 def get_all_azure_subscriptions(credentials):
-    # Create the client
-    client = SubscriptionClient(credentials.arm_credentials)
+    try:
+        # Create the client
+        client = SubscriptionClient(credentials.arm_credentials)
 
-    # client._client.config.add_user_agent(get_user_agent())
+        # Get all the accessible subscriptions
+        subs = list(lambda x: x.as_dict(), client.subscriptions.list())
 
-    # Get all the accessible subscriptions
-    subs = list(client.subscriptions.list())
+        if not subs:
+            raise Exception('The provided credentials do not have access to any subscriptions')
 
-    if not subs:
-        raise Exception('The provided credentials do not have access to any subscriptions')
+        return subs
 
-    subscriptions = []
-    for sub in subs:
-        subscriptions.append({
-            'id': sub['id'],
-            'subscriptionId': sub['subscriptionId'],
-            'displayName': sub['displayName'],
-            'state': sub['state']
-        })
-
-    return subscriptions
+    except Exception as e:
+        logger.warning("Error while retrieving subscriptions - {}".format(e))
+        return []
 
 
 def get_current_azure_subscription(credentials, subscription_id):
-    # Create the client
-    client = SubscriptionClient(credentials.arm_credentials)
+    try:
+        # Create the client
+        client = SubscriptionClient(credentials.arm_credentials)
 
-    # client._client.config.add_user_agent(get_user_agent())
+        s = client.subscriptions.get(subscription_id)
 
-    # Get all the accessible subscriptions
-    sub = client.subscriptions.get(subscription_id)
-    print(sub)
+        # Get all the accessible subscriptions
+        subs = [s.as_dict()]
+        # subs = [s]
 
-    if not sub:
-        raise Exception(f'The provided credentials do not have access to this subscription: {subscription_id}')
+        if not subs:
+            raise Exception('The provided credentials do not have access to this subscription')
 
-    return [{
-            'id': sub.id,
-            'subscriptionId': sub.subscription_id,
-            'displayName': sub.display_name,
-            'state': sub.state
-            }]
+        return subs
+
+    except Exception as e:
+        logger.warning("Error while retrieving subscription info - {}".format(e))
+        return []
 
 
 def load_azure_subscriptions(neo4j_session, tenant_id, subscriptions, azure_update_tag, common_job_parameters):
@@ -60,8 +54,9 @@ def load_azure_subscriptions(neo4j_session, tenant_id, subscriptions, azure_upda
     SET at.lastupdated = {azure_update_tag}
     WITH at
     MERGE (as:AzureSubscription{id: {id}})
-    ON CREATE SET as.firstseen = timestamp(), as.path = {path}
-    SET as.lastupdated = {azure_update_tag}, as.name = {name}, as.state = {state}
+    ON CREATE SET as.firstseen = timestamp(), as.subscriptionid = {subscriptionID}
+    SET as.lastupdated = {azure_update_tag}, as.name = {name},
+    as.state = {state}, as.authorizationsource={authorizationSource}
     WITH as, at
     MERGE (at)-[r:RESOURCE]->(as)
     ON CREATE SET r.firstseen = timestamp()
@@ -71,10 +66,11 @@ def load_azure_subscriptions(neo4j_session, tenant_id, subscriptions, azure_upda
         neo4j_session.run(
             query,
             tenantID=tenant_id,
-            id=sub['subscriptionId'],
-            path=sub['id'],
-            name=sub['displayName'],
+            id=sub['id'],
+            subscriptionID=sub['subscription_id'],
+            name=sub['display_name'],
             state=sub['state'],
+            authorizationSource=sub['authorization_source'],
             azure_update_tag=azure_update_tag,
         )
 

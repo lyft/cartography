@@ -434,7 +434,8 @@ def run_azure(request):
                     subscription_id=request['azure']['subscription_id'],
                     refresh_token=request['azure']['refresh_token'],
                     graph_scope=request['azure']['graph_scope'],
-                    azure_scope=request['azure']['azure_scope']
+                    azure_scope=request['azure']['azure_scope'],
+                    params=request['params']
                     )
 
     if request['logging']['mode'] == "verbose":

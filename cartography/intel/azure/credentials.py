@@ -6,7 +6,6 @@ import requests
 import time
 
 import adal
-from azure.graphrbac import GraphRbacManagementClient
 from azure.core.credentials import AccessToken
 from azure.common.credentials import ServicePrincipalCredentials, get_azure_cli_credentials, get_cli_profile
 import jwt
@@ -93,7 +92,7 @@ class Authenticator:
             graph_creds = self.refresh_graph_token(client_id, client_secret, redirect_uri, refresh_token, graph_scope)
 
             azure_creds = self.refresh_azure_token(client_id, client_secret, redirect_uri, refresh_token, azure_scope)
-            tenant_id, user = self.decode_jwt(azure_creds['id_token'])
+            tenant_id, user = self.decode_jwt(azure_creds.cred['id_token'])
 
             return Credentials(azure_creds, graph_creds, subscription_id=subscription_id, tenant_id=tenant_id, current_user=user)
 
@@ -140,11 +139,17 @@ class Authenticator:
 
 class ImpersonateCredentials(object):
     def __init__(self, cred, resource):
+        self.scheme = "Bearer"
         self.cred = cred
         self.resource = resource
 
     def get_token(self, *scopes, **kwargs):  # pylint:disable=unused-argument
         return AccessToken(self.cred['access_token'], int(self.cred['expiresIn'] + time.time()))
+
+    def signed_session(self, session=None):
+        header = "{} {}".format(self.scheme, self.cred['access_token'])
+        session.headers['Authorization'] = header
+        return session
 
 
 class Credentials:
@@ -210,3 +215,8 @@ class Credentials:
 
         new_credentials = AADTokenCredentials(new_token, credentials.token.get('_client_id'))
         return new_credentials
+
+    def signed_session(self, session=None):
+        header = "{} {}".format(self.scheme, self.token['access_token'])
+        session.headers['Authorization'] = header
+        return session
