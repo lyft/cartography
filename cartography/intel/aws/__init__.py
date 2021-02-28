@@ -8,8 +8,6 @@ import boto3
 import botocore.exceptions
 import neo4j
 
-import cartography.intel.aws.permission_relationships
-import cartography.intel.aws.resourcegroupstaggingapi
 from . import ec2
 from . import organizations
 from .resources import RESOURCE_FUNCTIONS
@@ -66,16 +64,11 @@ def _sync_one_account(
 
     # MAP IAM permissions
     if 'permission_relationships' in aws_requested_syncs:
-        print('got here')
-        cartography.intel.aws.permission_relationships.sync(
-            neo4j_session, current_aws_account_id, update_tag, common_job_parameters,
-        )
+        RESOURCE_FUNCTIONS['permission_relationships'](**sync_args)
 
     # AWS Tags - Must always be last.
     if 'resourcegroupstaggingapi' in aws_requested_syncs:
-        cartography.intel.aws.resourcegroupstaggingapi.sync(
-            neo4j_session, boto3_session, regions, update_tag, common_job_parameters,
-        )
+        RESOURCE_FUNCTIONS['resourcegroupstaggingapi'](**sync_args)
 
 
 def _autodiscover_account_regions(boto3_session: boto3.session.Session, account_id: str) -> List[str]:
