@@ -372,13 +372,13 @@ def cleanup_s3_bucket_acl_and_policy(neo4j_session, common_job_parameters):
 
 
 @timeit
-def sync(neo4j_session, boto3_session, current_aws_account_id, aws_update_tag, common_job_parameters):
+def sync(neo4j_session, boto3_session, current_aws_account_id, update_tag, common_job_parameters):
     logger.info("Syncing S3 for account '%s'.", current_aws_account_id)
     bucket_data = get_s3_bucket_list(boto3_session)
 
-    load_s3_buckets(neo4j_session, bucket_data, current_aws_account_id, aws_update_tag)
+    load_s3_buckets(neo4j_session, bucket_data, current_aws_account_id, update_tag)
     cleanup_s3_buckets(neo4j_session, common_job_parameters)
 
     acl_and_policy_data_iter = get_s3_bucket_details(boto3_session, bucket_data)
-    load_s3_details(neo4j_session, acl_and_policy_data_iter, current_aws_account_id, aws_update_tag)
+    load_s3_details(neo4j_session, acl_and_policy_data_iter, current_aws_account_id, update_tag)
     cleanup_s3_bucket_acl_and_policy(neo4j_session, common_job_parameters)

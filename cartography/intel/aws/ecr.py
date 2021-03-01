@@ -142,7 +142,7 @@ def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
 @timeit
 def sync(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
-    aws_update_tag: int, common_job_parameters: Dict,
+    update_tag: int, common_job_parameters: Dict,
 ) -> None:
     for region in regions:
         logger.info("Syncing ECR for region '%s' in account '%s'.", region, current_aws_account_id)
@@ -151,7 +151,7 @@ def sync(
         for repo in repositories:
             repo_image_obj = get_ecr_repository_images(boto3_session, region, repo['repositoryName'])
             image_data[repo['repositoryUri']] = repo_image_obj
-        load_ecr_repositories(neo4j_session, repositories, region, current_aws_account_id, aws_update_tag)
+        load_ecr_repositories(neo4j_session, repositories, region, current_aws_account_id, update_tag)
         repo_images_list = transform_ecr_repository_images(image_data)
-        load_ecr_repository_images(neo4j_session, repo_images_list, region, aws_update_tag)
+        load_ecr_repository_images(neo4j_session, repo_images_list, region, update_tag)
     cleanup(neo4j_session, common_job_parameters)
