@@ -2,15 +2,24 @@ import logging
 import os
 import re
 from string import Template
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Pattern
+from typing import Tuple
 
+import neo4j
 import yaml
 
 from cartography.graph.statement import GraphStatement
+from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 
 
-def evaluate_clause(clause, match):
+# TODO: Someone should go through this module and looks at types closely, and make sure comments match!
+
+def evaluate_clause(clause: str, match: str) -> bool:
     """ Evaluates the a clause in IAM. Clauses can be AWS [not]actions and [not]resources
 
     Arguments:
@@ -26,7 +35,7 @@ def evaluate_clause(clause, match):
     return result is not None
 
 
-def evaluate_notaction_for_permission(statement, permission):
+def evaluate_notaction_for_permission(statement: Dict, permission: str) -> bool:
     """Return whether an IAM 'notaction' clause in the given statement applies to the item"""
     if 'notaction' not in statement:
         return False
@@ -36,7 +45,7 @@ def evaluate_notaction_for_permission(statement, permission):
     return False
 
 
-def evaluate_action_for_permission(statement, permission):
+def evaluate_action_for_permission(statement: Dict, permission: str) -> bool:
     """Return whether an IAM 'action' clause in the given statement applies to the permission"""
     if 'action' not in statement:
         return True
@@ -46,7 +55,7 @@ def evaluate_action_for_permission(statement, permission):
     return False
 
 
-def evaluate_resource_for_permission(statement, resource_arn):
+def evaluate_resource_for_permission(statement: Dict, resource_arn: str) -> bool:
     """Return whether the given IAM 'resource' statement applies to the resource_arn"""
     if 'resource' not in statement:
         return False
@@ -56,7 +65,7 @@ def evaluate_resource_for_permission(statement, resource_arn):
     return False
 
 
-def evaluate_notresource_for_permission(statement, resource_arn):
+def evaluate_notresource_for_permission(statement: Dict, resource_arn: str) -> bool:
     """Return whether an IAM 'notresource' clause in the given statement applies to the resource_arn"""
     if 'notresource' not in statement:
         return False
@@ -66,7 +75,7 @@ def evaluate_notresource_for_permission(statement, resource_arn):
     return False
 
 
-def evaluate_statements_for_permission(statements, permission, resource_arn):
+def evaluate_statements_for_permission(statements: List[Dict], permission: str, resource_arn: str) -> bool:
     """ Evaluate an entire statement for a specific permission against a resource
 
     Arguments:
@@ -88,7 +97,9 @@ def evaluate_statements_for_permission(statements, permission, resource_arn):
     return allowed
 
 
-def evaluate_policy_for_permission(statements, permissions, resource_arn):
+def evaluate_policy_for_permission(
+    statements: List[Dict], permissions: List[str], resource_arn: str,
+) -> Tuple[bool, bool]:
     """ Evaluates an entire policy for specific permissions to a resource.
     AWS Policy evaluation reference
     https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic.html
@@ -119,7 +130,7 @@ def evaluate_policy_for_permission(statements, permissions, resource_arn):
     return False, False
 
 
-def principal_allowed_on_resource(policies, resource_arn, permissions):
+def principal_allowed_on_resource(policies: Dict, resource_arn: str, permissions: List[str]) -> bool:
     """ Evaluates an enture set of policies for a specific resource for a specific permission.
 
 
@@ -146,7 +157,7 @@ def principal_allowed_on_resource(policies, resource_arn, permissions):
     return granted
 
 
-def calculate_permission_relationships(principals, resource_arns, permission):
+def calculate_permission_relationships(principals: Dict, resource_arns: List[str], permission: List[str]) -> List[Any]:
     """ Evaluate principals permissions to resources
     This currently only evaluates policies on IAM principals. It does not take into account
     Resource Policies - Policies attached to the resource instead of the IAM principal
@@ -172,7 +183,7 @@ def calculate_permission_relationships(principals, resource_arns, permission):
     return allowed_mappings
 
 
-def parse_statement_node(node_group):
+def parse_statement_node(node_group: Dict) -> List[Dict]:
     """ Parse a dict from group of Neo4J node
 
     Arguments:
@@ -184,7 +195,7 @@ def parse_statement_node(node_group):
     return [n._properties for n in node_group]
 
 
-def compile_regex(item):
+def compile_regex(item: str) -> Pattern[str]:
     r""" Compile a clause into a regex. Clause checking in AWS is case insensitive
     The following regex symbols will be replaced to make AWS * and ? matching a regex
     * -> .* (wildcard)
@@ -202,16 +213,15 @@ def compile_regex(item):
     if isinstance(item, str):
         item = item.replace(".", "\\.").replace("*", ".*").replace("?", ".?")
         try:
-            item = re.compile(item, flags=re.IGNORECASE)
+            return re.compile(item, flags=re.IGNORECASE)
         except re.error:
             logger.warning(f"Regex did not compile for {item}")
             # in this case it must still return a regex.
             # So it will return an re.Pattern of empry stringm
-            item = re.compile("", flags=re.IGNORECASE)
-    return item
+            return re.compile("", flags=re.IGNORECASE)
 
 
-def compile_statement(statements):
+def compile_statement(statements: List[Any]) -> List[Any]:
     """ Compile a statement by precompiling the regex for the relevant clauses. This is done to boost
     performance by not recompiling the regex over and over again.
 
@@ -229,7 +239,7 @@ def compile_statement(statements):
     return statements
 
 
-def get_principals_for_account(neo4j_session, account_id):
+def get_principals_for_account(neo4j_session: neo4j.Session, account_id: str) -> Dict:
     get_policy_query = """
     MATCH
     (acc:AWSAccount{id:{AccountId}})-[:RESOURCE]->
@@ -243,7 +253,7 @@ def get_principals_for_account(neo4j_session, account_id):
         get_policy_query,
         AccountId=account_id,
     )
-    principals = {}
+    principals: Dict[Any, Any] = {}
     for r in results:
         principal_arn = r["principal_arn"]
         policy_id = r["policy_id"]
@@ -254,12 +264,12 @@ def get_principals_for_account(neo4j_session, account_id):
     return principals
 
 
-def get_resource_arns(neo4j_session, account_id, node_label):
+def get_resource_arns(neo4j_session: neo4j.Session, account_id: str, node_label: str) -> List[Any]:
     get_resource_query = Template("""
     MATCH (acc:AWSAccount{id:{AccountId}})-[:RESOURCE]->(resource:$node_label)
     return resource.arn as arn
     """)
-    get_resource_query = get_resource_query.safe_substitute(node_label=node_label)
+    get_resource_query = get_resource_query.safe_substitute(node_label=node_label)      # type: ignore
     results = neo4j_session.run(
         get_resource_query,
         AccountId=account_id,
@@ -268,7 +278,10 @@ def get_resource_arns(neo4j_session, account_id, node_label):
     return arns
 
 
-def load_principal_mappings(neo4j_session, principal_mappings, node_label, relationship_name, update_tag):
+def load_principal_mappings(
+    neo4j_session: neo4j.Session, principal_mappings: List[Any], node_label: str,
+    relationship_name: str, update_tag: int,
+) -> None:
     map_policy_query = Template("""
     UNWIND {Mapping} as mapping
     MATCH (principal:AWSPrincipal{arn:mapping.principal_arn})
@@ -278,7 +291,7 @@ def load_principal_mappings(neo4j_session, principal_mappings, node_label, relat
     """)
     if not principal_mappings:
         return
-    map_policy_query = map_policy_query.safe_substitute(
+    map_policy_query = map_policy_query.safe_substitute(      # type: ignore
         node_label=node_label,
         relationship_name=relationship_name,
     )
@@ -289,7 +302,10 @@ def load_principal_mappings(neo4j_session, principal_mappings, node_label, relat
     )
 
 
-def cleanup_rpr(neo4j_session, node_label, relationship_name, update_tag, current_aws_id):
+def cleanup_rpr(
+    neo4j_session: neo4j.Session, node_label: str, relationship_name: str, update_tag: int,
+    current_aws_id: str,
+) -> None:
     logger.info("Cleaning up relationship '%s' for node label '%s'", relationship_name, node_label)
     cleanup_rpr_query = Template("""
         MATCH (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(principal:AWSPrincipal)-[r:$relationship_name]->
@@ -297,7 +313,7 @@ def cleanup_rpr(neo4j_session, node_label, relationship_name, update_tag, curren
         WHERE r.lastupdated <> {UPDATE_TAG}
         WITH r LIMIT {LIMIT_SIZE}  DELETE (r) return COUNT(*) as TotalCompleted
     """)
-    cleanup_rpr_query = cleanup_rpr_query.safe_substitute(
+    cleanup_rpr_query = cleanup_rpr_query.safe_substitute(     # type: ignore
         node_label=node_label,
         relationship_name=relationship_name,
     )
@@ -306,7 +322,7 @@ def cleanup_rpr(neo4j_session, node_label, relationship_name, update_tag, curren
     statement.run(neo4j_session)
 
 
-def parse_permission_relationships_file(file_path):
+def parse_permission_relationships_file(file_path: str) -> List[Any]:
     try:
         if not os.path.isabs(file_path):
             file_path = os.path.join(os.getcwd(), file_path)
@@ -322,7 +338,7 @@ def parse_permission_relationships_file(file_path):
         return []
 
 
-def is_valid_rpr(rpr):
+def is_valid_rpr(rpr: List[Any]) -> bool:
     required_fields = ["permissions", "relationship_name", "target_label"]
     for field in required_fields:
         if field not in rpr:
@@ -331,7 +347,8 @@ def is_valid_rpr(rpr):
     return True
 
 
-def sync(neo4j_session, account_id, update_tag, common_job_parameters):
+@timeit
+def sync(neo4j_session: neo4j.Session, account_id: str, update_tag: int, common_job_parameters: Dict) -> None:
     logger.info("Syncing Permission Relationships for account '%s'.", account_id)
     principals = get_principals_for_account(neo4j_session, account_id)
     pr_file = common_job_parameters["permission_relationships_file"]
