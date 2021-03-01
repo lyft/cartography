@@ -12,12 +12,9 @@ import neo4j
 import yaml
 
 from cartography.graph.statement import GraphStatement
-from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 
-
-# TODO: Someone should go through this module and looks at types closely, and make sure comments match!
 
 def evaluate_clause(clause: str, match: str) -> bool:
     """ Evaluates the a clause in IAM. Clauses can be AWS [not]actions and [not]resources
@@ -97,7 +94,7 @@ def evaluate_statements_for_permission(statements: List[Dict], permission: str, 
     return allowed
 
 
-def evaluate_policy_for_permission(
+def evaluate_policy_for_permissions(
     statements: List[Dict], permissions: List[str], resource_arn: str,
 ) -> Tuple[bool, bool]:
     """ Evaluates an entire policy for specific permissions to a resource.
@@ -146,7 +143,7 @@ def principal_allowed_on_resource(policies: Dict, resource_arn: str, permissions
         raise ValueError("permissions is not a list")
     granted = False
     for _, statements in policies.items():
-        allowed, explicit_deny = evaluate_policy_for_permission(statements, permissions, resource_arn)
+        allowed, explicit_deny = evaluate_policy_for_permissions(statements, permissions, resource_arn)
 
         if explicit_deny:
 
@@ -157,7 +154,9 @@ def principal_allowed_on_resource(policies: Dict, resource_arn: str, permissions
     return granted
 
 
-def calculate_permission_relationships(principals: Dict, resource_arns: List[str], permission: List[str]) -> List[Any]:
+def calculate_permission_relationships(
+    principals: Dict, resource_arns: List[str], permissions: List[str],
+) -> List[Dict]:
     """ Evaluate principals permissions to resources
     This currently only evaluates policies on IAM principals. It does not take into account
     Resource Policies - Policies attached to the resource instead of the IAM principal
@@ -175,15 +174,15 @@ def calculate_permission_relationships(principals: Dict, resource_arns: List[str
     Returns:
         [dict] -- The allowed mappings
     """
-    allowed_mappings = []
+    allowed_mappings: List[Dict] = []
     for resource_arn in resource_arns:
         for principal_arn, policies in principals.items():
-            if principal_allowed_on_resource(policies, resource_arn, permission):
+            if principal_allowed_on_resource(policies, resource_arn, permissions):
                 allowed_mappings.append({"principal_arn": principal_arn, "resource_arn": resource_arn})
     return allowed_mappings
 
 
-def parse_statement_node(node_group: Dict) -> List[Dict]:
+def parse_statement_node(node_group: List[Any]) -> List[Any]:
     """ Parse a dict from group of Neo4J node
 
     Arguments:
@@ -195,7 +194,7 @@ def parse_statement_node(node_group: Dict) -> List[Dict]:
     return [n._properties for n in node_group]
 
 
-def compile_regex(item: str) -> Pattern[str]:
+def compile_regex(item: str) -> Pattern:
     r""" Compile a clause into a regex. Clause checking in AWS is case insensitive
     The following regex symbols will be replaced to make AWS * and ? matching a regex
     * -> .* (wildcard)
@@ -219,6 +218,8 @@ def compile_regex(item: str) -> Pattern[str]:
             # in this case it must still return a regex.
             # So it will return an re.Pattern of empry stringm
             return re.compile("", flags=re.IGNORECASE)
+    else:
+        return item
 
 
 def compile_statement(statements: List[Any]) -> List[Any]:
@@ -269,9 +270,9 @@ def get_resource_arns(neo4j_session: neo4j.Session, account_id: str, node_label:
     MATCH (acc:AWSAccount{id:{AccountId}})-[:RESOURCE]->(resource:$node_label)
     return resource.arn as arn
     """)
-    get_resource_query = get_resource_query.safe_substitute(node_label=node_label)      # type: ignore
+    get_resource_query_template = get_resource_query.safe_substitute(node_label=node_label)
     results = neo4j_session.run(
-        get_resource_query,
+        get_resource_query_template,
         AccountId=account_id,
     )
     arns = [r["arn"] for r in results]
@@ -279,7 +280,7 @@ def get_resource_arns(neo4j_session: neo4j.Session, account_id: str, node_label:
 
 
 def load_principal_mappings(
-    neo4j_session: neo4j.Session, principal_mappings: List[Any], node_label: str,
+    neo4j_session: neo4j.Session, principal_mappings: List[Dict], node_label: str,
     relationship_name: str, update_tag: int,
 ) -> None:
     map_policy_query = Template("""
@@ -291,12 +292,12 @@ def load_principal_mappings(
     """)
     if not principal_mappings:
         return
-    map_policy_query = map_policy_query.safe_substitute(      # type: ignore
+    map_policy_query_template = map_policy_query.safe_substitute(
         node_label=node_label,
         relationship_name=relationship_name,
     )
     neo4j_session.run(
-        map_policy_query,
+        map_policy_query_template,
         Mapping=principal_mappings,
         aws_update_tag=update_tag,
     )
@@ -313,12 +314,15 @@ def cleanup_rpr(
         WHERE r.lastupdated <> {UPDATE_TAG}
         WITH r LIMIT {LIMIT_SIZE}  DELETE (r) return COUNT(*) as TotalCompleted
     """)
-    cleanup_rpr_query = cleanup_rpr_query.safe_substitute(     # type: ignore
+    cleanup_rpr_query_template = cleanup_rpr_query.safe_substitute(
         node_label=node_label,
         relationship_name=relationship_name,
     )
 
-    statement = GraphStatement(cleanup_rpr_query, {'UPDATE_TAG': update_tag, 'AWS_ID': current_aws_id}, True, 1000)
+    statement = GraphStatement(
+        cleanup_rpr_query_template, {'UPDATE_TAG': update_tag, 'AWS_ID': current_aws_id},
+        True, 1000,
+    )
     statement.run(neo4j_session)
 
 
@@ -338,7 +342,7 @@ def parse_permission_relationships_file(file_path: str) -> List[Any]:
         return []
 
 
-def is_valid_rpr(rpr: List[Any]) -> bool:
+def is_valid_rpr(rpr: Dict) -> bool:
     required_fields = ["permissions", "relationship_name", "target_label"]
     for field in required_fields:
         if field not in rpr:
@@ -347,7 +351,6 @@ def is_valid_rpr(rpr: List[Any]) -> bool:
     return True
 
 
-@timeit
 def sync(neo4j_session: neo4j.Session, account_id: str, update_tag: int, common_job_parameters: Dict) -> None:
     logger.info("Syncing Permission Relationships for account '%s'.", account_id)
     principals = get_principals_for_account(neo4j_session, account_id)
