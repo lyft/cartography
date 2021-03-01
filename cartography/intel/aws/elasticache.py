@@ -47,13 +47,13 @@ def get_elasticache_clusters(boto3_session, region):
 @timeit
 def load_elasticache_clusters(neo4j_session, clusters, region, aws_account_id, update_tag):
     query = """
-    UNWIND {Clusters} as elasticache_cluster
+    UNWIND {clusters} as elasticache_cluster
         MERGE (cluster:ElasticacheCluster{id:elasticache_cluster.ARN})
         ON CREATE SET cluster.firstseen = timestamp(),
             cluster.arn = elasticache_cluster.ARN,
             cluster.topic_arn = elasticache_cluster.NotificationConfiguration.TopicArn,
             cluster.id = elasticache_cluster.CacheClusterId,
-            cluster.region = {Region}
+            cluster.region = {region}
         SET cluster.lastupdated = {aws_update_tag}
 
         MERGE (topic:ElasticacheTopic{id: elasticache_cluster.NotificationConfiguration.TopicArn})
@@ -78,8 +78,8 @@ def load_elasticache_clusters(neo4j_session, clusters, region, aws_account_id, u
     logger.debug(f"Loading ElastiCache clusters for region '{region}' into graph.")
     neo4j_session.run(
         query,
-        Clusters=clusters,
-        Region=region,
+        clusters=clusters,
+        region=region,
         aws_update_tag=update_tag,
         aws_account_id=aws_account_id,
     )
