@@ -34,7 +34,7 @@ def load_vm_data(neo4j_session, subscription_id, vm_list, azure_update_tag, comm
     vm.plan = {plan}, vm.size = {size},
     vm.license_type={licenseType}, vm.computer_name={computerName},
     vm.identity_type={identityType}, vm.zones={zones},
-    vm.ultra_ssd_enabled={ultraSSDEnabled}, vm.encryption_at_host={encryptionAtHost},
+    vm.ultra_ssd_enabled={ultraSSDEnabled},
     vm.priority={priority}, vm.eviction_policy={evictionPolicy}
     WITH vm
     MATCH (owner:AzureSubscription{id: {SUBSCRIPTION_ID}})
@@ -61,7 +61,6 @@ def load_vm_data(neo4j_session, subscription_id, vm_list, azure_update_tag, comm
             identityType=get_optional_value(vm, ['identity', 'type']),
             zones=get_optional_value(vm, ['zones']),
             ultraSSDEnabled=get_optional_value(vm, ['additional_capabilities', 'ultra_ssd_enabled']),
-            encryptionAtHost=get_optional_value(vm, ['storage_profile', 'encryption_at_host']),
             priority=get_optional_value(vm, ['priority']),
             evictionPolicy=get_optional_value(vm, ['eviction_policy']),
             SUBSCRIPTION_ID=subscription_id,
