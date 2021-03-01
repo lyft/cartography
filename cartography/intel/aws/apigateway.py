@@ -156,7 +156,8 @@ def _load_apigateway_policies(neo4j_session, policies, update_tag):
 
 def _set_default_values(neo4j_session, aws_account_id):
     set_defaults = """
-    MATCH (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(restApi:APIGatewayRestAPI) where NOT EXISTS(restApi.anonymous_actions)
+    MATCH (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(restApi:APIGatewayRestAPI)
+    where NOT EXISTS(restApi.anonymous_actions)
     SET restApi.anonymous_access = false, restApi.anonymous_actions = []
     """
 
@@ -258,13 +259,13 @@ def _load_apigateway_resources(neo4j_session, resources, update_tag):
 @timeit
 def load_rest_api_details(neo4j_session, stages_certificate_resources, aws_account_id, update_tag):
     """
-    Create dictionaries for Stages, Client certificates, policies and Resource resources so we can import them in a single query
+    Create dictionaries for Stages, Client certificates, policies and Resource resources
+    so we can import them in a single query
     """
     stages = []
     certificates = []
     resources = []
     policies = []
-    apiId = ""
     for api_id, stage, certificate, resource, policy in stages_certificate_resources:
         parsed_policy = parse_policy(api_id, policy)
         if parsed_policy is not None:
