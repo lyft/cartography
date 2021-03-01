@@ -124,7 +124,7 @@ def sync(
     neo4j_session,
     boto3_session,
     regions,
-    aws_update_tag,
+    update_tag,
     common_job_parameters,
     tag_resource_type_mappings=TAG_RESOURCE_TYPE_MAPPINGS,
 ):
@@ -133,5 +133,5 @@ def sync(
         for resource_type in tag_resource_type_mappings.keys():
             tag_data = get_tags(boto3_session, [resource_type], region)
             transform_tags(tag_data, resource_type)
-            load_tags(neo4j_session, tag_data, resource_type, region, aws_update_tag)
+            load_tags(neo4j_session, tag_data, resource_type, region, update_tag)
     cleanup(neo4j_session, common_job_parameters)

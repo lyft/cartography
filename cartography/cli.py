@@ -4,8 +4,10 @@ import logging
 import os
 import sys
 
+import cartography.config
 import cartography.sync
 import cartography.util
+from cartography.intel.aws.util.common import parse_and_validate_aws_requested_syncs
 
 
 logger = logging.getLogger(__name__)
@@ -87,6 +89,17 @@ class CLI:
                 'supersedes other methods of supplying a Neo4j password.'
             ),
         )
+        parser.add_argument(
+            '--neo4j-max-connection-lifetime',
+            type=int,
+            default=3600,
+            help=(
+                'Time in seconds for the Neo4j driver to consider a TCP connection alive. cartography default = 3600, '
+                'which is the same as the Neo4j driver default. See '
+                'https://neo4j.com/docs/driver-manual/1.7/client-applications/#driver-config-connection-pool-management'
+                '.'
+            ),
+        )
         # TODO add the below parameters to a 'sync' subparser
         parser.add_argument(
             '--update-tag',
@@ -111,6 +124,16 @@ class CLI:
                 'account you want to sync and use the AWS_CONFIG_FILE environment variable to point to that config '
                 'file (see https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html). cartography '
                 'respects the AWS CLI/SDK environment variables and does not override them.'
+            ),
+        )
+        parser.add_argument(
+            '--aws-requested-syncs',
+            type=str,
+            default=None,
+            help=(
+                'Comma-separated list of AWS resources to sync. Example 1: "ecr,s3,ec2:instance" for ECR, S3, and all '
+                'EC2 instance resources. See the full list available in source code at cartography.intel.aws.resources.'
+                ' If not specified, cartography by default will run all AWS sync modules available.'
             ),
         )
         parser.add_argument(
@@ -250,7 +273,7 @@ class CLI:
         :param argv: The parameters supplied to the command line program.
         """
         # TODO support parameter lookup in environment variables if not present on command line
-        config = self.parser.parse_args(argv)
+        config: cartography.config.Config = self.parser.parse_args(argv)
         # Logging config
         if config.verbose:
             logging.getLogger('cartography').setLevel(logging.DEBUG)
@@ -276,6 +299,11 @@ class CLI:
                 logger.warning("Neo4j username was provided but a password could not be found.")
         else:
             config.neo4j_password = None
+
+        # AWS config
+        if config.aws_requested_syncs:
+            # No need to store the returned value; we're using this for input validation.
+            parse_and_validate_aws_requested_syncs(config.aws_requested_syncs)
 
         # Okta config
         if config.okta_org_id and config.okta_api_key_env_var:

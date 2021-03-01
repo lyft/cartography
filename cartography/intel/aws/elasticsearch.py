@@ -1,7 +1,11 @@
 import json
 import logging
+from typing import Dict
+from typing import List
 
+import boto3
 import botocore.config
+import neo4j
 from policyuniverse.policy import Policy
 
 from cartography.intel.dns import ingest_dns_record_by_fqdn
@@ -34,7 +38,7 @@ es_regions = [
 
 
 # TODO memoize this
-def _get_botocore_config():
+def _get_botocore_config() -> botocore.config.Config:
     return botocore.config.Config(
         retries={
             'max_attempts': 8,
@@ -44,7 +48,7 @@ def _get_botocore_config():
 
 @timeit
 @aws_handle_regions
-def _get_es_domains(client):
+def _get_es_domains(client: botocore.client.BaseClient) -> List[Dict]:
     """
     Get ES domains.
 
@@ -55,7 +59,7 @@ def _get_es_domains(client):
     domain_names = [d['DomainName'] for d in data.get('DomainNames', [])]
     # NOTE describe_elasticsearch_domains takes at most 5 domain names
     domain_name_chunks = [domain_names[i:i + 5] for i in range(0, len(domain_names), 5)]
-    domains = []
+    domains: List[Dict] = []
     for domain_name_chunk in domain_name_chunks:
         chunk_data = client.describe_elasticsearch_domains(DomainNames=domain_name_chunk)
         domains.extend(chunk_data['DomainStatusList'])
@@ -63,7 +67,9 @@ def _get_es_domains(client):
 
 
 @timeit
-def _load_es_domains(neo4j_session, domain_list, aws_account_id, aws_update_tag):
+def _load_es_domains(
+    neo4j_session: neo4j.Session, domain_list: List[Dict], aws_account_id: str, aws_update_tag: int,
+) -> None:
     """
     Ingest Elastic Search domains
 
@@ -118,7 +124,9 @@ def _load_es_domains(neo4j_session, domain_list, aws_account_id, aws_update_tag)
 
 
 @timeit
-def _link_es_domains_to_dns(neo4j_session, domain_id, domain_data, aws_update_tag):
+def _link_es_domains_to_dns(
+    neo4j_session: neo4j.Session, domain_id: str, domain_data: Dict, aws_update_tag: int,
+) -> None:
     """
     Link the ES domain to its DNS FQDN endpoint and create associated nodes in the graph
     if needed
@@ -138,7 +146,7 @@ def _link_es_domains_to_dns(neo4j_session, domain_id, domain_data, aws_update_ta
 
 
 @timeit
-def _link_es_domain_vpc(neo4j_session, domain_id, domain_data, aws_update_tag):
+def _link_es_domain_vpc(neo4j_session: neo4j.Session, domain_id: str, domain_data: Dict, aws_update_tag: int) -> None:
     """
     Link the ES domain to its DNS FQDN endpoint and create associated nodes in the graph
     if needed
@@ -190,7 +198,7 @@ def _link_es_domain_vpc(neo4j_session, domain_id, domain_data, aws_update_tag):
 
 
 @timeit
-def _process_access_policy(neo4j_session, domain_id, domain_data):
+def _process_access_policy(neo4j_session: neo4j.Session, domain_id: str, domain_data: Dict) -> None:
     """
     Link the ES domain to its DNS FQDN endpoint and create associated nodes in the graph
     if needed
@@ -212,7 +220,7 @@ def _process_access_policy(neo4j_session, domain_id, domain_data):
 
 
 @timeit
-def cleanup(neo4j_session, update_tag, aws_account_id):
+def cleanup(neo4j_session: neo4j.Session, update_tag: int, aws_account_id: int) -> None:
     run_cleanup_job(
         'aws_import_es_cleanup.json',
         neo4j_session,
@@ -221,11 +229,14 @@ def cleanup(neo4j_session, update_tag, aws_account_id):
 
 
 @timeit
-def sync(neo4j_session, boto3_session, aws_account_id, update_tag):
+def sync(
+    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
+    update_tag: int, common_job_parameters: Dict,
+) -> None:
     for region in es_regions:
-        logger.info("Syncing Elasticsearch Service for region '%s' in account '%s'.", region, aws_account_id)
+        logger.info("Syncing Elasticsearch Service for region '%s' in account '%s'.", region, current_aws_account_id)
         client = boto3_session.client('es', region_name=region, config=_get_botocore_config())
         data = _get_es_domains(client)
-        _load_es_domains(neo4j_session, data, aws_account_id, update_tag)
+        _load_es_domains(neo4j_session, data, current_aws_account_id, update_tag)
 
-    cleanup(neo4j_session, update_tag, aws_account_id)
+    cleanup(neo4j_session, update_tag, current_aws_account_id)

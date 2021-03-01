@@ -227,13 +227,12 @@ def cleanup_transit_gateways(neo4j_session, common_job_parameters):
 
 @timeit
 def sync_transit_gateways(
-    neo4j_session, boto3_session, regions, current_aws_account_id, aws_update_tag,
-    common_job_parameters,
+    neo4j_session, boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters,
 ):
     for region in regions:
         logger.info("Syncing AWS Transit Gateways for region '%s' in account '%s'.", region, current_aws_account_id)
         tgws = get_transit_gateways(boto3_session, region)
-        load_transit_gateways(neo4j_session, tgws, region, current_aws_account_id, aws_update_tag)
+        load_transit_gateways(neo4j_session, tgws, region, current_aws_account_id, update_tag)
 
         logger.debug(
             "Syncing AWS Transit Gateway Attachments for region '%s' in account '%s'.",
@@ -243,6 +242,6 @@ def sync_transit_gateways(
         tgw_vpc_attachments = get_tgw_vpc_attachments(boto3_session, region)
         load_tgw_attachments(
             neo4j_session, tgw_attachments + tgw_vpc_attachments,
-            region, current_aws_account_id, aws_update_tag,
+            region, current_aws_account_id, update_tag,
         )
     cleanup_transit_gateways(neo4j_session, common_job_parameters)
