@@ -8,26 +8,16 @@ from digitalocean import Account
 logger = logging.getLogger(__name__)
 
 @timeit
-def sync(neo4j_session, manager, digitalocean_update_tag, common_job_parameters):
-    # Will return the Account ID related to this credentials, to be used for the rest of the resources
-    account_id = sync_account(neo4j_session, manager, digitalocean_update_tag, common_job_parameters)
-    return account_id
+def sync(neo4j_session, manager, account, digitalocean_update_tag, common_job_parameters):
+    sync_account(neo4j_session, account, digitalocean_update_tag, common_job_parameters)
 
 @timeit
-def sync_account(neo4j_session, manager, digitalocean_update_tag, common_job_parameters):
+def sync_account(neo4j_session, account, digitalocean_update_tag, common_job_parameters):
     logger.info("Syncing Account")
-    account_res = get_account(manager)
-    account = transform_account(account_res)
-    load_account(neo4j_session, account, digitalocean_update_tag)
-
-    common_job_parameters['DO_ACCOUNT_ID'] = account['id']
+    account_transformed = transform_account(account)
+    load_account(neo4j_session, account_transformed, digitalocean_update_tag)
     cleanup_account(neo4j_session, common_job_parameters)
-
-    return account['id']
-
-@timeit
-def get_account(manager) -> Account:
-    return manager.get_account()
+    return
 
 @timeit
 def transform_account(account_res):
