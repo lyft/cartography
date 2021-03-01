@@ -52,5 +52,5 @@ RESOURCE_FUNCTIONS = {
     'elasticsearch': elasticsearch.sync,
     'permission_relationships': permission_relationships.sync,
     'resourcegroupstaggingapi': resourcegroupstaggingapi.sync,
-    'apigateway': apigateway.sync
+    'apigateway': apigateway.sync,
 }

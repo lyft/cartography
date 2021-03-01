@@ -18,7 +18,7 @@ GET_REST_APIS = [
             ],
             'vpcEndpointIds': [
                 'demo-1',
-            ]
+            ],
         },
         'disableExecuteApiEndpoint': True,
     },
@@ -39,9 +39,9 @@ GET_REST_APIS = [
             ],
             'vpcEndpointIds': [
                 'demo-1',
-            ]
+            ],
         },
-        'disableExecuteApiEndpoint': False
+        'disableExecuteApiEndpoint': False,
     },
 ]
 
@@ -66,14 +66,14 @@ GET_STAGES = [
                 'cacheTtlInSeconds': 123,
                 'cacheDataEncrypted': True,
                 'requireAuthorizationForCacheControl': True,
-                'unauthorizedCacheControlHeaderStrategy': 'FAIL_WITH_403'
-            }
+                'unauthorizedCacheControlHeaderStrategy': 'FAIL_WITH_403',
+            },
         },
         'documentationVersion': '1.17.14',
         'tracingEnabled': True,
         'webAclArn': 'arn:aws:wafv2:us-west-2:123456789012:regional/webacl/test-cli/a1b2c3d4-5678-90ab-cdef-EXAMPLE11111',
         'createdDate': datetime.datetime(2021, 1, 1),
-        'lastUpdatedDate': datetime.datetime(2021, 2, 1)
+        'lastUpdatedDate': datetime.datetime(2021, 2, 1),
     },
     {
         'deploymentId': 'd-002',
@@ -95,15 +95,15 @@ GET_STAGES = [
                 'cacheTtlInSeconds': 123,
                 'cacheDataEncrypted': True,
                 'requireAuthorizationForCacheControl': True,
-                'unauthorizedCacheControlHeaderStrategy': 'FAIL_WITH_403'
-            }
+                'unauthorizedCacheControlHeaderStrategy': 'FAIL_WITH_403',
+            },
         },
         'documentationVersion': '1.17.14',
         'tracingEnabled': True,
         'webAclArn': 'arn:aws:wafv2:us-west-2:123456789012:regional/webacl/test-cli/a1b2c3d4-5678-90ab-cdef-EXAMPLE11111',
         'createdDate': datetime.datetime(2021, 1, 1),
-        'lastUpdatedDate': datetime.datetime(2021, 2, 1)
-    }
+        'lastUpdatedDate': datetime.datetime(2021, 2, 1),
+    },
 ]
 
 GET_CERTIFICATES = [
@@ -112,14 +112,14 @@ GET_CERTIFICATES = [
         'description': 'Protection',
         'createdDate': datetime.datetime(2021, 2, 1),
         'expirationDate': datetime.datetime(2021, 4, 1),
-        'stageName': 'Cartography-testing-infra'
+        'stageName': 'Cartography-testing-infra',
     },
     {
         'clientCertificateId': 'cert-002',
         'description': 'Protection',
         'createdDate': datetime.datetime(2021, 2, 1),
         'expirationDate': datetime.datetime(2021, 4, 1),
-        'stageName': 'Cartography-testing-unit'
+        'stageName': 'Cartography-testing-unit',
     },
 ]
 
@@ -130,5 +130,5 @@ GET_RESOURCES = [
         'parentId': 'ababababab',
         'pathPart': 'resource',
         'path': '/restapis/test-001/resources/3kzxbg5sa2',
-    }
+    },
 ]

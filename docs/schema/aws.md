@@ -109,13 +109,13 @@
 - [KMSGrant](#kmsgrant)
   - [Relationships](#relationships-50)
 - [APIGatewayRestAPI](#apigatewayrestapi)
-  - [Relationships](#relationships-50)
-- [APIGatewayStage](#apigatewaystage)
   - [Relationships](#relationships-51)
-- [APIGatewayClientCertificate](#apigatewayclientcertificate)
+- [APIGatewayStage](#apigatewaystage)
   - [Relationships](#relationships-52)
-- [APIGatewayResource](#apigatewayresource)
+- [APIGatewayClientCertificate](#apigatewayclientcertificate)
   - [Relationships](#relationships-53)
+- [APIGatewayResource](#apigatewayresource)
+  - [Relationships](#relationships-54)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 

@@ -197,7 +197,7 @@ def _load_apigateway_stages(neo4j_session, stages, update_tag):
     neo4j_session.run(
         ingest_stages,
         stages_list=stages,
-        UpdateTag=update_tag
+        UpdateTag=update_tag,
     )
 
 
@@ -227,7 +227,7 @@ def _load_apigateway_certificates(neo4j_session, certificates, update_tag):
     neo4j_session.run(
         ingest_certificates,
         certificates_list=certificates,
-        UpdateTag=update_tag
+        UpdateTag=update_tag,
     )
 
 
@@ -251,7 +251,7 @@ def _load_apigateway_resources(neo4j_session, resources, update_tag):
     neo4j_session.run(
         ingest_resources,
         resources_list=resources,
-        UpdateTag=update_tag
+        UpdateTag=update_tag,
     )
 
 
@@ -305,7 +305,7 @@ def parse_policy(api_id, policy):
             return {
                 "api_id": api_id,
                 "internet_accessible": True,
-                "accessible_actions": list(policy.internet_accessible_actions())
+                "accessible_actions": list(policy.internet_accessible_actions()),
             }
         else:
             return None
