@@ -68,6 +68,7 @@ def timeit(method):
     return timed
 
 
+# TODO Move this to cartography.intel.aws.util.common
 def aws_handle_regions(func):
     ERROR_CODES = [
         'AccessDeniedException',
