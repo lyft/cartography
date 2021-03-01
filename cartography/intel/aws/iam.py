@@ -710,16 +710,16 @@ def sync_user_access_keys(
 
 @timeit
 def sync(
-    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], account_id: str,
+    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
     update_tag: int, common_job_parameters: Dict,
 ) -> None:
-    logger.info("Syncing IAM for account '%s'.", account_id)
+    logger.info("Syncing IAM for account '%s'.", current_aws_account_id)
     # This module only syncs IAM information that is in use.
     # As such only policies that are attached to a user, role or group are synced
-    sync_users(neo4j_session, boto3_session, account_id, update_tag, common_job_parameters)
-    sync_groups(neo4j_session, boto3_session, account_id, update_tag, common_job_parameters)
-    sync_roles(neo4j_session, boto3_session, account_id, update_tag, common_job_parameters)
-    sync_group_memberships(neo4j_session, boto3_session, account_id, update_tag, common_job_parameters)
-    sync_assumerole_relationships(neo4j_session, account_id, update_tag, common_job_parameters)
-    sync_user_access_keys(neo4j_session, boto3_session, account_id, update_tag, common_job_parameters)
+    sync_users(neo4j_session, boto3_session, current_aws_account_id, update_tag, common_job_parameters)
+    sync_groups(neo4j_session, boto3_session, current_aws_account_id, update_tag, common_job_parameters)
+    sync_roles(neo4j_session, boto3_session, current_aws_account_id, update_tag, common_job_parameters)
+    sync_group_memberships(neo4j_session, boto3_session, current_aws_account_id, update_tag, common_job_parameters)
+    sync_assumerole_relationships(neo4j_session, current_aws_account_id, update_tag, common_job_parameters)
+    sync_user_access_keys(neo4j_session, boto3_session, current_aws_account_id, update_tag, common_job_parameters)
     run_cleanup_job('aws_import_principals_cleanup.json', neo4j_session, common_job_parameters)

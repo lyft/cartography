@@ -6,6 +6,7 @@ from string import Template
 import yaml
 
 from cartography.graph.statement import GraphStatement
+from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 
@@ -331,9 +332,10 @@ def is_valid_rpr(rpr):
     return True
 
 
-def sync(neo4j_session, account_id, update_tag, common_job_parameters):
-    logger.info("Syncing Permission Relationships for account '%s'.", account_id)
-    principals = get_principals_for_account(neo4j_session, account_id)
+@timeit
+def sync(neo4j_session, current_aws_account_id, update_tag, common_job_parameters):
+    logger.info("Syncing Permission Relationships for account '%s'.", current_aws_account_id)
+    principals = get_principals_for_account(neo4j_session, current_aws_account_id)
     pr_file = common_job_parameters["permission_relationships_file"]
     if not pr_file:
         logger.warning(
@@ -351,11 +353,11 @@ def sync(neo4j_session, account_id, update_tag, common_job_parameters):
         permissions = rpr["permissions"]
         relationship_name = rpr["relationship_name"]
         target_label = rpr["target_label"]
-        resource_arns = get_resource_arns(neo4j_session, account_id, target_label)
+        resource_arns = get_resource_arns(neo4j_session, current_aws_account_id, target_label)
         logger.info("Syncing relationship '%s' for node label '%s'", relationship_name, target_label)
         allowed_mappings = calculate_permission_relationships(principals, resource_arns, permissions)
         load_principal_mappings(
             neo4j_session, allowed_mappings,
             target_label, relationship_name, update_tag,
         )
-        cleanup_rpr(neo4j_session, target_label, relationship_name, update_tag, account_id)
+        cleanup_rpr(neo4j_session, target_label, relationship_name, update_tag, current_aws_account_id)

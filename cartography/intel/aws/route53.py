@@ -367,10 +367,10 @@ def cleanup_route53(neo4j_session, current_aws_id, update_tag):
 
 
 @timeit
-def sync(neo4j_session, boto3_session, aws_id, update_tag):
-    logger.info("Syncing Route53 for account '%s'.", aws_id)
+def sync(neo4j_session, boto3_session, current_aws_account_id, update_tag):
+    logger.info("Syncing Route53 for account '%s'.", current_aws_account_id)
     client = boto3_session.client('route53')
     zones = get_zones(client)
-    load_dns_details(neo4j_session, zones, aws_id, update_tag)
+    load_dns_details(neo4j_session, zones, current_aws_account_id, update_tag)
     link_sub_zones(neo4j_session, update_tag)
-    cleanup_route53(neo4j_session, aws_id, update_tag)
+    cleanup_route53(neo4j_session, current_aws_account_id, update_tag)

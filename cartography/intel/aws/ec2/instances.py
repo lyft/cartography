@@ -234,11 +234,10 @@ def cleanup_ec2_instances(neo4j_session, common_job_parameters):
 
 @timeit
 def sync_ec2_instances(
-    neo4j_session, boto3_session, regions, current_aws_account_id, aws_update_tag,
-    common_job_parameters,
+    neo4j_session, boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters,
 ):
     for region in regions:
         logger.info("Syncing EC2 instances for region '%s' in account '%s'.", region, current_aws_account_id)
         data = get_ec2_instances(boto3_session, region)
-        load_ec2_instances(neo4j_session, data, region, current_aws_account_id, aws_update_tag)
+        load_ec2_instances(neo4j_session, data, region, current_aws_account_id, update_tag)
     cleanup_ec2_instances(neo4j_session, common_job_parameters)

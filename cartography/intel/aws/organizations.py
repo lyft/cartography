@@ -121,6 +121,6 @@ def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
 
 
 @timeit
-def sync(neo4j_session: neo4j.Session, accounts: Dict, aws_update_tag: int, common_job_parameters: Dict) -> None:
-    load_aws_accounts(neo4j_session, accounts, aws_update_tag, common_job_parameters)
+def sync(neo4j_session: neo4j.Session, accounts: Dict, update_tag: int, common_job_parameters: Dict) -> None:
+    load_aws_accounts(neo4j_session, accounts, update_tag, common_job_parameters)
     cleanup(neo4j_session, common_job_parameters)
