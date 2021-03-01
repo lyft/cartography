@@ -330,8 +330,8 @@ def sync_apigateway_rest_apis(neo4j_session, boto3_session, region, current_aws_
 
 
 @timeit
-def sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters):
+def sync(neo4j_session, boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters):
     for region in regions:
-        logger.info(f"Syncing AWS APIGateway Rest APIs for region '{region}' in account '{account_id}'.")
-        sync_apigateway_rest_apis(neo4j_session, boto3_session, region, account_id, sync_tag)
+        logger.info(f"Syncing AWS APIGateway Rest APIs for region '{region}' in account '{current_aws_account_id}'.")
+        sync_apigateway_rest_apis(neo4j_session, boto3_session, region, current_aws_account_id, update_tag)
     cleanup(neo4j_session, common_job_parameters)
