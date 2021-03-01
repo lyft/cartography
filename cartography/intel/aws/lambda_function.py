@@ -93,9 +93,8 @@ def sync_lambda_functions(
 @timeit
 def sync(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
-    aws_update_tag: int, common_job_parameters: Dict,
+    update_tag: int, common_job_parameters: Dict,
 ) -> None:
     sync_lambda_functions(
-        neo4j_session, boto3_session, regions, current_aws_account_id, aws_update_tag,
-        common_job_parameters,
+        neo4j_session, boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters,
     )

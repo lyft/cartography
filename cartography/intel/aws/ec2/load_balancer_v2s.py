@@ -207,11 +207,10 @@ def cleanup_load_balancer_v2s(neo4j_session, common_job_parameters):
 
 @timeit
 def sync_load_balancer_v2s(
-    neo4j_session, boto3_session, regions, current_aws_account_id, aws_update_tag,
-    common_job_parameters,
+    neo4j_session, boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters,
 ):
     for region in regions:
         logger.info("Syncing EC2 load balancers v2 for region '%s' in account '%s'.", region, current_aws_account_id)
         data = get_loadbalancer_v2_data(boto3_session, region)
-        load_load_balancer_v2s(neo4j_session, data, region, current_aws_account_id, aws_update_tag)
+        load_load_balancer_v2s(neo4j_session, data, region, current_aws_account_id, update_tag)
     cleanup_load_balancer_v2s(neo4j_session, common_job_parameters)
