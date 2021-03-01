@@ -141,7 +141,8 @@ def test_sync_one_account_just_iam_rels_and_tags(
 
 def test_standardize_aws_sync_kwargs():
     """
-    Makes sure that we always use a standard set of parameter names in AWS sync functions. This standardization gives us
+    Makes sure that we always use a standard set of parameter names for AWS syncs referenced in the
+    cartography.intel.aws.resources.RESOURCE_FUNCTIONS function table. This standardization gives us
     flexibility when calling these syncs as function pointers.
 
     Fine print: this test excludes parameters with default values (e.g. `tag_resource_type_mappings` in
