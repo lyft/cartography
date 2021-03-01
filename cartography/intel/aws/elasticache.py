@@ -67,8 +67,8 @@ def load_elasticache_clusters(neo4j_session, clusters, region, aws_account_id, u
         SET r.lastupdated = {aws_update_tag}
         WITH cluster, topic
 
-        MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
-        MERGE(owner)-[r2:RESOURCE]->(topic)
+        MATCH (owner:AWSAccount{id: {aws_account_id}})
+        MERGE (owner)-[r2:RESOURCE]->(topic)
         ON CREATE SET r2.firstseen = timestamp()
         SET r2.lastupdated = {aws_update_tag}
         MERGE (owner)-[r3:RESOURCE]->(cluster)
@@ -81,23 +81,23 @@ def load_elasticache_clusters(neo4j_session, clusters, region, aws_account_id, u
         Clusters=clusters,
         Region=region,
         aws_update_tag=update_tag,
-        AWS_ACCOUNT_ID=aws_account_id,
+        aws_account_id=aws_account_id,
     )
 
 
 @timeit
-def cleanup(neo4j_session, aws_account_id, update_tag):
+def cleanup(neo4j_session, current_aws_account_id, update_tag):
     run_cleanup_job(
         'aws_import_elasticache_cleanup.json',
         neo4j_session,
-        {'UPDATE_TAG': update_tag, 'AWS_ID': aws_account_id},
+        {'UPDATE_TAG': update_tag, 'AWS_ID': current_aws_account_id},
     )
 
 
 @timeit
-def sync(neo4j_session, boto3_session, regions, aws_account_id, aws_update_tag, common_job_parameters):
+def sync(neo4j_session, boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters):
     for region in regions:
-        logger.info(f"Syncing ElastiCache clusters for region '{region}' in account {aws_account_id}")
+        logger.info(f"Syncing ElastiCache clusters for region '{region}' in account {current_aws_account_id}")
         clusters = get_elasticache_clusters(boto3_session, region)
-        load_elasticache_clusters(neo4j_session, clusters, region, aws_account_id, aws_update_tag)
+        load_elasticache_clusters(neo4j_session, clusters, region, current_aws_account_id, update_tag)
     cleanup(neo4j_session, common_job_parameters)
