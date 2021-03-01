@@ -49,7 +49,7 @@ class GraphStatement:
         if self.iterative:
             self._run_iterative(tx)
         else:
-            data: neo4j.StatementResult = self._run(tx)
+            data: neo4j.ResultSummary = self._run(tx)
             data.consume()
         tx.commit()
 
@@ -64,7 +64,7 @@ class GraphStatement:
             "iterationsize": self.iterationsize,
         }
 
-    def _run(self, tx: neo4j.Transaction) -> neo4j.StatementResult:
+    def _run(self, tx: neo4j.Transaction) -> neo4j.ResultSummary:
         """
         Non-iterative statement execution.
         """
@@ -79,7 +79,7 @@ class GraphStatement:
         self.parameters["LIMIT_SIZE"] = self.iterationsize
 
         while True:
-            result: neo4j.StatementResult = self._run(tx)
+            result: neo4j.ResultSummary = self._run(tx)
             record: neo4j.Record = result.single()
 
             # TODO: use the BoltStatementResultSummary object to determine the number of items processed
