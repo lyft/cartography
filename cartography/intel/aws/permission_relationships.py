@@ -6,6 +6,7 @@ from string import Template
 import yaml
 
 from cartography.graph.statement import GraphStatement
+from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 
@@ -331,6 +332,7 @@ def is_valid_rpr(rpr):
     return True
 
 
+@timeit
 def sync(neo4j_session, current_aws_account_id, update_tag, common_job_parameters):
     logger.info("Syncing Permission Relationships for account '%s'.", current_aws_account_id)
     principals = get_principals_for_account(neo4j_session, current_aws_account_id)

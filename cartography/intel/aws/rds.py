@@ -274,5 +274,6 @@ def sync_rds_instances(
     cleanup_rds_instances_and_db_subnet_groups(neo4j_session, common_job_parameters)
 
 
+@timeit
 def sync(neo4j_session, boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters):
     sync_rds_instances(neo4j_session, boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters)

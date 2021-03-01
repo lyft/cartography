@@ -2,6 +2,7 @@ import inspect
 from typing import Any
 from typing import Callable
 from typing import Dict
+from typing import List
 from unittest import mock
 
 import neo4j
@@ -23,7 +24,12 @@ AWS_RESOURCE_FUNCTIONS_STUB: Dict[str, Callable] = {
 }
 
 
-def _make_aws_sync_test_kwargs(neo4j_session: neo4j.Session, mock_boto3_session: mock.MagicMock) -> Dict[str, Any]:
+def make_aws_sync_test_kwargs(neo4j_session: neo4j.Session, mock_boto3_session: mock.MagicMock) -> Dict[str, Any]:
+    """
+    Returns a dummy dict of kwargs to use for AWS sync functions.
+    The keys of this dict are also used to ensure that parameter names for all sync functions are standardized; see
+    `test_standardize_aws_sync_kwargs`.
+    """
     return {
         'neo4j_session': neo4j_session,
         'boto3_session': mock_boto3_session(),
@@ -94,7 +100,7 @@ def test_start_aws_ingestion(mock_run_analysis, mock_sync_multiple, mock_orgs, m
 def test_sync_one_account_all_sync_functions(
     mock_cleanup, mock_autodiscover, mock_perm_rels, mock_tags, mock_boto3_session, neo4j_session,
 ):
-    aws_sync_test_kwargs: Dict[str, Any] = _make_aws_sync_test_kwargs(neo4j_session, mock_boto3_session)
+    aws_sync_test_kwargs: Dict[str, Any] = make_aws_sync_test_kwargs(neo4j_session, mock_boto3_session)
     cartography.intel.aws._sync_one_account(
         **aws_sync_test_kwargs,
     )
@@ -117,7 +123,7 @@ def test_sync_one_account_all_sync_functions(
 def test_sync_one_account_just_iam_rels_and_tags(
     mock_cleanup, mock_autodiscover, mock_perm_rels, mock_tags, mock_boto3_session, neo4j_session,
 ):
-    aws_sync_test_kwargs: Dict[str, any] = _make_aws_sync_test_kwargs(neo4j_session, mock_boto3_session)
+    aws_sync_test_kwargs: Dict[str, any] = make_aws_sync_test_kwargs(neo4j_session, mock_boto3_session)
     cartography.intel.aws._sync_one_account(
         neo4j_session, mock_boto3_session(), '1234', TEST_UPDATE_TAG, GRAPH_JOB_PARAMETERS,
         aws_requested_syncs=['iam', 'permission_relationships', 'resourcegroupstaggingapi'],
@@ -133,13 +139,34 @@ def test_sync_one_account_just_iam_rels_and_tags(
     assert mock_cleanup.call_count == 1
 
 
-def test_inspect_aws_sync_kwargs(neo4j_session):
+def test_standardize_aws_sync_kwargs():
     """
-    Ensures that all parameter names used in AWS sync functions are standardized.
-    Assumption: _make_aws_sync_test_kwargs() above will be updated if new params are introduced.
+    Makes sure that we always use a standard set of parameter names in AWS sync functions. This standardization gives us
+    flexibility when calling these syncs as function pointers.
+
+    Fine print: this test excludes parameters with default values (e.g. `tag_resource_type_mappings` in
+    resourcegroupstaggingapi).
+
+    The set of standardized sync param names is maintained in
+    tests.integration.cartography.intel.aws.test_init.make_aws_sync_test_kwargs.
     """
-    aws_sync_test_kwargs = _make_aws_sync_test_kwargs(neo4j_session, mock.MagicMock)
+    aws_sync_test_kwargs = make_aws_sync_test_kwargs(mock.MagicMock, mock.MagicMock)
 
     for func_name, sync_func in cartography.intel.aws.resources.RESOURCE_FUNCTIONS.items():
-        for arg_name in inspect.getfullargspec(sync_func).args:
-            assert arg_name in aws_sync_test_kwargs.keys()
+        all_args: List[str] = inspect.getfullargspec(sync_func).args
+
+        # Inspect the sync func if it is wrapped, e.g. by @timeit
+        if len(all_args) == 0:
+            all_args = inspect.getfullargspec(sync_func.__wrapped__).args
+
+        for arg_name in all_args:
+            valid_param_names: str = ', '.join(aws_sync_test_kwargs.keys())
+
+            # Only enforce param names that don't have default values set.
+            if inspect.signature(sync_func).parameters[arg_name].default == inspect._empty:
+                assert arg_name in aws_sync_test_kwargs.keys(), (
+                    f'Argument name "{arg_name}" in sync function "{sync_func.__module__}.{sync_func.__name__}" is '
+                    f'non-standard. Valid ones include: {valid_param_names}. Please change your argument name to one '
+                    f'of these standard ones, or if you are introducing a new argument name, then please update '
+                    f'tests.integration.cartography.intel.aws.test_init.make_aws_sync_test_kwargs.'
+                )

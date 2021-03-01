@@ -1,5 +1,6 @@
 import logging
 import sys
+from functools import wraps
 
 import botocore
 
@@ -49,6 +50,8 @@ def timeit(method):
     This is only active if config.statsd_enabled is True.
     :param method: The function to measure execution
     """
+    # Allow access via `inspect` to the wrapped function. This is used in integration tests to standardize param names.
+    @wraps(method)
     def timed(*args, **kwargs):
         if stats_client:
             # Example metric name "cartography.intel.aws.iam.get_group_membership_data"
