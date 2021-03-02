@@ -1,6 +1,5 @@
 import logging
 
-import tests.data.aws.elasticache
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -31,17 +30,12 @@ def transform_elasticache_topics(cluster_data):
 @aws_handle_regions
 def get_elasticache_clusters(boto3_session, region):
     logger.debug(f"Getting ElastiCache Clusters in region '{region}'.")
-    logger.debug(boto3_session)  # TODO: remove this, added here to satisfy linters
-    """
     client = boto3_session.client('elasticache', region_name=region)
     paginator = client.get_paginator('describe_cache_clusters')
     clusters = []
     for page in paginator.paginate():
         clusters.extend(page['CacheClusters'])
     return clusters
-    """
-    # TODO: use real data
-    return tests.data.aws.elasticache.DESCRIBE_CACHE_CLUSTERS['CacheClusters']
 
 
 @timeit
@@ -75,7 +69,7 @@ def load_elasticache_clusters(neo4j_session, clusters, region, aws_account_id, u
         ON CREATE SET r3.firstseen = timestamp()
         SET r3.lastupdated = {aws_update_tag}
     """
-    logger.debug(f"Loading ElastiCache clusters for region '{region}' into graph.")
+    logger.info(f"Loading f{len(clusters)} ElastiCache clusters for region '{region}' into graph.")
     neo4j_session.run(
         query,
         clusters=clusters,
