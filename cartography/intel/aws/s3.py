@@ -8,6 +8,7 @@ from typing import List
 from typing import Optional
 
 import boto3
+import botocore
 import neo4j
 from botocore.exceptions import ClientError
 from policyuniverse.policy import Policy
@@ -66,7 +67,7 @@ def get_s3_bucket_details(boto3_session: boto3.session.Session, bucket_data: Dic
 
 
 @timeit
-def get_policy(bucket: Dict, client: boto3.session.Session) -> str:
+def get_policy(bucket: Dict, client: botocore.client.BaseClient) -> str:
     """
     Gets the S3 bucket policy. Returns policy string or None if no policy
     """
@@ -94,7 +95,7 @@ def get_policy(bucket: Dict, client: boto3.session.Session) -> str:
 
 
 @timeit
-def get_acl(bucket: Dict, client: boto3.session.Session) -> Optional[str]:
+def get_acl(bucket: Dict, client: botocore.client.BaseClient) -> Optional[str]:
     """
     Gets the S3 bucket ACL. Returns ACL string
     """
