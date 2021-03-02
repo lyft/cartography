@@ -47,6 +47,7 @@ GET_REST_APIS = [
 
 GET_STAGES = [
     {
+        'arn': 'arn:aws:apigateway:::test-001/Cartography-testing-infra',
         'deploymentId': 'd-001',
         'apiId': 'test-001',
         'clientCertificateId': 'cert-001',
@@ -76,6 +77,7 @@ GET_STAGES = [
         'lastUpdatedDate': datetime.datetime(2021, 2, 1),
     },
     {
+        'arn': 'arn:aws:apigateway:::test-002/Cartography-testing-unit',
         'deploymentId': 'd-002',
         'apiId': 'test-002',
         'clientCertificateId': 'cert-002',
@@ -113,6 +115,8 @@ GET_CERTIFICATES = [
         'createdDate': datetime.datetime(2021, 2, 1),
         'expirationDate': datetime.datetime(2021, 4, 1),
         'stageName': 'Cartography-testing-infra',
+        'apiId': 'test-001',
+        'stageArn': 'arn:aws:apigateway:::test-001/Cartography-testing-infra',
     },
     {
         'clientCertificateId': 'cert-002',
@@ -120,6 +124,8 @@ GET_CERTIFICATES = [
         'createdDate': datetime.datetime(2021, 2, 1),
         'expirationDate': datetime.datetime(2021, 4, 1),
         'stageName': 'Cartography-testing-unit',
+        'apiId': 'test-002',
+        'stageArn': 'arn:aws:apigateway:::test-002/Cartography-testing-unit',
     },
 ]
 

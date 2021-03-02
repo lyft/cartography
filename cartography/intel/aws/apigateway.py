@@ -211,7 +211,7 @@ def _load_apigateway_certificates(neo4j_session, certificates, update_tag):
     ON CREATE SET c.firstseen = timestamp(), c.createddate = certificate.createdDate
     SET c.lastupdated = {UpdateTag}, c.expirationdate = certificate.expirationDate
     WITH c, certificate
-    MATCH (stage:APIGatewayStage{id: certificate.stageName})
+    MATCH (stage:APIGatewayStage{id: certificate.stageArn})
     MERGE (stage)-[r:HAS_CERTIFICATE]->(c)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {UpdateTag}
@@ -222,6 +222,7 @@ def _load_apigateway_certificates(neo4j_session, certificates, update_tag):
     for certificate in certificates:
         certificate['createdDate'] = str(certificate['createdDate'])
         certificate['expirationDate'] = str(certificate.get('expirationDate'))
+        certificate['stageArn'] = "arn:aws:apigateway:::" + certificate['apiId'] + "/" + certificate['stageName']
 
     neo4j_session.run(
         ingest_certificates,
@@ -277,6 +278,7 @@ def load_rest_api_details(neo4j_session, stages_certificate_resources, aws_accou
                 r['apiId'] = api_id
             resources.extend(resource)
         if certificate:
+            certificate['apiId'] = api_id
             certificates.extend(certificate)
 
     # cleanup existing properties

@@ -79,8 +79,8 @@ def test_load_apigateway_stages(neo4j_session):
     )
 
     expected_nodes = {
-        "Cartography-testing-infra",
-        "Cartography-testing-unit",
+        "arn:aws:apigateway:::test-001/Cartography-testing-infra",
+        "arn:aws:apigateway:::test-002/Cartography-testing-unit",
     }
 
     nodes = neo4j_session.run(
@@ -114,10 +114,12 @@ def test_load_apigateway_stages_relationships(neo4j_session):
 
     expected = {
         (
-            'test-001', 'Cartography-testing-infra',
+            'test-001',
+            'arn:aws:apigateway:::test-001/Cartography-testing-infra',
         ),
         (
-            'test-002', 'Cartography-testing-unit',
+            'test-002',
+            'arn:aws:apigateway:::test-002/Cartography-testing-unit',
         ),
     }
 
@@ -176,10 +178,12 @@ def test_load_apigateway_certificates_relationships(neo4j_session):
 
     expected = {
         (
-            'Cartography-testing-infra', 'cert-001',
+            'arn:aws:apigateway:::test-001/Cartography-testing-infra',
+            'cert-001',
         ),
         (
-            'Cartography-testing-unit', 'cert-002',
+            'arn:aws:apigateway:::test-002/Cartography-testing-unit',
+            'cert-002',
         ),
     }
 
