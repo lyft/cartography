@@ -8,7 +8,6 @@ import time
 import adal
 from azure.core.credentials import AccessToken
 from azure.common.credentials import ServicePrincipalCredentials, get_azure_cli_credentials, get_cli_profile
-import jwt
 from msrestazure.azure_active_directory import AADTokenCredentials
 
 
@@ -23,7 +22,6 @@ class Authenticator:
         Implements authentication for the Azure provider
         """
         try:
-
             # Set logging level to error for libraries as otherwise generates a lot of warnings
             logging.getLogger('adal-python').setLevel(logging.ERROR)
             logging.getLogger('msrest').setLevel(logging.ERROR)
@@ -97,6 +95,8 @@ class Authenticator:
             return Credentials(azure_creds, graph_creds, subscription_id=subscription_id, tenant_id=tenant_id, current_user=user)
 
         except Exception as e:
+            logging.info(f'failed to impersonate user: {str(e)}')
+
             raise Exception(e)
 
     def refresh_graph_token(self, client_id, client_secret, redirect_uri, refresh_token, scope):
@@ -144,7 +144,7 @@ class ImpersonateCredentials(object):
         self.resource = resource
 
     def get_token(self, *scopes, **kwargs):  # pylint:disable=unused-argument
-        return AccessToken(self.cred['access_token'], int(self.cred['expiresIn'] + time.time()))
+        return AccessToken(self.cred['access_token'], int(self.cred['expires_in'] + time.time()))
 
     def signed_session(self, session=None):
         header = "{} {}".format(self.scheme, self.cred['access_token'])
