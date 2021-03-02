@@ -191,7 +191,7 @@ def _load_apigateway_stages(neo4j_session, stages, update_tag):
     # these values to string.
     for stage in stages:
         stage['createdDate'] = str(stage['createdDate'])
-        stage['arn'] = "arn:aws:apigateway:::"+stage['apiId']+"/"+stage['stageName']
+        stage['arn'] = "arn:aws:apigateway:::" + stage['apiId'] + "/" + stage['stageName']
 
     neo4j_session.run(
         ingest_stages,
