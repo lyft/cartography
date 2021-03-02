@@ -23,14 +23,6 @@ def get_apigateway_rest_apis(boto3_session, region):
 
 
 @timeit
-def transform_apigateway_rest_apis(apis):
-    # neo4j does not accept datetime objects and values. This loop is used to convert
-    # these values to string.
-    for api in apis:
-        api['CreatedDate'] = str(api['createdDate']) if 'createdDate' in api else None
-
-
-@timeit
 @aws_handle_regions
 def get_rest_api_details(boto3_session, rest_apis, region):
     """
@@ -103,7 +95,6 @@ def get_rest_api_policy(api, client):
 
 
 @timeit
-@aws_handle_regions
 def load_apigateway_rest_apis(neo4j_session, rest_apis, region, current_aws_account_id, aws_update_tag):
     """
     Ingest the details of API Gateway REST APIs into neo4j.
@@ -124,6 +115,11 @@ def load_apigateway_rest_apis(neo4j_session, rest_apis, region, current_aws_acco
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {aws_update_tag}
     """
+
+    # neo4j does not accept datetime objects and values. This loop is used to convert
+    # these values to string.
+    for api in rest_apis:
+        api['createdDate'] = str(api['createdDate']) if 'createdDate' in api else None
 
     neo4j_session.run(
         ingest_rest_apis,
@@ -174,8 +170,9 @@ def _load_apigateway_stages(neo4j_session, stages, update_tag):
     """
     ingest_stages = """
     UNWIND {stages_list} AS stage
-    MERGE (s:APIGatewayStage{id: stage.stageName})
-    ON CREATE SET s.firstseen = timestamp(), s.createddate = stage.createdDate
+    MERGE (s:APIGatewayStage{id: stage.arn})
+    ON CREATE SET s.firstseen = timestamp(), s.stagename = stage.stageName,
+    s.createddate = stage.createdDate
     SET s.deploymentid = stage.deploymentId,
     s.clientcertificateid = stage.clientCertificateId,
     s.cacheclusterenabled = stage.cacheClusterEnabled,
@@ -194,6 +191,7 @@ def _load_apigateway_stages(neo4j_session, stages, update_tag):
     # these values to string.
     for stage in stages:
         stage['createdDate'] = str(stage['createdDate'])
+        stage['arn'] = "arn:aws:apigateway:::"+stage['apiId']+"/"+stage['stageName']
 
     neo4j_session.run(
         ingest_stages,
@@ -322,7 +320,6 @@ def cleanup(neo4j_session, common_job_parameters):
 @timeit
 def sync_apigateway_rest_apis(neo4j_session, boto3_session, region, current_aws_account_id, aws_update_tag):
     rest_apis = get_apigateway_rest_apis(boto3_session, region)
-    transform_apigateway_rest_apis(rest_apis)
     load_apigateway_rest_apis(neo4j_session, rest_apis, region, current_aws_account_id, aws_update_tag)
 
     stages_certificate_resources = get_rest_api_details(boto3_session, rest_apis, region)
