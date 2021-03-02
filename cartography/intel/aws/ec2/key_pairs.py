@@ -49,7 +49,7 @@ def load_ec2_key_pairs(
             KeyFingerprint=key_fingerprint,
             AWS_ACCOUNT_ID=current_aws_account_id,
             Region=region,
-            aws_update_tag=update_tag,
+            update_tag=update_tag,
         )
 
 

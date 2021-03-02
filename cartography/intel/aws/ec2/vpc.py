@@ -72,7 +72,7 @@ def load_cidr_association_set(
         ingest_statement,
         VpcId=vpc_id,
         CidrBlock=data,
-        aws_update_tag=update_tag,
+        update_tag=update_tag,
     )
 
 
@@ -139,7 +139,7 @@ def load_ec2_vpcs(
             DhcpOptionsId=vpc.get("DhcpOptionsId", None),
             Region=region,
             AWS_ACCOUNT_ID=current_aws_account_id,
-            aws_update_tag=update_tag,
+            update_tag=update_tag,
         )
 
         load_cidr_association_set(
@@ -147,7 +147,7 @@ def load_ec2_vpcs(
             vpc_id=vpc_id,
             block_type="ipv4",
             vpc_data=vpc,
-            aws_update_tag=update_tag,
+            update_tag=update_tag,
         )
 
         load_cidr_association_set(
@@ -155,7 +155,7 @@ def load_ec2_vpcs(
             vpc_id=vpc_id,
             block_type="ipv6",
             vpc_data=vpc,
-            aws_update_tag=update_tag,
+            update_tag=update_tag,
         )
 
 

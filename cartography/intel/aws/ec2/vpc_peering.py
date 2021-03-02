@@ -138,7 +138,7 @@ def load_ec2_vpc_peering(neo4j_session: neo4j.Session, data: List[Dict], update_
                 StatusMessage=peering["Status"]["Message"],
                 ConnectionId=peering["VpcPeeringConnectionId"],
                 ExpirationTime=peering.get("ExpirationTime", None),
-                aws_update_tag=update_tag,
+                update_tag=update_tag,
             )
 
             for accepter_block in peering["AccepterVpcInfo"].get("CidrBlockSet", []):
@@ -153,7 +153,7 @@ def load_ec2_vpc_peering(neo4j_session: neo4j.Session, data: List[Dict], update_
                         StatusMessage=peering["Status"]["Message"],
                         ConnectionId=peering["VpcPeeringConnectionId"],
                         ExpirationTime=peering.get("ExpirationTime", None),
-                        aws_update_tag=update_tag,
+                        update_tag=update_tag,
                     )
 
 
