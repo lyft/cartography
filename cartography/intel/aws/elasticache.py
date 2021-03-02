@@ -1,4 +1,10 @@
 import logging
+from typing import Dict
+from typing import List
+from typing import Set
+
+import boto3
+import neo4j
 
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
@@ -7,16 +13,16 @@ from cartography.util import timeit
 logger = logging.getLogger(__name__)
 
 
-def _get_topic(cluster):
+def _get_topic(cluster: Dict) -> Dict:
     return cluster['NotificationConfiguration']
 
 
-def transform_elasticache_topics(cluster_data):
+def transform_elasticache_topics(cluster_data: List[Dict]) -> List[Dict]:
     """
     Collect unique TopicArns from the cluster data
     """
-    seen = set()
-    topics = []
+    seen: Set[str] = set()
+    topics: List[Dict] = []
     for cluster in cluster_data:
         topic = _get_topic(cluster)
         topic_arn = topic['TopicArn']
@@ -28,18 +34,21 @@ def transform_elasticache_topics(cluster_data):
 
 @timeit
 @aws_handle_regions
-def get_elasticache_clusters(boto3_session, region):
+def get_elasticache_clusters(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
     logger.debug(f"Getting ElastiCache Clusters in region '{region}'.")
     client = boto3_session.client('elasticache', region_name=region)
     paginator = client.get_paginator('describe_cache_clusters')
-    clusters = []
+    clusters: List[Dict] = []
     for page in paginator.paginate():
         clusters.extend(page['CacheClusters'])
     return clusters
 
 
 @timeit
-def load_elasticache_clusters(neo4j_session, clusters, region, aws_account_id, update_tag):
+def load_elasticache_clusters(
+    neo4j_session: neo4j.Session, clusters: List[Dict], region: str,
+    aws_account_id: str, update_tag: int,
+) -> None:
     query = """
     UNWIND {clusters} as elasticache_cluster
         MERGE (cluster:ElasticacheCluster{id:elasticache_cluster.ARN})
@@ -80,7 +89,7 @@ def load_elasticache_clusters(neo4j_session, clusters, region, aws_account_id, u
 
 
 @timeit
-def cleanup(neo4j_session, current_aws_account_id, update_tag):
+def cleanup(neo4j_session: neo4j.Session, current_aws_account_id: str, update_tag: int) -> None:
     run_cleanup_job(
         'aws_import_elasticache_cleanup.json',
         neo4j_session,
@@ -89,7 +98,10 @@ def cleanup(neo4j_session, current_aws_account_id, update_tag):
 
 
 @timeit
-def sync(neo4j_session, boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters):
+def sync(
+    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
+    update_tag: int, common_job_parameters: Dict,
+) -> None:
     for region in regions:
         logger.info(f"Syncing ElastiCache clusters for region '{region}' in account {current_aws_account_id}")
         clusters = get_elasticache_clusters(boto3_session, region)
