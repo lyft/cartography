@@ -24,6 +24,14 @@ Representation of a DigitalOcean [Account](https://developers.digitalocean.com/d
 | floating_ip_limit | Total number of floating IPs the account may have |
 | status | Status of the account |
 
+### Relationships
+
+- DOAccount contains DOProjects.
+
+    ```
+    (DOAccount)-[RESOURCE]->(DOProjects)
+    ```
+
 ## DOProject
 Representation of a DigitalOcean [Project](https://developers.digitalocean.com/documentation/v2/#projects) object.
     
@@ -41,6 +49,13 @@ Representation of a DigitalOcean [Project](https://developers.digitalocean.com/d
 | created_at | A time value given in ISO8601 combined date and time format that represents when the project was created |
 | updated_at | A time value given in ISO8601 combined date and time format that represents when the project was updated |
 
+### Relationships
+
+- DOProject has DODroplets as resource.
+
+    ```
+    (DOProject)-[RESOURCE]->(DODroplet)
+    ```
 
 ## DODroplet
 Representation of a DigitalOcean [Droplet](https://developers.digitalocean.com/documentation/v2/#droplets) object.
@@ -66,3 +81,11 @@ Representation of a DigitalOcean [Droplet](https://developers.digitalocean.com/d
 | tags | An array of Tags the Droplet has been tagged with |
 | volumes | A flat array including the unique identifier for each Block Storage volume attached to the Droplet |
 | created_at | A time value given in ISO8601 combined date and time format that represents when the Droplet was created |
+
+### Relationships
+
+- DODroplet is a resource of a DOProject.
+
+    ```
+    (DODroplet)<-[RESOURCE]-(DOProject)
+    ```
