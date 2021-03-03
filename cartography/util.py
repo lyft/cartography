@@ -89,10 +89,3 @@ def aws_handle_regions(func):
             else:
                 raise
     return inner_function
-
-
-def get_optional_value(cfg, keys):
-    if cfg.get(keys[0]):
-        return get_optional_value(cfg[keys[0]], keys[1:]) if len(keys) > 1 else cfg.get(keys[0])
-
-    return None
