@@ -4,8 +4,11 @@
 
 - [Cartography - DigitalOcean Schema](#cartography---digitalocean-schema)
   - [DOAccount](#doaccount)
+    - [Relationships](#relationships)
   - [DOProject](#doproject)
+    - [Relationships](#relationships-1)
   - [DODroplet](#dodroplet)
+    - [Relationships](#relationships-2)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
