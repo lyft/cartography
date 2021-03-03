@@ -49,10 +49,16 @@ def get_current_azure_subscription(credentials, subscription_id):
 
 def load_azure_subscriptions(neo4j_session, tenant_id, subscriptions, azure_update_tag, common_job_parameters):
     query = """
+    MERGE (w:CloudanixWorkspace{id: {workspaceID}})
+    SET w.lastupdated = {azure_update_tag}
+    WITH w
     MERGE (at:AzureTenant{id: {tenantID}})
     ON CREATE SET at.firstseen = timestamp()
     SET at.lastupdated = {azure_update_tag}
-    WITH at
+    WITH w, at
+    MERGE (w)-[o:OWNER]->(at)
+    ON CREATE SET o.firstseen = timestamp()
+    SET o.lastupdated = {azure_update_tag}
     MERGE (as:AzureSubscription{id: {id}})
     ON CREATE SET as.firstseen = timestamp(), as.subscriptionid = {subscriptionID}
     SET as.lastupdated = {azure_update_tag}, as.name = {name},
@@ -65,9 +71,10 @@ def load_azure_subscriptions(neo4j_session, tenant_id, subscriptions, azure_upda
     for sub in subscriptions:
         neo4j_session.run(
             query,
+            workspaceID=common_job_parameters['WORKSPACE_ID'],
             tenantID=tenant_id,
-            id=sub['id'],
-            subscriptionID=sub['subscription_id'],
+            id=sub['subscription_id'],
+            subscriptionID=sub['id'],
             name=sub['display_name'],
             state=sub['state'],
             authorizationSource=sub['authorization_source'],

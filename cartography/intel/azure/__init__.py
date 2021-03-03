@@ -47,6 +47,7 @@ def start_azure_ingestion(neo4j_session, config):
     common_job_parameters = {
         "UPDATE_TAG": config.update_tag,
         "permission_relationships_file": config.permission_relationships_file,
+        "WORKSPACE_ID": config.params['workspace']['id_string']
     }
 
     try:

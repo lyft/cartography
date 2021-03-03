@@ -9,7 +9,7 @@ build
 cloudformation
 docs
 node_modules
-test
+tests
 .venv
 venv
 
