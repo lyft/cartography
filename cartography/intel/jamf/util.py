@@ -1,4 +1,6 @@
 import logging
+from typing import Dict
+from typing import List
 
 import requests.auth
 
@@ -10,7 +12,7 @@ _TIMEOUT = (60, 60)
 
 
 @timeit
-def call_jamf_api(api_and_parameters, jamf_base_uri, jamf_user, jamf_password):
+def call_jamf_api(api_and_parameters: str, jamf_base_uri: str, jamf_user: str, jamf_password: str) -> List[Dict]:
     uri = jamf_base_uri + api_and_parameters
     jamf_auth = requests.auth.HTTPBasicAuth(jamf_user, jamf_password)
     try:
