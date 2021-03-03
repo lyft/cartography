@@ -70,36 +70,44 @@
   - [Relationships](#relationships-30)
 - [EKSCluster](#ekscluster)
   - [Relationships](#relationships-31)
-- [ESDomain](#esdomain)
+- [EMRCluster](#emrcluster)
   - [Relationships](#relationships-32)
-- [Endpoint](#endpoint)
+- [ESDomain](#esdomain)
   - [Relationships](#relationships-33)
-- [Endpoint::ELBListener](#endpointelblistener)
+- [Endpoint](#endpoint)
   - [Relationships](#relationships-34)
-- [Endpoint::ELBV2Listener](#endpointelbv2listener)
+- [Endpoint::ELBListener](#endpointelblistener)
   - [Relationships](#relationships-35)
-- [Ip](#ip)
+- [Endpoint::ELBV2Listener](#endpointelbv2listener)
   - [Relationships](#relationships-36)
-- [IpRule](#iprule)
+- [Ip](#ip)
   - [Relationships](#relationships-37)
-- [IpRule::IpPermissionInbound](#ipruleippermissioninbound)
+- [IpRule](#iprule)
   - [Relationships](#relationships-38)
-- [LoadBalancer](#loadbalancer)
+- [IpRule::IpPermissionInbound](#ipruleippermissioninbound)
   - [Relationships](#relationships-39)
-- [LoadBalancerV2](#loadbalancerv2)
+- [LoadBalancer](#loadbalancer)
   - [Relationships](#relationships-40)
-- [Nameserver](#nameserver)
+- [LoadBalancerV2](#loadbalancerv2)
   - [Relationships](#relationships-41)
-- [NetworkInterface](#networkinterface)
+- [Nameserver](#nameserver)
   - [Relationships](#relationships-42)
-- [RedshiftCluster](#redshiftcluster)
+- [NetworkInterface](#networkinterface)
   - [Relationships](#relationships-43)
-- [RDSInstance](#rdsinstance)
+- [RedshiftCluster](#redshiftcluster)
   - [Relationships](#relationships-44)
-- [S3Acl](#s3acl)
+- [RDSInstance](#rdsinstance)
   - [Relationships](#relationships-45)
-- [S3Bucket](#s3bucket)
+- [S3Acl](#s3acl)
   - [Relationships](#relationships-46)
+- [S3Bucket](#s3bucket)
+  - [Relationships](#relationships-47)
+- [KMSKey](#kmskey)
+  - [Relationships](#relationships-48)
+- [KMSAlias](#kmsalias)
+  - [Relationships](#relationships-49)
+- [KMSGrant](#kmsgrant)
+  - [Relationships](#relationships-50)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -1192,6 +1200,29 @@ Representation of an AWS [EKS Cluster](https://docs.aws.amazon.com/eks/latest/AP
       ```
 
 
+
+## EMRCluster
+
+Representation of an AWS [EMR Cluster](https://docs.aws.amazon.com/emr/latest/APIReference/API_Cluster.html).
+
+| Field            | Description                                                                                                 |
+| ---------------- | ----------------------------------------------------------------------------------------------------------- |
+| firstseen        | Timestamp of when a sync job first discovered this node                                                     |
+| lastupdated      | Timestamp of the last time the node was updated                                                             |
+| region           | The AWS region                                                                                              |
+| **arn**          | AWS-unique identifier for this object                                                                       |
+| id               | The Id of the EMR Cluster.                                                                                  |
+| servicerole      | Service Role of the EMR Cluster                                                                             |
+
+
+### Relationships
+
+- EMR Clusters belong to AWS Accounts.
+      ```
+      (AWSAccount)-[RESOURCE]->(EMRCluster)
+      ```
+
+
 ## ESDomain
 
 Representation of an AWS [ElasticSearch Domain](https://docs.aws.amazon.com/elasticsearch-service/latest/developerguide/es-configuration-api.html#es-configuration-api-datatypes) (see ElasticsearchDomainConfig).
@@ -1530,6 +1561,10 @@ Representation of a generic Network Interface.  Currently however, we only creat
 
 ### Relationships
 
+-  EC2 Network Interfaces belong to AWS accounts.
+
+        (NetworkInterface)<-[:RESOURCE]->(:AWSAccount)
+
 - Network interfaces can be connected to EC2Subnets.
 
         ```
@@ -1753,4 +1788,81 @@ Representation of an AWS S3 [Bucket](https://docs.aws.amazon.com/AmazonS3/latest
 
         ```
         (S3Bucket)-[TAGGED]->(AWSTag)
+        ```
+
+## KMSKey
+
+Representation of an AWS [KMS Key](https://docs.aws.amazon.com/kms/latest/APIReference/API_KeyListEntry.html).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The id of the key|
+| name |  The name of the key |
+| description |  The description of the key |
+| enabled |  Whether the key is enabled |
+| region | The region where key is created|
+| anonymous\_actions |  List of anonymous internet accessible actions that may be run on the key. |
+| anonymous\_access | True if this key has a policy applied to it that allows anonymous access or if it is open to the internet. |
+
+### Relationships
+
+- AWS KMS Keys are resources in an AWS Account.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(KMSKey)
+        ```
+
+- AWS KMS Key may also be refered as KMSAlias via aliases.
+
+        ```
+        (KMSKey)-[KNOWN_AS]->(KMSAlias)
+        ```
+
+- AWS KMS Key may also have KMSGrant based on grants.
+
+        ```
+        (KMSGrant)-[APPLIED_ON]->(KMSKey)
+        ```
+
+## KMSAlias
+
+Representation of an AWS [KMS Key Alias](https://docs.aws.amazon.com/kms/latest/APIReference/API_AliasListEntry.html).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The arn of the alias|
+| aliasname |  The name of the alias |
+| targetkeyid |  The kms key id associated via this alias |
+
+### Relationships
+
+- AWS KMS Key may also be refered as KMSAlias via aliases.
+
+        ```
+        (KMSKey)-[KNOWN_AS]->(KMSAlias)
+        ```
+
+## KMSGrant
+
+Representation of an AWS [KMS Key Grant](https://docs.aws.amazon.com/kms/latest/APIReference/API_GrantListEntry.html).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The id of the key grant|
+| name |  The name of the key grant |
+| granteeprincipal |  The principal associated with the key grant |
+| creationdate | ISO 8601 date-time string when the grant was created |
+
+### Relationships
+
+- AWS KMS Key may also have KMSGrant based on grants.
+
+        ```
+        (KMSGrant)-[APPLIED_ON]->(KMSKey)
         ```
