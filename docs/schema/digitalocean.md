@@ -37,7 +37,7 @@ Representation of a DigitalOcean [Account](https://developers.digitalocean.com/d
 
 ## DOProject
 Representation of a DigitalOcean [Project](https://developers.digitalocean.com/documentation/v2/#projects) object.
-    
+
 | Field | Description |
 | ----- | ----------- |
 | firstseen | Timestamp of when a sync job first discovered this node |

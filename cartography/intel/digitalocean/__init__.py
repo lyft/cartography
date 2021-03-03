@@ -1,11 +1,15 @@
 import logging
 
 from digitalocean import Manager
-from cartography.intel.digitalocean import compute, management, platform
+
+from cartography.intel.digitalocean import compute
+from cartography.intel.digitalocean import management
+from cartography.intel.digitalocean import platform
 from cartography.util import timeit
 
 
 logger = logging.getLogger(__name__)
+
 
 @timeit
 def start_digitalocean_ingestion(neo4j_session, config):
@@ -17,7 +21,7 @@ def start_digitalocean_ingestion(neo4j_session, config):
 
     """
     Get Account ID related to this credentials and pass it along in `common_job_parameters` to avoid cleaning up other
-    accounts resources 
+    accounts resources
     """
     account = manager.get_account()
     common_job_parameters["DO_ACCOUNT_ID"] = account.uuid

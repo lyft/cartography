@@ -1,15 +1,18 @@
 import logging
 
-from cartography.util import run_cleanup_job
-from cartography.util import timeit
 from digitalocean import Manager
 
+from cartography.util import run_cleanup_job
+from cartography.util import timeit
+
 logger = logging.getLogger(__name__)
+
 
 @timeit
 def sync(neo4j_session, manager, digitalocean_update_tag, common_job_parameters):
     projects_resources = sync_projects(neo4j_session, manager, digitalocean_update_tag, common_job_parameters)
     return projects_resources
+
 
 @timeit
 def sync_projects(neo4j_session, manager, digitalocean_update_tag, common_job_parameters):
@@ -23,18 +26,21 @@ def sync_projects(neo4j_session, manager, digitalocean_update_tag, common_job_pa
 
     return projects_resources
 
+
 @timeit
 def get_projects(manager: Manager):
     return manager.get_all_projects()
 
+
 @timeit
-def  get_projects_resources(projects_res: list):
+def get_projects_resources(projects_res: list):
     result = {}
     for p in projects_res:
         resources = p.get_all_resources()
         result[p.id] = resources
 
     return result
+
 
 @timeit
 def transform_projects(project_res: list, account_id):
@@ -49,7 +55,7 @@ def transform_projects(project_res: list, account_id):
             'is_default': p.is_default,
             'created_at': p.created_at,
             'updated_at': p.updated_at,
-            'account_id': account_id
+            'account_id': account_id,
         }
         result.append(project)
     return result
@@ -94,6 +100,7 @@ def load_projects(neo4j_session, data, digitalocean_update_tag):
             digitalocean_update_tag=digitalocean_update_tag,
         )
     return
+
 
 @timeit
 def cleanup_projects(neo4j_session, common_job_parameters):

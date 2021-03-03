@@ -2,14 +2,15 @@ import logging
 
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
-from digitalocean import Account
 
 
 logger = logging.getLogger(__name__)
 
+
 @timeit
 def sync(neo4j_session, manager, account, digitalocean_update_tag, common_job_parameters):
     sync_account(neo4j_session, account, digitalocean_update_tag, common_job_parameters)
+
 
 @timeit
 def sync_account(neo4j_session, account, digitalocean_update_tag, common_job_parameters):
@@ -19,6 +20,7 @@ def sync_account(neo4j_session, account, digitalocean_update_tag, common_job_par
     cleanup_account(neo4j_session, common_job_parameters)
     return
 
+
 @timeit
 def transform_account(account_res):
     account = {
@@ -26,9 +28,10 @@ def transform_account(account_res):
         'uuid': account_res.uuid,
         'droplet_limit': account_res.droplet_limit,
         'floating_ip_limit': account_res.floating_ip_limit,
-        'status': account_res.status
+        'status': account_res.status,
     }
     return account
+
 
 @timeit
 def load_account(neo4j_session, account, digitalocean_update_tag):
@@ -43,14 +46,15 @@ def load_account(neo4j_session, account, digitalocean_update_tag):
             """
     neo4j_session.run(
         query,
-        AccountId = account['id'],
-        Uuid = account['uuid'],
-        DropletLimit = account['droplet_limit'],
-        FloatingIpLimit = account['floating_ip_limit'],
-        Status = account['status'],
+        AccountId=account['id'],
+        Uuid=account['uuid'],
+        DropletLimit=account['droplet_limit'],
+        FloatingIpLimit=account['floating_ip_limit'],
+        Status=account['status'],
         digitalocean_update_tag=digitalocean_update_tag,
     )
     return
+
 
 @timeit
 def cleanup_account(neo4j_session, common_job_parameters):

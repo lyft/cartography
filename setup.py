@@ -41,7 +41,7 @@ setup(
         "requests>=2.22.0",
         "statsd",
         "packaging",
-        "python-digitalocean>=1.16.0"
+        "python-digitalocean>=1.16.0",
     ],
     extras_require={
         ':python_version<"3.7"': [

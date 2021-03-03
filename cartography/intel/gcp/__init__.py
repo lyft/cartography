@@ -227,10 +227,6 @@ def start_gcp_ingestion(neo4j_session, config):
         )
         return
 
-    if credentials.access_token is None:
-        logger.warning("No valid GCP credentials could be found. No GCP accounts can be synced. Exiting GCP sync stage.")
-        return
-
     resources = _initialize_resources(credentials)
 
     # If we don't have perms to pull Orgs or Folders from GCP, we will skip safely
