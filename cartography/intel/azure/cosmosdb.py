@@ -43,31 +43,32 @@ def load_database_account_data(neo4j_session, subscription_id, database_account_
     Ingest data of all database accounts into neo4j.
     """
     ingest_database_account = """
-    MERGE (d:AzureDatabaseAccount{id: {AccountId}})
+    UNWIND {database_accounts_list} AS da
+    MERGE (d:AzureDatabaseAccount{id: da.id})
     ON CREATE SET d.firstseen = timestamp(),
-    d.id = {AccountId}, d.name = {Name},
-    d.resourcegroup = {ResourceGroup}, d.location = {Location}
+    d.name = da.name, d.resourcegroup = da.resourceGroup,
+    d.location = da.location
     SET d.lastupdated = {azure_update_tag},
-    d.kind = {Kind},
-    d.type = {Type},
-    d.ipranges = coalesce(d.ipranges, []) + {IpRanges},
-    d.capabilities = {Capabilities},
-    d.documentendpoint = {DocumentEndpoint},
-    d.virtualnetworkfilterenabled = {VirtualNetworkFilterEnabled},
-    d.enableautomaticfailover = {EnableAutomaticFailover},
-    d.provisioningstate = {ProvisioningState},
-    d.multiplewritelocations = {MultipleWriteLocations},
-    d.accountoffertype = {AccountOfferType},
-    d.publicnetworkaccess = {PublicNetworkAccess},
-    d.enablecassandraconnector = {EnableCassandraConnector},
-    d.connectoroffer = {ConnectorOffer},
-    d.disablekeybasedmetadatawriteaccess = {DisableKeyBasedMetadataWriteAccess},
-    d.keyvaulturi = {KeyVaultUri},
-    d.enablefreetier = {EnableFreeTier},
-    d.enableanalyticalstorage = {EnableAnalyticalStorage},
-    d.defaultconsistencylevel = {DefaultConsistencyLevel},
-    d.maxstalenessprefix = {MaxStalenessPrefix},
-    d.maxintervalinseconds = {MaxIntervalInSeconds}
+    d.kind = da.kind,
+    d.type = da.type,
+    d.ipranges = da.ipruleslist,
+    d.capabilities = da.list_of_capabilities,
+    d.documentendpoint = da.document_endpoint,
+    d.virtualnetworkfilterenabled = da.is_virtual_network_filter_enabled,
+    d.enableautomaticfailover = da.enable_automatic_failover,
+    d.provisioningstate = da.provisioning_state,
+    d.multiplewritelocations = da.enable_multiple_write_locations,
+    d.accountoffertype = da.database_account_offer_type,
+    d.publicnetworkaccess = da.public_network_access,
+    d.enablecassandraconnector = da.enable_cassandra_connector,
+    d.connectoroffer = da.connector_offer,
+    d.disablekeybasedmetadatawriteaccess = da.disable_key_based_metadata_write_access,
+    d.keyvaulturi = da.key_vault_key_uri,
+    d.enablefreetier = da.enable_free_tier,
+    d.enableanalyticalstorage = da.enable_analytical_storage,
+    d.defaultconsistencylevel = da.consistency_policy.default_consistency_level,
+    d.maxstalenessprefix = da.consistency_policy.max_staleness_prefix,
+    d.maxintervalinseconds = da.consistency_policy.max_interval_in_seconds
     WITH d
     MATCH (owner:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}})
     MERGE (owner)-[r:RESOURCE]->(d)
@@ -82,37 +83,17 @@ def load_database_account_data(neo4j_session, subscription_id, database_account_
             capabilities = [x['name'] for x in database_account['capabilities']]
         if 'ip_rules' in database_account and len(database_account['ip_rules']) > 0:
             iprules = [x['ip_address_or_range'] for x in database_account['ip_rules']]
-        neo4j_session.run(
-            ingest_database_account,
-            AccountId=database_account['id'],
-            Name=database_account['name'],
-            ResourceGroup=database_account['resourceGroup'],
-            Location=database_account['location'],
-            Kind=database_account['kind'],
-            Type=database_account['type'],
-            IpRanges=iprules,
-            Capabilities=capabilities,
-            DocumentEndpoint=database_account['document_endpoint'],
-            VirtualNetworkFilterEnabled=database_account['is_virtual_network_filter_enabled'],
-            EnableAutomaticFailover=database_account['enable_automatic_failover'],
-            ProvisioningState=database_account['provisioning_state'],
-            MultipleWriteLocations=database_account['enable_multiple_write_locations'],
-            AccountOfferType=database_account['database_account_offer_type'],
-            PublicNetworkAccess=database_account['public_network_access'],
-            EnableCassandraConnector=get_optional_value(database_account, ['enable_cassandra_connector']),
-            ConnectorOffer=get_optional_value(database_account, ['connector_offer']),
-            DisableKeyBasedMetadataWriteAccess=database_account['disable_key_based_metadata_write_access'],
-            KeyVaultUri=get_optional_value(database_account, ['key_vault_key_uri']),
-            EnableFreeTier=database_account['enable_free_tier'],
-            EnableAnalyticalStorage=database_account['enable_analytical_storage'],
-            ServerVersion=get_optional_value(database_account, ['api_properties', 'server_version']),
-            DefaultConsistencyLevel=database_account['consistency_policy']['default_consistency_level'],
-            MaxStalenessPrefix=database_account['consistency_policy']['max_staleness_prefix'],
-            MaxIntervalInSeconds=database_account['consistency_policy']['max_interval_in_seconds'],
-            AZURE_SUBSCRIPTION_ID=subscription_id,
-            azure_update_tag=azure_update_tag,
-        )
+        database_account['ipruleslist'] = iprules
+        database_account['list_of_capabilities'] = capabilities
 
+    neo4j_session.run(
+        ingest_database_account,
+        database_accounts_list=database_account_list,
+        AZURE_SUBSCRIPTION_ID=subscription_id,
+        azure_update_tag=azure_update_tag,
+    )
+
+    for database_account in database_account_list:
         # cleanup existing cors policy properties
         run_cleanup_job(
             'azure_cosmosdb_cors_details.json',
@@ -265,16 +246,18 @@ def _load_cosmosdb_cors_policy(neo4j_session, database_account, azure_update_tag
     Ingest the details of the Cors Policy of the database account.
     """
     database_account_id = database_account['id']
-    cors_policy_unique_id = uuid.uuid4()
+    cors_policies = database_account['cors']
 
     ingest_cors_policy = """
-    MERGE (corspolicy:AzureCosmosDBCorsPolicy{id: {PolicyUniqueId}})
-    ON CREATE SET corspolicy.firstseen = timestamp(), corspolicy.allowedorigins = {AllowedOrigins}
+    UNWIND {cors_policies_list} AS cp
+    MERGE (corspolicy:AzureCosmosDBCorsPolicy{id: cp.cors_policy_unique_id})
+    ON CREATE SET corspolicy.firstseen = timestamp(), 
+    corspolicy.allowedorigins = cp.allowed_origins
     SET corspolicy.lastupdated = {azure_update_tag},
-    corspolicy.allowedmethods = {AllowedMethods},
-    corspolicy.allowedheaders = {AllowedHeaders},
-    corspolicy.exposedheaders = {ExposedHeaders},
-    corspolicy.maxageinseconds = {MaxAgeInSeconds}
+    corspolicy.allowedmethods = cp.allowed_methods,
+    corspolicy.allowedheaders = cp.allowed_headers,
+    corspolicy.exposedheaders = cp.exposed_headers,
+    corspolicy.maxageinseconds = cp.max_age_in_seconds
     WITH corspolicy
     MATCH (d:AzureDatabaseAccount{id: {DatabaseAccountId}})
     MERGE (d)-[r:CONTAINS]->(corspolicy)
@@ -282,18 +265,15 @@ def _load_cosmosdb_cors_policy(neo4j_session, database_account, azure_update_tag
     SET r.lastupdated = {azure_update_tag}
     """
 
-    for policy in database_account['cors']:
-        neo4j_session.run(
-            ingest_cors_policy,
-            PolicyUniqueId=cors_policy_unique_id,
-            AllowedOrigins=policy['allowed_origins'],
-            AllowedMethods=policy.get('allowed_methods'),
-            AllowedHeaders=policy.get('allowed_headers'),
-            ExposedHeaders=policy.get('exposed_headers'),
-            MaxAgeInSeconds=policy.get('max_age_in_seconds'),
-            DatabaseAccountId=database_account_id,
-            azure_update_tag=azure_update_tag,
-        )
+    for policy in cors_policies:
+        policy['cors_policy_unique_id'] = uuid.uuid4()
+
+    neo4j_session.run(
+        ingest_cors_policy,
+        cors_policies_list=cors_policies,
+        DatabaseAccountId=database_account_id,
+        azure_update_tag=azure_update_tag,
+    )
 
 
 @timeit
@@ -302,12 +282,15 @@ def _load_cosmosdb_failover_policies(neo4j_session, database_account, azure_upda
     Ingest the details of the Failover Policies of the database account.
     """
     database_account_id = database_account['id']
+    failover_policies = database_account['failover_policies']
+
     ingest_failover_policies = """
-    MERGE (fpolicy:AzureDatabaseAccountFailoverPolicy{id: {FailoverPolicyId}})
+    UNWIND {failover_policies_list} AS fp
+    MERGE (fpolicy:AzureDatabaseAccountFailoverPolicy{id: fp.id})
     ON CREATE SET fpolicy.firstseen = timestamp()
     SET fpolicy.lastupdated = {azure_update_tag},
-    fpolicy.locationname = {LocationName},
-    fpolicy.failoverpriority = {FailoverPriority}
+    fpolicy.locationname = fp.location_name,
+    fpolicy.failoverpriority = fp.failover_priority
     WITH fpolicy
     MATCH (d:AzureDatabaseAccount{id: {DatabaseAccountId}})
     MERGE (d)-[r:CONTAINS]->(fpolicy)
@@ -315,15 +298,12 @@ def _load_cosmosdb_failover_policies(neo4j_session, database_account, azure_upda
     SET r.lastupdated = {azure_update_tag}
     """
 
-    for policy in database_account['failover_policies']:
-        neo4j_session.run(
-            ingest_failover_policies,
-            FailoverPolicyId=policy['id'],
-            LocationName=policy['location_name'],
-            FailoverPriority=policy['failover_priority'],
-            DatabaseAccountId=database_account_id,
-            azure_update_tag=azure_update_tag,
-        )
+    neo4j_session.run(
+        ingest_failover_policies,
+        failover_policies_list=failover_policies,
+        DatabaseAccountId=database_account_id,
+        azure_update_tag=azure_update_tag,
+    )
 
 
 @timeit
@@ -332,14 +312,17 @@ def _load_cosmosdb_private_endpoint_connections(neo4j_session, database_account,
     Ingest the details of the Private Endpoint Connections of the database account.
     """
     database_account_id = database_account['id']
+    private_endpoint_connections = database_account['private_endpoint_connections']
+
     ingest_private_endpoint_connections = """
-    MERGE (pec:AzureCosmosDBPrivateEndpointConnection{id: {PrivateEndpointConnectionId}})
+    UNWIND {private_endpoint_connections_list} AS connection
+    MERGE (pec:AzureCosmosDBPrivateEndpointConnection{id: connection.id})
     ON CREATE SET pec.firstseen = timestamp()
     SET pec.lastupdated = {azure_update_tag},
-    pec.name = {Name},
-    pec.privateendpointid = {PrivateEndpointId},
-    pec.status = {Status},
-    pec.actionrequired = {ActionRequired}
+    pec.name = connection.name,
+    pec.privateendpointid = connection.{PrivateEndpointId},
+    pec.status = connection.private_link_service_connection_state.status,
+    pec.actionrequired = connection.private_link_service_connection_state.actions_required
     WITH pec
     MATCH (d:AzureDatabaseAccount{id: {DatabaseAccountId}})
     MERGE (d)-[r:CONFIGURED_WITH]->(pec)
@@ -347,16 +330,12 @@ def _load_cosmosdb_private_endpoint_connections(neo4j_session, database_account,
     SET r.lastupdated = {azure_update_tag}
     """
 
-    for endpoint in database_account['private_endpoint_connections']:
-        neo4j_session.run(
-            ingest_private_endpoint_connections,
-            PrivateEndpointConnectionId=endpoint['id'],
-            Name=endpoint['name'],
-            Status=get_optional_value(endpoint, ['private_link_service_connection_state', 'status']),
-            ActionRequired=get_optional_value(endpoint, ['private_link_service_connection_state', 'actions_required']),
-            DatabaseAccountId=database_account_id,
-            azure_update_tag=azure_update_tag,
-        )
+    neo4j_session.run(
+        ingest_private_endpoint_connections,
+        private_endpoint_connections_list=private_endpoint_connections,
+        DatabaseAccountId=database_account_id,
+        azure_update_tag=azure_update_tag,
+    )
 
 
 @timeit
@@ -365,11 +344,14 @@ def _load_cosmosdb_virtual_network_rules(neo4j_session, database_account, azure_
     Ingest the details of the Virtual Network Rules of the database account.
     """
     database_account_id = database_account['id']
+    virtual_network_rules = database_account['virtual_network_rules']
+
     ingest_virtual_network_rules = """
-    MERGE (rules:AzureCosmosDBVirtualNetworkRule{id: {VirtualNetworkRuleId}})
+    UNWIND {virtual_network_rules_list} AS vnr
+    MERGE (rules:AzureCosmosDBVirtualNetworkRule{id: vnr.id})
     ON CREATE SET rules.firstseen = timestamp()
     SET rules.lastupdated = {azure_update_tag},
-    rules.ignoremissingvnetserviceendpoint = {IgnoreMissingVNetServiceEndpoint}
+    rules.ignoremissingvnetserviceendpoint = vnr.ignore_missing_v_net_service_endpoint
     WITH rules
     MATCH (d:AzureDatabaseAccount{id: {DatabaseAccountId}})
     MERGE (d)-[r:CONFIGURED_WITH]->(rules)
@@ -377,14 +359,12 @@ def _load_cosmosdb_virtual_network_rules(neo4j_session, database_account, azure_
     SET r.lastupdated = {azure_update_tag}
     """
 
-    for rule in database_account['virtual_network_rules']:
-        neo4j_session.run(
-            ingest_virtual_network_rules,
-            VirtualNetworkRuleId=rule['id'],
-            IgnoreMissingVNetServiceEndpoint=rule.get('ignore_missing_v_net_service_endpoint'),
-            DatabaseAccountId=database_account_id,
-            azure_update_tag=azure_update_tag,
-        )
+    neo4j_session.run(
+        ingest_virtual_network_rules,
+        virtual_network_rules_list=virtual_network_rules,
+        DatabaseAccountId=database_account_id,
+        azure_update_tag=azure_update_tag,
+    )
 
 
 @timeit
@@ -525,32 +505,26 @@ def _load_sql_databases(neo4j_session, sql_databases, update_tag):
     Ingest SQL Databases into neo4j.
     """
     ingest_sql_databases = """
-    MERGE (sdb:AzureCosmosDBSqlDatabase{id: {SQLDatabaseId}})
+    UNWIND {sql_databases_list} AS database
+    MERGE (sdb:AzureCosmosDBSqlDatabase{id: database.id})
     ON CREATE SET sdb.firstseen = timestamp(), sdb.lastupdated = {azure_update_tag}
-    SET sdb.name = {Name},
-    sdb.type = {Type},
-    sdb.location = {Location},
-    sdb.throughput = {Throughput},
-    sdb.maxthroughput = {MaxThroughput}
-    WITH sdb
-    MATCH (d:AzureDatabaseAccount{id: {DatabaseAccountId}})
+    SET sdb.name = database.name,
+    sdb.type = database.type,
+    sdb.location = database.location,
+    sdb.throughput = database.options.throughput,
+    sdb.maxthroughput = database.options.autoscale_setting.max_throughput
+    WITH sdb, database
+    MATCH (d:AzureDatabaseAccount{id: database.database_account_id})
     MERGE (d)-[r:CONTAINS]->(sdb)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {azure_update_tag}
     """
 
-    for database in sql_databases:
-        neo4j_session.run(
-            ingest_sql_databases,
-            SQLDatabaseId=database['id'],
-            Name=database['name'],
-            Type=database['type'],
-            Location=get_optional_value(database, ['location']),
-            Throughput=get_optional_value(database, ['options', 'throughput']),
-            MaxThroughput=get_optional_value(database, ['options', 'autoscale_setting', 'max_throughput']),
-            DatabaseAccountId=database['database_account_id'],
-            azure_update_tag=update_tag,
-        )
+    neo4j_session.run(
+        ingest_sql_databases,
+        sql_databases_list=sql_databases,
+        azure_update_tag=update_tag,
+    )
 
 
 @timeit
@@ -559,32 +533,26 @@ def _load_cassandra_keyspaces(neo4j_session, cassandra_keyspaces, update_tag):
     Ingest Cassandra keyspaces into neo4j.
     """
     ingest_cassandra_keyspaces = """
-    MERGE (ck:AzureCosmosDBCassandraKeyspace{id: {KeyspaceId}})
+    UNWIND {cassandra_keyspaces_list} AS keyspace
+    MERGE (ck:AzureCosmosDBCassandraKeyspace{id: keyspace.id})
     ON CREATE SET ck.firstseen = timestamp(), ck.lastupdated = {azure_update_tag}
-    SET ck.name = {Name},
-    ck.type = {Type},
-    ck.location = {Location},
-    ck.throughput = {Throughput},
-    ck.maxthroughput = {MaxThroughput}
-    WITH ck
-    MATCH (d:AzureDatabaseAccount{id: {DatabaseAccountId}})
+    SET ck.name = keyspace.name,
+    ck.type = keyspace.type,
+    ck.location = keyspace.location,
+    ck.throughput = keyspace.options.throughput,
+    ck.maxthroughput = keyspace.options.autoscale_setting.max_throughput
+    WITH ck, keyspace
+    MATCH (d:AzureDatabaseAccount{id: keyspace.database_account_id})
     MERGE (d)-[r:CONTAINS]->(ck)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {azure_update_tag}
     """
 
-    for keyspace in cassandra_keyspaces:
-        neo4j_session.run(
-            ingest_cassandra_keyspaces,
-            KeyspaceId=keyspace['id'],
-            Name=keyspace['name'],
-            Type=keyspace['type'],
-            Location=get_optional_value(keyspace, ['location']),
-            Throughput=get_optional_value(keyspace, ['options', 'throughput']),
-            MaxThroughput=get_optional_value(keyspace, ['options', 'autoscale_setting', 'max_throughput']),
-            DatabaseAccountId=keyspace['database_account_id'],
-            azure_update_tag=update_tag,
-        )
+    neo4j_session.run(
+        ingest_cassandra_keyspaces,
+        cassandra_keyspaces_list=cassandra_keyspaces,
+        azure_update_tag=update_tag,
+    )
 
 
 @timeit
@@ -593,32 +561,26 @@ def _load_mongodb_databases(neo4j_session, mongodb_databases, update_tag):
     Ingest MongoDB databases into neo4j.
     """
     ingest_mongodb_databases = """
-    MERGE (mdb:AzureCosmosDBMongoDBDatabase{id: {DatabaseId}})
+    UNWIND {mongodb_databases_list} AS database
+    MERGE (mdb:AzureCosmosDBMongoDBDatabase{id: database.id})
     ON CREATE SET mdb.firstseen = timestamp(), mdb.lastupdated = {azure_update_tag}
-    SET mdb.name = {Name},
-    mdb.type = {Type},
-    mdb.location = {Location},
-    mdb.throughput = {Throughput},
-    mdb.maxthroughput = {MaxThroughput}
-    WITH mdb
-    MATCH (d:AzureDatabaseAccount{id: {DatabaseAccountId}})
+    SET mdb.name = database.name,
+    mdb.type = database.type,
+    mdb.location = database.location,
+    mdb.throughput = database.options.throughput,
+    mdb.maxthroughput = database..options.autoscale_setting.max_throughput
+    WITH mdb, database
+    MATCH (d:AzureDatabaseAccount{id: database.database_account_id})
     MERGE (d)-[r:CONTAINS]->(mdb)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {azure_update_tag}
     """
 
-    for database in mongodb_databases:
-        neo4j_session.run(
-            ingest_mongodb_databases,
-            DatabaseId=database['id'],
-            Name=database['name'],
-            Type=database['type'],
-            Location=get_optional_value(database, ['location']),
-            Throughput=get_optional_value(database, ['options', 'throughput']),
-            MaxThroughput=get_optional_value(database, ['options', 'autoscale_setting', 'max_throughput']),
-            DatabaseAccountId=database['database_account_id'],
-            azure_update_tag=update_tag,
-        )
+    neo4j_session.run(
+        ingest_mongodb_databases,
+        mongodb_databases_list=mongodb_databases,
+        azure_update_tag=update_tag,
+    )
 
 
 @timeit
@@ -627,32 +589,26 @@ def _load_table_resources(neo4j_session, table_resources, update_tag):
     Ingest Table resources into neo4j.
     """
     ingest_tables = """
-    MERGE (tr:AzureCosmosDBTableResource{id: {ResourceId}})
+    UNWIND {table_resources_list} AS table
+    MERGE (tr:AzureCosmosDBTableResource{id: table.id})
     ON CREATE SET tr.firstseen = timestamp(), tr.lastupdated = {azure_update_tag}
-    SET tr.name = {Name},
-    tr.type = {Type},
-    tr.location = {Location},
-    tr.throughput = {Throughput},
-    tr.maxthroughput = {MaxThroughput}
-    WITH tr
-    MATCH (d:AzureDatabaseAccount{id: {DatabaseAccountId}})
+    SET tr.name = table.name,
+    tr.type = table.type,
+    tr.location = table.location,
+    tr.throughput = table.options.throughput,
+    tr.maxthroughput = table.options.autoscale_setting.max_throughput
+    WITH tr, table
+    MATCH (d:AzureDatabaseAccount{id: table.database_account_id})
     MERGE (d)-[r:CONTAINS]->(tr)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {azure_update_tag}
     """
 
-    for table in table_resources:
-        neo4j_session.run(
-            ingest_tables,
-            ResourceId=table['id'],
-            Name=table['name'],
-            Type=table['type'],
-            Location=get_optional_value(table, ['location']),
-            Throughput=get_optional_value(table, ['options', 'throughput']),
-            MaxThroughput=get_optional_value(table, ['options', 'autoscale_setting', 'max_throughput']),
-            DatabaseAccountId=table['database_account_id'],
-            azure_update_tag=update_tag,
-        )
+    neo4j_session.run(
+        ingest_tables,
+        table_resources_list=table_resources,
+        azure_update_tag=update_tag,
+    )
 
 
 @timeit
@@ -710,44 +666,32 @@ def _load_sql_containers(neo4j_session, containers, update_tag):
     Ingest SQL Container details into neo4j.
     """
     ingest_containers = """
-    MERGE (c:AzureCosmosDBSqlContainer{id: {ResourceId}})
+    UNWIND {sql_containers_list} AS container
+    MERGE (c:AzureCosmosDBSqlContainer{id: container.id})
     ON CREATE SET c.firstseen = timestamp(), c.lastupdated = {azure_update_tag}
-    SET c.name = {Name},
-    c.type = {Type},
-    c.location = {Location},
-    c.throughput = {Throughput},
-    c.maxthroughput = {MaxThroughput},
-    c.container = {ContainerId},
-    c.defaultttl = {DefaultTimeToLive},
-    c.analyticalttl = {AnalyticalTTL},
-    c.isautomaticindexingpolicy = {IsAutomaticIndexingPolicy},
-    c.indexingmode = {IndexingMode},
-    c.conflictresolutionpolicymode = {ConflictResolutionPolicyMode}
-    WITH c
-    MATCH (sdb:AzureCosmosDBSqlDatabase{id: {SQLDatabaseId}})
+    SET c.name = container.name,
+    c.type = container.type,
+    c.location = container.location,
+    c.throughput = container.options.throughput,
+    c.maxthroughput = container.options.autoscale_setting.max_throughput,
+    c.container = container.resource.id,
+    c.defaultttl = container.resource.default_ttl,
+    c.analyticalttl = container.resource.analytical_storage_ttl,
+    c.isautomaticindexingpolicy = container.resource.indexing_policy.automatic,
+    c.indexingmode = container.resource.indexing_policy.indexing_mode,
+    c.conflictresolutionpolicymode = container.resource.conflict_resolution_policy.mode
+    WITH c, container
+    MATCH (sdb:AzureCosmosDBSqlDatabase{id: container.database_id})
     MERGE (sdb)-[r:CONTAINS]->(c)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {azure_update_tag}
     """
 
-    for container in containers:
-        neo4j_session.run(
-            ingest_containers,
-            ResourceId=container['id'],
-            Name=container['name'],
-            Type=container['type'],
-            Location=get_optional_value(container, ['location']),
-            Throughput=get_optional_value(container, ['options', 'throughput']),
-            MaxThroughput=get_optional_value(container, ['options', 'autoscale_setting', 'max_throughput']),
-            ContainerId=get_optional_value(container, ['resource', 'id']),
-            DefaultTimeToLive=get_optional_value(container, ['resource', 'default_ttl']),
-            AnalyticalTTL=get_optional_value(container, ['resource', 'analytical_storage_ttl']),
-            IsAutomaticIndexingPolicy=get_optional_value(container, ['resource', 'indexing_policy', 'automatic']),
-            IndexingMode=get_optional_value(container, ['resource', 'indexing_policy', 'indexing_mode']),
-            ConflictResolutionPolicyMode=get_optional_value(container['resource', 'conflict_resolution_policy', 'mode']),
-            SQLDatabaseId=container['database_id'],
-            azure_update_tag=update_tag,
-        )
+    neo4j_session.run(
+        ingest_containers,
+        sql_containers_list=containers,
+        azure_update_tag=update_tag,
+    )
 
 
 @timeit
@@ -805,38 +749,29 @@ def _load_cassandra_tables(neo4j_session, cassandra_tables, update_tag):
     Ingest Cassandra Tables into neo4j.
     """
     ingest_cassandra_tables = """
-    MERGE (ct:AzureCosmosDBCassandraTable{id: {ResourceId}})
+    UNWIND {cassandra_tables_list} AS table
+    MERGE (ct:AzureCosmosDBCassandraTable{id: table.{ResourceId}})
     ON CREATE SET ct.firstseen = timestamp(), ct.lastupdated = {azure_update_tag}
-    SET ct.name = {Name},
-    ct.type = {Type},
-    ct.location = {Location},
-    ct.throughput = {Throughput},
-    ct.maxthroughput = {MaxThroughput},
-    ct.container = {TableId},
-    ct.defaultttl = {DefaultTimeToLive},
-    ct.analyticalttl = {AnalyticalTTL}
-    WITH ct
-    MATCH (ck:AzureCosmosDBCassandraKeyspace{id: {KeyspaceId}})
+    SET ct.name = table.name,
+    ct.type = table.type,
+    ct.location = table.location,
+    ct.throughput = table.options.throughput,
+    ct.maxthroughput = table.options.autoscale_setting.max_throughput,
+    ct.container = table.resource.id,
+    ct.defaultttl = table.resource.default_ttl,
+    ct.analyticalttl = table.resource.analytical_storage_ttl
+    WITH ct, table
+    MATCH (ck:AzureCosmosDBCassandraKeyspace{id: table.keyspace_id})
     MERGE (ck)-[r:CONTAINS]->(ct)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {azure_update_tag}
     """
 
-    for table in cassandra_tables:
-        neo4j_session.run(
-            ingest_cassandra_tables,
-            ResourceId=table['id'],
-            Name=table['name'],
-            Type=table['type'],
-            Location=get_optional_value(table, ['location']),
-            Throughput=get_optional_value(table, ['options', 'throughput']),
-            MaxThroughput=get_optional_value(table, ['options', 'autoscale_setting', 'max_throughput']),
-            TableId=get_optional_value(table, ['resource', 'id']),
-            DefaultTimeToLive=get_optional_value(table, ['resource', 'default_ttl']),
-            AnalyticalTTL=get_optional_value(table, ['resource', 'analytical_storage_ttl']),
-            KeyspaceId=table['keyspace_id'],
-            azure_update_tag=update_tag,
-        )
+    neo4j_session.run(
+        ingest_cassandra_tables,
+        cassandra_tables_list=cassandra_tables,
+        azure_update_tag=update_tag,
+    )
 
 
 @timeit
@@ -894,17 +829,18 @@ def _load_collections(neo4j_session, collections, update_tag):
     Ingest MongoDB Collections into neo4j.
     """
     ingest_collections = """
-    MERGE (col:AzureCosmosDBMongoDBCollection{id: {ResourceId}})
+    UNWIND {mongodb_collections_list} AS collection
+    MERGE (col:AzureCosmosDBMongoDBCollection{id: collection.id})
     ON CREATE SET col.firstseen = timestamp(), col.lastupdated = {azure_update_tag}
-    SET col.name = {Name},
-    col.type = {Type},
-    col.location = {Location},
-    col.throughput = {Throughput},
-    col.maxthroughput = {MaxThroughput},
-    col.collectionname = {CollectionName},
-    col.analyticalttl = {AnalyticalTTL}
-    WITH col
-    MATCH (mdb:AzureCosmosDBMongoDBDatabase{id: {DatabaseId}})
+    SET col.name = collection.name,
+    col.type = collection.type,
+    col.location = collection.location,
+    col.throughput = collection.options.throughput,
+    col.maxthroughput = collection.options.autoscale_setting.max_throughput,
+    col.collectionname = collection.resource.id,
+    col.analyticalttl = collection.resource.analytical_storage_ttl
+    WITH col, collection
+    MATCH (mdb:AzureCosmosDBMongoDBDatabase{id: collection.database_id})
     MERGE (mdb)-[r:CONTAINS]->(col)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {azure_update_tag}
