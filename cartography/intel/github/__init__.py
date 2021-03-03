@@ -2,17 +2,19 @@ import base64
 import json
 import logging
 
+import neo4j
 from requests import exceptions
 
 import cartography.intel.github.repos
 import cartography.intel.github.users
+from cartography.config import Config
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 
 
 @timeit
-def start_github_ingestion(neo4j_session, config):
+def start_github_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
     """
     If this module is configured, perform ingestion of Github  data. Otherwise warn and exit
     :param neo4j_session: Neo4J session for database interface
