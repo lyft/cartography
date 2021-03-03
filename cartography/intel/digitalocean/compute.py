@@ -68,7 +68,7 @@ def load_droplets(neo4j_session, data, digitalocean_update_tag):
         ON CREATE SET d.firstseen = timestamp()
         SET d.account_id = {AccountId}, 
         d.name = {Name},
-        d.locker = {Locked},
+        d.locked = {Locked},
         d.status = {Status},
         d.features = {Features},
         d.region = {RegionSlug},
