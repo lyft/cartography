@@ -3,9 +3,12 @@ import os
 from collections import namedtuple
 
 import googleapiclient.discovery
+import neo4j
+from googleapiclient.discovery import Resource
 from oauth2client.client import ApplicationDefaultCredentialsError
 from oauth2client.client import GoogleCredentials
 
+from cartography.config import Config
 from cartography.intel.gsuite import api
 from cartography.util import timeit
 
@@ -24,7 +27,7 @@ logger = logging.getLogger(__name__)
 Resources = namedtuple('Resources', 'admin')
 
 
-def _get_admin_resource(credentials):
+def _get_admin_resource(credentials: GoogleCredentials) -> Resource:
     """
     Instantiates a Google API resource object to call the Google API.
     Used to pull users and groups.  See https://developers.google.com/admin-sdk/directory/v1/guides/manage-users
@@ -35,7 +38,7 @@ def _get_admin_resource(credentials):
     return googleapiclient.discovery.build('admin', 'directory_v1', credentials=credentials, cache_discovery=False)
 
 
-def _initialize_resources(credentials):
+def _initialize_resources(credentials: GoogleCredentials) -> Resources:
     """
     Create namedtuple of all resource objects necessary for Google API data gathering.
     :param credentials: The GoogleCredentials object
@@ -47,11 +50,11 @@ def _initialize_resources(credentials):
 
 
 @timeit
-def start_gsuite_ingestion(session, config):
+def start_gsuite_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
     """
     Starts the GSuite ingestion process by initializing
 
-    :param session: The Neo4j session
+    :param neo4j_session: The Neo4j session
     :param config: A `cartography.config` object
     :return: Nothing
     """
@@ -78,5 +81,5 @@ def start_gsuite_ingestion(session, config):
         return
 
     resources = _initialize_resources(credentials)
-    api.sync_gsuite_users(session, resources.admin, config.update_tag, common_job_parameters)
-    api.sync_gsuite_groups(session, resources.admin, config.update_tag, common_job_parameters)
+    api.sync_gsuite_users(neo4j_session, resources.admin, config.update_tag, common_job_parameters)
+    api.sync_gsuite_groups(neo4j_session, resources.admin, config.update_tag, common_job_parameters)

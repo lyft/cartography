@@ -1,4 +1,9 @@
 import logging
+from typing import Dict
+from typing import List
+
+import neo4j
+from googleapiclient.discovery import Resource
 
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -11,7 +16,7 @@ GOOGLE_API_NUM_RETRIES = 5
 
 
 @timeit
-def get_all_groups(admin):
+def get_all_groups(admin: Resource) -> List[Dict]:
     """
     Return list of Google Groups in your organization
     Returns empty list if we are unable to enumerate the groups for any reasons
@@ -32,13 +37,13 @@ def get_all_groups(admin):
 
 
 @timeit
-def transform_groups(response_objects):
+def transform_groups(response_objects: List[Dict]) -> List[Dict]:
     """  Strips list of API response objects to return list of group objects only
 
     :param response_objects:
     :return: list of dictionary objects as defined in /docs/schema/gsuite.md
     """
-    groups = []
+    groups: List[Dict] = []
     for response_object in response_objects:
         for group in response_object['groups']:
             groups.append(group)
@@ -46,12 +51,12 @@ def transform_groups(response_objects):
 
 
 @timeit
-def transform_users(response_objects):
+def transform_users(response_objects: List[Dict]) -> List[Dict]:
     """  Strips list of API response objects to return list of group objects only
     :param response_objects:
     :return: list of dictionary objects as defined in /docs/schema/gsuite.md
     """
-    users = []
+    users: List[Dict] = []
     for response_object in response_objects:
         for user in response_object['users']:
             users.append(user)
@@ -59,7 +64,7 @@ def transform_users(response_objects):
 
 
 @timeit
-def get_all_groups_for_email(admin, email):
+def get_all_groups_for_email(admin: Resource, email: str) -> List[Dict]:
     """ Fetch all groups of which the given group is a member
 
     Arguments:
@@ -69,7 +74,7 @@ def get_all_groups_for_email(admin, email):
     Throws GoogleException
     """
     request = admin.groups().list(userKey=email, maxResults=500)
-    groups = []
+    groups: List[Dict] = []
     while request is not None:
         resp = request.execute(num_retries=GOOGLE_API_NUM_RETRIES)
         groups = groups + resp.get('groups', [])
@@ -78,7 +83,7 @@ def get_all_groups_for_email(admin, email):
 
 
 @timeit
-def get_members_for_group(admin, group_email):
+def get_members_for_group(admin: Resource, group_email: str) -> List[Dict]:
     """ Get all members for a google group
 
     :param group_email: A string representing the email address for the group
@@ -89,7 +94,7 @@ def get_members_for_group(admin, group_email):
         groupKey=group_email,
         maxResults=500,
     )
-    members = []
+    members: List[Dict] = []
     while request is not None:
         resp = request.execute(num_retries=GOOGLE_API_NUM_RETRIES)
         members = members + resp.get('members', [])
@@ -99,7 +104,7 @@ def get_members_for_group(admin, group_email):
 
 
 @timeit
-def get_all_users(admin):
+def get_all_users(admin: Resource) -> List[Dict]:
     """
     Return list of Google Users in your organization
     Returns empty list if we are unable to enumerate the groups for any reasons
@@ -120,7 +125,7 @@ def get_all_users(admin):
 
 
 @timeit
-def load_gsuite_groups(session, groups, gsuite_update_tag):
+def load_gsuite_groups(neo4j_session: neo4j.Session, groups: List[Dict], gsuite_update_tag: int) -> None:
     ingestion_qry = """
         UNWIND {GroupData} as group
         MERGE (g:GSuiteGroup{id: group.id})
@@ -138,11 +143,11 @@ def load_gsuite_groups(session, groups, gsuite_update_tag):
         g.lastupdated = {UpdateTag}
     """
     logger.info('Ingesting {} gsuite groups'.format(len(groups)))
-    session.run(ingestion_qry, GroupData=groups, UpdateTag=gsuite_update_tag)
+    neo4j_session.run(ingestion_qry, GroupData=groups, UpdateTag=gsuite_update_tag)
 
 
 @timeit
-def load_gsuite_users(session, users, gsuite_update_tag):
+def load_gsuite_users(neo4j_session: neo4j.Session, users: List[Dict], gsuite_update_tag: int) -> None:
     ingestion_qry = """
         UNWIND {UserData} as user
         MERGE (u:GSuiteUser{id: user.id})
@@ -177,11 +182,11 @@ def load_gsuite_users(session, users, gsuite_update_tag):
         u.lastupdated = {UpdateTag}
     """
     logger.info('Ingesting {} gsuite users'.format(len(users)))
-    session.run(ingestion_qry, UserData=users, UpdateTag=gsuite_update_tag)
+    neo4j_session.run(ingestion_qry, UserData=users, UpdateTag=gsuite_update_tag)
 
 
 @timeit
-def load_gsuite_members(session, group, members, gsuite_update_tag):
+def load_gsuite_members(neo4j_session: neo4j.Session, group: Dict, members: List[Dict], gsuite_update_tag: int) -> None:
     ingestion_qry = """
         UNWIND {MemberData} as member
         MATCH (user:GSuiteUser {id: member.id}),(group:GSuiteGroup {id: {GroupID} })
@@ -191,7 +196,7 @@ def load_gsuite_members(session, group, members, gsuite_update_tag):
         ON MATCH SET
         r.lastupdated = {UpdateTag}
     """
-    session.run(
+    neo4j_session.run(
         ingestion_qry,
         MemberData=members,
         GroupID=group.get("id"),
@@ -206,29 +211,31 @@ def load_gsuite_members(session, group, members, gsuite_update_tag):
         ON MATCH SET
         r.lastupdated = {UpdateTag}
     """
-    session.run(membership_qry, MemberData=members, GroupID=group.get("id"), UpdateTag=gsuite_update_tag)
+    neo4j_session.run(membership_qry, MemberData=members, GroupID=group.get("id"), UpdateTag=gsuite_update_tag)
 
 
 @timeit
-def cleanup_gsuite_users(session, common_job_parameters):
+def cleanup_gsuite_users(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job(
         'gsuite_ingest_users_cleanup.json',
-        session,
+        neo4j_session,
         common_job_parameters,
     )
 
 
 @timeit
-def cleanup_gsuite_groups(session, common_job_parameters):
+def cleanup_gsuite_groups(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job(
         'gsuite_ingest_groups_cleanup.json',
-        session,
+        neo4j_session,
         common_job_parameters,
     )
 
 
 @timeit
-def sync_gsuite_users(session, admin, gsuite_update_tag, common_job_parameters):
+def sync_gsuite_users(
+    neo4j_session: neo4j.Session, admin: Resource, gsuite_update_tag: int, common_job_parameters: Dict,
+) -> None:
     """
     GET GSuite user objects using the google admin api resource, load the data into Neo4j and clean up stale nodes.
 
@@ -242,16 +249,18 @@ def sync_gsuite_users(session, admin, gsuite_update_tag, common_job_parameters):
     logger.debug('Syncing GSuite Users')
     resp_objs = get_all_users(admin)
     users = transform_users(resp_objs)
-    load_gsuite_users(session, users, gsuite_update_tag)
-    cleanup_gsuite_users(session, common_job_parameters)
+    load_gsuite_users(neo4j_session, users, gsuite_update_tag)
+    cleanup_gsuite_users(neo4j_session, common_job_parameters)
 
 
 @timeit
-def sync_gsuite_groups(session, admin, gsuite_update_tag, common_job_parameters):
+def sync_gsuite_groups(
+    neo4j_session: neo4j.Session, admin: Resource, gsuite_update_tag: int, common_job_parameters: Dict,
+) -> None:
     """
     GET GSuite group objects using the google admin api resource, load the data into Neo4j and clean up stale nodes.
 
-    :param session: The Neo4j session
+    :param neo4j_session: The Neo4j session
     :param admin: Google admin resource object created by `googleapiclient.discovery.build()`.
     See https://googleapis.github.io/google-api-python-client/docs/epy/googleapiclient.discovery-module.html#build.
     :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
@@ -261,13 +270,15 @@ def sync_gsuite_groups(session, admin, gsuite_update_tag, common_job_parameters)
     logger.debug('Syncing GSuite Groups')
     resp_objs = get_all_groups(admin)
     groups = transform_groups(resp_objs)
-    load_gsuite_groups(session, groups, gsuite_update_tag)
-    cleanup_gsuite_groups(session, common_job_parameters)
-    sync_gsuite_members(groups, session, admin, gsuite_update_tag)
+    load_gsuite_groups(neo4j_session, groups, gsuite_update_tag)
+    cleanup_gsuite_groups(neo4j_session, common_job_parameters)
+    sync_gsuite_members(groups, neo4j_session, admin, gsuite_update_tag)
 
 
 @timeit
-def sync_gsuite_members(groups, session, admin, gsuite_update_tag):
+def sync_gsuite_members(
+    groups: List[Dict], neo4j_session: neo4j.Session, admin: Resource, gsuite_update_tag: int,
+) -> None:
     for group in groups:
         members = get_members_for_group(admin, group['email'])
-        load_gsuite_members(session, group, members, gsuite_update_tag)
+        load_gsuite_members(neo4j_session, group, members, gsuite_update_tag)
