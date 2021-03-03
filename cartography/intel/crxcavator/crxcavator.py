@@ -1,6 +1,11 @@
 import json
 import logging
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Tuple
 
+import neo4j
 import requests.auth
 from requests import exceptions
 
@@ -12,7 +17,10 @@ _TIMEOUT = (60, 60)
 
 
 @timeit
-def get_extension_details(crxcavator_api_key, crxcavator_base_url, extension_id, version):
+def get_extension_details(
+    crxcavator_api_key: str, crxcavator_base_url: str, extension_id: str,
+    version: str,
+) -> List[Dict]:
     """
     Get metadata for the specific extension_id and version number provided
     :param crxcavator_api_key: The API key to access the CRXcavator service
@@ -26,7 +34,7 @@ def get_extension_details(crxcavator_api_key, crxcavator_base_url, extension_id,
 
 
 @timeit
-def get_users_extensions(crxcavator_api_key, crxcavator_base_url):
+def get_users_extensions(crxcavator_api_key: str, crxcavator_base_url: str) -> List[Dict]:
     """
     Gets listing of all users who have installed each extension
     :param crxcavator_api_key: The API key to access the CRXcavator service
@@ -38,7 +46,7 @@ def get_users_extensions(crxcavator_api_key, crxcavator_base_url):
 
 
 @timeit
-def call_crxcavator_api(api_and_parameters, crxcavator_api_key, crxcavator_base_url):
+def call_crxcavator_api(api_and_parameters: str, crxcavator_api_key: str, crxcavator_base_url: str) -> List[Dict]:
     """
     Perform the call requested to the CRXcavator API
     :param crxcavator_api_key: The API key to access the CRXcavator service
@@ -66,7 +74,7 @@ def call_crxcavator_api(api_and_parameters, crxcavator_api_key, crxcavator_base_
 
 
 @timeit
-def get_extensions(crxcavator_api_key, crxcavator_base_url, extensions_list):
+def get_extensions(crxcavator_api_key: str, crxcavator_base_url: str, extensions_list: List[Dict]) -> List[Dict]:
     """
     Retrieves the detailed information for all the extension_id and version pairs
     :param crxcavator_api_key: The API key to access the CRXcavator service
@@ -74,7 +82,7 @@ def get_extensions(crxcavator_api_key, crxcavator_base_url, extensions_list):
     :param extensions_list: list of dictonary items containing the extension_id and version pairs
     :return: list containing all metadata for extensions
     """
-    extensions_details = []
+    extensions_details: List[Dict] = []
     for extension in extensions_list:
         extension_id = extension['extension_id']
         version = extension['version']
@@ -101,7 +109,7 @@ def get_extensions(crxcavator_api_key, crxcavator_base_url, extensions_list):
 
 
 @timeit
-def transform_extensions(extension_details):
+def transform_extensions(extension_details: List[Dict]) -> List[Dict]:
     """
     Transforms the raw extensions JSON from the API into a list of extensions data
     :param extension_details:  List containing the extension details
@@ -111,7 +119,7 @@ def transform_extensions(extension_details):
     # instead, each object is named after it's key, making enumeration more difficult
     # will build a cleaner object for import into graph
 
-    extensions = []
+    extensions: List[Dict] = []
     for extension in extension_details:
         extension_id = extension['extension_id']
         version = extension['version']
@@ -156,7 +164,7 @@ def transform_extensions(extension_details):
 
 
 @timeit
-def get_risk_data(data_dict, key):
+def get_risk_data(data_dict: Dict, key: str) -> int:
     """
     Gets the total risk value from the provided key and returns the value else 0
     :param data_dict: input data dictionary to parse
@@ -169,7 +177,7 @@ def get_risk_data(data_dict, key):
 
 
 @timeit
-def load_extensions(extensions, session, update_tag):
+def load_extensions(extensions: List[Dict], neo4j_session: neo4j.Session, update_tag: int) -> None:
     """
     Ingests the extension details into Neo4J
     :param extensions: List of extension data to load to Neo4J
@@ -216,11 +224,11 @@ def load_extensions(extensions, session, update_tag):
     """
 
     logger.info(f'Ingesting {len(extensions)} extensions')
-    session.run(ingestion_cypher, ExtensionsData=extensions, UpdateTag=update_tag)
+    neo4j_session.run(ingestion_cypher, ExtensionsData=extensions, UpdateTag=update_tag)
 
 
 @timeit
-def transform_user_extensions(user_extension_json):
+def transform_user_extensions(user_extension_json: Dict) -> Tuple[List[Any], List[Dict], List[Dict]]:
     """
     Transforms the raw extensions JSON from the API into a list of extensions mapped to users
     :param user_extension_json:  The JSON text blob returned from the CRXcavator API
@@ -228,8 +236,8 @@ def transform_user_extensions(user_extension_json):
     """
     user_extensions = user_extension_json.items()
     users_set = set()
-    extensions = []
-    extensions_by_user = []
+    extensions: List[Dict] = []
+    extensions_by_user: List[Dict] = []
     for extension in user_extensions:
         for details in extension[1].items():
             extension_id = extension[0]
@@ -259,7 +267,10 @@ def transform_user_extensions(user_extension_json):
 
 
 @timeit
-def load_user_extensions(users, extensions_by_user, session, update_tag):
+def load_user_extensions(
+    users: List[Dict], extensions_by_user: Dict, neo4j_session: neo4j.Session,
+    update_tag: int,
+) -> None:
     """
     Ingests the extension to user mapping details into Neo4J
     :param users: List of user objects to create for mapping
@@ -287,13 +298,16 @@ def load_user_extensions(users, extensions_by_user, session, update_tag):
     """
 
     logger.info(f'Ingesting {len(users)} users')
-    session.run(user_ingestion_cypher, Users=users, UpdateTag=update_tag)
+    neo4j_session.run(user_ingestion_cypher, Users=users, UpdateTag=update_tag)
     logger.info(f'Ingesting {len(extensions_by_user)} user->extension relationships')
-    session.run(extension_ingestion_cypher, ExtensionsUsers=extensions_by_user, UpdateTag=update_tag)
+    neo4j_session.run(extension_ingestion_cypher, ExtensionsUsers=extensions_by_user, UpdateTag=update_tag)
 
 
 @timeit
-def sync_extensions(neo4j_session, common_job_parameters, crxcavator_api_key, crxcavator_base_url):
+def sync_extensions(
+    neo4j_session: neo4j.Session, common_job_parameters: Dict, crxcavator_api_key: str,
+    crxcavator_base_url: str,
+) -> None:
     """
     Performs the sequential tasks to collect, transform, and sync extension data
     :param neo4j_session: Neo4J session for database interface

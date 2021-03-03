@@ -106,4 +106,4 @@ def sync(
         logger.info(f"Syncing ElastiCache clusters for region '{region}' in account {current_aws_account_id}")
         clusters = get_elasticache_clusters(boto3_session, region)
         load_elasticache_clusters(neo4j_session, clusters, region, current_aws_account_id, update_tag)
-    cleanup(neo4j_session, common_job_parameters)
+    cleanup(neo4j_session, current_aws_account_id, update_tag)
