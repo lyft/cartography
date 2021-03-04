@@ -34,8 +34,8 @@ def get_apigateway_rest_apis(boto3_session: boto3.session.Session, region: str) 
 @timeit
 @aws_handle_regions
 def get_rest_api_details(
-        boto3_session: boto3.session.Session, rest_apis: Dict, region: str,
-) -> Generator[Any, Any, Any]:
+        boto3_session: boto3.session.Session, rest_apis: List[Dict], region: str,
+) -> Generator[Any, Any, Any, Any]:
     """
     Iterates over all API Gateway REST APIs.
     """
@@ -63,7 +63,7 @@ def get_rest_api_stages(api: Dict, client: botocore.client.BaseClient) -> List[A
 
 
 @timeit
-def get_rest_api_client_certificate(stages, client):
+def get_rest_api_client_certificate(stages: Dict, client: botocore.client.BaseClient) -> List[Any]:
     """
     Gets the current ClientCertificate resource if present, else returns None.
     """
@@ -83,7 +83,7 @@ def get_rest_api_client_certificate(stages, client):
 
 
 @timeit
-def get_rest_api_resources(api, client):
+def get_rest_api_resources(api: Dict, client: botocore.client.BaseClient) -> List[Any]:
     """
     Gets the collection of Resource resources.
     """
@@ -97,7 +97,7 @@ def get_rest_api_resources(api, client):
 
 
 @timeit
-def get_rest_api_policy(api, client):
+def get_rest_api_policy(api: Dict, client: botocore.client.BaseClient) -> List[Any]:
     """
     Gets the REST API policy. Returns policy string or None if no policy is present.
     """
@@ -107,7 +107,7 @@ def get_rest_api_policy(api, client):
 
 @timeit
 def load_apigateway_rest_apis(
-    neo4j_session: neo4j.Session, rest_apis: Dict, region: str, current_aws_account_id: str,
+    neo4j_session: neo4j.Session, rest_apis: List[Dict], region: str, current_aws_account_id: str,
     aws_update_tag: int,
 ) -> None:
     """
@@ -145,7 +145,9 @@ def load_apigateway_rest_apis(
 
 
 @timeit
-def _load_apigateway_policies(neo4j_session, policies, update_tag):
+def _load_apigateway_policies(
+        neo4j_session: neo4j.Session, policies: List, update_tag: int,
+) -> None:
     """
     Ingest API Gateway REST API policy results into neo4j.
     """
@@ -164,7 +166,7 @@ def _load_apigateway_policies(neo4j_session, policies, update_tag):
     )
 
 
-def _set_default_values(neo4j_session, aws_account_id):
+def _set_default_values(neo4j_session: neo4j.Session, aws_account_id: str) -> None:
     set_defaults = """
     MATCH (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(restApi:APIGatewayRestAPI)
     where NOT EXISTS(restApi.anonymous_actions)
@@ -178,7 +180,9 @@ def _set_default_values(neo4j_session, aws_account_id):
 
 
 @timeit
-def _load_apigateway_stages(neo4j_session, stages, update_tag):
+def _load_apigateway_stages(
+        neo4j_session: neo4j.Session, stages: List, update_tag: int
+) -> None:
     """
     Ingest the Stage resource details into neo4j.
     """
@@ -215,7 +219,9 @@ def _load_apigateway_stages(neo4j_session, stages, update_tag):
 
 
 @timeit
-def _load_apigateway_certificates(neo4j_session, certificates, update_tag):
+def _load_apigateway_certificates(
+        neo4j_session: neo4j.Session, certificates: List, update_tag: int,
+) -> None:
     """
     Ingest the API Gateway Client Certificate details into neo4j.
     """
@@ -246,7 +252,12 @@ def _load_apigateway_certificates(neo4j_session, certificates, update_tag):
 
 
 @timeit
-def _load_apigateway_resources(neo4j_session, resources, update_tag):
+def _load_apigateway_resources(
+        neo4j_session: neo4j.Session, resources: List, update_tag: int,
+) -> None:
+    """
+    Ingest the API Gateway Resource details into neo4j.
+    """
     ingest_resources = """
     UNWIND {resources_list} AS res
     MERGE (s:APIGatewayResource{id: res.id})
@@ -270,14 +281,17 @@ def _load_apigateway_resources(neo4j_session, resources, update_tag):
 
 
 @timeit
-def load_rest_api_details(neo4j_session, stages_certificate_resources, aws_account_id, update_tag):
+def load_rest_api_details(
+        neo4j_session: neo4j.Session, stages_certificate_resources: List[Tuple[Any, Any, Any, Any, Any]],
+        aws_account_id: str, update_tag: int,
+) -> None:
     """
     Create dictionaries for Stages, Client certificates, policies and Resource resources
     so we can import them in a single query
     """
-    stages = []
-    certificates = []
-    resources = []
+    stages: List[Dict] = []
+    certificates: List[Dict] = []
+    resources: List[Dict] = []
     policies = []
     for api_id, stage, certificate, resource, policy in stages_certificate_resources:
         parsed_policy = parse_policy(api_id, policy)
