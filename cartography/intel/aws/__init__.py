@@ -65,11 +65,11 @@ def _sync_one_account(
 
     # MAP IAM permissions
     if 'permission_relationships' in aws_requested_syncs:
-        RESOURCE_FUNCTIONS['permission_relationships'](**sync_args)
+        RESOURCE_FUNCTIONS['permission_relationships'](neo4j_session, current_aws_account_id, update_tag, common_job_parameters)
 
     # AWS Tags - Must always be last.
     if 'resourcegroupstaggingapi' in aws_requested_syncs:
-        RESOURCE_FUNCTIONS['resourcegroupstaggingapi'](**sync_args)
+        RESOURCE_FUNCTIONS['resourcegroupstaggingapi'](neo4j_session, boto3_session, regions, update_tag, common_job_parameters)
 
 
 def _autodiscover_account_regions(boto3_session: boto3.session.Session, account_id: str) -> List[str]:

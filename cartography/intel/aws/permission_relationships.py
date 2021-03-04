@@ -8,7 +8,6 @@ from typing import List
 from typing import Pattern
 from typing import Tuple
 
-import boto3
 import neo4j
 import yaml
 
@@ -355,8 +354,7 @@ def is_valid_rpr(rpr: Dict) -> bool:
 
 @timeit
 def sync(
-    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
-    update_tag: int, common_job_parameters: Dict,
+    neo4j_session: neo4j.Session, current_aws_account_id: str, update_tag: int, common_job_parameters: Dict,
 ) -> None:
     logger.info("Syncing Permission Relationships for account '%s'.", current_aws_account_id)
     principals = get_principals_for_account(neo4j_session, current_aws_account_id)
