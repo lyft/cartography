@@ -4,14 +4,6 @@ import tests.data.digitalocean.compute
 TEST_UPDATE_TAG = 123456789
 
 
-def _ensure_local_neo4j_has_test_droplet_data(neo4j_session):
-    cartography.intel.digitalocean.compute.load_droplets(
-        neo4j_session,
-        tests.data.digitalocean.compute.TRANSFORMED_DROPLETS,
-        TEST_UPDATE_TAG,
-    )
-
-
 def test_transform_and_load_droplets(neo4j_session):
     droplet_res = tests.data.digitalocean.compute.DROPLETS_RESPONSE
     test_droplet = droplet_res[0]
@@ -26,7 +18,6 @@ def test_transform_and_load_droplets(neo4j_session):
     """
     Test that we can correctly transform and load DODroplet nodes to Neo4j.
     """
-
     droplet_list = cartography.intel.digitalocean.compute.transform_droplets(droplet_res, account_id, project_resources)
     cartography.intel.digitalocean.compute.load_droplets(neo4j_session, droplet_list, TEST_UPDATE_TAG)
 
