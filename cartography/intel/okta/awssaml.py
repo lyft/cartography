@@ -1,6 +1,11 @@
 # Okta intel module - AWS SAML
 import logging
 import re
+from typing import Dict
+from typing import List
+from typing import Optional
+
+import neo4j
 
 from cartography.util import timeit
 
@@ -8,12 +13,12 @@ from cartography.util import timeit
 logger = logging.getLogger(__name__)
 
 
-def _parse_regex(regex_string):
+def _parse_regex(regex_string: str) -> str:
     return regex_string.replace("{{accountid}}", "P<accountid>").replace("{{role}}", "P<role>").strip()
 
 
 @timeit
-def transform_okta_group_to_aws_role(group_id, group_name, mapping_regex):
+def transform_okta_group_to_aws_role(group_id: str, group_name: str, mapping_regex: str) -> Optional[Dict]:
     regex = _parse_regex(mapping_regex)
     matches = re.search(regex, group_name)
     if matches:
@@ -21,10 +26,12 @@ def transform_okta_group_to_aws_role(group_id, group_name, mapping_regex):
         role = matches.group("role")
         role_arn = f"arn:aws:iam::{accountid}:role/{role}"
         return {"groupid": group_id, "role": role_arn}
+    else:
+        return None
 
 
 @timeit
-def query_for_okta_to_aws_role_mapping(neo4j_session, mapping_regex):
+def query_for_okta_to_aws_role_mapping(neo4j_session: neo4j.Session, mapping_regex: str) -> List[Dict]:
     """
     Query the graph for all groups associated with the amazon_aws application and map them to AWSRoles
     :param neo4j_session: session from the Neo4j server
@@ -32,7 +39,7 @@ def query_for_okta_to_aws_role_mapping(neo4j_session, mapping_regex):
     """
     query = "MATCH (app:OktaApplication{name:'amazon_aws'})--(group:OktaGroup) return group.id, group.name"
 
-    group_to_role_mapping = []
+    group_to_role_mapping: List[Dict] = []
     has_results = False
     results = neo4j_session.run(query)
 
@@ -52,7 +59,10 @@ def query_for_okta_to_aws_role_mapping(neo4j_session, mapping_regex):
 
 
 @timeit
-def _load_okta_group_to_aws_roles(neo4j_session, group_to_role, okta_update_tag):
+def _load_okta_group_to_aws_roles(
+    neo4j_session: neo4j.Session, group_to_role: List[Dict],
+    okta_update_tag: int,
+) -> None:
     """
     Add the ALLOWED_BY relationship between OktaGroups and the AWSRoles they enable
     :param neo4j_session: session with the Neo4j server
@@ -78,7 +88,7 @@ def _load_okta_group_to_aws_roles(neo4j_session, group_to_role, okta_update_tag)
 
 
 @timeit
-def _load_human_can_assume_role(neo4j_session, okta_update_tag):
+def _load_human_can_assume_role(neo4j_session: neo4j.Session, okta_update_tag: int) -> None:
     """
     Add the CAN_ASSUME_ROLE relationship between Humans and the AWSRoles they can assume
     :param neo4j_session: session with the Neo4j server
@@ -98,7 +108,7 @@ def _load_human_can_assume_role(neo4j_session, okta_update_tag):
 
 
 @timeit
-def sync_okta_aws_saml(neo4j_session, mapping_regex, okta_update_tag):
+def sync_okta_aws_saml(neo4j_session: neo4j.Session, mapping_regex: str, okta_update_tag: int) -> None:
     """
     Sync okta integration with saml. This will link OktaGroups to the AWSRoles they enable.
     This is for people who use the okta saml provider for AWS
