@@ -1,6 +1,15 @@
 import json
 import logging
+from typing import Any
+from typing import Dict
+from typing import Generator
+from typing import List
+from typing import Optional
+from typing import Tuple
 
+import boto3
+import botocore
+import neo4j
 from botocore.exceptions import ClientError
 from policyuniverse.policy import Policy
 
@@ -13,10 +22,10 @@ logger = logging.getLogger(__name__)
 
 @timeit
 @aws_handle_regions
-def get_apigateway_rest_apis(boto3_session, region):
+def get_apigateway_rest_apis(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
     client = boto3_session.client('apigateway', region_name=region)
     paginator = client.get_paginator('get_rest_apis')
-    apis = []
+    apis: List[Any] = []
     for page in paginator.paginate():
         apis.extend(page['items'])
     return apis
@@ -24,7 +33,9 @@ def get_apigateway_rest_apis(boto3_session, region):
 
 @timeit
 @aws_handle_regions
-def get_rest_api_details(boto3_session, rest_apis, region):
+def get_rest_api_details(
+        boto3_session: boto3.session.Session, rest_apis: Dict, region: str,
+) -> Generator[Any, Any, Any]:
     """
     Iterates over all API Gateway REST APIs.
     """
@@ -38,7 +49,7 @@ def get_rest_api_details(boto3_session, rest_apis, region):
 
 
 @timeit
-def get_rest_api_stages(api, client):
+def get_rest_api_stages(api: Dict, client: botocore.client.BaseClient) -> List[Any]:
     """
     Gets the REST API Stage Resources.
     """
@@ -95,7 +106,10 @@ def get_rest_api_policy(api, client):
 
 
 @timeit
-def load_apigateway_rest_apis(neo4j_session, rest_apis, region, current_aws_account_id, aws_update_tag):
+def load_apigateway_rest_apis(
+    neo4j_session: neo4j.Session, rest_apis: Dict, region: str, current_aws_account_id: str,
+    aws_update_tag: int,
+) -> None:
     """
     Ingest the details of API Gateway REST APIs into neo4j.
     """
@@ -296,7 +310,7 @@ def load_rest_api_details(neo4j_session, stages_certificate_resources, aws_accou
 
 
 @timeit
-def parse_policy(api_id, policy):
+def parse_policy(api_id: str, policy: Policy) -> Optional[Dict[Any, Any]]:
     """
     Uses PolicyUniverse to parse API Gateway REST API policy and returns the internet accessibility results
     """
@@ -315,12 +329,15 @@ def parse_policy(api_id, policy):
 
 
 @timeit
-def cleanup(neo4j_session, common_job_parameters):
+def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('aws_import_apigateway_cleanup.json', neo4j_session, common_job_parameters)
 
 
 @timeit
-def sync_apigateway_rest_apis(neo4j_session, boto3_session, region, current_aws_account_id, aws_update_tag):
+def sync_apigateway_rest_apis(
+    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, region: str, current_aws_account_id: str,
+    aws_update_tag: int,
+) -> None:
     rest_apis = get_apigateway_rest_apis(boto3_session, region)
     load_apigateway_rest_apis(neo4j_session, rest_apis, region, current_aws_account_id, aws_update_tag)
 
@@ -329,7 +346,10 @@ def sync_apigateway_rest_apis(neo4j_session, boto3_session, region, current_aws_
 
 
 @timeit
-def sync(neo4j_session, boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters):
+def sync(
+    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
+    update_tag: int, common_job_parameters: Dict,
+) -> None:
     for region in regions:
         logger.info(f"Syncing AWS APIGateway Rest APIs for region '{region}' in account '{current_aws_account_id}'.")
         sync_apigateway_rest_apis(neo4j_session, boto3_session, region, current_aws_account_id, update_tag)
