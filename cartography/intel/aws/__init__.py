@@ -11,6 +11,7 @@ import neo4j
 from . import ec2
 from . import organizations
 from .resources import RESOURCE_FUNCTIONS
+from cartography.config import Config
 from cartography.intel.aws.util.common import parse_and_validate_aws_requested_syncs
 from cartography.util import run_analysis_job
 from cartography.util import run_cleanup_job
@@ -88,23 +89,26 @@ def _autodiscover_account_regions(boto3_session: boto3.session.Session, account_
     return regions
 
 
-def _autodiscover_accounts(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters):
+def _autodiscover_accounts(
+    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, account_id: str,
+    sync_tag: int, common_job_parameters: Dict,
+) -> None:
     logger.info("Trying to autodiscover accounts.")
     try:
         # Fetch all accounts
         client = boto3_session.client('organizations')
         paginator = client.get_paginator('list_accounts')
-        accounts = []
+        accounts: List[Dict] = []
         for page in paginator.paginate():
             accounts.extend(page['Accounts'])
 
         # Filter out every account which is not in the ACTIVE status
         # and select only the Id and Name fields
-        accounts = {x['Name']: x['Id'] for x in accounts if x['Status'] == 'ACTIVE'}
+        filtered_accounts: Dict[str, str] = {x['Name']: x['Id'] for x in accounts if x['Status'] == 'ACTIVE'}
 
         # Add them to the graph
         logger.info("Loading autodiscovered accounts.")
-        organizations.load_aws_accounts(neo4j_session, accounts, sync_tag, common_job_parameters)
+        organizations.load_aws_accounts(neo4j_session, filtered_accounts, sync_tag, common_job_parameters)
     except botocore.exceptions.ClientError:
         logger.warning(f"The current account ({account_id}) doesn't have enough permissions to perform autodiscovery.")
 
@@ -147,7 +151,7 @@ def _sync_multiple_accounts(
 
 
 @timeit
-def start_aws_ingestion(neo4j_session, config):
+def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
     common_job_parameters = {
         "UPDATE_TAG": config.update_tag,
         "permission_relationships_file": config.permission_relationships_file,
@@ -185,7 +189,7 @@ def start_aws_ingestion(neo4j_session, config):
             ),
         )
 
-    requested_syncs: List[str] = []
+    requested_syncs: List[str] = list(RESOURCE_FUNCTIONS.keys())
     if config.aws_requested_syncs:
         requested_syncs = parse_and_validate_aws_requested_syncs(config.aws_requested_syncs)
 

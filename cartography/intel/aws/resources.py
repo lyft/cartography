@@ -1,7 +1,10 @@
+from typing import Dict
+
 from . import apigateway
 from . import dynamodb
 from . import ecr
 from . import eks
+from . import elasticache
 from . import elasticsearch
 from . import emr
 from . import iam
@@ -25,8 +28,7 @@ from .ec2.tgw import sync_transit_gateways
 from .ec2.vpc import sync_vpc
 from .ec2.vpc_peering import sync_vpc_peering
 
-
-RESOURCE_FUNCTIONS = {
+RESOURCE_FUNCTIONS: Dict = {
     'iam': iam.sync,
     's3': s3.sync,
     'dynamodb': dynamodb.sync,
@@ -43,6 +45,7 @@ RESOURCE_FUNCTIONS = {
     'ec2:vpc_peering': sync_vpc_peering,
     'ecr': ecr.sync,
     'eks': eks.sync,
+    'elasticache': elasticache.sync,
     'emr': emr.sync,
     'lambda_function': lambda_function.sync,
     'kms': kms.sync,

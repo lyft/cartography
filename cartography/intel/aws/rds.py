@@ -1,4 +1,10 @@
 import logging
+from typing import Any
+from typing import Dict
+from typing import List
+
+import boto3
+import neo4j
 
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
@@ -9,13 +15,13 @@ logger = logging.getLogger(__name__)
 
 @timeit
 @aws_handle_regions
-def get_rds_instance_data(boto3_session, region):
+def get_rds_instance_data(boto3_session: boto3.session.Session, region: str) -> List[Any]:
     """
     Create an RDS boto3 client and grab all the DBInstances.
     """
     client = boto3_session.client('rds', region_name=region)
     paginator = client.get_paginator('describe_db_instances')
-    instances = []
+    instances: List[Any] = []
     for page in paginator.paginate():
         instances.extend(page['DBInstances'])
 
@@ -23,7 +29,10 @@ def get_rds_instance_data(boto3_session, region):
 
 
 @timeit
-def load_rds_instances(neo4j_session, data, region, current_aws_account_id, aws_update_tag):
+def load_rds_instances(
+    neo4j_session: neo4j.Session, data: Dict, region: str, current_aws_account_id: str,
+    aws_update_tag: int,
+) -> None:
     """
     Ingest the RDS instances to neo4j and link them to necessary nodes.
     """
@@ -122,7 +131,10 @@ def load_rds_instances(neo4j_session, data, region, current_aws_account_id, aws_
 
 
 @timeit
-def _attach_ec2_subnet_groups(neo4j_session, instance, region, current_aws_account_id, aws_update_tag):
+def _attach_ec2_subnet_groups(
+    neo4j_session: neo4j.Session, instance: dict, region: str, current_aws_account_id: str,
+    aws_update_tag: int,
+) -> None:
     """
     Attach RDS instance to its EC2 subnets
     """
@@ -157,7 +169,10 @@ def _attach_ec2_subnet_groups(neo4j_session, instance, region, current_aws_accou
 
 
 @timeit
-def _attach_ec2_subnets_to_subnetgroup(neo4j_session, db_subnet_group, region, current_aws_account_id, aws_update_tag):
+def _attach_ec2_subnets_to_subnetgroup(
+    neo4j_session: neo4j.Session, db_subnet_group: Dict, region: str,
+    current_aws_account_id: str, aws_update_tag: int,
+) -> None:
     """
     Attach EC2Subnets to the DB Subnet Group.
 
@@ -189,7 +204,7 @@ def _attach_ec2_subnets_to_subnetgroup(neo4j_session, db_subnet_group, region, c
 
 
 @timeit
-def _attach_ec2_security_groups(neo4j_session, instance, aws_update_tag):
+def _attach_ec2_security_groups(neo4j_session: neo4j.Session, instance: Dict, aws_update_tag: int) -> None:
     """
     Attach an RDS instance to its EC2SecurityGroups
     """
@@ -210,7 +225,7 @@ def _attach_ec2_security_groups(neo4j_session, instance, aws_update_tag):
 
 
 @timeit
-def _attach_read_replicas(neo4j_session, read_replicas, aws_update_tag):
+def _attach_read_replicas(neo4j_session: neo4j.Session, read_replicas: Dict, aws_update_tag: int) -> None:
     """
     Attach read replicas to their source instances
     """
@@ -230,7 +245,7 @@ def _attach_read_replicas(neo4j_session, read_replicas, aws_update_tag):
         )
 
 
-def _validate_rds_endpoint(rds):
+def _validate_rds_endpoint(rds: Dict) -> Dict:
     """
     Get Endpoint from RDS data structure.  Log to debug if an Endpoint field does not exist.
     """
@@ -240,7 +255,7 @@ def _validate_rds_endpoint(rds):
     return ep
 
 
-def _get_db_subnet_group_arn(region, current_aws_account_id, db_subnet_group_name):
+def _get_db_subnet_group_arn(region: str, current_aws_account_id: str, db_subnet_group_name: str) -> str:
     """
     Return an ARN for the DB subnet group name by concatenating the account name and region.
     This is done to avoid another AWS API call since the describe_db_instances boto call does not return the DB subnet
@@ -252,7 +267,7 @@ def _get_db_subnet_group_arn(region, current_aws_account_id, db_subnet_group_nam
 
 
 @timeit
-def cleanup_rds_instances_and_db_subnet_groups(neo4j_session, common_job_parameters):
+def cleanup_rds_instances_and_db_subnet_groups(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     """
     Remove RDS graph nodes and DBSubnetGroups that were created from other ingestion runs
     """
@@ -261,19 +276,25 @@ def cleanup_rds_instances_and_db_subnet_groups(neo4j_session, common_job_paramet
 
 @timeit
 def sync_rds_instances(
-    neo4j_session, boto3_session, regions, current_aws_account_id, aws_update_tag,
-    common_job_parameters,
-):
+    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
+    update_tag: int, common_job_parameters: Dict,
+) -> None:
     """
     Grab RDS instance data from AWS, ingest to neo4j, and run the cleanup job.
     """
     for region in regions:
         logger.info("Syncing RDS for region '%s' in account '%s'.", region, current_aws_account_id)
         data = get_rds_instance_data(boto3_session, region)
-        load_rds_instances(neo4j_session, data, region, current_aws_account_id, aws_update_tag)
+        load_rds_instances(neo4j_session, data, region, current_aws_account_id, update_tag)
     cleanup_rds_instances_and_db_subnet_groups(neo4j_session, common_job_parameters)
 
 
 @timeit
-def sync(neo4j_session, boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters):
-    sync_rds_instances(neo4j_session, boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters)
+def sync(
+    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
+    update_tag: int, common_job_parameters: Dict,
+) -> None:
+    sync_rds_instances(
+        neo4j_session, boto3_session, regions, current_aws_account_id, update_tag,
+        common_job_parameters,
+    )

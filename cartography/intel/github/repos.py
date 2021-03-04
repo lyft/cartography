@@ -1,6 +1,11 @@
 import logging
 from string import Template
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
 
+import neo4j
 from packaging.requirements import InvalidRequirement
 from packaging.requirements import Requirement
 from packaging.utils import canonicalize_name
@@ -81,7 +86,7 @@ GITHUB_ORG_REPOS_PAGINATED_GRAPHQL = """
 
 
 @timeit
-def get(token, api_url, organization):
+def get(token: str, api_url: str, organization: str) -> List[Dict]:
     """
     Retrieve a list of repos from a Github organization as described in
     https://docs.github.com/en/graphql/reference/objects#repository.
@@ -95,7 +100,7 @@ def get(token, api_url, organization):
     return repos
 
 
-def transform(repos_json):
+def transform(repos_json: List[Dict]) -> Dict:
     """
     Parses the JSON returned from GitHub API to create data for graph ingestion
     :param repos_json: the list of individual repository nodes from GitHub. See tests.data.github.repos.GET_REPOS for
@@ -103,12 +108,14 @@ def transform(repos_json):
     :return: Dict containing the repos, repo->language mapping, owners->repo mapping, outside collaborators->repo
     mapping, and Python requirements files (if any) in a repo.
     """
-    transformed_repo_list = []
-    transformed_repo_languages = []
-    transformed_repo_owners = []
+    transformed_repo_list: List[Dict] = []
+    transformed_repo_languages: List[Dict] = []
+    transformed_repo_owners: List[Dict] = []
     # See https://docs.github.com/en/graphql/reference/enums#repositorypermission
-    transformed_collaborators = {'ADMIN': [], 'MAINTAIN': [], 'READ': [], 'TRIAGE': [], 'WRITE': []}
-    transformed_requirements_files = []
+    transformed_collaborators: Dict[str, List[Any]] = {
+        'ADMIN': [], 'MAINTAIN': [], 'READ': [], 'TRIAGE': [], 'WRITE': [],
+    }
+    transformed_requirements_files: List[Dict] = []
     for repo_object in repos_json:
         _transform_repo_languages(repo_object['url'], repo_object, transformed_repo_languages)
         _transform_repo_objects(repo_object, transformed_repo_list)
@@ -125,7 +132,7 @@ def transform(repos_json):
     return results
 
 
-def _create_default_branch_id(repo_url, default_branch_ref_id):
+def _create_default_branch_id(repo_url: str, default_branch_ref_id: str) -> str:
     """
     Return a unique node id for a repo's defaultBranchId using the given repo_url and default_branch_ref_id.
     This ensures that default branches for each GitHub repo are unique nodes in the graph.
@@ -133,14 +140,14 @@ def _create_default_branch_id(repo_url, default_branch_ref_id):
     return f"{repo_url}:{default_branch_ref_id}"
 
 
-def _create_git_url_from_ssh_url(ssh_url):
+def _create_git_url_from_ssh_url(ssh_url: str) -> str:
     """
     Return a git:// URL from the given ssh_url
     """
     return ssh_url.replace("/", ":").replace("git@", "git://")
 
 
-def _transform_repo_objects(input_repo_object, out_repo_list):
+def _transform_repo_objects(input_repo_object: Dict, out_repo_list: List[Dict]) -> None:
     """
     Performs data transforms including creating necessary IDs for unique nodes in the graph related to GitHub repos,
     their default branches, and languages.
@@ -178,7 +185,7 @@ def _transform_repo_objects(input_repo_object, out_repo_list):
     })
 
 
-def _transform_repo_owners(owner_id, repo, repo_owners):
+def _transform_repo_owners(owner_id: str, repo: Dict, repo_owners: List[Dict]) -> None:
     """
     Helper function to transform repo owners.
     :param owner_id: The URL of the owner object (either of type Organization or User).
@@ -194,7 +201,7 @@ def _transform_repo_owners(owner_id, repo, repo_owners):
     })
 
 
-def _transform_repo_languages(repo_url, repo, repo_languages):
+def _transform_repo_languages(repo_url: str, repo: Dict, repo_languages: List[Dict]) -> None:
     """
     Helper function to transform the languages in a GitHub repo.
     :param repo_url: The URL of the repo.
@@ -210,7 +217,7 @@ def _transform_repo_languages(repo_url, repo, repo_languages):
             })
 
 
-def _transform_collaborators(collaborators, repo_url, transformed_collaborators):
+def _transform_collaborators(collaborators: Dict, repo_url: str, transformed_collaborators: Dict) -> None:
     """
     Performs data adjustments for outside collaborators in a GitHub repo.
     Output data shape = [{permission, repo_url, url (the user's URL), login, name}, ...]
@@ -228,7 +235,7 @@ def _transform_collaborators(collaborators, repo_url, transformed_collaborators)
             transformed_collaborators[user_permission].append(user)
 
 
-def _transform_python_requirements(req_file_contents, repo_url, out_requirements_files):
+def _transform_python_requirements(req_file_contents: Dict, repo_url: str, out_requirements_files: List[Dict]) -> None:
     """
     Performs data transformations for the requirements.txt files in a GitHub repo, if available.
     :param req_file_contents: str: The text contents of the requirements file.
@@ -262,7 +269,7 @@ def _transform_python_requirements(req_file_contents, repo_url, out_requirements
                     pinned_version = specifier.version
 
             # Set `spec` to a default value. Example values for str(req.specifier): "<4.0,>=3.0" or "==1.0.0".
-            spec = str(req.specifier)
+            spec: Optional[str] = str(req.specifier)
             # Set spec to `None` instead of empty string so that the Neo4j driver will leave the library.specifier field
             # undefined. As convention, we prefer undefined values over empty strings in the graph.
             if spec == '':
@@ -281,7 +288,7 @@ def _transform_python_requirements(req_file_contents, repo_url, out_requirements
 
 
 @timeit
-def load_github_repos(neo4j_session, update_tag, repo_data):
+def load_github_repos(neo4j_session: neo4j.Session, update_tag: int, repo_data: List[Dict]) -> None:
     """
     Ingest the GitHub repository information
     :param neo4j_session: Neo4J session object for server communication
@@ -332,7 +339,7 @@ def load_github_repos(neo4j_session, update_tag, repo_data):
 
 
 @timeit
-def load_github_languages(neo4j_session, update_tag, repo_languages):
+def load_github_languages(neo4j_session: neo4j.Session, update_tag: int, repo_languages: List[Dict]) -> None:
     """
     Ingest the relationships for repo languages
     :param neo4j_session: Neo4J session object for server communication
@@ -362,7 +369,7 @@ def load_github_languages(neo4j_session, update_tag, repo_languages):
 
 
 @timeit
-def load_github_owners(neo4j_session, update_tag, repo_owners):
+def load_github_owners(neo4j_session: neo4j.Session, update_tag: int, repo_owners: List[Dict]) -> None:
     """
     Ingest the relationships for repo owners
     :param neo4j_session: Neo4J session object for server communication
@@ -395,7 +402,7 @@ def load_github_owners(neo4j_session, update_tag, repo_owners):
 
 
 @timeit
-def load_collaborators(neo4j_session, update_tag, collaborators):
+def load_collaborators(neo4j_session: neo4j.Session, update_tag: int, collaborators: Dict) -> None:
     query = Template("""
     UNWIND {UserData} as user
 
@@ -424,7 +431,7 @@ def load_collaborators(neo4j_session, update_tag, collaborators):
 
 
 @timeit
-def load(neo4j_session, common_job_parameters, repo_data):
+def load(neo4j_session: neo4j.Session, common_job_parameters: Dict, repo_data: Dict) -> None:
     load_github_repos(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data['repos'])
     load_github_owners(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data['repo_owners'])
     load_github_languages(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data['repo_languages'])
@@ -433,7 +440,7 @@ def load(neo4j_session, common_job_parameters, repo_data):
 
 
 @timeit
-def load_python_requirements(neo4j_session, update_tag, requirements_objects):
+def load_python_requirements(neo4j_session: neo4j.Session, update_tag: int, requirements_objects: List[Dict]) -> None:
     query = """
     UNWIND {Requirements} AS req
         MERGE (lib:PythonLibrary:Dependency{id: req.id})
@@ -456,7 +463,10 @@ def load_python_requirements(neo4j_session, update_tag, requirements_objects):
     )
 
 
-def sync(neo4j_session, common_job_parameters, github_api_key, github_url, organization):
+def sync(
+    neo4j_session: neo4j.Session, common_job_parameters: Dict, github_api_key: str, github_url: str,
+    organization: str,
+) -> None:
     """
     Performs the sequential tasks to collect, transform, and sync github data
     :param neo4j_session: Neo4J session for database interface
