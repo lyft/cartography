@@ -1,6 +1,11 @@
 # Okta intel module - Origin
 import json
 import logging
+from typing import Dict
+from typing import List
+
+import neo4j
+from okta.framework.ApiClient import ApiClient
 
 from cartography.intel.okta.utils import create_api_client
 from cartography.util import timeit
@@ -9,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
-def _get_trusted_origins(api_client):
+def _get_trusted_origins(api_client: ApiClient) -> str:
     """
     Get trusted origins from Okta
     :param api_client: api client
@@ -22,13 +27,13 @@ def _get_trusted_origins(api_client):
 
 
 @timeit
-def transform_trusted_origins(data):
+def transform_trusted_origins(data: str) -> List[Dict]:
     """
     Transform trusted origin data returned by Okta Server
     :param data: json response
     :return: Array of dictionary containing trusted origins properties
     """
-    ret_list = []
+    ret_list: List[Dict] = []
 
     json_data = json.loads(data)
     for origin_data in json_data:
@@ -55,7 +60,10 @@ def transform_trusted_origins(data):
 
 
 @timeit
-def _load_trusted_origins(neo4j_session, okta_org_id, trusted_list, okta_update_tag):
+def _load_trusted_origins(
+    neo4j_session: neo4j.Session, okta_org_id: str, trusted_list: List[Dict],
+    okta_update_tag: int,
+) -> None:
     """
     Add trusted origins to the graph
     :param neo4j_session: session with the Neo4j server
@@ -95,7 +103,10 @@ def _load_trusted_origins(neo4j_session, okta_org_id, trusted_list, okta_update_
 
 
 @timeit
-def sync_trusted_origins(neo4j_session, okta_org_id, okta_update_tag, okta_api_key):
+def sync_trusted_origins(
+    neo4j_session: neo4j.Session, okta_org_id: str, okta_update_tag: int,
+    okta_api_key: str,
+) -> None:
     """
     Sync trusted origins
     :param neo4j_session: session with the Neo4j server
