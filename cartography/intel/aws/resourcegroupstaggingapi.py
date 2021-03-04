@@ -126,6 +126,7 @@ def compute_resource_id(tag_mapping: Dict, resource_type: str) -> str:
 def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('aws_import_tags_cleanup.json', neo4j_session, common_job_parameters)
 
+
 @timeit
 def sync(
     neo4j_session: neo4j.Session,
