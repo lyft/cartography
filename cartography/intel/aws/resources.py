@@ -1,5 +1,6 @@
 from typing import Dict
 
+from . import apigateway
 from . import dynamodb
 from . import ecr
 from . import eks
@@ -54,4 +55,5 @@ RESOURCE_FUNCTIONS: Dict = {
     'elasticsearch': elasticsearch.sync,
     'permission_relationships': permission_relationships.sync,
     'resourcegroupstaggingapi': resourcegroupstaggingapi.sync,
+    'apigateway': apigateway.sync,
 }
