@@ -3,6 +3,7 @@ import tests.data.digitalocean.management
 
 TEST_UPDATE_TAG = 123456789
 
+
 def test_transform_and_load_projects(neo4j_session):
     projects_res = tests.data.digitalocean.management.PROJECTS_RESPONSE
     test_project = projects_res[0]

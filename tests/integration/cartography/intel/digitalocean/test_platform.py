@@ -3,6 +3,7 @@ import tests.data.digitalocean.platform
 
 TEST_UPDATE_TAG = 123456789
 
+
 def test_transform_and_load_account(neo4j_session):
     account_res = tests.data.digitalocean.platform.ACCOUNT_RESPONSE
 

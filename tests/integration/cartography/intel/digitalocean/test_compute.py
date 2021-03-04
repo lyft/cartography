@@ -38,7 +38,7 @@ def test_transform_and_load_droplets(neo4j_session):
             n['d.region'],
             n['d.project_id'],
             n['d.account_id'],
-            n['d.lastupdated']
+            n['d.lastupdated'],
         ) for n in nodes
     }
     expected_nodes = {
