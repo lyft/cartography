@@ -13,11 +13,21 @@ logger = logging.getLogger(__name__)
 
 @timeit
 def start_digitalocean_ingestion(neo4j_session, config):
+    """
+    If this module is configured, perform ingestion of DigitalOcean  data. Otherwise warn and exit
+    :param neo4j_session: Neo4J session for database interface
+    :param config: A cartography.config object
+    :return: None
+    """
+
+    if not config.digitalocean_token:
+        logger.info('DigitalOcean import is not configured - skipping this module. See docs to configure.')
+        return
+
     common_job_parameters = {
         "UPDATE_TAG": config.update_tag,
     }
-
-    manager = Manager()
+    manager = Manager(config.digitalocean_token)
 
     """
     Get Account ID related to this credentials and pass it along in `common_job_parameters` to avoid cleaning up other
