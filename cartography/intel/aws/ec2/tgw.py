@@ -1,6 +1,10 @@
 import logging
+from typing import Dict
+from typing import List
 
+import boto3
 import botocore.exceptions
+import neo4j
 
 from .util import get_botocore_config
 from cartography.util import aws_handle_regions
@@ -12,9 +16,9 @@ logger = logging.getLogger(__name__)
 
 @timeit
 @aws_handle_regions
-def get_transit_gateways(boto3_session, region):
+def get_transit_gateways(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
     client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
-    data = []
+    data: List[Dict] = []
     try:
         data = client.describe_transit_gateways()["TransitGateways"]
     except botocore.exceptions.ClientError as e:
@@ -29,9 +33,9 @@ def get_transit_gateways(boto3_session, region):
 
 @timeit
 @aws_handle_regions
-def get_tgw_attachments(boto3_session, region):
+def get_tgw_attachments(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
     client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
-    tgw_attachments = []
+    tgw_attachments: List[Dict] = []
     try:
         paginator = client.get_paginator('describe_transit_gateway_attachments')
         for page in paginator.paginate():
@@ -47,9 +51,9 @@ def get_tgw_attachments(boto3_session, region):
 
 @timeit
 @aws_handle_regions
-def get_tgw_vpc_attachments(boto3_session, region):
+def get_tgw_vpc_attachments(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
     client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
-    tgw_vpc_attachments = []
+    tgw_vpc_attachments: List[Dict] = []
     try:
         paginator = client.get_paginator('describe_transit_gateway_vpc_attachments')
         for page in paginator.paginate():
@@ -64,11 +68,14 @@ def get_tgw_vpc_attachments(boto3_session, region):
 
 
 @timeit
-def load_transit_gateways(neo4j_session, data, region, current_aws_account_id, aws_update_tag):
+def load_transit_gateways(
+    neo4j_session: neo4j.Session, data: List[Dict], region: str, current_aws_account_id: str,
+    update_tag: int,
+) -> None:
     ingest_transit_gateway = """
     MERGE (ownerAccount:AWSAccount {id: {OwnerId}})
     ON CREATE SET ownerAccount.firstseen = timestamp(), ownerAccount.foreign = true
-    SET ownerAccount.lastupdated = {aws_update_tag}
+    SET ownerAccount.lastupdated = {update_tag}
 
     MERGE (tgw:AWSTransitGateway {id: {ARN}})
     ON CREATE SET tgw.firstseen = timestamp(), tgw.arn = {ARN}
@@ -77,12 +84,12 @@ def load_transit_gateways(neo4j_session, data, region, current_aws_account_id, a
     tgw.state = {State},
     tgw.description = {Description},
     tgw.region = {Region},
-    tgw.lastupdated = {aws_update_tag}
+    tgw.lastupdated = {update_tag}
 
     WITH tgw
     MERGE (ownerAccount)-[r:RESOURCE]->(tgw)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = {update_tag}
     """
 
     for tgw in data:
@@ -97,25 +104,27 @@ def load_transit_gateways(neo4j_session, data, region, current_aws_account_id, a
             AWS_ACCOUNT_ID=current_aws_account_id,
             OwnerId=tgw["OwnerId"],
             State=tgw["State"],
-            aws_update_tag=aws_update_tag,
+            update_tag=update_tag,
         )
         _attach_shared_transit_gateway(
-            neo4j_session, tgw, region, current_aws_account_id, aws_update_tag,
+            neo4j_session, tgw, region, current_aws_account_id, update_tag,
         )
 
 
 @timeit
-def _attach_shared_transit_gateway(neo4j_session, tgw, region, current_aws_account_id, aws_update_tag):
+def _attach_shared_transit_gateway(
+    neo4j_session: neo4j.Session, tgw: Dict, region: str, current_aws_account_id: str, update_tag: int,
+) -> None:
     attach_tgw = """
     MERGE (tgw:AWSTransitGateway {id: {ARN}})
     ON CREATE SET tgw.firstseen = timestamp()
-    SET tgw.lastupdated = {aws_update_tag}
+    SET tgw.lastupdated = {update_tag}
 
     WITH tgw
     MATCH (currentAccount:AWSAccount{id: {AWS_ACCOUNT_ID}})
     MERGE (tgw)-[s:SHARED_WITH]->(currentAccount)
     ON CREATE SET s.firstseen = timestamp()
-    SET s.lastupdated = {aws_update_tag}
+    SET s.lastupdated = {update_tag}
     """
 
     if tgw["OwnerId"] != current_aws_account_id:
@@ -124,31 +133,34 @@ def _attach_shared_transit_gateway(neo4j_session, tgw, region, current_aws_accou
             ARN=tgw["TransitGatewayArn"],
             TransitGatewayId=tgw["TransitGatewayId"],
             AWS_ACCOUNT_ID=current_aws_account_id,
-            aws_update_tag=aws_update_tag,
+            update_tag=update_tag,
         )
 
 
 @timeit
-def load_tgw_attachments(neo4j_session, data, region, current_aws_account_id, aws_update_tag):
+def load_tgw_attachments(
+    neo4j_session: neo4j.Session, data: List[Dict], region: str, current_aws_account_id: str,
+    update_tag: int,
+) -> None:
     ingest_transit_gateway = """
     MERGE (tgwa:AWSTransitGatewayAttachment{id: {TgwAttachmentId}})
     ON CREATE SET tgwa.firstseen = timestamp()
     SET tgwa.region = {Region},
     tgwa.resource_type = {ResourceType},
     tgwa.state = {State},
-    tgwa.lastupdated = {aws_update_tag}
+    tgwa.lastupdated = {update_tag}
 
     WITH tgwa
     MATCH (awsAccount:AWSAccount {id: {AWS_ACCOUNT_ID}})
     MERGE (awsAccount)-[r:RESOURCE]->(tgwa)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = {update_tag}
 
     WITH tgwa
     MATCH (tgw:AWSTransitGateway {tgw_id: {TransitGatewayId}})
     MERGE (tgwa)-[attach:ATTACHED_TO]->(tgw)
     ON CREATE SET attach.firstseen = timestamp()
-    SET attach.lastupdated = {aws_update_tag}
+    SET attach.lastupdated = {update_tag}
     """
 
     for tgwa in data:
@@ -163,52 +175,52 @@ def load_tgw_attachments(neo4j_session, data, region, current_aws_account_id, aw
             AWS_ACCOUNT_ID=current_aws_account_id,
             ResourceType=tgwa.get("ResourceType"),
             State=tgwa["State"],
-            aws_update_tag=aws_update_tag,
+            update_tag=update_tag,
         )
 
         if tgwa.get("VpcId"):  # only attach if the TGW attachment is a VPC TGW attachment
             _attach_tgw_vpc_attachment_to_vpc_subnets(
-                neo4j_session, tgwa, region, current_aws_account_id, aws_update_tag,
+                neo4j_session, tgwa, region, current_aws_account_id, update_tag,
             )
 
 
 @timeit
 def _attach_tgw_vpc_attachment_to_vpc_subnets(
-    neo4j_session, tgw_vpc_attachment, region,
-    current_aws_account_id, aws_update_tag,
-):
+    neo4j_session: neo4j.Session, tgw_vpc_attachment: Dict, region: str,
+    current_aws_account_id: str, update_tag: int,
+) -> None:
     """
     Attach a VPC Transit Gateway Attachment to the VPC and and subnets
     """
     attach_vpc_tgw_attachment_to_vpc = """
     MERGE (vpc:AWSVpc {id: {VpcId}})
     ON CREATE SET vpc.firstseen = timestamp()
-    SET vpc.lastupdated = {aws_update_tag}
+    SET vpc.lastupdated = {update_tag}
 
     WITH vpc
     MATCH (tgwa:AWSTransitGatewayAttachment {id: {TgwAttachmentId}})
     MERGE (vpc)-[r:RESOURCE]->(tgwa)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = {update_tag}
     """
 
     attach_vpc_tgw_attachment_to_subnet = """
     MERGE (sub:EC2Subnet {subnetid: {SubnetId}})
     ON CREATE SET sub.firstseen = timestamp()
-    SET sub.lastupdated = {aws_update_tag}
+    SET sub.lastupdated = {update_tag}
 
     WITH sub
     MATCH (tgwa:AWSTransitGatewayAttachment {id: {TgwAttachmentId}})
     MERGE (tgwa)-[p:PART_OF_SUBNET]->(sub)
     ON CREATE SET p.firstseen = timestamp()
-    SET p.lastupdated = {aws_update_tag}
+    SET p.lastupdated = {update_tag}
     """
 
     neo4j_session.run(
         attach_vpc_tgw_attachment_to_vpc,
         VpcId=tgw_vpc_attachment["VpcId"],
         TgwAttachmentId=tgw_vpc_attachment["TransitGatewayAttachmentId"],
-        aws_update_tag=aws_update_tag,
+        update_tag=update_tag,
     )
 
     for subnet_id in tgw_vpc_attachment["SubnetIds"]:
@@ -216,24 +228,23 @@ def _attach_tgw_vpc_attachment_to_vpc_subnets(
             attach_vpc_tgw_attachment_to_subnet,
             SubnetId=subnet_id,
             TgwAttachmentId=tgw_vpc_attachment["TransitGatewayAttachmentId"],
-            aws_update_tag=aws_update_tag,
+            update_tag=update_tag,
         )
 
 
 @timeit
-def cleanup_transit_gateways(neo4j_session, common_job_parameters):
+def cleanup_transit_gateways(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('aws_import_tgw_cleanup.json', neo4j_session, common_job_parameters)
 
 
-@timeit
 def sync_transit_gateways(
-    neo4j_session, boto3_session, regions, current_aws_account_id, aws_update_tag,
-    common_job_parameters,
-):
+    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
+    update_tag: int, common_job_parameters: Dict,
+) -> None:
     for region in regions:
         logger.info("Syncing AWS Transit Gateways for region '%s' in account '%s'.", region, current_aws_account_id)
         tgws = get_transit_gateways(boto3_session, region)
-        load_transit_gateways(neo4j_session, tgws, region, current_aws_account_id, aws_update_tag)
+        load_transit_gateways(neo4j_session, tgws, region, current_aws_account_id, update_tag)
 
         logger.debug(
             "Syncing AWS Transit Gateway Attachments for region '%s' in account '%s'.",
@@ -243,6 +254,6 @@ def sync_transit_gateways(
         tgw_vpc_attachments = get_tgw_vpc_attachments(boto3_session, region)
         load_tgw_attachments(
             neo4j_session, tgw_attachments + tgw_vpc_attachments,
-            region, current_aws_account_id, aws_update_tag,
+            region, current_aws_account_id, update_tag,
         )
     cleanup_transit_gateways(neo4j_session, common_job_parameters)
