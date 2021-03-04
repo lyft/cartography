@@ -35,7 +35,7 @@ def get_apigateway_rest_apis(boto3_session: boto3.session.Session, region: str) 
 @aws_handle_regions
 def get_rest_api_details(
         boto3_session: boto3.session.Session, rest_apis: List[Dict], region: str,
-) -> Generator[Any, Any, Any, Any]:
+) -> Generator[Any, Any, Any]:
     """
     Iterates over all API Gateway REST APIs.
     """
@@ -63,7 +63,7 @@ def get_rest_api_stages(api: Dict, client: botocore.client.BaseClient) -> List[A
 
 
 @timeit
-def get_rest_api_client_certificate(stages: Dict, client: botocore.client.BaseClient) -> List[Any]:
+def get_rest_api_client_certificate(stages: Dict, client: botocore.client.BaseClient) -> Optional[Any]:
     """
     Gets the current ClientCertificate resource if present, else returns None.
     """
@@ -77,7 +77,7 @@ def get_rest_api_client_certificate(stages: Dict, client: botocore.client.BaseCl
                 logger.warning(f"Failed to retrive Client Certificate for Stage {stage['stageName']} - {e}")
                 raise
         else:
-            return None
+            return []
 
     return response
 
@@ -87,7 +87,7 @@ def get_rest_api_resources(api: Dict, client: botocore.client.BaseClient) -> Lis
     """
     Gets the collection of Resource resources.
     """
-    resources = []
+    resources: List[Any] = []
     paginator = client.get_paginator('get_resources')
     response_iterator = paginator.paginate(restApiId=api['id'])
     for page in response_iterator:
@@ -181,7 +181,7 @@ def _set_default_values(neo4j_session: neo4j.Session, aws_account_id: str) -> No
 
 @timeit
 def _load_apigateway_stages(
-        neo4j_session: neo4j.Session, stages: List, update_tag: int
+        neo4j_session: neo4j.Session, stages: List, update_tag: int,
 ) -> None:
     """
     Ingest the Stage resource details into neo4j.
@@ -292,7 +292,7 @@ def load_rest_api_details(
     stages: List[Dict] = []
     certificates: List[Dict] = []
     resources: List[Dict] = []
-    policies = []
+    policies: List = []
     for api_id, stage, certificate, resource, policy in stages_certificate_resources:
         parsed_policy = parse_policy(api_id, policy)
         if parsed_policy is not None:
