@@ -47,6 +47,7 @@ def start_azure_ingestion(neo4j_session, config):
             credentials = Authenticator().authenticate_sp(config.tenant_id, config.client_id, config.client_secret)
         else:
             credentials = Authenticator().authenticate_cli()
+
     except Exception as e:
         logger.debug("Error occurred calling Authenticator.authenticate().", exc_info=True)
         logger.error(
