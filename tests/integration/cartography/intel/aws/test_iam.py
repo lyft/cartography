@@ -4,6 +4,7 @@ import tests.data.aws.iam
 from cartography.cli import CLI
 from cartography.config import Config
 from cartography.sync import build_default_sync
+from unittest import mock
 
 TEST_ACCOUNT_ID = '000000000000'
 TEST_REGION = 'us-east-1'
@@ -136,6 +137,8 @@ def test_map_permissions(neo4j_session):
 
     cartography.intel.aws.permission_relationships.sync(
         neo4j_session,
+        mock.MagicMock,
+        [TEST_REGION],
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG, {
             "permission_relationships_file": "cartography/data/permission_relationships.yaml",
