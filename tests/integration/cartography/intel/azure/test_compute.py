@@ -7,9 +7,6 @@ from tests.data.azure.compute import DESCRIBE_VMS
 TEST_SUBSCRIPTION_ID = '00-00-00-00'
 TEST_RESOURCE_GROUP = 'TestRG'
 TEST_UPDATE_TAG = 123456789
-COMMON_JOB_PARAMETERS = {
-    "UPDATE_TAG": TEST_UPDATE_TAG,
-}
 
 
 def test_load_vms(neo4j_session):
@@ -18,7 +15,6 @@ def test_load_vms(neo4j_session):
         TEST_SUBSCRIPTION_ID,
         DESCRIBE_VMS,
         TEST_UPDATE_TAG,
-        COMMON_JOB_PARAMETERS,
     )
 
     expected_nodes = {
@@ -53,7 +49,6 @@ def test_load_vms_relationships(neo4j_session):
         TEST_SUBSCRIPTION_ID,
         DESCRIBE_VMS,
         TEST_UPDATE_TAG,
-        COMMON_JOB_PARAMETERS,
     )
 
     expected = {
@@ -86,7 +81,6 @@ def test_load_vm_data_disks(neo4j_session):
         TEST_SUBSCRIPTION_ID,
         DESCRIBE_VM_DATA_DISKS,
         TEST_UPDATE_TAG,
-        COMMON_JOB_PARAMETERS,
     )
 
     expected_nodes = {
@@ -111,7 +105,6 @@ def test_load_vm_data_disk_relationships(neo4j_session):
         TEST_SUBSCRIPTION_ID,
         DESCRIBE_VMS,
         TEST_UPDATE_TAG,
-        COMMON_JOB_PARAMETERS,
     )
 
     compute.load_vms(
@@ -119,7 +112,6 @@ def test_load_vm_data_disk_relationships(neo4j_session):
         TEST_SUBSCRIPTION_ID,
         DESCRIBE_VM_DATA_DISKS,
         TEST_UPDATE_TAG,
-        COMMON_JOB_PARAMETERS,
     )
 
     expected = {
@@ -152,7 +144,6 @@ def test_load_disks(neo4j_session):
         TEST_SUBSCRIPTION_ID,
         DESCRIBE_DISKS,
         TEST_UPDATE_TAG,
-        COMMON_JOB_PARAMETERS,
     )
 
     expected_nodes = {
@@ -187,7 +178,6 @@ def test_load_disk_relationships(neo4j_session):
         TEST_SUBSCRIPTION_ID,
         DESCRIBE_DISKS,
         TEST_UPDATE_TAG,
-        COMMON_JOB_PARAMETERS,
     )
 
     expected = {
@@ -220,7 +210,6 @@ def test_load_snapshots(neo4j_session):
         TEST_SUBSCRIPTION_ID,
         DESCRIBE_SNAPSHOTS,
         TEST_UPDATE_TAG,
-        COMMON_JOB_PARAMETERS,
     )
 
     expected_nodes = {
@@ -255,7 +244,6 @@ def test_load_snapshot_relationships(neo4j_session):
         TEST_SUBSCRIPTION_ID,
         DESCRIBE_SNAPSHOTS,
         TEST_UPDATE_TAG,
-        COMMON_JOB_PARAMETERS,
     )
 
     expected = {

@@ -5,6 +5,7 @@ from typing import Any
 from typing import Optional
 
 import adal
+from adal import AuthenticationContext
 import requests
 from azure.common.credentials import get_azure_cli_credentials
 from azure.common.credentials import get_cli_profile
@@ -99,7 +100,7 @@ class Credentials:
 
     def __init__(
         self, arm_credentials: Any, aad_graph_credentials: Any, tenant_id: str = None, subscription_id: str = None,
-        context: Any = None, current_user: str = None,
+        context: AuthenticationContext = None, current_user: str = None,
     ) -> None:
         self.arm_credentials = arm_credentials  # Azure Resource Manager API credentials
         self.aad_graph_credentials = aad_graph_credentials  # Azure AD Graph API credentials
