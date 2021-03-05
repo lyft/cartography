@@ -17,14 +17,14 @@ logger = logging.getLogger(__name__)
 
 def _sync_one_subscription(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict
+    common_job_parameters: Dict,
 ) -> None:
     compute.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
 
 
 def _sync_tenant(
     neo4j_session: neo4j.Session, tenant_id: str, current_user: str, update_tag: int,
-    common_job_parameters: Dict
+    common_job_parameters: Dict,
 ) -> None:
     logger.debug("Syncing Azure Tenant: %s", tenant_id)
     tenant.sync(neo4j_session, tenant_id, current_user, update_tag, common_job_parameters)
@@ -32,7 +32,7 @@ def _sync_tenant(
 
 def _sync_multiple_subscriptions(
     neo4j_session: neo4j.Session, credentials: Credentials, tenant_id: str, subscriptions: List[Dict],
-    update_tag: int, common_job_parameters
+    update_tag: int, common_job_parameters: Dict,
 ) -> None:
     logger.debug("Syncing Azure subscriptions")
 
@@ -57,7 +57,7 @@ def start_azure_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
     try:
         if config.azure_sp_auth:
             credentials = Authenticator().authenticate_sp(
-                config.azure_tenant_id, config.azure_client_id, config.azure_client_secret
+                config.azure_tenant_id, config.azure_client_id, config.azure_client_secret,
             )
         else:
             credentials = Authenticator().authenticate_cli()
@@ -75,7 +75,7 @@ def start_azure_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
 
     _sync_tenant(
         neo4j_session, credentials.get_tenant_id(), credentials.get_current_user(), config.update_tag,
-        common_job_parameters
+        common_job_parameters,
     )
 
     if config.azure_sync_all_subscriptions:
@@ -92,5 +92,5 @@ def start_azure_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
 
     _sync_multiple_subscriptions(
         neo4j_session, credentials, credentials.get_tenant_id(), subscriptions, config.update_tag,
-        common_job_parameters
+        common_job_parameters,
     )

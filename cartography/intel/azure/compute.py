@@ -5,7 +5,7 @@ from typing import List
 import neo4j
 from azure.mgmt.compute import ComputeManagementClient
 
-from . import Credentials
+from .credentials import Credentials
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
@@ -191,7 +191,7 @@ def cleanup_snapshot(neo4j_session: neo4j.Session, common_job_parameters: Dict) 
 
 def sync_virtual_machine(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict
+    common_job_parameters: Dict,
 ) -> None:
     vm_list = get_vm_list(credentials, subscription_id)
     load_vms(neo4j_session, subscription_id, vm_list, update_tag)
@@ -200,7 +200,7 @@ def sync_virtual_machine(
 
 def sync_disk(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict
+    common_job_parameters: Dict,
 ) -> None:
     disk_list = get_disks(credentials, subscription_id)
     load_disks(neo4j_session, subscription_id, disk_list, update_tag)
@@ -209,7 +209,7 @@ def sync_disk(
 
 def sync_snapshot(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict
+    common_job_parameters: Dict,
 ) -> None:
     snapshots = get_snapshots_list(credentials, subscription_id)
     load_snapshots(neo4j_session, subscription_id, snapshots, update_tag)
@@ -219,7 +219,7 @@ def sync_snapshot(
 @ timeit
 def sync(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict
+    common_job_parameters: Dict,
 ) -> None:
     logger.info("Syncing VM for subscription '%s'.", subscription_id)
 

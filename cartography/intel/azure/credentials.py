@@ -2,6 +2,7 @@ import logging
 from datetime import datetime
 from datetime import timedelta
 from typing import Any
+from typing import Optional
 
 import adal
 import requests
@@ -31,14 +32,14 @@ class Authenticator:
 
             arm_credentials, subscription_id, tenant_id = get_azure_cli_credentials(with_tenant=True)
             aad_graph_credentials, placeholder_1, placeholder_2 = get_azure_cli_credentials(
-                with_tenant=True, resource='https://graph.windows.net'
+                with_tenant=True, resource='https://graph.windows.net',
             )
 
             profile = get_cli_profile()
 
             return Credentials(
                 arm_credentials, aad_graph_credentials, tenant_id=tenant_id,
-                current_user=profile.get_current_account_user(), subscription_id=subscription_id
+                current_user=profile.get_current_account_user(), subscription_id=subscription_id,
             )
 
         except Exception as e:
@@ -46,7 +47,7 @@ class Authenticator:
                     'Current support version is wstrust2005 or wstrust13.' in e.args:
                 raise Exception(
                     'You are likely authenticating with a Microsoft Account. '
-                    'This authentication mode only support Azure Active Directory principal authentication.'
+                    'This authentication mode only support Azure Active Directory principal authentication.',
                 )
 
             raise Exception(e)
@@ -80,7 +81,7 @@ class Authenticator:
 
             return Credentials(
                 arm_credentials, aad_graph_credentials, tenant_id=tenant_id,
-                current_user=profile.get_current_account_user()
+                current_user=profile.get_current_account_user(),
             )
 
         except Exception as e:
@@ -88,7 +89,7 @@ class Authenticator:
                     'Current support version is wstrust2005 or wstrust13.' in e.args:
                 raise Exception(
                     'You are likely authenticating with a Microsoft Account. '
-                    'This authentication mode only support Azure Active Directory principal authentication.'
+                    'This authentication mode only support Azure Active Directory principal authentication.',
                 )
 
             raise Exception(e)
@@ -98,7 +99,7 @@ class Credentials:
 
     def __init__(
         self, arm_credentials: Any, aad_graph_credentials: Any, tenant_id: str = None, subscription_id: str = None,
-        context: Any = None, current_user: str = None
+        context: Any = None, current_user: str = None,
     ) -> None:
         self.arm_credentials = arm_credentials  # Azure Resource Manager API credentials
         self.aad_graph_credentials = aad_graph_credentials  # Azure AD Graph API credentials
@@ -107,7 +108,7 @@ class Credentials:
         self.context = context
         self.current_user = current_user
 
-    def get_current_user(self) -> str:
+    def get_current_user(self) -> Optional[str]:
         return self.current_user
 
     def get_tenant_id(self) -> Any:
@@ -136,7 +137,7 @@ class Credentials:
         else:
             raise Exception('Invalid credentials resource type')
 
-    def get_fresh_credentials(self, credentials: str) -> Any:
+    def get_fresh_credentials(self, credentials: Any) -> Any:
         """
         Check if credentials are outdated and if so refresh them.
         """
@@ -157,7 +158,7 @@ class Credentials:
         existing_cache = self.context.cache
         context = adal.AuthenticationContext(authority_uri, cache=existing_cache)
         new_token = context.acquire_token(
-            credentials.token['resource'], credentials.token['user_id'], credentials.token['_client_id']
+            credentials.token['resource'], credentials.token['user_id'], credentials.token['_client_id'],
         )
 
         new_credentials = AADTokenCredentials(new_token, credentials.token.get('_client_id'))
