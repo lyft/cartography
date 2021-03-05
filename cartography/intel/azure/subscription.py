@@ -5,7 +5,7 @@ from typing import List
 import neo4j
 from azure.mgmt.resource import SubscriptionClient
 
-from . import Credentials
+from .credentials import Credentials
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
@@ -52,7 +52,7 @@ def get_current_azure_subscription(credentials: Credentials, subscription_id: st
             'subscriptionId': sub.subscription_id,
             'displayName': sub.display_name,
             'state': sub.state,
-        }
+        },
     ]
 
 
