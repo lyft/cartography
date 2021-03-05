@@ -91,13 +91,13 @@ DESCRIBE_VM_DATA_DISKS = [
                 {
                     "lun": 0,
                     "name": "dd0",
-                    "createOption": "Empty",
+                    "create_option": "Empty",
                     "caching": "ReadWrite",
-                    "managedDisk": {
-                        "storageAccountType": "Premium_LRS",
+                    "managed_disk": {
+                        "storage_account_type": "Premium_LRS",
                         "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/disks/dd0",
                     },
-                    "diskSizeGB": 30,
+                    "disk_size_gb": 30,
                 },
             ],
         },
@@ -133,17 +133,17 @@ DESCRIBE_VM_DATA_DISKS = [
             "data_disks": [
                 {
                     "lun": 0,
-                    "name": "dd0",
-                    "createOption": "Empty",
+                    "name": "dd1",
+                    "create_option": "Empty",
                     "caching": "ReadWrite",
-                    "managedDisk": {
-                        "storageAccountType": "Premium_LRS",
-                        "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/disks/dd0",
+                    "managed_disk": {
+                        "storage_account_type": "Premium_LRS",
+                        "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/disks/dd1",
                     },
-                    "diskSizeGB": 30,
+                    "disk_size_gb": 30,
                 },
             ],
-        }
+        },
     },
 ]
 
