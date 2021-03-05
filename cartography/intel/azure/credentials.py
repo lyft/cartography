@@ -6,7 +6,6 @@ from typing import Optional
 
 import adal
 import requests
-from adal import AuthenticationContext
 from azure.common.credentials import get_azure_cli_credentials
 from azure.common.credentials import get_cli_profile
 from azure.common.credentials import ServicePrincipalCredentials
@@ -100,7 +99,7 @@ class Credentials:
 
     def __init__(
         self, arm_credentials: Any, aad_graph_credentials: Any, tenant_id: str = None, subscription_id: str = None,
-        context: AuthenticationContext = None, current_user: str = None,
+        context: adal.AuthenticationContext = None, current_user: str = None,
     ) -> None:
         self.arm_credentials = arm_credentials  # Azure Resource Manager API credentials
         self.aad_graph_credentials = aad_graph_credentials  # Azure AD Graph API credentials
@@ -156,8 +155,13 @@ class Credentials:
         """
         logger.debug('Refreshing credentials')
         authority_uri = AUTHORITY_HOST_URI + '/' + self.get_tenant_id()
-        existing_cache = self.context.cache
-        context = adal.AuthenticationContext(authority_uri, cache=existing_cache)
+        if self.context:
+            existing_cache = self.context.cache
+            context = adal.AuthenticationContext(authority_uri, cache=existing_cache)
+
+        else:
+            context = adal.AuthenticationContext(authority_uri)
+
         new_token = context.acquire_token(
             credentials.token['resource'], credentials.token['user_id'], credentials.token['_client_id'],
         )
