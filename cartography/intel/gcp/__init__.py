@@ -1,11 +1,17 @@
 import json
 import logging
 from collections import namedtuple
+from typing import Dict
+from typing import List
+from typing import Set
 
 import googleapiclient.discovery
+import neo4j
+from googleapiclient.discovery import Resource
 from oauth2client.client import ApplicationDefaultCredentialsError
 from oauth2client.client import GoogleCredentials
 
+from cartography.config import Config
 from cartography.intel.gcp import compute
 from cartography.intel.gcp import crm
 from cartography.intel.gcp import dns
@@ -28,7 +34,7 @@ service_names = Services(
 )
 
 
-def _get_crm_resource_v1(credentials):
+def _get_crm_resource_v1(credentials: GoogleCredentials) -> Resource:
     """
     Instantiates a Google Compute Resource Manager v1 resource object to call the Resource Manager API.
     See https://cloud.google.com/resource-manager/reference/rest/.
@@ -40,7 +46,7 @@ def _get_crm_resource_v1(credentials):
     return googleapiclient.discovery.build('cloudresourcemanager', 'v1', credentials=credentials, cache_discovery=False)
 
 
-def _get_crm_resource_v2(credentials):
+def _get_crm_resource_v2(credentials: GoogleCredentials) -> Resource:
     """
     Instantiates a Google Compute Resource Manager v2 resource object to call the Resource Manager API.
     We need a v2 resource object to query for GCP folders.
@@ -50,7 +56,7 @@ def _get_crm_resource_v2(credentials):
     return googleapiclient.discovery.build('cloudresourcemanager', 'v2', credentials=credentials, cache_discovery=False)
 
 
-def _get_compute_resource(credentials):
+def _get_compute_resource(credentials: GoogleCredentials) -> Resource:
     """
     Instantiates a Google Compute resource object to call the Compute API. This is used to pull zone, instance, and
     networking data. See https://cloud.google.com/compute/docs/reference/rest/v1/.
@@ -60,7 +66,7 @@ def _get_compute_resource(credentials):
     return googleapiclient.discovery.build('compute', 'v1', credentials=credentials, cache_discovery=False)
 
 
-def _get_storage_resource(credentials):
+def _get_storage_resource(credentials: GoogleCredentials) -> Resource:
     """
     Instantiates a Google Cloud Storage resource object to call the Storage API.
     This is used to pull bucket metadata and IAM Policies
@@ -72,7 +78,7 @@ def _get_storage_resource(credentials):
     return googleapiclient.discovery.build('storage', 'v1', credentials=credentials, cache_discovery=False)
 
 
-def _get_container_resource(credentials):
+def _get_container_resource(credentials: GoogleCredentials) -> Resource:
     """
     Instantiates a Google Cloud Container resource object to call the
     Container API. See: https://cloud.google.com/kubernetes-engine/docs/reference/rest/v1/.
@@ -83,7 +89,7 @@ def _get_container_resource(credentials):
     return googleapiclient.discovery.build('container', 'v1', credentials=credentials, cache_discovery=False)
 
 
-def _get_dns_resource(credentials):
+def _get_dns_resource(credentials: GoogleCredentials) -> Resource:
     """
     Instantiates a Google Cloud DNS resource object to call the
     Container API. See: https://cloud.google.com/dns/docs/reference/v1/.
@@ -94,7 +100,7 @@ def _get_dns_resource(credentials):
     return googleapiclient.discovery.build('dns', 'v1', credentials=credentials, cache_discovery=False)
 
 
-def _get_serviceusage_resource(credentials):
+def _get_serviceusage_resource(credentials: GoogleCredentials) -> Resource:
     """
     Instantiates a serviceusage resource object.
     See: https://cloud.google.com/service-usage/docs/reference/rest/v1/operations/list.
@@ -105,7 +111,7 @@ def _get_serviceusage_resource(credentials):
     return googleapiclient.discovery.build('serviceusage', 'v1', credentials=credentials, cache_discovery=False)
 
 
-def _initialize_resources(credentials):
+def _initialize_resources(credentials: GoogleCredentials) -> Resource:
     """
     Create namedtuple of all resource objects necessary for GCP data gathering.
     :param credentials: The GoogleCredentials object
@@ -122,7 +128,7 @@ def _initialize_resources(credentials):
     )
 
 
-def _services_enabled_on_project(serviceusage, project_id):
+def _services_enabled_on_project(serviceusage: Resource, project_id: str) -> Set:
     """
     Return a list of all Google API services that are enabled on the given project ID.
     See https://cloud.google.com/service-usage/docs/reference/rest/v1/services/list for data shape.
@@ -137,7 +143,7 @@ def _services_enabled_on_project(serviceusage, project_id):
         if 'services' in res:
             return {svc['config']['name'] for svc in res['services']}
         else:
-            return {}
+            return set()
     except googleapiclient.discovery.HttpError as http_error:
         http_error = json.loads(http_error.content.decode('utf-8'))
         # This is set to log-level `info` because Google creates many projects under the hood that cartography cannot
@@ -148,10 +154,13 @@ def _services_enabled_on_project(serviceusage, project_id):
             f"Code: {http_error['error']['code']}, Message: {http_error['error']['message']}. "
             f"Skipping.",
         )
-        return {}
+        return set()
 
 
-def _sync_single_project(neo4j_session, resources, project_id, gcp_update_tag, common_job_parameters):
+def _sync_single_project(
+    neo4j_session: neo4j.Session, resources: Resource, project_id: str, gcp_update_tag: int,
+    common_job_parameters: Dict,
+) -> None:
     """
     Handles graph sync for a single GCP project.
     :param neo4j_session: The Neo4j session
@@ -174,7 +183,10 @@ def _sync_single_project(neo4j_session, resources, project_id, gcp_update_tag, c
         dns.sync(neo4j_session, resources.dns, project_id, gcp_update_tag, common_job_parameters)
 
 
-def _sync_multiple_projects(neo4j_session, resources, projects, gcp_update_tag, common_job_parameters):
+def _sync_multiple_projects(
+    neo4j_session: neo4j.Session, resources: Resource, projects: List[Dict],
+    gcp_update_tag: int, common_job_parameters: Dict,
+) -> None:
     """
     Handles graph sync for multiple GCP projects.
     :param neo4j_session: The Neo4j session
@@ -197,7 +209,7 @@ def _sync_multiple_projects(neo4j_session, resources, projects, gcp_update_tag, 
 
 
 @timeit
-def start_gcp_ingestion(neo4j_session, config):
+def start_gcp_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
     """
     Starts the GCP ingestion process by initializing Google Application Default Credentials, creating the necessary
     resource objects, listing all GCP organizations and projects available to the GCP identity, and supplying that

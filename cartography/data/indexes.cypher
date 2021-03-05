@@ -1,3 +1,7 @@
+CREATE INDEX ON :APIGatewayClientCertificate(id);
+CREATE INDEX ON :APIGatewayRestAPI(id);
+CREATE INDEX ON :APIGatewayResource(id);
+CREATE INDEX ON :APIGatewayStage(id);
 CREATE INDEX ON :AWSAccount(id);
 CREATE INDEX ON :AWSCidrBlock(id);
 CREATE INDEX ON :AWSDNSRecord(id);
@@ -115,7 +119,7 @@ CREATE INDEX ON :RedshiftCluster(arn);
 CREATE INDEX ON :RDSInstance(db_instance_identifier);
 CREATE INDEX ON :RDSInstance(id);
 CREATE INDEX ON :RDSInstance(arn);
-CREATE INDEX ON :ReplyUri(id)
+CREATE INDEX ON :ReplyUri(id);
 CREATE INDEX ON :Risk(id);
 CREATE INDEX ON :S3Acl(id);
 CREATE INDEX ON :S3Bucket(id);

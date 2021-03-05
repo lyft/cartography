@@ -1,8 +1,9 @@
 # Okta intel module - utility functions
+from okta.framework import PagedResults
 from okta.framework.ApiClient import ApiClient
 
 
-def is_last_page(response):
+def is_last_page(response: PagedResults) -> bool:
     """
     Determine if we are at the last page of a Paged result flow
     :param response: server response
@@ -12,7 +13,7 @@ def is_last_page(response):
     return not ("next" in response.links)
 
 
-def create_api_client(okta_org, path_name, api_key):
+def create_api_client(okta_org: str, path_name: str, api_key: str) -> ApiClient:
     """
     Create Okta ApiClient
     :param okta_org: Okta organization name
