@@ -68,6 +68,7 @@ def test_load_vms_relationships(neo4j_session):
         MATCH (n1:AzureSubscription)-[:RESOURCE]->(n2:VirtualMachine) RETURN n1.id, n2.id;
         """,
     )
+
     actual = {
         (r['n1.id'], r['n2.id']) for r in result
     }
@@ -93,6 +94,7 @@ def test_load_vm_data_disks(neo4j_session):
         MATCH (r:AzureDataDisk) RETURN r.id;
         """,
     )
+
     actual_nodes = {n['r.id'] for n in nodes}
 
     assert actual_nodes == expected_nodes
@@ -131,6 +133,7 @@ def test_load_vm_data_disk_relationships(neo4j_session):
         MATCH (n1:VirtualMachine)-[:ATTACHED_TO]->(n2:AzureDataDisk) RETURN n1.id, n2.id;
         """,
     )
+
     actual = {
         (r['n1.id'], r['n2.id']) for r in result
     }
@@ -156,6 +159,7 @@ def test_load_disks(neo4j_session):
         MATCH (r:AzureDisk) RETURN r.id;
         """,
     )
+
     actual_nodes = {n['r.id'] for n in nodes}
 
     assert actual_nodes == expected_nodes
@@ -197,6 +201,7 @@ def test_load_disk_relationships(neo4j_session):
         MATCH (n1:AzureSubscription)-[:RESOURCE]->(n2:AzureDisk) RETURN n1.id, n2.id;
         """,
     )
+
     actual = {
         (r['n1.id'], r['n2.id']) for r in result
     }
@@ -222,6 +227,7 @@ def test_load_snapshots(neo4j_session):
         MATCH (r:Azuresnapshot) RETURN r.id;
         """,
     )
+
     actual_nodes = {n['r.id'] for n in nodes}
 
     assert actual_nodes == expected_nodes
@@ -263,6 +269,7 @@ def test_load_snapshot_relationships(neo4j_session):
         MATCH (n1:AzureSubscription)-[:RESOURCE]->(n2:AzureSnapshot) RETURN n1.id, n2.id;
         """,
     )
+
     actual = {
         (r['n1.id'], r['n2.id']) for r in result
     }

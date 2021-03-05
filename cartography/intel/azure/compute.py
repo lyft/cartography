@@ -69,7 +69,7 @@ def load_vms(neo4j_session: neo4j.Session, subscription_id: str, vm_list: List[D
 def load_vm_data_disks(neo4j_session: neo4j.Session, vm_id: str, data_disks: List[Dict], update_tag: int) -> None:
     ingest_data_disk = """
     UNWIND {disks} AS disk
-    MERGE (d:AzureDataDisk{id: disk.managedDisk.id})
+    MERGE (d:AzureDataDisk{id: disk.managed_disk.id})
     ON CREATE SET d.firstseen = timestamp(), d.lun = disk.lun
     SET d.lastupdated = {update_tag}, d.name = disk.name,
     d.vhd = disk.vhd.uri, d.image = disk.image.uri,
