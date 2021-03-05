@@ -57,8 +57,14 @@ def test_load_vms_relationships(neo4j_session):
     )
 
     expected = {
-        (TEST_SUBSCRIPTION_ID, "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachines/TestVM"),
-        (TEST_SUBSCRIPTION_ID, "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachines/TestVM1"),
+        (
+            TEST_SUBSCRIPTION_ID,
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachines/TestVM",
+        ),
+        (
+            TEST_SUBSCRIPTION_ID,
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachines/TestVM1",
+        ),
     }
 
     # Fetch relationships
@@ -119,11 +125,11 @@ def test_load_vm_data_disk_relationships(neo4j_session):
     expected = {
         (
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachines/TestVM",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/disks/dd0"
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/disks/dd0",
         ),
         (
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachines/TestVM1",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/disks/dd1"
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/disks/dd1",
         ),
     }
 
@@ -187,11 +193,11 @@ def test_load_disk_relationships(neo4j_session):
     expected = {
         (
             TEST_SUBSCRIPTION_ID,
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/disks/dd0"
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/disks/dd0",
         ),
         (
             TEST_SUBSCRIPTION_ID,
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/disks/dd1"
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/disks/dd1",
         ),
     }
 
@@ -255,11 +261,11 @@ def test_load_snapshot_relationships(neo4j_session):
     expected = {
         (
             TEST_SUBSCRIPTION_ID,
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/snapshots/ss0"
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/snapshots/ss0",
         ),
         (
             TEST_SUBSCRIPTION_ID,
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/snapshots/ss1"
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/snapshots/ss1",
         ),
     }
 

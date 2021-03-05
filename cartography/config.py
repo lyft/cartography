@@ -27,11 +27,11 @@ class Config:
     :param azure_sp_auth: If True, Azure sync will run using Service Principal Authentication. If
         False (default), Azure sync will run using current user session via CLI credentials. Optional.
     :type azure_tenant_id: str
-    :param azure_tenant_id: Azure Tenant Id for connecting in a Service Principal Authentication approach. Optional.
+    :param azure_tenant_id: Tenant Id for connecting in a Service Principal Authentication approach. Optional.
     :type azure_client_id: str
-    :param azure_client_id: Azure Client Id for connecting in a Service Principal Authentication approach. Optional.
+    :param azure_client_id: Client Id for connecting in a Service Principal Authentication approach. Optional.
     :type azure_client_secret: str
-    :param azure_client_secret: Azure Client Secret for connecting in a Service Principal Authentication approach. Optional.
+    :param azure_client_secret: Client Secret for connecting in a Service Principal Authentication approach. Optional.
     :type aws_requested_syncs: str
     :param aws_requested_syncs: Comma-separated list of AWS resources to sync. Optional.
     :type crxcavator_api_base_uri: str

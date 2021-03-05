@@ -2,8 +2,8 @@ import logging
 from typing import Dict
 from typing import List
 
-from azure.mgmt.resource import SubscriptionClient
 import neo4j
+from azure.mgmt.resource import SubscriptionClient
 
 from . import Credentials
 from cartography.util import run_cleanup_job
@@ -29,7 +29,7 @@ def get_all_azure_subscriptions(credentials: Credentials) -> List[Dict]:
             'id': sub['id'],
             'subscriptionId': sub['subscriptionId'],
             'displayName': sub['displayName'],
-            'state': sub['state']
+            'state': sub['state'],
         })
 
     return subscriptions
@@ -50,11 +50,13 @@ def get_current_azure_subscription(credentials: Credentials, subscription_id: st
             'id': sub.id,
             'subscriptionId': sub.subscription_id,
             'displayName': sub.display_name,
-            'state': sub.state
+            'state': sub.state,
             }]
 
 
-def load_azure_subscriptions(neo4j_session: neo4j.Session, tenant_id: str, subscriptions: List[Dict], update_tag: int, common_job_parameters: Dict) -> None:
+def load_azure_subscriptions(
+    neo4j_session: neo4j.Session, tenant_id: str, subscriptions: List[Dict], update_tag: int
+) -> None:
     query = """
     MERGE (at:AzureTenant{id: {TENANT_ID}})
     ON CREATE SET at.firstseen = timestamp()
@@ -85,6 +87,9 @@ def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
 
 
 @timeit
-def sync(neo4j_session: neo4j.Session, tenant_id: str, subscriptions: List[Dict], update_tag: int, common_job_parameters: Dict) -> None:
-    load_azure_subscriptions(neo4j_session, tenant_id, subscriptions, update_tag, common_job_parameters)
+def sync(
+    neo4j_session: neo4j.Session, tenant_id: str, subscriptions: List[Dict], update_tag: int,
+    common_job_parameters: Dict
+) -> None:
+    load_azure_subscriptions(neo4j_session, tenant_id, subscriptions, update_tag)
     cleanup(neo4j_session, common_job_parameters)

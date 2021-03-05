@@ -1,13 +1,14 @@
-from datetime import datetime, timedelta
 import logging
-import requests
+from datetime import datetime
+from datetime import timedelta
 from typing import Any
 
 import adal
-from azure.common.credentials import ServicePrincipalCredentials, get_azure_cli_credentials, get_cli_profile
+import requests
+from azure.common.credentials import get_azure_cli_credentials
+from azure.common.credentials import get_cli_profile
+from azure.common.credentials import ServicePrincipalCredentials
 from msrestazure.azure_active_directory import AADTokenCredentials
-
-from . import Credentials
 
 
 logger = logging.getLogger(__name__)
@@ -16,7 +17,7 @@ AUTHORITY_HOST_URI = 'https://login.microsoftonline.com'
 
 class Authenticator:
 
-    def authenticate_cli(self) -> Credentials:
+    def authenticate_cli(self) -> Any:
         """
         Implements authentication for the Azure provider
         """
@@ -29,22 +30,28 @@ class Authenticator:
             logging.getLogger('urllib3').setLevel(logging.ERROR)
 
             arm_credentials, subscription_id, tenant_id = get_azure_cli_credentials(with_tenant=True)
-            aad_graph_credentials, placeholder_1, placeholder_2 = get_azure_cli_credentials(with_tenant=True, resource='https://graph.windows.net')
+            aad_graph_credentials, placeholder_1, placeholder_2 = get_azure_cli_credentials(
+                with_tenant=True, resource='https://graph.windows.net'
+            )
 
             profile = get_cli_profile()
 
-            return Credentials(arm_credentials, aad_graph_credentials, tenant_id=tenant_id, current_user=profile.get_current_account_user(), subscription_id=subscription_id)
+            return Credentials(
+                arm_credentials, aad_graph_credentials, tenant_id=tenant_id,
+                current_user=profile.get_current_account_user(), subscription_id=subscription_id
+            )
 
         except Exception as e:
             if ', AdalError: Unsupported wstrust endpoint version. ' \
                     'Current support version is wstrust2005 or wstrust13.' in e.args:
                 raise Exception(
                     'You are likely authenticating with a Microsoft Account. '
-                    'This authentication mode only support Azure Active Directory principal authentication.')
+                    'This authentication mode only support Azure Active Directory principal authentication.'
+                )
 
             raise Exception(e)
 
-    def authenticate_sp(self, tenant_id: str = None, client_id: str = None, client_secret: str = None) -> Credentials:
+    def authenticate_sp(self, tenant_id: str = None, client_id: str = None, client_secret: str = None) -> Any:
         """
         Implements authentication for the Azure provider
         """
@@ -59,33 +66,40 @@ class Authenticator:
             arm_credentials = ServicePrincipalCredentials(
                 client_id=client_id,
                 secret=client_secret,
-                tenant=tenant_id
+                tenant=tenant_id,
             )
 
             aad_graph_credentials = ServicePrincipalCredentials(
                 client_id=client_id,
                 secret=client_secret,
                 tenant=tenant_id,
-                resource='https://graph.windows.net'
+                resource='https://graph.windows.net',
             )
 
             profile = get_cli_profile()
 
-            return Credentials(arm_credentials, aad_graph_credentials, tenant_id=tenant_id, current_user=profile.get_current_account_user())
+            return Credentials(
+                arm_credentials, aad_graph_credentials, tenant_id=tenant_id,
+                current_user=profile.get_current_account_user()
+            )
 
         except Exception as e:
             if ', AdalError: Unsupported wstrust endpoint version. ' \
                     'Current support version is wstrust2005 or wstrust13.' in e.args:
                 raise Exception(
                     'You are likely authenticating with a Microsoft Account. '
-                    'This authentication mode only support Azure Active Directory principal authentication.')
+                    'This authentication mode only support Azure Active Directory principal authentication.'
+                )
 
             raise Exception(e)
 
 
 class Credentials:
 
-    def __init__(self, arm_credentials: Any, aad_graph_credentials: Any, tenant_id: str = None, subscription_id: str = None, context: Any = None, current_user: str = None) -> None:
+    def __init__(
+        self, arm_credentials: Any, aad_graph_credentials: Any, tenant_id: str = None, subscription_id: str = None,
+        context: Any = None, current_user: str = None
+    ) -> None:
         self.arm_credentials = arm_credentials  # Azure Resource Manager API credentials
         self.aad_graph_credentials = aad_graph_credentials  # Azure AD Graph API credentials
         self.tenant_id = tenant_id
@@ -96,7 +110,7 @@ class Credentials:
     def get_current_user(self) -> str:
         return self.current_user
 
-    def get_tenant_id(self) -> str:
+    def get_tenant_id(self) -> Any:
         if self.tenant_id:
             return self.tenant_id
         elif 'tenant_id' in self.aad_graph_credentials.token:
@@ -109,7 +123,7 @@ class Credentials:
                 r2 = r.json()
                 return r2.get('value')[0].get('tenantId')
             except Exception as e:
-                logger.error('Unable to infer tenant ID: {}'.format(e))
+                logger.error(f'Unable to infer tenant ID: {e}')
                 return None
 
     def get_credentials(self, resource: str) -> Any:
@@ -142,7 +156,9 @@ class Credentials:
         authority_uri = AUTHORITY_HOST_URI + '/' + self.get_tenant_id()
         existing_cache = self.context.cache
         context = adal.AuthenticationContext(authority_uri, cache=existing_cache)
-        new_token = context.acquire_token(credentials.token['resource'], credentials.token['user_id'], credentials.token['_client_id'])
+        new_token = context.acquire_token(
+            credentials.token['resource'], credentials.token['user_id'], credentials.token['_client_id']
+        )
 
         new_credentials = AADTokenCredentials(new_token, credentials.token.get('_client_id'))
         return new_credentials

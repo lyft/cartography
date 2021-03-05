@@ -2,6 +2,7 @@ import logging
 from typing import Dict
 
 import neo4j
+
 from . import Credentials
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -13,7 +14,7 @@ def get_tenant_id(credentials: Credentials) -> str:
     return credentials.get_tenant_id()
 
 
-def load_azure_tenant(neo4j_session: neo4j.Session, tenant_id: str, current_user: str, update_tag: int, common_job_parameters: Dict) -> None:
+def load_azure_tenant(neo4j_session: neo4j.Session, tenant_id: str, current_user: str, update_tag: int) -> None:
     query = """
     MERGE (at:AzureTenant{id: {TENANT_ID}})
     ON CREATE SET at.firstseen = timestamp()
@@ -40,6 +41,9 @@ def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
 
 
 @timeit
-def sync(neo4j_session: neo4j.Session, tenant_id: str, current_user: str, update_tag: int, common_job_parameters: Dict) -> None:
-    load_azure_tenant(neo4j_session, tenant_id, current_user, update_tag, common_job_parameters)
+def sync(
+    neo4j_session: neo4j.Session, tenant_id: str, current_user: str, update_tag: int,
+    common_job_parameters: Dict
+) -> None:
+    load_azure_tenant(neo4j_session, tenant_id, current_user, update_tag)
     cleanup(neo4j_session, common_job_parameters)

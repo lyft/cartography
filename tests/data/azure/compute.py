@@ -1,5 +1,3 @@
-import datetime
-
 DESCRIBE_VMS = [
     {
         "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachines/TestVM",
@@ -8,26 +6,26 @@ DESCRIBE_VMS = [
         "resource_group": "TestRG",
         "name": "TestVM",
         "plan": {
-            "product": "Standard"
+            "product": "Standard",
         },
         "handware_profile": {
-            "vm_size": "Standard_D2s_v3"
+            "vm_size": "Standard_D2s_v3",
         },
         "license_type": "Windows_Client ",
         "os_profile": {
-            "computer_name": "TestVM"
+            "computer_name": "TestVM",
         },
         "identity": {
-            "type": "SystemAssigned"
+            "type": "SystemAssigned",
         },
         "zones": [
-            "West US 2"
+            "West US 2",
         ],
         "additional_capabilities": {
-            "ultra_ssd_enabled": True
+            "ultra_ssd_enabled": True,
         },
         "priority": "Low",
-        "eviction_policy": "Deallocate"
+        "eviction_policy": "Deallocate",
     },
     {
         "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachines/TestVM1",
@@ -36,27 +34,27 @@ DESCRIBE_VMS = [
         "resource_group": "TestRG",
         "name": "TestVM1",
         "plan": {
-            "product": "Standard"
+            "product": "Standard",
         },
         "handware_profile": {
-            "vm_size": "Standard_D2s_v3"
+            "vm_size": "Standard_D2s_v3",
         },
         "license_type": "Windows_Client ",
         "os_profile": {
-            "computer_name": "TestVM1"
+            "computer_name": "TestVM1",
         },
         "identity": {
-            "type": "SystemAssigned"
+            "type": "SystemAssigned",
         },
         "zones": [
-            "West US 2"
+            "West US 2",
         ],
         "additional_capabilities": {
-            "ultra_ssd_enabled": True
+            "ultra_ssd_enabled": True,
         },
         "priority": "Low",
-        "eviction_policy": "Deallocate"
-    }
+        "eviction_policy": "Deallocate",
+    },
 ]
 
 
@@ -68,23 +66,23 @@ DESCRIBE_VM_DATA_DISKS = [
         "resource_group": "TestRG",
         "name": "TestVM",
         "plan": {
-            "product": "Standard"
+            "product": "Standard",
         },
         "handware_profile": {
-            "vm_size": "Standard_D2s_v3"
+            "vm_size": "Standard_D2s_v3",
         },
         "license_type": "Windows_Client ",
         "os_profile": {
-            "computer_name": "TestVM"
+            "computer_name": "TestVM",
         },
         "identity": {
-            "type": "SystemAssigned"
+            "type": "SystemAssigned",
         },
         "zones": [
-            "West US 2"
+            "West US 2",
         ],
         "additional_capabilities": {
-            "ultra_ssd_enabled": True
+            "ultra_ssd_enabled": True,
         },
         "priority": "Low",
         "eviction_policy": "Deallocate",
@@ -96,9 +94,9 @@ DESCRIBE_VM_DATA_DISKS = [
                 "caching": "ReadWrite",
                 "managedDisk": {
                     "storageAccountType": "Premium_LRS",
-                    "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/disks/dd0"
+                    "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/disks/dd0",
                 },
-                "diskSizeGB": 30
+                "diskSizeGB": 30,
             },
             {
                 "lun": 1,
@@ -107,11 +105,11 @@ DESCRIBE_VM_DATA_DISKS = [
                 "caching": "ReadWrite",
                 "managedDisk": {
                     "storageAccountType": "Premium_LRS",
-                    "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/disks/dd1"
+                    "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/disks/dd1",
                 },
-                "diskSizeGB": 100
-            }
-        ]
+                "diskSizeGB": 100,
+            },
+        ],
     },
     {
         "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachines/TestVM1",
@@ -120,23 +118,23 @@ DESCRIBE_VM_DATA_DISKS = [
         "resource_group": "TestRG",
         "name": "TestVM1",
         "plan": {
-            "product": "Standard"
+            "product": "Standard",
         },
         "handware_profile": {
-            "vm_size": "Standard_D2s_v3"
+            "vm_size": "Standard_D2s_v3",
         },
         "license_type": "Windows_Client ",
         "os_profile": {
-            "computer_name": "TestVM1"
+            "computer_name": "TestVM1",
         },
         "identity": {
-            "type": "SystemAssigned"
+            "type": "SystemAssigned",
         },
         "zones": [
-            "West US 2"
+            "West US 2",
         ],
         "additional_capabilities": {
-            "ultra_ssd_enabled": True
+            "ultra_ssd_enabled": True,
         },
         "priority": "Low",
         "eviction_policy": "Deallocate",
@@ -148,9 +146,9 @@ DESCRIBE_VM_DATA_DISKS = [
                 "caching": "ReadWrite",
                 "managedDisk": {
                     "storageAccountType": "Premium_LRS",
-                    "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/disks/dd0"
+                    "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/disks/dd0",
                 },
-                "diskSizeGB": 30
+                "diskSizeGB": 30,
             },
             {
                 "lun": 1,
@@ -159,12 +157,12 @@ DESCRIBE_VM_DATA_DISKS = [
                 "caching": "ReadWrite",
                 "managedDisk": {
                     "storageAccountType": "Premium_LRS",
-                    "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/disks/dd1"
+                    "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/disks/dd1",
                 },
-                "diskSizeGB": 100
-            }
-        ]
-    }
+                "diskSizeGB": 100,
+            },
+        ],
+    },
 ]
 
 DESCRIBE_DISKS = [
@@ -175,22 +173,22 @@ DESCRIBE_DISKS = [
         "resource_group": "TestRG",
         "name": "dd0",
         "creation_data": {
-            "create_option": "Attach"
+            "create_option": "Attach",
         },
         "disk_size_gb": 100,
         "encryption_settings_collection": {
-            "enabled": true
+            "enabled": True,
         },
         "max_shares": 10,
         "network_access_policy": "AllowAll",
         "os_type": "Windows",
         "tier": "P4",
         "sku": {
-            "name": "Standard_LRS"
+            "name": "Standard_LRS",
         },
         "zones": [
-            "West US 2"
-        ]
+            "West US 2",
+        ],
     },
     {
         "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/disks/dd1",
@@ -199,23 +197,23 @@ DESCRIBE_DISKS = [
         "resource_group": "TestRG",
         "name": "dd1",
         "creation_data": {
-            "create_option": "Attach"
+            "create_option": "Attach",
         },
         "disk_size_gb": 100,
         "encryption_settings_collection": {
-            "enabled": true
+            "enabled": True,
         },
         "max_shares": 10,
         "network_access_policy": "AllowAll",
         "os_type": "Windows",
         "tier": "P4",
         "sku": {
-            "name": "Standard_LRS"
+            "name": "Standard_LRS",
         },
         "zones": [
-            "West US 2"
-        ]
-    }
+            "West US 2",
+        ],
+    },
 ]
 
 DESCRIBE_SNAPSHOTS = [
@@ -226,19 +224,19 @@ DESCRIBE_SNAPSHOTS = [
         "resource_group": "TestRG",
         "name": "ss0",
         "creation_data": {
-            "create_option": "Attach"
+            "create_option": "Attach",
         },
         "disk_size_gb": 100,
         "encryption_settings_collection": {
-            "enabled": true
+            "enabled": True,
         },
         "incremental": True,
         "network_access_policy": "AllowAll",
         "os_type": "Windows",
         "tier": "P4",
         "sku": {
-            "name": "Standard_LRS"
-        }
+            "name": "Standard_LRS",
+        },
     },
     {
         "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/snapshots/ss1",
@@ -247,18 +245,18 @@ DESCRIBE_SNAPSHOTS = [
         "resource_group": "TestRG",
         "name": "ss1",
         "creation_data": {
-            "create_option": "Attach"
+            "create_option": "Attach",
         },
         "disk_size_gb": 100,
         "encryption_settings_collection": {
-            "enabled": true
+            "enabled": True,
         },
         "incremental": True,
         "network_access_policy": "AllowAll",
         "os_type": "Windows",
         "tier": "P4",
         "sku": {
-            "name": "Standard_LRS"
-        }
-    }
+            "name": "Standard_LRS",
+        },
+    },
 ]

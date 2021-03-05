@@ -348,7 +348,7 @@ class CLI:
         if config.azure_sp_auth and config.azure_client_secret_env_var:
             logger.debug(
                 "Reading Client Secret for Azure Service Principal Authentication from environment variable %s",
-                config.azure_client_secret_env_var
+                config.azure_client_secret_env_var,
             )
             config.azure_client_secret = os.environ.get(config.azure_client_secret_env_var)
         else:

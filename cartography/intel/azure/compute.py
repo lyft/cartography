@@ -29,11 +29,11 @@ def get_vm_list(credentials: Credentials, subscription_id: str) -> List[Dict]:
         return vm_list
 
     except Exception as e:
-        logger.warning("Error while retrieving virtual machines - {}".format(e))
+        logger.warning(f"Error while retrieving virtual machines - {e}")
         return []
 
 
-def load_vms(neo4j_session: neo4j.Session, subscription_id: str, vm_list: List[Dict], update_tag: int, common_job_parameters: Dict) -> None:
+def load_vms(neo4j_session: neo4j.Session, subscription_id: str, vm_list: List[Dict], update_tag: int) -> None:
     ingest_vm = """
     UNWIND {vms} AS vm
     MERGE (v:VirtualMachine{id: vm.id})
@@ -57,16 +57,16 @@ def load_vms(neo4j_session: neo4j.Session, subscription_id: str, vm_list: List[D
         ingest_vm,
         vms=vm_list,
         SUBSCRIPTION_ID=subscription_id,
-        update_tag=update_tag
+        update_tag=update_tag,
     )
 
     for vm in vm_list:
         if vm.get('storage_profile', {}).get('data_disks'):
             disks = vm['storage_profile']['data_disks']
-            load_vm_data_disks(neo4j_session, vm['id'], disks, update_tag, common_job_parameters)
+            load_vm_data_disks(neo4j_session, vm['id'], disks, update_tag)
 
 
-def load_vm_data_disks(neo4j_session: neo4j.Session, vm_id: str, data_disks: List[Dict], update_tag: int, common_job_parameters: Dict) -> None:
+def load_vm_data_disks(neo4j_session: neo4j.Session, vm_id: str, data_disks: List[Dict], update_tag: int) -> None:
     ingest_data_disk = """
     UNWIND {disks} AS disk
     MERGE (d:AzureDataDisk{id: disk.managedDisk.id})
@@ -88,7 +88,7 @@ def load_vm_data_disks(neo4j_session: neo4j.Session, vm_id: str, data_disks: Lis
         ingest_data_disk,
         disks=data_disks,
         VM_ID=vm_id,
-        update_tag=update_tag
+        update_tag=update_tag,
     )
 
 
@@ -108,11 +108,11 @@ def get_disks(credentials: Credentials, subscription_id: str) -> List[Dict]:
         return disk_list
 
     except Exception as e:
-        logger.warning("Error while retrieving disks - {}".format(e))
+        logger.warning(f"Error while retrieving disks - {e}")
         return []
 
 
-def load_disks(neo4j_session: neo4j.Session, subscription_id: str, disk_list: List[Dict], update_tag: int, common_job_parameters: str) -> None:
+def load_disks(neo4j_session: neo4j.Session, subscription_id: str, disk_list: List[Dict], update_tag: int) -> None:
     ingest_disks = """
     UNWIND {disks} AS disk
     MERGE (d:AzureDisk{id: disk.id})
@@ -146,20 +146,20 @@ def cleanup_disks(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> 
 def get_snapshots_list(credentials: Credentials, subscription_id: str) -> List[Dict]:
     try:
         client = get_client(credentials, subscription_id)
-        snapshot_list = list(map(lambda x: x.as_dict(), client.snapshots.list()))
+        snapshots = list(map(lambda x: x.as_dict(), client.snapshots.list()))
 
-        for snapshot in snapshot_list:
+        for snapshot in snapshots:
             x = snapshot['id'].split('/')
             snapshot['resource_group'] = x[x.index('resourceGroups') + 1]
 
-        return snapshot_list
+        return snapshots
 
     except Exception as e:
-        logger.warning("Error while retrieving disks - {}".format(e))
+        logger.warning(f"Error while retrieving snapshots - {e}")
         return []
 
 
-def load_snapshots(neo4j_session: neo4j.Session, subscription_id: str, snapshot_list: List[Dict], update_tag: int, common_job_parameters: Dict) -> None:
+def load_snapshots(neo4j_session: neo4j.Session, subscription_id: str, snapshots: List[Dict], update_tag: int) -> None:
     ingest_snapshots = """
     UNWIND {snapshots} as snapshot
     MERGE (s:AzureSnapshot{id: snapshot.id})
@@ -179,7 +179,7 @@ def load_snapshots(neo4j_session: neo4j.Session, subscription_id: str, snapshot_
 
     neo4j_session.run(
         ingest_snapshots,
-        snapshots=snapshot_list,
+        snapshots=snapshots,
         SUBSCRIPTION_ID=subscription_id,
         update_tag=update_tag,
     )
@@ -189,26 +189,38 @@ def cleanup_snapshot(neo4j_session: neo4j.Session, common_job_parameters: Dict) 
     run_cleanup_job('azure_import_snapshots_cleanup.json', neo4j_session, common_job_parameters)
 
 
-def sync_virtual_machine(neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int, common_job_parameters: Dict) -> None:
+def sync_virtual_machine(
+    neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
+    common_job_parameters: Dict
+) -> None:
     vm_list = get_vm_list(credentials, subscription_id)
-    load_vms(neo4j_session, subscription_id, vm_list, update_tag, common_job_parameters)
+    load_vms(neo4j_session, subscription_id, vm_list, update_tag)
     cleanup_virtual_machine(neo4j_session, common_job_parameters)
 
 
-def sync_disk(neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int, common_job_parameters: Dict) -> None:
+def sync_disk(
+    neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
+    common_job_parameters: Dict
+) -> None:
     disk_list = get_disks(credentials, subscription_id)
-    load_disks(neo4j_session, subscription_id, disk_list, update_tag, common_job_parameters)
+    load_disks(neo4j_session, subscription_id, disk_list, update_tag)
     cleanup_disks(neo4j_session, common_job_parameters)
 
 
-def sync_snapshot(neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int, common_job_parameters: Dict) -> None:
-    snapshot_list = get_snapshots_list(credentials, subscription_id)
-    load_snapshots(neo4j_session, subscription_id, snapshot_list, update_tag, common_job_parameters)
+def sync_snapshot(
+    neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
+    common_job_parameters: Dict
+) -> None:
+    snapshots = get_snapshots_list(credentials, subscription_id)
+    load_snapshots(neo4j_session, subscription_id, snapshots, update_tag)
     cleanup_snapshot(neo4j_session, common_job_parameters)
 
 
 @ timeit
-def sync(neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int, common_job_parameters: Dict) -> None:
+def sync(
+    neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
+    common_job_parameters: Dict
+) -> None:
     logger.info("Syncing VM for subscription '%s'.", subscription_id)
 
     sync_virtual_machine(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
