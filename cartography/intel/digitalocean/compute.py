@@ -1,4 +1,8 @@
 import logging
+from typing import Optional
+
+import neo4j
+from digitalocean import Manager
 
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -7,12 +11,24 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
-def sync(neo4j_session, manager, projects_resources, digitalocean_update_tag, common_job_parameters):
+def sync(
+        neo4j_session: neo4j.Session,
+        manager: Manager,
+        projects_resources: dict,
+        digitalocean_update_tag: str,
+        common_job_parameters: dict,
+) -> None:
     sync_droplets(neo4j_session, manager, projects_resources, digitalocean_update_tag, common_job_parameters)
 
 
 @timeit
-def sync_droplets(neo4j_session, manager, projects_resources, digitalocean_update_tag, common_job_parameters):
+def sync_droplets(
+        neo4j_session: neo4j.Session,
+        manager: Manager,
+        projects_resources: dict,
+        digitalocean_update_tag: str,
+        common_job_parameters: dict,
+) -> None:
     logger.info("Syncing Droplets")
     account_id = common_job_parameters['DO_ACCOUNT_ID']
     droplets_res = get_droplets(manager)
@@ -22,12 +38,12 @@ def sync_droplets(neo4j_session, manager, projects_resources, digitalocean_updat
 
 
 @timeit
-def get_droplets(manager):
+def get_droplets(manager: Manager) -> list:
     return manager.get_all_droplets()
 
 
 @timeit
-def transform_droplets(droplets_res: list, account_id, projects_resources):
+def transform_droplets(droplets_res: list, account_id: str, projects_resources: dict) -> list:
     droplets = list()
     for d in droplets_res:
         droplet = {
@@ -55,7 +71,7 @@ def transform_droplets(droplets_res: list, account_id, projects_resources):
 
 
 @timeit
-def _get_project_id_for_droplet(droplet_id, project_resources):
+def _get_project_id_for_droplet(droplet_id: int, project_resources: dict) -> Optional[str]:
     for project_id, resource_list in project_resources.items():
         droplet_resource_name = "do:droplet:" + str(droplet_id)
         if droplet_resource_name in resource_list:
@@ -64,7 +80,7 @@ def _get_project_id_for_droplet(droplet_id, project_resources):
 
 
 @timeit
-def load_droplets(neo4j_session, data, digitalocean_update_tag):
+def load_droplets(neo4j_session: neo4j.Session, data: list, digitalocean_update_tag: str) -> None:
     query = """
         MERGE (p:DOProject{id:{ProjectId}})
         ON CREATE SET p.firstseen = timestamp()
@@ -123,7 +139,7 @@ def load_droplets(neo4j_session, data, digitalocean_update_tag):
 
 
 @timeit
-def cleanup_droplets(neo4j_session, common_job_parameters):
+def cleanup_droplets(neo4j_session: neo4j.Session, common_job_parameters: dict) -> None:
     """
         Delete out-of-date DigitalOcean droplets and relationships
         :param neo4j_session: The Neo4j session

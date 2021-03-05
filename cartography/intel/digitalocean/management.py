@@ -1,5 +1,6 @@
 import logging
 
+import neo4j
 from digitalocean import Manager
 
 from cartography.util import run_cleanup_job
@@ -9,13 +10,23 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
-def sync(neo4j_session, manager, digitalocean_update_tag, common_job_parameters):
+def sync(
+        neo4j_session: neo4j.Session,
+        manager: Manager,
+        digitalocean_update_tag: str,
+        common_job_parameters: dict,
+) -> dict:
     projects_resources = sync_projects(neo4j_session, manager, digitalocean_update_tag, common_job_parameters)
     return projects_resources
 
 
 @timeit
-def sync_projects(neo4j_session, manager, digitalocean_update_tag, common_job_parameters):
+def sync_projects(
+        neo4j_session: neo4j.Session,
+        manager: Manager,
+        digitalocean_update_tag: str,
+        common_job_parameters: dict,
+) -> dict:
     logger.info("Syncing Projects")
     account_id = common_job_parameters['DO_ACCOUNT_ID']
     projects_res = get_projects(manager)
@@ -28,12 +39,12 @@ def sync_projects(neo4j_session, manager, digitalocean_update_tag, common_job_pa
 
 
 @timeit
-def get_projects(manager: Manager):
+def get_projects(manager: Manager) -> list:
     return manager.get_all_projects()
 
 
 @timeit
-def get_projects_resources(projects_res: list):
+def get_projects_resources(projects_res: list) -> dict:
     result = {}
     for p in projects_res:
         resources = p.get_all_resources()
@@ -43,7 +54,7 @@ def get_projects_resources(projects_res: list):
 
 
 @timeit
-def transform_projects(project_res: list, account_id):
+def transform_projects(project_res: list, account_id: str) -> list:
     result = list()
     for p in project_res:
         project = {
@@ -62,7 +73,7 @@ def transform_projects(project_res: list, account_id):
 
 
 @timeit
-def load_projects(neo4j_session, data, digitalocean_update_tag):
+def load_projects(neo4j_session: neo4j.Session, data: list, digitalocean_update_tag: str) -> None:
     query = """
         MERGE (a:DOAccount{id:{AccountId}})
         ON CREATE SET a.firstseen = timestamp()
@@ -103,7 +114,7 @@ def load_projects(neo4j_session, data, digitalocean_update_tag):
 
 
 @timeit
-def cleanup_projects(neo4j_session, common_job_parameters):
+def cleanup_projects(neo4j_session: neo4j.Session, common_job_parameters: dict) -> None:
     """
         Delete out-of-date DigitalOcean projects and relationships
         :param neo4j_session: The Neo4j session

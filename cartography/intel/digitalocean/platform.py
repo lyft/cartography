@@ -1,5 +1,8 @@
 import logging
 
+import neo4j
+from digitalocean import Account
+
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
@@ -8,12 +11,22 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
-def sync(neo4j_session, manager, account, digitalocean_update_tag, common_job_parameters):
+def sync(
+        neo4j_session: neo4j.Session,
+        account: Account,
+        digitalocean_update_tag: str,
+        common_job_parameters: dict,
+) -> None:
     sync_account(neo4j_session, account, digitalocean_update_tag, common_job_parameters)
 
 
 @timeit
-def sync_account(neo4j_session, account, digitalocean_update_tag, common_job_parameters):
+def sync_account(
+        neo4j_session: neo4j.Session,
+        account: Account,
+        digitalocean_update_tag: str,
+        common_job_parameters: dict,
+) -> None:
     logger.info("Syncing Account")
     account_transformed = transform_account(account)
     load_account(neo4j_session, account_transformed, digitalocean_update_tag)
@@ -22,7 +35,7 @@ def sync_account(neo4j_session, account, digitalocean_update_tag, common_job_par
 
 
 @timeit
-def transform_account(account_res):
+def transform_account(account_res: Account) -> dict:
     account = {
         'id': account_res.uuid,
         'uuid': account_res.uuid,
@@ -34,7 +47,7 @@ def transform_account(account_res):
 
 
 @timeit
-def load_account(neo4j_session, account, digitalocean_update_tag):
+def load_account(neo4j_session: neo4j.Session, account: dict, digitalocean_update_tag: str) -> None:
     query = """
             MERGE (a:DOAccount{id:{AccountId}})
             ON CREATE SET a.firstseen = timestamp()
@@ -57,7 +70,7 @@ def load_account(neo4j_session, account, digitalocean_update_tag):
 
 
 @timeit
-def cleanup_account(neo4j_session, common_job_parameters):
+def cleanup_account(neo4j_session: neo4j.Session, common_job_parameters: dict) -> None:
     """
             Delete out-of-date DigitalOcean accounts and relationships
             :param neo4j_session: The Neo4j session
