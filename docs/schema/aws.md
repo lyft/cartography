@@ -108,6 +108,14 @@
   - [Relationships](#relationships-49)
 - [KMSGrant](#kmsgrant)
   - [Relationships](#relationships-50)
+- [APIGatewayRestAPI](#apigatewayrestapi)
+  - [Relationships](#relationships-51)
+- [APIGatewayStage](#apigatewaystage)
+  - [Relationships](#relationships-52)
+- [APIGatewayClientCertificate](#apigatewayclientcertificate)
+  - [Relationships](#relationships-53)
+- [APIGatewayResource](#apigatewayresource)
+  - [Relationships](#relationships-54)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -1865,4 +1873,113 @@ Representation of an AWS [KMS Key Grant](https://docs.aws.amazon.com/kms/latest/
 
         ```
         (KMSGrant)-[APPLIED_ON]->(KMSKey)
+        ```
+
+## APIGatewayRestAPI
+
+Representation of an AWS [API Gateway REST API](https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-rest-api.html).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The id of the REST API|
+| createddate |  The timestamp when the REST API was created |
+| version |  The version identifier for the API |
+| minimumcompressionsize | A nullable integer that is used to enable or disable the compression of the REST API |
+| disableexecuteapiendpoint | Specifies whether clients can invoke your API by using the default `execute-api` endpoint |
+| region | The region where the REST API is created |
+| anonymous\_actions |  List of anonymous internet accessible actions that may be run on the API. |
+| anonymous\_access | True if this API has a policy applied to it that allows anonymous access or if it is open to the internet. |
+
+### Relationships
+
+- AWS API Gateway REST APIs are resources in an AWS Account.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(APIGatewayRestAPI)
+        ```
+
+- AWS API Gateway REST APIs may be associated with an API Gateway Stage.
+
+        ```
+        (APIGatewayRestAPI)-[ASSOCIATED_WITH]->(APIGatewayStage)
+        ```
+
+- AWS API Gateway REST APIs may also have API Gateway Resource resources.
+
+        ```
+        (APIGatewayRestAPI)-[RESOURCE]->(APIGatewayResource)
+        ```
+
+## APIGatewayStage
+
+Representation of an AWS [API Gateway Stage](https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-stages.html).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The name of the API Gateway Stage|
+| createddate |  The timestamp when the stage was created |
+| deploymentid |  The identifier of the Deployment that the stage points to. |
+| clientcertificateid | The identifier of a client certificate for an API stage. |
+| cacheclusterenabled | Specifies whether a cache cluster is enabled for the stage. |
+| cacheclusterstatus | The status of the cache cluster for the stage, if enabled. |
+| tracingenabled | Specifies whether active tracing with X-ray is enabled for the Stage |
+| webaclarn | The ARN of the WebAcl associated with the Stage |
+
+### Relationships
+
+- AWS API Gateway REST APIs may be associated with an API Gateway Stage.
+
+        ```
+        (APIGatewayRestAPI)-[ASSOCIATED_WITH]->(APIGatewayStage)
+        ```
+
+- AWS API Gateway Stage may also contain a Client Certificate.
+
+        ```
+        (APIGatewayStage)-[HAS_CERTIFICATE]->(APIGatewayClientCertificate)
+        ```
+
+## APIGatewayClientCertificate
+
+Representation of an AWS [API Gateway Client Certificate](https://docs.aws.amazon.com/apigateway/api-reference/resource/client-certificate/).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The identifier of the client certificate |
+| createddate |  The timestamp when the client certificate was created |
+| expirationdate |  The timestamp when the client certificate will expire |
+
+### Relationships
+
+- AWS API Gateway Stage may also contain a Client Certificate.
+
+        ```
+        (APIGatewayStage)-[HAS_CERTIFICATE]->(APIGatewayClientCertificate)
+        ```
+
+## APIGatewayResource
+
+Representation of an AWS [API Gateway Resource](https://docs.aws.amazon.com/apigateway/api-reference/resource/resource/).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The id of the REST API|
+| path |  The timestamp when the REST API was created |
+| pathpart |  The version identifier for the API |
+| parentid | A nullable integer that is used to enable or disable the compression of the REST API |
+
+### Relationships
+
+- AWS API Gateway REST APIs may also have API Gateway Resource resources.
+
+        ```
+        (APIGatewayRestAPI)-[RESOURCE]->(APIGatewayResource)
         ```

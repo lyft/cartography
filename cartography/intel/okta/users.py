@@ -1,15 +1,21 @@
 # Okta intel module - Users
 import logging
+from typing import Dict
+from typing import List
+from typing import Tuple
 
+import neo4j
 from okta import UsersClient
+from okta.models.user import User
 
+from cartography.intel.okta.sync_state import OktaSyncState
 from cartography.util import timeit
 
 
 logger = logging.getLogger(__name__)
 
 
-def _create_user_client(okta_org, okta_api_key):
+def _create_user_client(okta_org: str, okta_api_key: str) -> UsersClient:
     """
     Create Okta User Client
     :param okta_org: Okta organization name
@@ -26,14 +32,16 @@ def _create_user_client(okta_org, okta_api_key):
 
 
 @timeit
-def _get_okta_users(user_client):
+def _get_okta_users(user_client: UsersClient) -> List[Dict]:
     """
     Get Okta users from Okta server
     :param user_client: user client
     :return: Array of user data
     """
-    user_list = []
+    user_list: List[Dict] = []
     paged_users = user_client.get_paged_users()
+
+    # TODO: Fix bug, we miss last page :(
     while True:
         user_list.extend(paged_users.result)
         if not paged_users.is_last_page():
@@ -46,9 +54,9 @@ def _get_okta_users(user_client):
 
 
 @timeit
-def transform_okta_user_list(okta_user_list):
-    users = []
-    user_ids = []
+def transform_okta_user_list(okta_user_list: List[User]) -> Tuple[List[Dict], List[str]]:
+    users: List[Dict] = []
+    user_ids: List[str] = []
 
     for current in okta_user_list:
         users.append(transform_okta_user(current))
@@ -58,7 +66,7 @@ def transform_okta_user_list(okta_user_list):
 
 
 @timeit
-def transform_okta_user(okta_user):
+def transform_okta_user(okta_user: User) -> Dict:
     """
     Transform okta user data
     :param okta_user: okta user object
@@ -109,7 +117,10 @@ def transform_okta_user(okta_user):
 
 
 @timeit
-def _load_okta_users(neo4j_session, okta_org_id, user_list, okta_update_tag):
+def _load_okta_users(
+    neo4j_session: neo4j.Session, okta_org_id: str, user_list: List[Dict],
+    okta_update_tag: int,
+) -> None:
     """
     Load Okta user information into the graph
     :param neo4j_session: session with neo4j server
@@ -160,7 +171,10 @@ def _load_okta_users(neo4j_session, okta_org_id, user_list, okta_update_tag):
 
 
 @timeit
-def sync_okta_users(neo4j_session, okta_org_id, okta_update_tag, okta_api_key, sync_state):
+def sync_okta_users(
+    neo4j_session: neo4j.Session, okta_org_id: str, okta_update_tag: int,
+    okta_api_key: str, sync_state: OktaSyncState,
+) -> None:
     """
     Sync okta users
     :param neo4j_session: Session with Neo4j server

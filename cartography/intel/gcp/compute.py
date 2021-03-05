@@ -4,8 +4,15 @@ import json
 import logging
 from collections import namedtuple
 from string import Template
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Set
 
+import neo4j
 from googleapiclient.discovery import HttpError
+from googleapiclient.discovery import Resource
 
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -14,7 +21,7 @@ logger = logging.getLogger(__name__)
 InstanceUriPrefix = namedtuple('InstanceUriPrefix', 'zone_name project_id')
 
 
-def _get_error_reason(http_error):
+def _get_error_reason(http_error: HttpError) -> str:
     """
     Helper function to get an error reason out of the googleapiclient's HttpError object
     This function copies the structure of
@@ -38,7 +45,7 @@ def _get_error_reason(http_error):
 
 
 @timeit
-def get_zones_in_project(project_id, compute, max_results=None):
+def get_zones_in_project(project_id: str, compute: Resource, max_results: Optional[int] = None) -> Optional[List[Dict]]:
     """
     Return the zones where the Compute Engine API is enabled for the given project_id.
     See https://cloud.google.com/compute/docs/reference/rest/v1/zones and
@@ -91,7 +98,7 @@ def get_zones_in_project(project_id, compute, max_results=None):
 
 
 @timeit
-def get_gcp_instance_responses(project_id, zones, compute):
+def get_gcp_instance_responses(project_id: str, zones: Optional[List[Dict]], compute: Resource) -> List[Resource]:
     """
     Return list of GCP instance response objects for a given project and list of zones
     :param project_id: The project ID
@@ -102,7 +109,7 @@ def get_gcp_instance_responses(project_id, zones, compute):
     if not zones:
         # If the Compute Engine API is not enabled for a project, there are no zones and therefore no instances.
         return []
-    response_objects = []
+    response_objects: List[Resource] = []
     for zone in zones:
         req = compute.instances().list(project=project_id, zone=zone['name'])
         res = req.execute()
@@ -111,7 +118,7 @@ def get_gcp_instance_responses(project_id, zones, compute):
 
 
 @timeit
-def get_gcp_subnets(projectid, region, compute):
+def get_gcp_subnets(projectid: str, region: str, compute: Resource) -> Resource:
     """
     Return list of all subnets in the given projectid and region
     :param projectid: THe projectid
@@ -124,7 +131,7 @@ def get_gcp_subnets(projectid, region, compute):
 
 
 @timeit
-def get_gcp_vpcs(projectid, compute):
+def get_gcp_vpcs(projectid: str, compute: Resource) -> Resource:
     """
     Get VPC data for given project
     :param projectid: The project ID
@@ -136,7 +143,7 @@ def get_gcp_vpcs(projectid, compute):
 
 
 @timeit
-def get_gcp_regional_forwarding_rules(project_id, region, compute):
+def get_gcp_regional_forwarding_rules(project_id: str, region: str, compute: Resource) -> Resource:
     """
     Return list of all regional forwarding rules in the given project_id and region
     :param project_id: The project ID
@@ -149,7 +156,7 @@ def get_gcp_regional_forwarding_rules(project_id, region, compute):
 
 
 @timeit
-def get_gcp_global_forwarding_rules(project_id, compute):
+def get_gcp_global_forwarding_rules(project_id: str, compute: Resource) -> Resource:
     """
     Return list of all global forwarding rules in the given project_id and region
     :param project_id: The project ID
@@ -161,7 +168,7 @@ def get_gcp_global_forwarding_rules(project_id, compute):
 
 
 @timeit
-def get_gcp_firewall_ingress_rules(project_id, compute):
+def get_gcp_firewall_ingress_rules(project_id: str, compute: Resource) -> Resource:
     """
     Get ingress Firewall data for a given project
     :param project_id: The project ID to get firewalls for
@@ -173,7 +180,7 @@ def get_gcp_firewall_ingress_rules(project_id, compute):
 
 
 @timeit
-def transform_gcp_instances(response_objects):
+def transform_gcp_instances(response_objects: List[Dict]) -> List[Dict]:
     """
     Process the GCP instance response objects and return a flattened list of GCP instances with all the necessary fields
     we need to load it into Neo4j
@@ -198,7 +205,7 @@ def transform_gcp_instances(response_objects):
     return instance_list
 
 
-def _parse_instance_uri_prefix(prefix):
+def _parse_instance_uri_prefix(prefix: str) -> InstanceUriPrefix:
     """
     Helper function to parse a GCP prefix string of the form `projects/{project}/zones/{zone}/instances`
     :param prefix: String of the form `projects/{project}/zones/{zone}/instances`
@@ -212,7 +219,7 @@ def _parse_instance_uri_prefix(prefix):
     )
 
 
-def _parse_compute_full_uri_to_partial_uri(full_uri, version='v1'):
+def _parse_compute_full_uri_to_partial_uri(full_uri: str, version: str = 'v1') -> str:
     """
     Take a GCP Compute object's self_link of the form
     `https://www.googleapis.com/compute/{version}/projects/{project}/{location specifier}/{subtype}/{resource name}`
@@ -225,7 +232,7 @@ def _parse_compute_full_uri_to_partial_uri(full_uri, version='v1'):
     return full_uri.split(f'compute/{version}/')[1]
 
 
-def _create_gcp_network_tag_id(vpc_partial_uri, tag):
+def _create_gcp_network_tag_id(vpc_partial_uri: str, tag: str) -> str:
     """
     Generate an ID for a GCP network tag
     :param vpc_partial_uri: The VPC that this tag applies to
@@ -235,7 +242,7 @@ def _create_gcp_network_tag_id(vpc_partial_uri, tag):
 
 
 @timeit
-def transform_gcp_vpcs(vpc_res):
+def transform_gcp_vpcs(vpc_res: Dict) -> List[Dict]:
     """
     Transform the VPC response object for Neo4j ingestion
     :param vpc_res: The return data
@@ -263,7 +270,7 @@ def transform_gcp_vpcs(vpc_res):
 
 
 @timeit
-def transform_gcp_subnets(subnet_res):
+def transform_gcp_subnets(subnet_res: Dict) -> List[Dict]:
     """
     Add additional fields to the subnet object to make it easier to process in `load_gcp_subnets()`.
     :param subnet_res: The response object returned from compute.subnetworks.list()
@@ -273,7 +280,7 @@ def transform_gcp_subnets(subnet_res):
     # We can include this in each subnet object in the list to form the partial_uri later on.
     prefix = subnet_res['id']
     projectid = prefix.split('/')[1]
-    subnet_list = []
+    subnet_list: List[Dict] = []
     for s in subnet_res.get('items', []):
         subnet = {}
 
@@ -300,17 +307,17 @@ def transform_gcp_subnets(subnet_res):
 
 
 @timeit
-def transform_gcp_forwarding_rules(fwd_response):
+def transform_gcp_forwarding_rules(fwd_response: Resource) -> List[Dict]:
     """
     Add additional fields to the forwarding rule object to make it easier to process in `load_gcp_forwarding_rules()`.
     :param fwd_response: The response object returned from compute.forwardRules.list()
     :return: A transformed fwd_response
     """
-    fwd_list = []
+    fwd_list: List[Dict] = []
     prefix = fwd_response['id']
     project_id = prefix.split('/')[1]
     for fwd in fwd_response.get('items', []):
-        forwarding_rule = {}
+        forwarding_rule: Dict[str, Any] = {}
 
         fwd_partial_uri = f"{prefix}/{fwd['name']}"
         forwarding_rule['id'] = fwd_partial_uri
@@ -330,7 +337,10 @@ def transform_gcp_forwarding_rules(fwd_response):
         forwarding_rule['ports'] = fwd.get('ports', None)
         forwarding_rule['self_link'] = fwd['selfLink']
         target = fwd.get('target', None)
-        forwarding_rule['target'] = _parse_compute_full_uri_to_partial_uri(target) if target else None
+        if target:
+            forwarding_rule['target'] = _parse_compute_full_uri_to_partial_uri(target)
+        else:
+            forwarding_rule['target'] = None
 
         network = fwd.get('network', None)
         if network:
@@ -347,14 +357,14 @@ def transform_gcp_forwarding_rules(fwd_response):
 
 
 @timeit
-def transform_gcp_firewall(fw_response):
+def transform_gcp_firewall(fw_response: Resource) -> List[Dict]:
     """
     Adjust the firewall response objects into a format that is easy to write to Neo4j.
     Also see _transform_fw_entry and _parse_port_string_to_rule().
     :param fw_response: Firewall response object from the GCP API
     :return: List of transformed firewall rule objects.
     """
-    fw_list = []
+    fw_list: List[Dict] = []
     prefix = fw_response['id']
     for fw in fw_response.get('items', []):
         fw_partial_uri = f"{prefix}/{fw['name']}"
@@ -379,7 +389,7 @@ def transform_gcp_firewall(fw_response):
     return fw_list
 
 
-def _transform_fw_entry(rule, fw_partial_uri, is_allow_rule):
+def _transform_fw_entry(rule: Dict, fw_partial_uri: str, is_allow_rule: bool) -> List[Dict]:
     """
     Takes a rule entry from a GCP firewall object's allow or deny list and converts it to a list of one or more
     dicts representing a firewall rule for each port and port range.  This format is easier to load into Neo4j.
@@ -403,7 +413,7 @@ def _transform_fw_entry(rule, fw_partial_uri, is_allow_rule):
     :param is_allow_rule: Whether the rule is an `allow` rule.  If false it is a `deny` rule.
     :return: A list of one or more transformed rules
     """
-    result = []
+    result: List[Dict] = []
     # rule['ruleid'] = f"{fw_partial_uri}/"
     protocol = rule['IPProtocol']
 
@@ -430,7 +440,7 @@ def _transform_fw_entry(rule, fw_partial_uri, is_allow_rule):
         return result
 
 
-def _parse_port_string_to_rule(port, protocol, fw_partial_uri, is_allow_rule):
+def _parse_port_string_to_rule(port: Optional[str], protocol: str, fw_partial_uri: str, is_allow_rule: bool) -> Dict:
     """
     Takes a string argument representing a GCP firewall rule port or port range and returns a dict that is easier to
     load into Neo4j.
@@ -487,7 +497,7 @@ def _parse_port_string_to_rule(port, protocol, fw_partial_uri, is_allow_rule):
 
 
 @timeit
-def load_gcp_instances(neo4j_session, data, gcp_update_tag):
+def load_gcp_instances(neo4j_session: neo4j.Session, data: List[Dict], gcp_update_tag: int) -> None:
     """
     Ingest GCP instance objects to Neo4j
     :param neo4j_session: The Neo4j session object
@@ -535,7 +545,7 @@ def load_gcp_instances(neo4j_session, data, gcp_update_tag):
 
 
 @timeit
-def load_gcp_vpcs(neo4j_session, vpcs, gcp_update_tag):
+def load_gcp_vpcs(neo4j_session: neo4j.Session, vpcs: List[Dict], gcp_update_tag: int) -> None:
     """
     Ingest VPCs to Neo4j
     :param neo4j_session: The Neo4j session object
@@ -578,7 +588,7 @@ def load_gcp_vpcs(neo4j_session, vpcs, gcp_update_tag):
 
 
 @timeit
-def load_gcp_subnets(neo4j_session, subnets, gcp_update_tag):
+def load_gcp_subnets(neo4j_session: neo4j.Session, subnets: List[Dict], gcp_update_tag: int) -> None:
     """
     Ingest GCP subnet data to Neo4j
     :param neo4j_session: The Neo4j session
@@ -626,7 +636,7 @@ def load_gcp_subnets(neo4j_session, subnets, gcp_update_tag):
 
 
 @timeit
-def load_gcp_forwarding_rules(neo4j_session, fwd_rules, gcp_update_tag):
+def load_gcp_forwarding_rules(neo4j_session: neo4j.Session, fwd_rules: List[Dict], gcp_update_tag: int) -> None:
     """
     Ingest GCP forwarding rules data to Neo4j
     :param neo4j_session: The Neo4j session
@@ -685,7 +695,7 @@ def load_gcp_forwarding_rules(neo4j_session, fwd_rules, gcp_update_tag):
 
 
 @timeit
-def _attach_fwd_rule_to_subnet(neo4j_session, fwd, gcp_update_tag):
+def _attach_fwd_rule_to_subnet(neo4j_session: neo4j.Session, fwd: Dict, gcp_update_tag: int) -> None:
     query = """
         MERGE(subnet:GCPSubnet{id:{SubNetworkPartialUri}})
         ON CREATE SET subnet.firstseen = timestamp(),
@@ -709,7 +719,7 @@ def _attach_fwd_rule_to_subnet(neo4j_session, fwd, gcp_update_tag):
 
 
 @timeit
-def _attach_fwd_rule_to_vpc(neo4j_session, fwd, gcp_update_tag):
+def _attach_fwd_rule_to_vpc(neo4j_session: neo4j.Session, fwd: Dict, gcp_update_tag: int) -> None:
     query = """
         MERGE (vpc:GCPVpc{id:{NetworkPartialUri}})
         ON CREATE SET vpc.firstseen = timestamp(),
@@ -732,7 +742,7 @@ def _attach_fwd_rule_to_vpc(neo4j_session, fwd, gcp_update_tag):
 
 
 @timeit
-def _attach_instance_tags(neo4j_session, instance, gcp_update_tag):
+def _attach_instance_tags(neo4j_session: neo4j.Session, instance: Resource, gcp_update_tag: int) -> None:
     """
     Attach tags to GCP instance and to the VPCs that they are defined in.
     :param neo4j_session: The session
@@ -774,7 +784,7 @@ def _attach_instance_tags(neo4j_session, instance, gcp_update_tag):
 
 
 @timeit
-def _attach_gcp_nics(neo4j_session, instance, gcp_update_tag):
+def _attach_gcp_nics(neo4j_session: neo4j.Session, instance: Resource, gcp_update_tag: int) -> None:
     """
     Attach GCP Network Interfaces to GCP Instances and GCP Subnets.
     Then, attach GCP Instances directly to VPCs.
@@ -821,7 +831,9 @@ def _attach_gcp_nics(neo4j_session, instance, gcp_update_tag):
 
 
 @timeit
-def _attach_gcp_nic_access_configs(neo4j_session, nic_id, nic, gcp_update_tag):
+def _attach_gcp_nic_access_configs(
+    neo4j_session: neo4j.Session, nic_id: str, nic: Resource, gcp_update_tag: int,
+) -> None:
     """
     Attach an access configuration to the GCP NIC.
     :param neo4j_session: The Neo4j session
@@ -864,7 +876,7 @@ def _attach_gcp_nic_access_configs(neo4j_session, nic_id, nic, gcp_update_tag):
 
 
 @timeit
-def _attach_gcp_vpc(neo4j_session, instance_id, gcp_update_tag):
+def _attach_gcp_vpc(neo4j_session: neo4j.Session, instance_id: str, gcp_update_tag: int) -> None:
     """
     Attach a GCP instance directly to a VPC
     :param neo4j_session: neo4j_session
@@ -887,7 +899,7 @@ def _attach_gcp_vpc(neo4j_session, instance_id, gcp_update_tag):
 
 
 @timeit
-def load_gcp_ingress_firewalls(neo4j_session, fw_list, gcp_update_tag):
+def load_gcp_ingress_firewalls(neo4j_session: neo4j.Session, fw_list: List[Resource], gcp_update_tag: int) -> None:
     """
     Load the firewall list to Neo4j
     :param fw_list: The transformed list of firewalls
@@ -932,7 +944,7 @@ def load_gcp_ingress_firewalls(neo4j_session, fw_list, gcp_update_tag):
 
 
 @timeit
-def _attach_firewall_rules(neo4j_session, fw, gcp_update_tag):
+def _attach_firewall_rules(neo4j_session: neo4j.Session, fw: Resource, gcp_update_tag: int) -> None:
     """
     Attach the allow_rules to the Firewall object
     :param neo4j_session: The Neo4j session
@@ -987,7 +999,7 @@ def _attach_firewall_rules(neo4j_session, fw, gcp_update_tag):
 
 
 @timeit
-def _attach_target_tags(neo4j_session, fw, gcp_update_tag):
+def _attach_target_tags(neo4j_session: neo4j.Session, fw: Resource, gcp_update_tag: int) -> None:
     """
     Attach target tags to the firewall object
     :param neo4j_session: The neo4j session
@@ -1020,7 +1032,7 @@ def _attach_target_tags(neo4j_session, fw, gcp_update_tag):
 
 
 @timeit
-def cleanup_gcp_instances(neo4j_session, common_job_parameters):
+def cleanup_gcp_instances(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     """
     Delete out-of-date GCP instance nodes and relationships
     :param neo4j_session: The Neo4j session
@@ -1031,7 +1043,7 @@ def cleanup_gcp_instances(neo4j_session, common_job_parameters):
 
 
 @timeit
-def cleanup_gcp_vpcs(neo4j_session, common_job_parameters):
+def cleanup_gcp_vpcs(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     """
     Delete out-of-date GCP VPC nodes and relationships
     :param neo4j_session: The Neo4j session
@@ -1042,7 +1054,7 @@ def cleanup_gcp_vpcs(neo4j_session, common_job_parameters):
 
 
 @timeit
-def cleanup_gcp_subnets(neo4j_session, common_job_parameters):
+def cleanup_gcp_subnets(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     """
     Delete out-of-date GCP VPC subnet nodes and relationships
     :param neo4j_session: The Neo4j session
@@ -1053,7 +1065,7 @@ def cleanup_gcp_subnets(neo4j_session, common_job_parameters):
 
 
 @timeit
-def cleanup_gcp_forwarding_rules(neo4j_session, common_job_parameters):
+def cleanup_gcp_forwarding_rules(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     """
     Delete out-of-date GCP forwarding rules and relationships
     :param neo4j_session: The Neo4j session
@@ -1064,7 +1076,7 @@ def cleanup_gcp_forwarding_rules(neo4j_session, common_job_parameters):
 
 
 @timeit
-def cleanup_gcp_firewall_rules(neo4j_session, common_job_parameters):
+def cleanup_gcp_firewall_rules(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     """
     Delete out of date GCP firewalls and their relationships
     :param neo4j_session: The Neo4j session
@@ -1075,7 +1087,10 @@ def cleanup_gcp_firewall_rules(neo4j_session, common_job_parameters):
 
 
 @timeit
-def sync_gcp_instances(neo4j_session, compute, project_id, zones, gcp_update_tag, common_job_parameters):
+def sync_gcp_instances(
+    neo4j_session: neo4j.Session, compute: Resource, project_id: str, zones: Optional[List[Dict]],
+    gcp_update_tag: int, common_job_parameters: Dict,
+) -> None:
     """
     Get GCP instances using the Compute resource object, ingest to Neo4j, and clean up old data.
     :param neo4j_session: The Neo4j session object
@@ -1096,7 +1111,10 @@ def sync_gcp_instances(neo4j_session, compute, project_id, zones, gcp_update_tag
 
 
 @timeit
-def sync_gcp_vpcs(neo4j_session, compute, project_id, gcp_update_tag, common_job_parameters):
+def sync_gcp_vpcs(
+    neo4j_session: neo4j.Session, compute: Resource, project_id: str, gcp_update_tag: int,
+    common_job_parameters: Dict,
+) -> None:
     """
     Get GCP VPCs, ingest to Neo4j, and clean up old data.
     :param neo4j_session: The Neo4j session
@@ -1114,7 +1132,10 @@ def sync_gcp_vpcs(neo4j_session, compute, project_id, gcp_update_tag, common_job
 
 
 @timeit
-def sync_gcp_subnets(neo4j_session, compute, project_id, regions, gcp_update_tag, common_job_parameters):
+def sync_gcp_subnets(
+    neo4j_session: neo4j.Session, compute: Resource, project_id: str, regions: List[str], gcp_update_tag: int,
+    common_job_parameters: Dict,
+) -> None:
     for r in regions:
         subnet_res = get_gcp_subnets(project_id, r, compute)
         subnets = transform_gcp_subnets(subnet_res)
@@ -1124,7 +1145,11 @@ def sync_gcp_subnets(neo4j_session, compute, project_id, regions, gcp_update_tag
 
 
 @timeit
-def sync_gcp_forwarding_rules(neo4j_session, compute, project_id, regions, gcp_update_tag, common_job_parameters):
+def sync_gcp_forwarding_rules(
+    neo4j_session: neo4j.Session, compute: Resource, project_id: str, regions: List[str], gcp_update_tag: int,
+
+    common_job_parameters: Dict,
+) -> None:
     """
     Sync GCP Both Global and Regional Forwarding Rules, ingest to Neo4j, and clean up old data.
     :param neo4j_session: The Neo4j session
@@ -1150,7 +1175,10 @@ def sync_gcp_forwarding_rules(neo4j_session, compute, project_id, regions, gcp_u
 
 
 @timeit
-def sync_gcp_firewall_rules(neo4j_session, compute, project_id, gcp_update_tag, common_job_parameters):
+def sync_gcp_firewall_rules(
+    neo4j_session: neo4j.Session, compute: Resource, project_id: str, gcp_update_tag: int,
+    common_job_parameters: Dict,
+) -> None:
     """
     Sync GCP firewalls
     :param neo4j_session: The Neo4j session
@@ -1166,21 +1194,24 @@ def sync_gcp_firewall_rules(neo4j_session, compute, project_id, gcp_update_tag, 
     cleanup_gcp_firewall_rules(neo4j_session, common_job_parameters)
 
 
-def _zones_to_regions(zones):
+def _zones_to_regions(zones: List[str]) -> List[Set]:
     """
     Return list of regions from the input list of zones
     :param zones: List of zones. This is the output from `get_zones_in_project()`.
     :return: List of regions available to the project
     """
     regions = set()
-    for z in zones:
+    for zone in zones:
         # Chop off the last 2 chars to turn the zone to a region
-        r = z['name'][:-2]
-        regions.add(r)
-    return list(regions)
+        region = zone['name'][:-2]     # type: ignore
+        regions.add(region)
+    return list(regions)     # type: ignore
 
 
-def sync(neo4j_session, compute, project_id, gcp_update_tag, common_job_parameters):
+def sync(
+    neo4j_session: neo4j.Session, compute: Resource, project_id: str, gcp_update_tag: int,
+    common_job_parameters: dict,
+) -> None:
     """
     Sync all objects that we need the GCP Compute resource object for.
     :param neo4j_session: The Neo4j session object
