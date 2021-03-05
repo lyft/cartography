@@ -60,90 +60,26 @@ DESCRIBE_VMS = [
 
 DESCRIBE_VM_DATA_DISKS = [
     {
-        "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachines/TestVM",
-        "type": "Microsoft.Compute/virtualMachines",
-        "location": "West US",
-        "resource_group": "TestRG",
-        "name": "TestVM",
-        "plan": {
-            "product": "Standard",
+        "lun": 0,
+        "name": "dd0",
+        "create_option": "Empty",
+        "caching": "ReadWrite",
+        "managed_disk": {
+            "storage_account_type": "Premium_LRS",
+            "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/disks/dd0",
         },
-        "handware_profile": {
-            "vm_size": "Standard_D2s_v3",
-        },
-        "license_type": "Windows_Client ",
-        "os_profile": {
-            "computer_name": "TestVM",
-        },
-        "identity": {
-            "type": "SystemAssigned",
-        },
-        "zones": [
-            "West US 2",
-        ],
-        "additional_capabilities": {
-            "ultra_ssd_enabled": True,
-        },
-        "priority": "Low",
-        "eviction_policy": "Deallocate",
-        "storage_profile": {
-            "data_disks": [
-                {
-                    "lun": 0,
-                    "name": "dd0",
-                    "create_option": "Empty",
-                    "caching": "ReadWrite",
-                    "managed_disk": {
-                        "storage_account_type": "Premium_LRS",
-                        "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/disks/dd0",
-                    },
-                    "disk_size_gb": 30,
-                },
-            ],
-        },
+        "disk_size_gb": 30,
     },
     {
-        "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachines/TestVM1",
-        "type": "Microsoft.Compute/virtualMachines",
-        "location": "West US",
-        "resource_group": "TestRG",
-        "name": "TestVM1",
-        "plan": {
-            "product": "Standard",
+        "lun": 0,
+        "name": "dd1",
+        "create_option": "Empty",
+        "caching": "ReadWrite",
+        "managed_disk": {
+            "storage_account_type": "Premium_LRS",
+            "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/disks/dd1",
         },
-        "handware_profile": {
-            "vm_size": "Standard_D2s_v3",
-        },
-        "license_type": "Windows_Client ",
-        "os_profile": {
-            "computer_name": "TestVM1",
-        },
-        "identity": {
-            "type": "SystemAssigned",
-        },
-        "zones": [
-            "West US 2",
-        ],
-        "additional_capabilities": {
-            "ultra_ssd_enabled": True,
-        },
-        "priority": "Low",
-        "eviction_policy": "Deallocate",
-        "storage_profile": {
-            "data_disks": [
-                {
-                    "lun": 0,
-                    "name": "dd1",
-                    "create_option": "Empty",
-                    "caching": "ReadWrite",
-                    "managed_disk": {
-                        "storage_account_type": "Premium_LRS",
-                        "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/disks/dd1",
-                    },
-                    "disk_size_gb": 30,
-                },
-            ],
-        },
+        "disk_size_gb": 30,
     },
 ]
 
