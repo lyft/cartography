@@ -86,19 +86,21 @@ DESCRIBE_VM_DATA_DISKS = [
         },
         "priority": "Low",
         "eviction_policy": "Deallocate",
-        "dataDisks": [
-            {
-                "lun": 0,
-                "name": "dd0",
-                "createOption": "Empty",
-                "caching": "ReadWrite",
-                "managedDisk": {
-                    "storageAccountType": "Premium_LRS",
-                    "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/disks/dd0",
+        "storage_profile": {
+            "data_disks": [
+                {
+                    "lun": 0,
+                    "name": "dd0",
+                    "createOption": "Empty",
+                    "caching": "ReadWrite",
+                    "managedDisk": {
+                        "storageAccountType": "Premium_LRS",
+                        "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/disks/dd0",
+                    },
+                    "diskSizeGB": 30,
                 },
-                "diskSizeGB": 30,
-            },
-        ],
+            ],
+        },
     },
     {
         "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachines/TestVM1",
@@ -127,19 +129,21 @@ DESCRIBE_VM_DATA_DISKS = [
         },
         "priority": "Low",
         "eviction_policy": "Deallocate",
-        "dataDisks": [
-            {
-                "lun": 0,
-                "name": "dd0",
-                "createOption": "Empty",
-                "caching": "ReadWrite",
-                "managedDisk": {
-                    "storageAccountType": "Premium_LRS",
-                    "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/disks/dd0",
+        "storage_profile": {
+            "data_disks": [
+                {
+                    "lun": 0,
+                    "name": "dd0",
+                    "createOption": "Empty",
+                    "caching": "ReadWrite",
+                    "managedDisk": {
+                        "storageAccountType": "Premium_LRS",
+                        "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/disks/dd0",
+                    },
+                    "diskSizeGB": 30,
                 },
-                "diskSizeGB": 30,
-            },
-        ],
+            ],
+        }
     },
 ]
 

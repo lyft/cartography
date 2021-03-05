@@ -224,7 +224,7 @@ def test_load_snapshots(neo4j_session):
 
     nodes = neo4j_session.run(
         """
-        MATCH (r:Azuresnapshot) RETURN r.id;
+        MATCH (r:AzureSnapshot) RETURN r.id;
         """,
     )
 
