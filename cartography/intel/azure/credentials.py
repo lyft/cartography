@@ -5,8 +5,8 @@ from typing import Any
 from typing import Optional
 
 import adal
-from adal import AuthenticationContext
 import requests
+from adal import AuthenticationContext
 from azure.common.credentials import get_azure_cli_credentials
 from azure.common.credentials import get_cli_profile
 from azure.common.credentials import ServicePrincipalCredentials
