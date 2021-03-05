@@ -1,6 +1,8 @@
 import json
 import logging
 
+import neo4j
+
 logger = logging.getLogger(__name__)
 
 
@@ -39,14 +41,17 @@ class GraphStatement:
         tmp.update(parameters)
         self.parameters = tmp
 
-    def run(self, session):
+    def run(self, session) -> None:
         """
         Run the statement. This will execute the query against the graph.
         """
+        tx: neo4j.Transaction = session.begin_transaction()
         if self.iterative:
-            self._run_iterative(session)
+            self._run_iterative(tx)
         else:
-            self._run(session)
+            data: neo4j.StatementResult = self._run(tx)
+            data.consume()
+        tx.commit()
 
     def as_dict(self):
         """
@@ -59,13 +64,13 @@ class GraphStatement:
             "iterationsize": self.iterationsize,
         }
 
-    def _run(self, session):
+    def _run(self, tx: neo4j.Transaction) -> neo4j.StatementResult:
         """
         Non-iterative statement execution.
         """
-        return session.run(self.query, self.parameters)
+        return tx.run(self.query, self.parameters)
 
-    def _run_iterative(self, session):
+    def _run_iterative(self, tx: neo4j.Transaction) -> None:
         """
         Iterative statement execution.
 
@@ -73,15 +78,17 @@ class GraphStatement:
         """
         self.parameters["LIMIT_SIZE"] = self.iterationsize
 
-        # TODO improve this
-        done = False
-        while not done:
-            results = self._run(session)
-            done = False
-            for r in results:
-                if int(r['TotalCompleted']) == 0:
-                    done = True
+        while True:
+            result: neo4j.StatementResult = self._run(tx)
+            record: neo4j.Record = result.single()
 
+            # TODO: use the BoltStatementResultSummary object to determine the number of items processed
+            total_completed = int(record['TotalCompleted'])
+            logger.debug("Processed %d items", total_completed)
+
+            # Ensure network buffers are cleared
+            result.consume()
+            if total_completed == 0:
                 break
 
     @classmethod
