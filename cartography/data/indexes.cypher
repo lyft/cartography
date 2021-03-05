@@ -122,3 +122,7 @@ CREATE INDEX ON :User(arn);
 CREATE INDEX ON :AzureTenant(id);
 CREATE INDEX ON :AzurePrincipal(email);
 CREATE INDEX ON :AzureSubscription(id);
+CREATE INDEX ON :VirtualMachine(id);
+CREATE INDEX ON :AzureDataDisk(id);
+CREATE INDEX ON :AzureDisk(id);
+CREATE INDEX ON :AzureSnapshot(id);

@@ -142,6 +142,30 @@ class CLI:
             ),
         )
         parser.add_argument(
+            '--azure-tenant-id',
+            type=str,
+            default=None,
+            help=(
+                'Azure Tenant Id for Service Principal Authentication.'
+            ),
+        )
+        parser.add_argument(
+            '--azure-client-id',
+            type=str,
+            default=None,
+            help=(
+                'Azure Client Id for Service Principal Authentication.'
+            ),
+        )
+        parser.add_argument(
+            '--azure-client-secret-env-var',
+            type=str,
+            default=None,
+            help=(
+                'The name of environment variable containing Azure Client Secret for Service Principal Authentication.'
+            ),
+        )
+        parser.add_argument(
             '--aws-requested-syncs',
             type=str,
             default=None,
@@ -319,6 +343,16 @@ class CLI:
         if config.aws_requested_syncs:
             # No need to store the returned value; we're using this for input validation.
             parse_and_validate_aws_requested_syncs(config.aws_requested_syncs)
+
+        # Okta config
+        if config.azure_sp_auth and config.azure_client_secret_env_var:
+            logger.debug(
+                "Reading Client Secret for Azure Service Principal Authentication from environment variable %s",
+                config.azure_client_secret_env_var
+            )
+            config.azure_client_secret = os.environ.get(config.azure_client_secret_env_var)
+        else:
+            config.azure_client_secret = None
 
         # Okta config
         if config.okta_org_id and config.okta_api_key_env_var:

@@ -8,13 +8,13 @@ from statsd import StatsClient
 
 import cartography.intel.analysis
 import cartography.intel.aws
+import cartography.intel.azure
 import cartography.intel.create_indexes
 import cartography.intel.crxcavator.crxcavator
 import cartography.intel.gcp
 import cartography.intel.github
 import cartography.intel.gsuite
 import cartography.intel.okta
-import cartography.intel.azure
 
 
 logger = logging.getLogger(__name__)
