@@ -1,10 +1,13 @@
+from datetime import datetime, timedelta
 import logging
 import requests
-from datetime import datetime, timedelta
+from typing import Any
 
+import adal
 from azure.common.credentials import ServicePrincipalCredentials, get_azure_cli_credentials, get_cli_profile
 from msrestazure.azure_active_directory import AADTokenCredentials
-import adal
+
+from . import Credentials
 
 
 logger = logging.getLogger(__name__)
@@ -13,7 +16,7 @@ AUTHORITY_HOST_URI = 'https://login.microsoftonline.com'
 
 class Authenticator:
 
-    def authenticate_cli(self):
+    def authenticate_cli(self) -> Credentials:
         """
         Implements authentication for the Azure provider
         """
@@ -41,7 +44,7 @@ class Authenticator:
 
             raise Exception(e)
 
-    def authenticate_sp(self, tenant_id=None, client_id=None, client_secret=None):
+    def authenticate_sp(self, tenant_id: str = None, client_id: str = None, client_secret: str = None) -> Credentials:
         """
         Implements authentication for the Azure provider
         """
@@ -82,8 +85,7 @@ class Authenticator:
 
 class Credentials:
 
-    def __init__(self, arm_credentials, aad_graph_credentials, tenant_id=None, subscription_id=None, context=None, current_user=None):
-
+    def __init__(self, arm_credentials: Any, aad_graph_credentials: Any, tenant_id: str = None, subscription_id: str = None, context: Any = None, current_user: str = None) -> None:
         self.arm_credentials = arm_credentials  # Azure Resource Manager API credentials
         self.aad_graph_credentials = aad_graph_credentials  # Azure AD Graph API credentials
         self.tenant_id = tenant_id
@@ -91,10 +93,10 @@ class Credentials:
         self.context = context
         self.current_user = current_user
 
-    def get_current_user(self):
+    def get_current_user(self) -> str:
         return self.current_user
 
-    def get_tenant_id(self):
+    def get_tenant_id(self) -> str:
         if self.tenant_id:
             return self.tenant_id
         elif 'tenant_id' in self.aad_graph_credentials.token:
@@ -110,7 +112,7 @@ class Credentials:
                 logger.error('Unable to infer tenant ID: {}'.format(e))
                 return None
 
-    def get_credentials(self, resource):
+    def get_credentials(self, resource: str) -> Any:
         if resource == 'arm':
             self.arm_credentials = self.get_fresh_credentials(self.arm_credentials)
             return self.arm_credentials
@@ -120,7 +122,7 @@ class Credentials:
         else:
             raise Exception('Invalid credentials resource type')
 
-    def get_fresh_credentials(self, credentials):
+    def get_fresh_credentials(self, credentials: str) -> Any:
         """
         Check if credentials are outdated and if so refresh them.
         """
@@ -132,7 +134,7 @@ class Credentials:
                 return self.refresh_credential(credentials)
         return credentials
 
-    def refresh_credential(self, credentials):
+    def refresh_credential(self, credentials: Any) -> Any:
         """
         Refresh credentials
         """
