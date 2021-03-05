@@ -77,21 +77,3 @@ def start_azure_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
         return
 
     _sync_multiple_subscriptions(neo4j_session, credentials, credentials.get_tenant_id(), subscriptions, config.update_tag, common_job_parameters)
-
-    # run_analysis_job(
-    #     'aws_ec2_asset_exposure.json',
-    #     neo4j_session,
-    #     common_job_parameters,
-    # )
-
-    # run_analysis_job(
-    #     'aws_ec2_keypair_analysis.json',
-    #     neo4j_session,
-    #     common_job_parameters,
-    # )
-
-    # run_analysis_job(
-    #     'aws_eks_asset_exposure.json',
-    #     neo4j_session,
-    #     common_job_parameters,
-    # )
