@@ -7,7 +7,7 @@ TEST_UPDATE_TAG = 123456789
 
 
 def test_load_internet_gateways(neo4j_session):
-    data = tests.data.aws.ec2.internet_gateway
+    data = tests.data.aws.ec2.internet_gateway.DESCRIBE_GATEWAYS
     cartography.intel.aws.ec2.internet_gateways.load_internet_gateways(
         neo4j_session,
         data,
