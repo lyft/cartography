@@ -1,5 +1,4 @@
-DESCRIBE_GATEWAYS = {
-    "InternetGateways": [
+DESCRIBE_GATEWAYS =  [
         {
             "Attachments": [
                 {
@@ -43,5 +42,4 @@ DESCRIBE_GATEWAYS = {
             "OwnerId": "012345678912",
             "Tags": [],
         },
-    ],
-}
+    ]
