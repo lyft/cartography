@@ -1061,13 +1061,6 @@ Representation of an AWS EC2 [Subnet](https://docs.aws.amazon.com/AWSEC2/latest/
         ```
 
 
-
-
-
-
-
-
-
 ## AWSInternetGateway
 
  Representation of an AWS [Interent Gateway](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_InternetGateway.html).
