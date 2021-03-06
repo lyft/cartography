@@ -70,42 +70,52 @@
   - [Relationships](#relationships-30)
 - [EKSCluster](#ekscluster)
   - [Relationships](#relationships-31)
-- [ESDomain](#esdomain)
+- [EMRCluster](#emrcluster)
   - [Relationships](#relationships-32)
-- [Endpoint](#endpoint)
+- [ESDomain](#esdomain)
   - [Relationships](#relationships-33)
-- [Endpoint::ELBListener](#endpointelblistener)
+- [Endpoint](#endpoint)
   - [Relationships](#relationships-34)
-- [Endpoint::ELBV2Listener](#endpointelbv2listener)
+- [Endpoint::ELBListener](#endpointelblistener)
   - [Relationships](#relationships-35)
-- [Ip](#ip)
+- [Endpoint::ELBV2Listener](#endpointelbv2listener)
   - [Relationships](#relationships-36)
-- [IpRule](#iprule)
+- [Ip](#ip)
   - [Relationships](#relationships-37)
-- [IpRule::IpPermissionInbound](#ipruleippermissioninbound)
+- [IpRule](#iprule)
   - [Relationships](#relationships-38)
-- [LoadBalancer](#loadbalancer)
+- [IpRule::IpPermissionInbound](#ipruleippermissioninbound)
   - [Relationships](#relationships-39)
-- [LoadBalancerV2](#loadbalancerv2)
+- [LoadBalancer](#loadbalancer)
   - [Relationships](#relationships-40)
-- [Nameserver](#nameserver)
+- [LoadBalancerV2](#loadbalancerv2)
   - [Relationships](#relationships-41)
-- [NetworkInterface](#networkinterface)
+- [Nameserver](#nameserver)
   - [Relationships](#relationships-42)
-- [RedshiftCluster](#redshiftcluster)
+- [NetworkInterface](#networkinterface)
   - [Relationships](#relationships-43)
-- [RDSInstance](#rdsinstance)
+- [RedshiftCluster](#redshiftcluster)
   - [Relationships](#relationships-44)
-- [S3Acl](#s3acl)
+- [RDSInstance](#rdsinstance)
   - [Relationships](#relationships-45)
-- [S3Bucket](#s3bucket)
+- [S3Acl](#s3acl)
   - [Relationships](#relationships-46)
-- [KMSKey](#kmskey)
+- [S3Bucket](#s3bucket)
   - [Relationships](#relationships-47)
-- [KMSAlias](#kmsalias)
+- [KMSKey](#kmskey)
   - [Relationships](#relationships-48)
-- [KMSGrant](#kmsgrant)
+- [KMSAlias](#kmsalias)
   - [Relationships](#relationships-49)
+- [KMSGrant](#kmsgrant)
+  - [Relationships](#relationships-50)
+- [APIGatewayRestAPI](#apigatewayrestapi)
+  - [Relationships](#relationships-51)
+- [APIGatewayStage](#apigatewaystage)
+  - [Relationships](#relationships-52)
+- [APIGatewayClientCertificate](#apigatewayclientcertificate)
+  - [Relationships](#relationships-53)
+- [APIGatewayResource](#apigatewayresource)
+  - [Relationships](#relationships-54)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -1198,6 +1208,29 @@ Representation of an AWS [EKS Cluster](https://docs.aws.amazon.com/eks/latest/AP
       ```
 
 
+
+## EMRCluster
+
+Representation of an AWS [EMR Cluster](https://docs.aws.amazon.com/emr/latest/APIReference/API_Cluster.html).
+
+| Field            | Description                                                                                                 |
+| ---------------- | ----------------------------------------------------------------------------------------------------------- |
+| firstseen        | Timestamp of when a sync job first discovered this node                                                     |
+| lastupdated      | Timestamp of the last time the node was updated                                                             |
+| region           | The AWS region                                                                                              |
+| **arn**          | AWS-unique identifier for this object                                                                       |
+| id               | The Id of the EMR Cluster.                                                                                  |
+| servicerole      | Service Role of the EMR Cluster                                                                             |
+
+
+### Relationships
+
+- EMR Clusters belong to AWS Accounts.
+      ```
+      (AWSAccount)-[RESOURCE]->(EMRCluster)
+      ```
+
+
 ## ESDomain
 
 Representation of an AWS [ElasticSearch Domain](https://docs.aws.amazon.com/elasticsearch-service/latest/developerguide/es-configuration-api.html#es-configuration-api-datatypes) (see ElasticsearchDomainConfig).
@@ -1840,4 +1873,113 @@ Representation of an AWS [KMS Key Grant](https://docs.aws.amazon.com/kms/latest/
 
         ```
         (KMSGrant)-[APPLIED_ON]->(KMSKey)
+        ```
+
+## APIGatewayRestAPI
+
+Representation of an AWS [API Gateway REST API](https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-rest-api.html).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The id of the REST API|
+| createddate |  The timestamp when the REST API was created |
+| version |  The version identifier for the API |
+| minimumcompressionsize | A nullable integer that is used to enable or disable the compression of the REST API |
+| disableexecuteapiendpoint | Specifies whether clients can invoke your API by using the default `execute-api` endpoint |
+| region | The region where the REST API is created |
+| anonymous\_actions |  List of anonymous internet accessible actions that may be run on the API. |
+| anonymous\_access | True if this API has a policy applied to it that allows anonymous access or if it is open to the internet. |
+
+### Relationships
+
+- AWS API Gateway REST APIs are resources in an AWS Account.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(APIGatewayRestAPI)
+        ```
+
+- AWS API Gateway REST APIs may be associated with an API Gateway Stage.
+
+        ```
+        (APIGatewayRestAPI)-[ASSOCIATED_WITH]->(APIGatewayStage)
+        ```
+
+- AWS API Gateway REST APIs may also have API Gateway Resource resources.
+
+        ```
+        (APIGatewayRestAPI)-[RESOURCE]->(APIGatewayResource)
+        ```
+
+## APIGatewayStage
+
+Representation of an AWS [API Gateway Stage](https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-stages.html).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The name of the API Gateway Stage|
+| createddate |  The timestamp when the stage was created |
+| deploymentid |  The identifier of the Deployment that the stage points to. |
+| clientcertificateid | The identifier of a client certificate for an API stage. |
+| cacheclusterenabled | Specifies whether a cache cluster is enabled for the stage. |
+| cacheclusterstatus | The status of the cache cluster for the stage, if enabled. |
+| tracingenabled | Specifies whether active tracing with X-ray is enabled for the Stage |
+| webaclarn | The ARN of the WebAcl associated with the Stage |
+
+### Relationships
+
+- AWS API Gateway REST APIs may be associated with an API Gateway Stage.
+
+        ```
+        (APIGatewayRestAPI)-[ASSOCIATED_WITH]->(APIGatewayStage)
+        ```
+
+- AWS API Gateway Stage may also contain a Client Certificate.
+
+        ```
+        (APIGatewayStage)-[HAS_CERTIFICATE]->(APIGatewayClientCertificate)
+        ```
+
+## APIGatewayClientCertificate
+
+Representation of an AWS [API Gateway Client Certificate](https://docs.aws.amazon.com/apigateway/api-reference/resource/client-certificate/).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The identifier of the client certificate |
+| createddate |  The timestamp when the client certificate was created |
+| expirationdate |  The timestamp when the client certificate will expire |
+
+### Relationships
+
+- AWS API Gateway Stage may also contain a Client Certificate.
+
+        ```
+        (APIGatewayStage)-[HAS_CERTIFICATE]->(APIGatewayClientCertificate)
+        ```
+
+## APIGatewayResource
+
+Representation of an AWS [API Gateway Resource](https://docs.aws.amazon.com/apigateway/api-reference/resource/resource/).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The id of the REST API|
+| path |  The timestamp when the REST API was created |
+| pathpart |  The version identifier for the API |
+| parentid | A nullable integer that is used to enable or disable the compression of the REST API |
+
+### Relationships
+
+- AWS API Gateway REST APIs may also have API Gateway Resource resources.
+
+        ```
+        (APIGatewayRestAPI)-[RESOURCE]->(APIGatewayResource)
         ```

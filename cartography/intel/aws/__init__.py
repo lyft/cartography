@@ -1,23 +1,18 @@
 import logging
+from typing import Any
+from typing import Dict
+from typing import Iterable
+from typing import List
 
 import boto3
 import botocore.exceptions
+import neo4j
 
-from . import dynamodb
 from . import ec2
-from . import ecr
-from . import eks
-from . import elasticsearch
-from . import iam
-from . import kms
-from . import lambda_function
 from . import organizations
-from . import permission_relationships
-from . import rds
-from . import redshift
-from . import resourcegroupstaggingapi
-from . import route53
-from . import s3
+from .resources import RESOURCE_FUNCTIONS
+from cartography.config import Config
+from cartography.intel.aws.util.common import parse_and_validate_aws_requested_syncs
 from cartography.util import run_analysis_job
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -25,10 +20,60 @@ from cartography.util import timeit
 logger = logging.getLogger(__name__)
 
 
-def _sync_one_account(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters):
-    iam.sync(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters)
-    s3.sync(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters)
+def _build_aws_sync_kwargs(
+    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
+    sync_tag: int, common_job_parameters: Dict[str, Any],
+) -> Dict[str, Any]:
+    return {
+        'neo4j_session': neo4j_session,
+        'boto3_session': boto3_session,
+        'regions': regions,
+        'current_aws_account_id': current_aws_account_id,
+        'update_tag': sync_tag,
+        'common_job_parameters': common_job_parameters,
+    }
 
+
+def _sync_one_account(
+    neo4j_session: neo4j.Session,
+    boto3_session: boto3.session.Session,
+    current_aws_account_id: str,
+    update_tag: int,
+    common_job_parameters: Dict[str, Any],
+    regions: List[str] = [],
+    aws_requested_syncs: Iterable[str] = RESOURCE_FUNCTIONS.keys(),
+) -> None:
+    if not regions:
+        regions = _autodiscover_account_regions(boto3_session, current_aws_account_id)
+
+    sync_args = _build_aws_sync_kwargs(
+        neo4j_session, boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters,
+    )
+
+    for func_name in aws_requested_syncs:
+        if func_name in RESOURCE_FUNCTIONS:
+            # Skip permission relationships and tags for now because they rely on data already being in the graph
+            if func_name not in ['permission_relationships', 'resourcegroupstaggingapi']:
+                RESOURCE_FUNCTIONS[func_name](**sync_args)
+            else:
+                continue
+        else:
+            raise ValueError(f'AWS sync function "{func_name}" was specified but does not exist. Did you misspell it?')
+
+    # NOTE clean up all DNS records, regardless of which job created them
+    run_cleanup_job('aws_account_dns_cleanup.json', neo4j_session, common_job_parameters)
+
+    # MAP IAM permissions
+    if 'permission_relationships' in aws_requested_syncs:
+        RESOURCE_FUNCTIONS['permission_relationships'](**sync_args)
+
+    # AWS Tags - Must always be last.
+    if 'resourcegroupstaggingapi' in aws_requested_syncs:
+        RESOURCE_FUNCTIONS['resourcegroupstaggingapi'](**sync_args)
+
+
+def _autodiscover_account_regions(boto3_session: boto3.session.Session, account_id: str) -> List[str]:
+    regions: List[str] = []
     try:
         regions = ec2.get_ec2_regions(boto3_session)
     except botocore.exceptions.ClientError as e:
@@ -40,53 +85,41 @@ def _sync_one_account(neo4j_session, boto3_session, account_id, sync_tag, common
             e,
             account_id,
         )
-        return
-
-    dynamodb.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-    ec2.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-    ecr.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-    eks.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-    lambda_function.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-    rds.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-    redshift.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-    kms.sync(neo4j_session, boto3_session, regions, account_id, sync_tag, common_job_parameters)
-
-    # NOTE each of the below will generate DNS records
-    route53.sync(neo4j_session, boto3_session, account_id, sync_tag)
-    elasticsearch.sync(neo4j_session, boto3_session, account_id, sync_tag)
-
-    # NOTE clean up all DNS records, regardless of which job created them
-    run_cleanup_job('aws_account_dns_cleanup.json', neo4j_session, common_job_parameters)
-
-    # MAP IAM permissions
-    permission_relationships.sync(neo4j_session, account_id, sync_tag, common_job_parameters)
-
-    # AWS Tags - Must always be last.
-    resourcegroupstaggingapi.sync(neo4j_session, boto3_session, regions, sync_tag, common_job_parameters)
+        raise
+    return regions
 
 
-def _autodiscover_accounts(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters):
+def _autodiscover_accounts(
+    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, account_id: str,
+    sync_tag: int, common_job_parameters: Dict,
+) -> None:
     logger.info("Trying to autodiscover accounts.")
     try:
         # Fetch all accounts
         client = boto3_session.client('organizations')
         paginator = client.get_paginator('list_accounts')
-        accounts = []
+        accounts: List[Dict] = []
         for page in paginator.paginate():
             accounts.extend(page['Accounts'])
 
         # Filter out every account which is not in the ACTIVE status
         # and select only the Id and Name fields
-        accounts = {x['Name']: x['Id'] for x in accounts if x['Status'] == 'ACTIVE'}
+        filtered_accounts: Dict[str, str] = {x['Name']: x['Id'] for x in accounts if x['Status'] == 'ACTIVE'}
 
         # Add them to the graph
         logger.info("Loading autodiscovered accounts.")
-        organizations.load_aws_accounts(neo4j_session, accounts, sync_tag, common_job_parameters)
+        organizations.load_aws_accounts(neo4j_session, filtered_accounts, sync_tag, common_job_parameters)
     except botocore.exceptions.ClientError:
-        logger.debug(f"The current account ({account_id}) doesn't have enough permissions to perform autodiscovery.")
+        logger.warning(f"The current account ({account_id}) doesn't have enough permissions to perform autodiscovery.")
 
 
-def _sync_multiple_accounts(neo4j_session, accounts, sync_tag, common_job_parameters):
+def _sync_multiple_accounts(
+    neo4j_session: neo4j.Session,
+    accounts: Dict[str, str],
+    sync_tag: int,
+    common_job_parameters: Dict[str, Any],
+    aws_requested_syncs: List[str] = [],
+) -> None:
     logger.debug("Syncing AWS accounts: %s", ', '.join(accounts.values()))
     organizations.sync(neo4j_session, accounts, sync_tag, common_job_parameters)
 
@@ -105,7 +138,14 @@ def _sync_multiple_accounts(neo4j_session, accounts, sync_tag, common_job_parame
 
         _autodiscover_accounts(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters)
 
-        _sync_one_account(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters)
+        _sync_one_account(
+            neo4j_session,
+            boto3_session,
+            account_id,
+            sync_tag,
+            common_job_parameters,
+            aws_requested_syncs=aws_requested_syncs,  # Could be replaced later with per-account requested syncs
+        )
 
     del common_job_parameters["AWS_ID"]
 
@@ -126,7 +166,7 @@ def _sync_multiple_accounts(neo4j_session, accounts, sync_tag, common_job_parame
 
 
 @timeit
-def start_aws_ingestion(neo4j_session, config):
+def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
     common_job_parameters = {
         "UPDATE_TAG": config.update_tag,
         "permission_relationships_file": config.permission_relationships_file,
@@ -165,7 +205,17 @@ def start_aws_ingestion(neo4j_session, config):
             ),
         )
 
-    _sync_multiple_accounts(neo4j_session, aws_accounts, config.update_tag, common_job_parameters)
+    requested_syncs: List[str] = list(RESOURCE_FUNCTIONS.keys())
+    if config.aws_requested_syncs:
+        requested_syncs = parse_and_validate_aws_requested_syncs(config.aws_requested_syncs)
+
+    _sync_multiple_accounts(
+        neo4j_session,
+        aws_accounts,
+        config.update_tag,
+        common_job_parameters,
+        requested_syncs,
+    )
 
     run_analysis_job(
         'aws_ec2_asset_exposure.json',

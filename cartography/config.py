@@ -12,11 +12,16 @@ class Config:
     :param neo4j_user: User name for a Neo4j graph database service. Optional.
     :type neo4j_password: string
     :param neo4j_password: Password for a Neo4j graph database service. Optional.
+    :type neo4j_max_connection_lifetime: int
+    :param neo4j_max_connection_lifetime: Time in seconds for Neo4j driver to consider a TCP connection alive.
+        See https://neo4j.com/docs/driver-manual/1.7/client-applications/. Optional.
     :type update_tag: int
     :param update_tag: Update tag for a cartography sync run. Optional.
     :type aws_sync_all_profiles: bool
     :param aws_sync_all_profiles: If True, AWS sync will run for all non-default profiles in the AWS_CONFIG_FILE. If
         False (default), AWS sync will run using the default credentials only. Optional.
+    :type aws_requested_syncs: str
+    :param aws_requested_syncs: Comma-separated list of AWS resources to sync. Optional.
     :type crxcavator_api_base_uri: str
     :param crxcavator_api_base_uri: URI for CRXcavator API. Optional.
     :type crxcavator_api_key: str
@@ -31,6 +36,8 @@ class Config:
     :param okta_saml_role_regex: The regex used to map okta groups to AWS roles. Optional.
     :type github_config: str
     :param github_config: Base64 encoded config object for GitHub ingestion. Optional.
+    :type digitalocean_token: str
+    :param digitalocean_token: DigitalOcean access token. Optional.
     :type permission_relationships_file: str
     :param permission_relationships_file: File path for the resource permission relationships file. Optional.
     :type jamf_base_uri: string
@@ -52,8 +59,10 @@ class Config:
         neo4j_uri,
         neo4j_user=None,
         neo4j_password=None,
+        neo4j_max_connection_lifetime=None,
         update_tag=None,
         aws_sync_all_profiles=False,
+        aws_requested_syncs=None,
         analysis_job_directory=None,
         crxcavator_api_base_uri=None,
         crxcavator_api_key=None,
@@ -61,6 +70,7 @@ class Config:
         okta_api_key=None,
         okta_saml_role_regex=None,
         github_config=None,
+        digitalocean_token=None,
         permission_relationships_file=None,
         jamf_base_uri=None,
         jamf_user=None,
@@ -73,8 +83,10 @@ class Config:
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user
         self.neo4j_password = neo4j_password
+        self.neo4j_max_connection_lifetime = neo4j_max_connection_lifetime
         self.update_tag = update_tag
         self.aws_sync_all_profiles = aws_sync_all_profiles
+        self.aws_requested_syncs = aws_requested_syncs
         self.analysis_job_directory = analysis_job_directory
         self.crxcavator_api_base_uri = crxcavator_api_base_uri
         self.crxcavator_api_key = crxcavator_api_key
@@ -82,6 +94,7 @@ class Config:
         self.okta_api_key = okta_api_key
         self.okta_saml_role_regex = okta_saml_role_regex
         self.github_config = github_config
+        self.digitalocean_token = digitalocean_token
         self.permission_relationships_file = permission_relationships_file
         self.jamf_base_uri = jamf_base_uri
         self.jamf_user = jamf_user

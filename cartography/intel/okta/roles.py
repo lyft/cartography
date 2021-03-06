@@ -1,7 +1,13 @@
 # Okta intel module - Roles
 import json
 import logging
+from typing import Dict
+from typing import List
 
+import neo4j
+from okta.framework.ApiClient import ApiClient
+
+from cartography.intel.okta.sync_state import OktaSyncState
 from cartography.intel.okta.utils import create_api_client
 from cartography.util import timeit
 
@@ -9,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
-def _get_user_roles(api_client, user_id, okta_org_id):
+def _get_user_roles(api_client: ApiClient, user_id: str, okta_org_id: str) -> str:
     """
     Get user roles from Okta
     :param api_client: api client
@@ -25,7 +31,7 @@ def _get_user_roles(api_client, user_id, okta_org_id):
 
 
 @timeit
-def _get_group_roles(api_client, group_id, okta_org_id):
+def _get_group_roles(api_client: ApiClient, group_id: str, okta_org_id: str) -> str:
     """
     Get user roles from Okta
     :param api_client: api client
@@ -41,7 +47,7 @@ def _get_group_roles(api_client, group_id, okta_org_id):
 
 
 @timeit
-def transform_user_roles_data(data, okta_org_id):
+def transform_user_roles_data(data: str, okta_org_id: str) -> List[Dict]:
     """
     Transform user role data
     :param data: data returned by Okta server
@@ -64,7 +70,7 @@ def transform_user_roles_data(data, okta_org_id):
 
 
 @timeit
-def transform_group_roles_data(data, okta_org_id):
+def transform_group_roles_data(data: str, okta_org_id: str) -> List[Dict]:
     """
     Transform user role data
     :param data: data returned by Okta server
@@ -87,7 +93,7 @@ def transform_group_roles_data(data, okta_org_id):
 
 
 @timeit
-def _load_user_role(neo4j_session, user_id, roles_data, okta_update_tag):
+def _load_user_role(neo4j_session: neo4j.Session, user_id: str, roles_data: List[Dict], okta_update_tag: int) -> None:
     ingest = """
     MATCH (user:OktaUser{id: {USER_ID}})<-[:RESOURCE]-(org:OktaOrganization)
     WITH user,org
@@ -114,7 +120,10 @@ def _load_user_role(neo4j_session, user_id, roles_data, okta_update_tag):
 
 
 @timeit
-def _load_group_role(neo4j_session, group_id, roles_data, okta_update_tag):
+def _load_group_role(
+    neo4j_session: neo4j.Session, group_id: str, roles_data: List[Dict],
+    okta_update_tag: int,
+) -> None:
     ingest = """
     MATCH (group:OktaGroup{id: {GROUP_ID}})<-[:RESOURCE]-(org:OktaOrganization)
     WITH group,org
@@ -141,7 +150,10 @@ def _load_group_role(neo4j_session, group_id, roles_data, okta_update_tag):
 
 
 @timeit
-def sync_roles(neo4j_session, okta_org_id, okta_update_tag, okta_api_key, sync_state):
+def sync_roles(
+    neo4j_session: str, okta_org_id: str, okta_update_tag: int, okta_api_key: str,
+    sync_state: OktaSyncState,
+) -> None:
     """
     Sync okta roles
     :param neo4j_session: Neo4j Session
@@ -157,14 +169,16 @@ def sync_roles(neo4j_session, okta_org_id, okta_update_tag, okta_api_key, sync_s
     # get API client
     api_client = create_api_client(okta_org_id, "/api/v1/users", okta_api_key)
 
-    for user_id in sync_state.users:
-        user_roles_data = _get_user_roles(api_client, user_id, okta_org_id)
-        user_roles = transform_user_roles_data(user_roles_data, okta_org_id)
-        if len(user_roles) > 0:
-            _load_user_role(neo4j_session, user_id, user_roles, okta_update_tag)
+    if sync_state.users:
+        for user_id in sync_state.users:
+            user_roles_data = _get_user_roles(api_client, user_id, okta_org_id)
+            user_roles = transform_user_roles_data(user_roles_data, okta_org_id)
+            if len(user_roles) > 0:
+                _load_user_role(neo4j_session, user_id, user_roles, okta_update_tag)
 
-    for group_id in sync_state.groups:
-        group_roles_data = _get_group_roles(api_client, group_id, okta_org_id)
-        group_roles = transform_group_roles_data(group_roles_data, okta_org_id)
-        if len(group_roles) > 0:
-            _load_group_role(neo4j_session, group_id, group_roles, okta_update_tag)
+    if sync_state.groups:
+        for group_id in sync_state.groups:
+            group_roles_data = _get_group_roles(api_client, group_id, okta_org_id)
+            group_roles = transform_group_roles_data(group_roles_data, okta_org_id)
+            if len(group_roles) > 0:
+                _load_group_role(neo4j_session, group_id, group_roles, okta_update_tag)
