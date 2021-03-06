@@ -36,6 +36,8 @@ class Config:
     :param okta_saml_role_regex: The regex used to map okta groups to AWS roles. Optional.
     :type github_config: str
     :param github_config: Base64 encoded config object for GitHub ingestion. Optional.
+    :type digitalocean_token: str
+    :param digitalocean_token: DigitalOcean access token. Optional.
     :type permission_relationships_file: str
     :param permission_relationships_file: File path for the resource permission relationships file. Optional.
     :type jamf_base_uri: string
@@ -68,6 +70,7 @@ class Config:
         okta_api_key=None,
         okta_saml_role_regex=None,
         github_config=None,
+        digitalocean_token=None,
         permission_relationships_file=None,
         jamf_base_uri=None,
         jamf_user=None,
@@ -91,6 +94,7 @@ class Config:
         self.okta_api_key = okta_api_key
         self.okta_saml_role_regex = okta_saml_role_regex
         self.github_config = github_config
+        self.digitalocean_token = digitalocean_token
         self.permission_relationships_file = permission_relationships_file
         self.jamf_base_uri = jamf_base_uri
         self.jamf_user = jamf_user
