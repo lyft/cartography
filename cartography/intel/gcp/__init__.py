@@ -238,6 +238,7 @@ def start_gcp_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
             e,
         )
         return
+
     resources = _initialize_resources(credentials)
 
     # If we don't have perms to pull Orgs or Folders from GCP, we will skip safely

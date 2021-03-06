@@ -42,6 +42,7 @@ setup(
         "statsd",
         "packaging",
         "cryptography<3.4,>=3.2",
+        "python-digitalocean>=1.16.0",
         "PyJWT==1.7.1",
         "adal>=1.2.4",
         "azure-cli-core>=2.12.0",

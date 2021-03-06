@@ -242,6 +242,15 @@ class CLI:
             ),
         )
         parser.add_argument(
+            '--digitalocean-token-env-var',
+            type=str,
+            default=None,
+            help=(
+                'The name of an environment variable containing a DigitalOcean access token.'
+                'Required if you are using the DigitalOcean intel module. Ignored otherwise.'
+            ),
+        )
+        parser.add_argument(
             '--permission-relationships-file',
             type=str,
             default="cartography/data/permission_relationships.yaml",
@@ -374,6 +383,13 @@ class CLI:
             config.github_config = os.environ.get(config.github_config_env_var)
         else:
             config.github_config = None
+
+        # DigitalOcean config
+        if config.digitalocean_token_env_var:
+            logger.debug(f"Reading token for DigitalOcean from env variable {config.digitalocean_token_env_var}")
+            config.digitalocean_token = os.environ.get(config.digitalocean_token_env_var)
+        else:
+            config.digitalocean_token = None
 
         # Jamf config
         if config.jamf_base_uri:

@@ -41,6 +41,7 @@ Start [here](docs/setup/install.md).
 - [Duo CRXcavator](docs/setup/config/crxcavator.md) - Chrome extensions, GSuite users
 - [Okta](docs/setup/config/okta.md) - users, groups, organizations, roles, applications, factors, trusted origins, reply URIs
 - [Github](docs/setup/config/github.md) - repos, branches, users
+- [DigitalOcean](docs/setup/config/digitalocean.md)
 - [Microsoft Azure](docs/setup/config/azure.md) -  Virtual Machine
 
 ## Usage
