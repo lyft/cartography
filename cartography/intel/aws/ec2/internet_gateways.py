@@ -50,12 +50,15 @@ def load_internet_gateways(
     """
 
     for gateway in data:
+        vpcId = None
+        if len(gateway['Attachments']) > 0:
+            vpcId = gateway['Attachments'][0]['VpcId']  # IGW can only be attached to one VPC
         neo4j_session.run(
             query,
             InternetGatewayId=gateway['InternetGatewayId'],
             OwnerId=gateway["OwnerId"],
             Region=region,
-            VpcId=gateway['Attachments'][0].get("VpcId", None),  # IGW can only be attached to one VPC
+            VpcId=vpcId,
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=update_tag,
         ).consume()
