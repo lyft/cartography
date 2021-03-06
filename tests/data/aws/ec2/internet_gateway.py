@@ -6,7 +6,7 @@ DESCRIBE_GATEWAYS = [
                 "VpcId": "vpc-XXXXXXX",
             },
         ],
-        "InternetGatewayId": "igw-XXXXXXX",
+        "InternetGatewayId": "igw-1234XXX",
         "OwnerId": "012345678912",
         "Tags": [
             {
