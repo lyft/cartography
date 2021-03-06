@@ -18,6 +18,7 @@ from . import route53
 from . import s3
 from .ec2.auto_scaling_groups import sync_ec2_auto_scaling_groups
 from .ec2.instances import sync_ec2_instances
+from .ec2.internet_gateways import sync_internet_gateways
 from .ec2.key_pairs import sync_ec2_key_pairs
 from .ec2.load_balancer_v2s import sync_load_balancer_v2s
 from .ec2.load_balancers import sync_load_balancers
@@ -27,7 +28,6 @@ from .ec2.subnets import sync_subnets
 from .ec2.tgw import sync_transit_gateways
 from .ec2.vpc import sync_vpc
 from .ec2.vpc_peering import sync_vpc_peering
-from .ec2.internet_gateways import sync_internet_gateways
 
 RESOURCE_FUNCTIONS: Dict = {
     'iam': iam.sync,

@@ -1,5 +1,4 @@
 import logging
-from string import Template
 from typing import Dict
 from typing import List
 
@@ -13,6 +12,7 @@ from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 
+
 @timeit
 @aws_handle_regions
 def get_internet_gateways(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
@@ -21,7 +21,10 @@ def get_internet_gateways(boto3_session: boto3.session.Session, region: str) -> 
 
 
 @timeit
-def load_internet_gateways(neo4j_session: neo4j.Session, data: List[Dict], region: str, current_aws_account_id: str, update_tag: int):
+def load_internet_gateways(
+    neo4j_session: neo4j.Session, data: List[Dict], region: str,
+    current_aws_account_id: str, update_tag: int,
+):
     logger.debug("Loading %d Internet Gateways in %s.", len(data), region)
     query = """
             MERGE (ig:AWSInternetGateway{id: {InternetGatewayId}})
@@ -52,15 +55,17 @@ def load_internet_gateways(neo4j_session: neo4j.Session, data: List[Dict], regio
             InternetGatewayId=gateway['InternetGatewayId'],
             OwnerId=gateway["OwnerId"],
             Region=region,
-            VpcId=gateway['Attachments'][0].get("VpcId", None), # IGW can only be attached to one VPC
+            VpcId=gateway['Attachments'][0].get("VpcId", None),  # IGW can only be attached to one VPC
             AWS_ACCOUNT_ID=current_aws_account_id,
-            aws_update_tag=update_tag
+            aws_update_tag=update_tag,
         ).consume()
+
 
 @timeit
 def cleanup(neo4j_session, common_job_parameters):
-     logger.debug("Running Internet Gateway cleanup job.")
-     run_cleanup_job('aws_import_internet_gateways_cleanup.json', neo4j_session, common_job_parameters)
+    logger.debug("Running Internet Gateway cleanup job.")
+    run_cleanup_job('aws_import_internet_gateways_cleanup.json', neo4j_session, common_job_parameters)
+
 
 @timeit
 def sync_internet_gateways(

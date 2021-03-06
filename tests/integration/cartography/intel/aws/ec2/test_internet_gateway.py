@@ -19,7 +19,7 @@ def test_load_internet_gateways(neo4j_session):
     expected_nodes = {
         "igw-1234XXX",
         "igw-7e3a7c18",
-        "igw-f1c81494"
+        "igw-f1c81494",
     }
 
     nodes = neo4j_session.run(
