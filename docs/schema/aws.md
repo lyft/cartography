@@ -56,6 +56,8 @@
   - [Relationships](#relationships-23)
 - [EC2SecurityGroup](#ec2securitygroup)
   - [Relationships](#relationships-24)
+- [EC2InternetGateway](#ec2internetgateway)
+  - [Relationships](#relationships-55)
 - [EC2Subnet](#ec2subnet)
   - [Relationships](#relationships-25)
 - [ECRRepository](#ecrrepository)
@@ -1059,6 +1061,19 @@ Representation of an AWS EC2 [Subnet](https://docs.aws.amazon.com/AWSEC2/latest/
         ```
 
 
+
+
+
+
+## EC2InternetGateway
+
+Representation of an AWS EC2 [Interent Gateway](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_Subnet.html).
+
+TODO: add table of attributes
+
+### Relationships
+
+TODO: Fill in
 
 ## ECRRepository
 
