@@ -24,7 +24,7 @@ def get_internet_gateways(boto3_session: boto3.session.Session, region: str) -> 
 def load_internet_gateways(
     neo4j_session: neo4j.Session, data: List[Dict], region: str,
     current_aws_account_id: str, update_tag: int,
-):
+) -> None:
     logger.debug("Loading %d Internet Gateways in %s.", len(data), region)
     query = """
             MERGE (ig:AWSInternetGateway{id: {InternetGatewayId}})
@@ -62,7 +62,7 @@ def load_internet_gateways(
 
 
 @timeit
-def cleanup(neo4j_session, common_job_parameters):
+def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     logger.debug("Running Internet Gateway cleanup job.")
     run_cleanup_job('aws_import_internet_gateways_cleanup.json', neo4j_session, common_job_parameters)
 
