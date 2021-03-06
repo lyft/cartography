@@ -1,0 +1,11 @@
+{
+  "statements": [
+    {
+      "query": "MATCH (n:DOAccount{id:{DO_ACCOUNT_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100,
+      "__comment__": "Delete DigitalOcean Accounts that no longer exist and detach them from all previously connected nodes."
+    }
+  ],
+  "name": "cleanup DigitalOcean Droplets"
+}
