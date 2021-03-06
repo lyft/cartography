@@ -10,6 +10,7 @@ import cartography.intel.analysis
 import cartography.intel.aws
 import cartography.intel.create_indexes
 import cartography.intel.crxcavator.crxcavator
+import cartography.intel.digitalocean
 import cartography.intel.gcp
 import cartography.intel.github
 import cartography.intel.gsuite
@@ -162,6 +163,7 @@ def build_default_sync():
         ('crxcavator', cartography.intel.crxcavator.start_extension_ingestion),
         ('okta', cartography.intel.okta.start_okta_ingestion),
         ('github', cartography.intel.github.start_github_ingestion),
+        ('digitalocean', cartography.intel.digitalocean.start_digitalocean_ingestion),
         ('analysis', cartography.intel.analysis.run),
     ])
     return sync
