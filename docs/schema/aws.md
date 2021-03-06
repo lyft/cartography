@@ -12,6 +12,8 @@
   - [Relationships](#relationships-1)
 - [AWSGroup](#awsgroup)
   - [Relationships](#relationships-2)
+- [AWS2InternetGateway](#awsinternetgateway)
+  - [Relationships](#relationships-55)
 - [AWSLambda](#awslambda)
   - [Relationships](#relationships-3)
 - [AWSPolicy](#awspolicy)
@@ -56,8 +58,6 @@
   - [Relationships](#relationships-23)
 - [EC2SecurityGroup](#ec2securitygroup)
   - [Relationships](#relationships-24)
-- [EC2InternetGateway](#ec2internetgateway)
-  - [Relationships](#relationships-55)
 - [EC2Subnet](#ec2subnet)
   - [Relationships](#relationships-25)
 - [ECRRepository](#ecrrepository)
@@ -1060,20 +1060,28 @@ Representation of an AWS EC2 [Subnet](https://docs.aws.amazon.com/AWSEC2/latest/
         (AWSAccount)-[RESOURCE]->(EC2Subnet)
         ```
 
+## AWSInternetGateway
 
+Representation of an AWS [Interent Gateway](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_InternetGateway.html).
 
-
-
-
-## EC2InternetGateway
-
-Representation of an AWS EC2 [Interent Gateway](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_Subnet.html).
-
-TODO: add table of attributes
+| Field | Description |
+|--------|-----------|
+| **id** | Internet gateway ID |
+| region | The region of the gateway |
 
 ### Relationships
 
-TODO: Fill in
+-  Internet Gateways are attached to a VPC.
+
+        ```
+        (AWSInternetGateway)-[ATTACHED_TO]->(AWSVpc)
+        ```
+
+-  Internet Gateways belong to AWS Accounts
+
+        ```
+        (AWSAccount)-[RESOURCE]->(AWSInternetGateway)
+        ```
 
 ## ECRRepository
 
