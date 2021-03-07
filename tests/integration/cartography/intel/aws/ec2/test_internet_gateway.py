@@ -41,6 +41,8 @@ def test_load_internet_gateway_relationships(neo4j_session):
         """,
     )
     print(accounts)
+    for n in accounts:
+        print(n)
 
     data = tests.data.aws.ec2.internet_gateway.DESCRIBE_GATEWAYS
     cartography.intel.aws.ec2.internet_gateways.load_internet_gateways(
@@ -67,10 +69,4 @@ def test_load_internet_gateway_relationships(neo4j_session):
         (n['n2.id'], n['n1.id']) for n in result
     }
 
-    print(result)
-    print(actual)
-    print(actual[0])
-    print(expected)
-    for n in result:
-        print(n)
     assert actual == expected
