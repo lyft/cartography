@@ -22,46 +22,43 @@ def get_internet_gateways(boto3_session: boto3.session.Session, region: str) -> 
 
 @timeit
 def load_internet_gateways(
-    neo4j_session: neo4j.Session, data: List[Dict], region: str,
+    neo4j_session: neo4j.Session, internet_gateways: List[Dict], region: str,
     current_aws_account_id: str, update_tag: int,
 ) -> None:
-    logger.info("Loading %d Internet Gateways in %s.", len(data), region)
+    logger.info("Loading %d Internet Gateways in %s.", len(internet_gateways), region)
+
     query = """
-            MERGE (ig:AWSInternetGateway{id: {InternetGatewayId}})
-            ON CREATE SET
-                ig.firstseen = timestamp(),
-                ig.region = {Region}
-            SET
-                ig.ownerid = {OwnerId},
-                ig.lastupdated = {aws_update_tag}
+    UNWIND {internet_gateways} as internet_gateway
+        MERGE (ig:AWSInternetGateway{id: internet_gateway.InternetGatewayId})
+        ON CREATE SET
+            ig.firstseen = timestamp(),
+            ig.region = {region}
+        SET
+            ig.ownerid = internet_gateway.OwnerId,
+            ig.lastupdated = {aws_update_tag}
+        WITH internet_gateway, ig
 
-            WITH ig
-            MATCH (awsAccount:AWSAccount {id: {AWS_ACCOUNT_ID}})
-            MERGE (awsAccount)-[r:RESOURCE]->(ig)
-            ON CREATE SET r.firstseen = timestamp()
-            SET r.lastupdated = {aws_update_tag}
+        UNWIND internet_gateway.Attachments as attachment
+        MATCH (vpc:AWSVpc{id: attachment.VpcId})
+        MERGE (ig)-[r:ATTACHED_TO]->(vpc)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {aws_update_tag}
+        WITH internet_gateway, ig
 
-            WITH ig
-            MATCH (vpc:AWSVpc{id: {VpcId}})
-            MERGE (ig)-[r:ATTACHED_TO]->(vpc)
-            ON CREATE SET r.firstseen = timestamp()
-            SET r.lastupdated = {aws_update_tag}
+        MATCH (awsAccount:AWSAccount {id: {aws_account_id}})
+        MERGE (awsAccount)-[r:RESOURCE]->(ig)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {aws_update_tag}
 
     """
 
-    for gateway in data:
-        vpcId = None
-        if len(gateway['Attachments']) > 0:
-            vpcId = gateway['Attachments'][0]['VpcId']  # IGW can only be attached to one VPC
-        neo4j_session.run(
-            query,
-            InternetGatewayId=gateway['InternetGatewayId'],
-            OwnerId=gateway["OwnerId"],
-            Region=region,
-            VpcId=vpcId,
-            AWS_ACCOUNT_ID=current_aws_account_id,
-            aws_update_tag=update_tag,
-        ).consume()
+    neo4j_session.run(
+        query,
+        internet_gateways=internet_gateways,
+        region=region,
+        aws_account_id=current_aws_account_id,
+        aws_update_tag=update_tag,
+    ).consume()
 
 
 @timeit
