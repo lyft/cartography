@@ -58,7 +58,7 @@ def test_load_internet_gateway_relationships(neo4j_session):
         """,
     )
     actual = {
-        (n['n1.id'], n['n2.id']) for n in result
+        (n['n2.id'], n['n1.id']) for n in result
     }
 
     assert actual == expected
