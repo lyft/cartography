@@ -34,7 +34,18 @@ def test_load_internet_gateways(neo4j_session):
 
 
 def test_load_internet_gateway_relationships(neo4j_session):
-    tests.integration.cartography.intel.aws.common.create_test_account(neo4j_session, TEST_ACCOUNT_ID, TEST_UPDATE_TAG)
+    #tests.integration.cartography.intel.aws.common.create_test_account(neo4j_session, TEST_ACCOUNT_ID, TEST_UPDATE_TAG)
+
+    # Create Test AWSAccount
+    neo4j_session.run(
+        """
+        MERGE (aws:AWSAccount{id: {aws_account_id}})
+        ON CREATE SET aws.firstseen = timestamp()
+        SET aws.lastupdated = {aws_update_tag}
+        """,
+        aws_account_id=TEST_ACCOUNT_ID,
+        aws_update_tag=TEST_UPDATE_TAG,
+    )
 
     data = tests.data.aws.ec2.internet_gateway.DESCRIBE_GATEWAYS
     cartography.intel.aws.ec2.internet_gateways.load_internet_gateways(
