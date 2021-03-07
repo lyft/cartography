@@ -25,7 +25,7 @@ def load_internet_gateways(
     neo4j_session: neo4j.Session, data: List[Dict], region: str,
     current_aws_account_id: str, update_tag: int,
 ) -> None:
-    logger.debug("Loading %d Internet Gateways in %s.", len(data), region)
+    logger.info("Loading %d Internet Gateways in %s.", len(data), region)
     query = """
             MERGE (ig:AWSInternetGateway{id: {InternetGatewayId}})
             ON CREATE SET
