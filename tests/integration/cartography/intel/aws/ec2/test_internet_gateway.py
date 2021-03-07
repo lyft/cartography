@@ -30,3 +30,16 @@ def test_load_internet_gateways(neo4j_session):
     actual_nodes = {n['n.id'] for n in nodes}
 
     assert actual_nodes == expected_nodes
+
+
+
+    # Fetch relationships
+    result = neo4j_session.run(
+        """
+        MATCH (n1:AWSInternetGateway)<-[:RESOURCE]-(n2:AWSAccount) RETURN n1.id;
+        """,
+    )
+    actual = {n['n1.id'] for n in nodes}
+
+
+    assert actual == expected_nodes
