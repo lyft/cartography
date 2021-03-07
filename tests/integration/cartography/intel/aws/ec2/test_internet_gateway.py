@@ -64,5 +64,6 @@ def test_load_internet_gateway_relationships(neo4j_session):
     print(result)
     print(actual)
     print(expected)
-
+    for n in result:
+        print(n)
     assert actual == expected
