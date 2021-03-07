@@ -32,6 +32,7 @@ def test_load_internet_gateways(neo4j_session):
 
     assert actual_nodes == expected_nodes
 
+
 def test_load_internet_gateway_relationships(neo4j_session):
     tests.integration.cartography.intel.aws.common.create_test_account(neo4j_session, TEST_ACCOUNT_ID, TEST_UPDATE_TAG)
 
