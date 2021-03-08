@@ -1,6 +1,15 @@
 import logging
+from typing import Any
+from typing import Dict
+from typing import Generator
+from typing import List
+from typing import Tuple
+
+import neo4j
+from azure.core.exceptions import HttpResponseError
 from azure.mgmt.sql import SqlManagementClient
 
+from .util.credentials import Credentials
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
@@ -8,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
-def get_client(credentials, subscription_id):
+def get_client(credentials: Credentials, subscription_id: str) -> SqlManagementClient:
     """
     Getting the Azure SQL client
     """
@@ -17,7 +26,7 @@ def get_client(credentials, subscription_id):
 
 
 @timeit
-def get_server_list(credentials, subscription_id):
+def get_server_list(credentials: Credentials, subscription_id: str) -> List[Dict]:
     """
     Returning the list of servers.
     """
@@ -25,7 +34,7 @@ def get_server_list(credentials, subscription_id):
         client = get_client(credentials, subscription_id)
         server_list = list(map(lambda x: x.as_dict(), client.servers.list()))
 
-    except Exception as e:
+    except HttpResponseError as e:
         logger.warning("Error while retrieving servers - {}".format(e))
         return []
 
@@ -37,7 +46,10 @@ def get_server_list(credentials, subscription_id):
 
 
 @timeit
-def load_server_data(neo4j_session, subscription_id, server_list, azure_update_tag):
+def load_server_data(
+        neo4j_session: neo4j.Session, subscription_id: str, server_list: List[Dict],
+        azure_update_tag: int,
+) -> None:
     """
     Ingest the server details into neo4j.
     """
@@ -67,15 +79,20 @@ def load_server_data(neo4j_session, subscription_id, server_list, azure_update_t
 
 
 @timeit
-def sync_server_details(neo4j_session, credentials, subscription_id, server_list, sync_tag):
+def sync_server_details(
+        neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str,
+        server_list: List[Dict], sync_tag: int,
+) -> None:
     details = get_server_details(credentials, subscription_id, server_list)
     load_server_details(neo4j_session, credentials, subscription_id, details, sync_tag)
 
 
 @timeit
-def get_server_details(credentials, subscription_id, server_list):
+def get_server_details(
+        credentials: Credentials, subscription_id: str, server_list: List[Dict],
+) -> Generator[Any, Any, Any]:
     """
-    Iterate over each servers to get it's resource details.
+    Iterate over each servers to get its resource details.
     """
     for server in server_list:
         dns_alias = get_dns_aliases(credentials, subscription_id, server)
@@ -89,15 +106,15 @@ def get_server_details(credentials, subscription_id, server_list):
 
 
 @timeit
-def get_dns_aliases(credentials, subscription_id, server):
+def get_dns_aliases(credentials: Credentials, subscription_id: str, server: Dict) -> List[Dict]:
     """
-    Returns details of DNS aliases in a server.
+    Returns details of the DNS aliases in a server.
     """
     try:
         client = get_client(credentials, subscription_id)
         dns_aliases = list(map(lambda x: x.as_dict(), client.server_dns_aliases.list_by_server(server['resourceGroup'], server['name'])))
 
-    except Exception as e:
+    except HttpResponseError as e:
         logger.warning("Error while retrieving Azure Server DNS Aliases - {}".format(e))
         return []
 
@@ -105,15 +122,15 @@ def get_dns_aliases(credentials, subscription_id, server):
 
 
 @timeit
-def get_ad_admins(credentials, subscription_id, server):
+def get_ad_admins(credentials: Credentials, subscription_id: str, server: Dict) -> List[Dict]:
     """
-    Returns details of Server AD Administrators in a server.
+    Returns details of the Server AD Administrators in a server.
     """
     try:
         client = get_client(credentials, subscription_id)
         ad_admins = list(map(lambda x: x.as_dict(), client.server_azure_ad_administrators.list_by_server(server['resourceGroup'], server['name'])))
 
-    except Exception as e:
+    except HttpResponseError as e:
         logger.warning("Error while retrieving server azure AD Administrators - {}".format(e))
         return []
 
@@ -121,9 +138,9 @@ def get_ad_admins(credentials, subscription_id, server):
 
 
 @timeit
-def get_recoverable_databases(credentials, subscription_id, server):
+def get_recoverable_databases(credentials: Credentials, subscription_id: str, server: Dict) -> List[Dict]:
     """
-    Returns details of Recoverable databases in a server.
+    Returns details of the Recoverable databases in a server.
     """
     try:
         client = get_client(credentials, subscription_id)
@@ -139,15 +156,15 @@ def get_recoverable_databases(credentials, subscription_id, server):
 
 
 @timeit
-def get_restorable_dropped_databases(credentials, subscription_id, server):
+def get_restorable_dropped_databases(credentials: Credentials, subscription_id: str, server: Dict) -> List[Dict]:
     """
-    Returns details of Restorable Dropped Databases in a server.
+    Returns details of the Restorable Dropped Databases in a server.
     """
     try:
         client = get_client(credentials, subscription_id)
         restorable_dropped_databases = list(map(lambda x: x.as_dict(), client.restorable_dropped_databases.list_by_server(server['resourceGroup'], server['name'])))
 
-    except Exception as e:
+    except HttpResponseError as e:
         logger.warning("Error while retrieving restorable dropped databases - {}".format(e))
         return []
 
@@ -155,7 +172,7 @@ def get_restorable_dropped_databases(credentials, subscription_id, server):
 
 
 @timeit
-def get_failover_groups(credentials, subscription_id, server):
+def get_failover_groups(credentials: Credentials, subscription_id: str, server: Dict) -> List[Dict]:
     """
     Returns details of Failover groups in a server.
     """
@@ -163,7 +180,7 @@ def get_failover_groups(credentials, subscription_id, server):
         client = get_client(credentials, subscription_id)
         failover_groups = list(map(lambda x: x.as_dict(), client.failover_groups.list_by_server(server['resourceGroup'], server['name'])))
 
-    except Exception as e:
+    except HttpResponseError as e:
         logger.warning("Error while retrieving failover groups - {}".format(e))
         return []
 
@@ -171,7 +188,7 @@ def get_failover_groups(credentials, subscription_id, server):
 
 
 @timeit
-def get_elastic_pools(credentials, subscription_id, server):
+def get_elastic_pools(credentials: Credentials, subscription_id: str, server: Dict) -> List[Dict]:
     """
     Returns details of Elastic Pools in a server.
     """
@@ -179,7 +196,7 @@ def get_elastic_pools(credentials, subscription_id, server):
         client = get_client(credentials, subscription_id)
         elastic_pools = list(map(lambda x: x.as_dict(), client.elastic_pools.list_by_server(server['resourceGroup'], server['name'])))
 
-    except Exception as e:
+    except HttpResponseError as e:
         logger.warning("Error while retrieving elastic pools - {}".format(e))
         return []
 
@@ -187,7 +204,7 @@ def get_elastic_pools(credentials, subscription_id, server):
 
 
 @timeit
-def get_databases(credentials, subscription_id, server):
+def get_databases(credentials: Credentials, subscription_id: str, server: Dict) -> List[Dict]:
     """
     Returns details of Databases in a server.
     """
@@ -195,7 +212,7 @@ def get_databases(credentials, subscription_id, server):
         client = get_client(credentials, subscription_id)
         databases = list(map(lambda x: x.as_dict(), client.databases.list_by_server(server['resourceGroup'], server['name'])))
 
-    except Exception as e:
+    except HttpResponseError as e:
         logger.warning("Error while retrieving databases - {}".format(e))
         return []
 
@@ -203,7 +220,10 @@ def get_databases(credentials, subscription_id, server):
 
 
 @timeit
-def load_server_details(neo4j_session, credentials, subscription_id, details, update_tag):
+def load_server_details(
+        neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str,
+        details: List[Tuple[Any, Any, Any, Any, Any, Any, Any, Any, Any, Any]], update_tag: int,
+) -> None:
     """
     Create dictionaries for every resource in the server so we can import them in a single query
     """
@@ -271,7 +291,9 @@ def load_server_details(neo4j_session, credentials, subscription_id, details, up
 
 
 @timeit
-def _load_server_dns_aliases(neo4j_session, dns_aliases, update_tag):
+def _load_server_dns_aliases(
+        neo4j_session: neo4j.Session, dns_aliases: List[Dict], update_tag: int
+) -> None:
     """
     Ingest the DNS Alias details into neo4j.
     """
@@ -296,7 +318,9 @@ def _load_server_dns_aliases(neo4j_session, dns_aliases, update_tag):
 
 
 @timeit
-def _load_server_ad_admins(neo4j_session, ad_admins, update_tag):
+def _load_server_ad_admins(
+        neo4j_session: neo4j.Session, ad_admins: List[Dict], update_tag: int
+) -> None:
     """
     Ingest the Server AD Administrators details into neo4j.
     """
@@ -322,7 +346,9 @@ def _load_server_ad_admins(neo4j_session, ad_admins, update_tag):
 
 
 @timeit
-def _load_recoverable_databases(neo4j_session, recoverable_databases, update_tag):
+def _load_recoverable_databases(
+        neo4j_session: neo4j.Session, recoverable_databases: List[Dict], update_tag: int
+) -> None:
     """
     Ingest the recoverable database details into neo4j.
     """
@@ -349,7 +375,9 @@ def _load_recoverable_databases(neo4j_session, recoverable_databases, update_tag
 
 
 @timeit
-def _load_restorable_dropped_databases(neo4j_session, restorable_dropped_databases, update_tag):
+def _load_restorable_dropped_databases(
+        neo4j_session: neo4j.Session, restorable_dropped_databases: List[Dict], update_tag: int
+) -> None:
     """
     Ingest the restorable dropped database details into neo4j.
     """
@@ -381,7 +409,9 @@ def _load_restorable_dropped_databases(neo4j_session, restorable_dropped_databas
 
 
 @timeit
-def _load_failover_groups(neo4j_session, failover_groups, update_tag):
+def _load_failover_groups(
+        neo4j_session: neo4j.Session, failover_groups: List[Dict], update_tag: int
+) -> None:
     """
     Ingest the failover groups details into neo4j.
     """
@@ -408,7 +438,9 @@ def _load_failover_groups(neo4j_session, failover_groups, update_tag):
 
 
 @timeit
-def _load_elastic_pools(neo4j_session, elastic_pools, update_tag):
+def _load_elastic_pools(
+        neo4j_session: neo4j.Session, elastic_pools: List[Dict], update_tag: int
+) -> None:
     """
     Ingest the elastic pool details into neo4j.
     """
@@ -439,7 +471,9 @@ def _load_elastic_pools(neo4j_session, elastic_pools, update_tag):
 
 
 @timeit
-def _load_databases(neo4j_session, databases, update_tag):
+def _load_databases(
+        neo4j_session: neo4j.Session, databases: List[Dict], update_tag: int
+) -> None:
     """
     Ingest the database details into neo4j.
     """
@@ -475,13 +509,18 @@ def _load_databases(neo4j_session, databases, update_tag):
 
 
 @timeit
-def sync_database_details(neo4j_session, credentials, subscription_id, databases, update_tag):
+def sync_database_details(
+        neo4j_session: neo4j.Session, credentials: Credentials,
+        subscription_id: str, databases: List[Dict], update_tag: int,
+) -> None:
     db_details = get_database_details(credentials, subscription_id, databases)
     load_database_details(neo4j_session, db_details, update_tag)
 
 
 @timeit
-def get_database_details(credentials, subscription_id, databases):
+def get_database_details(
+        credentials: Credentials, subscription_id: str, databases: List[Dict],
+) -> Generator[Any, Any, Any]:
     """
     Iterate over the databases to get the details of resources in it.
     """
@@ -494,7 +533,7 @@ def get_database_details(credentials, subscription_id, databases):
 
 
 @timeit
-def get_replication_links(credentials, subscription_id, database):
+def get_replication_links(credentials: Credentials, subscription_id: str, database: Dict) -> List[Dict]:
     """
     Returns the details of replication links in a database.
     """
@@ -502,7 +541,7 @@ def get_replication_links(credentials, subscription_id, database):
         client = get_client(credentials, subscription_id)
         replication_links = list(map(lambda x: x.as_dict(), client.replication_links.list_by_database(database['resource_group_name'], database['server_name'], database['name'])))
 
-    except Exception as e:
+    except HttpResponseError as e:
         logger.warning("Error while retrieving replication links - {}".format(e))
         return []
 
@@ -510,14 +549,14 @@ def get_replication_links(credentials, subscription_id, database):
 
 
 @timeit
-def get_db_threat_detection_policies(credentials, subscription_id, database):
+def get_db_threat_detection_policies(credentials: Credentials, subscription_id: str, database: Dict) -> List[Dict]:
     """
     Returns the threat detection policy of a database.
     """
     try:
         client = get_client(credentials, subscription_id)
         db_threat_detection_policies = client.database_threat_detection_policies.get(database['resource_group_name'], database['server_name'], database['name']).as_dict()
-    except Exception as e:
+    except HttpResponseError as e:
         logger.warning("Error while retrieving database threat detection policies - {}".format(e))
         return []
 
@@ -525,7 +564,7 @@ def get_db_threat_detection_policies(credentials, subscription_id, database):
 
 
 @timeit
-def get_restore_points(credentials, subscription_id, database):
+def get_restore_points(credentials: Credentials, subscription_id: str, database: Dict) -> List[Dict]:
     """
     Returns the details of restore points in a database.
     """
@@ -533,7 +572,7 @@ def get_restore_points(credentials, subscription_id, database):
         client = get_client(credentials, subscription_id)
         restore_points_list = list(map(lambda x: x.as_dict(), client.restore_points.list_by_database(database['resource_group_name'], database['server_name'], database['name'])))
 
-    except Exception as e:
+    except HttpResponseError as e:
         logger.warning("Error while retrieving restore points - {}".format(e))
         return []
 
@@ -541,14 +580,14 @@ def get_restore_points(credentials, subscription_id, database):
 
 
 @timeit
-def get_transparent_data_encryptions(credentials, subscription_id, database):
+def get_transparent_data_encryptions(credentials: Credentials, subscription_id: str, database: Dict) -> List[Dict]:
     """
     Returns the details of transparent data encryptions in a database.
     """
     try:
         client = get_client(credentials, subscription_id)
         transparent_data_encryptions_list = client.transparent_data_encryptions.get(database['resource_group_name'], database['server_name'], database['name']).as_dict()
-    except Exception as e:
+    except HttpResponseError as e:
         logger.warning("Error while retrieving transparent data encryptions - {}".format(e))
         return []
 
@@ -556,7 +595,9 @@ def get_transparent_data_encryptions(credentials, subscription_id, database):
 
 
 @timeit
-def load_database_details(neo4j_session, details, update_tag):
+def load_database_details(
+        neo4j_session: neo4j.Session, details: List[Tuple[Any, Any, Any, Any, Any]], update_tag: int,
+) -> None:
     """
     Create dictionaries for every resource in a database so we can import them in a single query
     """
@@ -591,7 +632,9 @@ def load_database_details(neo4j_session, details, update_tag):
 
 
 @timeit
-def _load_replication_links(neo4j_session, replication_links, update_tag):
+def _load_replication_links(
+        neo4j_session: neo4j.Session, replication_links: List[Dict], update_tag: int,
+) -> None:
     """
     Ingest replication links into neo4j.
     """
@@ -626,7 +669,9 @@ def _load_replication_links(neo4j_session, replication_links, update_tag):
 
 
 @timeit
-def _load_db_threat_detection_policies(neo4j_session, threat_detection_policies, update_tag):
+def _load_db_threat_detection_policies(
+        neo4j_session: neo4j.Session, threat_detection_policies: List[Dict], update_tag: int,
+) -> None:
     """
     Ingest threat detection policy into neo4j.
     """
@@ -659,7 +704,9 @@ def _load_db_threat_detection_policies(neo4j_session, threat_detection_policies,
 
 
 @timeit
-def _load_restore_points(neo4j_session, restore_points, update_tag):
+def _load_restore_points(
+        neo4j_session: neo4j.Session, restore_points: List[Dict], update_tag: int,
+) -> None:
     """
     Ingest restore points into neo4j.
     """
@@ -687,7 +734,9 @@ def _load_restore_points(neo4j_session, restore_points, update_tag):
 
 
 @timeit
-def _load_transparent_data_encryptions(neo4j_session, encryptions_list, update_tag):
+def _load_transparent_data_encryptions(
+        neo4j_session: neo4j.Session, encryptions_list: List[Dict], update_tag: int,
+) -> None:
     """
     Ingest transparent data encryptions into neo4j.
     """
@@ -713,13 +762,18 @@ def _load_transparent_data_encryptions(neo4j_session, encryptions_list, update_t
 
 
 @timeit
-def cleanup_azure_sql_servers(neo4j_session, subscription_id, common_job_parameters):
+def cleanup_azure_sql_servers(
+        neo4j_session: neo4j.Session, subscription_id: str, common_job_parameters: Dict
+) -> None:
     common_job_parameters['AZURE_SUBSCRIPTION_ID'] = subscription_id
     run_cleanup_job('azure_sql_server_cleanup.json', neo4j_session, common_job_parameters)
 
 
 @timeit
-def sync(neo4j_session, credentials, subscription_id, sync_tag, common_job_parameters):
+def sync(
+        neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str,
+        sync_tag: int, common_job_parameters: Dict,
+) -> None:
     logger.info("Syncing Azure SQL for subscription '%s'.", subscription_id)
     server_list = get_server_list(credentials, subscription_id)
     load_server_data(neo4j_session, subscription_id, server_list, sync_tag)
