@@ -24,7 +24,7 @@ def test_load_vms(neo4j_session):
 
     nodes = neo4j_session.run(
         """
-        MATCH (r:VirtualMachine) RETURN r.id;
+        MATCH (r:AzureVirtualMachine) RETURN r.id;
         """,
     )
     actual_nodes = {n['r.id'] for n in nodes}
@@ -65,7 +65,7 @@ def test_load_vms_relationships(neo4j_session):
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:AzureSubscription)-[:RESOURCE]->(n2:VirtualMachine) RETURN n1.id, n2.id;
+        MATCH (n1:AzureSubscription)-[:RESOURCE]->(n2:AzureVirtualMachine) RETURN n1.id, n2.id;
         """,
     )
 
@@ -130,7 +130,7 @@ def test_load_vm_data_disk_relationships(neo4j_session):
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:VirtualMachine)-[:ATTACHED_TO]->(n2:AzureDataDisk) RETURN n1.id, n2.id;
+        MATCH (n1:AzureVirtualMachine)-[:ATTACHED_TO]->(n2:AzureDataDisk) RETURN n1.id, n2.id;
         """,
     )
 
