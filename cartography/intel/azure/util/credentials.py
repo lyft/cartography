@@ -9,6 +9,7 @@ import requests
 from azure.common.credentials import get_azure_cli_credentials
 from azure.common.credentials import get_cli_profile
 from azure.common.credentials import ServicePrincipalCredentials
+from azure.core.exceptions import HttpResponseError
 from msrestazure.azure_active_directory import AADTokenCredentials
 
 
@@ -42,15 +43,16 @@ class Authenticator:
                 current_user=profile.get_current_account_user(), subscription_id=subscription_id,
             )
 
-        except Exception as e:
+        except HttpResponseError as e:
             if ', AdalError: Unsupported wstrust endpoint version. ' \
                     'Current support version is wstrust2005 or wstrust13.' in e.args:
-                raise Exception(
-                    'You are likely authenticating with a Microsoft Account. '
-                    'This authentication mode only support Azure Active Directory principal authentication.',
+                logger.error(
+                    f'You are likely authenticating with a Microsoft Account. \
+                    This authentication mode only support Azure Active Directory principal authentication.\
+                    {e}',
                 )
 
-            raise Exception(e)
+            raise e
 
     def authenticate_sp(self, tenant_id: str = None, client_id: str = None, client_secret: str = None) -> Any:
         """
@@ -84,15 +86,16 @@ class Authenticator:
                 current_user=profile.get_current_account_user(),
             )
 
-        except Exception as e:
+        except HttpResponseError as e:
             if ', AdalError: Unsupported wstrust endpoint version. ' \
                     'Current support version is wstrust2005 or wstrust13.' in e.args:
-                raise Exception(
-                    'You are likely authenticating with a Microsoft Account. '
-                    'This authentication mode only support Azure Active Directory principal authentication.',
+                logger.error(
+                    f'You are likely authenticating with a Microsoft Account. \
+                    This authentication mode only support Azure Active Directory principal authentication.\
+                    {e}',
                 )
 
-            raise Exception(e)
+            raise e
 
 
 class Credentials:
@@ -123,7 +126,7 @@ class Credentials:
                 r = requests.get('https://management.azure.com/tenants?api-version=2020-01-01', headers=h)
                 r2 = r.json()
                 return r2.get('value')[0].get('tenantId')
-            except Exception as e:
+            except requests.ConnectionError as e:
                 logger.error(f'Unable to infer tenant ID: {e}')
                 return None
 

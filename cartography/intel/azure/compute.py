@@ -3,6 +3,7 @@ from typing import Dict
 from typing import List
 
 import neo4j
+from azure.core.exceptions import HttpResponseError
 from azure.mgmt.compute import ComputeManagementClient
 
 from .credentials import Credentials
@@ -28,7 +29,7 @@ def get_vm_list(credentials: Credentials, subscription_id: str) -> List[Dict]:
 
         return vm_list
 
-    except Exception as e:
+    except HttpResponseError as e:
         logger.warning(f"Error while retrieving virtual machines - {e}")
         return []
 
@@ -106,7 +107,7 @@ def get_disks(credentials: Credentials, subscription_id: str) -> List[Dict]:
 
         return disk_list
 
-    except Exception as e:
+    except HttpResponseError as e:
         logger.warning(f"Error while retrieving disks - {e}")
         return []
 
@@ -153,7 +154,7 @@ def get_snapshots_list(credentials: Credentials, subscription_id: str) -> List[D
 
         return snapshots
 
-    except Exception as e:
+    except HttpResponseError as e:
         logger.warning(f"Error while retrieving snapshots - {e}")
         return []
 

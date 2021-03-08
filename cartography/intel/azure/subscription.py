@@ -3,6 +3,7 @@ from typing import Dict
 from typing import List
 
 import neo4j
+from azure.core.exceptions import HttpResponseError
 from azure.mgmt.resource import SubscriptionClient
 
 from .credentials import Credentials
@@ -13,15 +14,21 @@ logger = logging.getLogger(__name__)
 
 
 def get_all_azure_subscriptions(credentials: Credentials) -> List[Dict]:
-    # Create the client
-    client = SubscriptionClient(credentials.arm_credentials)
+    try:
+        # Create the client
+        client = SubscriptionClient(credentials.arm_credentials)
 
-    # Get all the accessible subscriptions
-    subs = list(client.subscriptions.list())
+        # Get all the accessible subscriptions
+        subs = list(client.subscriptions.list())
 
-    if not subs:
-        logger.warning('failed to fetch subscriptions for the credentials')
-        raise Exception('The provided credentials do not have access to any subscriptions')
+    except HttpResponseError as e:
+        logger.error(
+            f'failed to fetch subscriptions for the credentials \
+            The provided credentials do not have access to any subscriptions - \
+            {e}'
+        )
+
+        return []
 
     subscriptions = []
     for sub in subs:
@@ -36,15 +43,21 @@ def get_all_azure_subscriptions(credentials: Credentials) -> List[Dict]:
 
 
 def get_current_azure_subscription(credentials: Credentials, subscription_id: str) -> List[Dict]:
-    # Create the client
-    client = SubscriptionClient(credentials.arm_credentials)
+    try:
+        # Create the client
+        client = SubscriptionClient(credentials.arm_credentials)
 
-    # Get all the accessible subscriptions
-    sub = client.subscriptions.get(subscription_id)
-    print(sub)
+        # Get all the accessible subscriptions
+        sub = client.subscriptions.get(subscription_id)
 
-    if not sub:
-        raise Exception(f'The provided credentials do not have access to this subscription: {subscription_id}')
+    except HttpResponseError as e:
+        logger.error(
+            f'failed to fetch subscription for the credentials \
+            The provided credentials do not have access to this subscription: {subscription_id} - \
+            {e}'
+        )
+
+        return []
 
     return [
         {
