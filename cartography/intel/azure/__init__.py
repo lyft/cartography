@@ -7,8 +7,8 @@ import neo4j
 from . import compute
 from . import subscription
 from . import tenant
-from .credentials import Authenticator
-from .credentials import Credentials
+from .util.credentials import Authenticator
+from .util.credentials import Credentials
 from cartography.config import Config
 from cartography.util import timeit
 

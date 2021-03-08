@@ -6,7 +6,7 @@ import neo4j
 from azure.core.exceptions import HttpResponseError
 from azure.mgmt.compute import ComputeManagementClient
 
-from .credentials import Credentials
+from .util.credentials import Credentials
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
@@ -37,7 +37,7 @@ def get_vm_list(credentials: Credentials, subscription_id: str) -> List[Dict]:
 def load_vms(neo4j_session: neo4j.Session, subscription_id: str, vm_list: List[Dict], update_tag: int) -> None:
     ingest_vm = """
     UNWIND {vms} AS vm
-    MERGE (v:VirtualMachine{id: vm.id})
+    MERGE (v:AzureVirtualMachine{id: vm.id})
     ON CREATE SET v.firstseen = timestamp(),
     v.type = vm.type, v.location = vm.location,
     v.resourcegroup = vm.resource_group
@@ -77,7 +77,7 @@ def load_vm_data_disks(neo4j_session: neo4j.Session, vm_id: str, data_disks: Lis
     d.createoption = disk.create_option, d.write_accelerator_enabled=disk.write_accelerator_enabled,
     d.managed_disk_storage_type=disk.managed_disk.storage_account_type
     WITH d
-    MATCH (owner:VirtualMachine{id: {VM_ID}})
+    MATCH (owner:AzureVirtualMachine{id: {VM_ID}})
     MERGE (owner)-[r:ATTACHED_TO]->(d)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {update_tag}

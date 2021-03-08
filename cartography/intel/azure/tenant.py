@@ -3,7 +3,7 @@ from typing import Dict
 
 import neo4j
 
-from .credentials import Credentials
+from .util.credentials import Credentials
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
