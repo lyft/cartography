@@ -6,6 +6,7 @@ from typing import Optional
 
 import adal
 import requests
+from .credentials import Credentials
 from azure.common.credentials import get_azure_cli_credentials
 from azure.common.credentials import get_cli_profile
 from azure.common.credentials import ServicePrincipalCredentials
@@ -19,7 +20,7 @@ AUTHORITY_HOST_URI = 'https://login.microsoftonline.com'
 
 class Authenticator:
 
-    def authenticate_cli(self) -> Any:
+    def authenticate_cli(self) -> Credentials:
         """
         Implements authentication for the Azure provider
         """
@@ -45,16 +46,16 @@ class Authenticator:
 
         except HttpResponseError as e:
             if ', AdalError: Unsupported wstrust endpoint version. ' \
-                    'Current support version is wstrust2005 or wstrust13.' in e.args:
+                    'Current supported version is wstrust2005 or wstrust13.' in e.args:
                 logger.error(
                     f'You are likely authenticating with a Microsoft Account. \
-                    This authentication mode only support Azure Active Directory principal authentication.\
+                    This authentication mode only supports Azure Active Directory principal authentication.\
                     {e}',
                 )
 
             raise e
 
-    def authenticate_sp(self, tenant_id: str = None, client_id: str = None, client_secret: str = None) -> Any:
+    def authenticate_sp(self, tenant_id: str = None, client_id: str = None, client_secret: str = None) -> Credentials:
         """
         Implements authentication for the Azure provider
         """
@@ -88,10 +89,10 @@ class Authenticator:
 
         except HttpResponseError as e:
             if ', AdalError: Unsupported wstrust endpoint version. ' \
-                    'Current support version is wstrust2005 or wstrust13.' in e.args:
+                    'Current supported version is wstrust2005 or wstrust13.' in e.args:
                 logger.error(
                     f'You are likely authenticating with a Microsoft Account. \
-                    This authentication mode only support Azure Active Directory principal authentication.\
+                    This authentication mode only supports Azure Active Directory principal authentication.\
                     {e}',
                 )
 

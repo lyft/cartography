@@ -26,7 +26,7 @@ def _sync_tenant(
     neo4j_session: neo4j.Session, tenant_id: str, current_user: str, update_tag: int,
     common_job_parameters: Dict,
 ) -> None:
-    logger.debug("Syncing Azure Tenant: %s", tenant_id)
+    logger.info("Syncing Azure Tenant: %s", tenant_id)
     tenant.sync(neo4j_session, tenant_id, current_user, update_tag, common_job_parameters)
 
 
@@ -34,7 +34,7 @@ def _sync_multiple_subscriptions(
     neo4j_session: neo4j.Session, credentials: Credentials, tenant_id: str, subscriptions: List[Dict],
     update_tag: int, common_job_parameters: Dict,
 ) -> None:
-    logger.debug("Syncing Azure subscriptions")
+    logger.info("Syncing Azure subscriptions")
 
     subscription.sync(neo4j_session, tenant_id, subscriptions, update_tag, common_job_parameters)
 
@@ -63,7 +63,6 @@ def start_azure_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
             credentials = Authenticator().authenticate_cli()
 
     except Exception as e:
-        logger.debug("Error occurred calling Authenticator.authenticate().", exc_info=True)
         logger.error(
             (
                 "Unable to authenticate with Azure Service Principal, an error occurred: %s."

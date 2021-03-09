@@ -130,8 +130,8 @@ class CLI:
             '--azure-sync-all-subscriptions',
             action='store_true',
             help=(
-                'Enable Azure sync for all discovered profiles. When this parameter is supplied cartography will '
-                'discover all configured Azure profiles.'
+                'Enable Azure sync for all discovered subscriptions. When this parameter is supplied cartography will '
+                'discover all configured Azure subscriptions.'
             ),
         )
         parser.add_argument(
@@ -353,7 +353,7 @@ class CLI:
             # No need to store the returned value; we're using this for input validation.
             parse_and_validate_aws_requested_syncs(config.aws_requested_syncs)
 
-        # Okta config
+        # Azure config
         if config.azure_sp_auth and config.azure_client_secret_env_var:
             logger.debug(
                 "Reading Client Secret for Azure Service Principal Authentication from environment variable %s",

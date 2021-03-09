@@ -20,8 +20,8 @@ def load_azure_tenant(neo4j_session: neo4j.Session, tenant_id: str, current_user
     ON CREATE SET at.firstseen = timestamp()
     SET at.lastupdated = {update_tag}
     WITH at
-    MERGE (ap:AzurePrincipal{email: {CURRENT_USER}})
-    ON CREATE SET ap.firstseen = timestamp()
+    MERGE (ap:AzurePrincipal{id: {CURRENT_USER}})
+    ON CREATE SET ap.email = {CURRENT_USER}, ap.firstseen = timestamp()
     SET ap.lastupdated = {update_tag}
     WITH at, ap
     MERGE (at)-[r:RESOURCE]->(ap)
