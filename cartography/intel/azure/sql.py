@@ -28,7 +28,7 @@ def get_client(credentials: Credentials, subscription_id: str) -> SqlManagementC
 @timeit
 def get_server_list(credentials: Credentials, subscription_id: str) -> List[Dict]:
     """
-    Returning the list of servers.
+    Returning the list of Azure SQL servers.
     """
     try:
         client = get_client(credentials, subscription_id)
@@ -487,13 +487,14 @@ def _load_databases(
     d.creationdate = az_database.creation_date,
     d.databaseid = az_database.database_id,
     d.maxsizebytes = az_database.max_size_bytes,
-    d.licensetype = az_database.licenseType,
+    d.licensetype = az_database.license_type,
     d.secondarylocation = az_database.default_secondary_location,
-    d.elasticpoolid = az_database.elasticPoolId,
+    d.elasticpoolid = az_database.elastic_pool_id,
     d.collation = az_database.collation,
-    d.failovergroupid = az_database.failoverGroupId,
-    d.restorabledroppeddbid = az_database.restorableDroppedDatabaseId,
-    d.recoverabledbid = az_database.recoverableDatabaseId
+    d.failovergroupid = az_database.failover_group_id,
+    d.zoneredundant = az_database.zone_redundant,
+    d.restorabledroppeddbid = az_database.restorable_dropped_database_id,
+    d.recoverabledbid = az_database.recoverable_database_id
     WITH d, az_database
     MATCH (s:AzureServer{id: az_database.server_id})
     MERGE (s)-[r:RESOURCE]->(d)
