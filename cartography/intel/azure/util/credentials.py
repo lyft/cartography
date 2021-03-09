@@ -6,13 +6,13 @@ from typing import Optional
 
 import adal
 import requests
-from .credentials import Credentials
 from azure.common.credentials import get_azure_cli_credentials
 from azure.common.credentials import get_cli_profile
 from azure.common.credentials import ServicePrincipalCredentials
 from azure.core.exceptions import HttpResponseError
 from msrestazure.azure_active_directory import AADTokenCredentials
 
+from . import Credentials
 
 logger = logging.getLogger(__name__)
 AUTHORITY_HOST_URI = 'https://login.microsoftonline.com'
