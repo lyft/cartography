@@ -43,7 +43,7 @@ setup(
         "packaging",
         "cryptography<3.4,>=3.2",
         "python-digitalocean>=1.16.0",
-        "PyJWT==1.7.1",
+        "PyJWT==1.7.1",     # azure-cli-core has pinned the PyJWT version as 1.7.1
         "adal>=1.2.4",
         "azure-cli-core>=2.12.0",
         "azure-mgmt-compute>=5.0.0",
