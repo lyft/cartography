@@ -569,14 +569,14 @@ def _load_shares(neo4j_session, shares, update_tag):
             ShareQuota=share['share_quota'],
             AccessTier=share['access_tier'],
             Deleted=get_optional_value(share, ['deleted']),
-            AccessTierChangeTime=share['access_tier_change_time'],
+            AccessTierChangeTime=get_optional_value(share, ['access_tier_change_time']),
             AccessTierStatus=get_optional_value(share, ['access_tier_status']),
             DeletedTime=get_optional_value(share, ['deleted_time']),
             EnabledProtocols=get_optional_value(share, ['enabled_protocols']),
             RemainingRetentionDays=get_optional_value(share, ['remaining_retention_days']),
             ShareUsageBytes=get_optional_value(share, ['share_usage_bytes']),
             Version=get_optional_value(share, ['version']),
-            ServiceId=share['service_id'],
+            ServiceId=get_optional_value(share, ['service_id']),
             azure_update_tag=update_tag,
         )
 
