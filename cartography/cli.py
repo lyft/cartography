@@ -7,7 +7,7 @@ import sys
 import cartography.sync
 import cartography.util
 from cartography.config import Config
-from cartography.intel.aws.util.common import parse_and_validate_aws_requested_syncs
+# from cartography.intel.aws.util.common import parse_and_validate_aws_requested_syncs
 
 
 logger = logging.getLogger(__name__)
@@ -349,9 +349,9 @@ class CLI:
             config.neo4j_password = None
 
         # AWS config
-        if config.aws_requested_syncs:
+        # if config.aws_requested_syncs:
             # No need to store the returned value; we're using this for input validation.
-            parse_and_validate_aws_requested_syncs(config.aws_requested_syncs)
+            # parse_and_validate_aws_requested_syncs(config.aws_requested_syncs)
 
         # Azure config
         if config.azure_sp_auth and config.azure_client_secret_env_var:
@@ -506,14 +506,15 @@ def run_azure(request):
     config = Config(request['neo4j']['uri'],
                     neo4j_user=request['neo4j']['user'],
                     neo4j_password=request['neo4j']['pwd'],
-                    client_id=request['azure']['client_id'],
-                    client_secret=request['azure']['client_secret'],
-                    redirect_uri=request['azure']['redirect_uri'],
-                    subscription_id=request['azure']['subscription_id'],
-                    refresh_token=request['azure']['refresh_token'],
-                    graph_scope=request['azure']['graph_scope'],
-                    azure_scope=request['azure']['azure_scope'],
-                    params=request['params']
+                    azure_client_id=request['azure']['client_id'],
+                    azure_client_secret=request['azure']['client_secret'],
+                    azure_redirect_uri=request['azure']['redirect_uri'],
+                    azure_subscription_id=request['azure']['subscription_id'],
+                    azure_refresh_token=request['azure']['refresh_token'],
+                    azure_graph_scope=request['azure']['graph_scope'],
+                    azure_azure_scope=request['azure']['azure_scope'],
+                    params=request['params'],
+                    neo4j_max_connection_lifetime=3600,
                     )
 
     if request['logging']['mode'] == "verbose":

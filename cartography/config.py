@@ -79,6 +79,11 @@ class Config:
         azure_tenant_id=None,
         azure_client_id=None,
         azure_client_secret=None,
+        azure_redirect_uri=None,
+        azure_subscription_id=None,
+        azure_refresh_token=None,
+        azure_graph_scope=None,
+        azure_azure_scope=None,
         aws_requested_syncs=None,
         analysis_job_directory=None,
         crxcavator_api_base_uri=None,
@@ -110,6 +115,11 @@ class Config:
         self.azure_tenant_id = azure_tenant_id
         self.azure_client_id = azure_client_id
         self.azure_client_secret = azure_client_secret
+        self.azure_redirect_uri = azure_redirect_uri
+        self.azure_subscription_id = azure_subscription_id
+        self.azure_refresh_token = azure_refresh_token
+        self.azure_graph_scope = azure_graph_scope
+        self.azure_azure_scope = azure_azure_scope
         self.aws_requested_syncs = aws_requested_syncs
         self.analysis_job_directory = analysis_job_directory
         self.crxcavator_api_base_uri = crxcavator_api_base_uri

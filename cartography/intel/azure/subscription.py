@@ -107,4 +107,10 @@ def sync(
     common_job_parameters: Dict,
 ) -> None:
     load_azure_subscriptions(neo4j_session, tenant_id, subscriptions, update_tag)
-    cleanup(neo4j_session, common_job_parameters)
+
+    for sub in subscriptions:
+        common_job_parameters['AZURE_SUBSCRIPTION_ID'] = sub['subscriptionId']
+
+        cleanup(neo4j_session, common_job_parameters)
+
+        del common_job_parameters["AZURE_SUBSCRIPTION_ID"]

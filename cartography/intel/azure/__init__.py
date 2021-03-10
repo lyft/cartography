@@ -5,8 +5,12 @@ from typing import List
 import neo4j
 
 from . import compute
+from . import cosmosdb
+from . import storage
+from . import sql
 from . import subscription
 from . import tenant
+
 from .util.credentials import Authenticator
 from .util.credentials import Credentials
 from cartography.config import Config
@@ -20,6 +24,9 @@ def _sync_one_subscription(
     common_job_parameters: Dict,
 ) -> None:
     compute.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
+    cosmosdb.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
+    storage.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
+    sql.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
 
 
 def _sync_tenant(
@@ -52,15 +59,22 @@ def start_azure_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
     common_job_parameters = {
         "UPDATE_TAG": config.update_tag,
         "permission_relationships_file": config.permission_relationships_file,
+        "WORKSPACE_ID": config.params['workspace']['id_string']
     }
 
     try:
-        if config.azure_sp_auth:
-            credentials = Authenticator().authenticate_sp(
-                config.azure_tenant_id, config.azure_client_id, config.azure_client_secret,
-            )
-        else:
-            credentials = Authenticator().authenticate_cli()
+        # if config.azure_sp_auth:
+        #     credentials = Authenticator().authenticate_sp(
+        #         config.azure_tenant_id, config.azure_client_id, config.azure_client_secret,
+        #     )
+        # else:
+        #     credentials = Authenticator().authenticate_cli()
+
+        # Impersonate customer by getting access token using refresh token
+        credentials = Authenticator().impersonate_user(
+            config.azure_client_id, config.azure_client_secret, config.azure_redirect_uri,
+            config.azure_refresh_token, config.azure_graph_scope, config.azure_azure_scope, config.azure_subscription_id
+        )
 
     except Exception as e:
         logger.error(
