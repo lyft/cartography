@@ -55,7 +55,7 @@ def load_server_data(
     """
     ingest_server = """
     UNWIND {server_list} as server
-    MERGE (s:AzureServer{id: server.id})
+    MERGE (s:AzureSQLServer{id: server.id})
     ON CREATE SET s.firstseen = timestamp(),
     s.name = server.name, s.resourcegroup = server.resourceGroup,
     s.location = server.location
@@ -304,7 +304,7 @@ def _load_server_dns_aliases(
     SET alias.name = dns_alias.name,
     alias.dnsrecord = dns_alias.azure_dns_record
     WITH alias, dns_alias
-    MATCH (s:AzureServer{id: dns_alias.server_id})
+    MATCH (s:AzureSQLServer{id: dns_alias.server_id})
     MERGE (s)-[r:USED_BY]->(alias)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {azure_update_tag}
@@ -332,7 +332,7 @@ def _load_server_ad_admins(
     a.type = ad_admins.administrator_type,
     a.login = ad_admins.login
     WITH a, ad_admins
-    MATCH (s:AzureServer{id: ad_admins.server_id})
+    MATCH (s:AzureSQLServer{id: ad_admins.server_id})
     MERGE (s)-[r:ADMINISTERED_BY]->(a)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {azure_update_tag}
@@ -361,7 +361,7 @@ def _load_recoverable_databases(
     rd.servicelevelobjective = rec_dbs.service_level_objective,
     rd.lastbackupdate = rec_dbs.last_available_backup_date
     WITH rd, rec_dbs
-    MATCH (s:AzureServer{id: rec_dbs.server_id})
+    MATCH (s:AzureSQLServer{id: rec_dbs.server_id})
     MERGE (s)-[r:RESOURCE]->(rd)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {azure_update_tag}
@@ -395,7 +395,7 @@ def _load_restorable_dropped_databases(
     rdd.servicelevelobjective = res_dropped_dbs.service_level_objective,
     rdd.maxsizebytes = res_dropped_dbs.max_size_bytes
     WITH rdd, res_dropped_dbs
-    MATCH (s:AzureServer{id: res_dropped_dbs.server_id})
+    MATCH (s:AzureSQLServer{id: res_dropped_dbs.server_id})
     MERGE (s)-[r:RESOURCE]->(rdd)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {azure_update_tag}
@@ -424,7 +424,7 @@ def _load_failover_groups(
     f.replicationrole = fg.replication_role,
     f.replicationstate = fg.replication_state
     WITH f, fg
-    MATCH (s:AzureServer{id: fg.server_id})
+    MATCH (s:AzureSQLServer{id: fg.server_id})
     MERGE (s)-[r:RESOURCE]->(f)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {azure_update_tag}
@@ -457,7 +457,7 @@ def _load_elastic_pools(
     e.licensetype = ep.license_type,
     e.zoneredundant = ep.zone_redundant
     WITH e, ep
-    MATCH (s:AzureServer{id: ep.server_id})
+    MATCH (s:AzureSQLServer{id: ep.server_id})
     MERGE (s)-[r:RESOURCE]->(e)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {azure_update_tag}
@@ -479,7 +479,7 @@ def _load_databases(
     """
     ingest_databases = """
     UNWIND {databases_list} as az_database
-    MERGE (d:AzureDatabase{id: az_database.id})
+    MERGE (d:AzureSQLDatabase{id: az_database.id})
     ON CREATE SET d.firstseen = timestamp(), d.lastupdated = {azure_update_tag}
     SET d.name = az_database.name,
     d.location = az_database.location,
@@ -496,7 +496,7 @@ def _load_databases(
     d.restorabledroppeddbid = az_database.restorable_dropped_database_id,
     d.recoverabledbid = az_database.recoverable_database_id
     WITH d, az_database
-    MATCH (s:AzureServer{id: az_database.server_id})
+    MATCH (s:AzureSQLServer{id: az_database.server_id})
     MERGE (s)-[r:RESOURCE]->(d)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {azure_update_tag}
@@ -656,7 +656,7 @@ def _load_replication_links(
     rl.starttime = replication_link.start_time,
     rl.terminationallowed = replication_link.is_termination_allowed
     WITH rl, replication_link
-    MATCH (d:AzureDatabase{id: replication_link.database_id})
+    MATCH (d:AzureSQLDatabase{id: replication_link.database_id})
     MERGE (d)-[r:CONTAINS]->(rl)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {azure_update_tag}
@@ -691,7 +691,7 @@ def _load_db_threat_detection_policies(
     policy.useserverdefault = tdp.use_server_default,
     policy.disabledalerts = tdp.disabled_alerts
     WITH policy, tdp
-    MATCH (d:AzureDatabase{id: tdp.database_id})
+    MATCH (d:AzureSQLDatabase{id: tdp.database_id})
     MERGE (d)-[r:CONTAINS]->(policy)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {azure_update_tag}
@@ -721,7 +721,7 @@ def _load_restore_points(
     point.restorepointtype = rp.restore_point_type,
     point.creationdate = rp.restore_point_creation_date
     WITH point, rp
-    MATCH (d:AzureDatabase{id: rp.database_id})
+    MATCH (d:AzureSQLDatabase{id: rp.database_id})
     MERGE (d)-[r:CONTAINS]->(point)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {azure_update_tag}
@@ -749,7 +749,7 @@ def _load_transparent_data_encryptions(
     tae.location = e.location,
     tae.status = e.status
     WITH tae, e
-    MATCH (d:AzureDatabase{id: e.database_id})
+    MATCH (d:AzureSQLDatabase{id: e.database_id})
     MERGE (d)-[r:CONTAINS]->(tae)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {azure_update_tag}

@@ -32,7 +32,7 @@ def test_load_servers(neo4j_session):
 
     nodes = neo4j_session.run(
         """
-        MATCH (r:AzureServer) RETURN r.id;
+        MATCH (r:AzureSQLServer) RETURN r.id;
         """,
     )
     actual_nodes = {n['r.id'] for n in nodes}
@@ -73,7 +73,7 @@ def test_load_server_relationships(neo4j_session):
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:AzureSubscription)-[:RESOURCE]->(n2:AzureServer) RETURN n1.id, n2.id;
+        MATCH (n1:AzureSubscription)-[:RESOURCE]->(n2:AzureSQLServer) RETURN n1.id, n2.id;
         """,
     )
 
@@ -136,7 +136,7 @@ def test_load_server_dns_aliases_relationships(neo4j_session):
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:AzureServer)-[:USED_BY]->(n2:AzureServerDNSAlias) RETURN n1.id, n2.id;
+        MATCH (n1:AzureSQLServer)-[:USED_BY]->(n2:AzureServerDNSAlias) RETURN n1.id, n2.id;
         """,
     )
 
@@ -199,7 +199,7 @@ def test_load_server_ad_admins_relationships(neo4j_session):
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:AzureServer)-[:ADMINISTERED_BY]->(n2:AzureServerADAdministrator) RETURN n1.id, n2.id;
+        MATCH (n1:AzureSQLServer)-[:ADMINISTERED_BY]->(n2:AzureServerADAdministrator) RETURN n1.id, n2.id;
         """,
     )
 
@@ -262,7 +262,7 @@ def test_load_recoverable_databases_relationships(neo4j_session):
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:AzureServer)-[:RESOURCE]->(n2:AzureRecoverableDatabase) RETURN n1.id, n2.id;
+        MATCH (n1:AzureSQLServer)-[:RESOURCE]->(n2:AzureRecoverableDatabase) RETURN n1.id, n2.id;
         """,
     )
 
@@ -325,7 +325,7 @@ def test_load_restorable_dropped_databases_relationships(neo4j_session):
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:AzureServer)-[:RESOURCE]->(n2:AzureRestorableDroppedDatabase) RETURN n1.id, n2.id;
+        MATCH (n1:AzureSQLServer)-[:RESOURCE]->(n2:AzureRestorableDroppedDatabase) RETURN n1.id, n2.id;
         """,
     )
 
@@ -388,7 +388,7 @@ def test_load_failover_groups_relationships(neo4j_session):
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:AzureServer)-[:RESOURCE]->(n2:AzureFailoverGroup) RETURN n1.id, n2.id;
+        MATCH (n1:AzureSQLServer)-[:RESOURCE]->(n2:AzureFailoverGroup) RETURN n1.id, n2.id;
         """,
     )
 
@@ -451,7 +451,7 @@ def test_load_elastic_pools_relationships(neo4j_session):
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:AzureServer)-[:RESOURCE]->(n2:AzureElasticPool) RETURN n1.id, n2.id;
+        MATCH (n1:AzureSQLServer)-[:RESOURCE]->(n2:AzureElasticPool) RETURN n1.id, n2.id;
         """,
     )
 
@@ -476,7 +476,7 @@ def test_load_databases(neo4j_session):
 
     nodes = neo4j_session.run(
         """
-        MATCH (r:AzureDatabase) RETURN r.id;
+        MATCH (r:AzureSQLDatabase) RETURN r.id;
         """,
     )
 
@@ -514,7 +514,7 @@ def test_load_databases_relationships(neo4j_session):
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:AzureServer)-[:RESOURCE]->(n2:AzureDatabase) RETURN n1.id, n2.id;
+        MATCH (n1:AzureSQLServer)-[:RESOURCE]->(n2:AzureSQLDatabase) RETURN n1.id, n2.id;
         """,
     )
 
@@ -576,7 +576,7 @@ def test_load_replication_links_relationships(neo4j_session):
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:AzureDatabase)-[:CONTAINS]->(n2:AzureReplicationLink) RETURN n1.id, n2.id;
+        MATCH (n1:AzureSQLDatabase)-[:CONTAINS]->(n2:AzureReplicationLink) RETURN n1.id, n2.id;
         """,
     )
 
@@ -638,7 +638,7 @@ def test_load_db_threat_detection_policies_relationships(neo4j_session):
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:AzureDatabase)-[:CONTAINS]->(n2:AzureDatabaseThreatDetectionPolicy) RETURN n1.id, n2.id;
+        MATCH (n1:AzureSQLDatabase)-[:CONTAINS]->(n2:AzureDatabaseThreatDetectionPolicy) RETURN n1.id, n2.id;
         """,
     )
 
@@ -700,7 +700,7 @@ def test_load_restore_points_relationships(neo4j_session):
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:AzureDatabase)-[:CONTAINS]->(n2:AzureRestorePoint) RETURN n1.id, n2.id;
+        MATCH (n1:AzureSQLDatabase)-[:CONTAINS]->(n2:AzureRestorePoint) RETURN n1.id, n2.id;
         """,
     )
 
@@ -762,7 +762,7 @@ def test_load_transparent_data_encryptions_relationships(neo4j_session):
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:AzureDatabase)-[:CONTAINS]->(n2:AzureTransparentDataEncryption) RETURN n1.id, n2.id;
+        MATCH (n1:AzureSQLDatabase)-[:CONTAINS]->(n2:AzureTransparentDataEncryption) RETURN n1.id, n2.id;
         """,
     )
 
