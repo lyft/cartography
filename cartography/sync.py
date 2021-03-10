@@ -11,13 +11,13 @@ import cartography.intel.analysis
 import cartography.intel.azure
 import cartography.intel.create_indexes
 # import cartography.intel.crxcavator.crxcavator
+# import cartography.intel.digitalocean
 # import cartography.intel.gcp
 # import cartography.intel.github
 # import cartography.intel.gsuite
 # import cartography.intel.okta
 
 import cloudanix
-
 
 logger = logging.getLogger(__name__)
 
@@ -109,6 +109,7 @@ def run_with_config(sync, config):
         neo4j_driver = GraphDatabase.driver(
             config.neo4j_uri,
             auth=neo4j_auth,
+            max_connection_lifetime=config.neo4j_max_connection_lifetime,
         )
     except neobolt.exceptions.ServiceUnavailable as e:
         logger.debug("Error occurred during Neo4j connect.", exc_info=True)

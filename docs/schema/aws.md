@@ -70,50 +70,52 @@
   - [Relationships](#relationships-30)
 - [EKSCluster](#ekscluster)
   - [Relationships](#relationships-31)
-- [ESDomain](#esdomain)
+- [EMRCluster](#emrcluster)
   - [Relationships](#relationships-32)
-- [Endpoint](#endpoint)
+- [ESDomain](#esdomain)
   - [Relationships](#relationships-33)
-- [Endpoint::ELBListener](#endpointelblistener)
+- [Endpoint](#endpoint)
   - [Relationships](#relationships-34)
-- [Endpoint::ELBV2Listener](#endpointelbv2listener)
+- [Endpoint::ELBListener](#endpointelblistener)
   - [Relationships](#relationships-35)
-- [Ip](#ip)
+- [Endpoint::ELBV2Listener](#endpointelbv2listener)
   - [Relationships](#relationships-36)
-- [IpRule](#iprule)
+- [Ip](#ip)
   - [Relationships](#relationships-37)
-- [IpRule::IpPermissionInbound](#ipruleippermissioninbound)
+- [IpRule](#iprule)
   - [Relationships](#relationships-38)
-- [LoadBalancer](#loadbalancer)
+- [IpRule::IpPermissionInbound](#ipruleippermissioninbound)
   - [Relationships](#relationships-39)
-- [LoadBalancerV2](#loadbalancerv2)
+- [LoadBalancer](#loadbalancer)
   - [Relationships](#relationships-40)
-- [Nameserver](#nameserver)
+- [LoadBalancerV2](#loadbalancerv2)
   - [Relationships](#relationships-41)
-- [NetworkInterface](#networkinterface)
+- [Nameserver](#nameserver)
   - [Relationships](#relationships-42)
-- [RedshiftCluster](#redshiftcluster)
+- [NetworkInterface](#networkinterface)
   - [Relationships](#relationships-43)
-- [RDSInstance](#rdsinstance)
+- [RedshiftCluster](#redshiftcluster)
   - [Relationships](#relationships-44)
-- [S3Acl](#s3acl)
+- [RDSInstance](#rdsinstance)
   - [Relationships](#relationships-45)
-- [S3Bucket](#s3bucket)
+- [S3Acl](#s3acl)
   - [Relationships](#relationships-46)
-- [KMSKey](#kmskey)
+- [S3Bucket](#s3bucket)
   - [Relationships](#relationships-47)
-- [KMSAlias](#kmsalias)
+- [KMSKey](#kmskey)
   - [Relationships](#relationships-48)
-- [KMSGrant](#kmsgrant)
+- [KMSAlias](#kmsalias)
   - [Relationships](#relationships-49)
-- [APIGatewayRestAPI](#apigatewayrestapi)
+- [KMSGrant](#kmsgrant)
   - [Relationships](#relationships-50)
-- [APIGatewayStage](#apigatewaystage)
+- [APIGatewayRestAPI](#apigatewayrestapi)
   - [Relationships](#relationships-51)
-- [APIGatewayClientCertificate](#apigatewayclientcertificate)
+- [APIGatewayStage](#apigatewaystage)
   - [Relationships](#relationships-52)
-- [APIGatewayResource](#apigatewayresource)
+- [APIGatewayClientCertificate](#apigatewayclientcertificate)
   - [Relationships](#relationships-53)
+- [APIGatewayResource](#apigatewayresource)
+  - [Relationships](#relationships-54)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -1203,6 +1205,29 @@ Representation of an AWS [EKS Cluster](https://docs.aws.amazon.com/eks/latest/AP
 - EKS Clusters belong to AWS Accounts.
       ```
       (AWSAccount)-[RESOURCE]->(EKSCluster)
+      ```
+
+
+
+## EMRCluster
+
+Representation of an AWS [EMR Cluster](https://docs.aws.amazon.com/emr/latest/APIReference/API_Cluster.html).
+
+| Field            | Description                                                                                                 |
+| ---------------- | ----------------------------------------------------------------------------------------------------------- |
+| firstseen        | Timestamp of when a sync job first discovered this node                                                     |
+| lastupdated      | Timestamp of the last time the node was updated                                                             |
+| region           | The AWS region                                                                                              |
+| **arn**          | AWS-unique identifier for this object                                                                       |
+| id               | The Id of the EMR Cluster.                                                                                  |
+| servicerole      | Service Role of the EMR Cluster                                                                             |
+
+
+### Relationships
+
+- EMR Clusters belong to AWS Accounts.
+      ```
+      (AWSAccount)-[RESOURCE]->(EMRCluster)
       ```
 
 

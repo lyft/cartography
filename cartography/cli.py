@@ -7,6 +7,8 @@ import sys
 import cartography.sync
 import cartography.util
 from cartography.config import Config
+from cartography.intel.aws.util.common import parse_and_validate_aws_requested_syncs
+
 
 logger = logging.getLogger(__name__)
 
@@ -87,6 +89,17 @@ class CLI:
                 'supersedes other methods of supplying a Neo4j password.'
             ),
         )
+        parser.add_argument(
+            '--neo4j-max-connection-lifetime',
+            type=int,
+            default=3600,
+            help=(
+                'Time in seconds for the Neo4j driver to consider a TCP connection alive. cartography default = 3600, '
+                'which is the same as the Neo4j driver default. See '
+                'https://neo4j.com/docs/driver-manual/1.7/client-applications/#driver-config-connection-pool-management'
+                '.'
+            ),
+        )
         # TODO add the below parameters to a 'sync' subparser
         parser.add_argument(
             '--update-tag',
@@ -117,8 +130,8 @@ class CLI:
             '--azure-sync-all-subscriptions',
             action='store_true',
             help=(
-                'Enable Azure sync for all discovered profiles. When this parameter is supplied cartography will '
-                'discover all configured Azure profiles.'
+                'Enable Azure sync for all discovered subscriptions. When this parameter is supplied cartography will '
+                'discover all configured Azure subscriptions.'
             ),
         )
         parser.add_argument(
@@ -126,6 +139,40 @@ class CLI:
             action='store_true',
             help=(
                 'Use Service Principal authentication for Azure sync.'
+            ),
+        )
+        parser.add_argument(
+            '--azure-tenant-id',
+            type=str,
+            default=None,
+            help=(
+                'Azure Tenant Id for Service Principal Authentication.'
+            ),
+        )
+        parser.add_argument(
+            '--azure-client-id',
+            type=str,
+            default=None,
+            help=(
+                'Azure Client Id for Service Principal Authentication.'
+            ),
+        )
+        parser.add_argument(
+            '--azure-client-secret-env-var',
+            type=str,
+            default=None,
+            help=(
+                'The name of environment variable containing Azure Client Secret for Service Principal Authentication.'
+            ),
+        )
+        parser.add_argument(
+            '--aws-requested-syncs',
+            type=str,
+            default=None,
+            help=(
+                'Comma-separated list of AWS resources to sync. Example 1: "ecr,s3,ec2:instance" for ECR, S3, and all '
+                'EC2 instance resources. See the full list available in source code at cartography.intel.aws.resources.'
+                ' If not specified, cartography by default will run all AWS sync modules available.'
             ),
         )
         parser.add_argument(
@@ -192,6 +239,15 @@ class CLI:
             help=(
                 'The name of an environment variable containing a Base64 encoded GitHub config object.'
                 'Required if you are using the GitHub intel module. Ignored otherwise.'
+            ),
+        )
+        parser.add_argument(
+            '--digitalocean-token-env-var',
+            type=str,
+            default=None,
+            help=(
+                'The name of an environment variable containing a DigitalOcean access token.'
+                'Required if you are using the DigitalOcean intel module. Ignored otherwise.'
             ),
         )
         parser.add_argument(
@@ -265,7 +321,7 @@ class CLI:
         :param argv: The parameters supplied to the command line program.
         """
         # TODO support parameter lookup in environment variables if not present on command line
-        config = self.parser.parse_args(argv)
+        config: cartography.config.Config = self.parser.parse_args(argv)
         # Logging config
         if config.verbose:
             logging.getLogger('cartography').setLevel(logging.DEBUG)
@@ -292,6 +348,21 @@ class CLI:
         else:
             config.neo4j_password = None
 
+        # AWS config
+        if config.aws_requested_syncs:
+            # No need to store the returned value; we're using this for input validation.
+            parse_and_validate_aws_requested_syncs(config.aws_requested_syncs)
+
+        # Azure config
+        if config.azure_sp_auth and config.azure_client_secret_env_var:
+            logger.debug(
+                "Reading Client Secret for Azure Service Principal Authentication from environment variable %s",
+                config.azure_client_secret_env_var,
+            )
+            config.azure_client_secret = os.environ.get(config.azure_client_secret_env_var)
+        else:
+            config.azure_client_secret = None
+
         # Okta config
         if config.okta_org_id and config.okta_api_key_env_var:
             logger.debug(f"Reading API key for Okta from environment variable {config.okta_api_key_env_var}")
@@ -312,6 +383,13 @@ class CLI:
             config.github_config = os.environ.get(config.github_config_env_var)
         else:
             config.github_config = None
+
+        # DigitalOcean config
+        if config.digitalocean_token_env_var:
+            logger.debug(f"Reading token for DigitalOcean from env variable {config.digitalocean_token_env_var}")
+            config.digitalocean_token = os.environ.get(config.digitalocean_token_env_var)
+        else:
+            config.digitalocean_token = None
 
         # Jamf config
         if config.jamf_base_uri:

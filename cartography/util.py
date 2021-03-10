@@ -1,5 +1,6 @@
 import logging
 import sys
+from functools import wraps
 
 import botocore
 
@@ -49,6 +50,8 @@ def timeit(method):
     This is only active if config.statsd_enabled is True.
     :param method: The function to measure execution
     """
+    # Allow access via `inspect` to the wrapped function. This is used in integration tests to standardize param names.
+    @wraps(method)
     def timed(*args, **kwargs):
         if stats_client:
             # Example metric name "cartography.intel.aws.iam.get_group_membership_data"
@@ -65,6 +68,7 @@ def timeit(method):
     return timed
 
 
+# TODO Move this to cartography.intel.aws.util.common
 def aws_handle_regions(func):
     ERROR_CODES = [
         'AccessDeniedException',
@@ -85,9 +89,3 @@ def aws_handle_regions(func):
             else:
                 raise
     return inner_function
-
-
-def get_optional_value(cfg, keys):
-    if cfg.get(keys[0]):
-        return get_optional_value(cfg[keys[0]], keys[1:]) if len(keys) > 1 else cfg.get(keys[0])
-    return None
