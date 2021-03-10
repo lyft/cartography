@@ -1,7 +1,9 @@
 import logging
+from typing import Dict
 
 import boto3
 import botocore.exceptions
+import neo4j
 
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -9,21 +11,21 @@ from cartography.util import timeit
 logger = logging.getLogger(__name__)
 
 
-def get_account_from_arn(arn):
+def get_account_from_arn(arn: str) -> str:
     # TODO use policyuniverse to parse ARN?
     return arn.split(":")[4]
 
 
-def get_caller_identity(boto3_session):
+def get_caller_identity(boto3_session: boto3.session.Session) -> Dict:
     client = boto3_session.client('sts')
     return client.get_caller_identity()
 
 
-def get_current_aws_account_id(boto3_session):
+def get_current_aws_account_id(boto3_session: boto3.session.Session) -> Dict:
     return get_caller_identity(boto3_session)['Account']
 
 
-def get_aws_account_default(boto3_session):
+def get_aws_account_default(boto3_session: boto3.session.Session) -> Dict:
     try:
         return {boto3_session.profile_name: get_current_aws_account_id(boto3_session)}
     except (botocore.exceptions.BotoCoreError, botocore.exceptions.ClientError) as e:
@@ -39,7 +41,7 @@ def get_aws_account_default(boto3_session):
         return {}
 
 
-def get_aws_accounts_from_botocore_config(boto3_session):
+def get_aws_accounts_from_botocore_config(boto3_session: boto3.session.Session) -> Dict:
     d = {}
     for profile_name in boto3_session.available_profiles:
         if profile_name == 'default':
@@ -85,7 +87,10 @@ def get_aws_accounts_from_botocore_config(boto3_session):
     return d
 
 
-def load_aws_accounts(neo4j_session, aws_accounts, aws_update_tag, common_job_parameters):
+def load_aws_accounts(
+    neo4j_session: neo4j.Session, aws_accounts: Dict, aws_update_tag: int,
+    common_job_parameters: Dict,
+) -> None:
     query = """
     MERGE (w:CloudanixWorkspace{id: {WORKSPACE_ID}})
     SET w.lastupdated = {UPDATE_TAG}
@@ -119,11 +124,12 @@ def load_aws_accounts(neo4j_session, aws_accounts, aws_update_tag, common_job_pa
         cleanup(neo4j_session, account_id, common_job_parameters)
 
 
-def cleanup(neo4j_session, account_id, common_job_parameters):
+@timeit
+def cleanup(neo4j_session: neo4j.Session, account_id: str, common_job_parameters: Dict) -> None:
     common_job_parameters['AWS_ACCOUNT_ID'] = account_id
     run_cleanup_job('aws_account_cleanup.json', neo4j_session, common_job_parameters)
 
 
 @timeit
-def sync(neo4j_session, accounts, aws_update_tag, common_job_parameters):
-    load_aws_accounts(neo4j_session, accounts, aws_update_tag, common_job_parameters)
+def sync(neo4j_session: neo4j.Session, accounts: Dict, update_tag: int, common_job_parameters: Dict) -> None:
+    load_aws_accounts(neo4j_session, accounts, update_tag, common_job_parameters)
