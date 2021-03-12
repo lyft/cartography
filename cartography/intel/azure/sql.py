@@ -40,7 +40,7 @@ def get_server_list(credentials: Credentials, subscription_id: str) -> List[Dict
 
     for server in server_list:
         x = server['id'].split('/')
-        server['resourceGroup'] = x[x.index('resourceGroups')+1]
+        server['resourceGroup'] = x[x.index('resourceGroups') + 1]
 
     return server_list
 
@@ -57,9 +57,9 @@ def load_server_data(
     UNWIND {server_list} as server
     MERGE (s:AzureSQLServer{id: server.id})
     ON CREATE SET s.firstseen = timestamp(),
-    s.name = server.name, s.resourcegroup = server.resourceGroup,
-    s.location = server.location
+    s.resourcegroup = server.resourceGroup, s.location = server.location
     SET s.lastupdated = {azure_update_tag},
+    s.name = server.name,
     s.kind = server.kind,
     s.state = server.state,
     s.version = server.version
@@ -102,7 +102,8 @@ def get_server_details(
         failover_groups = get_failover_groups(credentials, subscription_id, server)
         elastic_pools = get_elastic_pools(credentials, subscription_id, server)
         databases = get_databases(credentials, subscription_id, server)
-        yield server['id'], server['name'], server['resourceGroup'], dns_alias, ad_admins, recoverable_databases, restorable_dropped_databases, failover_groups, elastic_pools, databases
+        yield server['id'], server['name'], server[
+            'resourceGroup'], dns_alias, ad_admins, recoverable_databases, restorable_dropped_databases, failover_groups, elastic_pools, databases
 
 
 @timeit
@@ -112,7 +113,8 @@ def get_dns_aliases(credentials: Credentials, subscription_id: str, server: Dict
     """
     try:
         client = get_client(credentials, subscription_id)
-        dns_aliases = list(map(lambda x: x.as_dict(), client.server_dns_aliases.list_by_server(server['resourceGroup'], server['name'])))
+        dns_aliases = list(map(lambda x: x.as_dict(),
+                               client.server_dns_aliases.list_by_server(server['resourceGroup'], server['name'])))
 
     except HttpResponseError as e:
         logger.warning("Error while retrieving Azure Server DNS Aliases - {}".format(e))
@@ -128,7 +130,9 @@ def get_ad_admins(credentials: Credentials, subscription_id: str, server: Dict) 
     """
     try:
         client = get_client(credentials, subscription_id)
-        ad_admins = list(map(lambda x: x.as_dict(), client.server_azure_ad_administrators.list_by_server(server['resourceGroup'], server['name'])))
+        ad_admins = list(map(lambda x: x.as_dict(),
+                             client.server_azure_ad_administrators.list_by_server(server['resourceGroup'],
+                                                                                  server['name'])))
 
     except HttpResponseError as e:
         logger.warning("Error while retrieving server azure AD Administrators - {}".format(e))
@@ -144,7 +148,9 @@ def get_recoverable_databases(credentials: Credentials, subscription_id: str, se
     """
     try:
         client = get_client(credentials, subscription_id)
-        recoverable_databases = list(map(lambda x: x.as_dict(), client.recoverable_databases.list_by_server(server['resourceGroup'], server['name'])))
+        recoverable_databases = list(map(lambda x: x.as_dict(),
+                                         client.recoverable_databases.list_by_server(server['resourceGroup'],
+                                                                                     server['name'])))
 
     except Exception as e:
         if e.status_code == 404:  # The API returns a 404 Not Found Error if no recoverable databases are present.
@@ -162,7 +168,9 @@ def get_restorable_dropped_databases(credentials: Credentials, subscription_id: 
     """
     try:
         client = get_client(credentials, subscription_id)
-        restorable_dropped_databases = list(map(lambda x: x.as_dict(), client.restorable_dropped_databases.list_by_server(server['resourceGroup'], server['name'])))
+        restorable_dropped_databases = list(map(lambda x: x.as_dict(),
+                                                client.restorable_dropped_databases.list_by_server(
+                                                    server['resourceGroup'], server['name'])))
 
     except HttpResponseError as e:
         logger.warning("Error while retrieving restorable dropped databases - {}".format(e))
@@ -178,7 +186,8 @@ def get_failover_groups(credentials: Credentials, subscription_id: str, server: 
     """
     try:
         client = get_client(credentials, subscription_id)
-        failover_groups = list(map(lambda x: x.as_dict(), client.failover_groups.list_by_server(server['resourceGroup'], server['name'])))
+        failover_groups = list(
+            map(lambda x: x.as_dict(), client.failover_groups.list_by_server(server['resourceGroup'], server['name'])))
 
     except HttpResponseError as e:
         logger.warning("Error while retrieving failover groups - {}".format(e))
@@ -194,7 +203,8 @@ def get_elastic_pools(credentials: Credentials, subscription_id: str, server: Di
     """
     try:
         client = get_client(credentials, subscription_id)
-        elastic_pools = list(map(lambda x: x.as_dict(), client.elastic_pools.list_by_server(server['resourceGroup'], server['name'])))
+        elastic_pools = list(
+            map(lambda x: x.as_dict(), client.elastic_pools.list_by_server(server['resourceGroup'], server['name'])))
 
     except HttpResponseError as e:
         logger.warning("Error while retrieving elastic pools - {}".format(e))
@@ -210,7 +220,8 @@ def get_databases(credentials: Credentials, subscription_id: str, server: Dict) 
     """
     try:
         client = get_client(credentials, subscription_id)
-        databases = list(map(lambda x: x.as_dict(), client.databases.list_by_server(server['resourceGroup'], server['name'])))
+        databases = list(
+            map(lambda x: x.as_dict(), client.databases.list_by_server(server['resourceGroup'], server['name'])))
 
     except HttpResponseError as e:
         logger.warning("Error while retrieving databases - {}".format(e))
@@ -300,9 +311,10 @@ def _load_server_dns_aliases(
     ingest_dns_aliases = """
     UNWIND {dns_aliases_list} as dns_alias
     MERGE (alias:AzureServerDNSAlias{id: dns_alias.id})
-    ON CREATE SET alias.firstseen = timestamp(), alias.lastupdated = {azure_update_tag}
+    ON CREATE SET alias.firstseen = timestamp()
     SET alias.name = dns_alias.name,
-    alias.dnsrecord = dns_alias.azure_dns_record
+    alias.dnsrecord = dns_alias.azure_dns_record,
+    alias.lastupdated = {azure_update_tag}
     WITH alias, dns_alias
     MATCH (s:AzureSQLServer{id: dns_alias.server_id})
     MERGE (s)-[r:USED_BY]->(alias)
@@ -325,14 +337,15 @@ def _load_server_ad_admins(
     Ingest the Server AD Administrators details into neo4j.
     """
     ingest_ad_admins = """
-    UNWIND {ad_admins_list} as ad_admins
-    MERGE (a:AzureServerADAdministrator{id: ad_admins.id})
-    ON CREATE SET a.firstseen = timestamp(), a.lastupdated = {azure_update_tag}
-    SET a.name = ad_admins.name,
-    a.type = ad_admins.administrator_type,
-    a.login = ad_admins.login
-    WITH a, ad_admins
-    MATCH (s:AzureSQLServer{id: ad_admins.server_id})
+    UNWIND {ad_admins_list} as ad_admin
+    MERGE (a:AzureServerADAdministrator{id: ad_admin.id})
+    ON CREATE SET a.firstseen = timestamp()
+    SET a.name = ad_admin.name,
+    a.type = ad_admin.administrator_type,
+    a.login = ad_admin.login,
+    a.lastupdated = {azure_update_tag}
+    WITH a, ad_admin
+    MATCH (s:AzureSQLServer{id: ad_admin.server_id})
     MERGE (s)-[r:ADMINISTERED_BY]->(a)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {azure_update_tag}
@@ -353,15 +366,16 @@ def _load_recoverable_databases(
     Ingest the recoverable database details into neo4j.
     """
     ingest_recoverable_databases = """
-    UNWIND {recoverable_databases_list} as rec_dbs
-    MERGE (rd:AzureRecoverableDatabase{id: rec_dbs.id})
-    ON CREATE SET rd.firstseen = timestamp(), rd.lastupdated = {azure_update_tag}
-    SET rd.name = rec_dbs.name,
-    rd.edition = rec_dbs.edition,
-    rd.servicelevelobjective = rec_dbs.service_level_objective,
-    rd.lastbackupdate = rec_dbs.last_available_backup_date
-    WITH rd, rec_dbs
-    MATCH (s:AzureSQLServer{id: rec_dbs.server_id})
+    UNWIND {recoverable_databases_list} as rec_db
+    MERGE (rd:AzureRecoverableDatabase{id: rec_db.id})
+    ON CREATE SET rd.firstseen = timestamp()
+    SET rd.name = rec_db.name,
+    rd.edition = rec_db.edition,
+    rd.servicelevelobjective = rec_db.service_level_objective,
+    rd.lastbackupdate = rec_db.last_available_backup_date, 
+    rd.lastupdated = {azure_update_tag}
+    WITH rd, rec_db
+    MATCH (s:AzureSQLServer{id: rec_db.server_id})
     MERGE (s)-[r:RESOURCE]->(rd)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {azure_update_tag}
@@ -382,20 +396,20 @@ def _load_restorable_dropped_databases(
     Ingest the restorable dropped database details into neo4j.
     """
     ingest_restorable_dropped_databases = """
-    UNWIND {restorable_dropped_databases_list} as res_dropped_dbs
-    MERGE (rdd:AzureRestorableDroppedDatabase{id: res_dropped_dbs.id})
-    ON CREATE SET rdd.firstseen = timestamp(), rdd.lastupdated = {azure_update_tag}
-    SET rdd.name = res_dropped_dbs.name,
-    rdd.location = res_dropped_dbs.location,
-    rdd.databasename = res_dropped_dbs.database_name,
-    rdd.creationdate = res_dropped_dbs.creation_date,
-    rdd.deletiondate = res_dropped_dbs.deletion_date,
-    rdd.restoredate = res_dropped_dbs.earliest_restore_date,
-    rdd.edition = res_dropped_dbs.edition,
-    rdd.servicelevelobjective = res_dropped_dbs.service_level_objective,
-    rdd.maxsizebytes = res_dropped_dbs.max_size_bytes
-    WITH rdd, res_dropped_dbs
-    MATCH (s:AzureSQLServer{id: res_dropped_dbs.server_id})
+    UNWIND {restorable_dropped_databases_list} as res_dropped_db
+    MERGE (rdd:AzureRestorableDroppedDatabase{id: res_dropped_db.id})
+    ON CREATE SET rdd.firstseen = timestamp(), rdd.location = res_dropped_db.location
+    SET rdd.name = res_dropped_db.name,
+    rdd.databasename = res_dropped_db.database_name,
+    rdd.creationdate = res_dropped_db.creation_date,
+    rdd.deletiondate = res_dropped_db.deletion_date,
+    rdd.restoredate = res_dropped_db.earliest_restore_date,
+    rdd.edition = res_dropped_db.edition,
+    rdd.servicelevelobjective = res_dropped_db.service_level_objective,
+    rdd.maxsizebytes = res_dropped_db.max_size_bytes, 
+    rdd.lastupdated = {azure_update_tag}
+    WITH rdd, res_dropped_db
+    MATCH (s:AzureSQLServer{id: res_dropped_db.server_id})
     MERGE (s)-[r:RESOURCE]->(rdd)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {azure_update_tag}
@@ -418,11 +432,11 @@ def _load_failover_groups(
     ingest_failover_groups = """
     UNWIND {failover_groups_list} as fg
     MERGE (f:AzureFailoverGroup{id: fg.id})
-    ON CREATE SET f.firstseen = timestamp(), f.lastupdated = {azure_update_tag}
+    ON CREATE SET f.firstseen = timestamp(), f.location = fg.location
     SET f.name = fg.name,
-    f.location = fg.location,
     f.replicationrole = fg.replication_role,
-    f.replicationstate = fg.replication_state
+    f.replicationstate = fg.replication_state, 
+    f.lastupdated = {azure_update_tag}
     WITH f, fg
     MATCH (s:AzureSQLServer{id: fg.server_id})
     MERGE (s)-[r:RESOURCE]->(f)
@@ -447,15 +461,15 @@ def _load_elastic_pools(
     ingest_elastic_pools = """
     UNWIND {elastic_pools_list} as ep
     MERGE (e:AzureElasticPool{id: ep.id})
-    ON CREATE SET e.firstseen = timestamp(), e.lastupdated = {azure_update_tag}
+    ON CREATE SET e.firstseen = timestamp(), e.location = ep.location
     SET e.name = ep.name,
-    e.location = ep.location,
     e.kind = ep.kind,
     e.creationdate = ep.creation_date,
     e.state = ep.state,
     e.maxsizebytes = ep.max_size_bytes,
     e.licensetype = ep.license_type,
-    e.zoneredundant = ep.zone_redundant
+    e.zoneredundant = ep.zone_redundant, 
+    e.lastupdated = {azure_update_tag}
     WITH e, ep
     MATCH (s:AzureSQLServer{id: ep.server_id})
     MERGE (s)-[r:RESOURCE]->(e)
@@ -480,9 +494,8 @@ def _load_databases(
     ingest_databases = """
     UNWIND {databases_list} as az_database
     MERGE (d:AzureSQLDatabase{id: az_database.id})
-    ON CREATE SET d.firstseen = timestamp(), d.lastupdated = {azure_update_tag}
+    ON CREATE SET d.firstseen = timestamp(), d.location = az_database.location
     SET d.name = az_database.name,
-    d.location = az_database.location,
     d.kind = az_database.kind,
     d.creationdate = az_database.creation_date,
     d.databaseid = az_database.database_id,
@@ -494,7 +507,8 @@ def _load_databases(
     d.failovergroupid = az_database.failover_group_id,
     d.zoneredundant = az_database.zone_redundant,
     d.restorabledroppeddbid = az_database.restorable_dropped_database_id,
-    d.recoverabledbid = az_database.recoverable_database_id
+    d.recoverabledbid = az_database.recoverable_database_id, 
+    d.lastupdated = {azure_update_tag}
     WITH d, az_database
     MATCH (s:AzureSQLServer{id: az_database.server_id})
     MERGE (s)-[r:RESOURCE]->(d)
@@ -530,7 +544,8 @@ def get_database_details(
         db_threat_detection_policies = get_db_threat_detection_policies(credentials, subscription_id, database)
         restore_points_list = get_restore_points(credentials, subscription_id, database)
         transparent_data_encryptions = get_transparent_data_encryptions(credentials, subscription_id, database)
-        yield database['id'], replication_links_list, db_threat_detection_policies, restore_points_list, transparent_data_encryptions
+        yield database[
+                  'id'], replication_links_list, db_threat_detection_policies, restore_points_list, transparent_data_encryptions
 
 
 @timeit
@@ -540,7 +555,10 @@ def get_replication_links(credentials: Credentials, subscription_id: str, databa
     """
     try:
         client = get_client(credentials, subscription_id)
-        replication_links = list(map(lambda x: x.as_dict(), client.replication_links.list_by_database(database['resource_group_name'], database['server_name'], database['name'])))
+        replication_links = list(map(lambda x: x.as_dict(),
+                                     client.replication_links.list_by_database(database['resource_group_name'],
+                                                                               database['server_name'],
+                                                                               database['name'])))
 
     except HttpResponseError as e:
         logger.warning("Error while retrieving replication links - {}".format(e))
@@ -556,7 +574,9 @@ def get_db_threat_detection_policies(credentials: Credentials, subscription_id: 
     """
     try:
         client = get_client(credentials, subscription_id)
-        db_threat_detection_policies = client.database_threat_detection_policies.get(database['resource_group_name'], database['server_name'], database['name']).as_dict()
+        db_threat_detection_policies = client.database_threat_detection_policies.get(database['resource_group_name'],
+                                                                                     database['server_name'],
+                                                                                     database['name']).as_dict()
     except HttpResponseError as e:
         logger.warning("Error while retrieving database threat detection policies - {}".format(e))
         return []
@@ -571,7 +591,10 @@ def get_restore_points(credentials: Credentials, subscription_id: str, database:
     """
     try:
         client = get_client(credentials, subscription_id)
-        restore_points_list = list(map(lambda x: x.as_dict(), client.restore_points.list_by_database(database['resource_group_name'], database['server_name'], database['name'])))
+        restore_points_list = list(map(lambda x: x.as_dict(),
+                                       client.restore_points.list_by_database(database['resource_group_name'],
+                                                                              database['server_name'],
+                                                                              database['name'])))
 
     except HttpResponseError as e:
         logger.warning("Error while retrieving restore points - {}".format(e))
@@ -587,7 +610,9 @@ def get_transparent_data_encryptions(credentials: Credentials, subscription_id: 
     """
     try:
         client = get_client(credentials, subscription_id)
-        transparent_data_encryptions_list = client.transparent_data_encryptions.get(database['resource_group_name'], database['server_name'], database['name']).as_dict()
+        transparent_data_encryptions_list = client.transparent_data_encryptions.get(database['resource_group_name'],
+                                                                                    database['server_name'],
+                                                                                    database['name']).as_dict()
     except HttpResponseError as e:
         logger.warning("Error while retrieving transparent data encryptions - {}".format(e))
         return []
@@ -642,9 +667,9 @@ def _load_replication_links(
     ingest_replication_links = """
     UNWIND {replication_links_list} as replication_link
     MERGE (rl:AzureReplicationLink{id: replication_link.id})
-    ON CREATE SET rl.firstseen = timestamp(), rl.lastupdated = {azure_update_tag}
+    ON CREATE SET rl.firstseen = timestamp(),
+    rl.location = replication_link.location
     SET rl.name = replication_link.name,
-    rl.location = replication_link.location,
     rl.partnerdatabase = replication_link.partner_database,
     rl.partnerlocation = replication_link.partner_location,
     rl.partnerrole = replication_link.partner_role,
@@ -654,7 +679,8 @@ def _load_replication_links(
     rl.percentcomplete = replication_link.percent_complete,
     rl.role = replication_link.role,
     rl.starttime = replication_link.start_time,
-    rl.terminationallowed = replication_link.is_termination_allowed
+    rl.terminationallowed = replication_link.is_termination_allowed,
+    rl.lastupdated = {azure_update_tag}
     WITH rl, replication_link
     MATCH (d:AzureSQLDatabase{id: replication_link.database_id})
     MERGE (d)-[r:CONTAINS]->(rl)
@@ -679,7 +705,8 @@ def _load_db_threat_detection_policies(
     ingest_threat_detection_policies = """
     UNWIND {threat_detection_policies_list} as tdp
     MERGE (policy:AzureDatabaseThreatDetectionPolicy{id: tdp.id})
-    ON CREATE SET policy.firstseen = timestamp(), policy.lastupdated = {azure_update_tag}
+    ON CREATE SET policy.firstseen = timestamp(),
+    policy.location = tdp.location
     SET policy.name = tdp.name,
     policy.location = tdp.location,
     policy.kind = tdp.kind,
@@ -689,7 +716,8 @@ def _load_db_threat_detection_policies(
     policy.state = tdp.state,
     policy.storageendpoint = tdp.storage_endpoint,
     policy.useserverdefault = tdp.use_server_default,
-    policy.disabledalerts = tdp.disabled_alerts
+    policy.disabledalerts = tdp.disabled_alerts,
+    policy.lastupdated = {azure_update_tag}
     WITH policy, tdp
     MATCH (d:AzureSQLDatabase{id: tdp.database_id})
     MERGE (d)-[r:CONTAINS]->(policy)
@@ -714,12 +742,13 @@ def _load_restore_points(
     ingest_restore_points = """
     UNWIND {restore_points_list} as rp
     MERGE (point:AzureRestorePoint{id: rp.id})
-    ON CREATE SET point.firstseen = timestamp(), point.lastupdated = {azure_update_tag}
+    ON CREATE SET point.firstseen = timestamp(),
+    point.location = rp.location
     SET point.name = rp.name,
-    point.location = rp.location,
     point.restoredate = rp.earliest_restore_date,
     point.restorepointtype = rp.restore_point_type,
-    point.creationdate = rp.restore_point_creation_date
+    point.creationdate = rp.restore_point_creation_date,
+    point.lastupdated = {azure_update_tag}
     WITH point, rp
     MATCH (d:AzureSQLDatabase{id: rp.database_id})
     MERGE (d)-[r:CONTAINS]->(point)
@@ -744,10 +773,11 @@ def _load_transparent_data_encryptions(
     ingest_data_encryptions = """
     UNWIND {transparent_data_encryptions_list} as e
     MERGE (tae:AzureTransparentDataEncryption{id: e.id})
-    ON CREATE SET tae.firstseen = timestamp(), tae.lastupdated = {azure_update_tag}
+    ON CREATE SET tae.firstseen = timestamp(),
+    tae.location = e.location
     SET tae.name = e.name,
-    tae.location = e.location,
-    tae.status = e.status
+    tae.status = e.status,
+    tae.lastupdated = {azure_update_tag}
     WITH tae, e
     MATCH (d:AzureSQLDatabase{id: e.database_id})
     MERGE (d)-[r:CONTAINS]->(tae)
@@ -766,7 +796,6 @@ def _load_transparent_data_encryptions(
 def cleanup_azure_sql_servers(
         neo4j_session: neo4j.Session, subscription_id: str, common_job_parameters: Dict
 ) -> None:
-    common_job_parameters['AZURE_SUBSCRIPTION_ID'] = subscription_id
     run_cleanup_job('azure_sql_server_cleanup.json', neo4j_session, common_job_parameters)
 
 
