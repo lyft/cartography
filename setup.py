@@ -41,6 +41,7 @@ setup(
         "requests>=2.22.0",
         "statsd",
         "packaging",
+        "azure-mgmt-cosmosdb>=6.0.0",
     ],
     extras_require={
         ':python_version<"3.7"': [
