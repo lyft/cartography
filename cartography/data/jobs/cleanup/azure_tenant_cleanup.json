@@ -1,0 +1,9 @@
+{
+	"statements": [
+	{
+		"query": "MATCH (n:AzureTenant) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+		"iterative": true,
+		"iterationsize": 100
+	}],
+	"name": "cleanup Azure Tenants"
+}
