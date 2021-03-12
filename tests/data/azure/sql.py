@@ -19,68 +19,70 @@ DESCRIBE_SERVERS = [
     },
 ]
 
+server1 = "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1"
+server2 = "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2"
 
 DESCRIBE_DNS_ALIASES = [
     {
-        "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1/dnsAliases/dns-alias-1",
+        "id": server1 + "/dnsAliases/dns-alias-1",
         "name": "server-dns-alias-1",
         "type": "Microsoft.Sql/servers/dnsAliases",
         "azure_dns_record": "dns-alias-1.database.windows.net",
-        "server_id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1",
+        "server_id": server1,
     },
     {
-        "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2/dnsAliases/dns-alias-2",
+        "id": server2 + "/dnsAliases/dns-alias-2",
         "name": "server-dns-alias-2",
         "type": "Microsoft.Sql/servers/dnsAliases",
         "azure_dns_record": "dns-alias-2.database.windows.net",
-        "server_id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2",
+        "server_id": server2,
     },
 ]
 
 
 DESCRIBE_AD_ADMINS = [
     {
-        "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1/providers/Microsoft.Sql/administrators/ActiveDirectory1",
+        "id": server1 + "/providers/Microsoft.Sql/administrators/ActiveDirectory1",
         "name": "ActiveDirectory1",
         "administrator_type": "ActiveDirectory",
         "login": "DSEngAll",
-        "server_id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1",
+        "server_id": server1,
     },
     {
-        "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2/providers/Microsoft.Sql/administrators/ActiveDirectory2",
+        "id": server2 + "/providers/Microsoft.Sql/administrators/ActiveDirectory2",
         "name": "ActiveDirectory2",
         "administrator_type": "ActiveDirectory",
         "login": "DSEngAll",
-        "server_id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2",
+        "server_id": server2,
     },
 ]
 
 
 DESCRIBE_RECOVERABLE_DATABASES = [
     {
-        "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1/recoverabledatabases/RD1",
+        "id": server1 + "/recoverabledatabases/RD1",
         "name": "RD1",
         "type": "Microsoft.Sql/servers/recoverabledatabases",
         "edition": "Standard",
         "service_level_objective": "S0",
         "last_available_backup_date": "2020-05-26T01:06:29.78Z",
-        "server_id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1",
+        "server_id": server1,
     },
     {
-        "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2/recoverabledatabases/RD2",
+        "id": server2 + "/recoverabledatabases/RD2",
         "name": "RD2",
         "type": "Microsoft.Sql/servers/recoverabledatabases",
         "edition": "Premium",
         "service_level_objective": "P1",
         "last_available_backup_date": "2020-05-26T03:20:31.78Z",
-        "server_id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2",
+        "server_id": server2,
     },
 ]
 
 
 DESCRIBE_RESTORABLE_DROPPED_DATABASES = [
     {
-        "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1/restorableDroppedDatabases/RDD1,001",
+        "id": server1 + "/restorableDroppedDatabases/RDD1,001",
         "name": "RDD1,001",
         "type": "Microsoft.Sql/servers/restorableDroppedDatabases",
         "location": "Central India",
@@ -91,10 +93,10 @@ DESCRIBE_RESTORABLE_DROPPED_DATABASES = [
         "creation_date": "2020-02-10T00:56:19.2Z",
         "deletion_date": "2020-05-27T02:49:47.69Z",
         "earliest_restore_date": "2020-05-20T02:49:47.69Z",
-        "server_id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1",
+        "server_id": server1,
     },
     {
-        "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2/restorableDroppedDatabases/RDD2,002",
+        "id": server2 + "/restorableDroppedDatabases/RDD2,002",
         "name": "RDD2,002",
         "type": "Microsoft.Sql/servers/restorableDroppedDatabases",
         "location": "Central India",
@@ -104,14 +106,14 @@ DESCRIBE_RESTORABLE_DROPPED_DATABASES = [
         "service_level_objective": "S0",
         "creation_date": "2020-05-10T00:56:19.2Z",
         "earliest_restore_date": "2020-04-21T02:49:47.69Z",
-        "server_id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2",
+        "server_id": server2,
     },
 ]
 
 
 DESCRIBE_FAILOVER_GROUPS = [
     {
-        "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1/failoverGroups/FG1",
+        "id": server1 + "/failoverGroups/FG1",
         "name": "FG1",
         "type": "Microsoft.Sql/servers/failoverGroups",
         "location": "Central India",
@@ -124,10 +126,10 @@ DESCRIBE_FAILOVER_GROUPS = [
                 "replication_role": "Secondary"
             }
         ],
-        "server_id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1",
+        "server_id": server1,
     },
     {
-        "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2/failoverGroups/FG1",
+        "id": server2 + "/failoverGroups/FG1",
         "name": "FG1",
         "type": "Microsoft.Sql/servers/failoverGroups",
         "location": "Central India",
@@ -140,14 +142,14 @@ DESCRIBE_FAILOVER_GROUPS = [
                 "replication_role": "Primary"
             }
         ],
-        "server_id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2",
+        "server_id": server2,
     },
 ]
 
 
 DESCRIBE_ELASTIC_POOLS = [
     {
-        "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1/elasticPools/EP1",
+        "id": server1 + "/elasticPools/EP1",
         "name": "EP1",
         "type": "Microsoft.Sql/servers/elasticPools",
         "location": "Central India",
@@ -156,10 +158,10 @@ DESCRIBE_ELASTIC_POOLS = [
         "max_size_bytes": 5242880000,
         "zone_redundant": True,
         "license_type": "LicenseIncluded",
-        "server_id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1",
+        "server_id": server1,
     },
     {
-        "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2/elasticPools/EP2",
+        "id": server2 + "/elasticPools/EP2",
         "name": "EP2",
         "type": "Microsoft.Sql/servers/elasticPools",
         "location": "Central India",
@@ -168,7 +170,7 @@ DESCRIBE_ELASTIC_POOLS = [
         "max_size_bytes": 5242880000,
         "zone_redundant": True,
         "license_type": "LicenseIncluded",
-        "server_id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2",
+        "server_id": server2,
     },
 ]
 
@@ -185,10 +187,10 @@ DESCRIBE_DATABASES = [
         "license_type": "LicenseIncluded",
         "zone_redundant": False,
         "location": "Central India",
-        "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1/databases/testdb1",
+        "id": server1 + "/databases/testdb1",
         "name": "testdb1",
         "type": "Microsoft.Sql/servers/databases",
-        "server_id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1",
+        "server_id": server1,
     },
     {
         "kind": "v12.0,user,vcore",
@@ -201,17 +203,17 @@ DESCRIBE_DATABASES = [
         "license_type": "LicenseIncluded",
         "zone_redundant": False,
         "location": "North Europe",
-        "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2/databases/testdb2",
+        "id": server2 + "/databases/testdb2",
         "name": "testdb2",
         "type": "Microsoft.Sql/servers/databases",
-        "server_id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2",
+        "server_id": server2,
     },
 ]
 
 
 DESCRIBE_REPLICATION_LINKS = [
     {
-        "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1/databases/testdb1/replicationLinks/5b301b68-03f6-4b26-b0f4-73ebb8634238",
+        "id": server1 + "/databases/testdb1/replicationLinks/5b301b68-03f6-4b26-b0f4-73ebb8634238",
         "name": "5b301b68-03f6-4b26-b0f4-73ebb8634238",
         "type": "Microsoft.Sql/servers/databases/replicationLinks",
         "location": "North Europe",
@@ -225,10 +227,10 @@ DESCRIBE_REPLICATION_LINKS = [
         "percent_complete": 100,
         "replication_state": "CATCH_UP",
         "is_termination_allowed": True,
-        "database_id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1/databases/testdb1",
+        "database_id": server1 + "/databases/testdb1",
     },
     {
-        "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2/databases/testdb2/replicationLinks/5b301b68-03f6-4b26-b0f4-73ebb8634238",
+        "id": server2 + "/databases/testdb2/replicationLinks/5b301b68-03f6-4b26-b0f4-73ebb8634238",
         "name": "5b301b68-03f6-4b26-b0f4-73ebb8634238",
         "type": "Microsoft.Sql/servers/databases/replicationLinks",
         "location": "North Europe",
@@ -242,14 +244,14 @@ DESCRIBE_REPLICATION_LINKS = [
         "percent_complete": 100,
         "replication_state": "CATCH_UP",
         "is_termination_allowed": True,
-        "database_id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2/databases/testdb2",
+        "database_id": server2 + "/databases/testdb2",
     },
 ]
 
 
 DESCRIBE_THREAT_DETECTION_POLICY = [
     {
-        "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1/databases/testdb1/securityAlertPolicies/TDP1",
+        "id": server1 + "/databases/testdb1/securityAlertPolicies/TDP1",
         "name": "TDP1",
         "type": "Microsoft.Sql/servers/databases/securityAlertPolicies",
         "location": "Central India",
@@ -262,10 +264,10 @@ DESCRIBE_THREAT_DETECTION_POLICY = [
         "storageAccountAccessKey": "",
         "storage_endpoint": "",
         "use_server_default": "Enabled",
-        "database_id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1/databases/testdb1",
+        "database_id": server1 + "/databases/testdb1",
     },
     {
-        "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2/databases/testdb2/securityAlertPolicies/TDP2",
+        "id": server2 + "/databases/testdb2/securityAlertPolicies/TDP2",
         "name": "TDP2",
         "type": "Microsoft.Sql/servers/databases/securityAlertPolicies",
         "location": "Central India",
@@ -278,29 +280,29 @@ DESCRIBE_THREAT_DETECTION_POLICY = [
         "storageAccountAccessKey": "",
         "storage_endpoint": "",
         "use_server_default": "Enabled",
-        "database_id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2/databases/testdb2",
+        "database_id": server2 + "/databases/testdb2",
     },
 ]
 
 
 DESCRIBE_RESTORE_POINTS = [
     {
-        "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1/databases/testdb1/restorepoints/RP1",
+        "id": server1 + "/databases/testdb1/restorepoints/RP1",
         "name": "RP1",
         "location": "Central India",
         "type": "Microsoft.Sql/servers/databases/restorePoints",
         "restore_point_type": "DISCRETE",
         "restore_point_creation_date": "2017-07-18T03:09:27Z",
-        "database_id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1/databases/testdb1",
+        "database_id": server1 + "/databases/testdb1",
     },
     {
-        "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2/databases/testdb2/restorepoints/RP2",
+        "id": server2 + "/databases/testdb2/restorepoints/RP2",
         "name": "RP2",
         "location": "Central India",
         "type": "Microsoft.Sql/servers/databases/restorePoints",
         "restore_point_type": "DISCRETE",
         "restore_point_creation_date": "2017-07-18T03:09:27Z",
-        "database_id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2/databases/testdb2",
+        "database_id": server2 + "/databases/testdb2",
     },
 ]
 
@@ -309,17 +311,17 @@ DESCRIBE_TRANSPARENT_DATA_ENCRYPTIONS = [
     {
         "name": "TAE1",
         "location": "Central India",
-        "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1/databases/testdb1/transparentDataEncryption/TAE1",
+        "id": server1 + "/databases/testdb1/transparentDataEncryption/TAE1",
         "type": "Microsoft.Sql/servers/databases/transparentDataEncryption",
         "status": "Enabled",
-        "database_id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1/databases/testdb1",
+        "database_id": server1 + "/databases/testdb1",
     },
     {
         "name": "TAE2",
         "location": "Central India",
-        "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2/databases/testdb2/transparentDataEncryption/TAE2",
+        "id": server2 + "/databases/testdb2/transparentDataEncryption/TAE2",
         "type": "Microsoft.Sql/servers/databases/transparentDataEncryption",
         "status": "Enabled",
-        "database_id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2/databases/testdb2",
+        "database_id": server2 + "/databases/testdb2",
     }
 ]
