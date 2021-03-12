@@ -12,6 +12,8 @@ from tests.data.azure.storage import DESCRIBE_TABLE_SERVICES
 TEST_SUBSCRIPTION_ID = '00-00-00-00'
 TEST_RESOURCE_GROUP = 'TestRG'
 TEST_UPDATE_TAG = 123456789
+sa1 = "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG1"
+sa2 = "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG2"
 
 
 def test_load_storage_account_data(neo4j_session):
@@ -23,8 +25,7 @@ def test_load_storage_account_data(neo4j_session):
     )
 
     expected_nodes = {
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG1",
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG2",
+        sa1, sa2,
     }
 
     nodes = neo4j_session.run(
@@ -58,12 +59,10 @@ def test_load_storage_account_data_relationships(neo4j_session):
 
     expected = {
         (
-            TEST_SUBSCRIPTION_ID,
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG1",
+            TEST_SUBSCRIPTION_ID, sa1,
         ),
         (
-            TEST_SUBSCRIPTION_ID,
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG2",
+            TEST_SUBSCRIPTION_ID, sa2,
         ),
     }
 
@@ -89,8 +88,8 @@ def test_load_queue_services(neo4j_session):
     )
 
     expected_nodes = {
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG1/queueServices/QS1",
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG2/queueServices/QS2",
+        sa1 + "/queueServices/QS1",
+        sa2 + "/queueServices/QS2",
     }
 
     nodes = neo4j_session.run(
@@ -121,12 +120,10 @@ def test_load_queue_services_relationships(neo4j_session):
 
     expected = {
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG1",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG1/queueServices/QS1",
+            sa1, sa1 + "/queueServices/QS1",
         ),
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG2",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG2/queueServices/QS2",
+            sa2, sa2 + "/queueServices/QS2",
         ),
     }
 
@@ -152,8 +149,8 @@ def test_load_table_services(neo4j_session):
     )
 
     expected_nodes = {
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG1/tableServices/TS1",
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG2/tableServices/TS2",
+        sa1 + "/tableServices/TS1",
+        sa2 + "/tableServices/TS2",
     }
 
     nodes = neo4j_session.run(
@@ -184,12 +181,10 @@ def test_load_table_services_relationships(neo4j_session):
 
     expected = {
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG1",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG1/tableServices/TS1",
+            sa1, sa1 + "/tableServices/TS1",
         ),
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG2",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG2/tableServices/TS2",
+            sa2, sa2 + "/tableServices/TS2",
         ),
     }
 
@@ -215,8 +210,8 @@ def test_load_file_services(neo4j_session):
     )
 
     expected_nodes = {
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG1/fileServices/FS1",
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG2/fileServices/FS2",
+        sa1 + "/fileServices/FS1",
+        sa2 + "/fileServices/FS2",
     }
 
     nodes = neo4j_session.run(
@@ -247,12 +242,10 @@ def test_load_file_services_relationships(neo4j_session):
 
     expected = {
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG1",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG1/fileServices/FS1",
+            sa1, sa1 + "/fileServices/FS1",
         ),
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG2",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG2/fileServices/FS2",
+            sa2, sa2 + "/fileServices/FS2",
         ),
     }
 
@@ -278,8 +271,8 @@ def test_load_blob_services(neo4j_session):
     )
 
     expected_nodes = {
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG1/blobServices/BS1",
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG2/blobServices/BS2",
+        sa1 + "/blobServices/BS1",
+        sa2 + "/blobServices/BS2",
     }
 
     nodes = neo4j_session.run(
@@ -310,12 +303,10 @@ def test_load_blob_services_relationships(neo4j_session):
 
     expected = {
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG1",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG1/blobServices/BS1",
+            sa1, sa1 + "/blobServices/BS1",
         ),
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG2",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG2/blobServices/BS2",
+            sa2, sa2 + "/blobServices/BS2",
         ),
     }
 
@@ -341,8 +332,8 @@ def test_load_queues(neo4j_session):
     )
 
     expected_nodes = {
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG1/queueServices/QS1/queues/queue1",
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG2/queueServices/QS2/queues/queue2",
+        sa1 + "/queueServices/QS1/queues/queue1",
+        sa2 + "/queueServices/QS2/queues/queue2",
     }
 
     nodes = neo4j_session.run(
@@ -372,12 +363,12 @@ def test_load_queues_relationships(neo4j_session):
 
     expected = {
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG1/queueServices/QS1",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG1/queueServices/QS1/queues/queue1",
+            sa1 + "/queueServices/QS1",
+            sa1 + "/queueServices/QS1/queues/queue1",
         ),
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG2/queueServices/QS2",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG2/queueServices/QS2/queues/queue2",
+            sa2 + "/queueServices/QS2",
+            sa2 + "/queueServices/QS2/queues/queue2",
         ),
     }
 
@@ -403,8 +394,8 @@ def test_load_tables(neo4j_session):
     )
 
     expected_nodes = {
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG1/tableServices/TS1/tables/table1",
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG2/tableServices/TS2/tables/table2",
+        sa1 + "/tableServices/TS1/tables/table1",
+        sa2 + "/tableServices/TS2/tables/table2",
     }
 
     nodes = neo4j_session.run(
@@ -434,12 +425,12 @@ def test_load_tables_relationships(neo4j_session):
 
     expected = {
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG1/tableServices/TS1",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG1/tableServices/TS1/tables/table1",
+            sa1 + "/tableServices/TS1",
+            sa1 + "/tableServices/TS1/tables/table1",
         ),
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG2/tableServices/TS2",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG2/tableServices/TS2/tables/table2",
+            sa2 + "/tableServices/TS2",
+            sa2 + "/tableServices/TS2/tables/table2",
         ),
     }
 
@@ -465,8 +456,8 @@ def test_load_shares(neo4j_session):
     )
 
     expected_nodes = {
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG1/fileServices/FS1/shares/share1",
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG2/fileServices/FS2/shares/share2",
+        sa1 + "/fileServices/FS1/shares/share1",
+        sa2 + "/fileServices/FS2/shares/share2",
     }
 
     nodes = neo4j_session.run(
@@ -496,12 +487,12 @@ def test_load_shares_relationships(neo4j_session):
 
     expected = {
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG1/fileServices/FS1",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG1/fileServices/FS1/shares/share1",
+            sa1 + "/fileServices/FS1",
+            sa1 + "/fileServices/FS1/shares/share1",
         ),
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG2/fileServices/FS2",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG2/fileServices/FS2/shares/share2",
+            sa2 + "/fileServices/FS2",
+            sa2 + "/fileServices/FS2/shares/share2",
         ),
     }
 
@@ -527,8 +518,8 @@ def test_load_blob_containers(neo4j_session):
     )
 
     expected_nodes = {
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG1/blobServices/BS1/containers/container1",
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG2/blobServices/BS2/containers/container2",
+        sa1 + "/blobServices/BS1/containers/container1",
+        sa2 + "/blobServices/BS2/containers/container2",
     }
 
     nodes = neo4j_session.run(
@@ -558,12 +549,12 @@ def test_load_blob_containers_relationships(neo4j_session):
 
     expected = {
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG1/blobServices/BS1",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG1/blobServices/BS1/containers/container1",
+            sa1 + "/blobServices/BS1",
+            sa1 + "/blobServices/BS1/containers/container1",
         ),
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG2/blobServices/BS2",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG2/blobServices/BS2/containers/container2",
+            sa2 + "/blobServices/BS2",
+            sa2 + "/blobServices/BS2/containers/container2",
         ),
     }
 
