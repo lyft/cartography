@@ -8,10 +8,10 @@ from statsd import StatsClient
 
 import cartography.intel.analysis
 import cartography.intel.aws
-import cartography.intel.azure
+# import cartography.intel.azure
 import cartography.intel.create_indexes
 import cartography.intel.crxcavator.crxcavator
-import cartography.intel.digitalocean
+# import cartography.intel.digitalocean
 import cartography.intel.gcp
 import cartography.intel.github
 import cartography.intel.gsuite
@@ -166,7 +166,7 @@ def build_default_sync():
         ('crxcavator', cartography.intel.crxcavator.start_extension_ingestion),
         ('okta', cartography.intel.okta.start_okta_ingestion),
         ('github', cartography.intel.github.start_github_ingestion),
-        ('digitalocean', cartography.intel.digitalocean.start_digitalocean_ingestion),
+        # ('digitalocean', cartography.intel.digitalocean.start_digitalocean_ingestion),
         ('analysis', cartography.intel.analysis.run),
     ])
 
@@ -202,7 +202,7 @@ def build_azure_sync():
     sync.add_stages([
         ('create-indexes', cartography.intel.create_indexes.run),
         ('cloudanix-workspace', cloudanix.run),
-        ('azure', cartography.intel.azure.start_azure_ingestion),
+        # ('azure', cartography.intel.azure.start_azure_ingestion),
         ('analysis', cartography.intel.analysis.run),
     ])
 

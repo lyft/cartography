@@ -116,7 +116,7 @@ def _autodiscover_accounts(
 def _sync_multiple_accounts(
     neo4j_session: neo4j.Session,
     accounts: Dict[str, str],
-    sync_tag: int,
+    config: Config,
     common_job_parameters: Dict[str, Any],
     aws_requested_syncs: List[str] = [],
 ) -> None:
@@ -149,7 +149,7 @@ def _sync_multiple_accounts(
             neo4j_session,
             boto3_session,
             account_id,
-            sync_tag,
+            config.update_tag,
             common_job_parameters,
             aws_requested_syncs=aws_requested_syncs,  # Could be replaced later with per-account requested syncs
         )
@@ -227,7 +227,7 @@ def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
     _sync_multiple_accounts(
         neo4j_session,
         aws_accounts,
-        config.update_tag,
+        config,
         common_job_parameters,
         requested_syncs,
     )

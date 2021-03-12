@@ -140,6 +140,9 @@ class CLI:
             action='store_true',
             help=(
                 'Use Service Principal authentication for Azure sync.'
+            ),
+        )
+        parser.add_argument(
             '--aws-requested-syncs',
             type=str,
             default=None,
@@ -447,8 +450,9 @@ def run_aws(request):
     config=Config(request['neo4j']['uri'],
                     neo4j_user=request['neo4j']['user'],
                     neo4j_password=request['neo4j']['pwd'],
+                    neo4j_max_connection_lifetime=request['neo4j']['connection_lifetime'],
                     credentials=request['credentials'],
-                    params=request['params']
+                    params=request['params'],
                     )
 
     if request['logging']['mode'] == "verbose":
@@ -470,6 +474,7 @@ def run_azure(request):
     config=Config(request['neo4j']['uri'],
                     neo4j_user=request['neo4j']['user'],
                     neo4j_password=request['neo4j']['pwd'],
+                    neo4j_max_connection_lifetime=request['neo4j']['connection_lifetime'],
                     client_id=request['azure']['client_id'],
                     client_secret=request['azure']['client_secret'],
                     redirect_uri=request['azure']['redirect_uri'],

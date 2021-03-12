@@ -84,7 +84,8 @@ def process_request(context, args):
         "neo4j": {
             "uri": context.neo4j_uri,
             "user": context.neo4j_user,
-            "pwd": context.neo4j_pwd
+            "pwd": context.neo4j_pwd,
+            "connection_lifetime": 3600
         },
         "logging": {
             "mode": "verbose",
