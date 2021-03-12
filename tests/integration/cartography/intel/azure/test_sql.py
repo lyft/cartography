@@ -15,6 +15,8 @@ from tests.data.azure.sql import DESCRIBE_TRANSPARENT_DATA_ENCRYPTIONS
 TEST_SUBSCRIPTION_ID = '00-00-00-00'
 TEST_RESOURCE_GROUP = 'TestRG'
 TEST_UPDATE_TAG = 123456789
+server1 = "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1"
+server2 = "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2"
 
 
 def test_load_servers(neo4j_session):
@@ -26,8 +28,8 @@ def test_load_servers(neo4j_session):
     )
 
     expected_nodes = {
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1",
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2",
+        server1,
+        server2,
     }
 
     nodes = neo4j_session.run(
@@ -62,11 +64,11 @@ def test_load_server_relationships(neo4j_session):
     expected = {
         (
             TEST_SUBSCRIPTION_ID,
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1",
+            server1,
         ),
         (
             TEST_SUBSCRIPTION_ID,
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2",
+            server2,
         ),
     }
 
@@ -92,8 +94,8 @@ def test_load_server_dns_aliases(neo4j_session):
     )
 
     expected_nodes = {
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1/dnsAliases/dns-alias-1",
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2/dnsAliases/dns-alias-2",
+        server1 + "/dnsAliases/dns-alias-1",
+        server2 + "/dnsAliases/dns-alias-2",
     }
 
     nodes = neo4j_session.run(
@@ -124,12 +126,10 @@ def test_load_server_dns_aliases_relationships(neo4j_session):
 
     expected = {
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1/dnsAliases/dns-alias-1",
+            server1, server1 + "/dnsAliases/dns-alias-1",
         ),
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2/dnsAliases/dns-alias-2",
+            server2, server2 + "/dnsAliases/dns-alias-2",
         ),
     }
 
@@ -155,8 +155,8 @@ def test_load_server_ad_admins(neo4j_session):
     )
 
     expected_nodes = {
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1/providers/Microsoft.Sql/administrators/ActiveDirectory1",
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2/providers/Microsoft.Sql/administrators/ActiveDirectory2",
+        server1 + "/providers/Microsoft.Sql/administrators/ActiveDirectory1",
+        server2 + "/providers/Microsoft.Sql/administrators/ActiveDirectory2",
     }
 
     nodes = neo4j_session.run(
@@ -187,12 +187,10 @@ def test_load_server_ad_admins_relationships(neo4j_session):
 
     expected = {
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1/providers/Microsoft.Sql/administrators/ActiveDirectory1",
+            server1, server1 + "/providers/Microsoft.Sql/administrators/ActiveDirectory1",
         ),
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2/providers/Microsoft.Sql/administrators/ActiveDirectory2",
+            server2, server2 + "/providers/Microsoft.Sql/administrators/ActiveDirectory2",
         ),
     }
 
@@ -218,8 +216,7 @@ def test_load_recoverable_databases(neo4j_session):
     )
 
     expected_nodes = {
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1/recoverabledatabases/RD1",
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2/recoverabledatabases/RD2",
+        server1 + "/recoverabledatabases/RD1", server2 + "/recoverabledatabases/RD2",
     }
 
     nodes = neo4j_session.run(
@@ -250,12 +247,10 @@ def test_load_recoverable_databases_relationships(neo4j_session):
 
     expected = {
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1/recoverabledatabases/RD1",
+            server1, server1 + "/recoverabledatabases/RD1",
         ),
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2/recoverabledatabases/RD2",
+            server2, server2 + "/recoverabledatabases/RD2",
         ),
     }
 
@@ -281,8 +276,8 @@ def test_load_restorable_dropped_databases(neo4j_session):
     )
 
     expected_nodes = {
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1/restorableDroppedDatabases/RDD1,001",
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2/restorableDroppedDatabases/RDD2,002",
+        server1 + "/restorableDroppedDatabases/RDD1,001",
+        server2 + "/restorableDroppedDatabases/RDD2,002",
     }
 
     nodes = neo4j_session.run(
@@ -313,12 +308,10 @@ def test_load_restorable_dropped_databases_relationships(neo4j_session):
 
     expected = {
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1/restorableDroppedDatabases/RDD1,001",
+            server1, server1 + "/restorableDroppedDatabases/RDD1,001",
         ),
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2/restorableDroppedDatabases/RDD2,002",
+            server2, server2 + "/restorableDroppedDatabases/RDD2,002",
         ),
     }
 
@@ -344,8 +337,8 @@ def test_load_failover_groups(neo4j_session):
     )
 
     expected_nodes = {
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1/failoverGroups/FG1",
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2/failoverGroups/FG1",
+        server1 + "/failoverGroups/FG1",
+        server2 + "/failoverGroups/FG1",
     }
 
     nodes = neo4j_session.run(
@@ -376,12 +369,10 @@ def test_load_failover_groups_relationships(neo4j_session):
 
     expected = {
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1/failoverGroups/FG1",
+            server1, server1 + "/failoverGroups/FG1",
         ),
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2/failoverGroups/FG1",
+            server2, server2 + "/failoverGroups/FG1",
         ),
     }
 
@@ -407,8 +398,8 @@ def test_load_elastic_pools(neo4j_session):
     )
 
     expected_nodes = {
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1/elasticPools/EP1",
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2/elasticPools/EP2",
+        server1 + "/elasticPools/EP1",
+        server2 + "/elasticPools/EP2",
     }
 
     nodes = neo4j_session.run(
@@ -439,12 +430,10 @@ def test_load_elastic_pools_relationships(neo4j_session):
 
     expected = {
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1/elasticPools/EP1",
+            server1, server1 + "/elasticPools/EP1",
         ),
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2/elasticPools/EP2",
+            server2, server2 + "/elasticPools/EP2",
         ),
     }
 
@@ -470,8 +459,7 @@ def test_load_databases(neo4j_session):
     )
 
     expected_nodes = {
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1/databases/testdb1",
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2/databases/testdb2",
+        server1 + "/databases/testdb1", server2 + "/databases/testdb2",
     }
 
     nodes = neo4j_session.run(
@@ -502,12 +490,10 @@ def test_load_databases_relationships(neo4j_session):
 
     expected = {
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1/databases/testdb1",
+            server1, server1 + "/databases/testdb1",
         ),
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2/databases/testdb2",
+            server2, server2 + "/databases/testdb2",
         ),
     }
 
@@ -533,8 +519,8 @@ def test_load_replication_links(neo4j_session):
     )
 
     expected_nodes = {
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1/databases/testdb1/replicationLinks/RL1",
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2/databases/testdb2/replicationLinks/RL1",
+        server1 + "/databases/testdb1/replicationLinks/RL1",
+        server2 + "/databases/testdb2/replicationLinks/RL1",
     }
 
     nodes = neo4j_session.run(
@@ -564,12 +550,10 @@ def test_load_replication_links_relationships(neo4j_session):
 
     expected = {
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1/databases/testdb1",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1/databases/testdb1/replicationLinks/RL1",
+            server1, server1 + "/databases/testdb1/replicationLinks/RL1",
         ),
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2/databases/testdb2",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2/databases/testdb2/replicationLinks/RL1",
+            server2, server2 + "/databases/testdb2/replicationLinks/RL2",
         ),
     }
 
@@ -595,8 +579,8 @@ def test_load_db_threat_detection_policies(neo4j_session):
     )
 
     expected_nodes = {
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1/databases/testdb1/securityAlertPolicies/TDP1",
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2/databases/testdb2/securityAlertPolicies/TDP2",
+        server1 + "/databases/testdb1/securityAlertPolicies/TDP1",
+        server2 + "/databases/testdb2/securityAlertPolicies/TDP2",
     }
 
     nodes = neo4j_session.run(
@@ -626,12 +610,10 @@ def test_load_db_threat_detection_policies_relationships(neo4j_session):
 
     expected = {
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1/databases/testdb1",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1/databases/testdb1/securityAlertPolicies/TDP1",
+            server1, server1 + "/databases/testdb1/securityAlertPolicies/TDP1",
         ),
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2/databases/testdb2",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2/databases/testdb2/securityAlertPolicies/TDP2",
+            server2, server2 + "/databases/testdb2/securityAlertPolicies/TDP2",
         ),
     }
 
@@ -657,8 +639,8 @@ def test_load_restore_points(neo4j_session):
     )
 
     expected_nodes = {
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1/databases/testdb1/restorepoints/RP1",
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2/databases/testdb2/restorepoints/RP2",
+        server1 + "/databases/testdb1/restorepoints/RP1",
+        server2 + "/databases/testdb2/restorepoints/RP2",
     }
 
     nodes = neo4j_session.run(
@@ -688,12 +670,10 @@ def test_load_restore_points_relationships(neo4j_session):
 
     expected = {
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1/databases/testdb1",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1/databases/testdb1/restorepoints/RP1",
+            server1, server1 + "/databases/testdb1/restorepoints/RP1",
         ),
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2/databases/testdb2",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2/databases/testdb2/restorepoints/RP2",
+            server2, server2 + "/databases/testdb2/restorepoints/RP2",
         ),
     }
 
@@ -719,8 +699,8 @@ def test_load_transparent_data_encryptions(neo4j_session):
     )
 
     expected_nodes = {
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1/databases/testdb1/transparentDataEncryption/TAE1",
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2/databases/testdb2/transparentDataEncryption/TAE2",
+        server1 + "/databases/testdb1/transparentDataEncryption/TAE1",
+        server2 + "/databases/testdb2/transparentDataEncryption/TAE2",
     }
 
     nodes = neo4j_session.run(
@@ -750,12 +730,10 @@ def test_load_transparent_data_encryptions_relationships(neo4j_session):
 
     expected = {
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1/databases/testdb1",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1/databases/testdb1/transparentDataEncryption/TAE1",
+            server1, server1 + "/databases/testdb1/transparentDataEncryption/TAE1",
         ),
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2/databases/testdb2",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2/databases/testdb2/transparentDataEncryption/TAE2",
+            server2, server2 + "/databases/testdb2/transparentDataEncryption/TAE2",
         ),
     }
 

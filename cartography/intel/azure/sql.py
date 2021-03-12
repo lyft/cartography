@@ -97,13 +97,13 @@ def get_server_details(
     for server in server_list:
         dns_alias = get_dns_aliases(credentials, subscription_id, server)
         ad_admins = get_ad_admins(credentials, subscription_id, server)
-        recoverable_databases = get_recoverable_databases(credentials, subscription_id, server)
-        restorable_dropped_databases = get_restorable_dropped_databases(credentials, subscription_id, server)
-        failover_groups = get_failover_groups(credentials, subscription_id, server)
+        r_databases = get_recoverable_databases(credentials, subscription_id, server)
+        rd_databases = get_restorable_dropped_databases(credentials, subscription_id, server)
+        fgs = get_failover_groups(credentials, subscription_id, server)
         elastic_pools = get_elastic_pools(credentials, subscription_id, server)
         databases = get_databases(credentials, subscription_id, server)
         yield server['id'], server['name'], server[
-            'resourceGroup'], dns_alias, ad_admins, recoverable_databases, restorable_dropped_databases, failover_groups, elastic_pools, databases
+            'resourceGroup'], dns_alias, ad_admins, r_databases, rd_databases, fgs, elastic_pools, databases
 
 
 @timeit
@@ -246,7 +246,7 @@ def load_server_details(
     elastic_pools = []
     databases = []
 
-    for server_id, name, resourceGroup, dns_alias, ad_admin, r_database, rd_database, failover_group, elastic_pool, database in details:
+    for server_id, name, rg, dns_alias, ad_admin, r_database, rd_database, fg, elastic_pool, database in details:
         if len(dns_alias) > 0:
             for alias in dns_alias:
                 alias['server_name'] = name
@@ -271,8 +271,8 @@ def load_server_details(
                 rddb['server_id'] = server_id
                 restorable_dropped_databases.append(rddb)
 
-        if len(failover_group) > 0:
-            for group in failover_group:
+        if len(fg) > 0:
+            for group in fg:
                 group['server_name'] = name
                 group['server_id'] = server_id
                 failover_groups.append(group)
@@ -287,7 +287,7 @@ def load_server_details(
             for db in database:
                 db['server_name'] = name
                 db['server_id'] = server_id
-                db['resource_group_name'] = resourceGroup
+                db['resource_group_name'] = rg
                 databases.append(db)
 
     _load_server_dns_aliases(neo4j_session, dns_aliases, update_tag)
@@ -540,12 +540,12 @@ def get_database_details(
     Iterate over the databases to get the details of resources in it.
     """
     for database in databases:
-        replication_links_list = get_replication_links(credentials, subscription_id, database)
+        replication_links = get_replication_links(credentials, subscription_id, database)
         db_threat_detection_policies = get_db_threat_detection_policies(credentials, subscription_id, database)
-        restore_points_list = get_restore_points(credentials, subscription_id, database)
+        restore_points = get_restore_points(credentials, subscription_id, database)
         transparent_data_encryptions = get_transparent_data_encryptions(credentials, subscription_id, database)
         yield database[
-                  'id'], replication_links_list, db_threat_detection_policies, restore_points_list, transparent_data_encryptions
+                  'id'], replication_links, db_threat_detection_policies, restore_points, transparent_data_encryptions
 
 
 @timeit
