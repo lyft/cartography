@@ -41,7 +41,7 @@ def get_database_account_list(credentials: Credentials, subscription_id: str) ->
 
     for database_account in database_account_list:
         x = database_account['id'].split('/')
-        database_account['resourceGroup'] = x[x.index('resourceGroups')+1]
+        database_account['resourceGroup'] = x[x.index('resourceGroups') + 1]
 
     return database_account_list
 
@@ -116,7 +116,8 @@ def load_database_account_data(
             _load_cosmosdb_cors_policy(neo4j_session, database_account, azure_update_tag)
         if 'failover_policies' in database_account and len(database_account['failover_policies']) > 0:
             _load_cosmosdb_failover_policies(neo4j_session, database_account, azure_update_tag)
-        if 'private_endpoint_connections' in database_account and len(database_account['private_endpoint_connections']) > 0:
+        if 'private_endpoint_connections' in database_account and len(
+                database_account['private_endpoint_connections']) > 0:
             _load_cosmosdb_private_endpoint_connections(neo4j_session, database_account, azure_update_tag)
         if 'virtual_network_rules' in database_account and len(database_account['virtual_network_rules']) > 0:
             _load_cosmosdb_virtual_network_rules(neo4j_session, database_account, azure_update_tag)
@@ -132,7 +133,8 @@ def load_database_account_data(
         if 'locations' in database_account and len(database_account['locations']) > 0:
             for loc in database_account['locations']:
                 locations.append(loc)
-        loc = [i for n, i in enumerate(locations) if i not in locations[n + 1:]]  # Selecting only the unique location entries
+        # Selecting only the unique location entries
+        loc = [i for n, i in enumerate(locations) if i not in locations[n + 1:]]
         if len(loc) > 0:
             _load_database_account_locations(neo4j_session, database_account, loc, azure_update_tag)
 
@@ -415,7 +417,8 @@ def get_database_account_details(
         cassandra_keyspaces = get_cassandra_keyspaces(credentials, subscription_id, database_account)
         mongodb_databases = get_mongodb_databases(credentials, subscription_id, database_account)
         table_resources = get_table_resources(credentials, subscription_id, database_account)
-        yield database_account['id'], database_account['name'], database_account['resourceGroup'], sql_databases, cassandra_keyspaces, mongodb_databases, table_resources
+        yield database_account['id'], database_account['name'], database_account[
+            'resourceGroup'], sql_databases, cassandra_keyspaces, mongodb_databases, table_resources
 
 
 @timeit
@@ -425,7 +428,9 @@ def get_sql_databases(credentials: Credentials, subscription_id: str, database_a
     """
     try:
         client = get_client(credentials, subscription_id)
-        sql_database_list = list(map(lambda x: x.as_dict(), client.sql_resources.list_sql_databases(database_account['resourceGroup'], database_account['name'])))
+        sql_database_list = list(map(lambda x: x.as_dict(),
+                                     client.sql_resources.list_sql_databases(database_account['resourceGroup'],
+                                                                             database_account['name'])))
 
     except HttpResponseError as e:
         logger.warning("Error while retrieving SQL Database list - {}".format(e))
@@ -441,7 +446,8 @@ def get_cassandra_keyspaces(credentials: Credentials, subscription_id: str, data
     """
     try:
         client = get_client(credentials, subscription_id)
-        cassandra_keyspace_list = list(map(lambda x: x.as_dict(), client.cassandra_resources.list_cassandra_keyspaces(database_account['resourceGroup'], database_account['name'])))
+        cassandra_keyspace_list = list(map(lambda x: x.as_dict(), client.cassandra_resources.list_cassandra_keyspaces(
+            database_account['resourceGroup'], database_account['name'])))
 
     except HttpResponseError as e:
         logger.warning("Error while retrieving Cassandra keyspaces list - {}".format(e))
@@ -457,7 +463,8 @@ def get_mongodb_databases(credentials: Credentials, subscription_id: str, databa
     """
     try:
         client = get_client(credentials, subscription_id)
-        mongodb_database_list = list(map(lambda x: x.as_dict(), client.mongo_db_resources.list_mongo_db_databases(database_account['resourceGroup'], database_account['name'])))
+        mongodb_database_list = list(map(lambda x: x.as_dict(), client.mongo_db_resources.list_mongo_db_databases(
+            database_account['resourceGroup'], database_account['name'])))
 
     except HttpResponseError as e:
         logger.warning("Error while retrieving MongoDB Database list - {}".format(e))
@@ -473,7 +480,9 @@ def get_table_resources(credentials: Credentials, subscription_id: str, database
     """
     try:
         client = get_client(credentials, subscription_id)
-        table_resources_list = list(map(lambda x: x.as_dict(), client.table_resources.list_tables(database_account['resourceGroup'], database_account['name'])))
+        table_resources_list = list(map(lambda x: x.as_dict(),
+                                        client.table_resources.list_tables(database_account['resourceGroup'],
+                                                                           database_account['name'])))
 
     except HttpResponseError as e:
         logger.warning("Error while retrieving table resources list - {}".format(e))
@@ -529,9 +538,12 @@ def load_database_account_details(
     _load_cassandra_keyspaces(neo4j_session, cassandra_keyspaces, update_tag)
     _load_mongodb_databases(neo4j_session, mongodb_databases, update_tag)
 
-    sync_sql_database_details(neo4j_session, credentials, subscription_id, sql_databases, update_tag, common_job_parameters)
-    sync_cassandra_keyspace_details(neo4j_session, credentials, subscription_id, cassandra_keyspaces, update_tag, common_job_parameters)
-    sync_mongodb_database_details(neo4j_session, credentials, subscription_id, mongodb_databases, update_tag, common_job_parameters)
+    sync_sql_database_details(neo4j_session, credentials, subscription_id, sql_databases, update_tag,
+                              common_job_parameters)
+    sync_cassandra_keyspace_details(neo4j_session, credentials, subscription_id, cassandra_keyspaces, update_tag,
+                                    common_job_parameters)
+    sync_mongodb_database_details(neo4j_session, credentials, subscription_id, mongodb_databases, update_tag,
+                                  common_job_parameters)
 
 
 @timeit
@@ -675,7 +687,10 @@ def get_sql_containers(credentials: Credentials, subscription_id: str, database:
     """
     try:
         client = get_client(credentials, subscription_id)
-        containers = list(map(lambda x: x.as_dict(), client.sql_resources.list_sql_containers(database['resource_group_name'], database['database_account_name'], database['name'])))
+        containers = list(map(lambda x: x.as_dict(),
+                              client.sql_resources.list_sql_containers(database['resource_group_name'],
+                                                                       database['database_account_name'],
+                                                                       database['name'])))
 
     except HttpResponseError as e:
         logger.warning("Error while retrieving SQL Containers - {}".format(e))
@@ -763,7 +778,10 @@ def get_cassandra_tables(credentials: Credentials, subscription_id: str, keyspac
     """
     try:
         client = get_client(credentials, subscription_id)
-        cassandra_tables = list(map(lambda x: x.as_dict(), client.cassandra_resources.list_cassandra_tables(keyspace['resource_group_name'], keyspace['database_account_name'], keyspace['name'])))
+        cassandra_tables = list(map(lambda x: x.as_dict(),
+                                    client.cassandra_resources.list_cassandra_tables(keyspace['resource_group_name'],
+                                                                                     keyspace['database_account_name'],
+                                                                                     keyspace['name'])))
 
     except HttpResponseError as e:
         logger.warning("Error while retrieving Cassandra tables - {}".format(e))
@@ -850,7 +868,10 @@ def get_mongodb_collections(credentials: Credentials, subscription_id: str, data
     """
     try:
         client = get_client(credentials, subscription_id)
-        collections = list(map(lambda x: x.as_dict(), client.mongo_db_resources.list_mongo_db_collections(database['resource_group_name'], database['database_account_name'], database['name'])))
+        collections = list(map(lambda x: x.as_dict(),
+                               client.mongo_db_resources.list_mongo_db_collections(database['resource_group_name'],
+                                                                                   database['database_account_name'],
+                                                                                   database['name'])))
 
     except HttpResponseError as e:
         logger.warning("Error while retrieving MongoDB collections - {}".format(e))
@@ -940,5 +961,6 @@ def sync(
     logger.info("Syncing Azure CosmosDB for subscription '%s'.", subscription_id)
     database_account_list = get_database_account_list(credentials, subscription_id)
     load_database_account_data(neo4j_session, subscription_id, database_account_list, sync_tag)
-    sync_database_account_details(neo4j_session, credentials, subscription_id, database_account_list, sync_tag, common_job_parameters)
+    sync_database_account_details(neo4j_session, credentials, subscription_id, database_account_list, sync_tag,
+                                  common_job_parameters)
     cleanup_azure_database_accounts(neo4j_session, common_job_parameters)
