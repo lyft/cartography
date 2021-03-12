@@ -35,11 +35,6 @@ def test_load_internet_gateways(neo4j_session):
 
 def test_load_internet_gateway_relationships(neo4j_session):
     tests.integration.cartography.intel.aws.common.create_test_account(neo4j_session, TEST_ACCOUNT_ID, TEST_UPDATE_TAG)
-    neo4j_session.run(
-        """
-        MATCH (n:AWSAccount) RETURN n.id;
-        """,
-    )
 
     data = tests.data.aws.ec2.internet_gateway.DESCRIBE_GATEWAYS
     cartography.intel.aws.ec2.internet_gateways.load_internet_gateways(
