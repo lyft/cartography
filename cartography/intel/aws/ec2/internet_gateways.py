@@ -28,24 +28,24 @@ def load_internet_gateways(
     logger.info("Loading %d Internet Gateways in %s.", len(internet_gateways), region)
     # TODO: Right now this won't work in non-AWS commercial (GovCloud, China) as partition is hardcoded
     query = """
-    UNWIND {internet_gateways} as internet_gateway
-        MERGE (ig:AWSInternetGateway{id: internet_gateway.InternetGatewayId})
+    UNWIND {internet_gateways} as igw
+        MERGE (ig:AWSInternetGateway{id: igw.InternetGatewayId})
         ON CREATE SET
             ig.firstseen = timestamp(),
             ig.region = {region}
         SET
-            ig.ownerid = internet_gateway.OwnerId,
+            ig.ownerid = igw.OwnerId,
             ig.lastupdated = {aws_update_tag},
-            ig.arn = "arn:aws:ec2:"+{region}+":"+internet_gateway.OwnerId+":internet-gateway/"+internet_gateway.InternetGatewayId
-        WITH internet_gateway, ig
+            ig.arn = "arn:aws:ec2:"+{region}+":"+igw.OwnerId+":internet-gateway/"+igw.InternetGatewayId
+        WITH igw, ig
 
         MATCH (awsAccount:AWSAccount {id: {aws_account_id}})
         MERGE (awsAccount)-[r:RESOURCE]->(ig)
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = {aws_update_tag}
-        WITH internet_gateway, ig
+        WITH igw, ig
 
-        UNWIND internet_gateway.Attachments as attachment
+        UNWIND igw.Attachments as attachment
         MATCH (vpc:AWSVpc{id: attachment.VpcId})
         MERGE (ig)-[r:ATTACHED_TO]->(vpc)
         ON CREATE SET r.firstseen = timestamp()
