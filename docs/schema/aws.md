@@ -1068,7 +1068,9 @@ Representation of an AWS EC2 [Subnet](https://docs.aws.amazon.com/AWSEC2/latest/
  | Field | Description |
  |--------|-----------|
  | **id** | Internet gateway ID |
+ | arn | Amazon Resource Name |
  | region | The region of the gateway |
+
 
  ### Relationships
 
