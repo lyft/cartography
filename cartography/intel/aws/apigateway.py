@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 def get_apigateway_rest_apis(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
     config = Config(
         region_name=region,
-        retries = {
+        retries={
             'max_attempts': 5,
             'mode': 'standard',
         }
@@ -59,7 +59,7 @@ def get_rest_api_details(
     """
     config = Config(
         region_name=region,
-        retries = {
+        retries={
             'max_attempts': 5,
             'mode': 'standard',
         }
@@ -309,7 +309,7 @@ def _load_apigateway_resources(
 @timeit
 def load_rest_api_details(
         neo4j_session: neo4j.Session, stages_certificate_resources: List[Tuple[Any, Any, Any, Any, Any]],
-        aws_account_id: str, update_tag: int,
+        aws_account_id: str, update_tag: int, common_job_parameters: Dict,
 ) -> None:
     """
     Create dictionaries for Stages, Client certificates, policies and Resource resources
@@ -339,7 +339,7 @@ def load_rest_api_details(
     run_cleanup_job(
         'aws_apigateway_details.json',
         neo4j_session,
-        {'UPDATE_TAG': update_tag, 'AWS_ID': aws_account_id},
+        common_job_parameters,
     )
 
     _load_apigateway_policies(neo4j_session, policies, update_tag)
@@ -376,13 +376,15 @@ def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
 @timeit
 def sync_apigateway_rest_apis(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, region: str, current_aws_account_id: str,
-    aws_update_tag: int,
+    aws_update_tag: int, common_job_parameters: Dict,
 ) -> None:
     rest_apis = get_apigateway_rest_apis(boto3_session, region)
     load_apigateway_rest_apis(neo4j_session, rest_apis, region, current_aws_account_id, aws_update_tag)
 
     stages_certificate_resources = get_rest_api_details(boto3_session, rest_apis, region)
-    load_rest_api_details(neo4j_session, stages_certificate_resources, current_aws_account_id, aws_update_tag)
+    load_rest_api_details(
+        neo4j_session, stages_certificate_resources, current_aws_account_id, aws_update_tag, common_job_parameters
+    )
 
 
 @timeit
@@ -392,5 +394,7 @@ def sync(
 ) -> None:
     for region in regions:
         logger.info(f"Syncing AWS APIGateway Rest APIs for region '{region}' in account '{current_aws_account_id}'.")
-        sync_apigateway_rest_apis(neo4j_session, boto3_session, region, current_aws_account_id, update_tag)
+        sync_apigateway_rest_apis(
+            neo4j_session, boto3_session, region, current_aws_account_id, update_tag, common_job_parameters
+        )
     cleanup(neo4j_session, common_job_parameters)

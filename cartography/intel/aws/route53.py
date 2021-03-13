@@ -374,11 +374,11 @@ def _normalize_dns_address(address: str) -> str:
 
 
 @timeit
-def cleanup_route53(neo4j_session: neo4j.Session, current_aws_id: str, update_tag: int) -> None:
+def cleanup_route53(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job(
         'aws_dns_cleanup.json',
         neo4j_session,
-        {'UPDATE_TAG': update_tag, 'AWS_ID': current_aws_id},
+        common_job_parameters,
     )
 
 
@@ -392,4 +392,4 @@ def sync(
     zones = get_zones(client)
     load_dns_details(neo4j_session, zones, current_aws_account_id, update_tag)
     link_sub_zones(neo4j_session, update_tag)
-    cleanup_route53(neo4j_session, current_aws_account_id, update_tag)
+    cleanup_route53(neo4j_session, common_job_parameters)
