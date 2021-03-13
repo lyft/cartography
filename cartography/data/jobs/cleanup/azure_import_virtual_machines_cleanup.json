@@ -1,0 +1,25 @@
+{
+    "statements": [
+        {
+            "query": "MATCH (n:AzureDataDisk)-[:ATTACHED_TO]->(:AzureVirtualMachine)-[:RESOURCE]->(:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+            "iterative": true,
+            "iterationsize": 100
+        },
+        {
+            "query": "MATCH (:AzureDataDisk)-[r:ATTACHED_TO]->(:AzureVirtualMachine)-[:RESOURCE]->(:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+            "iterative": true,
+            "iterationsize": 100
+        },
+        {
+            "query": "MATCH (n:AzureVirtualMachine)-[:RESOURCE]->(:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+            "iterative": true,
+            "iterationsize": 100
+        },
+        {
+            "query": "MATCH (:AzureVirtualMachine)-[r:RESOURCE]->(:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+            "iterative": true,
+            "iterationsize": 100
+        }
+    ],
+    "name": "cleanup Azure Compute related resources"
+}

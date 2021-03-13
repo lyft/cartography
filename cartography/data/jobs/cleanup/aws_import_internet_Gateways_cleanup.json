@@ -1,0 +1,10 @@
+{
+    "statements": [
+      {
+        "query": "MATCH (:AWSAccount{id:{AWS_ID}})-[:RESOURCE]->(n:AWSInternetGateway) WHERE n.lastupdated <> {UPDATE_TAG} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+        "iterative": true,
+        "iterationsize": 100
+      }
+    ],
+    "name": "cleanup AWSInternetGateway"
+  }
