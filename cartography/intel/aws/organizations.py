@@ -126,7 +126,7 @@ def load_aws_accounts(
 
 @timeit
 def cleanup(neo4j_session: neo4j.Session, account_id: str, common_job_parameters: Dict) -> None:
-    common_job_parameters['AWS_ACCOUNT_ID'] = account_id
+    common_job_parameters['AWS_ID'] = account_id
     run_cleanup_job('aws_account_cleanup.json', neo4j_session, common_job_parameters)
 
 
