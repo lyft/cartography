@@ -12,14 +12,19 @@ from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 
+
 @timeit
 @aws_handle_regions
 def get_vpc_peerings_data(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
     client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
     return client.describe_vpc_peering_connections()['VpcPeeringConnections']
 
+
 @timeit
-def load_vpc_peerings(neo4j_session: neo4j.Session, data: List[Dict], region: str, aws_account_id: str, update_tag: int) -> None:
+def load_vpc_peerings(
+    neo4j_session: neo4j.Session, data: List[Dict], region: str,
+    aws_account_id: str, update_tag: int,
+) -> None:
     ingest_vpc_peerings = """
     UNWIND {vpc_peerings} AS vpc_peering
 
@@ -76,8 +81,12 @@ def load_vpc_peerings(neo4j_session: neo4j.Session, data: List[Dict], region: st
         region=region, aws_account_id=aws_account_id,
     )
 
+
 @timeit
-def load_accepter_cidrs(neo4j_session: neo4j.Session, data: List[Dict], region: str, aws_account_id: str, update_tag: int) -> None:
+def load_accepter_cidrs(
+    neo4j_session: neo4j.Session, data: List[Dict], region: str,
+    aws_account_id: str, update_tag: int,
+) -> None:
 
     ingest_accepter_cidr = """
     UNWIND {vpc_peerings} AS vpc_peering
@@ -107,7 +116,10 @@ def load_accepter_cidrs(neo4j_session: neo4j.Session, data: List[Dict], region: 
 
 
 @timeit
-def load_requester_cidrs(neo4j_session: neo4j.Session, data: List[Dict], region: str, aws_account_id: str, update_tag: int) -> None:
+def load_requester_cidrs(
+    neo4j_session: neo4j.Session, data: List[Dict], region: str,
+    aws_account_id: str, update_tag: int,
+) -> None:
 
     ingest_requester_cidr = """
     UNWIND {vpc_peerings} AS vpc_peering
@@ -134,6 +146,7 @@ def load_requester_cidrs(neo4j_session: neo4j.Session, data: List[Dict], region:
         ingest_requester_cidr, vpc_peerings=data, update_tag=update_tag,
         region=region, aws_account_id=aws_account_id,
     )
+
 
 @timeit
 def cleanup_vpc_peerings(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
