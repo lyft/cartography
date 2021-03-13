@@ -2,7 +2,12 @@
 import json
 import logging
 from datetime import datetime
+from typing import Dict
+from typing import List
+from typing import Optional
 
+import neo4j
+from okta.framework.ApiClient import ApiClient
 from okta.framework.OktaError import OktaError
 
 from cartography.intel.okta.utils import create_api_client
@@ -14,13 +19,13 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
-def _get_okta_applications(api_client):
+def _get_okta_applications(api_client: ApiClient) -> List[Dict]:
     """
     Get application data from Okta server
     :param app_client: api client
     :return: application data
     """
-    app_list = []
+    app_list: List[Dict] = []
 
     next_url = None
     while True:
@@ -48,14 +53,14 @@ def _get_okta_applications(api_client):
 
 
 @timeit
-def _get_application_assigned_users(api_client, app_id):
+def _get_application_assigned_users(api_client: ApiClient, app_id: str) -> List[str]:
     """
     Get users assigned to a specific application
     :param api_client: api client
     :param app_id: application id to get users from
     :return: Array of user data
     """
-    app_users = []
+    app_users: List[str] = []
 
     next_url = None
     while True:
@@ -83,14 +88,14 @@ def _get_application_assigned_users(api_client, app_id):
 
 
 @timeit
-def _get_application_assigned_groups(api_client, app_id):
+def _get_application_assigned_groups(api_client: ApiClient, app_id: str) -> List[str]:
     """
     Get groups assigned to a specific application
     :param api_client: api client
     :param app_id: application id to get users from
     :return: Array of group id
     """
-    app_groups = []
+    app_groups: List[str] = []
 
     next_url = None
 
@@ -118,13 +123,13 @@ def _get_application_assigned_groups(api_client, app_id):
 
 
 @timeit
-def transform_application_assigned_users_list(assigned_user_list):
+def transform_application_assigned_users_list(assigned_user_list: List[str]) -> List[str]:
     """
     Transform application users Okta data
     :param assigned_user_list: Okta data on assigned users
     :return: Array of users
     """
-    users = []
+    users: List[str] = []
 
     for current in assigned_user_list:
         users.extend(transform_application_assigned_users(current))
@@ -133,14 +138,14 @@ def transform_application_assigned_users_list(assigned_user_list):
 
 
 @timeit
-def transform_application_assigned_users(json_app_data):
+def transform_application_assigned_users(json_app_data: str) -> List[str]:
     """
     Transform application users data for graph consumption
     :param json_app_data: raw json application data
     :return: individual user id
     """
 
-    users = []
+    users: List[str] = []
     app_data = json.loads(json_app_data)
     for user in app_data:
         users.append(user["id"])
@@ -149,8 +154,8 @@ def transform_application_assigned_users(json_app_data):
 
 
 @timeit
-def transform_application_assigned_groups_list(assigned_group_list):
-    group_list = []
+def transform_application_assigned_groups_list(assigned_group_list: List[str]) -> List[Dict]:
+    group_list: List[Dict] = []
 
     for current in assigned_group_list:
         group_data = transform_application_assigned_groups(current)
@@ -160,13 +165,13 @@ def transform_application_assigned_groups_list(assigned_group_list):
 
 
 @timeit
-def transform_application_assigned_groups(json_app_data):
+def transform_application_assigned_groups(json_app_data: str) -> List[str]:
     """
     Transform application group assignment to consumable data for the graph
     :param json_app_data: raw json group application assignment data.
     :return: group ids
     """
-    groups = []
+    groups: List[str] = []
     app_data = json.loads(json_app_data)
 
     for group in app_data:
@@ -176,8 +181,8 @@ def transform_application_assigned_groups(json_app_data):
 
 
 @timeit
-def transform_okta_application_list(okta_applications):
-    app_list = []
+def transform_okta_application_list(okta_applications: List[Dict]) -> List[Dict]:
+    app_list: List[Dict] = []
 
     for current in okta_applications:
         app_info = transform_okta_application(current)
@@ -187,7 +192,7 @@ def transform_okta_application_list(okta_applications):
 
 
 @timeit
-def transform_okta_application(okta_application):
+def transform_okta_application(okta_application: Dict) -> Dict:
     app_props = {}
     app_props["id"] = okta_application["id"]
     app_props["name"] = okta_application["name"]
@@ -222,7 +227,7 @@ def transform_okta_application(okta_application):
 
 
 @timeit
-def transform_okta_application_extract_replyurls(okta_application):
+def transform_okta_application_extract_replyurls(okta_application: Dict) -> Optional[str]:
     """
     Extracts the reply uri information from an okta app
     """
@@ -234,7 +239,10 @@ def transform_okta_application_extract_replyurls(okta_application):
 
 
 @timeit
-def _load_okta_applications(neo4j_session, okta_org_id, app_list, okta_update_tag):
+def _load_okta_applications(
+    neo4j_session: neo4j.Session, okta_org_id: str, app_list: List[Dict],
+    okta_update_tag: int,
+) -> None:
     """
     Add application into the graph
     :param neo4j_session: session with the Neo4j server
@@ -273,7 +281,10 @@ def _load_okta_applications(neo4j_session, okta_org_id, app_list, okta_update_ta
 
 
 @timeit
-def _load_application_user(neo4j_session, app_id, user_list, okta_update_tag):
+def _load_application_user(
+    neo4j_session: neo4j.Session, app_id: str, user_list: List[str],
+    okta_update_tag: int,
+) -> None:
     """
     Add application users into the graph
     :param neo4j_session: session with the Neo4j server
@@ -302,7 +313,10 @@ def _load_application_user(neo4j_session, app_id, user_list, okta_update_tag):
 
 
 @timeit
-def _load_application_group(neo4j_session, app_id, group_list, okta_update_tag):
+def _load_application_group(
+    neo4j_session: neo4j.Session, app_id: str, group_list: List[str],
+    okta_update_tag: int,
+) -> None:
     """
     Add application groups into the graph
     :param neo4j_session: session with the Neo4j server
@@ -331,7 +345,10 @@ def _load_application_group(neo4j_session, app_id, group_list, okta_update_tag):
 
 
 @timeit
-def _load_application_reply_urls(neo4j_session, app_id, reply_urls, okta_update_tag):
+def _load_application_reply_urls(
+    neo4j_session: neo4j.Session, app_id: str, reply_urls: List[str],
+    okta_update_tag: int,
+) -> None:
     """
     Add reply urls to their applications
     :param neo4j_session: session with the Neo4j server
@@ -365,7 +382,10 @@ def _load_application_reply_urls(neo4j_session, app_id, reply_urls, okta_update_
 
 
 @timeit
-def sync_okta_applications(neo4j_session, okta_org_id, okta_update_tag, okta_api_key):
+def sync_okta_applications(
+    neo4j_session: neo4j.Session, okta_org_id: str, okta_update_tag: int,
+    okta_api_key: str,
+) -> None:
     """
     Sync okta application
     :param neo4j_session: session from the Neo4j server

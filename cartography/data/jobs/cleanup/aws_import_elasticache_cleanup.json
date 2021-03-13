@@ -1,0 +1,25 @@
+{
+  "statements": [
+    {
+      "query": "MATCH (n:ElasticacheCluster)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (:ElasticacheCluster)<-[r:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (n:ElasticacheTopic)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (:ElasticacheTopic)<-[r:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    }
+  ],
+  "name": "cleanup Elasticache*"
+}

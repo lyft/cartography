@@ -1,7 +1,15 @@
 import hashlib
 import json
 import logging
+from typing import Any
+from typing import Dict
+from typing import Generator
+from typing import List
+from typing import Optional
 
+import boto3
+import botocore
+import neo4j
 from botocore.exceptions import ClientError
 from policyuniverse.policy import Policy
 
@@ -13,29 +21,44 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
-def get_s3_bucket_list(boto3_session):
+def get_s3_bucket_list(boto3_session: boto3.session.Session) -> List[Dict]:
     client = boto3_session.client('s3')
     # NOTE no paginator available for this operation
     buckets = client.list_buckets()
     for bucket in buckets['Buckets']:
-        bucket['Region'] = client.get_bucket_location(Bucket=bucket['Name'])['LocationConstraint']
+        try:
+            bucket['Region'] = client.get_bucket_location(Bucket=bucket['Name'])['LocationConstraint']
+        except ClientError as e:
+            if "AccessDenied" in e.args[0]:
+                # If we don't have perms to call get_bucket_location(), set region to None and keep going
+                logger.warning("get_bucket_location(bucket='{}') AccessDenied, skipping.".format(bucket['Name']))
+                bucket['Region'] = None
+                continue
+            elif "NoSuchBucket" in e.args[0]:
+                logger.warning("get_bucket_location({}) threw NoSuchBucket exception, skipping".format(bucket['Name']))
+                bucket['Region'] = None
+                continue
+            elif "AllAccessDisabled" in e.args[0]:
+                logger.warning("get_bucket_location({}) failed - bucket is disabled, skipping".format(bucket['Name']))
+            else:
+                raise
     return buckets
 
 
 @timeit
-def get_s3_bucket_details(boto3_session, bucket_data):
+def get_s3_bucket_details(boto3_session: boto3.session.Session, bucket_data: Dict) -> Generator[Any, Any, Any]:
     """
     Iterates over all S3 buckets. Yields bucket name (string) and pairs of S3 bucket policies (JSON) and ACLs (JSON)
     """
     # a local store for s3 clients so that we may re-use clients for an AWS region
-    s3_regional_clients = {}
+    s3_regional_clients: Dict[Any, Any] = {}
 
     for bucket in bucket_data['Buckets']:
-        # Use us-east-1 region if no region was recognized for buckets
-        # It was found that client.get_bucket_location does not return a region for buckets
+        # Note: bucket['Region'] is sometimes None because
+        # client.get_bucket_location() does not return a location constraint for buckets
         # in us-east-1 region
         client = s3_regional_clients.get(bucket['Region'])
-        if(not client):
+        if not client:
             client = boto3_session.client('s3', bucket['Region'])
             s3_regional_clients[bucket['Region']] = client
         acl = get_acl(bucket, client)
@@ -44,7 +67,7 @@ def get_s3_bucket_details(boto3_session, bucket_data):
 
 
 @timeit
-def get_policy(bucket, client):
+def get_policy(bucket: Dict, client: botocore.client.BaseClient) -> str:
     """
     Gets the S3 bucket policy. Returns policy string or None if no policy
     """
@@ -53,6 +76,7 @@ def get_policy(bucket, client):
     except ClientError as e:
         # no policy is defined for this bucket
         if "NoSuchBucketPolicy" in e.args[0]:
+            logger.warning("get_bucket_policy({}) failed because the bucket no longer exists".format(bucket['Name']))
             policy = None
         elif "AccessDenied" in e.args[0]:
             logger.warning("Access denied trying to retrieve S3 bucket {} policy".format(bucket['Name']))
@@ -71,7 +95,7 @@ def get_policy(bucket, client):
 
 
 @timeit
-def get_acl(bucket, client):
+def get_acl(bucket: Dict, client: botocore.client.BaseClient) -> Optional[str]:
     """
     Gets the S3 bucket ACL. Returns ACL string
     """
@@ -93,7 +117,7 @@ def get_acl(bucket, client):
 
 
 @timeit
-def _load_s3_acls(neo4j_session, acls, aws_account_id, update_tag):
+def _load_s3_acls(neo4j_session: neo4j.Session, acls: Dict, aws_account_id: str, update_tag: int) -> None:
     """
     Ingest S3 ACL into neo4j.
     """
@@ -125,7 +149,7 @@ def _load_s3_acls(neo4j_session, acls, aws_account_id, update_tag):
 
 
 @timeit
-def _load_s3_policies(neo4j_session, policies, update_tag):
+def _load_s3_policies(neo4j_session: neo4j.Session, policies: List[Dict], update_tag: int) -> None:
     """
     Ingest S3 policy results into neo4j.
     """
@@ -145,7 +169,7 @@ def _load_s3_policies(neo4j_session, policies, update_tag):
     )
 
 
-def _set_default_values(neo4j_session, aws_account_id):
+def _set_default_values(neo4j_session: neo4j.Session, aws_account_id: str) -> None:
     set_defaults = """
     MATCH (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(s:S3Bucket) where NOT EXISTS(s.anonymous_actions)
     SET s.anonymous_access = false, s.anonymous_actions = []
@@ -158,12 +182,15 @@ def _set_default_values(neo4j_session, aws_account_id):
 
 
 @timeit
-def load_s3_details(neo4j_session, s3_details_iter, aws_account_id, update_tag):
+def load_s3_details(
+    neo4j_session: neo4j.Session, s3_details_iter: Generator[Any, Any, Any], aws_account_id: str,
+    update_tag: int,
+) -> None:
     """
     Create dictionaries for all bucket ACLs and all bucket policies so we can import them in a single query for each
     """
-    acls = []
-    policies = []
+    acls: List[Dict] = []
+    policies: List[Dict] = []
     for bucket, acl, policy in s3_details_iter:
         if acl is None:
             continue
@@ -189,7 +216,7 @@ def load_s3_details(neo4j_session, s3_details_iter, aws_account_id, update_tag):
 
 
 @timeit
-def parse_policy(bucket, policy):
+def parse_policy(bucket: str, policyDict: Dict) -> Optional[Dict]:
     """
     Uses PolicyUniverse to parse S3 policies and returns the internet accessibility results
     """
@@ -228,9 +255,9 @@ def parse_policy(bucket, policy):
     #         ]
     #     }
     # }
-    if policy is not None:
+    if policyDict is not None:
         # get just the policy element and convert to JSON because boto3 returns this as string
-        policy = Policy(json.loads(policy['Policy']))
+        policy = Policy(json.loads(policyDict['Policy']))
         if policy.is_internet_accessible():
             return {
                 "bucket": bucket,
@@ -244,7 +271,7 @@ def parse_policy(bucket, policy):
 
 
 @timeit
-def parse_acl(acl, bucket, aws_account_id):
+def parse_acl(acl: Dict, bucket: str, aws_account_id: str) -> List[Dict]:
     """ Parses the AWS ACL object and returns a dict of the relevant data """
     # ACL JSON looks like
     # ...metadata...
@@ -267,7 +294,7 @@ def parse_acl(acl, bucket, aws_account_id):
     #         "ID": "string"
     #     }
     # }
-    acl_list = []
+    acl_list: List[Dict] = []
     for grant in acl['Grants']:
         parsed_acl = None
         if grant['Grantee']['Type'] == 'CanonicalUser':
@@ -315,7 +342,7 @@ def parse_acl(acl, bucket, aws_account_id):
 
 
 @timeit
-def load_s3_buckets(neo4j_session, data, current_aws_account_id, aws_update_tag):
+def load_s3_buckets(neo4j_session: neo4j.Session, data: Dict, current_aws_account_id: str, aws_update_tag: int) -> None:
     ingest_bucket = """
     MERGE (bucket:S3Bucket{id:{BucketName}})
     ON CREATE SET bucket.firstseen = timestamp(), bucket.creationdate = {CreationDate}
@@ -346,23 +373,26 @@ def load_s3_buckets(neo4j_session, data, current_aws_account_id, aws_update_tag)
 
 
 @timeit
-def cleanup_s3_buckets(neo4j_session, common_job_parameters):
+def cleanup_s3_buckets(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('aws_import_s3_buckets_cleanup.json', neo4j_session, common_job_parameters)
 
 
 @timeit
-def cleanup_s3_bucket_acl_and_policy(neo4j_session, common_job_parameters):
+def cleanup_s3_bucket_acl_and_policy(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('aws_import_s3_acl_cleanup.json', neo4j_session, common_job_parameters)
 
 
 @timeit
-def sync(neo4j_session, boto3_session, current_aws_account_id, aws_update_tag, common_job_parameters):
+def sync(
+    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
+    update_tag: int, common_job_parameters: Dict,
+) -> None:
     logger.info("Syncing S3 for account '%s'.", current_aws_account_id)
     bucket_data = get_s3_bucket_list(boto3_session)
 
-    load_s3_buckets(neo4j_session, bucket_data, current_aws_account_id, aws_update_tag)
+    load_s3_buckets(neo4j_session, bucket_data, current_aws_account_id, update_tag)
     cleanup_s3_buckets(neo4j_session, common_job_parameters)
 
     acl_and_policy_data_iter = get_s3_bucket_details(boto3_session, bucket_data)
-    load_s3_details(neo4j_session, acl_and_policy_data_iter, current_aws_account_id, aws_update_tag)
+    load_s3_details(neo4j_session, acl_and_policy_data_iter, current_aws_account_id, update_tag)
     cleanup_s3_bucket_acl_and_policy(neo4j_session, common_job_parameters)
