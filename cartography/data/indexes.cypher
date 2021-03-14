@@ -9,6 +9,7 @@ CREATE INDEX ON :AWSDNSRecord(id);
 CREATE INDEX ON :AWSDNSZone(name);
 CREATE INDEX ON :AWSDNSZone(zoneid);
 CREATE INDEX ON :AWSGroup(arn);
+CREATE INDEX ON :AWSInternetGateway(id);
 CREATE INDEX ON :AWSIpv4CidrBlock(id);
 CREATE INDEX ON :AWSIpv6CidrBlock(id);
 CREATE INDEX ON :AWSLambda(id);

@@ -25,7 +25,7 @@ def get_all_azure_subscriptions(credentials: Credentials) -> List[Dict]:
         logger.error(
             f'failed to fetch subscriptions for the credentials \
             The provided credentials do not have access to any subscriptions - \
-            {e}'
+            {e}',
         )
 
         return []
@@ -54,7 +54,7 @@ def get_current_azure_subscription(credentials: Credentials, subscription_id: st
         logger.error(
             f'failed to fetch subscription for the credentials \
             The provided credentials do not have access to this subscription: {subscription_id} - \
-            {e}'
+            {e}',
         )
 
         return []

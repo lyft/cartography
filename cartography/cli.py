@@ -363,6 +363,16 @@ class CLI:
         else:
             config.azure_client_secret = None
 
+        # Azure config
+        if config.azure_sp_auth and config.azure_client_secret_env_var:
+            logger.debug(
+                "Reading Client Secret for Azure Service Principal Authentication from environment variable %s",
+                config.azure_client_secret_env_var,
+            )
+            config.azure_client_secret = os.environ.get(config.azure_client_secret_env_var)
+        else:
+            config.azure_client_secret = None
+
         # Okta config
         if config.okta_org_id and config.okta_api_key_env_var:
             logger.debug(f"Reading API key for Okta from environment variable {config.okta_api_key_env_var}")

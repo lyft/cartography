@@ -7,7 +7,7 @@ from neo4j import GraphDatabase
 from statsd import StatsClient
 
 import cartography.intel.analysis
-# import cartography.intel.aws
+import cartography.intel.aws
 import cartography.intel.azure
 import cartography.intel.create_indexes
 # import cartography.intel.crxcavator.crxcavator
