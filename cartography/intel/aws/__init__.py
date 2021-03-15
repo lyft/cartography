@@ -43,33 +43,33 @@ def _sync_one_account(
     regions: List[str] = [],
     aws_requested_syncs: Iterable[str] = RESOURCE_FUNCTIONS.keys(),
 ) -> None:
-    # if not regions:
-    #     regions = _autodiscover_account_regions(boto3_session, current_aws_account_id)
-    #
-    # sync_args = _build_aws_sync_kwargs(
-    #     neo4j_session, boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters,
-    # )
-    #
-    # for func_name in aws_requested_syncs:
-    #     if func_name in RESOURCE_FUNCTIONS:
-    #         # Skip permission relationships and tags for now because they rely on data already being in the graph
-    #         if func_name not in ['permission_relationships', 'resourcegroupstaggingapi']:
-    #             RESOURCE_FUNCTIONS[func_name](**sync_args)
-    #         else:
-    #             continue
-    #     else:
-    #         raise ValueError(f'AWS sync function "{func_name}" was specified but does not exist. Did you misspell it?')
+    if not regions:
+        regions = _autodiscover_account_regions(boto3_session, current_aws_account_id)
+
+    sync_args = _build_aws_sync_kwargs(
+        neo4j_session, boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters,
+    )
+
+    for func_name in aws_requested_syncs:
+        if func_name in RESOURCE_FUNCTIONS:
+            # Skip permission relationships and tags for now because they rely on data already being in the graph
+            if func_name not in ['permission_relationships', 'resourcegroupstaggingapi']:
+                RESOURCE_FUNCTIONS[func_name](**sync_args)
+            else:
+                continue
+        else:
+            raise ValueError(f'AWS sync function "{func_name}" was specified but does not exist. Did you misspell it?')
 
     # NOTE clean up all DNS records, regardless of which job created them
     run_cleanup_job('aws_account_dns_cleanup.json', neo4j_session, common_job_parameters)
 
-    # # MAP IAM permissions
-    # if 'permission_relationships' in aws_requested_syncs:
-    #     RESOURCE_FUNCTIONS['permission_relationships'](**sync_args)
-    #
-    # # AWS Tags - Must always be last.
-    # if 'resourcegroupstaggingapi' in aws_requested_syncs:
-    #     RESOURCE_FUNCTIONS['resourcegroupstaggingapi'](**sync_args)
+    # MAP IAM permissions
+    if 'permission_relationships' in aws_requested_syncs:
+        RESOURCE_FUNCTIONS['permission_relationships'](**sync_args)
+
+    # AWS Tags - Must always be last.
+    if 'resourcegroupstaggingapi' in aws_requested_syncs:
+        RESOURCE_FUNCTIONS['resourcegroupstaggingapi'](**sync_args)
 
 
 def _autodiscover_account_regions(boto3_session: boto3.session.Session, account_id: str) -> List[str]:
