@@ -170,7 +170,7 @@ def get_recoverable_databases(credentials: Credentials, subscription_id: str, se
             ),
         )
 
-    except ResourceNotFoundError as e:
+    except ResourceNotFoundError:
         # The API returns a 404 ResourceNotFoundError if no recoverable databases are present.
         return []
     except HttpResponseError as e:
