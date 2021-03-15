@@ -7,6 +7,7 @@ from typing import Tuple
 
 import neo4j
 from azure.core.exceptions import HttpResponseError
+from azure.core.exceptions import ResourceNotFoundError
 from azure.mgmt.sql import SqlManagementClient
 
 from .util.credentials import Credentials
@@ -169,9 +170,10 @@ def get_recoverable_databases(credentials: Credentials, subscription_id: str, se
             ),
         )
 
-    except Exception as e:
-        if e.status_code == 404:  # The API returns a 404 Not Found Error if no recoverable databases are present.
-            return []
+    except ResourceNotFoundError as e:
+        # The API returns a 404 ResourceNotFoundError if no recoverable databases are present.
+        return []
+    except HttpResponseError as e:
         logger.warning(f"Error while retrieving recoverable databases - {e}")
         return []
 
