@@ -7,8 +7,8 @@ from typing import Tuple
 
 import neo4j
 from azure.core.exceptions import HttpResponseError
-from azure.core.exceptions import ResourceNotFoundError
 from azure.mgmt.sql import SqlManagementClient
+from msrestazure.azure_exceptions import CloudError
 
 from .util.credentials import Credentials
 from cartography.util import run_cleanup_job
@@ -170,8 +170,8 @@ def get_recoverable_databases(credentials: Credentials, subscription_id: str, se
             ),
         )
 
-    except ResourceNotFoundError:
-        # The API returns a 404 ResourceNotFoundError if no recoverable databases are present.
+    except CloudError:
+        # The API returns a '404 CloudError: Not Found for url: <url>' if no recoverable databases are present.
         return []
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving recoverable databases - {e}")
