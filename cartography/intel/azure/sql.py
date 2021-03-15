@@ -341,7 +341,7 @@ def _load_server_ad_admins(
     MERGE (a:AzureServerADAdministrator{id: ad_admin.id})
     ON CREATE SET a.firstseen = timestamp()
     SET a.name = ad_admin.name,
-    a.type = ad_admin.administrator_type,
+    a.administratortype = ad_admin.administrator_type,
     a.login = ad_admin.login,
     a.lastupdated = {azure_update_tag}
     WITH a, ad_admin
@@ -712,7 +712,7 @@ def _load_db_threat_detection_policies(
     policy.kind = tdp.kind,
     policy.emailadmins = tdp.email_account_admins,
     policy.emailaddresses = tdp.email_addresses,
-    policy.days = tdp.retention_days,
+    policy.retentiondays = tdp.retention_days,
     policy.state = tdp.state,
     policy.storageendpoint = tdp.storage_endpoint,
     policy.useserverdefault = tdp.use_server_default,
