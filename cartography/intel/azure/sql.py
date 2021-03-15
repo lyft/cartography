@@ -570,7 +570,7 @@ def get_database_details(
         restore_points = get_restore_points(credentials, subscription_id, database)
         transparent_data_encryptions = get_transparent_data_encryptions(credentials, subscription_id, database)
         yield database[
-                  'id'
+            'id'
         ], replication_links, db_threat_detection_policies, restore_points, transparent_data_encryptions
 
 
