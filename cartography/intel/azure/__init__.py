@@ -5,6 +5,7 @@ from typing import List
 import neo4j
 
 from . import compute
+from . import sql
 from . import subscription
 from . import tenant
 from .util.credentials import Authenticator
@@ -20,6 +21,7 @@ def _sync_one_subscription(
     common_job_parameters: Dict,
 ) -> None:
     compute.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
+    sql.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
 
 
 def _sync_tenant(
