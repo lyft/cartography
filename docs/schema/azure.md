@@ -25,7 +25,7 @@
 - [AzureServerADAdministrator](#azureserveradadministrator)
   - [Relationships](#relationships-9)
 - [AzureRecoverableDatabase](#azurerecoverabledatabase)
-  - [Relationships](#relationships-10)  
+  - [Relationships](#relationships-10)
 - [AzureRestorableDroppedDatabase](#azurerestorabledroppeddatabase)
   - [Relationships](#relationships-11)
 - [AzureFailoverGroup](#azurefailovergroup)

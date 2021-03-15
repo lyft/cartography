@@ -9,7 +9,7 @@
 - [Google Cloud Platform](#google-cloud-platform)
 - [GSuite](#gsuite)
 - [CRXcavator Platform](#crxcavator-platform)
-- [Microsoft Azure](#microsoft-azure)  
+- [Microsoft Azure](#microsoft-azure)
 - [More to come!](#more-to-come)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->

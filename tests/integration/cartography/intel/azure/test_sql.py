@@ -5,9 +5,9 @@ from tests.data.azure.sql import DESCRIBE_DNS_ALIASES
 from tests.data.azure.sql import DESCRIBE_ELASTIC_POOLS
 from tests.data.azure.sql import DESCRIBE_FAILOVER_GROUPS
 from tests.data.azure.sql import DESCRIBE_RECOVERABLE_DATABASES
-from tests.data.azure.sql import DESCRIBE_RESTORE_POINTS
-from tests.data.azure.sql import DESCRIBE_RESTORABLE_DROPPED_DATABASES
 from tests.data.azure.sql import DESCRIBE_REPLICATION_LINKS
+from tests.data.azure.sql import DESCRIBE_RESTORABLE_DROPPED_DATABASES
+from tests.data.azure.sql import DESCRIBE_RESTORE_POINTS
 from tests.data.azure.sql import DESCRIBE_SERVERS
 from tests.data.azure.sql import DESCRIBE_THREAT_DETECTION_POLICY
 from tests.data.azure.sql import DESCRIBE_TRANSPARENT_DATA_ENCRYPTIONS
