@@ -452,22 +452,22 @@ Representation of an [AzureSQLDatabase](https://docs.microsoft.com/en-us/rest/ap
 - Azure SQL Database contains one or more Azure Replication Links.
 
         ```
-        (Azure SQL Database)-[CONTAINS]->(AzureReplicationLink)
+        (AzureSQLDatabase)-[CONTAINS]->(AzureReplicationLink)
         ```
 - Azure SQL Database contains a Database Threat Detection Policy.
 
         ```
-        (Azure SQL Database)-[CONTAINS]->(AzureDatabaseThreatDetectionPolicy)
+        (AzureSQLDatabase)-[CONTAINS]->(AzureDatabaseThreatDetectionPolicy)
         ```
 - Azure SQL Database contains one or more Restore Points.
 
         ```
-        (Azure SQL Database)-[CONTAINS]->(AzureRestorePoint)
+        (AzureSQLDatabase)-[CONTAINS]->(AzureRestorePoint)
         ```
 - Azure SQL Database contains Transparent Data Encryption.
 
         ```
-        (Azure SQL Database)-[CONTAINS]->(AzureTransparentDataEncryption)
+        (AzureSQLDatabase)-[CONTAINS]->(AzureTransparentDataEncryption)
         ```
 
 ## AzureReplicationLink
@@ -497,7 +497,7 @@ Representation of an [AzureReplicationLink](https://docs.microsoft.com/en-us/res
 - Azure SQL Database contains one or more Azure Replication Links.
 
         ```
-        (Azure SQL Database)-[CONTAINS]->(AzureReplicationLink)
+        (AzureSQLDatabase)-[CONTAINS]->(AzureReplicationLink)
         ```
 
 ## AzureDatabaseThreatDetectionPolicy
@@ -525,7 +525,7 @@ Representation of an [AzureDatabaseThreatDetectionPolicy](https://docs.microsoft
 - Azure SQL Database contains a Database Threat Detection Policy.
 
         ```
-        (Azure SQL Database)-[CONTAINS]->(AzureDatabaseThreatDetectionPolicy)
+        (AzureSQLDatabase)-[CONTAINS]->(AzureDatabaseThreatDetectionPolicy)
         ```
 
 ## AzureRestorePoint
@@ -548,7 +548,7 @@ Representation of an [AzureRestorePoint](https://docs.microsoft.com/en-us/rest/a
 - Azure SQL Database contains one or more Restore Points.
 
         ```
-        (Azure SQL Database)-[CONTAINS]->(AzureRestorePoint)
+        (AzureSQLDatabase)-[CONTAINS]->(AzureRestorePoint)
         ```
 
 ## AzureTransparentDataEncryption
@@ -569,5 +569,5 @@ Representation of an [AzureTransparentDataEncryption](https://docs.microsoft.com
 - Azure SQL Database contains Transparent Data Encryption.
 
         ```
-        (Azure SQL Database)-[CONTAINS]->(AzureTransparentDataEncryption)
+        (AzureSQLDatabase)-[CONTAINS]->(AzureTransparentDataEncryption)
         ```
