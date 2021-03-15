@@ -42,7 +42,7 @@
   - [Relationships](#relationships-17)
 - [AzureTransparentDataEncryption](#azuretransparentdataencryption)
   - [Relationships](#relationships-18)
-  
+
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 

@@ -124,7 +124,7 @@ DESCRIBE_FAILOVER_GROUPS = [
                 "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2",
                 "location": "Central India",
                 "replication_role": "Secondary",
-            }
+            },
         ],
         "server_id": server1,
     },
@@ -140,7 +140,7 @@ DESCRIBE_FAILOVER_GROUPS = [
                 "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1",
                 "location": "Central India",
                 "replication_role": "Primary",
-            }
+            },
         ],
         "server_id": server2,
     },
