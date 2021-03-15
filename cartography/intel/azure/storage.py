@@ -486,6 +486,7 @@ def _load_tables(neo4j_session: neo4j.Session, tables: List[Dict], update_tag: i
     MERGE (t:AzureStorageTable{id: table.id})
     ON CREATE SET t.firstseen = timestamp(), t.type = table.type
     SET t.name = table.name,
+    t.tablename = table.table_name,
     t.lastupdated = {azure_update_tag}
     WITH t, table
     MATCH (ts:AzureStorageTableService{id: table.service_id})
@@ -574,7 +575,7 @@ def _load_shares(neo4j_session: neo4j.Session, shares: List[Dict], update_tag: i
     share.accesstierchangetime = s.access_tier_change_time,
     share.accesstierstatus = s.access_tier_status,
     share.deletedtime = s.deleted_time,
-    share.enabledProtocols = s.enabled_protocols,
+    share.enabledprotocols = s.enabled_protocols,
     share.remainingretentiondays = s.remaining_retention_days,
     share.shareusagebytes = s.share_usage_bytes,
     share.version = s.version
@@ -671,7 +672,7 @@ def _load_blob_containers(
     bc.lastmodifiedtime = blob.last_modified_time,
     bc.remainingretentiondays = blob.remaining_retention_days,
     bc.version = blob.version,
-    bc.immutabilitypolicy = blob.has_immutability_policy,
+    bc.hasimmutabilitypolicy = blob.has_immutability_policy,
     bc.haslegalhold = blob.has_legal_hold,
     bc.leaseduration = blob.leaseDuration
     WITH bc, blob

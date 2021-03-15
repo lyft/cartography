@@ -197,3 +197,258 @@ Representation of an [Azure Snapshot](https://docs.microsoft.com/en-us/rest/api/
         ```
         (AzureSubscription)-[RESOURCE]->(AzureSnapshot)
         ```
+
+## AzureStorageAccount
+
+Representation of an [AzureStorageAccount](https://docs.microsoft.com/en-us/rest/api/storagerp/storageaccounts).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| Fully qualified resource ID for the resource.|
+|type | The type of the resource.|
+|location | The geo-location where the resource lives.|
+|resourcegroup | The Resource Group where the storage account is created|
+|name | The name of the resource.|
+|kind | Gets the Kind of the resource.|
+|creationtime | Gets the creation date and time of the storage account in UTC.|
+|hnsenabled | Specifies if the Account HierarchicalNamespace is enabled.|
+|primarylocation | Gets the location of the primary data center for the storage account.|
+|secondarylocation | Gets the location of the geo-replicated secondary for the storage account.|
+|provisioningstate | Gets the status of the storage account at the time the operation was called.|
+|statusofprimary | Gets the status availability status of the primary location of the storage account.|
+|statusofsecondary | Gets the status availability status of the secondary location of the storage account.|
+|supportshttpstrafficonly | Allows https traffic only to storage service if sets to true.|
+
+### Relationships
+
+- Azure Subscription contains one or more Storage Accounts.
+
+        ```
+        (AzureSubscription)-[RESOURCE]->(AzureStorageAccount)
+        ```
+- Azure Storage Accounts uses one or more Queue Services.
+
+        ```
+        (AzureStorageAccount)-[USES]->(AzureStorageQueueService)
+        ```
+- Azure Storage Accounts uses one or more Table Services.
+
+        ```
+        (AzureStorageAccount)-[USES]->(AzureStorageTableService)
+        ```
+- Azure Storage Accounts uses one or more File Services.
+
+        ```
+        (AzureStorageAccount)-[USES]->(AzureStorageFileService)
+        ```
+- Azure Storage Accounts uses one or more Blob Services.
+
+        ```
+        (AzureStorageAccount)-[USES]->(AzureStorageBlobService)
+        ```
+
+## AzureStorageQueueService
+
+Representation of an [AzureStorageQueueService](https://docs.microsoft.com/en-us/rest/api/storagerp/queueservices).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| Fully qualified resource ID for the resource.|
+|type | The type of the resource.|
+|name | The name of the queue service.|
+
+### Relationships
+
+- Azure Storage Accounts uses one or more Queue Services.
+
+        ```
+        (AzureStorageAccount)-[USES]->(AzureStorageQueueService)
+        ```
+- Queue Service contains one or more queues.
+
+        ```
+        (AzureStorageQueueService)-[CONTAINS]->(AzureStorageQueue)
+        ```
+
+## AzureStorageTableService
+
+Representation of an [AzureStorageTableService](https://docs.microsoft.com/en-us/rest/api/storagerp/tableservices).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| Fully qualified resource ID for the resource.|
+|type | The type of the resource.|
+|name | The name of the table service.|
+
+### Relationships
+
+- Azure Storage Accounts uses one or more Table Services.
+
+        ```
+        (AzureStorageAccount)-[USES]->(AzureStorageTableService)
+        ```
+- Table Service contains one or more tables.
+
+        ```
+        (AzureStorageTableService)-[CONTAINS]->(AzureStorageTable)
+        ```
+
+## AzureStorageFileService
+
+Representation of an [AzureStorageFileService](https://docs.microsoft.com/en-us/rest/api/storagerp/fileservices).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| Fully qualified resource ID for the resource.|
+|type | The type of the resource.|
+|name | The name of the file service.|
+
+### Relationships
+
+- Azure Storage Accounts uses one or more File Services.
+
+        ```
+        (AzureStorageAccount)-[USES]->(AzureStorageFileService)
+        ```
+- Table Service contains one or more file shares.
+
+        ```
+        (AzureStorageFileService)-[CONTAINS]->(AzureStorageFileShare)
+        ```
+
+## AzureStorageBlobService
+
+Representation of an [AzureStorageBlobService](https://docs.microsoft.com/en-us/rest/api/storagerp/blobservices).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| Fully qualified resource ID for the resource.|
+|type | The type of the resource.|
+|name | The name of the blob service.|
+
+### Relationships
+
+- Azure Storage Accounts uses one or more Blob Services.
+
+        ```
+        (AzureStorageAccount)-[USES]->(AzureStorageBlobService)
+        ```
+- Blob Service contains one or more blob containers.
+
+        ```
+        (AzureStorageBlobService)-[CONTAINS]->(AzureStorageBlobContainer)
+        ```
+
+## AzureStorageQueue
+
+Representation of an [AzureStorageQueue](https://docs.microsoft.com/en-us/rest/api/storagerp/queue).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| Fully qualified resource ID for the resource.|
+|type | The type of the resource.|
+|name | The name of the queue.|
+
+### Relationships
+
+- Queue Service contains one or more queues.
+
+        ```
+        (AzureStorageQueueService)-[CONTAINS]->(AzureStorageQueue)
+        ```
+
+## AzureStorageTable
+
+Representation of an [AzureStorageTable](https://docs.microsoft.com/en-us/rest/api/storagerp/table).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| Fully qualified resource ID for the resource.|
+|type | The type of the resource.|
+|name | The name of the table resource.|
+|tablename | Table name under the specified account.|
+
+### Relationships
+
+- Table Service contains one or more tables.
+
+        ```
+        (AzureStorageTableService)-[CONTAINS]->(AzureStorageTable)
+        ```
+
+## AzureStorageFileShare
+
+Representation of an [AzureStorageFileShare](https://docs.microsoft.com/en-us/rest/api/storagerp/fileshares).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| Fully qualified resource ID for the resource.|
+|type | The type of the resource.|
+|name | The name of the resource.|
+|lastmodifiedtime | Specifies the date and time the share was last modified.|
+|sharequota | The maximum size of the share, in gigabytes.|
+|accesstier | Specifies the access tier for the share.|
+|deleted | Indicates whether the share was deleted.|
+|accesstierchangetime | Indicates the last modification time for share access tier.|
+|accesstierstatus | Indicates if there is a pending transition for access tier.|
+|deletedtime | The deleted time if the share was deleted.|
+|enabledprotocols | The authentication protocol that is used for the file share.|
+|remainingretentiondays | Remaining retention days for share that was soft deleted.|
+|shareusagebytes | The approximate size of the data stored on the share.|
+|version | The version of the share.|
+
+### Relationships
+
+- File Service contains one or more file shares.
+
+        ```
+        (AzureStorageTableService)-[CONTAINS]->(AzureStorageFileShare)
+        ```
+
+## AzureStorageBlobContainer
+
+Representation of an [AzureStorageBlobContainer](https://docs.microsoft.com/en-us/rest/api/storagerp/blobcontainers).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| Fully qualified resource ID for the resource.|
+|type | The type of the resource.|
+|name | The name of the resource.|
+|deleted | Indicates whether the blob container was deleted.|
+|deletedtime | Blob container deletion time.|
+|defaultencryptionscope | Default the container to use specified encryption scope for all writes.|
+|publicaccess | Specifies whether data in the container may be accessed publicly and the level of access.|
+|leasestatus | The lease status of the container.|
+|leasestate | Lease state of the container.|
+|lastmodifiedtime | Specifies the date and time the container was last modified.|
+|remainingretentiondays | Specifies the remaining retention days for soft deleted blob container.|
+|version | The version of the deleted blob container.|
+|hasimmutabilitypolicy | Specifies the if the container has an ImmutabilityPolicy or not.|
+|haslegalhold | Specifies if the container has any legal hold tags.|
+|leaseduration | Specifies whether the lease on a container is of infinite or fixed duration, only when the container is leased.|
+
+### Relationships
+
+- Blob Service contains one or more blob containers.
+
+        ```
+        (AzureStorageBlobService)-[CONTAINS]->(AzureStorageBlobContainer)
+        ```
