@@ -5,8 +5,8 @@ from typing import List
 import neo4j
 
 from . import compute
-from . import subscription
 from . import storage
+from . import subscription
 from . import tenant
 from .util.credentials import Authenticator
 from .util.credentials import Credentials

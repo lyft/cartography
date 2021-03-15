@@ -47,7 +47,7 @@ DESCRIBE_QUEUE_SERVICES = [
         "name": "QS2",
         "type": "Microsoft.Storage/storageAccounts/queueServices",
         "storage_account_id": sa2,
-    }
+    },
 ]
 
 
@@ -63,7 +63,7 @@ DESCRIBE_TABLE_SERVICES = [
         "name": "TS2",
         "type": "Microsoft.Storage/storageAccounts/tableServices",
         "storage_account_id": sa2,
-    }
+    },
 ]
 
 
@@ -79,7 +79,7 @@ DESCRIBE_FILE_SERVICES = [
         "name": "FS2",
         "type": "Microsoft.Storage/storageAccounts/fileServices",
         "storage_account_id": sa2,
-    }
+    },
 ]
 
 
@@ -95,7 +95,7 @@ DESCRIBE_BLOB_SERVICES = [
         "name": "BS2",
         "type": "Microsoft.Storage/storageAccounts/blobServices",
         "storage_account_id": sa2,
-    }
+    },
 ]
 
 
@@ -111,7 +111,7 @@ DESCRIBE_QUEUE = [
         "name": "queue2",
         "type": "Microsoft.Storage/storageAccounts/queueServices/queues",
         "service_id": sa2 + "/queueServices/QS2",
-    }
+    },
 ]
 
 
@@ -127,7 +127,7 @@ DESCRIBE_TABLES = [
         "name": "table2",
         "type": "Microsoft.Storage/storageAccounts/tableServices/tables",
         "service_id": sa2 + "/tableServices/TS2",
-    }
+    },
 ]
 
 
@@ -155,7 +155,7 @@ DESCRIBE_FILE_SHARES = [
         "version": "1234567890",
         "remaining_retention_days": 30,
         "service_id": sa2 + "/fileServices/FS2",
-    }
+    },
 ]
 
 
@@ -185,5 +185,5 @@ DESCRIBE_BLOB_CONTAINERS = [
         "has_immutability_policy": False,
         "has_legal_hold": False,
         "service_id": sa2 + "/blobServices/BS2",
-    }
+    },
 ]

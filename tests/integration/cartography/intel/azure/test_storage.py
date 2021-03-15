@@ -6,8 +6,8 @@ from tests.data.azure.storage import DESCRIBE_FILE_SHARES
 from tests.data.azure.storage import DESCRIBE_QUEUE
 from tests.data.azure.storage import DESCRIBE_QUEUE_SERVICES
 from tests.data.azure.storage import DESCRIBE_STORAGE_ACCOUNTS
-from tests.data.azure.storage import DESCRIBE_TABLES
 from tests.data.azure.storage import DESCRIBE_TABLE_SERVICES
+from tests.data.azure.storage import DESCRIBE_TABLES
 
 TEST_SUBSCRIPTION_ID = '00-00-00-00'
 TEST_RESOURCE_GROUP = 'TestRG'

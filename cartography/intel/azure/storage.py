@@ -35,7 +35,7 @@ def get_storage_account_list(credentials: Credentials, subscription_id: str) -> 
         storage_account_list = list(map(lambda x: x.as_dict(), client.storage_accounts.list()))
 
     except HttpResponseError as e:
-        logger.warning("Error while retrieving storage accounts - {}".format(e))
+        logger.warning(f"Error while retrieving storage accounts - {e}")
         return []
 
     for storage_account in storage_account_list:
@@ -107,7 +107,8 @@ def get_storage_account_details(
         file_services = get_file_services(credentials, subscription_id, storage_account)
         blob_services = get_blob_services(credentials, subscription_id, storage_account)
         yield storage_account['id'], storage_account['name'], storage_account[
-            'resourceGroup'], queue_services, table_services, file_services, blob_services
+            'resourceGroup'
+        ], queue_services, table_services, file_services, blob_services
 
 
 @timeit
@@ -118,10 +119,11 @@ def get_queue_services(credentials: Credentials, subscription_id: str, storage_a
     try:
         client = get_client(credentials, subscription_id)
         queue_service_list = client.queue_services.list(
-            storage_account['resourceGroup'], storage_account['name']).as_dict()['value']
+            storage_account['resourceGroup'], storage_account['name'],
+        ).as_dict()['value']
 
     except HttpResponseError as e:
-        logger.warning("Error while retrieving queue services list - {}".format(e))
+        logger.warning(f"Error while retrieving queue services list - {e}")
         return []
 
     return queue_service_list
@@ -135,10 +137,11 @@ def get_table_services(credentials: Credentials, subscription_id: str, storage_a
     try:
         client = get_client(credentials, subscription_id)
         table_service_list = client.table_services.list(
-            storage_account['resourceGroup'], storage_account['name']).as_dict()['value']
+            storage_account['resourceGroup'], storage_account['name'],
+        ).as_dict()['value']
 
     except HttpResponseError as e:
-        logger.warning("Error while retrieving table services list - {}".format(e))
+        logger.warning(f"Error while retrieving table services list - {e}")
         return []
 
     return table_service_list
@@ -152,10 +155,11 @@ def get_file_services(credentials: Credentials, subscription_id: str, storage_ac
     try:
         client = get_client(credentials, subscription_id)
         file_service_list = client.file_services.list(
-            storage_account['resourceGroup'], storage_account['name']).as_dict()['value']
+            storage_account['resourceGroup'], storage_account['name'],
+        ).as_dict()['value']
 
     except HttpResponseError as e:
-        logger.warning("Error while retrieving file services list - {}".format(e))
+        logger.warning(f"Error while retrieving file services list - {e}")
         return []
 
     return file_service_list
@@ -168,11 +172,17 @@ def get_blob_services(credentials: Credentials, subscription_id: str, storage_ac
     """
     try:
         client = get_client(credentials, subscription_id)
-        blob_service_list = list(map(lambda x: x.as_dict(), client.blob_services.list(storage_account['resourceGroup'],
-                                                                                      storage_account['name'])))
+        blob_service_list = list(
+            map(
+                lambda x: x.as_dict(), client.blob_services.list(
+                    storage_account['resourceGroup'],
+                    storage_account['name'],
+                ),
+            ),
+        )
 
     except HttpResponseError as e:
-        logger.warning("Error while retrieving blob services list - {}".format(e))
+        logger.warning(f"Error while retrieving blob services list - {e}")
         return []
 
     return blob_service_list
@@ -367,11 +377,17 @@ def get_queues(credentials: Credentials, subscription_id: str, queue_service: Di
     """
     try:
         client = get_client(credentials, subscription_id)
-        queues = list(map(lambda x: x.as_dict(), client.queue.list(queue_service['resource_group_name'],
-                                                                   queue_service['storage_account_name'])))
+        queues = list(
+            map(
+                lambda x: x.as_dict(), client.queue.list(
+                    queue_service['resource_group_name'],
+                    queue_service['storage_account_name'],
+                ),
+            ),
+        )
 
     except HttpResponseError as e:
-        logger.warning("Error while retrieving queues - {}".format(e))
+        logger.warning(f"Error while retrieving queues - {e}")
         return []
 
     return queues
@@ -448,11 +464,17 @@ def get_tables(credentials: Credentials, subscription_id: str, table_service: Di
     """
     try:
         client = get_client(credentials, subscription_id)
-        tables = list(map(lambda x: x.as_dict(), client.table.list(table_service['resource_group_name'],
-                                                                   table_service['storage_account_name'])))
+        tables = list(
+            map(
+                lambda x: x.as_dict(), client.table.list(
+                    table_service['resource_group_name'],
+                    table_service['storage_account_name'],
+                ),
+            ),
+        )
 
     except HttpResponseError as e:
-        logger.warning("Error while retrieving tables - {}".format(e))
+        logger.warning(f"Error while retrieving tables - {e}")
         return []
 
     return tables
@@ -512,8 +534,9 @@ def sync_file_services_details(
 
 
 @timeit
-def get_file_services_details(credentials: Credentials, subscription_id: str, file_services: List[Dict],
-                              ) -> Generator[Any, Any, Any]:
+def get_file_services_details(
+        credentials: Credentials, subscription_id: str, file_services: List[Dict],
+) -> Generator[Any, Any, Any]:
     """
     Returning the shares with their respective file service id.
     """
@@ -529,11 +552,17 @@ def get_shares(credentials: Credentials, subscription_id: str, file_service: Dic
     """
     try:
         client = get_client(credentials, subscription_id)
-        shares = list(map(lambda x: x.as_dict(), client.file_shares.list(file_service['resource_group_name'],
-                                                                         file_service['storage_account_name'])))
+        shares = list(
+            map(
+                lambda x: x.as_dict(), client.file_shares.list(
+                    file_service['resource_group_name'],
+                    file_service['storage_account_name'],
+                ),
+            ),
+        )
 
     except HttpResponseError as e:
-        logger.warning("Error while retrieving file shares - {}".format(e))
+        logger.warning(f"Error while retrieving file shares - {e}")
         return []
 
     return shares
@@ -621,12 +650,18 @@ def get_blob_containers(credentials: Credentials, subscription_id: str, blob_ser
     """
     try:
         client = get_client(credentials, subscription_id)
-        blob_containers = list(map(lambda x: x.as_dict(),
-                                   client.blob_containers.list(blob_service['resource_group_name'],
-                                                               blob_service['storage_account_name'])))
+        blob_containers = list(
+            map(
+                lambda x: x.as_dict(),
+                client.blob_containers.list(
+                    blob_service['resource_group_name'],
+                    blob_service['storage_account_name'],
+                ),
+            ),
+        )
 
     except HttpResponseError as e:
-        logger.warning("Error while retrieving blob_containers - {}".format(e))
+        logger.warning(f"Error while retrieving blob_containers - {e}")
         return []
 
     return blob_containers
@@ -691,7 +726,7 @@ def _load_blob_containers(
 
 @timeit
 def cleanup_azure_storage_accounts(
-        neo4j_session: neo4j.Session, subscription_id: str, common_job_parameters: Dict
+        neo4j_session: neo4j.Session, common_job_parameters: Dict,
 ) -> None:
     run_cleanup_job('azure_storage_account_cleanup.json', neo4j_session, common_job_parameters)
 
@@ -705,4 +740,4 @@ def sync(
     storage_account_list = get_storage_account_list(credentials, subscription_id)
     load_storage_account_data(neo4j_session, subscription_id, storage_account_list, sync_tag)
     sync_storage_account_details(neo4j_session, credentials, subscription_id, storage_account_list, sync_tag)
-    cleanup_azure_storage_accounts(neo4j_session, subscription_id, common_job_parameters)
+    cleanup_azure_storage_accounts(neo4j_session, common_job_parameters)

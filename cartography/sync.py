@@ -16,7 +16,6 @@ import cartography.intel.gcp
 import cartography.intel.github
 import cartography.intel.gsuite
 import cartography.intel.okta
-import cartography.intel.azure
 
 
 logger = logging.getLogger(__name__)
