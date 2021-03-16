@@ -1,3 +1,5 @@
+from unittest import mock
+
 import cartography.intel.aws.iam
 import cartography.intel.aws.permission_relationships
 import tests.data.aws.iam
@@ -136,6 +138,8 @@ def test_map_permissions(neo4j_session):
 
     cartography.intel.aws.permission_relationships.sync(
         neo4j_session,
+        mock.MagicMock,
+        [TEST_REGION],
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG, {
             "permission_relationships_file": "cartography/data/permission_relationships.yaml",

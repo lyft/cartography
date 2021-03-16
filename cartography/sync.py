@@ -8,8 +8,10 @@ from statsd import StatsClient
 
 import cartography.intel.analysis
 import cartography.intel.aws
+import cartography.intel.azure
 import cartography.intel.create_indexes
 import cartography.intel.crxcavator.crxcavator
+import cartography.intel.digitalocean
 import cartography.intel.gcp
 import cartography.intel.github
 import cartography.intel.gsuite
@@ -107,6 +109,7 @@ def run_with_config(sync, config):
         neo4j_driver = GraphDatabase.driver(
             config.neo4j_uri,
             auth=neo4j_auth,
+            max_connection_lifetime=config.neo4j_max_connection_lifetime,
         )
     except neobolt.exceptions.ServiceUnavailable as e:
         logger.debug("Error occurred during Neo4j connect.", exc_info=True)
@@ -118,7 +121,7 @@ def run_with_config(sync, config):
             config.neo4j_uri,
             e,
         )
-        return
+        return 1
     except neobolt.exceptions.AuthError as e:
         logger.debug("Error occurred during Neo4j auth.", exc_info=True)
         if not neo4j_auth:
@@ -139,7 +142,7 @@ def run_with_config(sync, config):
                 ),
                 e,
             )
-        return
+        return 1
     default_update_tag = int(time.time())
     if not config.update_tag:
         config.update_tag = default_update_tag
@@ -163,6 +166,7 @@ def build_default_sync():
         ('crxcavator', cartography.intel.crxcavator.start_extension_ingestion),
         ('okta', cartography.intel.okta.start_okta_ingestion),
         ('github', cartography.intel.github.start_github_ingestion),
+        ('digitalocean', cartography.intel.digitalocean.start_digitalocean_ingestion),
         ('analysis', cartography.intel.analysis.run),
     ])
     return sync
