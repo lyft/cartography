@@ -196,10 +196,10 @@ def load_storage_account_details(
     """
     Create dictionaries for every Azure storage service so we can import them in a single query
     """
-    queue_services = []
-    table_services = []
-    file_services = []
-    blob_services = []
+    queue_services: List[Dict] = []
+    table_services: List[Dict] = []
+    file_services: List[Dict] = []
+    blob_services: List[Dict] = []
 
     for account_id, name, resourceGroup, queue_service, table_service, file_service, blob_service in details:
         if len(queue_service) > 0:
@@ -400,7 +400,7 @@ def load_queue_services_details(
     """
     Create dictionary for the queue so we can import them in a single query
     """
-    queues = []
+    queues: List[Dict] = []
 
     for queue_service_id, queue in details:
         if len(queue) > 0:
@@ -487,7 +487,7 @@ def load_table_services_details(
     """
     Create dictionary for the table so we can import them in a single query
     """
-    tables = []
+    tables: List[Dict] = []
 
     for table_service_id, table in details:
         if len(table) > 0:
@@ -575,7 +575,7 @@ def load_file_services_details(
     """
     Create dictionary for the shares so we can import them in a single query
     """
-    shares = []
+    shares: List[Dict] = []
 
     for file_service_id, share in details:
         if len(share) > 0:
@@ -674,7 +674,7 @@ def load_blob_services_details(
     """
     Create dictionary for the blob containers so we can import them in a single query
     """
-    blob_containers = []
+    blob_containers: List[Dict] = []
 
     for blob_service_id, container in details:
         if len(container) > 0:
