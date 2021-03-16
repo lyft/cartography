@@ -242,7 +242,7 @@ def get_elastic_pools(credentials: Credentials, subscription_id: str, server: Di
 @timeit
 def get_databases(credentials: Credentials, subscription_id: str, server: Dict) -> List[Dict]:
     """
-    Returns details of Databases in a server.
+    Returns details of Databases in a SQL server.
     """
     try:
         client = get_client(credentials, subscription_id)
