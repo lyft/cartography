@@ -16,34 +16,12 @@ from cartography.util import timeit
 logger = logging.getLogger(__name__)
 
 
-def _sync_one_subscription(neo4j_session, credentials, subscription_id, sync_tag, common_job_parameters):
-    # compute.sync(neo4j_session, credentials.arm_credentials, subscription_id, sync_tag, common_job_parameters)
-    cosmosdb.sync(neo4j_session, credentials.arm_credentials, subscription_id, sync_tag, common_job_parameters)
-
-
-def _sync_tenant(neo4j_session, tenant_id, current_user, sync_tag, common_job_parameters):
-    logger.debug("Syncing Azure Tenant: %s", tenant_id)
-    tenant.sync(neo4j_session, tenant_id, current_user, sync_tag, common_job_parameters)
-
-
-def _sync_multiple_subscriptions(neo4j_session, credentials, tenant_id, subscriptions, sync_tag, common_job_parameters):
-    logger.debug("Syncing Azure subscriptions")
-
-    subscription.sync(neo4j_session, tenant_id, subscriptions, sync_tag, common_job_parameters)
-
-    for sub in subscriptions:
-        logger.info("Syncing Azure Subscription with ID '%s'", sub['subscriptionId'])
-
-        _sync_one_subscription(neo4j_session, credentials, sub['subscriptionId'], sync_tag, common_job_parameters)
-
-
-@timeit
-def start_azure_ingestion(neo4j_session, config):
 def _sync_one_subscription(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
     common_job_parameters: Dict,
 ) -> None:
     compute.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
+    cosmosdb.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
 
 
 def _sync_tenant(

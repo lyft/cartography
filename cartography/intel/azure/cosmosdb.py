@@ -347,7 +347,7 @@ def _load_cosmosdb_private_endpoint_connections(
     ON CREATE SET pec.firstseen = timestamp()
     SET pec.lastupdated = {azure_update_tag},
     pec.name = connection.name,
-    pec.privateendpointid = connection.{PrivateEndpointId},
+    pec.privateendpointid = connection.private_endpoint.id,
     pec.status = connection.private_link_service_connection_state.status,
     pec.actionrequired = connection.private_link_service_connection_state.actions_required
     WITH pec
