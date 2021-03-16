@@ -57,11 +57,11 @@ def load_database_account_data(
     UNWIND {database_accounts_list} AS da
     MERGE (d:AzureDatabaseAccount{id: da.id})
     ON CREATE SET d.firstseen = timestamp(),
-    d.name = da.name, d.resourcegroup = da.resourceGroup,
+    d.type = da.type, d.resourcegroup = da.resourceGroup,
     d.location = da.location
     SET d.lastupdated = {azure_update_tag},
     d.kind = da.kind,
-    d.type = da.type,
+    d.name = da.name,
     d.ipranges = da.ipruleslist,
     d.capabilities = da.list_of_capabilities,
     d.documentendpoint = da.document_endpoint,
@@ -165,8 +165,9 @@ def _load_database_account_write_locations(
     """
     ingest_write_location = """
     MERGE (loc:AzureCosmosDBLocation{id: {LocationId}})
-    ON CREATE SET loc.firstseen = timestamp(), loc.locationname = {Name}
+    ON CREATE SET loc.firstseen = timestamp(),
     SET loc.lastupdated = {azure_update_tag},
+    loc.locationname = {Name},
     loc.documentendpoint = {DocumentEndpoint},
     loc.provisioningstate = {ProvisioningState},
     loc.failoverpriority = {FailoverPriority},
@@ -200,8 +201,9 @@ def _load_database_account_read_locations(
     """
     ingest_read_location = """
     MERGE (loc:AzureCosmosDBLocation{id: {LocationId}})
-    ON CREATE SET loc.firstseen = timestamp(), loc.locationname = {Name}
+    ON CREATE SET loc.firstseen = timestamp()
     SET loc.lastupdated = {azure_update_tag},
+    loc.locationname = {Name},
     loc.documentendpoint = {DocumentEndpoint},
     loc.provisioningstate = {ProvisioningState},
     loc.failoverpriority = {FailoverPriority},
@@ -235,8 +237,9 @@ def _load_database_account_associated_locations(
     """
     ingest_associated_location = """
     MERGE (loc:AzureCosmosDBLocation{id: {LocationId}})
-    ON CREATE SET loc.firstseen = timestamp(), loc.locationname = {Name}
+    ON CREATE SET loc.firstseen = timestamp()
     SET loc.lastupdated = {azure_update_tag},
+    loc.locationname = {Name},
     loc.documentendpoint = {DocumentEndpoint},
     loc.provisioningstate = {ProvisioningState},
     loc.failoverpriority = {FailoverPriority},
@@ -554,12 +557,12 @@ def _load_sql_databases(neo4j_session: neo4j.Session, sql_databases: List[Dict],
     ingest_sql_databases = """
     UNWIND {sql_databases_list} AS database
     MERGE (sdb:AzureCosmosDBSqlDatabase{id: database.id})
-    ON CREATE SET sdb.firstseen = timestamp(), sdb.lastupdated = {azure_update_tag}
+    ON CREATE SET sdb.firstseen = timestamp(), sdb.type = database.type,
+    sdb.location = database.location
     SET sdb.name = database.name,
-    sdb.type = database.type,
-    sdb.location = database.location,
     sdb.throughput = database.options.throughput,
-    sdb.maxthroughput = database.options.autoscale_setting.max_throughput
+    sdb.maxthroughput = database.options.autoscale_setting.max_throughput,
+    sdb.lastupdated = {azure_update_tag}
     WITH sdb, database
     MATCH (d:AzureDatabaseAccount{id: database.database_account_id})
     MERGE (d)-[r:CONTAINS]->(sdb)
@@ -582,10 +585,10 @@ def _load_cassandra_keyspaces(neo4j_session: neo4j.Session, cassandra_keyspaces:
     ingest_cassandra_keyspaces = """
     UNWIND {cassandra_keyspaces_list} AS keyspace
     MERGE (ck:AzureCosmosDBCassandraKeyspace{id: keyspace.id})
-    ON CREATE SET ck.firstseen = timestamp(), ck.lastupdated = {azure_update_tag}
-    SET ck.name = keyspace.name,
-    ck.type = keyspace.type,
+    ON CREATE SET ck.firstseen = timestamp(), ck.type = keyspace.type,
     ck.location = keyspace.location,
+    SET ck.name = keyspace.name,
+    ck.lastupdated = {azure_update_tag},
     ck.throughput = keyspace.options.throughput,
     ck.maxthroughput = keyspace.options.autoscale_setting.max_throughput
     WITH ck, keyspace
@@ -610,12 +613,12 @@ def _load_mongodb_databases(neo4j_session: neo4j.Session, mongodb_databases: Lis
     ingest_mongodb_databases = """
     UNWIND {mongodb_databases_list} AS database
     MERGE (mdb:AzureCosmosDBMongoDBDatabase{id: database.id})
-    ON CREATE SET mdb.firstseen = timestamp(), mdb.lastupdated = {azure_update_tag}
+    ON CREATE SET mdb.firstseen = timestamp(), mdb.type = database.type,
+    mdb.location = database.location
     SET mdb.name = database.name,
-    mdb.type = database.type,
-    mdb.location = database.location,
     mdb.throughput = database.options.throughput,
-    mdb.maxthroughput = database..options.autoscale_setting.max_throughput
+    mdb.maxthroughput = database..options.autoscale_setting.max_throughput,
+    mdb.lastupdated = {azure_update_tag}
     WITH mdb, database
     MATCH (d:AzureDatabaseAccount{id: database.database_account_id})
     MERGE (d)-[r:CONTAINS]->(mdb)
@@ -638,10 +641,10 @@ def _load_table_resources(neo4j_session: neo4j.Session, table_resources: List[Di
     ingest_tables = """
     UNWIND {table_resources_list} AS table
     MERGE (tr:AzureCosmosDBTableResource{id: table.id})
-    ON CREATE SET tr.firstseen = timestamp(), tr.lastupdated = {azure_update_tag}
+    ON CREATE SET tr.firstseen = timestamp(), tr.type = table.type,
+    tr.location = table.location
     SET tr.name = table.name,
-    tr.type = table.type,
-    tr.location = table.location,
+    tr.lastupdated = {azure_update_tag},
     tr.throughput = table.options.throughput,
     tr.maxthroughput = table.options.autoscale_setting.max_throughput
     WITH tr, table
@@ -723,10 +726,10 @@ def _load_sql_containers(neo4j_session: neo4j.Session, containers: List[Dict], u
     ingest_containers = """
     UNWIND {sql_containers_list} AS container
     MERGE (c:AzureCosmosDBSqlContainer{id: container.id})
-    ON CREATE SET c.firstseen = timestamp(), c.lastupdated = {azure_update_tag}
+    ON CREATE SET c.firstseen = timestamp(), c.type = container.type,
+    c.location = container.location
     SET c.name = container.name,
-    c.type = container.type,
-    c.location = container.location,
+    c.lastupdated = {azure_update_tag},
     c.throughput = container.options.throughput,
     c.maxthroughput = container.options.autoscale_setting.max_throughput,
     c.container = container.resource.id,
@@ -816,10 +819,10 @@ def _load_cassandra_tables(neo4j_session: neo4j.Session, cassandra_tables: List[
     ingest_cassandra_tables = """
     UNWIND {cassandra_tables_list} AS table
     MERGE (ct:AzureCosmosDBCassandraTable{id: table.{ResourceId}})
-    ON CREATE SET ct.firstseen = timestamp(), ct.lastupdated = {azure_update_tag}
+    ON CREATE SET ct.firstseen = timestamp(), ct.type = table.type,
+    ct.location = table.location
     SET ct.name = table.name,
-    ct.type = table.type,
-    ct.location = table.location,
+    ct.lastupdated = {azure_update_tag},
     ct.throughput = table.options.throughput,
     ct.maxthroughput = table.options.autoscale_setting.max_throughput,
     ct.container = table.resource.id,
@@ -906,10 +909,10 @@ def _load_collections(neo4j_session: neo4j.Session, collections: List[Dict], upd
     ingest_collections = """
     UNWIND {mongodb_collections_list} AS collection
     MERGE (col:AzureCosmosDBMongoDBCollection{id: collection.id})
-    ON CREATE SET col.firstseen = timestamp(), col.lastupdated = {azure_update_tag}
+    ON CREATE SET col.firstseen = timestamp(), col.type = collection.type,
+    col.location = collection.location
     SET col.name = collection.name,
-    col.type = collection.type,
-    col.location = collection.location,
+    col.lastupdated = {azure_update_tag},
     col.throughput = collection.options.throughput,
     col.maxthroughput = collection.options.autoscale_setting.max_throughput,
     col.collectionname = collection.resource.id,
