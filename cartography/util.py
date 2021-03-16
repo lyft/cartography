@@ -89,4 +89,3 @@ def aws_handle_regions(func):
             else:
                 raise
     return inner_function
-
