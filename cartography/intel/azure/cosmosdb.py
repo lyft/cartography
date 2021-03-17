@@ -104,6 +104,15 @@ def load_database_account_data(
         azure_update_tag=azure_update_tag,
     )
 
+
+@timeit
+def load_database_account_data_resources(
+        neo4j_session: neo4j.Session, subscription_id: str, database_account_list: List[Dict], azure_update_tag: int,
+) -> None:
+    """
+    Loading all the resources (like cors policy, failover policy, private endpoint connections, virtual
+    network rules and locations) that we get as a part of the database account data itself.
+    """
     for database_account in database_account_list:
         # cleanup existing cors policy properties
         run_cleanup_job(
@@ -136,24 +145,15 @@ def load_database_account_data(
         # Selecting only the unique location entries
         loc = [i for n, i in enumerate(locations) if i not in locations[n + 1:]]
         if len(loc) > 0:
-            _load_database_account_locations(neo4j_session, database_account, loc, azure_update_tag)
-
-
-@timeit
-def _load_database_account_locations(
-        neo4j_session: neo4j.Session, database_account: Dict, locations: Any, azure_update_tag: int,
-) -> None:
-    """
-    Getting locations enabled with read/write permissions for the database account.
-    """
-    database_account_id = database_account['id']
-    for loc in locations:
-        if 'write_locations' in database_account and loc in database_account['write_locations']:
-            _load_database_account_write_locations(neo4j_session, database_account_id, loc, azure_update_tag)
-        if 'read_locations' in database_account and loc in database_account['read_locations']:
-            _load_database_account_read_locations(neo4j_session, database_account_id, loc, azure_update_tag)
-        if 'locations' in database_account and loc in database_account['locations']:
-            _load_database_account_associated_locations(neo4j_session, database_account_id, loc, azure_update_tag)
+            database_account_id = database_account['id']
+            for loc in locations:
+                if 'write_locations' in database_account and loc in database_account['write_locations']:
+                    _load_database_account_write_locations(neo4j_session, database_account_id, loc, azure_update_tag)
+                if 'read_locations' in database_account and loc in database_account['read_locations']:
+                    _load_database_account_read_locations(neo4j_session, database_account_id, loc, azure_update_tag)
+                if 'locations' in database_account and loc in database_account['locations']:
+                    _load_database_account_associated_locations(neo4j_session, database_account_id, loc,
+                                                                azure_update_tag)
 
 
 @timeit
@@ -346,7 +346,7 @@ def _load_cosmosdb_private_endpoint_connections(
 
     ingest_private_endpoint_connections = """
     UNWIND {private_endpoint_connections_list} AS connection
-    MERGE (pec:AzureCosmosDBPrivateEndpointConnection{id: connection.id})
+    MERGE (pec:AzureCDBPrivateEndpointConnection{id: connection.id})
     ON CREATE SET pec.firstseen = timestamp()
     SET pec.lastupdated = {azure_update_tag},
     pec.name = connection.name,
@@ -617,7 +617,7 @@ def _load_mongodb_databases(neo4j_session: neo4j.Session, mongodb_databases: Lis
     mdb.location = database.location
     SET mdb.name = database.name,
     mdb.throughput = database.options.throughput,
-    mdb.maxthroughput = database..options.autoscale_setting.max_throughput,
+    mdb.maxthroughput = database.options.autoscale_setting.max_throughput,
     mdb.lastupdated = {azure_update_tag}
     WITH mdb, database
     MATCH (d:AzureDatabaseAccount{id: database.database_account_id})
@@ -964,6 +964,7 @@ def sync(
     logger.info("Syncing Azure CosmosDB for subscription '%s'.", subscription_id)
     database_account_list = get_database_account_list(credentials, subscription_id)
     load_database_account_data(neo4j_session, subscription_id, database_account_list, sync_tag)
+    load_database_account_data_resources(neo4j_session, subscription_id, database_account_list, sync_tag)
     sync_database_account_details(neo4j_session, credentials, subscription_id, database_account_list, sync_tag,
                                   common_job_parameters)
     cleanup_azure_database_accounts(neo4j_session, common_job_parameters)

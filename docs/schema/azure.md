@@ -261,7 +261,7 @@ Representation of an [AzureDatabaseAccount](https://docs.microsoft.com/en-us/res
 - Azure Database Account is configured with one or more private endpoint connections.
 
         ```
-        (AzureDatabaseAccount)-[CONFIGURED_WITH]->(AzureCosmosDBPrivateEndpointConnection)
+        (AzureDatabaseAccount)-[CONFIGURED_WITH]->(AzureCDBPrivateEndpointConnection)
         ```
 - Azure Database Account is configured with one or more virtual network rules.
 
@@ -360,7 +360,7 @@ Representation of an Azure Database Account Failover Policy.
         (AzureDatabaseAccount)-[CONTAINS]->(AzureDatabaseAccountFailoverPolicy)
         ```
 
-## AzureCosmosDBPrivateEndpointConnection
+## AzureCDBPrivateEndpointConnection
 
 Representation of an Azure Cosmos DB Private Endpoint Connection.
 
@@ -379,7 +379,7 @@ Representation of an Azure Cosmos DB Private Endpoint Connection.
 - Azure Database Account is configured with one or more private endpoint connections.
 
         ```
-        (AzureDatabaseAccount)-[CONFIGURED_WITH]->(AzureCosmosDBPrivateEndpointConnection)
+        (AzureDatabaseAccount)-[CONFIGURED_WITH]->(AzureCDBPrivateEndpointConnection)
         ```
 
 ## AzureCosmosDBVirtualNetworkRule

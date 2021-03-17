@@ -134,7 +134,7 @@ CREATE INDEX ON :AzureDatabaseAccount(id);
 CREATE INDEX ON :AzureCosmosDBLocation(id);
 CREATE INDEX ON :AzureCosmosDBCorsPolicy(id);
 CREATE INDEX ON :AzureDatabaseAccountFailoverPolicy(id);
-CREATE INDEX ON :AzureCosmosDBPrivateEndpointConnection(id);
+CREATE INDEX ON :AzureCDBPrivateEndpointConnection(id);
 CREATE INDEX ON :AzureCosmosDBVirtualNetworkRule(id);
 CREATE INDEX ON :AzureCosmosDBSqlDatabase(id);
 CREATE INDEX ON :AzureCosmosDBCassandraKeyspace(id);
