@@ -416,7 +416,8 @@ def get_database_account_details(
         credentials: Credentials, subscription_id: str, database_account_list: List[Dict],
 ) -> Generator[Any, Any, Any]:
     """
-    Iterate over the database accounts and return the list of SQL and MongoDB databases, Cassandra keyspaces and table resources associated with each database account.
+    Iterate over the database accounts and return the list of SQL and MongoDB databases, Cassandra keyspaces and
+    table resources associated with each database account.
     """
     for database_account in database_account_list:
         sql_databases = get_sql_databases(credentials, subscription_id, database_account)
