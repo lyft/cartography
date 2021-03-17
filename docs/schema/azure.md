@@ -18,6 +18,32 @@
   - [Relationships](#relationships-5)
 - [AzureSnapshot](#azuresnapshot)
   - [Relationships](#relationships-6)
+- [AzureDatabaseAccount](#azuredatabaseaccount)
+  - [Relationships](#relationships-7)
+- [AzureCosmosDBLocation](#azurecosmosdblocation)
+  - [Relationships](#relationships-8)
+- [AzureCosmosDBCorsPolicy](#azurecosmosdbcorspolicy)
+  - [Relationships](#relationships-9)
+- [AzureDatabaseAccountFailoverPolicy](#azuredatabaseaccountfailoverpolicy)
+  - [Relationships](#relationships-10)
+- [AzureCDBPrivateEndpointConnection](#azurecdbprivateendpointconnection)
+  - [Relationships](#relationships-11)
+- [AzureCosmosDBVirtualNetworkRule](#azurecosmosdbvirtualnetworkrule)
+  - [Relationships](#relationships-12)
+- [AzureCosmosDBSqlDatabase](#azurecosmosdbsqldatabase)
+  - [Relationships](#relationships-13)
+- [AzureCosmosDBCassandraKeyspace](#azurecosmosdbcassandrakeyspace)
+  - [Relationships](#relationships-14)
+- [AzureCosmosDBMongoDBDatabase](#azurecosmosdbmongodbdatabase)
+  - [Relationships](#relationships-15)
+- [AzureCosmosDBTableResource](#azurecosmosdbtableresource)
+  - [Relationships](#relationships-16)
+- [AzureCosmosDBSqlContainer](#azurecosmosdbsqlcontainer)
+  - [Relationships](#relationships-17)
+- [AzureCosmosDBCassandraTable](#azurecosmosdbcassandratable)
+  - [Relationships](#relationships-18)
+- [AzureCosmosDBMongoDBCollection](#azurecosmosdbmongodbcollection)
+  - [Relationships](#relationships-19)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -238,8 +264,7 @@ Representation of an [AzureDatabaseAccount](https://docs.microsoft.com/en-us/res
         ```
         (AzureSubscription)-[RESOURCE]->(AzureDatabaseAccount)
         ```
-- Azure Database Account has write permissions from, read permissions from and is associated with Azure CosmosDB 
-  Locations.
+- Azure Database Account has write permissions from, read permissions from and is associated with Azure CosmosDB Locations.
 
         ```
         (AzureDatabaseAccount)-[WRITE_PERMISSIONS_FROM]->(AzureCosmosDBLocation)
@@ -306,8 +331,7 @@ Representation of an Azure CosmosDB Location.
 
 ### Relationships
 
-- Azure Database Account has write permissions from, read permissions from and is associated with Azure CosmosDB 
-  Locations.
+- Azure Database Account has write permissions from, read permissions from and is associated with Azure CosmosDB Locations.
 
         ```
         (AzureDatabaseAccount)-[WRITE_PERMISSIONS_FROM]->(AzureCosmosDBLocation)

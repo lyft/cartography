@@ -27,7 +27,7 @@ DESCRIBE_DATABASE_ACCOUNTS = [
         "consistency_policy": {
             "default_consistency_level": "Session",
             "max_interval_in_seconds": 5,
-            "max_staleness_prefix": 100
+            "max_staleness_prefix": 100,
         },
         "write_locations": [
             {
@@ -35,14 +35,14 @@ DESCRIBE_DATABASE_ACCOUNTS = [
                 "location_name": "East US",
                 "document_endpoint": "https://DA1-eastus.documents.azure.com:443/",
                 "provisioning_state": "Succeeded",
-                "failover_priority": 0
+                "failover_priority": 0,
             },
             {
                 "id": "DA1-centralindia",
                 "location_name": "Central India",
                 "document_endpoint": "https://DA1-centralindia.documents.azure.com:443/",
                 "provisioning_state": "Succeeded",
-                "failover_priority": 0
+                "failover_priority": 0,
             },
         ],
         "read_locations": [
@@ -51,14 +51,14 @@ DESCRIBE_DATABASE_ACCOUNTS = [
                 "location_name": "East US",
                 "document_endpoint": "https://DA1-eastus.documents.azure.com:443/",
                 "provisioning_state": "Succeeded",
-                "failover_priority": 0
+                "failover_priority": 0,
             },
             {
                 "id": "DA1-centralindia",
                 "location_name": "Central India",
                 "document_endpoint": "https://DA1-centralindia.documents.azure.com:443/",
                 "provisioning_state": "Succeeded",
-                "failover_priority": 0
+                "failover_priority": 0,
             },
         ],
         "locations": [
@@ -67,54 +67,54 @@ DESCRIBE_DATABASE_ACCOUNTS = [
                 "location_name": "East US",
                 "document_endpoint": "https://DA1-eastus.documents.azure.com:443/",
                 "provisioning_state": "Succeeded",
-                "failover_priority": 0
+                "failover_priority": 0,
             },
             {
                 "id": "DA1-centralindia",
                 "location_name": "Central India",
                 "document_endpoint": "https://DA1-centralindia.documents.azure.com:443/",
                 "provisioning_state": "Succeeded",
-                "failover_priority": 0
+                "failover_priority": 0,
             },
             {
                 "id": "DA1-japaneast",
                 "location_name": "Japan East",
                 "document_endpoint": "https://DA1-japaneast.documents.azure.com:443/",
                 "provisioning_state": "Succeeded",
-                "failover_priority": 0
+                "failover_priority": 0,
             },
         ],
         "failover_policies": [
             {
                 "id": "DA1-eastus",
                 "location_name": "East US",
-                "failover_priority": 0
+                "failover_priority": 0,
             }
         ],
         "private_endpoint_connections": [
             {
                 "id": da1 + "/privateEndpointConnections/pe1",
                 "private_endpoint": {
-                    "id": rg + "/providers/Microsoft.Network/privateEndpoints/pe1"
+                    "id": rg + "/providers/Microsoft.Network/privateEndpoints/pe1",
                 },
                 "private_link_service_connection_state": {
                     "status": "Approved",
-                    "actions_required": "None"
-                }
-            }
+                    "actions_required": "None",
+                },
+            },
         ],
         "cors": [
             {
                 "cors_policy_unique_id": cors1_id,
                 "allowed_origins": "*",
-            }
+            },
         ],
         "virtual_network_rules": [
             {
                 "id": rg + "/providers/Microsoft.Network/virtualNetworks/vn1",
                 "ignore_missing_v_net_service_endpoint": False,
-            }
-        ]
+            },
+        ],
     },
     {
         "id": da2,
@@ -136,39 +136,39 @@ DESCRIBE_DATABASE_ACCOUNTS = [
         "consistency_policy": {
             "default_consistency_level": "Session",
             "max_interval_in_seconds": 5,
-            "max_staleness_prefix": 100
+            "max_staleness_prefix": 100,
         },
         "failover_policies": [
             {
                 "id": "DA2-eastus",
                 "location_name": "East US",
-                "failover_priority": 0
-            }
+                "failover_priority": 0,
+            },
         ],
         "private_endpoint_connections": [
             {
                 "id": da2 + "/privateEndpointConnections/pe2",
                 "private_endpoint": {
-                    "id": rg + "/providers/Microsoft.Network/privateEndpoints/pe2"
+                    "id": rg + "/providers/Microsoft.Network/privateEndpoints/pe2",
                 },
                 "private_link_service_connection_state": {
                     "status": "Approved",
-                    "actions_required": "None"
-                }
-            }
+                    "actions_required": "None",
+                },
+            },
         ],
         "cors": [
             {
                 "cors_policy_unique_id": cors2_id,
                 "allowed_origins": "*",
-            }
+            },
         ],
         "virtual_network_rules": [
             {
                 "id": rg + "/providers/Microsoft.Network/virtualNetworks/vn2",
                 "ignore_missing_v_net_service_endpoint": False,
-            }
-        ]
+            },
+        ],
     },
 ]
 
@@ -178,14 +178,14 @@ DESCRIBE_WRITE_LOCATIONS = [
         "location_name": "East US",
         "document_endpoint": "https://DA1-eastus.documents.azure.com:443/",
         "provisioning_state": "Succeeded",
-        "failover_priority": 0
+        "failover_priority": 0,
     },
     {
         "id": "DA1-centralindia",
         "location_name": "Central India",
         "document_endpoint": "https://DA1-centralindia.documents.azure.com:443/",
         "provisioning_state": "Succeeded",
-        "failover_priority": 0
+        "failover_priority": 0,
     },
 ]
 
@@ -195,14 +195,14 @@ DESCRIBE_READ_LOCATIONS = [
         "location_name": "East US",
         "document_endpoint": "https://DA1-eastus.documents.azure.com:443/",
         "provisioning_state": "Succeeded",
-        "failover_priority": 0
+        "failover_priority": 0,
     },
     {
         "id": "DA1-centralindia",
         "location_name": "Central India",
         "document_endpoint": "https://DA1-centralindia.documents.azure.com:443/",
         "provisioning_state": "Succeeded",
-        "failover_priority": 0
+        "failover_priority": 0,
     },
 ]
 
@@ -212,21 +212,21 @@ DESCRIBE_LOCATIONS = [
         "location_name": "East US",
         "document_endpoint": "https://DA1-eastus.documents.azure.com:443/",
         "provisioning_state": "Succeeded",
-        "failover_priority": 0
+        "failover_priority": 0,
     },
     {
         "id": "DA1-centralindia",
         "location_name": "Central India",
         "document_endpoint": "https://DA1-centralindia.documents.azure.com:443/",
         "provisioning_state": "Succeeded",
-        "failover_priority": 0
+        "failover_priority": 0,
     },
     {
         "id": "DA1-japaneast",
         "location_name": "Japan East",
         "document_endpoint": "https://DA1-japaneast.documents.azure.com:443/",
         "provisioning_state": "Succeeded",
-        "failover_priority": 0
+        "failover_priority": 0,
     },
 ]
 
@@ -241,7 +241,7 @@ DESCRIBE_SQL_DATABASES = [
             "throughput": 100,
             "autoscale_settings": {
                 "max_throughput": 1000,
-            }
+            },
         },
         "database_account_id": da1,
     },
@@ -255,7 +255,7 @@ DESCRIBE_SQL_DATABASES = [
             "throughput": 100,
             "autoscale_settings": {
                 "max_throughput": 1000,
-            }
+            },
         },
         "database_account_id": da2,
     },
@@ -271,7 +271,7 @@ DESCRIBE_CASSANDRA_KEYSPACES = [
             "throughput": 100,
             "autoscale_settings": {
                 "max_throughput": 1000,
-            }
+            },
         },
         "database_account_id": da1,
     },
@@ -284,7 +284,7 @@ DESCRIBE_CASSANDRA_KEYSPACES = [
             "throughput": 100,
             "autoscale_settings": {
                 "max_throughput": 1000,
-            }
+            },
         },
         "database_account_id": da2,
     },
@@ -300,7 +300,7 @@ DESCRIBE_MONGODB_DATABASES = [
             "throughput": 100,
             "autoscale_settings": {
                 "max_throughput": 1000,
-            }
+            },
         },
         "database_account_id": da1,
     },
@@ -313,7 +313,7 @@ DESCRIBE_MONGODB_DATABASES = [
             "throughput": 100,
             "autoscale_settings": {
                 "max_throughput": 1000,
-            }
+            },
         },
         "database_account_id": da2,
     },
@@ -329,7 +329,7 @@ DESCRIBE_TABLE_RESOURCES = [
             "throughput": 100,
             "autoscale_settings": {
                 "max_throughput": 1000,
-            }
+            },
         },
         "database_account_id": da1,
     },
@@ -342,10 +342,10 @@ DESCRIBE_TABLE_RESOURCES = [
             "throughput": 100,
             "autoscale_settings": {
                 "max_throughput": 1000,
-            }
+            },
         },
         "database_account_id": da2,
-    }
+    },
 ]
 
 DESCRIBE_SQL_CONTAINERS = [
@@ -358,7 +358,7 @@ DESCRIBE_SQL_CONTAINERS = [
             "throughput": 100,
             "autoscale_settings": {
                 "max_throughput": 1000,
-            }
+            },
         },
         "resource": {
             "id": "test-con1",
@@ -382,7 +382,7 @@ DESCRIBE_SQL_CONTAINERS = [
             "throughput": 100,
             "autoscale_settings": {
                 "max_throughput": 1000,
-            }
+            },
         },
         "resource": {
             "id": "test-con2",
@@ -409,7 +409,7 @@ DESCRIBE_CASSANDRA_TABLES = [
             "throughput": 100,
             "autoscale_settings": {
                 "max_throughput": 1000,
-            }
+            },
         },
         "resource": {
             "id": "table1",
@@ -427,7 +427,7 @@ DESCRIBE_CASSANDRA_TABLES = [
             "throughput": 100,
             "autoscale_settings": {
                 "max_throughput": 1000,
-            }
+            },
         },
         "resource": {
             "id": "table2",
@@ -448,7 +448,7 @@ DESCRIBE_MONGODB_COLLECTIONS = [
             "throughput": 100,
             "autoscale_settings": {
                 "max_throughput": 1000,
-            }
+            },
         },
         "resource": {
             "id": "testcoll",
@@ -465,7 +465,7 @@ DESCRIBE_MONGODB_COLLECTIONS = [
             "throughput": 100,
             "autoscale_settings": {
                 "max_throughput": 1000,
-            }
+            },
         },
         "resource": {
             "id": "testcoll",

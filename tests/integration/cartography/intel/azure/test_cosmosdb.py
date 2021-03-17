@@ -478,7 +478,7 @@ def test_load_cosmosdb_virtual_network_rules(neo4j_session):
 
     expected_nodes = {
         rg + "/providers/Microsoft.Network/virtualNetworks/vn1",
-        rg + "/providers/Microsoft.Network/virtualNetworks/vn2"
+        rg + "/providers/Microsoft.Network/virtualNetworks/vn2",
     }
 
     nodes = neo4j_session.run(
