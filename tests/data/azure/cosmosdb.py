@@ -89,7 +89,7 @@ DESCRIBE_DATABASE_ACCOUNTS = [
                 "id": "DA1-eastus",
                 "location_name": "East US",
                 "failover_priority": 0,
-            }
+            },
         ],
         "private_endpoint_connections": [
             {
