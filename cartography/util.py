@@ -68,17 +68,17 @@ def timeit(method):
     return timed
 
 
-def increment(stat, count=1, rate=1):
+def increment_counter_stats(counter_name: str, increment_by: int = 1, rate: float = 1):
     """
     This method uses statsd to increment a counter.
     This is only active if config.statsd_enabled is True.
-    :param stat: the name of the counter (string) to increment
-    :param count: the amount (integer) to increment by. May be negative
+    :param counter_name: the name of the counter metric (string) to increment
+    :param increment_by: the amount (integer) to increment by. May be negative
     :param rate: a sample rate, a float between 0 and 1. Will only send data this percentage of the time.
                          The statsd server will take the sample rate into account for counters
     """
     if stats_client:
-        stats_client.incr(stat, count, rate)
+        stats_client.incr(counter_name, increment_by, rate)
 
 
 # TODO Move this to cartography.intel.aws.util.common
