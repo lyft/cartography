@@ -4,8 +4,8 @@ from functools import wraps
 
 import botocore
 
-from cartography.scoped_stats_client import ScopedStatsClient
 from cartography.graph.job import GraphJob
+from cartography.scoped_stats_client import ScopedStatsClient
 
 if sys.version_info >= (3, 7):
     from importlib.resources import open_binary, read_text

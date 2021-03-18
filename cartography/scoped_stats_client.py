@@ -2,7 +2,7 @@ from statsd import StatsClient
 from statsd.client.timer import Timer
 
 
-class ScopedStatsClient(object):
+class ScopedStatsClient:
     """
     A Proxy object for an underlying statsd client.
     Adds a new call, get_scoped_stats_client(scope), which returns a new proxy to the same

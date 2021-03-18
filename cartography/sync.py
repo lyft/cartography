@@ -100,7 +100,7 @@ def run_with_config(sync, config):
                 host=config.statsd_host,
                 port=config.statsd_port,
                 prefix=config.statsd_prefix,
-            )
+            ),
         )
 
     neo4j_auth = None
