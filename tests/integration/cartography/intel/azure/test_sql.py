@@ -520,7 +520,7 @@ def test_load_replication_links(neo4j_session):
 
     expected_nodes = {
         server1 + "/databases/testdb1/replicationLinks/RL1",
-        server2 + "/databases/testdb2/replicationLinks/RL1",
+        server2 + "/databases/testdb2/replicationLinks/RL2",
     }
 
     nodes = neo4j_session.run(
