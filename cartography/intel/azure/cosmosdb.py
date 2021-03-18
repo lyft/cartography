@@ -168,7 +168,7 @@ def _load_database_account_write_locations(
     """
     ingest_write_location = """
     MERGE (loc:AzureCosmosDBLocation{id: {LocationId}})
-    ON CREATE SET loc.firstseen = timestamp(),
+    ON CREATE SET loc.firstseen = timestamp()
     SET loc.lastupdated = {azure_update_tag},
     loc.locationname = {Name},
     loc.documentendpoint = {DocumentEndpoint},
