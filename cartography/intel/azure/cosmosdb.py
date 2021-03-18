@@ -295,7 +295,7 @@ def _load_cosmosdb_cors_policy(
     """
 
     for policy in cors_policies:
-        policy['cors_policy_unique_id'] = uuid.uuid4()
+        policy['cors_policy_unique_id'] = str(uuid.uuid4())
 
     neo4j_session.run(
         ingest_cors_policy,
@@ -867,7 +867,7 @@ def _load_cassandra_tables(neo4j_session: neo4j.Session, cassandra_tables: List[
     """
     ingest_cassandra_tables = """
     UNWIND {cassandra_tables_list} AS table
-    MERGE (ct:AzureCosmosDBCassandraTable{id: table.{ResourceId}})
+    MERGE (ct:AzureCosmosDBCassandraTable{id: table.id})
     ON CREATE SET ct.firstseen = timestamp(), ct.type = table.type,
     ct.location = table.location
     SET ct.name = table.name,
