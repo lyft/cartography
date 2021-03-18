@@ -1,11 +1,4 @@
-import inspect
-from typing import Any
-from typing import Callable
-from typing import Dict
-from typing import List
 from unittest import mock
-
-import neo4j
 
 import cartography.config
 import cartography.intel.azure
@@ -18,13 +11,13 @@ TEST_SUBSCRIPTIONS = [
         "id": "000000",
         "subscriptionId": "000000",
         "displayName": "profile",
-        "state": "active"
+        "state": "active",
     },
     {
         "id": "000001",
         "subscriptionId": "000001",
         "displayName": "profile1",
-        "state": "active"
+        "state": "active",
     }
 ]
 TEST_UPDATE_TAG = 123456789
@@ -40,7 +33,8 @@ def test_sync_multiple_subscriptions(
         mock_cleanup, mock_sync_one, mock_credentials, neo4j_session,
 ):
     cartography.intel.azure._sync_multiple_subscriptions(
-        neo4j_session, mock_credentials, TEST_TENANT_ID, TEST_SUBSCRIPTIONS, TEST_UPDATE_TAG, GRAPH_JOB_PARAMETERS)
+        neo4j_session, mock_credentials, TEST_TENANT_ID, TEST_SUBSCRIPTIONS, TEST_UPDATE_TAG, GRAPH_JOB_PARAMETERS,
+    )
 
     # Ensure we call _sync_one_account on all accounts in our list.
     mock_sync_one.assert_any_call(
