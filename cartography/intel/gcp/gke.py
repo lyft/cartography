@@ -1,16 +1,18 @@
 import json
 import logging
+from typing import Dict
 
+import neo4j
 from googleapiclient.discovery import HttpError
+from googleapiclient.discovery import Resource
 
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
-
 logger = logging.getLogger(__name__)
 
 
 @timeit
-def get_gke_clusters(container, project_id):
+def get_gke_clusters(container: Resource, project_id: str) -> Dict:
     """
     Returns a GCP response object containing a list of GKE clusters within the given project.
 
@@ -41,7 +43,7 @@ def get_gke_clusters(container, project_id):
 
 
 @timeit
-def load_gke_clusters(neo4j_session, cluster_resp, project_id, gcp_update_tag):
+def load_gke_clusters(neo4j_session: neo4j.Session, cluster_resp: Dict, project_id: str, gcp_update_tag: int) -> None:
     """
     Ingest GCP GKE Clusters to Neo4j
 
@@ -131,7 +133,7 @@ def load_gke_clusters(neo4j_session, cluster_resp, project_id, gcp_update_tag):
         )
 
 
-def _process_network_policy(cluster):
+def _process_network_policy(cluster: Dict) -> bool:
     """
     Parse cluster.networkPolicy to verify if
     the provider has been enabled.
@@ -144,7 +146,7 @@ def _process_network_policy(cluster):
 
 
 @timeit
-def cleanup_gke_clusters(neo4j_session, common_job_parameters):
+def cleanup_gke_clusters(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     """
     Delete out-of-date GCP GKE Clusters nodes and relationships
 
@@ -161,7 +163,10 @@ def cleanup_gke_clusters(neo4j_session, common_job_parameters):
 
 
 @timeit
-def sync_gke_clusters(neo4j_session, container, project_id, gcp_update_tag, common_job_parameters):
+def sync_gke_clusters(
+    neo4j_session: neo4j.Session, container: Resource, project_id: str, gcp_update_tag: int,
+    common_job_parameters: Dict,
+) -> None:
     """
     Get GCP GKE Clusters using the Container resource object, ingest to Neo4j, and clean up old data.
 

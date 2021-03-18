@@ -1,13 +1,15 @@
 import logging
 import pathlib
 
-from cartography.graph.job import GraphJob
+import neo4j
 
+from cartography.config import Config
+from cartography.graph.job import GraphJob
 
 logger = logging.getLogger(__name__)
 
 
-def run(neo4j_session, config):
+def run(neo4j_session: neo4j.Session, config: Config) -> None:
     analysis_job_directory_path = config.analysis_job_directory
     if not analysis_job_directory_path:
         logger.info("Skipping analysis because no job path was provided.")

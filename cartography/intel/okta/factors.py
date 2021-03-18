@@ -1,17 +1,21 @@
 # Okta intel module - Factors
 import logging
+from typing import Dict
+from typing import List
 
+import neo4j
 from okta import FactorsClient
 from okta.framework.OktaError import OktaError
+from okta.models.factor.Factor import Factor
 
+from cartography.intel.okta.sync_state import OktaSyncState
 from cartography.util import timeit
-
 
 logger = logging.getLogger(__name__)
 
 
 @timeit
-def _create_factor_client(okta_org, okta_api_key):
+def _create_factor_client(okta_org: str, okta_api_key: str) -> FactorsClient:
     """
     Create Okta FactorsClient
     :param okta_org: Okta organization name
@@ -29,7 +33,7 @@ def _create_factor_client(okta_org, okta_api_key):
 
 
 @timeit
-def _get_factor_for_user_id(factor_client, user_id):
+def _get_factor_for_user_id(factor_client: FactorsClient, user_id: str) -> List[Factor]:
     """
     Get factor for user from the Okta server
     :param factor_client: factor client
@@ -51,7 +55,7 @@ def _get_factor_for_user_id(factor_client, user_id):
 
 
 @timeit
-def transform_okta_user_factor_list(okta_factor_list):
+def transform_okta_user_factor_list(okta_factor_list: List[Factor]) -> List[Dict]:
     factors = []
 
     for current in okta_factor_list:
@@ -61,7 +65,7 @@ def transform_okta_user_factor_list(okta_factor_list):
 
 
 @timeit
-def transform_okta_user_factor(okta_factor_info):
+def transform_okta_user_factor(okta_factor_info: Factor) -> Dict:
     """
     Transform okta user factor into consumable data for the graph
     :param okta_factor_info: okta factor information
@@ -89,7 +93,7 @@ def transform_okta_user_factor(okta_factor_info):
 
 
 @timeit
-def _load_user_factors(neo4j_session, user_id, factors, okta_update_tag):
+def _load_user_factors(neo4j_session: neo4j.Session, user_id: str, factors: List[Dict], okta_update_tag: int) -> None:
     """
     Add user factors into the graph
     :param neo4j_session: session with the Neo4j server
@@ -126,7 +130,10 @@ def _load_user_factors(neo4j_session, user_id, factors, okta_update_tag):
 
 
 @timeit
-def sync_users_factors(neo4j_session, okta_org_id, okta_update_tag, okta_api_key, sync_state):
+def sync_users_factors(
+    neo4j_session: neo4j.Session, okta_org_id: str, okta_update_tag: int, okta_api_key: str,
+    sync_state: OktaSyncState,
+) -> None:
     """
     Sync user factors
     :param neo4j_session: session with the Neo4j server
@@ -141,7 +148,8 @@ def sync_users_factors(neo4j_session, okta_org_id, okta_update_tag, okta_api_key
 
     factor_client = _create_factor_client(okta_org_id, okta_api_key)
 
-    for user_id in sync_state.users:
-        factor_data = _get_factor_for_user_id(factor_client, user_id)
-        user_factors = transform_okta_user_factor_list(factor_data)
-        _load_user_factors(neo4j_session, user_id, user_factors, okta_update_tag)
+    if sync_state.users:
+        for user_id in sync_state.users:
+            factor_data = _get_factor_for_user_id(factor_client, user_id)
+            user_factors = transform_okta_user_factor_list(factor_data)
+            _load_user_factors(neo4j_session, user_id, user_factors, okta_update_tag)

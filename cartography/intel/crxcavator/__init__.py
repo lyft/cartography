@@ -1,7 +1,9 @@
 import logging
 
+import neo4j
 from requests import exceptions
 
+from cartography.config import Config
 from cartography.intel.crxcavator.crxcavator import sync_extensions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -10,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
-def start_extension_ingestion(neo4j_session, config):
+def start_extension_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
     """
     If this module is configured, perform ingestion of CRXcavator data. Otherwise warn and exit
     :param neo4j_session: Neo4J session for database interface
