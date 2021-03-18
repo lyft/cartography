@@ -550,10 +550,10 @@ def test_load_replication_links_relationships(neo4j_session):
 
     expected = {
         (
-            server1, server1 + "/databases/testdb1/replicationLinks/RL1",
+            server1 + "/databases/testdb1", server1 + "/databases/testdb1/replicationLinks/RL1",
         ),
         (
-            server2, server2 + "/databases/testdb2/replicationLinks/RL2",
+            server2 + "/databases/testdb2", server2 + "/databases/testdb2/replicationLinks/RL2",
         ),
     }
 
@@ -610,10 +610,10 @@ def test_load_db_threat_detection_policies_relationships(neo4j_session):
 
     expected = {
         (
-            server1, server1 + "/databases/testdb1/securityAlertPolicies/TDP1",
+            server1 + "/databases/testdb1", server1 + "/databases/testdb1/securityAlertPolicies/TDP1",
         ),
         (
-            server2, server2 + "/databases/testdb2/securityAlertPolicies/TDP2",
+            server2 + "/databases/testdb2", server2 + "/databases/testdb2/securityAlertPolicies/TDP2",
         ),
     }
 
@@ -670,10 +670,10 @@ def test_load_restore_points_relationships(neo4j_session):
 
     expected = {
         (
-            server1, server1 + "/databases/testdb1/restorepoints/RP1",
+            server1 + "/databases/testdb1", server1 + "/databases/testdb1/restorepoints/RP1",
         ),
         (
-            server2, server2 + "/databases/testdb2/restorepoints/RP2",
+            server2 + "/databases/testdb2", server2 + "/databases/testdb2/restorepoints/RP2",
         ),
     }
 
@@ -730,10 +730,10 @@ def test_load_transparent_data_encryptions_relationships(neo4j_session):
 
     expected = {
         (
-            server1, server1 + "/databases/testdb1/transparentDataEncryption/TAE1",
+            server1 + "/databases/testdb1", server1 + "/databases/testdb1/transparentDataEncryption/TAE1",
         ),
         (
-            server2, server2 + "/databases/testdb2/transparentDataEncryption/TAE2",
+            server2 + "/databases/testdb2", server2 + "/databases/testdb2/transparentDataEncryption/TAE2",
         ),
     }
 

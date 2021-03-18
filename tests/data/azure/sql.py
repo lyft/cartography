@@ -213,8 +213,8 @@ DESCRIBE_DATABASES = [
 
 DESCRIBE_REPLICATION_LINKS = [
     {
-        "id": server1 + "/databases/testdb1/replicationLinks/5b301b68-03f6-4b26-b0f4-73ebb8634238",
-        "name": "5b301b68-03f6-4b26-b0f4-73ebb8634238",
+        "id": server1 + "/databases/testdb1/replicationLinks/RL1",
+        "name": "RL1",
         "type": "Microsoft.Sql/servers/databases/replicationLinks",
         "location": "North Europe",
         "partner_server": "testSQL2",
@@ -230,8 +230,8 @@ DESCRIBE_REPLICATION_LINKS = [
         "database_id": server1 + "/databases/testdb1",
     },
     {
-        "id": server2 + "/databases/testdb2/replicationLinks/5b301b68-03f6-4b26-b0f4-73ebb8634238",
-        "name": "5b301b68-03f6-4b26-b0f4-73ebb8634238",
+        "id": server2 + "/databases/testdb2/replicationLinks/RL2",
+        "name": "RL2",
         "type": "Microsoft.Sql/servers/databases/replicationLinks",
         "location": "North Europe",
         "partner_server": "testSQL1",
