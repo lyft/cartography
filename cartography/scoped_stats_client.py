@@ -19,6 +19,10 @@ class ScopedStatsClient(object):
         self._scope_prefix = prefix
 
     def get_scoped_stats_client(self, scope: str):
+        """
+        This method returns a new proxy to the same client
+        which will prefix all calls to underlying methods with the scoped prefix
+        """
         if not self._scope_prefix:
             prefix = scope
         else:
@@ -28,11 +32,25 @@ class ScopedStatsClient(object):
     def is_enabled(self) -> bool:
         return self._client is not None
 
-    def incr(self, stat: str, count: int = 1, rate: float = 1.0):
+    def incr(self, stat: str, count: int = 1, rate: float = 1.0) -> None:
+        """
+        This method uses statsd to increment a counter.
+        :param stat: the name of the counter metric stat (string) to increment
+        :param count: the amount (integer) to increment by. May be negative
+        :param rate: a sample rate, a float between 0 and 1. Will only send data this percentage of the time.
+                             The statsd server will take the sample rate into account for counters
+        """
         if self.is_enabled():
             self._client.incr(self._scope_prefix + "." + stat, count, rate)
 
     def timer(self, stat: str, rate: float = 1.0) -> Timer:
+        """
+        This method uses statsd to retrieve a timer.
+        When Timer.stop() is called, a timing stat will automatically be sent to statsd
+        :param stat: the name of the timer metric stat (string) to report
+        :param rate: a sample rate, a float between 0 and 1. Will only send data this percentage of the time.
+                             The statsd server will take the sample rate into account for counters
+        """
         if self.is_enabled():
             return self._client.timer(stat, rate)
         return None
