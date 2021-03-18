@@ -186,10 +186,10 @@ def _load_database_account_write_locations(
         ingest_write_location,
         LocationId=loc['id'],
         Name=loc['location_name'],
-        DocumentEndpoint=loc['document_endpoint'],
-        ProvisioningState=loc['provisioning_state'],
-        FailoverPriority=loc['failover_priority'],
-        IsZoneRedundant=loc['is_zone_redundant'],
+        DocumentEndpoint=loc.get('document_endpoint'),
+        ProvisioningState=loc.get('provisioning_state'),
+        FailoverPriority=loc.get('failover_priority'),
+        IsZoneRedundant=loc.get('is_zone_redundant'),
         DatabaseAccountId=database_account_id,
         azure_update_tag=azure_update_tag,
     )
@@ -222,10 +222,10 @@ def _load_database_account_read_locations(
         ingest_read_location,
         LocationId=loc['id'],
         Name=loc['location_name'],
-        DocumentEndpoint=loc['document_endpoint'],
-        ProvisioningState=loc['provisioning_state'],
-        FailoverPriority=loc['failover_priority'],
-        IsZoneRedundant=loc['is_zone_redundant'],
+        DocumentEndpoint=loc.get('document_endpoint'),
+        ProvisioningState=loc.get('provisioning_state'),
+        FailoverPriority=loc.get('failover_priority'),
+        IsZoneRedundant=loc.get('is_zone_redundant'),
         DatabaseAccountId=database_account_id,
         azure_update_tag=azure_update_tag,
     )
@@ -258,10 +258,10 @@ def _load_database_account_associated_locations(
         ingest_associated_location,
         LocationId=loc['id'],
         Name=loc['location_name'],
-        DocumentEndpoint=loc['document_endpoint'],
-        ProvisioningState=loc['provisioning_state'],
-        FailoverPriority=loc['failover_priority'],
-        IsZoneRedundant=loc['is_zone_redundant'],
+        DocumentEndpoint=loc.get('document_endpoint'),
+        ProvisioningState=loc.get('provisioning_state'),
+        FailoverPriority=loc.get('failover_priority'),
+        IsZoneRedundant=loc.get('is_zone_redundant'),
         DatabaseAccountId=database_account_id,
         azure_update_tag=azure_update_tag,
     )
@@ -295,7 +295,8 @@ def _load_cosmosdb_cors_policy(
     """
 
     for policy in cors_policies:
-        policy['cors_policy_unique_id'] = str(uuid.uuid4())
+        if 'cors_policy_unique_id' not in policy:
+            policy['cors_policy_unique_id'] = str(uuid.uuid4())
 
     neo4j_session.run(
         ingest_cors_policy,
