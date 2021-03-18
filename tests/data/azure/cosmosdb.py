@@ -1,7 +1,5 @@
-import uuid
-
-cors1_id = str(uuid.uuid4())
-cors2_id = str(uuid.uuid4())
+cors1_id = "0001"
+cors2_id = "0002"
 da1 = "/subscriptions/00-00-00-00/resourceGroups/RG/providers/Microsoft.DocumentDB/databaseAccounts/DA1"
 da2 = "/subscriptions/00-00-00-00/resourceGroups/RG/providers/Microsoft.DocumentDB/databaseAccounts/DA2"
 rg = "/subscriptions/00-00-00-00/resourceGroups/RG"

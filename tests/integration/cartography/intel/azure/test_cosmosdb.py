@@ -89,12 +89,13 @@ def test_load_database_account_data_relationships(neo4j_session):
 
 
 def test_load_database_account_write_locations(neo4j_session):
-    cosmosdb._load_database_account_write_locations(
-        neo4j_session,
-        da1,
-        DESCRIBE_WRITE_LOCATIONS,
-        TEST_UPDATE_TAG,
-    )
+    for location in DESCRIBE_WRITE_LOCATIONS:
+        cosmosdb._load_database_account_write_locations(
+            neo4j_session,
+            da1,
+            location,
+            TEST_UPDATE_TAG,
+        )
 
     expected_nodes = {
         "DA1-eastus",
@@ -121,12 +122,13 @@ def test_load_database_account_write_locations_relationships(neo4j_session):
         TEST_UPDATE_TAG,
     )
 
-    cosmosdb._load_database_account_write_locations(
-        neo4j_session,
-        da1,
-        DESCRIBE_WRITE_LOCATIONS,
-        TEST_UPDATE_TAG,
-    )
+    for location in DESCRIBE_WRITE_LOCATIONS:
+        cosmosdb._load_database_account_write_locations(
+            neo4j_session,
+            da1,
+            location,
+            TEST_UPDATE_TAG,
+        )
 
     expected = {
         (
@@ -152,12 +154,13 @@ def test_load_database_account_write_locations_relationships(neo4j_session):
 
 
 def test_load_database_account_read_locations(neo4j_session):
-    cosmosdb._load_database_account_read_locations(
-        neo4j_session,
-        da1,
-        DESCRIBE_READ_LOCATIONS,
-        TEST_UPDATE_TAG,
-    )
+    for location in DESCRIBE_READ_LOCATIONS:
+        cosmosdb._load_database_account_read_locations(
+            neo4j_session,
+            da1,
+            location,
+            TEST_UPDATE_TAG,
+        )
 
     expected_nodes = {
         "DA1-eastus",
@@ -184,12 +187,13 @@ def test_load_database_account_read_locations_relationships(neo4j_session):
         TEST_UPDATE_TAG,
     )
 
-    cosmosdb._load_database_account_read_locations(
-        neo4j_session,
-        da1,
-        DESCRIBE_READ_LOCATIONS,
-        TEST_UPDATE_TAG,
-    )
+    for location in DESCRIBE_READ_LOCATIONS:
+        cosmosdb._load_database_account_read_locations(
+            neo4j_session,
+            da1,
+            location,
+            TEST_UPDATE_TAG,
+        )
 
     expected = {
         (
@@ -215,12 +219,13 @@ def test_load_database_account_read_locations_relationships(neo4j_session):
 
 
 def test_load_database_account_associated_locations(neo4j_session):
-    cosmosdb._load_database_account_associated_locations(
-        neo4j_session,
-        da1,
-        DESCRIBE_LOCATIONS,
-        TEST_UPDATE_TAG,
-    )
+    for location in DESCRIBE_LOCATIONS:
+        cosmosdb._load_database_account_associated_locations(
+            neo4j_session,
+            da1,
+            location,
+            TEST_UPDATE_TAG,
+        )
 
     expected_nodes = {
         "DA1-eastus",
@@ -248,12 +253,13 @@ def test_load_database_account_associated_locations_relationships(neo4j_session)
         TEST_UPDATE_TAG,
     )
 
-    cosmosdb._load_database_account_associated_locations(
-        neo4j_session,
-        da1,
-        DESCRIBE_LOCATIONS,
-        TEST_UPDATE_TAG,
-    )
+    for location in DESCRIBE_LOCATIONS:
+        cosmosdb._load_database_account_associated_locations(
+            neo4j_session,
+            da1,
+            location,
+            TEST_UPDATE_TAG,
+        )
 
     expected = {
         (

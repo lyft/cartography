@@ -161,7 +161,7 @@ def load_database_account_data_resources(
 
 @timeit
 def _load_database_account_write_locations(
-        neo4j_session: neo4j.Session, database_account_id: Any, loc: Any, azure_update_tag: int,
+        neo4j_session: neo4j.Session, database_account_id: str, loc: Dict, azure_update_tag: int,
 ) -> None:
     """
     Ingest the details of location with write permission enabled.
@@ -197,7 +197,7 @@ def _load_database_account_write_locations(
 
 @timeit
 def _load_database_account_read_locations(
-        neo4j_session: neo4j.Session, database_account_id: Any, loc: Any, azure_update_tag: int,
+        neo4j_session: neo4j.Session, database_account_id: str, loc: Dict, azure_update_tag: int,
 ) -> None:
     """
     Ingest the details of location with read permission enabled.
@@ -233,7 +233,7 @@ def _load_database_account_read_locations(
 
 @timeit
 def _load_database_account_associated_locations(
-        neo4j_session: neo4j.Session, database_account_id: Any, loc: Any, azure_update_tag: int,
+        neo4j_session: neo4j.Session, database_account_id: str, loc: Dict, azure_update_tag: int,
 ) -> None:
     """
     Ingest the details of enabled location for the database account.
@@ -623,7 +623,7 @@ def _load_cassandra_keyspaces(neo4j_session: neo4j.Session, cassandra_keyspaces:
     UNWIND {cassandra_keyspaces_list} AS keyspace
     MERGE (ck:AzureCosmosDBCassandraKeyspace{id: keyspace.id})
     ON CREATE SET ck.firstseen = timestamp(), ck.type = keyspace.type,
-    ck.location = keyspace.location,
+    ck.location = keyspace.location
     SET ck.name = keyspace.name,
     ck.lastupdated = {azure_update_tag},
     ck.throughput = keyspace.options.throughput,
