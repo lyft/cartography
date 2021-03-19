@@ -131,8 +131,8 @@ class CLI:
             '--azure-sync-all-subscriptions',
             action='store_true',
             help=(
-                'Enable Azure sync for all discovered profiles. When this parameter is supplied cartography will '
-                'discover all configured Azure profiles.'
+                'Enable Azure sync for all discovered subscriptions. When this parameter is supplied cartography will '
+                'discover all configured Azure subscriptions.'
             ),
         )
         parser.add_argument(
@@ -140,6 +140,30 @@ class CLI:
             action='store_true',
             help=(
                 'Use Service Principal authentication for Azure sync.'
+            ),
+        )
+        parser.add_argument(
+            '--azure-tenant-id',
+            type=str,
+            default=None,
+            help=(
+                'Azure Tenant Id for Service Principal Authentication.'
+            ),
+        )
+        parser.add_argument(
+            '--azure-client-id',
+            type=str,
+            default=None,
+            help=(
+                'Azure Client Id for Service Principal Authentication.'
+            ),
+        )
+        parser.add_argument(
+            '--azure-client-secret-env-var',
+            type=str,
+            default=None,
+            help=(
+                'The name of environment variable containing Azure Client Secret for Service Principal Authentication.'
             ),
         )
         parser.add_argument(
@@ -298,7 +322,7 @@ class CLI:
         :param argv: The parameters supplied to the command line program.
         """
         # TODO support parameter lookup in environment variables if not present on command line
-        config: cartography.config.Config=self.parser.parse_args(argv)
+        config: cartography.config.Config = self.parser.parse_args(argv)
         # Logging config
         if config.verbose:
             logging.getLogger('cartography').setLevel(logging.DEBUG)
@@ -309,73 +333,83 @@ class CLI:
         # logger.debug("Launching cartography with CLI configuration: %r", vars(config))
         # Neo4j config
         if config.neo4j_user:
-            config.neo4j_password=None
+            config.neo4j_password = None
             if config.neo4j_password_prompt:
                 logger.info("Reading password for Neo4j user '%s' interactively.", config.neo4j_user)
-                config.neo4j_password=getpass.getpass()
+                config.neo4j_password = getpass.getpass()
             elif config.neo4j_password_env_var:
                 logger.debug(
                     "Reading password for Neo4j user '%s' from environment variable '%s'.",
                     config.neo4j_user,
                     config.neo4j_password_env_var,
                 )
-                config.neo4j_password=os.environ.get(config.neo4j_password_env_var)
+                config.neo4j_password = os.environ.get(config.neo4j_password_env_var)
             if not config.neo4j_password:
                 logger.warning("Neo4j username was provided but a password could not be found.")
         else:
-            config.neo4j_password=None
+            config.neo4j_password = None
 
         # AWS config
         if config.aws_requested_syncs:
             # No need to store the returned value; we're using this for input validation.
             parse_and_validate_aws_requested_syncs(config.aws_requested_syncs)
 
+        # Azure config
+        if config.azure_sp_auth and config.azure_client_secret_env_var:
+            logger.debug(
+                "Reading Client Secret for Azure Service Principal Authentication from environment variable %s",
+                config.azure_client_secret_env_var,
+            )
+            config.azure_client_secret = os.environ.get(config.azure_client_secret_env_var)
+        else:
+            config.azure_client_secret = None
+
         # Okta config
         if config.okta_org_id and config.okta_api_key_env_var:
             logger.debug(f"Reading API key for Okta from environment variable {config.okta_api_key_env_var}")
-            config.okta_api_key=os.environ.get(config.okta_api_key_env_var)
+            config.okta_api_key = os.environ.get(config.okta_api_key_env_var)
         else:
-            config.okta_api_key=None
+            config.okta_api_key = None
 
         # CRXcavator config
         if config.crxcavator_api_base_uri and config.crxcavator_api_key_env_var:
             logger.debug(f"Reading API key for CRXcavator from env variable {config.crxcavator_api_key_env_var}.")
-            config.crxcavator_api_key=os.environ.get(config.crxcavator_api_key_env_var)
+            config.crxcavator_api_key = os.environ.get(config.crxcavator_api_key_env_var)
         else:
-            config.crxcavator_api_key=None
+            config.crxcavator_api_key = None
 
         # GitHub config
         if config.github_config_env_var:
             logger.debug(f"Reading config string for GitHub from environment variable {config.github_config_env_var}")
-            config.github_config=os.environ.get(config.github_config_env_var)
+            config.github_config = os.environ.get(config.github_config_env_var)
         else:
-            config.github_config=None
+            config.github_config = None
 
         # DigitalOcean config
         if config.digitalocean_token_env_var:
             logger.debug(f"Reading token for DigitalOcean from env variable {config.digitalocean_token_env_var}")
-            config.digitalocean_token=os.environ.get(config.digitalocean_token_env_var)
+            config.digitalocean_token = os.environ.get(config.digitalocean_token_env_var)
         else:
-            config.digitalocean_token=None
+            config.digitalocean_token = None
 
         # Jamf config
         if config.jamf_base_uri:
             if config.jamf_user:
-                config.jamf_password=None
+                config.jamf_password = None
                 if config.jamf_password_env_var:
                     logger.debug(
                         "Reading password for Jamf user '%s' from environment variable '%s'.",
                         config.jamf_user,
                         config.jamf_password_env_var,
                     )
-                    config.jamf_password=os.environ.get(config.jamf_password_env_var)
+                    config.jamf_password = os.environ.get(config.jamf_password_env_var)
             if not config.jamf_user:
                 logger.warning("A Jamf base URI was provided but a user was not.")
             if not config.jamf_password:
                 logger.warning("A Jamf password could not be found.")
         else:
-            config.jamf_user=None
-            config.jamf_password=None
+            config.jamf_user = None
+            config.jamf_password = None
 
         if config.statsd_enabled:
             logger.debug(
@@ -401,7 +435,7 @@ class CLI:
 
         # Run cartography
         try:
-            output=cartography.sync.run_with_config(self.sync, config)
+            output = cartography.sync.run_with_config(self.sync, config)
 
             return {
                 "status": "success",
@@ -434,8 +468,8 @@ def main(argv=None):
     logging.getLogger('botocore').setLevel(logging.WARNING)
     logging.getLogger('googleapiclient').setLevel(logging.WARNING)
     logging.getLogger('neo4j.bolt').setLevel(logging.WARNING)
-    argv=argv if argv is not None else sys.argv[1:]
-    default_sync=cartography.sync.build_default_sync()
+    argv = argv if argv is not None else sys.argv[1:]
+    default_sync = cartography.sync.build_default_sync()
     return CLI(default_sync, prog='cartography').main(argv)
 
 
@@ -444,10 +478,10 @@ def run_aws(request):
     logging.getLogger('botocore').setLevel(logging.WARNING)
     logging.getLogger('neo4j.bolt').setLevel(logging.WARNING)
 
-    default_sync=cartography.sync.build_aws_sync()
+    default_sync = cartography.sync.build_aws_sync()
 
     # TODO: Define config and pass it forward
-    config=Config(request['neo4j']['uri'],
+    config = Config(request['neo4j']['uri'],
                     neo4j_user=request['neo4j']['user'],
                     neo4j_password=request['neo4j']['pwd'],
                     neo4j_max_connection_lifetime=request['neo4j']['connection_lifetime'],
@@ -456,9 +490,9 @@ def run_aws(request):
                     )
 
     if request['logging']['mode'] == "verbose":
-        config.verbose=True
+        config.verbose = True
     elif request['logging']['mode'] == "quiet":
-        config.quiet=True
+        config.quiet = True
 
     return CLI(default_sync, prog='cartography').process(config)
 
@@ -468,15 +502,15 @@ def run_azure(request):
     logging.getLogger('botocore').setLevel(logging.WARNING)
     logging.getLogger('neo4j.bolt').setLevel(logging.WARNING)
 
-    default_sync=cartography.sync.build_azure_sync()
+    default_sync = cartography.sync.build_azure_sync()
 
     # TODO: Define config and pass it forward
-    config=Config(request['neo4j']['uri'],
+    config = Config(request['neo4j']['uri'],
                     neo4j_user=request['neo4j']['user'],
                     neo4j_password=request['neo4j']['pwd'],
                     neo4j_max_connection_lifetime=request['neo4j']['connection_lifetime'],
-                    client_id=request['azure']['client_id'],
-                    client_secret=request['azure']['client_secret'],
+                    azure_client_id=request['azure']['client_id'],
+                    azure_client_secret=request['azure']['client_secret'],
                     redirect_uri=request['azure']['redirect_uri'],
                     subscription_id=request['azure']['subscription_id'],
                     refresh_token=request['azure']['refresh_token'],
@@ -486,8 +520,8 @@ def run_azure(request):
                     )
 
     if request['logging']['mode'] == "verbose":
-        config.verbose=True
+        config.verbose = True
     elif request['logging']['mode'] == "quiet":
-        config.quiet=True
+        config.quiet = True
 
     return CLI(default_sync, prog='cartography').process(config)

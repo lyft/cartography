@@ -22,10 +22,16 @@ class Config:
         False (default), AWS sync will run using the default credentials only. Optional.
     :type azure_sync_all_subscriptions: bool
     :param azure_sync_all_subscriptions: If True, Azure sync will run for all profiles in azureProfile.json. If
-        False (default), Azure sync will run using the default credentials only. Optional.
+        False (default), Azure sync will run using current user session via CLI credentials. Optional.
     :type azure_sp_auth: bool
     :param azure_sp_auth: If True, Azure sync will run using Service Principal Authentication. If
         False (default), Azure sync will run using current user session via CLI credentials. Optional.
+    :type azure_tenant_id: str
+    :param azure_tenant_id: Tenant Id for connecting in a Service Principal Authentication approach. Optional.
+    :type azure_client_id: str
+    :param azure_client_id: Client Id for connecting in a Service Principal Authentication approach. Optional.
+    :type azure_client_secret: str
+    :param azure_client_secret: Client Secret for connecting in a Service Principal Authentication approach. Optional.
     :type aws_requested_syncs: str
     :param aws_requested_syncs: Comma-separated list of AWS resources to sync. Optional.
     :type crxcavator_api_base_uri: str
@@ -70,8 +76,9 @@ class Config:
         aws_sync_all_profiles=False,
         azure_sync_all_subscriptions=False,
         azure_sp_auth=None,
-        client_id=None,
-        client_secret=None,
+        azure_tenant_id=None,
+        azure_client_id=None,
+        azure_client_secret=None,
         redirect_uri=None,
         subscription_id=None,
         refresh_token=None,
@@ -105,8 +112,9 @@ class Config:
         self.aws_sync_all_profiles = aws_sync_all_profiles
         self.azure_sync_all_subscriptions = azure_sync_all_subscriptions
         self.azure_sp_auth = azure_sp_auth
-        self.client_id = client_id
-        self.client_secret = client_secret
+        self.azure_tenant_id = azure_tenant_id
+        self.azure_client_id = azure_client_id
+        self.azure_client_secret = azure_client_secret
         self.redirect_uri = redirect_uri
         self.subscription_id = subscription_id
         self.refresh_token = refresh_token
