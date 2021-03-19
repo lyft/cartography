@@ -13,6 +13,4 @@ build/
 .coverage
 .mypy_cache
 *.vscode
-node_modules
-.serverless
-.env.*
+.env*
