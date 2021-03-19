@@ -6,7 +6,9 @@ from typing import List
 from typing import Tuple
 
 import neo4j
+from azure.core.exceptions import ClientAuthenticationError
 from azure.core.exceptions import HttpResponseError
+from azure.core.exceptions import ResourceNotFoundError
 from azure.mgmt.sql import SqlManagementClient
 from msrestazure.azure_exceptions import CloudError
 
@@ -35,6 +37,13 @@ def get_server_list(credentials: Credentials, subscription_id: str) -> List[Dict
         client = get_client(credentials, subscription_id)
         server_list = list(map(lambda x: x.as_dict(), client.servers.list()))
 
+    # ClientAuthenticationError and ResourceNotFoundError are subclasses under HttpResponseError
+    except ClientAuthenticationError as e:
+        logger.warning(f"Client Authentication Error while retrieving servers - {e}")
+        return []
+    except ResourceNotFoundError as e:
+        logger.warning(f"Server resource not found error - {e}")
+        return []
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving servers - {e}")
         return []
@@ -122,6 +131,12 @@ def get_dns_aliases(credentials: Credentials, subscription_id: str, server: Dict
             ),
         )
 
+    except ClientAuthenticationError as e:
+        logger.warning(f"Client Authentication Error while retrieving DNS Aliases - {e}")
+        return []
+    except ResourceNotFoundError as e:
+        logger.warning(f"DNS Alias resource not found error - {e}")
+        return []
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving Azure Server DNS Aliases - {e}")
         return []
@@ -146,6 +161,12 @@ def get_ad_admins(credentials: Credentials, subscription_id: str, server: Dict) 
             ),
         )
 
+    except ClientAuthenticationError as e:
+        logger.warning(f"Client Authentication Error while retrieving Azure AD Administrators - {e}")
+        return []
+    except ResourceNotFoundError as e:
+        logger.warning(f"Azure AD Administrators resource not found error - {e}")
+        return []
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving server azure AD Administrators - {e}")
         return []
@@ -173,6 +194,12 @@ def get_recoverable_databases(credentials: Credentials, subscription_id: str, se
     except CloudError:
         # The API returns a '404 CloudError: Not Found for url: <url>' if no recoverable databases are present.
         return []
+    except ClientAuthenticationError as e:
+        logger.warning(f"Client Authentication Error while retrieving recoverable databases - {e}")
+        return []
+    except ResourceNotFoundError as e:
+        logger.warning(f"Recoverable databases resource not found error - {e}")
+        return []
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving recoverable databases - {e}")
         return []
@@ -196,6 +223,12 @@ def get_restorable_dropped_databases(credentials: Credentials, subscription_id: 
             ),
         )
 
+    except ClientAuthenticationError as e:
+        logger.warning(f"Client Authentication Error while retrieving Restorable Dropped Databases - {e}")
+        return []
+    except ResourceNotFoundError as e:
+        logger.warning(f"Restorable Dropped Databases resource not found error - {e}")
+        return []
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving restorable dropped databases - {e}")
         return []
@@ -214,6 +247,12 @@ def get_failover_groups(credentials: Credentials, subscription_id: str, server: 
             map(lambda x: x.as_dict(), client.failover_groups.list_by_server(server['resourceGroup'], server['name'])),
         )
 
+    except ClientAuthenticationError as e:
+        logger.warning(f"Client Authentication Error while retrieving Failover groups - {e}")
+        return []
+    except ResourceNotFoundError as e:
+        logger.warning(f"Failover groups resource not found error - {e}")
+        return []
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving failover groups - {e}")
         return []
@@ -232,6 +271,12 @@ def get_elastic_pools(credentials: Credentials, subscription_id: str, server: Di
             map(lambda x: x.as_dict(), client.elastic_pools.list_by_server(server['resourceGroup'], server['name'])),
         )
 
+    except ClientAuthenticationError as e:
+        logger.warning(f"Client Authentication Error while retrieving Elastic Pools - {e}")
+        return []
+    except ResourceNotFoundError as e:
+        logger.warning(f"Elastic Pools resource not found error - {e}")
+        return []
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving elastic pools - {e}")
         return []
@@ -250,6 +295,12 @@ def get_databases(credentials: Credentials, subscription_id: str, server: Dict) 
             map(lambda x: x.as_dict(), client.databases.list_by_server(server['resourceGroup'], server['name'])),
         )
 
+    except ClientAuthenticationError as e:
+        logger.warning(f"Client Authentication Error while retrieving SQL databases - {e}")
+        return []
+    except ResourceNotFoundError as e:
+        logger.warning(f"SQL databases resource not found error - {e}")
+        return []
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving databases - {e}")
         return []
@@ -594,6 +645,12 @@ def get_replication_links(credentials: Credentials, subscription_id: str, databa
             ),
         )
 
+    except ClientAuthenticationError as e:
+        logger.warning(f"Client Authentication Error while retrieving replication links - {e}")
+        return []
+    except ResourceNotFoundError as e:
+        logger.warning(f"Replication links resource not found error - {e}")
+        return []
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving replication links - {e}")
         return []
@@ -613,6 +670,12 @@ def get_db_threat_detection_policies(credentials: Credentials, subscription_id: 
             database['server_name'],
             database['name'],
         ).as_dict()
+    except ClientAuthenticationError as e:
+        logger.warning(f"Client Authentication Error while retrieving threat detection policy - {e}")
+        return []
+    except ResourceNotFoundError as e:
+        logger.warning(f"Threat detection policy resource not found error - {e}")
+        return []
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving database threat detection policies - {e}")
         return []
@@ -638,6 +701,12 @@ def get_restore_points(credentials: Credentials, subscription_id: str, database:
             ),
         )
 
+    except ClientAuthenticationError as e:
+        logger.warning(f"Client Authentication Error while retrieving restore points - {e}")
+        return []
+    except ResourceNotFoundError as e:
+        logger.warning(f"Restore points resource not found error - {e}")
+        return []
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving restore points - {e}")
         return []
@@ -657,6 +726,12 @@ def get_transparent_data_encryptions(credentials: Credentials, subscription_id: 
             database['server_name'],
             database['name'],
         ).as_dict()
+    except ClientAuthenticationError as e:
+        logger.warning(f"Client Authentication Error while retrieving transparent data encryptions - {e}")
+        return []
+    except ResourceNotFoundError as e:
+        logger.warning(f"Transparent data encryptions resource not found error - {e}")
+        return []
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving transparent data encryptions - {e}")
         return []
