@@ -1,6 +1,7 @@
 import logging
 from typing import Dict
 from typing import List
+from typing import Optional
 
 import neo4j
 from azure.core.exceptions import HttpResponseError
@@ -42,7 +43,7 @@ def get_all_azure_subscriptions(credentials: Credentials) -> List[Dict]:
     return subscriptions
 
 
-def get_current_azure_subscription(credentials: Credentials, subscription_id: str) -> List[Dict]:
+def get_current_azure_subscription(credentials: Credentials, subscription_id: Optional[str]) -> List[Dict]:
     try:
         # Create the client
         client = SubscriptionClient(credentials.arm_credentials)

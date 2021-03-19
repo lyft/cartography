@@ -1,6 +1,7 @@
 import logging
 from typing import Dict
 from typing import List
+from typing import Optional
 
 import neo4j
 
@@ -30,7 +31,7 @@ def _sync_one_subscription(
 
 
 def _sync_tenant(
-    neo4j_session: neo4j.Session, tenant_id: str, current_user: str, update_tag: int,
+    neo4j_session: neo4j.Session, tenant_id: str, current_user: Optional[str], update_tag: int,
     common_job_parameters: Dict,
 ) -> None:
     logger.info("Syncing Azure Tenant: %s", tenant_id)

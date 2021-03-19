@@ -7,7 +7,7 @@ from neo4j import GraphDatabase
 from statsd import StatsClient
 
 import cartography.intel.analysis
-import cartography.intel.aws
+# import cartography.intel.aws
 import cartography.intel.azure
 import cartography.intel.create_indexes
 # import cartography.intel.crxcavator.crxcavator
@@ -18,6 +18,7 @@ import cartography.intel.create_indexes
 # import cartography.intel.okta
 
 import cloudanix
+from cartography.scoped_stats_client import ScopedStatsClient
 
 logger = logging.getLogger(__name__)
 
@@ -96,10 +97,12 @@ def run_with_config(sync, config):
     """
     # Initialize statsd client if enabled
     if config.statsd_enabled:
-        cartography.util.stats_client = StatsClient(
-            host=config.statsd_host,
-            port=config.statsd_port,
-            prefix=config.statsd_prefix,
+        cartography.util.stats_client = ScopedStatsClient(
+            StatsClient(
+                host=config.statsd_host,
+                port=config.statsd_port,
+                prefix=config.statsd_prefix,
+            ),
         )
 
     neo4j_auth = None
@@ -182,7 +185,7 @@ def build_aws_sync():
     sync.add_stages([
         ('create-indexes', cartography.intel.create_indexes.run),
         ('cloudanix-workspace', cloudanix.run),
-        ('aws', cartography.intel.aws.start_aws_ingestion),
+        # ('aws', cartography.intel.aws.start_aws_ingestion),
         ('analysis', cartography.intel.analysis.run),
     ])
 
