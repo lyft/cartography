@@ -6,10 +6,7 @@ __pycache__
 .serverless
 .vscode
 build
-cloudformation
-docs
 node_modules
-tests
 .venv
 venv
 
@@ -17,3 +14,8 @@ local.settings.json
 .env*
 *.sh
 serverless.yml
+
+azure
+cloudformation
+docs
+tests
