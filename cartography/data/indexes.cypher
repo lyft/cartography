@@ -112,6 +112,7 @@ CREATE INDEX ON :OktaTrustedOrigin(id);
 CREATE INDEX ON :OktaAdministrationRole(id);
 CREATE INDEX ON :Package(id);
 CREATE INDEX ON :Package(name);
+CREATE INDEX ON :PeeringConnection(id);
 CREATE INDEX ON :ProgrammingLanguage(id);
 CREATE INDEX ON :PublicIpAddress(ip);
 CREATE INDEX ON :PythonLibrary(id);
