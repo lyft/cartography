@@ -7,7 +7,9 @@ from typing import List
 from typing import Tuple
 
 import neo4j
+from azure.core.exceptions import ClientAuthenticationError
 from azure.core.exceptions import HttpResponseError
+from azure.core.exceptions import ResourceNotFoundError
 from azure.mgmt.cosmosdb import CosmosDBManagementClient
 
 from .util.credentials import Credentials
@@ -35,6 +37,13 @@ def get_database_account_list(credentials: Credentials, subscription_id: str) ->
         client = get_client(credentials, subscription_id)
         database_account_list = list(map(lambda x: x.as_dict(), client.database_accounts.list()))
 
+    # ClientAuthenticationError and ResourceNotFoundError are subclasses under HttpResponseError
+    except ClientAuthenticationError as e:
+        logger.warning(f"Client Authentication Error while retrieving database accounts - {e}")
+        return []
+    except ResourceNotFoundError as e:
+        logger.warning(f"Database Account not found error - {e}")
+        return []
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving database accounts - {e}")
         return []
@@ -447,6 +456,12 @@ def get_sql_databases(credentials: Credentials, subscription_id: str, database_a
             ),
         )
 
+    except ClientAuthenticationError as e:
+        logger.warning(f"Client Authentication Error while retrieving SQL databases - {e}")
+        return []
+    except ResourceNotFoundError as e:
+        logger.warning(f"SQL databases resource not found error - {e}")
+        return []
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving SQL Database list - {e}")
         return []
@@ -471,6 +486,12 @@ def get_cassandra_keyspaces(credentials: Credentials, subscription_id: str, data
             ),
         )
 
+    except ClientAuthenticationError as e:
+        logger.warning(f"Client Authentication Error while retrieving Cassandra keyspaces - {e}")
+        return []
+    except ResourceNotFoundError as e:
+        logger.warning(f"Cassandra keyspaces resource not found error - {e}")
+        return []
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving Cassandra keyspaces list - {e}")
         return []
@@ -495,6 +516,12 @@ def get_mongodb_databases(credentials: Credentials, subscription_id: str, databa
             ),
         )
 
+    except ClientAuthenticationError as e:
+        logger.warning(f"Client Authentication Error while retrieving MongoDB Databases - {e}")
+        return []
+    except ResourceNotFoundError as e:
+        logger.warning(f"MongoDB Database resource not found error - {e}")
+        return []
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving MongoDB Database list - {e}")
         return []
@@ -519,6 +546,12 @@ def get_table_resources(credentials: Credentials, subscription_id: str, database
             ),
         )
 
+    except ClientAuthenticationError as e:
+        logger.warning(f"Client Authentication Error while retrieving table resources - {e}")
+        return []
+    except ResourceNotFoundError as e:
+        logger.warning(f"Table resource not found error - {e}")
+        return []
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving table resources list - {e}")
         return []
@@ -739,6 +772,12 @@ def get_sql_containers(credentials: Credentials, subscription_id: str, database:
             ),
         )
 
+    except ClientAuthenticationError as e:
+        logger.warning(f"Client Authentication Error while retrieving SQL containers - {e}")
+        return []
+    except ResourceNotFoundError as e:
+        logger.warning(f"SQL containers resource not found error - {e}")
+        return []
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving SQL Containers - {e}")
         return []
@@ -836,6 +875,12 @@ def get_cassandra_tables(credentials: Credentials, subscription_id: str, keyspac
             ),
         )
 
+    except ClientAuthenticationError as e:
+        logger.warning(f"Client Authentication Error while retrieving Cassandra tables - {e}")
+        return []
+    except ResourceNotFoundError as e:
+        logger.warning(f"Cassandra tables resource not found error - {e}")
+        return []
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving Cassandra tables - {e}")
         return []
@@ -932,6 +977,12 @@ def get_mongodb_collections(credentials: Credentials, subscription_id: str, data
             ),
         )
 
+    except ClientAuthenticationError as e:
+        logger.warning(f"Client Authentication Error while retrieving MongoDB collections - {e}")
+        return []
+    except ResourceNotFoundError as e:
+        logger.warning(f"MongoDB collections resource not found error - {e}")
+        return []
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving MongoDB collections - {e}")
         return []
