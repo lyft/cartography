@@ -6,7 +6,9 @@ from typing import List
 from typing import Tuple
 
 import neo4j
+from azure.core.exceptions import ClientAuthenticationError
 from azure.core.exceptions import HttpResponseError
+from azure.core.exceptions import ResourceNotFoundError
 from azure.mgmt.storage import StorageManagementClient
 
 from .util.credentials import Credentials
@@ -34,6 +36,13 @@ def get_storage_account_list(credentials: Credentials, subscription_id: str) -> 
         client = get_client(credentials, subscription_id)
         storage_account_list = list(map(lambda x: x.as_dict(), client.storage_accounts.list()))
 
+    # ClientAuthenticationError and ResourceNotFoundError are subclasses under HttpResponseError
+    except ClientAuthenticationError as e:
+        logger.warning(f"Client Authentication Error while retrieving storage accounts - {e}")
+        return []
+    except ResourceNotFoundError as e:
+        logger.warning(f"Storage Account not found error - {e}")
+        return []
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving storage accounts - {e}")
         return []
@@ -122,6 +131,12 @@ def get_queue_services(credentials: Credentials, subscription_id: str, storage_a
             storage_account['resourceGroup'], storage_account['name'],
         ).as_dict()['value']
 
+    except ClientAuthenticationError as e:
+        logger.warning(f"Client Authentication Error while retrieving queue services - {e}")
+        return []
+    except ResourceNotFoundError as e:
+        logger.warning(f"Queue services resource not found error - {e}")
+        return []
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving queue services list - {e}")
         return []
@@ -140,6 +155,12 @@ def get_table_services(credentials: Credentials, subscription_id: str, storage_a
             storage_account['resourceGroup'], storage_account['name'],
         ).as_dict()['value']
 
+    except ClientAuthenticationError as e:
+        logger.warning(f"Client Authentication Error while retrieving table services - {e}")
+        return []
+    except ResourceNotFoundError as e:
+        logger.warning(f"Table services resource not found error - {e}")
+        return []
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving table services list - {e}")
         return []
@@ -158,6 +179,12 @@ def get_file_services(credentials: Credentials, subscription_id: str, storage_ac
             storage_account['resourceGroup'], storage_account['name'],
         ).as_dict()['value']
 
+    except ClientAuthenticationError as e:
+        logger.warning(f"Client Authentication Error while retrieving file services - {e}")
+        return []
+    except ResourceNotFoundError as e:
+        logger.warning(f"File services resource not found error - {e}")
+        return []
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving file services list - {e}")
         return []
@@ -181,6 +208,12 @@ def get_blob_services(credentials: Credentials, subscription_id: str, storage_ac
             ),
         )
 
+    except ClientAuthenticationError as e:
+        logger.warning(f"Client Authentication Error while retrieving blob services - {e}")
+        return []
+    except ResourceNotFoundError as e:
+        logger.warning(f"Blob services resource not found error - {e}")
+        return []
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving blob services list - {e}")
         return []
@@ -386,6 +419,12 @@ def get_queues(credentials: Credentials, subscription_id: str, queue_service: Di
             ),
         )
 
+    except ClientAuthenticationError as e:
+        logger.warning(f"Client Authentication Error while retrieving queues - {e}")
+        return []
+    except ResourceNotFoundError as e:
+        logger.warning(f"Queue resource not found error - {e}")
+        return []
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving queues - {e}")
         return []
@@ -473,6 +512,12 @@ def get_tables(credentials: Credentials, subscription_id: str, table_service: Di
             ),
         )
 
+    except ClientAuthenticationError as e:
+        logger.warning(f"Client Authentication Error while retrieving tables - {e}")
+        return []
+    except ResourceNotFoundError as e:
+        logger.warning(f"Table resource not found error - {e}")
+        return []
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving tables - {e}")
         return []
@@ -561,6 +606,12 @@ def get_shares(credentials: Credentials, subscription_id: str, file_service: Dic
             ),
         )
 
+    except ClientAuthenticationError as e:
+        logger.warning(f"Client Authentication Error while retrieving tables - {e}")
+        return []
+    except ResourceNotFoundError as e:
+        logger.warning(f"Table resource not found error - {e}")
+        return []
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving file shares - {e}")
         return []
@@ -660,8 +711,14 @@ def get_blob_containers(credentials: Credentials, subscription_id: str, blob_ser
             ),
         )
 
+    except ClientAuthenticationError as e:
+        logger.warning(f"Client Authentication Error while retrieving blob containers - {e}")
+        return []
+    except ResourceNotFoundError as e:
+        logger.warning(f"Blob containers resource not found error - {e}")
+        return []
     except HttpResponseError as e:
-        logger.warning(f"Error while retrieving blob_containers - {e}")
+        logger.warning(f"Error while retrieving blob containers - {e}")
         return []
 
     return blob_containers
