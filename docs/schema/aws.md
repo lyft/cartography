@@ -96,7 +96,7 @@
   - [Relationships](#relationships-43)
 - [NetworkInterface](#networkinterface)
   - [Relationships](#relationships-44)
-- [PeeringConnection:AWSPeeringConnection](#peeringconnectionawspeeringconnection)
+- [AWSPeeringConnection](#awspeeringconnection)
 - [RedshiftCluster](#redshiftcluster)
   - [Relationships](#relationships-45)
 - [RDSInstance](#rdsinstance)
@@ -188,19 +188,19 @@ type for `AWSIpv4CidrBlock` and `AWSIpv6CidrBlock`
   ```
 - Peering connection where `AWSCidrBlock` is an accepter or requester cidr.
   ```
-  (AWSCidrBlock)<-[REQUESTER_CIDR]-(PeeringConnection)
-  (AWSCidrBlock)<-[ACCEPTER_CIDR]-(PeeringConnection)
+  (AWSCidrBlock)<-[REQUESTER_CIDR]-(AWSPeeringConnection)
+  (AWSCidrBlock)<-[ACCEPTER_CIDR]-(AWSPeeringConnection)
   ```
 
   Example of high level view of peering (without security group permissions)
   ```
-  MATCH p=(:AWSAccount)-[:RESOURCE|BLOCK_ASSOCIATION*..]->(:AWSCidrBlock)<-[:ACCEPTER_CIDR]-(:PeeringConnection)-[:REQUESTER_CIDR]->(:AWSCidrBlock)<-[:RESOURCE|BLOCK_ASSOCIATION*..]-(:AWSAccount)
+  MATCH p=(:AWSAccount)-[:RESOURCE|BLOCK_ASSOCIATION*..]->(:AWSCidrBlock)<-[:ACCEPTER_CIDR]-(:AWSPeeringConnection)-[:REQUESTER_CIDR]->(:AWSCidrBlock)<-[:RESOURCE|BLOCK_ASSOCIATION*..]-(:AWSAccount)
   RETURN p
   ```
 
   Exploring detailed inbound peering rules
   ```
-  MATCH (outbound_account:AWSAccount)-[:RESOURCE|BLOCK_ASSOCIATION*..]->(:AWSCidrBlock)<-[:ACCEPTER_CIDR]-(:PeeringConnection)-[:REQUESTER_CIDR]->(inbound_block:AWSCidrBlock)<-[:BLOCK_ASSOCIATION]-(inbound_vpc:AWSVpc)<-[:RESOURCE]-(inbound_account:AWSAccount)
+  MATCH (outbound_account:AWSAccount)-[:RESOURCE|BLOCK_ASSOCIATION*..]->(:AWSCidrBlock)<-[:ACCEPTER_CIDR]-(:AWSPeeringConnection)-[:REQUESTER_CIDR]->(inbound_block:AWSCidrBlock)<-[:BLOCK_ASSOCIATION]-(inbound_vpc:AWSVpc)<-[:RESOURCE]-(inbound_account:AWSAccount)
   WITH inbound_vpc, inbound_block, outbound_account, inbound_account
   MATCH (inbound_range:IpRange{id: inbound_block.cidr_block})-[:MEMBER_OF_IP_RULE]->(inbound_rule:IpPermissionInbound)-[:MEMBER_OF_EC2_SECURITY_GROUP]->(inbound_group:EC2SecurityGroup)<-[:MEMBER_OF_EC2_SECURITY_GROUP]-(inbound_vpc)
   RETURN outbound_account.name, inbound_account.name, inbound_range.range, inbound_rule.fromport, inbound_rule.toport, inbound_rule.protocol, inbound_group.name, inbound_vpc.id
@@ -545,8 +545,8 @@ More information on https://docs.aws.amazon.com/cli/latest/reference/ec2/describ
     ```
 - Peering connection where `AWSVpc` is an accepter or requester vpc.
   ```
-  (AWSVpc)<-[REQUESTER_VPC]-(PeeringConnection)
-  (AWSVpc)<-[ACCEPTER_VPC]-(PeeringConnection)
+  (AWSVpc)<-[REQUESTER_VPC]-(AWSPeeringConnection)
+  (AWSVpc)<-[ACCEPTER_VPC]-(AWSPeeringConnection)
   ```
 
 
@@ -1647,7 +1647,7 @@ Representation of a generic Network Interface.  Currently however, we only creat
         (NetworkInterface)-[TAGGED]->(AWSTag)
         ```
 
-## PeeringConnection:AWSPeeringConnection
+## AWSPeeringConnection
 
 Representation of an AWS [PeeringConnection](https://docs.aws.amazon.com/vpc/latest/peering/what-is-vpc-peering.html) implementing an AWS [VpcPeeringConnection](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_VpcPeeringConnection.html) object.
 
@@ -1666,14 +1666,14 @@ Representation of an AWS [PeeringConnection](https://docs.aws.amazon.com/vpc/lat
 
 - `AWSVpc` is an accepter or requester vpc.
   ```
-  (AWSVpc)<-[REQUESTER_VPC]-(PeeringConnection)
-  (AWSVpc)<-[ACCEPTER_VPC]-(PeeringConnection)
+  (AWSVpc)<-[REQUESTER_VPC]-(AWSPeeringConnection)
+  (AWSVpc)<-[ACCEPTER_VPC]-(AWSPeeringConnection)
   ```
 
 - `AWSCidrBlock` is an accepter or requester cidr.
   ```
-  (AWSCidrBlock)<-[REQUESTER_CIDR]-(PeeringConnection)
-  (AWSCidrBlock)<-[ACCEPTER_CIDR]-(PeeringConnection)
+  (AWSCidrBlock)<-[REQUESTER_CIDR]-(AWSPeeringConnection)
+  (AWSCidrBlock)<-[ACCEPTER_CIDR]-(AWSPeeringConnection)
   ```
 
 

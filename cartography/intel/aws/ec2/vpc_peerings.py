@@ -28,7 +28,7 @@ def load_vpc_peerings(
     ingest_vpc_peerings = """
     UNWIND {vpc_peerings} AS vpc_peering
 
-    MERGE (pcx:PeeringConnection:AWSPeeringConnection{id: vpc_peering.VpcPeeringConnectionId})
+    MERGE (pcx:AWSPeeringConnection{id: vpc_peering.VpcPeeringConnectionId})
     ON CREATE SET pcx.firstseen = timestamp()
     SET pcx.lastupdated = {update_tag},
     pcx.allow_dns_resolution_from_remote_vpc =
@@ -97,7 +97,7 @@ def load_accepter_cidrs(
     SET ac_b.lastupdated = {update_tag}, ac_b.cidr_block  =  c_b.CidrBlock
 
     WITH vpc_peering, ac_b
-    MATCH (pcx:PeeringConnection{id: vpc_peering.VpcPeeringConnectionId}), (cb:AWSCidrBlock{id: ac_b.id})
+    MATCH (pcx:AWSPeeringConnection{id: vpc_peering.VpcPeeringConnectionId}), (cb:AWSCidrBlock{id: ac_b.id})
     MERGE (pcx)-[r:ACCEPTER_CIDR]->(cb)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {update_tag}
@@ -130,7 +130,7 @@ def load_requester_cidrs(
     SET rc_b.lastupdated = {update_tag}, rc_b.cidr_block  =  c_b.CidrBlock
 
     WITH vpc_peering, rc_b
-    MATCH (pcx:PeeringConnection{id: vpc_peering.VpcPeeringConnectionId}), (cb:AWSCidrBlock{id: rc_b.id})
+    MATCH (pcx:AWSPeeringConnection{id: vpc_peering.VpcPeeringConnectionId}), (cb:AWSCidrBlock{id: rc_b.id})
     MERGE (pcx)-[r:REQUESTER_CIDR]->(cb)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {update_tag}

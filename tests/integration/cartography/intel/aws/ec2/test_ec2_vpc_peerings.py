@@ -23,7 +23,7 @@ def test_load_vpc_peerings(neo4j_session):
 
     nodes = neo4j_session.run(
         """
-        MATCH (pcx:PeeringConnection) RETURN pcx.id;
+        MATCH (pcx:AWSPeeringConnection) RETURN pcx.id;
         """,
     )
     actual_nodes = {n['pcx.id'] for n in nodes}
@@ -53,7 +53,7 @@ def test_vpc_peering_relationships_vpc(neo4j_session):
     result = neo4j_session.run(
         """
         MATCH
-        (rvpc:AWSVpc)-[:REQUESTER_VPC]-(pcx:PeeringConnection)-[:ACCEPTER_VPC]-(avpc:AWSVpc)
+        (rvpc:AWSVpc)-[:REQUESTER_VPC]-(pcx:AWSPeeringConnection)-[:ACCEPTER_VPC]-(avpc:AWSVpc)
         RETURN rvpc.id, pcx.id, avpc.id;
         """,
     )
@@ -100,7 +100,7 @@ def test_vpc_peering_relationships_cidr(neo4j_session):
     result = neo4j_session.run(
         """
         MATCH
-        (r:AWSIpv4CidrBlock)-[:REQUESTER_CIDR]-(p:PeeringConnection)-[]-(a:AWSIpv4CidrBlock)
+        (r:AWSIpv4CidrBlock)-[:REQUESTER_CIDR]-(p:AWSPeeringConnection)-[]-(a:AWSIpv4CidrBlock)
         RETURN r.id, p.id, a.id;
         """,
     )
