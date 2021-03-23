@@ -1,5 +1,9 @@
 import json
 import logging
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Tuple
 
 import requests
 
@@ -8,7 +12,7 @@ logger = logging.getLogger(__name__)
 _TIMEOUT = (60, 60)
 
 
-def call_github_api(query, variables, token, api_url):
+def call_github_api(query: str, variables: str, token: str, api_url: str) -> Dict:
     """
     Calls the GitHub v4 API and executes a query
     :param query: the GraphQL query to run
@@ -33,7 +37,7 @@ def call_github_api(query, variables, token, api_url):
     return response.json()
 
 
-def fetch_page(token, api_url, organization, query, cursor=None):
+def fetch_page(token: str, api_url: str, organization: str, query: str, cursor: Optional[str] = None) -> Dict:
     """
     Return a single page of max size 100 elements from the Github api_url using the given `query` and `cursor` params.
     :param token: The API token as string. Must have permission for the object being paginated.
@@ -53,7 +57,9 @@ def fetch_page(token, api_url, organization, query, cursor=None):
     return response
 
 
-def fetch_all(token, api_url, organization, query, resource_type, field_name):
+def fetch_all(
+    token: str, api_url: str, organization: str, query: str, resource_type: str, field_name: str,
+) -> Tuple[List[Dict], Dict]:
     """
     Fetch and return all data items of the given `resource_type` and `field_name` from Github's paginated GraphQL API as
     a list, along with information on the organization that they belong to.
@@ -71,22 +77,22 @@ def fetch_all(token, api_url, organization, query, resource_type, field_name):
     """
     cursor = None
     has_next_page = True
-    data = []
+    data: List[Dict] = []
     while has_next_page:
         try:
             resp = fetch_page(token, api_url, organization, query, cursor)
         except requests.exceptions.Timeout:
-            logger.warning(
-                "GitHub: Could not retrieve page of resource %s due to API timeout; continuing with incomplete data",
-                resource_type,
+            logger.error(
+                f"GitHub: Could not retrieve page of resource {resource_type} due to API timeout.",
+                exc_info=True,
             )
-            break
-        except requests.exceptions.HTTPError as e:
-            logger.warning(
-                f"GitHub: Could not retrieve page of resource `{resource_type}` due to HTTP error."
-                f"Details: {e}; Continuing with incomplete data.",
+            raise
+        except requests.exceptions.HTTPError:
+            logger.error(
+                f"GitHub: Could not retrieve page of resource `{resource_type}` due to HTTP error.",
+                exc_info=True,
             )
-            break
+            raise
         resource = resp['data']['organization'][resource_type]
         data.extend(resource[field_name])
         cursor = resource['pageInfo']['endCursor']

@@ -1,6 +1,10 @@
 import logging
+from typing import Dict
+from typing import List
 
+import neo4j
 from googleapiclient.discovery import HttpError
+from googleapiclient.discovery import Resource
 
 from cartography.intel.gcp import compute
 from cartography.util import run_cleanup_job
@@ -10,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
-def get_gcp_buckets(storage, project_id):
+def get_gcp_buckets(storage: Resource, project_id: str) -> Dict:
     """
     Returns a list of storage objects within some given project
 
@@ -51,7 +55,7 @@ def get_gcp_buckets(storage, project_id):
 
 
 @timeit
-def transform_gcp_buckets(bucket_res):
+def transform_gcp_buckets(bucket_res: Dict) -> List[Dict]:
     '''
     Transform the GCP Storage Bucket response object for Neo4j ingestion
 
@@ -92,7 +96,7 @@ def transform_gcp_buckets(bucket_res):
 
 
 @timeit
-def load_gcp_buckets(neo4j_session, buckets, gcp_update_tag):
+def load_gcp_buckets(neo4j_session: neo4j.Session, buckets: List[Dict], gcp_update_tag: int) -> None:
     '''
     Ingest GCP Storage Buckets to Neo4j
 
@@ -165,7 +169,7 @@ def load_gcp_buckets(neo4j_session, buckets, gcp_update_tag):
 
 
 @timeit
-def _attach_gcp_bucket_labels(neo4j_session, bucket, gcp_update_tag):
+def _attach_gcp_bucket_labels(neo4j_session: neo4j.Session, bucket: Resource, gcp_update_tag: int) -> None:
     """
     Attach GCP bucket labels to the bucket.
     :param neo4j_session: The neo4j session
@@ -197,7 +201,7 @@ def _attach_gcp_bucket_labels(neo4j_session, bucket, gcp_update_tag):
 
 
 @timeit
-def cleanup_gcp_buckets(neo4j_session, common_job_parameters):
+def cleanup_gcp_buckets(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     """
     Delete out-of-date GCP Storage Bucket nodes and relationships
 
@@ -214,7 +218,10 @@ def cleanup_gcp_buckets(neo4j_session, common_job_parameters):
 
 
 @timeit
-def sync_gcp_buckets(neo4j_session, storage, project_id, gcp_update_tag, common_job_parameters):
+def sync_gcp_buckets(
+    neo4j_session: neo4j.Session, storage: Resource, project_id: str, gcp_update_tag: int,
+    common_job_parameters: Dict,
+) -> None:
     """
     Get GCP instances using the Storage resource object, ingest to Neo4j, and clean up old data.
 

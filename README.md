@@ -35,13 +35,15 @@ You can learn more about the story behind Cartography in our [presentation at BS
 Start [here](docs/setup/install.md).
 
 ## Supported platforms
-- [Amazon Web Services](docs/setup/config/aws.md) -  EC2, Elasticsearch, Elastic Kubernetes Service, DynamoDB, IAM, Lambda, RDS, Redshift, Route53, S3, STS, Tags
+- [Amazon Web Services](docs/setup/config/aws.md) -  API Gateway, EC2, Elasticsearch, Elastic Kubernetes Service, DynamoDB, IAM, KMS, Lambda, RDS, Redshift, Route53, S3, STS, Tags
 - [Google Cloud Platform](docs/setup/config/gcp.md) - Cloud Resource Manager, Compute, DNS, Storage, Google Kubernetes Engine
 - [Google GSuite](docs/setup/config/gsuite.md) - users, groups
 - [Oracle Cloud Infrastructure](docs/setup/config/oci.md) - IAM
 - [Duo CRXcavator](docs/setup/config/crxcavator.md) - Chrome extensions, GSuite users
 - [Okta](docs/setup/config/okta.md) - users, groups, organizations, roles, applications, factors, trusted origins, reply URIs
 - [Github](docs/setup/config/github.md) - repos, branches, users
+- [DigitalOcean](docs/setup/config/digitalocean.md)
+- [Microsoft Azure](docs/setup/config/azure.md) -  SQL, Virtual Machine
 
 ## Usage
 Start with our [tutorial](docs/usage/tutorial.md). Our [data schema](docs/schema) is a helpful reference when you get stuck.

@@ -1,8 +1,12 @@
 import logging
 from string import Template
+from typing import Any
+from typing import List
+from typing import Optional
 
 import dns.rdatatype
 import dns.resolver
+import neo4j
 
 from cartography.util import timeit
 
@@ -11,9 +15,9 @@ logger = logging.getLogger(__name__)
 
 @timeit
 def ingest_dns_record_by_fqdn(
-    neo4j_session, update_tag, fqdn, points_to_record, record_label,
-    dns_node_additional_label=None,
-):
+    neo4j_session: neo4j.Session, update_tag: int, fqdn: str, points_to_record: str, record_label: str,
+    dns_node_additional_label: Optional[str] = None,
+) -> None:
     """
     Creates a :DNSRecord node in the graph from the given FQDN and performs DNS resolution to connect it to its
     associated IP addresses.
@@ -63,7 +67,7 @@ def ingest_dns_record_by_fqdn(
 
 
 @timeit
-def _link_ip_to_A_record(neo4j_session, update_tag, ip_list, parent_record):
+def _link_ip_to_A_record(neo4j_session: neo4j.Session, update_tag: int, ip_list: List[str], parent_record: str) -> None:
     """
     Link A record to to its IP
 
@@ -95,9 +99,9 @@ def _link_ip_to_A_record(neo4j_session, update_tag, ip_list, parent_record):
 
 @timeit
 def ingest_dns_record(
-    neo4j_session, name, value, type, update_tag, points_to_record, record_label,
-    dns_node_additional_label,
-):
+    neo4j_session: neo4j.Session, name: neo4j.Session, value: str, type: str, update_tag: int, points_to_record: str,
+    record_label: str, dns_node_additional_label: str,
+) -> str:
     """
     Ingest a new DNS record
 
@@ -138,7 +142,7 @@ def ingest_dns_record(
 
 
 @timeit
-def get_dns_resolution_by_fqdn(fqdn):
+def get_dns_resolution_by_fqdn(fqdn: str) -> Any:
     """
     Get dns resolution data for fqdn
 
@@ -148,7 +152,7 @@ def get_dns_resolution_by_fqdn(fqdn):
     return dns.resolver.query(fqdn)
 
 
-def get_dns_record_type(record_data):
+def get_dns_record_type(record_data: Any) -> str:
     """
     Get DNS record type from answer
 
