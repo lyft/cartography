@@ -18,6 +18,30 @@
   - [Relationships](#relationships-5)
 - [AzureSnapshot](#azuresnapshot)
   - [Relationships](#relationships-6)
+- [AzureSQLServer](#azuresqlserver)
+  - [Relationships](#relationships-7)
+- [AzureServerDNSAlias](#azureserverdnsalias)
+  - [Relationships](#relationships-8)
+- [AzureServerADAdministrator](#azureserveradadministrator)
+  - [Relationships](#relationships-9)
+- [AzureRecoverableDatabase](#azurerecoverabledatabase)
+  - [Relationships](#relationships-10)
+- [AzureRestorableDroppedDatabase](#azurerestorabledroppeddatabase)
+  - [Relationships](#relationships-11)
+- [AzureFailoverGroup](#azurefailovergroup)
+  - [Relationships](#relationships-12)
+- [AzureElasticPool](#azureelasticpool)
+  - [Relationships](#relationships-13)
+- [AzureSQLDatabase](#azuresqldatabase)
+  - [Relationships](#relationships-14)
+- [AzureReplicationLink](#azurereplicationlink)
+  - [Relationships](#relationships-15)
+- [AzureDatabaseThreatDetectionPolicy](#azuredatabasethreatdetectionpolicy)
+  - [Relationships](#relationships-16)
+- [AzureRestorePoint](#azurerestorepoint)
+  - [Relationships](#relationships-17)
+- [AzureTransparentDataEncryption](#azuretransparentdataencryption)
+  - [Relationships](#relationships-18)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -196,4 +220,354 @@ Representation of an [Azure Snapshot](https://docs.microsoft.com/en-us/rest/api/
 
         ```
         (AzureSubscription)-[RESOURCE]->(AzureSnapshot)
+        ```
+## AzureSQLServer
+
+Representation of an [AzureSQLServer](https://docs.microsoft.com/en-us/rest/api/sql/servers).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The resource ID|
+|location | The location where the resource is created|
+|resourcegroup | The Resource Group where SQL Server is created|
+|name | The friendly name that identifies the SQL server|
+|kind | Specifies the kind of SQL server|
+|state | The state of the server|
+|version | The version of the server |
+
+### Relationships
+
+- Azure Subscription contains one or more SQL Servers.
+
+        ```
+        (AzureSubscription)-[RESOURCE]->(AzureSQLServer)
+        ```
+- Azure SQL Server can be used by one or more Azure Server DNS Aliases.
+
+        ```
+        (AzureSQLServer)-[USED_BY]->(AzureServerDNSAlias)
+        ```
+- Azure SQL Server can be administered by one or more Azure Server AD Administrators.
+
+        ```
+        (AzureSQLServer)-[ADMINISTERED_BY]->(AzureServerADAdministrator)
+        ```
+- Azure SQL Server has one or more Azure Recoverable Database.
+
+        ```
+        (AzureSQLServer)-[RESOURCE]->(AzureRecoverableDatabase)
+        ```
+- Azure SQL Server has one or more Azure Restorable Dropped Database.
+
+        ```
+        (AzureSQLServer)-[RESOURCE]->(AzureRestorableDroppedDatabase)
+        ```
+- Azure SQL Server has one or more Azure Failover Group.
+
+        ```
+        (AzureSQLServer)-[RESOURCE]->(AzureFailoverGroup)
+        ```
+- Azure SQL Server has one or more Azure Elastic Pool.
+
+        ```
+        (AzureSQLServer)-[RESOURCE]->(AzureElasticPool)
+        ```
+- Azure SQL Server has one or more Azure SQL Database.
+
+        ```
+        (AzureSQLServer)-[RESOURCE]->(AzureSQLDatabase)
+        ```
+
+## AzureServerDNSAlias
+
+Representation of an [AzureServerDNSAlias](https://docs.microsoft.com/en-us/rest/api/sql/serverdnsaliases).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The resource ID|
+|name | The name of the server DNS alias|
+|dnsrecord | The fully qualified DNS record for alias.|
+
+### Relationships
+
+- Azure SQL Server can be used by one or more Azure Server DNS Aliases.
+
+        ```
+        (AzureSQLServer)-[USED_BY]->(AzureServerDNSAlias)
+        ```
+
+## AzureServerADAdministrator
+
+Representation of an [AzureServerADAdministrator](https://docs.microsoft.com/en-us/rest/api/sql/serverazureadadministrators).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The resource ID|
+|name | The name of the resource.|
+|administratortype | The type of the server administrator.|
+|login | The login name of the server administrator.|
+
+### Relationships
+
+- Azure SQL Server can be administered by one or more Azure Server AD Administrators.
+
+        ```
+        (AzureSQLServer)-[ADMINISTERED_BY]->(AzureServerADAdministrator)
+        ```
+
+## AzureRecoverableDatabase
+
+Representation of an [AzureRecoverableDatabase](https://docs.microsoft.com/en-us/rest/api/sql/recoverabledatabases).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The resource ID|
+|name | The name of the resource.|
+|edition | The edition of the database.|
+|servicelevelobjective | The service level objective name of the database.|
+|lastbackupdate | The last available backup date of the database (ISO8601 format).|
+
+### Relationships
+
+- Azure SQL Server has one or more Azure Recoverable Database.
+
+        ```
+        (AzureSQLServer)-[RESOURCE]->(AzureRecoverableDatabase)
+        ```
+
+## AzureRestorableDroppedDatabase
+
+Representation of an [AzureRestorableDroppedDatabase](https://docs.microsoft.com/en-us/rest/api/sql/restorabledroppeddatabases).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The resource ID|
+|name | The name of the resource.|
+|location | The geo-location where the resource lives.|
+|databasename | The name of the database.|
+|creationdate | The creation date of the database (ISO8601 format).|
+|deletiondate | The deletion date of the database (ISO8601 format).|
+|restoredate | The earliest restore date of the database (ISO8601 format).|
+|edition | The edition of the database.|
+|servicelevelobjective | The service level objective name of the database.|
+|maxsizebytes | The max size in bytes of the database.|
+
+### Relationships
+
+- Azure SQL Server has one or more Azure Restorable Dropped Database.
+
+        ```
+        (AzureSQLServer)-[RESOURCE]->(AzureRestorableDroppedDatabase)
+        ```
+
+## AzureFailoverGroup
+
+Representation of an [AzureFailoverGroup](https://docs.microsoft.com/en-us/rest/api/sql/failovergroups).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The resource ID|
+|name | The name of the resource.|
+|location | The geo-location where the resource lives.|
+|replicationrole | Local replication role of the failover group instance.|
+|replicationstate | Replication state of the failover group instance.|
+
+### Relationships
+
+- Azure SQL Server has one or more Azure Failover Group.
+
+        ```
+        (AzureSQLServer)-[RESOURCE]->(AzureFailoverGroup)
+        ```
+
+## AzureElasticPool
+
+Representation of an [AzureElasticPool](https://docs.microsoft.com/en-us/rest/api/sql/elasticpools).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The resource ID|
+|name | The name of the resource.|
+|location | The location of the resource.|
+|kind | The kind of elastic pool.|
+|creationdate | The creation date of the elastic pool (ISO8601 format).|
+|state | The state of the elastic pool.|
+|maxsizebytes | The storage limit for the database elastic pool in bytes.|
+|licensetype | The license type to apply for this elastic pool. |
+|zoneredundant | Specifies whether or not this elastic pool is zone redundant, which means the replicas of this elastic pool will be spread across multiple availability zones.|
+
+### Relationships
+
+- Azure SQL Server has one or more Azure Elastic Pool.
+
+        ```
+        (AzureSQLServer)-[RESOURCE]->(AzureElasticPool)
+        ```
+
+## AzureSQLDatabase
+
+Representation of an [AzureSQLDatabase](https://docs.microsoft.com/en-us/rest/api/sql/databases).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The resource ID|
+|name | The name of the resource.|
+|location | The location of the resource.|
+|kind | The kind of database.|
+|creationdate | The creation date of the database (ISO8601 format).|
+|databaseid | The ID of the database.|
+|maxsizebytes | The max size of the database expressed in bytes.|
+|licensetype | The license type to apply for this database.|
+|secondarylocation | The default secondary region for this database.|
+|elasticpoolid | The resource identifier of the elastic pool containing this database.|
+|collation | The collation of the database.|
+|failovergroupid | Failover Group resource identifier that this database belongs to.|
+|zoneredundant | Whether or not this database is zone redundant, which means the replicas of this database will be spread across multiple availability zones.|
+|restorabledroppeddbid | The resource identifier of the restorable dropped database associated with create operation of this database.|
+|recoverabledbid | The resource identifier of the recoverable database associated with create operation of this database.|
+
+### Relationships
+
+- Azure SQL Server has one or more Azure SQL Database.
+
+        ```
+        (AzureSQLServer)-[RESOURCE]->(AzureSQLDatabase)
+        ```
+- Azure SQL Database contains one or more Azure Replication Links.
+
+        ```
+        (AzureSQLDatabase)-[CONTAINS]->(AzureReplicationLink)
+        ```
+- Azure SQL Database contains a Database Threat Detection Policy.
+
+        ```
+        (AzureSQLDatabase)-[CONTAINS]->(AzureDatabaseThreatDetectionPolicy)
+        ```
+- Azure SQL Database contains one or more Restore Points.
+
+        ```
+        (AzureSQLDatabase)-[CONTAINS]->(AzureRestorePoint)
+        ```
+- Azure SQL Database contains Transparent Data Encryption.
+
+        ```
+        (AzureSQLDatabase)-[CONTAINS]->(AzureTransparentDataEncryption)
+        ```
+
+## AzureReplicationLink
+
+Representation of an [AzureReplicationLink](https://docs.microsoft.com/en-us/rest/api/sql/replicationlinks).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The resource ID|
+|name | The name of the resource.|
+|location | Location of the server that contains this firewall rule.|
+|partnerdatabase | The name of the partner database.|
+|partnerlocation | The Azure Region of the partner database.|
+|partnerrole | The role of the database in the replication link.|
+|partnerserver | The name of the server hosting the partner database.|
+|mode | Replication mode of this replication link.|
+|state | The replication state for the replication link.|
+|percentcomplete | The percentage of seeding complete for the replication link.|
+|role | The role of the database in the replication link.|
+|starttime | The start time for the replication link.|
+|terminationallowed | Legacy value indicating whether termination is allowed.|
+
+### Relationships
+
+- Azure SQL Database contains one or more Azure Replication Links.
+
+        ```
+        (AzureSQLDatabase)-[CONTAINS]->(AzureReplicationLink)
+        ```
+
+## AzureDatabaseThreatDetectionPolicy
+
+Representation of an [AzureDatabaseThreatDetectionPolicy](https://docs.microsoft.com/en-us/rest/api/sql/databasethreatdetectionpolicies).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The resource ID|
+|name | The name of the resource.|
+|location | The geo-location where the resource lives.|
+|kind | The kind of the resource.|
+|emailadmins | Specifies that the alert is sent to the account administrators.|
+|emailaddresses | Specifies the semicolon-separated list of e-mail addresses to which the alert is sent.|
+|retentiondays | Specifies the number of days to keep in the Threat Detection audit logs.|
+|state | Specifies the state of the policy.|
+|storageendpoint | Specifies the blob storage endpoint.|
+|useserverdefault | Specifies whether to use the default server policy.|
+|disabledalerts | Specifies the semicolon-separated list of alerts that are disabled, or empty string to disable no alerts.|
+
+### Relationships
+
+- Azure SQL Database contains a Database Threat Detection Policy.
+
+        ```
+        (AzureSQLDatabase)-[CONTAINS]->(AzureDatabaseThreatDetectionPolicy)
+        ```
+
+## AzureRestorePoint
+
+Representation of an [AzureRestorePoint](https://docs.microsoft.com/en-us/rest/api/sql/restorepoints).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The resource ID|
+|name | The name of the resource.|
+|location | The geo-location where the resource lives.|
+|restoredate | The earliest time to which this database can be restored.|
+|restorepointtype | The type of restore point.|
+|creationdate | The time the backup was taken.|
+
+### Relationships
+
+- Azure SQL Database contains one or more Restore Points.
+
+        ```
+        (AzureSQLDatabase)-[CONTAINS]->(AzureRestorePoint)
+        ```
+
+## AzureTransparentDataEncryption
+
+Representation of an [AzureTransparentDataEncryption](https://docs.microsoft.com/en-us/rest/api/sql/transparentdataencryptions).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The resource ID|
+|name | The name of the resource.|
+|location | The resource location.|
+|status | The status of the database transparent data encryption.|
+
+### Relationships
+
+- Azure SQL Database contains Transparent Data Encryption.
+
+        ```
+        (AzureSQLDatabase)-[CONTAINS]->(AzureTransparentDataEncryption)
         ```

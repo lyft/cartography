@@ -42,7 +42,7 @@ Start [here](docs/setup/install.md).
 - [Okta](docs/setup/config/okta.md) - users, groups, organizations, roles, applications, factors, trusted origins, reply URIs
 - [Github](docs/setup/config/github.md) - repos, branches, users
 - [DigitalOcean](docs/setup/config/digitalocean.md)
-- [Microsoft Azure](docs/setup/config/azure.md) -  Virtual Machine
+- [Microsoft Azure](docs/setup/config/azure.md) -  SQL, Virtual Machine
 
 ## Usage
 Start with our [tutorial](docs/usage/tutorial.md). Our [data schema](docs/schema) is a helpful reference when you get stuck.
