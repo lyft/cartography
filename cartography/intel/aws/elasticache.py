@@ -5,6 +5,7 @@ from typing import Set
 
 import boto3
 import neo4j
+from neobolt import exceptions
 
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
@@ -102,8 +103,11 @@ def sync(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
     update_tag: int, common_job_parameters: Dict,
 ) -> None:
-    for region in regions:
-        logger.info(f"Syncing ElastiCache clusters for region '{region}' in account {current_aws_account_id}")
-        clusters = get_elasticache_clusters(boto3_session, region)
-        load_elasticache_clusters(neo4j_session, clusters, region, current_aws_account_id, update_tag)
-    cleanup(neo4j_session, current_aws_account_id, update_tag)
+    try:
+        for region in regions:
+            logger.info(f"Syncing ElastiCache clusters for region '{region}' in account {current_aws_account_id}")
+            clusters = get_elasticache_clusters(boto3_session, region)
+            load_elasticache_clusters(neo4j_session, clusters, region, current_aws_account_id, update_tag)
+        cleanup(neo4j_session, current_aws_account_id, update_tag)
+    except exceptions.ClientError as err:
+        logger.warning(err)
