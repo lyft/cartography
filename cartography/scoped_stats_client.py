@@ -1,5 +1,4 @@
 from statsd import StatsClient
-from statsd.client.timer import Timer
 
 
 class ScopedStatsClient:
@@ -43,7 +42,7 @@ class ScopedStatsClient:
         if self.is_enabled():
             self._client.incr(self._scope_prefix + "." + stat, count, rate)
 
-    def timer(self, stat: str, rate: float = 1.0) -> Timer:
+    def timer(self, stat: str, rate: float = 1.0):
         """
         This method uses statsd to retrieve a timer.
         When Timer.stop() is called, a timing stat will automatically be sent to statsd
