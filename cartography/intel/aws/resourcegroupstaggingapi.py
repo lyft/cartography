@@ -132,6 +132,7 @@ def sync(
     neo4j_session: neo4j.Session,
     boto3_session: boto3.session.Session,
     regions: List[str],
+    current_aws_account_id: str,
     update_tag: int,
     common_job_parameters: Dict,
     tag_resource_type_mappings: Dict = TAG_RESOURCE_TYPE_MAPPINGS,

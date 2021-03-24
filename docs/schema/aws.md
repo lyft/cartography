@@ -58,64 +58,67 @@
   - [Relationships](#relationships-24)
 - [EC2Subnet](#ec2subnet)
   - [Relationships](#relationships-25)
-- [ECRRepository](#ecrrepository)
+- [AWSInternetGateway](#awsinternetgateway)
   - [Relationships](#relationships-26)
-- [ECRRepositoryImage](#ecrrepositoryimage)
+- [ECRRepository](#ecrrepository)
   - [Relationships](#relationships-27)
-- [ECRImage](#ecrimage)
+- [ECRRepositoryImage](#ecrrepositoryimage)
   - [Relationships](#relationships-28)
-- [Package](#package)
+- [ECRImage](#ecrimage)
   - [Relationships](#relationships-29)
-- [ECRScanFinding (:Risk:CVE)](#ecrscanfinding-riskcve)
+- [Package](#package)
   - [Relationships](#relationships-30)
-- [EKSCluster](#ekscluster)
+- [ECRScanFinding (:Risk:CVE)](#ecrscanfinding-riskcve)
   - [Relationships](#relationships-31)
-- [EMRCluster](#emrcluster)
+- [EKSCluster](#ekscluster)
   - [Relationships](#relationships-32)
-- [ESDomain](#esdomain)
+- [EMRCluster](#emrcluster)
   - [Relationships](#relationships-33)
-- [Endpoint](#endpoint)
+- [ESDomain](#esdomain)
   - [Relationships](#relationships-34)
-- [Endpoint::ELBListener](#endpointelblistener)
+- [Endpoint](#endpoint)
   - [Relationships](#relationships-35)
-- [Endpoint::ELBV2Listener](#endpointelbv2listener)
+- [Endpoint::ELBListener](#endpointelblistener)
   - [Relationships](#relationships-36)
-- [Ip](#ip)
+- [Endpoint::ELBV2Listener](#endpointelbv2listener)
   - [Relationships](#relationships-37)
-- [IpRule](#iprule)
+- [Ip](#ip)
   - [Relationships](#relationships-38)
-- [IpRule::IpPermissionInbound](#ipruleippermissioninbound)
+- [IpRule](#iprule)
   - [Relationships](#relationships-39)
-- [LoadBalancer](#loadbalancer)
+- [IpRule::IpPermissionInbound](#ipruleippermissioninbound)
   - [Relationships](#relationships-40)
-- [LoadBalancerV2](#loadbalancerv2)
+- [LoadBalancer](#loadbalancer)
   - [Relationships](#relationships-41)
-- [Nameserver](#nameserver)
+- [LoadBalancerV2](#loadbalancerv2)
   - [Relationships](#relationships-42)
-- [NetworkInterface](#networkinterface)
+- [Nameserver](#nameserver)
   - [Relationships](#relationships-43)
-- [RedshiftCluster](#redshiftcluster)
+- [NetworkInterface](#networkinterface)
   - [Relationships](#relationships-44)
-- [RDSInstance](#rdsinstance)
+- [AWSPeeringConnection](#awspeeringconnection)
+- [RedshiftCluster](#redshiftcluster)
   - [Relationships](#relationships-45)
-- [S3Acl](#s3acl)
+- [RDSInstance](#rdsinstance)
   - [Relationships](#relationships-46)
-- [S3Bucket](#s3bucket)
+- [S3Acl](#s3acl)
   - [Relationships](#relationships-47)
-- [KMSKey](#kmskey)
+- [S3Bucket](#s3bucket)
   - [Relationships](#relationships-48)
-- [KMSAlias](#kmsalias)
+- [KMSKey](#kmskey)
   - [Relationships](#relationships-49)
-- [KMSGrant](#kmsgrant)
+- [KMSAlias](#kmsalias)
   - [Relationships](#relationships-50)
-- [APIGatewayRestAPI](#apigatewayrestapi)
+- [KMSGrant](#kmsgrant)
   - [Relationships](#relationships-51)
-- [APIGatewayStage](#apigatewaystage)
+- [APIGatewayRestAPI](#apigatewayrestapi)
   - [Relationships](#relationships-52)
-- [APIGatewayClientCertificate](#apigatewayclientcertificate)
+- [APIGatewayStage](#apigatewaystage)
   - [Relationships](#relationships-53)
-- [APIGatewayResource](#apigatewayresource)
+- [APIGatewayClientCertificate](#apigatewayclientcertificate)
   - [Relationships](#relationships-54)
+- [APIGatewayResource](#apigatewayresource)
+  - [Relationships](#relationships-55)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -183,19 +186,21 @@ type for `AWSIpv4CidrBlock` and `AWSIpv6CidrBlock`
   ```
   (AWSVpc)-[BLOCK_ASSOCIATION]->(AWSCidrBlock)
   ```
-- VPC peering where two `AWSCidrBlock` have peering between them
+- Peering connection where `AWSCidrBlock` is an accepter or requester cidr.
   ```
-  (AWSCidrBlock)<-[VPC_PEERING]-(AWSCidrBlock)
+  (AWSCidrBlock)<-[REQUESTER_CIDR]-(AWSPeeringConnection)
+  (AWSCidrBlock)<-[ACCEPTER_CIDR]-(AWSPeeringConnection)
   ```
+
   Example of high level view of peering (without security group permissions)
   ```
-  MATCH p=(:AWSAccount)-[:RESOURCE|BLOCK_ASSOCIATION*..]->(:AWSCidrBlock)<-[r:VPC_PEERING]->(:AWSCidrBlock)<-[:RESOURCE|BLOCK_ASSOCIATION*..]-(:AWSAccount)
+  MATCH p=(:AWSAccount)-[:RESOURCE|BLOCK_ASSOCIATION*..]->(:AWSCidrBlock)<-[:ACCEPTER_CIDR]-(:AWSPeeringConnection)-[:REQUESTER_CIDR]->(:AWSCidrBlock)<-[:RESOURCE|BLOCK_ASSOCIATION*..]-(:AWSAccount)
   RETURN p
   ```
 
   Exploring detailed inbound peering rules
   ```
-  MATCH (outbound_account:AWSAccount)-[:RESOURCE|BLOCK_ASSOCIATION*..]->(:AWSCidrBlock)<-[r:VPC_PEERING]->(inbound_block:AWSCidrBlock)<-[:BLOCK_ASSOCIATION]-(inbound_vpc:AWSVpc)<-[:RESOURCE]-(inbound_account:AWSAccount)
+  MATCH (outbound_account:AWSAccount)-[:RESOURCE|BLOCK_ASSOCIATION*..]->(:AWSCidrBlock)<-[:ACCEPTER_CIDR]-(:AWSPeeringConnection)-[:REQUESTER_CIDR]->(inbound_block:AWSCidrBlock)<-[:BLOCK_ASSOCIATION]-(inbound_vpc:AWSVpc)<-[:RESOURCE]-(inbound_account:AWSAccount)
   WITH inbound_vpc, inbound_block, outbound_account, inbound_account
   MATCH (inbound_range:IpRange{id: inbound_block.cidr_block})-[:MEMBER_OF_IP_RULE]->(inbound_rule:IpPermissionInbound)-[:MEMBER_OF_EC2_SECURITY_GROUP]->(inbound_group:EC2SecurityGroup)<-[:MEMBER_OF_EC2_SECURITY_GROUP]-(inbound_vpc)
   RETURN outbound_account.name, inbound_account.name, inbound_range.range, inbound_rule.fromport, inbound_rule.toport, inbound_rule.protocol, inbound_group.name, inbound_vpc.id
@@ -538,6 +543,11 @@ More information on https://docs.aws.amazon.com/cli/latest/reference/ec2/describ
     ```
     (RedshiftCluster)-[MEMBER_OF_AWS_VPC]->(AWSVpc)
     ```
+- Peering connection where `AWSVpc` is an accepter or requester vpc.
+  ```
+  (AWSVpc)<-[REQUESTER_VPC]-(AWSPeeringConnection)
+  (AWSVpc)<-[ACCEPTER_VPC]-(AWSPeeringConnection)
+  ```
 
 
 ## Tag::AWSTag
@@ -1059,6 +1069,30 @@ Representation of an AWS EC2 [Subnet](https://docs.aws.amazon.com/AWSEC2/latest/
         ```
 
 
+## AWSInternetGateway
+
+ Representation of an AWS [Interent Gateway](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_InternetGateway.html).
+
+ | Field | Description |
+ |--------|-----------|
+ | **id** | Internet gateway ID |
+ | arn | Amazon Resource Name |
+ | region | The region of the gateway |
+
+
+ ### Relationships
+
+ -  Internet Gateways are attached to a VPC.
+
+         ```
+         (AWSInternetGateway)-[ATTACHED_TO]->(AWSVpc)
+         ```
+
+ -  Internet Gateways belong to AWS Accounts
+
+         ```
+         (AWSAccount)-[RESOURCE]->(AWSInternetGateway)
+         ```
 
 ## ECRRepository
 
@@ -1612,6 +1646,35 @@ Representation of a generic Network Interface.  Currently however, we only creat
         ```
         (NetworkInterface)-[TAGGED]->(AWSTag)
         ```
+
+## AWSPeeringConnection
+
+Representation of an AWS [PeeringConnection](https://docs.aws.amazon.com/vpc/latest/peering/what-is-vpc-peering.html) implementing an AWS [VpcPeeringConnection](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_VpcPeeringConnection.html) object.
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | vpcPeeringConnectionId, The ID of the VPC peering connection. |
+| allow_dns_resolution_from_remote_vpc | Indicates whether a local VPC can resolve public DNS hostnames to private IP addresses when queried from instances in a peer VPC. |
+| allow_egress_from_local_classic_link_to_remote_vpc | Indicates whether a local ClassicLink connection can communicate with the peer VPC over the VPC peering connection.  |
+| allow_egress_from_local_vpc_to_remote_classic_link | Indicates whether a local VPC can communicate with a ClassicLink connection in the peer VPC over the VPC peering connection. |
+| requester_region | Peering requester region |
+| accepter_region | Peering accepter region |
+| status_code | The status of the VPC peering connection. |
+| status_message | A message that provides more information about the status, if applicable. |
+
+- `AWSVpc` is an accepter or requester vpc.
+  ```
+  (AWSVpc)<-[REQUESTER_VPC]-(AWSPeeringConnection)
+  (AWSVpc)<-[ACCEPTER_VPC]-(AWSPeeringConnection)
+  ```
+
+- `AWSCidrBlock` is an accepter or requester cidr.
+  ```
+  (AWSCidrBlock)<-[REQUESTER_CIDR]-(AWSPeeringConnection)
+  (AWSCidrBlock)<-[ACCEPTER_CIDR]-(AWSPeeringConnection)
+  ```
 
 
 ## RedshiftCluster
