@@ -41,11 +41,6 @@ def load_resource_binary(package, resource_name):
     return open_binary(package, resource_name)
 
 
-# The statsd client used for observability.
-# stats_client.is_enabled() will always return false unless cartography.config.statsd_enabled is True.
-stats_client = get_stats(None)
-
-
 def timeit(method):
     """
     This decorator uses statsd to time the execution of the wrapped method and sends it to the statsd server.
@@ -55,6 +50,7 @@ def timeit(method):
     # Allow access via `inspect` to the wrapped function. This is used in integration tests to standardize param names.
     @wraps(method)
     def timed(*args, **kwargs):
+        stats_client = get_stats(None)
         if stats_client.is_enabled():
             # Example metric name "cartography.intel.aws.iam.get_group_membership_data"
             metric_name = f"{method.__module__}.{method.__name__}"
