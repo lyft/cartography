@@ -5,7 +5,7 @@ from functools import wraps
 import botocore
 
 from cartography.graph.job import GraphJob
-from cartography.scoped_stats_client import ScopedStatsClient
+from cartography.stats import get_stats
 
 if sys.version_info >= (3, 7):
     from importlib.resources import open_binary, read_text
@@ -43,7 +43,7 @@ def load_resource_binary(package, resource_name):
 
 # The statsd client used for observability.
 # stats_client.is_enabled() will always return false unless cartography.config.statsd_enabled is True.
-stats_client = ScopedStatsClient(None)
+stats_client = get_stats(None)
 
 
 def timeit(method):
