@@ -5,7 +5,7 @@ from functools import wraps
 import botocore
 
 from cartography.graph.job import GraphJob
-from cartography.stats import get_stats
+from cartography.stats import get_stats_client
 
 if sys.version_info >= (3, 7):
     from importlib.resources import open_binary, read_text
@@ -50,7 +50,7 @@ def timeit(method):
     # Allow access via `inspect` to the wrapped function. This is used in integration tests to standardize param names.
     @wraps(method)
     def timed(*args, **kwargs):
-        stats_client = get_stats(None)
+        stats_client = get_stats_client(None)
         if stats_client.is_enabled():
             # Example metric name "cartography.intel.aws.iam.get_group_membership_data"
             metric_name = f"{method.__module__}.{method.__name__}"
