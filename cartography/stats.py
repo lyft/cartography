@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from statsd import StatsClient
 
 
@@ -19,7 +17,7 @@ class ScopedStatsClient:
         self._client = client
         self._scope_prefix = prefix
 
-    def get_stats_client(self, scope: str) -> ScopedStatsClient:
+    def get_stats_client(self, scope: str) -> 'ScopedStatsClient':
         """
         This method returns a new proxy to the same client
         which will prefix all calls to underlying methods with the scoped prefix
