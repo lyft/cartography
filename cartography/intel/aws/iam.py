@@ -653,7 +653,7 @@ def sync_role_managed_policies(
     current_aws_account_id: str, boto3_session: boto3.session.Session, data: Dict,
     neo4j_session: neo4j.Session, aws_update_tag: int,
 ) -> None:
-    logger.debug("Syncing IAM role managed policies for account '%s'.", current_aws_account_id)
+    logger.info("Syncing IAM role managed policies for account '%s'.", current_aws_account_id)
     managed_policy_data = get_role_managed_policy_data(boto3_session, data["Roles"])
     transform_policy_data(managed_policy_data, PolicyType.managed.value)
     load_policy_data(neo4j_session, managed_policy_data, PolicyType.managed.value, aws_update_tag)
@@ -663,7 +663,7 @@ def sync_role_inline_policies(
     current_aws_account_id: str, boto3_session: boto3.session.Session, data: Dict,
     neo4j_session: neo4j.Session, aws_update_tag: int,
 ) -> None:
-    logger.debug("Syncing IAM role inline policies for account '%s'.", current_aws_account_id)
+    logger.info("Syncing IAM role inline policies for account '%s'.", current_aws_account_id)
     inline_policy_data = get_role_policy_data(boto3_session, data["Roles"])
     transform_policy_data(inline_policy_data, PolicyType.inline.value)
     load_policy_data(neo4j_session, inline_policy_data, PolicyType.inline.value, aws_update_tag)
