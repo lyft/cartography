@@ -53,6 +53,7 @@ CREATE INDEX ON :ECRRepository(id);
 CREATE INDEX ON :ECRRepository(name);
 CREATE INDEX ON :ECRRepository(uri);
 CREATE INDEX ON :ECRRepositoryImage(id);
+CREATE INDEX ON :ECRRepositoryImage(uri);
 CREATE INDEX ON :ECRRepositoryImage(tag);
 CREATE INDEX ON :ECRScanFinding(id);
 CREATE INDEX ON :EKSCluster(id);
