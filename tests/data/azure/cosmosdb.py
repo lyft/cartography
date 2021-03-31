@@ -1,5 +1,5 @@
-cors1_id = "0001"
-cors2_id = "0002"
+cors1_id = "0001"  # Sample cors policy id for testing
+cors2_id = "0002"  # Sample cors policy id for testing
 da1 = "/subscriptions/00-00-00-00/resourceGroups/RG/providers/Microsoft.DocumentDB/databaseAccounts/DA1"
 da2 = "/subscriptions/00-00-00-00/resourceGroups/RG/providers/Microsoft.DocumentDB/databaseAccounts/DA2"
 rg = "/subscriptions/00-00-00-00/resourceGroups/RG"

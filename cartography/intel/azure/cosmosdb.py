@@ -56,6 +56,24 @@ def get_database_account_list(credentials: Credentials, subscription_id: str) ->
 
 
 @timeit
+def transform_database_account_data(database_account_list: List[Dict]) -> List[Dict]:
+    """
+    Transforming the database account response for neo4j ingestion.
+    """
+    for database_account in database_account_list:
+        capabilities: List[str] = []
+        iprules: List[str] = []
+        if 'capabilities' in database_account and len(database_account['capabilities']) > 0:
+            capabilities = [x['name'] for x in database_account['capabilities']]
+        if 'ip_rules' in database_account and len(database_account['ip_rules']) > 0:
+            iprules = [x['ip_address_or_range'] for x in database_account['ip_rules']]
+        database_account['ipruleslist'] = iprules
+        database_account['list_of_capabilities'] = capabilities
+
+    return database_account_list
+
+
+@timeit
 def load_database_account_data(
         neo4j_session: neo4j.Session, subscription_id: str, database_account_list: List[Dict], azure_update_tag: int,
 ) -> None:
@@ -96,16 +114,6 @@ def load_database_account_data(
     SET r.lastupdated = {azure_update_tag}
     """
 
-    for database_account in database_account_list:
-        capabilities: List[str] = []
-        iprules: List[str] = []
-        if 'capabilities' in database_account and len(database_account['capabilities']) > 0:
-            capabilities = [x['name'] for x in database_account['capabilities']]
-        if 'ip_rules' in database_account and len(database_account['ip_rules']) > 0:
-            iprules = [x['ip_address_or_range'] for x in database_account['ip_rules']]
-        database_account['ipruleslist'] = iprules
-        database_account['list_of_capabilities'] = capabilities
-
     neo4j_session.run(
         ingest_database_account,
         database_accounts_list=database_account_list,
@@ -115,23 +123,17 @@ def load_database_account_data(
 
 
 @timeit
-def load_database_account_data_resources(
+def sync_database_account_data_resources(
         neo4j_session: neo4j.Session, subscription_id: str, database_account_list: List[Dict], azure_update_tag: int,
 ) -> None:
     """
     Loading all the resources (like cors policy, failover policy, private endpoint connections, virtual
-    network rules and locations) that we get as a part of the database account data itself.
+    network rules and locations) that we get as a part of the database account response itself.
     """
     for database_account in database_account_list:
-        # cleanup existing cors policy properties
-        run_cleanup_job(
-            'azure_cosmosdb_cors_details.json',
-            neo4j_session,
-            {'UPDATE_TAG': azure_update_tag, 'AZURE_SUBSCRIPTION_ID': subscription_id},
-        )
-
         if 'cors' in database_account and len(database_account['cors']) > 0:
-            _load_cosmosdb_cors_policy(neo4j_session, database_account, azure_update_tag)
+            db_account = transform_cosmosdb_cors_policy(database_account)
+            _load_cosmosdb_cors_policy(neo4j_session, db_account, azure_update_tag)
         if 'failover_policies' in database_account and len(database_account['failover_policies']) > 0:
             _load_cosmosdb_failover_policies(neo4j_session, database_account, azure_update_tag)
         if 'private_endpoint_connections' in database_account and len(
@@ -277,6 +279,18 @@ def _load_database_account_associated_locations(
 
 
 @timeit
+def transform_cosmosdb_cors_policy(database_account: Dict) -> Dict:
+    """
+    Transform CosmosDB Cors Policy response for neo4j ingestion.
+    """
+    for policy in database_account['cors']:
+        if 'cors_policy_unique_id' not in policy:
+            policy['cors_policy_unique_id'] = str(uuid.uuid4())
+
+    return database_account
+
+
+@timeit
 def _load_cosmosdb_cors_policy(
         neo4j_session: neo4j.Session, database_account: Dict, azure_update_tag: int,
 ) -> None:
@@ -302,10 +316,6 @@ def _load_cosmosdb_cors_policy(
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {azure_update_tag}
     """
-
-    for policy in cors_policies:
-        if 'cors_policy_unique_id' not in policy:
-            policy['cors_policy_unique_id'] = str(uuid.uuid4())
 
     neo4j_session.run(
         ingest_cors_policy,
@@ -1070,8 +1080,9 @@ def sync(
 ) -> None:
     logger.info("Syncing Azure CosmosDB for subscription '%s'.", subscription_id)
     database_account_list = get_database_account_list(credentials, subscription_id)
+    database_account_list = transform_database_account_data(database_account_list)
     load_database_account_data(neo4j_session, subscription_id, database_account_list, sync_tag)
-    load_database_account_data_resources(neo4j_session, subscription_id, database_account_list, sync_tag)
+    sync_database_account_data_resources(neo4j_session, subscription_id, database_account_list, sync_tag)
     sync_database_account_details(
         neo4j_session, credentials, subscription_id, database_account_list, sync_tag,
         common_job_parameters,
