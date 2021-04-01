@@ -8,8 +8,8 @@ import adal
 import requests
 from azure.common.credentials import get_azure_cli_credentials
 from azure.common.credentials import get_cli_profile
-from azure.identity import ClientSecretCredential
 from azure.core.exceptions import HttpResponseError
+from azure.identity import ClientSecretCredential
 from msrestazure.azure_active_directory import AADTokenCredentials
 
 logger = logging.getLogger(__name__)
