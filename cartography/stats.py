@@ -1,4 +1,9 @@
+import logging
+
 from statsd import StatsClient
+
+
+logger = logging.getLogger(__name__)
 
 
 class ScopedStatsClient:
@@ -42,6 +47,7 @@ class ScopedStatsClient:
         if self.is_enabled():
             if self._scope_prefix:
                 stat = f"{self._scope_prefix}.{stat}"
+            logger.info(f"Stat being incremented is {stat}")
             self._client.incr(stat, count, rate)
 
     def timer(self, stat: str, rate: float = 1.0):
@@ -68,7 +74,7 @@ def set_stats_client(stats_client: StatsClient) -> None:
     """
     This is used to set the module level stats client configured to talk with a statsd host
     """
-    global _stats_client
+    global _stats_client1
     _stats_client = stats_client
 
 
