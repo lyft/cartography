@@ -40,7 +40,9 @@ class ScopedStatsClient:
                              The statsd server will take the sample rate into account for counters
         """
         if self.is_enabled():
-            self._client.incr(self._scope_prefix + "." + stat, count, rate)
+            if self._scope_prefix:
+                stat = f"{self._scope_prefix}.{stat}"
+            self._client.incr(stat, count, rate)
 
     def timer(self, stat: str, rate: float = 1.0):
         """
@@ -51,6 +53,8 @@ class ScopedStatsClient:
                              The statsd server will take the sample rate into account for counters
         """
         if self.is_enabled():
+            if self._scope_prefix:
+                stat = f"{self._scope_prefix}.{stat}"
             return self._client.timer(stat, rate)
         return None
 
