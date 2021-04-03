@@ -17,7 +17,7 @@ class ScopedStatsClient:
         self._client = client
         self._scope_prefix = prefix
 
-    def get_scoped_stats_client(self, scope: str):
+    def get_stats_client(self, scope: str) -> 'ScopedStatsClient':
         """
         This method returns a new proxy to the same client
         which will prefix all calls to underlying methods with the scoped prefix
@@ -53,3 +53,24 @@ class ScopedStatsClient:
         if self.is_enabled():
             return self._client.timer(stat, rate)
         return None
+
+
+# Global _stats_client
+# Will be set when cartography.config.statsd_enabled is True
+_stats_client: StatsClient = None
+
+
+def set_stats_client(stats_client: StatsClient) -> None:
+    """
+    This is used to set the module level stats client configured to talk with a statsd host
+    """
+    global _stats_client
+    _stats_client = stats_client
+
+
+def get_stats_client(prefix: str) -> ScopedStatsClient:
+    """
+    Returns a ScopedStatsClient object, which is a simple wrapper over statsd.client.Statsclient
+    that allows one to scope down the metric as needed
+    """
+    return ScopedStatsClient(_stats_client, prefix)
