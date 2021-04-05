@@ -67,7 +67,7 @@ class ScopedStatsClient:
 
 # Global _scoped_stats_client
 # Will be set when cartography.config.statsd_enabled is True
-_scoped_stats_client: ScopedStatsClient = None
+_scoped_stats_client: ScopedStatsClient = ScopedStatsClient(None)
 
 
 def set_stats_client(stats_client: StatsClient) -> None:
