@@ -65,17 +65,17 @@ class ScopedStatsClient:
         return None
 
 
-# Global _stats_client
+# Global _scoped_stats_client
 # Will be set when cartography.config.statsd_enabled is True
-_stats_client: StatsClient = None
+_scoped_stats_client: ScopedStatsClient = None
 
 
 def set_stats_client(stats_client: StatsClient) -> None:
     """
     This is used to set the module level stats client configured to talk with a statsd host
     """
-    global _stats_client
-    _stats_client = stats_client
+    global _scoped_stats_client
+    _scoped_stats_client._client = stats_client
 
 
 def get_stats_client(prefix: str) -> ScopedStatsClient:
@@ -83,4 +83,4 @@ def get_stats_client(prefix: str) -> ScopedStatsClient:
     Returns a ScopedStatsClient object, which is a simple wrapper over statsd.client.Statsclient
     that allows one to scope down the metric as needed
     """
-    return ScopedStatsClient(_stats_client, prefix)
+    return _scoped_stats_client.get_stats_client(prefix)
