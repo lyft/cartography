@@ -74,7 +74,7 @@ def set_stats_client(stats_client: StatsClient) -> None:
     """
     This is used to set the module level stats client configured to talk with a statsd host
     """
-    global _stats_client1
+    global _stats_client
     _stats_client = stats_client
 
 
