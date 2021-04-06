@@ -127,8 +127,9 @@ def sync_database_account_data_resources(
         neo4j_session: neo4j.Session, subscription_id: str, database_account_list: List[Dict], azure_update_tag: int,
 ) -> None:
     """
-    Loading all the resources (like cors policy, failover policy, private endpoint connections, virtual
-    network rules and locations) that we get as a part of the database account response itself.
+    This function checks for the presence of the resources (like cors policy, failover policy, private endpoint
+    connections, virtual network rules and locations) that we get as a part of the database account response itself.
+    If present, it calls their corresponding load function.
     """
     for database_account in database_account_list:
         if 'cors' in database_account and len(database_account['cors']) > 0:
@@ -570,6 +571,18 @@ def get_table_resources(credentials: Credentials, subscription_id: str, database
 
 
 @timeit
+def transform_database_account_resources(account_id, name, resourceGroup, resources):
+    """
+    Transform the SQL Database/Cassandra Keyspace/MongoDB Database/Table Resource response for neo4j ingestion.
+    """
+    for resource in resources:
+        resource['database_account_name'] = name
+        resource['database_account_id'] = account_id
+        resource['resource_group_name'] = resourceGroup
+    return resources
+
+
+@timeit
 def load_database_account_details(
         neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str,
         details: List[Tuple[Any, Any, Any, Any, Any, Any, Any]], update_tag: int, common_job_parameters: Dict,
@@ -584,34 +597,27 @@ def load_database_account_details(
 
     for account_id, name, resourceGroup, sql_database, cassandra_keyspace, mongodb_database, table in details:
         if len(sql_database) > 0:
-            for db in sql_database:
-                db['database_account_name'] = name
-                db['database_account_id'] = account_id
-                db['resource_group_name'] = resourceGroup
-            sql_databases.extend(sql_database)
+            dbs = transform_database_account_resources(account_id, name, resourceGroup, sql_database)
+            sql_databases.extend(dbs)
 
         if len(cassandra_keyspace) > 0:
-            for keyspace in cassandra_keyspace:
-                keyspace['database_account_name'] = name
-                keyspace['database_account_id'] = account_id
-                keyspace['resource_group_name'] = resourceGroup
-            cassandra_keyspaces.extend(cassandra_keyspace)
+            keyspaces = transform_database_account_resources(account_id, name, resourceGroup, cassandra_keyspace)
+            cassandra_keyspaces.extend(keyspaces)
 
         if len(mongodb_database) > 0:
-            for db in mongodb_database:
-                db['database_account_name'] = name
-                db['database_account_id'] = account_id
-                db['resource_group_name'] = resourceGroup
-            mongodb_databases.extend(mongodb_database)
+            mongo_dbs = transform_database_account_resources(account_id, name, resourceGroup, mongodb_database)
+            mongodb_databases.extend(mongo_dbs)
 
         if len(table) > 0:
-            for t in table:
-                t['database_account_id'] = account_id
-            table_resources.extend(table)
+            t = transform_database_account_resources(account_id, name, resourceGroup, table)
+            table_resources.extend(t)
 
+    # Loading the table resources
     _load_table_resources(neo4j_session, table_resources, update_tag)
+    # Cleanup of table resources (done here because table resource doesn't have any other child resources in it)
     cleanup_table_resources(neo4j_session, common_job_parameters)
 
+    # Loading SQL databases, Cassandra Keyspaces and MongoDB databases
     _load_sql_databases(neo4j_session, sql_databases, update_tag)
     _load_cassandra_keyspaces(neo4j_session, cassandra_keyspaces, update_tag)
     _load_mongodb_databases(neo4j_session, mongodb_databases, update_tag)
