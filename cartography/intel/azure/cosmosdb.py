@@ -571,14 +571,16 @@ def get_table_resources(credentials: Credentials, subscription_id: str, database
 
 
 @timeit
-def transform_database_account_resources(account_id, name, resourceGroup, resources):
+def transform_database_account_resources(
+        account_id: Any, name: Any, resource_group: Any, resources: List[Dict],
+) -> List[Dict]:
     """
     Transform the SQL Database/Cassandra Keyspace/MongoDB Database/Table Resource response for neo4j ingestion.
     """
     for resource in resources:
         resource['database_account_name'] = name
         resource['database_account_id'] = account_id
-        resource['resource_group_name'] = resourceGroup
+        resource['resource_group_name'] = resource_group
     return resources
 
 
