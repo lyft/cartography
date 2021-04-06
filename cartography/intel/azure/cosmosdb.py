@@ -38,14 +38,14 @@ def get_database_account_list(credentials: Credentials, subscription_id: str) ->
         database_account_list = list(map(lambda x: x.as_dict(), client.database_accounts.list()))
 
     # ClientAuthenticationError and ResourceNotFoundError are subclasses under HttpResponseError
-    except ClientAuthenticationError as e:
-        logger.warning(f"Client Authentication Error while retrieving database accounts - {e}")
+    except ClientAuthenticationError:
+        logger.warning('Client Authentication Error while retrieving database accounts', exc_info=True)
         return []
-    except ResourceNotFoundError as e:
-        logger.warning(f"Database Account not found error - {e}")
+    except ResourceNotFoundError:
+        logger.warning('Database Account not found error', exc_info=True)
         return []
-    except HttpResponseError as e:
-        logger.warning(f"Error while retrieving database accounts - {e}")
+    except HttpResponseError:
+        logger.warning('Error while retrieving database accounts', exc_info=True)
         return []
 
     for database_account in database_account_list:
@@ -82,7 +82,7 @@ def load_database_account_data(
     """
     ingest_database_account = """
     UNWIND {database_accounts_list} AS da
-    MERGE (d:AzureDatabaseAccount{id: da.id})
+    MERGE (d:AzureCosmosDBAccount{id: da.id})
     ON CREATE SET d.firstseen = timestamp(),
     d.type = da.type, d.resourcegroup = da.resourceGroup,
     d.location = da.location
@@ -187,7 +187,7 @@ def _load_database_account_write_locations(
     loc.failoverpriority = {FailoverPriority},
     loc.iszoneredundant = {IsZoneRedundant}
     WITH loc
-    MATCH (d:AzureDatabaseAccount{id: {DatabaseAccountId}})
+    MATCH (d:AzureCosmosDBAccount{id: {DatabaseAccountId}})
     MERGE (d)-[r:WRITE_PERMISSIONS_FROM]->(loc)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {azure_update_tag}
@@ -223,7 +223,7 @@ def _load_database_account_read_locations(
     loc.failoverpriority = {FailoverPriority},
     loc.iszoneredundant = {IsZoneRedundant}
     WITH loc
-    MATCH (d:AzureDatabaseAccount{id: {DatabaseAccountId}})
+    MATCH (d:AzureCosmosDBAccount{id: {DatabaseAccountId}})
     MERGE (d)-[r:READ_PERMISSIONS_FROM]->(loc)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {azure_update_tag}
@@ -259,7 +259,7 @@ def _load_database_account_associated_locations(
     loc.failoverpriority = {FailoverPriority},
     loc.iszoneredundant = {IsZoneRedundant}
     WITH loc
-    MATCH (d:AzureDatabaseAccount{id: {DatabaseAccountId}})
+    MATCH (d:AzureCosmosDBAccount{id: {DatabaseAccountId}})
     MERGE (d)-[r:ASSOCIATED_WITH]->(loc)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {azure_update_tag}
@@ -311,7 +311,7 @@ def _load_cosmosdb_cors_policy(
     corspolicy.exposedheaders = cp.exposed_headers,
     corspolicy.maxageinseconds = cp.max_age_in_seconds
     WITH corspolicy
-    MATCH (d:AzureDatabaseAccount{id: {DatabaseAccountId}})
+    MATCH (d:AzureCosmosDBAccount{id: {DatabaseAccountId}})
     MERGE (d)-[r:CONTAINS]->(corspolicy)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {azure_update_tag}
@@ -337,13 +337,13 @@ def _load_cosmosdb_failover_policies(
 
     ingest_failover_policies = """
     UNWIND {failover_policies_list} AS fp
-    MERGE (fpolicy:AzureDatabaseAccountFailoverPolicy{id: fp.id})
+    MERGE (fpolicy:AzureCosmosDBAccountFailoverPolicy{id: fp.id})
     ON CREATE SET fpolicy.firstseen = timestamp()
     SET fpolicy.lastupdated = {azure_update_tag},
     fpolicy.locationname = fp.location_name,
     fpolicy.failoverpriority = fp.failover_priority
     WITH fpolicy
-    MATCH (d:AzureDatabaseAccount{id: {DatabaseAccountId}})
+    MATCH (d:AzureCosmosDBAccount{id: {DatabaseAccountId}})
     MERGE (d)-[r:CONTAINS]->(fpolicy)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {azure_update_tag}
@@ -377,7 +377,7 @@ def _load_cosmosdb_private_endpoint_connections(
     pec.status = connection.private_link_service_connection_state.status,
     pec.actionrequired = connection.private_link_service_connection_state.actions_required
     WITH pec
-    MATCH (d:AzureDatabaseAccount{id: {DatabaseAccountId}})
+    MATCH (d:AzureCosmosDBAccount{id: {DatabaseAccountId}})
     MERGE (d)-[r:CONFIGURED_WITH]->(pec)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {azure_update_tag}
@@ -408,7 +408,7 @@ def _load_cosmosdb_virtual_network_rules(
     SET rules.lastupdated = {azure_update_tag},
     rules.ignoremissingvnetserviceendpoint = vnr.ignore_missing_v_net_service_endpoint
     WITH rules
-    MATCH (d:AzureDatabaseAccount{id: {DatabaseAccountId}})
+    MATCH (d:AzureCosmosDBAccount{id: {DatabaseAccountId}})
     MERGE (d)-[r:CONFIGURED_WITH]->(rules)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {azure_update_tag}
@@ -466,14 +466,14 @@ def get_sql_databases(credentials: Credentials, subscription_id: str, database_a
             ),
         )
 
-    except ClientAuthenticationError as e:
-        logger.warning(f"Client Authentication Error while retrieving SQL databases - {e}")
+    except ClientAuthenticationError:
+        logger.warning('Client Authentication Error while retrieving SQL databases', exc_info=True)
         return []
-    except ResourceNotFoundError as e:
-        logger.warning(f"SQL databases resource not found error - {e}")
+    except ResourceNotFoundError:
+        logger.warning('SQL databases resource not found error', exc_info=True)
         return []
-    except HttpResponseError as e:
-        logger.warning(f"Error while retrieving SQL Database list - {e}")
+    except HttpResponseError:
+        logger.warning('Error while retrieving SQL Database list', exc_info=True)
         return []
 
     return sql_database_list
@@ -496,14 +496,14 @@ def get_cassandra_keyspaces(credentials: Credentials, subscription_id: str, data
             ),
         )
 
-    except ClientAuthenticationError as e:
-        logger.warning(f"Client Authentication Error while retrieving Cassandra keyspaces - {e}")
+    except ClientAuthenticationError:
+        logger.warning('Client Authentication Error while retrieving Cassandra keyspaces', exc_info=True)
         return []
-    except ResourceNotFoundError as e:
-        logger.warning(f"Cassandra keyspaces resource not found error - {e}")
+    except ResourceNotFoundError:
+        logger.warning('Cassandra keyspaces resource not found error', exc_info=True)
         return []
-    except HttpResponseError as e:
-        logger.warning(f"Error while retrieving Cassandra keyspaces list - {e}")
+    except HttpResponseError:
+        logger.warning('Error while retrieving Cassandra keyspaces list', exc_info=True)
         return []
 
     return cassandra_keyspace_list
@@ -526,14 +526,14 @@ def get_mongodb_databases(credentials: Credentials, subscription_id: str, databa
             ),
         )
 
-    except ClientAuthenticationError as e:
-        logger.warning(f"Client Authentication Error while retrieving MongoDB Databases - {e}")
+    except ClientAuthenticationError:
+        logger.warning('Client Authentication Error while retrieving MongoDB Databases', exc_info=True)
         return []
-    except ResourceNotFoundError as e:
-        logger.warning(f"MongoDB Database resource not found error - {e}")
+    except ResourceNotFoundError:
+        logger.warning('MongoDB Databases resource not found error', exc_info=True)
         return []
-    except HttpResponseError as e:
-        logger.warning(f"Error while retrieving MongoDB Database list - {e}")
+    except HttpResponseError:
+        logger.warning('Error while retrieving MongoDB Databases list', exc_info=True)
         return []
 
     return mongodb_database_list
@@ -556,14 +556,14 @@ def get_table_resources(credentials: Credentials, subscription_id: str, database
             ),
         )
 
-    except ClientAuthenticationError as e:
-        logger.warning(f"Client Authentication Error while retrieving table resources - {e}")
+    except ClientAuthenticationError:
+        logger.warning('Client Authentication Error while retrieving Table resources', exc_info=True)
         return []
-    except ResourceNotFoundError as e:
-        logger.warning(f"Table resource not found error - {e}")
+    except ResourceNotFoundError:
+        logger.warning('Table resource not found error', exc_info=True)
         return []
-    except HttpResponseError as e:
-        logger.warning(f"Error while retrieving table resources list - {e}")
+    except HttpResponseError:
+        logger.warning('Error while retrieving Table resources list', exc_info=True)
         return []
 
     return table_resources_list
@@ -645,7 +645,7 @@ def _load_sql_databases(neo4j_session: neo4j.Session, sql_databases: List[Dict],
     sdb.maxthroughput = database.options.autoscale_setting.max_throughput,
     sdb.lastupdated = {azure_update_tag}
     WITH sdb, database
-    MATCH (d:AzureDatabaseAccount{id: database.database_account_id})
+    MATCH (d:AzureCosmosDBAccount{id: database.database_account_id})
     MERGE (d)-[r:CONTAINS]->(sdb)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {azure_update_tag}
@@ -673,7 +673,7 @@ def _load_cassandra_keyspaces(neo4j_session: neo4j.Session, cassandra_keyspaces:
     ck.throughput = keyspace.options.throughput,
     ck.maxthroughput = keyspace.options.autoscale_setting.max_throughput
     WITH ck, keyspace
-    MATCH (d:AzureDatabaseAccount{id: keyspace.database_account_id})
+    MATCH (d:AzureCosmosDBAccount{id: keyspace.database_account_id})
     MERGE (d)-[r:CONTAINS]->(ck)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {azure_update_tag}
@@ -701,7 +701,7 @@ def _load_mongodb_databases(neo4j_session: neo4j.Session, mongodb_databases: Lis
     mdb.maxthroughput = database.options.autoscale_setting.max_throughput,
     mdb.lastupdated = {azure_update_tag}
     WITH mdb, database
-    MATCH (d:AzureDatabaseAccount{id: database.database_account_id})
+    MATCH (d:AzureCosmosDBAccount{id: database.database_account_id})
     MERGE (d)-[r:CONTAINS]->(mdb)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {azure_update_tag}
@@ -729,7 +729,7 @@ def _load_table_resources(neo4j_session: neo4j.Session, table_resources: List[Di
     tr.throughput = table.options.throughput,
     tr.maxthroughput = table.options.autoscale_setting.max_throughput
     WITH tr, table
-    MATCH (d:AzureDatabaseAccount{id: table.database_account_id})
+    MATCH (d:AzureCosmosDBAccount{id: table.database_account_id})
     MERGE (d)-[r:CONTAINS]->(tr)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {azure_update_tag}
@@ -782,14 +782,14 @@ def get_sql_containers(credentials: Credentials, subscription_id: str, database:
             ),
         )
 
-    except ClientAuthenticationError as e:
-        logger.warning(f"Client Authentication Error while retrieving SQL containers - {e}")
+    except ClientAuthenticationError:
+        logger.warning('Client Authentication Error while retrieving SQL containers', exc_info=True)
         return []
-    except ResourceNotFoundError as e:
-        logger.warning(f"SQL containers resource not found error - {e}")
+    except ResourceNotFoundError:
+        logger.warning('SQL containers not found error', exc_info=True)
         return []
-    except HttpResponseError as e:
-        logger.warning(f"Error while retrieving SQL Containers - {e}")
+    except HttpResponseError:
+        logger.warning('Error while retrieving SQL containers list', exc_info=True)
         return []
 
     return containers
@@ -885,14 +885,14 @@ def get_cassandra_tables(credentials: Credentials, subscription_id: str, keyspac
             ),
         )
 
-    except ClientAuthenticationError as e:
-        logger.warning(f"Client Authentication Error while retrieving Cassandra tables - {e}")
+    except ClientAuthenticationError:
+        logger.warning('Client Authentication Error while retrieving Cassandra tables', exc_info=True)
         return []
-    except ResourceNotFoundError as e:
-        logger.warning(f"Cassandra tables resource not found error - {e}")
+    except ResourceNotFoundError:
+        logger.warning('Cassandra tables not found error', exc_info=True)
         return []
-    except HttpResponseError as e:
-        logger.warning(f"Error while retrieving Cassandra tables - {e}")
+    except HttpResponseError:
+        logger.warning('Error while retrieving Cassandra tables list', exc_info=True)
         return []
 
     return cassandra_tables
@@ -987,14 +987,14 @@ def get_mongodb_collections(credentials: Credentials, subscription_id: str, data
             ),
         )
 
-    except ClientAuthenticationError as e:
-        logger.warning(f"Client Authentication Error while retrieving MongoDB collections - {e}")
+    except ClientAuthenticationError:
+        logger.warning('Client Authentication Error while retrieving MongoDB collections', exc_info=True)
         return []
-    except ResourceNotFoundError as e:
-        logger.warning(f"MongoDB collections resource not found error - {e}")
+    except ResourceNotFoundError:
+        logger.warning('MongoDB collections not found error', exc_info=True)
         return []
-    except HttpResponseError as e:
-        logger.warning(f"Error while retrieving MongoDB collections - {e}")
+    except HttpResponseError:
+        logger.warning('Error while retrieving MongoDB collections list', exc_info=True)
         return []
 
     return collections

@@ -36,7 +36,7 @@ def test_load_database_account_data(neo4j_session):
 
     nodes = neo4j_session.run(
         """
-        MATCH (r:AzureDatabaseAccount) RETURN r.id;
+        MATCH (r:AzureCosmosDBAccount) RETURN r.id;
         """,
     )
     actual_nodes = {n['r.id'] for n in nodes}
@@ -77,7 +77,7 @@ def test_load_database_account_data_relationships(neo4j_session):
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:AzureSubscription)-[:RESOURCE]->(n2:AzureDatabaseAccount) RETURN n1.id, n2.id;
+        MATCH (n1:AzureSubscription)-[:RESOURCE]->(n2:AzureCosmosDBAccount) RETURN n1.id, n2.id;
         """,
     )
 
@@ -142,7 +142,7 @@ def test_load_database_account_write_locations_relationships(neo4j_session):
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:AzureDatabaseAccount)-[:WRITE_PERMISSIONS_FROM]->(n2:AzureCosmosDBLocation) RETURN n1.id, n2.id;
+        MATCH (n1:AzureCosmosDBAccount)-[:WRITE_PERMISSIONS_FROM]->(n2:AzureCosmosDBLocation) RETURN n1.id, n2.id;
         """,
     )
 
@@ -207,7 +207,7 @@ def test_load_database_account_read_locations_relationships(neo4j_session):
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:AzureDatabaseAccount)-[:READ_PERMISSIONS_FROM]->(n2:AzureCosmosDBLocation) RETURN n1.id, n2.id;
+        MATCH (n1:AzureCosmosDBAccount)-[:READ_PERMISSIONS_FROM]->(n2:AzureCosmosDBLocation) RETURN n1.id, n2.id;
         """,
     )
 
@@ -276,7 +276,7 @@ def test_load_database_account_associated_locations_relationships(neo4j_session)
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:AzureDatabaseAccount)-[:ASSOCIATED_WITH]->(n2:AzureCosmosDBLocation) RETURN n1.id, n2.id;
+        MATCH (n1:AzureCosmosDBAccount)-[:ASSOCIATED_WITH]->(n2:AzureCosmosDBLocation) RETURN n1.id, n2.id;
         """,
     )
 
@@ -338,7 +338,7 @@ def test_load_cosmosdb_cors_policy_relationships(neo4j_session):
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:AzureDatabaseAccount)-[:CONTAINS]->(n2:AzureCosmosDBCorsPolicy) RETURN n1.id, n2.id;
+        MATCH (n1:AzureCosmosDBAccount)-[:CONTAINS]->(n2:AzureCosmosDBCorsPolicy) RETURN n1.id, n2.id;
         """,
     )
 
@@ -363,7 +363,7 @@ def test_load_cosmosdb_failover_policies(neo4j_session):
 
     nodes = neo4j_session.run(
         """
-        MATCH (r:AzureDatabaseAccountFailoverPolicy) RETURN r.id;
+        MATCH (r:AzureCosmosDBAccountFailoverPolicy) RETURN r.id;
         """,
     )
 
@@ -400,7 +400,7 @@ def test_load_cosmosdb_failover_policies_relationships(neo4j_session):
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:AzureDatabaseAccount)-[:CONTAINS]->(n2:AzureDatabaseAccountFailoverPolicy) RETURN n1.id, n2.id;
+        MATCH (n1:AzureCosmosDBAccount)-[:CONTAINS]->(n2:AzureCosmosDBAccountFailoverPolicy) RETURN n1.id, n2.id;
         """,
     )
 
@@ -463,7 +463,7 @@ def test_load_cosmosdb_private_endpoint_connections_relationships(neo4j_session)
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:AzureDatabaseAccount)-[:CONFIGURED_WITH]->(n2:AzureCDBPrivateEndpointConnection) RETURN n1.id, n2.id;
+        MATCH (n1:AzureCosmosDBAccount)-[:CONFIGURED_WITH]->(n2:AzureCDBPrivateEndpointConnection) RETURN n1.id, n2.id;
         """,
     )
 
@@ -526,7 +526,7 @@ def test_load_cosmosdb_virtual_network_rules_relationships(neo4j_session):
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:AzureDatabaseAccount)-[:CONFIGURED_WITH]->(n2:AzureCosmosDBVirtualNetworkRule) RETURN n1.id, n2.id;
+        MATCH (n1:AzureCosmosDBAccount)-[:CONFIGURED_WITH]->(n2:AzureCosmosDBVirtualNetworkRule) RETURN n1.id, n2.id;
         """,
     )
 
@@ -586,7 +586,7 @@ def test_load_sql_databases_relationships(neo4j_session):
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:AzureDatabaseAccount)-[:CONTAINS]->(n2:AzureCosmosDBSqlDatabase) RETURN n1.id, n2.id;
+        MATCH (n1:AzureCosmosDBAccount)-[:CONTAINS]->(n2:AzureCosmosDBSqlDatabase) RETURN n1.id, n2.id;
         """,
     )
 
@@ -646,7 +646,7 @@ def test_load_cassandra_keyspaces_relationships(neo4j_session):
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:AzureDatabaseAccount)-[:CONTAINS]->(n2:AzureCosmosDBCassandraKeyspace) RETURN n1.id, n2.id;
+        MATCH (n1:AzureCosmosDBAccount)-[:CONTAINS]->(n2:AzureCosmosDBCassandraKeyspace) RETURN n1.id, n2.id;
         """,
     )
 
@@ -706,7 +706,7 @@ def test_load_mongodb_databases_relationships(neo4j_session):
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:AzureDatabaseAccount)-[:CONTAINS]->(n2:AzureCosmosDBMongoDBDatabase) RETURN n1.id, n2.id;
+        MATCH (n1:AzureCosmosDBAccount)-[:CONTAINS]->(n2:AzureCosmosDBMongoDBDatabase) RETURN n1.id, n2.id;
         """,
     )
 
@@ -766,7 +766,7 @@ def test_load_table_resources_relationships(neo4j_session):
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:AzureDatabaseAccount)-[:CONTAINS]->(n2:AzureCosmosDBTableResource) RETURN n1.id, n2.id;
+        MATCH (n1:AzureCosmosDBAccount)-[:CONTAINS]->(n2:AzureCosmosDBTableResource) RETURN n1.id, n2.id;
         """,
     )
 

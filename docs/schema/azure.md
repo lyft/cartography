@@ -60,13 +60,13 @@
   - [Relationships](#relationships-26)
 - [AzureStorageBlobContainer](#azurestorageblobcontainer)
   - [Relationships](#relationships-27)
-- [AzureDatabaseAccount](#azuredatabaseaccount)
+- [AzureCosmosDBAccount](#azurecosmosdbaccount)
   - [Relationships](#relationships-28)
 - [AzureCosmosDBLocation](#azurecosmosdblocation)
   - [Relationships](#relationships-29)
 - [AzureCosmosDBCorsPolicy](#azurecosmosdbcorspolicy)
   - [Relationships](#relationships-30)
-- [AzureDatabaseAccountFailoverPolicy](#azuredatabaseaccountfailoverpolicy)
+- [AzureCosmosDBAccountFailoverPolicy](#azurecosmosdbaccountfailoverpolicy)
   - [Relationships](#relationships-31)
 - [AzureCDBPrivateEndpointConnection](#azurecdbprivateendpointconnection)
   - [Relationships](#relationships-32)
@@ -872,9 +872,9 @@ Representation of an [AzureStorageBlobContainer](https://docs.microsoft.com/en-u
         (AzureStorageBlobService)-[CONTAINS]->(AzureStorageBlobContainer)
         ```
 
-## AzureDatabaseAccount
+## AzureCosmosDBAccount
 
-Representation of an [AzureDatabaseAccount](https://docs.microsoft.com/en-us/rest/api/cosmos-db-resource-provider/2020-04-01/databaseaccounts).
+Representation of an [AzureCosmosDBAccount](https://docs.microsoft.com/en-us/rest/api/cosmos-db-resource-provider/2020-04-01/databaseaccounts).
 
 | Field | Description |
 |-------|-------------|
@@ -910,56 +910,56 @@ Representation of an [AzureDatabaseAccount](https://docs.microsoft.com/en-us/res
 - Azure Subscription contains one or more database accounts.
 
         ```
-        (AzureSubscription)-[RESOURCE]->(AzureDatabaseAccount)
+        (AzureSubscription)-[RESOURCE]->(AzureCosmosDBAccount)
         ```
 - Azure Database Account has write permissions from, read permissions from and is associated with Azure CosmosDB Locations.
 
         ```
-        (AzureDatabaseAccount)-[WRITE_PERMISSIONS_FROM]->(AzureCosmosDBLocation)
+        (AzureCosmosDBAccount)-[WRITE_PERMISSIONS_FROM]->(AzureCosmosDBLocation)
         ```
-        (AzureDatabaseAccount)-[READ_PERMISSIONS_FROM]->(AzureCosmosDBLocation)
+        (AzureCosmosDBAccount)-[READ_PERMISSIONS_FROM]->(AzureCosmosDBLocation)
         ```
-        (AzureDatabaseAccount)-[ASSOCIATED_WITH]->(AzureCosmosDBLocation)
+        (AzureCosmosDBAccount)-[ASSOCIATED_WITH]->(AzureCosmosDBLocation)
         ```
 - Azure Database Account contains one or more Cors Policy.
 
         ```
-        (AzureDatabaseAccount)-[CONTAINS]->(AzureCosmosDBCorsPolicy)
+        (AzureCosmosDBAccount)-[CONTAINS]->(AzureCosmosDBCorsPolicy)
         ```
 - Azure Database Account contains one or more failover policies.
 
         ```
-        (AzureDatabaseAccount)-[CONTAINS]->(AzureDatabaseAccountFailoverPolicy)
+        (AzureCosmosDBAccount)-[CONTAINS]->(AzureCosmosDBAccountFailoverPolicy)
         ```
 - Azure Database Account is configured with one or more private endpoint connections.
 
         ```
-        (AzureDatabaseAccount)-[CONFIGURED_WITH]->(AzureCDBPrivateEndpointConnection)
+        (AzureCosmosDBAccount)-[CONFIGURED_WITH]->(AzureCDBPrivateEndpointConnection)
         ```
 - Azure Database Account is configured with one or more virtual network rules.
 
         ```
-        (AzureDatabaseAccount)-[CONFIGURED_WITH]->(AzureCosmosDBVirtualNetworkRule)
+        (AzureCosmosDBAccount)-[CONFIGURED_WITH]->(AzureCosmosDBVirtualNetworkRule)
         ```
 - Azure Database Account contains one or more SQL databases.
 
         ```
-        (AzureDatabaseAccount)-[CONTAINS]->(AzureCosmosDBSqlDatabase)
+        (AzureCosmosDBAccount)-[CONTAINS]->(AzureCosmosDBSqlDatabase)
         ```
 - Azure Database Account contains one or more Cassandra keyspace.
 
         ```
-        (AzureDatabaseAccount)-[CONTAINS]->(AzureCosmosDBCassandraKeyspace)
+        (AzureCosmosDBAccount)-[CONTAINS]->(AzureCosmosDBCassandraKeyspace)
         ```
 - Azure Database Account contains one or more MongoDB Database.
 
         ```
-        (AzureDatabaseAccount)-[CONTAINS]->(AzureCosmosDBMongoDBDatabase)
+        (AzureCosmosDBAccount)-[CONTAINS]->(AzureCosmosDBMongoDBDatabase)
         ```
 - Azure Database Account contains one or more table resource.
 
         ```
-        (AzureDatabaseAccount)-[CONTAINS]->(AzureCosmosDBTableResource)
+        (AzureCosmosDBAccount)-[CONTAINS]->(AzureCosmosDBTableResource)
         ```
 
 ## AzureCosmosDBLocation
@@ -982,11 +982,11 @@ Representation of an Azure CosmosDB Location.
 - Azure Database Account has write permissions from, read permissions from and is associated with Azure CosmosDB Locations.
 
         ```
-        (AzureDatabaseAccount)-[WRITE_PERMISSIONS_FROM]->(AzureCosmosDBLocation)
+        (AzureCosmosDBAccount)-[WRITE_PERMISSIONS_FROM]->(AzureCosmosDBLocation)
         ```
-        (AzureDatabaseAccount)-[READ_PERMISSIONS_FROM]->(AzureCosmosDBLocation)
+        (AzureCosmosDBAccount)-[READ_PERMISSIONS_FROM]->(AzureCosmosDBLocation)
         ```
-        (AzureDatabaseAccount)-[ASSOCIATED_WITH]->(AzureCosmosDBLocation)
+        (AzureCosmosDBAccount)-[ASSOCIATED_WITH]->(AzureCosmosDBLocation)
         ```
 
 ## AzureCosmosDBCorsPolicy
@@ -1009,10 +1009,10 @@ Representation of an Azure Cosmos DB Cors Policy.
 - Azure Database Account contains one or more Cors Policy.
 
         ```
-        (AzureDatabaseAccount)-[CONTAINS]->(AzureCosmosDBCorsPolicy)
+        (AzureCosmosDBAccount)-[CONTAINS]->(AzureCosmosDBCorsPolicy)
         ```
 
-## AzureDatabaseAccountFailoverPolicy
+## AzureCosmosDBAccountFailoverPolicy
 
 Representation of an Azure Database Account Failover Policy.
 
@@ -1029,7 +1029,7 @@ Representation of an Azure Database Account Failover Policy.
 - Azure Database Account contains one or more failover policies.
 
         ```
-        (AzureDatabaseAccount)-[CONTAINS]->(AzureDatabaseAccountFailoverPolicy)
+        (AzureCosmosDBAccount)-[CONTAINS]->(AzureCosmosDBAccountFailoverPolicy)
         ```
 
 ## AzureCDBPrivateEndpointConnection
@@ -1051,7 +1051,7 @@ Representation of an Azure Cosmos DB Private Endpoint Connection.
 - Azure Database Account is configured with one or more private endpoint connections.
 
         ```
-        (AzureDatabaseAccount)-[CONFIGURED_WITH]->(AzureCDBPrivateEndpointConnection)
+        (AzureCosmosDBAccount)-[CONFIGURED_WITH]->(AzureCDBPrivateEndpointConnection)
         ```
 
 ## AzureCosmosDBVirtualNetworkRule
@@ -1070,7 +1070,7 @@ Representation of an Azure Cosmos DB Virtual Network Rule.
 - Azure Database Account is configured with one or more virtual network rules.
 
         ```
-        (AzureDatabaseAccount)-[CONFIGURED_WITH]->(AzureCosmosDBVirtualNetworkRule)
+        (AzureCosmosDBAccount)-[CONFIGURED_WITH]->(AzureCosmosDBVirtualNetworkRule)
         ```
 
 ## AzureCosmosDBSqlDatabase
@@ -1093,7 +1093,7 @@ Representation of an [AzureCosmosDBSqlDatabase](https://docs.microsoft.com/en-us
 - Azure Database Account contains one or more SQL databases.
 
         ```
-        (AzureDatabaseAccount)-[CONTAINS]->(AzureCosmosDBSqlDatabase)
+        (AzureCosmosDBAccount)-[CONTAINS]->(AzureCosmosDBSqlDatabase)
         ```
 - SQL Databases contain one or more SQL containers.
 
@@ -1121,7 +1121,7 @@ Representation of an [AzureCosmosDBCassandraKeyspace](https://docs.microsoft.com
 - Azure Database Account contains one or more Cassandra keyspace.
 
         ```
-        (AzureDatabaseAccount)-[CONTAINS]->(AzureCosmosDBCassandraKeyspace)
+        (AzureCosmosDBAccount)-[CONTAINS]->(AzureCosmosDBCassandraKeyspace)
         ```
 - Cassandra Keyspace contains one or more Cassandra tables.
 
@@ -1149,7 +1149,7 @@ Representation of an [AzureCosmosDBMongoDBDatabase](https://docs.microsoft.com/e
 - Azure Database Account contains one or more MongoDB Database.
 
         ```
-        (AzureDatabaseAccount)-[CONTAINS]->(AzureCosmosDBMongoDBDatabase)
+        (AzureCosmosDBAccount)-[CONTAINS]->(AzureCosmosDBMongoDBDatabase)
         ```
 - MongoDB database contains one or more MongoDB collections.
 
@@ -1177,7 +1177,7 @@ Representation of an [AzureCosmosDBTableResource](https://docs.microsoft.com/en-
 - Azure Database Account contains one or more table resource.
 
         ```
-        (AzureDatabaseAccount)-[CONTAINS]->(AzureCosmosDBTableResource)
+        (AzureCosmosDBAccount)-[CONTAINS]->(AzureCosmosDBTableResource)
         ```
 
 ## AzureCosmosDBSqlContainer
