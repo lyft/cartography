@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 @timeit
 @aws_handle_regions
 def get_ecr_repositories(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
-    logger.debug("Getting ECR repositories for region '%s'.", region)
+    logger.info("Getting ECR repositories for region '%s'.", region)
     client = boto3_session.client('ecr', region_name=region)
     paginator = client.get_paginator('describe_repositories')
     ecr_repositories: List[Dict] = []
@@ -58,7 +58,7 @@ def load_ecr_repositories(
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = {aws_update_tag}
     """
-    logger.debug("Loading ECR repositories for region '%s' into graph.", region)
+    logger.info(f"Loading {len(repos)} ECR repositories for region {region} into graph.")
     neo4j_session.run(
         query,
         Repositories=repos,
@@ -119,7 +119,7 @@ def load_ecr_repository_images(
         ON CREATE SET r2.firstseen = timestamp()
         SET r2.lastupdated = {aws_update_tag}
     """
-    logger.debug("Loading ECR repository images for region '%s' into graph.", region)
+    logger.info(f"Loading {len(repo_images_list)} ECR repository images in {region} into graph.")
     neo4j_session.run(
         query,
         RepoList=repo_images_list,
