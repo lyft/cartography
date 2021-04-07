@@ -1,9 +1,4 @@
-import logging
-
 from statsd import StatsClient
-
-
-logger = logging.getLogger(__name__)
 
 
 class _StatsClientWrapper:
@@ -61,7 +56,6 @@ class ScopedStatsClient:
         if self.is_enabled():
             if self._scope_prefix:
                 stat = f"{self._scope_prefix}.{stat}"
-            logger.info(f"Stat being incremented is {stat}")
             self._client.get_client().incr(stat, count, rate)
 
     def timer(self, stat: str, rate: float = 1.0):
