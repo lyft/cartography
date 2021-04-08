@@ -1,20 +1,6 @@
 from statsd import StatsClient
 
 
-class _StatsClientWrapper:
-    def __init__(self, client: StatsClient):
-        self._client = client
-
-    def set_client(self, client: StatsClient) -> None:
-        self._client = client
-
-    def get_client(self) -> StatsClient:
-        return self._client
-
-    def is_enabled(self) -> bool:
-        return self._client is not None
-
-
 class ScopedStatsClient:
     """
     A Proxy object for an underlying statsd client.
@@ -27,8 +13,10 @@ class ScopedStatsClient:
     newer_client.incr('bad') # Metric name = a.subsystem.bad
     """
 
-    def __init__(self, client: _StatsClientWrapper, prefix: str = None):
-        self._client = client
+    _client: StatsClient = None
+    _parent: 'ScopedStatsClient' = None
+
+    def __init__(self, prefix: str = None):
         self._scope_prefix = prefix
 
     def get_stats_client(self, scope: str) -> 'ScopedStatsClient':
@@ -40,10 +28,19 @@ class ScopedStatsClient:
             prefix = scope
         else:
             prefix = f"{self._scope_prefix}.{scope}"
-        return ScopedStatsClient(self._client, prefix)
+
+        scoped_stats_client = ScopedStatsClient(prefix)
+        scoped_stats_client._parent = self
+        return scoped_stats_client
+
+    def get_base_scoped_stats_client(self) -> 'ScopedStatsClient':
+        base_client = self
+        while base_client._parent:
+            base_client = base_client._parent
+        return base_client
 
     def is_enabled(self) -> bool:
-        return self._client.is_enabled()
+        return self.get_base_scoped_stats_client()._client is not None
 
     def incr(self, stat: str, count: int = 1, rate: float = 1.0) -> None:
         """
@@ -56,7 +53,7 @@ class ScopedStatsClient:
         if self.is_enabled():
             if self._scope_prefix:
                 stat = f"{self._scope_prefix}.{stat}"
-            self._client.get_client().incr(stat, count, rate)
+            self.get_base_scoped_stats_client()._client.incr(stat, count, rate)
 
     def timer(self, stat: str, rate: float = 1.0):
         """
@@ -69,16 +66,16 @@ class ScopedStatsClient:
         if self.is_enabled():
             if self._scope_prefix:
                 stat = f"{self._scope_prefix}.{stat}"
-            return self._client.get_client().timer(stat, rate)
+            return self.get_base_scoped_stats_client()._client.timer(stat, rate)
         return None
 
     def set_stats_client(self, stats_client: StatsClient) -> None:
-        self._client.set_client(stats_client)
+        self.get_base_scoped_stats_client()._client = stats_client
 
 
 # Global _scoped_stats_client
 # Will be set when cartography.config.statsd_enabled is True
-_scoped_stats_client: ScopedStatsClient = ScopedStatsClient(_StatsClientWrapper(None))
+_scoped_stats_client: ScopedStatsClient = ScopedStatsClient()
 
 
 def set_stats_client(stats_client: StatsClient) -> None:
