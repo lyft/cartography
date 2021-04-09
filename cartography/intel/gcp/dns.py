@@ -124,7 +124,8 @@ def load_dns_zones(neo4j_session: neo4j.Session, dns_zones: List[Dict], project_
         zone.description = record.description,
         zone.visibility = record.visibility,
         zone.kind = record.kind,
-        zone.nameservers = record.nameServers
+        zone.nameservers = record.nameServers,
+        zone.lastupdated = {gcp_update_tag}
     WITH zone
     MATCH (owner:GCPProject{id:{ProjectId}})
     MERGE (owner)-[r:RESOURCE]->(zone)
@@ -170,7 +171,8 @@ def load_rrs(neo4j_session: neo4j.Session, dns_rrs: List[Resource], project_id: 
         rrs.name = record.name,
         rrs.type = record.type,
         rrs.ttl = record.ttl,
-        rrs.data = record.rrdatas
+        rrs.data = record.rrdatas,
+        rrs.lastupdated = {gcp_update_tag}
     WITH rrs, record
     MATCH (zone:GCPDNSZone{id:record.zone})
     MERGE (zone)-[r:HAS_RECORD]->(rrs)

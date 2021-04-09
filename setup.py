@@ -1,7 +1,7 @@
 from setuptools import find_packages
 from setuptools import setup
 
-__version__ = '0.33.3'
+__version__ = '0.34.1'
 
 
 setup(
@@ -51,6 +51,7 @@ setup(
         "msrestazure >= 0.6.4",
         "azure-mgmt-storage>=16.0.0",
         "azure-mgmt-sql>=0.11.0",
+        "azure-identity>=1.5.0",
     ],
     extras_require={
         ':python_version<"3.7"': [

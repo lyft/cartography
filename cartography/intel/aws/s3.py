@@ -111,6 +111,9 @@ def get_acl(bucket: Dict, client: botocore.client.BaseClient) -> Optional[str]:
         elif "AllAccessDisabled" in e.args[0]:
             logger.warning("Failed to retrieve S3 bucket {} ACL - Bucket is disabled".format(bucket['Name']))
             return None
+        elif "EndpointConnectionError" in e.args[0]:
+            logger.warning("Failed to retrieve S3 bucket {} ACL - EndpointConnectionError".format(bucket['Name']))
+            return None
         else:
             raise
     return acl
