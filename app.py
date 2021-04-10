@@ -86,7 +86,9 @@ def process_request(context, args):
             "sessionString": args['sessionString'],
             "eventId": args['eventId'],
             "templateType": args['templateType'],
-            "workspace": args['workspace']
+            "workspace": args['workspace'],
+            "actions": args['actions'],
+            "resultTopic": args['resultTopic']
         }
     }
 
@@ -116,11 +118,19 @@ def publish_response(context, req, resp):
         body = {
             "status": resp['status'],
             "params": req['params'],
+            "sessionString": req['params']['sessionString'],
+            "eventId": req['params']['eventId'],
+            "templateType": req['params']['templateType'],
+            "workspace": req['params']['workspace'],
+            "actions": req['params']['actions'],
             "response": resp
         }
 
         sns_helper = SNSLibrary(context)
-        status = sns_helper.publish(json.dumps(body), context.aws_inventory_sync_response_topic)
+        # status = sns_helper.publish(json.dumps(body), context.aws_inventory_sync_response_topic)
+
+        # Result should be pushed to "resultTopic" passed in the request
+        status = sns_helper.publish(json.dumps(body), req['params']['resultTopic'])
 
         context.logger.info(f'result published to SNS with status: {status}')
 
