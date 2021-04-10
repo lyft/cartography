@@ -66,11 +66,12 @@ def get_tags(boto3_session: boto3.session.Session, resource_types: List[str], re
     client = boto3_session.client('resourcegroupstaggingapi', region_name=region)
     paginator = client.get_paginator('get_resources')
     resources: List[Dict] = []
-    for page in paginator.paginate(
-        # Only ingest tags for resources that Cartography supports.
-        # This is just a starting list; there may be others supported by this API.
-        ResourceTypeFilters=resource_types,
-    ):
+    # for page in paginator.paginate(
+    #     # Only ingest tags for resources that Cartography supports.
+    #     # This is just a starting list; there may be others supported by this API.
+    #     ResourceTypeFilters=resource_types,
+    # ):
+    for page in paginator.paginate():
         resources.extend(page['ResourceTagMappingList'])
     return resources
 
