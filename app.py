@@ -127,10 +127,13 @@ def publish_response(context, req, resp):
         }
 
         sns_helper = SNSLibrary(context)
-        # status = sns_helper.publish(json.dumps(body), context.aws_inventory_sync_response_topic)
 
-        # Result should be pushed to "resultTopic" passed in the request
-        status = sns_helper.publish(json.dumps(body), req['params']['resultTopic'])
+        if 'resultTopic' in req['params']:
+            # Result should be pushed to "resultTopic" passed in the request
+            status = sns_helper.publish(json.dumps(body), req['params']['resultTopic'])
+
+        else:
+            status = sns_helper.publish(json.dumps(body), context.aws_inventory_sync_response_topic)
 
         context.logger.info(f'result published to SNS with status: {status}')
 
