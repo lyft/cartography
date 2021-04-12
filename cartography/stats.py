@@ -30,14 +30,13 @@ class ScopedStatsClient:
         else:
             prefix = f"{self._scope_prefix}.{scope}"
 
-        scoped_stats_client = ScopedStatsClient(prefix)
-        scoped_stats_client._parent = self
+        scoped_stats_client = ScopedStatsClient(prefix, self._root)
         return scoped_stats_client
 
+    @staticmethod
     def get_root_client() -> 'ScopedStatsClient':
         client = ScopedStatsClient()
         client._root = client
-
         return client
 
     def is_enabled(self) -> bool:
