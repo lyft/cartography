@@ -14,10 +14,11 @@ class ScopedStatsClient:
     """
 
     _client: StatsClient = None
-    _parent: 'ScopedStatsClient' = None
+    _root: 'ScopedStatsClient' = None
 
-    def __init__(self, prefix: str = None):
+    def __init__(self, prefix: str = None, root: 'ScopedStatsClient' = None):
         self._scope_prefix = prefix
+        self._root = root
 
     def get_stats_client(self, scope: str) -> 'ScopedStatsClient':
         """
@@ -33,14 +34,14 @@ class ScopedStatsClient:
         scoped_stats_client._parent = self
         return scoped_stats_client
 
-    def get_base_scoped_stats_client(self) -> 'ScopedStatsClient':
-        base_client = self
-        while base_client._parent:
-            base_client = base_client._parent
-        return base_client
+    def get_root_client() -> 'ScopedStatsClient':
+        client = ScopedStatsClient()
+        client._root = client
+
+        return client
 
     def is_enabled(self) -> bool:
-        return self.get_base_scoped_stats_client()._client is not None
+        return self._root._client is not None
 
     def incr(self, stat: str, count: int = 1, rate: float = 1.0) -> None:
         """
@@ -53,7 +54,7 @@ class ScopedStatsClient:
         if self.is_enabled():
             if self._scope_prefix:
                 stat = f"{self._scope_prefix}.{stat}"
-            self.get_base_scoped_stats_client()._client.incr(stat, count, rate)
+            self._root._client.incr(stat, count, rate)
 
     def timer(self, stat: str, rate: float = 1.0):
         """
@@ -66,16 +67,16 @@ class ScopedStatsClient:
         if self.is_enabled():
             if self._scope_prefix:
                 stat = f"{self._scope_prefix}.{stat}"
-            return self.get_base_scoped_stats_client()._client.timer(stat, rate)
+            return self._root._client.timer(stat, rate)
         return None
 
     def set_stats_client(self, stats_client: StatsClient) -> None:
-        self.get_base_scoped_stats_client()._client = stats_client
+        self._root._client = stats_client
 
 
 # Global _scoped_stats_client
 # Will be set when cartography.config.statsd_enabled is True
-_scoped_stats_client: ScopedStatsClient = ScopedStatsClient()
+_scoped_stats_client: ScopedStatsClient = ScopedStatsClient.get_root_client()
 
 
 def set_stats_client(stats_client: StatsClient) -> None:
