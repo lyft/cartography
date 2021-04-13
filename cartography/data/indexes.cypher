@@ -79,6 +79,8 @@ CREATE INDEX ON :GCPBucket(id);
 CREATE INDEX ON :GCPBucketLabel(key);
 CREATE INDEX ON :GCPSubnet(id);
 CREATE INDEX ON :GCPVpc(id);
+CREATE INDEX ON :GCPVpnGateway(id);
+CREATE INDEX ON :GCPVpnTunnel(id);
 CREATE INDEX ON :GitHubOrganization(id);
 CREATE INDEX ON :GitHubRepository(id);
 CREATE INDEX ON :GitHubUser(id);
