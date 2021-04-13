@@ -82,17 +82,17 @@ def fetch_all(
         try:
             resp = fetch_page(token, api_url, organization, query, cursor)
         except requests.exceptions.Timeout:
-            logger.warning(
-                "GitHub: Could not retrieve page of resource %s due to API timeout; continuing with incomplete data",
-                resource_type,
+            logger.error(
+                f"GitHub: Could not retrieve page of resource {resource_type} due to API timeout.",
+                exc_info=True,
             )
-            break
-        except requests.exceptions.HTTPError as e:
-            logger.warning(
-                f"GitHub: Could not retrieve page of resource `{resource_type}` due to HTTP error."
-                f"Details: {e}; Continuing with incomplete data.",
+            raise
+        except requests.exceptions.HTTPError:
+            logger.error(
+                f"GitHub: Could not retrieve page of resource `{resource_type}` due to HTTP error.",
+                exc_info=True,
             )
-            break
+            raise
         resource = resp['data']['organization'][resource_type]
         data.extend(resource[field_name])
         cursor = resource['pageInfo']['endCursor']

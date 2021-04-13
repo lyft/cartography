@@ -4,8 +4,10 @@ from typing import Dict
 from typing import List
 
 import boto3
+import botocore.exceptions
 import neo4j
 
+from cartography.intel.aws.ec2.util import get_botocore_config
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -20,7 +22,7 @@ DESCRIBE_SLEEP = 1
 @timeit
 @aws_handle_regions
 def get_emr_clusters(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
-    client = boto3_session.client('emr', region_name=region)
+    client = boto3_session.client('emr', region_name=region, config=get_botocore_config())
     clusters: List[Dict] = []
     paginator = client.get_paginator('list_clusters')
     for page in paginator.paginate():
@@ -32,9 +34,18 @@ def get_emr_clusters(boto3_session: boto3.session.Session, region: str) -> List[
 
 @timeit
 def get_emr_describe_cluster(boto3_session: boto3.session.Session, region: str, cluster_id: str) -> Dict:
-    client = boto3_session.client('emr', region_name=region)
-    response = client.describe_cluster(ClusterId=cluster_id)
-    return response['Cluster']
+    client = boto3_session.client('emr', region_name=region, config=get_botocore_config())
+    cluster_details: Dict = {}
+    try:
+        response = client.describe_cluster(ClusterId=cluster_id)
+        cluster_details = response['Cluster']
+    except botocore.exceptions.ClientError as e:
+        logger.warning(
+            "Could not run EMR describe_cluster due to boto3 error %s: %s. Skipping.",
+            e.response['Error']['Code'],
+            e.response['Error']['Message'],
+        )
+    return cluster_details
 
 
 @timeit
@@ -89,7 +100,9 @@ def sync(
         cluster_data: List[Dict] = []
         for cluster in clusters:
             cluster_id = cluster['Id']
-            cluster_data += [get_emr_describe_cluster(boto3_session, region, cluster_id)]
+            cluster_details = get_emr_describe_cluster(boto3_session, region, cluster_id)
+            if cluster_details:
+                cluster_data.append(cluster_details)
             time.sleep(DESCRIBE_SLEEP)
 
         load_emr_clusters(neo4j_session, cluster_data, region, current_aws_account_id, update_tag)

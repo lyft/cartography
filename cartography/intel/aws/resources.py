@@ -27,7 +27,7 @@ from .ec2.security_groups import sync_ec2_security_groupinfo
 from .ec2.subnets import sync_subnets
 from .ec2.tgw import sync_transit_gateways
 from .ec2.vpc import sync_vpc
-from .ec2.vpc_peering import sync_vpc_peering
+from .ec2.vpc_peerings import sync_vpc_peerings
 
 RESOURCE_FUNCTIONS: Dict = {
     'iam': iam.sync,
@@ -43,7 +43,7 @@ RESOURCE_FUNCTIONS: Dict = {
     'ec2:subnet': sync_subnets,
     'ec2:tgw': sync_transit_gateways,
     'ec2:vpc': sync_vpc,
-    'ec2:vpc_peering': sync_vpc_peering,
+    'ec2:vpc_peering': sync_vpc_peerings,
     'ec2:internet_gateway': sync_internet_gateways,
     'ecr': ecr.sync,
     'eks': eks.sync,

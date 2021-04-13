@@ -16,7 +16,7 @@ import cartography.intel.gcp
 import cartography.intel.github
 import cartography.intel.gsuite
 import cartography.intel.okta
-from cartography.scoped_stats_client import ScopedStatsClient
+from cartography.stats import set_stats_client
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +95,7 @@ def run_with_config(sync, config):
     """
     # Initialize statsd client if enabled
     if config.statsd_enabled:
-        cartography.util.stats_client = ScopedStatsClient(
+        set_stats_client(
             StatsClient(
                 host=config.statsd_host,
                 port=config.statsd_port,
