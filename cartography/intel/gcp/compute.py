@@ -438,7 +438,7 @@ def transform_gcp_vpn_tunnels(tunnels_response: Resource) -> List[Dict]:
     tunnels_list: List[Dict] = []
     prefix = tunnels_response['id']
     projectid = prefix.split('/')[1]
-    for tn in tunnels_list.get('items', []):
+    for tn in tunnels_response.get('items', []):
         tunnel_partial_uri = f"{prefix}/{tn['name']}"
 
         tunnel = {}
