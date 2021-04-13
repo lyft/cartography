@@ -6,6 +6,12 @@
       "iterationsize": 100,
       "__comment__": "Delete GCP VPN Gateways that no longer exist and detach them from all previously connected nodes."
     },
+    {
+      "query": "MATCH (:GCPVpnGateway)-[r:ASSOCIATED_WITH]->(:GCPForwardingRule) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100,
+      "__comment__": "Remove GCP VpnGateway-to-ForwardingRule relationships that are out of date."
+    }
   ],
   "name": "cleanup GCP VPN Gateways"
 }
