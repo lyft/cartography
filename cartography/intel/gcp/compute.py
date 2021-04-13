@@ -1445,7 +1445,8 @@ def sync_gcp_vpn_gateways(
         vpngw_response = get_gcp_target_vpn_gateways(project_id, region, compute)
         vpngw_list = transform_gcp_vpn_gateways(vpngw_response)
         load_gcp_vpn_gateways(neo4j_session, vpngw_list, gcp_update_tag)
-        cleanup_gcp_vpn_gateways(neo4j_session, common_job_parameters)@timeit
+        cleanup_gcp_vpn_gateways(neo4j_session, common_job_parameters)
+
 
 @timeit
 def sync_gcp_vpn_tunnels(
