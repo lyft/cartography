@@ -420,6 +420,7 @@ def transform_gcp_vpn_gateways(vpngw_response: Resource) -> List[Dict]:
 
         vpn_gateway = {}
         vpn_gateway['id'] = vpngw_partial_uri
+        vpn_gateway['partial_uri'] = vpngw_partial_uri
         vpn_gateway['name'] = vpngw['name']
         vpn_gateway['description'] = vpngw['description']
         vpn_gateway['region'] = vpngw['region'].split('/')[-1]
@@ -443,6 +444,7 @@ def transform_gcp_vpn_tunnels(tunnels_response: Resource) -> List[Dict]:
 
         tunnel = {}
         tunnel['id'] = tunnel_partial_uri
+        tunnel['partial_uri'] = tunnel_partial_uri
         tunnel['name'] = tn['name']
         tunnel['description'] = tn['description']
         tunnel['region'] = tn['region'].split('/')[-1]
@@ -789,7 +791,7 @@ def load_gcp_vpn_gateways(neo4j_session: neo4j.Session, vpngw_list: Dict, gcp_up
         neo4j_session.run(
             query,
             Id = vpngw['id'],
-            PartialUri=vpngw['id'],
+            PartialUri=vpngw['partial_uri'],
             Name = vpngw['name'],
             Description = vpngw['description'],
             Region = vpngw['region'],
@@ -831,7 +833,7 @@ def load_gcp_vpn_tunnels(neo4j_session: neo4j.Session, tunnels_list: Dict, gcp_u
         neo4j_session.run(
             query,
             Id=tn['id'],
-            PartialUri=tn['id'],
+            PartialUri=tn['partial_uri'],
             Name=tn['name'],
             Description=tn['description'],
             Region=tn['region'],
