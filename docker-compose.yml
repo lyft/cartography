@@ -12,7 +12,7 @@ services:
       - ./.compose/neo4j/import:/import
       - ./.compose/neo4j/logs:/logs
       - ./.compose/neo4j/plugins:/plugins
-    environment: 
+    environment:
       # Raise memory limits
       - NEO4J_dbms_memory_pagecache_size=1G
       - NEO4J_dbms.memory.heap.initial_size=1G
