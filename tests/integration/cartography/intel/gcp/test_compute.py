@@ -36,7 +36,6 @@ def _ensure_local_neo4j_has_test_firewall_data(neo4j_session):
         TEST_UPDATE_TAG,
     )
 
-
 def test_transform_and_load_vpcs(neo4j_session):
     """
     Test that we can correctly transform and load VPC nodes to Neo4j.
@@ -165,6 +164,36 @@ def test_transform_and_load_gcp_forwarding_rules(neo4j_session):
             'europe-west2',
             'projects/project-abc/regions/europe-west2/targetPools/node-pool-234567',
         ),
+    }
+
+    assert actual_nodes == expected_nodes
+
+def test_transform_and_load_vpn_gateways(neo4j_session):
+    """
+    Ensure that we can correctly transform and load GCP VPN Gateways
+    """
+    vpn_res = tests.data.gcp.compute.LIST_VPN_GATEWAYS_RESPONSE
+    vpn_list = cartography.intel.gcp.compute.transform_gcp_vpn_gateways(vpn_res)
+    cartography.intel.gcp.compute.load_gcp_vpn_gateways(neo4j_session, vpn_list, TEST_UPDATE_TAG)
+
+    vpn_query = """
+    MATCH(v:GCPVpnGateway)
+    RETURN v.id, v.partial_uri, v.name, v.network, v.project_id, v.region, v.self_link
+    """
+    objects = neo4j_session.run(vpn_query)
+    actual_nodes = {
+        (
+            o['v.id'],
+            o['v.partial_uri'],
+            o['v.network'],
+            o['v.project_id'],
+            o['v.region'],
+            o['v.self_link']
+        ) for o in objects
+    }
+
+    expected_nodes = {
+        ()
     }
 
     assert actual_nodes == expected_nodes
