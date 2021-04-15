@@ -23,6 +23,7 @@ from .ec2.key_pairs import sync_ec2_key_pairs
 from .ec2.load_balancer_v2s import sync_load_balancer_v2s
 from .ec2.load_balancers import sync_load_balancers
 from .ec2.network_interfaces import sync_network_interfaces
+from .ec2.route_tables import sync_route_tables
 from .ec2.security_groups import sync_ec2_security_groupinfo
 from .ec2.subnets import sync_subnets
 from .ec2.tgw import sync_transit_gateways
@@ -41,6 +42,7 @@ RESOURCE_FUNCTIONS: Dict = {
     'ec2:network_interface': sync_network_interfaces,
     'ec2:security_group': sync_ec2_security_groupinfo,
     'ec2:subnet': sync_subnets,
+    'ec2:route_table': sync_route_tables,
     'ec2:tgw': sync_transit_gateways,
     'ec2:vpc': sync_vpc,
     'ec2:vpc_peering': sync_vpc_peerings,
