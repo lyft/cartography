@@ -460,8 +460,8 @@ def transform_gcp_vpn_tunnels(tunnels_response: Resource) -> List[Dict]:
         tunnel['self_link'] = tn['selfLink']
         tunnel['ike_version'] = tn['ikeVersion']
         tunnel['detailed_status'] = tn['detailedStatus']
-        tunnel['local_traffic_selector'] = tn['localTrafficSelector']
-        tunnel['remote_traffic_selector'] = tn['remoteTrafficSelector']
+        tunnel['local_traffic_selector'] = tn.get('localTrafficSelector', None)
+        tunnel['remote_traffic_selector'] = tn.get('remoteTrafficSelector', None)
         tunnel['project_id'] = projectid
 
         tunnels_list.append(tunnel)

@@ -223,6 +223,96 @@ def test_transform_and_load_vpn_gateways(neo4j_session):
 
     assert actual_nodes == expected_nodes
 
+def test_transform_and_load_vpn_tunnels(neo4j_session):
+    """
+    Ensure that we can correctly transform and load GCP VPN Tunnels
+    """
+    tunnels_res = tests.data.gcp.compute.LIST_VPN_TUNNELS_RESPONSE
+    tunnels_list = cartography.intel.gcp.compute.transform_gcp_vpn_tunnels(tunnels_res)
+    cartography.intel.gcp.compute.load_gcp_vpn_tunnels(neo4j_session, tunnels_list, TEST_UPDATE_TAG)
+
+    tunnels_query = """
+    MATCH(t:GCPVpnTunnel)
+    RETURN t.id, t.partial_uri, t.name, t.description, t.region, t.target_vpn_gateway, t.vpn_gateway,
+    t.vpn_gateway_interface, t.peer_external_gateway, t.peer_external_gateway_interface, t.peer_gcp_gateway, t.router,
+    t.peer_ip, t.status, t.self_link, t.ike_version, t.detailed_status, t.local_traffic_selector, 
+    t.remote_traffic_selector, t.project_id
+    """
+    objects = neo4j_session.run(tunnels_query)
+    actual_nodes = {
+        (
+            o['t.id'],
+            o['t.partial_uri'],
+            o['t.name'],
+            o['t.description'],
+            o['t.region'],
+            o['t.target_vpn_gateway'],
+            o['t.vpn_gateway'],
+            o['t.vpn_gateway_interface'],
+            o['t.peer_external_gateway'],
+            o['t.peer_external_gateway_interface'],
+            o['t.peer_gcp_gateway'],
+            o['t.router'],
+            o['t.peer_ip'],
+            o['t.status'],
+            o['t.self_link'],
+            o['t.ike_version'],
+            o['t.detailed_status'],
+            ','.join(o.get('t.local_traffic_selector', None)) if o.get('t.local_traffic_selector', None) else None,
+            o.get('t.remote_traffic_selector',None),
+            o['t.project_id'],
+        ) for o in objects
+    }
+
+    expected_nodes = {
+        (
+            'projects/project-abc/regions/europe-west2/vpnTunnels/vpn-abc-1-tunnel-1',
+            'projects/project-abc/regions/europe-west2/vpnTunnels/vpn-abc-1-tunnel-1',
+            'vpn-abc-1-tunnel-1',
+            '',
+            'europe-west2',
+            'https://www.googleapis.com/compute/v1/projects/project-abc/regions/europe-west2/targetVpnGateways/vpn-abc-1',
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            '1.2.3.41',
+            'ESTABLISHED',
+            'https://www.googleapis.com/compute/v1/projects/project-abc/regions/europe-west2/vpnTunnels/vpn-abc-1-tunnel-1',
+            2,
+            'Tunnel is up and running.',
+            '10.10.5.0/24,10.10.4.0/24',
+            None,
+            'project-abc'
+         ),
+        (
+            'projects/project-abc/regions/europe-west2/vpnTunnels/vpn-abc-2-tunnel-2',
+            'projects/project-abc/regions/europe-west2/vpnTunnels/vpn-abc-2-tunnel-2',
+            'vpn-abc-2-tunnel-2',
+            '',
+            'europe-west2',
+            'https://www.googleapis.com/compute/v1/projects/project-abc/regions/europe-west2/targetVpnGateways/vpn-abc-2',
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            '1.2.3.31',
+            'FIRST_HANDSHAKE',
+            'https://www.googleapis.com/compute/v1/projects/project-abc/regions/europe-west2/vpnTunnels/vpn-abc-2-tunnel-2',
+            2,
+            'Allocating resources. VPN tunnel will start soon.',
+            '10.10.5.0/24',
+            None,
+            'project-abc'
+        ),
+    }
+
+    assert actual_nodes == expected_nodes
+
 
 def test_transform_and_load_gcp_instances_and_nics(neo4j_session):
     """

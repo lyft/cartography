@@ -788,7 +788,8 @@ LIST_VPN_TUNNELS_RESPONSE = {
       "ikeVersion": 2,
       "detailedStatus": "Tunnel is up and running.",
       "localTrafficSelector": [
-        "10.10.5.0/24"
+        "10.10.5.0/24",
+        "10.10.4.0/24",
       ],
       "kind": "compute#vpnTunnel"
     },
