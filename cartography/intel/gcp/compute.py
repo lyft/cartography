@@ -178,6 +178,7 @@ def get_gcp_firewall_ingress_rules(project_id: str, compute: Resource) -> Resour
     req = compute.firewalls().list(project=project_id, filter='(direction="INGRESS")')
     return req.execute()
 
+
 @timeit
 def get_gcp_target_vpn_gateways(project_id: str, region: str, compute: Resource) -> Resource:
     """
@@ -188,6 +189,7 @@ def get_gcp_target_vpn_gateways(project_id: str, region: str, compute: Resource)
     """
     req = compute.targetVpnGateways().list(project=project_id, region=region)
     return req.execute()
+
 
 @timeit
 def get_gcp_target_vpn_tunnels(project_id: str, region: str, compute: Resource) -> Resource:
@@ -410,6 +412,7 @@ def transform_gcp_firewall(fw_response: Resource) -> List[Dict]:
         fw_list.append(fw)
     return fw_list
 
+
 @timeit
 def transform_gcp_vpn_gateways(vpngw_response: Resource) -> List[Dict]:
     vpngw_list: List[Dict] = []
@@ -433,6 +436,7 @@ def transform_gcp_vpn_gateways(vpngw_response: Resource) -> List[Dict]:
 
         vpngw_list.append(vpn_gateway)
     return vpngw_list
+
 
 @timeit
 def transform_gcp_vpn_tunnels(tunnels_response: Resource) -> List[Dict]:
@@ -466,6 +470,7 @@ def transform_gcp_vpn_tunnels(tunnels_response: Resource) -> List[Dict]:
 
         tunnels_list.append(tunnel)
     return tunnels_list
+
 
 def _transform_fw_entry(rule: Dict, fw_partial_uri: str, is_allow_rule: bool) -> List[Dict]:
     """
@@ -771,6 +776,7 @@ def load_gcp_forwarding_rules(neo4j_session: neo4j.Session, fwd_rules: List[Dict
         elif network:
             _attach_fwd_rule_to_vpc(neo4j_session, fwd, gcp_update_tag)
 
+
 @timeit
 def load_gcp_vpn_gateways(neo4j_session: neo4j.Session, vpngw_list: Dict, gcp_update_tag: int) -> None:
     query = """
@@ -790,18 +796,19 @@ def load_gcp_vpn_gateways(neo4j_session: neo4j.Session, vpngw_list: Dict, gcp_up
     for vpngw in vpngw_list:
         neo4j_session.run(
             query,
-            Id = vpngw['id'],
+            Id=vpngw['id'],
             PartialUri=vpngw['partial_uri'],
-            Name = vpngw['name'],
-            Description = vpngw['description'],
-            Region = vpngw['region'],
-            Network = vpngw['network'],
-            Status = vpngw['status'],
-            SelfLink = vpngw['self_link'],
-            ProjectId = vpngw['project_id'],
+            Name=vpngw['name'],
+            Description=vpngw['description'],
+            Region=vpngw['region'],
+            Network=vpngw['network'],
+            Status=vpngw['status'],
+            SelfLink=vpngw['self_link'],
+            ProjectId=vpngw['project_id'],
             gcp_update_tag=gcp_update_tag,
         )
         _attach_vpn_gateway_to_fwd_rules(neo4j_session, vpngw, gcp_update_tag)
+
 
 @timeit
 def load_gcp_vpn_tunnels(neo4j_session: neo4j.Session, tunnels_list: Dict, gcp_update_tag: int) -> None:
@@ -856,6 +863,7 @@ def load_gcp_vpn_tunnels(neo4j_session: neo4j.Session, tunnels_list: Dict, gcp_u
         )
         _attach_vpn_tunnel_to_target_vpn_gateway(neo4j_session, tn, gcp_update_tag)
 
+
 @timeit
 def _attach_vpn_tunnel_to_target_vpn_gateway(neo4j_session: neo4j.Session, vpn_tunnel: Dict, gcp_update_tag: int) -> None:
     query = """
@@ -878,6 +886,7 @@ def _attach_vpn_tunnel_to_target_vpn_gateway(neo4j_session: neo4j.Session, vpn_t
         gcp_update_tag=gcp_update_tag,
     )
 
+
 @timeit
 def _attach_vpn_gateway_to_fwd_rules(neo4j_session: neo4j.Session, vpn_gateway: Dict, gcp_update_tag: int) -> None:
     forwarding_rules = vpn_gateway.get('forwarding_rules', None)
@@ -888,10 +897,10 @@ def _attach_vpn_gateway_to_fwd_rules(neo4j_session: neo4j.Session, vpn_gateway: 
                 ON CREATE SET fwd.firstseen = timestamp(),
                 fwd.partial_uri = {ForwardingRulePartialUri}
                 SET fwd.lastupdated = {gcp_update_tag}
-    
+
                 WITH fwd
                 MATCH(vpngw:GCPVpnGateway{id:{PartialUri}})
-    
+
                 MERGE(vpngw)-[p:ASSOCIATED_WITH]->(fwd)
                 ON CREATE SET p.firstseen = timestamp()
                 SET p.lastupdated = {gcp_update_tag}
@@ -903,6 +912,7 @@ def _attach_vpn_gateway_to_fwd_rules(neo4j_session: neo4j.Session, vpn_gateway: 
             ForwardingRulePartialUri=fwd,
             gcp_update_tag=gcp_update_tag,
         )
+
 
 @timeit
 def _attach_fwd_rule_to_subnet(neo4j_session: neo4j.Session, fwd: Dict, gcp_update_tag: int) -> None:
@@ -1295,6 +1305,8 @@ def cleanup_gcp_firewall_rules(neo4j_session: neo4j.Session, common_job_paramete
     """
     run_cleanup_job('gcp_compute_firewall_cleanup.json', neo4j_session, common_job_parameters)\
 
+
+
 @timeit
 def cleanup_gcp_vpn_gateways(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     """
@@ -1304,6 +1316,8 @@ def cleanup_gcp_vpn_gateways(neo4j_session: neo4j.Session, common_job_parameters
     :return: Nothing
     """
     run_cleanup_job('gcp_compute_vpn_gateways_cleanup.json', neo4j_session, common_job_parameters)\
+
+
 
 @timeit
 def cleanup_gcp_vpn_tunnels(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
@@ -1431,7 +1445,7 @@ def sync_gcp_vpn_gateways(
         project_id: str,
         regions: List[str],
         gcp_update_tag: int,
-        common_job_parameters: Dict
+        common_job_parameters: Dict,
 ) -> None:
     """
     Sync GCP VPN Gateways
@@ -1457,7 +1471,7 @@ def sync_gcp_vpn_tunnels(
         project_id: str,
         regions: List[str],
         gcp_update_tag: int,
-        common_job_parameters: Dict
+        common_job_parameters: Dict,
 ) -> None:
     """
     Sync GCP VPN Tunnels
@@ -1474,6 +1488,7 @@ def sync_gcp_vpn_tunnels(
         tunnels_list = transform_gcp_vpn_tunnels(tunnels_response)
         load_gcp_vpn_tunnels(neo4j_session, tunnels_list, gcp_update_tag)
         cleanup_gcp_vpn_tunnels(neo4j_session, common_job_parameters)
+
 
 def _zones_to_regions(zones: List[str]) -> List[Set]:
     """
