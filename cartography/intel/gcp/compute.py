@@ -1442,7 +1442,7 @@ def sync_gcp_vpn_gateways(
     :return: Nothing
     """
     logger.info("Syncing GCP VPN Gateways objects for project %s.", project_id)
-    common_job_parameters['PROJECT_ID'] = project_id
+    common_job_parameters['GCP_PROJECT_ID'] = project_id
     for region in regions:
         vpngw_response = get_gcp_target_vpn_gateways(project_id, region, compute)
         vpngw_list = transform_gcp_vpn_gateways(vpngw_response)
@@ -1468,7 +1468,7 @@ def sync_gcp_vpn_tunnels(
     :return: Nothing
     """
     logger.info("Syncing GCP VPN Tunnels objects for project %s.", project_id)
-    common_job_parameters['PROJECT_ID'] = project_id
+    common_job_parameters['GCP_PROJECT_ID'] = project_id
     for region in regions:
         tunnels_response = get_gcp_target_vpn_tunnels(project_id, region, compute)
         tunnels_list = transform_gcp_vpn_tunnels(tunnels_response)

@@ -178,22 +178,47 @@ def test_transform_and_load_vpn_gateways(neo4j_session):
 
     vpn_query = """
     MATCH(v:GCPVpnGateway)
-    RETURN v.id, v.partial_uri, v.name, v.network, v.project_id, v.region, v.self_link
+    RETURN v.id, v.partial_uri, v.name, v.network, v.description, v.status,
+    v.project_id, v.region, v.self_link
     """
     objects = neo4j_session.run(vpn_query)
     actual_nodes = {
         (
             o['v.id'],
             o['v.partial_uri'],
+            o['v.name'],
             o['v.network'],
-            o['v.project_id'],
+            o['v.description'],
+            o['v.status'],
             o['v.region'],
-            o['v.self_link']
+            o['v.self_link'],
+            o['v.project_id'],
         ) for o in objects
     }
 
     expected_nodes = {
-        ()
+        (
+            'projects/project-abc/regions/europe-west2/targetVpnGateways/vpn-abc-1',
+            'projects/project-abc/regions/europe-west2/targetVpnGateways/vpn-abc-1',
+            'vpn-abc-1',
+            'projects/project-abc/global/networks/default',
+            '',
+            'READY',
+            'europe-west2',
+            'https://www.googleapis.com/compute/v1/projects/project-abc/regions/europe-west2/targetVpnGateways/vpn-abc-1',
+            'project-abc'
+        ),
+        (
+            'projects/project-abc/regions/europe-west2/targetVpnGateways/vpn-abc-2',
+            'projects/project-abc/regions/europe-west2/targetVpnGateways/vpn-abc-2',
+            'vpn-abc-2',
+            'projects/project-abc/global/networks/default',
+            '',
+            'READY',
+            'europe-west2',
+            'https://www.googleapis.com/compute/v1/projects/project-abc/regions/europe-west2/targetVpnGateways/vpn-abc-2',
+            'project-abc'
+        )
     }
 
     assert actual_nodes == expected_nodes
