@@ -136,154 +136,157 @@ def sync_database_account_data_resources(
         _load_cosmosdb_private_endpoint_connections(neo4j_session, database_account, azure_update_tag)
         _load_cosmosdb_virtual_network_rules(neo4j_session, database_account, azure_update_tag)
 
-        unique_locations = transform_locations(database_account)
-        database_account_id = database_account['id']
+        # unique_locations = transform_locations(database_account)
+        # database_account_id = database_account['id']
 
-        # We iterate over the unique location entries (list of dictionaries) and check if it is a part of
-        # 'write_locations', 'read_locations' or 'locations' and we call the corresponding load function for that
-        # relationship.
-        for location in unique_locations:
-            if 'write_locations' in database_account and location in database_account['write_locations']:
-                _load_database_account_write_locations(neo4j_session, database_account_id, location, azure_update_tag)
-            if 'read_locations' in database_account and location in database_account['read_locations']:
-                _load_database_account_read_locations(neo4j_session, database_account_id, location, azure_update_tag)
-            if 'locations' in database_account and location in database_account['locations']:
-                _load_database_account_associated_locations(
-                    neo4j_session, database_account_id, location,
-                    azure_update_tag,
-                )
+        # # We iterate over the unique location entries (list of dictionaries) and check if it is a part of
+        # # 'write_locations', 'read_locations' or 'locations' and we call the corresponding load function for that
+        # # relationship.
+        # for location in unique_locations:
+        #     if 'write_locations' in database_account and location in database_account['write_locations']:
+        #         _load_database_account_write_locations(neo4j_session, database_account_id, location, azure_update_tag)
+        #     if 'read_locations' in database_account and location in database_account['read_locations']:
+        #         _load_database_account_read_locations(neo4j_session, database_account_id, location, azure_update_tag)
+        #     if 'locations' in database_account and location in database_account['locations']:
+        #         _load_database_account_associated_locations(
+        #             neo4j_session, database_account_id, location,
+        #             azure_update_tag,
+        #         )
+        _load_database_account_write_locations(neo4j_session, database_account, azure_update_tag)
+        _load_database_account_read_locations(neo4j_session, database_account, azure_update_tag)
+        _load_database_account_associated_locations(neo4j_session, database_account, azure_update_tag)
 
 
-@timeit
-def transform_locations(database_account: Dict) -> List[Dict]:
-    """
-    Returns the unique locations (a list of dictionaries) that have a read/write/associative relationship with the
-    database account.
-    """
-    locations: List = []
-    # Extracting every location that has a relationship with the database account
-    if 'write_locations' in database_account and len(database_account['write_locations']) > 0:
-        for loc in database_account['write_locations']:
-            locations.extend(loc)
-    if 'read_locations' in database_account and len(database_account['read_locations']) > 0:
-        for loc in database_account['read_locations']:
-            locations.extend(loc)
-    if 'locations' in database_account and len(database_account['locations']) > 0:
-        for loc in database_account['locations']:
-            locations.extend(loc)
-
-    # Selecting only the unique location entries.
-    unique_locations = [i for n, i in enumerate(locations) if i not in locations[n + 1:]]
-
-    return unique_locations
+# @timeit
+# def transform_locations(database_account: Dict) -> List[Dict]:
+#     """
+#     Returns the unique locations (a list of dictionaries) that have a read/write/associative relationship with the
+#     database account.
+#     """
+#     locations: List = []
+#     # Extracting every location that has a relationship with the database account
+#     if 'write_locations' in database_account and len(database_account['write_locations']) > 0:
+#         for loc in database_account['write_locations']:
+#             locations.extend(loc)
+#     if 'read_locations' in database_account and len(database_account['read_locations']) > 0:
+#         for loc in database_account['read_locations']:
+#             locations.extend(loc)
+#     if 'locations' in database_account and len(database_account['locations']) > 0:
+#         for loc in database_account['locations']:
+#             locations.extend(loc)
+#
+#     # Selecting only the unique location entries.
+#     unique_locations = [i for n, i in enumerate(locations) if i not in locations[n + 1:]]
+#
+#     return unique_locations
 
 
 @timeit
 def _load_database_account_write_locations(
-        neo4j_session: neo4j.Session, database_account_id: str, loc: Dict, azure_update_tag: int,
+        neo4j_session: neo4j.Session, database_account: Dict, azure_update_tag: int,
 ) -> None:
     """
     Ingest the details of location with write permission enabled.
     """
-    ingest_write_location = """
-    MERGE (loc:AzureCosmosDBLocation{id: {LocationId}})
-    ON CREATE SET loc.firstseen = timestamp()
-    SET loc.lastupdated = {azure_update_tag},
-    loc.locationname = {Name},
-    loc.documentendpoint = {DocumentEndpoint},
-    loc.provisioningstate = {ProvisioningState},
-    loc.failoverpriority = {FailoverPriority},
-    loc.iszoneredundant = {IsZoneRedundant}
-    WITH loc
-    MATCH (d:AzureCosmosDBAccount{id: {DatabaseAccountId}})
-    MERGE (d)-[r:WRITE_PERMISSIONS_FROM]->(loc)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {azure_update_tag}
-    """
+    if 'write_locations' in database_account and len(database_account['write_locations']) > 0:
+        database_account_id = database_account['id']
+        write_locations = database_account['write_locations']
 
-    neo4j_session.run(
-        ingest_write_location,
-        LocationId=loc['id'],
-        Name=loc['location_name'],
-        DocumentEndpoint=loc.get('document_endpoint'),
-        ProvisioningState=loc.get('provisioning_state'),
-        FailoverPriority=loc.get('failover_priority'),
-        IsZoneRedundant=loc.get('is_zone_redundant'),
-        DatabaseAccountId=database_account_id,
-        azure_update_tag=azure_update_tag,
-    )
+        ingest_write_location = """
+        UNWIND {write_locations_list} as wl
+        MERGE (loc:AzureCosmosDBLocation{id: wl.id})
+        ON CREATE SET loc.firstseen = timestamp()
+        SET loc.lastupdated = {azure_update_tag},
+        loc.locationname = wl.location_name,
+        loc.documentendpoint = wl.document_endpoint,
+        loc.provisioningstate = wl.provisioning_state,
+        loc.failoverpriority = wl.failover_priority,
+        loc.iszoneredundant = wl.is_zone_redundant
+        WITH loc
+        MATCH (d:AzureCosmosDBAccount{id: {DatabaseAccountId}})
+        MERGE (d)-[r:WRITE_PERMISSIONS_FROM]->(loc)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {azure_update_tag}
+        """
+
+        neo4j_session.run(
+            ingest_write_location,
+            write_locations_list=write_locations,
+            DatabaseAccountId=database_account_id,
+            azure_update_tag=azure_update_tag,
+        )
 
 
 @timeit
 def _load_database_account_read_locations(
-        neo4j_session: neo4j.Session, database_account_id: str, loc: Dict, azure_update_tag: int,
+        neo4j_session: neo4j.Session, database_account: Dict, azure_update_tag: int,
 ) -> None:
     """
     Ingest the details of location with read permission enabled.
     """
-    ingest_read_location = """
-    MERGE (loc:AzureCosmosDBLocation{id: {LocationId}})
-    ON CREATE SET loc.firstseen = timestamp()
-    SET loc.lastupdated = {azure_update_tag},
-    loc.locationname = {Name},
-    loc.documentendpoint = {DocumentEndpoint},
-    loc.provisioningstate = {ProvisioningState},
-    loc.failoverpriority = {FailoverPriority},
-    loc.iszoneredundant = {IsZoneRedundant}
-    WITH loc
-    MATCH (d:AzureCosmosDBAccount{id: {DatabaseAccountId}})
-    MERGE (d)-[r:READ_PERMISSIONS_FROM]->(loc)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {azure_update_tag}
-    """
+    if 'read_locations' in database_account and len(database_account['read_locations']) > 0:
+        database_account_id = database_account['id']
+        read_locations = database_account['read_locations']
 
-    neo4j_session.run(
-        ingest_read_location,
-        LocationId=loc['id'],
-        Name=loc['location_name'],
-        DocumentEndpoint=loc.get('document_endpoint'),
-        ProvisioningState=loc.get('provisioning_state'),
-        FailoverPriority=loc.get('failover_priority'),
-        IsZoneRedundant=loc.get('is_zone_redundant'),
-        DatabaseAccountId=database_account_id,
-        azure_update_tag=azure_update_tag,
-    )
+        ingest_read_location = """
+        UNWIND {read_locations_list} as rl
+        MERGE (loc:AzureCosmosDBLocation{id: rl.id})
+        ON CREATE SET loc.firstseen = timestamp()
+        SET loc.lastupdated = {azure_update_tag},
+        loc.locationname = rl.location_name,
+        loc.documentendpoint = rl.document_endpoint,
+        loc.provisioningstate = rl.provisioning_state,
+        loc.failoverpriority = rl.failover_priority,
+        loc.iszoneredundant = rl.is_zone_redundant
+        WITH loc
+        MATCH (d:AzureCosmosDBAccount{id: {DatabaseAccountId}})
+        MERGE (d)-[r:READ_PERMISSIONS_FROM]->(loc)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {azure_update_tag}
+        """
+
+        neo4j_session.run(
+            ingest_read_location,
+            read_locations_list=read_locations,
+            DatabaseAccountId=database_account_id,
+            azure_update_tag=azure_update_tag,
+        )
 
 
 @timeit
 def _load_database_account_associated_locations(
-        neo4j_session: neo4j.Session, database_account_id: str, loc: Dict, azure_update_tag: int,
+        neo4j_session: neo4j.Session, database_account: Dict, azure_update_tag: int,
 ) -> None:
     """
     Ingest the details of enabled location for the database account.
     """
-    ingest_associated_location = """
-    MERGE (loc:AzureCosmosDBLocation{id: {LocationId}})
-    ON CREATE SET loc.firstseen = timestamp()
-    SET loc.lastupdated = {azure_update_tag},
-    loc.locationname = {Name},
-    loc.documentendpoint = {DocumentEndpoint},
-    loc.provisioningstate = {ProvisioningState},
-    loc.failoverpriority = {FailoverPriority},
-    loc.iszoneredundant = {IsZoneRedundant}
-    WITH loc
-    MATCH (d:AzureCosmosDBAccount{id: {DatabaseAccountId}})
-    MERGE (d)-[r:ASSOCIATED_WITH]->(loc)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {azure_update_tag}
-    """
+    if 'locations' in database_account and len(database_account['locations']) > 0:
+        database_account_id = database_account['id']
+        associated_locations = database_account['locations']
 
-    neo4j_session.run(
-        ingest_associated_location,
-        LocationId=loc['id'],
-        Name=loc['location_name'],
-        DocumentEndpoint=loc.get('document_endpoint'),
-        ProvisioningState=loc.get('provisioning_state'),
-        FailoverPriority=loc.get('failover_priority'),
-        IsZoneRedundant=loc.get('is_zone_redundant'),
-        DatabaseAccountId=database_account_id,
-        azure_update_tag=azure_update_tag,
-    )
+        ingest_associated_location = """
+        UNWIND {associated_locations_list} as al
+        MERGE (loc:AzureCosmosDBLocation{id: al.id})
+        ON CREATE SET loc.firstseen = timestamp()
+        SET loc.lastupdated = {azure_update_tag},
+        loc.locationname = al.location_name,
+        loc.documentendpoint = al.document_endpoint,
+        loc.provisioningstate = al.provisioning_state,
+        loc.failoverpriority = al.failover_priority,
+        loc.iszoneredundant = al.is_zone_redundant
+        WITH loc
+        MATCH (d:AzureCosmosDBAccount{id: {DatabaseAccountId}})
+        MERGE (d)-[r:ASSOCIATED_WITH]->(loc)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {azure_update_tag}
+        """
+
+        neo4j_session.run(
+            ingest_associated_location,
+            associated_locations_list=associated_locations,
+            DatabaseAccountId=database_account_id,
+            azure_update_tag=azure_update_tag,
+        )
 
 
 @timeit

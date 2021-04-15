@@ -89,11 +89,10 @@ def test_load_database_account_data_relationships(neo4j_session):
 
 
 def test_load_database_account_write_locations(neo4j_session):
-    for location in DESCRIBE_WRITE_LOCATIONS:
+    for database_account in DESCRIBE_DATABASE_ACCOUNTS:
         cosmosdb._load_database_account_write_locations(
             neo4j_session,
-            da1,
-            location,
+            database_account,
             TEST_UPDATE_TAG,
         )
 
@@ -122,11 +121,10 @@ def test_load_database_account_write_locations_relationships(neo4j_session):
         TEST_UPDATE_TAG,
     )
 
-    for location in DESCRIBE_WRITE_LOCATIONS:
+    for database_account in DESCRIBE_DATABASE_ACCOUNTS:
         cosmosdb._load_database_account_write_locations(
             neo4j_session,
-            da1,
-            location,
+            database_account,
             TEST_UPDATE_TAG,
         )
 
@@ -154,11 +152,10 @@ def test_load_database_account_write_locations_relationships(neo4j_session):
 
 
 def test_load_database_account_read_locations(neo4j_session):
-    for location in DESCRIBE_READ_LOCATIONS:
+    for database_account in DESCRIBE_DATABASE_ACCOUNTS:
         cosmosdb._load_database_account_read_locations(
             neo4j_session,
-            da1,
-            location,
+            database_account,
             TEST_UPDATE_TAG,
         )
 
@@ -187,11 +184,10 @@ def test_load_database_account_read_locations_relationships(neo4j_session):
         TEST_UPDATE_TAG,
     )
 
-    for location in DESCRIBE_READ_LOCATIONS:
+    for database_account in DESCRIBE_DATABASE_ACCOUNTS:
         cosmosdb._load_database_account_read_locations(
             neo4j_session,
-            da1,
-            location,
+            database_account,
             TEST_UPDATE_TAG,
         )
 
@@ -219,11 +215,10 @@ def test_load_database_account_read_locations_relationships(neo4j_session):
 
 
 def test_load_database_account_associated_locations(neo4j_session):
-    for location in DESCRIBE_LOCATIONS:
+    for database_account in DESCRIBE_DATABASE_ACCOUNTS:
         cosmosdb._load_database_account_associated_locations(
             neo4j_session,
-            da1,
-            location,
+            database_account,
             TEST_UPDATE_TAG,
         )
 
@@ -253,11 +248,10 @@ def test_load_database_account_associated_locations_relationships(neo4j_session)
         TEST_UPDATE_TAG,
     )
 
-    for location in DESCRIBE_LOCATIONS:
+    for database_account in DESCRIBE_DATABASE_ACCOUNTS:
         cosmosdb._load_database_account_associated_locations(
             neo4j_session,
-            da1,
-            location,
+            database_account,
             TEST_UPDATE_TAG,
         )
 
