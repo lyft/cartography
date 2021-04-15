@@ -1,0 +1,41 @@
+# Testing with docker
+
+## Using the included docker-compose support
+
+### Usage
+
+```bash
+docker build -t lyft/cartography
+docker-compose run cartography ...
+```
+
+### Configuration
+
+Configuration is possible via the `.compose` directory, which is
+git ignored. Environment for cartography is in
+`.compose/cartography/cartography.env`. neo4j config, logs, etc is
+located at `.compose/neo4j/...`
+
+### Notes
+
+* On initial start of the compose stack, it's necessary to
+change the neo4j user's password through the neo4j UI.
+* Neither the docker image, nor the docker-compose file define an
+entrypoint, so it's necessary to pass in the command being run. This
+also makes it possible to run a custom sync script, rather than only
+cartography.
+
+### Example
+
+`./compose/cartography/cartography.env`:
+```
+# See the cartography github configuration intel module docs
+GITHUB_KEY=BASE64ENCODEDKEY
+# You need to set this after starting neo4j once, and resetting
+# the default neo4j password, which is neo4j
+NEO4j_PASSWORD=...
+```
+
+```bash
+docker-compose run cartography cartography --github-config-env-var GITHUB_KEY --neo4j-uri bolt://neo4j:7687 --neo4j-password-env-var NEO4j_PASSWORD --neo4j-user neo4j
+```
