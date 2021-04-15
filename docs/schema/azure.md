@@ -874,7 +874,7 @@ Representation of an [AzureStorageBlobContainer](https://docs.microsoft.com/en-u
 
 ## AzureCosmosDBAccount
 
-Representation of an [AzureCosmosDBAccount](https://docs.microsoft.com/en-us/rest/api/cosmos-db-resource-provider/2020-04-01/databaseaccounts).
+Representation of an [AzureCosmosDBAccount](https://docs.microsoft.com/en-us/rest/api/cosmos-db-resource-provider/).
 
 | Field | Description |
 |-------|-------------|
@@ -1075,7 +1075,7 @@ Representation of an Azure Cosmos DB Virtual Network Rule.
 
 ## AzureCosmosDBSqlDatabase
 
-Representation of an [AzureCosmosDBSqlDatabase](https://docs.microsoft.com/en-us/rest/api/cosmos-db-resource-provider/2020-04-01/sqlresources).
+Representation of an [AzureCosmosDBSqlDatabase](https://docs.microsoft.com/en-us/rest/api/cosmos-db-resource-provider/).
 
 | Field | Description |
 |-------|-------------|
@@ -1103,7 +1103,7 @@ Representation of an [AzureCosmosDBSqlDatabase](https://docs.microsoft.com/en-us
 
 ## AzureCosmosDBCassandraKeyspace
 
-Representation of an [AzureCosmosDBCassandraKeyspace](https://docs.microsoft.com/en-us/rest/api/cosmos-db-resource-provider/2020-04-01/cassandraresources).
+Representation of an [AzureCosmosDBCassandraKeyspace](https://docs.microsoft.com/en-us/rest/api/cosmos-db-resource-provider/).
 
 | Field | Description |
 |-------|-------------|
@@ -1131,7 +1131,7 @@ Representation of an [AzureCosmosDBCassandraKeyspace](https://docs.microsoft.com
 
 ## AzureCosmosDBMongoDBDatabase
 
-Representation of an [AzureCosmosDBMongoDBDatabase](https://docs.microsoft.com/en-us/rest/api/cosmos-db-resource-provider/2020-04-01/mongodbresources).
+Representation of an [AzureCosmosDBMongoDBDatabase](https://docs.microsoft.com/en-us/rest/api/cosmos-db-resource-provider/).
 
 | Field | Description |
 |-------|-------------|
@@ -1159,7 +1159,7 @@ Representation of an [AzureCosmosDBMongoDBDatabase](https://docs.microsoft.com/e
 
 ## AzureCosmosDBTableResource
 
-Representation of an [AzureCosmosDBTableResource](https://docs.microsoft.com/en-us/rest/api/cosmos-db-resource-provider/2020-04-01/tableresources).
+Representation of an [AzureCosmosDBTableResource](https://docs.microsoft.com/en-us/rest/api/cosmos-db-resource-provider/).
 
 | Field | Description |
 |-------|-------------|
@@ -1182,7 +1182,7 @@ Representation of an [AzureCosmosDBTableResource](https://docs.microsoft.com/en-
 
 ## AzureCosmosDBSqlContainer
 
-Representation of an [AzureCosmosDBSqlContainer](https://docs.microsoft.com/en-us/rest/api/cosmos-db-resource-provider/2020-04-01/sqlresources).
+Representation of an [AzureCosmosDBSqlContainer](https://docs.microsoft.com/en-us/rest/api/cosmos-db-resource-provider/).
 
 | Field | Description |
 |-------|-------------|
@@ -1211,7 +1211,7 @@ Representation of an [AzureCosmosDBSqlContainer](https://docs.microsoft.com/en-u
 
 ## AzureCosmosDBCassandraTable
 
-Representation of an [AzureCosmosDBCassandraTable](https://docs.microsoft.com/en-us/rest/api/cosmos-db-resource-provider/2020-04-01/cassandraresources).
+Representation of an [AzureCosmosDBCassandraTable](https://docs.microsoft.com/en-us/rest/api/cosmos-db-resource-provider/).
 
 | Field | Description |
 |-------|-------------|
@@ -1237,7 +1237,7 @@ Representation of an [AzureCosmosDBCassandraTable](https://docs.microsoft.com/en
 
 ## AzureCosmosDBMongoDBCollection
 
-Representation of an [AzureCosmosDBMongoDBCollection](https://docs.microsoft.com/en-us/rest/api/cosmos-db-resource-provider/2020-04-01/mongodbresources).
+Representation of an [AzureCosmosDBMongoDBCollection](https://docs.microsoft.com/en-us/rest/api/cosmos-db-resource-provider/).
 
 | Field | Description |
 |-------|-------------|

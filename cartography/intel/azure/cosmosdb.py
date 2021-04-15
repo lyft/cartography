@@ -127,48 +127,55 @@ def sync_database_account_data_resources(
         neo4j_session: neo4j.Session, subscription_id: str, database_account_list: List[Dict], azure_update_tag: int,
 ) -> None:
     """
-    This function checks for the presence of the resources (like cors policy, failover policy, private endpoint
-    connections, virtual network rules and locations) that we get as a part of the database account response itself.
-    If present, it calls their corresponding load function.
+    This function calls the load functions for the resources that are present as a part of the database account
+    response (like cors policy, failover policy, private endpoint connections, virtual network rules and locations).
     """
     for database_account in database_account_list:
-        if 'cors' in database_account and len(database_account['cors']) > 0:
-            db_account = transform_cosmosdb_cors_policy(database_account)
-            _load_cosmosdb_cors_policy(neo4j_session, db_account, azure_update_tag)
-        if 'failover_policies' in database_account and len(database_account['failover_policies']) > 0:
-            _load_cosmosdb_failover_policies(neo4j_session, database_account, azure_update_tag)
-        if 'private_endpoint_connections' in database_account and len(
-                database_account['private_endpoint_connections'],
-        ) > 0:
-            _load_cosmosdb_private_endpoint_connections(neo4j_session, database_account, azure_update_tag)
-        if 'virtual_network_rules' in database_account and len(database_account['virtual_network_rules']) > 0:
-            _load_cosmosdb_virtual_network_rules(neo4j_session, database_account, azure_update_tag)
+        _load_cosmosdb_cors_policy(neo4j_session, database_account, azure_update_tag)
+        _load_cosmosdb_failover_policies(neo4j_session, database_account, azure_update_tag)
+        _load_cosmosdb_private_endpoint_connections(neo4j_session, database_account, azure_update_tag)
+        _load_cosmosdb_virtual_network_rules(neo4j_session, database_account, azure_update_tag)
 
-        locations = []
-        # Extracting every location
-        if 'write_locations' in database_account and len(database_account['write_locations']) > 0:
-            for loc in database_account['write_locations']:
-                locations.append(loc)
-        if 'read_locations' in database_account and len(database_account['read_locations']) > 0:
-            for loc in database_account['read_locations']:
-                locations.append(loc)
-        if 'locations' in database_account and len(database_account['locations']) > 0:
-            for loc in database_account['locations']:
-                locations.append(loc)
-        # Selecting only the unique location entries
-        loc = [i for n, i in enumerate(locations) if i not in locations[n + 1:]]
-        if len(loc) > 0:
-            database_account_id = database_account['id']
-            for loc in locations:
-                if 'write_locations' in database_account and loc in database_account['write_locations']:
-                    _load_database_account_write_locations(neo4j_session, database_account_id, loc, azure_update_tag)
-                if 'read_locations' in database_account and loc in database_account['read_locations']:
-                    _load_database_account_read_locations(neo4j_session, database_account_id, loc, azure_update_tag)
-                if 'locations' in database_account and loc in database_account['locations']:
-                    _load_database_account_associated_locations(
-                        neo4j_session, database_account_id, loc,
-                        azure_update_tag,
-                    )
+        unique_locations = transform_locations(database_account)
+        database_account_id = database_account['id']
+
+        # We iterate over the unique location entries (list of dictionaries) and check if it is a part of
+        # 'write_locations', 'read_locations' or 'locations' and we call the corresponding load function for that
+        # relationship.
+        for location in unique_locations:
+            if 'write_locations' in database_account and location in database_account['write_locations']:
+                _load_database_account_write_locations(neo4j_session, database_account_id, location, azure_update_tag)
+            if 'read_locations' in database_account and location in database_account['read_locations']:
+                _load_database_account_read_locations(neo4j_session, database_account_id, location, azure_update_tag)
+            if 'locations' in database_account and location in database_account['locations']:
+                _load_database_account_associated_locations(
+                    neo4j_session, database_account_id, location,
+                    azure_update_tag,
+                )
+
+
+@timeit
+def transform_locations(database_account: Dict) -> List[Dict]:
+    """
+    Returns the unique locations (a list of dictionaries) that have a read/write/associative relationship with the
+    database account.
+    """
+    locations = []
+    # Extracting every location that has a relationship with the database account
+    if 'write_locations' in database_account and len(database_account['write_locations']) > 0:
+        for loc in database_account['write_locations']:
+            locations.extend(loc)
+    if 'read_locations' in database_account and len(database_account['read_locations']) > 0:
+        for loc in database_account['read_locations']:
+            locations.extend(loc)
+    if 'locations' in database_account and len(database_account['locations']) > 0:
+        for loc in database_account['locations']:
+            locations.extend(loc)
+
+    # Selecting only the unique location entries.
+    unique_locations = [i for n, i in enumerate(locations) if i not in locations[n + 1:]]
+
+    return unique_locations
 
 
 @timeit
@@ -298,32 +305,34 @@ def _load_cosmosdb_cors_policy(
     """
     Ingest the details of the Cors Policy of the database account.
     """
-    database_account_id = database_account['id']
-    cors_policies = database_account['cors']
+    if 'cors' in database_account and len(database_account['cors']) > 0:
+        database_account = transform_cosmosdb_cors_policy(database_account)
+        database_account_id = database_account['id']
+        cors_policies = database_account['cors']
 
-    ingest_cors_policy = """
-    UNWIND {cors_policies_list} AS cp
-    MERGE (corspolicy:AzureCosmosDBCorsPolicy{id: cp.cors_policy_unique_id})
-    ON CREATE SET corspolicy.firstseen = timestamp(),
-    corspolicy.allowedorigins = cp.allowed_origins
-    SET corspolicy.lastupdated = {azure_update_tag},
-    corspolicy.allowedmethods = cp.allowed_methods,
-    corspolicy.allowedheaders = cp.allowed_headers,
-    corspolicy.exposedheaders = cp.exposed_headers,
-    corspolicy.maxageinseconds = cp.max_age_in_seconds
-    WITH corspolicy
-    MATCH (d:AzureCosmosDBAccount{id: {DatabaseAccountId}})
-    MERGE (d)-[r:CONTAINS]->(corspolicy)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {azure_update_tag}
-    """
+        ingest_cors_policy = """
+        UNWIND {cors_policies_list} AS cp
+        MERGE (corspolicy:AzureCosmosDBCorsPolicy{id: cp.cors_policy_unique_id})
+        ON CREATE SET corspolicy.firstseen = timestamp(),
+        corspolicy.allowedorigins = cp.allowed_origins
+        SET corspolicy.lastupdated = {azure_update_tag},
+        corspolicy.allowedmethods = cp.allowed_methods,
+        corspolicy.allowedheaders = cp.allowed_headers,
+        corspolicy.exposedheaders = cp.exposed_headers,
+        corspolicy.maxageinseconds = cp.max_age_in_seconds
+        WITH corspolicy
+        MATCH (d:AzureCosmosDBAccount{id: {DatabaseAccountId}})
+        MERGE (d)-[r:CONTAINS]->(corspolicy)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {azure_update_tag}
+        """
 
-    neo4j_session.run(
-        ingest_cors_policy,
-        cors_policies_list=cors_policies,
-        DatabaseAccountId=database_account_id,
-        azure_update_tag=azure_update_tag,
-    )
+        neo4j_session.run(
+            ingest_cors_policy,
+            cors_policies_list=cors_policies,
+            DatabaseAccountId=database_account_id,
+            azure_update_tag=azure_update_tag,
+        )
 
 
 @timeit
@@ -333,29 +342,30 @@ def _load_cosmosdb_failover_policies(
     """
     Ingest the details of the Failover Policies of the database account.
     """
-    database_account_id = database_account['id']
-    failover_policies = database_account['failover_policies']
+    if 'failover_policies' in database_account and len(database_account['failover_policies']) > 0:
+        database_account_id = database_account['id']
+        failover_policies = database_account['failover_policies']
 
-    ingest_failover_policies = """
-    UNWIND {failover_policies_list} AS fp
-    MERGE (fpolicy:AzureCosmosDBAccountFailoverPolicy{id: fp.id})
-    ON CREATE SET fpolicy.firstseen = timestamp()
-    SET fpolicy.lastupdated = {azure_update_tag},
-    fpolicy.locationname = fp.location_name,
-    fpolicy.failoverpriority = fp.failover_priority
-    WITH fpolicy
-    MATCH (d:AzureCosmosDBAccount{id: {DatabaseAccountId}})
-    MERGE (d)-[r:CONTAINS]->(fpolicy)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {azure_update_tag}
-    """
+        ingest_failover_policies = """
+        UNWIND {failover_policies_list} AS fp
+        MERGE (fpolicy:AzureCosmosDBAccountFailoverPolicy{id: fp.id})
+        ON CREATE SET fpolicy.firstseen = timestamp()
+        SET fpolicy.lastupdated = {azure_update_tag},
+        fpolicy.locationname = fp.location_name,
+        fpolicy.failoverpriority = fp.failover_priority
+        WITH fpolicy
+        MATCH (d:AzureCosmosDBAccount{id: {DatabaseAccountId}})
+        MERGE (d)-[r:CONTAINS]->(fpolicy)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {azure_update_tag}
+        """
 
-    neo4j_session.run(
-        ingest_failover_policies,
-        failover_policies_list=failover_policies,
-        DatabaseAccountId=database_account_id,
-        azure_update_tag=azure_update_tag,
-    )
+        neo4j_session.run(
+            ingest_failover_policies,
+            failover_policies_list=failover_policies,
+            DatabaseAccountId=database_account_id,
+            azure_update_tag=azure_update_tag,
+        )
 
 
 @timeit
@@ -365,31 +375,34 @@ def _load_cosmosdb_private_endpoint_connections(
     """
     Ingest the details of the Private Endpoint Connections of the database account.
     """
-    database_account_id = database_account['id']
-    private_endpoint_connections = database_account['private_endpoint_connections']
+    if 'private_endpoint_connections' in database_account and len(
+            database_account['private_endpoint_connections'],
+    ) > 0:
+        database_account_id = database_account['id']
+        private_endpoint_connections = database_account['private_endpoint_connections']
 
-    ingest_private_endpoint_connections = """
-    UNWIND {private_endpoint_connections_list} AS connection
-    MERGE (pec:AzureCDBPrivateEndpointConnection{id: connection.id})
-    ON CREATE SET pec.firstseen = timestamp()
-    SET pec.lastupdated = {azure_update_tag},
-    pec.name = connection.name,
-    pec.privateendpointid = connection.private_endpoint.id,
-    pec.status = connection.private_link_service_connection_state.status,
-    pec.actionrequired = connection.private_link_service_connection_state.actions_required
-    WITH pec
-    MATCH (d:AzureCosmosDBAccount{id: {DatabaseAccountId}})
-    MERGE (d)-[r:CONFIGURED_WITH]->(pec)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {azure_update_tag}
-    """
+        ingest_private_endpoint_connections = """
+        UNWIND {private_endpoint_connections_list} AS connection
+        MERGE (pec:AzureCDBPrivateEndpointConnection{id: connection.id})
+        ON CREATE SET pec.firstseen = timestamp()
+        SET pec.lastupdated = {azure_update_tag},
+        pec.name = connection.name,
+        pec.privateendpointid = connection.private_endpoint.id,
+        pec.status = connection.private_link_service_connection_state.status,
+        pec.actionrequired = connection.private_link_service_connection_state.actions_required
+        WITH pec
+        MATCH (d:AzureCosmosDBAccount{id: {DatabaseAccountId}})
+        MERGE (d)-[r:CONFIGURED_WITH]->(pec)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {azure_update_tag}
+        """
 
-    neo4j_session.run(
-        ingest_private_endpoint_connections,
-        private_endpoint_connections_list=private_endpoint_connections,
-        DatabaseAccountId=database_account_id,
-        azure_update_tag=azure_update_tag,
-    )
+        neo4j_session.run(
+            ingest_private_endpoint_connections,
+            private_endpoint_connections_list=private_endpoint_connections,
+            DatabaseAccountId=database_account_id,
+            azure_update_tag=azure_update_tag,
+        )
 
 
 @timeit
@@ -399,28 +412,29 @@ def _load_cosmosdb_virtual_network_rules(
     """
     Ingest the details of the Virtual Network Rules of the database account.
     """
-    database_account_id = database_account['id']
-    virtual_network_rules = database_account['virtual_network_rules']
+    if 'virtual_network_rules' in database_account and len(database_account['virtual_network_rules']) > 0:
+        database_account_id = database_account['id']
+        virtual_network_rules = database_account['virtual_network_rules']
 
-    ingest_virtual_network_rules = """
-    UNWIND {virtual_network_rules_list} AS vnr
-    MERGE (rules:AzureCosmosDBVirtualNetworkRule{id: vnr.id})
-    ON CREATE SET rules.firstseen = timestamp()
-    SET rules.lastupdated = {azure_update_tag},
-    rules.ignoremissingvnetserviceendpoint = vnr.ignore_missing_v_net_service_endpoint
-    WITH rules
-    MATCH (d:AzureCosmosDBAccount{id: {DatabaseAccountId}})
-    MERGE (d)-[r:CONFIGURED_WITH]->(rules)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {azure_update_tag}
-    """
+        ingest_virtual_network_rules = """
+        UNWIND {virtual_network_rules_list} AS vnr
+        MERGE (rules:AzureCosmosDBVirtualNetworkRule{id: vnr.id})
+        ON CREATE SET rules.firstseen = timestamp()
+        SET rules.lastupdated = {azure_update_tag},
+        rules.ignoremissingvnetserviceendpoint = vnr.ignore_missing_v_net_service_endpoint
+        WITH rules
+        MATCH (d:AzureCosmosDBAccount{id: {DatabaseAccountId}})
+        MERGE (d)-[r:CONFIGURED_WITH]->(rules)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {azure_update_tag}
+        """
 
-    neo4j_session.run(
-        ingest_virtual_network_rules,
-        virtual_network_rules_list=virtual_network_rules,
-        DatabaseAccountId=database_account_id,
-        azure_update_tag=azure_update_tag,
-    )
+        neo4j_session.run(
+            ingest_virtual_network_rules,
+            virtual_network_rules_list=virtual_network_rules,
+            DatabaseAccountId=database_account_id,
+            azure_update_tag=azure_update_tag,
+        )
 
 
 @timeit
