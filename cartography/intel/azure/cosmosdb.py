@@ -135,50 +135,9 @@ def sync_database_account_data_resources(
         _load_cosmosdb_failover_policies(neo4j_session, database_account, azure_update_tag)
         _load_cosmosdb_private_endpoint_connections(neo4j_session, database_account, azure_update_tag)
         _load_cosmosdb_virtual_network_rules(neo4j_session, database_account, azure_update_tag)
-
-        # unique_locations = transform_locations(database_account)
-        # database_account_id = database_account['id']
-
-        # # We iterate over the unique location entries (list of dictionaries) and check if it is a part of
-        # # 'write_locations', 'read_locations' or 'locations' and we call the corresponding load function for that
-        # # relationship.
-        # for location in unique_locations:
-        #     if 'write_locations' in database_account and location in database_account['write_locations']:
-        #         _load_database_account_write_locations(neo4j_session, database_account_id, location, azure_update_tag)
-        #     if 'read_locations' in database_account and location in database_account['read_locations']:
-        #         _load_database_account_read_locations(neo4j_session, database_account_id, location, azure_update_tag)
-        #     if 'locations' in database_account and location in database_account['locations']:
-        #         _load_database_account_associated_locations(
-        #             neo4j_session, database_account_id, location,
-        #             azure_update_tag,
-        #         )
         _load_database_account_write_locations(neo4j_session, database_account, azure_update_tag)
         _load_database_account_read_locations(neo4j_session, database_account, azure_update_tag)
         _load_database_account_associated_locations(neo4j_session, database_account, azure_update_tag)
-
-
-# @timeit
-# def transform_locations(database_account: Dict) -> List[Dict]:
-#     """
-#     Returns the unique locations (a list of dictionaries) that have a read/write/associative relationship with the
-#     database account.
-#     """
-#     locations: List = []
-#     # Extracting every location that has a relationship with the database account
-#     if 'write_locations' in database_account and len(database_account['write_locations']) > 0:
-#         for loc in database_account['write_locations']:
-#             locations.extend(loc)
-#     if 'read_locations' in database_account and len(database_account['read_locations']) > 0:
-#         for loc in database_account['read_locations']:
-#             locations.extend(loc)
-#     if 'locations' in database_account and len(database_account['locations']) > 0:
-#         for loc in database_account['locations']:
-#             locations.extend(loc)
-#
-#     # Selecting only the unique location entries.
-#     unique_locations = [i for n, i in enumerate(locations) if i not in locations[n + 1:]]
-#
-#     return unique_locations
 
 
 @timeit

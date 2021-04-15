@@ -4,14 +4,11 @@ from tests.data.azure.cosmosdb import cors2_id
 from tests.data.azure.cosmosdb import DESCRIBE_CASSANDRA_KEYSPACES
 from tests.data.azure.cosmosdb import DESCRIBE_CASSANDRA_TABLES
 from tests.data.azure.cosmosdb import DESCRIBE_DATABASE_ACCOUNTS
-from tests.data.azure.cosmosdb import DESCRIBE_LOCATIONS
 from tests.data.azure.cosmosdb import DESCRIBE_MONGODB_COLLECTIONS
 from tests.data.azure.cosmosdb import DESCRIBE_MONGODB_DATABASES
-from tests.data.azure.cosmosdb import DESCRIBE_READ_LOCATIONS
 from tests.data.azure.cosmosdb import DESCRIBE_SQL_CONTAINERS
 from tests.data.azure.cosmosdb import DESCRIBE_SQL_DATABASES
 from tests.data.azure.cosmosdb import DESCRIBE_TABLE_RESOURCES
-from tests.data.azure.cosmosdb import DESCRIBE_WRITE_LOCATIONS
 
 TEST_SUBSCRIPTION_ID = '00-00-00-00'
 TEST_RESOURCE_GROUP = 'RG'

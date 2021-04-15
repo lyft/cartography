@@ -170,64 +170,6 @@ DESCRIBE_DATABASE_ACCOUNTS = [
     },
 ]
 
-DESCRIBE_WRITE_LOCATIONS = [
-    {
-        "id": "DA1-eastus",
-        "location_name": "East US",
-        "document_endpoint": "https://DA1-eastus.documents.azure.com:443/",
-        "provisioning_state": "Succeeded",
-        "failover_priority": 0,
-    },
-    {
-        "id": "DA1-centralindia",
-        "location_name": "Central India",
-        "document_endpoint": "https://DA1-centralindia.documents.azure.com:443/",
-        "provisioning_state": "Succeeded",
-        "failover_priority": 0,
-    },
-]
-
-DESCRIBE_READ_LOCATIONS = [
-    {
-        "id": "DA1-eastus",
-        "location_name": "East US",
-        "document_endpoint": "https://DA1-eastus.documents.azure.com:443/",
-        "provisioning_state": "Succeeded",
-        "failover_priority": 0,
-    },
-    {
-        "id": "DA1-centralindia",
-        "location_name": "Central India",
-        "document_endpoint": "https://DA1-centralindia.documents.azure.com:443/",
-        "provisioning_state": "Succeeded",
-        "failover_priority": 0,
-    },
-]
-
-DESCRIBE_LOCATIONS = [
-    {
-        "id": "DA1-eastus",
-        "location_name": "East US",
-        "document_endpoint": "https://DA1-eastus.documents.azure.com:443/",
-        "provisioning_state": "Succeeded",
-        "failover_priority": 0,
-    },
-    {
-        "id": "DA1-centralindia",
-        "location_name": "Central India",
-        "document_endpoint": "https://DA1-centralindia.documents.azure.com:443/",
-        "provisioning_state": "Succeeded",
-        "failover_priority": 0,
-    },
-    {
-        "id": "DA1-japaneast",
-        "location_name": "Japan East",
-        "document_endpoint": "https://DA1-japaneast.documents.azure.com:443/",
-        "provisioning_state": "Succeeded",
-        "failover_priority": 0,
-    },
-]
-
 DESCRIBE_SQL_DATABASES = [
     {
         "id": da1 + "/sqlDatabases/sql_db1",
