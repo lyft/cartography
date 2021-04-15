@@ -160,7 +160,7 @@ def transform_locations(database_account: Dict) -> List[Dict]:
     Returns the unique locations (a list of dictionaries) that have a read/write/associative relationship with the
     database account.
     """
-    locations = []
+    locations: List = []
     # Extracting every location that has a relationship with the database account
     if 'write_locations' in database_account and len(database_account['write_locations']) > 0:
         for loc in database_account['write_locations']:
