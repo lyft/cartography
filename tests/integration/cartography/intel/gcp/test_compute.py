@@ -207,7 +207,8 @@ def test_transform_and_load_vpn_gateways(neo4j_session):
             '',
             'READY',
             'europe-west2',
-            'https://www.googleapis.com/compute/v1/projects/project-abc/regions/europe-west2/targetVpnGateways/vpn-abc-1',
+            'https://www.googleapis.com/compute/v1/projects/project-abc/regions/europe-west2/targetVpnGateways/'
+            'vpn-abc-1',
             'project-abc',
         ),
         (
@@ -218,7 +219,8 @@ def test_transform_and_load_vpn_gateways(neo4j_session):
             '',
             'READY',
             'europe-west2',
-            'https://www.googleapis.com/compute/v1/projects/project-abc/regions/europe-west2/targetVpnGateways/vpn-abc-2',
+            'https://www.googleapis.com/compute/v1/projects/project-abc/regions/europe-west2/targetVpnGateways/'
+            'vpn-abc-2',
             'project-abc',
         ),
     }
@@ -274,7 +276,8 @@ def test_transform_and_load_vpn_tunnels(neo4j_session):
             'vpn-abc-1-tunnel-1',
             '',
             'europe-west2',
-            'https://www.googleapis.com/compute/v1/projects/project-abc/regions/europe-west2/targetVpnGateways/vpn-abc-1',
+            'https://www.googleapis.com/compute/v1/projects/project-abc/regions/europe-west2/targetVpnGateways/'
+            'vpn-abc-1',
             None,
             None,
             None,
@@ -283,7 +286,8 @@ def test_transform_and_load_vpn_tunnels(neo4j_session):
             None,
             '1.2.3.41',
             'ESTABLISHED',
-            'https://www.googleapis.com/compute/v1/projects/project-abc/regions/europe-west2/vpnTunnels/vpn-abc-1-tunnel-1',
+            'https://www.googleapis.com/compute/v1/projects/project-abc/regions/europe-west2/vpnTunnels/'
+            'vpn-abc-1-tunnel-1',
             2,
             'Tunnel is up and running.',
             '10.10.5.0/24,10.10.4.0/24',
@@ -296,7 +300,8 @@ def test_transform_and_load_vpn_tunnels(neo4j_session):
             'vpn-abc-2-tunnel-2',
             '',
             'europe-west2',
-            'https://www.googleapis.com/compute/v1/projects/project-abc/regions/europe-west2/targetVpnGateways/vpn-abc-2',
+            'https://www.googleapis.com/compute/v1/projects/project-abc/regions/europe-west2/targetVpnGateways/'
+            'vpn-abc-2',
             None,
             None,
             None,
@@ -305,7 +310,8 @@ def test_transform_and_load_vpn_tunnels(neo4j_session):
             None,
             '1.2.3.31',
             'FIRST_HANDSHAKE',
-            'https://www.googleapis.com/compute/v1/projects/project-abc/regions/europe-west2/vpnTunnels/vpn-abc-2-tunnel-2',
+            'https://www.googleapis.com/compute/v1/projects/project-abc/regions/europe-west2/vpnTunnels/'
+            'vpn-abc-2-tunnel-2',
             2,
             'Allocating resources. VPN tunnel will start soon.',
             '10.10.5.0/24',

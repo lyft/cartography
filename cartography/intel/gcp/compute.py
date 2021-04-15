@@ -865,7 +865,11 @@ def load_gcp_vpn_tunnels(neo4j_session: neo4j.Session, tunnels_list: Dict, gcp_u
 
 
 @timeit
-def _attach_vpn_tunnel_to_target_vpn_gateway(neo4j_session: neo4j.Session, vpn_tunnel: Dict, gcp_update_tag: int) -> None:
+def _attach_vpn_tunnel_to_target_vpn_gateway(
+        neo4j_session: neo4j.Session,
+        vpn_tunnel: Dict,
+        gcp_update_tag: int,
+) -> None:
     query = """
             MERGE(vpngw:GCPVpnGateway{id:{VpnGatewayPartialUri}})
             ON CREATE SET vpngw.firstseen = timestamp(),
