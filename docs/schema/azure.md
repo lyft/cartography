@@ -964,7 +964,7 @@ Representation of an [AzureCosmosDBAccount](https://docs.microsoft.com/en-us/res
 
 ## AzureCosmosDBLocation
 
-Representation of an Azure CosmosDB Location.
+Representation of an [Azure CosmosDB Location](https://docs.microsoft.com/en-us/rest/api/cosmos-db-resource-provider/).
 
 | Field | Description |
 |-------|-------------|
@@ -991,7 +991,7 @@ Representation of an Azure CosmosDB Location.
 
 ## AzureCosmosDBCorsPolicy
 
-Representation of an Azure Cosmos DB Cors Policy.
+Representation of an [Azure Cosmos DB Cors Policy](https://docs.microsoft.com/en-us/rest/api/cosmos-db-resource-provider/).
 
 | Field | Description |
 |-------|-------------|
@@ -1014,7 +1014,7 @@ Representation of an Azure Cosmos DB Cors Policy.
 
 ## AzureCosmosDBAccountFailoverPolicy
 
-Representation of an Azure Database Account Failover Policy.
+Representation of an Azure Database Account [Failover Policy](https://docs.microsoft.com/en-us/rest/api/cosmos-db-resource-provider/).
 
 | Field | Description |
 |-------|-------------|
@@ -1034,7 +1034,7 @@ Representation of an Azure Database Account Failover Policy.
 
 ## AzureCDBPrivateEndpointConnection
 
-Representation of an Azure Cosmos DB Private Endpoint Connection.
+Representation of an Azure Cosmos DB [Private Endpoint Connection](https://docs.microsoft.com/en-us/rest/api/cosmos-db-resource-provider/).
 
 | Field | Description |
 |-------|-------------|
@@ -1056,7 +1056,7 @@ Representation of an Azure Cosmos DB Private Endpoint Connection.
 
 ## AzureCosmosDBVirtualNetworkRule
 
-Representation of an Azure Cosmos DB Virtual Network Rule.
+Representation of an Azure Cosmos DB [Virtual Network Rule](https://docs.microsoft.com/en-us/rest/api/cosmos-db-resource-provider/).
 
 | Field | Description |
 |-------|-------------|
