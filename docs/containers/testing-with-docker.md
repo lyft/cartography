@@ -42,10 +42,17 @@ cartography.
 ### Example
 
 ```bash
+# Temporarily disable bash command history
+set +o history
 # See the cartography github configuration intel module docs
 export GITHUB_KEY=BASE64ENCODEDKEY
 # You need to set this after starting neo4j once, and resetting
 # the default neo4j password, which is neo4j
 export NEO4j_PASSWORD=...
+# Reenable bash command history
+set -o history
+# Start cartography dependencies
+docker-compose up -d
+# Run cartography
 docker-compose run -e GITHUB_KEY -e NEO4j_PASSWORD cartography cartography --github-config-env-var GITHUB_KEY --neo4j-uri bolt://neo4j:7687 --neo4j-password-env-var NEO4j_PASSWORD --neo4j-user neo4j
 ```
