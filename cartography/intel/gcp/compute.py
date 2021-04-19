@@ -421,8 +421,8 @@ def transform_gcp_vpn_gateways(vpngw_response: Resource) -> List[Dict]:
     for vpngw in vpngw_response.get('items', []):
         vpngw_partial_uri = f"{prefix}/{vpngw['name']}"
 
-        vpn_gateway = {}
-        vpn_gateway['forwarding_rules']: List[str] = []
+        vpn_gateway: Dict = {}
+        vpn_gateway['forwarding_rules'] = []
         vpn_gateway['id'] = vpngw_partial_uri
         vpn_gateway['partial_uri'] = vpngw_partial_uri
         vpn_gateway['name'] = vpngw['name']
@@ -446,6 +446,7 @@ def _transform_vpngateway_tunnels_property(vpngateway: Dict) -> Optional[List[st
     for tunnel in tunnels:
         transformed_tunnels.append(_parse_compute_full_uri_to_partial_uri(tunnel))
     return transformed_tunnels
+
 
 @timeit
 def _transform_vpngateway_forwarding_rules_property(vpngateway: Dict) -> Optional[List[str]]:
@@ -831,8 +832,8 @@ def load_gcp_vpn_gateways(neo4j_session: neo4j.Session, vpngw_list: Dict, gcp_up
             Network=vpngw['network'],
             Status=vpngw['status'],
             SelfLink=vpngw['self_link'],
-            Tunnels = vpngw.get('tunnels', None),
-            ForwardingRules = forwarding_rules,
+            Tunnels=vpngw.get('tunnels', None),
+            ForwardingRules=forwarding_rules,
             ProjectId=vpngw['project_id'],
             gcp_update_tag=gcp_update_tag,
         )
