@@ -12,7 +12,10 @@ pytz
 cryptography<3.4,>=3.2
 PyJWT==1.7.1
 adal>=1.2.4
+azure-core~=1.13.0
 azure-cli-core>=2.12.0
+azure-eventgrid~=4.1.1
+azure-functions~=1.6.0
 azure-mgmt-compute>=5.0.0
 azure-mgmt-cosmosdb>=6.1.0
 azure-mgmt-resource>=10.2.0
