@@ -12,3 +12,8 @@ COPY . /srv/cartography
 
 RUN pip3 install -e . && \
     pip3 install -r test-requirements.txt
+
+RUN groupadd cartography && \
+    useradd -s /bin/bash -d /home/cartography -m -g cartography cartography
+
+USER cartography
