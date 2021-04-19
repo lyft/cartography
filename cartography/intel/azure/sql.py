@@ -1,5 +1,7 @@
 import logging
 from azure.mgmt.sql import SqlManagementClient
+from azure.mgmt.sql.models import SecurityAlertPolicyName
+from azure.mgmt.sql.models import TransparentDataEncryptionName
 from cartography.util import get_optional_value
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -572,7 +574,8 @@ def get_db_threat_detection_policies(credentials, subscription_id, database):
     """
     try:
         client = get_client(credentials, subscription_id)
-        db_threat_detection_policies = client.database_threat_detection_policies.get(database['resource_group_name'], database['server_name'], database['name']).as_dict()
+        db_threat_detection_policies = client.database_threat_detection_policies.get(
+            database['resource_group_name'], database['server_name'], database['name'], SecurityAlertPolicyName.DEFAULT).as_dict()
     except Exception as e:
         logger.warning("Error while retrieving database threat detection policies - {}".format(e))
         return []
@@ -603,7 +606,8 @@ def get_transparent_data_encryptions(credentials, subscription_id, database):
     """
     try:
         client = get_client(credentials, subscription_id)
-        transparent_data_encryptions_list = client.transparent_data_encryptions.get(database['resource_group_name'], database['server_name'], database['name']).as_dict()
+        transparent_data_encryptions_list = client.transparent_data_encryptions.get(
+            database['resource_group_name'], database['server_name'], database['name'], TransparentDataEncryptionName.CURRENT,).as_dict()
     except Exception as e:
         logger.warning("Error while retrieving transparent data encryptions - {}".format(e))
         return []
