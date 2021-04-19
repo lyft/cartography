@@ -26,9 +26,13 @@ docker-compose run cartography ...
 ### Configuration
 
 Configuration is possible via the `.compose` directory, which is
-git ignored. Environment for cartography is in
-`.compose/cartography/cartography.env`. neo4j config, logs, etc is
-located at `.compose/neo4j/...`
+git ignored. neo4j config, logs, etc is located at `.compose/neo4j/...`
+
+Configuration for cartography itself should be passed in through
+environment variables, using the docker-compose format `-e VARIABLE -e VARIABLE`
+
+AWS credentials can be bind mapped in using volumes. TODO: document correct
+bind mount format for docker-compose run.
 
 ### Notes
 

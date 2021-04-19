@@ -29,4 +29,3 @@ services:
     restart: on-failure
     depends_on:
       - neo4j
-    env_file: ./.compose/cartography/cartography.env
