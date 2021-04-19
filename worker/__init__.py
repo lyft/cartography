@@ -4,6 +4,8 @@ import logging
 import os
 import time
 
+from libraries.eventgridlibrary import EventGridLibrary
+
 import azure.functions as func
 import cartography.cli
 
@@ -66,6 +68,18 @@ def main(event: func.EventGridEvent, outputEvent: func.Out[func.EventGridOutputE
             },
             "response": resp
         }
+
+        if msg.get('inventoryRefresh'):
+            logging.info(f'inventoryRefresh - {msg["inventoryRefresh"]}')
+            # Push message to Cartography Queue, if refresh is needed
+            # Post processing, result should be pushed to Inventory Views Request Topic
+            # without 'inventoryRefresh' field
+            topic = msg['resultTopic']
+            access_key = msg['resultTopicAccessKey']
+
+            lib = EventGridLibrary(topic, access_key)
+            resp = lib.publish_event(message)
+            return resp
 
         outputEvent.set(
             func.EventGridOutputEvent(
