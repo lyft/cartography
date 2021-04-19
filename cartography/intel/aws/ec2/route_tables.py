@@ -1,4 +1,3 @@
-import json
 import logging
 from typing import Dict
 from typing import List
@@ -21,7 +20,7 @@ def get_route_tables_data(boto3_session: boto3.session.Session, region: str) -> 
     route_tables: List[Dict] = []
     for page in paginator.paginate():
         route_tables.extend(page['RouteTables'])
-    #logger.debug(json.dumps(route_tables))
+    # logger.debug(json.dumps(route_tables))
     return route_tables
 
 
@@ -147,7 +146,9 @@ def load_routes(
 
 
 
-    FOREACH(runMe IN CASE WHEN route.GatewayId IS NOT NULL AND route.GatewayId CONTAINS 'local' AND route.DestinationCidrBlock  IS NOT NULL THEN [1] ELSE [] END |
+    FOREACH(runMe IN CASE WHEN route.GatewayId IS NOT NULL AND
+        route.GatewayId CONTAINS 'local' AND
+        route.DestinationCidrBlock  IS NOT NULL THEN [1] ELSE [] END |
 
         MERGE (r:EC2Route:Route{id: route_table.RouteTableId + '|' + route.DestinationCidrBlock})
         ON CREATE SET r.firstseen = timestamp()
@@ -159,7 +160,9 @@ def load_routes(
         SET ra.lastupdated = {update_tag}
     )
 
-    FOREACH(runMe IN CASE WHEN route.GatewayId IS NOT NULL AND route.GatewayId CONTAINS 'igw-' AND route.DestinationCidrBlock  IS NOT NULL THEN [1] ELSE [] END |
+    FOREACH(runMe IN CASE WHEN route.GatewayId IS NOT NULL AND
+        route.GatewayId CONTAINS 'igw-' AND
+        route.DestinationCidrBlock  IS NOT NULL THEN [1] ELSE [] END |
 
         MERGE (r:EC2Route:Route{id: route_table.RouteTableId + '|' + route.DestinationCidrBlock})
         ON CREATE SET r.firstseen = timestamp()
@@ -181,7 +184,9 @@ def load_routes(
 
     )
 
-    FOREACH(runMe IN CASE WHEN route.GatewayId IS NOT NULL AND route.GatewayId CONTAINS 'vgw-' AND route.DestinationCidrBlock  IS NOT NULL THEN [1] ELSE [] END |
+    FOREACH(runMe IN CASE WHEN route.GatewayId IS NOT NULL AND
+        route.GatewayId CONTAINS 'vgw-' AND
+        route.DestinationCidrBlock  IS NOT NULL THEN [1] ELSE [] END |
 
         MERGE (r:EC2Route:Route{id: route_table.RouteTableId + '|' + route.DestinationCidrBlock})
         ON CREATE SET r.firstseen = timestamp()
@@ -203,7 +208,8 @@ def load_routes(
 
     )
 
-    FOREACH(runMe IN CASE WHEN route.VpcPeeringConnectionId IS NOT NULL AND route.DestinationCidrBlock  IS NOT NULL THEN [1] ELSE [] END |
+    FOREACH(runMe IN CASE WHEN route.VpcPeeringConnectionId IS NOT NULL AND
+        route.DestinationCidrBlock  IS NOT NULL THEN [1] ELSE [] END |
 
         MERGE (r:EC2Route:Route{id: route_table.RouteTableId + '|' + route.DestinationCidrBlock})
         ON CREATE SET r.firstseen = timestamp()
@@ -224,7 +230,8 @@ def load_routes(
 
     )
 
-    FOREACH(runMe IN CASE WHEN route.NatGatewayId  IS NOT NULL AND route.DestinationCidrBlock  IS NOT NULL THEN [1] ELSE [] END |
+    FOREACH(runMe IN CASE WHEN route.NatGatewayId  IS NOT NULL AND
+        route.DestinationCidrBlock  IS NOT NULL THEN [1] ELSE [] END |
 
         MERGE (r:EC2Route:Route{id: route_table.RouteTableId + '|' + route.DestinationCidrBlock})
         ON CREATE SET r.firstseen = timestamp()
@@ -245,7 +252,8 @@ def load_routes(
     )
 
 
-    FOREACH(runMe IN CASE WHEN route.TransitGatewayId  IS NOT NULL AND route.DestinationCidrBlock  IS NOT NULL THEN [1] ELSE [] END |
+    FOREACH(runMe IN CASE WHEN route.TransitGatewayId  IS NOT NULL AND
+        route.DestinationCidrBlock  IS NOT NULL THEN [1] ELSE [] END |
 
         MERGE (r:EC2Route:Route{id: route_table.RouteTableId + '|' + route.DestinationCidrBlock})
         ON CREATE SET r.firstseen = timestamp()
@@ -266,7 +274,8 @@ def load_routes(
 
     )
 
-    FOREACH(runMe IN CASE WHEN route.CarrierGatewayId  IS NOT NULL AND route.DestinationCidrBlock  IS NOT NULL THEN [1] ELSE [] END |
+    FOREACH(runMe IN CASE WHEN route.CarrierGatewayId  IS NOT NULL AND
+        route.DestinationCidrBlock  IS NOT NULL THEN [1] ELSE [] END |
 
         MERGE (r:EC2Route:Route{id: route_table.RouteTableId + '|' + route.DestinationCidrBlock})
         ON CREATE SET r.firstseen = timestamp()
@@ -290,7 +299,9 @@ def load_routes(
 
 
 
-    FOREACH(runMe IN CASE WHEN route.GatewayId IS NOT NULL AND route.GatewayId CONTAINS 'local' AND route.DestinationPrefixListId  IS NOT NULL THEN [1] ELSE [] END |
+    FOREACH(runMe IN CASE WHEN route.GatewayId IS NOT NULL AND
+        route.GatewayId CONTAINS 'local' AND
+        route.DestinationPrefixListId  IS NOT NULL THEN [1] ELSE [] END |
 
         MERGE (r:EC2Route:Route{id: route_table.RouteTableId + '|' + route.DestinationPrefixListId})
         ON CREATE SET r.firstseen = timestamp()
@@ -302,7 +313,9 @@ def load_routes(
         SET ra.lastupdated = {update_tag}
     )
 
-    FOREACH(runMe IN CASE WHEN route.GatewayId IS NOT NULL AND route.GatewayId CONTAINS 'igw-' AND route.DestinationPrefixListId  IS NOT NULL THEN [1] ELSE [] END |
+    FOREACH(runMe IN CASE WHEN route.GatewayId IS NOT NULL AND
+        route.GatewayId CONTAINS 'igw-' AND
+        route.DestinationPrefixListId  IS NOT NULL THEN [1] ELSE [] END |
 
         MERGE (r:EC2Route:Route{id: route_table.RouteTableId + '|' + route.DestinationPrefixListId})
         ON CREATE SET r.firstseen = timestamp()
@@ -324,7 +337,9 @@ def load_routes(
 
     )
 
-    FOREACH(runMe IN CASE WHEN route.GatewayId IS NOT NULL AND route.GatewayId CONTAINS 'vgw-' AND route.DestinationPrefixListId  IS NOT NULL THEN [1] ELSE [] END |
+    FOREACH(runMe IN CASE WHEN route.GatewayId IS NOT NULL AND
+        route.GatewayId CONTAINS 'vgw-' AND
+        route.DestinationPrefixListId  IS NOT NULL THEN [1] ELSE [] END |
 
         MERGE (r:EC2Route:Route{id: route_table.RouteTableId + '|' + route.DestinationPrefixListId})
         ON CREATE SET r.firstseen = timestamp()
@@ -346,7 +361,8 @@ def load_routes(
 
     )
 
-    FOREACH(runMe IN CASE WHEN route.VpcPeeringConnectionId IS NOT NULL AND route.DestinationPrefixListId  IS NOT NULL THEN [1] ELSE [] END |
+    FOREACH(runMe IN CASE WHEN route.VpcPeeringConnectionId IS NOT NULL AND
+        route.DestinationPrefixListId  IS NOT NULL THEN [1] ELSE [] END |
 
         MERGE (r:EC2Route:Route{id: route_table.RouteTableId + '|' + route.DestinationPrefixListId})
         ON CREATE SET r.firstseen = timestamp()
@@ -367,7 +383,8 @@ def load_routes(
 
     )
 
-    FOREACH(runMe IN CASE WHEN route.NatGatewayId  IS NOT NULL AND route.DestinationPrefixListId  IS NOT NULL THEN [1] ELSE [] END |
+    FOREACH(runMe IN CASE WHEN route.NatGatewayId  IS NOT NULL AND
+        route.DestinationPrefixListId  IS NOT NULL THEN [1] ELSE [] END |
 
         MERGE (r:EC2Route:Route{id: route_table.RouteTableId + '|' + route.DestinationPrefixListId})
         ON CREATE SET r.firstseen = timestamp()
@@ -388,7 +405,8 @@ def load_routes(
     )
 
 
-    FOREACH(runMe IN CASE WHEN route.TransitGatewayId  IS NOT NULL AND route.DestinationPrefixListId  IS NOT NULL THEN [1] ELSE [] END |
+    FOREACH(runMe IN CASE WHEN route.TransitGatewayId  IS NOT NULL AND
+        route.DestinationPrefixListId  IS NOT NULL THEN [1] ELSE [] END |
 
         MERGE (r:EC2Route:Route{id: route_table.RouteTableId + '|' + route.DestinationPrefixListId})
         ON CREATE SET r.firstseen = timestamp()
@@ -409,7 +427,8 @@ def load_routes(
 
     )
 
-    FOREACH(runMe IN CASE WHEN route.CarrierGatewayId  IS NOT NULL AND route.DestinationPrefixListId  IS NOT NULL THEN [1] ELSE [] END |
+    FOREACH(runMe IN CASE WHEN route.CarrierGatewayId  IS NOT NULL AND
+        route.DestinationPrefixListId  IS NOT NULL THEN [1] ELSE [] END |
 
         MERGE (r:EC2Route:Route{id: route_table.RouteTableId + '|' + route.DestinationPrefixListId})
         ON CREATE SET r.firstseen = timestamp()
@@ -432,14 +451,14 @@ def load_routes(
 
 
 
-    FOREACH(runMe IN CASE WHEN route.DestinationCidrBlock  IS NOT NULL THEN [1] ELSE [] END |
+    FOREACH(runMe IN CASE WHEN route.DestinationCidrBlock IS NOT NULL THEN [1] ELSE [] END |
         MERGE (ec2r:EC2Route:Route{id: route_table.RouteTableId + '|' + route.DestinationCidrBlock})
         ON CREATE SET ec2r.firstseen = timestamp()
         SET ec2r.destination_cidr_block = route.DestinationCidrBlock,
         ec2r.origin = route.Origin, ec2r.state = route.State
     )
 
-    FOREACH(runMe IN CASE WHEN route.DestinationPrefixListId  IS NOT NULL THEN [1] ELSE [] END |
+    FOREACH(runMe IN CASE WHEN route.DestinationPrefixListId IS NOT NULL THEN [1] ELSE [] END |
         MERGE (ec2r:EC2Route:Route{id: route_table.RouteTableId + '|' + route.DestinationPrefixListId})
         ON CREATE SET ec2r.firstseen = timestamp()
         SET ec2r.destination_prefix_list_id = route.DestinationPrefixListId,
