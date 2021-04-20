@@ -1,9 +1,11 @@
 import logging
 import sys
+from functools import wraps
 
 import botocore
 
 from cartography.graph.job import GraphJob
+from cartography.stats import get_stats_client
 
 if sys.version_info >= (3, 7):
     from importlib.resources import open_binary, read_text
@@ -39,18 +41,17 @@ def load_resource_binary(package, resource_name):
     return open_binary(package, resource_name)
 
 
-# The statsd client used for observability.  This is `None` unless cartography.config.statsd_enabled is True.
-stats_client = None
-
-
 def timeit(method):
     """
     This decorator uses statsd to time the execution of the wrapped method and sends it to the statsd server.
     This is only active if config.statsd_enabled is True.
     :param method: The function to measure execution
     """
+    # Allow access via `inspect` to the wrapped function. This is used in integration tests to standardize param names.
+    @wraps(method)
     def timed(*args, **kwargs):
-        if stats_client:
+        stats_client = get_stats_client(None)
+        if stats_client.is_enabled():
             # Example metric name "cartography.intel.aws.iam.get_group_membership_data"
             metric_name = f"{method.__module__}.{method.__name__}"
             timer = stats_client.timer(metric_name)
@@ -65,6 +66,7 @@ def timeit(method):
     return timed
 
 
+# TODO Move this to cartography.intel.aws.util.common
 def aws_handle_regions(func):
     ERROR_CODES = [
         'AccessDeniedException',

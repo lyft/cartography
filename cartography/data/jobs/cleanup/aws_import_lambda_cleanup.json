@@ -11,7 +11,7 @@
             "iterationsize": 100
         },
         {
-            "query": "MATCH (:AWSLambda)-[r:STS_ASSUME_ROLE_ALLOW]->(:AWSPrincipal) WITH r LIMIT {LIMIT_SIZE} DELETE r return COUNT(*) as TotalCompleted",
+            "query": "MATCH (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(:AWSLambda)-[r:STS_ASSUME_ROLE_ALLOW]->(:AWSPrincipal) WITH r LIMIT {LIMIT_SIZE} DELETE r return COUNT(*) as TotalCompleted",
             "iterative": true,
             "iterationsize": 100
         }
