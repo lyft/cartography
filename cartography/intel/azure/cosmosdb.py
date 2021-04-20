@@ -163,7 +163,7 @@ def _load_database_account_write_locations(
         loc.iszoneredundant = wl.is_zone_redundant
         WITH loc
         MATCH (d:AzureCosmosDBAccount{id: {DatabaseAccountId}})
-        MERGE (d)-[r:WRITE_PERMISSIONS_FROM]->(loc)
+        MERGE (d)-[r:CAN_WRITE_FROM]->(loc)
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = {azure_update_tag}
         """
@@ -199,7 +199,7 @@ def _load_database_account_read_locations(
         loc.iszoneredundant = rl.is_zone_redundant
         WITH loc
         MATCH (d:AzureCosmosDBAccount{id: {DatabaseAccountId}})
-        MERGE (d)-[r:READ_PERMISSIONS_FROM]->(loc)
+        MERGE (d)-[r:CAN_READ_FROM]->(loc)
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = {azure_update_tag}
         """

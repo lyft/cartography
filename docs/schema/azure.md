@@ -912,12 +912,12 @@ Representation of an [AzureCosmosDBAccount](https://docs.microsoft.com/en-us/res
         ```
         (AzureSubscription)-[RESOURCE]->(AzureCosmosDBAccount)
         ```
-- Azure Database Account has write permissions from, read permissions from and is associated with Azure CosmosDB Locations.
+- Azure Database Account can be read from, written from and is associated with Azure CosmosDB Locations.
 
         ```
-        (AzureCosmosDBAccount)-[WRITE_PERMISSIONS_FROM]->(AzureCosmosDBLocation)
+        (AzureCosmosDBAccount)-[CAN_WRITE_FROM]->(AzureCosmosDBLocation)
         ```
-        (AzureCosmosDBAccount)-[READ_PERMISSIONS_FROM]->(AzureCosmosDBLocation)
+        (AzureCosmosDBAccount)-[CAN_READ_FROM]->(AzureCosmosDBLocation)
         ```
         (AzureCosmosDBAccount)-[ASSOCIATED_WITH]->(AzureCosmosDBLocation)
         ```
@@ -982,9 +982,9 @@ Representation of an [Azure CosmosDB Location](https://docs.microsoft.com/en-us/
 - Azure Database Account has write permissions from, read permissions from and is associated with Azure CosmosDB Locations.
 
         ```
-        (AzureCosmosDBAccount)-[WRITE_PERMISSIONS_FROM]->(AzureCosmosDBLocation)
+        (AzureCosmosDBAccount)-[CAN_WRITE_FROM]->(AzureCosmosDBLocation)
         ```
-        (AzureCosmosDBAccount)-[READ_PERMISSIONS_FROM]->(AzureCosmosDBLocation)
+        (AzureCosmosDBAccount)-[CAN_READ_FROM]->(AzureCosmosDBLocation)
         ```
         (AzureCosmosDBAccount)-[ASSOCIATED_WITH]->(AzureCosmosDBLocation)
         ```

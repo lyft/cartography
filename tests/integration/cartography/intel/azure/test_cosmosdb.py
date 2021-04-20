@@ -137,7 +137,7 @@ def test_load_database_account_write_locations_relationships(neo4j_session):
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:AzureCosmosDBAccount)-[:WRITE_PERMISSIONS_FROM]->(n2:AzureCosmosDBLocation) RETURN n1.id, n2.id;
+        MATCH (n1:AzureCosmosDBAccount)-[:CAN_WRITE_FROM]->(n2:AzureCosmosDBLocation) RETURN n1.id, n2.id;
         """,
     )
 
@@ -200,7 +200,7 @@ def test_load_database_account_read_locations_relationships(neo4j_session):
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:AzureCosmosDBAccount)-[:READ_PERMISSIONS_FROM]->(n2:AzureCosmosDBLocation) RETURN n1.id, n2.id;
+        MATCH (n1:AzureCosmosDBAccount)-[:CAN_READ_FROM]->(n2:AzureCosmosDBLocation) RETURN n1.id, n2.id;
         """,
     )
 
