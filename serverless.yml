@@ -1,0 +1,84 @@
+# serverless.yml
+
+service: cartography-service
+
+provider:
+  name: aws
+  runtime: python3.8
+  stage: prod
+  region: us-east-2
+  memorySize: 256
+  profile: cloudanix-serverless-admin
+  apiGateway:
+    shouldStartNameWithService: true
+  environment:
+    CLOUDANIX_DEFAULT_REGION: ${env:CLOUDANIX_DEFAULT_REGION}
+    CLOUDANIX_DEFAULT_LOG_LEVEL: ${env:CLOUDANIX_DEFAULT_LOG_LEVEL}
+    CLOUDANIX_APP_ENV: ${env:CLOUDANIX_APP_ENV}
+    CLOUDANIX_CONFIG: ${ssm:/CLOUDANIX_CARTOGRAPHY_CONFIG}
+
+functions:
+  cartographyService:
+    handler: app.load_cartography
+    timeout: 900 # optional, in seconds, default is 30
+
+    role: arn:aws:iam::774118602354:role/cloudanix-lambda-role
+
+    events:
+      - sns:
+          arn: arn:aws:sns:us-east-2:774118602354:inventory-sync-aws-requests
+
+plugins:
+  - serverless-python-requirements
+  - serverless-offline
+  - serverless-offline-python
+  - serverless-offline-sns
+custom:
+  pythonRequirements:
+    dockerizePip: non-linux
+  serverless-offline:
+    port: 5000
+  serverless-offline-sns:
+    port: 5002 # a free port for the sns server to run on
+    debug: true
+  mySnsTopic: "inventory-sync-aws-requests"
+  mySnsTopicArn: "arn:aws:sns:us-east-2:774118602354:inventory-sync-aws-requests"
+
+package:
+  exclude:
+    - .git/**
+    - .github/**
+    - .gitignore
+    - .DS_Store
+    - npm-debug.log
+    - .serverless/**
+    - .serverless_plugins/**
+    - node_modules/**
+    - __pycache__/**
+    - .vscode/**
+    - venv/**
+    - build/**
+    - misc/**
+    - tests/**
+    - cloudformation/**
+    - docs/**
+    - LICENSE
+    - README.md
+    - package.json
+    - package-lock.json
+    - serverless.yml
+    - .pre-commit-config.yaml
+    - CODE_OF_CONDUCT.md
+    - config
+    - Dockerfile
+    - Makefile
+    - NOTICE
+    - setup.cfg
+    - setup.py
+    - setup.sh
+    - test-requirements.txt
+    - deploy.sh
+    - __main__.py
+    - requirements.txt
+    - .env.aws.development.json
+    - .env.aws.production.json

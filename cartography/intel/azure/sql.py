@@ -15,6 +15,7 @@ from azure.mgmt.sql.models import TransparentDataEncryptionName
 from msrestazure.azure_exceptions import CloudError
 
 from .util.credentials import Credentials
+from cartography.util import get_optional_value
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 

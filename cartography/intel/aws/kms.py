@@ -189,7 +189,7 @@ def _set_default_values(neo4j_session: neo4j.Session, aws_account_id: str) -> No
 @timeit
 def load_kms_key_details(
         neo4j_session: neo4j.Session, policy_alias_grants_data: List[Tuple[Any, Any, Any, Any]], region: str,
-        aws_account_id: str, update_tag: int,
+        aws_account_id: str, update_tag: int, common_job_parameters: Dict,
 ) -> None:
     """
     Create dictionaries for all KMS key policies, aliases and grants so we can import them in a single query for each
@@ -210,7 +210,7 @@ def load_kms_key_details(
     run_cleanup_job(
         'aws_kms_details.json',
         neo4j_session,
-        {'UPDATE_TAG': update_tag, 'AWS_ID': aws_account_id},
+        common_job_parameters,
     )
 
     _load_kms_key_policies(neo4j_session, policies, update_tag)
@@ -330,14 +330,16 @@ def cleanup_kms(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> No
 @timeit
 def sync_kms_keys(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, region: str, current_aws_account_id: str,
-    aws_update_tag: int,
+    aws_update_tag: int, common_job_parameters: Dict,
 ) -> None:
     kms_keys = get_kms_key_list(boto3_session, region)
 
     load_kms_keys(neo4j_session, kms_keys, region, current_aws_account_id, aws_update_tag)
 
     policy_alias_grants_data = get_kms_key_details(boto3_session, kms_keys, region)
-    load_kms_key_details(neo4j_session, policy_alias_grants_data, region, current_aws_account_id, aws_update_tag)
+    load_kms_key_details(
+        neo4j_session, policy_alias_grants_data, region, current_aws_account_id, aws_update_tag, common_job_parameters
+    )
 
 
 @timeit
@@ -347,6 +349,6 @@ def sync(
 ) -> None:
     for region in regions:
         logger.info("Syncing KMS for region %s in account '%s'.", region, current_aws_account_id)
-        sync_kms_keys(neo4j_session, boto3_session, region, current_aws_account_id, update_tag)
+        sync_kms_keys(neo4j_session, boto3_session, region, current_aws_account_id, update_tag, common_job_parameters)
 
     cleanup_kms(neo4j_session, common_job_parameters)

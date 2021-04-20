@@ -7,16 +7,20 @@ from neo4j import GraphDatabase
 from statsd import StatsClient
 
 import cartography.intel.analysis
-import cartography.intel.aws
-import cartography.intel.azure
+# import cartography.intel.aws
+# import cartography.intel.azure
 import cartography.intel.create_indexes
-import cartography.intel.crxcavator.crxcavator
-import cartography.intel.digitalocean
+# import cartography.intel.crxcavator.crxcavator
+# import cartography.intel.digitalocean
 import cartography.intel.gcp
-import cartography.intel.github
-import cartography.intel.gsuite
-import cartography.intel.okta
+# import cartography.intel.github
+# import cartography.intel.gsuite
+# import cartography.intel.okta
 from cartography.stats import set_stats_client
+
+import cloudanix
+
+from cartography.scoped_stats_client import ScopedStatsClient
 
 logger = logging.getLogger(__name__)
 
@@ -160,14 +164,51 @@ def build_default_sync():
     sync = Sync()
     sync.add_stages([
         ('create-indexes', cartography.intel.create_indexes.run),
-        ('aws', cartography.intel.aws.start_aws_ingestion),
-        ('azure', cartography.intel.azure.start_azure_ingestion),
-        ('gcp', cartography.intel.gcp.start_gcp_ingestion),
-        ('gsuite', cartography.intel.gsuite.start_gsuite_ingestion),
-        ('crxcavator', cartography.intel.crxcavator.start_extension_ingestion),
-        ('okta', cartography.intel.okta.start_okta_ingestion),
-        ('github', cartography.intel.github.start_github_ingestion),
-        ('digitalocean', cartography.intel.digitalocean.start_digitalocean_ingestion),
+        # ('aws', cartography.intel.aws.start_aws_ingestion),
+        # ('azure', cartography.intel.azure.start_azure_ingestion),
+        # ('gcp', cartography.intel.gcp.start_gcp_ingestion),
+        # ('gsuite', cartography.intel.gsuite.start_gsuite_ingestion),
+        # ('crxcavator', cartography.intel.crxcavator.start_extension_ingestion),
+        # ('okta', cartography.intel.okta.start_okta_ingestion),
+        # ('github', cartography.intel.github.start_github_ingestion),
+        # ('digitalocean', cartography.intel.digitalocean.start_digitalocean_ingestion),
         ('analysis', cartography.intel.analysis.run),
     ])
+
+    return sync
+
+
+def build_aws_sync():
+    """
+    Build the aws cartography sync, which runs all intelligence modules shipped with the cartography package.
+
+    :rtype: cartography.sync.Sync
+    :return: The aws cartography sync object.
+    """
+    sync = Sync()
+    sync.add_stages([
+        ('create-indexes', cartography.intel.create_indexes.run),
+        ('cloudanix-workspace', cloudanix.run),
+        ('aws', cartography.intel.aws.start_aws_ingestion),
+        ('analysis', cartography.intel.analysis.run),
+    ])
+
+    return sync
+
+
+def build_azure_sync():
+    """
+    Build the azure cartography sync, which runs all intelligence modules shipped with the cartography package.
+
+    :rtype: cartography.sync.Sync
+    :return: The azure cartography sync object.
+    """
+    sync = Sync()
+    sync.add_stages([
+        ('create-indexes', cartography.intel.create_indexes.run),
+        ('cloudanix-workspace', cloudanix.run),
+        # ('azure', cartography.intel.azure.start_azure_ingestion),
+        ('analysis', cartography.intel.analysis.run),
+    ])
+
     return sync

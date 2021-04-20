@@ -92,35 +92,44 @@ def load_aws_accounts(
     common_job_parameters: Dict,
 ) -> None:
     query = """
+    MERGE (w:CloudanixWorkspace{id: {WORKSPACE_ID}})
+    SET w.lastupdated = {UPDATE_TAG}
+    WITH w
     MERGE (aa:AWSAccount{id: {ACCOUNT_ID}})
     ON CREATE SET aa.firstseen = timestamp()
-    SET aa.lastupdated = {aws_update_tag}, aa.name = {ACCOUNT_NAME}
-    WITH aa
+    SET aa.lastupdated = {UPDATE_TAG}, aa.name = {ACCOUNT_NAME}
+    WITH w, aa
+    MERGE (w)-[o:OWNER]->(aa)
+    ON CREATE SET o.firstseen = timestamp()
+    SET o.lastupdated = {UPDATE_TAG}
     MERGE (root:AWSPrincipal{arn: {RootArn}})
     ON CREATE SET root.firstseen = timestamp(), root.type = 'AWS'
-    SET root.lastupdated = {aws_update_tag}
+    SET root.lastupdated = {UPDATE_TAG}
     WITH aa, root
     MERGE (aa)-[r:RESOURCE]->(root)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag};
+    SET r.lastupdated = {UPDATE_TAG};
     """
     for account_name, account_id in aws_accounts.items():
         root_arn = f'arn:aws:iam::{account_id}:root'
         neo4j_session.run(
             query,
+            WORKSPACE_ID=common_job_parameters['WORKSPACE_ID'],
             ACCOUNT_ID=account_id,
             ACCOUNT_NAME=account_name,
             RootArn=root_arn,
-            aws_update_tag=aws_update_tag,
+            UPDATE_TAG=aws_update_tag,
         )
+
+        cleanup(neo4j_session, account_id, common_job_parameters)
 
 
 @timeit
-def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+def cleanup(neo4j_session: neo4j.Session, account_id: str, common_job_parameters: Dict) -> None:
+    common_job_parameters['AWS_ID'] = account_id
     run_cleanup_job('aws_account_cleanup.json', neo4j_session, common_job_parameters)
 
 
 @timeit
 def sync(neo4j_session: neo4j.Session, accounts: Dict, update_tag: int, common_job_parameters: Dict) -> None:
     load_aws_accounts(neo4j_session, accounts, update_tag, common_job_parameters)
-    cleanup(neo4j_session, common_job_parameters)
