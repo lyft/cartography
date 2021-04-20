@@ -10,7 +10,6 @@ from typing import Tuple
 import boto3
 import botocore
 import neo4j
-from botocore.config import Config
 from botocore.exceptions import ClientError
 from policyuniverse.policy import Policy
 
@@ -24,15 +23,7 @@ logger = logging.getLogger(__name__)
 @timeit
 @aws_handle_regions
 def get_apigateway_rest_apis(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
-    config = Config(
-        region_name=region,
-        retries={
-            'max_attempts': 5,
-            'mode': 'standard',
-        },
-    )
-
-    client = boto3_session.client('apigateway', config=config)
+    client = boto3_session.client('apigateway', region_name=region)
     paginator = client.get_paginator('get_rest_apis')
     apis: List[Any] = []
     for page in paginator.paginate():
@@ -48,15 +39,7 @@ def get_rest_api_details(
     """
     Iterates over all API Gateway REST APIs.
     """
-    config = Config(
-        region_name=region,
-        retries={
-            'max_attempts': 5,
-            'mode': 'standard',
-        },
-    )
-
-    client = boto3_session.client('apigateway', config=config)
+    client = boto3_session.client('apigateway', region_name=region)
     for api in rest_apis:
         stages = get_rest_api_stages(api, client)
         certificate = get_rest_api_client_certificate(stages, client)  # clientcertificate id is given by the api stage
