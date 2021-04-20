@@ -630,11 +630,11 @@ Representation of a GCP [GKE Cluster](https://cloud.google.com/kubernetes-engine
     (GCPProject)-[RESOURCE]->(GKECluster)
     ```
 
-## GCPVpnGateway 
+## GCPVpnGateway
 
 Representation of GCP [VPN Gateway](https://cloud.google.com/compute/docs/reference/rest/v1/targetVpnGateways/list).
 Support limited to Target VPN Gateways for now.
-       
+
 | Field                      | Description                                                                                                                                                                                                       |
 | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | firstseen | Timestamp of when a sync job first discovered this node |
@@ -658,13 +658,13 @@ Support limited to Target VPN Gateways for now.
     ```
     (GCPVpnGateway)-[p:ASSOCIATED_WITH]->(GCPForwardingRule)
     ```
-  
+
 - GCPVpnTunnels are associated with GCPVpnGateways
-    
+
     ```
     (GCPVpnGateway)<-[p:ASSOCIATED_WITH]-(GCPVpnTunnel)
     ```
-  
+
 ## GCPVpnTunnel
 Representation of GCP [VPN Tunnel](https://cloud.google.com/compute/docs/reference/rest/v1/vpnTunnels/list).
  tn.name = {Name},
@@ -685,7 +685,7 @@ Representation of GCP [VPN Tunnel](https://cloud.google.com/compute/docs/referen
        tn.local_traffic_selector = {LocalTrafficSelector},
        tn.remote_traffic_selector = {RemoteTrafficSelector},
        tn.project_id = {ProjectId}
-       
+
 | Field                      | Description                                                                                                                                                                                                       |
 | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | firstseen | Timestamp of when a sync job first discovered this node |
@@ -695,11 +695,11 @@ Representation of GCP [VPN Tunnel](https://cloud.google.com/compute/docs/referen
 | name | Name of the resource |
 | description | An optional description of this resource |
 | region | A partial resource URI of the region where the target VPN tunnel resides |
-| target_vpn_gateway | A partial resource URI of the Target VPN gateway with which this VPN tunnel is associated | 
-| vpn_gateway | A partial resource URI of the VPN gateway with which this VPN tunnel is associated | 
-| vpn_gateway_interface | The interface ID of the VPN gateway with which this VPN tunnel is associated | 
-| peer_external_gateway | URL of the peer side external VPN gateway to which this VPN tunnel is connected | 
-| peer_external_gateway_interface | The interface ID of the external VPN gateway to which this VPN tunnel is connected | 
+| target_vpn_gateway | A partial resource URI of the Target VPN gateway with which this VPN tunnel is associated |
+| vpn_gateway | A partial resource URI of the VPN gateway with which this VPN tunnel is associated |
+| vpn_gateway_interface | The interface ID of the VPN gateway with which this VPN tunnel is associated |
+| peer_external_gateway | URL of the peer side external VPN gateway to which this VPN tunnel is connected |
+| peer_external_gateway_interface | The interface ID of the external VPN gateway to which this VPN tunnel is connected |
 | peer_gcp_gateway | URL of the peer side HA GCP VPN gateway to which this VPN tunnel is connected |
 | router | A partial resource URI of the router resource to be used for dynamic routing |
 | peer_ip | IP address of the peer VPN gateway. Only IPv4 is supported |

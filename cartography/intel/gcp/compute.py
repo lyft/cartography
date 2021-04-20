@@ -464,8 +464,6 @@ def transform_gcp_vpn_tunnels(tunnels_response: Resource) -> List[Dict]:
     projectid = prefix.split('/')[1]
     for tn in tunnels_response.get('items', []):
         tunnel_partial_uri = f"{prefix}/{tn['name']}"
-        target_vpn_gateway = tn.get('targetVpnGateway', None)
-        vpn_gateway = tn.get('vpnGateway', None)
 
         tunnel = {}
         tunnel['id'] = tunnel_partial_uri
@@ -476,8 +474,6 @@ def transform_gcp_vpn_tunnels(tunnels_response: Resource) -> List[Dict]:
         tunnel['vpn_gateway_interface'] = tn.get('vpnGatewayInterface', None)
         tunnel['peer_external_gateway'] = tn.get('peerExternalGateway', None)
         tunnel['peer_external_gateway_interface'] = tn.get('peerExternalGatewayInterface', None)
-        tunnel['peer_gcp_gateway'] = tn.get('peerGcpGateway', None)
-        tunnel['router'] = tn.get('router', None)
         tunnel['peer_ip'] = tn.get('peerIp', None)
         tunnel['status'] = tn['status']
         tunnel['self_link'] = tn['selfLink']
@@ -487,9 +483,19 @@ def transform_gcp_vpn_tunnels(tunnels_response: Resource) -> List[Dict]:
         tunnel['remote_traffic_selector'] = tn.get('remoteTrafficSelector', None)
         tunnel['project_id'] = projectid
 
+        peer_gcp_gateway = tn.get('peerGcpGateway', None)
+        if peer_gcp_gateway:
+            tunnel['peer_gcp_gateway'] = peer_gcp_gateway
+
+        router = tn.get('router', None)
+        if router:
+            tunnel['router'] = _parse_compute_full_uri_to_partial_uri(router)
+
+        target_vpn_gateway = tn.get('targetVpnGateway', None)
         if target_vpn_gateway:
             tunnel['target_vpn_gateway'] = _parse_compute_full_uri_to_partial_uri(target_vpn_gateway)
 
+        vpn_gateway = tn.get('vpnGateway', None)
         if vpn_gateway:
             tunnel['vpn_gateway'] = _parse_compute_full_uri_to_partial_uri(vpn_gateway)
 
@@ -881,8 +887,8 @@ def load_gcp_vpn_tunnels(neo4j_session: neo4j.Session, tunnels_list: Dict, gcp_u
             VpnGatewayInterface=tn['vpn_gateway_interface'],
             PeerExternalGateway=tn['peer_external_gateway'],
             PeerExternalGatewayInterface=tn['peer_external_gateway_interface'],
-            PeerGcpGateway=tn['peer_gcp_gateway'],
-            Router=tn['router'],
+            PeerGcpGateway=tn.get('peer_gcp_gateway', None),
+            Router=tn.get('router', None),
             PeerIp=tn['peer_ip'],
             Status=tn['status'],
             SelfLink=tn['self_link'],
@@ -1563,10 +1569,10 @@ def sync(
         return
     else:
         regions = _zones_to_regions(zones)
-        # sync_gcp_vpcs(neo4j_session, compute, project_id, gcp_update_tag, common_job_parameters)
-        # sync_gcp_firewall_rules(neo4j_session, compute, project_id, gcp_update_tag, common_job_parameters)
-        # sync_gcp_subnets(neo4j_session, compute, project_id, regions, gcp_update_tag, common_job_parameters)
-        # sync_gcp_instances(neo4j_session, compute, project_id, zones, gcp_update_tag, common_job_parameters)
+        sync_gcp_vpcs(neo4j_session, compute, project_id, gcp_update_tag, common_job_parameters)
+        sync_gcp_firewall_rules(neo4j_session, compute, project_id, gcp_update_tag, common_job_parameters)
+        sync_gcp_subnets(neo4j_session, compute, project_id, regions, gcp_update_tag, common_job_parameters)
+        sync_gcp_instances(neo4j_session, compute, project_id, zones, gcp_update_tag, common_job_parameters)
         sync_gcp_forwarding_rules(neo4j_session, compute, project_id, regions, gcp_update_tag, common_job_parameters)
         sync_gcp_vpn_gateways(neo4j_session, compute, project_id, regions, gcp_update_tag, common_job_parameters)
         sync_gcp_vpn_tunnels(neo4j_session, compute, project_id, regions, gcp_update_tag, common_job_parameters)
