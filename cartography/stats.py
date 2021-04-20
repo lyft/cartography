@@ -13,9 +13,12 @@ class ScopedStatsClient:
     newer_client.incr('bad') # Metric name = a.subsystem.bad
     """
 
-    def __init__(self, client: StatsClient, prefix: str = None):
-        self._client = client
+    _client: StatsClient = None
+    _root: 'ScopedStatsClient' = None
+
+    def __init__(self, prefix: str = None, root: 'ScopedStatsClient' = None):
         self._scope_prefix = prefix
+        self._root = root
 
     def get_stats_client(self, scope: str) -> 'ScopedStatsClient':
         """
@@ -25,11 +28,19 @@ class ScopedStatsClient:
         if not self._scope_prefix:
             prefix = scope
         else:
-            prefix = self._scope_prefix + "." + scope
-        return ScopedStatsClient(self._client, prefix)
+            prefix = f"{self._scope_prefix}.{scope}"
+
+        scoped_stats_client = ScopedStatsClient(prefix, self._root)
+        return scoped_stats_client
+
+    @staticmethod
+    def get_root_client() -> 'ScopedStatsClient':
+        client = ScopedStatsClient()
+        client._root = client
+        return client
 
     def is_enabled(self) -> bool:
-        return self._client is not None
+        return self._root._client is not None
 
     def incr(self, stat: str, count: int = 1, rate: float = 1.0) -> None:
         """
@@ -40,7 +51,9 @@ class ScopedStatsClient:
                              The statsd server will take the sample rate into account for counters
         """
         if self.is_enabled():
-            self._client.incr(self._scope_prefix + "." + stat, count, rate)
+            if self._scope_prefix:
+                stat = f"{self._scope_prefix}.{stat}"
+            self._root._client.incr(stat, count, rate)
 
     def timer(self, stat: str, rate: float = 1.0):
         """
@@ -51,21 +64,26 @@ class ScopedStatsClient:
                              The statsd server will take the sample rate into account for counters
         """
         if self.is_enabled():
-            return self._client.timer(stat, rate)
+            if self._scope_prefix:
+                stat = f"{self._scope_prefix}.{stat}"
+            return self._root._client.timer(stat, rate)
         return None
 
+    def set_stats_client(self, stats_client: StatsClient) -> None:
+        self._root._client = stats_client
 
-# Global _stats_client
+
+# Global _scoped_stats_client
 # Will be set when cartography.config.statsd_enabled is True
-_stats_client: StatsClient = None
+_scoped_stats_client: ScopedStatsClient = ScopedStatsClient.get_root_client()
 
 
 def set_stats_client(stats_client: StatsClient) -> None:
     """
     This is used to set the module level stats client configured to talk with a statsd host
     """
-    global _stats_client
-    _stats_client = stats_client
+    global _scoped_stats_client
+    _scoped_stats_client.set_stats_client(stats_client)
 
 
 def get_stats_client(prefix: str) -> ScopedStatsClient:
@@ -73,4 +91,4 @@ def get_stats_client(prefix: str) -> ScopedStatsClient:
     Returns a ScopedStatsClient object, which is a simple wrapper over statsd.client.Statsclient
     that allows one to scope down the metric as needed
     """
-    return ScopedStatsClient(_stats_client, prefix)
+    return _scoped_stats_client.get_stats_client(prefix)
