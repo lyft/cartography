@@ -32,8 +32,12 @@
   - [Relationships](#relationships-12)
 - [GKECluster](#gkecluster)
   - [Relationships](#relationships-13)
-- [IpRule::IpPermissionInbound::GCPIpRule](#ipruleippermissioninboundgcpiprule)
+- [GCPVpnGateway](#gcpvpngateway)
   - [Relationships](#relationships-14)
+- [GCPVpnTunnel](#gcpvpntunnel)
+  - [Relationships](#relationships-15)
+- [IpRule::IpPermissionInbound::GCPIpRule](#ipruleippermissioninboundgcpiprule)
+  - [Relationships](#relationships-16)
 - [IpRange](#iprange)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -625,6 +629,89 @@ Representation of a GCP [GKE Cluster](https://cloud.google.com/kubernetes-engine
     ```
     (GCPProject)-[RESOURCE]->(GKECluster)
     ```
+
+## GCPVpnGateway 
+
+Representation of GCP [VPN Gateway](https://cloud.google.com/compute/docs/reference/rest/v1/targetVpnGateways/list).
+Support limited to Target VPN Gateways for now.
+       
+| Field                      | Description                                                                                                                                                                                                       |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| firstseen | Timestamp of when a sync job first discovered this node |
+| lastupdated | Timestamp of the last time the node was updated |
+| id | A partial resource URI representing this VPN Gateway |
+| partial_uri | Same as `id` |
+| name | Name of the resource |
+| description | An optional description of this resource |
+| region | A partial resource URI of the region where the target VPN gateway resides |
+| network | A partial resource URI of the network to which this VPN gateway is attached |
+| status | The status of the VPN gateway, which can be one of the following: CREATING, READY, FAILED, or DELETING. |
+| self_link | Server-defined URL for the resource |
+| vpn_tunnels | A list of partial resource URI to VpnTunnel resources |
+| forwarding_rules | A list of partial resource URI to the ForwardingRule resources |
+| project_id | The project ID that this VPN Gateway belongs to |
+
+### Relationships
+
+- GCPVpnGateways are associated with GCPForwardingRules
+
+    ```
+    (GCPVpnGateway)-[p:ASSOCIATED_WITH]->(GCPForwardingRule)
+    ```
+  
+- GCPVpnTunnels are associated with GCPVpnGateways
+    
+    ```
+    (GCPVpnGateway)<-[p:ASSOCIATED_WITH]-(GCPVpnTunnel)
+    ```
+  
+## GCPVpnTunnel
+Representation of GCP [VPN Tunnel](https://cloud.google.com/compute/docs/reference/rest/v1/vpnTunnels/list).
+ tn.name = {Name},
+       tn.description = {Description},
+       tn.region = {Region},
+       tn.target_vpn_gateway = {TargetVpnGateway},
+       tn.vpn_gateway = {VpnGateway},
+       tn.vpn_gateway_interface = {VpnGatewayInterface},
+       tn.peer_external_gateway = {PeerExternalGateway},
+       tn.peer_external_gateway_interface = {PeerExternalGatewayInterface},
+       tn.peer_gcp_gateway = {PeerGcpGateway},
+       tn.router = {Router},
+       tn.peer_ip = {PeerIp},
+       tn.status = {Status},
+       tn.self_link = {SelfLink},
+       tn.ike_version = {IkeVersion},
+       tn.detailed_status = {DetailedStatus},
+       tn.local_traffic_selector = {LocalTrafficSelector},
+       tn.remote_traffic_selector = {RemoteTrafficSelector},
+       tn.project_id = {ProjectId}
+       
+| Field                      | Description                                                                                                                                                                                                       |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| firstseen | Timestamp of when a sync job first discovered this node |
+| lastupdated | Timestamp of the last time the node was updated |
+| id | A partial resource URI representing this VPN Tunnel |
+| partial_uri | Same as `id` |
+| name | Name of the resource |
+| description | An optional description of this resource |
+| region | A partial resource URI of the region where the target VPN tunnel resides |
+| target_vpn_gateway | A partial resource URI of the Target VPN gateway with which this VPN tunnel is associated | 
+| vpn_gateway | A partial resource URI of the VPN gateway with which this VPN tunnel is associated | 
+| vpn_gateway_interface | The interface ID of the VPN gateway with which this VPN tunnel is associated | 
+| peer_external_gateway | URL of the peer side external VPN gateway to which this VPN tunnel is connected | 
+| peer_external_gateway_interface | The interface ID of the external VPN gateway to which this VPN tunnel is connected | 
+| peer_gcp_gateway | URL of the peer side HA GCP VPN gateway to which this VPN tunnel is connected |
+| router | A partial resource URI of the router resource to be used for dynamic routing |
+| peer_ip | IP address of the peer VPN gateway. Only IPv4 is supported |
+| status | The status of the VPN tunnel. Check GCP docs for valid values |
+| self_link | Server-defined URL for the resource |
+| ike_version | IKE protocol version to use when establishing the VPN tunnel with the peer VPN gateway |
+| detailed_status | Detailed status message for the VPN tunnel |
+| local_traffic_selector | Local traffic selector to use when establishing the VPN tunnel with the peer VPN gateway |
+| remote_traffic_selector | Remote traffic selectors to use when establishing the VPN tunnel with the peer VPN gateway |
+| project_id | The project ID that this VPN Tunnel belongs to |
+
+### Relationships
 
 
 ## IpRule::IpPermissionInbound::GCPIpRule
