@@ -1,5 +1,7 @@
 import datetime
 
+DOUBLY_ESCAPED_POLICY = "{\\\"Version\\\":\\\"2012-10-17\\\",\\\"Statement\\\":[{\\\"Effect\\\":\\\"Allow\\\",\\\"Principal\\\":\\\"*\\\",\\\"Action\\\":\\\"execute-api:Invoke\\\",\\\"Resource\\\":\\\"arn:aws:execute-api:us-east-1:deadbeef:2stva8ras3\/*\/*\/*\\\"}]}"
+
 GET_REST_APIS = [
     {
         'id': 'test-001',
