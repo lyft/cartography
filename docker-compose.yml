@@ -1,0 +1,31 @@
+version: "3.7"
+services:
+  neo4j:
+    image: neo4j:3.5
+    restart: unless-stopped
+    ports:
+      - 7474:7474
+      - 7687:7687
+    volumes:
+      - ./.compose/neo4j/conf:/conf
+      - ./.compose/neo4j/data:/data
+      - ./.compose/neo4j/import:/import
+      - ./.compose/neo4j/logs:/logs
+      - ./.compose/neo4j/plugins:/plugins
+    environment:
+      # Raise memory limits
+      - NEO4J_dbms_memory_pagecache_size=1G
+      - NEO4J_dbms.memory.heap.initial_size=1G
+      - NEO4J_dbms_memory_heap_max__size=1G
+    healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:7474"]
+        interval: 30s
+        timeout: 10s
+        retries: 5
+  cartography:
+    image: lyft/cartography
+    user: cartography
+    init: true
+    restart: on-failure
+    depends_on:
+      - neo4j
