@@ -1,6 +1,9 @@
 import logging
 import sys
 from functools import wraps
+import csv
+from typing import Iterable
+from typing import Dict
 
 import botocore
 
@@ -87,3 +90,13 @@ def aws_handle_regions(func):
             else:
                 raise
     return inner_function
+
+
+def write_list_to_csv(out_path: str, list_of_dicts: Iterable[Dict], fieldnames:Iterable[str]) -> None:
+    """
+    Returns a StringIO CSV file-like object from the given dict and list of column names.
+    """
+    with open(out_path, 'w') as csv_file:
+        dict_writer = csv.DictWriter(csv_file, fieldnames=fieldnames, extrasaction="ignore")
+        dict_writer.writeheader()
+        dict_writer.writerows(list_of_dicts)

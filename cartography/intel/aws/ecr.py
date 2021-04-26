@@ -129,6 +129,42 @@ def load_ecr_repository_images(
 
 
 @timeit
+def load_ecr_repository_images_csv(neo4j_session: neo4j.Session, region: str, update_tag: int, csv_path: str) -> None:
+    query = """
+    LOAD CSV WITH HEADERS FROM {CsvPath} AS row WITH row
+        MERGE (ri:ECRRepositoryImage{id: row.repo_uri + COALESCE(":" + row.imageTag, '')})
+        ON CREATE SET ri.firstseen = timestamp()
+        SET ri.lastupdated = {aws_update_tag},
+            ri.tag = row.imageTag,
+            ri.uri = row.repo_uri + COALESCE(":" + row.imageTag, '')
+        WITH ri, row
+
+        MERGE (img:ECRImage{id: row.imageDigest})
+        ON CREATE SET img.firstseen = timestamp(),
+            img.digest = row.imageDigest
+        SET img.lastupdated = {aws_update_tag},
+            img.region = {Region}
+        WITH ri, img, row
+
+        MERGE (ri)-[r1:IMAGE]->(img)
+        ON CREATE SET r1.firstseen = timestamp()
+        SET r1.lastupdated = {aws_update_tag}
+        WITH ri, row
+
+        MATCH (repo:ECRRepository{uri: row.repo_uri})
+        MERGE (repo)-[r2:REPO_IMAGE]->(ri)
+        ON CREATE SET r2.firstseen = timestamp()
+        SET r2.lastupdated = {aws_update_tag}
+    """
+    logger.info(f"Loading {csv_path} to graph.")
+    neo4j_session.run(
+        query,
+        CsvPath=f"file://{csv_path}",
+        aws_update_tag=update_tag,
+        Region=region,
+    ).consume()
+
+@timeit
 def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     logger.debug("Running ECR cleanup job.")
     run_cleanup_job('aws_import_ecr_cleanup.json', neo4j_session, common_job_parameters)
@@ -137,7 +173,7 @@ def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
 @timeit
 def sync(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
-    update_tag: int, common_job_parameters: Dict,
+    update_tag: int, common_job_parameters: Dict, csv_path: str = '',
 ) -> None:
     for region in regions:
         logger.info("Syncing ECR for region '%s' in account '%s'.", region, current_aws_account_id)
@@ -148,5 +184,9 @@ def sync(
             image_data[repo['repositoryUri']] = repo_image_obj
         load_ecr_repositories(neo4j_session, repositories, region, current_aws_account_id, update_tag)
         repo_images_list = transform_ecr_repository_images(image_data)
-        load_ecr_repository_images(neo4j_session, repo_images_list, region, update_tag)
+
+        if csv_path:
+            load_ecr_repository_images_csv(neo4j_session, region, update_tag, csv_path)
+        else:
+            load_ecr_repository_images(neo4j_session, repo_images_list, region, update_tag)
     cleanup(neo4j_session, common_job_parameters)
