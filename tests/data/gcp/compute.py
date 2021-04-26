@@ -745,7 +745,7 @@ LIST_VPN_GATEWAYS_RESPONSE = {
             'selfLink': 'https://www.googleapis.com/compute/v1/projects/project-abc/regions/europe-west2/targetVpnGateways/vpn-abc-1',
             'forwardingRules': [
               'https://www.googleapis.com/compute/v1/projects/project-abc/regions/europe-west2/forwardingRules/internal-service-1111',
-          ],
+            ],
             'kind': 'compute#targetVpnGateway',
         },
         {
