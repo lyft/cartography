@@ -1,15 +1,80 @@
 import logging
 from typing import Dict
 from typing import List
+from datetime import datetime
+import pytz
 
 import boto3
 import neo4j
+import neomodel
 
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+
+
+# class CartographyNode(neomodel.StructuredNode):
+#     # neomodel.DateTimeProperty(
+#     #     default=lambda: datetime.now(pytz.utc)
+#     # )
+#     firstseen = neomodel.DateTimeProperty()
+#     lastupdated = neomodel.IntegerProperty()
+
+
+class CartographyRel(neomodel.StructuredRel):
+    firstseen = neomodel.DateTimeProperty(
+        default=lambda: datetime.now(pytz.utc)
+    )
+    lastupdated = neomodel.IntegerProperty()
+
+
+class AWSAccount(neomodel.StructuredNode):
+    #id = neomodel.StringProperty(unique_index=True)
+    id = neomodel.StringProperty()
+    name = neomodel.StringProperty()
+    firstseen = neomodel.DateTimeProperty()
+    lastupdated = neomodel.IntegerProperty()
+
+
+class ECRImage(neomodel.StructuredNode):
+    #id = neomodel.StringProperty(unique_index=True)
+    id = neomodel.StringProperty()
+    digest = neomodel.StringProperty() # TODO check this
+    region = neomodel.StringProperty()
+    firstseen = neomodel.DateTimeProperty()
+    lastupdated = neomodel.IntegerProperty()
+
+
+class ECRRepositoryImage(neomodel.StructuredNode):
+    # id = neomodel.StringProperty(unique_index=True)
+    # tag = neomodel.StringProperty(index=True) # TODO check this
+    # uri = neomodel.StringProperty(index=True)
+    id = neomodel.StringProperty()
+    tag = neomodel.StringProperty() # TODO check this
+    uri = neomodel.StringProperty()
+    firstseen = neomodel.DateTimeProperty()
+    lastupdated = neomodel.IntegerProperty()
+
+    ecr_image = neomodel.RelationshipTo(ECRImage, 'IMAGE')
+
+
+class ECRRepository(neomodel.StructuredNode):
+    # id = neomodel.StringProperty(unique_index=True)
+    # arn = neomodel.StringProperty(unique_index=True)
+    id = neomodel.StringProperty()
+    arn = neomodel.StringProperty()
+    name = neomodel.StringProperty()
+    region = neomodel.StringProperty()
+    created_at = neomodel.DateTimeProperty()
+    # uri = neomodel.StringProperty(index=True)
+    uri = neomodel.StringProperty()
+    firstseen = neomodel.DateTimeProperty()
+    lastupdated = neomodel.IntegerProperty()
+
+    account = neomodel.RelationshipFrom(AWSAccount, "RESOURCE")
+    ecr_repository_image = neomodel.RelationshipTo(ECRRepositoryImage, 'REPO_IMAGE')
 
 
 @timeit
@@ -41,31 +106,27 @@ def load_ecr_repositories(
     neo4j_session: neo4j.Session, repos: List[Dict], region: str, current_aws_account_id: str,
     aws_update_tag: int,
 ) -> None:
-    query = """
-    UNWIND {Repositories} as ecr_repo
-        MERGE (repo:ECRRepository{id: ecr_repo.repositoryArn})
-        ON CREATE SET repo.firstseen = timestamp(),
-            repo.arn = ecr_repo.repositoryArn,
-            repo.name = ecr_repo.repositoryName,
-            repo.region = {Region},
-            repo.created_at = ecr_repo.createdAt
-        SET repo.lastupdated = {aws_update_tag},
-            repo.uri = ecr_repo.repositoryUri
-        WITH repo
-
-        MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
-        MERGE (owner)-[r:RESOURCE]->(repo)
-        ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {aws_update_tag}
-    """
     logger.info(f"Loading {len(repos)} ECR repositories for region {region} into graph.")
-    neo4j_session.run(
-        query,
-        Repositories=repos,
-        Region=region,
-        aws_update_tag=aws_update_tag,
-        AWS_ACCOUNT_ID=current_aws_account_id,
-    ).consume()  # See issue #440
+    try:
+        aws_account = AWSAccount.nodes.get(id=current_aws_account_id)
+    except neomodel.exceptions.ModelDefinitionMismatch as e:
+        print(e)
+        raise
+    for repo in repos:
+        print(repo)
+        ecr_repo = ECRRepository(
+            id=repo['repositoryArn'],
+            arn=repo['repositoryArn'],
+            name=repo['repositoryName'],
+            created_at=datetime.now(),
+            region=region,
+            uri=repo['repositoryUri'],
+            firstseen=datetime.now(),
+            lastupdated=aws_update_tag,
+        )
+        ecr_repo.save()
+        ecr_repo.refresh()
+        ecr_repo.account.connect(aws_account)
 
 
 @timeit
@@ -93,39 +154,25 @@ def transform_ecr_repository_images(repo_data: Dict) -> List[Dict]:
 def load_ecr_repository_images(
         neo4j_session: neo4j.Session, repo_images_list: List[Dict], region: str, aws_update_tag: int,
 ) -> None:
-    query = """
-    UNWIND {RepoList} as repo_img
-        MERGE (ri:ECRRepositoryImage{id: repo_img.repo_uri + COALESCE(":" + repo_img.imageTag, '')})
-        ON CREATE SET ri.firstseen = timestamp()
-        SET ri.lastupdated = {aws_update_tag},
-            ri.tag = repo_img.imageTag,
-            ri.uri = repo_img.repo_uri + COALESCE(":" + repo_img.imageTag, '')
-        WITH ri, repo_img
+    for repo_img in repo_images_list:
+        repo_img_node = ECRRepositoryImage(
+            id=f"{repo_img['repo_uri']}:{repo_img['imageTag']}" if repo_img.get('imageTag') else repo_img['repo_uri'],
+            tag=repo_img['imageTag'],
+            uri=f"{repo_img['repo_uri']}:{repo_img['imageTag']}" if repo_img.get('imageTag') else repo_img['repo_uri'],
+            lastupdated=aws_update_tag,
+        )
+        repo_img_node.save()
+        repo_node = ECRRepository.nodes.get(uri=repo_img['repo_uri'])
+        repo_node.ecr_repository_image.connect(repo_img_node)
 
-        MERGE (img:ECRImage{id: repo_img.imageDigest})
-        ON CREATE SET img.firstseen = timestamp(),
-            img.digest = repo_img.imageDigest
-        SET img.lastupdated = {aws_update_tag},
-            img.region = {Region}
-        WITH ri, img, repo_img
-
-        MERGE (ri)-[r1:IMAGE]->(img)
-        ON CREATE SET r1.firstseen = timestamp()
-        SET r1.lastupdated = {aws_update_tag}
-        WITH ri, repo_img
-
-        MATCH (repo:ECRRepository{uri: repo_img.repo_uri})
-        MERGE (repo)-[r2:REPO_IMAGE]->(ri)
-        ON CREATE SET r2.firstseen = timestamp()
-        SET r2.lastupdated = {aws_update_tag}
-    """
-    logger.info(f"Loading {len(repo_images_list)} ECR repository images in {region} into graph.")
-    neo4j_session.run(
-        query,
-        RepoList=repo_images_list,
-        aws_update_tag=aws_update_tag,
-        Region=region,
-    ).consume()  # See issue #440
+        img_node = ECRImage(
+            id=repo_img['imageDigest'],
+            digest=repo_img['imageDigest'],
+            lastupdated=aws_update_tag,
+            region=region,
+        )
+        img_node.save()
+        repo_img_node.ecr_image.connect(img_node)
 
 
 @timeit

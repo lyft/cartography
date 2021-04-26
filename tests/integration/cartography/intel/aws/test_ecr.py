@@ -1,3 +1,4 @@
+from datetime import datetime
 import cartography.intel.aws.ecr
 import tests.data.aws.ecr
 
@@ -7,6 +8,12 @@ TEST_UPDATE_TAG = 123456789
 
 
 def _ensure_local_neo4j_has_test_ecr_repo_data(neo4j_session):
+    neo4j_session.run(
+        "MERGE (a:AWSAccount{id:{account_id}, name:{account_name}, lastupdated:{update_tag}})",
+        account_id=TEST_ACCOUNT_ID,
+        account_name="DERP",
+        update_tag=TEST_UPDATE_TAG,
+    )
     repo_data = tests.data.aws.ecr.DESCRIBE_REPOSITORIES
     cartography.intel.aws.ecr.load_ecr_repositories(
         neo4j_session,

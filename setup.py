@@ -32,6 +32,7 @@ setup(
         "dnspython>=1.15.0",
         "neo4j>=1.7.6,<4.0.0",
         "neobolt>=1.7.0,<4.0.0",
+        'neomodel==3.3.2',
         "policyuniverse>=1.1.0.0",
         "google-api-python-client>=1.7.8",
         "oauth2client>=4.1.3",

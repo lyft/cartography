@@ -5,6 +5,7 @@ from collections import OrderedDict
 import neobolt.exceptions
 from neo4j import GraphDatabase
 from statsd import StatsClient
+import neomodel
 
 import cartography.intel.analysis
 import cartography.intel.aws
@@ -65,6 +66,7 @@ class Sync:
         :type config: cartography.config.Config
         :param config: Configuration for the sync run.
         """
+        neomodel.config.DATABASE_URL = config.neo4j_uri
         logger.info("Starting sync with update tag '%d'", config.update_tag)
         with neo4j_driver.session() as neo4j_session:
             for stage_name, stage_func in self._stages.items():
