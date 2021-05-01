@@ -10,16 +10,16 @@ import cartography.intel.analysis
 import cartography.intel.aws
 # import cartography.intel.azure
 import cartography.intel.create_indexes
+from cartography.scoped_stats_client import ScopedStatsClient
 # import cartography.intel.crxcavator.crxcavator
 # import cartography.intel.digitalocean
 # import cartography.intel.gcp
 # import cartography.intel.github
 # import cartography.intel.gsuite
 # import cartography.intel.okta
+from cartography.stats import set_stats_client
 
 import cloudanix
-
-from cartography.scoped_stats_client import ScopedStatsClient
 
 logger = logging.getLogger(__name__)
 
@@ -98,7 +98,7 @@ def run_with_config(sync, config):
     """
     # Initialize statsd client if enabled
     if config.statsd_enabled:
-        cartography.util.stats_client = ScopedStatsClient(
+        set_stats_client(
             StatsClient(
                 host=config.statsd_host,
                 port=config.statsd_port,

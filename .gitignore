@@ -14,3 +14,4 @@ build/
 .mypy_cache
 *.vscode
 .env*
+.compose

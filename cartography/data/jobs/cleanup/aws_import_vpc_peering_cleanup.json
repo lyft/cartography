@@ -1,6 +1,16 @@
 {
   "statements": [{
-    "query": "MATCH (n:AWSCidrBlock)<-[:BLOCK_ASSOCIATION]-(:AWSVpc)<-[:RESOURCE]-(:AWSAccount{foreign: true, id: {AWS_ID}})<-[:OWNER]-(:CloudanixWorkspace{id: {WORKSPACE_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+    "query": "MATCH (:CloudanixWorkspace{id: {WORKSPACE_ID}})-[:OWNER]->(:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(:AWSVpc)<-[:ACCEPTER_VPC]-(n:AWSPeeringConnection) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+    "iterative": true,
+    "iterationsize": 100
+  },
+  {
+    "query": "MATCH (:CloudanixWorkspace{id: {WORKSPACE_ID}})-[:OWNER]->(:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(:AWSVpc)<-[:REQUESTER_VPC]-(n:AWSPeeringConnection) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+    "iterative": true,
+    "iterationsize": 100
+  },
+  {
+    "query": "MATCH (n:AWSCidrBlock)<-[:BLOCK_ASSOCIATION]-(:AWSVpc)<-[:RESOURCE]-(:AWSAccount{foreign: true})<-[:OWNER]-(:CloudanixWorkspace{id: {WORKSPACE_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
     "iterative": true,
     "iterationsize": 100
   },
