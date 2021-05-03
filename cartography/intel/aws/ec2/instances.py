@@ -94,7 +94,11 @@ def load_ec2_instances(
     instance.imageid = {ImageId}, instance.instancetype = {InstanceType}, instance.monitoringstate = {MonitoringState},
     instance.state = {State}, instance.launchtime = {LaunchTime}, instance.launchtimeunix = {LaunchTimeUnix},
     instance.region = {Region}, instance.lastupdated = {update_tag},
-    instance.iaminstanceprofile = {IamInstanceProfile}
+    instance.iaminstanceprofile = {IamInstanceProfile}, instance.availabilityzone = {AvailabilityZone},
+    instance.tenancy = {Tenancy}, instance.hostresourcegrouparn = {HostResourceGroupArn},
+    instance.platform = {Platform}, instance.architecture = {Architecture}, instance.ebsoptimized = {EbsOptimized},
+    instance.bootmode = {BootMode}, instance.instancelifecycle = {InstanceLifecycle},
+    instance.hibernationoptions = {HibernationOptions}
     WITH instance
     MATCH (rez:EC2Reservation{reservationid: {ReservationId}})
     MERGE (instance)-[r:MEMBER_OF_EC2_RESERVATION]->(rez)
@@ -191,6 +195,15 @@ def load_ec2_instances(
                 LaunchTime=str(launch_time),
                 LaunchTimeUnix=launch_time_unix,
                 State=instance_state,
+                AvailabilityZone=instance.get("Placement").get("AvailabilityZone"),
+                Tenancy=instance.get("Placement").get("Tenancy"),
+                HostResourceGroupArn=instance.get("Placement").get("HostResourceGroupArn"),
+                Platform=instance.get("Platform"),
+                Architecture=instance.get("Architecture"),
+                EbsOptimized=instance.get("EbsOptimized"),
+                BootMode=instance.get("BootMode"),
+                InstanceLifecycle=instance.get("InstanceLifecycle"),
+                HibernationOptions=instance.get("HibernationOptions").get("Configured"),
                 AWS_ACCOUNT_ID=current_aws_account_id,
                 Region=region,
                 update_tag=update_tag,

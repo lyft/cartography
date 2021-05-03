@@ -26,14 +26,21 @@ def get_ec2_auto_scaling_groups(boto3_session: boto3.session.Session, region: st
 
 @timeit
 def load_ec2_auto_scaling_groups(
-    neo4j_session: neo4j.Session, data: List[Dict], region: str,
-    current_aws_account_id: str, update_tag: int,
+        neo4j_session: neo4j.Session, data: List[Dict], region: str,
+        current_aws_account_id: str, update_tag: int,
 ) -> None:
     ingest_group = """
-    MERGE (group:AutoScalingGroup{arn: {ARN}})
-    ON CREATE SET group.firstseen = timestamp(), group.name = {Name}, group.createdtime = {CreatedTime}
-    SET group.lastupdated = {update_tag}, group.launchconfigurationname = {LaunchConfigurationName},
-    group.maxsize = {MaxSize}, group.region={Region}
+    UNWIND {autoscaling_groups_list} as ag
+    MERGE (group:AutoScalingGroup{arn: ag.AutoScalingGroupARN})
+    ON CREATE SET group.firstseen = timestamp(), group.name = ag.AutoScalingGroupName,
+    group.createdtime = ag.CreatedTime
+    SET group.lastupdated = {update_tag}, group.launchconfigurationname = ag.LaunchConfigurationName,
+    group.maxsize = ag.MaxSize, group.minsize = ag.MinSize, group.defaultcooldown = ag.DefaultCooldown,
+    group.desiredcapacity = ag.DesiredCapacity, group.healthchecktype = ag.HealthCheckType,
+    group.healthcheckgraceperiod = ag.HealthCheckGracePeriod, group.status = ag.Status,
+    group.newinstancesprotectedfromscalein = ag.NewInstancesProtectedFromScaleIn,
+    group.maxinstancelifetime = ag.MaxInstanceLifetime, group.capacityrebalance = ag.CapacityRebalance,
+    group.region={Region}
     WITH group
     MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
     MERGE (aa)-[r:RESOURCE]->(group)
@@ -42,7 +49,8 @@ def load_ec2_auto_scaling_groups(
     """
 
     ingest_vpc = """
-    MERGE (subnet:EC2Subnet{subnetid: {SubnetId}})
+    UNWIND {vpc_list} as vpc
+    MERGE (subnet:EC2Subnet{subnetid: vpc.SubnetId})
     ON CREATE SET subnet.firstseen = timestamp()
     SET subnet.lastupdated = {update_tag}
     WITH subnet
@@ -53,9 +61,10 @@ def load_ec2_auto_scaling_groups(
     """
 
     ingest_instance = """
-    MERGE (instance:Instance:EC2Instance{id: {InstanceId}})
+    UNWIND {instances_list} as i
+    MERGE (instance:Instance:EC2Instance{id: i.InstanceId})
     ON CREATE SET instance.firstseen = timestamp()
-    SET instance.instanceid = {InstanceId}, instance.lastupdated = {update_tag}, instance.region={Region}
+    SET instance.lastupdated = {update_tag}, instance.region={Region}
     WITH instance
     MATCH (group:AutoScalingGroup{arn: {GROUPARN}})
     MERGE (instance)-[r:MEMBER_AUTO_SCALE_GROUP]->(group)
@@ -68,46 +77,41 @@ def load_ec2_auto_scaling_groups(
     SET r.lastupdated = {update_tag}
     """
 
+    # neo4j does not accept datetime objects and values. This loop is used to convert
+    # these values to string.
     for group in data:
-        name = group["AutoScalingGroupName"]
-        createtime = group.get("CreatedTime")
-        lauchconfig_name = group.get("LaunchConfigurationName")
+        group['CreatedTime'] = str(group['CreatedTime'])
+
+    neo4j_session.run(
+        ingest_group,
+        autoscaling_groups_list=data,
+        AWS_ACCOUNT_ID=current_aws_account_id,
+        Region=region,
+        update_tag=update_tag,
+    )
+
+    for group in data:
         group_arn = group["AutoScalingGroupARN"]
-        max_size = group["MaxSize"]
-
-        neo4j_session.run(
-            ingest_group,
-            ARN=group_arn,
-            Name=name,
-            CreatedTime=str(createtime),
-            LaunchConfigurationName=lauchconfig_name,
-            MaxSize=max_size,
-            AWS_ACCOUNT_ID=current_aws_account_id,
-            Region=region,
-            update_tag=update_tag,
-        )
-
         if group.get('VPCZoneIdentifier'):
             vpclist = group["VPCZoneIdentifier"]
-            for vpc in str(vpclist).split(','):
-                neo4j_session.run(
-                    ingest_vpc,
-                    SubnetId=vpc,
-                    GROUPARN=group_arn,
-                    update_tag=update_tag,
-                )
+            data = str(vpclist).split(',')
+            neo4j_session.run(
+                ingest_vpc,
+                vpc_list=data,
+                GROUPARN=group_arn,
+                update_tag=update_tag,
+            )
 
         if group.get("Instances"):
-            for instance in group["Instances"]:
-                instanceid = instance["InstanceId"]
-                neo4j_session.run(
-                    ingest_instance,
-                    InstanceId=instanceid,
-                    GROUPARN=group_arn,
-                    AWS_ACCOUNT_ID=current_aws_account_id,
-                    Region=region,
-                    update_tag=update_tag,
-                )
+            data = group["Instances"]
+            neo4j_session.run(
+                ingest_instance,
+                instances_list=data,
+                GROUPARN=group_arn,
+                AWS_ACCOUNT_ID=current_aws_account_id,
+                Region=region,
+                update_tag=update_tag,
+            )
 
 
 @timeit
@@ -121,8 +125,9 @@ def cleanup_ec2_auto_scaling_groups(neo4j_session: neo4j.Session, common_job_par
 
 @timeit
 def sync_ec2_auto_scaling_groups(
-    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
-    update_tag: int, common_job_parameters: Dict,
+        neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str],
+        current_aws_account_id: str,
+        update_tag: int, common_job_parameters: Dict,
 ) -> None:
     for region in regions:
         logger.debug("Syncing auto scaling groups for region '%s' in account '%s'.", region, current_aws_account_id)

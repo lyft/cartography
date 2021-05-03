@@ -119,6 +119,8 @@
   - [Relationships](#relationships-54)
 - [APIGatewayResource](#apigatewayresource)
   - [Relationships](#relationships-55)
+- [AutoScalingGroup](#autoscalinggroup)
+  - [Relationships](#relationships-56)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -797,6 +799,15 @@ Our representation of an AWS [EC2 Instance](https://docs.aws.amazon.com/AWSEC2/l
 | launchtimeunix | The time the instance was launched in unix time |
 | region | The AWS region this Instance is running in|
 | exposed\_internet |  The `exposed_internet` flag on an EC2 instance is set to `True` when (1) the instance is part of an EC2 security group or is connected to a network interface connected to an EC2 security group that allows connectivity from the 0.0.0.0/0 subnet or (2) the instance is connected to an Elastic Load Balancer that has its own `exposed_internet` flag set to `True`. |
+| availabilityzone | The Availability Zone of the instance.|
+| tenancy | The tenancy of the instance.|
+| hostresourcegrouparn | The ARN of the host resource group in which to launch the instances.|
+| platform | The value is `Windows` for Windows instances; otherwise blank.|
+| architecture | The architecture of the image.|
+| ebsoptimized | Indicates whether the instance is optimized for Amazon EBS I/O. |
+| bootmode | The boot mode of the instance.|
+| instancelifecycle | Indicates whether this is a Spot Instance or a Scheduled Instance.|
+| hibernationoptions | Indicates whether the instance is enabled for hibernation.|
 
 
 ### Relationships
@@ -1008,6 +1019,8 @@ Representation of an AWS EC2 [Subnet](https://docs.aws.amazon.com/AWSEC2/latest/
 | subnet_arn | The Amazon Resource Name (ARN) of the subnet |
 | availability_zone | The Availability Zone of the subnet |
 | availability_zone_id | The AZ ID of the subnet |
+| state | The current state of the subnet. |
+| assignipv6addressoncreation | Indicates whether a network interface created in this subnet (including a network interface created by RunInstances ) receives an IPv6 address. |
 
 
 ### Relationships
@@ -2038,6 +2051,38 @@ Representation of an AWS [API Gateway Resource](https://docs.aws.amazon.com/apig
 | path |  The timestamp when the REST API was created |
 | pathpart |  The version identifier for the API |
 | parentid | A nullable integer that is used to enable or disable the compression of the REST API |
+
+### Relationships
+
+- AWS API Gateway REST APIs may also have API Gateway Resource resources.
+
+        ```
+        (APIGatewayRestAPI)-[RESOURCE]->(APIGatewayResource)
+        ```
+
+## AutoScalingGroup
+
+Representation of an AWS [Auto Scaling Group Resource](https://docs.aws.amazon.com/autoscaling/ec2/userguide/AutoScalingGroup.html).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **arn** | The ARN of the Auto Scaling Group|
+| name |  The name of the Auto Scaling group. |
+| createdtime | The date and time the group was created. |
+| launchconfigurationname | The name of the associated launch configuration. |
+| maxsize | The maximum size of the group.|
+| minsize | The minimum size of the group.|
+| defaultcooldown | The duration of the default cooldown period, in seconds. |
+| desiredcapacity | The desired size of the group. |
+| healthchecktype | The service to use for the health checks. |
+| healthcheckgraceperiod | The amount of time, in seconds, that Amazon EC2 Auto Scaling waits before checking the health status of an EC2 instance that has come into service.|
+| status | The current state of the group when the DeleteAutoScalingGroup operation is in progress. |
+| newinstancesprotectedfromscalein | Indicates whether newly launched instances are protected from termination by Amazon EC2 Auto Scaling when scaling in.|
+| maxinstancelifetime | The maximum amount of time, in seconds, that an instance can be in service. |
+| capacityrebalance | Indicates whether Capacity Rebalancing is enabled. |
+| region | The region of the auto scaling group. |
 
 ### Relationships
 
