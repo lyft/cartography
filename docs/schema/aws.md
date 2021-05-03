@@ -2086,8 +2086,18 @@ Representation of an AWS [Auto Scaling Group Resource](https://docs.aws.amazon.c
 
 ### Relationships
 
-- AWS API Gateway REST APIs may also have API Gateway Resource resources.
+- AWS Auto Scaling Groups are a resource under the AWS Account.
 
         ```
-        (APIGatewayRestAPI)-[RESOURCE]->(APIGatewayResource)
+        (AWSAccount)-[RESOURCE]->(AutoScalingGroup)
+        ```
+- AWS Auto Scaling Groups has one or more subnets/vpc identifiers.
+
+        ```
+        (AutoScalingGroup)-[VPC_IDENTIFIER]->(EC2Subnet)
+        ```
+- AWS EC2 Instances are members of one or more AWS Auto Scaling Groups.
+
+        ```
+        (EC2Instance)-[MEMBER_AUTO_SCALE_GROUP]->(AutoScalingGroup)
         ```
