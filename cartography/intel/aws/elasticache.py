@@ -93,11 +93,11 @@ def load_elasticache_clusters(
 
 
 @timeit
-def cleanup(neo4j_session: neo4j.Session, current_aws_account_id: str, update_tag: int) -> None:
+def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job(
         'aws_import_elasticache_cleanup.json',
         neo4j_session,
-        {'UPDATE_TAG': update_tag, 'AWS_ID': current_aws_account_id},
+        common_job_parameters
     )
 
 
@@ -110,4 +110,4 @@ def sync(
         logger.info(f"Syncing ElastiCache clusters for region '{region}' in account {current_aws_account_id}")
         clusters = get_elasticache_clusters(boto3_session, region)
         load_elasticache_clusters(neo4j_session, clusters, region, current_aws_account_id, update_tag)
-    cleanup(neo4j_session, current_aws_account_id, update_tag)
+    cleanup(neo4j_session, common_job_parameters)

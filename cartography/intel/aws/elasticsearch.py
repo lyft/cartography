@@ -220,11 +220,11 @@ def _process_access_policy(neo4j_session: neo4j.Session, domain_id: str, domain_
 
 
 @timeit
-def cleanup(neo4j_session: neo4j.Session, update_tag: int, aws_account_id: int) -> None:
+def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job(
         'aws_import_es_cleanup.json',
         neo4j_session,
-        {'UPDATE_TAG': update_tag, 'AWS_ID': aws_account_id},
+        common_job_parameters,
     )
 
 
@@ -239,4 +239,4 @@ def sync(
         data = _get_es_domains(client)
         _load_es_domains(neo4j_session, data, current_aws_account_id, update_tag)
 
-    cleanup(neo4j_session, update_tag, current_aws_account_id)
+    cleanup(neo4j_session, common_job_parameters)

@@ -1,3 +1,4 @@
+CREATE INDEX ON :CloudanixWorkspace(id);
 CREATE INDEX ON :APIGatewayClientCertificate(id);
 CREATE INDEX ON :APIGatewayRestAPI(id);
 CREATE INDEX ON :APIGatewayResource(id);
@@ -12,6 +13,9 @@ CREATE INDEX ON :AWSInternetGateway(id);
 CREATE INDEX ON :AWSIpv4CidrBlock(id);
 CREATE INDEX ON :AWSIpv6CidrBlock(id);
 CREATE INDEX ON :AWSLambda(id);
+CREATE INDEX ON :AWSLambdaEventSourceMapping(id);
+CREATE INDEX ON :AWSLambdaFunctionAlias(id);
+CREATE INDEX ON :AWSLambdaLayer(id);
 CREATE INDEX ON :AWSPeeringConnection(id);
 CREATE INDEX ON :AWSPolicy(id);
 CREATE INDEX ON :AWSPolicy(name);

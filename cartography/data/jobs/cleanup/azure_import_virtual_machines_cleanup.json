@@ -6,17 +6,29 @@
             "iterationsize": 100
         },
         {
+<<<<<<< HEAD
+            "query": "MATCH (:AzureDataDisk)-[r:ATTACHED_TO]->(:VirtualMachine)-[:RESOURCE]->(:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+=======
             "query": "MATCH (:AzureDataDisk)-[r:ATTACHED_TO]->(:AzureVirtualMachine)-[:RESOURCE]->(:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+>>>>>>> master-upstream
             "iterative": true,
             "iterationsize": 100
         },
         {
+<<<<<<< HEAD
+            "query": "MATCH (n:VirtualMachine)-[:RESOURCE]->(:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+=======
             "query": "MATCH (n:AzureVirtualMachine)-[:RESOURCE]->(:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+>>>>>>> master-upstream
             "iterative": true,
             "iterationsize": 100
         },
         {
+<<<<<<< HEAD
+            "query": "MATCH (:VirtualMachine)-[r:RESOURCE]->(:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+=======
             "query": "MATCH (:AzureVirtualMachine)-[r:RESOURCE]->(:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+>>>>>>> master-upstream
             "iterative": true,
             "iterationsize": 100
         }

@@ -116,38 +116,54 @@ def _autodiscover_accounts(
 def _sync_multiple_accounts(
     neo4j_session: neo4j.Session,
     accounts: Dict[str, str],
-    sync_tag: int,
+    config: Config,
     common_job_parameters: Dict[str, Any],
     aws_requested_syncs: List[str] = [],
 ) -> None:
     logger.info("Syncing AWS accounts: %s", ', '.join(accounts.values()))
-    organizations.sync(neo4j_session, accounts, sync_tag, common_job_parameters)
+    organizations.sync(neo4j_session, accounts, config.update_tag, common_job_parameters)
 
     for profile_name, account_id in accounts.items():
         logger.info("Syncing AWS account with ID '%s' using configured profile '%s'.", account_id, profile_name)
         common_job_parameters["AWS_ID"] = account_id
-        boto3_session = boto3.Session(profile_name=profile_name)
+        # boto3_session = boto3.Session(profile_name=profile_name)
 
-        _autodiscover_accounts(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters)
+        if config.credentials['type'] == 'self':
+            boto3_session = boto3.Session(
+                # profile_name=profile_name,
+                aws_access_key_id=config.credentials['aws_access_key_id'],
+                aws_secret_access_key=config.credentials['aws_secret_access_key'],
+            )
+
+        elif config.credentials['type'] == 'assumerole':
+            boto3_session = boto3.Session(
+                # profile_name=profile_name,
+                aws_access_key_id=config.credentials['aws_access_key_id'],
+                aws_secret_access_key=config.credentials['aws_secret_access_key'],
+                aws_session_token=config.credentials['session_token']
+            )
+
+        _autodiscover_accounts(neo4j_session, boto3_session, account_id, config.update_tag, common_job_parameters)
 
         _sync_one_account(
             neo4j_session,
             boto3_session,
             account_id,
-            sync_tag,
+            config.update_tag,
             common_job_parameters,
             aws_requested_syncs=aws_requested_syncs,  # Could be replaced later with per-account requested syncs
         )
 
     del common_job_parameters["AWS_ID"]
 
-    # There may be orphan Principals which point outside of known AWS accounts. This job cleans
-    # up those nodes after all AWS accounts have been synced.
-    run_cleanup_job('aws_post_ingestion_principals_cleanup.json', neo4j_session, common_job_parameters)
+    # Commented this out to support multi-account setup
+    # # There may be orphan Principals which point outside of known AWS accounts. This job cleans
+    # # up those nodes after all AWS accounts have been synced.
+    # run_cleanup_job('aws_post_ingestion_principals_cleanup.json', neo4j_session, common_job_parameters)
 
-    # There may be orphan DNS entries that point outside of known AWS zones. This job cleans
-    # up those entries after all AWS accounts have been synced.
-    run_cleanup_job('aws_post_ingestion_dns_cleanup.json', neo4j_session, common_job_parameters)
+    # # There may be orphan DNS entries that point outside of known AWS zones. This job cleans
+    # # up those entries after all AWS accounts have been synced.
+    # run_cleanup_job('aws_post_ingestion_dns_cleanup.json', neo4j_session, common_job_parameters)
 
 
 @timeit
@@ -155,9 +171,24 @@ def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
     common_job_parameters = {
         "UPDATE_TAG": config.update_tag,
         "permission_relationships_file": config.permission_relationships_file,
+        "WORKSPACE_ID": config.params['workspace']['id_string']
     }
     try:
-        boto3_session = boto3.Session()
+        # boto3_session = boto3.Session()
+
+        if config.credentials['type'] == 'self':
+            boto3_session = boto3.Session(
+                aws_access_key_id=config.credentials['aws_access_key_id'],
+                aws_secret_access_key=config.credentials['aws_secret_access_key']
+            )
+
+        elif config.credentials['type'] == 'assumerole':
+            boto3_session = boto3.Session(
+                aws_access_key_id=config.credentials['aws_access_key_id'],
+                aws_secret_access_key=config.credentials['aws_secret_access_key'],
+                aws_session_token=config.credentials['session_token']
+            )
+
     except (botocore.exceptions.BotoCoreError, botocore.exceptions.ClientError) as e:
         logger.debug("Error occurred calling boto3.Session().", exc_info=True)
         logger.error(
@@ -196,7 +227,7 @@ def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
     _sync_multiple_accounts(
         neo4j_session,
         aws_accounts,
-        config.update_tag,
+        config,
         common_job_parameters,
         requested_syncs,
     )
