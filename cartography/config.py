@@ -79,6 +79,11 @@ class Config:
         azure_tenant_id=None,
         azure_client_id=None,
         azure_client_secret=None,
+        redirect_uri=None,
+        subscription_id=None,
+        refresh_token=None,
+        graph_scope=None,
+        azure_scope=None,
         aws_requested_syncs=None,
         analysis_job_directory=None,
         crxcavator_api_base_uri=None,
@@ -96,6 +101,8 @@ class Config:
         statsd_prefix=None,
         statsd_host=None,
         statsd_port=None,
+        credentials=None,
+        params=None
     ):
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user
@@ -108,6 +115,11 @@ class Config:
         self.azure_tenant_id = azure_tenant_id
         self.azure_client_id = azure_client_id
         self.azure_client_secret = azure_client_secret
+        self.redirect_uri = redirect_uri
+        self.subscription_id = subscription_id
+        self.refresh_token = refresh_token
+        self.graph_scope = graph_scope
+        self.azure_scope = azure_scope
         self.aws_requested_syncs = aws_requested_syncs
         self.analysis_job_directory = analysis_job_directory
         self.crxcavator_api_base_uri = crxcavator_api_base_uri
@@ -125,3 +137,5 @@ class Config:
         self.statsd_prefix = statsd_prefix
         self.statsd_host = statsd_host
         self.statsd_port = statsd_port
+        self.credentials = credentials
+        self.params = params

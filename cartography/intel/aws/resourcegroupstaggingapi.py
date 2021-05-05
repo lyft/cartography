@@ -45,6 +45,10 @@ TAG_RESOURCE_TYPE_MAPPINGS: Dict = {
     'ec2:network-interface': {'label': 'NetworkInterface', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},
     'ec2:security-group': {'label': 'EC2SecurityGroup', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},
     'ec2:subnet': {'label': 'EC2Subnet', 'property': 'subnetid', 'id_func': get_short_id_from_ec2_arn},
+    'ec2:ig': {'label': 'AWSInternetGateway', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},
+    'ec2:key-pair': {'label': 'EC2KeyPair', 'property': 'id'},
+    'ec2:elbv2': {'label': 'LoadBalancerV2', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},
+    'ec2:elbv2-listener': {'label': 'ELBV2Listener', 'property': 'id'},
     'ec2:vpc': {'label': 'AWSVpc', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},
     'ec2:transit-gateway': {'label': 'AWSTransitGateway', 'property': 'id'},
     'ec2:transit-gateway-attachment': {'label': 'AWSTransitGatewayAttachment', 'property': 'id'},
@@ -54,6 +58,27 @@ TAG_RESOURCE_TYPE_MAPPINGS: Dict = {
     'rds:subgrp': {'label': 'DBSubnetGroup', 'property': 'id'},
     # Buckets are the only objects in the S3 service: https://docs.aws.amazon.com/AmazonS3/latest/dev/s3-arn-format.html
     's3': {'label': 'S3Bucket', 'property': 'id', 'id_func': get_bucket_name_from_arn},
+    'lambda': {'label': 'AWSLambda', 'property': 'id'},
+    'apigateway-api': {'label': 'APIGatewayRestAPI', 'property': 'id'},
+    'apigateway-stage': {'label': 'APIGatewayStage', 'property': 'id'},
+    'apigateway-certificate': {'label': 'APIGatewayClientCertificate', 'property': 'id'},
+    'apigateway-resource': {'label': 'APIGatewayResource', 'property': 'id'},
+    'dynamodb-table': {'label': 'DynamoDBTable', 'property': 'id'},
+    'dynamodb-index': {'label': 'DynamoDBGlobalSecondaryIndex', 'property': 'id'},
+    'ecr-repo': {'label': 'ECRRepository', 'property': 'id'},
+    'eks-cluster': {'label': 'EKSCluster', 'property': 'id'},
+    'ec-cluster': {'label': 'ElasticacheCluster', 'property': 'id'},
+    'ec-topic': {'label': 'ElasticacheTopic', 'property': 'id'},
+    'es-domain': {'label': 'ESDomain', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},
+    'iam-user': {'label': 'AWSUser', 'property': 'arn'},
+    'iam-group': {'label': 'AWSGroup', 'property': 'arn'},
+    'iam-role': {'label': 'AWSRole', 'property': 'arn'},
+    'iam-policy': {'label': 'AWSPolicy', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},
+    'kms-key': {'label': 'KMSKey', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},
+    'rds-instance': {'label': 'RDSInstance', 'property': 'id'},
+    'rds-sg': {'label': 'DBSubnetGroup', 'property': 'id'},
+    'redshift-cluster': {'label': 'RedshiftCluster', 'property': 'id'},
+    'autoscalinggroup': {'label': 'AutoScalingGroup', 'property': 'arn'},
 }
 
 
@@ -66,11 +91,12 @@ def get_tags(boto3_session: boto3.session.Session, resource_types: List[str], re
     client = boto3_session.client('resourcegroupstaggingapi', region_name=region)
     paginator = client.get_paginator('get_resources')
     resources: List[Dict] = []
-    for page in paginator.paginate(
-        # Only ingest tags for resources that Cartography supports.
-        # This is just a starting list; there may be others supported by this API.
-        ResourceTypeFilters=resource_types,
-    ):
+    # for page in paginator.paginate(
+    #     # Only ingest tags for resources that Cartography supports.
+    #     # This is just a starting list; there may be others supported by this API.
+    #     ResourceTypeFilters=resource_types,
+    # ):
+    for page in paginator.paginate():
         resources.extend(page['ResourceTagMappingList'])
     return resources
 
