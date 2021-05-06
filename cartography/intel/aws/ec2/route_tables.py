@@ -155,7 +155,7 @@ def load_routes(
         SET r.lastupdated = {update_tag},
         r.gateway_id  =  route.GatewayId
 
-        MERGE (rt)-[ra:LOCAL_ROUTE]->(r)
+        MERGE (rt)-[ra:ROUTE]->(r)
         ON CREATE SET ra.firstseen = timestamp()
         SET ra.lastupdated = {update_tag}
     )
@@ -169,7 +169,7 @@ def load_routes(
         SET r.lastupdated = {update_tag},
         r.gateway_id  =  route.GatewayId
 
-        MERGE (rt)-[ra:IGW_ROUTE]->(r)
+        MERGE (rt)-[ra:ROUTE]->(r)
         ON CREATE SET ra.firstseen = timestamp()
         SET ra.lastupdated = {update_tag}
 
@@ -193,7 +193,7 @@ def load_routes(
         SET r.lastupdated = {update_tag},
         r.vgw_id  =  route.GatewayId
 
-        MERGE (rt)-[ra:VGW_ROUTE]->(r)
+        MERGE (rt)-[ra:ROUTE]->(r)
         ON CREATE SET ra.firstseen = timestamp()
         SET ra.lastupdated = {update_tag}
 
@@ -216,7 +216,7 @@ def load_routes(
         SET r.lastupdated = {update_tag},
         r.peeringconnection_id  =  route.VpcPeeringConnectionId
 
-        MERGE (rt)-[ra:PCX_ROUTE]->(r)
+        MERGE (rt)-[ra:ROUTE]->(r)
         ON CREATE SET ra.firstseen = timestamp()
         SET ra.lastupdated = {update_tag}
 
@@ -238,7 +238,7 @@ def load_routes(
         SET r.lastupdated = {update_tag},
         r.ngw_id  =  route.NatGatewayId
 
-        MERGE (rt)-[ra:NAT_ROUTE]->(r)
+        MERGE (rt)-[ra:ROUTE]->(r)
         ON CREATE SET ra.firstseen = timestamp()
         SET ra.lastupdated = {update_tag}
 
@@ -260,7 +260,7 @@ def load_routes(
         SET r.lastupdated = {update_tag},
         r.tgw_id  =  route.TransitGatewayId
 
-        MERGE (rt)-[ra:TGW_ROUTE]->(r)
+        MERGE (rt)-[ra:ROUTE]->(r)
         ON CREATE SET ra.firstseen = timestamp()
         SET ra.lastupdated = {update_tag}
 
@@ -282,7 +282,7 @@ def load_routes(
         SET r.lastupdated = {update_tag},
         r.cgw_id  =  route.CarrierGatewayId
 
-        MERGE (rt)-[ra:NAT_ROUTE]->(r)
+        MERGE (rt)-[ra:ROUTE]->(r)
         ON CREATE SET ra.firstseen = timestamp()
         SET ra.lastupdated = {update_tag}
 
@@ -308,7 +308,7 @@ def load_routes(
         SET r.lastupdated = {update_tag},
         r.gateway_id  =  route.GatewayId
 
-        MERGE (rt)-[ra:LOCAL_ROUTE]->(r)
+        MERGE (rt)-[ra:ROUTE]->(r)
         ON CREATE SET ra.firstseen = timestamp()
         SET ra.lastupdated = {update_tag}
     )
@@ -322,7 +322,7 @@ def load_routes(
         SET r.lastupdated = {update_tag},
         r.gateway_id  =  route.GatewayId
 
-        MERGE (rt)-[ra:IGW_ROUTE]->(r)
+        MERGE (rt)-[ra:ROUTE]->(r)
         ON CREATE SET ra.firstseen = timestamp()
         SET ra.lastupdated = {update_tag}
 
@@ -346,7 +346,7 @@ def load_routes(
         SET r.lastupdated = {update_tag},
         r.vgw_id  =  route.GatewayId
 
-        MERGE (rt)-[ra:VGW_ROUTE]->(r)
+        MERGE (rt)-[ra:ROUTE]->(r)
         ON CREATE SET ra.firstseen = timestamp()
         SET ra.lastupdated = {update_tag}
 
@@ -369,7 +369,7 @@ def load_routes(
         SET r.lastupdated = {update_tag},
         r.peeringconnection_id  =  route.VpcPeeringConnectionId
 
-        MERGE (rt)-[ra:PCX_ROUTE]->(r)
+        MERGE (rt)-[ra:ROUTE]->(r)
         ON CREATE SET ra.firstseen = timestamp()
         SET ra.lastupdated = {update_tag}
 
@@ -391,7 +391,7 @@ def load_routes(
         SET r.lastupdated = {update_tag},
         r.ngw_id  =  route.NatGatewayId
 
-        MERGE (rt)-[ra:NAT_ROUTE]->(r)
+        MERGE (rt)-[ra:ROUTE]->(r)
         ON CREATE SET ra.firstseen = timestamp()
         SET ra.lastupdated = {update_tag}
 
@@ -413,7 +413,7 @@ def load_routes(
         SET r.lastupdated = {update_tag},
         r.tgw_id  =  route.TransitGatewayId
 
-        MERGE (rt)-[ra:TGW_ROUTE]->(r)
+        MERGE (rt)-[ra:ROUTE]->(r)
         ON CREATE SET ra.firstseen = timestamp()
         SET ra.lastupdated = {update_tag}
 
@@ -435,7 +435,7 @@ def load_routes(
         SET r.lastupdated = {update_tag},
         r.cgw_id  =  route.CarrierGatewayId
 
-        MERGE (rt)-[ra:NAT_ROUTE]->(r)
+        MERGE (rt)-[ra:ROUTE]->(r)
         ON CREATE SET ra.firstseen = timestamp()
         SET ra.lastupdated = {update_tag}
 
