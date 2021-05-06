@@ -22,10 +22,10 @@ def test_load_images(neo4j_session):
 
     nodes = neo4j_session.run(
         """
-        MATCH (r:EC2Images) RETURN r.id;
+        MATCH (r:EC2Image) RETURN r.id;
         """,
     )
-    actual_nodes = {n['r.arn'] for n in nodes}
+    actual_nodes = {n['r.id'] for n in nodes}
 
     assert actual_nodes == expected_nodes
 
@@ -59,7 +59,7 @@ def test_load_images_relationships(neo4j_session):
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:AWSAccount)-[:RESOURCE]->(n2:EC2Images) RETURN n1.id, n2.id;
+        MATCH (n1:AWSAccount)-[:RESOURCE]->(n2:EC2Image) RETURN n1.id, n2.id;
         """,
     )
     actual = {

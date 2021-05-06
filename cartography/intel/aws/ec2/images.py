@@ -33,7 +33,7 @@ def load_images(
 ) -> None:
     ingest_images = """
     UNWIND {images_list} as image
-    MERGE (i:EC2Images{id: image.ImageId})
+    MERGE (i:EC2Image{id: image.ImageId})
     ON CREATE SET i.firstseen = timestamp(), i.name = image.Name, i.creationdate = image.CreationDate
     SET i.lastupdated = {update_tag},
     i.architecture = image.Architecture, i.location = image.ImageLocation, i.type = image.ImageType,
