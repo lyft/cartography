@@ -127,6 +127,8 @@
   - [Relationships](#relationships-58)
 - [AutoScalingGroup](#autoscalinggroup)
   - [Relationships](#relationships-59)
+- [EC2Image](#ec2image)
+  - [Relationships](#relationships-60)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -153,6 +155,7 @@ Representation of an AWS Account.
                               AutoScalingGroup,
                               DNSZone,
                               DynamoDBTable,
+                              EC2Image,
                               EC2Instance,
                               EC2Reservation,
                               EC2SecurityGroup,
@@ -2212,4 +2215,39 @@ Representation of an AWS [Auto Scaling Group Resource](https://docs.aws.amazon.c
 
         ```
         (EC2Instance)-[MEMBER_AUTO_SCALE_GROUP]->(AutoScalingGroup)
+        ```
+
+## EC2Image
+
+Representation of an AWS [EC2 Images (AMIs)](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AMIs.html).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The ID of the AMI.|
+| name | The name of the AMI that was provided during image creation. |
+| creationdate | The date and time the image was created. |
+| architecture | The architecture of the image. |
+| location | The location of the AMI.|
+| type | The type of image.|
+| ispublic | Indicates whether the image has public launch permissions. |
+| platform | This value is set to `windows` for Windows AMIs; otherwise, it is blank. |
+| usageoperation | The operation of the Amazon EC2 instance and the billing code that is associated with the AMI.  |
+| state | The current state of the AMI.|
+| description | The description of the AMI that was provided during image creation.|
+| enasupport | Specifies whether enhanced networking with ENA is enabled.|
+| hypervisor | The hypervisor type of the image.|
+| rootdevicename | The device name of the root device volume (for example, `/dev/sda1` ). |
+| rootdevicetype | The type of root device used by the AMI. |
+| virtualizationtype | The type of virtualization of the AMI. |
+| bootmode | The boot mode of the image. |
+| region | The region of the image. |
+
+### Relationships
+
+- AWS EC2 Images (AMIs) are a resource under the AWS Account.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(EC2Image)
         ```
