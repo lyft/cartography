@@ -38,7 +38,7 @@ CREATE INDEX ON :DOProject(id);
 CREATE INDEX ON :DynamoDBGlobalSecondaryIndex(id);
 CREATE INDEX ON :DynamoDBTable(arn);
 CREATE INDEX ON :DynamoDBTable(id);
-CREATE INDEX ON :EC2Images(id);
+CREATE INDEX ON :EC2Image(id);
 CREATE INDEX ON :EC2Instance(id);
 CREATE INDEX ON :EC2Instance(instanceid);
 CREATE INDEX ON :EC2Instance(publicdnsname);

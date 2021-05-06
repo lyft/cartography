@@ -121,7 +121,7 @@
   - [Relationships](#relationships-55)
 - [AutoScalingGroup](#autoscalinggroup)
   - [Relationships](#relationships-56)
-- [EC2Images](#ec2images)
+- [EC2Image](#ec2image)
   - [Relationships](#relationships-57)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -149,7 +149,7 @@ Representation of an AWS Account.
                               AutoScalingGroup,
                               DNSZone,
                               DynamoDBTable,
-                              EC2Images,
+                              EC2Image,
                               EC2Instance,
                               EC2Reservation,
                               EC2SecurityGroup,
@@ -2105,7 +2105,7 @@ Representation of an AWS [Auto Scaling Group Resource](https://docs.aws.amazon.c
         (EC2Instance)-[MEMBER_AUTO_SCALE_GROUP]->(AutoScalingGroup)
         ```
 
-## EC2Images
+## EC2Image
 
 Representation of an AWS [EC2 Images (AMIs)](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AMIs.html).
 
@@ -2137,5 +2137,5 @@ Representation of an AWS [EC2 Images (AMIs)](https://docs.aws.amazon.com/AWSEC2/
 - AWS EC2 Images (AMIs) are a resource under the AWS Account.
 
         ```
-        (AWSAccount)-[RESOURCE]->(EC2Images)
+        (AWSAccount)-[RESOURCE]->(EC2Image)
         ```
