@@ -1,14 +1,14 @@
-import cartography.intel.aws.ec2.images
-import tests.data.aws.ec2.images
+import cartography.intel.aws.ec2.reserved_instances
+import tests.data.aws.ec2.reserved_instances
 
 TEST_ACCOUNT_ID = '000000000000'
 TEST_REGION = 'eu-west-1'
 TEST_UPDATE_TAG = 123456789
 
 
-def test_load_images(neo4j_session):
-    data = tests.data.aws.ec2.images.DESCRIBE_IMAGES
-    cartography.intel.aws.ec2.images.load_images(
+def test_load_reserved_instances(neo4j_session):
+    data = tests.data.aws.ec2.reserved_instances.DESCRIBE_RESERVED_INSTANCES
+    cartography.intel.aws.ec2.reserved_instances.load_reserved_instances(
         neo4j_session,
         data,
         TEST_REGION,
@@ -17,20 +17,20 @@ def test_load_images(neo4j_session):
     )
 
     expected_nodes = {
-        "img-01", "img-02",
+        "res-01", "res-02",
     }
 
     nodes = neo4j_session.run(
         """
-        MATCH (r:EC2Images) RETURN r.id;
+        MATCH (r:EC2ReservedInstance) RETURN r.id;
         """,
     )
-    actual_nodes = {n['r.arn'] for n in nodes}
+    actual_nodes = {n['r.id'] for n in nodes}
 
     assert actual_nodes == expected_nodes
 
 
-def test_load_images_relationships(neo4j_session):
+def test_load_reserved_instances_relationships(neo4j_session):
     # Create Test AWSAccount
     neo4j_session.run(
         """
@@ -42,24 +42,25 @@ def test_load_images_relationships(neo4j_session):
         aws_update_tag=TEST_UPDATE_TAG,
     )
 
-    # Load Test Images
-    data = tests.data.aws.ec2.images.DESCRIBE_IMAGES
-    cartography.intel.aws.ec2.images.load_images(
+    # Load Test Reserved Instances
+    data = tests.data.aws.ec2.reserved_instances.DESCRIBE_RESERVED_INSTANCES
+    cartography.intel.aws.ec2.reserved_instances.load_reserved_instances(
         neo4j_session,
         data,
         TEST_REGION,
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG,
     )
+
     expected = {
-        (TEST_ACCOUNT_ID, 'img-01'),
-        (TEST_ACCOUNT_ID, 'img-02'),
+        (TEST_ACCOUNT_ID, 'res-01'),
+        (TEST_ACCOUNT_ID, 'res-02'),
     }
 
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:AWSAccount)-[:RESOURCE]->(n2:EC2Images) RETURN n1.id, n2.id;
+        MATCH (n1:AWSAccount)-[:RESOURCE]->(n2:EC2ReservedInstance) RETURN n1.id, n2.id;
         """,
     )
     actual = {

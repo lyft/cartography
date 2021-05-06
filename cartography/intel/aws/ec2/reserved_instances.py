@@ -27,30 +27,36 @@ def get_reserved_instances(boto3_session: boto3.session.Session, region: str) ->
 
 
 @timeit
-def load_images(
+def load_reserved_instances(
         neo4j_session: neo4j.Session, data: List[Dict], region: str,
         current_aws_account_id: str, update_tag: int,
 ) -> None:
-    ingest_images = """
-    UNWIND {images_list} as image
-    MERGE (i:EC2Images{id: image.ImageId})
-    ON CREATE SET i.firstseen = timestamp(), i.name = image.Name, i.creationdate = image.CreationDate
-    SET i.lastupdated = {update_tag},
-    i.architecture = image.Architecture, i.location = image.ImageLocation, i.type = image.ImageType,
-    i.ispublic = image.Public, i.platform = image.Platform, i.usageoperation = image.UsageOperation,
-    i.state = image.State, i.description = image.Description, i.enasupport = image.EnaSupport,
-    i.hypervisor = image.Hypervisor, i.rootdevicename = image.RootDeviceName, i.rootdevicetype = image.RootDeviceType,
-    i.virtualizationtype = image.VirtualizationType, i.bootmode = image.BootMode, i.region={Region}
-    WITH i
+    ingest_reserved_instances = """
+    UNWIND {reserved_instances_list} as res
+    MERGE (r:EC2ReservedInstance{id: res.ReservedInstancesId})
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {update_tag}, r.availabilityzone = res.AvailabilityZone, r.duration = res.Duration,
+    r.end = res.End, r.start = res.Start, r.count = res.InstanceCount, r.type = res.InstanceType,
+    r.productdescription = res.ProductDescription, r.state = res.State, r.currencycode = res.CurrencyCode,
+    r.instancetenancy = res.InstanceTenancy, r.offeringclass = res.OfferingClass, r.offeringtype = res.OfferingType,
+    r.scope = res.Scope, r.fixedprice = res.FixedPrice,
+    r.region={Region}
+    WITH r
     MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
-    MERGE (aa)-[r:RESOURCE]->(i)
+    MERGE (aa)-[r:RESOURCE]->(r)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {update_tag}
     """
 
+    # neo4j does not accept datetime objects and values. This loop is used to convert
+    # these values to string.
+    for r_instance in data:
+        r_instance['Start'] = str(r_instance['Start'])
+        r_instance['End'] = str(r_instance['End'])
+
     neo4j_session.run(
-        ingest_images,
-        images_list=data,
+        ingest_reserved_instances,
+        reserved_instances_list=data,
         AWS_ACCOUNT_ID=current_aws_account_id,
         Region=region,
         update_tag=update_tag,
@@ -58,7 +64,7 @@ def load_images(
 
 
 @timeit
-def cleanup_images(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+def cleanup_reserved_instances(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job(
         'aws_import_reserved_instances_cleanup.json',
         neo4j_session,
