@@ -6,7 +6,6 @@ from typing import List
 import boto3
 import neo4j
 
-from .util import get_botocore_config
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -17,7 +16,7 @@ logger = logging.getLogger(__name__)
 @timeit
 @aws_handle_regions
 def get_ec2_instances(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
-    client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
+    client = boto3_session.client('ec2', region_name=region)
     paginator = client.get_paginator('describe_instances')
     reservations: List[Dict] = []
     for page in paginator.paginate():
