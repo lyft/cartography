@@ -49,6 +49,7 @@ CREATE INDEX ON :EC2Instance(publicdnsname);
 CREATE INDEX ON :EC2KeyPair(id);
 CREATE INDEX ON :EC2PrivateIp(id);
 CREATE INDEX ON :EC2Reservation(reservationid);
+CREATE INDEX ON :EC2ReservedInstance(id);
 CREATE INDEX ON :EC2SecurityGroup(groupid);
 CREATE INDEX ON :EC2SecurityGroup(id);
 CREATE INDEX ON :EC2Subnet(id);
