@@ -35,8 +35,7 @@ def load_volumes(
     v.encrypted = volume.Encrypted, v.size = volume.Size, v.state = volume.State, v.outpostarn = volume.OutpostArn,
     v.snapshotid = volume.SnapshotId, v.iops = volume.Iops, v.type = volume.VolumeType,
     v.fastrestored = volume.FastRestored, v.multiattachenabled = volume.MultiAttachEnabled,
-    v.throughput = volume.Throughput, v.kmskeyid = volume.KmsKeyId,
-    v.region={Region}
+    v.kmskeyid = volume.KmsKeyId, v.region={Region}
     WITH v
     MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
     MERGE (aa)-[r:RESOURCE]->(v)
