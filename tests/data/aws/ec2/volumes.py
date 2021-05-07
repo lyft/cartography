@@ -15,7 +15,7 @@ DESCRIBE_VOLUMES = {
         'VolumeType': 'standard',
         'FastRestored': True,
         'MultiAttachEnabled': True,
-        'Throughput': 123
+        'Throughput': 123,
     },
     {
         'AvailabilityZone': 'US West 1',
@@ -27,9 +27,10 @@ DESCRIBE_VOLUMES = {
         'State': 'available',
         'VolumeId': 'v-02',
         'Iops': 123,
+        'SnapshotId': 'sn-02',
         'VolumeType': 'standard',
         'FastRestored': True,
         'MultiAttachEnabled': True,
-        'Throughput': 123
+        'Throughput': 123,
     },
 }
