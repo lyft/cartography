@@ -2,7 +2,7 @@ import datetime
 import json
 import logging
 import os
-import time
+import uuid
 
 from libraries.eventgridlibrary import EventGridLibrary
 
@@ -50,6 +50,8 @@ def main(event: func.EventGridEvent, outputEvent: func.Out[func.EventGridOutputE
     try:
         msg = event.get_json()
 
+        logging.info(f'request: {msg}')
+
         resp = process_request(msg)
 
         if resp.get('status') == 'success':
@@ -79,16 +81,18 @@ def main(event: func.EventGridEvent, outputEvent: func.Out[func.EventGridOutputE
 
             lib = EventGridLibrary(topic, access_key)
             resp = lib.publish_event(message)
-            return resp
 
-        outputEvent.set(
-            func.EventGridOutputEvent(
-                id=time.time(),
-                data=message,
-                subject="cartography-response",
-                event_type="inventory",
-                event_time=datetime.datetime.utcnow(),
-                data_version="1.0"))
+            logging.info(f'inventoryRefresh completed: {resp}')
+
+        else:
+            outputEvent.set(
+                func.EventGridOutputEvent(
+                    id=str(uuid.uuid4()),
+                    data=message,
+                    subject="cartography-response",
+                    event_type="inventory",
+                    event_time=datetime.datetime.now(datetime.timezone.utc),
+                    data_version="1.0"))
 
         logging.info(f'worker processed successfully: {msg["eventId"]}')
 

@@ -1,7 +1,7 @@
 import datetime
 import json
 import logging
-import time
+import uuid
 
 import azure.functions as func
 
@@ -26,17 +26,17 @@ def main(req: func.HttpRequest, outputEvent: func.Out[func.EventGridOutputEvent]
             mimetype="application/json"
         )
 
-    # logging.info(f'request: {message}')
+    logging.info(f'request: {message}')
 
     response = None
     try:
         outputEvent.set(
             func.EventGridOutputEvent(
-                id=time.time(),
+                id=str(uuid.uuid4()),
                 data=message,
                 subject="cartography-request",
                 event_type="inventory",
-                event_time=datetime.datetime.utcnow(),
+                event_time=datetime.datetime.now(datetime.timezone.utc),
                 data_version="1.0"))
 
         response = {
