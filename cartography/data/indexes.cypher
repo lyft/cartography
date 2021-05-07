@@ -38,6 +38,8 @@ CREATE INDEX ON :DOProject(id);
 CREATE INDEX ON :DynamoDBGlobalSecondaryIndex(id);
 CREATE INDEX ON :DynamoDBTable(arn);
 CREATE INDEX ON :DynamoDBTable(id);
+CREATE INDEX ON :EBSSnapshot(id);
+CREATE INDEX ON :EBSVolume(id);
 CREATE INDEX ON :EC2Image(id);
 CREATE INDEX ON :EC2Instance(id);
 CREATE INDEX ON :EC2Instance(instanceid);
