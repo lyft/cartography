@@ -1,5 +1,5 @@
 import datetime
-import time
+import uuid
 
 from azure.core.credentials import AzureKeyCredential
 from azure.eventgrid import EventGridPublisherClient, EventGridEvent
@@ -16,11 +16,11 @@ class EventGridLibrary():
 
         try:
             event = EventGridEvent(
-                id=time.time(),
+                id=str(uuid.uuid4()),
                 subject="inventoryviews-request",
                 data=message,
                 event_type="inventoryviews",
-                event_time=datetime.datetime.utcnow(),
+                event_time=datetime.datetime.now(datetime.timezone.utc),
                 data_version="1.0"
             )
 

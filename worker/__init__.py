@@ -66,7 +66,9 @@ def main(event: func.EventGridEvent, outputEvent: func.Out[func.EventGridOutputE
                 "sessionString": msg['sessionString'],
                 "eventId": msg['eventId'],
                 "templateType": msg['templateType'],
-                "workspace": msg['workspace']
+                "subscriptions": msg['subscriptions'],
+                "workspace": msg['workspace'],
+                "actions": msg['actions']
             },
             "response": resp
         }
