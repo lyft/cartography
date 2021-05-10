@@ -58,34 +58,42 @@ def load_snapshots(
 
 
 @timeit
+def get_snapshot_volumes(snapshots: List[Dict]) -> List[Dict]:
+    snapshot_volumes: List[Dict] = []
+    for snapshot in snapshots:
+        if snapshot.get('VolumeId'):
+            snapshot_volumes.append(snapshot)
+
+    return snapshot_volumes
+
+
+@timeit
 def load_snapshot_volume_relations(
         neo4j_session: neo4j.Session, data: List[Dict], current_aws_account_id: str, update_tag: int,
 ) -> None:
     ingest_volumes = """
-    MERGE (v:EBSVolume{id: {VolumeId})
+    UNWIND {snapshot_volumes_list) as volume
+    MERGE (v:EBSVolume{id: volume.VolumeId)
     ON CREATE SET v.firstseen = timestamp()
     SET v.lastupdated = {update_tag}
-    WITH v
+    WITH v, volume
     MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
     MERGE (aa)-[r:RESOURCE]->(v)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {update_tag}
-    WITH v
-    MATCH (s:EBSSnapshot{id: {SnapshotId}})
+    WITH v, volume
+    MATCH (s:EBSSnapshot{id: volume.SnapshotId})
     MERGE (s)-[r:CREATED_FROM]->(v)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {update_tag}
     """
 
-    for snapshot in data:
-        if snapshot.get('VolumeId'):
-            neo4j_session.run(
-                ingest_volumes,
-                VolumeId=snapshot['VolumeId'],
-                SnapshotId=snapshot['SnapshotId'],
-                AWS_ACCOUNT_ID=current_aws_account_id,
-                update_tag=update_tag,
-            )
+    neo4j_session.run(
+        ingest_volumes,
+        snapshot_volumes_list=data,
+        AWS_ACCOUNT_ID=current_aws_account_id,
+        update_tag=update_tag,
+    )
 
 
 @timeit
@@ -106,5 +114,6 @@ def sync_ebs_snapshots(
         logger.debug("Syncing snapshots for region '%s' in account '%s'.", region, current_aws_account_id)
         data = get_snapshots(boto3_session, region)
         load_snapshots(neo4j_session, data, region, current_aws_account_id, update_tag)
-        load_snapshot_volume_relations(neo4j_session, data, current_aws_account_id, update_tag)
+        snapshot_volumes = get_snapshot_volumes(data)
+        load_snapshot_volume_relations(neo4j_session, snapshot_volumes, current_aws_account_id, update_tag)
     cleanup_snapshots(neo4j_session, common_job_parameters)

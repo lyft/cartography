@@ -244,39 +244,50 @@ def load_ec2_instances(
                     ).consume()  # TODO see issue 170
 
             load_ec2_instance_network_interfaces(neo4j_session, instance, update_tag)
-            load_ec2_instance_ebs_volumes(neo4j_session, instance, update_tag)
+            sync_ec2_instance_ebs_volumes(neo4j_session, instance, update_tag)
 
 
 @timeit
-def load_ec2_instance_ebs_volumes(neo4j_session: neo4j.Session, instance: Dict, update_tag: int) -> None:
-    instanceId = instance["InstanceId"]
-    if 'BlockDeviceMappings' in instance and len(instance['BlockDeviceMappings']) > 0:
-        ingest_volume = """
-        MERGE (v:EBSVolume{id: {VolumeId})
-        ON CREATE SET v.firstseen = timestamp()
-        SET v.lastupdated = {update_tag}, v.deleteontermination = {DeleteOnTermination}
-        WITH v
-        MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
-        MERGE (aa)-[r:RESOURCE]->(v)
-        ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {update_tag}
-        WITH v
-        MATCH (instance:EC2Instance{instanceid: {InstanceId}})
-        MERGE (v)-[r:ATTACHED_TO]->(instance)
-        ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {update_tag}
-        """
+def sync_ec2_instance_ebs_volumes(neo4j_session: neo4j.Session, instance: Dict, update_tag: int) -> None:
+    instance_ebs_volumes_list = get_ec2_instance_ebs_volumes(instance)
+    load_ec2_instance_ebs_volumes(neo4j_session, instance_ebs_volumes_list, update_tag)
 
-        ebs_mappings = instance['BlockDeviceMappings']
-        for mapping in ebs_mappings:
+
+@timeit
+def get_ec2_instance_ebs_volumes(instance: Dict) -> List[Dict]:
+    instance_ebs_volumes_list: List[Dict] = []
+    if 'BlockDeviceMappings' in instance and len(instance['BlockDeviceMappings']) > 0:
+        for mapping in instance['BlockDeviceMappings']:
             if 'VolumeId' in mapping['Ebs']:
-                neo4j_session.run(
-                    ingest_volume,
-                    InstanceId=instanceId,
-                    VolumeId=mapping['Ebs']['VolumeId'],
-                    DeleteOnTermination=mapping['Ebs']['DeleteOnTermination'],
-                    update_tag=update_tag,
-                )
+                mapping['InstanceId'] = instance["InstanceId"]
+                instance_ebs_volumes_list.append(mapping)
+    return instance_ebs_volumes_list
+
+
+@timeit
+def load_ec2_instance_ebs_volumes(neo4j_session: neo4j.Session, data: List[Dict], update_tag: int) -> None:
+    ingest_volume = """
+    UNWIND {ebs_mappings_list} as em
+    MERGE (v:EBSVolume{id: em.Ebs.VolumeId})
+    ON CREATE SET v.firstseen = timestamp()
+    SET v.lastupdated = {update_tag}, v.deleteontermination = em.Ebs.DeleteOnTermination
+    WITH v, em
+    MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MERGE (aa)-[r:RESOURCE]->(v)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {update_tag}
+    WITH v, em
+    MATCH (instance:EC2Instance{instanceid: em.InstanceId})
+    MERGE (v)-[r:ATTACHED_TO]->(instance)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {update_tag}
+    """
+
+    neo4j_session.run(
+        ingest_volume,
+        ebs_mappings_list=data,
+        update_tag=update_tag,
+    )
 
 
 @timeit
