@@ -61,14 +61,13 @@ def get_kms_key_details(
 @timeit
 def get_policy(key: Dict, client: botocore.client.BaseClient) -> Any:
     """
-    Gets the KMS Key policy. Returns policy string or None if no policy
+    Gets the KMS Key policy. Returns policy string or None if we are unable to retrieve it.
     """
     try:
         policy = client.get_key_policy(KeyId=key["KeyId"], PolicyName='default')
-    except ClientError as e:
+    except ClientError:
         policy = None
-        logger.warning("Failed to retrieve Key Policy for key id - {}. Error - {}".format(key["KeyId"], e))
-        raise
+        logger.warning(f"Failed to retrieve Key Policy for key id - {key['KeyId']}, skipping.", exc_info=True)
 
     return policy
 
