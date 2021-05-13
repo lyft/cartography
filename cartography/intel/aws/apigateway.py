@@ -322,7 +322,7 @@ def load_rest_api_details(
     for api_id, stage, certificate, resource, policy in stages_certificate_resources:
         parsed_policy = parse_policy(api_id, policy)
         if parsed_policy is not None:
-            policies.extend(parsed_policy)
+            policies.append(parsed_policy)
         if len(stage) > 0:
             for s in stage:
                 s['apiId'] = api_id
@@ -354,15 +354,22 @@ def parse_policy(api_id: str, policy: Policy) -> Optional[Dict[Any, Any]]:
     """
     Uses PolicyUniverse to parse API Gateway REST API policy and returns the internet accessibility results
     """
+
     if policy is not None:
-        policy = Policy(json.loads(policy))
-        if policy.is_internet_accessible():
-            return {
-                "api_id": api_id,
-                "internet_accessible": True,
-                "accessible_actions": list(policy.internet_accessible_actions()),
-            }
-        else:
+        # unescape doubly escapped JSON
+        policy = policy.replace("\\", "")
+        try:
+            policy = Policy(json.loads(policy))
+            if policy.is_internet_accessible():
+                return {
+                    "api_id": api_id,
+                    "internet_accessible": True,
+                    "accessible_actions": list(policy.internet_accessible_actions()),
+                }
+            else:
+                return None
+        except json.JSONDecodeError:
+            logger.warn(f"failed to decode policy json : {policy}")
             return None
     else:
         return None
