@@ -300,7 +300,7 @@ LIST_LAMBDA_FUNCTION_ALIASES = [
         "Description": "",
         "RevisionId": "7d2e5d1a-95cf-4a04-8936-5bed46c5a88b",
         "FunctionArn": "arn:aws:lambda:us-west-2:000000000000:function:sample-function-10",
-    }
+    },
 ]
 
 LIST_EVENT_SOURCE_MAPPINGS = [
@@ -347,5 +347,5 @@ LIST_LAYERS = [
         "Arn": "arn:aws:lambda:us-east-2:123456789012:layer:my-layer-3",
         "CodeSize": 123,
         "FunctionArn": "arn:aws:lambda:us-west-2:000000000000:function:sample-function-4",
-    }
+    },
 ]

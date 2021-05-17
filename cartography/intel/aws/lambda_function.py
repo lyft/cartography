@@ -6,8 +6,8 @@ from typing import List
 from typing import Tuple
 
 import boto3
-import neo4j
 import botocore
+import neo4j
 
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
@@ -103,7 +103,7 @@ def get_event_source_mappings(lambda_function: Dict, client: botocore.client.Bas
 
 @timeit
 def get_lambda_function_details(
-        boto3_session: boto3.session.Session, data: List[Dict], region: str
+        boto3_session: boto3.session.Session, data: List[Dict], region: str,
 ) -> Generator[Any, Any, Any]:
     client = boto3_session.client('lambda', region_name=region)
     for lambda_function in data:
