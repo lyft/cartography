@@ -27,6 +27,16 @@ def test_get_short_id_from_ec2_arn():
     assert 'i-1337' == rgta.get_short_id_from_ec2_arn(arn)
 
 
+def test_get_short_id_from_elb_arn():
+    arn = 'arn:aws:elasticloadbalancing:::loadbalancer/foo'
+    assert 'foo' == rgta.get_short_id_from_elb_arn(arn)
+
+
+def test_get_short_id_from_lb2_arn():
+    arn = 'arn:aws:elasticloadbalancing:::loadbalancer/app/foo/abdc123'
+    assert 'foo' == rgta.get_short_id_from_lb2_arn(arn)
+
+
 def test_transform_tags():
     assert 'resource_id' not in test_data.GET_RESOURCES_RESPONSE[0]
     rgta.transform_tags(test_data.GET_RESOURCES_RESPONSE, 'ec2:instance')
