@@ -41,12 +41,14 @@ def get_short_id_from_elb_arn(alb_arn: str) -> str:
     """
     return alb_arn.split('/')[-1]
 
-def get_short_id_from_alb_arn(alb_arn: str) -> str:
+
+def get_short_id_from_lb2_arn(alb_arn: str) -> str:
     """
-    Return the ALB name from the ARN
+    Return the (A|N)LB name from the ARN
     For example, for arn:aws:elasticloadbalancing:::loadbalancer/app/foo/ab123", return 'foo'.
-    :param arn: The ALB's full ARN
-    :return: The ALB's name
+    For example, for arn:aws:elasticloadbalancing:::loadbalancer/net/foo/ab123", return 'foo'.
+    :param arn: The (N|A)LB's full ARN
+    :return: The (N|A)LB's name
     """
     return alb_arn.split('/')[-2]
 
@@ -67,7 +69,8 @@ TAG_RESOURCE_TYPE_MAPPINGS: Dict = {
     'ec2:transit-gateway': {'label': 'AWSTransitGateway', 'property': 'id'},
     'ec2:transit-gateway-attachment': {'label': 'AWSTransitGatewayAttachment', 'property': 'id'},
     'elasticloadbalancing:loadbalancer': {'label': 'LoadBalancer', 'property': 'name', 'id_func': get_short_id_from_elb_arn},
-    'elasticloadbalancing:loadbalancer/app': {'label': 'LoadBalancerV2', 'property': 'name', 'id_func': get_short_id_from_alb_arn},
+    'elasticloadbalancing:loadbalancer/app': {'label': 'LoadBalancerV2', 'property': 'name', 'id_func': get_short_id_from_lb2_arn},
+    'elasticloadbalancing:loadbalancer/net': {'label': 'LoadBalancerV2', 'property': 'name', 'id_func': get_short_id_from_lb2_arn},
     'es:domain': {'label': 'ESDomain', 'property': 'id'},
     'redshift:cluster': {'label': 'RedshiftCluster', 'property': 'id'},
     'rds:db': {'label': 'RDSInstance', 'property': 'id'},
