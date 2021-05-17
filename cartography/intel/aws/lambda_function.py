@@ -209,7 +209,7 @@ def _load_lambda_layers(neo4j_session: neo4j.Session, lambda_layers: List[Dict],
     l.signingjobarn = layer.SigningJobArn,
     l.lastupdated = {aws_update_tag}
     WITH l, layer
-    MATCH (lambda:AWSLambda{id: l.FunctionArn})
+    MATCH (lambda:AWSLambda{id: layer.FunctionArn})
     MERGE (lambda)-[r:HAS]->(l)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {aws_update_tag}
