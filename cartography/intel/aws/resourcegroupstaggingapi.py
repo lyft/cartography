@@ -32,6 +32,7 @@ def get_bucket_name_from_arn(bucket_arn: str) -> str:
     """
     return bucket_arn.split(':')[-1]
 
+
 def get_short_id_from_elb_arn(alb_arn: str) -> str:
     """
     Return the ELB name from the ARN
@@ -68,9 +69,18 @@ TAG_RESOURCE_TYPE_MAPPINGS: Dict = {
     'ec2:vpc': {'label': 'AWSVpc', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},
     'ec2:transit-gateway': {'label': 'AWSTransitGateway', 'property': 'id'},
     'ec2:transit-gateway-attachment': {'label': 'AWSTransitGatewayAttachment', 'property': 'id'},
-    'elasticloadbalancing:loadbalancer': {'label': 'LoadBalancer', 'property': 'name', 'id_func': get_short_id_from_elb_arn},
-    'elasticloadbalancing:loadbalancer/app': {'label': 'LoadBalancerV2', 'property': 'name', 'id_func': get_short_id_from_lb2_arn},
-    'elasticloadbalancing:loadbalancer/net': {'label': 'LoadBalancerV2', 'property': 'name', 'id_func': get_short_id_from_lb2_arn},
+    'elasticloadbalancing:loadbalancer': {
+        'label': 'LoadBalancer', 'property':
+        'name', 'id_func': get_short_id_from_elb_arn,
+    },
+    'elasticloadbalancing:loadbalancer/app': {
+        'label': 'LoadBalancerV2',
+        'property': 'name', 'id_func': get_short_id_from_lb2_arn,
+    },
+    'elasticloadbalancing:loadbalancer/net': {
+        'label': 'LoadBalancerV2',
+        'property': 'name', 'id_func': get_short_id_from_lb2_arn,
+    },
     'es:domain': {'label': 'ESDomain', 'property': 'id'},
     'redshift:cluster': {'label': 'RedshiftCluster', 'property': 'id'},
     'rds:db': {'label': 'RDSInstance', 'property': 'id'},
