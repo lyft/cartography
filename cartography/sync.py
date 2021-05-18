@@ -20,7 +20,7 @@ from cartography.stats import set_stats_client
 
 import cloudanix
 
-from cartography.scoped_stats_client import ScopedStatsClient
+# from cartography.scoped_stats_client import ScopedStatsClient
 
 logger = logging.getLogger(__name__)
 
@@ -208,6 +208,24 @@ def build_azure_sync():
         ('create-indexes', cartography.intel.create_indexes.run),
         ('cloudanix-workspace', cloudanix.run),
         # ('azure', cartography.intel.azure.start_azure_ingestion),
+        ('analysis', cartography.intel.analysis.run),
+    ])
+
+    return sync
+
+
+def build_gcp_sync():
+    """
+    Build the default cartography sync, which runs all intelligence modules shipped with the cartography package.
+
+    :rtype: cartography.sync.Sync
+    :return: The default cartography sync object.
+    """
+    sync = Sync()
+    sync.add_stages([
+        ('create-indexes', cartography.intel.create_indexes.run),
+        ('cloudanix-workspace', cloudanix.run),
+        ('gcp', cartography.intel.gcp.start_gcp_ingestion),
         ('analysis', cartography.intel.analysis.run),
     ])
 

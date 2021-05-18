@@ -12,6 +12,7 @@ from oauth2client.client import ApplicationDefaultCredentialsError
 from oauth2client.client import GoogleCredentials
 
 from cartography.config import Config
+from cartography.intel.gcp.auth import AuthHelper
 from cartography.intel.gcp import compute
 from cartography.intel.gcp import crm
 from cartography.intel.gcp import dns
@@ -220,12 +221,17 @@ def start_gcp_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
     """
     common_job_parameters = {
         "UPDATE_TAG": config.update_tag,
+        "WORKSPACE_ID": config.params['workspace']['id_string']
     }
     try:
-        # Explicitly use Application Default Credentials.
-        # See https://oauth2client.readthedocs.io/en/latest/source/
-        #             oauth2client.client.html#oauth2client.client.OAuth2Credentials
-        credentials = GoogleCredentials.get_application_default()
+        # # Explicitly use Application Default Credentials.
+        # # See https://oauth2client.readthedocs.io/en/latest/source/
+        # #             oauth2client.client.html#oauth2client.client.OAuth2Credentials
+        # credentials = GoogleCredentials.get_application_default()
+
+        auth_helper = AuthHelper()
+        credentials = auth_helper.get_credentials(config.credentials['token_uri'], config.credentials['account_email'])
+
     except ApplicationDefaultCredentialsError as e:
         logger.debug("Error occurred calling GoogleCredentials.get_application_default().", exc_info=True)
         logger.error(
