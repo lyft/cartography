@@ -12,6 +12,8 @@ pyyaml>=5.3.1
 requests>=2.22.0
 statsd
 packaging
-flask
+flask<2.0,>=1.0
 maya
 pytz
+google-cloud-pubsub>=2.3.0
+click<8.0,>=7.0

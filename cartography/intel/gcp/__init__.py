@@ -173,15 +173,15 @@ def _sync_single_project(
     :return: Nothing
     """
     # Determine the resources available on the project.
-    enabled_services = _services_enabled_on_project(resources.serviceusage, project_id)
-    if service_names.compute in enabled_services:
-        compute.sync(neo4j_session, resources.compute, project_id, gcp_update_tag, common_job_parameters)
-    if service_names.storage in enabled_services:
-        storage.sync_gcp_buckets(neo4j_session, resources.storage, project_id, gcp_update_tag, common_job_parameters)
-    if service_names.gke in enabled_services:
-        gke.sync_gke_clusters(neo4j_session, resources.container, project_id, gcp_update_tag, common_job_parameters)
-    if service_names.dns in enabled_services:
-        dns.sync(neo4j_session, resources.dns, project_id, gcp_update_tag, common_job_parameters)
+    # enabled_services = _services_enabled_on_project(resources.serviceusage, project_id)
+    # if service_names.compute in enabled_services:
+    compute.sync(neo4j_session, resources.compute, project_id, gcp_update_tag, common_job_parameters)
+    # if service_names.storage in enabled_services:
+    storage.sync_gcp_buckets(neo4j_session, resources.storage, project_id, gcp_update_tag, common_job_parameters)
+    # if service_names.gke in enabled_services:
+    gke.sync_gke_clusters(neo4j_session, resources.container, project_id, gcp_update_tag, common_job_parameters)
+    # if service_names.dns in enabled_services:
+    dns.sync(neo4j_session, resources.dns, project_id, gcp_update_tag, common_job_parameters)
 
 
 def _sync_multiple_projects(
@@ -221,7 +221,8 @@ def start_gcp_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
     """
     common_job_parameters = {
         "UPDATE_TAG": config.update_tag,
-        "WORKSPACE_ID": config.params['workspace']['id_string']
+        "WORKSPACE_ID": config.params['workspace']['id_string'],
+        "WORKSPACE_ACCOUNT_ID": config.params['workspace']['account_id'],
     }
     try:
         # # Explicitly use Application Default Credentials.
