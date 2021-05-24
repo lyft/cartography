@@ -79,27 +79,27 @@ def get_policy(key: Dict, client: botocore.client.BaseClient) -> Any:
 
 
 @timeit
-def get_aliases(key: str, client: botocore.client.BaseClient) -> List[Any]:
+def get_aliases(key: Dict, client: botocore.client.BaseClient) -> List[Any]:
     """
     Gets the KMS Key Aliases.
     """
     aliases: List[Any] = []
     paginator = client.get_paginator('list_aliases')
-    for page in paginator.paginate(KeyId=key['KeyId']):   # type: ignore
+    for page in paginator.paginate(KeyId=key['KeyId']):
         aliases.extend(page['Aliases'])
 
     return aliases
 
 
 @timeit
-def get_grants(key: str, client: botocore.client.BaseClient) -> List[Any]:
+def get_grants(key: Dict, client: botocore.client.BaseClient) -> List[Any]:
     """
     Gets the KMS Key Grants.
     """
     grants: List[Any] = []
     paginator = client.get_paginator('list_grants')
     try:
-        for page in paginator.paginate(KeyId=key['KeyId']):   # type: ignore
+        for page in paginator.paginate(KeyId=key['KeyId']):
             grants.extend(page['Grants'])
     except ClientError as e:
         if e.response['Error']['Code'] == 'AccessDeniedException':
