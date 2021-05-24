@@ -68,7 +68,7 @@ def get_policy(key: Dict, client: botocore.client.BaseClient) -> Any:
     except ClientError as e:
         policy = None
         if e.response['Error']['Code'] == 'AccessDeniedException':
-            logger.error(
+            logger.warning(
                 f"kms:get_key_policy on key id {key['KeyId']} failed with AccessDeniedException; continuing sync.",
                 exc_info=True,
             )
@@ -103,7 +103,7 @@ def get_grants(key: str, client: botocore.client.BaseClient) -> List[Any]:
             grants.extend(page['Grants'])
     except ClientError as e:
         if e.response['Error']['Code'] == 'AccessDeniedException':
-            logger.error(
+            logger.warning(
                 f'kms:list_grants on key_id {key["KeyId"]} failed with AccessDeniedException; continuing sync.',
                 exc_info=True,
             )
