@@ -19,6 +19,7 @@ CREATE INDEX ON :AWSPolicyStatement(id);
 CREATE INDEX ON :AWSPrincipal(arn);
 CREATE INDEX ON :AWSRole(arn);
 CREATE INDEX ON :AWSTag(id);
+CREATE INDEX ON :AWSTag(key);
 CREATE INDEX ON :AWSTransitGateway(arn);
 CREATE INDEX ON :AWSTransitGateway(id);
 CREATE INDEX ON :AWSTransitGatewayAttachment(id);
