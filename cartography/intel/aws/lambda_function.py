@@ -82,6 +82,7 @@ def load_lambda_functions(
 
 
 @timeit
+@aws_handle_regions
 def get_function_aliases(lambda_function: Dict, client: botocore.client.BaseClient) -> List[Any]:
     aliases: List[Any] = []
     paginator = client.get_paginator('list_aliases')
@@ -92,6 +93,7 @@ def get_function_aliases(lambda_function: Dict, client: botocore.client.BaseClie
 
 
 @timeit
+@aws_handle_regions
 def get_event_source_mappings(lambda_function: Dict, client: botocore.client.BaseClient) -> List[Any]:
     event_source_mappings: List[Any] = []
     paginator = client.get_paginator('list_event_source_mappings')
@@ -102,6 +104,7 @@ def get_event_source_mappings(lambda_function: Dict, client: botocore.client.Bas
 
 
 @timeit
+@aws_handle_regions
 def get_lambda_function_details(
         boto3_session: boto3.session.Session, data: List[Dict], region: str,
 ) -> Generator[Any, Any, Any]:
