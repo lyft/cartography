@@ -1,5 +1,5 @@
-from cartography.graph.loader import build_node_ingestion_query
-from cartography.graph.loader import build_relationship_ingestion_query
+from cartography.graph.querybuilder import build_node_ingestion_query
+from cartography.graph.querybuilder import build_relationship_ingestion_query
 
 
 def test_build_node_ingestion_query():
