@@ -113,7 +113,7 @@ def build_relationship_ingestion_query(
 
 def merge_nodes_with_unwind(
     tx: neo4j.Transaction, node_label: str, id_field: str, field_list: List[Tuple[str, str]],
-    node_data_list: List[Dict], batch_size: int, update_tag: int,
+    node_data_list: List[Dict], update_tag: int, batch_size: int = 1000,
 ) -> None:
     if batch_size < 1:
         raise ValueError("batch_size cannot be less than 1.")
