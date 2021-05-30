@@ -38,7 +38,7 @@ def build_node_ingestion_query(node_label: str, id_field: str, field_list: List[
 
 def build_relationship_ingestion_query(
     label_a: str, id_tuple_a: Tuple[str, str], label_b: str, id_tuple_b: Tuple[str, str], label_r: str,
-    rel_field_list: List,
+    rel_field_list: List[Tuple[str, str]],
 ) -> str:
     """
     Generates query to create the path ($NodeA)-[:$RELATIONSHIP_NAME]->($NodeB).
@@ -66,7 +66,7 @@ def build_relationship_ingestion_query(
         MERGE (a)-[r:$LabelR]->(b)
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = {UpdateTag}""")
-    ingest_fields_template = Template('        r.$FieldName = r.$FieldParamName')
+    ingest_fields_template = Template('        r.$FieldName = item.$FieldParamName')
 
     ingest_preamble = ingest_preamble_template.safe_substitute(
         NodeLabelA=label_a,

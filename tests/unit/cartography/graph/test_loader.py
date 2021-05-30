@@ -54,4 +54,26 @@ def test_build_relationship_ingestion_query():
         MERGE (a)-[r:RESOURCE]->(b)
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = {UpdateTag}"""
-    # TODO - test the relationship attributes capability
+
+
+def test_build_relationship_with_attributes_query():
+    query = build_relationship_ingestion_query(
+        'Service',
+        ('id', 'Id'),
+        'GoLibrary',
+        ('id', 'Id'),
+        'REQUIRES',
+        [
+            ('libraryspecifier', 'LibrarySpecifier'),
+            ('someotherrelfield', 'SomeOtherRelField'),
+        ],
+    )
+    assert query == """
+    UNWIND {DictList} AS item
+        MATCH (a:Service{id:item.Id})
+        MATCH (b:GoLibrary{id:item.Id})
+        MERGE (a)-[r:REQUIRES]->(b)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {UpdateTag},
+        r.libraryspecifier = item.LibrarySpecifier,
+        r.someotherrelfield = item.SomeOtherRelField"""
