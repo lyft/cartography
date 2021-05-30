@@ -56,15 +56,9 @@ def test_build_node_ingestion_query_only_id():
 
 def test_build_relationship_ingestion_query():
     query = build_relationship_ingestion_query(
-        'AWSAccount',
+        'AWSAccount', 'id', 'Id',
+        'EC2Instance', 'instanceid', 'InstanceId',
         'RESOURCE',
-        'EC2Instance',
-        {
-            'search_property_a': 'id',
-            'dict_key_a': 'Id',
-            'search_property_b': 'instanceid',
-            'dict_key_b': 'InstanceId',
-        }
     )
     assert query == """
     UNWIND {DictList} AS item
@@ -77,15 +71,9 @@ def test_build_relationship_ingestion_query():
 
 def test_build_relationship_with_attributes_query():
     query = build_relationship_ingestion_query(
-        'Service',
+        'Service', 'name', 'Name',
+        'GoLibrary', 'id', 'Id',
         'REQUIRES',
-        'GoLibrary',
-        {
-            'search_property_a': 'name',
-            'dict_key_a': 'Name',
-            'search_property_b': 'id',
-            'dict_key_b': 'Id',
-        },
         {
             'libraryspecifier': 'LibrarySpecifier',
             'someotherrelfield': 'SomeOtherRelField',
