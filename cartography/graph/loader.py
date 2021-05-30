@@ -5,17 +5,22 @@ from typing import Tuple
 
 def build_node_ingestion_query(node_label: str, id_field: str, field_list: List[Tuple[str, str]]) -> str:
     """
-    Generates query to write a list of dicts as nodes to the graph with the given node_label,
-    id_field, and other arbitrary fields as provided by field_list.
-    The generated query includes a hardcoded {DictList} parameter that the caller
-    can use to pass in a list of dicts to the query.
+    Generates Neo4j query string to write a list of dicts as nodes to the graph with the
+    given node_label, id_field, and other arbitrary fields as provided by field_list. This
+    uses the UNWIND + MERGE pattern to batch writes.
+    The resulting `query` string can then be called with
+    ```
+    data_list: List[Dict] = {}
+    neo4j_session.run(query, DictList=data_list, ...)
+    ```
+
     :param node_label: The label of the node to create.
     :param id_field: The field on the node to designate as the unique identifier. Strongly
     recommend that `id` is used here.
     :param field_list: A list of 2-tuples of the form
            0: FieldName - the name of the field to set on the node
            1: FieldParamName - the dict key on where to access the value for this field.
-    :return:
+    :return: A Neo4j query string using the UNWIND + MERGE pattern to write a list of nodes in batch.
     """
     ingest_preamble_template = Template("""
     UNWIND {DictList} AS item
@@ -37,32 +42,44 @@ def build_node_ingestion_query(node_label: str, id_field: str, field_list: List[
 
 
 def build_relationship_ingestion_query(
-    label_a: str, id_tuple_a: Tuple[str, str], label_b: str, id_tuple_b: Tuple[str, str], label_r: str,
-    rel_field_list: List[Tuple[str, str]],
+    label_a: str, mapping_tuple_a: Tuple[str, str], label_b: str, mapping_tuple_b: Tuple[str, str],
+    label_r: str, rel_field_list: List[Tuple[str, str]],
 ) -> str:
     """
-    Generates query to create the path ($NodeA)-[:$RELATIONSHIP_NAME]->($NodeB).
-    The generated query includes a hardcoded {DictList} parameter that the caller
-    can use to pass in a list of dicts to the query.
-    Precondition: Both nodes A and B must already exist in the graph.
+    Generates Neo4j query string to create the path `($NodeA)-[:$RELATIONSHIP_NAME]->($NodeB)`
+    using an UNWIND + MERGE pattern. The resulting `query` string can then be called with
+    ```
+    data_list: List[Dict] = {}
+    neo4j_session.run(query, DictList=data_list, ...)
+    ```
+
     :param label_a: The label of $NodeA
-    :param id_tuple_a: A tuple containing
-            0. The node field used to uniquely identify $NodeA in the graph.
-            1. The dict key on where to access the value for this field.
+    :param mapping_tuple_a: A tuple containing
+            0. The field used to search for $NodeA in the graph (e.g. `id`)
+            1. The dict key on where to access the value for this field (e.g. `item['Id']`)
+
+            Explained another way, providing `('id', 'Id')` here tells cartography to
+            set $NodeA.id with the value from `item['Id']`, where `item` is an item in
+            `DictList`.
     :param label_b: The label of $NodeB.
-    :param id_tuple_b: A tuple containing
-            0. The node field used to uniquely identify $NodeB in the graph.
-            1. The dict key on where to access the value for this field.
+    :param mapping_tuple_b: A tuple containing
+            0. The field used to search for $NodeB in the graph (e.g. `id`)
+            1. The dict key on where to access the value for this field (e.g. `item['Id']`)
+
+            Explained another way, providing `('id', 'Id')` here tells cartography to
+            set $NodeB.id with the value from `item['Id']`, where `item` is an item in
+            `DictList`.
     :param label_r: The $RELATIONSHIP_NAME to merge between $NodeA and $NodeB.
     :param rel_field_list: Optional list of 2-tuples containing
             0. The field to add to the new relationship in the graph
             1. The dict key where on where to access the value for this field.
-    :return: Generated Neo4j query string to draw a relationship between $NodeA and $NodeB.
+    :return: Generated Neo4j query string to draw relationships between all $NodeA and $NodeB
+    in a given list.
     """
     ingest_preamble_template = Template("""
     UNWIND {DictList} AS item
-        MATCH (a:$NodeLabelA{$IdFieldA:item.$IdParamA})
-        MATCH (b:$NodeLabelB{$IdFieldB:item.$IdParamB})
+        MATCH (a:$NodeLabelA{$SearchFieldA:item.$SearchParamA})
+        MATCH (b:$NodeLabelB{$SearchFieldB:item.$SearchParamB})
         MERGE (a)-[r:$LabelR]->(b)
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = {UpdateTag}""")
@@ -70,11 +87,11 @@ def build_relationship_ingestion_query(
 
     ingest_preamble = ingest_preamble_template.safe_substitute(
         NodeLabelA=label_a,
-        IdFieldA=id_tuple_a[0],
-        IdParamA=id_tuple_a[1],
+        SearchFieldA=mapping_tuple_a[0],
+        SearchParamA=mapping_tuple_a[1],
         NodeLabelB=label_b,
-        IdFieldB=id_tuple_b[0],
-        IdParamB=id_tuple_b[1],
+        SearchFieldB=mapping_tuple_b[0],
+        SearchParamB=mapping_tuple_b[1],
         LabelR=label_r,
     )
     if rel_field_list:
