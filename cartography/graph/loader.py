@@ -10,7 +10,7 @@ from cartography.graph.querybuilder import build_relationship_ingestion_query
 logger = logging.getLogger(__name__)
 
 
-def merge_nodes_with_unwind(
+def merge_nodes(
     tx: neo4j.Transaction, node_label: str, node_property_map: Dict[str, str],
     node_data_list: List[Dict], update_tag: int, batch_size: int = 1000,
 ) -> None:
@@ -36,14 +36,14 @@ def merge_nodes_with_unwind(
         chunk = node_data_list[cursor:cursor + batch_size]
 
 
-def merge_relationships_with_unwind(
+def merge_relationships(
     tx: neo4j.Transaction, node_label_a: str, search_property_a: str, dict_key_a: str,
     node_label_b: str, search_property_b: str, dict_key_b: str,
     relationship_label: str,
     rel_mapping_list: List[Dict],
     update_tag: int,
-    batch_size: int = 1000,
     rel_property_map: Dict[str, str] = None,
+    batch_size: int = 1000,
 ) -> None:
     if batch_size < 1:
         raise ValueError("batch_size cannot be less than 1.")
