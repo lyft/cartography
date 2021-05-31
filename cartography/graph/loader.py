@@ -59,7 +59,7 @@ def merge_relationships_with_unwind(
     while len(chunk) > 0:
         query_args = {
             'UpdateTag': update_tag,
-            'DictList': chunk,
+            'RelMappingList': chunk,
         }
         try:
             tx.run(query, **query_args)
