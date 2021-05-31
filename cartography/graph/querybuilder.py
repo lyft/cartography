@@ -5,8 +5,16 @@ from typing import Dict
 def build_node_ingestion_query(node_label: str, node_property_map: Dict[str, str]) -> str:
     """
     Generates Neo4j query string to write a list of dicts as nodes to the graph with the
-    given node_label, id_field, and other arbitrary fields as provided by field_list. This
-    uses the UNWIND + MERGE pattern to batch writes.
+    given node_label, id_field, and other arbitrary fields as provided by field_list. The
+    resulting query looks like
+
+    UNWIND {DictList} AS item
+        MERGE (i:`node_label`{id:item.`node_property_map['id']`})
+        ON CREATE SET i.firstseen = timestamp()
+        SET i.lastupdated = {UpdateTag},
+        ... <expand the given node property map to set the other node fields> ...
+
+    Note that `node_property_map` **must** have an `id` key defined.
 
     :param node_label: The label of the nodes to write, e.g. EC2Instance
     :param node_property_map: A mapping of node property names to dict key names.
@@ -48,19 +56,18 @@ def build_relationship_ingestion_query(
     rel_property_map: Dict[str, str] = None,
 ) -> str:
     """
-    Generates Neo4j query string to search the graph for nodes A and B using the given
-    `node_property_map` and draw a relationship between them. The resulting path is
-    `($NodeA)-[:$RELATIONSHIP_NAME]->($NodeB)`. The caller can also optionally provide a
-    `rel_property_map` to define properties for the new relationship - see notes below on what
-    this means for performance.
+    Generates Neo4j query string that looks like
 
-    The resulting `query` string uses an UNWIND + MERGE pattern so that relationships are
-    created in batches. The returned query can then be called with
+    UNWIND {RelMappingList} AS item
+        MATCH (a:`node_label_a`{`search_property_a`:item.`dict_key_a`})
+        MATCH (b:`node_label_b`{`search_property_b`:item.`dict_key_b})
+        MERGE (a)-[r:`rel_label`]->(b)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {UpdateTag},
+            ... <optionally expands the relationship property map too> ...
 
-    ```
-    data_list: List[Dict] = {}
-    neo4j_session.run(query, DictList=data_list, ...)
-    ```
+    To summarize, for each dict in RelMappingList, we create the paths
+    `($NodeA)-[:$RELATIONSHIP_NAME]->($NodeB)`.
 
     :param node_label_a: The label of $NodeA.
     :param search_property_a: the search key to used to search the graph to find node A. For
@@ -78,11 +85,11 @@ def build_relationship_ingestion_query(
     so performing searches on them is slow. Reconsider your schema design if you expect to need
     to run queries using relationship fields as search keys.
     :return: Neo4j query string to draw relationships between $NodeA and $NodeB. This exposes 2
-    parameters: `{DictList}` accepts a list of dictionaries to write as relationships to the
+    parameters: `{RelMappingList}` accepts a list of dictionaries to write as relationships to the
     graph, and `{UpdateTag}` is the standard cartography int update tag.
     """
     ingest_preamble_template = Template("""
-    UNWIND {DictList} AS item
+    UNWIND {RelMappingList} AS item
         MATCH (a:$NodeLabelA{$SearchPropertyA:item.$DictKeyA})
         MATCH (b:$NodeLabelB{$SearchPropertyB:item.$DictKeyB})
         MERGE (a)-[r:$LabelR]->(b)

@@ -61,7 +61,7 @@ def test_build_relationship_ingestion_query():
         'RESOURCE',
     )
     assert query == """
-    UNWIND {DictList} AS item
+    UNWIND {RelMappingList} AS item
         MATCH (a:AWSAccount{id:item.Id})
         MATCH (b:EC2Instance{instanceid:item.InstanceId})
         MERGE (a)-[r:RESOURCE]->(b)
@@ -80,7 +80,7 @@ def test_build_relationship_with_attributes_query():
         },
     )
     assert query == """
-    UNWIND {DictList} AS item
+    UNWIND {RelMappingList} AS item
         MATCH (a:Service{name:item.Name})
         MATCH (b:GoLibrary{id:item.Id})
         MERGE (a)-[r:REQUIRES]->(b)
