@@ -14,7 +14,7 @@ def build_node_ingestion_query(node_label: str, node_property_map: Dict[str, str
     in batch. This exposes 2 parameters: `{DictList}` accepts a list of dictionaries to
     write as nodes to the graph, and `{UpdateTag}` is the standard cartography int update tag.
     """
-    if not node_property_map['id']:
+    if not 'id' in node_property_map or not node_property_map['id']:
         raise ValueError('node_property_map must have key `id` set.')
 
     ingest_preamble_template = Template("""
