@@ -2,7 +2,7 @@ from string import Template
 from typing import Dict
 
 
-def build_node_ingestion_query(node_label: str, node_property_map: Dict[str, str] = {}) -> str:
+def build_node_ingestion_query(node_label: str, node_property_map: Dict[str, str]) -> str:
     """
     Generates Neo4j query string to write a list of dicts as nodes to the graph with the
     given node_label, id_field, and other arbitrary fields as provided by field_list. This
@@ -14,7 +14,7 @@ def build_node_ingestion_query(node_label: str, node_property_map: Dict[str, str
     in batch. This exposes 2 parameters: `{DictList}` accepts a list of dictionaries to
     write as nodes to the graph, and `{UpdateTag}` is the standard cartography int update tag.
     """
-    if not 'id' in node_property_map or not node_property_map['id']:
+    if 'id' not in node_property_map or not node_property_map['id']:
         raise ValueError('node_property_map must have key `id` set.')
 
     ingest_preamble_template = Template("""
@@ -28,11 +28,12 @@ def build_node_ingestion_query(node_label: str, node_property_map: Dict[str, str
         NodeLabel=node_label, DictIdField=node_property_map['id'],
     )
 
-    del node_property_map['id']
-    if node_property_map:
+    # If the node_property_map contains more than just `id`, generate a SET statement for the other fields.
+    if len(node_property_map.keys()) > 1:
         set_clause = ',\n'.join([
             ingest_fields_template.safe_substitute(NodeProperty=node_property, DictProperty=dict_property)
             for node_property, dict_property in node_property_map.items()
+            if not node_property == 'id'  # Make sure to exclude setting the `id` again.
         ])
         ingest_query = ingest_preamble + ",\n" + set_clause
     else:
