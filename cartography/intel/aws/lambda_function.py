@@ -107,7 +107,7 @@ def get_event_source_mappings(lambda_function: Dict, client: botocore.client.Bas
 @aws_handle_regions
 def get_lambda_function_details(
         boto3_session: boto3.session.Session, data: List[Dict], region: str,
-) -> Generator[Any, Any, Any]:
+) -> Generator[Any, Any, None]:
     client = boto3_session.client('lambda', region_name=region)
     for lambda_function in data:
         function_aliases = get_function_aliases(lambda_function, client)
