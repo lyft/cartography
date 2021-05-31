@@ -20,7 +20,7 @@ def build_node_ingestion_query(node_label: str, node_property_map: Dict[str, str
     ingest_preamble_template = Template("""
     UNWIND {DictList} AS item
         MERGE (i:$NodeLabel{id:item.$DictIdField})
-        ON CREATE SET i.firstseen = timestamp(),
+        ON CREATE SET i.firstseen = timestamp()
         SET i.lastupdated = {UpdateTag}""")
     ingest_fields_template = Template('        i.$NodeProperty = item.$DictProperty')
 
