@@ -11,12 +11,17 @@ logger = logging.getLogger(__name__)
 
 
 def merge_nodes(
-    tx: neo4j.Transaction, node_label: str, node_property_map: Dict[str, str],
-    node_data_list: List[Dict], update_tag: int, batch_size: int = 1000,
+    neo4j_session: neo4j.Session, node_label: str, node_property_map: Dict[str, str],
+    node_data_list: List[Dict], update_tag: int, batch_size: int = 10000,
 ) -> None:
     """
-    Writes the `node_data_list` to Neo4j using the UNWIND + MERGE pattern in batches for performance
-    and reliability. The query run looks like
+    Writes the `node_data_list` to Neo4j using the UNWIND pattern in batches with
+    just one MERGE per statement for performance and reliability. Follows guidelines
+    described in
+    - https://neo4j.com/blog/bulk-data-import-neo4j-3-0/
+    - https://dzone.com/articles/tips-for-fast-batch-updates-of-graph-structures-wi
+
+    The query run looks like
 
     UNWIND {DictList} AS item
         MERGE (i:`node_label`{id:item.`node_property_map['id']`})
@@ -24,13 +29,13 @@ def merge_nodes(
         SET i.lastupdated = {UpdateTag},
         ... <expand the given node property map to set the other node fields> ...
 
-    If an error is encountered during this process, we rollback the transaction and raise the exception.
-    :param tx: The Neo4j transaction
+    :param neo4j_session: The Neo4j session
     :param node_label: The label of the node to MERGE to Neo4j
     :param node_property_map: Mapping from node field names to dict keys in `node_data_list`.
     :param node_data_list: A list of dicts to be written as nodes to the graph.
     :param update_tag: The cartography update tag.
-    :param batch_size: Optional: the number of nodes to write in a single batch operation. Default = 1000.
+    :param batch_size: Optional: the number of nodes to write in a single batch operation.
+    Default = 10000.
     :return: None.
     """
     if batch_size < 1:
@@ -45,28 +50,35 @@ def merge_nodes(
             'UpdateTag': update_tag,
             'DictList': chunk,
         }
-        try:
-            tx.run(ingest_query, **query_args)
-        except neo4j.ServiceUnavailable:
-            logger.error("Failed to merge nodes.", exc_info=True)
-            tx.rollback()
-            raise
+        neo4j_session.write_transaction(_merge_chunk, ingest_query, query_args)
         cursor += batch_size
         chunk = node_data_list[cursor:cursor + batch_size]
 
 
+def _merge_chunk(tx: neo4j.Transaction, ingest_query: str, query_args: Dict) -> None:
+    """
+    Thin wrapper used as the `unit_of_work` argument to `neo4j_session.write_transaction()`.
+    """
+    tx.run(ingest_query, **query_args)
+
+
 def merge_relationships(
-    tx: neo4j.Transaction, node_label_a: str, search_property_a: str, dict_key_a: str,
+    neo4j_session: neo4j.Session,
+    node_label_a: str, search_property_a: str, dict_key_a: str,
     node_label_b: str, search_property_b: str, dict_key_b: str,
-    relationship_label: str,
-    rel_mapping_list: List[Dict],
+    relationship_label: str, rel_mapping_list: List[Dict],
     update_tag: int,
     rel_property_map: Dict[str, str] = None,
-    batch_size: int = 1000,
+    batch_size: int = 10000,
 ) -> None:
     """
-    Writes relationships from nodes A to B using the `rel_mapping_list`. Employs the UNWIND + MERGE
-    pattern in batches for performance and reliability. The query run looks like
+    Writes relationships from nodes A to B using the `rel_mapping_list`. Uses the
+    UNWIND pattern in batches with just one MERGE per statement for performance and
+    reliability. Follows guidelines described in
+    - https://neo4j.com/blog/bulk-data-import-neo4j-3-0/
+    - https://dzone.com/articles/tips-for-fast-batch-updates-of-graph-structures-wi
+
+    The query run looks like
 
     UNWIND {RelMappingList} AS item
         MATCH (a:`node_label_a`{`search_property_a`:item.`dict_key_a`})
@@ -76,9 +88,7 @@ def merge_relationships(
         SET r.lastupdated = {UpdateTag},
             ... <optionally expands the relationship property map too> ...
 
-    If an error is encountered during this process, we rollback the transaction and raise
-    the exception.
-    :param tx: The Neo4j transaction object.
+    :param neo4j_session: The Neo4j transaction object.
     :param node_label_a: The label of node A.
     :param search_property_a: the search key to used to search the graph to find node A. For
     performance, this should be an indexed property. If your graph is large, querying on
@@ -99,7 +109,8 @@ def merge_relationships(
     corresponding keys on the input data dict. Note: relationships in Neo4j 3.5 cannot be indexed
     so performing searches on them is slow. Reconsider your schema design if you expect to need
     to run queries using relationship fields as search keys.
-    :param batch_size: Optional: the number of nodes to write in a single batch operation. Default = 1000.
+    :param batch_size: Optional: the number of nodes to write in a single batch operation.
+    Default = 10000.
     :return: None.
     """
     if batch_size < 1:
@@ -118,11 +129,6 @@ def merge_relationships(
             'UpdateTag': update_tag,
             'RelMappingList': chunk,
         }
-        try:
-            tx.run(query, **query_args)
-        except neo4j.ServiceUnavailable:
-            logger.error("Failed to merge nodes.", exc_info=True)
-            tx.rollback()
-            raise
+        neo4j_session.write_transaction(_merge_chunk, query, query_args)
         cursor += batch_size
         chunk = rel_mapping_list[cursor:cursor + batch_size]

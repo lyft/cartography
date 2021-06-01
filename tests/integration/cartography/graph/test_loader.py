@@ -1,5 +1,3 @@
-import neo4j
-
 from cartography.graph.loader import merge_nodes
 from cartography.graph.loader import merge_relationships
 
@@ -39,11 +37,9 @@ TEST_NODE_PROPERTY_MAP = {
 
 def test_merge_nodes(neo4j_session):
     # Arrange
-    tx: neo4j.Transaction = neo4j_session.begin_transaction()
-
-    # Act
+    # Act: add test nodes to the graph.
     merge_nodes(
-        tx,
+        neo4j_session,
         'SomeNodeLabel',
         TEST_NODE_PROPERTY_MAP,
         TEST_NODE_DATA,
@@ -59,16 +55,14 @@ def test_merge_nodes(neo4j_session):
     nodes = neo4j_session.run("MATCH (s:SomeNodeLabel) return s.id, s.name, s.encrypted")
     actual_nodes = {(n['s.id'], n['s.name'], n['s.encrypted']) for n in nodes}
     assert actual_nodes == expected_nodes
-    tx.close()  # Note: this has to be at the end of this test function else the test fails for some reason.
 
 
 def test_merge_relationships(neo4j_session):
     # Arrange: add 2 parent nodes to the graph, add test child nodes.
     neo4j_session.run("MERGE (p:ParentNode{id:101010, name:'Parent1'})")
     neo4j_session.run("MERGE (p:ParentNode{id:202020, name:'Parent2'})")
-    tx: neo4j.Transaction = neo4j_session.begin_transaction()
     merge_nodes(
-        tx,
+        neo4j_session,
         'SomeNodeLabel',
         TEST_NODE_PROPERTY_MAP,
         TEST_NODE_DATA,
@@ -82,7 +76,7 @@ def test_merge_relationships(neo4j_session):
         {'SomeNodeId': 1339, 'ParentId': 202020},
     ]
     merge_relationships(
-        tx,
+        neo4j_session,
         'SomeNodeLabel', 'id', 'SomeNodeId',
         'ParentNode', 'id', 'ParentId',
         'PARENT',
@@ -102,16 +96,14 @@ def test_merge_relationships(neo4j_session):
     nodes = neo4j_session.run("MATCH (s:SomeNodeLabel)-[:PARENT]->(p:ParentNode) return s.name, p.name")
     actual_nodes = {(n['s.name'], n['p.name']) for n in nodes}
     assert actual_nodes == expected_nodes
-    tx.close()
 
 
 def test_merge_relationships_with_properties(neo4j_session):
     # Arrange: add 2 parent nodes to the graph, add test child nodes.
     neo4j_session.run("MERGE (p:ParentNode{id:101010, name:'Parent1'})")
     neo4j_session.run("MERGE (p:ParentNode{id:202020, name:'Parent2'})")
-    tx: neo4j.Transaction = neo4j_session.begin_transaction()
     merge_nodes(
-        tx,
+        neo4j_session,
         'SomeNodeLabel',
         TEST_NODE_PROPERTY_MAP,
         TEST_NODE_DATA,
@@ -129,7 +121,7 @@ def test_merge_relationships_with_properties(neo4j_session):
         'rel_attrib': 'RelAttrib',
     }
     merge_relationships(
-        tx,
+        neo4j_session,
         'SomeNodeLabel', 'id', 'SomeNodeId',
         'ParentNode', 'id', 'ParentId',
         'PARENT',
@@ -150,4 +142,3 @@ def test_merge_relationships_with_properties(neo4j_session):
     items = neo4j_session.run("MATCH (s:SomeNodeLabel)-[r:PARENT]->(p:ParentNode) return s.name, r.rel_attrib, p.name")
     actual = {(n['s.name'], n['r.rel_attrib'], n['p.name']) for n in items}
     assert actual == expected
-    tx.close()
