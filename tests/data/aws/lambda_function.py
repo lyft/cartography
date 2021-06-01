@@ -275,3 +275,77 @@ LIST_LAMBDA_FUNCTIONS = [
         "RevisionId": "8d44bdbc-9c39-4309-af5c-7d0f31fed90b",
     },
 ]
+
+LIST_LAMBDA_FUNCTION_ALIASES = [
+    {
+        "AliasArn": "arn:aws:lambda:us-west-2:000000000000:function:sample-function-3:LIVE",
+        "Name": "alias-1",
+        "FunctionVersion": "$LATEST",
+        "Description": "",
+        "RevisionId": "43b3eaa2-96a4-4070-a6b1-e7a2020d61f5",
+        "FunctionArn": "arn:aws:lambda:us-west-2:000000000000:function:sample-function-3",
+    },
+    {
+        "AliasArn": "arn:aws:lambda:us-west-2:000000000000:function:sample-function-9:LIVE",
+        "Name": "alias-2",
+        "FunctionVersion": "$LATEST",
+        "Description": "",
+        "RevisionId": "7d2e5d1a-95cf-4a04-8936-5bed46c5a88b",
+        "FunctionArn": "arn:aws:lambda:us-west-2:000000000000:function:sample-function-9",
+    },
+    {
+        "AliasArn": "arn:aws:lambda:us-west-2:000000000000:function:sample-function-10:LIVE",
+        "Name": "alias-3",
+        "FunctionVersion": "$LATEST",
+        "Description": "",
+        "RevisionId": "7d2e5d1a-95cf-4a04-8936-5bed46c5a88b",
+        "FunctionArn": "arn:aws:lambda:us-west-2:000000000000:function:sample-function-10",
+    },
+]
+
+LIST_EVENT_SOURCE_MAPPINGS = [
+    {
+        "UUID": "i01",
+        "StartingPosition": "LATEST",
+        "BatchSize": 123,
+        "MaximumBatchingWindowInSeconds": 123,
+        "ParallelizationFactor": 123,
+        "EventSourceArn": "arn:aws:sqs:us-west-2:123456789012:mySQSqueue",
+        "FunctionArn": "arn:aws:lambda:us-west-2:000000000000:function:sample-function-7",
+        "MaximumRecordAgeInSeconds": 123,
+        "BisectBatchOnFunctionError": True,
+        "MaximumRetryAttempts": 123,
+        "TumblingWindowInSeconds": 123,
+    },
+    {
+        "UUID": "i02",
+        "StartingPosition": "LATEST",
+        "BatchSize": 123,
+        "MaximumBatchingWindowInSeconds": 123,
+        "ParallelizationFactor": 123,
+        "EventSourceArn": "arn:aws:sqs:us-west-2:123456789012:mySQSqueue",
+        "FunctionArn": "arn:aws:lambda:us-west-2:000000000000:function:sample-function-8",
+        "MaximumRecordAgeInSeconds": 123,
+        "BisectBatchOnFunctionError": True,
+        "MaximumRetryAttempts": 123,
+        "TumblingWindowInSeconds": 123,
+    },
+]
+
+LIST_LAYERS = [
+    {
+        "Arn": "arn:aws:lambda:us-east-2:123456789012:layer:my-layer-1",
+        "CodeSize": 123,
+        "FunctionArn": "arn:aws:lambda:us-west-2:000000000000:function:sample-function-2",
+    },
+    {
+        "Arn": "arn:aws:lambda:us-east-2:123456789012:layer:my-layer-2",
+        "CodeSize": 123,
+        "FunctionArn": "arn:aws:lambda:us-west-2:000000000000:function:sample-function-3",
+    },
+    {
+        "Arn": "arn:aws:lambda:us-east-2:123456789012:layer:my-layer-3",
+        "CodeSize": 123,
+        "FunctionArn": "arn:aws:lambda:us-west-2:000000000000:function:sample-function-4",
+    },
+]
