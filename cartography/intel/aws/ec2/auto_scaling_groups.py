@@ -26,8 +26,7 @@ def get_ec2_auto_scaling_groups(boto3_session: boto3.session.Session, region: st
 
 @timeit
 def load_ec2_auto_scaling_groups(
-        neo4j_session: neo4j.Session, data: List[Dict], region: str,
-        current_aws_account_id: str, update_tag: int,
+        neo4j_session: neo4j.Session, data: List[Dict], region: str, current_aws_account_id: str, update_tag: int,
 ) -> None:
     ingest_group = """
     UNWIND {autoscaling_groups_list} as ag
@@ -94,7 +93,10 @@ def load_ec2_auto_scaling_groups(
         group_arn = group["AutoScalingGroupARN"]
         if group.get('VPCZoneIdentifier'):
             vpclist = group["VPCZoneIdentifier"]
-            data = str(vpclist).split(',')
+            if ',' in vpclist:
+                data = vpclist.split(',')
+            else:
+                data = vpclist
             neo4j_session.run(
                 ingest_vpc,
                 vpc_list=data,
@@ -126,8 +128,7 @@ def cleanup_ec2_auto_scaling_groups(neo4j_session: neo4j.Session, common_job_par
 @timeit
 def sync_ec2_auto_scaling_groups(
         neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str],
-        current_aws_account_id: str,
-        update_tag: int, common_job_parameters: Dict,
+        current_aws_account_id: str, update_tag: int, common_job_parameters: Dict,
 ) -> None:
     for region in regions:
         logger.debug("Syncing auto scaling groups for region '%s' in account '%s'.", region, current_aws_account_id)

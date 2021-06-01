@@ -38,8 +38,9 @@ def load_images(
         i.architecture = image.Architecture, i.location = image.ImageLocation, i.type = image.ImageType,
         i.ispublic = image.Public, i.platform = image.Platform, i.usageoperation = image.UsageOperation,
         i.state = image.State, i.description = image.Description, i.enasupport = image.EnaSupport,
-        i.hypervisor = image.Hypervisor, i.rootdevicename = image.RootDeviceName, i.rootdevicetype = image.RootDeviceType,
-        i.virtualizationtype = image.VirtualizationType, i.bootmode = image.BootMode, i.region={Region}
+        i.hypervisor = image.Hypervisor, i.rootdevicename = image.RootDeviceName,
+        i.rootdevicetype = image.RootDeviceType, i.virtualizationtype = image.VirtualizationType,
+        i.bootmode = image.BootMode, i.region={Region}
         WITH i
         MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
         MERGE (aa)-[r:RESOURCE]->(i)
