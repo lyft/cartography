@@ -31,50 +31,50 @@ def load_ec2_auto_scaling_groups(
 ) -> None:
     ingest_group = """
     UNWIND {autoscaling_groups_list} as ag
-    MERGE (group:AutoScalingGroup{arn: ag.AutoScalingGroupARN})
-    ON CREATE SET group.firstseen = timestamp(), group.name = ag.AutoScalingGroupName,
-    group.createdtime = ag.CreatedTime
-    SET group.lastupdated = {update_tag}, group.launchconfigurationname = ag.LaunchConfigurationName,
-    group.maxsize = ag.MaxSize, group.minsize = ag.MinSize, group.defaultcooldown = ag.DefaultCooldown,
-    group.desiredcapacity = ag.DesiredCapacity, group.healthchecktype = ag.HealthCheckType,
-    group.healthcheckgraceperiod = ag.HealthCheckGracePeriod, group.status = ag.Status,
-    group.newinstancesprotectedfromscalein = ag.NewInstancesProtectedFromScaleIn,
-    group.maxinstancelifetime = ag.MaxInstanceLifetime, group.capacityrebalance = ag.CapacityRebalance,
-    group.region={Region}
-    WITH group
-    MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
-    MERGE (aa)-[r:RESOURCE]->(group)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {update_tag}
+        MERGE (group:AutoScalingGroup{arn: ag.AutoScalingGroupARN})
+        ON CREATE SET group.firstseen = timestamp(), group.name = ag.AutoScalingGroupName,
+        group.createdtime = ag.CreatedTime
+        SET group.lastupdated = {update_tag}, group.launchconfigurationname = ag.LaunchConfigurationName,
+        group.maxsize = ag.MaxSize, group.minsize = ag.MinSize, group.defaultcooldown = ag.DefaultCooldown,
+        group.desiredcapacity = ag.DesiredCapacity, group.healthchecktype = ag.HealthCheckType,
+        group.healthcheckgraceperiod = ag.HealthCheckGracePeriod, group.status = ag.Status,
+        group.newinstancesprotectedfromscalein = ag.NewInstancesProtectedFromScaleIn,
+        group.maxinstancelifetime = ag.MaxInstanceLifetime, group.capacityrebalance = ag.CapacityRebalance,
+        group.region={Region}
+        WITH group
+        MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+        MERGE (aa)-[r:RESOURCE]->(group)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {update_tag}
     """
 
     ingest_vpc = """
     UNWIND {vpc_list} as vpc
-    MERGE (subnet:EC2Subnet{subnetid: vpc.SubnetId})
-    ON CREATE SET subnet.firstseen = timestamp()
-    SET subnet.lastupdated = {update_tag}
-    WITH subnet
-    MATCH (group:AutoScalingGroup{arn: {GROUPARN}})
-    MERGE (subnet)<-[r:VPC_IDENTIFIER]-(group)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {update_tag}
+        MERGE (subnet:EC2Subnet{subnetid: vpc.SubnetId})
+        ON CREATE SET subnet.firstseen = timestamp()
+        SET subnet.lastupdated = {update_tag}
+        WITH subnet
+        MATCH (group:AutoScalingGroup{arn: {GROUPARN}})
+        MERGE (subnet)<-[r:VPC_IDENTIFIER]-(group)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {update_tag}
     """
 
     ingest_instance = """
     UNWIND {instances_list} as i
-    MERGE (instance:Instance:EC2Instance{id: i.InstanceId})
-    ON CREATE SET instance.firstseen = timestamp()
-    SET instance.lastupdated = {update_tag}, instance.region={Region}
-    WITH instance
-    MATCH (group:AutoScalingGroup{arn: {GROUPARN}})
-    MERGE (instance)-[r:MEMBER_AUTO_SCALE_GROUP]->(group)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {update_tag}
-    WITH instance
-    MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
-    MERGE (aa)-[r:RESOURCE]->(instance)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {update_tag}
+        MERGE (instance:Instance:EC2Instance{id: i.InstanceId})
+        ON CREATE SET instance.firstseen = timestamp()
+        SET instance.lastupdated = {update_tag}, instance.region={Region}
+        WITH instance
+        MATCH (group:AutoScalingGroup{arn: {GROUPARN}})
+        MERGE (instance)-[r:MEMBER_AUTO_SCALE_GROUP]->(group)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {update_tag}
+        WITH instance
+        MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+        MERGE (aa)-[r:RESOURCE]->(instance)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {update_tag}
     """
 
     # neo4j does not accept datetime objects and values. This loop is used to convert

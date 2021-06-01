@@ -28,24 +28,23 @@ def get_images(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
 
 @timeit
 def load_images(
-        neo4j_session: neo4j.Session, data: List[Dict], region: str,
-        current_aws_account_id: str, update_tag: int,
+        neo4j_session: neo4j.Session, data: List[Dict], region: str, current_aws_account_id: str, update_tag: int,
 ) -> None:
     ingest_images = """
     UNWIND {images_list} as image
-    MERGE (i:EC2Image{id: image.ImageId})
-    ON CREATE SET i.firstseen = timestamp(), i.name = image.Name, i.creationdate = image.CreationDate
-    SET i.lastupdated = {update_tag},
-    i.architecture = image.Architecture, i.location = image.ImageLocation, i.type = image.ImageType,
-    i.ispublic = image.Public, i.platform = image.Platform, i.usageoperation = image.UsageOperation,
-    i.state = image.State, i.description = image.Description, i.enasupport = image.EnaSupport,
-    i.hypervisor = image.Hypervisor, i.rootdevicename = image.RootDeviceName, i.rootdevicetype = image.RootDeviceType,
-    i.virtualizationtype = image.VirtualizationType, i.bootmode = image.BootMode, i.region={Region}
-    WITH i
-    MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
-    MERGE (aa)-[r:RESOURCE]->(i)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {update_tag}
+        MERGE (i:EC2Image{id: image.ImageId})
+        ON CREATE SET i.firstseen = timestamp(), i.name = image.Name, i.creationdate = image.CreationDate
+        SET i.lastupdated = {update_tag},
+        i.architecture = image.Architecture, i.location = image.ImageLocation, i.type = image.ImageType,
+        i.ispublic = image.Public, i.platform = image.Platform, i.usageoperation = image.UsageOperation,
+        i.state = image.State, i.description = image.Description, i.enasupport = image.EnaSupport,
+        i.hypervisor = image.Hypervisor, i.rootdevicename = image.RootDeviceName, i.rootdevicetype = image.RootDeviceType,
+        i.virtualizationtype = image.VirtualizationType, i.bootmode = image.BootMode, i.region={Region}
+        WITH i
+        MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+        MERGE (aa)-[r:RESOURCE]->(i)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {update_tag}
     """
 
     neo4j_session.run(
@@ -69,8 +68,7 @@ def cleanup_images(neo4j_session: neo4j.Session, common_job_parameters: Dict) ->
 @timeit
 def sync_ec2_images(
         neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str],
-        current_aws_account_id: str,
-        update_tag: int, common_job_parameters: Dict,
+        current_aws_account_id: str, update_tag: int, common_job_parameters: Dict,
 ) -> None:
     for region in regions:
         logger.debug("Syncing images for region '%s' in account '%s'.", region, current_aws_account_id)
