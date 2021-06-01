@@ -9,3 +9,9 @@ def test_parse_policy():
     assert(res['api_id']) is not None
     assert(res['internet_accessible']) is not None
     assert(res['accessible_actions']) is not None
+
+
+def test_none_policy():
+    res = parse_policy(None, None)
+
+    assert(res) is None

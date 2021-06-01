@@ -14,115 +14,121 @@
   - [Relationships](#relationships-2)
 - [AWSLambda](#awslambda)
   - [Relationships](#relationships-3)
-- [AWSPolicy](#awspolicy)
+- [AWSLambdaFunctionAlias](#awslambdafunctionalias)
   - [Relationships](#relationships-4)
-- [AWSPolicyStatement](#awspolicystatement)
+- [AWSLambdaEventSourceMapping](#awslambdaeventsourcemapping)
   - [Relationships](#relationships-5)
-- [AWSPrincipal](#awsprincipal)
+- [AWSLambdaLayer](#awslambdalayer)
   - [Relationships](#relationships-6)
-- [AWSPrincipal::AWSUser](#awsprincipalawsuser)
+- [AWSPolicy](#awspolicy)
   - [Relationships](#relationships-7)
-- [AWSPrincipal::AWSRole](#awsprincipalawsrole)
+- [AWSPolicyStatement](#awspolicystatement)
   - [Relationships](#relationships-8)
-- [AWSTransitGateway](#awstransitgateway)
+- [AWSPrincipal](#awsprincipal)
   - [Relationships](#relationships-9)
-- [AWSTransitGatewayAttachment](#awstransitgatewayattachment)
+- [AWSPrincipal::AWSUser](#awsprincipalawsuser)
   - [Relationships](#relationships-10)
-- [AWSVpc](#awsvpc)
+- [AWSPrincipal::AWSRole](#awsprincipalawsrole)
   - [Relationships](#relationships-11)
-- [Tag::AWSTag](#tagawstag)
+- [AWSTransitGateway](#awstransitgateway)
   - [Relationships](#relationships-12)
-- [AccountAccessKey](#accountaccesskey)
+- [AWSTransitGatewayAttachment](#awstransitgatewayattachment)
   - [Relationships](#relationships-13)
-- [DBSubnetGroup](#dbsubnetgroup)
+- [AWSVpc](#awsvpc)
   - [Relationships](#relationships-14)
-- [DNSRecord](#dnsrecord)
+- [Tag::AWSTag](#tagawstag)
   - [Relationships](#relationships-15)
-- [DNSRecord::AWSDNSRecord](#dnsrecordawsdnsrecord)
+- [AccountAccessKey](#accountaccesskey)
   - [Relationships](#relationships-16)
-- [DNSZone](#dnszone)
+- [DBSubnetGroup](#dbsubnetgroup)
   - [Relationships](#relationships-17)
-- [DNSZone::AWSDNSZone](#dnszoneawsdnszone)
+- [DNSRecord](#dnsrecord)
   - [Relationships](#relationships-18)
-- [DynamoDBTable](#dynamodbtable)
+- [DNSRecord::AWSDNSRecord](#dnsrecordawsdnsrecord)
   - [Relationships](#relationships-19)
-- [EC2Instance](#ec2instance)
+- [DNSZone](#dnszone)
   - [Relationships](#relationships-20)
-- [EC2KeyPair](#ec2keypair)
+- [DNSZone::AWSDNSZone](#dnszoneawsdnszone)
   - [Relationships](#relationships-21)
-- [EC2PrivateIp](#ec2privateip)
+- [DynamoDBTable](#dynamodbtable)
   - [Relationships](#relationships-22)
-- [EC2Reservation](#ec2reservation)
+- [EC2Instance](#ec2instance)
   - [Relationships](#relationships-23)
-- [EC2SecurityGroup](#ec2securitygroup)
+- [EC2KeyPair](#ec2keypair)
   - [Relationships](#relationships-24)
-- [EC2Subnet](#ec2subnet)
+- [EC2PrivateIp](#ec2privateip)
   - [Relationships](#relationships-25)
-- [AWSInternetGateway](#awsinternetgateway)
+- [EC2Reservation](#ec2reservation)
   - [Relationships](#relationships-26)
-- [ECRRepository](#ecrrepository)
+- [EC2SecurityGroup](#ec2securitygroup)
   - [Relationships](#relationships-27)
-- [ECRRepositoryImage](#ecrrepositoryimage)
+- [EC2Subnet](#ec2subnet)
   - [Relationships](#relationships-28)
-- [ECRImage](#ecrimage)
+- [AWSInternetGateway](#awsinternetgateway)
   - [Relationships](#relationships-29)
-- [Package](#package)
+- [ECRRepository](#ecrrepository)
   - [Relationships](#relationships-30)
-- [ECRScanFinding (:Risk:CVE)](#ecrscanfinding-riskcve)
+- [ECRRepositoryImage](#ecrrepositoryimage)
   - [Relationships](#relationships-31)
-- [EKSCluster](#ekscluster)
+- [ECRImage](#ecrimage)
   - [Relationships](#relationships-32)
-- [EMRCluster](#emrcluster)
+- [Package](#package)
   - [Relationships](#relationships-33)
-- [ESDomain](#esdomain)
+- [ECRScanFinding (:Risk:CVE)](#ecrscanfinding-riskcve)
   - [Relationships](#relationships-34)
-- [Endpoint](#endpoint)
+- [EKSCluster](#ekscluster)
   - [Relationships](#relationships-35)
-- [Endpoint::ELBListener](#endpointelblistener)
+- [EMRCluster](#emrcluster)
   - [Relationships](#relationships-36)
-- [Endpoint::ELBV2Listener](#endpointelbv2listener)
+- [ESDomain](#esdomain)
   - [Relationships](#relationships-37)
-- [Ip](#ip)
+- [Endpoint](#endpoint)
   - [Relationships](#relationships-38)
-- [IpRule](#iprule)
+- [Endpoint::ELBListener](#endpointelblistener)
   - [Relationships](#relationships-39)
-- [IpRule::IpPermissionInbound](#ipruleippermissioninbound)
+- [Endpoint::ELBV2Listener](#endpointelbv2listener)
   - [Relationships](#relationships-40)
-- [LoadBalancer](#loadbalancer)
+- [Ip](#ip)
   - [Relationships](#relationships-41)
-- [LoadBalancerV2](#loadbalancerv2)
+- [IpRule](#iprule)
   - [Relationships](#relationships-42)
-- [Nameserver](#nameserver)
+- [IpRule::IpPermissionInbound](#ipruleippermissioninbound)
   - [Relationships](#relationships-43)
-- [NetworkInterface](#networkinterface)
+- [LoadBalancer](#loadbalancer)
   - [Relationships](#relationships-44)
+- [LoadBalancerV2](#loadbalancerv2)
+  - [Relationships](#relationships-45)
+- [Nameserver](#nameserver)
+  - [Relationships](#relationships-46)
+- [NetworkInterface](#networkinterface)
+  - [Relationships](#relationships-47)
 - [AWSPeeringConnection](#awspeeringconnection)
 - [RedshiftCluster](#redshiftcluster)
-  - [Relationships](#relationships-45)
-- [RDSInstance](#rdsinstance)
-  - [Relationships](#relationships-46)
-- [S3Acl](#s3acl)
-  - [Relationships](#relationships-47)
-- [S3Bucket](#s3bucket)
   - [Relationships](#relationships-48)
-- [KMSKey](#kmskey)
+- [RDSInstance](#rdsinstance)
   - [Relationships](#relationships-49)
-- [KMSAlias](#kmsalias)
+- [S3Acl](#s3acl)
   - [Relationships](#relationships-50)
-- [KMSGrant](#kmsgrant)
+- [S3Bucket](#s3bucket)
   - [Relationships](#relationships-51)
-- [APIGatewayRestAPI](#apigatewayrestapi)
+- [KMSKey](#kmskey)
   - [Relationships](#relationships-52)
-- [APIGatewayStage](#apigatewaystage)
+- [KMSAlias](#kmsalias)
   - [Relationships](#relationships-53)
-- [APIGatewayClientCertificate](#apigatewayclientcertificate)
+- [KMSGrant](#kmsgrant)
   - [Relationships](#relationships-54)
-- [APIGatewayResource](#apigatewayresource)
+- [APIGatewayRestAPI](#apigatewayrestapi)
   - [Relationships](#relationships-55)
-- [AutoScalingGroup](#autoscalinggroup)
+- [APIGatewayStage](#apigatewaystage)
   - [Relationships](#relationships-56)
-- [EC2Image](#ec2image)
+- [APIGatewayClientCertificate](#apigatewayclientcertificate)
   - [Relationships](#relationships-57)
+- [APIGatewayResource](#apigatewayresource)
+  - [Relationships](#relationships-58)
+- [AutoScalingGroup](#autoscalinggroup)
+  - [Relationships](#relationships-59)
+- [EC2Image](#ec2image)
+  - [Relationships](#relationships-60)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -259,6 +265,20 @@ Representation of an AWS [Lambda Function](https://docs.aws.amazon.com/lambda/la
 | description |  The description of the Lambda function |
 | timeout |  The amount of time in seconds that Lambda allows a function to run before stopping it |
 | memory |  The memory that's allocated to the function |
+| codesize |  The size of the function's deployment package, in bytes. |
+| handler |  The function that Lambda calls to begin executing your function. |
+| version |  The version of the Lambda function. |
+| tracingconfigmode | The function's AWS X-Ray tracing configuration mode. |
+| revisionid | The latest updated revision of the function or alias. |
+| state | The current state of the function. |
+| statereason | The reason for the function's current state. |
+| statereasoncode | The reason code for the function's current state. |
+| lastupdatestatus | The status of the last update that was performed on the function. |
+| lastupdatestatusreason |  The reason for the last update that was performed on the function.|
+| lastupdatestatusreasoncode | The reason code for the last update that was performed on the function. |
+| packagetype |  The type of deployment package. |
+| signingprofileversionarn | The ARN of the signing profile version. |
+| signingjobarn | The ARN of the signing job. |
 
 ### Relationships
 
@@ -272,6 +292,98 @@ Representation of an AWS [Lambda Function](https://docs.aws.amazon.com/lambda/la
 
         ```
         (AWSLambda)-[STS_ASSUME_ROLE_ALLOW]->(AWSPrincipal)
+        ```
+
+- AWSLambda functions may also have aliases.
+
+        ```
+        (AWSLambda)-[KNOWN_AS]->(AWSLambdaFunctionAlias)
+        ```
+
+- AWSLambda functions may have the resource AWSLambdaEventSourceMapping.
+
+        ```
+        (AWSLambda)-[RESOURCE]->(AWSLambdaEventSourceMapping)
+        ```
+
+- AWSLambda functions has AWS Lambda Layers.
+
+        ```
+        (AWSLambda)-[HAS]->(AWSLambdaLayer)
+        ```
+
+## AWSLambdaFunctionAlias
+
+Representation of an [AWSLambdaFunctionAlias](https://docs.aws.amazon.com/lambda/latest/dg/configuration-aliases.html).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The arn of the lambda function alias|
+| name |  The name of the lambda function alias |
+| functionversion | The function version that the alias invokes.|
+| revisionid |  A unique identifier that changes when you update the alias. |
+| description |  The description of the alias. |
+
+### Relationships
+
+- AWSLambda functions may also have aliases.
+
+        ```
+        (AWSLambda)-[KNOWN_AS]->(AWSLambdaFunctionAlias)
+        ```
+
+## AWSLambdaEventSourceMapping
+
+Representation of an [AWSLambdaEventSourceMapping](https://docs.aws.amazon.com/lambda/latest/dg/API_ListEventSourceMappings.html).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The id of the event source mapping|
+| batchsize | The maximum number of items to retrieve in a single batch. |
+| startingposition | The position in a stream from which to start reading. |
+| startingpositiontimestamp |  The time from which to start reading. |
+| parallelizationfactor |  The number of batches to process from each shard concurrently. |
+| maximumbatchingwindowinseconds | The maximum amount of time to gather records before invoking the function, in seconds.|
+| eventsourcearn |The Amazon Resource Name (ARN) of the event source.|
+| lastmodified |The date that the event source mapping was last updated, or its state changed.|
+| state | The state of the event source mapping. |
+| maximumrecordage | Discard records older than the specified age. |
+| bisectbatchonfunctionerror | If the function returns an error, split the batch in two and retry. |
+| maximumretryattempts | Discard records after the specified number of retries. |
+| tumblingwindowinseconds | The duration in seconds of a processing window. |
+| lastprocessingresult |The result of the last AWS Lambda invocation of your Lambda function. |
+
+### Relationships
+
+- AWSLambda functions may have the resource AWSLambdaEventSourceMapping.
+
+        ```
+        (AWSLambda)-[RESOURCE]->(AWSLambdaEventSourceMapping)
+        ```
+
+## AWSLambdaLayer
+
+Representation of an [AWSLambdaLayer](https://docs.aws.amazon.com/lambda/latest/dg/configuration-layers.html).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The arn of the lambda function layer|
+| codesize | The size of the layer archive in bytes.|
+| signingprofileversionarn | The Amazon Resource Name (ARN) for a signing profile version.|
+| signingjobarn | The Amazon Resource Name (ARN) of a signing job. |
+
+### Relationships
+
+- AWSLambda functions has AWS Lambda Layers.
+
+        ```
+        (AWSLambda)-[HAS]->(AWSLambdaLayer)
         ```
 
 ## AWSPolicy
