@@ -49,6 +49,7 @@ def merge_nodes(
         query_args = {
             'UpdateTag': update_tag,
             'DictList': chunk,
+            'NodeLabel': node_label,  # used for debug logs
         }
         neo4j_session.write_transaction(_merge_chunk, ingest_query, query_args)
         cursor += batch_size
@@ -57,9 +58,17 @@ def merge_nodes(
 
 def _merge_chunk(tx: neo4j.Transaction, ingest_query: str, query_args: Dict) -> None:
     """
-    Thin wrapper used as the `unit_of_work` argument to `neo4j_session.write_transaction()`.
+    `unit_of_work` function for `neo4j_session.write_transaction()`.
     """
-    tx.run(ingest_query, **query_args)
+    result: neo4j.BoltStatementResult = tx.run(ingest_query, **query_args)
+    summary: neo4j.BoltStatementResultSummary = result.consume()
+
+    if 'NodeLabel' in query_args:
+        logger.debug(f"Created {summary.counters.nodes_created} nodes with label '{query_args['NodeLabel']}'.")
+    if 'RelLabel' in query_args:
+        logger.debug(
+            f"Created {summary.counters.relationships_created} relationships with label '{query_args['RelLabel']}'.",
+        )
 
 
 def merge_relationships(
@@ -128,6 +137,7 @@ def merge_relationships(
         query_args = {
             'UpdateTag': update_tag,
             'RelMappingList': chunk,
+            'RelLabel': relationship_label,  # used for debug logs
         }
         neo4j_session.write_transaction(_merge_chunk, query, query_args)
         cursor += batch_size
