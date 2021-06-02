@@ -128,7 +128,8 @@ def load_default_associations(
 ) -> None:
     ingest_default_associations = """
 
-    MATCH (snet:EC2Subnet)-[]-(vpc:AWSVpc)-[:RESOURCE]-(rtb:EC2RouteTable)-[:ASSOCIATED]-(rtba:EC2RouteTableAssociation{main:true}) 
+    MATCH (snet:EC2Subnet)-[]-(vpc:AWSVpc)-[:RESOURCE]-(rtb:EC2RouteTable)-
+    [:ASSOCIATED]-(rtba:EC2RouteTableAssociation{main:true})
     WHERE NOT (snet)-[:ASSOCIATED]-(:EC2RouteTable)
 
     MERGE (snet)-[r_m:ASSOCIATED]->(rtb)
@@ -146,6 +147,7 @@ def load_default_associations(
         ingest_default_associations, route_tables=data, update_tag=update_tag,
         region=region, aws_account_id=aws_account_id,
     )
+
 
 @timeit
 def load_routes(

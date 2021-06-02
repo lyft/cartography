@@ -55,12 +55,10 @@ def load_subnets(
 
     """
 
-
     neo4j_session.run(
         ingest_subnets, subnets=data, aws_update_tag=aws_update_tag,
         region=region, aws_account_id=aws_account_id,
     )
-
 
 
 @timeit
