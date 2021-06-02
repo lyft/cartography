@@ -39,37 +39,28 @@ def load_subnets(
     snet.map_customer_owned_ip_on_launch = subnet.MapCustomerOwnedIpOnLaunch,
     snet.map_public_ip_on_launch = subnet.MapPublicIpOnLaunch, snet.subnet_arn = subnet.SubnetArn,
     snet.availability_zone = subnet.AvailabilityZone, snet.availability_zone_id = subnet.AvailabilityZoneId,
-    snet.subnetid = subnet.SubnetId
-    """
+    snet.subnetid = subnet.SubnetId, snet.vpcid = subnet.VpcId
 
-    ingest_subnet_vpc_relations = """
-    UNWIND {subnets} as subnet
-    MATCH (snet:EC2Subnet{subnetid: subnet.SubnetId}), (vpc:AWSVpc{id: subnet.VpcId})
+    MERGE (vpc:AWSVpc{id: subnet.VpcId})
+    ON CREATE SET vpc.firstseen = timestamp()
+    SET vpc.lastupdated = {aws_update_tag}
+
     MERGE (snet)-[r:MEMBER_OF_AWS_VPC]->(vpc)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {aws_update_tag}
+
+    MERGE (aws:AWSAccount{id: {aws_account_id}})-[res:RESOURCE]->(snet)
+    ON CREATE SET res.firstseen = timestamp()
+    SET res.lastupdated = {aws_update_tag}
+
     """
 
-    ingest_subnet_aws_account_relations = """
-    UNWIND {subnets} as subnet
-    MATCH (snet:EC2Subnet{subnetid: subnet.SubnetId}), (aws:AWSAccount{id: {aws_account_id}})
-    MERGE (aws)-[r:RESOURCE]->(snet)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
-    """
 
     neo4j_session.run(
         ingest_subnets, subnets=data, aws_update_tag=aws_update_tag,
         region=region, aws_account_id=aws_account_id,
     )
-    neo4j_session.run(
-        ingest_subnet_vpc_relations, subnets=data, aws_update_tag=aws_update_tag,
-        region=region, aws_account_id=aws_account_id,
-    )
-    neo4j_session.run(
-        ingest_subnet_aws_account_relations, subnets=data, aws_update_tag=aws_update_tag,
-        region=region, aws_account_id=aws_account_id,
-    )
+
 
 
 @timeit
