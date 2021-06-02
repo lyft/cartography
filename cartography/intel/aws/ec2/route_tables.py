@@ -122,6 +122,32 @@ def load_associations(
 
 
 @timeit
+def load_default_associations(
+    neo4j_session: neo4j.Session, data: List[Dict], region: str,
+    aws_account_id: str, update_tag: int,
+) -> None:
+    ingest_default_associations = """
+
+    MATCH (snet:EC2Subnet)-[]-(vpc:AWSVpc)-[:RESOURCE]-(rtb:EC2RouteTable)-[:ASSOCIATED]-(rtba:EC2RouteTableAssociation{main:true}) 
+    WHERE NOT (snet)-[:ASSOCIATED]-(:EC2RouteTable)
+
+    MERGE (snet)-[r_m:ASSOCIATED]->(rtb)
+    ON CREATE SET r_m.firstseen = timestamp()
+    SET r_m.lastupdated = {update_tag}, r_m.main = rtba.Main,
+    r_m.state = rtba.AssociationState.State,
+    r_m.id = rtba.RouteTableAssociationId
+
+    MERGE (subnet)-[s_rta_m:ASSOCIATED]->(rtba)
+    ON CREATE SET s_rta_m.firstseen = timestamp()
+    SET s_rta_m.lastupdated = {update_tag}
+    """
+
+    neo4j_session.run(
+        ingest_default_associations, route_tables=data, update_tag=update_tag,
+        region=region, aws_account_id=aws_account_id,
+    )
+
+@timeit
 def load_routes(
     neo4j_session: neo4j.Session, data: List[Dict], region: str,
     aws_account_id: str, update_tag: int,
