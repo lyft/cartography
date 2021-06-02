@@ -90,12 +90,12 @@ def merge_relationships(
 
     :param neo4j_session: The Neo4j transaction object.
     :param node_label_a: The label of node A.
-    :param search_property_a: the search key to used to search the graph to find node A. For
+    :param search_property_a: the search key to use to search the graph to find node A. For
     performance, this should be an indexed property. If your graph is large, querying on
     non-indexed properties can cause your syncs to take **days** to run!
     :param dict_key_a: The dict key on what value of `search_property_a` to search for.
     :param node_label_b: The label of node B.
-    :param search_property_b: the search key to used to search the graph to find node B. For
+    :param search_property_b: the search key to use to search the graph to find node B. For
     performance, this should be an indexed property. If your graph is large, querying on
     non-indexed properties can cause your syncs to take **days** to run!
     :param dict_key_b: The dict key on what value of `search_property_b` to search for.
