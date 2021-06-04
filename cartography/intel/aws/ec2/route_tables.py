@@ -128,8 +128,8 @@ def load_default_associations(
 ) -> None:
     ingest_default_associations = """
 
-    MATCH (snet:EC2Subnet)-[]-(vpc:AWSVpc)-[:RESOURCE]-(rtb:EC2RouteTable)-
-    [:ASSOCIATED]-(rtba:EC2RouteTableAssociation{main:true})
+    MATCH (a:AWSAccount{id:{aws_account_id}})-[:RESOURCE]-(snet:EC2Subnet)-[]-(vpc:AWSVpc)-
+    [:RESOURCE]-(rtb:EC2RouteTable)-[:ASSOCIATED]-(rtba:EC2RouteTableAssociation{main:true})
     WHERE NOT (snet)-[:ASSOCIATED]-(:EC2RouteTable)
 
     MERGE (snet)-[r_m:ASSOCIATED]->(rtb)
@@ -515,5 +515,6 @@ def sync_route_tables(
         data = get_route_tables_data(boto3_session, region)
         load_route_tables(neo4j_session, data, region, current_aws_account_id, update_tag)
         load_associations(neo4j_session, data, region, current_aws_account_id, update_tag)
+        load_default_associations(neo4j_session, data, region, current_aws_account_id, update_tag)
         load_routes(neo4j_session, data, region, current_aws_account_id, update_tag)
     cleanup_route_tables(neo4j_session, common_job_parameters)
