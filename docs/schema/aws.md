@@ -60,71 +60,77 @@
   - [Relationships](#relationships-25)
 - [EC2Reservation](#ec2reservation)
   - [Relationships](#relationships-26)
-- [EC2SecurityGroup](#ec2securitygroup)
+- [EC2RouteTable](#ec2routetable)
   - [Relationships](#relationships-27)
-- [EC2Subnet](#ec2subnet)
+- [EC2RouteTableAssociation](#ec2routetableassociation)
   - [Relationships](#relationships-28)
-- [AWSInternetGateway](#awsinternetgateway)
+- [EC2Route](#ec2route)
   - [Relationships](#relationships-29)
-- [ECRRepository](#ecrrepository)
+- [EC2SecurityGroup](#ec2securitygroup)
   - [Relationships](#relationships-30)
-- [ECRRepositoryImage](#ecrrepositoryimage)
+- [EC2Subnet](#ec2subnet)
   - [Relationships](#relationships-31)
-- [ECRImage](#ecrimage)
+- [AWSInternetGateway](#awsinternetgateway)
   - [Relationships](#relationships-32)
-- [Package](#package)
+- [ECRRepository](#ecrrepository)
   - [Relationships](#relationships-33)
-- [ECRScanFinding (:Risk:CVE)](#ecrscanfinding-riskcve)
+- [ECRRepositoryImage](#ecrrepositoryimage)
   - [Relationships](#relationships-34)
-- [EKSCluster](#ekscluster)
+- [ECRImage](#ecrimage)
   - [Relationships](#relationships-35)
-- [EMRCluster](#emrcluster)
+- [Package](#package)
   - [Relationships](#relationships-36)
-- [ESDomain](#esdomain)
+- [ECRScanFinding (:Risk:CVE)](#ecrscanfinding-riskcve)
   - [Relationships](#relationships-37)
-- [Endpoint](#endpoint)
+- [EKSCluster](#ekscluster)
   - [Relationships](#relationships-38)
-- [Endpoint::ELBListener](#endpointelblistener)
+- [EMRCluster](#emrcluster)
   - [Relationships](#relationships-39)
-- [Endpoint::ELBV2Listener](#endpointelbv2listener)
+- [ESDomain](#esdomain)
   - [Relationships](#relationships-40)
-- [Ip](#ip)
+- [Endpoint](#endpoint)
   - [Relationships](#relationships-41)
-- [IpRule](#iprule)
+- [Endpoint::ELBListener](#endpointelblistener)
   - [Relationships](#relationships-42)
-- [IpRule::IpPermissionInbound](#ipruleippermissioninbound)
+- [Endpoint::ELBV2Listener](#endpointelbv2listener)
   - [Relationships](#relationships-43)
-- [LoadBalancer](#loadbalancer)
+- [Ip](#ip)
   - [Relationships](#relationships-44)
-- [LoadBalancerV2](#loadbalancerv2)
+- [IpRule](#iprule)
   - [Relationships](#relationships-45)
-- [Nameserver](#nameserver)
+- [IpRule::IpPermissionInbound](#ipruleippermissioninbound)
   - [Relationships](#relationships-46)
-- [NetworkInterface](#networkinterface)
+- [LoadBalancer](#loadbalancer)
   - [Relationships](#relationships-47)
+- [LoadBalancerV2](#loadbalancerv2)
+  - [Relationships](#relationships-48)
+- [Nameserver](#nameserver)
+  - [Relationships](#relationships-49)
+- [NetworkInterface](#networkinterface)
+  - [Relationships](#relationships-50)
 - [AWSPeeringConnection](#awspeeringconnection)
 - [RedshiftCluster](#redshiftcluster)
-  - [Relationships](#relationships-48)
-- [RDSInstance](#rdsinstance)
-  - [Relationships](#relationships-49)
-- [S3Acl](#s3acl)
-  - [Relationships](#relationships-50)
-- [S3Bucket](#s3bucket)
   - [Relationships](#relationships-51)
-- [KMSKey](#kmskey)
+- [RDSInstance](#rdsinstance)
   - [Relationships](#relationships-52)
-- [KMSAlias](#kmsalias)
+- [S3Acl](#s3acl)
   - [Relationships](#relationships-53)
-- [KMSGrant](#kmsgrant)
+- [S3Bucket](#s3bucket)
   - [Relationships](#relationships-54)
-- [APIGatewayRestAPI](#apigatewayrestapi)
+- [KMSKey](#kmskey)
   - [Relationships](#relationships-55)
-- [APIGatewayStage](#apigatewaystage)
+- [KMSAlias](#kmsalias)
   - [Relationships](#relationships-56)
-- [APIGatewayClientCertificate](#apigatewayclientcertificate)
+- [KMSGrant](#kmsgrant)
   - [Relationships](#relationships-57)
-- [APIGatewayResource](#apigatewayresource)
+- [APIGatewayRestAPI](#apigatewayrestapi)
   - [Relationships](#relationships-58)
+- [APIGatewayStage](#apigatewaystage)
+  - [Relationships](#relationships-59)
+- [APIGatewayClientCertificate](#apigatewayclientcertificate)
+  - [Relationships](#relationships-60)
+- [APIGatewayResource](#apigatewayresource)
+  - [Relationships](#relationships-61)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -156,7 +162,9 @@ Representation of an AWS Account.
                               EC2SecurityGroup,
                               ESDomain,
                               LoadBalancer,
-                              AWSVpc)
+                              AWSVpc,
+                              EC2RouteTable,
+                              EC2Route)
         ```
 
 - An `AWSPolicy` node is defined for an `AWSAccount`.
@@ -591,6 +599,12 @@ Representation of an [AWS Transit Gateway](https://docs.aws.amazon.com/AWSEC2/la
 (AWSTransitGateway)-[TAGGED]->(AWSTag)
 ```
 
+- AWSTransitGateways are associated with EC2Routes
+
+        ```
+        (AWSTransitGateway)-[ASSOCIATED]->(EC2Route)
+        ```
+
 ## AWSTransitGatewayAttachment
 Representation of an [AWS Transit Gateway Attachment](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_TransitGatewayAttachment.html).
 
@@ -660,7 +674,11 @@ More information on https://docs.aws.amazon.com/cli/latest/reference/ec2/describ
   (AWSVpc)<-[REQUESTER_VPC]-(AWSPeeringConnection)
   (AWSVpc)<-[ACCEPTER_VPC]-(AWSPeeringConnection)
   ```
+- EC2RouteTable is a resource of an `AWSVpc`
 
+        ```
+        (AWSVpc)-[RESOURCE]->(EC2RouteTable)
+        ```
 
 ## Tag::AWSTag
 
@@ -1043,6 +1061,140 @@ Representation of an AWS EC2 [Reservation](https://docs.aws.amazon.com/AWSEC2/la
 
         ```
         (EC2Instance)-[MEMBER_OF_EC2_RESERVATION]->(EC2Reservation)
+        ```
+
+
+
+## EC2RouteTable
+Representation of an AWS EC2 [RouteTable](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_RouteTable.html)
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | routeTableId, the ID of the route table |
+| route_table_id| routeTableId, the ID of the route table |
+
+### Relationships
+
+- EC2RouteTables are resources in an AWSAccount.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(EC2RouteTable)
+        ```
+
+- EC2RouteTables are resources in an AWSVpc.
+
+        ```
+        (AWSVpc)-[RESOURCE]->(EC2RouteTable)
+        ```
+
+- EC2RouteTables have EC2RouteTableAssociations
+
+        ```
+        (EC2RouteTableAssociation)-[ASSOCIATED]->(EC2RouteTable)
+        ```
+
+- EC2RouteTables are associated with EC2Subnets
+
+        ```
+        (EC2Subnet)-[ASSOCIATED]->(EC2RouteTable)
+        ```
+
+- EC2RouteTables have routes towards EC2Routes
+
+        ```
+        (EC2RouteTable)-[ROUTE]->(EC2Route)
+        ```
+
+## EC2RouteTableAssociation
+Representation of an AWS EC2 [RouteTableAssociation](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_RouteTableAssociation.html)
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | routeTableAssociationId, the ID of the association |
+| state | associationState, the state of the association |
+| main | Indicates whether this is the main route table |
+| subnet_id | subnetId, the ID of the subnet. A subnet ID is not returned for an implicit association |
+
+NOTE: implicit associations are loaded into the database too
+
+### Relationships
+- EC2RouteTables have EC2RouteTableAssociations
+
+        ```
+        (EC2RouteTableAssociation)-[ASSOCIATED]->(EC2RouteTable)
+        ```
+- EC2RouteTableAssociations are associated with EC2Subnets
+
+        ```
+        (EC2Subnet)-[ASSOCIATED]->(EC2RouteTableAssociation)
+        ```
+
+## EC2Route
+Representation of an AWS EC2 [Route](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_Route.html)
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | ``RouteTableId + | + DestinationCidrBlock`` or ``RouteTableId + | + DestinationPrefixListId`` |
+| gateway_id | gatewayId, the ID of a gateway attached to your VPC |
+| vgw_id | gatewayId, for VPN gateways |
+| peeringconnection_id | vpcPeeringConnectionId, the ID of a VPC peering connection |
+| ngw_id | natGatewayId, the ID of a NAT gateway |
+| tgw_id | transitGatewayId, the ID of a transit gateway |
+| cgw_id | carrierGatewayId, the ID of the carrier gateway |
+| destination_cidr_block | DestinationCidrBlock, the IPv4 CIDR block used for the destination match |
+| destination_prefix_list_id | destinationPrefixListId. the prefix of the AWS service |
+| state | The state of the route. Valid Values: ``active | blackhole`` |
+| origin | Describes how the route was created. ``Valid Values: CreateRouteTable | CreateRoute | EnableVgwRoutePropagation`` |
+
+TODO: implement networkInterfaceId and egressOnlyInternetGatewayId type of routes.
+
+### Relationships
+- EC2Routes are resources in an AWSAccount.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(EC2Route)
+        ```
+
+- EC2RouteTables have routes towards EC2Routes
+
+        ```
+        (EC2RouteTable)-[ROUTE]->(EC2Route)
+        ```
+
+- AWSInternetGateways are associated with EC2Routes
+
+        ```
+        (AWSInternetGateway)-[ASSOCIATED]->(EC2Route)
+        ```
+- AWSVPNGateways are associated with EC2Routes
+
+        ```
+        (AWSVPNGateway)-[ASSOCIATED]->(EC2Route)
+        ```
+- AWSPeeringConnections are associated with EC2Routes
+
+        ```
+        (AWSPeeringConnections)-[ASSOCIATED]->(EC2Route)
+        ```
+- NatGateways are associated with EC2Routes
+
+        ```
+        (NatGateway)-[ASSOCIATED]->(EC2Route)
+        ```
+- AWSTransitGateways are associated with EC2Routes
+
+        ```
+        (AWSTransitGateway)-[ASSOCIATED]->(EC2Route)
+        ```
+- CarrierGateways are associated with EC2Routes
+
+        ```
+        (CarrierGateway)-[ASSOCIATED]->(EC2Route)
         ```
 
 
@@ -1788,6 +1940,12 @@ Representation of an AWS [PeeringConnection](https://docs.aws.amazon.com/vpc/lat
   (AWSCidrBlock)<-[ACCEPTER_CIDR]-(AWSPeeringConnection)
   ```
 
+
+- AWSPeeringConnections are associated with EC2Routes
+
+        ```
+        (AWSPeeringConnections)-[ASSOCIATED]->(EC2Route)
+        ```
 
 ## RedshiftCluster
 
