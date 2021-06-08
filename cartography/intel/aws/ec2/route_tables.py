@@ -314,7 +314,7 @@ def load_routes(
         ON CREATE SET ra.firstseen = timestamp()
         SET ra.lastupdated = {update_tag}
 
-        MERGE (cgw:CarrierGatewayId{id: route.CarrierGatewayId})
+        MERGE (cgw:CarrierGateway{id: route.CarrierGatewayId})
         ON CREATE SET cgw.firstseen = timestamp()
         SET cgw.lastupdated = {update_tag}
 
@@ -467,7 +467,7 @@ def load_routes(
         ON CREATE SET ra.firstseen = timestamp()
         SET ra.lastupdated = {update_tag}
 
-        MERGE (cgw:CarrierGatewayId{id: route.CarrierGatewayId})
+        MERGE (cgw:CarrierGateway{id: route.CarrierGatewayId})
         ON CREATE SET cgw.firstseen = timestamp()
         SET cgw.lastupdated = {update_tag}
 
