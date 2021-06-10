@@ -173,7 +173,7 @@ def load_routes(neo4j_session):
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (rtb:EC2RouteTable)-[:ROUTE]-(r)-[:ASSOCIATED]-(gw)
+        MATCH (rtb:EC2RouteTable)-[re:ROUTE]-(r:EC2Route)-[a:ASSOCIATED]-(gw)
         RETURN rtb.id,r.id, gw.id;
         """,
     )
