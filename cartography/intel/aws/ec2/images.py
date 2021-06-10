@@ -32,8 +32,9 @@ def load_images(
 ) -> None:
     ingest_images = """
     UNWIND {images_list} as image
-        MERGE (i:EC2Image{id: image.ImageId})
-        ON CREATE SET i.firstseen = timestamp(), i.name = image.Name, i.creationdate = image.CreationDate
+        MERGE (i:EC2Image{id: image.ID})
+        ON CREATE SET i.firstseen = timestamp(), i.imageid = image.ImageId, i.name = image.Name,
+        i.creationdate = image.CreationDate
         SET i.lastupdated = {update_tag},
         i.architecture = image.Architecture, i.location = image.ImageLocation, i.type = image.ImageType,
         i.ispublic = image.Public, i.platform = image.Platform, i.usageoperation = image.UsageOperation,
@@ -47,6 +48,10 @@ def load_images(
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = {update_tag}
     """
+
+    # AMI IDs are unique to each AWS Region. Hence we make an 'ID' string that is a combo of ImageId and region
+    for image in data:
+        image['ID'] = image['ImageId'] + '|' + region
 
     neo4j_session.run(
         ingest_images,
