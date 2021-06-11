@@ -105,7 +105,7 @@ def get_encryption(bucket: Dict, client: botocore.client.BaseClient) -> Optional
     except ClientError as e:
         if "ServerSideEncryptionConfigurationNotFoundError" in e.args[0]:
             logger.warning(
-                "Failed to retrieve S3 bucket {} encryption configuration - Access Denied".format(bucket['Name'])
+                "Failed to retrieve S3 bucket {} encryption configuration - Access Denied".format(bucket['Name']),
             )
             return None
         elif _is_common_exception(e):
@@ -221,7 +221,7 @@ def _set_default_values(neo4j_session: neo4j.Session, aws_account_id: str) -> No
     SET s.default_encryption = false, s.encryption_rules = []
     """
     neo4j_session.run(
-        set_anonymous_defaults,
+        set_encryption_defaults,
         AWS_ID=aws_account_id,
     )
 
@@ -316,7 +316,7 @@ def parse_policy(bucket: str, policyDict: Optional[Dict]) -> Optional[Dict]:
 
 
 @timeit
-def parse_acl(acl: Optional[Dict], bucket: str, aws_account_id: str) -> List[Dict]:
+def parse_acl(acl: Optional[Dict], bucket: str, aws_account_id: str) -> Optional[List[Dict]]:
     """ Parses the AWS ACL object and returns a dict of the relevant data """
     # ACL JSON looks like
     # ...metadata...
@@ -389,7 +389,7 @@ def parse_acl(acl: Optional[Dict], bucket: str, aws_account_id: str) -> List[Dic
 
 
 @timeit
-def parse_encryption(encryption: Dict, bucket: str, aws_account_id: str) -> List[Dict]:
+def parse_encryption(encryption: Dict, bucket: str, aws_account_id: str) -> Optional[Dict]:
     """ Parses the S3 default encryption object and returns a dict of the relevant data """
     # Encryption object JSON looks like:
     # {
@@ -410,16 +410,16 @@ def parse_encryption(encryption: Dict, bucket: str, aws_account_id: str) -> List
     rule_list: List[Dict] = []
     _rules = encryption.get('ServerSideEncryptionConfiguration', {}).get('Rules')
     for _rule in _rules:
-        algorithm = rule.get('ApplyServerSideEncryptionByDefault', {}).get('SSEAlgorithm')
+        algorithm = _rule.get('ApplyServerSideEncryptionByDefault', {}).get('SSEAlgorithm')
         if not algorithm:
             continue
         rule = {}
         rule['algorithm'] = algorithm
         if algorithm == 'aws:kms':
-            key_id = rule.get('ApplyServerSideEncryptionByDefault', {}).get('KMSMasterKeyID')
+            key_id = _rule.get('ApplyServerSideEncryptionByDefault', {}).get('KMSMasterKeyID')
             if key_id is not None:
                 rule['kms_master_key'] = key_id
-            bucket_key_enabled = rule.get('BucketKeyEnabled')
+            bucket_key_enabled = _rule.get('BucketKeyEnabled')
             if bucket_key_enabled is not None:
                 rule['bucket_key_enabled'] = bucket_key_enabled
         rule_list.append(rule)
