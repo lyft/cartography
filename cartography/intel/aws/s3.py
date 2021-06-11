@@ -98,7 +98,7 @@ def get_acl(bucket: Dict, client: botocore.client.BaseClient) -> Optional[str]:
 @timeit
 def get_encryption(bucket: Dict, client: botocore.client.BaseClient) -> Optional[str]:
     """
-    Gets the S3 bucket default encryption configuration. Returns encryption rules or None if not enabled
+    Gets the S3 bucket default encryption configuration. Returns encryption configuration or None if not enabled
     """
     try:
         encryption = client.get_bucket_encryption(Bucket=bucket['Name'])
@@ -195,7 +195,8 @@ def _load_s3_encryption(neo4j_session: neo4j.Session, encryption_configs: List[D
     UNWIND {encryption_configs} AS encryption
     MATCH (s:S3Bucket) where s.name = encryption.bucket
     SET s.default_encryption = (coalesce(s.default_encryption, false) OR encryption.default_encryption),
-    s.encryption_rules = coalesce(s.encryption_rules, []) + encryption.encryption_rules,
+    s.encryption_algorithm = encryption.encryption_algorithm, s.encryption_algorithm = encryption.encryption_algorithm,
+    s.encryption_key_id = encryption.encryption_key_id, s.bucket_key_enabled = encryption.bucket_key_enabled,
     s.lastupdated = {UpdateTag}
     """
 
@@ -207,18 +208,18 @@ def _load_s3_encryption(neo4j_session: neo4j.Session, encryption_configs: List[D
 
 
 def _set_default_values(neo4j_session: neo4j.Session, aws_account_id: str) -> None:
-    set_anonymous_defaults = """
+    set_defaults = """
     MATCH (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(s:S3Bucket) where NOT EXISTS(s.anonymous_actions)
     SET s.anonymous_access = false, s.anonymous_actions = []
     """
     neo4j_session.run(
-        set_anonymous_defaults,
+        set_defaults,
         AWS_ID=aws_account_id,
     )
 
     set_encryption_defaults = """
     MATCH (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(s:S3Bucket) where NOT EXISTS(s.default_encryption)
-    SET s.default_encryption = false, s.encryption_rules = []
+    SET s.default_encryption = false
     """
     neo4j_session.run(
         set_encryption_defaults,
@@ -389,7 +390,7 @@ def parse_acl(acl: Optional[Dict], bucket: str, aws_account_id: str) -> Optional
 
 
 @timeit
-def parse_encryption(encryption: Dict, bucket: str, aws_account_id: str) -> Optional[Dict]:
+def parse_encryption(bucket: str, encryption: Optional[Dict]) -> Optional[Dict]:
     """ Parses the S3 default encryption object and returns a dict of the relevant data """
     # Encryption object JSON looks like:
     # {
@@ -407,28 +408,21 @@ def parse_encryption(encryption: Dict, bucket: str, aws_account_id: str) -> Opti
     # }
     if encryption is None:
         return None
-    rule_list: List[Dict] = []
-    _rules = encryption.get('ServerSideEncryptionConfiguration', {}).get('Rules')
-    for _rule in _rules:
-        algorithm = _rule.get('ApplyServerSideEncryptionByDefault', {}).get('SSEAlgorithm')
-        if not algorithm:
-            continue
-        rule = {}
-        rule['algorithm'] = algorithm
-        if algorithm == 'aws:kms':
-            key_id = _rule.get('ApplyServerSideEncryptionByDefault', {}).get('KMSMasterKeyID')
-            if key_id is not None:
-                rule['kms_master_key'] = key_id
-            bucket_key_enabled = _rule.get('BucketKeyEnabled')
-            if bucket_key_enabled is not None:
-                rule['bucket_key_enabled'] = bucket_key_enabled
-        rule_list.append(rule)
-    if not rule_list:
+    _ssec = encryption.get('ServerSideEncryptionConfiguration', {})
+    # Rules is a list, but only one rule ever exists
+    try:
+        rule = _ssec.get('Rules', []).pop()
+    except IndexError:
+        return None
+    algorithm = rule.get('ApplyServerSideEncryptionByDefault', {}).get('SSEAlgorithm')
+    if not algorithm:
         return None
     return {
         "bucket": bucket,
         "default_encryption": True,
-        "encryption_rules": list(rule_list),
+        "encryption_algorithm": algorithm,
+        "encryption_key_id": rule.get("ApplyServerSideEncryptionByDefault", {}).get('KMSMasterKeyID'),
+        "bucket_key_enabled": rule.get('BucketKeyEnabled'),
     }
 
 
