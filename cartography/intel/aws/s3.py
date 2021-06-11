@@ -29,17 +29,10 @@ def get_s3_bucket_list(boto3_session: boto3.session.Session) -> List[Dict]:
         try:
             bucket['Region'] = client.get_bucket_location(Bucket=bucket['Name'])['LocationConstraint']
         except ClientError as e:
-            if "AccessDenied" in e.args[0]:
-                # If we don't have perms to call get_bucket_location(), set region to None and keep going
-                logger.warning("get_bucket_location(bucket='{}') AccessDenied, skipping.".format(bucket['Name']))
+            if _is_common_exception(e):
                 bucket['Region'] = None
+                logger.warning("skipping bucket='{}' due to exception.".format(bucket['Name']))
                 continue
-            elif "NoSuchBucket" in e.args[0]:
-                logger.warning("get_bucket_location({}) threw NoSuchBucket exception, skipping".format(bucket['Name']))
-                bucket['Region'] = None
-                continue
-            elif "AllAccessDisabled" in e.args[0]:
-                logger.warning("get_bucket_location({}) failed - bucket is disabled, skipping".format(bucket['Name']))
             else:
                 raise
     return buckets
@@ -48,7 +41,8 @@ def get_s3_bucket_list(boto3_session: boto3.session.Session) -> List[Dict]:
 @timeit
 def get_s3_bucket_details(boto3_session: boto3.session.Session, bucket_data: Dict) -> Generator[Any, Any, Any]:
     """
-    Iterates over all S3 buckets. Yields bucket name (string) and pairs of S3 bucket policies (JSON) and ACLs (JSON)
+    Iterates over all S3 buckets. Yields bucket name (string), S3 bucket policies (JSON), ACLs (JSON), and
+    default encryption policy (JSON)
     """
     # a local store for s3 clients so that we may re-use clients for an AWS region
     s3_regional_clients: Dict[Any, Any] = {}
@@ -63,7 +57,8 @@ def get_s3_bucket_details(boto3_session: boto3.session.Session, bucket_data: Dic
             s3_regional_clients[bucket['Region']] = client
         acl = get_acl(bucket, client)
         policy = get_policy(bucket, client)
-        yield bucket['Name'], acl, policy
+        encryption = get_encryption(bucket, client)
+        yield bucket['Name'], acl, policy, encryption
 
 
 @timeit
@@ -78,16 +73,7 @@ def get_policy(bucket: Dict, client: botocore.client.BaseClient) -> str:
         if "NoSuchBucketPolicy" in e.args[0]:
             logger.warning("get_bucket_policy({}) failed because the bucket no longer exists".format(bucket['Name']))
             policy = None
-        elif "AccessDenied" in e.args[0]:
-            logger.warning("Access denied trying to retrieve S3 bucket {} policy".format(bucket['Name']))
-            policy = None
-        elif "NoSuchBucket" in e.args[0]:
-            logger.warning("get_bucket_policy({}) threw NoSuchBucket exception, skipping".format(bucket['Name']))
-            policy = None
-        elif "AllAccessDisabled" in e.args[0]:
-            # Catches the following error : "An error occurred (AllAccessDisabled) when calling the
-            # GetBucketAcl operation: All access to this object has been disabled"
-            logger.warning("Failed to retrieve S3 bucket {} policies - Bucket is disabled".format(bucket['Name']))
+        elif _is_common_exception(e):
             policy = None
         else:
             raise
@@ -102,21 +88,48 @@ def get_acl(bucket: Dict, client: botocore.client.BaseClient) -> Optional[str]:
     try:
         acl = client.get_bucket_acl(Bucket=bucket['Name'])
     except ClientError as e:
-        if "AccessDenied" in e.args[0]:
-            logger.warning("Failed to retrieve S3 bucket {} ACL - Access Denied".format(bucket['Name']))
-            return None
-        elif "NoSuchBucket" in e.args[0]:
-            logger.warning("Failed to retrieve S3 bucket {} ACL - No Such Bucket".format(bucket['Name']))
-            return None
-        elif "AllAccessDisabled" in e.args[0]:
-            logger.warning("Failed to retrieve S3 bucket {} ACL - Bucket is disabled".format(bucket['Name']))
-            return None
-        elif "EndpointConnectionError" in e.args[0]:
-            logger.warning("Failed to retrieve S3 bucket {} ACL - EndpointConnectionError".format(bucket['Name']))
+        if _is_common_exception(e):
             return None
         else:
             raise
     return acl
+
+
+@timeit
+def get_encryption(bucket: Dict, client: botocore.client.BaseClient) -> Optional[str]:
+    """
+    Gets the S3 bucket default encryption configuration. Returns encryption rules or None if not enabled
+    """
+    try:
+        encryption = client.get_bucket_encryption(Bucket=bucket['Name'])
+    except ClientError as e:
+        if "ServerSideEncryptionConfigurationNotFoundError" in e.args[0]:
+            logger.warning(
+                "Failed to retrieve S3 bucket {} encryption configuration - Access Denied".format(bucket['Name'])
+            )
+            return None
+        elif _is_common_exception(e):
+            return None
+        else:
+            raise
+    return encryption
+
+
+@timeit
+def _is_common_exception(e: Exception, bucket: Dict) -> bool:
+    if "AccessDenied" in e.args[0]:
+        logger.warning("Failed to retrieve S3 bucket {} ACL - Access Denied".format(bucket['Name']))
+        return True
+    elif "NoSuchBucket" in e.args[0]:
+        logger.warning("Failed to retrieve S3 bucket {} ACL - No Such Bucket".format(bucket['Name']))
+        return True
+    elif "AllAccessDisabled" in e.args[0]:
+        logger.warning("Failed to retrieve S3 bucket {} ACL - Bucket is disabled".format(bucket['Name']))
+        return True
+    elif "EndpointConnectionError" in e.args[0]:
+        logger.warning("Failed to retrieve S3 bucket {} ACL - EndpointConnectionError".format(bucket['Name']))
+        return True
+    return False
 
 
 @timeit
@@ -172,14 +185,43 @@ def _load_s3_policies(neo4j_session: neo4j.Session, policies: List[Dict], update
     )
 
 
-def _set_default_values(neo4j_session: neo4j.Session, aws_account_id: str) -> None:
-    set_defaults = """
-    MATCH (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(s:S3Bucket) where NOT EXISTS(s.anonymous_actions)
-    SET s.anonymous_access = false, s.anonymous_actions = []
+@timeit
+def _load_s3_encryption(neo4j_session: neo4j.Session, encryption_configs: List[Dict], update_tag: int) -> None:
+    """
+    Ingest S3 default encryption results into neo4j.
+    """
+    # NOTE we use the coalesce function so appending works when the value is null initially
+    ingest_encryption = """
+    UNWIND {encryption_configs} AS encryption
+    MATCH (s:S3Bucket) where s.name = encryption.bucket
+    SET s.default_encryption = (coalesce(s.default_encryption, false) OR encryption.default_encryption),
+    s.encryption_rules = coalesce(s.encryption_rules, []) + encryption.encryption_rules,
+    s.lastupdated = {UpdateTag}
     """
 
     neo4j_session.run(
-        set_defaults,
+        ingest_encryption,
+        encryption_configs=encryption_configs,
+        UpdateTag=update_tag,
+    )
+
+
+def _set_default_values(neo4j_session: neo4j.Session, aws_account_id: str) -> None:
+    set_anonymous_defaults = """
+    MATCH (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(s:S3Bucket) where NOT EXISTS(s.anonymous_actions)
+    SET s.anonymous_access = false, s.anonymous_actions = []
+    """
+    neo4j_session.run(
+        set_anonymous_defaults,
+        AWS_ID=aws_account_id,
+    )
+
+    set_encryption_defaults = """
+    MATCH (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(s:S3Bucket) where NOT EXISTS(s.default_encryption)
+    SET s.default_encryption = false, s.encryption_rules = []
+    """
+    neo4j_session.run(
+        set_anonymous_defaults,
         AWS_ID=aws_account_id,
     )
 
@@ -194,17 +236,17 @@ def load_s3_details(
     """
     acls: List[Dict] = []
     policies: List[Dict] = []
-    for bucket, acl, policy in s3_details_iter:
-        if acl is None:
-            continue
+    encryption_configs: List[Dict] = []
+    for bucket, acl, policy, encryption in s3_details_iter:
         parsed_acls = parse_acl(acl, bucket, aws_account_id)
-        if parsed_acls:
+        if parsed_acls is not None:
             acls.extend(parsed_acls)
-        else:
-            continue
         parsed_policy = parse_policy(bucket, policy)
         if parsed_policy is not None:
             policies.append(parsed_policy)
+        parsed_encryption = parse_encryption(bucket, encryption)
+        if parsed_encryption is not None:
+            encryption_configs.append(parsed_encryption)
 
     # cleanup existing policy properties set on S3 Buckets
     run_cleanup_job(
@@ -215,11 +257,12 @@ def load_s3_details(
 
     _load_s3_acls(neo4j_session, acls, aws_account_id, update_tag)
     _load_s3_policies(neo4j_session, policies, update_tag)
+    _load_s3_encryption(neo4j_session, encryption_configs, update_tag)
     _set_default_values(neo4j_session, aws_account_id)
 
 
 @timeit
-def parse_policy(bucket: str, policyDict: Dict) -> Optional[Dict]:
+def parse_policy(bucket: str, policyDict: Optional[Dict]) -> Optional[Dict]:
     """
     Uses PolicyUniverse to parse S3 policies and returns the internet accessibility results
     """
@@ -258,23 +301,22 @@ def parse_policy(bucket: str, policyDict: Dict) -> Optional[Dict]:
     #         ]
     #     }
     # }
-    if policyDict is not None:
-        # get just the policy element and convert to JSON because boto3 returns this as string
-        policy = Policy(json.loads(policyDict['Policy']))
-        if policy.is_internet_accessible():
-            return {
-                "bucket": bucket,
-                "internet_accessible": True,
-                "accessible_actions": list(policy.internet_accessible_actions()),
-            }
-        else:
-            return None
+    if policyDict is None:
+        return None
+    # get just the policy element and convert to JSON because boto3 returns this as string
+    policy = Policy(json.loads(policyDict['Policy']))
+    if policy.is_internet_accessible():
+        return {
+            "bucket": bucket,
+            "internet_accessible": True,
+            "accessible_actions": list(policy.internet_accessible_actions()),
+        }
     else:
         return None
 
 
 @timeit
-def parse_acl(acl: Dict, bucket: str, aws_account_id: str) -> List[Dict]:
+def parse_acl(acl: Optional[Dict], bucket: str, aws_account_id: str) -> List[Dict]:
     """ Parses the AWS ACL object and returns a dict of the relevant data """
     # ACL JSON looks like
     # ...metadata...
@@ -297,6 +339,8 @@ def parse_acl(acl: Dict, bucket: str, aws_account_id: str) -> List[Dict]:
     #         "ID": "string"
     #     }
     # }
+    if acl is None:
+        return None
     acl_list: List[Dict] = []
     for grant in acl['Grants']:
         parsed_acl = None
@@ -342,6 +386,50 @@ def parse_acl(acl: Dict, bucket: str, aws_account_id: str) -> List[Dict]:
         acl_list.append(parsed_acl)
 
     return acl_list
+
+
+@timeit
+def parse_encryption(encryption: Dict, bucket: str, aws_account_id: str) -> List[Dict]:
+    """ Parses the S3 default encryption object and returns a dict of the relevant data """
+    # Encryption object JSON looks like:
+    # {
+    #     'ServerSideEncryptionConfiguration': {
+    #         'Rules': [
+    #             {
+    #                 'ApplyServerSideEncryptionByDefault': {
+    #                     'SSEAlgorithm': 'AES256'|'aws:kms',
+    #                     'KMSMasterKeyID': 'string'
+    #                 },
+    #                 'BucketKeyEnabled': True|False
+    #             },
+    #         ]
+    #     }
+    # }
+    if encryption is None:
+        return None
+    rule_list: List[Dict] = []
+    _rules = encryption.get('ServerSideEncryptionConfiguration', {}).get('Rules')
+    for _rule in _rules:
+        algorithm = rule.get('ApplyServerSideEncryptionByDefault', {}).get('SSEAlgorithm')
+        if not algorithm:
+            continue
+        rule = {}
+        rule['algorithm'] = algorithm
+        if algorithm == 'aws:kms':
+            key_id = rule.get('ApplyServerSideEncryptionByDefault', {}).get('KMSMasterKeyID')
+            if key_id is not None:
+                rule['kms_master_key'] = key_id
+            bucket_key_enabled = rule.get('BucketKeyEnabled')
+            if bucket_key_enabled is not None:
+                rule['bucket_key_enabled'] = bucket_key_enabled
+        rule_list.append(rule)
+    if not rule_list:
+        return None
+    return {
+        "bucket": bucket,
+        "default_encryption": True,
+        "encryption_rules": list(rule_list),
+    }
 
 
 @timeit
