@@ -430,6 +430,29 @@ def cleanup_rds_instances_and_db_subnet_groups(neo4j_session: neo4j.Session, com
 
 
 @timeit
+def cleanup_rds_clusters(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    """
+    Remove RDS cluster graph nodes
+    """
+    run_cleanup_job('aws_import_rds_clusters_cleanup.json', neo4j_session, common_job_parameters)
+
+
+@timeit
+def sync_rds_clusters(
+    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
+    update_tag: int, common_job_parameters: Dict,
+) -> None:
+    """
+    Grab RDS instance data from AWS, ingest to neo4j, and run the cleanup job.
+    """
+    for region in regions:
+        logger.info("Syncing RDS for region '%s' in account '%s'.", region, current_aws_account_id)
+        data = get_rds_cluster_data(boto3_session, region)
+        load_rds_clusters(neo4j_session, data, region, current_aws_account_id, update_tag)
+    cleanup_rds_clusters(neo4j_session, common_job_parameters)
+
+
+@timeit
 def sync_rds_instances(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
     update_tag: int, common_job_parameters: Dict,
@@ -449,6 +472,10 @@ def sync(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
     update_tag: int, common_job_parameters: Dict,
 ) -> None:
+    sync_rds_clusters(
+        neo4j_session, boto3_session, regions, current_aws_account_id, update_tag,
+        common_job_parameters,
+    )
     sync_rds_instances(
         neo4j_session, boto3_session, regions, current_aws_account_id, update_tag,
         common_job_parameters,
