@@ -6,6 +6,7 @@ from typing import Dict
 from typing import Generator
 from typing import List
 from typing import Optional
+from typing import Tuple
 
 import boto3
 import botocore
@@ -39,7 +40,10 @@ def get_s3_bucket_list(boto3_session: boto3.session.Session) -> List[Dict]:
 
 
 @timeit
-def get_s3_bucket_details(boto3_session: boto3.session.Session, bucket_data: Dict) -> Generator[Any, Any, Any]:
+def get_s3_bucket_details(
+        boto3_session: boto3.session.Session,
+        bucket_data: Dict,
+) -> Generator[Tuple[str, Dict, Dict, Dict], None, None]:
     """
     Iterates over all S3 buckets. Yields bucket name (string), S3 bucket policies (JSON), ACLs (JSON), and
     default encryption policy (JSON)
