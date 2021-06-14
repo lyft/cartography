@@ -197,7 +197,7 @@ def load_load_balancer_v2_listeners(
     WITH elbv2
     UNWIND {Listeners} as data
         MERGE (l:Endpoint:ELBV2Listener{id: data.ListenerArn})
-        ON CREATE SET l.port = data.Port, l.protocol = data.Protocol,
+        ON CREATE SET l.port = data.Port, l.protocol = data.Protocol, l.ssl_policy = data.SslPolicy,
         l.firstseen = timestamp(),
         l.targetgrouparn = data.TargetGroupArn
         SET l.lastupdated = {update_tag}
