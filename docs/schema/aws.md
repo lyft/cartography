@@ -2202,6 +2202,8 @@ Representation of an AWS [Auto Scaling Group Resource](https://docs.aws.amazon.c
 | capacityrebalance | Indicates whether Capacity Rebalancing is enabled. |
 | region | The region of the auto scaling group. |
 
+[Link to API Documentation](https://docs.aws.amazon.com/autoscaling/ec2/APIReference/API_AutoScalingGroup.html) of AWS Auto Scaling Groups
+
 ### Relationships
 
 - AWS Auto Scaling Groups are a resource under the AWS Account.
@@ -2246,6 +2248,8 @@ Representation of an AWS [EC2 Images (AMIs)](https://docs.aws.amazon.com/AWSEC2/
 | virtualizationtype | The type of virtualization of the AMI. |
 | bootmode | The boot mode of the image. |
 | region | The region of the image. |
+
+[Link to API Documentation](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_Image.html) of EC2 Images
 
 ### Relationships
 
