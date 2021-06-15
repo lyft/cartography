@@ -20,7 +20,7 @@ def get_reserved_instances(boto3_session: boto3.session.Session, region: str) ->
     try:
         reserved_instances = client.describe_reserved_instances()['ReservedInstances']
     except ClientError as e:
-        logger.warning("Failed retrieve reserved instances for region - {}. Error - {}".format(region, e))
+        logger.warning(f"Failed retrieve reserved instances for region - {region}. Error - {e}")
         raise
     return reserved_instances
 
