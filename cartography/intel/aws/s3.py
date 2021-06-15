@@ -75,7 +75,6 @@ def get_policy(bucket: Dict, client: botocore.client.BaseClient) -> str:
     except ClientError as e:
         # no policy is defined for this bucket
         if "NoSuchBucketPolicy" in e.args[0]:
-            logger.warning("get_bucket_policy({}) failed because the bucket no longer exists".format(bucket['Name']))
             policy = None
         elif _is_common_exception(e):
             policy = None
@@ -108,9 +107,6 @@ def get_encryption(bucket: Dict, client: botocore.client.BaseClient) -> Optional
         encryption = client.get_bucket_encryption(Bucket=bucket['Name'])
     except ClientError as e:
         if "ServerSideEncryptionConfigurationNotFoundError" in e.args[0]:
-            logger.warning(
-                "Failed to retrieve S3 bucket {} encryption configuration - Access Denied".format(bucket['Name']),
-            )
             return None
         elif _is_common_exception(e):
             return None
