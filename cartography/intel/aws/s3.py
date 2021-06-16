@@ -30,7 +30,7 @@ def get_s3_bucket_list(boto3_session: boto3.session.Session) -> List[Dict]:
         try:
             bucket['Region'] = client.get_bucket_location(Bucket=bucket['Name'])['LocationConstraint']
         except ClientError as e:
-            if _is_common_exception(e):
+            if _is_common_exception(e, bucket):
                 bucket['Region'] = None
                 logger.warning("skipping bucket='{}' due to exception.".format(bucket['Name']))
                 continue
@@ -76,7 +76,7 @@ def get_policy(bucket: Dict, client: botocore.client.BaseClient) -> str:
         # no policy is defined for this bucket
         if "NoSuchBucketPolicy" in e.args[0]:
             policy = None
-        elif _is_common_exception(e):
+        elif _is_common_exception(e, bucket):
             policy = None
         else:
             raise
@@ -91,7 +91,7 @@ def get_acl(bucket: Dict, client: botocore.client.BaseClient) -> Optional[str]:
     try:
         acl = client.get_bucket_acl(Bucket=bucket['Name'])
     except ClientError as e:
-        if _is_common_exception(e):
+        if _is_common_exception(e, bucket):
             return None
         else:
             raise
@@ -108,7 +108,7 @@ def get_encryption(bucket: Dict, client: botocore.client.BaseClient) -> Optional
     except ClientError as e:
         if "ServerSideEncryptionConfigurationNotFoundError" in e.args[0]:
             return None
-        elif _is_common_exception(e):
+        elif _is_common_exception(e, bucket):
             return None
         else:
             raise
