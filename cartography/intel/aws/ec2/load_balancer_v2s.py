@@ -200,7 +200,8 @@ def load_load_balancer_v2_listeners(
         ON CREATE SET l.port = data.Port, l.protocol = data.Protocol,
         l.firstseen = timestamp(),
         l.targetgrouparn = data.TargetGroupArn
-        SET l.lastupdated = {update_tag}
+        SET l.lastupdated = {update_tag},
+        l.ssl_policy = data.SslPolicy
         WITH l, elbv2
         MERGE (elbv2)-[r:ELBV2_LISTENER]->(l)
         ON CREATE SET r.firstseen = timestamp()
