@@ -125,6 +125,10 @@
   - [Relationships](#relationships-57)
 - [APIGatewayResource](#apigatewayresource)
   - [Relationships](#relationships-58)
+- [AutoScalingGroup](#autoscalinggroup)
+  - [Relationships](#relationships-59)
+- [EC2Image](#ec2image)
+  - [Relationships](#relationships-60)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -151,6 +155,7 @@ Representation of an AWS Account.
                               AutoScalingGroup,
                               DNSZone,
                               DynamoDBTable,
+                              EC2Image,
                               EC2Instance,
                               EC2Reservation,
                               EC2SecurityGroup,
@@ -909,6 +914,15 @@ Our representation of an AWS [EC2 Instance](https://docs.aws.amazon.com/AWSEC2/l
 | launchtimeunix | The time the instance was launched in unix time |
 | region | The AWS region this Instance is running in|
 | exposed\_internet |  The `exposed_internet` flag on an EC2 instance is set to `True` when (1) the instance is part of an EC2 security group or is connected to a network interface connected to an EC2 security group that allows connectivity from the 0.0.0.0/0 subnet or (2) the instance is connected to an Elastic Load Balancer that has its own `exposed_internet` flag set to `True`. |
+| availabilityzone | The Availability Zone of the instance.|
+| tenancy | The tenancy of the instance.|
+| hostresourcegrouparn | The ARN of the host resource group in which to launch the instances.|
+| platform | The value is `Windows` for Windows instances; otherwise blank.|
+| architecture | The architecture of the image.|
+| ebsoptimized | Indicates whether the instance is optimized for Amazon EBS I/O. |
+| bootmode | The boot mode of the instance.|
+| instancelifecycle | Indicates whether this is a Spot Instance or a Scheduled Instance.|
+| hibernationoptions | Indicates whether the instance is enabled for hibernation.|
 
 
 ### Relationships
@@ -1120,6 +1134,8 @@ Representation of an AWS EC2 [Subnet](https://docs.aws.amazon.com/AWSEC2/latest/
 | subnet_arn | The Amazon Resource Name (ARN) of the subnet |
 | availability_zone | The Availability Zone of the subnet |
 | availability_zone_id | The AZ ID of the subnet |
+| state | The current state of the subnet. |
+| assignipv6addressoncreation | Indicates whether a network interface created in this subnet (including a network interface created by RunInstances ) receives an IPv6 address. |
 
 
 ### Relationships
@@ -2157,4 +2173,85 @@ Representation of an AWS [API Gateway Resource](https://docs.aws.amazon.com/apig
 
         ```
         (APIGatewayRestAPI)-[RESOURCE]->(APIGatewayResource)
+        ```
+
+## AutoScalingGroup
+
+Representation of an AWS [Auto Scaling Group Resource](https://docs.aws.amazon.com/autoscaling/ec2/userguide/AutoScalingGroup.html).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **arn** | The ARN of the Auto Scaling Group|
+| name |  The name of the Auto Scaling group. |
+| createdtime | The date and time the group was created. |
+| launchconfigurationname | The name of the associated launch configuration. |
+| maxsize | The maximum size of the group.|
+| minsize | The minimum size of the group.|
+| defaultcooldown | The duration of the default cooldown period, in seconds. |
+| desiredcapacity | The desired size of the group. |
+| healthchecktype | The service to use for the health checks. |
+| healthcheckgraceperiod | The amount of time, in seconds, that Amazon EC2 Auto Scaling waits before checking the health status of an EC2 instance that has come into service.|
+| status | The current state of the group when the DeleteAutoScalingGroup operation is in progress. |
+| newinstancesprotectedfromscalein | Indicates whether newly launched instances are protected from termination by Amazon EC2 Auto Scaling when scaling in.|
+| maxinstancelifetime | The maximum amount of time, in seconds, that an instance can be in service. |
+| capacityrebalance | Indicates whether Capacity Rebalancing is enabled. |
+| region | The region of the auto scaling group. |
+
+[Link to API Documentation](https://docs.aws.amazon.com/autoscaling/ec2/APIReference/API_AutoScalingGroup.html) of AWS Auto Scaling Groups
+
+### Relationships
+
+- AWS Auto Scaling Groups are a resource under the AWS Account.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(AutoScalingGroup)
+        ```
+- AWS Auto Scaling Groups has one or more subnets/vpc identifiers.
+
+        ```
+        (AutoScalingGroup)-[VPC_IDENTIFIER]->(EC2Subnet)
+        ```
+- AWS EC2 Instances are members of one or more AWS Auto Scaling Groups.
+
+        ```
+        (EC2Instance)-[MEMBER_AUTO_SCALE_GROUP]->(AutoScalingGroup)
+        ```
+
+## EC2Image
+
+Representation of an AWS [EC2 Images (AMIs)](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AMIs.html).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The ID of the AMI.|
+| name | The name of the AMI that was provided during image creation. |
+| creationdate | The date and time the image was created. |
+| architecture | The architecture of the image. |
+| location | The location of the AMI.|
+| type | The type of image.|
+| ispublic | Indicates whether the image has public launch permissions. |
+| platform | This value is set to `windows` for Windows AMIs; otherwise, it is blank. |
+| usageoperation | The operation of the Amazon EC2 instance and the billing code that is associated with the AMI.  |
+| state | The current state of the AMI.|
+| description | The description of the AMI that was provided during image creation.|
+| enasupport | Specifies whether enhanced networking with ENA is enabled.|
+| hypervisor | The hypervisor type of the image.|
+| rootdevicename | The device name of the root device volume (for example, `/dev/sda1` ). |
+| rootdevicetype | The type of root device used by the AMI. |
+| virtualizationtype | The type of virtualization of the AMI. |
+| bootmode | The boot mode of the image. |
+| region | The region of the image. |
+
+[Link to API Documentation](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_Image.html) of EC2 Images
+
+### Relationships
+
+- AWS EC2 Images (AMIs) are a resource under the AWS Account.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(EC2Image)
         ```
