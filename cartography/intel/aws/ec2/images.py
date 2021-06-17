@@ -77,7 +77,7 @@ def sync_ec2_images(
         current_aws_account_id: str, update_tag: int, common_job_parameters: Dict,
 ) -> None:
     for region in regions:
-        logger.debug("Syncing images for region '%s' in account '%s'.", region, current_aws_account_id)
+        logger.info("Syncing images for region '%s' in account '%s'.", region, current_aws_account_id)
         data = get_images(boto3_session, region)
         load_images(neo4j_session, data, region, current_aws_account_id, update_tag)
     cleanup_images(neo4j_session, common_job_parameters)
