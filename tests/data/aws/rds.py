@@ -40,7 +40,7 @@ DESCRIBE_DBCLUSTERS_RESPONSE = {
             ],
             'VpcSecurityGroups': [],
             'HostedZoneId': 'hostedzone',
-            'StorageEncrypted': False,
+            'StorageEncrypted': True,
             'DbClusterResourceId': 'cluster-abcde',
             'DBClusterArn': 'arn:aws:rds:us-east-1:some-arn:cluster:some-prod-db-iad-0',
             'AssociatedRoles': [],
