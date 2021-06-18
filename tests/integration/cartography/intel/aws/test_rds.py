@@ -13,16 +13,15 @@ def test_load_rds_clusters_basic(neo4j_session):
         '1234',
         TEST_UPDATE_TAG,
     )
-    query = """MATCH(rds:RDSCluster) RETURN rds.id, rds.arn, rds.storage_encrypted, rds.availability_zones"""
+    query = """MATCH(rds:RDSCluster) RETURN rds.id, rds.arn, rds.storage_encrypted"""
     nodes = neo4j_session.run(query)
 
-    actual_nodes = {(n['rds.id'], n['rds.arn'], n['rds.storage_encrypted'], n['rds.availability_zones']) for n in nodes}
+    actual_nodes = {(n['rds.id'], n['rds.arn'], n['rds.storage_encrypted']) for n in nodes}
     expected_nodes = {
         (
             'arn:aws:rds:us-east-1:some-arn:cluster:some-prod-db-iad-0',
             'arn:aws:rds:us-east-1:some-arn:cluster:some-prod-db-iad-0',
             True,
-            ['us-east-1e'],
         ),
     }
     assert actual_nodes == expected_nodes
