@@ -13,7 +13,7 @@ def test_load_rds_clusters_basic(neo4j_session):
         '1234',
         TEST_UPDATE_TAG,
     )
-    query = """MATCH(rds:RDSCluster) RETURN rds.id, rds.arn, rds.storage_encrypted, rds.avalability_zones"""
+    query = """MATCH(rds:RDSCluster) RETURN rds.id, rds.arn, rds.storage_encrypted, rds.availability_zones"""
     nodes = neo4j_session.run(query)
 
     actual_nodes = {(n['rds.id'], n['rds.arn'], n['rds.storage_encrypted'], n['rds.availability_zones']) for n in nodes}
