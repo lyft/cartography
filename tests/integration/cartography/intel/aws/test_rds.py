@@ -16,7 +16,7 @@ def test_load_rds_clusters_basic(neo4j_session):
     query = """MATCH(rds:RDSCluster) RETURN rds.id, rds.arn, rds.storage_encrypted, rds.avalability_zones"""
     nodes = neo4j_session.run(query)
 
-    actual_nodes = {(n['rds.id'], n['rds.arn'], n['rds.storage_encrypted'], n['availability_zones']) for n in nodes}
+    actual_nodes = {(n['rds.id'], n['rds.arn'], n['rds.storage_encrypted'], n['rds.availability_zones']) for n in nodes}
     expected_nodes = {
         (
             'arn:aws:rds:us-east-1:some-arn:cluster:some-prod-db-iad-0',
