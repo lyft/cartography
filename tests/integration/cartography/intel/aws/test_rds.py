@@ -26,6 +26,14 @@ def test_load_rds_clusters_basic(neo4j_session):
     }
     assert actual_nodes == expected_nodes
 
+    cartography.intel.aws.rds.load_rds_instances(
+        neo4j_session,
+        DESCRIBE_DBINSTANCES_RESPONSE['DBInstances'],
+        'us-east1',
+        '1234',
+        TEST_UPDATE_TAG,
+    )
+
     # Fetch relationships
     result = neo4j_session.run(
         """
@@ -41,10 +49,18 @@ def test_load_rds_clusters_basic(neo4j_session):
     }
 
     actual = {
-        (r['r.db_cluster_identifier'], r['n2.db_cluster_identifier']) for r in result
+        (r['r.db_cluster_identifier'], r['c.db_cluster_identifier']) for r in result
     }
 
     assert actual == expected
+
+    # Cleanup to not interfere with other rds tests
+    result = neo4j_session.run(
+        """
+        MATCH (r:RDSInstance)
+        DETACH DELETE r
+        """,
+    )
 
 
 def test_load_rds_instances_basic(neo4j_session):
