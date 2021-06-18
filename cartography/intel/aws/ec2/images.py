@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 def get_images(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
     client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
     try:
-        images = client.describe_images()['Images']
+        images = client.describe_images(Owners=['self'])['Images']
     except ClientError as e:
         logger.warning(f"Failed retrieve images for region - {region}. Error - {e}")
         raise
@@ -77,7 +77,7 @@ def sync_ec2_images(
         current_aws_account_id: str, update_tag: int, common_job_parameters: Dict,
 ) -> None:
     for region in regions:
-        logger.debug("Syncing images for region '%s' in account '%s'.", region, current_aws_account_id)
+        logger.info("Syncing images for region '%s' in account '%s'.", region, current_aws_account_id)
         data = get_images(boto3_session, region)
         load_images(neo4j_session, data, region, current_aws_account_id, update_tag)
     cleanup_images(neo4j_session, common_job_parameters)

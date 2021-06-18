@@ -1465,6 +1465,7 @@ Representation of an AWS Elastic Load Balancer [Listener](https://docs.aws.amazo
 | lastupdated |  Timestamp of the last time the node was updated |
 | protocol | The protocol of this endpoint |
 | port | The port of this endpoint |
+| policy\_names | A list of SSL policy names set on the listener.
 | **id** | The ELB ID.  This is a concatenation of the DNS name, port, and protocol. |
 | instance\_port | The port open on the EC2 instance that this listener is connected to |
 | instance\_protocol | The protocol defined on the EC2 instance that this listener is connected to |
@@ -1488,6 +1489,7 @@ Representation of an AWS Elastic Load Balancer V2 [Listener](https://docs.aws.am
 | lastupdated |  Timestamp of the last time the node was updated |
 | protocol | The protocol of this endpoint - One of `'HTTP''HTTPS''TCP''TLS''UDP''TCP_UDP'` |
 | port | The port of this endpoint |
+| ssl\_policy | Only set for HTTPS or TLS listener. The security policy that defines which protocols and ciphers are supported. |
 | targetgrouparn | The ARN of the Target Group, if the Action type is `forward`. |
 
 
