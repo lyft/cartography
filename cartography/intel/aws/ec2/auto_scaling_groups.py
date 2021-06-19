@@ -48,8 +48,8 @@ def load_ec2_auto_scaling_groups(
     """
 
     ingest_vpc = """
-    UNWIND {vpc_list} as vpc
-        MERGE (subnet:EC2Subnet{subnetid: vpc.SubnetId})
+    UNWIND {vpc_id_list} as vpc_id
+        MERGE (subnet:EC2Subnet{subnetid: vpc_id})
         ON CREATE SET subnet.firstseen = timestamp()
         SET subnet.lastupdated = {update_tag}
         WITH subnet
@@ -97,7 +97,7 @@ def load_ec2_auto_scaling_groups(
                 data = vpclist
             neo4j_session.run(
                 ingest_vpc,
-                vpc_list=data,
+                vpc_id_list=data,
                 GROUPARN=group_arn,
                 update_tag=update_tag,
             )
