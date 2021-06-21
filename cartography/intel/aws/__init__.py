@@ -72,7 +72,7 @@ def _sync_one_account(
         RESOURCE_FUNCTIONS['resourcegroupstaggingapi'](**sync_args)
 
     run_analysis_job(
-        'aws_ec2_iaminstance.json',
+        'aws_ec2_iaminstanceprofile.json',
         neo4j_session,
         common_job_parameters,
     )

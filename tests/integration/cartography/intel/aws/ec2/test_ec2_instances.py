@@ -95,9 +95,9 @@ def test_ec2_reservations_to_instances(neo4j_session, *args):
     assert actual_nodes == expected_nodes
 
 
-def test_ec2_iaminstanceprofiles(neo4j_session, *args):
+def test_ec2_iaminstanceprofiles(neo4j_session):
     """
-    Ensure that iaminstanceprofiles are connected to their expected iam roles
+    Ensure that EC2Instances are attached to the IAM Roles that they can assume due to their IAM instance profiles
     """
     neo4j_session.run(
         """
@@ -110,7 +110,7 @@ def test_ec2_iaminstanceprofiles(neo4j_session, *args):
     )
 
     data_instances = tests.data.aws.ec2.instances.DESCRIBE_INSTANCES['Reservations']
-    data_iam = tests.data.aws.iam.INSTACE_ROLES['Roles']
+    data_iam = tests.data.aws.iam.INSTACE['Roles']
 
     cartography.intel.aws.ec2.instances.load_ec2_instances(
         neo4j_session, data_instances, TEST_REGION, TEST_ACCOUNT_ID, TEST_UPDATE_TAG,
@@ -125,7 +125,7 @@ def test_ec2_iaminstanceprofiles(neo4j_session, *args):
     }
 
     run_analysis_job(
-        'aws_ec2_iaminstance.json',
+        'aws_ec2_iaminstanceprofile.json',
         neo4j_session,
         common_job_parameters,
     )

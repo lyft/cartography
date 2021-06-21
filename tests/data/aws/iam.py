@@ -143,7 +143,7 @@ LIST_ROLES = {
     ],
 }
 
-INSTACE_ROLES = {
+INSTACE = {
     'Roles': [
         {
             "AssumeRolePolicyDocument": {
