@@ -1,0 +1,10 @@
+{
+    "name": "EC2 Instances assume IAM roles",
+    "statements": [
+        {
+            "__comment": "Create ASSUMES_ROLE realtionship from ec2 instance to the associated iaminstance iam role",
+            "query":"MATCH (aa:AWSAccount)-[:RESOURCE]->(i:EC2Instance)\nWITH SPLIT(i.iaminstanceprofile, '/')[-1] AS role_name, aa, i\nMATCH (aa)-[:RESOURCE]->(r:AWSRole)\nWHERE r.arn ENDS WITH role_name\nMERGE (i)-[:ASSUMES_ROLE]->(r)",
+            "iterative": false
+        }
+    ]
+}

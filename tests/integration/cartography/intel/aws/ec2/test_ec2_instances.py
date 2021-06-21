@@ -1,5 +1,8 @@
 import cartography.intel.aws.ec2
 import tests.data.aws.ec2.instances
+import cartography.intel.aws.iam
+import tests.data.aws.iam
+from cartography.util import run_analysis_job
 
 TEST_ACCOUNT_ID = '000000000000'
 TEST_REGION = 'us-east-1'
@@ -86,6 +89,90 @@ def test_ec2_reservations_to_instances(neo4j_session, *args):
         (
             n['r.reservationid'],
             n['i.id'],
+        )
+        for n in nodes
+    }
+    assert actual_nodes == expected_nodes
+
+
+def test_ec2_iaminstanceprofiles(neo4j_session, *args):
+    """
+    Ensure that iaminstanceprofiles are connected to their expected iam roles
+    """
+    neo4j_session.run(
+        """
+        MERGE (aws:AWSAccount{id: {aws_account_id}})
+        ON CREATE SET aws.firstseen = timestamp()
+        SET aws.lastupdated = {aws_update_tag}
+        """,
+        aws_account_id="OWNER_ACCOUNT_ID",
+        aws_update_tag=TEST_UPDATE_TAG,
+    )
+    neo4j_session.run(
+        """
+        MERGE (aws:AWSAccount{id: {aws_account_id}})
+        ON CREATE SET aws.firstseen = timestamp()
+        SET aws.lastupdated = {aws_update_tag}
+        """,
+        aws_account_id="ACCOUNT_NUM",
+        aws_update_tag=TEST_UPDATE_TAG,
+    )
+    
+    data_instances = tests.data.aws.ec2.instances.DESCRIBE_INSTANCES['Reservations']
+    data_iam = tests.data.aws.ec2.instances.DESCRIBE_INSTANCES['Roles']
+
+    cartography.intel.aws.ec2.instances.load_ec2_instances(
+        neo4j_session, data_instances, TEST_REGION, TEST_ACCOUNT_ID, TEST_UPDATE_TAG,
+    )
+
+    cartography.intel.aws.iam.load_roles(
+        neo4j_session, data_iam, TEST_ACCOUNT_ID, TEST_UPDATE_TAG,
+    )
+
+    config = cartography.config.Config(
+        neo4j_uri='bolt://localhost:7687',
+        update_tag=TEST_UPDATE_TAG,
+        aws_sync_all_profiles=True,
+    )
+
+    common_job_parameters = {
+        "UPDATE_TAG": config.update_tag,
+        "permission_relationships_file": config.permission_relationships_file,
+    }
+
+    run_analysis_job(
+        'aws_ec2_iaminstance.json',
+        neo4j_session,
+        common_job_parameters,
+    )
+    
+    # expected_nodes = {
+    #     ('SERVICE_NAME_2', 'i-02'),
+    #     ('ANOTHER_SERVICE_NAME', 'i-03'),
+    #     ('ANOTHER_SERVICE_NAME', 'i-04')
+    # }
+
+    expected_nodes = {
+        ('arn:aws:iam::OWNER_ACCOUNT_ID:role/PROFILE_NAME', 'i-01'),
+        ('arn:aws:iam::OWNER_ACCOUNT_ID:role/SERVICE_NAME_2', 'i-02'),
+        ('arn:aws:iam::OWNER_ACCOUNT_ID:role/ANOTHER_SERVICE_NAME', 'i-03'),
+        ('arn:aws:iam::OWNER_ACCOUNT_ID:role/ANOTHER_SERVICE_NAME', 'i-04')
+    }
+
+    # nodes = neo4j_session.run(
+    #     """
+    #     MATCH (aa:AWSAccount)-[:RESOURCE]->(i:EC2Instance) return aa.id, i.id
+    #     """,
+    # )
+    nodes = neo4j_session.run(
+        """
+        MATCH (i:EC2Instance)-[:ASSUMES_ROLE]->(r:AWSRole) return r.arn, i.id
+        """,
+    )
+    actual_nodes = {
+        (
+            n['i.id'],
+            n['aa.id'],
         )
         for n in nodes
     }
