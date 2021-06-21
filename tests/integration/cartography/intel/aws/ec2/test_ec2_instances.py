@@ -154,7 +154,6 @@ def test_ec2_iaminstanceprofiles(neo4j_session, *args):
     # }
 
     expected_nodes = {
-        ('arn:aws:iam::OWNER_ACCOUNT_ID:role/PROFILE_NAME', 'i-01'),
         ('arn:aws:iam::OWNER_ACCOUNT_ID:role/SERVICE_NAME_2', 'i-02'),
         ('arn:aws:iam::OWNER_ACCOUNT_ID:role/ANOTHER_SERVICE_NAME', 'i-03'),
         ('arn:aws:iam::OWNER_ACCOUNT_ID:role/ANOTHER_SERVICE_NAME', 'i-04')
