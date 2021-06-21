@@ -184,6 +184,6 @@ INSTACE_ROLES = {
             "RoleName": "ANOTHER_SERVICE_NAME",
             "Path": "/",
             "Arn": "arn:aws:iam::000000000000:role/ANOTHER_SERVICE_NAME",
-        }
-    ]
+        },
+    ],
 }

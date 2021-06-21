@@ -1,6 +1,6 @@
 import cartography.intel.aws.ec2
-import tests.data.aws.ec2.instances
 import cartography.intel.aws.iam
+import tests.data.aws.ec2.instances
 import tests.data.aws.iam
 from cartography.util import run_analysis_job
 
@@ -129,25 +129,13 @@ def test_ec2_iaminstanceprofiles(neo4j_session, *args):
         neo4j_session,
         common_job_parameters,
     )
-    
-    # expected_nodes = {
-    #     ('PROFILE_NAME', 'i-01'),
-    #     ('SERVICE_NAME_2', 'i-02'),
-    #     ('ANOTHER_SERVICE_NAME', 'i-03'),
-    #     ('ANOTHER_SERVICE_NAME', 'i-04')
-    # }
 
     expected_nodes = {
         ('arn:aws:iam::000000000000:role/SERVICE_NAME_2', 'i-02'),
         ('arn:aws:iam::000000000000:role/ANOTHER_SERVICE_NAME', 'i-03'),
-        ('arn:aws:iam::000000000000:role/ANOTHER_SERVICE_NAME', 'i-04')
+        ('arn:aws:iam::000000000000:role/ANOTHER_SERVICE_NAME', 'i-04'),
     }
 
-    # nodes = neo4j_session.run(
-    #     """
-    #     MATCH (aa:AWSAccount)-[:RESOURCE]->(i:EC2Instance) return aa.id, i.id
-    #     """,
-    # )
     nodes = neo4j_session.run(
         """
         MATCH (i:EC2Instance)-[:STS_ASSUMEROLE_ALLOW]->(r:AWSRole) return r.arn, i.id
