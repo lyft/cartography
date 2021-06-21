@@ -32,7 +32,7 @@ DESCRIBE_INSTANCES = {
                 },
                 'Hypervisor': 'xen',
                 'IamInstanceProfile': {
-                    'Arn': 'arn:aws:iam::ACCOUNT_NUM:instance-profile/PROFILE_NAME',
+                    'Arn': 'arn:aws:iam::000000000000:instance-profile/PROFILE_NAME',
                     'Id': 'PROFILE_NAME',
                 },
                 'ImageId': 'IMAGE_ID',
@@ -161,7 +161,7 @@ DESCRIBE_INSTANCES = {
                 },
                 'Hypervisor': 'xen',
                 'IamInstanceProfile': {
-                    'Arn': 'arn:aws:iam::OWNER_ACCOUNT_ID:instance-profile/SERVICE_NAME_2',
+                    'Arn': 'arn:aws:iam::000000000000:instance-profile/SERVICE_NAME_2',
                     'Id': 'SERVICE_NAME_2',
                 },
                 'ImageId': 'ami-2c',
@@ -288,7 +288,7 @@ DESCRIBE_INSTANCES = {
                     },
                     'Hypervisor': 'xen',
                     'IamInstanceProfile': {
-                        'Arn': 'arn:aws:iam::OWNER_ACCOUNT_ID:instance-profile/ANOTHER_SERVICE_NAME',
+                        'Arn': 'arn:aws:iam::000000000000:instance-profile/ANOTHER_SERVICE_NAME',
                         'Id': 'ANOTHER_SERVICE_NAME',
                     },
                     'ImageId': 'THIS_IS_AN_IMAGE_ID',
@@ -408,7 +408,7 @@ DESCRIBE_INSTANCES = {
                     },
                     'Hypervisor': 'xen',
                     'IamInstanceProfile': {
-                        'Arn': 'arn:aws:iam::OWNER_ACCOUNT_ID:instance-profile/ANOTHER_SERVICE_NAME',
+                        'Arn': 'arn:aws:iam::000000000000:instance-profile/ANOTHER_SERVICE_NAME',
                         'Id': 'ANOTHER_SERVICE_NAME',
                     },
                     'ImageId': 'THIS_IS_AN_IMAGE_ID',
@@ -508,68 +508,6 @@ DESCRIBE_INSTANCES = {
             'RequesterId': 'REQUESTER_ID',
             'ReservationId': 'r-03',
         },
-    ],
-    'Roles': [
-        {
-            "AssumeRolePolicyDocument": {
-                "Version": "2012-10-17",
-                "Statement": [
-                    {
-                        "Action": "sts:AssumeRole",
-                        "Effect": "Allow",
-                        "Principal": {
-                            "AWS": "arn:aws:iam::OWNER_ACCOUNT_ID:role/SERVICE_NAME_2",
-                        },
-                    },
-                ],
-            },
-            "MaxSessionDuration": 3600,
-            "RoleId": "AROA00000000000000004",
-            "CreateDate": datetime.datetime(2019, 1, 1, 0, 0, 1),
-            "RoleName": "SERVICE_NAME_2",
-            "Path": "/",
-            "Arn": "arn:aws:iam::OWNER_ACCOUNT_ID:role/SERVICE_NAME_2",
-        },
-        {
-            "AssumeRolePolicyDocument": {
-                "Version": "2012-10-17",
-                "Statement": [
-                    {
-                        "Action": "sts:AssumeRole",
-                        "Effect": "Allow",
-                        "Principal": {
-                            "AWS": "arn:aws:iam::OWNER_ACCOUNT_ID:role/ANOTHER_SERVICE_NAME",
-                        },
-                    },
-                ],
-            },
-            "MaxSessionDuration": 3600,
-            "RoleId": "AROA00000000000000005",
-            "CreateDate": datetime.datetime(2019, 1, 1, 0, 0, 1),
-            "RoleName": "ANOTHER_SERVICE_NAME",
-            "Path": "/",
-            "Arn": "arn:aws:iam::OWNER_ACCOUNT_ID:role/ANOTHER_SERVICE_NAME",
-        },
-        {
-            "AssumeRolePolicyDocument": {
-                "Version": "2012-10-17",
-                "Statement": [
-                    {
-                        "Action": "sts:AssumeRole",
-                        "Effect": "Allow",
-                        "Principal": {
-                            "AWS": "arn:aws:iam::ACCOUNT_NUM:role/ANOTHER_SERVICE_NAME",
-                        },
-                    },
-                ],
-            },
-            "MaxSessionDuration": 3600,
-            "RoleId": "AROA00000000000000006",
-            "CreateDate": datetime.datetime(2019, 1, 1, 0, 0, 1),
-            "RoleName": "ANOTHER_SERVICE_NAME",
-            "Path": "/",
-            "Arn": "arn:aws:iam::ACCOUNT_NUM:role/ANOTHER_SERVICE_NAME",
-        }
     ],
     'ResponseMetadata': {
         'HTTPHeaders': {

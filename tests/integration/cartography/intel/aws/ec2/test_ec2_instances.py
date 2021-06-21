@@ -105,21 +105,12 @@ def test_ec2_iaminstanceprofiles(neo4j_session, *args):
         ON CREATE SET aws.firstseen = timestamp()
         SET aws.lastupdated = {aws_update_tag}
         """,
-        aws_account_id="OWNER_ACCOUNT_ID",
+        aws_account_id=TEST_ACCOUNT_ID,
         aws_update_tag=TEST_UPDATE_TAG,
     )
-    neo4j_session.run(
-        """
-        MERGE (aws:AWSAccount{id: {aws_account_id}})
-        ON CREATE SET aws.firstseen = timestamp()
-        SET aws.lastupdated = {aws_update_tag}
-        """,
-        aws_account_id="ACCOUNT_NUM",
-        aws_update_tag=TEST_UPDATE_TAG,
-    )
-    
+
     data_instances = tests.data.aws.ec2.instances.DESCRIBE_INSTANCES['Reservations']
-    data_iam = tests.data.aws.ec2.instances.DESCRIBE_INSTANCES['Roles']
+    data_iam = tests.data.aws.iam.INSTACE_ROLES['Roles']
 
     cartography.intel.aws.ec2.instances.load_ec2_instances(
         neo4j_session, data_instances, TEST_REGION, TEST_ACCOUNT_ID, TEST_UPDATE_TAG,
@@ -129,15 +120,8 @@ def test_ec2_iaminstanceprofiles(neo4j_session, *args):
         neo4j_session, data_iam, TEST_ACCOUNT_ID, TEST_UPDATE_TAG,
     )
 
-    config = cartography.config.Config(
-        neo4j_uri='bolt://localhost:7687',
-        update_tag=TEST_UPDATE_TAG,
-        aws_sync_all_profiles=True,
-    )
-
     common_job_parameters = {
-        "UPDATE_TAG": config.update_tag,
-        "permission_relationships_file": config.permission_relationships_file,
+        "UPDATE_TAG": TEST_UPDATE_TAG,
     }
 
     run_analysis_job(
@@ -154,9 +138,9 @@ def test_ec2_iaminstanceprofiles(neo4j_session, *args):
     # }
 
     expected_nodes = {
-        ('arn:aws:iam::OWNER_ACCOUNT_ID:role/SERVICE_NAME_2', 'i-02'),
-        ('arn:aws:iam::OWNER_ACCOUNT_ID:role/ANOTHER_SERVICE_NAME', 'i-03'),
-        ('arn:aws:iam::OWNER_ACCOUNT_ID:role/ANOTHER_SERVICE_NAME', 'i-04')
+        ('arn:aws:iam::000000000000:role/SERVICE_NAME_2', 'i-02'),
+        ('arn:aws:iam::000000000000:role/ANOTHER_SERVICE_NAME', 'i-03'),
+        ('arn:aws:iam::000000000000:role/ANOTHER_SERVICE_NAME', 'i-04')
     }
 
     # nodes = neo4j_session.run(
@@ -166,13 +150,13 @@ def test_ec2_iaminstanceprofiles(neo4j_session, *args):
     # )
     nodes = neo4j_session.run(
         """
-        MATCH (i:EC2Instance)-[:ASSUMES_ROLE]->(r:AWSRole) return r.arn, i.id
+        MATCH (i:EC2Instance)-[:STS_ASSUMEROLE_ALLOW]->(r:AWSRole) return r.arn, i.id
         """,
     )
     actual_nodes = {
         (
-            n['i.id'],
             n['r.arn'],
+            n['i.id'],
         )
         for n in nodes
     }
