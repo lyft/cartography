@@ -147,6 +147,7 @@ def test_ec2_iaminstanceprofiles(neo4j_session, *args):
     )
     
     # expected_nodes = {
+    #     ('PROFILE_NAME', 'i-01'),
     #     ('SERVICE_NAME_2', 'i-02'),
     #     ('ANOTHER_SERVICE_NAME', 'i-03'),
     #     ('ANOTHER_SERVICE_NAME', 'i-04')
@@ -172,7 +173,7 @@ def test_ec2_iaminstanceprofiles(neo4j_session, *args):
     actual_nodes = {
         (
             n['i.id'],
-            n['aa.id'],
+            n['r.arn'],
         )
         for n in nodes
     }
