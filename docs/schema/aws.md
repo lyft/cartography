@@ -544,10 +544,10 @@ Representation of an AWS [IAM Role](https://docs.aws.amazon.com/IAM/latest/APIRe
 
 ### Relationships
 
-- Some AWS Groups, Users, and Principals can assume AWS Roles.
+- Some AWS Groups, Users, Principals, and EC2 Instances can assume AWS Roles.
 
     ```
-    (AWSGroup, AWSUser)-[STS_ASSUMEROLE_ALLOW]->(AWSRole)
+    (AWSGroup, AWSUser, EC2Instance)-[STS_ASSUMEROLE_ALLOW]->(AWSRole)
     ```
 
 - Some AWS Roles can assume other AWS Roles.
@@ -975,6 +975,12 @@ Our representation of an AWS [EC2 Instance](https://docs.aws.amazon.com/AWSEC2/l
 
         ```
         (EC2Instance)-[TAGGED]->(AWSTag)
+        ```
+
+-  EC2 Instances can assume IAM Roles.
+
+        ```
+        (EC2Instance)-[STS_ASSUMEROLE_ALLOW]->(AWSRole)
         ```
 
 
