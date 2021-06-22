@@ -142,3 +142,48 @@ LIST_ROLES = {
         },
     ],
 }
+
+INSTACE = {
+    'Roles': [
+        {
+            "AssumeRolePolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Action": "sts:AssumeRole",
+                        "Effect": "Allow",
+                        "Principal": {
+                            "AWS": "arn:aws:iam::000000000000:role/SERVICE_NAME_2",
+                        },
+                    },
+                ],
+            },
+            "MaxSessionDuration": 3600,
+            "RoleId": "AROA00000000000000004",
+            "CreateDate": datetime.datetime(2019, 1, 1, 0, 0, 1),
+            "RoleName": "SERVICE_NAME_2",
+            "Path": "/",
+            "Arn": "arn:aws:iam::000000000000:role/SERVICE_NAME_2",
+        },
+        {
+            "AssumeRolePolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Action": "sts:AssumeRole",
+                        "Effect": "Allow",
+                        "Principal": {
+                            "AWS": "arn:aws:iam::000000000000:role/ANOTHER_SERVICE_NAME",
+                        },
+                    },
+                ],
+            },
+            "MaxSessionDuration": 3600,
+            "RoleId": "AROA00000000000000006",
+            "CreateDate": datetime.datetime(2019, 1, 1, 0, 0, 1),
+            "RoleName": "ANOTHER_SERVICE_NAME",
+            "Path": "/",
+            "Arn": "arn:aws:iam::000000000000:role/ANOTHER_SERVICE_NAME",
+        },
+    ],
+}
