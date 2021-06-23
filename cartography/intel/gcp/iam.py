@@ -136,7 +136,7 @@ def transform_bindings(bindings, project_id):
                 service_accounts.append({
                     "arn": f'{project_id}/{sa}',
                     "id": f'{project_id}/{sa}',
-                    "name": sa
+                    "name": f'projects/{project_id}/serviceAccounts/{sa}'
                 })
 
             elif member.startswith('group:'):
@@ -315,7 +315,7 @@ def load_bindings(neo4j_session: neo4j.Session, bindings: List[Dict], project_id
                 attach_role_to_user(neo4j_session, role_arn, f"{project_id}/{member[len('user:'):]}", project_id, gcp_update_tag)
 
             elif member.startswith('serviceAccount:'):
-                attach_role_to_service_account(neo4j_session, role_arn, f"{project_id}/{member[len('serviceAccount:'):]}", project_id, gcp_update_tag)
+                attach_role_to_service_account(neo4j_session, role_arn, f"projects/{project_id}/serviceAccounts/{member[len('serviceAccount:'):]}", project_id, gcp_update_tag)
 
             elif member.startswith('group:'):
                 attach_role_to_group(neo4j_session, role_arn, f"{project_id}/{member[len('group:'):]}", project_id, gcp_update_tag)
@@ -347,10 +347,12 @@ def attach_role_to_user(neo4j_session: neo4j.Session, role_arn: str, user_arn: s
 
 @timeit
 def attach_role_to_service_account(neo4j_session: neo4j.Session, role_arn: str, service_account_arn: str, project_id: str, gcp_update_tag: int) -> None:
+    # TODO: saId is not valid - it should be a query based on name?
+    # check the output from service accounts & bindings to confirm
     ingest_script = """
     MATCH (role:GCPRole{id:{RoleId}})
 
-    MERGE (sa:GCPServiceAccount{id:{saId}})
+    MERGE (sa:GCPServiceAccount{name:{saId}})
 
     MERGE (sa)-[r:ASSUME_ROLE]->(role)
     ON CREATE SET r.firstseen = timestamp()
@@ -422,8 +424,6 @@ def sync(
     roles_list = get_roles(iam, project_id)
     custom_roles_list = get_project_roles(iam, project_id)
     roles_list.extend(custom_roles_list)
-    print('loading roles')
-    print(roles_list)
 
     load_roles(neo4j_session, roles_list, project_id, gcp_update_tag)
     # cleanup_roles(neo4j_session, common_job_parameters)
