@@ -13,6 +13,7 @@ from oauth2client.client import GoogleCredentials
 
 from cartography.config import Config
 from cartography.intel.gcp.auth import AuthHelper
+from cartography.intel.gcp import iam
 from cartography.intel.gcp import compute
 from cartography.intel.gcp import crm
 from cartography.intel.gcp import dns
@@ -22,7 +23,7 @@ from cartography.util import run_analysis_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
-Resources = namedtuple('Resources', 'compute container crm_v1 crm_v2 dns storage serviceusage')
+Resources = namedtuple('Resources', 'iam compute container crm_v1 crm_v2 dns storage serviceusage')
 
 # Mapping of service short names to their full names as in docs. See https://developers.google.com/apis-explorer,
 # and https://cloud.google.com/service-usage/docs/reference/rest/v1/services#ServiceConfig
@@ -33,6 +34,17 @@ service_names = Services(
     gke='container.googleapis.com',
     dns='dns.googleapis.com',
 )
+
+
+def _get_iam_resource_v1(credentials: GoogleCredentials) -> Resource:
+    """
+    Instantiates a Google IAM v1 resource object to call the IAM API.
+    See https://cloud.google.com/iam/docs/reference/rest.
+    :param credentials: The GoogleCredentials object
+    :return: A IAM v1 resource object
+    """
+    # cache_discovery=False to suppress extra warnings.
+    return googleapiclient.discovery.build('iam', 'v1', credentials=credentials, cache_discovery=False)
 
 
 def _get_crm_resource_v1(credentials: GoogleCredentials) -> Resource:
@@ -119,6 +131,7 @@ def _initialize_resources(credentials: GoogleCredentials) -> Resource:
     :return: namedtuple of all resource objects
     """
     return Resources(
+        iam=_get_iam_resource_v1(credentials),
         crm_v1=_get_crm_resource_v1(credentials),
         crm_v2=_get_crm_resource_v2(credentials),
         compute=_get_compute_resource(credentials),
@@ -174,6 +187,8 @@ def _sync_single_project(
     """
     # Determine the resources available on the project.
     # enabled_services = _services_enabled_on_project(resources.serviceusage, project_id)
+    # if service_names.compute in enabled_services:
+    iam.sync(neo4j_session, resources.iam, resources.crm_v1, project_id, gcp_update_tag, common_job_parameters)
     # if service_names.compute in enabled_services:
     compute.sync(neo4j_session, resources.compute, project_id, gcp_update_tag, common_job_parameters)
     # if service_names.storage in enabled_services:

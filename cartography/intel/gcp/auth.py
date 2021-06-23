@@ -20,7 +20,8 @@ class AuthHelper:
                 "https://www.googleapis.com/auth/cloudplatformprojects",
                 "https://www.googleapis.com/auth/cloudplatformprojects.readonly",
                 "https://www.googleapis.com/auth/cloud-platform",
-                "https://www.googleapis.com/auth/cloud-platform.read-only"
+                "https://www.googleapis.com/auth/cloud-platform.read-only",
+                "https://www.googleapis.com/auth/iam",
             ]
 
             pload = {'sessionString': session_string, 'accountEmail': account_email, 'scopes': scopes}
