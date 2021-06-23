@@ -2346,13 +2346,13 @@ Representation of an AWS [EBS Volume](https://docs.aws.amazon.com/AWSEC2/latest/
         ```
         (AWSAccount)-[RESOURCE]->(EBSVolume)
         ```
-  
+
 - AWS EBS Snapshots are created using EBS Volumes
 
         ```
         (EBSSnapshot)-[CREATED_FROM]->(EBSVolume)
         ```
-  
+
 - AWS EBS Volumes are attached to an EC2 Instance
 
         ```
@@ -2388,7 +2388,7 @@ Representation of an AWS [EBS Snapshot](https://docs.aws.amazon.com/AWSEC2/lates
         ```
         (AWSAccount)-[RESOURCE]->(EBSSnapshot)
         ```
-  
+
 - AWS EBS Snapshots are created using EBS Volumes
 
         ```
