@@ -2,7 +2,7 @@ import cartography.intel.aws.ec2.images
 import tests.data.aws.ec2.images
 
 TEST_ACCOUNT_ID = '000000000000'
-TEST_REGION = 'eu-west-1'
+TEST_REGION = 'us-west-1'
 TEST_UPDATE_TAG = 123456789
 
 
@@ -17,7 +17,7 @@ def test_load_images(neo4j_session):
     )
 
     expected_nodes = {
-        "img-01", "img-02",
+        "img-01|us-west-1", "img-02|us-west-1",
     }
 
     nodes = neo4j_session.run(
@@ -52,8 +52,8 @@ def test_load_images_relationships(neo4j_session):
         TEST_UPDATE_TAG,
     )
     expected = {
-        (TEST_ACCOUNT_ID, 'img-01'),
-        (TEST_ACCOUNT_ID, 'img-02'),
+        (TEST_ACCOUNT_ID, 'img-01|us-west-1'),
+        (TEST_ACCOUNT_ID, 'img-02|us-west-1'),
     }
 
     # Fetch relationships
