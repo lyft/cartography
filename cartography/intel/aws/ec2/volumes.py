@@ -29,22 +29,20 @@ def load_volumes(
 ) -> None:
     ingest_volumes = """
     UNWIND {volumes_list} as volume
-    MERGE (v:EBSVolume{id: volume.VolumeId})
-    ON CREATE SET v.firstseen = timestamp()
-    SET v.lastupdated = {update_tag}, v.availabilityzone = volume.AvailabilityZone, v.createtime = volume.CreateTime,
-    v.encrypted = volume.Encrypted, v.size = volume.Size, v.state = volume.State, v.outpostarn = volume.OutpostArn,
-    v.snapshotid = volume.SnapshotId, v.iops = volume.Iops, v.type = volume.VolumeType,
-    v.fastrestored = volume.FastRestored, v.multiattachenabled = volume.MultiAttachEnabled,
-    v.kmskeyid = volume.KmsKeyId, v.region={Region}
-    WITH v
-    MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
-    MERGE (aa)-[r:RESOURCE]->(v)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {update_tag}
+        MERGE (v:EBSVolume{id: volume.VolumeId})
+        ON CREATE SET v.firstseen = timestamp()
+        SET v.lastupdated = {update_tag}, v.availabilityzone = volume.AvailabilityZone, v.createtime = volume.CreateTime,
+        v.encrypted = volume.Encrypted, v.size = volume.Size, v.state = volume.State, v.outpostarn = volume.OutpostArn,
+        v.snapshotid = volume.SnapshotId, v.iops = volume.Iops, v.type = volume.VolumeType,
+        v.fastrestored = volume.FastRestored, v.multiattachenabled = volume.MultiAttachEnabled,
+        v.kmskeyid = volume.KmsKeyId, v.region={Region}
+        WITH v
+        MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+        MERGE (aa)-[r:RESOURCE]->(v)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {update_tag}
     """
 
-    # neo4j does not accept datetime objects and values. This loop is used to convert
-    # these values to string.
     for volume in data:
         volume['CreateTime'] = str(volume['CreateTime'])
 
