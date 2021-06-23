@@ -34,8 +34,8 @@ def load_volumes(
         SET v.lastupdated = {update_tag}, v.availabilityzone = volume.AvailabilityZone,
         v.createtime = volume.CreateTime, v.encrypted = volume.Encrypted, v.size = volume.Size, v.state = volume.State,
         v.outpostarn = volume.OutpostArn, v.snapshotid = volume.SnapshotId, v.iops = volume.Iops,
-        v.type = volume.VolumeType, v.kmskeyid = volume.KmsKeyId, v.region={Region}
-        v.fastrestored = volume.FastRestored, v.multiattachenabled = volume.MultiAttachEnabled,
+        v.type = volume.VolumeType, v.kmskeyid = volume.KmsKeyId, v.region={Region},
+        v.fastrestored = volume.FastRestored, v.multiattachenabled = volume.MultiAttachEnabled
         WITH v
         MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
         MERGE (aa)-[r:RESOURCE]->(v)
