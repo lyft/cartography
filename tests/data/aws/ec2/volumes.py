@@ -1,6 +1,6 @@
 import datetime
 
-DESCRIBE_VOLUMES = {
+DESCRIBE_VOLUMES = [
     {
         'AvailabilityZone': 'US West 1',
         'CreateTime': datetime.datetime(2018, 10, 14, 16, 30, 26),
@@ -33,4 +33,4 @@ DESCRIBE_VOLUMES = {
         'MultiAttachEnabled': True,
         'Throughput': 123,
     },
-}
+]
