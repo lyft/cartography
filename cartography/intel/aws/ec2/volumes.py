@@ -31,11 +31,11 @@ def load_volumes(
     UNWIND {volumes_list} as volume
         MERGE (v:EBSVolume{id: volume.VolumeId})
         ON CREATE SET v.firstseen = timestamp()
-        SET v.lastupdated = {update_tag}, v.availabilityzone = volume.AvailabilityZone, v.createtime = volume.CreateTime,
-        v.encrypted = volume.Encrypted, v.size = volume.Size, v.state = volume.State, v.outpostarn = volume.OutpostArn,
-        v.snapshotid = volume.SnapshotId, v.iops = volume.Iops, v.type = volume.VolumeType,
+        SET v.lastupdated = {update_tag}, v.availabilityzone = volume.AvailabilityZone,
+        v.createtime = volume.CreateTime, v.encrypted = volume.Encrypted, v.size = volume.Size, v.state = volume.State,
+        v.outpostarn = volume.OutpostArn, v.snapshotid = volume.SnapshotId, v.iops = volume.Iops, 
+        v.type = volume.VolumeType, v.kmskeyid = volume.KmsKeyId, v.region={Region}
         v.fastrestored = volume.FastRestored, v.multiattachenabled = volume.MultiAttachEnabled,
-        v.kmskeyid = volume.KmsKeyId, v.region={Region}
         WITH v
         MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
         MERGE (aa)-[r:RESOURCE]->(v)
