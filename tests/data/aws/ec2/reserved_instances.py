@@ -22,7 +22,7 @@ DESCRIBE_RESERVED_INSTANCES = [
         'AvailabilityZone': 'US West 1',
         'Duration': 123,
         'End': datetime.datetime(2018, 10, 14, 16, 30, 26),
-        'FixedPrice': ...,
+        'FixedPrice': 45.2,
         'InstanceCount': 123,
         'InstanceType': 't2.large',
         'ProductDescription': 'Linux/UNIX',
