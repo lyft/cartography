@@ -29,16 +29,17 @@ def load_volumes(
 ) -> None:
     ingest_volumes = """
     UNWIND {volumes_list} as volume
-        MERGE (v:EBSVolume{id: volume.VolumeId})
-        ON CREATE SET v.firstseen = timestamp()
-        SET v.lastupdated = {update_tag}, v.availabilityzone = volume.AvailabilityZone,
-        v.createtime = volume.CreateTime, v.encrypted = volume.Encrypted, v.size = volume.Size, v.state = volume.State,
-        v.outpostarn = volume.OutpostArn, v.snapshotid = volume.SnapshotId, v.iops = volume.Iops,
-        v.type = volume.VolumeType, v.kmskeyid = volume.KmsKeyId, v.region={Region},
-        v.fastrestored = volume.FastRestored, v.multiattachenabled = volume.MultiAttachEnabled
-        WITH v
+        MERGE (vol:EBSVolume{id: volume.VolumeId})
+        ON CREATE SET vol.firstseen = timestamp()
+        SET vol.lastupdated = {update_tag}, vol.availabilityzone = volume.AvailabilityZone,
+        vol.createtime = volume.CreateTime, vol.encrypted = volume.Encrypted, vol.size = volume.Size,
+        vol.state = volume.State,
+        vol.outpostarn = volume.OutpostArn, vol.snapshotid = volume.SnapshotId, vol.iops = volume.Iops,
+        vol.fastrestored = volume.FastRestored, vol.multiattachenabled = volume.MultiAttachEnabled,
+        vol.type = volume.VolumeType, vol.kmskeyid = volume.KmsKeyId, vol.region={Region}
+        WITH vol
         MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
-        MERGE (aa)-[r:RESOURCE]->(v)
+        MERGE (aa)-[r:RESOURCE]->(vol)
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = {update_tag}
     """
