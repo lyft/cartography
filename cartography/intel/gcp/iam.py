@@ -40,7 +40,7 @@ def get_service_accounts(iam: Resource, project_id: str) -> List[Resource]:
 def get_roles(iam: Resource, project_id: str) -> List[Resource]:
     roles: List[Resource] = []
     try:
-        req = iam.roles().list()
+        req = iam.roles().list(view="FULL")
         while req is not None:
             res = req.execute()
             page = res.get('roles', [])
@@ -64,7 +64,7 @@ def get_roles(iam: Resource, project_id: str) -> List[Resource]:
 def get_project_roles(iam: Resource, project_id: str) -> List[Resource]:
     roles: List[Resource] = []
     try:
-        req = iam.projects().roles().list(parent='projects/{}'.format(project_id))
+        req = iam.projects().roles().list(parent='projects/{}'.format(project_id), view="FULL")
         while req is not None:
             res = req.execute()
             page = res.get('roles', [])
