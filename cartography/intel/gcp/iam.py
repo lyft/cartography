@@ -117,9 +117,8 @@ def transform_bindings(bindings, project_id):
     for binding in bindings:
         role = binding['role']
         roles.append({
-            "arn": f'{project_id}/{binding["role"]}',
-            "id": f'{project_id}/{binding["role"]}',
-            "name": role
+            "arn": role,
+            "id": role
         })
 
         for member in binding['members']:
@@ -128,15 +127,17 @@ def transform_bindings(bindings, project_id):
                 users.append({
                     "arn": f'{project_id}/{usr}',
                     "id": f'{project_id}/{usr}',
-                    "name": usr
+                    "email": usr,
+                    "name": usr.split("@")[0]
                 })
 
             elif member.startswith('serviceAccount:'):
                 sa = member[len('serviceAccount:'):]
                 service_accounts.append({
-                    "arn": f'{project_id}/{sa}',
-                    "id": f'{project_id}/{sa}',
-                    "name": f'projects/{project_id}/serviceAccounts/{sa}'
+                    "arn": f'projects/{project_id}/serviceAccounts/{sa}',
+                    "id": f'projects/{project_id}/serviceAccounts/{sa}',
+                    "name": f'projects/{project_id}/serviceAccounts/{sa}',
+                    "email": sa
                 })
 
             elif member.startswith('group:'):
@@ -144,6 +145,7 @@ def transform_bindings(bindings, project_id):
                 groups.append({
                     "arn": f'{project_id}/{grp}',
                     "id": f'{project_id}/{grp}',
+                    "email": grp,
                     "name": grp
                 })
 
@@ -152,6 +154,7 @@ def transform_bindings(bindings, project_id):
                 domains.append({
                     "arn": f'{project_id}/{dmn}',
                     "id": f'{project_id}/{dmn}',
+                    "email": dmn,
                     "name": dmn
                 })
 
@@ -160,10 +163,11 @@ def transform_bindings(bindings, project_id):
 
 @timeit
 def load_users(neo4j_session: neo4j.Session, users: Dict, project_id: str, gcp_update_tag: int) -> None:
+
     ingest_users = """
     UNWIND {users_list} AS usr
     MERGE (u:GCPUser{id: usr.id})
-    ON CREATE SET u.firstseen = timestamp(), u.type = 'User'
+    ON CREATE SET u.firstseen = timestamp()
     SET u.arn = usr.arn, u.name = usr.name,
     u.lastupdated = {gcp_update_tag}
     WITH u, usr
@@ -191,11 +195,10 @@ def load_service_accounts(neo4j_session: neo4j.Session, service_accounts: Dict, 
     ingest_service_accounts = """
     UNWIND {service_accounts_list} AS sa
     MERGE (u:GCPServiceAccount{id: sa.uniqueId})
-    ON CREATE SET u.firstseen = timestamp(), u.type = 'ServiceAccount'
-    SET u.arn = sa.uniqueId, u.name = sa.name,
-    u.displayname = sa.displayname, u.email = sa.email,
-    u.description = sa.description, u.disabled = sa.disabled,
-    u.lastupdated = {gcp_update_tag}
+    ON CREATE SET u.firstseen = timestamp()
+    SET u.arn = sa.name, u.name = sa.displayname,
+    u.email = sa.email, u.description = sa.description,
+    u.disabled = sa.disabled, u.lastupdated = {gcp_update_tag}
     WITH u, sa
     MATCH (d:GCPProject{id: {project_id}})
     MERGE (d)-[r:RESOURCE]->(u)
@@ -221,7 +224,7 @@ def load_groups(neo4j_session: neo4j.Session, groups: Dict, project_id: str, gcp
     ingest_groups = """
     UNWIND {groups_list} AS g
     MERGE (u:GCPGroup{id: g.id})
-    ON CREATE SET u.firstseen = timestamp(), u.type = 'Group'
+    ON CREATE SET u.firstseen = timestamp()
     SET u.arn = g.arn, u.name = g.name,
     u.lastupdated = {gcp_update_tag}
     WITH u, g
@@ -249,7 +252,7 @@ def load_domains(neo4j_session: neo4j.Session, domains: Dict, project_id: str, g
     ingest_domains = """
     UNWIND {domains_list} AS d
     MERGE (u:GCPDomain{id: d.id})
-    ON CREATE SET u.firstseen = timestamp(), u.type = 'Domain'
+    ON CREATE SET u.firstseen = timestamp()
     SET u.arn = d.arn, u.name = d.name,
     u.lastupdated = {gcp_update_tag}
     WITH u, d
@@ -277,10 +280,11 @@ def load_roles(neo4j_session: neo4j.Session, roles: Dict, project_id: str, gcp_u
     ingest_roles = """
     UNWIND {roles_list} AS d
     MERGE (u:GCPRole{id: d.id})
-    ON CREATE SET u.firstseen = timestamp(), u.type = 'Role'
+    ON CREATE SET u.firstseen = timestamp()
     SET u.arn = d.arn, u.name = d.name,
     u.title = d.title, u.description = d.description,
-    u.permissions = d.includedPermissions, u.lastupdated = {gcp_update_tag}
+    u.deleted = d.deleted, u.permissions = d.includedPermissions,
+    u.lastupdated = {gcp_update_tag}
     WITH u, d
     MATCH (d:GCPProject{id: {project_id}})
     MERGE (d)-[r:RESOURCE]->(u)
