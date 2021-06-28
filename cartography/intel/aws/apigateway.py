@@ -329,9 +329,9 @@ def parse_policy(api_id: str, policy: Policy) -> Optional[Dict[Any, Any]]:
     Uses PolicyUniverse to parse API Gateway REST API policy and returns the internet accessibility results
     """
 
-    # unescape doubly escapped JSON
-    policy = policy.replace("\\", "")
     if policy is not None:
+        # unescape doubly escapped JSON
+        policy = policy.replace("\\", "")
         try:
             policy = Policy(json.loads(policy))
             if policy.is_internet_accessible():

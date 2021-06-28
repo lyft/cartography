@@ -15,22 +15,22 @@ else:
 logger = logging.getLogger(__name__)
 
 
-def run_analysis_job(filename, neo4j_session, common_job_parameters):
+def run_analysis_job(filename, neo4j_session, common_job_parameters, package='cartography.data.jobs.analysis'):
     GraphJob.run_from_json(
         neo4j_session,
         read_text(
-            'cartography.data.jobs.analysis',
+            package,
             filename,
         ),
         common_job_parameters,
     )
 
 
-def run_cleanup_job(filename, neo4j_session, common_job_parameters):
+def run_cleanup_job(filename, neo4j_session, common_job_parameters, package='cartography.data.jobs.cleanup'):
     GraphJob.run_from_json(
         neo4j_session,
         read_text(
-            'cartography.data.jobs.cleanup',
+            package,
             filename,
         ),
         common_job_parameters,
