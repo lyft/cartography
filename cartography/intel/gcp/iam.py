@@ -169,7 +169,7 @@ def load_users(neo4j_session: neo4j.Session, users: Dict, project_id: str, gcp_u
     MERGE (u:GCPUser{id: usr.id})
     ON CREATE SET u.firstseen = timestamp()
     SET u.arn = usr.arn, u.name = usr.name,
-    u.lastupdated = {gcp_update_tag}
+    u.email = usr.email, u.lastupdated = {gcp_update_tag}
     WITH u, usr
     MATCH (d:GCPProject{id: {project_id}})
     MERGE (d)-[r:RESOURCE]->(u)
