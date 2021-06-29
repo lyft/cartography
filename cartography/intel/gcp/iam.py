@@ -158,7 +158,7 @@ def load_users(neo4j_session: neo4j.Session, users: Dict, project_id: str, gcp_u
     MERGE (u:GCPUser{id: usr.id})
     ON CREATE SET u.firstseen = timestamp()
     SET u.name = usr.name, u.email = usr.email,
-    u.lastupdated = {gcp_update_tag}
+    u.userid = usr.id, u.lastupdated = {gcp_update_tag}
     WITH u, usr
     MATCH (d:GCPProject{id: {project_id}})
     MERGE (d)-[r:RESOURCE]->(u)
@@ -187,7 +187,7 @@ def load_service_accounts(neo4j_session: neo4j.Session, service_accounts: Dict, 
     ON CREATE SET u.firstseen = timestamp()
     SET u.name = sa.displayname, u.email = sa.email,
     u.description = sa.description, u.disabled = sa.disabled,
-    u.lastupdated = {gcp_update_tag}
+    u.serviceaccountid = sa.uniqueId, u.lastupdated = {gcp_update_tag}
     WITH u, sa
     MATCH (d:GCPProject{id: {project_id}})
     MERGE (d)-[r:RESOURCE]->(u)
@@ -214,7 +214,8 @@ def load_groups(neo4j_session: neo4j.Session, groups: Dict, project_id: str, gcp
     UNWIND {groups_list} AS g
     MERGE (u:GCPGroup{id: g.id})
     ON CREATE SET u.firstseen = timestamp()
-    SET u.name = g.name, u.lastupdated = {gcp_update_tag}
+    SET u.name = g.name, u.groupid = g.id,
+    u.lastupdated = {gcp_update_tag}
     WITH u, g
     MATCH (d:GCPProject{id: {project_id}})
     MERGE (d)-[r:RESOURCE]->(u)
@@ -241,7 +242,8 @@ def load_domains(neo4j_session: neo4j.Session, domains: Dict, project_id: str, g
     UNWIND {domains_list} AS d
     MERGE (u:GCPDomain{id: d.id})
     ON CREATE SET u.firstseen = timestamp()
-    SET u.name = d.name, u.lastupdated = {gcp_update_tag}
+    SET u.name = d.name, u.domainid = d.id,
+    u.lastupdated = {gcp_update_tag}
     WITH u, d
     MATCH (d:GCPProject{id: {project_id}})
     MERGE (d)-[r:RESOURCE]->(u)
@@ -270,7 +272,8 @@ def load_roles(neo4j_session: neo4j.Session, roles: Dict, project_id: str, gcp_u
     ON CREATE SET u.firstseen = timestamp()
     SET u.name = d.name, u.title = d.title,
     u.description = d.description, u.deleted = d.deleted,
-    u.permissions = d.includedPermissions, u.lastupdated = {gcp_update_tag}
+    u.permissions = d.includedPermissions, u.roleid = d.id,
+    u.lastupdated = {gcp_update_tag}
     WITH u, d
     MATCH (d:GCPProject{id: {project_id}})
     MERGE (d)-[r:RESOURCE]->(u)
