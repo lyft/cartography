@@ -7,7 +7,7 @@ provider:
   runtime: python3.8
   stage: prod
   region: us-east-2
-  memorySize: 256
+  memorySize: 1024
   profile: cloudanix-serverless-admin
   apiGateway:
     shouldStartNameWithService: true
