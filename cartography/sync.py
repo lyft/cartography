@@ -10,7 +10,7 @@ import cartography.intel.analysis
 import cartography.intel.aws
 # import cartography.intel.azure
 import cartography.intel.create_indexes
-from cartography.scoped_stats_client import ScopedStatsClient
+# from cartography.scoped_stats_client import ScopedStatsClient
 # import cartography.intel.crxcavator.crxcavator
 # import cartography.intel.digitalocean
 # import cartography.intel.gcp
