@@ -220,6 +220,7 @@ def _sync_multiple_projects(
 
     for project in projects:
         project_id = project['projectId']
+        common_job_parameters["GCP_PROJECT_ID"] = project_id
         logger.info("Syncing GCP project %s.", project_id)
         _sync_single_project(neo4j_session, resources, project_id, gcp_update_tag, common_job_parameters)
 
