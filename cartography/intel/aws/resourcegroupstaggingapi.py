@@ -85,6 +85,7 @@ TAG_RESOURCE_TYPE_MAPPINGS: Dict = {
     'redshift:cluster': {'label': 'RedshiftCluster', 'property': 'id'},
     'rds:db': {'label': 'RDSInstance', 'property': 'id'},
     'rds:subgrp': {'label': 'DBSubnetGroup', 'property': 'id'},
+    'rds:cluster': {'label': 'RDSCluster', 'property': 'id'},
     # Buckets are the only objects in the S3 service: https://docs.aws.amazon.com/AmazonS3/latest/dev/s3-arn-format.html
     's3': {'label': 'S3Bucket', 'property': 'id', 'id_func': get_bucket_name_from_arn},
 }
