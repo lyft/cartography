@@ -2,6 +2,7 @@ import logging
 from typing import Any
 from typing import Dict
 from typing import List
+from typing import Optional
 
 import boto3
 import neo4j
@@ -11,6 +12,112 @@ from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+
+
+@timeit
+def _dict_value_to_str(obj: Dict, key: str) -> Optional[str]:
+    """
+    Convert the value referenced by the key in the dict to a string, if it exists, and return it. If it doesn't exist,
+    return None.
+    """
+    value = obj.get(key)
+    if value is not None:
+        return str(value)
+    else:
+        return None
+
+
+@timeit
+@aws_handle_regions
+def get_rds_cluster_data(boto3_session: boto3.session.Session, region: str) -> List[Any]:
+    """
+    Create an RDS boto3 client and grab all the DBClusters.
+    """
+    client = boto3_session.client('rds', region_name=region)
+    paginator = client.get_paginator('describe_db_clusters')
+    instances: List[Any] = []
+    for page in paginator.paginate():
+        instances.extend(page['DBClusters'])
+
+    return instances
+
+
+@timeit
+def load_rds_clusters(
+    neo4j_session: neo4j.Session, data: Dict, region: str, current_aws_account_id: str,
+    aws_update_tag: int,
+) -> None:
+    """
+    Ingest the RDS clusters to neo4j and link them to necessary nodes.
+    """
+    ingest_rds_cluster = """
+    UNWIND {Clusters} as rds_cluster
+        MERGE (cluster:RDSCluster{id: rds_cluster.DBClusterArn})
+        ON CREATE SET cluster.firstseen = timestamp(),
+            cluster.arn = rds_cluster.DBClusterArn
+        SET cluster.allocated_storage = rds_cluster.AllocatedStorage,
+            cluster.availability_zones = rds_cluster.AvailabilityZones,
+            cluster.backup_retention_period = rds_cluster.BackupRetentionPeriod,
+            cluster.character_set_name = rds_cluster.CharacterSetName,
+            cluster.database_name = rds_cluster.DatabaseName,
+            cluster.db_cluster_identifier = rds_cluster.DBClusterIdentifier,
+            cluster.db_parameter_group = rds_cluster.DBClusterParameterGroup,
+            cluster.status = rds_cluster.Status,
+            cluster.earliest_restorable_time = rds_cluster.EarliestRestorableTime,
+            cluster.endpoint = rds_cluster.Endpoint,
+            cluster.reader_endpoint = rds_cluster.ReaderEndpoint,
+            cluster.multi_az = rds_cluster.MultiAZ,
+            cluster.engine = rds_cluster.Engine,
+            cluster.engine_version = rds_cluster.EngineVersion,
+            cluster.latest_restorable_time = rds_cluster.LatestRestorableTime,
+            cluster.port = rds_cluster.Port,
+            cluster.master_username = rds_cluster.MasterUsername,
+            cluster.preferred_backup_window = rds_cluster.PreferredBackupWindow,
+            cluster.preferred_maintenance_window = rds_cluster.PreferredMaintenanceWindow,
+            cluster.hosted_zone_id = rds_cluster.HostedZoneId,
+            cluster.storage_encrypted = rds_cluster.StorageEncrypted,
+            cluster.kms_key_id = rds_cluster.KmsKeyId,
+            cluster.db_cluster_resource_id = rds_cluster.DbClusterResourceId,
+            cluster.clone_group_id = rds_cluster.CloneGroupId,
+            cluster.cluster_create_time = rds_cluster.ClusterCreateTime,
+            cluster.earliest_backtrack_time = rds_cluster.EarliestBacktrackTime,
+            cluster.backtrack_window = rds_cluster.BacktrackWindow,
+            cluster.backtrack_consumed_change_records = rds_cluster.BacktrackConsumedChangeRecords,
+            cluster.capacity = rds_cluster.Capacity,
+            cluster.engine_mode = rds_cluster.EngineMode,
+            cluster.scaling_configuration_info_min_capacity = rds_cluster.ScalingConfigurationInfoMinCapacity,
+            cluster.scaling_configuration_info_max_capacity = rds_cluster.ScalingConfigurationInfoMaxCapacity,
+            cluster.scaling_configuration_info_auto_pause = rds_cluster.ScalingConfigurationInfoAutoPause,
+            cluster.deletion_protection = rds_cluster.DeletionProtection,
+            cluster.region = {Region},
+            cluster.lastupdated = {aws_update_tag}
+        WITH cluster
+        MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+        MERGE (aa)-[r:RESOURCE]->(cluster)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {aws_update_tag}
+    """
+    for cluster in data:
+        # TODO: track read replicas
+        # TODO: track associated roles
+        # TODO: track security groups
+        # TODO: track subnet groups
+
+        cluster['EarliestRestorableTime'] = _dict_value_to_str(cluster, 'EarliestRestorableTime')
+        cluster['LatestRestorableTime'] = _dict_value_to_str(cluster, 'LatestRestorableTime')
+        cluster['ClusterCreateTime'] = _dict_value_to_str(cluster, 'ClusterCreateTime')
+        cluster['EarliestBacktrackTime'] = _dict_value_to_str(cluster, 'EarliestBacktrackTime')
+        cluster['ScalingConfigurationInfoMinCapacity'] = cluster.get('ScalingConfigurationInfo', {}).get('MinCapacity')
+        cluster['ScalingConfigurationInfoMaxCapacity'] = cluster.get('ScalingConfigurationInfo', {}).get('MaxCapacity')
+        cluster['ScalingConfigurationInfoAutoPause'] = cluster.get('ScalingConfigurationInfo', {}).get('AutoPause')
+
+    neo4j_session.run(
+        ingest_rds_cluster,
+        Clusters=data,
+        Region=region,
+        AWS_ACCOUNT_ID=current_aws_account_id,
+        aws_update_tag=aws_update_tag,
+    )
 
 
 @timeit
@@ -37,144 +144,132 @@ def load_rds_instances(
     Ingest the RDS instances to neo4j and link them to necessary nodes.
     """
     ingest_rds_instance = """
-    MERGE (rds:RDSInstance{id: {DBInstanceArn}})
-    ON CREATE SET rds.firstseen = timestamp()
-    SET rds.arn = {DBInstanceArn},
-    rds.db_instance_identifier = {DBInstanceIdentifier},
-    rds.db_instance_class = {DBInstanceClass},
-    rds.engine = {Engine},
-    rds.master_username = {MasterUsername},
-    rds.db_name = {DBName},
-    rds.instance_create_time = {InstanceCreateTime},
-    rds.availability_zone = {AvailabilityZone},
-    rds.multi_az = {MultiAZ},
-    rds.engine_version = {EngineVersion},
-    rds.publicly_accessible = {PubliclyAccessible},
-    rds.db_cluster_identifier = {DBClusterIdentifier},
-    rds.storage_encrypted = {StorageEncrypted},
-    rds.kms_key_id = {KmsKeyId},
-    rds.dbi_resource_id = {DbiResourceId},
-    rds.ca_certificate_identifier = {CACertificateIdentifier},
-    rds.enhanced_monitoring_resource_arn = {EnhancedMonitoringResourceArn},
-    rds.monitoring_role_arn = {MonitoringRoleArn},
-    rds.performance_insights_enabled = {PerformanceInsightsEnabled},
-    rds.performance_insights_kms_key_id = {PerformanceInsightsKMSKeyId},
-    rds.region = {Region},
-    rds.deletion_protection = {DeletionProtection},
-    rds.preferred_backup_window = {PreferredBackupWindow},
-    rds.latest_restorable_time = {LatestRestorableTime},
-    rds.preferred_maintenance_window = {PreferredMaintenanceWindow},
-    rds.backup_retention_period = {BackupRetentionPeriod},
-    rds.endpoint_address = {EndpointAddress},
-    rds.endpoint_hostedzoneid = {EndpointHostedZoneId},
-    rds.endpoint_port = {EndpointPort},
-    rds.iam_database_authentication_enabled = {IAMDatabaseAuthenticationEnabled},
-    rds.auto_minor_version_upgrade = {AutoMinorVersionUpgrade},
-    rds.lastupdated = {aws_update_tag}
-    WITH rds
-    MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
-    MERGE (aa)-[r:RESOURCE]->(rds)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    UNWIND {Instances} as rds_instance
+        MERGE (rds:RDSInstance{id: rds_instance.DBInstanceArn})
+        ON CREATE SET rds.firstseen = timestamp(),
+            rds.arn = rds_instance.DBInstanceArn
+        SET rds.db_instance_identifier = rds_instance.DBInstanceIdentifier,
+            rds.db_instance_class = rds_instance.DBInstanceClass,
+            rds.engine = rds_instance.Engine,
+            rds.master_username = rds_instance.MasterUsername,
+            rds.db_name = rds_instance.DBName,
+            rds.instance_create_time = rds_instance.InstanceCreateTime,
+            rds.availability_zone = rds_instance.AvailabilityZone,
+            rds.multi_az = rds_instance.MultiAZ,
+            rds.engine_version = rds_instance.EngineVersion,
+            rds.publicly_accessible = rds_instance.PubliclyAccessible,
+            rds.db_cluster_identifier = rds_instance.DBClusterIdentifier,
+            rds.storage_encrypted = rds_instance.StorageEncrypted,
+            rds.kms_key_id = rds_instance.KmsKeyId,
+            rds.dbi_resource_id = rds_instance.DbiResourceId,
+            rds.ca_certificate_identifier = rds_instance.CACertificateIdentifier,
+            rds.enhanced_monitoring_resource_arn = rds_instance.EnhancedMonitoringResourceArn,
+            rds.monitoring_role_arn = rds_instance.MonitoringRoleArn,
+            rds.performance_insights_enabled = rds_instance.PerformanceInsightsEnabled,
+            rds.performance_insights_kms_key_id = rds_instance.PerformanceInsightsKMSKeyId,
+            rds.region = rds_instance.Region,
+            rds.deletion_protection = rds_instance.DeletionProtection,
+            rds.preferred_backup_window = rds_instance.PreferredBackupWindow,
+            rds.latest_restorable_time = rds_instance.LatestRestorableTime,
+            rds.preferred_maintenance_window = rds_instance.PreferredMaintenanceWindow,
+            rds.backup_retention_period = rds_instance.BackupRetentionPeriod,
+            rds.endpoint_address = rds_instance.EndpointAddress,
+            rds.endpoint_hostedzoneid = rds_instance.EndpointHostedZoneId,
+            rds.endpoint_port = rds_instance.EndpointPort,
+            rds.iam_database_authentication_enabled = rds_instance.IAMDatabaseAuthenticationEnabled,
+            rds.auto_minor_version_upgrade = rds_instance.AutoMinorVersionUpgrade,
+            rds.lastupdated = {aws_update_tag}
+        WITH rds
+        MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+        MERGE (aa)-[r:RESOURCE]->(rds)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {aws_update_tag}
     """
     read_replicas = []
+    clusters = []
+    secgroups = []
+    subnets = []
 
     for rds in data:
-        instance_create_time = str(rds['InstanceCreateTime']) if 'InstanceCreateTime' in rds else None
-        latest_restorable_time = str(rds['LatestRestorableTime']) if 'LatestRestorableTime' in rds else None
-
         ep = _validate_rds_endpoint(rds)
 
         # Keep track of instances that are read replicas so we can attach them to their source instances later
         if rds.get("ReadReplicaSourceDBInstanceIdentifier"):
             read_replicas.append(rds)
 
-        neo4j_session.run(
-            ingest_rds_instance,
-            DBInstanceArn=rds['DBInstanceArn'],
-            DBInstanceIdentifier=rds['DBInstanceIdentifier'],
-            DBInstanceClass=rds.get('DBInstanceClass'),
-            Engine=rds.get('Engine'),
-            MasterUsername=rds.get('MasterUsername'),
-            DBName=rds.get('DBName'),
-            InstanceCreateTime=instance_create_time,
-            AvailabilityZone=rds.get('AvailabilityZone'),
-            MultiAZ=rds.get('MultiAZ'),
-            EngineVersion=rds.get('EngineVersion'),
-            PubliclyAccessible=rds.get('PubliclyAccessible'),
-            DBClusterIdentifier=rds.get('DBClusterIdentifier'),
-            StorageEncrypted=rds.get('StorageEncrypted'),
-            KmsKeyId=rds.get('KmsKeyId'),
-            DbiResourceId=rds.get('DbiResourceId'),
-            CACertificateIdentifier=rds.get('CACertificateIdentifier'),
-            EnhancedMonitoringResourceArn=rds.get('EnhancedMonitoringResourceArn'),
-            MonitoringRoleArn=rds.get('MonitoringRoleArn'),
-            PerformanceInsightsEnabled=rds.get('PerformanceInsightsEnabled'),
-            PerformanceInsightsKMSKeyId=rds.get('PerformanceInsightsKMSKeyId'),
-            DeletionProtection=rds.get('DeletionProtection'),
-            BackupRetentionPeriod=rds.get('BackupRetentionPeriod'),
-            PreferredBackupWindow=rds.get('PreferredBackupWindow'),
-            LatestRestorableTime=latest_restorable_time,
-            PreferredMaintenanceWindow=rds.get('PreferredMaintenanceWindow'),
-            EndpointAddress=ep.get('Address'),
-            EndpointHostedZoneId=ep.get('HostedZoneId'),
-            EndpointPort=ep.get('Port'),
-            IAMDatabaseAuthenticationEnabled=rds.get('IAMDatabaseAuthenticationEnabled'),
-            AutoMinorVersionUpgrade=rds.get('AutoMinorVersionUpgrade'),
-            Region=region,
-            AWS_ACCOUNT_ID=current_aws_account_id,
-            aws_update_tag=aws_update_tag,
-        )
-        _attach_ec2_security_groups(neo4j_session, rds, aws_update_tag)
-        _attach_ec2_subnet_groups(neo4j_session, rds, region, current_aws_account_id, aws_update_tag)
+        # Keep track of instances that are cluster members so we can attach them to their source clusters later
+        if rds.get("DBClusterIdentifier"):
+            clusters.append(rds)
+
+        if rds.get('VpcSecurityGroups'):
+            secgroups.append(rds)
+
+        if rds.get('DBSubnetGroup'):
+            subnets.append(rds)
+
+        rds['InstanceCreateTime'] = _dict_value_to_str(rds, 'InstanceCreateTime')
+        rds['LatestRestorableTime'] = _dict_value_to_str(rds, 'LatestRestorableTime')
+        rds['EndpointAddress'] = ep.get('Address')
+        rds['EndpointHostedZoneId'] = ep.get('HostedZoneId')
+        rds['EndpointPort'] = ep.get('Port')
+
+    neo4j_session.run(
+        ingest_rds_instance,
+        Instances=data,
+        Region=region,
+        AWS_ACCOUNT_ID=current_aws_account_id,
+        aws_update_tag=aws_update_tag,
+    )
+    _attach_ec2_security_groups(neo4j_session, secgroups, aws_update_tag)
+    _attach_ec2_subnet_groups(neo4j_session, subnets, region, current_aws_account_id, aws_update_tag)
     _attach_read_replicas(neo4j_session, read_replicas, aws_update_tag)
+    _attach_clusters(neo4j_session, clusters, aws_update_tag)
 
 
 @timeit
 def _attach_ec2_subnet_groups(
-    neo4j_session: neo4j.Session, instance: dict, region: str, current_aws_account_id: str,
+    neo4j_session: neo4j.Session, instances: List[Dict], region: str, current_aws_account_id: str,
     aws_update_tag: int,
 ) -> None:
     """
-    Attach RDS instance to its EC2 subnets
+    Attach RDS instances to their EC2 subnet groups
     """
     attach_rds_to_subnet_group = """
-    MERGE(sng:DBSubnetGroup{id:{sng_arn}})
-    ON CREATE SET sng.firstseen = timestamp()
-    SET sng.name = {DBSubnetGroupName},
-    sng.vpc_id = {VpcId},
-    sng.description = {DBSubnetGroupDescription},
-    sng.status = {DBSubnetGroupStatus},
-    sng.lastupdated = {aws_update_tag}
-    WITH sng
-    MATCH(rds:RDSInstance{id:{DBInstanceArn}})
-    MERGE(rds)-[r:MEMBER_OF_DB_SUBNET_GROUP]->(sng)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    UNWIND {SubnetGroups} as rds_sng
+        MERGE (sng:DBSubnetGroup{id: rds_sng.arn})
+        ON CREATE SET sng.firstseen = timestamp()
+        SET sng.name = rds_sng.DBSubnetGroupName,
+            sng.vpc_id = rds_sng.VpcId,
+            sng.description = rds_sng.DBSubnetGroupDescription,
+            sng.status = rds_sng.DBSubnetGroupStatus,
+            sng.lastupdated = {aws_update_tag}
+        WITH sng, rds_sng.instance_arn AS instance_arn
+        MATCH(rds:RDSInstance{id: instance_arn})
+        MERGE(rds)-[r:MEMBER_OF_DB_SUBNET_GROUP]->(sng)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {aws_update_tag}
     """
-    if 'DBSubnetGroup' in instance:
+    db_sngs = []
+    for instance in instances:
         db_sng = instance['DBSubnetGroup']
-        arn = _get_db_subnet_group_arn(region, current_aws_account_id, db_sng['DBSubnetGroupName'])
-        neo4j_session.run(
-            attach_rds_to_subnet_group,
-            sng_arn=arn,
-            DBSubnetGroupName=db_sng['DBSubnetGroupName'],
-            VpcId=db_sng.get("VpcId"),
-            DBSubnetGroupDescription=db_sng.get('DBSubnetGroupDescription'),
-            DBSubnetGroupStatus=db_sng.get('SubnetGroupStatus'),
-            DBInstanceArn=instance['DBInstanceArn'],
-            aws_update_tag=aws_update_tag,
-        )
-        _attach_ec2_subnets_to_subnetgroup(neo4j_session, db_sng, region, current_aws_account_id, aws_update_tag)
+        db_sng['arn'] = _get_db_subnet_group_arn(region, current_aws_account_id, db_sng['DBSubnetGroupName'])
+        db_sng['instance_arn'] = instance['DBInstanceArn']
+        db_sngs.append(db_sng)
+    neo4j_session.run(
+        attach_rds_to_subnet_group,
+        SubnetGroups=db_sngs,
+        aws_update_tag=aws_update_tag,
+    )
+    _attach_ec2_subnets_to_subnetgroup(neo4j_session, db_sngs, region, current_aws_account_id, aws_update_tag)
 
 
 @timeit
 def _attach_ec2_subnets_to_subnetgroup(
-    neo4j_session: neo4j.Session, db_subnet_group: Dict, region: str,
+    neo4j_session: neo4j.Session, db_subnet_groups: List[Dict], region: str,
     current_aws_account_id: str, aws_update_tag: int,
 ) -> None:
     """
-    Attach EC2Subnets to the DB Subnet Group.
+    Attach EC2Subnets to their DB Subnet Group.
 
     From https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_VPC.WorkingWithRDSInstanceinaVPC.html:
     `Each DB subnet group should have subnets in at least two Availability Zones in a given region. When creating a DB
@@ -182,67 +277,99 @@ def _attach_ec2_subnets_to_subnetgroup(
     Availability Zone to select a subnet and an IP address within that subnet to associate with your DB instance.`
     """
     attach_subnets_to_sng = """
-    MATCH(sng:DBSubnetGroup{id:{sng_arn}})
-    MERGE(subnet:EC2Subnet{subnetid:{SubnetIdentifier}})
-    ON CREATE SET subnet.firstseen = timestamp()
-    MERGE(sng)-[r:RESOURCE]->(subnet)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag},
-    subnet.availability_zone = {SubnetAvailabilityZone},
-    subnet.lastupdated = {aws_update_tag}
+    UNWIND {Subnets} as rds_sn
+        MATCH(sng:DBSubnetGroup{id: rds_sn.sng_arn})
+        MERGE(subnet:EC2Subnet{subnetid: rds_sn.sn_id})
+        ON CREATE SET subnet.firstseen = timestamp()
+        MERGE(sng)-[r:RESOURCE]->(subnet)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {aws_update_tag},
+        subnet.availability_zone = rds_sn.az,
+        subnet.lastupdated = {aws_update_tag}
     """
-    for sn in db_subnet_group.get('Subnets', []):
-        subnet_id = sn.get('SubnetIdentifier')
-        arn = _get_db_subnet_group_arn(region, current_aws_account_id, db_subnet_group['DBSubnetGroupName'])
-        neo4j_session.run(
-            attach_subnets_to_sng,
-            SubnetIdentifier=subnet_id,
-            sng_arn=arn,
-            aws_update_tag=aws_update_tag,
-            SubnetAvailabilityZone=sn.get('SubnetAvailabilityZone', {}).get('Name'),
-        )
+    subnets = []
+    for subnet_group in db_subnet_groups:
+        for subnet in subnet_group.get('Subnets', []):
+            sn_id = subnet.get('SubnetIdentifier')
+            sng_arn = _get_db_subnet_group_arn(region, current_aws_account_id, subnet_group['DBSubnetGroupName'])
+            az = subnet.get('SubnetAvailabilityZone', {}).get('Name')
+            subnets.append({
+                'sn_id': sn_id,
+                'sng_arn': sng_arn,
+                'az': az,
+            })
+    neo4j_session.run(
+        attach_subnets_to_sng,
+        Subnets=subnets,
+        aws_update_tag=aws_update_tag,
+    )
 
 
 @timeit
-def _attach_ec2_security_groups(neo4j_session: neo4j.Session, instance: Dict, aws_update_tag: int) -> None:
+def _attach_ec2_security_groups(neo4j_session: neo4j.Session, instances: List[Dict], aws_update_tag: int) -> None:
     """
     Attach an RDS instance to its EC2SecurityGroups
     """
     attach_rds_to_group = """
-    MATCH (rds:RDSInstance{id:{RdsArn}})
-    MERGE (sg:EC2SecurityGroup{id:{GroupId}})
-    MERGE (rds)-[m:MEMBER_OF_EC2_SECURITY_GROUP]->(sg)
-    ON CREATE SET m.firstseen = timestamp()
-    SET m.lastupdated = {aws_update_tag}
+    UNWIND {Groups} as rds_sg
+        MATCH (rds:RDSInstance{id: rds_sg.arn})
+        MERGE (sg:EC2SecurityGroup{id: rds_sg.group_id})
+        MERGE (rds)-[m:MEMBER_OF_EC2_SECURITY_GROUP]->(sg)
+        ON CREATE SET m.firstseen = timestamp()
+        SET m.lastupdated = {aws_update_tag}
     """
-    for group in instance.get('VpcSecurityGroups', []):
-        neo4j_session.run(
-            attach_rds_to_group,
-            RdsArn=instance['DBInstanceArn'],
-            GroupId=group['VpcSecurityGroupId'],
-            aws_update_tag=aws_update_tag,
-        )
+    groups = []
+    for instance in instances:
+        for group in instance['VpcSecurityGroups']:
+            groups.append({
+                'arn': instance['DBInstanceArn'],
+                'group_id': group['VpcSecurityGroupId'],
+            })
+    neo4j_session.run(
+        attach_rds_to_group,
+        Groups=groups,
+        aws_update_tag=aws_update_tag,
+    )
 
 
 @timeit
-def _attach_read_replicas(neo4j_session: neo4j.Session, read_replicas: Dict, aws_update_tag: int) -> None:
+def _attach_read_replicas(neo4j_session: neo4j.Session, read_replicas: List[Dict], aws_update_tag: int) -> None:
     """
     Attach read replicas to their source instances
     """
     attach_replica_to_source = """
-    MATCH (replica:RDSInstance{id:{ReplicaArn}}),
-    (source:RDSInstance{db_instance_identifier:{SourceInstanceIdentifier}})
-    MERGE (replica)-[r:IS_READ_REPLICA_OF]->(source)
+    UNWIND {Replicas} as rds_replica
+        MATCH (replica:RDSInstance{id: rds_replica.DBInstanceArn}),
+        (source:RDSInstance{db_instance_identifier: rds_replica.ReadReplicaSourceDBInstanceIdentifier})
+        MERGE (replica)-[r:IS_READ_REPLICA_OF]->(source)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {aws_update_tag}
+    """
+    neo4j_session.run(
+        attach_replica_to_source,
+        Replicas=read_replicas,
+        aws_update_tag=aws_update_tag,
+    )
+
+
+@timeit
+def _attach_clusters(neo4j_session: neo4j.Session, cluster_members: List[Dict], aws_update_tag: int) -> None:
+    """
+    Attach cluster members to their source clusters
+    """
+    attach_member_to_source = """
+    UNWIND {Members} as rds_cluster_member
+    MATCH (member:RDSInstance{id: rds_cluster_member.DBInstanceArn}),
+    (source:RDSCluster{db_cluster_identifier: rds_cluster_member.DBClusterIdentifier})
+    MERGE (member)-[r:IS_CLUSTER_MEMBER_OF]->(source)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {aws_update_tag}
     """
-    for replica in read_replicas:
-        neo4j_session.run(
-            attach_replica_to_source,
-            ReplicaArn=replica['DBInstanceArn'],
-            SourceInstanceIdentifier=replica['ReadReplicaSourceDBInstanceIdentifier'],
-            aws_update_tag=aws_update_tag,
-        )
+    neo4j_session.run(
+        attach_member_to_source,
+        Members=cluster_members,
+        aws_update_tag=aws_update_tag,
+    )
 
 
 def _validate_rds_endpoint(rds: Dict) -> Dict:
@@ -275,6 +402,29 @@ def cleanup_rds_instances_and_db_subnet_groups(neo4j_session: neo4j.Session, com
 
 
 @timeit
+def cleanup_rds_clusters(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    """
+    Remove RDS cluster graph nodes
+    """
+    run_cleanup_job('aws_import_rds_clusters_cleanup.json', neo4j_session, common_job_parameters)
+
+
+@timeit
+def sync_rds_clusters(
+    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
+    update_tag: int, common_job_parameters: Dict,
+) -> None:
+    """
+    Grab RDS instance data from AWS, ingest to neo4j, and run the cleanup job.
+    """
+    for region in regions:
+        logger.info("Syncing RDS for region '%s' in account '%s'.", region, current_aws_account_id)
+        data = get_rds_cluster_data(boto3_session, region)
+        load_rds_clusters(neo4j_session, data, region, current_aws_account_id, update_tag)
+    cleanup_rds_clusters(neo4j_session, common_job_parameters)
+
+
+@timeit
 def sync_rds_instances(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
     update_tag: int, common_job_parameters: Dict,
@@ -294,6 +444,10 @@ def sync(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
     update_tag: int, common_job_parameters: Dict,
 ) -> None:
+    sync_rds_clusters(
+        neo4j_session, boto3_session, regions, current_aws_account_id, update_tag,
+        common_job_parameters,
+    )
     sync_rds_instances(
         neo4j_session, boto3_session, regions, current_aws_account_id, update_tag,
         common_job_parameters,
