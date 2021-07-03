@@ -13,8 +13,8 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
-def get_service_accounts(iam: Resource, project_id: str) -> List[Resource]:
-    service_accounts: List[Resource] = []
+def get_service_accounts(iam: Resource, project_id: str) -> List[Dict]:
+    service_accounts: List[Dict] = []
     try:
         req = iam.projects().serviceAccounts().list(name='projects/{}'.format(project_id))
         while req is not None:
@@ -37,8 +37,34 @@ def get_service_accounts(iam: Resource, project_id: str) -> List[Resource]:
 
 
 @timeit
-def get_roles(iam: Resource, project_id: str) -> List[Resource]:
-    roles: List[Resource] = []
+def get_service_account_keys(iam: Resource, project_id: str, service_accounts_list: str) -> List[Dict]:
+    service_keys: List[Dict] = []
+    for account in service_accounts_list:
+        try:
+            res = iam.projects().serviceAccounts().keys().list(name=account['name']).execute()
+            keys = res.get('keys', [])
+            for key in keys:
+                key['service_account'] = account['name']
+
+            service_keys.extend(keys)
+
+            return service_keys
+        except HttpError as e:
+            err = json.loads(e.content.decode('utf-8'))['error']
+            if err['status'] == 'PERMISSION_DENIED':
+                logger.warning(
+                    (
+                        "Could not retrieve Keys on project %s & account %s due to permissions issue. Code: %s, Message: %s"
+                    ), project_id, account['name'], err['code'], err['message'],
+                )
+                return []
+            else:
+                raise
+
+
+@timeit
+def get_roles(iam: Resource, project_id: str) -> List[Dict]:
+    roles: List[Dict] = []
     try:
         req = iam.roles().list(view="FULL")
         while req is not None:
@@ -61,8 +87,8 @@ def get_roles(iam: Resource, project_id: str) -> List[Resource]:
 
 
 @timeit
-def get_project_roles(iam: Resource, project_id: str) -> List[Resource]:
-    roles: List[Resource] = []
+def get_project_roles(iam: Resource, project_id: str) -> List[Dict]:
+    roles: List[Dict] = []
     try:
         req = iam.projects().roles().list(parent='projects/{}'.format(project_id), view="FULL")
         while req is not None:
@@ -85,7 +111,7 @@ def get_project_roles(iam: Resource, project_id: str) -> List[Resource]:
 
 
 @timeit
-def get_policy_bindings(crm: Resource, project_id: str) -> Dict:
+def get_policy_bindings(crm: Resource, project_id: str) -> List[Dict]:
     try:
         req = crm.projects().getIamPolicy(resource=project_id, body={'options': {'requestedPolicyVersion': 3}})
         res = req.execute()
@@ -112,6 +138,8 @@ def transform_bindings(bindings, project_id):
     service_accounts = []
     groups = []
     domains = []
+
+    print(bindings)
 
     for binding in bindings:
         for member in binding['members']:
@@ -151,7 +179,7 @@ def transform_bindings(bindings, project_id):
 
 
 @timeit
-def load_users(neo4j_session: neo4j.Session, users: Dict, project_id: str, gcp_update_tag: int) -> None:
+def load_users(neo4j_session: neo4j.Session, users: List[Dict], project_id: str, gcp_update_tag: int) -> None:
 
     ingest_users = """
     UNWIND {users_list} AS usr
@@ -180,7 +208,7 @@ def cleanup_users(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> 
 
 
 @timeit
-def load_service_accounts(neo4j_session: neo4j.Session, service_accounts: Dict, project_id: str, gcp_update_tag: int) -> None:
+def load_service_accounts(neo4j_session: neo4j.Session, service_accounts: List[Dict], project_id: str, gcp_update_tag: int) -> None:
     ingest_service_accounts = """
     UNWIND {service_accounts_list} AS sa
     MERGE (u:GCPServiceAccount{id: sa.name})
@@ -209,7 +237,35 @@ def cleanup_service_accounts(neo4j_session: neo4j.Session, common_job_parameters
 
 
 @timeit
-def load_groups(neo4j_session: neo4j.Session, groups: Dict, project_id: str, gcp_update_tag: int) -> None:
+def load_service_account_keys(neo4j_session: neo4j.Session, service_account_keys: List[Dict], gcp_update_tag: int) -> None:
+    ingest_service_accounts = """
+    UNWIND {service_account_keys_list} AS sa
+    MERGE (u:GCPServiceAccountKey{id: sa.name})
+    ON CREATE SET u.firstseen = timestamp()
+    SET u.keytype = sa.keyType, u.origin = sa.origin,
+    u.algorithm = sa.algorithm, u.validbeforetime = sa.validbeforetime,
+    u.validaftertime = sa.validaftertime, u.lastupdated = {gcp_update_tag}
+    WITH u, sa
+    MATCH (d:GCPServiceAccount{id: {sa.service_account}})
+    MERGE (d)-[r:RESOURCE]->(u)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}
+    """
+
+    neo4j_session.run(
+        ingest_service_accounts,
+        service_account_keys_list=service_account_keys,
+        gcp_update_tag=gcp_update_tag,
+    )
+
+
+@timeit
+def cleanup_service_account_keys(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('gcp_service_account_keys_cleanup.json', neo4j_session, common_job_parameters)
+
+
+@timeit
+def load_groups(neo4j_session: neo4j.Session, groups: List[Dict], project_id: str, gcp_update_tag: int) -> None:
     ingest_groups = """
     UNWIND {groups_list} AS g
     MERGE (u:GCPGroup{id: g.id})
@@ -237,7 +293,7 @@ def cleanup_groups(neo4j_session: neo4j.Session, common_job_parameters: Dict) ->
 
 
 @timeit
-def load_domains(neo4j_session: neo4j.Session, domains: Dict, project_id: str, gcp_update_tag: int) -> None:
+def load_domains(neo4j_session: neo4j.Session, domains: List[Dict], project_id: str, gcp_update_tag: int) -> None:
     ingest_domains = """
     UNWIND {domains_list} AS d
     MERGE (u:GCPDomain{id: d.id})
@@ -265,7 +321,7 @@ def cleanup_domains(neo4j_session: neo4j.Session, common_job_parameters: Dict) -
 
 
 @timeit
-def load_roles(neo4j_session: neo4j.Session, roles: Dict, project_id: str, gcp_update_tag: int) -> None:
+def load_roles(neo4j_session: neo4j.Session, roles: List[Dict], project_id: str, gcp_update_tag: int) -> None:
     ingest_roles = """
     UNWIND {roles_list} AS d
     MERGE (u:GCPRole{id: d.id})
@@ -411,14 +467,18 @@ def sync(
 
     service_accounts_list = get_service_accounts(iam, project_id)
     load_service_accounts(neo4j_session, service_accounts_list, project_id, gcp_update_tag)
-    # cleanup_service_accounts(neo4j_session, common_job_parameters)
+    cleanup_service_accounts(neo4j_session, common_job_parameters)
+
+    service_keys = get_service_account_keys(iam, project_id, service_accounts_list)
+    load_service_account_keys(neo4j_session, service_keys, project_id, gcp_update_tag)
+    cleanup_service_account_keys(neo4j_session, common_job_parameters)
 
     roles_list = get_roles(iam, project_id)
     custom_roles_list = get_project_roles(iam, project_id)
     roles_list.extend(custom_roles_list)
 
     load_roles(neo4j_session, roles_list, project_id, gcp_update_tag)
-    # cleanup_roles(neo4j_session, common_job_parameters)
+    cleanup_roles(neo4j_session, common_job_parameters)
 
     bindings = get_policy_bindings(crm, project_id)
 
@@ -432,6 +492,6 @@ def sync(
 
     load_bindings(neo4j_session, bindings, project_id, gcp_update_tag)
 
-    # cleanup_users(neo4j_session, common_job_parameters)
-    # cleanup_groups(neo4j_session, common_job_parameters)
-    # cleanup_domains(neo4j_session, common_job_parameters)
+    cleanup_users(neo4j_session, common_job_parameters)
+    cleanup_groups(neo4j_session, common_job_parameters)
+    cleanup_domains(neo4j_session, common_job_parameters)
