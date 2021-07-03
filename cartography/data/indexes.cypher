@@ -172,6 +172,7 @@ CREATE INDEX ON :AzureDisk(id);
 CREATE INDEX ON :AzureSnapshot(id);
 CREATE INDEX ON :GCPUser(id);
 CREATE INDEX ON :GCPServiceAccount(id);
+CREATE INDEX ON :GCPServiceAccountKey(id);
 CREATE INDEX ON :GCPGroup(id);
 CREATE INDEX ON :GCPDomain(id);
 CREATE INDEX ON :GCPRole(id);
