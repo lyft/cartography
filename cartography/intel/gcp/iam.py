@@ -204,7 +204,7 @@ def load_users(neo4j_session: neo4j.Session, users: List[Dict], project_id: str,
 
 @timeit
 def cleanup_users(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
-    run_cleanup_job('gcp_users_cleanup.json', neo4j_session, common_job_parameters)
+    run_cleanup_job('gcp_iam_users_cleanup.json', neo4j_session, common_job_parameters)
 
 
 @timeit
@@ -233,7 +233,7 @@ def load_service_accounts(neo4j_session: neo4j.Session, service_accounts: List[D
 
 @timeit
 def cleanup_service_accounts(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
-    run_cleanup_job('gcp_service_accounts_cleanup.json', neo4j_session, common_job_parameters)
+    run_cleanup_job('gcp_iam_service_accounts_cleanup.json', neo4j_session, common_job_parameters)
 
 
 @timeit
@@ -261,7 +261,7 @@ def load_service_account_keys(neo4j_session: neo4j.Session, service_account_keys
 
 @timeit
 def cleanup_service_account_keys(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
-    run_cleanup_job('gcp_service_account_keys_cleanup.json', neo4j_session, common_job_parameters)
+    run_cleanup_job('gcp_iam_service_account_keys_cleanup.json', neo4j_session, common_job_parameters)
 
 
 @timeit
@@ -289,7 +289,7 @@ def load_groups(neo4j_session: neo4j.Session, groups: List[Dict], project_id: st
 
 @timeit
 def cleanup_groups(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
-    run_cleanup_job('gcp_groups_cleanup.json', neo4j_session, common_job_parameters)
+    run_cleanup_job('gcp_iam_groups_cleanup.json', neo4j_session, common_job_parameters)
 
 
 @timeit
@@ -317,7 +317,7 @@ def load_domains(neo4j_session: neo4j.Session, domains: List[Dict], project_id: 
 
 @timeit
 def cleanup_domains(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
-    run_cleanup_job('gcp_domains_cleanup.json', neo4j_session, common_job_parameters)
+    run_cleanup_job('gcp_iam_domains_cleanup.json', neo4j_session, common_job_parameters)
 
 
 @timeit
@@ -350,7 +350,7 @@ def load_roles(neo4j_session: neo4j.Session, roles: List[Dict], project_id: str,
 
 @timeit
 def cleanup_roles(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
-    run_cleanup_job('gcp_roles_cleanup.json', neo4j_session, common_job_parameters)
+    run_cleanup_job('gcp_iam_roles_cleanup.json', neo4j_session, common_job_parameters)
 
 
 @timeit
