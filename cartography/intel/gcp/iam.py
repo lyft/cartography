@@ -271,8 +271,8 @@ def load_groups(neo4j_session: neo4j.Session, groups: List[Dict], project_id: st
     UNWIND {groups_list} AS g
     MERGE (u:GCPGroup{id: g.id})
     ON CREATE SET u.firstseen = timestamp()
-    SET u.name = g.name, u.groupid = g.id,
-    u.lastupdated = {gcp_update_tag}
+    SET u.name = g.name, u.email=g.name,
+    u.groupid = g.id, u.lastupdated = {gcp_update_tag}
     WITH u, g
     MATCH (d:GCPProject{id: {project_id}})
     MERGE (d)-[r:RESOURCE]->(u)
@@ -361,16 +361,16 @@ def load_bindings(neo4j_session: neo4j.Session, bindings: List[Dict], project_id
 
         for member in binding['members']:
             if member.startswith('user:'):
-                attach_role_to_user(neo4j_session, role_id, f"{project_id}/{member[len('user:'):]}", project_id, gcp_update_tag)
+                attach_role_to_user(neo4j_session, role_id, f"{project_id}/{project_id}/users/{member[len('user:'):]}", project_id, gcp_update_tag)
 
             elif member.startswith('serviceAccount:'):
                 attach_role_to_service_account(neo4j_session, role_id, f"projects/{project_id}/serviceAccounts/{member[len('serviceAccount:'):]}", project_id, gcp_update_tag)
 
             elif member.startswith('group:'):
-                attach_role_to_group(neo4j_session, role_id, f"{project_id}/{member[len('group:'):]}", project_id, gcp_update_tag)
+                attach_role_to_group(neo4j_session, role_id, f"{project_id}/{project_id}/groups/{member[len('group:'):]}", project_id, gcp_update_tag)
 
             elif member.startswith('domain:'):
-                attach_role_to_domain(neo4j_session, role_id, f"{project_id}/{member[len('group:'):]}", project_id, gcp_update_tag)
+                attach_role_to_domain(neo4j_session, role_id, f"{project_id}/{project_id}/domains/{member[len('domain:'):]}", project_id, gcp_update_tag)
 
 
 @timeit
