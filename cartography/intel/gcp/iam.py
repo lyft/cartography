@@ -37,29 +37,28 @@ def get_service_accounts(iam: Resource, project_id: str) -> List[Dict]:
 
 
 @timeit
-def get_service_account_keys(iam: Resource, project_id: str, service_accounts_list: str) -> List[Dict]:
+def get_service_account_keys(iam: Resource, project_id: str, service_account: str) -> List[Dict]:
     service_keys: List[Dict] = []
-    for account in service_accounts_list:
-        try:
-            res = iam.projects().serviceAccounts().keys().list(name=account['name']).execute()
-            keys = res.get('keys', [])
-            for key in keys:
-                key['service_account'] = account['name']
+    try:
+        res = iam.projects().serviceAccounts().keys().list(name=service_account).execute()
+        keys = res.get('keys', [])
+        for key in keys:
+            key['serviceaccount'] = service_account
 
-            service_keys.extend(keys)
+        service_keys.extend(keys)
 
-            return service_keys
-        except HttpError as e:
-            err = json.loads(e.content.decode('utf-8'))['error']
-            if err['status'] == 'PERMISSION_DENIED':
-                logger.warning(
-                    (
-                        "Could not retrieve Keys on project %s & account %s due to permissions issue. Code: %s, Message: %s"
-                    ), project_id, account['name'], err['code'], err['message'],
-                )
-                return []
-            else:
-                raise
+        return service_keys
+    except HttpError as e:
+        err = json.loads(e.content.decode('utf-8'))['error']
+        if err['status'] == 'PERMISSION_DENIED':
+            logger.warning(
+                (
+                    "Could not retrieve Keys on project %s & account %s due to permissions issue. Code: %s, Message: %s"
+                ), project_id, service_account, err['code'], err['message'],
+            )
+            return []
+        else:
+            raise
 
 
 @timeit
@@ -237,16 +236,17 @@ def cleanup_service_accounts(neo4j_session: neo4j.Session, common_job_parameters
 
 
 @timeit
-def load_service_account_keys(neo4j_session: neo4j.Session, service_account_keys: List[Dict], gcp_update_tag: int) -> None:
+def load_service_account_keys(neo4j_session: neo4j.Session, service_account_keys: List[Dict], service_account: str, gcp_update_tag: int) -> None:
     ingest_service_accounts = """
     UNWIND {service_account_keys_list} AS sa
     MERGE (u:GCPServiceAccountKey{id: sa.name})
     ON CREATE SET u.firstseen = timestamp()
     SET u.keytype = sa.keyType, u.origin = sa.origin,
     u.algorithm = sa.algorithm, u.validbeforetime = sa.validbeforetime,
-    u.validaftertime = sa.validaftertime, u.lastupdated = {gcp_update_tag}
+    u.validaftertime = sa.validaftertime, u.serviceaccount=sa.serviceaccount,
+    u.lastupdated = {gcp_update_tag}
     WITH u, sa
-    MATCH (d:GCPServiceAccount{id: {sa.service_account}})
+    MATCH (d:GCPServiceAccount{id: {serviceaccount}})
     MERGE (d)-[r:RESOURCE]->(u)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {gcp_update_tag}
@@ -255,6 +255,7 @@ def load_service_account_keys(neo4j_session: neo4j.Session, service_account_keys
     neo4j_session.run(
         ingest_service_accounts,
         service_account_keys_list=service_account_keys,
+        serviceaccount=service_account,
         gcp_update_tag=gcp_update_tag,
     )
 
@@ -469,8 +470,10 @@ def sync(
     load_service_accounts(neo4j_session, service_accounts_list, project_id, gcp_update_tag)
     cleanup_service_accounts(neo4j_session, common_job_parameters)
 
-    service_keys = get_service_account_keys(iam, project_id, service_accounts_list)
-    load_service_account_keys(neo4j_session, service_keys, project_id, gcp_update_tag)
+    for service_account in service_accounts_list:
+        service_account_keys = get_service_account_keys(iam, project_id, service_account['name'])
+        load_service_account_keys(neo4j_session, service_account_keys, service_account['name'], gcp_update_tag)
+
     cleanup_service_account_keys(neo4j_session, common_job_parameters)
 
     roles_list = get_roles(iam, project_id)
