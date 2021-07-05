@@ -43,6 +43,7 @@ def get_service_account_keys(iam: Resource, project_id: str, service_account: st
         res = iam.projects().serviceAccounts().keys().list(name=service_account).execute()
         keys = res.get('keys', [])
         for key in keys:
+            key['id'] = key['name'].split('/')[-1]
             key['serviceaccount'] = service_account
 
         service_keys.extend(keys)
@@ -137,8 +138,6 @@ def transform_bindings(bindings, project_id):
     service_accounts = []
     groups = []
     domains = []
-
-    print(bindings)
 
     for binding in bindings:
         for member in binding['members']:
@@ -239,15 +238,15 @@ def cleanup_service_accounts(neo4j_session: neo4j.Session, common_job_parameters
 def load_service_account_keys(neo4j_session: neo4j.Session, service_account_keys: List[Dict], service_account: str, gcp_update_tag: int) -> None:
     ingest_service_accounts = """
     UNWIND {service_account_keys_list} AS sa
-    MERGE (u:GCPServiceAccountKey{id: sa.name})
+    MERGE (u:GCPServiceAccountKey{id: sa.id})
     ON CREATE SET u.firstseen = timestamp()
-    SET u.keytype = sa.keyType, u.origin = sa.origin,
-    u.algorithm = sa.algorithm, u.validbeforetime = sa.validbeforetime,
-    u.validaftertime = sa.validaftertime, u.serviceaccount=sa.serviceaccount,
-    u.lastupdated = {gcp_update_tag}
+    SET u.name=sa.name, u.serviceaccount=sa.serviceaccount,
+    u.keytype = sa.keyType, u.origin = sa.keyOrigin,
+    u.algorithm = sa.keyAlgorithm, u.validbeforetime = sa.validBeforeTime,
+    u.validaftertime = sa.validAfterTime, u.lastupdated = {gcp_update_tag}
     WITH u, sa
     MATCH (d:GCPServiceAccount{id: {serviceaccount}})
-    MERGE (d)-[r:RESOURCE]->(u)
+    MERGE (d)-[r:HAS_KEY]->(u)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {gcp_update_tag}
     """
