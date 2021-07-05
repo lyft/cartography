@@ -212,7 +212,7 @@ def load_service_accounts(neo4j_session: neo4j.Session, service_accounts: List[D
     UNWIND {service_accounts_list} AS sa
     MERGE (u:GCPServiceAccount{id: sa.name})
     ON CREATE SET u.firstseen = timestamp()
-    SET u.name = sa.displayname, u.email = sa.email,
+    SET u.name = sa.displayName, u.email = sa.email,
     u.description = sa.description, u.disabled = sa.disabled,
     u.serviceaccountid = sa.uniqueId, u.lastupdated = {gcp_update_tag}
     WITH u, sa
