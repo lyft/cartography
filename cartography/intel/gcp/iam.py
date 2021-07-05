@@ -162,7 +162,7 @@ def transform_bindings(bindings, project_id):
                 grp = member[len('group:'):]
                 groups.append({
                     "id": f'projects/{project_id}/groups/{grp}',
-                    "email": grp,
+                    "email": grp.split('@')[0],
                     "name": grp
                 })
 
@@ -271,7 +271,7 @@ def load_groups(neo4j_session: neo4j.Session, groups: List[Dict], project_id: st
     UNWIND {groups_list} AS g
     MERGE (u:GCPGroup{id: g.id})
     ON CREATE SET u.firstseen = timestamp()
-    SET u.name = g.name, u.email=g.name,
+    SET u.name = g.name, u.email=g.email,
     u.groupid = g.id, u.lastupdated = {gcp_update_tag}
     WITH u, g
     MATCH (d:GCPProject{id: {project_id}})
