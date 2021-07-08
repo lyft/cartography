@@ -400,7 +400,7 @@ def attach_role_to_service_account(neo4j_session: neo4j.Session, role_id: str, s
     ingest_script = """
     MATCH (role:GCPRole{id:{RoleId}})
 
-    MERGE (sa:GCPServiceAccount{name:{saId}})
+    MERGE (sa:GCPServiceAccount{id:{saId}})
 
     MERGE (sa)-[r:ASSUME_ROLE]->(role)
     ON CREATE SET r.firstseen = timestamp()
