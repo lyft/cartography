@@ -63,7 +63,7 @@ RESOURCE_FUNCTIONS: Dict = {
     'redshift': redshift.sync,
     'route53': route53.sync,
     'elasticsearch': elasticsearch.sync,
+    'apigateway': apigateway.sync,
     'permission_relationships': permission_relationships.sync,
     'resourcegroupstaggingapi': resourcegroupstaggingapi.sync,
-    'apigateway': apigateway.sync,
 }
