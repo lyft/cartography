@@ -37,6 +37,14 @@ def get_service_accounts(iam: Resource, project_id: str) -> List[Dict]:
 
 
 @timeit
+def transform_service_accounts(service_accounts: List[Dict]) -> List[Dict]:
+    for account in service_accounts:
+        account['firstName'] = account['name'].split('@')[0]
+
+    return service_accounts
+
+
+@timeit
 def get_service_account_keys(iam: Resource, project_id: str, service_account: str) -> List[Dict]:
     service_keys: List[Dict] = []
     try:
@@ -111,6 +119,18 @@ def get_project_roles(iam: Resource, project_id: str) -> List[Dict]:
 
 
 @timeit
+def transform_roles(roles_list: List[Dict], project_id: str) -> List[Dict]:
+    for role in roles_list:
+        if role['name'].startswith('projects/'):
+            role['id'] = role['name']
+
+        elif role['name'].startswith('roles/'):
+            role['id'] = f'projects/{project_id}/roles/{role["name"]}'
+
+    return roles_list
+
+
+@timeit
 def get_policy_bindings(crm: Resource, project_id: str) -> List[Dict]:
     try:
         req = crm.projects().getIamPolicy(resource=project_id, body={'options': {'requestedPolicyVersion': 3}})
@@ -135,7 +155,6 @@ def get_policy_bindings(crm: Resource, project_id: str) -> List[Dict]:
 
 def transform_bindings(bindings, project_id):
     users = []
-    service_accounts = []
     groups = []
     domains = []
 
@@ -149,20 +168,12 @@ def transform_bindings(bindings, project_id):
                     "name": usr.split("@")[0]
                 })
 
-            elif member.startswith('serviceAccount:'):
-                sa = member[len('serviceAccount:'):]
-                service_accounts.append({
-                    "id": f'projects/{project_id}/serviceAccounts/{sa}',
-                    "name": f'projects/{project_id}/serviceAccounts/{sa}',
-                    "email": sa
-                })
-
             elif member.startswith('group:'):
                 grp = member[len('group:'):]
                 groups.append({
                     "id": f'projects/{project_id}/groups/{grp}',
-                    "email": grp.split('@')[0],
-                    "name": grp
+                    "email": grp,
+                    "name": grp.split('@')[0]
                 })
 
             elif member.startswith('domain:'):
@@ -173,12 +184,11 @@ def transform_bindings(bindings, project_id):
                     "name": dmn
                 })
 
-    return [dict(s) for s in set(frozenset(d.items()) for d in users)], [dict(s) for s in set(frozenset(d.items()) for d in service_accounts)], [dict(s) for s in set(frozenset(d.items()) for d in groups)], [dict(s) for s in set(frozenset(d.items()) for d in domains)]
+    return [dict(s) for s in set(frozenset(d.items()) for d in users)], [dict(s) for s in set(frozenset(d.items()) for d in groups)], [dict(s) for s in set(frozenset(d.items()) for d in domains)]
 
 
 @timeit
 def load_users(neo4j_session: neo4j.Session, users: List[Dict], project_id: str, gcp_update_tag: int) -> None:
-
     ingest_users = """
     UNWIND {users_list} AS usr
     MERGE (u:GCPUser{id: usr.id})
@@ -211,9 +221,10 @@ def load_service_accounts(neo4j_session: neo4j.Session, service_accounts: List[D
     UNWIND {service_accounts_list} AS sa
     MERGE (u:GCPServiceAccount{id: sa.name})
     ON CREATE SET u.firstseen = timestamp()
-    SET u.name = sa.displayName, u.email = sa.email,
-    u.description = sa.description, u.disabled = sa.disabled,
-    u.serviceaccountid = sa.uniqueId, u.lastupdated = {gcp_update_tag}
+    SET u.name = sa.firstName, u.displayname = sa.displayName,
+    u.email = sa.email, u.description = sa.description,
+    u.disabled = sa.disabled, u.serviceaccountid = sa.uniqueId,
+    u.lastupdated = {gcp_update_tag}
     WITH u, sa
     MATCH (d:GCPProject{id: {project_id}})
     MERGE (d)-[r:RESOURCE]->(u)
@@ -337,9 +348,6 @@ def load_roles(neo4j_session: neo4j.Session, roles: List[Dict], project_id: str,
     SET r.lastupdated = {gcp_update_tag}
     """
 
-    for role in roles:
-        role['id'] = f'projects/{project_id}/roles/{role["name"]}'
-
     neo4j_session.run(
         ingest_roles,
         roles_list=roles,
@@ -388,15 +396,12 @@ def attach_role_to_user(neo4j_session: neo4j.Session, role_id: str, user_id: str
         ingest_script,
         RoleId=role_id,
         UserId=user_id,
-        ProjectId=project_id,
         gcp_update_tag=gcp_update_tag,
     )
 
 
 @timeit
 def attach_role_to_service_account(neo4j_session: neo4j.Session, role_id: str, service_account_id: str, project_id: str, gcp_update_tag: int) -> None:
-    # TODO: saId is not valid - it should be a query based on name?
-    # check the output from service accounts & bindings to confirm
     ingest_script = """
     MATCH (role:GCPRole{id:{RoleId}})
 
@@ -411,7 +416,6 @@ def attach_role_to_service_account(neo4j_session: neo4j.Session, role_id: str, s
         ingest_script,
         RoleId=role_id,
         saId=service_account_id,
-        ProjectId=project_id,
         gcp_update_tag=gcp_update_tag,
     )
 
@@ -432,7 +436,6 @@ def attach_role_to_group(neo4j_session: neo4j.Session, role_id: str, group_id: s
         ingest_script,
         RoleId=role_id,
         GroupId=group_id,
-        ProjectId=project_id,
         gcp_update_tag=gcp_update_tag,
     )
 
@@ -453,7 +456,6 @@ def attach_role_to_domain(neo4j_session: neo4j.Session, role_id: str, domain_id:
         ingest_script,
         RoleId=role_id,
         DomainId=domain_id,
-        ProjectId=project_id,
         gcp_update_tag=gcp_update_tag,
     )
 
@@ -466,6 +468,7 @@ def sync(
     logger.info("Syncing IAM objects for project %s.", project_id)
 
     service_accounts_list = get_service_accounts(iam, project_id)
+    service_accounts_list = transform_service_accounts(service_accounts_list)
     load_service_accounts(neo4j_session, service_accounts_list, project_id, gcp_update_tag)
     cleanup_service_accounts(neo4j_session, common_job_parameters)
 
@@ -479,12 +482,14 @@ def sync(
     custom_roles_list = get_project_roles(iam, project_id)
     roles_list.extend(custom_roles_list)
 
+    roles_list = transform_roles(roles_list, project_id)
+
     load_roles(neo4j_session, roles_list, project_id, gcp_update_tag)
     cleanup_roles(neo4j_session, common_job_parameters)
 
     bindings = get_policy_bindings(crm, project_id)
 
-    users, service_accounts, groups, domains = transform_bindings(bindings, project_id)
+    users, groups, domains = transform_bindings(bindings, project_id)
 
     load_users(neo4j_session, users, project_id, gcp_update_tag)
 
