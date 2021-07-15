@@ -42,9 +42,9 @@ def load_reserved_instances(
     r.region={Region}
     WITH r
     MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
-    MERGE (aa)-[r:RESOURCE]->(r)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {update_tag}
+    MERGE (aa)-[rr:RESOURCE]->(r)
+    ON CREATE SET rr.firstseen = timestamp()
+    SET rr.lastupdated = {update_tag}
     """
 
     # neo4j does not accept datetime objects and values. This loop is used to convert
