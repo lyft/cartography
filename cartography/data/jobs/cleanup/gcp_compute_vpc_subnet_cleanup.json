@@ -31,5 +31,5 @@
       "__comment__": "Remove GCP NetworkInterface-to-NicAccessConfig relationships that are out of date."
     }
   ],
-  "name": "cleanup GCP Instances"
+  "name": "cleanup GCP Subnets"
 }

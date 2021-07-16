@@ -372,7 +372,7 @@ def cleanup_roles(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> 
 @timeit
 def load_bindings(neo4j_session: neo4j.Session, bindings: List[Dict], project_id: str, gcp_update_tag: int) -> None:
     for binding in bindings:
-        role_id = get_role_id(binding['role'])
+        role_id = get_role_id(binding['role'], project_id)
 
         for member in binding['members']:
             if member.startswith('user:'):

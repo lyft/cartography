@@ -19,5 +19,5 @@
       "__comment__": "Remove GCP Instance-to-VPC relationships that are out of date."
     }
   ],
-  "name": "cleanup GCP Instances"
+  "name": "cleanup GCP VPCs"
 }
