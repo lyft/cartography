@@ -70,8 +70,8 @@ def load_snapshot_volume_relations(
         neo4j_session: neo4j.Session, data: List[Dict], current_aws_account_id: str, update_tag: int,
 ) -> None:
     ingest_volumes = """
-    UNWIND {snapshot_volumes_list) as volume
-        MERGE (v:EBSVolume{id: volume.VolumeId)
+    UNWIND {snapshot_volumes_list} as volume
+        MERGE (v:EBSVolume{id: volume.VolumeId})
         ON CREATE SET v.firstseen = timestamp()
         SET v.lastupdated = {update_tag}
         WITH v, volume
