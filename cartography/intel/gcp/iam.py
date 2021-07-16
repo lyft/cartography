@@ -121,13 +121,21 @@ def get_project_roles(iam: Resource, project_id: str) -> List[Dict]:
 @timeit
 def transform_roles(roles_list: List[Dict], project_id: str) -> List[Dict]:
     for role in roles_list:
-        if role['name'].startswith('projects/'):
-            role['id'] = role['name']
-
-        elif role['name'].startswith('roles/'):
-            role['id'] = f'projects/{project_id}/roles/{role["name"]}'
+        role['id'] = get_role_id(role['name'], project_id)
 
     return roles_list
+
+
+@timeit
+def get_role_id(role_name: str, project_id: str) -> str:
+    if role_name.startswith('organizations/'):
+        return role_name
+
+    elif role_name.startswith('projects/'):
+        return role_name
+
+    elif role_name.startswith('roles/'):
+        return f'projects/{project_id}/roles/{role_name}'
 
 
 @timeit
@@ -364,7 +372,7 @@ def cleanup_roles(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> 
 @timeit
 def load_bindings(neo4j_session: neo4j.Session, bindings: List[Dict], project_id: str, gcp_update_tag: int) -> None:
     for binding in bindings:
-        role_id = f'projects/{project_id}/roles/{binding["role"]}'
+        role_id = get_role_id(binding['role'])
 
         for member in binding['members']:
             if member.startswith('user:'):
