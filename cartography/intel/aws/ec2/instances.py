@@ -6,6 +6,7 @@ from typing import List
 import boto3
 import neo4j
 
+from .util import get_botocore_config
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -16,7 +17,7 @@ logger = logging.getLogger(__name__)
 @timeit
 @aws_handle_regions
 def get_ec2_instances(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
-    client = boto3_session.client('ec2', region_name=region)
+    client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
     paginator = client.get_paginator('describe_instances')
     reservations: List[Dict] = []
     for page in paginator.paginate():
@@ -70,7 +71,8 @@ def load_ec2_instance_network_interfaces(neo4j_session: neo4j.Session, instance_
 
 @timeit
 def load_ec2_instances(
-        neo4j_session: neo4j.Session, data: List[Dict], region: str, current_aws_account_id: str, update_tag: int,
+        neo4j_session: neo4j.Session, data: List[Dict], region: str, current_aws_account_id: str,
+        update_tag: int,
 ) -> None:
     ingest_reservation = """
     MERGE (reservation:EC2Reservation{reservationid: {ReservationId}})
