@@ -259,7 +259,7 @@ def load_service_account_keys(neo4j_session: neo4j.Session, service_account_keys
     UNWIND {service_account_keys_list} AS sa
     MERGE (u:GCPServiceAccountKey{id: sa.id})
     ON CREATE SET u.firstseen = timestamp()
-    SET u.name=sa.name, u.serviceaccount=sa.serviceaccount,
+    SET u.name=sa.name, u.serviceaccountid={serviceaccount},
     u.keytype = sa.keyType, u.origin = sa.keyOrigin,
     u.algorithm = sa.keyAlgorithm, u.validbeforetime = sa.validBeforeTime,
     u.validaftertime = sa.validAfterTime, u.lastupdated = {gcp_update_tag}
