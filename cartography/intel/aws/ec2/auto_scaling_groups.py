@@ -76,8 +76,6 @@ def load_ec2_auto_scaling_groups(
         SET r.lastupdated = {update_tag}
     """
 
-    # neo4j does not accept datetime objects and values. This loop is used to convert
-    # these values to string.
     for group in data:
         group['CreatedTime'] = str(group['CreatedTime'])
 

@@ -246,15 +246,8 @@ def load_ec2_instances(
                     ).consume()  # TODO see issue 170
 
             load_ec2_instance_network_interfaces(neo4j_session, instance, update_tag)
-            sync_ec2_instance_ebs_volumes(neo4j_session, instance, current_aws_account_id, update_tag)
-
-
-@timeit
-def sync_ec2_instance_ebs_volumes(
-        neo4j_session: neo4j.Session, instance: Dict, current_aws_account_id: str, update_tag: int,
-) -> None:
-    instance_ebs_volumes_list = get_ec2_instance_ebs_volumes(instance)
-    load_ec2_instance_ebs_volumes(neo4j_session, instance_ebs_volumes_list, current_aws_account_id, update_tag)
+            instance_ebs_volumes_list = get_ec2_instance_ebs_volumes(instance)
+            load_ec2_instance_ebs_volumes(neo4j_session, instance_ebs_volumes_list, current_aws_account_id, update_tag)
 
 
 @timeit
