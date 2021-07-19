@@ -19,25 +19,22 @@ def test_load_s3_buckets(neo4j_session, *args):
             "bucket-1",
             "bucket-1",
             "eu-west-1",
-            False,
         ),
         (
             "bucket-2",
             "bucket-2",
             "me-south-1",
-            False,
         ),
         (
             "bucket-3",
             "bucket-3",
             None,
-            False,
         ),
     }
 
     nodes = neo4j_session.run(
         """
-        MATCH (s:S3Bucket) return s.id, s.name, s.region, s.default_encryption
+        MATCH (s:S3Bucket) return s.id, s.name, s.region
         """,
     )
     actual_nodes = {
@@ -45,7 +42,6 @@ def test_load_s3_buckets(neo4j_session, *args):
             n['s.id'],
             n['s.name'],
             n['s.region'],
-            n['s.default_encryption'],
         )
         for n in nodes
     }
@@ -57,7 +53,7 @@ def test_load_s3_encryption(neo4j_session, *args):
     Ensure that expected bucket gets loaded with their encryption fields.
     """
     data = tests.data.aws.s3.GET_ENCRYPTION
-    cartography.intel.aws.s3.load_s3_encryption(neo4j_session, data, TEST_UPDATE_TAG)
+    cartography.intel.aws.s3._load_s3_encryption(neo4j_session, data, TEST_UPDATE_TAG)
 
     expected_nodes = {
         (
