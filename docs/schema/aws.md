@@ -131,6 +131,8 @@
   - [Relationships](#relationships-60)
 - [EC2Image](#ec2image)
   - [Relationships](#relationships-61)
+- [EC2ReservedInstance](#ec2reservedinstance)
+  - [Relationships](#relationships-62)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -160,6 +162,7 @@ Representation of an AWS Account.
                               EC2Image,
                               EC2Instance,
                               EC2Reservation,
+                              EC2ReservedInstance,
                               EC2SecurityGroup,
                               ESDomain,
                               LoadBalancer,
@@ -2327,4 +2330,37 @@ Representation of an AWS [EC2 Images (AMIs)](https://docs.aws.amazon.com/AWSEC2/
 
         ```
         (AWSAccount)-[RESOURCE]->(EC2Image)
+        ```
+
+## EC2ReservedInstance
+
+Representation of an AWS [EC2 Reserved Instance](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-reserved-instances.html).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The ID of the Reserved Instance.|
+| availabilityzone | The Availability Zone in which the Reserved Instance can be used. |
+| duration | The duration of the Reserved Instance, in seconds. |
+| end | The time when the Reserved Instance expires. |
+| start | The date and time the Reserved Instance started.|
+| count | The number of reservations purchased.|
+| type | The instance type on which the Reserved Instance can be used. |
+| productdescription | The Reserved Instance product platform description. |
+| state | The state of the Reserved Instance purchase.  |
+| currencycode | The currency of the Reserved Instance. It's specified using ISO 4217 standard currency codes.|
+| instancetenancy | The tenancy of the instance.|
+| offeringclass | The offering class of the Reserved Instance.|
+| offeringtype | The Reserved Instance offering type.|
+| scope | The scope of the Reserved Instance.|
+| fixedprice | The purchase price of the Reserved Instance. |
+| region | The region of the reserved instance. |
+
+### Relationships
+
+- AWS EC2 Reserved Instances are a resource under the AWS Account.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(EC2ReservedInstance)
         ```
