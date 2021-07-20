@@ -1,6 +1,8 @@
 import logging
 import sys
 from functools import wraps
+from typing import Dict
+from typing import Optional
 
 import botocore
 
@@ -87,3 +89,15 @@ def aws_handle_regions(func):
             else:
                 raise
     return inner_function
+
+
+def dict_value_to_str(obj: Dict, key: str) -> Optional[str]:
+    """
+    Convert the value referenced by the key in the dict to a string, if it exists, and return it. If it doesn't exist,
+    return None.
+    """
+    value = obj.get(key)
+    if value is not None:
+        return str(value)
+    else:
+        return None
