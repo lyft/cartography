@@ -22,7 +22,7 @@ def test_load_load_secrets(neo4j_session, *args):
             "arn:aws:lambda:us-east-1:000000000000:function:test-secret-rotate",
             "arn:aws:kms:us-east-1:000000000000:key/00000000-0000-0000-0000-000000000000",
             "us-west-1",
-            1397639689,
+            1397672089,
         ),
         (
             "test-secret-2",
@@ -31,7 +31,7 @@ def test_load_load_secrets(neo4j_session, *args):
             None,
             None,
             None,
-            1397639689,
+            1397672089,
         ),
     }
 
