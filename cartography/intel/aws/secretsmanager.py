@@ -6,7 +6,7 @@ from typing import List
 import boto3
 import neo4j
 
-from cartography.util import dict_value_to_str
+from cartography.util import dict_date_to_epoch
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
@@ -47,11 +47,11 @@ def load_secrets(neo4j_session: neo4j.Session, data: List, current_aws_account_i
         secret['rotation_rules_automatically_after_days'] = secret.get(
             'RotationRules', {},
         ).get('AutomaticallyAfterDays')
-        secret['LastRotatedDate'] = dict_value_to_str(secret, 'LastRotatedDate')
-        secret['LastChangedDate'] = dict_value_to_str(secret, 'LastChangedDate')
-        secret['LastAccessedDate'] = dict_value_to_str(secret, 'LastAccessedDate')
-        secret['DeletedDate'] = dict_value_to_str(secret, 'DeletedDate')
-        secret['CreatedDate'] = dict_value_to_str(secret, 'CreatedDate')
+        secret['LastRotatedDate'] = dict_date_to_epoch(secret, 'LastRotatedDate')
+        secret['LastChangedDate'] = dict_date_to_epoch(secret, 'LastChangedDate')
+        secret['LastAccessedDate'] = dict_date_to_epoch(secret, 'LastAccessedDate')
+        secret['DeletedDate'] = dict_date_to_epoch(secret, 'DeletedDate')
+        secret['CreatedDate'] = dict_date_to_epoch(secret, 'CreatedDate')
 
     neo4j_session.run(
         ingest_secrets,

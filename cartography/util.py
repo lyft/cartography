@@ -101,3 +101,15 @@ def dict_value_to_str(obj: Dict, key: str) -> Optional[str]:
         return str(value)
     else:
         return None
+
+
+def dict_date_to_epoch(obj: Dict, key: str) -> Optional[int]:
+    """
+    Convert the date referenced by the key in the dict to an epoch timestamp, if it exists, and return it. If it
+    doesn't exist, return None.
+    """
+    value = obj.get(key)
+    if value is not None:
+        return int(value.timestamp())
+    else:
+        return None
