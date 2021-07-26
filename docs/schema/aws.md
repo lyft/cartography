@@ -133,6 +133,10 @@
   - [Relationships](#relationships-61)
 - [EC2ReservedInstance](#ec2reservedinstance)
   - [Relationships](#relationships-62)
+- [EBSVolume](#ebsvolume)
+  - [Relationships](#relationships-63)
+- [EBSSnapshot](#ebssnapshot)
+  - [Relationships](#relationships-64)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -159,6 +163,8 @@ Representation of an AWS Account.
                               AutoScalingGroup,
                               DNSZone,
                               DynamoDBTable,
+                              EBSSnapshot,
+                              EBSVolume,
                               EC2Image,
                               EC2Instance,
                               EC2Reservation,
@@ -978,6 +984,12 @@ Our representation of an AWS [EC2 Instance](https://docs.aws.amazon.com/AWSEC2/l
 
         ```
         (EC2Instance)-[TAGGED]->(AWSTag)
+        ```
+
+- AWS EBS Volumes are attached to an EC2 Instance
+
+        ```
+        (EBSVolume)-[ATTACHED_TO]->(EC2Instance)
         ```
 
 -  EC2 Instances can assume IAM Roles.
@@ -2275,6 +2287,7 @@ Representation of an AWS [Auto Scaling Group Resource](https://docs.aws.amazon.c
 | capacityrebalance | Indicates whether Capacity Rebalancing is enabled. |
 | region | The region of the auto scaling group. |
 
+
 [Link to API Documentation](https://docs.aws.amazon.com/autoscaling/ec2/APIReference/API_AutoScalingGroup.html) of AWS Auto Scaling Groups
 
 ### Relationships
@@ -2322,6 +2335,7 @@ Representation of an AWS [EC2 Images (AMIs)](https://docs.aws.amazon.com/AWSEC2/
 | bootmode | The boot mode of the image. |
 | region | The region of the image. |
 
+
 [Link to API Documentation](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_Image.html) of EC2 Images
 
 ### Relationships
@@ -2363,4 +2377,85 @@ Representation of an AWS [EC2 Reserved Instance](https://docs.aws.amazon.com/AWS
 
         ```
         (AWSAccount)-[RESOURCE]->(EC2ReservedInstance)
+        ```
+
+## EBSVolume
+
+Representation of an AWS [EBS Volume](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-volumes.html).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The ID of the EBS Volume.|
+| availabilityzone | The Availability Zone for the volume. |
+| createtime | The time stamp when volume creation was initiated. |
+| encrypted | Indicates whether the volume is encrypted. |
+| size | The size of the volume, in GiBs.|
+| state | The volume state.|
+| outpostarn | The Amazon Resource Name (ARN) of the Outpost. |
+| snapshotid | The snapshot ID. |
+| iops | The number of I/O operations per second (IOPS).  |
+| type | The volume type.|
+| fastrestored | Indicates whether the volume was created using fast snapshot restore.|
+| multiattachenabled |Indicates whether Amazon EBS Multi-Attach is enabled.|
+| throughput | The throughput that the volume supports, in MiB/s.|
+| kmskeyid | The Amazon Resource Name (ARN) of the AWS Key Management Service (AWS KMS) customer master key (CMK) that was used to protect the volume encryption key for the volume.|
+| deleteontermination | Indicates whether the volume is deleted on instance termination. |
+| region | The region of the volume. |
+
+### Relationships
+
+- AWS EBS Volumes are a resource under the AWS Account.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(EBSVolume)
+        ```
+
+- AWS EBS Snapshots are created using EBS Volumes
+
+        ```
+        (EBSSnapshot)-[CREATED_FROM]->(EBSVolume)
+        ```
+
+- AWS EBS Volumes are attached to an EC2 Instance
+
+        ```
+        (EBSVolume)-[ATTACHED_TO]->(EC2Instance)
+        ```
+
+## EBSSnapshot
+
+Representation of an AWS [EBS Snapshot](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSSnapshots.html).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The ID of the EBS Snapshot.|
+| description | The description of the snapshot. |
+| progress | The progress of the snapshot, as a percentage. |
+| encrypted |Indicates whether the snapshot is encrypted. |
+| starttime | The time stamp when the snapshot was initiated.|
+| state | The snapshot state.|
+| statemessage | Encrypted Amazon EBS snapshots are copied asynchronously. If a snapshot copy operation fails (for example, if the proper AWS Key Management Service (AWS KMS) permissions are not obtained) this field displays error state details to help you diagnose why the error occurred. This parameter is only returned by DescribeSnapshots .|
+| volumeid | The volume ID. |
+| volumesize | The size of the volume, in GiB.|
+| outpostarn | The ARN of the AWS Outpost on which the snapshot is stored. |
+| dataencryptionkeyid | The data encryption key identifier for the snapshot.|
+| kmskeyid | The Amazon Resource Name (ARN) of the AWS Key Management Service (AWS KMS) customer master key (CMK) that was used to protect the volume encryption key for the parent volume.|
+| region | The region of the snapshot. |
+
+### Relationships
+
+- AWS EBS Snapshots are a resource under the AWS Account.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(EBSSnapshot)
+        ```
+
+- AWS EBS Snapshots are created using EBS Volumes
+
+        ```
+        (EBSSnapshot)-[CREATED_FROM]->(EBSVolume)
         ```
