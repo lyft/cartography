@@ -133,10 +133,12 @@
   - [Relationships](#relationships-61)
 - [EC2ReservedInstance](#ec2reservedinstance)
   - [Relationships](#relationships-62)
-- [EBSVolume](#ebsvolume)
+- [SecretsManagerSecret](#secretsmanagersecret)
   - [Relationships](#relationships-63)
-- [EBSSnapshot](#ebssnapshot)
+- [EBSVolume](#ebsvolume)
   - [Relationships](#relationships-64)
+- [EBSSnapshot](#ebssnapshot)
+  - [Relationships](#relationships-65)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -158,8 +160,10 @@ Representation of an AWS Account.
         ```
         (AWSAccount)-[RESOURCE]->(AWSDNSZone,
                               AWSGroup,
+                              AWSLambda,
                               AWSPrincipal,
                               AWSUser,
+                              AWSVpc,
                               AutoScalingGroup,
                               DNSZone,
                               DynamoDBTable,
@@ -172,7 +176,9 @@ Representation of an AWS Account.
                               EC2SecurityGroup,
                               ESDomain,
                               LoadBalancer,
-                              AWSVpc)
+                              RDSCluster,
+                              RDSInstance,
+                              SecretsManagerSecret)
         ```
 
 - An `AWSPolicy` node is defined for an `AWSAccount`.
@@ -2378,6 +2384,36 @@ Representation of an AWS [EC2 Reserved Instance](https://docs.aws.amazon.com/AWS
         ```
         (AWSAccount)-[RESOURCE]->(EC2ReservedInstance)
         ```
+
+## SecretsManagerSecret
+
+Representation of an AWS [Secrets Manager Secret](https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_SecretListEntry.html)
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The arn of the secret. |
+| created\_date | The date and time when a secret was created. |
+| deleted\_date | The date and time the deletion of the secret occurred. Not present on active secrets. The secret can be recovered until the number of days in the recovery window has passed, as specified in the RecoveryWindowInDays parameter of the DeleteSecret operation. |
+| description | The user-provided description of the secret. |
+| kms\_key\_id | The ARN or alias of the AWS KMS customer master key (CMK) used to encrypt the SecretString and SecretBinary fields in each version of the secret. If you don't provide a key, then Secrets Manager defaults to encrypting the secret fields with the default KMS CMK, the key named awssecretsmanager, for this account. |
+| last\_accessed\_date | The last date that this secret was accessed. This value is truncated to midnight of the date and therefore shows only the date, not the time. |
+| last\_changed\_date | The last date and time that this secret was modified in any way. |
+| last\_rotated\_date | The most recent date and time that the Secrets Manager rotation process was successfully completed. This value is null if the secret hasn't ever rotated. |
+| name | The friendly name of the secret. You can use forward slashes in the name to represent a path hierarchy. For example, /prod/databases/dbserver1 could represent the secret for a server named dbserver1 in the folder databases in the folder prod. |
+| owning\_service | Returns the name of the service that created the secret. |
+| primary\_region | The Region where Secrets Manager originated the secret. |
+| rotation\_enabled | Indicates whether automatic, scheduled rotation is enabled for this secret. |
+| rotation\_lambda\_arn | The ARN of an AWS Lambda function invoked by Secrets Manager to rotate and expire the secret either automatically per the schedule or manually by a call to RotateSecret. |
+| rotation\_rules\_automatically\_after\_days | Specifies the number of days between automatic scheduled rotations of the secret. |
+
+### Relationships
+
+- AWS Secrets Manager Secrets are a resource under the AWS Account.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(SecretsManagerSecret)
 
 ## EBSVolume
 
