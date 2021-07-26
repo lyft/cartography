@@ -156,8 +156,10 @@ Representation of an AWS Account.
         ```
         (AWSAccount)-[RESOURCE]->(AWSDNSZone,
                               AWSGroup,
+                              AWSLambda,
                               AWSPrincipal,
                               AWSUser,
+                              AWSVpc,
                               AutoScalingGroup,
                               DNSZone,
                               DynamoDBTable,
@@ -168,7 +170,9 @@ Representation of an AWS Account.
                               EC2SecurityGroup,
                               ESDomain,
                               LoadBalancer,
-                              AWSVpc)
+                              RDSCluster,
+                              RDSInstance,
+                              SecretsManagerSecret)
         ```
 
 - An `AWSPolicy` node is defined for an `AWSAccount`.

@@ -1,5 +1,4 @@
 import logging
-from typing import Any
 from typing import Dict
 from typing import List
 
@@ -17,21 +16,26 @@ logger = logging.getLogger(__name__)
 def get_secret_list(boto3_session: boto3.session.Session) -> List[Dict]:
     client = boto3_session.client('secretsmanager')
     paginator = client.get_paginator('list_secrets')
-    secrets: List[Any] = []
+    secrets: List[Dict] = []
     for page in paginator.paginate():
         secrets.extend(page['SecretList'])
     return secrets
 
 
 @timeit
-def load_secrets(neo4j_session: neo4j.Session, data: List, current_aws_account_id: str, aws_update_tag: int) -> None:
+def load_secrets(
+    neo4j_session: neo4j.Session,
+    data: List[Dict],
+    current_aws_account_id: str,
+    aws_update_tag: int,
+) -> None:
     ingest_secrets = """
     UNWIND {Secrets} as secret
         MERGE (s:SecretsManagerSecret{id: secret.ARN})
         ON CREATE SET s.firstseen = timestamp()
         SET s.name = secret.Name, s.description = secret.Description, s.kms_key_id = secret.KmsKeyId,
             s.rotation_enabled = secret.RotationEnabled, s.rotation_lambda_arn = secret.RotationLambdaARN,
-            s.rotation_rules_automatically_after_days = secret.rotation_rules_automatically_after_days,
+            s.rotation_rules_automatically_after_days = secret.RotationRules.AutomaticallyAfterDays,
             s.last_rotated_date = secret.LastRotatedDate, s.last_changed_date = secret.LastChangedDate,
             s.last_accessed_date = secret.LastAccessedDate, s.deleted_date = secret.DeletedDate,
             s.owning_service = secret.OwningService, s.created_date = secret.CreatedDate,
@@ -44,9 +48,6 @@ def load_secrets(neo4j_session: neo4j.Session, data: List, current_aws_account_i
         SET r.lastupdated = {aws_update_tag}
     """
     for secret in data:
-        secret['rotation_rules_automatically_after_days'] = secret.get(
-            'RotationRules', {},
-        ).get('AutomaticallyAfterDays')
         secret['LastRotatedDate'] = dict_date_to_epoch(secret, 'LastRotatedDate')
         secret['LastChangedDate'] = dict_date_to_epoch(secret, 'LastChangedDate')
         secret['LastAccessedDate'] = dict_date_to_epoch(secret, 'LastAccessedDate')
