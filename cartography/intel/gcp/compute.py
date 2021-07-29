@@ -196,6 +196,7 @@ def transform_gcp_instances(response_objects: List[Dict]) -> List[Dict]:
             instance['partial_uri'] = f"{prefix}/{instance['name']}"
             instance['project_id'] = prefix_fields.project_id
             instance['zone_name'] = prefix_fields.zone_name
+            instance['region'] = prefix_fields.zone_name[:-2]
 
             for nic in instance.get('networkInterfaces', []):
                 nic['subnet_partial_uri'] = _parse_compute_full_uri_to_partial_uri(nic['subnetwork'])
@@ -518,6 +519,7 @@ def load_gcp_instances(neo4j_session: neo4j.Session, data: List[Dict], gcp_updat
     i.instancename = {InstanceName},
     i.hostname = {Hostname},
     i.zone_name = {ZoneName},
+    i.region = {Region},
     i.project_id = {ProjectId},
     i.status = {Status},
     i.lastupdated = {gcp_update_tag}
@@ -535,6 +537,7 @@ def load_gcp_instances(neo4j_session: neo4j.Session, data: List[Dict], gcp_updat
             SelfLink=instance['selfLink'],
             InstanceName=instance['name'],
             ZoneName=instance['zone_name'],
+            Region=instance['region'],
             Hostname=instance.get('hostname', None),
             Status=instance['status'],
             gcp_update_tag=gcp_update_tag,

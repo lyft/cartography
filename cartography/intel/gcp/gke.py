@@ -75,6 +75,7 @@ def load_gke_clusters(neo4j_session: neo4j.Session, cluster_resp: Dict, project_
         cluster.subnetwork = {ClusterSubnetwork},
         cluster.cluster_ipv4cidr = {ClusterIPv4Cidr},
         cluster.zone = {ClusterZone},
+        cluster.region = {ClusterRegion},
         cluster.location = {ClusterLocation},
         cluster.endpoint = {ClusterEndpoint},
         cluster.initial_version = {ClusterInitialVersion},
@@ -99,6 +100,8 @@ def load_gke_clusters(neo4j_session: neo4j.Session, cluster_resp: Dict, project_
     SET r.lastupdated = {gcp_update_tag}
     """
     for cluster in cluster_resp.get('clusters', []):
+        cluster['region'] = cluster.get('zone')[:-2]
+
         neo4j_session.run(
             query,
             ProjectId=project_id,
@@ -112,6 +115,7 @@ def load_gke_clusters(neo4j_session: neo4j.Session, cluster_resp: Dict, project_
             ClusterSubnetwork=cluster.get('subnetwork'),
             ClusterIPv4Cidr=cluster.get('clusterIpv4Cidr'),
             ClusterZone=cluster.get('zone'),
+            ClusterRegion=cluster.get('region'),
             ClusterLocation=cluster.get('location'),
             ClusterEndpoint=cluster.get('endpoint'),
             ClusterInitialVersion=cluster.get('initialClusterVersion'),

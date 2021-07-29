@@ -181,7 +181,7 @@ def _attach_gcp_bucket_labels(neo4j_session: neo4j.Session, bucket: Resource, gc
     MERGE (l:Label:GCPBucketLabel{id: {BucketLabelId}})
     ON CREATE SET l.firstseen = timestamp(),
     l.key = {Key}
-    SET l.value = {Value},
+    SET l.value = {Value}, l.location = {Location},
     l.lastupdated = {gcp_update_tag}
     WITH l
     MATCH (bucket:GCPBucket{id:{BucketId}})
@@ -196,6 +196,7 @@ def _attach_gcp_bucket_labels(neo4j_session: neo4j.Session, bucket: Resource, gc
             Key=key,
             Value=val,
             BucketId=bucket['id'],
+            Location=bucket['location'],
             gcp_update_tag=gcp_update_tag,
         )
 
