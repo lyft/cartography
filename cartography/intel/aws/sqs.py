@@ -53,7 +53,7 @@ def load_sqs_queues(
         MERGE (queue:SQSQueue{id: sqs_queue.QueueArn})
         ON CREATE SET queue.firstseen = timestamp(), queue.url = sqs_queue.url
         SET queue.name = sqs_queue.name, queue.region = {Region}, queue.arn = sqs_queue.QueueArn,
-            queue.created_timestamp = sqs_queue.created_time, queue.delay_seconds = sqs_queue.DelaySeconds,
+            queue.created_timestamp = sqs_queue.CreatedTimestamp, queue.delay_seconds = sqs_queue.DelaySeconds,
             queue.last_modified_timestamp = sqs_queue.LastModifiedTimestamp,
             queue.maximum_message_size = sqs_queue.MaximumMessageSize,
             queue.message_retention_period = sqs_queue.MessageRetentionPeriod,
