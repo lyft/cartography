@@ -47,7 +47,7 @@ def test_load_load_secrets(neo4j_session, *args):
         """
         MATCH (s:SecretsManagerSecret)
         RETURN s.name, s.rotation_enabled, s.rotation_rules_automatically_after_days,
-        s.rotation_lambda_arn, s.kms_key_id, s.primary_region, s.last_changed_date
+        s.rotation_lambda_arn, s.kms_key_id, s.primary_region, s.region, s.last_changed_date
         """,
     )
     actual_nodes = {
@@ -58,6 +58,7 @@ def test_load_load_secrets(neo4j_session, *args):
             n['s.rotation_lambda_arn'],
             n['s.kms_key_id'],
             n['s.primary_region'],
+            n['s.region'],
             n['s.last_changed_date'],
         )
         for n in nodes
