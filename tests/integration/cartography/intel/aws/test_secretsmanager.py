@@ -9,7 +9,7 @@ TEST_UPDATE_TAG = 123456789
 
 def test_load_load_secrets(neo4j_session, *args):
     """
-    Ensure that expected buckets get loaded with their key fields.
+    Ensure that expected secrets get loaded with their key fields.
     """
     data = tests.data.aws.secretsmanager.LIST_SECRETS
     cartography.intel.aws.secretsmanager.load_secrets(
