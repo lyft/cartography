@@ -6,6 +6,7 @@ from typing import List
 import boto3
 import neo4j
 
+from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
@@ -13,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
+@aws_handle_regions
 def get_sqs_queue_list(boto3_session: boto3.session.Session, region: str) -> List[str]:
     client = boto3_session.client('sqs', region_name=region)
     paginator = client.get_paginator('list_queues')
@@ -23,6 +25,7 @@ def get_sqs_queue_list(boto3_session: boto3.session.Session, region: str) -> Lis
 
 
 @timeit
+@aws_handle_regions
 def get_sqs_queue_attributes(
         boto3_session: boto3.session.Session,
         queue_urls: List[str],
