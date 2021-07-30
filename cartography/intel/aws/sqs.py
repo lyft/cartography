@@ -5,6 +5,7 @@ from typing import List
 
 import boto3
 import neo4j
+from botocore.exceptions import ClientError
 
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
@@ -37,7 +38,14 @@ def get_sqs_queue_attributes(
 
     queue_attributes: Dict[str, Any] = {}
     for queue_url in queue_urls:
-        response = client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=['All'])
+        try:
+            response = client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=['All'])
+        except ClientError as e:
+            if e.response['Error']['Code'] == 'AWS.SimpleQueueService.NonExistentQueue':
+                logger.warning(f"Failed to retrieve SQS queue {queue_url} - Queue does not exist error")
+                continue
+            else:
+                raise
         queue_attributes[queue_url] = response['Attributes']
 
     return queue_attributes
