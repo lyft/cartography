@@ -139,6 +139,8 @@
   - [Relationships](#relationships-64)
 - [EBSSnapshot](#ebssnapshot)
   - [Relationships](#relationships-65)
+- [SQSQueue](#sqsqueue)
+  - [Relationships](#relationships-66)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -178,7 +180,8 @@ Representation of an AWS Account.
                               LoadBalancer,
                               RDSCluster,
                               RDSInstance,
-                              SecretsManagerSecret)
+                              SecretsManagerSecret,
+                              SQSQueue)
         ```
 
 - An `AWSPolicy` node is defined for an `AWSAccount`.
@@ -2494,4 +2497,45 @@ Representation of an AWS [EBS Snapshot](https://docs.aws.amazon.com/AWSEC2/lates
 
         ```
         (EBSSnapshot)-[CREATED_FROM]->(EBSVolume)
+        ```
+
+## SQSQueue
+
+Representation of an AWS [SQS Queue](https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_GetQueueAttributes.html)
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The arn of the sqs queue. |
+| created\_timestamp | The time when the queue was created in seconds |
+| delay\_seconds | The default delay on the queue in seconds. |
+| last\_modified\_timestamp | The time when the queue was last changed in seconds. |
+| maximum\_message\_size | The limit of how many bytes a message can contain before Amazon SQS rejects it. |
+| message\_retention\_period | he length of time, in seconds, for which Amazon SQS retains a message. |
+| policy | The IAM policy of the queue. |
+| arn | The arn of the sqs queue. |
+| receive\_message\_wait\_time\_seconds | The length of time, in seconds, for which the ReceiveMessage action waits for a message to arrive. |
+| redrive\_policy\_dead\_letter\_target\_arn | The Amazon Resource Name (ARN) of the dead-letter queue to which Amazon SQS moves messages after the value of maxReceiveCount is exceeded. |
+| redrive\_policy\_max\_receive\_count | The number of times a message is delivered to the source queue before being moved to the dead-letter queue. When the ReceiveCount for a message exceeds the maxReceiveCount for a queue, Amazon SQS moves the message to the dead-letter-queue. |
+| visibility\_timeout | The visibility timeout for the queue. |
+| kms\_master\_key\_id | The ID of an AWS managed customer master key (CMK) for Amazon SQS or a custom CMK. |
+| kms\_data\_key\_reuse\_period\_seconds | The length of time, in seconds, for which Amazon SQS can reuse a data key to encrypt or decrypt messages before calling AWS KMS again. |
+| fifo\_queue | Whether or not the queue is FIFO. |
+| content\_based\_deduplication | Whether or not content-based deduplication is enabled for the queue. |
+| deduplication\_scope | Specifies whether message deduplication occurs at the message group or queue level. |
+| fifo\_throughput\_limit | Specifies whether the FIFO queue throughput quota applies to the entire queue or per message group. |
+
+### Relationships
+
+- AWS SQS Queues are a resource under the AWS Account.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(SQSQueue)
+        ```
+
+- AWS SQS Queues can have other SQS Queues configured as dead letter queues
+
+        ```
+        (SQSQueue)-[HAS_DEADLETTER_QUEUE]->(SQSQueue)
         ```
