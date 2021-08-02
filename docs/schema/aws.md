@@ -105,26 +105,42 @@
 - [AWSPeeringConnection](#awspeeringconnection)
 - [RedshiftCluster](#redshiftcluster)
   - [Relationships](#relationships-48)
-- [RDSInstance](#rdsinstance)
+- [RDSCluster](#rdscluster)
   - [Relationships](#relationships-49)
-- [S3Acl](#s3acl)
+- [RDSInstance](#rdsinstance)
   - [Relationships](#relationships-50)
-- [S3Bucket](#s3bucket)
+- [S3Acl](#s3acl)
   - [Relationships](#relationships-51)
-- [KMSKey](#kmskey)
+- [S3Bucket](#s3bucket)
   - [Relationships](#relationships-52)
-- [KMSAlias](#kmsalias)
+- [KMSKey](#kmskey)
   - [Relationships](#relationships-53)
-- [KMSGrant](#kmsgrant)
+- [KMSAlias](#kmsalias)
   - [Relationships](#relationships-54)
-- [APIGatewayRestAPI](#apigatewayrestapi)
+- [KMSGrant](#kmsgrant)
   - [Relationships](#relationships-55)
-- [APIGatewayStage](#apigatewaystage)
+- [APIGatewayRestAPI](#apigatewayrestapi)
   - [Relationships](#relationships-56)
-- [APIGatewayClientCertificate](#apigatewayclientcertificate)
+- [APIGatewayStage](#apigatewaystage)
   - [Relationships](#relationships-57)
-- [APIGatewayResource](#apigatewayresource)
+- [APIGatewayClientCertificate](#apigatewayclientcertificate)
   - [Relationships](#relationships-58)
+- [APIGatewayResource](#apigatewayresource)
+  - [Relationships](#relationships-59)
+- [AutoScalingGroup](#autoscalinggroup)
+  - [Relationships](#relationships-60)
+- [EC2Image](#ec2image)
+  - [Relationships](#relationships-61)
+- [EC2ReservedInstance](#ec2reservedinstance)
+  - [Relationships](#relationships-62)
+- [SecretsManagerSecret](#secretsmanagersecret)
+  - [Relationships](#relationships-63)
+- [EBSVolume](#ebsvolume)
+  - [Relationships](#relationships-64)
+- [EBSSnapshot](#ebssnapshot)
+  - [Relationships](#relationships-65)
+- [SQSQueue](#sqsqueue)
+  - [Relationships](#relationships-66)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -146,17 +162,26 @@ Representation of an AWS Account.
         ```
         (AWSAccount)-[RESOURCE]->(AWSDNSZone,
                               AWSGroup,
+                              AWSLambda,
                               AWSPrincipal,
                               AWSUser,
+                              AWSVpc,
                               AutoScalingGroup,
                               DNSZone,
                               DynamoDBTable,
+                              EBSSnapshot,
+                              EBSVolume,
+                              EC2Image,
                               EC2Instance,
                               EC2Reservation,
+                              EC2ReservedInstance,
                               EC2SecurityGroup,
                               ESDomain,
                               LoadBalancer,
-                              AWSVpc)
+                              RDSCluster,
+                              RDSInstance,
+                              SecretsManagerSecret,
+                              SQSQueue)
         ```
 
 - An `AWSPolicy` node is defined for an `AWSAccount`.
@@ -537,10 +562,10 @@ Representation of an AWS [IAM Role](https://docs.aws.amazon.com/IAM/latest/APIRe
 
 ### Relationships
 
-- Some AWS Groups, Users, and Principals can assume AWS Roles.
+- Some AWS Groups, Users, Principals, and EC2 Instances can assume AWS Roles.
 
     ```
-    (AWSGroup, AWSUser)-[STS_ASSUMEROLE_ALLOW]->(AWSRole)
+    (AWSGroup, AWSUser, EC2Instance)-[STS_ASSUMEROLE_ALLOW]->(AWSRole)
     ```
 
 - Some AWS Roles can assume other AWS Roles.
@@ -909,6 +934,15 @@ Our representation of an AWS [EC2 Instance](https://docs.aws.amazon.com/AWSEC2/l
 | launchtimeunix | The time the instance was launched in unix time |
 | region | The AWS region this Instance is running in|
 | exposed\_internet |  The `exposed_internet` flag on an EC2 instance is set to `True` when (1) the instance is part of an EC2 security group or is connected to a network interface connected to an EC2 security group that allows connectivity from the 0.0.0.0/0 subnet or (2) the instance is connected to an Elastic Load Balancer that has its own `exposed_internet` flag set to `True`. |
+| availabilityzone | The Availability Zone of the instance.|
+| tenancy | The tenancy of the instance.|
+| hostresourcegrouparn | The ARN of the host resource group in which to launch the instances.|
+| platform | The value is `Windows` for Windows instances; otherwise blank.|
+| architecture | The architecture of the image.|
+| ebsoptimized | Indicates whether the instance is optimized for Amazon EBS I/O. |
+| bootmode | The boot mode of the instance.|
+| instancelifecycle | Indicates whether this is a Spot Instance or a Scheduled Instance.|
+| hibernationoptions | Indicates whether the instance is enabled for hibernation.|
 
 
 ### Relationships
@@ -959,6 +993,18 @@ Our representation of an AWS [EC2 Instance](https://docs.aws.amazon.com/AWSEC2/l
 
         ```
         (EC2Instance)-[TAGGED]->(AWSTag)
+        ```
+
+- AWS EBS Volumes are attached to an EC2 Instance
+
+        ```
+        (EBSVolume)-[ATTACHED_TO]->(EC2Instance)
+        ```
+
+-  EC2 Instances can assume IAM Roles.
+
+        ```
+        (EC2Instance)-[STS_ASSUMEROLE_ALLOW]->(AWSRole)
         ```
 
 
@@ -1120,6 +1166,8 @@ Representation of an AWS EC2 [Subnet](https://docs.aws.amazon.com/AWSEC2/latest/
 | subnet_arn | The Amazon Resource Name (ARN) of the subnet |
 | availability_zone | The Availability Zone of the subnet |
 | availability_zone_id | The AZ ID of the subnet |
+| state | The current state of the subnet. |
+| assignipv6addressoncreation | Indicates whether a network interface created in this subnet (including a network interface created by RunInstances ) receives an IPv6 address. |
 
 
 ### Relationships
@@ -1449,6 +1497,7 @@ Representation of an AWS Elastic Load Balancer [Listener](https://docs.aws.amazo
 | lastupdated |  Timestamp of the last time the node was updated |
 | protocol | The protocol of this endpoint |
 | port | The port of this endpoint |
+| policy\_names | A list of SSL policy names set on the listener.
 | **id** | The ELB ID.  This is a concatenation of the DNS name, port, and protocol. |
 | instance\_port | The port open on the EC2 instance that this listener is connected to |
 | instance\_protocol | The protocol defined on the EC2 instance that this listener is connected to |
@@ -1472,6 +1521,7 @@ Representation of an AWS Elastic Load Balancer V2 [Listener](https://docs.aws.am
 | lastupdated |  Timestamp of the last time the node was updated |
 | protocol | The protocol of this endpoint - One of `'HTTP''HTTPS''TCP''TLS''UDP''TCP_UDP'` |
 | port | The port of this endpoint |
+| ssl\_policy | Only set for HTTPS or TLS listener. The security policy that defines which protocols and ciphers are supported. |
 | targetgrouparn | The ARN of the Target Group, if the Action type is `forward`. |
 
 
@@ -1841,6 +1891,65 @@ Representation of an AWS [RedshiftCluster](https://docs.aws.amazon.com/redshift/
     (RedshiftCluster)-[MEMBER_OF_AWS_VPC]->(AWSVpc)
     ```
 
+## RDSCluster
+
+Representation of an AWS Relational Database Service [DBCluster](https://docs.aws.amazon.com/AmazonRDS/latest/APIReference/API_DBCluster.html)
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | Same as ARN |
+| **arn** | The Amazon Resource Name (ARN) for the DB cluster. |
+| **allocated\_storage** | For all database engines except Amazon Aurora, AllocatedStorage specifies the allocated storage size in gibibytes (GiB). For Aurora, AllocatedStorage always returns 1, because Aurora DB cluster storage size isn't fixed, but instead automatically adjusts as needed. |
+| **availability\_zones** | Provides the list of Availability Zones (AZs) where instances in the DB cluster can be created. |
+| **backup\_retention\_period** | Specifies the number of days for which automatic DB snapshots are retained. |
+| **character\_set\_name** | If present, specifies the name of the character set that this cluster is associated with. |
+| **database\_name** | Contains the name of the initial database of this DB cluster that was provided at create time, if one was specified when the DB cluster was created. This same name is returned for the life of the DB cluster. |
+| **db\_cluster\_identifier** | Contains a user-supplied DB cluster identifier. This identifier is the unique key that identifies a DB cluster. |
+| **db\_parameter\_group** | Specifies the name of the DB cluster parameter group for the DB cluster. |
+| **status** | Specifies the current state of this DB cluster. |
+| **earliest\_restorable\_time** | The earliest time to which a database can be restored with point-in-time restore. |
+| **endpoint** | Specifies the connection endpoint for the primary instance of the DB cluster. |
+| **reader\_endpoint** | The reader endpoint for the DB cluster. The reader endpoint for a DB cluster load-balances connections across the Aurora Replicas that are available in a DB cluster. As clients request new connections to the reader endpoint, Aurora distributes the connection requests among the Aurora Replicas in the DB cluster. This functionality can help balance your read workload across multiple Aurora Replicas in your DB cluster. If a failover occurs, and the Aurora Replica that you are connected to is promoted to be the primary instance, your connection is dropped. To continue sending your read workload to other Aurora Replicas in the cluster, you can then reconnect to the reader endpoint. |
+| **multi\_az** | Specifies whether the DB cluster has instances in multiple Availability Zones. |
+| **engine** | The name of the database engine to be used for this DB cluster. |
+| **engine\_version** | Indicates the database engine version. |
+| **latest\_restorable\_time** | Specifies the latest time to which a database can be restored with point-in-time restore. |
+| **port** | Specifies the port that the database engine is listening on. |
+| **master\_username** | Contains the master username for the DB cluster. |
+| **preferred\_backup\_window** | Specifies the daily time range during which automated backups are created if automated backups are enabled, as determined by the BackupRetentionPeriod. |
+| **preferred\_maintenance\_window** | Specifies the weekly time range during which system maintenance can occur, in Universal Coordinated Time (UTC). |
+| **hosted\_zone\_id** | Specifies the ID that Amazon Route 53 assigns when you create a hosted zone. |
+| **storage\_encrypted** | Specifies whether the DB cluster is encrypted. |
+| **kms\_key\_id** | If StorageEncrypted is enabled, the AWS KMS key identifier for the encrypted DB cluster. The AWS KMS key identifier is the key ARN, key ID, alias ARN, or alias name for the AWS KMS customer master key (CMK). |
+| **db\_cluster\_resource\_id** | The AWS Region-unique, immutable identifier for the DB cluster. This identifier is found in AWS CloudTrail log entries whenever the AWS KMS CMK for the DB cluster is accessed. |
+| **clone\_group\_id** | Identifies the clone group to which the DB cluster is associated. |
+| **cluster\_create\_time** | Specifies the time when the DB cluster was created, in Universal Coordinated Time (UTC). |
+| **earliest\_backtrack\_time** | The earliest time to which a DB cluster can be backtracked. |
+| **backtrack\_window** | The target backtrack window, in seconds. If this value is set to 0, backtracking is disabled for the DB cluster. Otherwise, backtracking is enabled. |
+| **backtrack\_consumed\_change\_records** | The number of change records stored for Backtrack. |
+| **capacity** | The current capacity of an Aurora Serverless DB cluster. The capacity is 0 (zero) when the cluster is paused. |
+| **engine\_mode** | The DB engine mode of the DB cluster, either provisioned, serverless, parallelquery, global, or multimaster. |
+| **scaling\_configuration\_info\_min\_capacity** | The minimum capacity for the Aurora DB cluster in serverless DB engine mode. |
+| **scaling\_configuration\_info\_max\_capacity** | The maximum capacity for an Aurora DB cluster in serverless DB engine mode. |
+| **scaling\_configuration\_info\_auto\_pause** | A value that indicates whether automatic pause is allowed for the Aurora DB cluster in serverless DB engine mode. |
+| **deletion\_protection** | Indicates if the DB cluster has deletion protection enabled. The database can't be deleted when deletion protection is enabled. |
+
+### Relationships
+
+- RDS Clusters are part of AWS Accounts.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(RDSCluster)
+        ```
+
+- Some RDS instances are cluster members.
+
+    ```
+    (replica:RDSInstance)-[IS_CLUSTER_MEMBER_OF]->(source:RDSCluster)
+    ```
+
 ## RDSInstance
 
 Representation of an AWS Relational Database Service [DBInstance](https://docs.aws.amazon.com/AmazonRDS/latest/APIReference/API_DBInstance.html).
@@ -1952,6 +2061,10 @@ Representation of an AWS S3 [Bucket](https://docs.aws.amazon.com/AmazonS3/latest
 | anonymous\_actions |  List of anonymous internet accessible actions that may be run on the bucket.  This list is taken by running [policyuniverse](https://github.com/Netflix-Skunkworks/policyuniverse#internet-accessible-policy) on the policy that applies to the bucket.   |
 | anonymous\_access | True if this bucket has a policy applied to it that allows anonymous access or if it is open to the internet.  These policy determinations are made by using the [policyuniverse](https://github.com/Netflix-Skunkworks/policyuniverse) library.  |
 | region | The region that the bucket is in. Only defined if the S3 bucket has a [location constraint](https://docs.aws.amazon.com/AmazonS3/latest/dev/UsingBucket.html#access-bucket-intro) |
+| default\_encryption | True if this bucket has [default encryption](https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucket-encryption.html) enabled. |
+| encryption\_algorithm | The encryption algorithm used for default encryption. Only defined if the S3 bucket has default encryption enabled. |
+| encryption\_key\_id | The KMS key ID used for default encryption. Only defined if the S3 bucket has SSE-KMS enabled as the default encryption method. |
+| bucket\_key\_enabled | True if a bucket key is enabled, when using SSE-KMS as the default encryption method. |
 
 ### Relationships
 
@@ -2157,4 +2270,272 @@ Representation of an AWS [API Gateway Resource](https://docs.aws.amazon.com/apig
 
         ```
         (APIGatewayRestAPI)-[RESOURCE]->(APIGatewayResource)
+        ```
+
+## AutoScalingGroup
+
+Representation of an AWS [Auto Scaling Group Resource](https://docs.aws.amazon.com/autoscaling/ec2/userguide/AutoScalingGroup.html).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **arn** | The ARN of the Auto Scaling Group|
+| name |  The name of the Auto Scaling group. |
+| createdtime | The date and time the group was created. |
+| launchconfigurationname | The name of the associated launch configuration. |
+| maxsize | The maximum size of the group.|
+| minsize | The minimum size of the group.|
+| defaultcooldown | The duration of the default cooldown period, in seconds. |
+| desiredcapacity | The desired size of the group. |
+| healthchecktype | The service to use for the health checks. |
+| healthcheckgraceperiod | The amount of time, in seconds, that Amazon EC2 Auto Scaling waits before checking the health status of an EC2 instance that has come into service.|
+| status | The current state of the group when the DeleteAutoScalingGroup operation is in progress. |
+| newinstancesprotectedfromscalein | Indicates whether newly launched instances are protected from termination by Amazon EC2 Auto Scaling when scaling in.|
+| maxinstancelifetime | The maximum amount of time, in seconds, that an instance can be in service. |
+| capacityrebalance | Indicates whether Capacity Rebalancing is enabled. |
+| region | The region of the auto scaling group. |
+
+
+[Link to API Documentation](https://docs.aws.amazon.com/autoscaling/ec2/APIReference/API_AutoScalingGroup.html) of AWS Auto Scaling Groups
+
+### Relationships
+
+- AWS Auto Scaling Groups are a resource under the AWS Account.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(AutoScalingGroup)
+        ```
+- AWS Auto Scaling Groups has one or more subnets/vpc identifiers.
+
+        ```
+        (AutoScalingGroup)-[VPC_IDENTIFIER]->(EC2Subnet)
+        ```
+- AWS EC2 Instances are members of one or more AWS Auto Scaling Groups.
+
+        ```
+        (EC2Instance)-[MEMBER_AUTO_SCALE_GROUP]->(AutoScalingGroup)
+        ```
+
+## EC2Image
+
+Representation of an AWS [EC2 Images (AMIs)](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AMIs.html).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The ID of the AMI.|
+| name | The name of the AMI that was provided during image creation. |
+| creationdate | The date and time the image was created. |
+| architecture | The architecture of the image. |
+| location | The location of the AMI.|
+| type | The type of image.|
+| ispublic | Indicates whether the image has public launch permissions. |
+| platform | This value is set to `windows` for Windows AMIs; otherwise, it is blank. |
+| usageoperation | The operation of the Amazon EC2 instance and the billing code that is associated with the AMI.  |
+| state | The current state of the AMI.|
+| description | The description of the AMI that was provided during image creation.|
+| enasupport | Specifies whether enhanced networking with ENA is enabled.|
+| hypervisor | The hypervisor type of the image.|
+| rootdevicename | The device name of the root device volume (for example, `/dev/sda1` ). |
+| rootdevicetype | The type of root device used by the AMI. |
+| virtualizationtype | The type of virtualization of the AMI. |
+| bootmode | The boot mode of the image. |
+| region | The region of the image. |
+
+
+[Link to API Documentation](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_Image.html) of EC2 Images
+
+### Relationships
+
+- AWS EC2 Images (AMIs) are a resource under the AWS Account.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(EC2Image)
+        ```
+
+## EC2ReservedInstance
+
+Representation of an AWS [EC2 Reserved Instance](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-reserved-instances.html).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The ID of the Reserved Instance.|
+| availabilityzone | The Availability Zone in which the Reserved Instance can be used. |
+| duration | The duration of the Reserved Instance, in seconds. |
+| end | The time when the Reserved Instance expires. |
+| start | The date and time the Reserved Instance started.|
+| count | The number of reservations purchased.|
+| type | The instance type on which the Reserved Instance can be used. |
+| productdescription | The Reserved Instance product platform description. |
+| state | The state of the Reserved Instance purchase.  |
+| currencycode | The currency of the Reserved Instance. It's specified using ISO 4217 standard currency codes.|
+| instancetenancy | The tenancy of the instance.|
+| offeringclass | The offering class of the Reserved Instance.|
+| offeringtype | The Reserved Instance offering type.|
+| scope | The scope of the Reserved Instance.|
+| fixedprice | The purchase price of the Reserved Instance. |
+| region | The region of the reserved instance. |
+
+### Relationships
+
+- AWS EC2 Reserved Instances are a resource under the AWS Account.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(EC2ReservedInstance)
+        ```
+
+## SecretsManagerSecret
+
+Representation of an AWS [Secrets Manager Secret](https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_SecretListEntry.html)
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The arn of the secret. |
+| created\_date | The date and time when a secret was created. |
+| deleted\_date | The date and time the deletion of the secret occurred. Not present on active secrets. The secret can be recovered until the number of days in the recovery window has passed, as specified in the RecoveryWindowInDays parameter of the DeleteSecret operation. |
+| description | The user-provided description of the secret. |
+| kms\_key\_id | The ARN or alias of the AWS KMS customer master key (CMK) used to encrypt the SecretString and SecretBinary fields in each version of the secret. If you don't provide a key, then Secrets Manager defaults to encrypting the secret fields with the default KMS CMK, the key named awssecretsmanager, for this account. |
+| last\_accessed\_date | The last date that this secret was accessed. This value is truncated to midnight of the date and therefore shows only the date, not the time. |
+| last\_changed\_date | The last date and time that this secret was modified in any way. |
+| last\_rotated\_date | The most recent date and time that the Secrets Manager rotation process was successfully completed. This value is null if the secret hasn't ever rotated. |
+| name | The friendly name of the secret. You can use forward slashes in the name to represent a path hierarchy. For example, /prod/databases/dbserver1 could represent the secret for a server named dbserver1 in the folder databases in the folder prod. |
+| owning\_service | Returns the name of the service that created the secret. |
+| primary\_region | The Region where Secrets Manager originated the secret. |
+| rotation\_enabled | Indicates whether automatic, scheduled rotation is enabled for this secret. |
+| rotation\_lambda\_arn | The ARN of an AWS Lambda function invoked by Secrets Manager to rotate and expire the secret either automatically per the schedule or manually by a call to RotateSecret. |
+| rotation\_rules\_automatically\_after\_days | Specifies the number of days between automatic scheduled rotations of the secret. |
+
+### Relationships
+
+- AWS Secrets Manager Secrets are a resource under the AWS Account.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(SecretsManagerSecret)
+
+## EBSVolume
+
+Representation of an AWS [EBS Volume](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-volumes.html).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The ID of the EBS Volume.|
+| availabilityzone | The Availability Zone for the volume. |
+| createtime | The time stamp when volume creation was initiated. |
+| encrypted | Indicates whether the volume is encrypted. |
+| size | The size of the volume, in GiBs.|
+| state | The volume state.|
+| outpostarn | The Amazon Resource Name (ARN) of the Outpost. |
+| snapshotid | The snapshot ID. |
+| iops | The number of I/O operations per second (IOPS).  |
+| type | The volume type.|
+| fastrestored | Indicates whether the volume was created using fast snapshot restore.|
+| multiattachenabled |Indicates whether Amazon EBS Multi-Attach is enabled.|
+| throughput | The throughput that the volume supports, in MiB/s.|
+| kmskeyid | The Amazon Resource Name (ARN) of the AWS Key Management Service (AWS KMS) customer master key (CMK) that was used to protect the volume encryption key for the volume.|
+| deleteontermination | Indicates whether the volume is deleted on instance termination. |
+| region | The region of the volume. |
+
+### Relationships
+
+- AWS EBS Volumes are a resource under the AWS Account.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(EBSVolume)
+        ```
+
+- AWS EBS Snapshots are created using EBS Volumes
+
+        ```
+        (EBSSnapshot)-[CREATED_FROM]->(EBSVolume)
+        ```
+
+- AWS EBS Volumes are attached to an EC2 Instance
+
+        ```
+        (EBSVolume)-[ATTACHED_TO]->(EC2Instance)
+        ```
+
+## EBSSnapshot
+
+Representation of an AWS [EBS Snapshot](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSSnapshots.html).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The ID of the EBS Snapshot.|
+| description | The description of the snapshot. |
+| progress | The progress of the snapshot, as a percentage. |
+| encrypted |Indicates whether the snapshot is encrypted. |
+| starttime | The time stamp when the snapshot was initiated.|
+| state | The snapshot state.|
+| statemessage | Encrypted Amazon EBS snapshots are copied asynchronously. If a snapshot copy operation fails (for example, if the proper AWS Key Management Service (AWS KMS) permissions are not obtained) this field displays error state details to help you diagnose why the error occurred. This parameter is only returned by DescribeSnapshots .|
+| volumeid | The volume ID. |
+| volumesize | The size of the volume, in GiB.|
+| outpostarn | The ARN of the AWS Outpost on which the snapshot is stored. |
+| dataencryptionkeyid | The data encryption key identifier for the snapshot.|
+| kmskeyid | The Amazon Resource Name (ARN) of the AWS Key Management Service (AWS KMS) customer master key (CMK) that was used to protect the volume encryption key for the parent volume.|
+| region | The region of the snapshot. |
+
+### Relationships
+
+- AWS EBS Snapshots are a resource under the AWS Account.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(EBSSnapshot)
+        ```
+
+- AWS EBS Snapshots are created using EBS Volumes
+
+        ```
+        (EBSSnapshot)-[CREATED_FROM]->(EBSVolume)
+        ```
+
+## SQSQueue
+
+Representation of an AWS [SQS Queue](https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_GetQueueAttributes.html)
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The arn of the sqs queue. |
+| created\_timestamp | The time when the queue was created in seconds |
+| delay\_seconds | The default delay on the queue in seconds. |
+| last\_modified\_timestamp | The time when the queue was last changed in seconds. |
+| maximum\_message\_size | The limit of how many bytes a message can contain before Amazon SQS rejects it. |
+| message\_retention\_period | he length of time, in seconds, for which Amazon SQS retains a message. |
+| policy | The IAM policy of the queue. |
+| arn | The arn of the sqs queue. |
+| receive\_message\_wait\_time\_seconds | The length of time, in seconds, for which the ReceiveMessage action waits for a message to arrive. |
+| redrive\_policy\_dead\_letter\_target\_arn | The Amazon Resource Name (ARN) of the dead-letter queue to which Amazon SQS moves messages after the value of maxReceiveCount is exceeded. |
+| redrive\_policy\_max\_receive\_count | The number of times a message is delivered to the source queue before being moved to the dead-letter queue. When the ReceiveCount for a message exceeds the maxReceiveCount for a queue, Amazon SQS moves the message to the dead-letter-queue. |
+| visibility\_timeout | The visibility timeout for the queue. |
+| kms\_master\_key\_id | The ID of an AWS managed customer master key (CMK) for Amazon SQS or a custom CMK. |
+| kms\_data\_key\_reuse\_period\_seconds | The length of time, in seconds, for which Amazon SQS can reuse a data key to encrypt or decrypt messages before calling AWS KMS again. |
+| fifo\_queue | Whether or not the queue is FIFO. |
+| content\_based\_deduplication | Whether or not content-based deduplication is enabled for the queue. |
+| deduplication\_scope | Specifies whether message deduplication occurs at the message group or queue level. |
+| fifo\_throughput\_limit | Specifies whether the FIFO queue throughput quota applies to the entire queue or per message group. |
+
+### Relationships
+
+- AWS SQS Queues are a resource under the AWS Account.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(SQSQueue)
+        ```
+
+- AWS SQS Queues can have other SQS Queues configured as dead letter queues
+
+        ```
+        (SQSQueue)-[HAS_DEADLETTER_QUEUE]->(SQSQueue)
         ```

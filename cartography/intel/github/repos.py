@@ -250,18 +250,20 @@ def _transform_python_requirements(req_file_contents: Dict, repo_url: str, out_r
 
         parsed_list = []
         for line in text_contents.split("\n"):
+            # Remove trailing comments and extra whitespace
+            stripped_line = line.partition('#')[0].strip()
+            if stripped_line == '':
+                continue
             try:
-                # Remove trailing comments and extra whitespace
-                line = line.partition('#')[0].strip()
-                req = Requirement(line)
-                parsed_list.append(req)
-            except InvalidRequirement as e:
+                req = Requirement(stripped_line)
+            except InvalidRequirement:
+                # INFO and not WARN/ERROR as we intentionally don't support all ways to specify Python requirements
                 logger.info(
-                    f"Failed to parse line \"{line}\" in repo {repo_url}'s requirements.txt; skipping line. "
-                    f"Details: {e}. This is probably ok since we don't support all ways to specify Python "
-                    f"requirements.",
+                    f"Failed to parse line \"{line}\" in repo {repo_url}'s requirements.txt; skipping line.",
+                    exc_info=True,
                 )
                 continue
+            parsed_list.append(req)
 
         for req in parsed_list:
             pinned_version = None
