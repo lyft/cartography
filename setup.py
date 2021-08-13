@@ -51,7 +51,7 @@ setup(
         "azure-mgmt-cosmosdb>=6.0.0",
         "msrestazure >= 0.6.4",
         "azure-mgmt-storage>=16.0.0",
-        "azure-mgmt-sql==1.0.0",
+        "azure-mgmt-sql<=1.0.0",
         "azure-identity>=1.5.0",
     ],
     extras_require={
