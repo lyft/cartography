@@ -70,6 +70,7 @@ def get_policy(bucket: Dict, client: botocore.client.BaseClient) -> str:
     """
     Gets the S3 bucket policy. Returns policy string or None if no policy
     """
+    policy = None
     try:
         policy = client.get_bucket_policy(Bucket=bucket['Name'])
     except ClientError as e:
@@ -80,6 +81,10 @@ def get_policy(bucket: Dict, client: botocore.client.BaseClient) -> str:
             policy = None
         else:
             raise
+    except Exception as e:
+        if "Could not connect to the endpoint URL" in e.args[0]:
+            logger.warning(
+                "Failed to retrieve S3 bucket {} Policy - Could not connect to the endpoint URL".format(bucket['Name']))
     return policy
 
 
@@ -88,6 +93,7 @@ def get_acl(bucket: Dict, client: botocore.client.BaseClient) -> Optional[str]:
     """
     Gets the S3 bucket ACL. Returns ACL string
     """
+    acl = None
     try:
         acl = client.get_bucket_acl(Bucket=bucket['Name'])
     except ClientError as e:
@@ -95,6 +101,10 @@ def get_acl(bucket: Dict, client: botocore.client.BaseClient) -> Optional[str]:
             return None
         else:
             raise
+    except Exception as e:
+        if "Could not connect to the endpoint URL" in e.args[0]:
+            logger.warning(
+                "Failed to retrieve S3 bucket {} ACL - Could not connect to the endpoint URL".format(bucket['Name']))
     return acl
 
 
@@ -103,6 +113,7 @@ def get_encryption(bucket: Dict, client: botocore.client.BaseClient) -> Optional
     """
     Gets the S3 bucket default encryption configuration. Returns encryption configuration or None if not enabled
     """
+    encryption = None
     try:
         encryption = client.get_bucket_encryption(Bucket=bucket['Name'])
     except ClientError as e:
@@ -112,6 +123,10 @@ def get_encryption(bucket: Dict, client: botocore.client.BaseClient) -> Optional
             return None
         else:
             raise
+    except Exception as e:
+        if "Could not connect to the endpoint URL" in e.args[0]:
+            logger.warning(
+                "Failed to retrieve S3 bucket {} Policy - Could not connect to the endpoint URL".format(bucket['Name']))
     return encryption
 
 
