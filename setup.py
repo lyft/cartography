@@ -1,7 +1,7 @@
 from setuptools import find_packages
 from setuptools import setup
 
-__version__ = '0.42.0'
+__version__ = '0.42.1'
 
 
 setup(
@@ -43,7 +43,6 @@ setup(
         "packaging",
         "cryptography<3.4,>=3.2",
         "python-digitalocean>=1.16.0",
-        "PyJWT>=2.1.0",
         "adal>=1.2.4",
         "azure-cli-core>=2.12.0",
         "azure-mgmt-compute>=5.0.0",
