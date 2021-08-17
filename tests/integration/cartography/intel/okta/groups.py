@@ -26,5 +26,5 @@ def test_cleanup_okta_groups(neo4j_session):
     # Assert 2: the group was cleaned up
     expected_nodes = set()
     nodes = neo4j_session.run("MATCH (g:OktaGroup) RETURN g.id")
-    actual_nodes = set([(n['g.id']) for n in nodes])
+    actual_nodes = {(n['g.id']) for n in nodes}
     assert actual_nodes == expected_nodes
