@@ -84,7 +84,8 @@ def get_policy(bucket: Dict, client: botocore.client.BaseClient) -> str:
     except Exception as e:
         if "Could not connect to the endpoint URL" in e.args[0]:
             logger.warning(
-                "Failed to retrieve S3 bucket {} Policy - Could not connect to the endpoint URL".format(bucket['Name']))
+                "Failed to retrieve S3 bucket {} Policy - Could not connect to the endpoint URL".format(bucket['Name']),
+            )
     return policy
 
 
@@ -104,7 +105,8 @@ def get_acl(bucket: Dict, client: botocore.client.BaseClient) -> Optional[str]:
     except Exception as e:
         if "Could not connect to the endpoint URL" in e.args[0]:
             logger.warning(
-                "Failed to retrieve S3 bucket {} ACL - Could not connect to the endpoint URL".format(bucket['Name']))
+                "Failed to retrieve S3 bucket {} ACL - Could not connect to the endpoint URL".format(bucket['Name']),
+            )
     return acl
 
 
@@ -126,7 +128,8 @@ def get_encryption(bucket: Dict, client: botocore.client.BaseClient) -> Optional
     except Exception as e:
         if "Could not connect to the endpoint URL" in e.args[0]:
             logger.warning(
-                "Failed to retrieve S3 bucket {} Policy - Could not connect to the endpoint URL".format(bucket['Name']))
+                "Failed to retrieve S3 bucket {} Policy - Could not connect to the endpoint URL".format(bucket['Name']),
+            )
     return encryption
 
 
