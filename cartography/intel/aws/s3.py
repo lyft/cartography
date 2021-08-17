@@ -70,7 +70,7 @@ def get_policy(bucket: Dict, client: botocore.client.BaseClient) -> str:
     """
     Gets the S3 bucket policy. Returns policy string or None if no policy
     """
-    policy = None
+    policy = ""
     try:
         policy = client.get_bucket_policy(Bucket=bucket['Name'])
     except ClientError as e:
@@ -94,7 +94,7 @@ def get_acl(bucket: Dict, client: botocore.client.BaseClient) -> Optional[str]:
     """
     Gets the S3 bucket ACL. Returns ACL string
     """
-    acl = None
+    acl = ""
     try:
         acl = client.get_bucket_acl(Bucket=bucket['Name'])
     except ClientError as e:
@@ -115,7 +115,7 @@ def get_encryption(bucket: Dict, client: botocore.client.BaseClient) -> Optional
     """
     Gets the S3 bucket default encryption configuration. Returns encryption configuration or None if not enabled
     """
-    encryption = None
+    encryption = ""
     try:
         encryption = client.get_bucket_encryption(Bucket=bucket['Name'])
     except ClientError as e:
