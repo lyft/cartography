@@ -28,8 +28,12 @@ def _cleanup_okta_organizations(neo4j_session: neo4j.Session, common_job_paramet
     :param common_job_parameters: Parameters to carry to the cleanup job
     :return: Nothing
     """
-
     run_cleanup_job('okta_import_cleanup.json', neo4j_session, common_job_parameters)
+    cleanup_okta_groups(neo4j_session, common_job_parameters)
+
+
+def cleanup_okta_groups(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('okta_groups_cleanup.json', neo4j_session, common_job_parameters)
 
 
 @timeit
