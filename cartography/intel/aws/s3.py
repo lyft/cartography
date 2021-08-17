@@ -76,9 +76,9 @@ def get_policy(bucket: Dict, client: botocore.client.BaseClient) -> str:
     except ClientError as e:
         # no policy is defined for this bucket
         if "NoSuchBucketPolicy" in e.args[0]:
-            policy = None
+            pass
         elif _is_common_exception(e, bucket):
-            policy = None
+            pass
         else:
             raise
     except Exception as e:
@@ -99,7 +99,7 @@ def get_acl(bucket: Dict, client: botocore.client.BaseClient) -> Optional[str]:
         acl = client.get_bucket_acl(Bucket=bucket['Name'])
     except ClientError as e:
         if _is_common_exception(e, bucket):
-            return None
+            pass
         else:
             raise
     except Exception as e:
@@ -120,9 +120,9 @@ def get_encryption(bucket: Dict, client: botocore.client.BaseClient) -> Optional
         encryption = client.get_bucket_encryption(Bucket=bucket['Name'])
     except ClientError as e:
         if "ServerSideEncryptionConfigurationNotFoundError" in e.args[0]:
-            return None
+            pass
         elif _is_common_exception(e, bucket):
-            return None
+            pass
         else:
             raise
     except Exception as e:
