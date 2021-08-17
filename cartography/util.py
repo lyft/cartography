@@ -1,6 +1,8 @@
 import logging
 import sys
 from functools import wraps
+from typing import Dict
+from typing import Optional
 
 import botocore
 
@@ -15,22 +17,22 @@ else:
 logger = logging.getLogger(__name__)
 
 
-def run_analysis_job(filename, neo4j_session, common_job_parameters):
+def run_analysis_job(filename, neo4j_session, common_job_parameters, package='cartography.data.jobs.analysis'):
     GraphJob.run_from_json(
         neo4j_session,
         read_text(
-            'cartography.data.jobs.analysis',
+            package,
             filename,
         ),
         common_job_parameters,
     )
 
 
-def run_cleanup_job(filename, neo4j_session, common_job_parameters):
+def run_cleanup_job(filename, neo4j_session, common_job_parameters, package='cartography.data.jobs.cleanup'):
     GraphJob.run_from_json(
         neo4j_session,
         read_text(
-            'cartography.data.jobs.cleanup',
+            package,
             filename,
         ),
         common_job_parameters,
@@ -87,3 +89,27 @@ def aws_handle_regions(func):
             else:
                 raise
     return inner_function
+
+
+def dict_value_to_str(obj: Dict, key: str) -> Optional[str]:
+    """
+    Convert the value referenced by the key in the dict to a string, if it exists, and return it. If it doesn't exist,
+    return None.
+    """
+    value = obj.get(key)
+    if value is not None:
+        return str(value)
+    else:
+        return None
+
+
+def dict_date_to_epoch(obj: Dict, key: str) -> Optional[int]:
+    """
+    Convert the date referenced by the key in the dict to an epoch timestamp, if it exists, and return it. If it
+    doesn't exist, return None.
+    """
+    value = obj.get(key)
+    if value is not None:
+        return int(value.timestamp())
+    else:
+        return None

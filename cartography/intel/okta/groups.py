@@ -77,7 +77,7 @@ def _get_okta_group_members(api_client: ApiClient, group_id: str) -> List[str]:
                 }
                 paged_response = api_client.get_path(f'/{group_id}/users', params)
         except OktaError as okta_error:
-            logger.debug(f"Got error while going through list group member {okta_error}")
+            logger.error(f"Got error while going through list group member {okta_error}")
             break
 
         member_list.append(paged_response.text)
@@ -270,7 +270,7 @@ def sync_okta_groups(
     :param sync_state: Okta sync state
     :return: Nothing
     """
-    logger.debug("Syncing Okta groups")
+    logger.info("Syncing Okta groups")
     api_client = create_api_client(okta_org_id, "/api/v1/groups", okta_api_key)
 
     okta_group_data = _get_okta_groups(api_client)

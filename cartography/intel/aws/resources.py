@@ -16,17 +16,26 @@ from . import redshift
 from . import resourcegroupstaggingapi
 from . import route53
 from . import s3
+from . import secretsmanager
+from . import sqs
 from .ec2.auto_scaling_groups import sync_ec2_auto_scaling_groups
+from .ec2.images import sync_ec2_images
 from .ec2.instances import sync_ec2_instances
 from .ec2.internet_gateways import sync_internet_gateways
 from .ec2.key_pairs import sync_ec2_key_pairs
 from .ec2.load_balancer_v2s import sync_load_balancer_v2s
 from .ec2.load_balancers import sync_load_balancers
 from .ec2.network_interfaces import sync_network_interfaces
+<<<<<<< HEAD
 from .ec2.route_tables import sync_route_tables
+=======
+from .ec2.reserved_instances import sync_ec2_reserved_instances
+>>>>>>> 60fc9f79f6aea5468b525b7ce0d9c3daa1b18d12
 from .ec2.security_groups import sync_ec2_security_groupinfo
+from .ec2.snapshots import sync_ebs_snapshots
 from .ec2.subnets import sync_subnets
 from .ec2.tgw import sync_transit_gateways
+from .ec2.volumes import sync_ebs_volumes
 from .ec2.vpc import sync_vpc
 from .ec2.vpc_peerings import sync_vpc_peerings
 
@@ -35,6 +44,7 @@ RESOURCE_FUNCTIONS: Dict = {
     's3': s3.sync,
     'dynamodb': dynamodb.sync,
     'ec2:autoscalinggroup': sync_ec2_auto_scaling_groups,
+    'ec2:images': sync_ec2_images,
     'ec2:instance': sync_ec2_instances,
     'ec2:keypair': sync_ec2_key_pairs,
     'ec2:load_balancer': sync_load_balancers,
@@ -47,6 +57,9 @@ RESOURCE_FUNCTIONS: Dict = {
     'ec2:vpc': sync_vpc,
     'ec2:vpc_peering': sync_vpc_peerings,
     'ec2:internet_gateway': sync_internet_gateways,
+    'ec2:reserved_instances': sync_ec2_reserved_instances,
+    'ec2:volumes': sync_ebs_volumes,
+    'ec2:snapshots': sync_ebs_snapshots,
     'ecr': ecr.sync,
     'eks': eks.sync,
     'elasticache': elasticache.sync,
@@ -60,4 +73,6 @@ RESOURCE_FUNCTIONS: Dict = {
     'permission_relationships': permission_relationships.sync,
     'resourcegroupstaggingapi': resourcegroupstaggingapi.sync,
     'apigateway': apigateway.sync,
+    'secretsmanager': secretsmanager.sync,
+    'sqs': sqs.sync,
 }
