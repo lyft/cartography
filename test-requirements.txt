@@ -2,3 +2,6 @@ pre-commit
 pytest>=4.6
 pytest-mock
 pytest-cov
+
+types-PyYAML
+types-requests
