@@ -141,6 +141,8 @@
   - [Relationships](#relationships-65)
 - [SQSQueue](#sqsqueue)
   - [Relationships](#relationships-66)
+- [SecurityHub](#securityhub)
+  - [Relationships](#relationships-67)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -181,6 +183,7 @@ Representation of an AWS Account.
                               RDSCluster,
                               RDSInstance,
                               SecretsManagerSecret,
+                              SecurityHub,
                               SQSQueue)
         ```
 
@@ -2538,4 +2541,24 @@ Representation of an AWS [SQS Queue](https://docs.aws.amazon.com/AWSSimpleQueueS
 
         ```
         (SQSQueue)-[HAS_DEADLETTER_QUEUE]->(SQSQueue)
+        ```
+
+## SecurityHub
+
+Representation of the configuration of AWS [Security Hub](https://docs.aws.amazon.com/securityhub/1.0/APIReference/API_DescribeHub.html)
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The arn of the hub resource. |
+| subscribed\_at | The date and time when Security Hub was enabled in the account. |
+| auto\_enable\_controls | Whether to automatically enable new controls when they are added to standards that are enabled. |
+
+### Relationships
+
+- AWS Security Hub nodes are a resource under the AWS Account.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(SecurityHub)
         ```
