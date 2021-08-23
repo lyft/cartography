@@ -15,7 +15,10 @@ logger = logging.getLogger(__name__)
 @timeit
 def get_hub(boto3_session: boto3.session.Session) -> Dict:
     client = boto3_session.client('securityhub')
-    return client.describe_hub()
+    try:
+        return client.describe_hub()
+    except client.exceptions.ResourceNotFoundException:
+        return {}
 
 
 @timeit
