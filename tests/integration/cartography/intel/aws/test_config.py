@@ -121,7 +121,7 @@ def test_load_config_rules(neo4j_session, *args):
         """
         MATCH (n:AWSConfigRule)
         RETURN n.id, n.arn, n.name, n.description, n.source_owner, n.source_identifier,
-        n.source_details, n.region
+        n.source_details, n.created_by, n.region
         """,
     )
     actual_nodes = {
@@ -133,6 +133,7 @@ def test_load_config_rules(neo4j_session, *args):
             n['n.source_owner'],
             n['n.source_identifier'],
             tuple(n['n.source_details']),
+            n['n.created_by'],
             n['n.region'],
         )
         for n in nodes
