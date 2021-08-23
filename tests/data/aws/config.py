@@ -24,10 +24,12 @@ LIST_CONFIG_RULES = [
         'Source': {
             'Owner': 'AWS',
             'SourceIdentifier': 'ALB_HTTP_DROP_INVALID_HEADER_ENABLED',
-            'SourceDetails': {
-                'EventSource': 'aws.config',
-                'MessageType': 'ConfigurationItemChangeNotification',
-            },
+            'SourceDetails': [
+                {
+                    'EventSource': 'aws.config',
+                    'MessageType': 'ConfigurationItemChangeNotification',
+                },
+            ],
         },
         'CreatedBy': 'securityhub.amazonaws.com',
     },
