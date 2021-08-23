@@ -111,7 +111,7 @@ def test_load_config_rules(neo4j_session, *args):
             "Test description",
             "AWS",
             "ALB_HTTP_DROP_INVALID_HEADER_ENABLED",
-            tuple(['{"EventSource": "aws.config", "MessageType": "ConfigurationItemChangeNotification"}']),
+            tuple(["{'EventSource': 'aws.config', 'MessageType': 'ConfigurationItemChangeNotification'}"]),
             "securityhub.amazonaws.com",
             "us-east-1",
         ),
