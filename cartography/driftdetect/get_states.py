@@ -136,7 +136,7 @@ def get_state(session, state):
         values = []
         for field in record.values():
             if isinstance(field, list):
-                s = "|".join(sorted([str(i) for i in field]))
+                s = "|".join(sorted(str(i) for i in field))
                 values.append(s)
             else:
                 values.append(str(field))
