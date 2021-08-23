@@ -74,7 +74,7 @@ def test_load_delivery_channels(neo4j_session, *args):
 
     nodes = neo4j_session.run(
         """
-        MATCH (n:AWSConfigurationRecorder)
+        MATCH (n:AWSConfigDeliveryChannel)
         RETURN n.id, n.name, n.s3_bucket_name, n.region
         """,
     )
@@ -119,7 +119,7 @@ def test_load_config_rules(neo4j_session, *args):
 
     nodes = neo4j_session.run(
         """
-        MATCH (n:AWSConfigurationRecorder)
+        MATCH (n:AWSConfigRule)
         RETURN n.id, n.arn, n.name, n.description, n.source_owner, n.source_identifier,
         n.source_details, n.region
         """,
