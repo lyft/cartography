@@ -131,8 +131,8 @@ def test_load_config_rules(neo4j_session, *args):
             n['n.name'],
             n['n.description'],
             n['n.source_owner'],
-            tuple(n['n.source_identifier']),
-            n['n.source_details'],
+            n['n.source_identifier'],
+            tuple(n['n.source_details']),
             n['n.region'],
         )
         for n in nodes
