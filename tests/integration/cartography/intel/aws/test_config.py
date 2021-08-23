@@ -111,7 +111,7 @@ def test_load_config_rules(neo4j_session, *args):
             "Test description",
             "AWS",
             "ALB_HTTP_DROP_INVALID_HEADER_ENABLED",
-            '{"EventSource": "aws.config", "MessageType": "ConfigurationItemChangeNotification"}',
+            tuple(['{"EventSource": "aws.config", "MessageType": "ConfigurationItemChangeNotification"}']),
             "securityhub.amazonaws.com",
             "us-east-1",
         ),
@@ -131,7 +131,7 @@ def test_load_config_rules(neo4j_session, *args):
             n['n.name'],
             n['n.description'],
             n['n.source_owner'],
-            n['n.source_identifier'],
+            tuple(n['n.source_identifier']),
             n['n.source_details'],
             n['n.region'],
         )
