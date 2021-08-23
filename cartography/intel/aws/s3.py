@@ -12,6 +12,7 @@ import boto3
 import botocore
 import neo4j
 from botocore.exceptions import ClientError
+from botocore.exceptions import EndpointConnectionError
 from policyuniverse.policy import Policy
 
 from cartography.util import run_analysis_job
@@ -66,68 +67,85 @@ def get_s3_bucket_details(
 
 
 @timeit
-def get_policy(bucket: Dict, client: botocore.client.BaseClient) -> str:
+def get_policy(bucket: Dict, client: botocore.client.BaseClient) -> Optional[Dict]:
     """
-    Gets the S3 bucket policy. Returns policy string or None if no policy
+    Gets the S3 bucket policy.
     """
+    policy = None
     try:
         policy = client.get_bucket_policy(Bucket=bucket['Name'])
     except ClientError as e:
-        # no policy is defined for this bucket
-        if "NoSuchBucketPolicy" in e.args[0]:
-            policy = None
-        elif _is_common_exception(e, bucket):
-            policy = None
+        if _is_common_exception(e, bucket):
+            pass
         else:
             raise
+    except EndpointConnectionError:
+        logger.warning(
+            f"Failed to retrieve S3 bucket policy for {bucket['Name']} - Could not connect to the endpoint URL",
+        )
     return policy
 
 
 @timeit
-def get_acl(bucket: Dict, client: botocore.client.BaseClient) -> Optional[str]:
+def get_acl(bucket: Dict, client: botocore.client.BaseClient) -> Optional[Dict]:
     """
-    Gets the S3 bucket ACL. Returns ACL string
+    Gets the S3 bucket ACL.
     """
+    acl = None
     try:
         acl = client.get_bucket_acl(Bucket=bucket['Name'])
     except ClientError as e:
         if _is_common_exception(e, bucket):
-            return None
+            pass
         else:
             raise
+    except EndpointConnectionError:
+        logger.warning(
+            f"Failed to retrieve S3 bucket ACL for {bucket['Name']} - Could not connect to the endpoint URL",
+        )
     return acl
 
 
 @timeit
-def get_encryption(bucket: Dict, client: botocore.client.BaseClient) -> Optional[str]:
+def get_encryption(bucket: Dict, client: botocore.client.BaseClient) -> Optional[Dict]:
     """
-    Gets the S3 bucket default encryption configuration. Returns encryption configuration or None if not enabled
+    Gets the S3 bucket default encryption configuration.
     """
+    encryption = None
     try:
         encryption = client.get_bucket_encryption(Bucket=bucket['Name'])
     except ClientError as e:
-        if "ServerSideEncryptionConfigurationNotFoundError" in e.args[0]:
-            return None
-        elif _is_common_exception(e, bucket):
-            return None
+        if _is_common_exception(e, bucket):
+            pass
         else:
             raise
+    except EndpointConnectionError:
+        logger.warning(
+            f"Failed to retrieve S3 bucket encryption for {bucket['Name']} - Could not connect to the endpoint URL",
+        )
     return encryption
 
 
 @timeit
 def _is_common_exception(e: Exception, bucket: Dict) -> bool:
+    error_msg = "Failed to retrieve S3 bucket detail"
     if "AccessDenied" in e.args[0]:
-        logger.warning("Failed to retrieve S3 bucket {} ACL - Access Denied".format(bucket['Name']))
+        logger.warning(f"{error_msg} for {bucket['Name']} - Access Denied")
         return True
     elif "NoSuchBucket" in e.args[0]:
-        logger.warning("Failed to retrieve S3 bucket {} ACL - No Such Bucket".format(bucket['Name']))
+        logger.warning(f"{error_msg} for {bucket['Name']} - No Such Bucket")
         return True
     elif "AllAccessDisabled" in e.args[0]:
-        logger.warning("Failed to retrieve S3 bucket {} ACL - Bucket is disabled".format(bucket['Name']))
+        logger.warning(f"{error_msg} for {bucket['Name']} - Bucket is disabled")
         return True
     elif "EndpointConnectionError" in e.args[0]:
-        logger.warning("Failed to retrieve S3 bucket {} ACL - EndpointConnectionError".format(bucket['Name']))
+        logger.warning(f"{error_msg} for {bucket['Name']} - EndpointConnectionError")
+        return True
+    elif "NoSuchBucketPolicy" in e.args[0]:
+        logger.warning(f"{error_msg} for {bucket['Name']} - NoSuchBucketPolicy")
+        return True
+    elif "ServerSideEncryptionConfigurationNotFoundError" in e.args[0]:
+        logger.warning(f"{error_msg} for {bucket['Name']} - ServerSideEncryptionConfigurationNotFoundError")
         return True
     return False
 
