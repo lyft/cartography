@@ -143,6 +143,12 @@
   - [Relationships](#relationships-66)
 - [SecurityHub](#securityhub)
   - [Relationships](#relationships-67)
+- [AWSConfigurationRecorder](#awsconfigurationrecorder)
+  - [Relationships](#relationships-68)
+- [AWSConfigDeliveryChannel](#awsconfigdeliverychannel)
+  - [Relationships](#relationships-69)
+- [AWSConfigRule](#awsconfigrule)
+  - [Relationships](#relationships-70)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -2561,4 +2567,85 @@ Representation of the configuration of AWS [Security Hub](https://docs.aws.amazo
 
         ```
         (AWSAccount)-[RESOURCE]->(SecurityHub)
+
+## AWSConfigurationRecorder
+
+Representation of an AWS [Config Configuration Recorder](https://docs.aws.amazon.com/config/latest/APIReference/API_ConfigurationRecorder.html)
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | A combination of name:account\_id:region |
+| name | The name of the recorder. |
+| role\_arn | Amazon Resource Name (ARN) of the IAM role used to describe the AWS resources associated with the account. |
+| recording\_group\_all\_supported | Specifies whether AWS Config records configuration changes for every supported type of regional resource. |
+| recording\_group\_include\_global\_resource\_types | Specifies whether AWS Config includes all supported types of global resources (for example, IAM resources) with the resources that it records. |
+| recording\_group\_resource\_types | A comma-separated list that specifies the types of AWS resources for which AWS Config records configuration changes (for example, AWS::EC2::Instance or AWS::CloudTrail::Trail). |
+| region | The region of the configuration recorder. |
+
+### Relationships
+
+- AWS Configuration Recorders are a resource under the AWS Account.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(AWSConfigurationRecorder)
+        ```
+
+## AWSConfigDeliveryChannel
+
+Representation of an AWS [Config Delivery Channel](https://docs.aws.amazon.com/config/latest/APIReference/API_DeliveryChannel.html)
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | A combination of name:account\_id:region |
+| name | The name of the delivery channel. |
+| s3\_bucket\_name | The name of the Amazon S3 bucket to which AWS Config delivers configuration snapshots and configuration history files. |
+| s3\_key\_prefix | The prefix for the specified Amazon S3 bucket. |
+| s3\_kms\_key\_arn | The Amazon Resource Name (ARN) of the AWS Key Management Service (KMS) customer managed key (CMK) used to encrypt objects delivered by AWS Config. Must belong to the same Region as the destination S3 bucket. |
+| sns\_topic\_arn | The Amazon Resource Name (ARN) of the Amazon SNS topic to which AWS Config sends notifications about configuration changes. |
+| config\_snapshot\_delivery\_properties\_delivery\_frequency | The frequency with which AWS Config delivers configuration snapshots. |
+| region | The region of the delivery channel. |
+
+### Relationships
+
+- AWS Config Delivery Channels are a resource under the AWS Account.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(AWSConfigDeliveryChannel)
+        ```
+
+## AWSConfigRule
+
+Representation of an AWS [Config Rule](https://docs.aws.amazon.com/config/latest/APIReference/API_DeliveryChannel.html)
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The ARN of the config rule. |
+| name | The name of the delivery channel. |
+| description | The description that you provide for the AWS Config rule. |
+| arn | The ARN of the config rule. |
+| rule\_id | The ID of the AWS Config rule. |
+| scope\_compliance\_resource\_types | The resource types of only those AWS resources that you want to trigger an evaluation for the rule. You can only specify one type if you also specify a resource ID for ComplianceResourceId. |
+| scope\_tag\_key | The tag key that is applied to only those AWS resources that you want to trigger an evaluation for the rule. |
+| scope\_tag\_value | The tag value applied to only those AWS resources that you want to trigger an evaluation for the rule. If you specify a value for TagValue, you must also specify a value for TagKey. |
+| scope\_tag\_compliance\_resource\_id | The resource types of only those AWS resources that you want to trigger an evaluation for the rule. You can only specify one type if you also specify a resource ID for ComplianceResourceId. |
+| source\_owner | Indicates whether AWS or the customer owns and manages the AWS Config rule. |
+| source\_identifier | For AWS Config managed rules, a predefined identifier from a list. For example, IAM\_PASSWORD\_POLICY is a managed rule. |
+| source\_details | Provides the source and type of the event that causes AWS Config to evaluate your AWS resources. |
+| input\_parameters | A string, in JSON format, that is passed to the AWS Config rule Lambda function. |
+| maximum\_execution\_frequency | The maximum frequency with which AWS Config runs evaluations for a rule. |
+| created\_by | Service principal name of the service that created the rule. |
+| region | The region of the delivery channel. |
+
+### Relationships
+
+- AWS Config Rules are a resource under the AWS Account.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(AWSConfigRule)
         ```

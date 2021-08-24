@@ -1,3 +1,6 @@
+CREATE INDEX ON :AWSConfigurationRecorder(id);
+CREATE INDEX ON :AWSConfigDeliveryChannel(id);
+CREATE INDEX ON :AWSConfigRule(id);
 CREATE INDEX ON :APIGatewayClientCertificate(id);
 CREATE INDEX ON :APIGatewayRestAPI(id);
 CREATE INDEX ON :APIGatewayResource(id);

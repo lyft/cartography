@@ -1,6 +1,7 @@
 from typing import Dict
 
 from . import apigateway
+from . import config
 from . import dynamodb
 from . import ecr
 from . import eks
@@ -72,4 +73,5 @@ RESOURCE_FUNCTIONS: Dict = {
     'secretsmanager': secretsmanager.sync,
     'securityhub': securityhub.sync,
     'sqs': sqs.sync,
+    'config': config.sync,
 }
