@@ -1,9 +1,14 @@
 import json
 import logging
+from typing import Dict
 
 import neo4j
 
+from cartography.stats import get_stats_client
+
+
 logger = logging.getLogger(__name__)
+stat_handler = get_stats_client(__name__)
 
 
 class GraphStatementJSONEncoder(json.JSONEncoder):
@@ -24,14 +29,20 @@ class GraphStatement:
     A statement that will run against the cartography graph. Statements can query or update the graph.
     """
 
-    def __init__(self, query, parameters=None, iterative=False, iterationsize=0):
+    def __init__(
+        self, query: str, parameters: Dict = None, iterative: bool = False, iterationsize: int = 0,
+        parent_job_name: str = None, parent_job_sequence_num: int = None,
+    ):
         self.query = query
-        self.parameters = parameters
+        self.parameters: Dict = parameters
         if not parameters:
             self.parameters = {}
         self.iterative = iterative
         self.iterationsize = iterationsize
         self.parameters["LIMIT_SIZE"] = self.iterationsize
+
+        self.parent_job_name = parent_job_name if parent_job_name else None
+        self.parent_job_sequence_num = parent_job_sequence_num if parent_job_sequence_num else None
 
     def merge_parameters(self, parameters):
         """
@@ -41,14 +52,15 @@ class GraphStatement:
         tmp.update(parameters)
         self.parameters = tmp
 
-    def run(self, session) -> None:
+    def run(self, session: neo4j.Session) -> None:
         """
         Run the statement. This will execute the query against the graph.
         """
         if self.iterative:
-            self._run_iterative()
+            self._run_iterative(session)
         else:
-            session.write_transaction(self._run)
+            session.write_transaction(self._run_noniterative).consume()
+        logger.info(f"Completed {self.parent_job_name} statement #{self.parent_job_sequence_num}")
 
     def as_dict(self):
         """
@@ -61,13 +73,32 @@ class GraphStatement:
             "iterationsize": self.iterationsize,
         }
 
-    def _run(self, tx: neo4j.Transaction) -> neo4j.StatementResult:
+    def _run_noniterative(self, tx: neo4j.Transaction) -> neo4j.StatementResult:
         """
         Non-iterative statement execution.
         """
-        return tx.run(self.query, self.parameters)
+        result: neo4j.StatementResult = tx.run(self.query, self.parameters)
 
-    def _run_iterative(self) -> None:
+        # Handle stats
+        summary: neo4j.BoltStatementResultSummary = result.summary()
+        objects_changed: int = (
+            summary.counters.constraints_added +
+            summary.counters.constraints_removed +
+            summary.counters.indexes_added +
+            summary.counters.indexes_removed +
+            summary.counters.labels_added +
+            summary.counters.labels_removed +
+            summary.counters.nodes_created +
+            summary.counters.nodes_deleted +
+            summary.counters.properties_set +
+            summary.counters.relationships_created +
+            summary.counters.relationships_deleted
+        )
+        stat_handler.incr(f'{self.parent_job_name}-{self.parent_job_sequence_num}-objects_changed', objects_changed)
+
+        return result
+
+    def _run_iterative(self, session: neo4j.Session) -> None:
         """
         Iterative statement execution.
 
@@ -76,20 +107,17 @@ class GraphStatement:
         self.parameters["LIMIT_SIZE"] = self.iterationsize
 
         while True:
-            result: neo4j.StatementResult = session.write_transaction(self._run)
-            record: neo4j.Record = result.single()
+            result: neo4j.StatementResult = session.write_transaction(self._run_noniterative)
 
-            # TODO: use the BoltStatementResultSummary object to determine the number of items processed
-            total_completed = int(record['TotalCompleted'])
-            logger.debug("Processed %d items", total_completed)
-
-            # Ensure network buffers are cleared
-            result.consume()
-            if total_completed == 0:
+            # Exit if we have finished processing all items
+            if not result.summary().counters.contains_updates():
+                # Ensure network buffers are cleared
+                result.consume()
                 break
+            result.consume()
 
     @classmethod
-    def create_from_json(cls, json_obj):
+    def create_from_json(cls, json_obj: Dict, parent_job_name: str = None, parent_job_sequence_num: int = None):
         """
         Create a statement from a JSON blob.
         """
@@ -98,10 +126,12 @@ class GraphStatement:
             json_obj.get("parameters", {}),
             json_obj.get("iterative", False),
             json_obj.get("iterationsize", 0),
+            parent_job_name,
+            parent_job_sequence_num,
         )
 
     @classmethod
-    def create_from_json_file(cls, file_path):
+    def create_from_json_file(cls, file_path: str):
         """
         Create a statement from a JSON file.
         """
