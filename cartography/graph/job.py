@@ -1,13 +1,14 @@
 import json
 import logging
-import os
 from pathlib import Path
 from typing import Dict
 from typing import List
 
 import neo4j
 
+from cartography.graph.statement import get_job_shortname
 from cartography.graph.statement import GraphStatement
+
 
 logger = logging.getLogger(__name__)
 
@@ -30,9 +31,12 @@ class GraphJob:
     A job that will run against the cartography graph. A job is a sequence of statements which execute sequentially.
     """
 
-    def __init__(self, name: str, statements: List[GraphStatement]):
+    def __init__(self, name: str, statements: List[GraphStatement], short_name: str = None):
+        # E.g. "Okta intel module cleanup"
         self.name = name
         self.statements: List[GraphStatement] = statements
+        # E.g. "okta_import_cleanup"
+        self.short_name = short_name
 
     def merge_parameters(self, parameters: Dict) -> None:
         """
@@ -56,7 +60,8 @@ class GraphJob:
                     e,
                 )
                 raise
-        logger.info(f"Finished job '{self.name}'")
+        log_msg = f"Finished job {self.short_name}" if self.short_name else f"Finished job {self.name}"
+        logger.info(log_msg)
 
     def as_dict(self) -> Dict:
         """
@@ -65,40 +70,43 @@ class GraphJob:
         return {
             "name": self.name,
             "statements": [s.as_dict() for s in self.statements],
+            "short_name": self.short_name,
         }
 
     @classmethod
-    def from_json(cls, blob: str):
+    def from_json(cls, blob: str, short_name: str = None):
         """
         Create a job from a JSON blob.
         """
         data: Dict = json.loads(blob)
         statements = _get_statements_from_json(data)
         name = data["name"]
-        return cls(name, statements)
+        return cls(name, statements, short_name)
 
     @classmethod
-    def from_json_file(cls, file_path: str):
+    def from_json_file(cls, file_path: Path):
         """
         Create a job from a JSON file.
         """
         with open(file_path) as j_file:
             data: Dict = json.load(j_file)
 
-        job_name = os.path.splitext(file_path)[0]
-        statements: List[GraphStatement] = _get_statements_from_json(data, job_name)
+        job_shortname: str = get_job_shortname(file_path)
+        statements: List[GraphStatement] = _get_statements_from_json(data, job_shortname)
         name: str = data["name"]
-        return cls(name, statements)
+        return cls(name, statements, job_shortname)
 
     @classmethod
-    def run_from_json(cls, neo4j_session: neo4j.Session, blob: Dict, parameters: Dict = None) -> None:
+    def run_from_json(
+        cls, neo4j_session: neo4j.Session, blob: str, parameters: Dict = None, short_name: str = None,
+    ) -> None:
         """
         Run a job from a JSON blob. This will deserialize the job and execute all statements sequentially.
         """
         if not parameters:
             parameters = {}
 
-        job: GraphJob = cls.from_json(blob)
+        job: GraphJob = cls.from_json(blob, short_name)
         job.merge_parameters(parameters)
         job.run(neo4j_session)
 
@@ -116,13 +124,13 @@ class GraphJob:
         job.run(neo4j_session)
 
 
-def _get_statements_from_json(blob: Dict, parent_job_name: str = None) -> List[GraphStatement]:
+def _get_statements_from_json(blob: Dict, short_job_name: str = None) -> List[GraphStatement]:
     """
     Deserialize all statements from the JSON blob.
     """
     statements: List[GraphStatement] = []
     for i, statement_data in enumerate(blob["statements"]):
-        statement: GraphStatement = GraphStatement.create_from_json(statement_data, parent_job_name, i)
+        statement: GraphStatement = GraphStatement.create_from_json(statement_data, short_job_name, i)
         statements.append(statement)
 
     return statements

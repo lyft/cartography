@@ -1,6 +1,9 @@
 import json
 import logging
+import os
+from pathlib import Path
 from typing import Dict
+from typing import Union
 
 import neo4j
 
@@ -22,6 +25,12 @@ class GraphStatementJSONEncoder(json.JSONEncoder):
         else:
             # Let the default encoder roll up the exception.
             return json.JSONEncoder.default(self, obj)
+
+
+# TODO move this cartography.util after we move util.run_*_job to cartography.graph.job.
+def get_job_shortname(file_path: Union[Path, str]) -> str:
+    # Return filename without path and extension
+    return os.path.splitext(file_path)[0]
 
 
 class GraphStatement:
@@ -117,7 +126,7 @@ class GraphStatement:
             result.consume()
 
     @classmethod
-    def create_from_json(cls, json_obj: Dict, parent_job_name: str = None, parent_job_sequence_num: int = None):
+    def create_from_json(cls, json_obj: Dict, short_job_name: str = None, job_sequence_num: int = None):
         """
         Create a statement from a JSON blob.
         """
@@ -126,16 +135,16 @@ class GraphStatement:
             json_obj.get("parameters", {}),
             json_obj.get("iterative", False),
             json_obj.get("iterationsize", 0),
-            parent_job_name,
-            parent_job_sequence_num,
+            short_job_name,
+            job_sequence_num,
         )
 
     @classmethod
-    def create_from_json_file(cls, file_path: str):
+    def create_from_json_file(cls, file_path: Path):
         """
         Create a statement from a JSON file.
         """
         with open(file_path) as json_file:
             data = json.load(json_file)
 
-        return cls.create_from_json(data)
+        return cls.create_from_json(data, get_job_shortname(file_path))
