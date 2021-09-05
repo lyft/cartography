@@ -11,15 +11,15 @@ SAMPLE_CLEANUP_JOB = """
 {
   "statements": [
     {
-      "query": "MATCH (:NodeTypeA)-[r:RELATION]->(:NodeTypeB) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE r",
+      "query": "MATCH(:TypeA)-[r:REL]->(:TypeB) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE r",
       "iterative": true,
       "iterationsize": 100
     },{
-      "query": "MATCH (n:NodeTypeA) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n)",
+      "query": "MATCH (n:TypeA) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n)",
       "iterative": true,
       "iterationsize": 100
     },{
-      "query": "MATCH (n:NodeTypeB) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n)",
+      "query": "MATCH (n:TypeB) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n)",
       "iterative": true,
       "iterationsize": 100
     }],
@@ -31,12 +31,12 @@ SAMPLE_JOB_FILENAME = '/path/to/this/cleanupjob/mycleanupjob.json'
 
 
 @mock.patch.object(cartography.util, 'read_text', return_value=SAMPLE_CLEANUP_JOB)
-def test_run_cleanup_job_on_relationships(mock_read_text:mock.MagicMock, neo4j_session):
-    # Arrange: nodes id1 and id2 are connected to each other at time T2 via stale relationship r
+def test_run_cleanup_job_on_RELships(mock_read_text:mock.MagicMock, neo4j_session):
+    # Arrange: nodes id1 and id2 are connected to each other at time T2 via stale RELship r
     neo4j_session.run(
         """
-        MERGE (a:NodeTypeA{id:"id1", lastupdated:{UPDATE_TAG_T2}})-[r:RELATION{lastupdated:{UPDATE_TAG_T1}}]->
-              (b:NodeTypeB{id:"id2", lastupdated:{UPDATE_TAG_T2}})
+        MERGE (a:TypeA{id:"id1", lastupdated:{UPDATE_TAG_T2}})-[r:REL{lastupdated:{UPDATE_TAG_T1}}]->
+              (b:TypeB{id:"id2", lastupdated:{UPDATE_TAG_T2}})
         """,
         UPDATE_TAG_T1=UPDATE_TAG_T1,
         UPDATE_TAG_T2=UPDATE_TAG_T2,
@@ -49,8 +49,8 @@ def test_run_cleanup_job_on_relationships(mock_read_text:mock.MagicMock, neo4j_s
     # Assert 1: Node id1 is no longer attached to Node id2
     nodes = neo4j_session.run(
         """
-        MATCH (a:NodeTypeA)
-        OPTIONAL MATCH (a)-[r:RELATION]->(b:NodeTypeB)
+        MATCH (a:TypeA)
+        OPTIONAL MATCH (a)-[r:REL]->(b:TypeB)
         RETURN a.id, r.lastupdated, b.id
         """,
     )
@@ -63,7 +63,7 @@ def test_run_cleanup_job_on_relationships(mock_read_text:mock.MagicMock, neo4j_s
     # Assert 2: Node id2 still exists
     nodes = neo4j_session.run(
         """
-        MATCH (b:NodeTypeB) RETURN b.id, b.lastupdated
+        MATCH (b:TypeB) RETURN b.id, b.lastupdated
         """,
     )
     actual_nodes = {(n['b.id'], n['b.lastupdated']) for n in nodes}
@@ -79,7 +79,7 @@ def test_run_cleanup_job_on_nodes(mock_read_text: mock.MagicMock, neo4j_session)
     # Arrange: we are now at time T3, and node id1 exists but node id2 no longer exists
     neo4j_session.run(
         """
-        MATCH (a:NodeTypeA{id:"id1"}) SET a.lastupdated={UPDATE_TAG_T3}
+        MATCH (a:TypeA{id:"id1"}) SET a.lastupdated={UPDATE_TAG_T3}
         """,
         UPDATE_TAG_T3=UPDATE_TAG_T3,
     )
