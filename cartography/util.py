@@ -5,6 +5,7 @@ from typing import Dict
 from typing import Optional
 
 import botocore
+import neo4j
 
 from cartography.graph.job import GraphJob
 from cartography.stats import get_stats_client
@@ -28,7 +29,10 @@ def run_analysis_job(filename, neo4j_session, common_job_parameters, package='ca
     )
 
 
-def run_cleanup_job(filename, neo4j_session, common_job_parameters, package='cartography.data.jobs.cleanup'):
+def run_cleanup_job(
+    filename: str, neo4j_session: neo4j.Session, common_job_parameters: Dict,
+    package:str = 'cartography.data.jobs.cleanup',
+) -> None:
     GraphJob.run_from_json(
         neo4j_session,
         read_text(

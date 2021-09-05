@@ -83,7 +83,7 @@ class GraphJob:
         Create a job from a JSON file.
         """
         with open(file_path) as j_file:
-            data = json.load(j_file)
+            data: Dict = json.load(j_file)
 
         job_name = os.path.splitext(file_path)[0]
         statements: List[GraphStatement] = _get_statements_from_json(data, job_name)
