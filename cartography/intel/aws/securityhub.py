@@ -19,6 +19,8 @@ def get_hub(boto3_session: boto3.session.Session) -> Dict:
         return client.describe_hub()
     except client.exceptions.ResourceNotFoundException:
         return {}
+    except client.exceptions.InvalidAccessException:
+        return {}
 
 
 @timeit
