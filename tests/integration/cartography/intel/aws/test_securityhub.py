@@ -6,11 +6,12 @@ TEST_ACCOUNT_ID = '000000000000'
 TEST_UPDATE_TAG = 123456789
 
 
-def test_get_hub(neo4j_session, *args):
+def test_transform_and_load_hub(neo4j_session, *args):
     """
     Ensure that expected hub gets loaded with its key fields.
     """
     data = tests.data.aws.securityhub.GET_HUB
+    cartography.intel.aws.securityhub.transform_hub(data)
     cartography.intel.aws.securityhub.load_hub(
         neo4j_session,
         data,
