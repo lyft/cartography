@@ -25,10 +25,9 @@ def get_hub(boto3_session: boto3.session.Session) -> Dict:
 
 def transform_hub(hub_data: Dict) -> None:
     if 'SubscribedAt' in hub_data and hub_data['SubscribedAt']:
-        subscribed_at = datetime.datetime.strptime(hub_data['SubscribedAt'], "%Y-%m-%dT%H:%M:%S.%fZ")
+        hub_data['SubscribedAt'] = datetime.datetime.strptime(hub_data['SubscribedAt'], "%Y-%m-%dT%H:%M:%S.%fZ")
     else:
-        subscribed_at = None
-    hub_data['SubscribedAt'] = subscribed_at
+        hub_data['SubscribedAt'] = None
 
 
 @timeit
