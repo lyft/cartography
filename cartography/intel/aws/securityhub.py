@@ -65,5 +65,6 @@ def sync(
 ) -> None:
     logger.info("Syncing Security Hub in account '%s'.", current_aws_account_id)
     hub = get_hub(boto3_session)
-    load_hub(neo4j_session, hub, current_aws_account_id, update_tag)
+    if hub:
+        load_hub(neo4j_session, hub, current_aws_account_id, update_tag)
     cleanup_securityhub(neo4j_session, common_job_parameters)
