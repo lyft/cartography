@@ -70,6 +70,8 @@ def sync(
 ) -> None:
     logger.info("Syncing Security Hub in account '%s'.", current_aws_account_id)
     hub = get_hub(boto3_session)
-    transform_hub(hub)
-    load_hub(neo4j_session, hub, current_aws_account_id, update_tag)
-    cleanup_securityhub(neo4j_session, common_job_parameters)
+    if hub:
+        transform_hub(hub)
+        load_hub(neo4j_session, hub, current_aws_account_id, update_tag)
+        # Avoid deleting data if we have a transient API failure
+        cleanup_securityhub(neo4j_session, common_job_parameters)
