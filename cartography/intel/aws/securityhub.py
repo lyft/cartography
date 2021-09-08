@@ -23,6 +23,14 @@ def get_hub(boto3_session: boto3.session.Session) -> Dict:
         return {}
 
 
+def transform_hub(hub_data: Dict):
+    if 'SubscribedAt' in hub_data and data['SubscribedAt']:
+        subscribed_at = datetime.datetime.strptime(data['SubscribedAt'], "%Y-%m-%dT%H:%M:%S.%fZ")
+    else
+        subscribed_at = None
+    hub_data['SubscribedAt'] = subscribed_at
+
+
 @timeit
 def load_hub(
     neo4j_session: neo4j.Session,
@@ -42,9 +50,6 @@ def load_hub(
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {aws_update_tag}
     """
-    subscribed_at = datetime.datetime.strptime(data['SubscribedAt'], "%Y-%m-%dT%H:%M:%S.%fZ")
-    data["SubscribedAt"] = int(subscribed_at.timestamp())
-
     neo4j_session.run(
         ingest_hub,
         Hub=data,
@@ -65,5 +70,6 @@ def sync(
 ) -> None:
     logger.info("Syncing Security Hub in account '%s'.", current_aws_account_id)
     hub = get_hub(boto3_session)
+    transform_hub(hub)
     load_hub(neo4j_session, hub, current_aws_account_id, update_tag)
     cleanup_securityhub(neo4j_session, common_job_parameters)
