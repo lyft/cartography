@@ -100,6 +100,7 @@ def load_sqs_queues(
                 rp = json.loads(redrive_policy)
             except TypeError:
                 rp = {}
+            queue['RedrivePolicy'] = rp
             dead_letter_arn = rp.get('deadLetterTargetArn')
             if dead_letter_arn:
                 dead_letter_queues.append({
