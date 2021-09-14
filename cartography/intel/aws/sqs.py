@@ -1,3 +1,4 @@
+import json
 import logging
 from typing import Any
 from typing import Dict
@@ -93,12 +94,18 @@ def load_sqs_queues(
         queue['name'] = queue['QueueArn'].split(':')[-1]
         queue['CreatedTimestamp'] = int(queue['CreatedTimestamp'])
         queue['LastModifiedTimestamp'] = int(queue['LastModifiedTimestamp'])
-        dead_letter_arn = queue.get('RedrivePolicy', {}).get('deadLetterTargetArn')
-        if dead_letter_arn:
-            dead_letter_queues.append({
-                'arn': queue['QueueArn'],
-                'dead_letter_arn': dead_letter_arn,
-            })
+        redrive_policy = queue.get('RedrivePolicy')
+        if redrive_policy:
+            try:
+                rp = json.loads(redrive_policy)
+            except TypeError:
+                rp = {}
+            dead_letter_arn = rp.get('deadLetterTargetArn')
+            if dead_letter_arn:
+                dead_letter_queues.append({
+                    'arn': queue['QueueArn'],
+                    'dead_letter_arn': dead_letter_arn,
+                })
         queues.append(queue)
 
     neo4j_session.run(
