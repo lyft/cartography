@@ -147,6 +147,9 @@ def _is_common_exception(e: Exception, bucket: Dict) -> bool:
     elif "ServerSideEncryptionConfigurationNotFoundError" in e.args[0]:
         logger.warning(f"{error_msg} for {bucket['Name']} - ServerSideEncryptionConfigurationNotFoundError")
         return True
+    elif "InvalidToken" in e.args[0]:
+        logger.warning(f"{error_msg} for {bucket['Name']} - InvalidToken")
+        return True
     return False
 
 
