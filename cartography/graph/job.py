@@ -79,7 +79,7 @@ class GraphJob:
         Create a job from a JSON blob.
         """
         data: Dict = json.loads(blob)
-        statements = _get_statements_from_json(data)
+        statements = _get_statements_from_json(data, short_name)
         name = data["name"]
         return cls(name, statements, short_name)
 
@@ -118,7 +118,7 @@ class GraphJob:
         if not parameters:
             parameters = {}
 
-        job = cls.from_json_file(file_path)
+        job: GraphJob = cls.from_json_file(file_path)
 
         job.merge_parameters(parameters)
         job.run(neo4j_session)
@@ -130,7 +130,8 @@ def _get_statements_from_json(blob: Dict, short_job_name: str = None) -> List[Gr
     """
     statements: List[GraphStatement] = []
     for i, statement_data in enumerate(blob["statements"]):
-        statement: GraphStatement = GraphStatement.create_from_json(statement_data, short_job_name, i)
+        # i+1 to make it 1-based and not 0-based to help with log readability
+        statement: GraphStatement = GraphStatement.create_from_json(statement_data, short_job_name, i + 1)
         statements.append(statement)
 
     return statements
