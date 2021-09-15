@@ -131,7 +131,7 @@ def _get_statements_from_json(blob: Dict, short_job_name: str = None) -> List[Gr
     statements: List[GraphStatement] = []
     for i, statement_data in enumerate(blob["statements"]):
         # i+1 to make it 1-based and not 0-based to help with log readability
-        statement: GraphStatement = GraphStatement.create_from_json(statement_data, short_job_name, i+1)
+        statement: GraphStatement = GraphStatement.create_from_json(statement_data, short_job_name, i + 1)
         statements.append(statement)
 
     return statements
