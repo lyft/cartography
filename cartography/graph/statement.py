@@ -51,7 +51,7 @@ class GraphStatement:
         self.parameters["LIMIT_SIZE"] = self.iterationsize
 
         self.parent_job_name = parent_job_name if parent_job_name else None
-        self.parent_job_sequence_num = parent_job_sequence_num if not parent_job_sequence_num is None else None
+        self.parent_job_sequence_num = parent_job_sequence_num if parent_job_sequence_num else None
 
     def merge_parameters(self, parameters):
         """
