@@ -332,7 +332,7 @@ def transform_gcp_forwarding_rules(fwd_response: Resource) -> List[Dict]:
         forwarding_rule['ip_protocol'] = fwd['IPProtocol']
         forwarding_rule['allow_global_access'] = fwd.get('allowGlobalAccess', None)
 
-        forwarding_rule['load_balancing_scheme'] = fwd['loadBalancingScheme']
+        forwarding_rule['load_balancing_scheme'] = fwd.get('loadBalancingScheme', None)
         forwarding_rule['name'] = fwd['name']
         forwarding_rule['port_range'] = fwd.get('portRange', None)
         forwarding_rule['ports'] = fwd.get('ports', None)
@@ -676,7 +676,7 @@ def load_gcp_forwarding_rules(neo4j_session: neo4j.Session, fwd_rules: List[Dict
             PartialUri=fwd['partial_uri'],
             IPAddress=fwd['ip_address'],
             IPProtocol=fwd['ip_protocol'],
-            LoadBalancingScheme=fwd['load_balancing_scheme'],
+            LoadBalancingScheme=fwd.get('load_balancing_scheme', None),
             Name=fwd['name'],
             Network=network,
             NetworkPartialUri=fwd.get('network_partial_uri', None),
