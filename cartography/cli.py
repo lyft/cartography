@@ -311,6 +311,14 @@ class CLI:
                 'The port of your statsd server. Only used if --statsd-enabled is on. Default = UDP 8125.'
             ),
         )
+        parser.add_argument(
+            '--k8-kubeconfig',
+            default=None,
+            type=str,
+            help=(
+                'The path to kubeconfig file specifying context to access K8 cluster(s).'
+            ),
+        )
         return parser
 
     def main(self, argv):
