@@ -2,18 +2,18 @@ import logging
 from typing import Dict
 from typing import List
 
-from cartography.util import timeit
 from neo4j import Session
 
 from cartography.intel.kubernetes.util import get_epoch
 from cartography.intel.kubernetes.util import K8Client
+from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 
 
 @timeit
 def sync_services(
-    session: Session, client: K8Client, update_tag: int, cluster: Dict, pods: List[Dict]
+    session: Session, client: K8Client, update_tag: int, cluster: Dict, pods: List[Dict],
 ) -> None:
     services = list()
     for service in client.core.list_service_for_all_namespaces().items:
@@ -38,8 +38,8 @@ def sync_services(
             is_service_pod = True if service.spec.selector else False
             for selector in service.spec.selector or dict():
                 if (
-                    selector not in pod["labels"]
-                    or service.spec.selector[selector] != pod["labels"][selector]
+                    selector not in pod["labels"] or
+                    service.spec.selector[selector] != pod["labels"][selector]
                 ):
                     is_service_pod = False
                     break

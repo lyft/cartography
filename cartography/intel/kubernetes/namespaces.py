@@ -2,11 +2,11 @@ import logging
 from typing import Dict
 from typing import List
 
-from cartography.util import timeit
 from neo4j import Session
 
 from cartography.intel.kubernetes.util import get_epoch
 from cartography.intel.kubernetes.util import K8Client
+from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +22,7 @@ def sync_namespaces(session: Session, client: K8Client, update_tag: int) -> Dict
                 "name": namespace.metadata.name,
                 "creation_timestamp": get_epoch(namespace.metadata.creation_timestamp),
                 "deletion_timestamp": get_epoch(namespace.metadata.deletion_timestamp),
-            }
+            },
         )
         if namespace.metadata.name == "kube-system":
             cluster = {"uid": namespace.metadata.uid, "name": client.name}
@@ -31,7 +31,7 @@ def sync_namespaces(session: Session, client: K8Client, update_tag: int) -> Dict
 
 
 def load_namespace_data(
-    session: Session, data: List[Dict], cluster: Dict, update_tag: int
+    session: Session, data: List[Dict], cluster: Dict, update_tag: int,
 ) -> None:
     ingestion_cypher_query = """
     MERGE (cluster:KubernetesCluster {id: {cluster_id}})

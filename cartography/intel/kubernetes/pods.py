@@ -2,18 +2,18 @@ import logging
 from typing import Dict
 from typing import List
 
-from cartography.util import timeit
 from neo4j import Session
 
 from cartography.intel.kubernetes.util import get_epoch
 from cartography.intel.kubernetes.util import K8Client
+from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 
 
 @timeit
 def sync_pods(
-    session: Session, client: K8Client, update_tag: int, cluster: Dict
+    session: Session, client: K8Client, update_tag: int, cluster: Dict,
 ) -> List[Dict]:
     pods = list()
     for pod in client.core.list_pod_for_all_namespaces().items:
@@ -35,7 +35,7 @@ def sync_pods(
                     }
                     for container in pod.spec.containers
                 ],
-            }
+            },
         )
     load_pod_data(session, pods, update_tag)
     return pods

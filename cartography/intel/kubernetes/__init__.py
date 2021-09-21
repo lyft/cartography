@@ -1,7 +1,5 @@
 import logging
 
-from cartography.util import run_cleanup_job
-from cartography.util import timeit
 from neo4j import Session
 
 from cartography.config import Config
@@ -9,6 +7,8 @@ from cartography.intel.kubernetes.namespaces import sync_namespaces
 from cartography.intel.kubernetes.pods import sync_pods
 from cartography.intel.kubernetes.services import sync_services
 from cartography.intel.kubernetes.util import get_k8_clients
+from cartography.util import run_cleanup_job
+from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 
