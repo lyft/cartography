@@ -281,6 +281,14 @@ class CLI:
             help='The name of an environment variable containing a password with which to authenticate to Jamf.',
         )
         parser.add_argument(
+            '--k8s-kubeconfig',
+            default=None,
+            type=str,
+            help=(
+                'The path to kubeconfig file specifying context to access K8 cluster(s).'
+            ),
+        )
+        parser.add_argument(
             '--statsd-enabled',
             action='store_true',
             help=(
@@ -309,14 +317,6 @@ class CLI:
             default=8125,
             help=(
                 'The port of your statsd server. Only used if --statsd-enabled is on. Default = UDP 8125.'
-            ),
-        )
-        parser.add_argument(
-            '--k8-kubeconfig',
-            default=None,
-            type=str,
-            help=(
-                'The path to kubeconfig file specifying context to access K8 cluster(s).'
             ),
         )
         return parser

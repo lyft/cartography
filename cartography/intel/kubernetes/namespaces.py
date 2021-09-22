@@ -5,14 +5,14 @@ from typing import List
 from neo4j import Session
 
 from cartography.intel.kubernetes.util import get_epoch
-from cartography.intel.kubernetes.util import K8Client
+from cartography.intel.kubernetes.util import K8sClient
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 
 
 @timeit
-def sync_namespaces(session: Session, client: K8Client, update_tag: int) -> Dict:
+def sync_namespaces(session: Session, client: K8sClient, update_tag: int) -> Dict:
     cluster = dict()
     namespaces = list()
     for namespace in client.core.list_namespace().items:

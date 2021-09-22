@@ -5,7 +5,7 @@ from typing import List
 from neo4j import Session
 
 from cartography.intel.kubernetes.util import get_epoch
-from cartography.intel.kubernetes.util import K8Client
+from cartography.intel.kubernetes.util import K8sClient
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 @timeit
 def sync_services(
-    session: Session, client: K8Client, update_tag: int, cluster: Dict, pods: List[Dict],
+    session: Session, client: K8sClient, update_tag: int, cluster: Dict, pods: List[Dict],
 ) -> None:
     services = list()
     for service in client.core.list_service_for_all_namespaces().items:
