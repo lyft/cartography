@@ -85,7 +85,7 @@ def fetch_all(
             resp = fetch_page(token, api_url, organization, query, cursor)
         except requests.exceptions.Timeout:
             retry += 1
-            if retry <= retries:
+            if retry >= retries:
                 logger.error(
                     f"GitHub: Could not retrieve page of resource {resource_type} due to API timeout.",
                     exc_info=True,
@@ -95,7 +95,7 @@ def fetch_all(
                 continue
         except requests.exceptions.HTTPError:
             retry += 1
-            if retry <= retries:
+            if retry >= retries:
                 logger.error(
                     f"GitHub: Could not retrieve page of resource `{resource_type}` due to HTTP error.",
                     exc_info=True,
