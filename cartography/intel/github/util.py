@@ -93,7 +93,7 @@ def fetch_all(
                 )
                 raise
             else:
-                time.sleep(1*retry)
+                time.sleep(1 * retry)
                 continue
         except requests.exceptions.HTTPError:
             retry += 1
@@ -104,7 +104,7 @@ def fetch_all(
                 )
                 raise
             else:
-                time.sleep(1*retry)
+                time.sleep(1 * retry)
                 continue
         resource = resp['data']['organization'][resource_type]
         data.extend(resource[field_name])
