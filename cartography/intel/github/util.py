@@ -58,7 +58,7 @@ def fetch_page(token: str, api_url: str, organization: str, query: str, cursor: 
 
 
 def fetch_all(
-    token: str, api_url: str, organization: str, query: str, resource_type: str, field_name: str,
+    token: str, api_url: str, organization: str, query: str, resource_type: str, field_name: str, retries: int = 5,
 ) -> Tuple[List[Dict], Dict]:
     """
     Fetch and return all data items of the given `resource_type` and `field_name` from Github's paginated GraphQL API as
@@ -78,6 +78,7 @@ def fetch_all(
     cursor = None
     has_next_page = True
     data: List[Dict] = []
+    retry = 0
     while has_next_page:
         try:
             resp = fetch_page(token, api_url, organization, query, cursor)
@@ -88,11 +89,13 @@ def fetch_all(
             )
             raise
         except requests.exceptions.HTTPError:
-            logger.error(
-                f"GitHub: Could not retrieve page of resource `{resource_type}` due to HTTP error.",
-                exc_info=True,
-            )
-            raise
+            retry += 1
+            if retry <= retries:
+                logger.error(
+                    f"GitHub: Could not retrieve page of resource `{resource_type}` due to HTTP error.",
+                    exc_info=True,
+                )
+                raise
         resource = resp['data']['organization'][resource_type]
         data.extend(resource[field_name])
         cursor = resource['pageInfo']['endCursor']
