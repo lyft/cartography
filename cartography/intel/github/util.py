@@ -1,5 +1,6 @@
 import json
 import logging
+import time
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -92,6 +93,7 @@ def fetch_all(
                 )
                 raise
             else:
+                time.sleep(1*retry)
                 continue
         except requests.exceptions.HTTPError:
             retry += 1
@@ -102,6 +104,7 @@ def fetch_all(
                 )
                 raise
             else:
+                time.sleep(1*retry)
                 continue
         resource = resp['data']['organization'][resource_type]
         data.extend(resource[field_name])
