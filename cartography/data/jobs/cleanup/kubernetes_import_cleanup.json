@@ -46,37 +46,12 @@
             "iterationsize": 100
         },
         {
-            "query": "MATCH (:KubernetesNamespace)-[rel:IN_CLUSTER]->(:KubernetesCluster) WHERE rel.lastupdated <> {UPDATE_TAG} WITH rel LIMIT {LIMIT_SIZE} DELETE (rel) return COUNT(*) as TotalCompleted",
-            "iterative": true,
-            "iterationsize": 100
-        },
-        {
             "query": "MATCH (:KubernetesCluster)-[rel:HAS_NAMESPACE]->(:KubernetesNamespace) WHERE rel.lastupdated <> {UPDATE_TAG} WITH rel LIMIT {LIMIT_SIZE} DELETE (rel) return COUNT(*) as TotalCompleted",
             "iterative": true,
             "iterationsize": 100
         },
         {
-            "query": "MATCH (:KubernetesPod)-[rel:IN_NAMESPACE]->(:KubernetesNamespace) WHERE rel.lastupdated <> {UPDATE_TAG} WITH rel LIMIT {LIMIT_SIZE} DELETE (rel) return COUNT(*) as TotalCompleted",
-            "iterative": true,
-            "iterationsize": 100
-        },
-        {
-            "query": "MATCH (:KubernetesContainer)-[rel:IN_NAMESPACE]->(:KubernetesNamespace) WHERE rel.lastupdated <> {UPDATE_TAG} WITH rel LIMIT {LIMIT_SIZE} DELETE (rel) return COUNT(*) as TotalCompleted",
-            "iterative": true,
-            "iterationsize": 100
-        },
-        {
-            "query": "MATCH (:KubernetesService)-[rel:IN_NAMESPACE]->(:KubernetesNamespace) WHERE rel.lastupdated <> {UPDATE_TAG} WITH rel LIMIT {LIMIT_SIZE} DELETE (rel) return COUNT(*) as TotalCompleted",
-            "iterative": true,
-            "iterationsize": 100
-        },
-        {
             "query": "MATCH (:KubernetesService)-[rel:SERVES_POD]->(:KubernetesPod) WHERE rel.lastupdated <> {UPDATE_TAG} WITH rel LIMIT {LIMIT_SIZE} DELETE (rel) return COUNT(*) as TotalCompleted",
-            "iterative": true,
-            "iterationsize": 100
-        },
-        {
-            "query": "MATCH (:KubernetesPod)-[rel:BELONGS_TO]->(:KubernetesService) WHERE rel.lastupdated <> {UPDATE_TAG} WITH rel LIMIT {LIMIT_SIZE} DELETE (rel) return COUNT(*) as TotalCompleted",
             "iterative": true,
             "iterationsize": 100
         }

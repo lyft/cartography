@@ -15,6 +15,11 @@ logger = logging.getLogger(__name__)
 def sync_services(
     session: Session, client: K8sClient, update_tag: int, cluster: Dict, pods: List[Dict],
 ) -> None:
+    services = get_services(client, cluster, pods)
+    load_services(session, services, update_tag)
+
+
+def get_services(client: K8sClient, cluster: Dict, pods: List[Dict]) -> List[Dict]:
     services = list()
     for service in client.core.list_service_for_all_namespaces().items:
         item = {
@@ -47,10 +52,10 @@ def sync_services(
                 service_pods.append(pod)
         item["pods"] = service_pods
         services.append(item)
-    load_service_data(session, services, update_tag)
+    return services
 
 
-def load_service_data(session: Session, data: List[Dict], update_tag: int) -> None:
+def load_services(session: Session, data: List[Dict], update_tag: int) -> None:
     ingestion_cypher_query = """
     UNWIND {services} as k8service
         MERGE (service:KubernetesService {id: k8service.uid})
@@ -64,22 +69,16 @@ def load_service_data(session: Session, data: List[Dict], update_tag: int) -> No
             service.ingress_host = k8service.ingress_host,
             service.ingress_ip = k8service.ingress_ip
         WITH service, k8service.namespace as ns, k8service.cluster_uid as cuid, k8service.pods as k8pods
-        MATCH (space:KubernetesNamespace {name: ns})-[:IN_CLUSTER]->(cluster:KubernetesCluster {id: cuid})
+        MATCH (cluster:KubernetesCluster {id: cuid})-[:HAS_NAMESPACE]->(space:KubernetesNamespace {name: ns})
         MERGE (space)-[rel1:HAS_SERVICE]->(service)
         ON CREATE SET rel1.firstseen = timestamp()
         SET rel1.lastupdated = {update_tag}
-        MERGE (service)-[rel2:IN_NAMESPACE]->(space)
-        ON CREATE SET rel2.firstseen = timestamp()
-        SET rel2.lastupdated = {update_tag}
         WITH service, k8pods
         UNWIND k8pods as k8pod
             MATCH (pod:KubernetesPod {id: k8pod.uid})
-            MERGE (service)-[rel3:SERVES_POD]->(pod)
-            ON CREATE SET rel3.firstseen = timestamp()
-            SET rel3.lastupdated = {update_tag}
-            MERGE (pod)-[rel4:BELONGS_TO]->(service)
-            ON CREATE SET rel4.firstseen = timestamp()
-            SET rel4.lastupdated = {update_tag}
+            MERGE (service)-[rel2:SERVES_POD]->(pod)
+            ON CREATE SET rel2.firstseen = timestamp()
+            SET rel2.lastupdated = {update_tag}
     """
     logger.info(f"Loading {len(data)} kubernetes services.")
     session.run(ingestion_cypher_query, services=data, update_tag=update_tag)

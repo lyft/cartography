@@ -52,11 +52,6 @@ Representation of a [Kubernetes Namespace.](https://kubernetes.io/docs/concepts/
 | deleted_at | Timestamp of the deletion time of the kubernetes namespace |
 
 ### Relationships
-- KubernetesNamespace resides in a KubernetesCluster.
-    ```
-    (KubernetesNamespace)-[IN_CLUSTER]->(KubernetesCluster)
-    ```
-
 - KubernetesNamespace can have KubernetesPods.
     ```
     (KubernetesNamespace)-[HAS_POD]->(KubernetesPod)
@@ -80,19 +75,9 @@ Representation of a [Kubernetes Pod.](https://kubernetes.io/docs/concepts/worklo
 | deleted_at | Timestamp of the deletion time of the kubernetes pod |
 
 ### Relationships
-- KubernetesPod resides in a KubernetesNamespace.
-    ```
-    (KubernetesPod)-[IN_NAMESPACE]->(KubernetesNamespace)
-    ```
-
 - KubernetesPod has KubernetesContainers.
     ```
     (KubernetesPod)-[HAS_CONTAINER]->(KubernetesContainer)
-    ```
-
-- KubernetesPod can belong to a KubernetesService.
-    ```
-    (KubernetesPod)-[BELONGS_TO]->(KubernetesService)
     ```
 
 ## KubernetesContainer
@@ -107,10 +92,7 @@ Representation of a [Kubernetes Container.](https://kubernetes.io/docs/concepts/
 | image | Docker image used in the container |
 
 ### Relationships
-- KubernetesContainer resides in a KubernetesNamespace.
-    ```
-    (KubernetesContainer)-[IN_NAMESPACE]->(KubernetesNamespace)
-    ```
+- No relationships originate from KubernetesContainer node.
 
 ## KubernetesService
 Representation of a [Kubernetes Service.](https://kubernetes.io/docs/concepts/services-networking/service/)
@@ -129,11 +111,6 @@ Representation of a [Kubernetes Service.](https://kubernetes.io/docs/concepts/se
 | ingress_ip | IP of the ingress endpoint, if any |
 
 ### Relationships
-- KubernetesService resides in a KubernetesNamespace.
-    ```
-    (KubernetesService)-[IN_NAMESPACE]->(KubernetesNamespace)
-    ```
-
 - KubernetesService can serve KubernetesPods.
     ```
     (KubernetesService)-[SERVES_POD]->(KubernetesPod)

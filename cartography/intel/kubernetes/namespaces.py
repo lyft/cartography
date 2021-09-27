@@ -1,6 +1,7 @@
 import logging
 from typing import Dict
 from typing import List
+from typing import Tuple
 
 from neo4j import Session
 
@@ -13,6 +14,12 @@ logger = logging.getLogger(__name__)
 
 @timeit
 def sync_namespaces(session: Session, client: K8sClient, update_tag: int) -> Dict:
+    cluster, namespaces = get_namespaces(client)
+    load_namespaces(session, cluster, namespaces, update_tag)
+    return cluster
+
+
+def get_namespaces(client: K8sClient) -> Tuple[Dict, List[Dict]]:
     cluster = dict()
     namespaces = list()
     for namespace in client.core.list_namespace().items:
@@ -26,12 +33,11 @@ def sync_namespaces(session: Session, client: K8sClient, update_tag: int) -> Dic
         )
         if namespace.metadata.name == "kube-system":
             cluster = {"uid": namespace.metadata.uid, "name": client.name}
-    load_namespace_data(session, namespaces, cluster, update_tag)
-    return cluster
+    return cluster, namespaces
 
 
-def load_namespace_data(
-    session: Session, data: List[Dict], cluster: Dict, update_tag: int,
+def load_namespaces(
+    session: Session, cluster: Dict, data: List[Dict], update_tag: int,
 ) -> None:
     ingestion_cypher_query = """
     MERGE (cluster:KubernetesCluster {id: {cluster_id}})
@@ -47,13 +53,9 @@ def load_namespace_data(
             space.created_at = namespace.creation_timestamp,
             space.deleted_at = namespace.deletion_timestamp
         WITH cluster, space
-        MERGE (space)-[rel1:IN_CLUSTER]->(cluster)
+        MERGE (cluster)-[rel1:HAS_NAMESPACE]->(space)
         ON CREATE SET rel1.firstseen = timestamp()
         SET rel1.lastupdated = {update_tag}
-        WITH space, cluster
-        MERGE (cluster)-[rel2:HAS_NAMESPACE]->(space)
-        ON CREATE SET rel2.firstseen = timestamp()
-        SET rel2.lastupdated = {update_tag}
     """
     logger.info(f"Loading {len(data)} kubernetes namespaces.")
     session.run(
