@@ -79,9 +79,11 @@ def timeit(method):
 def aws_handle_regions(func):
     ERROR_CODES = [
         'AccessDeniedException',
+        'AccessDenied',
         'UnrecognizedClientException',
         'InvalidClientTokenId',
         'AuthFailure',
+        'UnauthorizedOperation',
     ]
 
     def inner_function(*args, **kwargs):
