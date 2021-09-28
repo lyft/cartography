@@ -92,7 +92,10 @@ Representation of a [Kubernetes Container.](https://kubernetes.io/docs/concepts/
 | image | Docker image used in the container |
 
 ### Relationships
-- No relationships originate from KubernetesContainer node.
+- KubernetesPod has KubernetesContainers.
+    ```
+    (KubernetesPod)-[HAS_CONTAINER]->(KubernetesContainer)
+    ```
 
 ## KubernetesService
 Representation of a [Kubernetes Service.](https://kubernetes.io/docs/concepts/services-networking/service/)
