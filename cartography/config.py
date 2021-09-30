@@ -64,6 +64,8 @@ class Config:
     :param statsd_host: If statsd_enabled is True, send metrics to this host. Optional.
     :type: statsd_port: int
     :param statsd_port: If statsd_enabled is True, send metrics to this port on statsd_host. Optional.
+    :type: pagerduty_api_key: str
+    :param pagerduty_api_key: API authentication key for pagerduty. Optional.
     """
 
     def __init__(
@@ -96,6 +98,7 @@ class Config:
         statsd_prefix=None,
         statsd_host=None,
         statsd_port=None,
+        pagerduty_api_key=None,
     ):
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user
@@ -125,3 +128,4 @@ class Config:
         self.statsd_prefix = statsd_prefix
         self.statsd_host = statsd_host
         self.statsd_port = statsd_port
+        self.pagerduty_api_key = pagerduty_api_key
