@@ -77,7 +77,7 @@ def transform_gcp_buckets(bucket_res: Dict) -> List[Dict]:
         bucket['owner_entity'] = b.get('owner', {}).get('entity')
         bucket['owner_entity_id'] = b.get('owner', {}).get('entityId')
         bucket['kind'] = b.get('kind')
-        bucket['location'] = b.get('location')
+        bucket['location'] = b.get('location', "").lower()
         bucket['location_type'] = b.get('locationType')
         bucket['meta_generation'] = b.get('metageneration', None)
         bucket['project_number'] = b['projectNumber']
@@ -181,7 +181,7 @@ def _attach_gcp_bucket_labels(neo4j_session: neo4j.Session, bucket: Resource, gc
     MERGE (l:Label:GCPBucketLabel{id: {BucketLabelId}})
     ON CREATE SET l.firstseen = timestamp(),
     l.key = {Key}
-    SET l.value = {Value},
+    SET l.value = {Value}, l.location = {Location},
     l.lastupdated = {gcp_update_tag}
     WITH l
     MATCH (bucket:GCPBucket{id:{BucketId}})
@@ -196,6 +196,7 @@ def _attach_gcp_bucket_labels(neo4j_session: neo4j.Session, bucket: Resource, gc
             Key=key,
             Value=val,
             BucketId=bucket['id'],
+            Location=bucket['location'],
             gcp_update_tag=gcp_update_tag,
         )
 

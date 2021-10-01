@@ -84,12 +84,19 @@ def load_gcp_organizations(neo4j_session: neo4j.Session, data: List[Dict], gcp_u
     :return: Nothing
     """
     query = """
+    MERGE (w:CloudanixWorkspace{id: {WorkspaceId}})
+    SET w.lastupdated = {gcp_update_tag}
+    WITH w
     MERGE (org:GCPOrganization{id:{OrgName}})
     ON CREATE SET org.firstseen = timestamp()
     SET org.orgname = {OrgName},
     org.displayname = {DisplayName},
     org.lifecyclestate = {LifecycleState},
     org.lastupdated = {gcp_update_tag}
+    WITH w, org
+    MERGE (w)-[o:OWNER]->(org)
+    ON CREATE SET o.firstseen = timestamp()
+    SET o.lastupdated = {gcp_update_tag}
     """
     for org_object in data:
         neo4j_session.run(
@@ -144,7 +151,9 @@ def load_gcp_folders(neo4j_session: neo4j.Session, data: List[Dict], gcp_update_
 
 
 @timeit
-def load_gcp_projects(neo4j_session: neo4j.Session, data: List[Dict], gcp_update_tag: int) -> None:
+def load_gcp_projects(
+    neo4j_session: neo4j.Session, data: List[Dict], gcp_update_tag: int, common_job_parameters: Dict
+) -> None:
     """
     Ingest the GCP projects to Neo4j
     :param neo4j_session: The Neo4j session
@@ -153,22 +162,32 @@ def load_gcp_projects(neo4j_session: neo4j.Session, data: List[Dict], gcp_update
     :return: Nothing
     """
     query = """
+    MERGE (w:CloudanixWorkspace{id: {WorkspaceId}})
+    SET w.lastupdated = {gcp_update_tag}
+    WITH w
     MERGE (project:GCPProject{id:{ProjectId}})
     ON CREATE SET project.firstseen = timestamp()
     SET project.projectid = {ProjectId},
     project.projectnumber = {ProjectNumber},
     project.displayname = {DisplayName},
     project.lifecyclestate = {LifecycleState},
+    project.accountid = {WorkspaceAccountId},
     project.lastupdated = {gcp_update_tag}
+    WITH w, project
+    MERGE (w)-[o:OWNER]->(project)
+    ON CREATE SET o.firstseen = timestamp()
+    SET o.lastupdated = {gcp_update_tag}
     """
 
     for project in data:
         neo4j_session.run(
             query,
+            WorkspaceId=common_job_parameters['WORKSPACE_ID'],
             ProjectId=project['projectId'],
             ProjectNumber=project['projectNumber'],
             DisplayName=project.get('name', None),
             LifecycleState=project.get('lifecycleState', None),
+            WorkspaceAccountId=common_job_parameters['WORKSPACE_ACCOUNT_ID'],
             gcp_update_tag=gcp_update_tag,
         )
         if project.get('parent'):
@@ -298,5 +317,5 @@ def sync_gcp_projects(
     :return: Nothing
     """
     logger.debug("Syncing GCP projects")
-    load_gcp_projects(neo4j_session, projects, gcp_update_tag)
+    load_gcp_projects(neo4j_session, projects, gcp_update_tag, common_job_parameters)
     cleanup_gcp_projects(neo4j_session, common_job_parameters)

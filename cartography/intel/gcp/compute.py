@@ -196,6 +196,7 @@ def transform_gcp_instances(response_objects: List[Dict]) -> List[Dict]:
             instance['partial_uri'] = f"{prefix}/{instance['name']}"
             instance['project_id'] = prefix_fields.project_id
             instance['zone_name'] = prefix_fields.zone_name
+            instance['region'] = prefix_fields.zone_name[:-2]
 
             for nic in instance.get('networkInterfaces', []):
                 nic['subnet_partial_uri'] = _parse_compute_full_uri_to_partial_uri(nic['subnetwork'])
@@ -328,10 +329,10 @@ def transform_gcp_forwarding_rules(fwd_response: Resource) -> List[Dict]:
         region = fwd.get('region', None)
         forwarding_rule['region'] = region.split('/')[-1] if region else None
         forwarding_rule['ip_address'] = fwd['IPAddress']
-        forwarding_rule['ip_protocol'] = fwd['IPProtocol']
+        forwarding_rule['ip_protocol'] = fwd.get('IPProtocol', None)
         forwarding_rule['allow_global_access'] = fwd.get('allowGlobalAccess', None)
 
-        forwarding_rule['load_balancing_scheme'] = fwd['loadBalancingScheme']
+        forwarding_rule['load_balancing_scheme'] = fwd.get('loadBalancingScheme', None)
         forwarding_rule['name'] = fwd['name']
         forwarding_rule['port_range'] = fwd.get('portRange', None)
         forwarding_rule['ports'] = fwd.get('ports', None)
@@ -518,6 +519,7 @@ def load_gcp_instances(neo4j_session: neo4j.Session, data: List[Dict], gcp_updat
     i.instancename = {InstanceName},
     i.hostname = {Hostname},
     i.zone_name = {ZoneName},
+    i.region = {Region},
     i.project_id = {ProjectId},
     i.status = {Status},
     i.lastupdated = {gcp_update_tag}
@@ -535,6 +537,7 @@ def load_gcp_instances(neo4j_session: neo4j.Session, data: List[Dict], gcp_updat
             SelfLink=instance['selfLink'],
             InstanceName=instance['name'],
             ZoneName=instance['zone_name'],
+            Region=instance['region'],
             Hostname=instance.get('hostname', None),
             Status=instance['status'],
             gcp_update_tag=gcp_update_tag,
@@ -673,7 +676,7 @@ def load_gcp_forwarding_rules(neo4j_session: neo4j.Session, fwd_rules: List[Dict
             PartialUri=fwd['partial_uri'],
             IPAddress=fwd['ip_address'],
             IPProtocol=fwd['ip_protocol'],
-            LoadBalancingScheme=fwd['load_balancing_scheme'],
+            LoadBalancingScheme=fwd.get('load_balancing_scheme', None),
             Name=fwd['name'],
             Network=network,
             NetworkPartialUri=fwd.get('network_partial_uri', None),

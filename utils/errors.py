@@ -26,6 +26,10 @@ class GraphRequestError(ServerError):
     """Raised when Graph Requests fail"""
 
 
+class PubSubPublishError(ServerError):
+    """ Raised when publishing message to Google PubSub fails"""
+
+
 def classify_error(logger, err, msg, extra=None):
     """Classify the error to Permission or Request Processing Error"""
     message = f'{msg}: {err}'

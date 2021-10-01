@@ -7,13 +7,13 @@ from neo4j import GraphDatabase
 from statsd import StatsClient
 
 import cartography.intel.analysis
-import cartography.intel.aws
+# import cartography.intel.aws
 # import cartography.intel.azure
 import cartography.intel.create_indexes
 # from cartography.scoped_stats_client import ScopedStatsClient
 # import cartography.intel.crxcavator.crxcavator
 # import cartography.intel.digitalocean
-# import cartography.intel.gcp
+import cartography.intel.gcp
 # import cartography.intel.github
 # import cartography.intel.gsuite
 # import cartography.intel.okta
@@ -207,6 +207,24 @@ def build_azure_sync():
         ('create-indexes', cartography.intel.create_indexes.run),
         ('cloudanix-workspace', cloudanix.run),
         # ('azure', cartography.intel.azure.start_azure_ingestion),
+        ('analysis', cartography.intel.analysis.run),
+    ])
+
+    return sync
+
+
+def build_gcp_sync():
+    """
+    Build the default cartography sync, which runs all intelligence modules shipped with the cartography package.
+
+    :rtype: cartography.sync.Sync
+    :return: The default cartography sync object.
+    """
+    sync = Sync()
+    sync.add_stages([
+        ('create-indexes', cartography.intel.create_indexes.run),
+        ('cloudanix-workspace', cloudanix.run),
+        ('gcp', cartography.intel.gcp.start_gcp_ingestion),
         ('analysis', cartography.intel.analysis.run),
     ])
 
