@@ -248,7 +248,11 @@ def test_transform_go_mod():
     """
     go_mod_contents = textwrap.dedent(go_mod_contents)
     out_go_mod = []
-    cartography.intel.github.repos._transform_go_mod({'text': go_mod_contents}, 'https://github.com/lyft/cartography', out_go_mod)
+    cartography.intel.github.repos._transform_go_mod(
+        {'text': go_mod_contents},
+        'https://github.com/lyft/cartography',
+        out_go_mod,
+    )
     assert out_go_mod == [
         {
             'id': 'github.com/lyft/directdependency|v1.0.0',

@@ -296,7 +296,11 @@ def _transform_python_requirements(req_file_contents: Dict, repo_url: str, out_r
             })
 
 
-def _transform_go_mod(go_mod_contents: Optional[Dict[str, Any]], repo_url: str, out_go_mod: List[Dict[str, Any]]) -> None:
+def _transform_go_mod(
+    go_mod_contents: Optional[Dict[str, Any]],
+    repo_url: str,
+    out_go_mod: List[Dict[str, Any]],
+) -> None:
     text_contents: Optional[str] = (go_mod_contents or {}).get('text')
     if text_contents is None:
         return
