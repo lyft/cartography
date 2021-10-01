@@ -4,6 +4,7 @@ from typing import Any
 from typing import Dict
 from typing import List
 
+import dateutil.parser
 import neo4j
 from pdpyras import APISession
 
@@ -152,7 +153,7 @@ def load_integration_data(
     logger.info(f"Loading {len(data)} pagerduty integrations.")
 
     for integration in data:
-        created_at = datetime.datetime.fromisoformat(integration["created_at"])
+        created_at = dateutil.parser.parse(integration["created_at"])
         integration["created_at"] = int(created_at.timestamp())
 
     neo4j_session.run(
