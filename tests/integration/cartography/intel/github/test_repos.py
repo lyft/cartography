@@ -243,7 +243,7 @@ def test_transform_go_mod():
     )
 
     require (
-        github.ocm/lyft/newindirectdependency v3.2.1 // indirect
+        github.com/lyft/newindirectdependency v3.2.1 // indirect
     )
     """
     go_mod_contents = textwrap.dedent(go_mod_contents)
@@ -256,20 +256,20 @@ def test_transform_go_mod():
     assert out_go_mod == [
         {
             'id': 'github.com/lyft/directdependency|v1.0.0',
-            'name': 'githuhb.com/lyft/directdependency',
+            'name': 'github.com/lyft/directdependency',
             'version': 'v1.0.0',
             'repo_url': 'https://github.com/lyft/cartography',
         },
         {
-            'id': 'github.com/lyft/olddirectdependency|v1.0.0',
-            'name': 'githuhb.com/lyft/olddirectdependency',
+            'id': 'github.com/lyft/olddirectdependency|v1.2.3',
+            'name': 'github.com/lyft/olddirectdependency',
             'version': 'v1.2.3',
             'repo_url': 'https://github.com/lyft/cartography',
         },
         {
-            'id': 'github.com/lyft/newdirectdependency|v1.0.0',
-            'name': 'githuhb.com/lyft/newdirectdependency',
-            'version': 'v1.2.3',
+            'id': 'github.com/lyft/newdirectdependency|v3.2.1',
+            'name': 'github.com/lyft/newdirectdependency',
+            'version': 'v3.2.1',
             'repo_url': 'https://github.com/lyft/cartography',
         },
     ]
