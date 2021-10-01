@@ -1,3 +1,5 @@
+import textwrap
+
 import cartography.intel.github
 import tests.data.github.repos
 
@@ -227,3 +229,43 @@ def test_upinned_python_library_to_repo(neo4j_session):
     actual_nodes = {n['repo_count'] for n in nodes}
     expected_nodes = {1}
     assert actual_nodes == expected_nodes
+
+
+def test_transform_go_mod():
+    go_mod_contents = """
+    module github.com/lyft/refactorator
+
+    go 1.17
+
+    require (
+        github.com/lyft/directdependency v1.0.0
+        github.com/lyft/oldindirectdependency v1.2.3 // indirect
+    )
+
+    require (
+        github.ocm/lyft/newindirectdependency v3.2.1 // indirect
+    )
+    """
+    go_mod_contents = textwrap.dedent(go_mod_contents)
+    out_go_mod = []
+    cartography.intel.github.repos._transform_go_mod({'text': go_mod_contents}, 'https://github.com/lyft/cartography', out_go_mod)
+    assert out_go_mod == [
+        {
+            'id': 'github.com/lyft/directdependency|v1.0.0',
+            'name': 'githuhb.com/lyft/directdependency',
+            'version': 'v1.0.0',
+            'repo_url': 'https://github.com/lyft/cartography',
+        },
+        {
+            'id': 'github.com/lyft/olddirectdependency|v1.0.0',
+            'name': 'githuhb.com/lyft/olddirectdependency',
+            'version': 'v1.2.3',
+            'repo_url': 'https://github.com/lyft/cartography',
+        },
+        {
+            'id': 'github.com/lyft/newdirectdependency|v1.0.0',
+            'name': 'githuhb.com/lyft/newdirectdependency',
+            'version': 'v1.2.3',
+            'repo_url': 'https://github.com/lyft/cartography',
+        },
+    ]

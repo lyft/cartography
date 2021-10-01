@@ -76,6 +76,11 @@ GITHUB_ORG_REPOS_PAGINATED_GRAPHQL = """
                             text
                         }
                     }
+                    gomod:object(expression: "HEAD:go.mod") {
+                        ... on Blob {
+                            text
+                        }
+                    }
                 }
             }
         }
@@ -116,12 +121,14 @@ def transform(repos_json: List[Dict]) -> Dict:
         'ADMIN': [], 'MAINTAIN': [], 'READ': [], 'TRIAGE': [], 'WRITE': [],
     }
     transformed_requirements_files: List[Dict] = []
+    transformed_go_mod_files: List[Dict] = []
     for repo_object in repos_json:
         _transform_repo_languages(repo_object['url'], repo_object, transformed_repo_languages)
         _transform_repo_objects(repo_object, transformed_repo_list)
         _transform_repo_owners(repo_object['owner']['url'], repo_object, transformed_repo_owners)
         _transform_collaborators(repo_object['collaborators'], repo_object['url'], transformed_collaborators)
         _transform_python_requirements(repo_object['requirements'], repo_object['url'], transformed_requirements_files)
+        _transform_go_mod(repo_object['gomod'], repo_object['url'], transformed_go_mod_files)
     results = {
         'repos': transformed_repo_list,
         'repo_languages': transformed_repo_languages,
@@ -287,6 +294,37 @@ def _transform_python_requirements(req_file_contents: Dict, repo_url: str, out_r
                 "version": pinned_version,
                 "repo_url": repo_url,
             })
+
+
+def _transform_go_mod(go_mod_contents: Optional[Dict[str, Any]], repo_url: str, out_go_mod: List[Dict[str, Any]]) -> None:
+    text_contents: Optional[str] = (go_mod_contents or {}).get('text')
+    if text_contents is None:
+        return
+
+    in_require_block = False
+    for line in text_contents.splitlines():
+        line = line.strip()
+        if line == 'require (':
+            in_require_block = True
+            continue
+        elif line == ')':
+            in_require_block = False
+            continue
+
+        if not in_require_block:
+            continue
+
+        package, _, version = line.partition(' ')
+        if version.endswith(' // indirect'):
+            version = version[:-len(' // indirect')]
+        package_id = f'{package}|{version}' if version else package
+
+        out_go_mod.append({
+            'id': package_id,
+            'name': package,
+            'version': version,
+            'repo_url': repo_url,
+        })
 
 
 @timeit
