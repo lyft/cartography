@@ -1,9 +1,9 @@
 import logging
-from datetime import datetime
 from typing import Any
 from typing import Dict
 from typing import List
 
+import dateutil.parser
 import neo4j
 from pdpyras import APISession
 
@@ -116,7 +116,7 @@ def _attach_layers(
         layer["_layer_id"] = f"{layer['_schedule_id']}-{layer['name']}"
         for d_attr in ["start", "end", "rotation_virtual_start"]:
             if layer.get(d_attr):
-                d_val = datetime.fromisoformat(layer[d_attr])
+                d_val = dateutil.parser.parse(layer[d_attr])
                 layer[d_attr] = int(d_val.timestamp())
         if layer.get("users"):
             for user in layer["users"]:
