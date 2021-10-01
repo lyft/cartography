@@ -1,4 +1,3 @@
-import datetime
 import logging
 from typing import Any
 from typing import Dict
@@ -88,7 +87,7 @@ def load_service_data(
 
     team_relations: List[Dict[str, str]] = []
     for service in data:
-        created_at = datetime.datetime.fromisoformat(service["created_at"])
+        created_at = dateutil.parser.parse(service["created_at"])
         service["created_at"] = int(created_at.timestamp())
         if service.get("teams"):
             for team in service["teams"]:
