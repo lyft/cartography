@@ -17,7 +17,7 @@ def test_load_escalation_policy_data(neo4j_session):
     }
     nodes = neo4j_session.run(
         """
-        MATCH (n:EscalationPolicies) RETURN n.id;
+        MATCH (n:PagerDutyEscalationPolicy) RETURN n.id;
         """,
     )
     actual_nodes = {n['n.id'] for n in nodes}
@@ -28,7 +28,7 @@ def test_load_escalation_policy_data(neo4j_session):
     }
     rules = neo4j_session.run(
         """
-        MATCH (:EscalationPolicies{id:"PANZZEQ"})-[:HAS_RULE]->(n:PagerDutyEscalationPolicyRule)
+        MATCH (:PagerDutyEscalationPolicy{id:"PANZZEQ"})-[:HAS_RULE]->(n:PagerDutyEscalationPolicyRule)
         RETURN n.id;
         """,
     )
