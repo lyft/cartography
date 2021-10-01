@@ -78,28 +78,26 @@ GET_SERVICES_DATA = [
 
 GET_INTEGRATIONS_DATA = [
     {
-        "integration": {
-            "id": "PE1U9CH",
-            "type": "generic_email_inbound_integration",
-            "summary": "Email",
-            "self": "https://api.pagerduty.com/services/PQL78HM/integrations/PE1U9CH",
-            "html_url": "https://subdomain.pagerduty.com/services/PQL78HM/integrations/PE1U9CH",
-            "name": "Email",
-            "service": {
-                "id": "PQL78HM",
-                "type": "service_reference",
-                "summary": "My Email-Based Integration",
-                "self": "https://api.pagerduty.com/services/PQL78HM",
-                "html_url": "https://subdomain.pagerduty.com/services/PQL78HM",
-            },
-            "created_at": "2015-10-14T13:33:02-07:00",
-            "vendor": {
-                "id": "P8JX75F",
-                "type": "vendor_reference",
-                "summary": "Autotask",
-                "self": "https://api.pagerduty.com/vendors/P8JX75F",
-            },
-            "integration_email": "my-email-based-integration@subdomain.pagerduty.com",
+        "id": "PE1U9CH",
+        "type": "generic_email_inbound_integration",
+        "summary": "Email",
+        "self": "https://api.pagerduty.com/services/PQL78HM/integrations/PE1U9CH",
+        "html_url": "https://subdomain.pagerduty.com/services/PQL78HM/integrations/PE1U9CH",
+        "name": "Email",
+        "service": {
+            "id": "PQL78HM",
+            "type": "service_reference",
+            "summary": "My Email-Based Integration",
+            "self": "https://api.pagerduty.com/services/PQL78HM",
+            "html_url": "https://subdomain.pagerduty.com/services/PQL78HM",
         },
+        "created_at": "2015-10-14T13:33:02-07:00",
+        "vendor": {
+            "id": "P8JX75F",
+            "type": "vendor_reference",
+            "summary": "Autotask",
+            "self": "https://api.pagerduty.com/vendors/P8JX75F",
+        },
+        "integration_email": "my-email-based-integration@subdomain.pagerduty.com",
     },
 ]

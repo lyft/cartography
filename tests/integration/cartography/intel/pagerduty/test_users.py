@@ -14,6 +14,7 @@ def test_load_user_data(neo4j_session):
 
     expected_nodes = {
         "PXPGF42",
+        "PAM4FGS",
     }
     nodes = neo4j_session.run(
         """
