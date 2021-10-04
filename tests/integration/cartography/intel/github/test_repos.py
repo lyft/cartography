@@ -261,14 +261,14 @@ def test_transform_go_mod():
             'repo_url': 'https://github.com/lyft/cartography',
         },
         {
-            'id': 'github.com/lyft/olddirectdependency|v1.2.3',
-            'name': 'github.com/lyft/olddirectdependency',
+            'id': 'github.com/lyft/oldindirectdependency|v1.2.3',
+            'name': 'github.com/lyft/oldindirectdependency',
             'version': 'v1.2.3',
             'repo_url': 'https://github.com/lyft/cartography',
         },
         {
-            'id': 'github.com/lyft/newdirectdependency|v3.2.1',
-            'name': 'github.com/lyft/newdirectdependency',
+            'id': 'github.com/lyft/newindirectdependency|v3.2.1',
+            'name': 'github.com/lyft/newindirectdependency',
             'version': 'v3.2.1',
             'repo_url': 'https://github.com/lyft/cartography',
         },
