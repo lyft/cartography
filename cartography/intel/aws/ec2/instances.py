@@ -244,13 +244,18 @@ def load_ec2_instances(
                     ).consume()  # TODO see issue 170
 
             load_ec2_instance_network_interfaces(neo4j_session, instance, update_tag)
-            sync_ec2_instance_ebs_volumes(neo4j_session, instance, update_tag)
+            sync_ec2_instance_ebs_volumes(neo4j_session, instance, current_aws_account_id, update_tag)
 
 
 @timeit
-def sync_ec2_instance_ebs_volumes(neo4j_session: neo4j.Session, instance: Dict, update_tag: int) -> None:
+def sync_ec2_instance_ebs_volumes(
+    neo4j_session: neo4j.Session,
+    instance: Dict,
+    current_aws_account_id: str,
+    update_tag: int
+) -> None:
     instance_ebs_volumes_list = get_ec2_instance_ebs_volumes(instance)
-    load_ec2_instance_ebs_volumes(neo4j_session, instance_ebs_volumes_list, update_tag)
+    load_ec2_instance_ebs_volumes(neo4j_session, instance_ebs_volumes_list, current_aws_account_id, update_tag)
 
 
 @timeit
@@ -265,7 +270,12 @@ def get_ec2_instance_ebs_volumes(instance: Dict) -> List[Dict]:
 
 
 @timeit
-def load_ec2_instance_ebs_volumes(neo4j_session: neo4j.Session, data: List[Dict], update_tag: int) -> None:
+def load_ec2_instance_ebs_volumes(
+    neo4j_session: neo4j.Session,
+    data: List[Dict],
+    current_aws_account_id: str,
+    update_tag: int
+) -> None:
     ingest_volume = """
     UNWIND {ebs_mappings_list} as em
     MERGE (v:EBSVolume{id: em.Ebs.VolumeId})
@@ -286,6 +296,7 @@ def load_ec2_instance_ebs_volumes(neo4j_session: neo4j.Session, data: List[Dict]
     neo4j_session.run(
         ingest_volume,
         ebs_mappings_list=data,
+        AWS_ACCOUNT_ID=current_aws_account_id,
         update_tag=update_tag,
     )
 

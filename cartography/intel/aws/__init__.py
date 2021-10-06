@@ -120,11 +120,7 @@ def _sync_multiple_accounts(
     common_job_parameters: Dict[str, Any],
     aws_requested_syncs: List[str] = [],
 ) -> None:
-<<<<<<< HEAD
     logger.info("Syncing AWS accounts: %s", ', '.join(accounts.values()))
-=======
-    logger.debug("Syncing AWS accounts: %s", ', '.join(accounts.values()))
->>>>>>> 5e44a492908584243735db48f4f1c4fa1c919138
     organizations.sync(neo4j_session, accounts, config.update_tag, common_job_parameters)
 
     for profile_name, account_id in accounts.items():
