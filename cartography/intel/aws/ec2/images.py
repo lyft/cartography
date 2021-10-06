@@ -18,10 +18,11 @@ logger = logging.getLogger(__name__)
 def get_images(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
     client = boto3_session.client('ec2', region_name=region)
     try:
-        images = client.describe_images()['Images']
+        images = client.describe_images(Owners=['self'])['Images']
     except ClientError as e:
         logger.warning("Failed retrieve images for region - {}. Error - {}".format(region, e))
         raise
+
     return images
 
 
