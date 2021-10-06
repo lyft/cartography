@@ -17,9 +17,13 @@ logger = logging.getLogger(__name__)
 def get_snapshots(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
     client = boto3_session.client('ec2', region_name=region)
     paginator = client.get_paginator('describe_snapshots')
+    query_params = {'OwnerIds': ['self']}
+
     snapshots: List[Dict] = []
-    for page in paginator.paginate():
+    for page in paginator.paginate(**query_params):
         snapshots.extend(page['Snapshots'])
+
+    print(snapshots)
     return snapshots
 
 
