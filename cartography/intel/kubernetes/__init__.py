@@ -18,7 +18,7 @@ def start_k8s_ingestion(session: Session, config: Config) -> None:
 
     common_job_parameters = {"UPDATE_TAG": config.update_tag}
     if not config.k8s_kubeconfig:
-        logger.info("kubeconfig not found.")
+        logger.error("kubeconfig not found.")
         return
 
     for client in get_k8s_clients(config.k8s_kubeconfig):
