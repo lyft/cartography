@@ -44,6 +44,7 @@ Start [here](docs/setup/install.md).
 - [DigitalOcean](docs/setup/config/digitalocean.md)
 - [Microsoft Azure](docs/setup/config/azure.md) -  CosmosDB, SQL, Storage, Virtual Machine
 - [Kubernetes](docs/setup/config/kubernetes.md) - Cluster, Namespace, Service, Pod, Container
+- [PagerDuty](docs/setup/config/pagerduty.md) - Users, teams, services, schedules, escalation policies, integrations, vendors
 
 ## Usage
 Start with our [tutorial](docs/usage/tutorial.md). Our [data schema](docs/schema) is a helpful reference when you get stuck.

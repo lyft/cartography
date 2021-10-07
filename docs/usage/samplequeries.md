@@ -117,10 +117,10 @@ ORDER BY dep.name
 ```
 
 With info about which repos are using them:
-"""
+```
 MATCH (repo:GitHubRepository)-[edge:REQUIRES]->(dep:Dependency)
 RETURN repo.name, dep.name, edge.specifier, dep.version
-"""
+```
 Lyft ingests this information into our internal data stack,
 which has enabled us to throw BI tooling on top for easy reporting -
 this is highly recommended!

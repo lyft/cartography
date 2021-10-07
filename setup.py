@@ -1,7 +1,7 @@
 from setuptools import find_packages
 from setuptools import setup
 
-__version__ = '0.45.0'
+__version__ = '0.46.0'
 
 
 setup(
@@ -53,6 +53,7 @@ setup(
         "azure-mgmt-sql<=1.0.0",
         "azure-identity>=1.5.0",
         "kubernetes>=18.20.0",
+        "pdpyras>=4.3.0",
     ],
     extras_require={
         ':python_version<"3.7"': [
