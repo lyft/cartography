@@ -19,6 +19,7 @@ def sync_services(
     load_services(session, services, update_tag)
 
 
+@timeit
 def get_services(client: K8sClient, cluster: Dict, pods: List[Dict]) -> List[Dict]:
     services = list()
     for service in client.core.list_service_for_all_namespaces().items:

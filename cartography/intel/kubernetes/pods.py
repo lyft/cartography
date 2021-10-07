@@ -20,6 +20,7 @@ def sync_pods(
     return pods
 
 
+@timeit
 def get_pods(client: K8sClient, cluster: Dict) -> List[Dict]:
     pods = list()
     for pod in client.core.list_pod_for_all_namespaces().items:

@@ -19,6 +19,7 @@ def sync_namespaces(session: Session, client: K8sClient, update_tag: int) -> Dic
     return cluster
 
 
+@timeit
 def get_namespaces(client: K8sClient) -> Tuple[Dict, List[Dict]]:
     cluster = dict()
     namespaces = list()
