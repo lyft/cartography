@@ -64,6 +64,8 @@ class Config:
     :param statsd_host: If statsd_enabled is True, send metrics to this host. Optional.
     :type: statsd_port: int
     :param statsd_port: If statsd_enabled is True, send metrics to this port on statsd_host. Optional.
+    :type: k8s_kubeconfig: str
+    :param k8s_kubeconfig: Path to kubeconfig file for kubernetes cluster(s). Optional
     :type: pagerduty_api_key: str
     :param pagerduty_api_key: API authentication key for pagerduty. Optional.
     """
@@ -94,6 +96,7 @@ class Config:
         jamf_base_uri=None,
         jamf_user=None,
         jamf_password=None,
+        k8s_kubeconfig=None,
         statsd_enabled=False,
         statsd_prefix=None,
         statsd_host=None,
@@ -124,6 +127,7 @@ class Config:
         self.jamf_base_uri = jamf_base_uri
         self.jamf_user = jamf_user
         self.jamf_password = jamf_password
+        self.k8s_kubeconfig = k8s_kubeconfig
         self.statsd_enabled = statsd_enabled
         self.statsd_prefix = statsd_prefix
         self.statsd_host = statsd_host
