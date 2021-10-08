@@ -1,0 +1,86 @@
+GET_USERS_DATA = [
+    {
+        "id": "PXPGF42",
+        "type": "user",
+        "summary": "Earline Greenholt",
+        "self": "https://api.pagerduty.com/users/PXPGF42",
+        "html_url": "https://subdomain.pagerduty.com/users/PXPGF42",
+        "name": "Earline Greenholt",
+        "email": "125.greenholt.earline@graham.name",
+        "time_zone": "America/Lima",
+        "color": "green",
+        "role": "admin",
+        "avatar_url": "https://secure.gravatar.com/avatar/a8b714a39626f2444ee05990b078995f.png?d=mm&r=PG",
+        "description": "I'm the boss",
+        "invitation_sent": False,
+        "contact_methods": [
+            {
+                "id": "PTDVERC",
+                "type": "email_contact_method_reference",
+                "summary": "Default",
+                "self": "https://api.pagerduty.com/users/PXPGF42/contact_methods/PTDVERC",
+            },
+        ],
+        "notification_rules": [
+            {
+                "id": "P8GRWKK",
+                "type": "assignment_notification_rule_reference",
+                "summary": "Default",
+                "self": "https://api.pagerduty.com/users/PXPGF42/notification_rules/P8GRWKK",
+                "html_url": None,
+            },
+        ],
+        "job_title": "Director of Engineering",
+        "teams": [
+            {
+                "id": "PQ9K7I8",
+                "type": "team_reference",
+                "summary": "Engineering",
+                "self": "https://api.pagerduty.com/teams/PQ9K7I8",
+                "html_url": "https://subdomain.pagerduty.com/teams/PQ9K7I8",
+            },
+        ],
+    },
+    {
+        "id": "PAM4FGS",
+        "type": "user",
+        "summary": "Kyler Kuhn",
+        "self": "https://api.pagerduty.com/users/PAM4FGS",
+        "html_url": "https://subdomain.pagerduty.com/users/PAM4FGS",
+        "name": "Kyler Kuhn",
+        "email": "126_dvm_kyler_kuhn@beahan.name",
+        "time_zone": "Asia/Hong_Kong",
+        "color": "red",
+        "role": "admin",
+        "avatar_url": "https://secure.gravatar.com/avatar/47857d059adacf9a41dc4030c2e14b0a.png?d=mm&r=PG",
+        "description": "Actually, I am the boss",
+        "invitation_sent": False,
+        "contact_methods": [
+            {
+                "id": "PVMGSML",
+                "type": "email_contact_method_reference",
+                "summary": "Work",
+                "self": "https://api.pagerduty.com/users/PAM4FGS/contact_methods/PVMGSMLL",
+            },
+        ],
+        "notification_rules": [
+            {
+                "id": "P8GRWKK",
+                "type": "assignment_notification_rule_reference",
+                "summary": "Default",
+                "self": "https://api.pagerduty.com/users/PXPGF42/notification_rules/P8GRWKK",
+                "html_url": None,
+            },
+        ],
+        "job_title": "Senior Engineer",
+        "teams": [
+            {
+                "id": "PQ9K7I8",
+                "type": "team_reference",
+                "summary": "Engineering",
+                "self": "https://api.pagerduty.com/teams/PQ9K7I8",
+                "html_url": "https://subdomain.pagerduty.com/teams/PQ9K7I8",
+            },
+        ],
+    },
+]

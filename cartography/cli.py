@@ -311,6 +311,14 @@ class CLI:
                 'The port of your statsd server. Only used if --statsd-enabled is on. Default = UDP 8125.'
             ),
         )
+        parser.add_argument(
+            '--pagerduty-api-key-env-var',
+            type=str,
+            default=None,
+            help=(
+                'The name of environment variable containing the pagerduty API key for authentication.'
+            ),
+        )
         return parser
 
     def main(self, argv):
@@ -415,6 +423,13 @@ class CLI:
                 f'statsd enabled. Sending metrics to server {config.statsd_host}:{config.statsd_port}. '
                 f'Metrics have prefix "{config.statsd_prefix}".',
             )
+
+        # Pagerduty config
+        if config.pagerduty_api_key_env_var:
+            logger.debug(f"Reading API key for PagerDuty from environment variable {config.pagerduty_api_key_env_var}")
+            config.pagerduty_api_key = os.environ.get(config.pagerduty_api_key_env_var)
+        else:
+            config.pagerduty_api_key = None
 
         # Run cartography
         try:
