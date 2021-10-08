@@ -285,7 +285,7 @@ class CLI:
             default=None,
             type=str,
             help=(
-                'The path to kubeconfig file specifying context to access K8 cluster(s).'
+                'The path to kubeconfig file specifying context to access K8s cluster(s).'
             ),
         )
         parser.add_argument(
