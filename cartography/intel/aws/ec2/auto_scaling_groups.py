@@ -34,6 +34,9 @@ def load_ec2_auto_scaling_groups(
         ON CREATE SET group.firstseen = timestamp(), group.name = ag.AutoScalingGroupName,
         group.createdtime = ag.CreatedTime
         SET group.lastupdated = {update_tag}, group.launchconfigurationname = ag.LaunchConfigurationName,
+        group.launchtemplatename = ag.LaunchTemplate.LaunchTemplateName,
+        group.launchtemplateid = ag.LaunchTemplate.LaunchTemplateId,
+        group.launchtemplateversion = ag.LaunchTemplate.Version,
         group.maxsize = ag.MaxSize, group.minsize = ag.MinSize, group.defaultcooldown = ag.DefaultCooldown,
         group.desiredcapacity = ag.DesiredCapacity, group.healthchecktype = ag.HealthCheckType,
         group.healthcheckgraceperiod = ag.HealthCheckGracePeriod, group.status = ag.Status,

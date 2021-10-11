@@ -2293,6 +2293,9 @@ Representation of an AWS [Auto Scaling Group Resource](https://docs.aws.amazon.c
 | name |  The name of the Auto Scaling group. |
 | createdtime | The date and time the group was created. |
 | launchconfigurationname | The name of the associated launch configuration. |
+| launchtemplatename | The name of the launch template. |
+| launchtemplateid | The ID of the launch template. |
+| launchtemplateversion | The version number of the launch template. |
 | maxsize | The maximum size of the group.|
 | minsize | The minimum size of the group.|
 | defaultcooldown | The duration of the default cooldown period, in seconds. |
