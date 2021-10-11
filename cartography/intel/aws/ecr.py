@@ -89,8 +89,10 @@ def transform_ecr_repository_images(repo_data: Dict) -> List[Dict]:
     return repo_images_list
 
 
-def _load_ecr_repo_img_tx(tx: neo4j.Transaction, repo_images_list: List[Dict], aws_update_tag: int,
-                          region: str) -> None:
+def _load_ecr_repo_img_tx(
+    tx: neo4j.Transaction, repo_images_list: List[Dict], aws_update_tag: int,
+    region: str,
+) -> None:
     query = """
     UNWIND {RepoList} as repo_img
         MERGE (ri:ECRRepositoryImage{id: repo_img.repo_uri + COALESCE(":" + repo_img.imageTag, '')})
@@ -121,8 +123,10 @@ def _load_ecr_repo_img_tx(tx: neo4j.Transaction, repo_images_list: List[Dict], a
 
 
 @timeit
-def load_ecr_repository_images(neo4j_session: neo4j.Session, repo_images_list: List[Dict], region: str,
-                               aws_update_tag: int) -> None:
+def load_ecr_repository_images(
+    neo4j_session: neo4j.Session, repo_images_list: List[Dict], region: str,
+    aws_update_tag: int,
+) -> None:
     logger.info(f"Loading {len(repo_images_list)} ECR repository images in {region} into graph.")
     neo4j_session.write_transaction(_load_ecr_repo_img_tx, repo_images_list, aws_update_tag, region)
 

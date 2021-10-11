@@ -493,8 +493,10 @@ def transform_policy_id(principal_arn: str, policy_type: str, name: str) -> str:
     return f"{principal_arn}/{policy_type}_policy/{name}"
 
 
-def _load_policy_tx(tx: neo4j.Transaction, policy_id:str, policy_name: str, policy_type: str, principal_arn: str,
-                    aws_update_tag: int) -> None:
+def _load_policy_tx(
+    tx: neo4j.Transaction, policy_id: str, policy_name: str, policy_type: str, principal_arn: str,
+    aws_update_tag: int,
+) -> None:
     ingest_policy = """
     MERGE (policy:AWSPolicy{id: {PolicyId}})
     ON CREATE SET
