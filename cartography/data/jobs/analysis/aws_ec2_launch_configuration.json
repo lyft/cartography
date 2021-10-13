@@ -1,0 +1,10 @@
+{
+    "name": "Autoscale group has launch configuration",
+    "statements": [
+        {
+            "__comment": "Create HAS_LAUNCH_CONFIG relationship from autoscale group to launch config",
+            "query":"MATCH (aa:AWSAccount)-[:RESOURCE]->(a:AutoScalingGroup)\nWITH a, aa\nMATCH (aa)-[:RESOURCE]->(lc:LaunchConfiguration{name: a.launchconfigurationname})\nMERGE (a)-[:HAS_LAUNCH_CONFIG]->(lc)",
+            "iterative": false
+        }
+    ]
+}
