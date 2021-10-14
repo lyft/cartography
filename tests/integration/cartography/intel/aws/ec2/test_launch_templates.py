@@ -53,7 +53,7 @@ def test_load_launch_templates(neo4j_session, *args):
     }
     versions = neo4j_session.run(
         """
-        MATCH (n:LaunchTemplateVersion)
+        MATCH (:LaunchTemplate)-[:VERSION]->(n:LaunchTemplateVersion)
         return n.id, n.name, n.version_number, n.create_time, n.image_id
         """,
     )
