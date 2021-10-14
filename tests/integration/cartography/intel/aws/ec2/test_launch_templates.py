@@ -47,18 +47,25 @@ def test_load_launch_templates(neo4j_session, *args):
             n['n.name'],
             n['n.create_time'],
             n['n.latest_version_number'],
-            n['v.id'],
         )
         for n in nodes
     }
+    assert actual_templates == expected_templates
+
+    nodes = neo4j_session.run(
+        """
+        MATCH (:LaunchTemplate)-[:VERSION]->(n:LaunchTemplateVersion)
+        return n.id, n.name, n.version_number, n.create_time, n.image_id
+        """,
+    )
     actual_versions = {
         (
-            v['v.name'],
-            v['v.version_number'],
-            v['v.create_time'],
-            v['v.image_id'],
+            n['n.id'],
+            n['n.name'],
+            n['n.version_number'],
+            n['n.create_time'],
+            n['n.image_id'],
         )
-        for v in nodes
+        for n in nodes
     }
-    assert actual_templates == expected_templates
     assert actual_versions == expected_versions

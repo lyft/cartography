@@ -26,7 +26,7 @@ def test_load_launch_configurations(neo4j_session, *args):
 
     nodes = neo4j_session.run(
         """
-        MATCH (n:LaunchConfiguration) return n.name, n.id, n.create_time
+        MATCH (n:LaunchConfiguration) return n.name, n.id, n.created_time
         """,
     )
     actual_nodes = {
