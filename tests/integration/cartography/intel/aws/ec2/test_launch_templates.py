@@ -8,6 +8,17 @@ TEST_UPDATE_TAG = 123456789
 
 
 def test_load_launch_templates(neo4j_session, *args):
+    # an AWSAccount must exist
+    neo4j_session.run(
+        """
+        MERGE (aws:AWSAccount{id: {aws_account_id}})
+        ON CREATE SET aws.firstseen = timestamp()
+        SET aws.lastupdated = {aws_update_tag}
+        """,
+        aws_account_id=TEST_ACCOUNT_ID,
+        aws_update_tag=TEST_UPDATE_TAG,
+    )
+
     data = tests.data.aws.ec2.launch_templates.GET_LAUNCH_TEMPLATES
     cartography.intel.aws.ec2.launch_templates.load_launch_templates(
         neo4j_session,
