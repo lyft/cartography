@@ -33,6 +33,9 @@ def get_launch_configurations(boto3_session: boto3.session.Session, region: str)
     lcs: List[Dict] = []
     for page in paginator.paginate():
         lcs.extend(page['LaunchConfigurations'])
+    if lcs:
+        with open('/home/cartography/test2.txt', 'w') as f:
+            f.write(str(lcs[0]))
     return lcs
 
 
