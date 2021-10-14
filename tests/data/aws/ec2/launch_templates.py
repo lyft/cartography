@@ -1,12 +1,10 @@
 import datetime
 
-import tzlocal
-
 
 GET_LAUNCH_TEMPLATES = {
     'LaunchTemplateId': 'lt-00000000000000000',
     'LaunchTemplateName': 'eks-00000000-0000-0000-0000-000000000000',
-    'CreateTime': datetime.datetime(2021, 10, 12, 6, 27, 52, tzinfo=tzlocal()),
+    'CreateTime': datetime.datetime(2021, 10, 12, 6, 27, 52),
     'CreatedBy': 'arn:aws:sts::000000000000:assumed-role/AWSServiceRoleForAmazonEKSNodegroup/EKS',
     'DefaultVersionNumber': 1,
     'LatestVersionNumber': 1,
@@ -25,7 +23,7 @@ GET_LAUNCH_TEMPLATES = {
             'LaunchTemplateId': 'lt-00000000000000000',
             'LaunchTemplateName': 'eks-00000000-0000-0000-0000-000000000000',
             'VersionNumber': 1,
-            'CreateTime': datetime.datetime(2021, 10, 12, 6, 27, 52, tzinfo=tzlocal()),
+            'CreateTime': datetime.datetime(2021, 10, 12, 6, 27, 52),
             'CreatedBy': 'arn:aws:sts::000000000000:assumed-role/AWSServiceRoleForAmazonEKSNodegroup/EKS',
             'DefaultVersion': True,
             'LaunchTemplateData': {

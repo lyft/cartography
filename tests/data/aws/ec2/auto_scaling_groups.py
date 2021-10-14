@@ -1,7 +1,5 @@
 import datetime
 
-import tzlocal
-
 
 GET_LAUNCH_CONFIGURATIONS = {
     'LaunchConfigurationName': 'example',
@@ -30,6 +28,6 @@ GET_LAUNCH_CONFIGURATIONS = {
         'Enabled': False,
     },
     'IamInstanceProfile': 'example',
-    'CreatedTime': datetime.datetime(2021, 9, 21, 10, 55, 34, 222000, tzinfo=tzlocal()),
+    'CreatedTime': datetime.datetime(2021, 9, 21, 10, 55, 34, 222000),
     'EbsOptimized': True,
 }
