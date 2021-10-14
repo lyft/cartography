@@ -36,9 +36,8 @@ def test_load_launch_templates(neo4j_session, *args):
 
     nodes = neo4j_session.run(
         """
-        MATCH (n:LaunchTemplate)-[:VERSION]->(v:LaunchTemplateVersion)
-        return n.id, n.name, n.create_time, n.latest_version_number, v.id, v.name,
-               v.version_number, v.create_time, v.image_id
+        MATCH (n:LaunchTemplate)
+        return n.id, n.name, n.create_time, n.latest_version_number
         """,
     )
     actual_templates = {

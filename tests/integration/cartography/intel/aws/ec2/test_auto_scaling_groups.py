@@ -33,7 +33,7 @@ def test_load_launch_configurations(neo4j_session, *args):
         (
             n['n.name'],
             n['n.id'],
-            n['n.create_time'],
+            n['n.created_time'],
         )
         for n in nodes
     }
