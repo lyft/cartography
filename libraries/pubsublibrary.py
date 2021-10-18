@@ -2,6 +2,7 @@
 # https://google-cloud-python.readthedocs.io/en/0.32.0/pubsub/index.html#publishing
 
 from google.cloud import pubsub_v1
+import logging
 import traceback
 from utils.errors import PubSubPublishError
 
@@ -17,13 +18,13 @@ class PubSubLibrary:
 
         try:
             # When you publish a message, the client returns a message_id
-            message_id = self.publisher.publish(topic_path, data=data).result()
-            self.logger.error(f'PubSub publish payload success: {message_id}')
+            message_id = publisher.publish(topic_path, data=data).result()
+            logging.error(f'PubSub publish payload success: {message_id}')
 
             return True
 
         except Exception as ex:
-            self.logger.error(f'PubSub publish payload failed: {str(ex)}')
+            logging.error(f'PubSub publish payload failed: {str(ex)}')
 
             traceback.print_exception(type(ex), ex, ex.__traceback__)
 
