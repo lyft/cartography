@@ -33,9 +33,6 @@ def get_launch_configurations(boto3_session: boto3.session.Session, region: str)
     lcs: List[Dict] = []
     for page in paginator.paginate():
         lcs.extend(page['LaunchConfigurations'])
-    if lcs:
-        with open('/home/cartography/test2.txt', 'w') as f:
-            f.write(str(lcs[0]))
     return lcs
 
 
@@ -88,8 +85,8 @@ def load_ec2_auto_scaling_groups(
     UNWIND {autoscaling_groups_list} as ag
         MERGE (group:AutoScalingGroup{arn: ag.AutoScalingGroupARN})
         ON CREATE SET group.firstseen = timestamp(),
-        group.createdtime = ag.CreatedTime,
-        group.launchconfigurationname = ag.LaunchConfigurationName,
+        group.createdtime = ag.CreatedTime
+        SET group.launchconfigurationname = ag.LaunchConfigurationName,
         group.launchtemplatename = ag.LaunchTemplate.LaunchTemplateName,
         group.launchtemplateid = ag.LaunchTemplate.LaunchTemplateId,
         group.launchtemplateversion = ag.LaunchTemplate.Version,
@@ -98,14 +95,9 @@ def load_ec2_auto_scaling_groups(
         group.healthcheckgraceperiod = ag.HealthCheckGracePeriod, group.status = ag.Status,
         group.newinstancesprotectedfromscalein = ag.NewInstancesProtectedFromScaleIn,
         group.maxinstancelifetime = ag.MaxInstanceLifetime, group.capacityrebalance = ag.CapacityRebalance,
-        group.name = ag.AutoScalingGroupName
-        SET group.lastupdated = {update_tag},
+        group.name = ag.AutoScalingGroupName,
+        group.lastupdated = {update_tag},
         group.region={Region}
-        WITH group
-        MATCH (lc:LaunchConfiguration{name: group.launchconfigurationname})
-        MERGE (group)-[r:LAUNCH_CONFIGURATION]->(lc)
-        ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {update_tag}
         WITH group
         MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
         MERGE (aa)-[r:RESOURCE]->(group)
@@ -142,12 +134,51 @@ def load_ec2_auto_scaling_groups(
         SET r.lastupdated = {update_tag}
     """
 
+    ingest_lts = """
+    UNWIND {autoscaling_groups_list} as ag
+        MATCH (group:AutoScalingGroup{arn: ag.AutoScalingGroupARN})
+        MATCH (template:LaunchTemplate{id: ag.LaunchTemplate.LaunchTemplateId})
+        MERGE (group)-[r:HAS_LAUNCH_TEMPLATE]->(template)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {update_tag}
+    """
+
+    ingest_lcs = """
+    UNWIND {autoscaling_groups_list} as ag
+        MATCH (group:AutoScalingGroup{arn: ag.AutoScalingGroupARN})
+        MATCH (config:LaunchConfiguration{name: ag.LaunchConfigurationName})
+        MERGE (group)-[r:HAS_LAUNCH_CONFIG]->(config)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {update_tag}
+    """
+
+    launch_configs = []
+    launch_templates = []
     for group in data:
+        if group.get('LaunchConfigurationName'):
+            launch_configs.append(group)
+        if group.get('LaunchTemplate'):
+            launch_templates.append(group)
+
         group['CreatedTime'] = str(group['CreatedTime'])
 
     neo4j_session.run(
         ingest_group,
         autoscaling_groups_list=data,
+        AWS_ACCOUNT_ID=current_aws_account_id,
+        Region=region,
+        update_tag=update_tag,
+    )
+    neo4j_session.run(
+        ingest_lcs,
+        autoscaling_groups_list=launch_configs,
+        AWS_ACCOUNT_ID=current_aws_account_id,
+        Region=region,
+        update_tag=update_tag,
+    )
+    neo4j_session.run(
+        ingest_lts,
+        autoscaling_groups_list=launch_templates,
         AWS_ACCOUNT_ID=current_aws_account_id,
         Region=region,
         update_tag=update_tag,

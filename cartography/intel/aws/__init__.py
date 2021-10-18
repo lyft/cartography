@@ -76,16 +76,6 @@ def _sync_one_account(
         neo4j_session,
         common_job_parameters,
     )
-    run_analysis_job(
-        'aws_ec2_launch_configuration.json',
-        neo4j_session,
-        common_job_parameters,
-    )
-    run_analysis_job(
-        'aws_ec2_launch_templates.json',
-        neo4j_session,
-        common_job_parameters,
-    )
 
 
 def _autodiscover_account_regions(boto3_session: boto3.session.Session, account_id: str) -> List[str]:
