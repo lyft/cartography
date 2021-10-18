@@ -37,6 +37,7 @@ from .ec2.tgw import sync_transit_gateways
 from .ec2.volumes import sync_ebs_volumes
 from .ec2.vpc import sync_vpc
 from .ec2.vpc_peerings import sync_vpc_peerings
+from .ec2.elastic_ip_addresses import sync_elastic_ip_addresses
 
 RESOURCE_FUNCTIONS: Dict = {
     'iam': iam.sync,
@@ -62,6 +63,7 @@ RESOURCE_FUNCTIONS: Dict = {
     'ecr': ecr.sync,
     'eks': eks.sync,
     'elasticache': elasticache.sync,
+    'elastic_ip_addresses': sync_elastic_ip_addresses,
     'emr': emr.sync,
     'lambda_function': lambda_function.sync,
     'kms': kms.sync,
