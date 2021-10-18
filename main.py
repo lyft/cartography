@@ -4,6 +4,7 @@ import logging
 import os
 import cartography.cli
 from libraries.pubsublibrary import PubSubLibrary
+from utils.errors import PubSubPublishError
 
 
 def cartography_worker(event, ctx):
@@ -96,11 +97,15 @@ def publish_response(req, resp):
 
     pubsub_helper = PubSubLibrary()
 
-    if 'resultTopic' in req['params']:
-        # Result should be pushed to "resultTopic" passed in the request
-        status = pubsub_helper.publish(os.environ['CLOUDANIX_PROJECT_ID'], json.dumps(body), req['params']['resultTopic'])
+    try:
+        if 'resultTopic' in req['params']:
+            # Result should be pushed to "resultTopic" passed in the request
+            status = pubsub_helper.publish(os.environ['CLOUDANIX_PROJECT_ID'], json.dumps(body), req['params']['resultTopic'])
 
-    else:
-        status = pubsub_helper.publish(os.environ['CLOUDANIX_PROJECT_ID'], json.dumps(body), os.environ['CARTOGRAPHY_RESULT_TOPIC'])
+        else:
+            status = pubsub_helper.publish(os.environ['CLOUDANIX_PROJECT_ID'], json.dumps(body), os.environ['CARTOGRAPHY_RESULT_TOPIC'])
 
-    logging.info(f'result published to PubSub with status: {status}')
+        logging.info(f'result published to PubSub with status: {status}')
+
+    except PubSubPublishError as e:
+        logging.error(f'Failed while publishing response to PubSub: {str(e)}')
