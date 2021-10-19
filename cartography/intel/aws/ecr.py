@@ -89,9 +89,9 @@ def transform_ecr_repository_images(repo_data: Dict) -> List[Dict]:
     return repo_images_list
 
 
-@timeit
-def load_ecr_repository_images(
-        neo4j_session: neo4j.Session, repo_images_list: List[Dict], region: str, aws_update_tag: int,
+def _load_ecr_repo_img_tx(
+    tx: neo4j.Transaction, repo_images_list: List[Dict], aws_update_tag: int,
+    region: str,
 ) -> None:
     query = """
     UNWIND {RepoList} as repo_img
@@ -119,13 +119,16 @@ def load_ecr_repository_images(
         ON CREATE SET r2.firstseen = timestamp()
         SET r2.lastupdated = {aws_update_tag}
     """
+    tx.run(query, RepoList=repo_images_list, Region=region, aws_update_tag=aws_update_tag)
+
+
+@timeit
+def load_ecr_repository_images(
+    neo4j_session: neo4j.Session, repo_images_list: List[Dict], region: str,
+    aws_update_tag: int,
+) -> None:
     logger.info(f"Loading {len(repo_images_list)} ECR repository images in {region} into graph.")
-    neo4j_session.run(
-        query,
-        RepoList=repo_images_list,
-        aws_update_tag=aws_update_tag,
-        Region=region,
-    ).consume()  # See issue #440
+    neo4j_session.write_transaction(_load_ecr_repo_img_tx, repo_images_list, aws_update_tag, region)
 
 
 @timeit
