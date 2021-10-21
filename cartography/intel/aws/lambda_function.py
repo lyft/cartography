@@ -6,6 +6,7 @@ from typing import List
 from typing import Tuple
 
 import boto3
+import botocore
 import neo4j
 import botocore
 
@@ -82,6 +83,7 @@ def load_lambda_functions(
 
 
 @timeit
+@aws_handle_regions
 def get_function_aliases(lambda_function: Dict, client: botocore.client.BaseClient) -> List[Any]:
     aliases: List[Any] = []
     paginator = client.get_paginator('list_aliases')
@@ -92,6 +94,7 @@ def get_function_aliases(lambda_function: Dict, client: botocore.client.BaseClie
 
 
 @timeit
+@aws_handle_regions
 def get_event_source_mappings(lambda_function: Dict, client: botocore.client.BaseClient) -> List[Any]:
     event_source_mappings: List[Any] = []
     paginator = client.get_paginator('list_event_source_mappings')
@@ -102,9 +105,10 @@ def get_event_source_mappings(lambda_function: Dict, client: botocore.client.Bas
 
 
 @timeit
+@aws_handle_regions
 def get_lambda_function_details(
-        boto3_session: boto3.session.Session, data: List[Dict], region: str
-) -> Generator[Any, Any, Any]:
+        boto3_session: boto3.session.Session, data: List[Dict], region: str,
+) -> Generator[Any, Any, None]:
     client = boto3_session.client('lambda', region_name=region)
     for lambda_function in data:
         function_aliases = get_function_aliases(lambda_function, client)
@@ -115,7 +119,8 @@ def get_lambda_function_details(
 
 @timeit
 def load_lambda_function_details(
-        neo4j_session: neo4j.Session, lambda_function_details: List[Tuple[Any, Any, Any, Any]], update_tag: int,
+        neo4j_session: neo4j.Session, lambda_function_details: List[Tuple[str, List[Dict], List[Dict], List[Dict]]],
+        update_tag: int,
 ) -> None:
     lambda_aliases: List[Dict] = []
     lambda_event_source_mappings: List[Dict] = []
@@ -209,7 +214,7 @@ def _load_lambda_layers(neo4j_session: neo4j.Session, lambda_layers: List[Dict],
     l.signingjobarn = layer.SigningJobArn,
     l.lastupdated = {aws_update_tag}
     WITH l, layer
-    MATCH (lambda:AWSLambda{id: l.FunctionArn})
+    MATCH (lambda:AWSLambda{id: layer.FunctionArn})
     MERGE (lambda)-[r:HAS]->(l)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {aws_update_tag}

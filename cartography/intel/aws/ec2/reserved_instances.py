@@ -6,6 +6,7 @@ import boto3
 import neo4j
 from botocore.exceptions import ClientError
 
+from .util import get_botocore_config
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -16,11 +17,11 @@ logger = logging.getLogger(__name__)
 @timeit
 @aws_handle_regions
 def get_reserved_instances(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
-    client = boto3_session.client('ec2', region_name=region)
+    client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
     try:
         reserved_instances = client.describe_reserved_instances()['ReservedInstances']
     except ClientError as e:
-        logger.warning("Failed retrieve reserved instances for region - {}. Error - {}".format(region, e))
+        logger.warning(f"Failed retrieve reserved instances for region - {region}. Error - {e}")
         raise
     return reserved_instances
 
@@ -32,19 +33,18 @@ def load_reserved_instances(
 ) -> None:
     ingest_reserved_instances = """
     UNWIND {reserved_instances_list} as res
-    MERGE (r:EC2ReservedInstance{id: res.ReservedInstancesId})
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {update_tag}, r.availabilityzone = res.AvailabilityZone, r.duration = res.Duration,
-    r.end = res.End, r.start = res.Start, r.count = res.InstanceCount, r.type = res.InstanceType,
-    r.productdescription = res.ProductDescription, r.state = res.State, r.currencycode = res.CurrencyCode,
-    r.instancetenancy = res.InstanceTenancy, r.offeringclass = res.OfferingClass, r.offeringtype = res.OfferingType,
-    r.scope = res.Scope, r.fixedprice = res.FixedPrice,
-    r.region={Region}
-    WITH r
+    MERGE (ri:EC2ReservedInstance{id: res.ReservedInstancesId})
+    ON CREATE SET ri.firstseen = timestamp()
+    SET ri.lastupdated = {update_tag}, ri.availabilityzone = res.AvailabilityZone, ri.duration = res.Duration,
+    ri.end = res.End, ri.start = res.Start, ri.count = res.InstanceCount, ri.type = res.InstanceType,
+    ri.productdescription = res.ProductDescription, ri.state = res.State, ri.currencycode = res.CurrencyCode,
+    ri.instancetenancy = res.InstanceTenancy, ri.offeringclass = res.OfferingClass,
+    ri.offeringtype = res.OfferingType, ri.scope = res.Scope, ri.fixedprice = res.FixedPrice, ri.region={Region}
+    WITH ri
     MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
-    MERGE (aa)-[rr:RESOURCE]->(r)
-    ON CREATE SET rr.firstseen = timestamp()
-    SET rr.lastupdated = {update_tag}
+    MERGE (aa)-[r:RESOURCE]->(ri)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {update_tag}
     """
 
     # neo4j does not accept datetime objects and values. This loop is used to convert

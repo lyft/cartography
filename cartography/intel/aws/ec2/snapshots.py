@@ -23,7 +23,6 @@ def get_snapshots(boto3_session: boto3.session.Session, region: str) -> List[Dic
     for page in paginator.paginate(**query_params):
         snapshots.extend(page['Snapshots'])
 
-    print(snapshots)
     return snapshots
 
 

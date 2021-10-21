@@ -38,6 +38,7 @@ def load_load_balancer_listeners(
         ON CREATE SET l.port = data.Listener.LoadBalancerPort, l.protocol = data.Listener.Protocol,
         l.firstseen = timestamp()
         SET l.instance_port = data.Listener.InstancePort, l.instance_protocol = data.Listener.InstanceProtocol,
+        l.policy_names = data.PolicyNames,
         l.lastupdated = {update_tag}
         WITH l, elb
         MERGE (elb)-[r:ELB_LISTENER]->(l)

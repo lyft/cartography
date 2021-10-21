@@ -1,7 +1,10 @@
+from typing import Dict
+from typing import List
+
 from cartography.intel.okta.groups import transform_okta_group
-from cartography.intel.okta.groups import transform_okta_group_member
+from cartography.intel.okta.groups import transform_okta_group_member_list
 from tests.data.okta.groups import create_test_group
-from tests.data.okta.groups import LIST_GROUP_MEMBER_RESPONSE
+from tests.data.okta.groups import GROUP_MEMBERS_SAMPLE_DATA
 
 
 def test_group_transform_with_all_values():
@@ -80,7 +83,13 @@ def test_group_transform_with_external_id_none():
 
 
 def test_group_member_list_transform():
-    result = transform_okta_group_member(LIST_GROUP_MEMBER_RESPONSE)
+    """
+    Simple test to see if `last_name` and `id` are present.
+    """
+    transformed_results: List[Dict] = transform_okta_group_member_list(GROUP_MEMBERS_SAMPLE_DATA)
+    last_names = [(r['last_name'], r['id']) for r in transformed_results]
 
-    expected = ["00u1f96ECLNVOKVMUSEA", "00u1f9cMYQZFMPVXIDIZ"]
-    assert result == expected
+    assert len(last_names) == 3
+    assert ('Clarkson', 'OKTA_USER_ID_1') in last_names
+    assert ('Hammond', 'OKTA_USER_ID_3') in last_names
+    assert ('May', 'OKTA_USER_ID_2') in last_names

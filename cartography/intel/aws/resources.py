@@ -1,6 +1,7 @@
 from typing import Dict
 
 from . import apigateway
+from . import config
 from . import dynamodb
 from . import ecr
 from . import eks
@@ -16,6 +17,9 @@ from . import redshift
 from . import resourcegroupstaggingapi
 from . import route53
 from . import s3
+from . import secretsmanager
+from . import securityhub
+from . import sqs
 from .ec2.auto_scaling_groups import sync_ec2_auto_scaling_groups
 from .ec2.images import sync_ec2_images
 from .ec2.instances import sync_ec2_instances
@@ -40,6 +44,7 @@ RESOURCE_FUNCTIONS: Dict = {
     'ec2:autoscalinggroup': sync_ec2_auto_scaling_groups,
     'ec2:images': sync_ec2_images,
     'ec2:instance': sync_ec2_instances,
+    'ec2:images': sync_ec2_images,
     'ec2:keypair': sync_ec2_key_pairs,
     'ec2:load_balancer': sync_load_balancers,
     'ec2:load_balancer_v2': sync_load_balancer_v2s,
@@ -64,6 +69,10 @@ RESOURCE_FUNCTIONS: Dict = {
     'route53': route53.sync,
     'elasticsearch': elasticsearch.sync,
     'apigateway': apigateway.sync,
+    'secretsmanager': secretsmanager.sync,
+    'securityhub': securityhub.sync,
+    'sqs': sqs.sync,
+    'config': config.sync,
     'permission_relationships': permission_relationships.sync,
     'resourcegroupstaggingapi': resourcegroupstaggingapi.sync,
 }

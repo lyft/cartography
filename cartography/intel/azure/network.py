@@ -1,6 +1,5 @@
 import logging
 from azure.mgmt.compute import ComputeManagementClient
-from cartography.util import get_optional_value
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
@@ -119,7 +118,7 @@ def load_network_interface_data(neo4j_session, subscription_id, network_interfac
             location=networkInterface.get('location'),
             etag=networkInterface.get('etag'),
             macAddress=networkInterface.get('macAddress'),
-            networkSecurityGroupId=get_optional_value(networkInterface, ['properties', 'macAddress', 'networkSecurityGroup', 'id']),
+            networkSecurityGroupId=networkInterface.get('properties', {}).get('macAddress', {}).get('networkSecurityGroup', {}).get('id', None),
             AZURE_SUBSCRIPTION_ID=subscription_id,
             azure_update_tag=azure_update_tag,
         )

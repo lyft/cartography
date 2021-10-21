@@ -65,36 +65,50 @@ def get_policy(key: Dict, client: botocore.client.BaseClient) -> Any:
     """
     try:
         policy = client.get_key_policy(KeyId=key["KeyId"], PolicyName='default')
-    except ClientError:
+    except ClientError as e:
         policy = None
-        logger.warning(f"Failed to retrieve Key Policy for key id - {key['KeyId']}, skipping.", exc_info=True)
+        if e.response['Error']['Code'] == 'AccessDeniedException':
+            logger.warning(
+                f"kms:get_key_policy on key id {key['KeyId']} failed with AccessDeniedException; continuing sync.",
+                exc_info=True,
+            )
+        else:
+            raise
 
     return policy
 
 
 @timeit
-def get_aliases(key: str, client: botocore.client.BaseClient) -> List[Any]:
+def get_aliases(key: Dict, client: botocore.client.BaseClient) -> List[Any]:
     """
     Gets the KMS Key Aliases.
     """
     aliases: List[Any] = []
     paginator = client.get_paginator('list_aliases')
-    for page in paginator.paginate(KeyId=key['KeyId']):   # type: ignore
+    for page in paginator.paginate(KeyId=key['KeyId']):
         aliases.extend(page['Aliases'])
 
     return aliases
 
 
 @timeit
-def get_grants(key: str, client: botocore.client.BaseClient) -> List[Any]:
+def get_grants(key: Dict, client: botocore.client.BaseClient) -> List[Any]:
     """
     Gets the KMS Key Grants.
     """
     grants: List[Any] = []
     paginator = client.get_paginator('list_grants')
-    for page in paginator.paginate(KeyId=key['KeyId']):   # type: ignore
-        grants.extend(page['Grants'])
-
+    try:
+        for page in paginator.paginate(KeyId=key['KeyId']):
+            grants.extend(page['Grants'])
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'AccessDeniedException':
+            logger.warning(
+                f'kms:list_grants on key_id {key["KeyId"]} failed with AccessDeniedException; continuing sync.',
+                exc_info=True,
+            )
+        else:
+            raise
     return grants
 
 
