@@ -925,7 +925,7 @@ def cleanup_azure_sql_servers(
 @timeit
 def sync(
         neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str,
-        sync_tag: int, common_job_parameters: Dict,
+        sync_tag: int, common_job_parameters: Dict, regions: List[str],
 ) -> None:
     logger.info("Syncing Azure SQL for subscription '%s'.", subscription_id)
     server_list = get_server_list(credentials, subscription_id)

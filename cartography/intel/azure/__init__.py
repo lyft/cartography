@@ -22,12 +22,12 @@ logger = logging.getLogger(__name__)
 
 def _sync_one_subscription(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict,
+    common_job_parameters: Dict, regions: List[str],
 ) -> None:
-    compute.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
-    cosmosdb.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
-    sql.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
-    storage.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
+    compute.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters, regions)
+    cosmosdb.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters, regions)
+    sql.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters, regions)
+    storage.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters, regions)
 
 
 def _sync_tenant(
@@ -40,7 +40,7 @@ def _sync_tenant(
 
 def _sync_multiple_subscriptions(
     neo4j_session: neo4j.Session, credentials: Credentials, tenant_id: str, subscriptions: List[Dict],
-    update_tag: int, common_job_parameters: Dict,
+    update_tag: int, common_job_parameters: Dict, regions: List[str],
 ) -> None:
     logger.info("Syncing Azure subscriptions")
 
@@ -50,7 +50,7 @@ def _sync_multiple_subscriptions(
         logger.info("Syncing Azure Subscription with ID '%s'", sub['subscriptionId'])
         common_job_parameters['AZURE_SUBSCRIPTION_ID'] = sub['subscriptionId']
 
-        _sync_one_subscription(neo4j_session, credentials, sub['subscriptionId'], update_tag, common_job_parameters)
+        _sync_one_subscription(neo4j_session, credentials, sub['subscriptionId'], update_tag, common_job_parameters, regions)
 
     del common_job_parameters["AZURE_SUBSCRIPTION_ID"]
 
@@ -104,7 +104,9 @@ def start_azure_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
         )
         return
 
+    regions = config.params.get('regions', [])
+
     _sync_multiple_subscriptions(
         neo4j_session, credentials, credentials.get_tenant_id(), subscriptions, config.update_tag,
-        common_job_parameters,
+        common_job_parameters, regions,
     )

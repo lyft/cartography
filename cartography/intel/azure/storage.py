@@ -791,7 +791,7 @@ def cleanup_azure_storage_accounts(
 @timeit
 def sync(
         neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str,
-        sync_tag: int, common_job_parameters: Dict,
+        sync_tag: int, common_job_parameters: Dict, regions: List[str],
 ) -> None:
     logger.info("Syncing Azure Storage for subscription '%s'.", subscription_id)
     storage_account_list = get_storage_account_list(credentials, subscription_id)

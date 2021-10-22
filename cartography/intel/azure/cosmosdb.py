@@ -1060,7 +1060,7 @@ def cleanup_table_resources(neo4j_session: neo4j.Session, common_job_parameters:
 @timeit
 def sync(
         neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str,
-        sync_tag: int, common_job_parameters: Dict,
+        sync_tag: int, common_job_parameters: Dict, regions: List[str],
 ) -> None:
     logger.info("Syncing Azure CosmosDB for subscription '%s'.", subscription_id)
     database_account_list = get_database_account_list(credentials, subscription_id)
