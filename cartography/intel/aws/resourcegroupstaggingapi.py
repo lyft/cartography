@@ -92,8 +92,9 @@ TAG_RESOURCE_TYPE_MAPPINGS: Dict = {
         'property': 'name', 'id_func': get_short_id_from_lb2_arn,
     },
     'elasticmapreduce:cluster': {'label': 'EMRCluster', 'property': 'arn'},
-    'es:domain': {'label': 'ESDomain', 'property': 'arn'},
+    'es:domain': {'label': 'ESDomain', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},
     'kms:key': {'label': 'KMSKey', 'property': 'arn'},
+    # 'kms:key': {'label': 'KMSKey', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},
     'lambda:function': {'label': 'AWSLambda', 'property': 'id'},
     'redshift:cluster': {'label': 'RedshiftCluster', 'property': 'id'},
     'rds:db': {'label': 'RDSInstance', 'property': 'id'},
@@ -102,26 +103,20 @@ TAG_RESOURCE_TYPE_MAPPINGS: Dict = {
     # Buckets are the only objects in the S3 service: https://docs.aws.amazon.com/AmazonS3/latest/dev/s3-arn-format.html
     's3': {'label': 'S3Bucket', 'property': 'id', 'id_func': get_bucket_name_from_arn},
     'lambda': {'label': 'AWSLambda', 'property': 'id'},
-    'apigateway-api': {'label': 'APIGatewayRestAPI', 'property': 'id'},
-    'apigateway-stage': {'label': 'APIGatewayStage', 'property': 'id'},
-    'apigateway-certificate': {'label': 'APIGatewayClientCertificate', 'property': 'id'},
-    'apigateway-resource': {'label': 'APIGatewayResource', 'property': 'id'},
-    'dynamodb-table': {'label': 'DynamoDBTable', 'property': 'id'},
-    'dynamodb-index': {'label': 'DynamoDBGlobalSecondaryIndex', 'property': 'id'},
-    'ecr-repo': {'label': 'ECRRepository', 'property': 'id'},
-    'eks-cluster': {'label': 'EKSCluster', 'property': 'id'},
-    'ec-cluster': {'label': 'ElasticacheCluster', 'property': 'id'},
-    'ec-topic': {'label': 'ElasticacheTopic', 'property': 'id'},
-    'es-domain': {'label': 'ESDomain', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},
-    'iam-user': {'label': 'AWSUser', 'property': 'arn'},
-    'iam-group': {'label': 'AWSGroup', 'property': 'arn'},
-    'iam-role': {'label': 'AWSRole', 'property': 'arn'},
-    'iam-policy': {'label': 'AWSPolicy', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},
-    'kms-key': {'label': 'KMSKey', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},
-    'rds-instance': {'label': 'RDSInstance', 'property': 'id'},
-    'rds-sg': {'label': 'DBSubnetGroup', 'property': 'id'},
-    'redshift-cluster': {'label': 'RedshiftCluster', 'property': 'id'},
-    'autoscalinggroup': {'label': 'AutoScalingGroup', 'property': 'arn'},
+    'apigateway:api': {'label': 'APIGatewayRestAPI', 'property': 'id'},
+    'apigateway:stage': {'label': 'APIGatewayStage', 'property': 'id'},
+    'apigateway:certificate': {'label': 'APIGatewayClientCertificate', 'property': 'id'},
+    'apigateway:resource': {'label': 'APIGatewayResource', 'property': 'id'},
+    'dynamodb:index': {'label': 'DynamoDBGlobalSecondaryIndex', 'property': 'id'},
+    'ecr:repo': {'label': 'ECRRepository', 'property': 'id'},
+    'elasticache:topic': {'label': 'ElasticacheTopic', 'property': 'id'},
+    'iam:user': {'label': 'AWSUser', 'property': 'arn'},
+    'iam:group': {'label': 'AWSGroup', 'property': 'arn'},
+    'iam:role': {'label': 'AWSRole', 'property': 'arn'},
+    'iam:policy': {'label': 'AWSPolicy', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},
+    'rds:instance': {'label': 'RDSInstance', 'property': 'id'},
+    'rds:sg': {'label': 'DBSubnetGroup', 'property': 'id'},
+    'autoscaling:group': {'label': 'AutoScalingGroup', 'property': 'arn'},
     'secretsmanager:secret': {'label': 'SecretsManagerSecret', 'property': 'id'},
     'sqs': {'label': 'SQSQueue', 'property': 'id'},
 }
@@ -141,7 +136,7 @@ def get_tags(boto3_session: boto3.session.Session, resource_types: List[str], re
     #     # This is just a starting list; there may be others supported by this API.
     #     ResourceTypeFilters=resource_types,
     # ):
-    for page in paginator.paginate():
+    for page in paginator.paginate(ResourceTypeFilters=resource_types):
         resources.extend(page['ResourceTagMappingList'])
     return resources
 
