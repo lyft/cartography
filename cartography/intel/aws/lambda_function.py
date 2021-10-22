@@ -173,7 +173,7 @@ def _load_lambda_event_source_mappings(
 ) -> None:
     ingest_esms = """
     UNWIND {esm_list} AS esm
-    MERGE (e:AWSLambdaEventSourceMapping{id: esm.UUID})
+    MERGE (e:AWSLambdaEventSourceMapping{id: esm.EventSourceArn})
     ON CREATE SET e.firstseen = timestamp()
     SET e.batchsize = esm.BatchSize,
     e.startingposition = esm.StartingPosition,
@@ -181,6 +181,7 @@ def _load_lambda_event_source_mappings(
     e.parallelizationfactor = esm.ParallelizationFactor,
     e.maximumbatchingwindowinseconds = esm.MaximumBatchingWindowInSeconds,
     e.eventsourcearn = esm.EventSourceArn,
+    e.UUID = esm.UUID,
     e.lastmodified = esm.LastModified,
     e.lastprocessingresult = esm.LastProcessingResult,
     e.state = esm.State,
