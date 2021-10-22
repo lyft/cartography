@@ -379,7 +379,7 @@ def start_gcp_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
     projects = crm.get_gcp_projects(resources.crm_v1)
 
     # Read regions from parameters
-    regions = config.get('params', {}).get('regions', [])
+    regions = config.params.get('regions', [])
 
     _sync_multiple_projects(neo4j_session, resources, projects, config.update_tag, common_job_parameters, regions=regions)
 
