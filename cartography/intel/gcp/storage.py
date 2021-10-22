@@ -221,7 +221,7 @@ def cleanup_gcp_buckets(neo4j_session: neo4j.Session, common_job_parameters: Dic
 @timeit
 def sync_gcp_buckets(
     neo4j_session: neo4j.Session, storage: Resource, project_id: str, gcp_update_tag: int,
-    common_job_parameters: Dict,
+    common_job_parameters: Dict, regions: List[str],
 ) -> None:
     """
     Get GCP instances using the Storage resource object, ingest to Neo4j, and clean up old data.

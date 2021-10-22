@@ -3,11 +3,13 @@ import logging
 from collections import namedtuple
 from typing import Dict
 from typing import List
+from typing import Optional
 from typing import Set
 
 import googleapiclient.discovery
 import neo4j
 from googleapiclient.discovery import Resource
+from googleapiclient.discovery import HttpError
 from oauth2client.client import ApplicationDefaultCredentialsError
 from oauth2client.client import GoogleCredentials
 
@@ -173,7 +175,7 @@ def _services_enabled_on_project(serviceusage: Resource, project_id: str) -> Set
 
 def _sync_single_project(
     neo4j_session: neo4j.Session, resources: Resource, project_id: str, gcp_update_tag: int,
-    common_job_parameters: Dict,
+    common_job_parameters: Dict, regions: List[str] = [],
 ) -> None:
     """
     Handles graph sync for a single GCP project.
@@ -185,30 +187,136 @@ def _sync_single_project(
     :param common_job_parameters: Other parameters sent to Neo4j
     :return: Nothing
     """
+    if not regions:
+        regions = _auto_discover_regions(resources.compute, project_id)
+
     # Determine the resources available on the project.
-    # enabled_services = _services_enabled_on_project(resources.serviceusage, project_id)
-    # if service_names.compute in enabled_services:
-    iam.sync(neo4j_session, resources.iam, resources.crm_v1, project_id, gcp_update_tag, common_job_parameters)
-    # if service_names.compute in enabled_services:
-    compute.sync(neo4j_session, resources.compute, project_id, gcp_update_tag, common_job_parameters)
-    # if service_names.storage in enabled_services:
-    storage.sync_gcp_buckets(neo4j_session, resources.storage, project_id, gcp_update_tag, common_job_parameters)
-    # if service_names.gke in enabled_services:
-    gke.sync_gke_clusters(neo4j_session, resources.container, project_id, gcp_update_tag, common_job_parameters)
-    # if service_names.dns in enabled_services:
-    dns.sync(neo4j_session, resources.dns, project_id, gcp_update_tag, common_job_parameters)
+    enabled_services = _services_enabled_on_project(resources.serviceusage, project_id)
+
+    if service_names.compute in enabled_services:
+        iam.sync(neo4j_session, resources.iam, resources.crm_v1, project_id, gcp_update_tag, common_job_parameters, regions)
+
+    if service_names.compute in enabled_services:
+        compute.sync(neo4j_session, resources.compute, project_id, gcp_update_tag, common_job_parameters, regions)
+
+    if service_names.storage in enabled_services:
+        storage.sync_gcp_buckets(neo4j_session, resources.storage, project_id, gcp_update_tag, common_job_parameters, regions)
+
+    if service_names.gke in enabled_services:
+        gke.sync_gke_clusters(neo4j_session, resources.container, project_id, gcp_update_tag, common_job_parameters, regions)
+
+    if service_names.dns in enabled_services:
+        dns.sync(neo4j_session, resources.dns, project_id, gcp_update_tag, common_job_parameters, regions)
+
+
+def _auto_discover_regions(compute: Resource, project_id: str) -> List[Dict]:
+    zones = get_zones_in_project(project_id, compute)
+
+    regions = _zones_to_regions(zones)
+
+    return regions
+
+
+@timeit
+def get_zones_in_project(project_id: str, compute: Resource, max_results: Optional[int] = None) -> Optional[List[Dict]]:
+    """
+    Return the zones where the Compute Engine API is enabled for the given project_id.
+    See https://cloud.google.com/compute/docs/reference/rest/v1/zones and
+    https://cloud.google.com/compute/docs/reference/rest/v1/zones/list.
+    If the API is not enabled or if the project returns a 404-not-found, return None.
+    :param project_id: The project ID number to sync.  See  the `projectId` field in
+    https://cloud.google.com/resource-manager/reference/rest/v1/projects
+    :param compute: The compute resource object created by googleapiclient.discovery.build()
+    :param max_results: Optional cap on number of results returned by this function. Default = None, which means no cap.
+    :return: List of a project's zone objects if Compute API is turned on, else None.
+    """
+    try:
+        req = compute.zones().list(project=project_id, maxResults=max_results)
+        res = req.execute()
+        return res['items']
+    except HttpError as e:
+        reason = _get_error_reason(e)
+        if reason == 'accessNotConfigured':
+            logger.info(
+                (
+                    "Google Compute Engine API access is not configured for project %s; skipping. "
+                    "Full details: %s"
+                ),
+                project_id,
+                e,
+            )
+            return None
+        elif reason == 'notFound':
+            logger.info(
+                (
+                    "Project %s returned a 404 not found error. "
+                    "Full details: %s"
+                ),
+                project_id,
+                e,
+            )
+            return None
+        elif reason == 'forbidden':
+            logger.info(
+                (
+                    "Your GCP identity does not have the compute.zones.list permission for project %s; skipping "
+                    "compute sync for this project. Full details: %s"
+                ),
+                project_id,
+                e,
+            )
+            return None
+        else:
+            raise
+
+
+def _zones_to_regions(zones: List[str]) -> List[Set]:
+    """
+    Return list of regions from the input list of zones
+    :param zones: List of zones. This is the output from `get_zones_in_project()`.
+    :return: List of regions available to the project
+    """
+    regions = set()
+    for zone in zones:
+        # Chop off the last 2 chars to turn the zone to a region
+        region = zone['name'][:-2]     # type: ignore
+        regions.add(region)
+    return list(regions)     # type: ignore
+
+
+def _get_error_reason(http_error: HttpError) -> str:
+    """
+    Helper function to get an error reason out of the googleapiclient's HttpError object
+    This function copies the structure of
+    https://github.com/googleapis/google-api-python-client/blob/1d2e240a74d2bc0074dffbc57cf7d62b8146cb82/
+                                  googleapiclient/http.py#L111
+    At the moment this is the best way we know of to extract the HTTP failure reason.
+    Additionally, see https://github.com/googleapis/google-api-python-client/issues/662.
+    :param http_error: The googleapi HttpError object
+    :return: The error reason as a string
+    """
+    try:
+        data = json.loads(http_error.content.decode('utf-8'))
+        if isinstance(data, dict):
+            reason = data['error']['errors'][0]['reason']
+        else:
+            reason = data[0]['error']['errors']['reason']
+    except (UnicodeDecodeError, ValueError, KeyError):
+        logger.warning(f"HttpError: {data}")
+        return ''
+    return reason
 
 
 def _sync_multiple_projects(
     neo4j_session: neo4j.Session, resources: Resource, projects: List[Dict],
-    gcp_update_tag: int, common_job_parameters: Dict,
+    gcp_update_tag: int, common_job_parameters: Dict, regions: List[str] = [],
 ) -> None:
     """
     Handles graph sync for multiple GCP projects.
     :param neo4j_session: The Neo4j session
     :param resources: namedtuple of the GCP resource objects
     :param: projects: A list of projects. At minimum, this list should contain a list of dicts with the key "projectId"
-     defined; so it would look like this: [{"projectId": "my-project-id-12345"}].
+    defined; so it would look like this: [{"projectId": "my-project-id-12345"}].
     This is the returned data from `crm.get_gcp_projects()`.
     See https://cloud.google.com/resource-manager/reference/rest/v1/projects.
     :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
@@ -222,7 +330,7 @@ def _sync_multiple_projects(
         project_id = project['projectId']
         common_job_parameters["GCP_PROJECT_ID"] = project_id
         logger.info("Syncing GCP project %s.", project_id)
-        _sync_single_project(neo4j_session, resources, project_id, gcp_update_tag, common_job_parameters)
+        _sync_single_project(neo4j_session, resources, project_id, gcp_update_tag, common_job_parameters, regions=regions)
 
 
 @timeit
@@ -270,7 +378,10 @@ def start_gcp_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
 
     projects = crm.get_gcp_projects(resources.crm_v1)
 
-    _sync_multiple_projects(neo4j_session, resources, projects, config.update_tag, common_job_parameters)
+    # Read regions from parameters
+    regions = config.get('params', {}).get('regions', [])
+
+    _sync_multiple_projects(neo4j_session, resources, projects, config.update_tag, common_job_parameters, regions=regions)
 
     run_analysis_job(
         'gcp_compute_asset_inet_exposure.json',

@@ -1,6 +1,7 @@
 import json
 import logging
 from typing import Dict
+from typing import List
 
 import neo4j
 from googleapiclient.discovery import HttpError
@@ -169,7 +170,7 @@ def cleanup_gke_clusters(neo4j_session: neo4j.Session, common_job_parameters: Di
 @timeit
 def sync_gke_clusters(
     neo4j_session: neo4j.Session, container: Resource, project_id: str, gcp_update_tag: int,
-    common_job_parameters: Dict,
+    common_job_parameters: Dict, regions: List[str],
 ) -> None:
     """
     Get GCP GKE Clusters using the Container resource object, ingest to Neo4j, and clean up old data.
