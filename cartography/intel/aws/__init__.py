@@ -151,12 +151,15 @@ def _sync_multiple_accounts(
 
         _autodiscover_accounts(neo4j_session, boto3_session, account_id, config.update_tag, common_job_parameters)
 
+        regions = config.params.get('regions', [])
+
         _sync_one_account(
             neo4j_session,
             boto3_session,
             account_id,
             config.update_tag,
             common_job_parameters,
+            regions=regions,
             aws_requested_syncs=aws_requested_syncs,  # Could be replaced later with per-account requested syncs
         )
 
@@ -179,6 +182,7 @@ def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
         "permission_relationships_file": config.permission_relationships_file,
         "WORKSPACE_ID": config.params['workspace']['id_string']
     }
+
     try:
         # boto3_session = boto3.Session()
 
