@@ -12,6 +12,9 @@ pyyaml>=5.3.1
 requests>=2.22.0
 statsd
 packaging
+cryptography<3.4,>=3.2
+
+# Cloudanix Lambda Specific requirements
 flask<2.0,>=1.0
 maya
 pytz

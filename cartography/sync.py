@@ -1,6 +1,7 @@
 import logging
 import time
 from collections import OrderedDict
+import traceback
 
 import neobolt.exceptions
 from neo4j import GraphDatabase
@@ -17,7 +18,7 @@ import cartography.intel.create_indexes
 # import cartography.intel.github
 # import cartography.intel.gsuite
 # import cartography.intel.okta
-import cartography.intel.kubernetes
+# import cartography.intel.kubernetes
 # import cartography.intel.okta
 from cartography.stats import set_stats_client
 
@@ -76,12 +77,18 @@ class Sync:
                 logger.info("Starting sync stage '%s'", stage_name)
                 try:
                     stage_func(neo4j_session, config)
-                except (KeyboardInterrupt, SystemExit):
+                except (KeyboardInterrupt, SystemExit) as ex:
                     logger.warning("Sync interrupted during stage '%s'.", stage_name)
+
+                    traceback.print_exception(type(ex), ex, ex.__traceback__)
                     raise
-                except Exception:
+
+                except Exception as ex:
                     logger.exception("Unhandled exception during sync stage '%s'", stage_name)
+
+                    traceback.print_exception(type(ex), ex, ex.__traceback__)
                     raise  # TODO this should be configurable
+
                 logger.info("Finishing sync stage '%s'", stage_name)
         logger.info("Finishing sync with update tag '%d'", config.update_tag)
 
