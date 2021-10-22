@@ -33,52 +33,95 @@ def get_bucket_name_from_arn(bucket_arn: str) -> str:
     return bucket_arn.split(':')[-1]
 
 
+def get_short_id_from_elb_arn(alb_arn: str) -> str:
+    """
+    Return the ELB name from the ARN
+    For example, for arn:aws:elasticloadbalancing:::loadbalancer/foo", return 'foo'.
+    :param arn: The ELB's full ARN
+    :return: The ELB's name
+    """
+    return alb_arn.split('/')[-1]
+
+
+def get_short_id_from_lb2_arn(alb_arn: str) -> str:
+    """
+    Return the (A|N)LB name from the ARN
+    For example, for arn:aws:elasticloadbalancing:::loadbalancer/app/foo/ab123", return 'foo'.
+    For example, for arn:aws:elasticloadbalancing:::loadbalancer/net/foo/ab123", return 'foo'.
+    :param arn: The (N|A)LB's full ARN
+    :return: The (N|A)LB's name
+    """
+    return alb_arn.split('/')[-2]
+
+
 # We maintain a mapping from AWS resource types to their associated labels and unique identifiers.
 # label: the node label used in cartography for this resource type
 # property: the field of this node that uniquely identified this resource type
 # id_func: [optional] - EC2 instances and S3 buckets in cartography currently use non-ARNs as their primary identifiers
 # so we need to supply a function pointer to translate the ARN returned by the resourcegroupstaggingapi to the form that
 # cartography uses.
+# reference: https://docs.aws.amazon.com/service-authorization/latest/reference/reference_policies_actions-resources-contextkeys.html
 # TODO - we should make EC2 and S3 assets query-able by their full ARN so that we don't need this workaround.
 TAG_RESOURCE_TYPE_MAPPINGS: Dict = {
+    'apigateway:clientcertificates': {'label': 'APIGatewayClientCertificate', 'property': 'id'},
+    'apigateway:resources': {'label': 'APIGatewayResource', 'property': 'id'},
+    'apigateway:restapis': {'label': 'APIGatewayRestAPI', 'property': 'id'},
+    'autoscaling:autoScalingGroup': {'label': 'AutoScalingGroup', 'property': 'arn'},
+    'dynamodb:table': {'label': 'DynamoDBTable', 'property': 'id'},
     'ec2:instance': {'label': 'EC2Instance', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},
+    'ec2:internet-gateway': {'label': 'AWSInternetGateway', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},
+    'ec2:key-pair': {'label': 'EC2KeyPair', 'property': 'id'},
     'ec2:network-interface': {'label': 'NetworkInterface', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},
     'ec2:security-group': {'label': 'EC2SecurityGroup', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},
     'ec2:subnet': {'label': 'EC2Subnet', 'property': 'subnetid', 'id_func': get_short_id_from_ec2_arn},
-    'ec2:ig': {'label': 'AWSInternetGateway', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},
-    'ec2:key-pair': {'label': 'EC2KeyPair', 'property': 'id'},
-    'ec2:elbv2': {'label': 'LoadBalancerV2', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},
-    'ec2:elbv2-listener': {'label': 'ELBV2Listener', 'property': 'id'},
-    'ec2:vpc': {'label': 'AWSVpc', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},
     'ec2:transit-gateway': {'label': 'AWSTransitGateway', 'property': 'id'},
     'ec2:transit-gateway-attachment': {'label': 'AWSTransitGatewayAttachment', 'property': 'id'},
-    'es:domain': {'label': 'ESDomain', 'property': 'id'},
+    'ec2:vpc': {'label': 'AWSVpc', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},
+    'ecr:repository': {'label': 'ECRRepository', 'property': 'id'},
+    'eks:cluster': {'label': 'EKSCluster', 'property': 'id'},
+    'elasticache:cluster': {'label': 'ElasticacheCluster', 'property': 'arn'},
+    'elasticloadbalancing:loadbalancer': {
+        'label': 'LoadBalancer', 'property':
+        'name', 'id_func': get_short_id_from_elb_arn,
+    },
+    'elasticloadbalancing:loadbalancer/app': {
+        'label': 'LoadBalancerV2',
+        'property': 'name', 'id_func': get_short_id_from_lb2_arn,
+    },
+    'elasticloadbalancing:loadbalancer/net': {
+        'label': 'LoadBalancerV2',
+        'property': 'name', 'id_func': get_short_id_from_lb2_arn,
+    },
+    'elasticloadbalancing:listener': {
+        'label': 'ELBListener', 'property':
+        'name', 'id_func': get_short_id_from_elb_arn,
+    },
+    'elasticloadbalancing:listener/app': {
+        'label': 'ELBV2Listener',
+        'property': 'name', 'id_func': get_short_id_from_lb2_arn,
+    },
+    'elasticloadbalancing:listener/net': {
+        'label': 'ELBV2Listener',
+        'property': 'name', 'id_func': get_short_id_from_lb2_arn,
+    },
+    'elasticmapreduce:cluster': {'label': 'EMRCluster', 'property': 'arn'},
+    'es:domain': {'label': 'ESDomain', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},
+    'iam:group': {'label': 'AWSGroup', 'property': 'arn'},
+    'iam:policy': {'label': 'AWSPolicy', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},
+    'iam:role': {'label': 'AWSRole', 'property': 'arn'},
+    'iam:user': {'label': 'AWSUser', 'property': 'arn'},
+    'kms:key': {'label': 'KMSKey', 'property': 'arn'},
+    'lambda:function': {'label': 'AWSLambda', 'property': 'id'},
+    'lambda:layer': {'label': 'AWSLambdaLayer', 'property': 'id'},
+    'lambda:event-source-mapping': {'label': 'AWSLambdaEventSourceMapping', 'property': 'id'},
     'redshift:cluster': {'label': 'RedshiftCluster', 'property': 'id'},
+    'rds:cluster': {'label': 'RDSCluster', 'property': 'id'},
     'rds:db': {'label': 'RDSInstance', 'property': 'id'},
     'rds:subgrp': {'label': 'DBSubnetGroup', 'property': 'id'},
     # Buckets are the only objects in the S3 service: https://docs.aws.amazon.com/AmazonS3/latest/dev/s3-arn-format.html
     's3': {'label': 'S3Bucket', 'property': 'id', 'id_func': get_bucket_name_from_arn},
-    'lambda': {'label': 'AWSLambda', 'property': 'id'},
-    'apigateway-api': {'label': 'APIGatewayRestAPI', 'property': 'id'},
-    'apigateway-stage': {'label': 'APIGatewayStage', 'property': 'id'},
-    'apigateway-certificate': {'label': 'APIGatewayClientCertificate', 'property': 'id'},
-    'apigateway-resource': {'label': 'APIGatewayResource', 'property': 'id'},
-    'dynamodb-table': {'label': 'DynamoDBTable', 'property': 'id'},
-    'dynamodb-index': {'label': 'DynamoDBGlobalSecondaryIndex', 'property': 'id'},
-    'ecr-repo': {'label': 'ECRRepository', 'property': 'id'},
-    'eks-cluster': {'label': 'EKSCluster', 'property': 'id'},
-    'ec-cluster': {'label': 'ElasticacheCluster', 'property': 'id'},
-    'ec-topic': {'label': 'ElasticacheTopic', 'property': 'id'},
-    'es-domain': {'label': 'ESDomain', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},
-    'iam-user': {'label': 'AWSUser', 'property': 'arn'},
-    'iam-group': {'label': 'AWSGroup', 'property': 'arn'},
-    'iam-role': {'label': 'AWSRole', 'property': 'arn'},
-    'iam-policy': {'label': 'AWSPolicy', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},
-    'kms-key': {'label': 'KMSKey', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},
-    'rds-instance': {'label': 'RDSInstance', 'property': 'id'},
-    'rds-sg': {'label': 'DBSubnetGroup', 'property': 'id'},
-    'redshift-cluster': {'label': 'RedshiftCluster', 'property': 'id'},
-    'autoscalinggroup': {'label': 'AutoScalingGroup', 'property': 'arn'},
+    'secretsmanager:secret': {'label': 'SecretsManagerSecret', 'property': 'id'},
+    'sqs': {'label': 'SQSQueue', 'property': 'id'},
 }
 
 
@@ -96,7 +139,7 @@ def get_tags(boto3_session: boto3.session.Session, resource_types: List[str], re
     #     # This is just a starting list; there may be others supported by this API.
     #     ResourceTypeFilters=resource_types,
     # ):
-    for page in paginator.paginate():
+    for page in paginator.paginate(ResourceTypeFilters=resource_types):
         resources.extend(page['ResourceTagMappingList'])
     return resources
 

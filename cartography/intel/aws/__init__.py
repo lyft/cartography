@@ -71,6 +71,12 @@ def _sync_one_account(
     if 'resourcegroupstaggingapi' in aws_requested_syncs:
         RESOURCE_FUNCTIONS['resourcegroupstaggingapi'](**sync_args)
 
+    run_analysis_job(
+        'aws_ec2_iaminstanceprofile.json',
+        neo4j_session,
+        common_job_parameters,
+    )
+
 
 def _autodiscover_account_regions(boto3_session: boto3.session.Session, account_id: str) -> List[str]:
     regions: List[str] = []

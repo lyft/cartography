@@ -394,7 +394,7 @@ def sync_okta_applications(
     :param okta_api_key: Okta api key
     :return: Nothing
     """
-    logger.debug("Syncing Okta Applications")
+    logger.info("Syncing Okta Applications")
 
     api_client = create_api_client(okta_org_id, "/api/v1/apps", okta_api_key)
 

@@ -11,7 +11,7 @@ class FileSystem:
         :param file_path: Filepath for the file.
         :return: Dictionary in JSON format.
         """
-        with open(file_path, 'r') as json_file:
+        with open(file_path) as json_file:
             data = json.load(json_file)
         return data
 
