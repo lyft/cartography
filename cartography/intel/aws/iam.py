@@ -216,7 +216,7 @@ def load_users(
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {aws_update_tag}
     """
-
+    logger.info(f"Loading {len(users)} IAM users.")
     for user in users:
         neo4j_session.run(
             ingest_user,
@@ -245,7 +245,7 @@ def load_groups(
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {aws_update_tag}
     """
-
+    logger.info(f"Loading {len(groups)} IAM groups to the graph.")
     for group in groups:
         neo4j_session.run(
             ingest_group,
@@ -303,7 +303,7 @@ def load_roles(
     """
 
     # TODO support conditions
-
+    logger.info(f"Loading {len(roles)} IAM roles to the graph.")
     for role in roles:
         neo4j_session.run(
             ingest_role,
@@ -380,7 +380,7 @@ def sync_assumerole_relationships(
 ) -> None:
     # Must be called after load_role
     # Computes and syncs the STS_ASSUME_ROLE allow relationship
-    logger.debug("Syncing assume role for account '%s'.", current_aws_account_id)
+    logger.info("Syncing assume role mappings for account '%s'.", current_aws_account_id)
     query_potential_matches = """
     MATCH (:AWSAccount{id:{AccountId}})-[:RESOURCE]->(target:AWSRole)-[:TRUSTS_AWS_PRINCIPAL]->(source:AWSPrincipal)
     WHERE NOT source.arn ENDS WITH 'root'
@@ -493,32 +493,38 @@ def transform_policy_id(principal_arn: str, policy_type: str, name: str) -> str:
     return f"{principal_arn}/{policy_type}_policy/{name}"
 
 
-@timeit
-def load_policy(
-    neo4j_session: neo4j.Session, policy_id: str, policy_name: str, policy_type: str, principal_arn: str,
+def _load_policy_tx(
+    tx: neo4j.Transaction, policy_id: str, policy_name: str, policy_type: str, principal_arn: str,
     aws_update_tag: int,
 ) -> None:
-    injest_policy = """
+    ingest_policy = """
     MERGE (policy:AWSPolicy{id: {PolicyId}})
     ON CREATE SET
-    policy.firstseen = timestamp(),
-    policy.type = {PolicyType},
-    policy.name = {PolicyName}
-    SET
-    policy.lastupdated = {aws_update_tag}
+        policy.firstseen = timestamp(),
+        policy.type = {PolicyType},
+        policy.name = {PolicyName}
+    SET policy.lastupdated = {aws_update_tag}
     WITH policy
     MATCH (principal:AWSPrincipal{arn: {PrincipalArn}})
     MERGE (policy) <-[r:POLICY]-(principal)
     SET r.lastupdated = {aws_update_tag}
     """
-    neo4j_session.run(
-        injest_policy,
+    tx.run(
+        ingest_policy,
         PolicyId=policy_id,
         PolicyName=policy_name,
         PolicyType=policy_type,
         PrincipalArn=principal_arn,
         aws_update_tag=aws_update_tag,
-    ).consume()
+    )
+
+
+@timeit
+def load_policy(
+    neo4j_session: neo4j.Session, policy_id: str, policy_name: str, policy_type: str, principal_arn: str,
+    aws_update_tag: int,
+) -> None:
+    neo4j_session.write_transaction(_load_policy_tx, policy_id, policy_name, policy_type, principal_arn, aws_update_tag)
 
 
 @timeit
@@ -526,7 +532,7 @@ def load_policy_statements(
     neo4j_session: neo4j.Session, policy_id: str, policy_name: str, statements: Any,
     aws_update_tag: int,
 ) -> None:
-    injest_policy_statement = """
+    ingest_policy_statement = """
         MATCH (policy:AWSPolicy{id: {PolicyId}})
         WITH policy
         UNWIND {Statements} as statement_data
@@ -545,7 +551,7 @@ def load_policy_statements(
         SET r.lastupdated = {aws_update_tag}
         """
     neo4j_session.run(
-        injest_policy_statement,
+        ingest_policy_statement,
         PolicyId=policy_id,
         PolicyName=policy_name,
         Statements=statements,
@@ -568,7 +574,7 @@ def sync_users(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, current_aws_account_id: str,
     aws_update_tag: int, common_job_parameters: Dict,
 ) -> None:
-    logger.debug("Syncing IAM users for account '%s'.", current_aws_account_id)
+    logger.info("Syncing IAM users for account '%s'.", current_aws_account_id)
     data = get_user_list_data(boto3_session)
     load_users(neo4j_session, data['Users'], current_aws_account_id, aws_update_tag)
 
@@ -604,7 +610,7 @@ def sync_groups(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, current_aws_account_id: str,
     aws_update_tag: int, common_job_parameters: Dict,
 ) -> None:
-    logger.debug("Syncing IAM groups for account '%s'.", current_aws_account_id)
+    logger.info("Syncing IAM groups for account '%s'.", current_aws_account_id)
     data = get_group_list_data(boto3_session)
     load_groups(neo4j_session, data['Groups'], current_aws_account_id, aws_update_tag)
 
@@ -638,7 +644,7 @@ def sync_roles(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, current_aws_account_id: str,
     aws_update_tag: int, common_job_parameters: Dict,
 ) -> None:
-    logger.debug("Syncing IAM roles for account '%s'.", current_aws_account_id)
+    logger.info("Syncing IAM roles for account '%s'.", current_aws_account_id)
     data = get_role_list_data(boto3_session)
     load_roles(neo4j_session, data['Roles'], current_aws_account_id, aws_update_tag)
 
@@ -653,7 +659,7 @@ def sync_role_managed_policies(
     current_aws_account_id: str, boto3_session: boto3.session.Session, data: Dict,
     neo4j_session: neo4j.Session, aws_update_tag: int,
 ) -> None:
-    logger.debug("Syncing IAM role managed policies for account '%s'.", current_aws_account_id)
+    logger.info("Syncing IAM role managed policies for account '%s'.", current_aws_account_id)
     managed_policy_data = get_role_managed_policy_data(boto3_session, data["Roles"])
     transform_policy_data(managed_policy_data, PolicyType.managed.value)
     load_policy_data(neo4j_session, managed_policy_data, PolicyType.managed.value, aws_update_tag)
@@ -663,7 +669,7 @@ def sync_role_inline_policies(
     current_aws_account_id: str, boto3_session: boto3.session.Session, data: Dict,
     neo4j_session: neo4j.Session, aws_update_tag: int,
 ) -> None:
-    logger.debug("Syncing IAM role inline policies for account '%s'.", current_aws_account_id)
+    logger.info("Syncing IAM role inline policies for account '%s'.", current_aws_account_id)
     inline_policy_data = get_role_policy_data(boto3_session, data["Roles"])
     transform_policy_data(inline_policy_data, PolicyType.inline.value)
     load_policy_data(neo4j_session, inline_policy_data, PolicyType.inline.value, aws_update_tag)
@@ -674,7 +680,7 @@ def sync_group_memberships(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session,
     current_aws_account_id: str, aws_update_tag: int, common_job_parameters: Dict,
 ) -> None:
-    logger.debug("Syncing IAM group membership for account '%s'.", current_aws_account_id)
+    logger.info("Syncing IAM group membership for account '%s'.", current_aws_account_id)
     query = "MATCH (group:AWSGroup)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ACCOUNT_ID}}) " \
             "return group.name as name, group.arn as arn;"
     groups = neo4j_session.run(query, AWS_ACCOUNT_ID=current_aws_account_id)
@@ -692,7 +698,7 @@ def sync_user_access_keys(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session,
     current_aws_account_id: str, aws_update_tag: int, common_job_parameters: Dict,
 ) -> None:
-    logger.debug("Syncing IAM user access keys for account '%s'.", current_aws_account_id)
+    logger.info("Syncing IAM user access keys for account '%s'.", current_aws_account_id)
     query = "MATCH (user:AWSUser)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ACCOUNT_ID}}) return user.name as name"
     result = neo4j_session.run(query, AWS_ACCOUNT_ID=current_aws_account_id)
     usernames = [r['name'] for r in result]

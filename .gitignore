@@ -12,9 +12,10 @@ build/
 .idea/
 .coverage
 .mypy_cache
+.compose
+
 *.vscode
 node_modules
 .serverless
 .env.*
-
 local.settings.json

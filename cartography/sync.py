@@ -10,15 +10,16 @@ import cartography.intel.analysis
 # import cartography.intel.aws
 import cartography.intel.azure
 import cartography.intel.create_indexes
+
+import cloudanix
 # import cartography.intel.crxcavator.crxcavator
 # import cartography.intel.digitalocean
 # import cartography.intel.gcp
 # import cartography.intel.github
 # import cartography.intel.gsuite
+# import cartography.intel.kubernetes
 # import cartography.intel.okta
-
-import cloudanix
-from cartography.scoped_stats_client import ScopedStatsClient
+from cartography.stats import set_stats_client
 
 logger = logging.getLogger(__name__)
 
@@ -97,7 +98,7 @@ def run_with_config(sync, config):
     """
     # Initialize statsd client if enabled
     if config.statsd_enabled:
-        cartography.util.stats_client = ScopedStatsClient(
+        set_stats_client(
             StatsClient(
                 host=config.statsd_host,
                 port=config.statsd_port,
@@ -184,7 +185,7 @@ def build_aws_sync():
     sync = Sync()
     sync.add_stages([
         ('create-indexes', cartography.intel.create_indexes.run),
-        ('cloudanix-workspace', cloudanix.run),
+        # ('cloudanix-workspace', cloudanix.run),
         # ('aws', cartography.intel.aws.start_aws_ingestion),
         ('analysis', cartography.intel.analysis.run),
     ])
@@ -204,6 +205,13 @@ def build_azure_sync():
         ('create-indexes', cartography.intel.create_indexes.run),
         ('cloudanix-workspace', cloudanix.run),
         ('azure', cartography.intel.azure.start_azure_ingestion),
+        # ('gcp', cartography.intel.gcp.start_gcp_ingestion),
+        # ('gsuite', cartography.intel.gsuite.start_gsuite_ingestion),
+        # ('crxcavator', cartography.intel.crxcavator.start_extension_ingestion),
+        # ('okta', cartography.intel.okta.start_okta_ingestion),
+        # ('github', cartography.intel.github.start_github_ingestion),
+        # ('digitalocean', cartography.intel.digitalocean.start_digitalocean_ingestion),
+        # ('kubernetes', cartography.intel.kubernetes.start_k8s_ingestion),
         ('analysis', cartography.intel.analysis.run),
     ])
 

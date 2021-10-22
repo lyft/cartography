@@ -9,6 +9,8 @@
 - [Google Cloud Platform](#google-cloud-platform)
 - [GSuite](#gsuite)
 - [CRXcavator Platform](#crxcavator-platform)
+- [Microsoft Azure](#microsoft-azure)
+- [Kubernetes](#kubernetes)
 - [More to come!](#more-to-come)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -47,6 +49,12 @@
 
 ## CRXcavator Platform
 - Click [here](crxcavator.md)
+
+## Microsoft Azure
+- Click [here](azure.md)
+
+## Kubernetes
+- Click [here](kubernetes.md)
 
 ## More to come!
 👍

@@ -71,6 +71,12 @@ def _sync_one_account(
     if 'resourcegroupstaggingapi' in aws_requested_syncs:
         RESOURCE_FUNCTIONS['resourcegroupstaggingapi'](**sync_args)
 
+    run_analysis_job(
+        'aws_ec2_iaminstanceprofile.json',
+        neo4j_session,
+        common_job_parameters,
+    )
+
 
 def _autodiscover_account_regions(boto3_session: boto3.session.Session, account_id: str) -> List[str]:
     regions: List[str] = []
@@ -120,7 +126,7 @@ def _sync_multiple_accounts(
     common_job_parameters: Dict[str, Any],
     aws_requested_syncs: List[str] = [],
 ) -> None:
-    logger.debug("Syncing AWS accounts: %s", ', '.join(accounts.values()))
+    logger.info("Syncing AWS accounts: %s", ', '.join(accounts.values()))
     organizations.sync(neo4j_session, accounts, sync_tag, common_job_parameters)
 
     for profile_name, account_id in accounts.items():

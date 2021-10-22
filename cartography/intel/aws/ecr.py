@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 @timeit
 @aws_handle_regions
 def get_ecr_repositories(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
-    logger.debug("Getting ECR repositories for region '%s'.", region)
+    logger.info("Getting ECR repositories for region '%s'.", region)
     client = boto3_session.client('ecr', region_name=region)
     paginator = client.get_paginator('describe_repositories')
     ecr_repositories: List[Dict] = []
@@ -58,7 +58,7 @@ def load_ecr_repositories(
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = {aws_update_tag}
     """
-    logger.debug("Loading ECR repositories for region '%s' into graph.", region)
+    logger.info(f"Loading {len(repos)} ECR repositories for region {region} into graph.")
     neo4j_session.run(
         query,
         Repositories=repos,
@@ -75,10 +75,10 @@ def transform_ecr_repository_images(repo_data: Dict) -> List[Dict]:
     """
     repo_images_list = []
     for repo_uri, repo_images in repo_data.items():
-        filtered_imgs = []
         for img in repo_images:
             if 'imageDigest' in img and img['imageDigest']:
-                filtered_imgs.append(img)
+                img['repo_uri'] = repo_uri
+                repo_images_list.append(img)
             else:
                 logger.warning(
                     "Repo %s has an image that has no imageDigest. Its tag is %s. Continuing on.",
@@ -86,51 +86,49 @@ def transform_ecr_repository_images(repo_data: Dict) -> List[Dict]:
                     img.get('imageTag'),
                 )
 
-        repo_images_list.append({
-            'repo_uri': repo_uri,
-            'repo_images': filtered_imgs,
-        })
     return repo_images_list
+
+
+def _load_ecr_repo_img_tx(
+    tx: neo4j.Transaction, repo_images_list: List[Dict], aws_update_tag: int,
+    region: str,
+) -> None:
+    query = """
+    UNWIND {RepoList} as repo_img
+        MERGE (ri:ECRRepositoryImage{id: repo_img.repo_uri + COALESCE(":" + repo_img.imageTag, '')})
+        ON CREATE SET ri.firstseen = timestamp()
+        SET ri.lastupdated = {aws_update_tag},
+            ri.tag = repo_img.imageTag,
+            ri.uri = repo_img.repo_uri + COALESCE(":" + repo_img.imageTag, '')
+        WITH ri, repo_img
+
+        MERGE (img:ECRImage{id: repo_img.imageDigest})
+        ON CREATE SET img.firstseen = timestamp(),
+            img.digest = repo_img.imageDigest
+        SET img.lastupdated = {aws_update_tag},
+            img.region = {Region}
+        WITH ri, img, repo_img
+
+        MERGE (ri)-[r1:IMAGE]->(img)
+        ON CREATE SET r1.firstseen = timestamp()
+        SET r1.lastupdated = {aws_update_tag}
+        WITH ri, repo_img
+
+        MATCH (repo:ECRRepository{uri: repo_img.repo_uri})
+        MERGE (repo)-[r2:REPO_IMAGE]->(ri)
+        ON CREATE SET r2.firstseen = timestamp()
+        SET r2.lastupdated = {aws_update_tag}
+    """
+    tx.run(query, RepoList=repo_images_list, Region=region, aws_update_tag=aws_update_tag)
 
 
 @timeit
 def load_ecr_repository_images(
-        neo4j_session: neo4j.Session, repo_images_list: List[Dict], region: str, aws_update_tag: int,
+    neo4j_session: neo4j.Session, repo_images_list: List[Dict], region: str,
+    aws_update_tag: int,
 ) -> None:
-    query = """
-    UNWIND {RepoList} as repo_item
-        UNWIND repo_item.repo_images as repo_img
-            MERGE (ri:ECRRepositoryImage{id: repo_item.repo_uri + COALESCE(":" + repo_img.imageTag, '')})
-            ON CREATE SET ri.firstseen = timestamp()
-            SET ri.lastupdated = {aws_update_tag},
-                ri.tag = repo_img.imageTag,
-                ri.uri = repo_item.repo_uri + COALESCE(":" + repo_img.imageTag, '')
-            WITH ri, repo_img, repo_item
-
-            MERGE (img:ECRImage{id: repo_img.imageDigest})
-            ON CREATE SET img.firstseen = timestamp(),
-                img.digest = repo_img.imageDigest
-            SET img.lastupdated = {aws_update_tag},
-                img.region = {Region}
-            WITH ri, img, repo_item
-
-            MERGE (ri)-[r1:IMAGE]->(img)
-            ON CREATE SET r1.firstseen = timestamp()
-            SET r1.lastupdated = {aws_update_tag}
-            WITH ri, repo_item
-
-            MATCH (repo:ECRRepository{uri: repo_item.repo_uri})
-            MERGE (repo)-[r2:REPO_IMAGE]->(ri)
-            ON CREATE SET r2.firstseen = timestamp()
-            SET r2.lastupdated = {aws_update_tag}
-    """
-    logger.debug("Loading ECR repository images for region '%s' into graph.", region)
-    neo4j_session.run(
-        query,
-        RepoList=repo_images_list,
-        aws_update_tag=aws_update_tag,
-        Region=region,
-    ).consume()  # See issue #440
+    logger.info(f"Loading {len(repo_images_list)} ECR repository images in {region} into graph.")
+    neo4j_session.write_transaction(_load_ecr_repo_img_tx, repo_images_list, aws_update_tag, region)
 
 
 @timeit

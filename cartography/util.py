@@ -1,11 +1,15 @@
 import logging
 import sys
 from functools import wraps
+from typing import Dict
+from typing import Optional
 
 import botocore
+import neo4j
 
 from cartography.graph.job import GraphJob
-from cartography.scoped_stats_client import ScopedStatsClient
+from cartography.graph.statement import get_job_shortname
+from cartography.stats import get_stats_client
 
 if sys.version_info >= (3, 7):
     from importlib.resources import open_binary, read_text
@@ -15,35 +19,35 @@ else:
 logger = logging.getLogger(__name__)
 
 
-def run_analysis_job(filename, neo4j_session, common_job_parameters):
+def run_analysis_job(filename, neo4j_session, common_job_parameters, package='cartography.data.jobs.analysis'):
     GraphJob.run_from_json(
         neo4j_session,
         read_text(
-            'cartography.data.jobs.analysis',
+            package,
             filename,
         ),
         common_job_parameters,
+        get_job_shortname(filename),
     )
 
 
-def run_cleanup_job(filename, neo4j_session, common_job_parameters):
+def run_cleanup_job(
+    filename: str, neo4j_session: neo4j.Session, common_job_parameters: Dict,
+    package: str = 'cartography.data.jobs.cleanup',
+) -> None:
     GraphJob.run_from_json(
         neo4j_session,
         read_text(
-            'cartography.data.jobs.cleanup',
+            package,
             filename,
         ),
         common_job_parameters,
+        get_job_shortname(filename),
     )
 
 
 def load_resource_binary(package, resource_name):
     return open_binary(package, resource_name)
-
-
-# The statsd client used for observability.
-# stats_client.is_enabled() will always return false unless cartography.config.statsd_enabled is True.
-stats_client = ScopedStatsClient(None)
 
 
 def timeit(method):
@@ -55,6 +59,7 @@ def timeit(method):
     # Allow access via `inspect` to the wrapped function. This is used in integration tests to standardize param names.
     @wraps(method)
     def timed(*args, **kwargs):
+        stats_client = get_stats_client(None)
         if stats_client.is_enabled():
             # Example metric name "cartography.intel.aws.iam.get_group_membership_data"
             metric_name = f"{method.__module__}.{method.__name__}"
@@ -93,7 +98,25 @@ def aws_handle_regions(func):
     return inner_function
 
 
-def get_optional_value(cfg, keys):
-    if cfg.get(keys[0]):
-        return get_optional_value(cfg[keys[0]], keys[1:]) if len(keys) > 1 else cfg.get(keys[0])
-    return None
+def dict_value_to_str(obj: Dict, key: str) -> Optional[str]:
+    """
+    Convert the value referenced by the key in the dict to a string, if it exists, and return it. If it doesn't exist,
+    return None.
+    """
+    value = obj.get(key)
+    if value is not None:
+        return str(value)
+    else:
+        return None
+
+
+def dict_date_to_epoch(obj: Dict, key: str) -> Optional[int]:
+    """
+    Convert the date referenced by the key in the dict to an epoch timestamp, if it exists, and return it. If it
+    doesn't exist, return None.
+    """
+    value = obj.get(key)
+    if value is not None:
+        return int(value.timestamp())
+    else:
+        return None

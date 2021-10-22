@@ -13,6 +13,10 @@
   - [How many unencrypted RDS instances do I have in all my AWS accounts?](#how-many-unencrypted-rds-instances-do-i-have-in-all-my-aws-accounts)
   - [What users have the TotallyFake Chrome extension installed?](#what-users-have-the-totallyfake-chrome-extension-installed)
   - [What users have installed extensions that are risky based on CRXcavator scoring?](#what-users-have-installed-extensions-that-are-risky-based-on-crxcavator-scoring)
+  - [What languages are used in a given GitHub repository?](#what-languages-are-used-in-a-given-github-repository)
+  - [What are the dependencies used in a given GitHub repository?](#what-are-the-dependencies-used-in-a-given-github-repository)
+  - [Given a dependency, which GitHub repos depend on it?](#given-a-dependency-which-github-repos-depend-on-it)
+  - [What are all the dependencies used across all GitHub repos?](#what-are-all-the-dependencies-used-across-all-github-repos)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 ### Sample queries
@@ -78,3 +82,45 @@ MATCH (u:GSuiteUser)-[r:INSTALLS]->(ext:ChromeExtension)
 WHERE ext.risk_total > 200
 return ext.name, ext.version, u.email
 ```
+
+#### What languages are used in a given GitHub repository?
+```
+MATCH (:GitHubRepository{name:"myrepo"})-[:LANGUAGE]->(lang:ProgrammingLanguage)
+RETURN lang.name
+```
+
+#### What are the dependencies used in a given GitHub repository?
+```
+MATCH (:GitHubRepository{name:"myrepo"})-[edge:REQUIRES]->(dep:Dependency)
+RETURN dep.name, edge.specifier, dep.version
+```
+
+If you want to filter to just e.g. Python libraries:
+```
+MATCH (:GitHubRepository{name:"myrepo"})-[edge:REQUIRES]->(dep:Dependency:PythonLibrary)
+RETURN dep.name, edge.specifier, dep.version
+```
+
+#### Given a dependency, which GitHub repos depend on it?
+Using boto3 as an example dependency:
+```
+MATCH (dep:Dependency:PythonLibrary{name:"boto3"})<-[req:REQUIRES]-(repo:GitHubRepository)
+RETURN repo.name, req.specifier, dep.version
+```
+
+#### What are all the dependencies used across all GitHub repos?
+Just the list of dependencies and their versions:
+```
+MATCH (dep:Dependency)
+RETURN DISTINCT dep.name AS name, dep.version AS version
+ORDER BY dep.name
+```
+
+With info about which repos are using them:
+```
+MATCH (repo:GitHubRepository)-[edge:REQUIRES]->(dep:Dependency)
+RETURN repo.name, dep.name, edge.specifier, dep.version
+```
+Lyft ingests this information into our internal data stack,
+which has enabled us to throw BI tooling on top for easy reporting -
+this is highly recommended!
