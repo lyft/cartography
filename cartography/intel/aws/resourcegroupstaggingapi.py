@@ -134,12 +134,11 @@ def get_tags(boto3_session: boto3.session.Session, resource_types: List[str], re
     client = boto3_session.client('resourcegroupstaggingapi', region_name=region)
     paginator = client.get_paginator('get_resources')
     resources: List[Dict] = []
-    # for page in paginator.paginate(
-    #     # Only ingest tags for resources that Cartography supports.
-    #     # This is just a starting list; there may be others supported by this API.
-    #     ResourceTypeFilters=resource_types,
-    # ):
-    for page in paginator.paginate(ResourceTypeFilters=resource_types):
+    for page in paginator.paginate(
+        # Only ingest tags for resources that Cartography supports.
+        # This is just a starting list; there may be others supported by this API.
+        ResourceTypeFilters=resource_types,
+    ):
         resources.extend(page['ResourceTagMappingList'])
     return resources
 
@@ -210,9 +209,6 @@ def sync(
         logger.info("Syncing AWS tags for region '%s'.", region)
         for resource_type in tag_resource_type_mappings.keys():
             tag_data = get_tags(boto3_session, [resource_type], region)
-
-            print(resource_type)
-            print(tag_data)
 
             transform_tags(tag_data, resource_type)
             load_tags(neo4j_session, tag_data, resource_type, region, update_tag)
