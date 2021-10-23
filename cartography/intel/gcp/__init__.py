@@ -29,12 +29,13 @@ Resources = namedtuple('Resources', 'iam compute container crm_v1 crm_v2 dns sto
 
 # Mapping of service short names to their full names as in docs. See https://developers.google.com/apis-explorer,
 # and https://cloud.google.com/service-usage/docs/reference/rest/v1/services#ServiceConfig
-Services = namedtuple('Services', 'compute storage gke dns')
+Services = namedtuple('Services', 'compute storage gke dns iam')
 service_names = Services(
     compute='compute.googleapis.com',
     storage='storage.googleapis.com',
     gke='container.googleapis.com',
     dns='dns.googleapis.com',
+    iam='iam.googleapis.com',
 )
 
 
@@ -193,7 +194,7 @@ def _sync_single_project(
     # Determine the resources available on the project.
     enabled_services = _services_enabled_on_project(resources.serviceusage, project_id)
 
-    if service_names.compute in enabled_services:
+    if service_names.iam in enabled_services:
         iam.sync(neo4j_session, resources.iam, resources.crm_v1, project_id, gcp_update_tag, common_job_parameters, regions)
 
     if service_names.compute in enabled_services:

@@ -1229,12 +1229,12 @@ def sync(
     logger.info("Syncing Compute objects for project %s.", project_id)
 
     # regions are calculated in init file as a common placeholder
-    # zones = get_zones_in_project(project_id, compute)
-    # # Only pull additional assets for this project if the Compute API is enabled
-    # if zones is None:
-    #     return
-    # else:
-    #     regions = _zones_to_regions(zones)
+    zones = get_zones_in_project(project_id, compute)
+    # Only pull additional assets for this project if the Compute API is enabled
+    if zones is None:
+        return
+    else:
+        regions = _zones_to_regions(zones)
 
     sync_gcp_vpcs(neo4j_session, compute, project_id, gcp_update_tag, common_job_parameters)
     sync_gcp_firewall_rules(neo4j_session, compute, project_id, gcp_update_tag, common_job_parameters)
