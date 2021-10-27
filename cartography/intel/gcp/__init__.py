@@ -333,6 +333,8 @@ def _sync_multiple_projects(
         logger.info("Syncing GCP project %s.", project_id)
         _sync_single_project(neo4j_session, resources, project_id, gcp_update_tag, common_job_parameters, regions=regions)
 
+    del common_job_parameters["GCP_PROJECT_ID"]
+
 
 @timeit
 def start_gcp_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
