@@ -149,6 +149,12 @@
   - [Relationships](#relationships-69)
 - [AWSConfigRule](#awsconfigrule)
   - [Relationships](#relationships-70)
+- [LaunchConfiguration](#launchconfiguration)
+  - [Relationships](#relationships-71)
+- [LaunchTemplate](#launchtemplate)
+  - [Relationships](#relationships-72)
+- [LaunchTemplateVersion](#launchtemplateversion)
+  - [Relationships](#relationships-73)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -185,6 +191,9 @@ Representation of an AWS Account.
                               EC2ReservedInstance,
                               EC2SecurityGroup,
                               ESDomain,
+                              LaunchConfiguration,
+                              LaunchTemplate,
+                              LaunchTemplateVersion,
                               LoadBalancer,
                               RDSCluster,
                               RDSInstance,
@@ -2293,6 +2302,9 @@ Representation of an AWS [Auto Scaling Group Resource](https://docs.aws.amazon.c
 | name |  The name of the Auto Scaling group. |
 | createdtime | The date and time the group was created. |
 | launchconfigurationname | The name of the associated launch configuration. |
+| launchtemplatename | The name of the launch template. |
+| launchtemplateid | The ID of the launch template. |
+| launchtemplateversion | The version number of the launch template. |
 | maxsize | The maximum size of the group.|
 | minsize | The minimum size of the group.|
 | defaultcooldown | The duration of the default cooldown period, in seconds. |
@@ -2324,6 +2336,16 @@ Representation of an AWS [Auto Scaling Group Resource](https://docs.aws.amazon.c
 
         ```
         (EC2Instance)-[MEMBER_AUTO_SCALE_GROUP]->(AutoScalingGroup)
+        ```
+- AWS Auto Scaling Groups have Launch Configurations
+
+        ```
+        (AutoScalingGroup)-[HAS_LAUNCH_CONFIG]->(LaunchConfiguration)
+        ```
+- AWS Auto Scaling Groups have Launch Templates
+
+        ```
+        (AutoScalingGroup)-[HAS_LAUNCH_TEMPLATE]->(LaunchTemplate)
         ```
 
 ## EC2Image
@@ -2648,4 +2670,105 @@ Representation of an AWS [Config Rule](https://docs.aws.amazon.com/config/latest
 
         ```
         (AWSAccount)-[RESOURCE]->(AWSConfigRule)
+        ```
+
+## LaunchConfiguration
+
+Representation of an AWS [Launch Configuration](https://docs.aws.amazon.com/autoscaling/ec2/APIReference/API_LaunchConfiguration.html)
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The ARN of the launch configuration. |
+| name | The name of the launch configuration. |
+| arn | The ARN of the launch configuration. |
+| created\_time| The creation date and time for the launch configuration. |
+| image\_id | The ID of the Amazon Machine Image (AMI) to use to launch your EC2 instances. |
+| key\_name | The name of the key pair. |
+| security\_groups | A list that contains the security groups to assign to the instances in the Auto Scaling group. |
+| instance\_type | The instance type for the instances. |
+| kernel\_id | The ID of the kernel associated with the AMI. |
+| ramdisk\_id | The ID of the RAM disk associated with the AMI. |
+| instance\_monitoring\_enabled | If true, detailed monitoring is enabled. Otherwise, basic monitoring is enabled. |
+| spot\_price | The maximum hourly price to be paid for any Spot Instance launched to fulfill the request. |
+| iam\_instance\_profile | The name or the Amazon Resource Name (ARN) of the instance profile associated with the IAM role for the instance. |
+| ebs\_optimized | Specifies whether the launch configuration is optimized for EBS I/O (true) or not (false). |
+| associate\_public\_ip\_address | For Auto Scaling groups that are running in a VPC, specifies whether to assign a public IP address to the group's instances. |
+| placement\_tenancy | The tenancy of the instance, either default or dedicated. An instance with dedicated tenancy runs on isolated, single-tenant hardware and can only be launched into a VPC. |
+| region | The region of the launch configuration. |
+
+### Relationships
+
+- Launch Configurations are a resource under the AWS Account.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(LaunchConfiguration)
+        ```
+
+## LaunchTemplate
+
+Representation of an AWS [Launch Template]()
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The ID of the launch template. |
+| name | The name of the launch template. |
+| create\_time | The time launch template was created. |
+| created\_by | The principal that created the launch template. |
+| default\_version\_number | The version number of the default version of the launch template. |
+| latest\_version\_number | The version number of the latest version of the launch template. |
+| region | The region of the launch template. |
+
+### Relationships
+
+- Launch Templates are a resource under the AWS Account.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(LaunchTemplate)
+        ```
+- Launch templates have Launch Template Versions
+
+        ```
+        (LaunchTemplate)-[VERSION]->(LaunchTemplateVersion)
+        ```
+
+## LaunchTemplateVersion
+
+Representation of an AWS [Launch Template Version]()
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The ID of the launch template version (ID-version). |
+| name | The name of the launch template. |
+| create\_time | The time the version was created. |
+| created\_by | The principal that created the version. |
+| default\_version | Indicates whether the version is the default version. |
+| version\_number | The version number. |
+| version\_description | The description of the version. |
+| kernel\_id | The ID of the kernel, if applicable. |
+| ebs\_optimized | Indicates whether the instance is optimized for Amazon EBS I/O. |
+| iam\_instance\_profile\_arn | The Amazon Resource Name (ARN) of the instance profile. |
+| iam\_instance\_profile\_name | The name of the instance profile. |
+| image\_id | The ID of the AMI that was used to launch the instance. |
+| instance\_type | The instance type. |
+| key\_name | The name of the key pair. |
+| monitoring\_enabled | Indicates whether detailed monitoring is enabled. Otherwise, basic monitoring is enabled. |
+| ramdisk\_id | The ID of the RAM disk, if applicable. |
+| disable\_api\_termination | If set to true, indicates that the instance cannot be terminated using the Amazon EC2 console, command line tool, or API. |
+| instance\_initiated\_shutdown\_behavior | Indicates whether an instance stops or terminates when you initiate shutdown from the instance (using the operating system command for system shutdown). |
+| security\_group\_ids | The security group IDs. |
+| security\_groups | The security group names. |
+| region | The region of the launch template. |
+
+### Relationships
+
+- Launch Template Versions are a resource under the AWS Account.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(LaunchTemplateVersion)
         ```
