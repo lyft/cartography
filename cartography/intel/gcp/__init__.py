@@ -17,20 +17,23 @@ from cartography.intel.gcp import crm
 from cartography.intel.gcp import dns
 from cartography.intel.gcp import gke
 from cartography.intel.gcp import storage
+from cartography.intel.gcp import cloudfunction
 from cartography.util import run_analysis_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
-Resources = namedtuple('Resources', 'compute container crm_v1 crm_v2 dns storage serviceusage')
+Resources = namedtuple('Resources', 'compute container crm_v1 crm_v2 dns storage serviceusage cloudfunction pubsub')
 
 # Mapping of service short names to their full names as in docs. See https://developers.google.com/apis-explorer,
 # and https://cloud.google.com/service-usage/docs/reference/rest/v1/services#ServiceConfig
-Services = namedtuple('Services', 'compute storage gke dns')
+Services = namedtuple('Services', 'compute storage gke dns cloudfunction pubsub')
 service_names = Services(
     compute='compute.googleapis.com',
     storage='storage.googleapis.com',
     gke='container.googleapis.com',
     dns='dns.googleapis.com',
+    cloudfunction = 'cloudfunctions.googleapis.com',
+    pubsub = 'pubsub.googleapis.com',
 )
 
 
@@ -110,6 +113,25 @@ def _get_serviceusage_resource(credentials: GoogleCredentials) -> Resource:
     """
     return googleapiclient.discovery.build('serviceusage', 'v1', credentials=credentials, cache_discovery=False)
 
+def _get_cloudfunction_resource(credentials:GoogleCredentials) -> Resource:
+    """
+    Instantiates a cloud function resource object.
+    See: https://cloud.google.com/functions/docs/reference/rest
+
+    :param credentials: The GoogleCredentials object
+    :return: A serviceusage resource object
+    """
+    return googleapiclient.discovery.build('cloudfunctions', 'v1', credentials=credentials, cache_discovery=False)
+
+def _get_pubsub_resource(credentials:GoogleCredentials) -> Resource:
+    """
+    Instantiates a cloud pubsub resource object.
+    See: https://cloud.google.com/pubsub/docs/reference/rest
+
+    :param credentials: The GoogleCredentials object
+    :return: A serviceusage resource object
+    """
+    return googleapiclient.discovery.build('pubsub', 'v1', credentials=credentials, cache_discovery=False)
 
 def _initialize_resources(credentials: GoogleCredentials) -> Resource:
     """
@@ -125,6 +147,8 @@ def _initialize_resources(credentials: GoogleCredentials) -> Resource:
         container=_get_container_resource(credentials),
         serviceusage=_get_serviceusage_resource(credentials),
         dns=_get_dns_resource(credentials),
+        cloudfunction = _get_cloudfunction_resource(credentials),
+        pubsub=_get_pubsub_resource(credentials),
     )
 
 
@@ -181,6 +205,8 @@ def _sync_single_project(
         gke.sync_gke_clusters(neo4j_session, resources.container, project_id, gcp_update_tag, common_job_parameters)
     if service_names.dns in enabled_services:
         dns.sync(neo4j_session, resources.dns, project_id, gcp_update_tag, common_job_parameters)
+    if service_names.cloudfunctions in enabled_services:
+        function.sync(neo4j_session, resources.function, resources.pubsub, project_id, gcp_update_tag,common_job_parameters)
 
 
 def _sync_multiple_projects(
