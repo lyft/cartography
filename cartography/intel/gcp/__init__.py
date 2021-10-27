@@ -347,7 +347,7 @@ def start_gcp_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
     common_job_parameters = {
         "UPDATE_TAG": config.update_tag,
         "WORKSPACE_ID": config.params['workspace']['id_string'],
-        "WORKSPACE_ACCOUNT_ID": config.params['workspace']['account_id'],
+        "GCP_PROJECT_ID": config.params['workspace']['account_id'],
     }
     try:
         # # Explicitly use Application Default Credentials.

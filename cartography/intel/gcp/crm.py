@@ -187,7 +187,7 @@ def load_gcp_projects(
             ProjectNumber=project['projectNumber'],
             DisplayName=project.get('name', None),
             LifecycleState=project.get('lifecycleState', None),
-            WorkspaceAccountId=common_job_parameters['WORKSPACE_ACCOUNT_ID'],
+            WorkspaceAccountId=common_job_parameters['GCP_PROJECT_ID'],
             gcp_update_tag=gcp_update_tag,
         )
         if project.get('parent'):
