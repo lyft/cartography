@@ -218,3 +218,4 @@ CREATE INDEX ON :KubernetesContainer(name);
 CREATE INDEX ON :KubernetesContainer(image);
 CREATE INDEX ON :KubernetesService(id);
 CREATE INDEX ON :KubernetesService(name);
+CREATE INDEX ON :AzureFunction(id);
