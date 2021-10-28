@@ -102,6 +102,7 @@ CREATE INDEX ON :GSuiteGroup(email);
 CREATE INDEX ON :GSuiteGroup(id);
 CREATE INDEX ON :GSuiteUser(email);
 CREATE INDEX ON :GSuiteUser(id);
+CREATE INDEX ON :GCPFunction(id)
 CREATE INDEX ON :Ip(id);
 CREATE INDEX ON :Ip(ip);
 CREATE INDEX ON :IpPermissionInbound(ruleid);
