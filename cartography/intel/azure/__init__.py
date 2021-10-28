@@ -11,6 +11,8 @@ from . import sql
 from . import storage
 from . import subscription
 from . import tenant
+from . import function
+
 from .util.credentials import Authenticator
 from .util.credentials import Credentials
 from cartography.config import Config
@@ -26,6 +28,7 @@ def _sync_one_subscription(
     compute.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
     cosmosdb.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
     sql.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
+    function.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
     storage.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
 
 
