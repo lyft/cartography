@@ -56,9 +56,9 @@ def get_gcp_functions(function: Resource,project_id: str) -> List[Dict]:
             while request is not None:
                 response = request.execute()
                 for func in response['functions']:
-                    func[id] = f"projects/{project_id}/locations/{region}/functions/{func['name']}"
+                    func['id'] = f"projects/{project_id}/locations/{region}/functions/{func['name']}"
                     functions.append(func)
-                request = function.projects().functions().list_next(previous_request=request, previous_response=response)
+                request = function.projects().locations().functions().list_next(previous_request=request, previous_response=response)
         return functions
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -89,7 +89,7 @@ def load_functions(neo4j_session: neo4j.Session,functions: List[Resource],projec
     """
     ingest_functions = """
     UNWIND {functions} as func
-    MERGE(function:GCPFunction:{name:func.id})
+    MERGE(function:GCPFunction:{id:func.id})
     ON CREATE SET
         function.firstseen = timestamp()
     SET
@@ -155,9 +155,6 @@ def sync(
 
     :type function: The GCP Cloud Function resource object created by googleapiclient.discovery.build()
     :param function: The GCP Cloud Function resource object
-
-    :type pubsub: The GCP Cloud PubSub resource object created by googleapiclient.discovery.build()
-    :param function: The GCP Cloud PubSub resource object
 
     :type project_id: str
     :param project_id: The project ID of the corresponding project
