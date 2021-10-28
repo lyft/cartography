@@ -25,6 +25,7 @@ from .ec2.images import sync_ec2_images
 from .ec2.instances import sync_ec2_instances
 from .ec2.internet_gateways import sync_internet_gateways
 from .ec2.key_pairs import sync_ec2_key_pairs
+from .ec2.launch_templates import sync_ec2_launch_templates
 from .ec2.load_balancer_v2s import sync_load_balancer_v2s
 from .ec2.load_balancers import sync_load_balancers
 from .ec2.network_interfaces import sync_network_interfaces
@@ -41,6 +42,7 @@ RESOURCE_FUNCTIONS: Dict = {
     'iam': iam.sync,
     's3': s3.sync,
     'dynamodb': dynamodb.sync,
+    'ec2:launch_templates': sync_ec2_launch_templates,
     'ec2:autoscalinggroup': sync_ec2_auto_scaling_groups,
     'ec2:instance': sync_ec2_instances,
     'ec2:images': sync_ec2_images,
