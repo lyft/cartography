@@ -2448,6 +2448,7 @@ Representation of an AWS [Secrets Manager Secret](https://docs.aws.amazon.com/se
 
         ```
         (AWSAccount)-[RESOURCE]->(SecretsManagerSecret)
+        ```
 
 ## EBSVolume
 
@@ -2492,6 +2493,11 @@ Representation of an AWS [EBS Volume](https://docs.aws.amazon.com/AWSEC2/latest/
 
         ```
         (EBSVolume)-[ATTACHED_TO]->(EC2Instance)
+        ```
+
+- `AWSTag`
+        ```
+        (EBSVolume)-[TAGGED]->(AWSTag)
         ```
 
 ## EBSSnapshot
@@ -2589,6 +2595,7 @@ Representation of the configuration of AWS [Security Hub](https://docs.aws.amazo
 
         ```
         (AWSAccount)-[RESOURCE]->(SecurityHub)
+        ```
 
 ## AWSConfigurationRecorder
 
