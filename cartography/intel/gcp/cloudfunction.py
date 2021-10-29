@@ -79,7 +79,7 @@ def load_functions(neo4j_session: neo4j.Session,functions: List[Resource],projec
         :param neo4j session: The Neo4j session object
 
         :type function_resp: List
-        :param fucntion_resp: A list of subscriptions for GCP Functions
+        :param fucntion_resp: A list GCP Functions
 
         :type project_id: str
         :param project_id: Current Google Project Id
