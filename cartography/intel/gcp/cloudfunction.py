@@ -170,7 +170,7 @@ def sync(
     """
     logger.info("Syncing GCP Cloud Functions for project %s.", project_id)
     #FUNCTIONS
-    functions = get_gcp_functions(function,project_id,function['locations'])
-    load_functions(functions,project_id)
+    functions = get_gcp_functions(function,project_id)
+    load_functions(functions,project_id,gcp_update_tag)
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gcp_functions(neo4j_session, common_job_parameters)
