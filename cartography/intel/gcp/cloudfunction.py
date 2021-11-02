@@ -31,7 +31,7 @@ def get_gcp_functions(function: Resource,project_id: str) -> List[Dict]:
     """
     try:
         regions = []
-        request = function.projects().locations().list(name = project_id)
+        request = function.projects().locations().list(name = f"projects/{project_id}")
         while request is not None:
             response = request.execute()
             for location in response['locations']:
@@ -52,11 +52,11 @@ def get_gcp_functions(function: Resource,project_id: str) -> List[Dict]:
     try:
         functions = []
         for region in regions:
-            request = function.projects().locations().functions().list(parent=f"projects/{project_id}/locations/{region}")
+            request = function.projects().locations().functions().list(parent=f"projects/{project_id}/locations/{region['locationId']}")
             while request is not None:
                 response = request.execute()
-                for func in response['functions']:
-                    func['id'] = f"projects/{project_id}/locations/{region}/functions/{func['name']}"
+                for func in response.get('functions', []):
+                    func['id'] = f"projects/{project_id}/locations/{region['locationId']}/functions/{func['name']}"
                     functions.append(func)
                 request = function.projects().locations().functions().list_next(previous_request=request, previous_response=response)
         return functions
@@ -73,13 +73,13 @@ def get_gcp_functions(function: Resource,project_id: str) -> List[Dict]:
             raise
 
 @timeit
-def load_functions(neo4j_session: neo4j.Session,functions: List[Resource],project_id: str,gcp_update_tag: int) -> None:
+def load_functions(neo4j_session: neo4j.Session,functions: List[Dict],project_id: str,gcp_update_tag: int) -> None:
     """
         :type neo4j_session: Neo4j session object
         :param neo4j session: The Neo4j session object
 
         :type function_resp: List
-        :param fucntion_resp: A list GCP Functions
+        :param function_resp: A list GCP Functions
 
         :type project_id: str
         :param project_id: Current Google Project Id
@@ -89,7 +89,7 @@ def load_functions(neo4j_session: neo4j.Session,functions: List[Resource],projec
     """
     ingest_functions = """
     UNWIND {functions} as func
-    MERGE(function:GCPFunction:{id:func.id})
+    MERGE(function:GCPFunction{id:func.id})
     ON CREATE SET
         function.firstseen = timestamp()
     SET
@@ -103,14 +103,14 @@ def load_functions(neo4j_session: neo4j.Session,functions: List[Resource],projec
         function.serviceAccountEmail = func.serviceAccountEmail,
         function.updateTime = func.updateTime,
         function.versionId = func.versionId,
-        funtion.network = func.network,
+        function.network = func.network,
         function.maxInstances = func.maxInstances,
         function.vpcConnector = func.vpcConnector,
         function.vpcConnectorEgressSettings = func.vpcConnectorEgressSettings,
         function.ingressSettings = func.ingressSettings,
         function.buildWorkerPool = func.buildWorkerPool,
         function.buildId = func.buildId,
-        fucntion.sourceToken = func.sourceToken,
+        function.sourceToken = func.sourceToken,
         function.sourceArchiveUrl = func.sourceArchiveUrl
     WITH function, func
     MATCH (owner:GCPProject{id:{ProjectId}})
@@ -148,7 +148,7 @@ def sync(
     common_job_parameters: Dict
 ) -> None:
     """
-    Get GCP Cloud Fucntions using the Cloud Function resource object, ingest to Neo4j, and clean up old data.
+    Get GCP Cloud Functions using the Cloud Function resource object, ingest to Neo4j, and clean up old data.
 
     :type neo4j_session: The Neo4j session object
     :param neo4j_session: The Neo4j session
@@ -171,6 +171,7 @@ def sync(
     logger.info("Syncing GCP Cloud Functions for project %s.", project_id)
     #FUNCTIONS
     functions = get_gcp_functions(function,project_id)
-    load_functions(functions,project_id,gcp_update_tag)
+    load_functions(neo4j_session, functions,project_id,gcp_update_tag)
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gcp_functions(neo4j_session, common_job_parameters)
+    
