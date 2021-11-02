@@ -215,7 +215,7 @@ def build_azure_sync():
     return sync
 
 
-def build_gcp_sync():
+def build_gcp_sync(init_indexes):
     """
     Build the default cartography sync, which runs all intelligence modules shipped with the cartography package.
 
@@ -223,17 +223,15 @@ def build_gcp_sync():
     :return: The default cartography sync object.
     """
     sync = Sync()
-    sync.add_stages([
-        ('create-indexes', cartography.intel.create_indexes.run),
-        ('cloudanix-workspace', cloudanix.run),
-        ('gcp', cartography.intel.gcp.start_gcp_ingestion),
-        # ('gsuite', cartography.intel.gsuite.start_gsuite_ingestion),
-        # ('crxcavator', cartography.intel.crxcavator.start_extension_ingestion),
-        # ('okta', cartography.intel.okta.start_okta_ingestion),
-        # ('github', cartography.intel.github.start_github_ingestion),
-        # ('digitalocean', cartography.intel.digitalocean.start_digitalocean_ingestion),
-        # ('kubernetes', cartography.intel.kubernetes.start_k8s_ingestion),
-        ('analysis', cartography.intel.analysis.run),
-    ])
+
+    stages = []
+    if init_indexes:
+        stages.append(('create-indexes', cartography.intel.create_indexes.run))
+
+    stages.append(('cloudanix-workspace', cloudanix.run))
+    stages.append(('gcp', cartography.intel.gcp.start_gcp_ingestion))
+    stages.append(('analysis', cartography.intel.analysis.run))
+
+    sync.add_stages(stages)
 
     return sync

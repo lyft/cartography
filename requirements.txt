@@ -17,3 +17,4 @@ maya
 pytz
 google-cloud-pubsub>=2.3.0
 click<8.0,>=7.0
+pyparsing==2.4.7
