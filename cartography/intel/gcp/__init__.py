@@ -224,7 +224,7 @@ def _sync_single_project(
         dns.sync(neo4j_session, resources.dns, project_id, gcp_update_tag, common_job_parameters, regions)
 
     if service_names.cloudfunction in enabled_services:
-        cloudfunction.sync(neo4j_session, resources.function, project_id, gcp_update_tag, common_job_parameters)
+        cloudfunction.sync(neo4j_session, resources.cloudfunction, project_id, gcp_update_tag, common_job_parameters)
 
 
 def _auto_discover_regions(compute: Resource, project_id: str) -> List[Dict]:
