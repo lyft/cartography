@@ -533,7 +533,7 @@ def run_azure(request):
     logging.getLogger('botocore').setLevel(logging.WARNING)
     logging.getLogger('neo4j.bolt').setLevel(logging.WARNING)
 
-    default_sync = cartography.sync.build_azure_sync()
+    default_sync = cartography.sync.build_azure_sync(request.get('config', {}).get('initIndexes', False))
 
     # TODO: Define config and pass it forward
     config = Config(request['neo4j']['uri'],
