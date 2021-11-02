@@ -86,7 +86,7 @@ def sync_function(
 @ timeit
 def sync(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict,
+    common_job_parameters: Dict, regions: List[str],
 ) -> None:
     logger.info("Syncing function for subscription '%s'.", subscription_id)
 
