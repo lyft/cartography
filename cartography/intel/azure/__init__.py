@@ -12,6 +12,7 @@ from . import storage
 from . import subscription
 from . import tenant
 from . import function
+from . import network
 
 from .util.credentials import Authenticator
 from .util.credentials import Credentials
@@ -25,11 +26,12 @@ def _sync_one_subscription(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
     common_job_parameters: Dict, regions: List[str],
 ) -> None:
-    compute.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters, regions)
-    cosmosdb.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters, regions)
-    sql.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters, regions)
-    function.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters, regions)
-    storage.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters, regions)
+    compute.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
+    cosmosdb.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
+    function.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
+    network.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
+    sql.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
+    storage.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
 
 
 def _sync_tenant(
