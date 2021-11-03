@@ -37,7 +37,7 @@ def get_aks_list(credentials: Credentials, subscription_id: str) -> List[Dict]:
 def load_aks(neo4j_session: neo4j.Session, subscription_id: str, aks_list: List[Dict], update_tag: int) -> None:
     ingest_aks = """
     UNWIND {akss} AS aks
-    MERGE (a:AzureAKS{id: aks.id})
+    MERGE (a:AzureCluster{id: aks.id})
     ON CREATE SET a.firstseen = timestamp(),
     a.type = aks.type,
     a.location = aks.location,

@@ -177,4 +177,4 @@ CREATE INDEX ON :AzureVirtualMachine(id);
 CREATE INDEX ON :AzureDataDisk(id);
 CREATE INDEX ON :AzureDisk(id);
 CREATE INDEX ON :AzureSnapshot(id);
-CREATE INDEX ON :AzureAKS(id);
+CREATE INDEX ON :AzureCluster(id);
