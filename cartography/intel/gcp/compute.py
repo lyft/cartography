@@ -498,7 +498,20 @@ def _parse_port_string_to_rule(port: Optional[str], protocol: str, fw_partial_ur
 
 
 @timeit
-def load_gcp_instances(neo4j_session: neo4j.Session, data: List[Dict], gcp_update_tag: int) -> None:
+def load_gcp_instances(neo4j_session: neo4j.Session, data: List[Dict], gcp_project_id: str, gcp_update_tag: int) -> None:
+    neo4j_session.write_transaction(_load_gcp_instances_transaction, data, gcp_project_id, gcp_update_tag)
+
+    for instance in data:
+        _attach_instance_tags(neo4j_session, instance, gcp_update_tag)
+        print('tags attached')
+        _attach_gcp_nics(neo4j_session, instance, gcp_update_tag)
+        print('nics attached')
+        _attach_gcp_vpc(neo4j_session, instance['partial_uri'], gcp_update_tag)
+        print('vpc attached')
+
+
+@timeit
+def _load_gcp_instances_transaction(tx: neo4j.Transaction, data: List[Dict], gcp_project_id: str, gcp_update_tag: int) -> None:
     """
     Ingest GCP instance objects to Neo4j
     :param neo4j_session: The Neo4j session object
@@ -508,43 +521,35 @@ def load_gcp_instances(neo4j_session: neo4j.Session, data: List[Dict], gcp_updat
     :return: Nothing
     """
     query = """
-    MERGE (p:GCPProject{id:{ProjectId}})
-    ON CREATE SET p.firstseen = timestamp()
-    SET p.lastupdated = {gcp_update_tag}
+    UNWIND {compute_instances_list} AS cil
+        MERGE (i:Instance:GCPInstance{id:cil.id})
+        ON CREATE SET i.firstseen = timestamp(),
+        i.partial_uri = cil.partial_uri
+        SET i.self_link = cil.selfLink,
+        i.instancename = cil.name,
+        i.hostname = cil.hostname,
+        i.zone_name = cil.zone_name,
+        i.region = cil.region,
+        i.project_id = cil.project_id,
+        i.status = cil.status,
+        i.lastupdated = {gcp_update_tag}
+        WITH i, cil
 
-    MERGE (i:Instance:GCPInstance{id:{PartialUri}})
-    ON CREATE SET i.firstseen = timestamp(),
-    i.partial_uri = {PartialUri}
-    SET i.self_link = {SelfLink},
-    i.instancename = {InstanceName},
-    i.hostname = {Hostname},
-    i.zone_name = {ZoneName},
-    i.region = {Region},
-    i.project_id = {ProjectId},
-    i.status = {Status},
-    i.lastupdated = {gcp_update_tag}
-    WITH i, p
+        MERGE (p:GCPProject{id:{ProjectId}})
+        ON CREATE SET p.firstseen = timestamp()
+        SET p.lastupdated = {gcp_update_tag}
+        WITH i, p, cil
 
-    MERGE (p)-[r:RESOURCE]->(i)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+        MERGE (p)-[r:RESOURCE]->(i)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {gcp_update_tag}
     """
-    for instance in data:
-        neo4j_session.run(
-            query,
-            ProjectId=instance['project_id'],
-            PartialUri=instance['partial_uri'],
-            SelfLink=instance['selfLink'],
-            InstanceName=instance['name'],
-            ZoneName=instance['zone_name'],
-            Region=instance['region'],
-            Hostname=instance.get('hostname', None),
-            Status=instance['status'],
-            gcp_update_tag=gcp_update_tag,
-        )
-        _attach_instance_tags(neo4j_session, instance, gcp_update_tag)
-        _attach_gcp_nics(neo4j_session, instance, gcp_update_tag)
-        _attach_gcp_vpc(neo4j_session, instance['partial_uri'], gcp_update_tag)
+    tx.run(
+        query,
+        compute_instances_list=data,
+        ProjectId=gcp_project_id,
+        gcp_update_tag=gcp_update_tag,
+    )
 
 
 @timeit
@@ -1108,7 +1113,7 @@ def sync_gcp_instances(
     """
     instance_responses = get_gcp_instance_responses(project_id, zones, compute)
     instance_list = transform_gcp_instances(instance_responses)
-    load_gcp_instances(neo4j_session, instance_list, gcp_update_tag)
+    load_gcp_instances(neo4j_session, instance_list, project_id, gcp_update_tag)
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gcp_instances(neo4j_session, common_job_parameters)
 
@@ -1236,8 +1241,17 @@ def sync(
     else:
         regions = _zones_to_regions(zones)
 
+    logger.info("Syncing Compute VPCs for project %s.", project_id)
     sync_gcp_vpcs(neo4j_session, compute, project_id, gcp_update_tag, common_job_parameters)
+
+    logger.info("Syncing Compute Firewalls for project %s.", project_id)
     sync_gcp_firewall_rules(neo4j_session, compute, project_id, gcp_update_tag, common_job_parameters)
+
+    logger.info("Syncing Compute Subnets for project %s.", project_id)
     sync_gcp_subnets(neo4j_session, compute, project_id, regions, gcp_update_tag, common_job_parameters)
+
+    logger.info("Syncing Compute Instances for project %s.", project_id)
     sync_gcp_instances(neo4j_session, compute, project_id, zones, gcp_update_tag, common_job_parameters)
+
+    logger.info("Syncing Compute Forwarding Rules for project %s.", project_id)
     sync_gcp_forwarding_rules(neo4j_session, compute, project_id, regions, gcp_update_tag, common_job_parameters)
