@@ -403,20 +403,20 @@ def start_gcp_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
 
     _sync_multiple_projects(neo4j_session, resources, projects, config.update_tag, common_job_parameters, regions=regions)
 
-    run_analysis_job(
-        'gcp_compute_asset_inet_exposure.json',
-        neo4j_session,
-        common_job_parameters,
-    )
+    # run_analysis_job(
+    #     'gcp_compute_asset_inet_exposure.json',
+    #     neo4j_session,
+    #     common_job_parameters,
+    # )
 
-    run_analysis_job(
-        'gcp_gke_asset_exposure.json',
-        neo4j_session,
-        common_job_parameters,
-    )
+    # run_analysis_job(
+    #     'gcp_gke_asset_exposure.json',
+    #     neo4j_session,
+    #     common_job_parameters,
+    # )
 
-    run_analysis_job(
-        'gcp_gke_basic_auth.json',
-        neo4j_session,
-        common_job_parameters,
-    )
+    # run_analysis_job(
+    #     'gcp_gke_basic_auth.json',
+    #     neo4j_session,
+    #     common_job_parameters,
+    # )
