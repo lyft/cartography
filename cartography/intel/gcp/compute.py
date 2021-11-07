@@ -515,8 +515,7 @@ def load_gcp_instances(neo4j_session: neo4j.Session, data: List[Dict], gcp_proje
     # _attach_gcp_nics(neo4j_session, data, gcp_update_tag)
     # print('nics attached')
 
-    # _attach_gcp_vpc(neo4j_session, instance['partial_uri'], gcp_update_tag)
-    # print('vpc attached')
+    _attach_gcp_vpc(neo4j_session, data, gcp_update_tag)
 
 
 @timeit
@@ -793,7 +792,7 @@ def _attach_instance_tags_transaction(tx: neo4j.Transaction, tags: List[Dict], g
         ON CREATE SET h.firstseen = timestamp()
         SET h.lastupdated = {gcp_update_tag}
         WITH t, i, tl
-        
+
         MATCH (vpc:GCPVpc{id:tl.vpc_partial_uri})
         MERGE (vpc)<-[d:DEFINED_IN]-(t)
         ON CREATE SET d.firstseen = timestamp()
@@ -918,52 +917,7 @@ def _attach_gcp_nic_configs_transaction(tx: neo4j.Transaction, nic_configs: List
 
 
 @timeit
-def _attach_gcp_nic_access_configs(
-    neo4j_session: neo4j.Session, nic_id: str, nic: Resource, gcp_update_tag: int,
-) -> None:
-    """
-    Attach an access configuration to the GCP NIC.
-    :param neo4j_session: The Neo4j session
-    :param instance: The GCP instance
-    :param gcp_update_tag: The timestamp to set updated nodes to
-    :return: Nothing
-    """
-    query = """
-    MATCH (nic{id:{NicId}})
-    MERGE (ac:GCPNicAccessConfig{id:{AccessConfigId}})
-    ON CREATE SET ac.firstseen = timestamp(),
-    ac.access_config_id = {AccessConfigId}
-    SET ac.type={Type},
-    ac.name = {Name},
-    ac.public_ip = {NatIP},
-    ac.set_public_ptr = {SetPublicPtr},
-    ac.public_ptr_domain_name = {PublicPtrDomainName},
-    ac.network_tier = {NetworkTier},
-    ac.lastupdated = {gcp_update_tag}
-
-    MERGE (nic)-[r:RESOURCE]->(ac)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
-    """
-    for ac in nic.get('accessConfigs', []):
-        # Make an ID for GCPNicAccessConfig nodes because GCP doesn't define one but we need to uniquely identify them
-        access_config_id = f"{nic_id}/accessconfigs/{ac['type']}"
-        neo4j_session.run(
-            query,
-            NicId=nic_id,
-            AccessConfigId=access_config_id,
-            Type=ac['type'],
-            Name=ac['name'],
-            NatIP=ac.get('natIP', None),
-            SetPublicPtr=ac.get('setPublicPtr', None),
-            PublicPtrDomainName=ac.get('publicPtrDomainName', None),
-            NetworkTier=ac.get('networkTier', None),
-            gcp_update_tag=gcp_update_tag,
-        )
-
-
-@timeit
-def _attach_gcp_vpc(neo4j_session: neo4j.Session, instance_id: str, gcp_update_tag: int) -> None:
+def _attach_gcp_vpc(neo4j_session: neo4j.Session, instances: List[Dict], gcp_update_tag: int) -> None:
     """
     Attach a GCP instance directly to a VPC
     :param neo4j_session: neo4j_session
@@ -971,16 +925,30 @@ def _attach_gcp_vpc(neo4j_session: neo4j.Session, instance_id: str, gcp_update_t
     :param gcp_update_tag:
     :return: Nothing
     """
+    items = []
+    for instance in instances:
+        items.append({
+            'instance_id': instance['partial_uri']
+        })
+
+    neo4j_session.write_transaction(_attach_gcp_vpc_transaction, items, gcp_update_tag)
+
+
+@timeit
+def _attach_gcp_vpc_transaction(tx: neo4j.Transaction, items: List[Resource], gcp_update_tag: int) -> None:
     query = """
-    MATCH (i:GCPInstance{id:{InstanceId}})-[:NETWORK_INTERFACE]->(nic:GCPNetworkInterface)
-          -[p:PART_OF_SUBNET]->(sn:GCPSubnet)<-[r:RESOURCE]-(vpc:GCPVpc)
-    MERGE (i)-[m:MEMBER_OF_GCP_VPC]->(vpc)
-    ON CREATE SET m.firstseen = timestamp()
-    SET m.lastupdated = {gcp_update_tag}
+    UNWIND {vpc_items} AS vi
+        MATCH (i:GCPInstance{id:vi.instance_id})-[:NETWORK_INTERFACE]->(nic:GCPNetworkInterface)
+        -[p:PART_OF_SUBNET]->(sn:GCPSubnet)<-[r:RESOURCE]-(vpc:GCPVpc)
+        WITH i, vi
+
+        MERGE (i)-[m:MEMBER_OF_GCP_VPC]->(vpc)
+        ON CREATE SET m.firstseen = timestamp()
+        SET m.lastupdated = {gcp_update_tag}
     """
-    neo4j_session.run(
+    tx.run(
         query,
-        InstanceId=instance_id,
+        vpc_items=items,
         gcp_update_tag=gcp_update_tag,
     )
 
