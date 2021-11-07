@@ -258,6 +258,7 @@ def transform_gcp_vpcs(vpc_res: Dict) -> List[Dict]:
         vpc = {}
         partial_uri = f"{prefix}/{v['name']}"
 
+        vpc['id'] = partial_uri
         vpc['partial_uri'] = partial_uri
         vpc['name'] = v['name']
         vpc['self_link'] = v['selfLink']
@@ -499,19 +500,6 @@ def _parse_port_string_to_rule(port: Optional[str], protocol: str, fw_partial_ur
 
 @timeit
 def load_gcp_instances(neo4j_session: neo4j.Session, data: List[Dict], gcp_project_id: str, gcp_update_tag: int) -> None:
-    neo4j_session.write_transaction(_load_gcp_instances_transaction, data, gcp_project_id, gcp_update_tag)
-
-    for instance in data:
-        _attach_instance_tags(neo4j_session, instance, gcp_update_tag)
-        print('tags attached')
-        _attach_gcp_nics(neo4j_session, instance, gcp_update_tag)
-        print('nics attached')
-        _attach_gcp_vpc(neo4j_session, instance['partial_uri'], gcp_update_tag)
-        print('vpc attached')
-
-
-@timeit
-def _load_gcp_instances_transaction(tx: neo4j.Transaction, data: List[Dict], gcp_project_id: str, gcp_update_tag: int) -> None:
     """
     Ingest GCP instance objects to Neo4j
     :param neo4j_session: The Neo4j session object
@@ -520,6 +508,19 @@ def _load_gcp_instances_transaction(tx: neo4j.Transaction, data: List[Dict], gcp
     :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
     :return: Nothing
     """
+    neo4j_session.write_transaction(_load_gcp_instances_transaction, data, gcp_project_id, gcp_update_tag)
+
+    _attach_instance_tags(neo4j_session, data, gcp_update_tag)
+
+    # _attach_gcp_nics(neo4j_session, data, gcp_update_tag)
+    # print('nics attached')
+
+    # _attach_gcp_vpc(neo4j_session, instance['partial_uri'], gcp_update_tag)
+    # print('vpc attached')
+
+
+@timeit
+def _load_gcp_instances_transaction(tx: neo4j.Transaction, data: List[Dict], gcp_project_id: str, gcp_update_tag: int) -> None:
     query = """
     UNWIND {compute_instances_list} AS cil
         MERGE (i:Instance:GCPInstance{id:cil.id})
@@ -553,7 +554,7 @@ def _load_gcp_instances_transaction(tx: neo4j.Transaction, data: List[Dict], gcp
 
 
 @timeit
-def load_gcp_vpcs(neo4j_session: neo4j.Session, vpcs: List[Dict], gcp_update_tag: int) -> None:
+def load_gcp_vpcs(neo4j_session: neo4j.Session, vpcs: List[Dict], gcp_project_id: str, gcp_update_tag: int) -> None:
     """
     Ingest VPCs to Neo4j
     :param neo4j_session: The Neo4j session object
@@ -561,42 +562,44 @@ def load_gcp_vpcs(neo4j_session: neo4j.Session, vpcs: List[Dict], gcp_update_tag
     :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
     :return: Nothing
     """
-    query = """
-    MERGE(p:GCPProject{id:{ProjectId}})
-    ON CREATE SET p.firstseen = timestamp()
-    SET p.lastupdated = {gcp_update_tag}
-
-    MERGE(vpc:GCPVpc{id:{PartialUri}})
-    ON CREATE SET vpc.firstseen = timestamp(),
-    vpc.partial_uri = {PartialUri}
-    SET vpc.self_link = {SelfLink},
-    vpc.name = {VpcName},
-    vpc.project_id = {ProjectId},
-    vpc.auto_create_subnetworks = {AutoCreateSubnetworks},
-    vpc.routing_config_routing_mode = {RoutingMode},
-    vpc.description = {Description},
-    vpc.lastupdated = {gcp_update_tag}
-
-    MERGE (p)-[r:RESOURCE]->(vpc)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
-    """
-    for vpc in vpcs:
-        neo4j_session.run(
-            query,
-            ProjectId=vpc['project_id'],
-            PartialUri=vpc['partial_uri'],
-            SelfLink=vpc['self_link'],
-            VpcName=vpc['name'],
-            AutoCreateSubnetworks=vpc['auto_create_subnetworks'],
-            RoutingMode=vpc['routing_config_routing_mode'],
-            Description=vpc['description'],
-            gcp_update_tag=gcp_update_tag,
-        )
+    neo4j_session.write_transaction(_load_gcp_vpcs_transaction, vpcs, gcp_project_id, gcp_update_tag)
 
 
 @timeit
-def load_gcp_subnets(neo4j_session: neo4j.Session, subnets: List[Dict], gcp_update_tag: int) -> None:
+def _load_gcp_vpcs_transaction(tx: neo4j.Transaction, vpcs: List[Dict], gcp_project_id: str, gcp_update_tag: int) -> None:
+    query = """
+    UNWIND {vpcs_list} AS vl
+        MERGE(vpc:GCPVpc{id:vl.id})
+        ON CREATE SET vpc.firstseen = timestamp(),
+        vpc.partial_uri = vl.partial_uri
+        SET vpc.self_link = vl.self_link,
+        vpc.name = vl.name,
+        vpc.project_id = vl.project_id,
+        vpc.auto_create_subnetworks = vl.auto_create_subnetworks,
+        vpc.routing_config_routing_mode = vl.routing_config_routing_mode,
+        vpc.description = vl.description,
+        vpc.lastupdated = {gcp_update_tag}
+        WITH vpc, vl
+
+        MERGE(p:GCPProject{id:{ProjectId}})
+        ON CREATE SET p.firstseen = timestamp()
+        SET p.lastupdated = {gcp_update_tag}
+        WITH vpc, p, vl
+
+        MERGE (p)-[r:RESOURCE]->(vpc)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {gcp_update_tag}
+    """
+    tx.run(
+        query,
+        vpcs_list=vpcs,
+        ProjectId=gcp_project_id,
+        gcp_update_tag=gcp_update_tag,
+    )
+
+
+@timeit
+def load_gcp_subnets(neo4j_session: neo4j.Session, subnets: List[Dict], gcp_project_id: str, gcp_update_tag: int) -> None:
     """
     Ingest GCP subnet data to Neo4j
     :param neo4j_session: The Neo4j session
@@ -604,43 +607,42 @@ def load_gcp_subnets(neo4j_session: neo4j.Session, subnets: List[Dict], gcp_upda
     :param gcp_update_tag: The timestamp to set these Neo4j nodes with
     :return: Nothing
     """
+    neo4j_session.write_transaction(_load_gcp_subnets_transaction, subnets, gcp_project_id, gcp_update_tag)
+
+
+@timeit
+def _load_gcp_subnets_transaction(tx: neo4j.Transaction, subnets: List[Dict], gcp_project_id: str, gcp_update_tag: int) -> None:
     query = """
-    MERGE(vpc:GCPVpc{id:{VpcPartialUri}})
-    ON CREATE SET vpc.firstseen = timestamp(),
-    vpc.partial_uri = {VpcPartialUri}
+    UNWIND {subnets_list} AS sl
+        MERGE(subnet:GCPSubnet{id:sl.id})
+        ON CREATE SET subnet.firstseen = timestamp(),
+        subnet.partial_uri = sl.partial_url
+        SET subnet.self_link = sl.self_link,
+        subnet.project_id = sl.project_id,
+        subnet.name = sl.name,
+        subnet.region = sl.region,
+        subnet.gateway_address = sl.gateway_address,
+        subnet.ip_cidr_range = sl.ip_cidr_range,
+        subnet.private_ip_google_access = sl.private_ip_google_access,
+        subnet.vpc_partial_uri = sl.vpc_partial_uri,
+        subnet.lastupdated = {gcp_update_tag}
+        WITH subnet, sl
 
-    MERGE(subnet:GCPSubnet{id:{PartialUri}})
-    ON CREATE SET subnet.firstseen = timestamp(),
-    subnet.partial_uri = {PartialUri}
-    SET subnet.self_link = {SubnetSelfLink},
-    subnet.project_id = {ProjectId},
-    subnet.name = {SubnetName},
-    subnet.region = {Region},
-    subnet.gateway_address = {GatewayAddress},
-    subnet.ip_cidr_range = {IpCidrRange},
-    subnet.private_ip_google_access = {PrivateIpGoogleAccess},
-    subnet.vpc_partial_uri = {VpcPartialUri},
-    subnet.lastupdated = {gcp_update_tag}
+        MERGE(vpc:GCPVpc{id:sl.vpc_partial_uri})
+        ON CREATE SET vpc.firstseen = timestamp(),
+        vpc.partial_uri = sl.vpc_partial_uri
+        WITH subnet, vpc, sl
 
-    MERGE (vpc)-[r:RESOURCE]->(subnet)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+        MERGE (vpc)-[r:RESOURCE]->(subnet)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {gcp_update_tag}
     """
-    for s in subnets:
-        neo4j_session.run(
-            query,
-            VpcPartialUri=s['vpc_partial_uri'],
-            VpcSelfLink=s['vpc_self_link'],
-            PartialUri=s['partial_uri'],
-            SubnetSelfLink=s['self_link'],
-            ProjectId=s['project_id'],
-            SubnetName=s['name'],
-            Region=s['region'],
-            GatewayAddress=s['gateway_address'],
-            IpCidrRange=s['ip_cidr_range'],
-            PrivateIpGoogleAccess=s['private_ip_google_access'],
-            gcp_update_tag=gcp_update_tag,
-        )
+    tx.run(
+        query,
+        subnets_list=subnets,
+        ProjectId=gcp_project_id,
+        gcp_update_tag=gcp_update_tag,
+    )
 
 
 @timeit
@@ -750,7 +752,7 @@ def _attach_fwd_rule_to_vpc(neo4j_session: neo4j.Session, fwd: Dict, gcp_update_
 
 
 @timeit
-def _attach_instance_tags(neo4j_session: neo4j.Session, instance: Resource, gcp_update_tag: int) -> None:
+def _attach_instance_tags(neo4j_session: neo4j.Session, instances: List[Resource], gcp_update_tag: int) -> None:
     """
     Attach tags to GCP instance and to the VPCs that they are defined in.
     :param neo4j_session: The session
@@ -758,41 +760,55 @@ def _attach_instance_tags(neo4j_session: neo4j.Session, instance: Resource, gcp_
     :param gcp_update_tag: The timestamp
     :return: Nothing
     """
-    query = """
-    MATCH (i:GCPInstance{id:{InstanceId}})
+    tags = []
+    for instance in instances:
+        for tag in instance.get('tags', {}).get('items', []):
+            for nic in instance.get('networkInterfaces', []):
+                tag_id = _create_gcp_network_tag_id(nic['vpc_partial_uri'], tag)
+                tags.append({
+                    'id': tag_id,
+                    'value': tag,
+                    'instance_id': instance['partial_uri'],
+                    'vpc_partial_uri': nic['vpc_partial_uri'],
+                })
 
-    MERGE (t:GCPNetworkTag{id:{TagId}})
-    ON CREATE SET t.tag_id = {TagId},
-    t.value = {TagValue},
-    t.firstseen = timestamp()
-    SET t.lastupdated = {gcp_update_tag}
-
-    MERGE (i)-[h:TAGGED]->(t)
-    ON CREATE SET h.firstseen = timestamp()
-    SET h.lastupdated = {gcp_update_tag}
-
-    WITH t
-    MATCH (vpc:GCPVpc{id:{VpcPartialUri}})
-
-    MERGE (vpc)<-[d:DEFINED_IN]-(t)
-    ON CREATE SET d.firstseen = timestamp()
-    SET d.lastupdated = {gcp_update_tag}
-    """
-    for tag in instance.get('tags', {}).get('items', []):
-        for nic in instance.get('networkInterfaces', []):
-            tag_id = _create_gcp_network_tag_id(nic['vpc_partial_uri'], tag)
-            neo4j_session.run(
-                query,
-                InstanceId=instance['partial_uri'],
-                TagId=tag_id,
-                TagValue=tag,
-                VpcPartialUri=nic['vpc_partial_uri'],
-                gcp_update_tag=gcp_update_tag,
-            )
+    neo4j_session.write_transaction(_attach_instance_tags_transaction, tags, gcp_update_tag)
 
 
 @timeit
-def _attach_gcp_nics(neo4j_session: neo4j.Session, instance: Resource, gcp_update_tag: int) -> None:
+def _attach_instance_tags_transaction(tx: neo4j.Transaction, tags: List[Dict], gcp_update_tag: int) -> None:
+    query = """
+    UNWIND {tags_list} AS tl
+        MERGE (t:GCPNetworkTag{id:tl.id})
+        ON CREATE SET t.tag_id = tl.id,
+        t.value = tl.value,
+        t.firstseen = timestamp()
+        SET t.lastupdated = {gcp_update_tag}
+        WITH t, tl
+
+        MATCH (i:GCPInstance{id:tl.instance_id})
+        WITH t, i, tl
+
+        MERGE (i)-[h:TAGGED]->(t)
+        ON CREATE SET h.firstseen = timestamp()
+        SET h.lastupdated = {gcp_update_tag}
+        WITH t, i, tl
+        
+        MATCH (vpc:GCPVpc{id:tl.vpc_partial_uri})
+        MERGE (vpc)<-[d:DEFINED_IN]-(t)
+        ON CREATE SET d.firstseen = timestamp()
+        SET d.lastupdated = {gcp_update_tag}
+    """
+
+    tx.run(
+        query,
+        tags_list=tags,
+        gcp_update_tag=gcp_update_tag,
+    )
+
+
+@timeit
+def _attach_gcp_nics(neo4j_session: neo4j.Session, instances: List[Resource], gcp_update_tag: int) -> None:
     """
     Attach GCP Network Interfaces to GCP Instances and GCP Subnets.
     Then, attach GCP Instances directly to VPCs.
@@ -801,41 +817,104 @@ def _attach_gcp_nics(neo4j_session: neo4j.Session, instance: Resource, gcp_updat
     :param gcp_update_tag: Timestamp to set the nodes
     :return: Nothing
     """
+    nics = []
+    nic_access_configs = []
+    for instance in instances:
+        for nic in instance.get('networkInterfaces', []):
+            # Make an ID for GCPNetworkInterface nodes because GCP doesn't define one but we need to uniquely identify them
+            nic_id = f"{instance['partial_uri']}/networkinterfaces/{nic['name']}"
+            nics.append({
+                'id': nic_id,
+                'name': nic['name'],
+                'instance_id': instance['partial_uri'],
+                'network_ip': nic.get('networkIP'),
+                'subnet_partial_uri': nic['subnet_partial_uri'],
+            })
+
+            for ac in nic.get('accessConfigs', []):
+                # Make an ID for GCPNicAccessConfig nodes because GCP doesn't define one but we need to uniquely identify them
+                access_config_id = f"{nic_id}/accessconfigs/{ac['type']}"
+                nic_access_configs.append({
+                    'id': nic_id,
+                    'name': ac['name'],
+                    'type': ac['type'],
+                    'access_config_id': access_config_id,
+                    'nat_ip': ac.get('natIP', None),
+                    'set_public_ptr': ac.get('setPublicPtr', None),
+                    'public_ptr_domain_name': ac.get('publicPtrDomainName', None),
+                    'network_tier': ac.get('networkTier', None),
+                })
+
+    neo4j_session.write_transaction(_attach_gcp_nics_transaction, nics, gcp_update_tag)
+
+    neo4j_session.write_transaction(_attach_gcp_nic_configs_transaction, nic_access_configs, gcp_update_tag)
+
+
+@timeit
+def _attach_gcp_nics_transaction(tx: neo4j.Transaction, nics: List[Dict], gcp_update_tag: int) -> None:
     query = """
-    MATCH (i:GCPInstance{id:{InstanceId}})
-    MERGE (nic:GCPNetworkInterface:NetworkInterface{id:{NicId}})
-    ON CREATE SET nic.firstseen = timestamp(),
-    nic.nic_id = {NicId}
-    SET nic.private_ip = {NetworkIP},
-    nic.name = {NicName},
-    nic.lastupdated = {gcp_update_tag}
+    UNWIND {nics_list} AS nl
+        MERGE (nic:GCPNetworkInterface:NetworkInterface{id:nl.id})
+        ON CREATE SET nic.firstseen = timestamp(),
+        nic.nic_id = nl.id
+        SET nic.private_ip = nl.network_ip,
+        nic.name = nl.name,
+        nic.lastupdated = {gcp_update_tag}
+        WITH nic, nl
 
-    MERGE (i)-[r:NETWORK_INTERFACE]->(nic)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+        MATCH (i:GCPInstance{id:nl.instance_id})
+        WITH nic, i, nl
 
-    MERGE (subnet:GCPSubnet{id:{SubnetPartialUri}})
-    ON CREATE SET subnet.firstseen = timestamp(),
-    subnet.partial_uri = {SubnetPartialUri}
-    SET subnet.lastupdated = {gcp_update_tag}
+        MERGE (i)-[r:NETWORK_INTERFACE]->(nic)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {gcp_update_tag}
+        WITH nic, i, nl
 
-    MERGE (nic)-[p:PART_OF_SUBNET]->(subnet)
-    ON CREATE SET p.firstseen = timestamp()
-    SET p.lastupdated = {gcp_update_tag}
+        MERGE (subnet:GCPSubnet{id:nl.subnet_partial_uri})
+        ON CREATE SET subnet.firstseen = timestamp(),
+        subnet.partial_uri = nl.subnet_partial_uri
+        SET subnet.lastupdated = {gcp_update_tag}
+        WITH nic, subnet, i, nl
+
+        MERGE (nic)-[p:PART_OF_SUBNET]->(subnet)
+        ON CREATE SET p.firstseen = timestamp()
+        SET p.lastupdated = {gcp_update_tag}
     """
-    for nic in instance.get('networkInterfaces', []):
-        # Make an ID for GCPNetworkInterface nodes because GCP doesn't define one but we need to uniquely identify them
-        nic_id = f"{instance['partial_uri']}/networkinterfaces/{nic['name']}"
-        neo4j_session.run(
-            query,
-            InstanceId=instance['partial_uri'],
-            NicId=nic_id,
-            NetworkIP=nic.get('networkIP'),
-            NicName=nic['name'],
-            gcp_update_tag=gcp_update_tag,
-            SubnetPartialUri=nic['subnet_partial_uri'],
-        )
-        _attach_gcp_nic_access_configs(neo4j_session, nic_id, nic, gcp_update_tag)
+    tx.run(
+        query,
+        nics_list=nics,
+        gcp_update_tag=gcp_update_tag,
+    )
+
+
+@timeit
+def _attach_gcp_nic_configs_transaction(tx: neo4j.Transaction, nic_configs: List[Dict], gcp_update_tag: int) -> None:
+    query = """
+    UNWIND {nic_configs_list} AS ncl
+        MERGE (ac:GCPNicAccessConfig{id:ncl.access_config_id})
+        ON CREATE SET ac.firstseen = timestamp(),
+        ac.access_config_id = ncl.access_config_id
+        SET ac.type=ncl.type,
+        ac.name = ncl.name,
+        ac.public_ip = ncl.nat_ip,
+        ac.set_public_ptr = ncl.set_public_ptr,
+        ac.public_ptr_domain_name = ncl.public_ptr_domain_name,
+        ac.network_tier = ncl.network_tier,
+        ac.lastupdated = {gcp_update_tag}
+        WITH ac, ncl
+
+        MATCH (nic{id:ncl.id})
+        WITH nic, ac, ncl
+
+        MERGE (nic)-[r:RESOURCE]->(ac)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {gcp_update_tag}
+    """
+    tx.run(
+        query,
+        nic_configs_list=nic_configs,
+        gcp_update_tag=gcp_update_tag,
+    )
 
 
 @timeit
@@ -907,48 +986,51 @@ def _attach_gcp_vpc(neo4j_session: neo4j.Session, instance_id: str, gcp_update_t
 
 
 @timeit
-def load_gcp_ingress_firewalls(neo4j_session: neo4j.Session, fw_list: List[Resource], gcp_update_tag: int) -> None:
+def load_gcp_ingress_firewalls(neo4j_session: neo4j.Session, fw_list: List[Resource], gcp_project_id: str, gcp_update_tag: int) -> None:
     """
     Load the firewall list to Neo4j
     :param fw_list: The transformed list of firewalls
     :return: Nothing
     """
-    query = """
-    MERGE (fw:GCPFirewall{id:{FwPartialUri}})
-    ON CREATE SET fw.firstseen = timestamp(),
-    fw.partial_uri = {FwPartialUri}
-    SET fw.direction = {Direction},
-    fw.disabled = {Disabled},
-    fw.name = {Name},
-    fw.priority = {Priority},
-    fw.self_link = {SelfLink},
-    fw.has_target_service_accounts = {HasTargetServiceAccounts},
-    fw.lastupdated = {gcp_update_tag}
+    neo4j_session.write_transaction(_load_gcp_ingress_firewalls_transaction, fw_list, gcp_project_id, gcp_update_tag)
 
-    MERGE (vpc:GCPVpc{id:{VpcPartialUri}})
-    ON CREATE SET vpc.firstseen = timestamp(),
-    vpc.partial_uri = {VpcPartialUri}
-    SET vpc.lastupdated = {gcp_update_tag}
-
-    MERGE (vpc)-[r:RESOURCE]->(fw)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
-    """
     for fw in fw_list:
-        neo4j_session.run(
-            query,
-            FwPartialUri=fw['id'],
-            Direction=fw['direction'],
-            Disabled=fw['disabled'],
-            Name=fw['name'],
-            Priority=fw['priority'],
-            SelfLink=fw['selfLink'],
-            VpcPartialUri=fw['vpc_partial_uri'],
-            HasTargetServiceAccounts=fw['has_target_service_accounts'],
-            gcp_update_tag=gcp_update_tag,
-        )
         _attach_firewall_rules(neo4j_session, fw, gcp_update_tag)
         _attach_target_tags(neo4j_session, fw, gcp_update_tag)
+
+
+@timeit
+def _load_gcp_ingress_firewalls_transaction(tx: neo4j.Transaction, fw_list: List[Resource], gcp_project_id: str, gcp_update_tag: int) -> None:
+    query = """
+    UNWIND {firewalls_list} AS fl
+        MERGE (fw:GCPFirewall{id:fl.id})
+        ON CREATE SET fw.firstseen = timestamp(),
+        fw.partial_uri = fl.id
+        SET fw.direction = fl.direction,
+        fw.disabled = fl.disabled,
+        fw.name = fl.name,
+        fw.priority = fl.priority,
+        fw.self_link = fl.selfLink,
+        fw.has_target_service_accounts = fl.has_target_service_accounts,
+        fw.lastupdated = {gcp_update_tag}
+        WITH fw, fl
+
+        MERGE (vpc:GCPVpc{id:fl.vpc_partial_uri})
+        ON CREATE SET vpc.firstseen = timestamp(),
+        vpc.partial_uri = fl.vpc_partial_uri
+        SET vpc.lastupdated = {gcp_update_tag}
+        WITH fw, vpc, fl
+
+        MERGE (vpc)-[r:RESOURCE]->(fw)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {gcp_update_tag}
+    """
+    tx.run(
+        query,
+        firewalls_list=fw_list,
+        ProjectId=gcp_project_id,
+        gcp_update_tag=gcp_update_tag,
+    )
 
 
 @timeit
@@ -1134,7 +1216,7 @@ def sync_gcp_vpcs(
     """
     vpc_res = get_gcp_vpcs(project_id, compute)
     vpcs = transform_gcp_vpcs(vpc_res)
-    load_gcp_vpcs(neo4j_session, vpcs, gcp_update_tag)
+    load_gcp_vpcs(neo4j_session, vpcs, project_id, gcp_update_tag)
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gcp_vpcs(neo4j_session, common_job_parameters)
 
@@ -1147,7 +1229,7 @@ def sync_gcp_subnets(
     for r in regions:
         subnet_res = get_gcp_subnets(project_id, r, compute)
         subnets = transform_gcp_subnets(subnet_res)
-        load_gcp_subnets(neo4j_session, subnets, gcp_update_tag)
+        load_gcp_subnets(neo4j_session, subnets, project_id, gcp_update_tag)
         # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
         cleanup_gcp_subnets(neo4j_session, common_job_parameters)
 
@@ -1197,7 +1279,7 @@ def sync_gcp_firewall_rules(
     """
     fw_response = get_gcp_firewall_ingress_rules(project_id, compute)
     fw_list = transform_gcp_firewall(fw_response)
-    load_gcp_ingress_firewalls(neo4j_session, fw_list, gcp_update_tag)
+    load_gcp_ingress_firewalls(neo4j_session, fw_list, project_id, gcp_update_tag)
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gcp_firewall_rules(neo4j_session, common_job_parameters)
 

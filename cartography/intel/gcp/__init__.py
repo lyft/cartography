@@ -202,6 +202,7 @@ def _sync_single_project(
     :param common_job_parameters: Other parameters sent to Neo4j
     :return: Nothing
     """
+    print(f"regions: {regions}")
     if not regions:
         regions = _auto_discover_regions(resources.compute, project_id)
 
