@@ -178,3 +178,4 @@ CREATE INDEX ON :AzureDataDisk(id);
 CREATE INDEX ON :AzureDisk(id);
 CREATE INDEX ON :AzureSnapshot(id);
 CREATE INDEX ON :AzureFunction(id);
+CREATE INDEX ON :AzureWebAppConfiguration(id);
