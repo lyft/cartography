@@ -1,6 +1,7 @@
 import logging
 from typing import Dict
 from typing import List
+from typing import Optional
 
 import neo4j
 
@@ -12,6 +13,12 @@ from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+
+def perform_db_action_function(session: neo4j.Session, subscription_id: str, data_list: List[Dict[str, Optional[str]]], update_tag: int) -> None:
+    session.write_transaction(load_function, subscription_id, data_list, update_tag)
+
+def perform_db_action_function_conf(session: neo4j.Session, data_list: List[Dict[str, Optional[str]]], update_tag: int) -> None:
+    session.write_transaction(load_function_conf, data_list, update_tag)
 
 @timeit
 def get_client(credentials: Credentials, subscription_id: str) -> WebSiteManagementClient:
@@ -53,7 +60,7 @@ def get_function_list(credentials: Credentials, subscription_id: str) -> List[Di
         logger.warning(f"Error while retrieving functions - {e}")
         return []
 
-def load_function(neo4j_session: neo4j.Session, subscription_id: str, function_list: List[Dict], update_tag: int) -> None:
+def load_function(tx: neo4j.Transaction, subscription_id: str, function_list: List[Dict], update_tag: int) -> None:
     ingest_fun = """
     UNWIND {functions} AS function
     MERGE (f:AzureFunction{id: function.id})
@@ -78,7 +85,7 @@ def load_function(neo4j_session: neo4j.Session, subscription_id: str, function_l
     SET r.lastupdated = {update_tag}
     """
 
-    neo4j_session.run(
+    tx.run(
         ingest_fun,
         functions=function_list,
         SUBSCRIPTION_ID=subscription_id,
@@ -97,7 +104,8 @@ def sync_function(
     common_job_parameters: Dict,
 ) -> None:
     function_list = get_function_list(credentials, subscription_id)
-    load_function(neo4j_session, subscription_id, function_list, update_tag)
+    perform_db_action_function(neo4j_session,subscription_id,function_list,update_tag)
+    # load_function(neo4j_session, subscription_id, function_list, update_tag)
     cleanup_function(neo4j_session, common_job_parameters)
 
 def load_function_conf(
@@ -149,7 +157,8 @@ def sync_function_conf(
     common_job_parameters: Dict,
 ) -> None:
     function_conf_list = get_function_conf_list(credentials, subscription_id)
-    load_function_conf(neo4j_session, function_conf_list, update_tag)
+    perform_db_action_function_conf(neo4j_session, function_conf_list, update_tag)
+    # load_function_conf(neo4j_session, function_conf_list, update_tag)
     cleanup_function_conf(neo4j_session, common_job_parameters)
 
 @ timeit
