@@ -2,6 +2,8 @@ import json
 import logging
 from typing import Dict
 from typing import List
+from typing import Optional
+
 
 import neo4j
 from googleapiclient.discovery import HttpError
@@ -71,9 +73,13 @@ def get_gcp_functions(function: Resource,project_id: str) -> List[Dict]:
             return []
         else:
             raise
+        
+@timeit
+def perform_db_action(session: neo4j.Session, data_list: List[Dict[str, Optional[str]]], update_tag: int) -> None:
+    session.write_transaction(load_functions, data_list, update_tag)
 
 @timeit
-def load_functions(neo4j_session: neo4j.Session,functions: List[Resource],project_id: str,gcp_update_tag: int) -> None:
+def load_functions(tx:neo4j.Transaction,functions: List[Resource],project_id: str,gcp_update_tag: int) -> None:
     """
         :type neo4j_session: Neo4j session object
         :param neo4j session: The Neo4j session object
@@ -119,7 +125,7 @@ def load_functions(neo4j_session: neo4j.Session,functions: List[Resource],projec
         r.firstseen = timestamp(),
         r.lastupdated = {gcp_update_tag}
     """
-    neo4j_session.run(
+    tx.run(
         ingest_functions,
         functions = functions,
         ProjectId=project_id,
@@ -171,6 +177,7 @@ def sync(
     logger.info("Syncing GCP Cloud Functions for project %s.", project_id)
     #FUNCTIONS
     functions = get_gcp_functions(function,project_id)
+    perform_db_action(neo4j_session,functions,gcp_update_tag)
     load_functions(functions,project_id,gcp_update_tag)
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gcp_functions(neo4j_session, common_job_parameters)
