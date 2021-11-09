@@ -1,6 +1,5 @@
+import configparser
 import logging
-from configparser import ConfigParser
-from configparser import Error
 from string import Template
 from typing import Any
 from typing import Dict
@@ -274,10 +273,10 @@ def _transform_setup_cfg_requirements(
     """
     if setup_cfg_contents and setup_cfg_contents.get('text'):
         text_contents = setup_cfg_contents['text']
-        setup_cfg = ConfigParser()
+        setup_cfg = configparser.ConfigParser()
         try:
             setup_cfg.read_string(text_contents)
-        except Error:
+        except configparser.Error:
             logger.info(
                 f"Failed to parse {repo_url}'s setup.cfg; skipping.",
                 exc_info=True,
@@ -341,7 +340,7 @@ def _transform_python_requirements(
         })
 
 
-def parse_setup_cfg(config: ConfigParser) -> List[str]:
+def parse_setup_cfg(config: configparser.ConfigParser) -> List[str]:
     reqs: List[str] = []
     reqs.extend(_parse_setup_cfg_requirements(config.get("options", "install_requires", fallback="")))
     reqs.extend(_parse_setup_cfg_requirements(config.get("options", "setup_requires", fallback="")))
