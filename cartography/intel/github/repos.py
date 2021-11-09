@@ -1,6 +1,6 @@
 import logging
 from configparser import ConfigParser
-from configparser import MissingSectionHeaderError
+from configparser import Error
 from string import Template
 from typing import Any
 from typing import Dict
@@ -87,8 +87,6 @@ GITHUB_ORG_REPOS_PAGINATED_GRAPHQL = """
         }
     }
     """
-
-
 # Note: In the above query, `HEAD` references the default branch.
 # See https://stackoverflow.com/questions/48935381/github-graphql-api-default-branch-in-repository
 
@@ -244,7 +242,11 @@ def _transform_collaborators(collaborators: Dict, repo_url: str, transformed_col
             transformed_collaborators[user_permission].append(user)
 
 
-def _transform_requirements_txt(req_file_contents: Dict, repo_url: str, out_requirements_files: List[Dict]) -> None:
+def _transform_requirements_txt(
+    req_file_contents: Optional[Dict],
+    repo_url: str,
+    out_requirements_files: List[Dict],
+) -> None:
     """
     Performs data transformations for the requirements.txt file in a GitHub repo, if available.
     :param req_file_contents: Dict: The contents of the requirements.txt file.
@@ -259,7 +261,7 @@ def _transform_requirements_txt(req_file_contents: Dict, repo_url: str, out_requ
 
 
 def _transform_setup_cfg_requirements(
-    setup_cfg_contents: Dict,
+    setup_cfg_contents: Optional[Dict],
     repo_url: str,
     out_requirements_files: List[Dict],
 ) -> None:
@@ -275,7 +277,7 @@ def _transform_setup_cfg_requirements(
         setup_cfg = ConfigParser()
         try:
             setup_cfg.read_string(text_contents)
-        except MissingSectionHeaderError:
+        except Error:
             logger.info(
                 f"Failed to parse {repo_url}'s setup.cfg; skipping.",
                 exc_info=True,
@@ -299,7 +301,6 @@ def _transform_python_requirements(
     """
     parsed_list = []
     for line in requirements_list:
-        # Remove trailing comments and extra whitespace
         stripped_line = line.partition('#')[0].strip()
         if stripped_line == '':
             continue
@@ -342,10 +343,8 @@ def _transform_python_requirements(
 
 def parse_setup_cfg(config: ConfigParser) -> List[str]:
     reqs: List[str] = []
-    if config.has_option("options", "install_requires"):
-        reqs.extend(_parse_setup_cfg_requirements(config["options"]["install_requires"]))
-    if config.has_option("options", "setup_requires"):
-        reqs.extend(_parse_setup_cfg_requirements(config["options"]["setup_requires"]))
+    reqs.extend(_parse_setup_cfg_requirements(config.get("options", "install_requires", fallback="")))
+    reqs.extend(_parse_setup_cfg_requirements(config.get("options", "setup_requires", fallback="")))
     if config.has_section("options.extras_require"):
         for _, val in config.items("options.extras_require"):
             reqs.extend(_parse_setup_cfg_requirements(val))
