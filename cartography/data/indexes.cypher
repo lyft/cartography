@@ -180,3 +180,4 @@ CREATE INDEX ON :AzureSnapshot(id);
 CREATE INDEX ON :AzureFunctionApp(id);
 CREATE INDEX ON :AzureWebAppConfiguration(id);
 CREATE INDEX ON :AzureFunction(id);
+CREATE INDEX ON :AzureWebAppsDeployment(id);

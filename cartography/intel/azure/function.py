@@ -23,6 +23,9 @@ def perform_db_action_function_app_conf(session: neo4j.Session, data_list: List[
 def perform_db_action_function(session: neo4j.Session, data_list: List[Dict[str, Optional[str]]], update_tag: int) -> None:
     session.write_transaction(_load_functions, data_list, update_tag)
 
+def perform_db_action_function_app_deployment(session: neo4j.Session, data_list: List[Dict[str, Optional[str]]], update_tag: int) -> None:
+    session.write_transaction(_load_function_app_deployments, data_list, update_tag)
+
 @timeit
 def get_client(credentials: Credentials, subscription_id: str) -> WebSiteManagementClient:
     client = WebSiteManagementClient(credentials, subscription_id)
@@ -226,6 +229,63 @@ def sync_function(
     perform_db_action_function(neo4j_session, function_list, update_tag)
     cleanup_function(neo4j_session, common_job_parameters)
 
+def get_function_app_deployment_list(credentials: Credentials, subscription_id: str) -> List[Dict]:
+    try:
+        client = get_client(credentials, subscription_id)
+        function_app_list = get_function_app_list(credentials, subscription_id)
+        function_app_deployments_list_=[]
+        for function in function_app_list:
+            function_app_deployments_list_.append(list(map(lambda x: x.as_dict(), client.web_apps.list_deployments(function['resource_group'],function['name']))))
+        
+        function_app_deployments_list_=list(filter(lambda a: a != [], function_app_deployments_list_))
+        function_app_deployments_list=[]
+        for function in function_app_deployments_list_:
+            function_app_deployments_list = function_app_deployments_list + function
+        for function in function_app_deployments_list:
+            x = function['id'].split('/')
+            function['resource_group'] = x[x.index('resourceGroups') + 1] 
+            function['function_app_id'] = function['id'][:function['id'].index("/deployments")]
+        return function_app_deployments_list
+
+    except HttpResponseError as e:
+        logger.warning(f"Error while retrieving functions deployments - {e}")
+        return []
+
+def _load_function_app_deployments(
+        tx: neo4j.Transaction, function_app_deployments_list: List[Dict], update_tag: int,
+) -> None:
+    ingest_function_app_deploy = """
+    UNWIND {function_app_deployments_list} as function_deply
+    MERGE (f:AzureWebAppsDeployment{id: function_deply.id})
+    ON CREATE SET f.firstseen = timestamp(),
+    f.type = function_deply.type
+    SET f.name = function_deply.name,
+    f.lastupdated = {azure_update_tag},
+    f.resource_group_name=function_deply.resource_group
+    WITH f, function_deply
+    MATCH (s:AzureFunctionApp{id: function_deply.function_app_id})
+    MERGE (s)-[r:DEPLOYMENT]->(f)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {azure_update_tag}
+    """
+
+    tx.run(
+        ingest_function_app_deploy,
+        function_app_deployments_list=function_app_deployments_list,
+        azure_update_tag=update_tag,
+    )
+
+def cleanup_function_app_deployement(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('azure_import_function_app_deployement_cleanup.json', neo4j_session, common_job_parameters)
+
+def sync_function_app_deployement(
+    neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
+    common_job_parameters: Dict,
+) -> None:
+    function_app_deployments_list = get_function_app_deployment_list(credentials, subscription_id)
+    perform_db_action_function_app_deployment(neo4j_session, function_app_deployments_list, update_tag)
+    cleanup_function_app_deployement(neo4j_session, common_job_parameters)
+
 @ timeit
 def sync(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
@@ -236,3 +296,4 @@ def sync(
     sync_function_app(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
     sync_function_app_conf(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
     sync_function(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
+    sync_function_app_deployement(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
