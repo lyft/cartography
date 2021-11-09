@@ -75,14 +75,14 @@ def get_gcp_functions(function: Resource,project_id: str) -> List[Dict]:
             raise
         
 @timeit
-def perform_db_action(session: neo4j.Session, data_list: List[Dict[str, Optional[str]]], update_tag: int) -> None:
-    session.write_transaction(load_functions, data_list, update_tag)
+def load_functions(session: neo4j.Session, data_list: List[Dict[str, Optional[str]]], project_id:str, update_tag: int) -> None:
+    session.write_transaction(_load_functions_tx, data_list, project_id, update_tag)
 
 @timeit
-def load_functions(tx:neo4j.Transaction,functions: List[Resource],project_id: str,gcp_update_tag: int) -> None:
+def _load_functions_tx(tx:neo4j.Transaction,functions: List[Resource],project_id: str,gcp_update_tag: int) -> None:
     """
-        :type neo4j_session: Neo4j session object
-        :param neo4j session: The Neo4j session object
+        :type neo4j_transaction: Neo4j transaction object
+        :param neo4j transaction: The Neo4j transaction object
 
         :type function_resp: List
         :param fucntion_resp: A list GCP Functions
@@ -177,7 +177,6 @@ def sync(
     logger.info("Syncing GCP Cloud Functions for project %s.", project_id)
     #FUNCTIONS
     functions = get_gcp_functions(function,project_id)
-    perform_db_action(neo4j_session,functions,gcp_update_tag)
     load_functions(functions,project_id,gcp_update_tag)
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gcp_functions(neo4j_session, common_job_parameters)

@@ -194,7 +194,7 @@ def _sync_single_project(
     if service_names.dns in enabled_services:
         dns.sync(neo4j_session, resources.dns, project_id, gcp_update_tag, common_job_parameters)
     if service_names.cloudfunction in enabled_services:
-        cloudfunction.sync(neo4j_session, resources.function, project_id, gcp_update_tag,common_job_parameters)
+        cloudfunction.sync(neo4j_session, resources.cloudfunction, project_id, gcp_update_tag,common_job_parameters)
 
 
 def _sync_multiple_projects(
