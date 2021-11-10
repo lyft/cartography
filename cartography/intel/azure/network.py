@@ -172,7 +172,7 @@ def sync_networks_subnets(
     common_job_parameters: Dict,
 ) -> None:
     networks_subnets_list = get_networks_subnets_list(credentials, subscription_id)
-    load_networks_subnets(neo4j_session, subscription_id, networks_subnets_list, update_tag)
+    load_networks_subnets(neo4j_session, networks_subnets_list, update_tag)
     cleanup_networks_subnets(neo4j_session, common_job_parameters)
 
 
