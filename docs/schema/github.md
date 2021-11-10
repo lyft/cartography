@@ -175,7 +175,8 @@ Representation of a single Programming Language [language object](https://develo
 ## Dependency::PythonLibrary
 
 Representation of a Python library as listed in a [requirements.txt](https://pip.pypa.io/en/stable/user_guide/#requirements-files)
-or [setup.cfg](https://setuptools.pypa.io/en/latest/userguide/declarative_config.html) file
+or [setup.cfg](https://setuptools.pypa.io/en/latest/userguide/declarative_config.html) file.
+Within a setup.cfg file, cartography will load everything from `install_requires`, `setup_requires`, and `extras_require`.
 
 | Field | Description |
 |-------|-------------|

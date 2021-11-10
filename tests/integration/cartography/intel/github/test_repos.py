@@ -245,3 +245,21 @@ def test_setup_cfg_library_to_repo(neo4j_session):
     actual_nodes = {n['repo_count'] for n in nodes}
     expected_nodes = {2}
     assert actual_nodes == expected_nodes
+
+
+def test_python_library_in_multiple_requirements_files(neo4j_session):
+    """
+   Ensure that repositories are connected to Python libraries stated as dependencies in
+   both setup.cfg and requirements.txt. Ensures that if the dependency has different
+   specifiers in each file, a separate node is created for each.
+   """
+    _ensure_local_neo4j_has_test_data(neo4j_session)
+
+    query = """
+    MATCH (repo:GitHubRepository)-[r:REQUIRES]->(lib:PythonLibrary{name:'okta'})
+    RETURN lib.id as lib_ids
+    """
+    nodes = neo4j_session.run(query)
+    node_ids = {n['lib_ids'] for n in nodes}
+    assert len(node_ids) == 2
+    assert node_ids == {'okta', 'okta|0.9.0'}

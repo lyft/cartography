@@ -271,19 +271,20 @@ def _transform_setup_cfg_requirements(
     :param out_requirements_files: Output array to append transformed results to.
     :return: Nothing.
     """
-    if setup_cfg_contents and setup_cfg_contents.get('text'):
-        text_contents = setup_cfg_contents['text']
-        setup_cfg = configparser.ConfigParser()
-        try:
-            setup_cfg.read_string(text_contents)
-        except configparser.Error:
-            logger.info(
-                f"Failed to parse {repo_url}'s setup.cfg; skipping.",
-                exc_info=True,
-            )
-            return
-        reqs_list = parse_setup_cfg(setup_cfg)
-        _transform_python_requirements(reqs_list, repo_url, out_requirements_files)
+    if not setup_cfg_contents or not setup_cfg_contents.get('text'):
+        return
+    text_contents = setup_cfg_contents['text']
+    setup_cfg = configparser.ConfigParser()
+    try:
+        setup_cfg.read_string(text_contents)
+    except configparser.Error:
+        logger.info(
+            f"Failed to parse {repo_url}'s setup.cfg; skipping.",
+            exc_info=True,
+        )
+        return
+    reqs_list = parse_setup_cfg(setup_cfg)
+    _transform_python_requirements(reqs_list, repo_url, out_requirements_files)
 
 
 def _transform_python_requirements(
