@@ -14,11 +14,12 @@ from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 
+
 @timeit
-def get_gcp_functions(function: Resource,project_id: str) -> List[Dict]:
+def get_gcp_functions(function: Resource, project_id: str) -> List[Dict]:
     """
         Returns a list of functions for a given project.
-        
+
         :type functions: Resource
         :param function: The function resource created by googleapiclient.discovery.build()
 
@@ -33,7 +34,7 @@ def get_gcp_functions(function: Resource,project_id: str) -> List[Dict]:
     """
     try:
         regions = []
-        request = function.projects().locations().list(name = project_id)
+        request = function.projects().locations().list(name=project_id)
         while request is not None:
             response = request.execute()
             for location in response['locations']:
@@ -73,13 +74,15 @@ def get_gcp_functions(function: Resource,project_id: str) -> List[Dict]:
             return []
         else:
             raise
-        
-@timeit
-def load_functions(session: neo4j.Session, data_list: List[Dict[str, Optional[str]]], project_id:str, update_tag: int) -> None:
-    session.write_transaction(_load_functions_tx, data_list, project_id, update_tag)
+
 
 @timeit
-def _load_functions_tx(tx:neo4j.Transaction,functions: List[Resource],project_id: str,gcp_update_tag: int) -> None:
+def load_functions(session: neo4j.Session, data_list: List[Dict[str, Optional[str]]], project_id: str, update_tag: int) -> None:
+    session.write_transaction(_load_functions_tx, data_list, project_id, update_tag)
+
+
+@timeit
+def _load_functions_tx(tx: neo4j.Transaction, functions: List[Resource], project_id: str, gcp_update_tag: int) -> None:
     """
         :type neo4j_transaction: Neo4j transaction object
         :param neo4j transaction: The Neo4j transaction object
@@ -127,10 +130,11 @@ def _load_functions_tx(tx:neo4j.Transaction,functions: List[Resource],project_id
     """
     tx.run(
         ingest_functions,
-        functions = functions,
+        functions=functions,
         ProjectId=project_id,
         gcp_update_tag=gcp_update_tag,
     )
+
 
 @timeit
 def cleanup_gcp_functions(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
@@ -147,6 +151,7 @@ def cleanup_gcp_functions(neo4j_session: neo4j.Session, common_job_parameters: D
     :return: Nothing
     """
     run_cleanup_job('gcp_function_cleanup.json', neo4j_session, common_job_parameters)
+
 
 @timeit
 def sync(
@@ -175,8 +180,8 @@ def sync(
     :return: Nothing
     """
     logger.info("Syncing GCP Cloud Functions for project %s.", project_id)
-    #FUNCTIONS
-    functions = get_gcp_functions(function,project_id)
-    load_functions(functions,project_id,gcp_update_tag)
+    # FUNCTIONS
+    functions = get_gcp_functions(function, project_id)
+    load_functions(functions, project_id, gcp_update_tag)
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gcp_functions(neo4j_session, common_job_parameters)
