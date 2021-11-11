@@ -223,3 +223,4 @@ CREATE INDEX ON :AzureNetwork(id);
 CREATE INDEX ON :AzureNetworkSubnet(id);
 CREATE INDEX ON :AzureRoutetable(id);
 CREATE INDEX ON :AzureNetworkRoute(id);
+CREATE INDEX ON :AzureNetworkSecurityGroup(id);

@@ -30,6 +30,10 @@ def load_network_routes(session: neo4j.Session, data_list: List[Dict], update_ta
     session.write_transaction(_load_network_routes_tx, data_list, update_tag)
 
 
+def load_network_security_groups(session: neo4j.Session, subscription_id: str, data_list: List[Dict], update_tag: int) -> None:
+    session.write_transaction(_load_network_security_groups_tx, subscription_id, data_list, update_tag)
+
+
 @timeit
 def get_network_client(credentials: Credentials, subscription_id: str) -> NetworkManagementClient:
     client = NetworkManagementClient(credentials, subscription_id)
@@ -261,13 +265,67 @@ def cleanup_network_routes(neo4j_session: neo4j.Session, common_job_parameters: 
     run_cleanup_job('azure_import_network_routes_cleanup.json', neo4j_session, common_job_parameters)
 
 
-def sync_networks_routes(
+def sync_network_routes(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
     common_job_parameters: Dict,
 ) -> None:
     networks_routes_list = get_network_routes_list(credentials, subscription_id)
     load_network_routes(neo4j_session, networks_routes_list, update_tag)
     cleanup_network_routes(neo4j_session, common_job_parameters)
+
+
+def get_network_security_groups_list(credentials: Credentials, subscription_id: str) -> List[Dict]:
+    try:
+        client = get_network_client(credentials, subscription_id)
+        network_security_groups_list = list(map(lambda x: x.as_dict(), client.network_security_groups.list_all()))
+
+        for network in network_security_groups_list:
+            x = network['id'].split('/')
+            network['resource_group'] = x[x.index('resourceGroups') + 1]
+        return network_security_groups_list
+
+    except HttpResponseError as e:
+        logger.warning(f"Error while retrieving network_security_groups - {e}")
+        return []
+
+
+def _load_network_security_groups_tx(tx: neo4j.Transaction, subscription_id: str, network_security_groups_list: List[Dict], update_tag: int) -> None:
+    ingest_network = """
+    UNWIND {network_security_groups_list} AS network
+    MERGE (n:AzureNetworkSecurityGroup{id: network.id})
+    ON CREATE SET n.firstseen = timestamp(),
+    n.type = network.type,
+    n.location = network.location,
+    n.resourcegroup = network.resource_group
+    SET n.lastupdated = {update_tag},
+    n.name = network.name,
+    n.etag=network.etag
+    WITH n
+    MATCH (owner:AzureSubscription{id: {SUBSCRIPTION_ID}})
+    MERGE (owner)-[r:RESOURCE]->(n)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {update_tag}
+    """
+
+    tx.run(
+        ingest_network,
+        network_security_groups_list=network_security_groups_list,
+        SUBSCRIPTION_ID=subscription_id,
+        update_tag=update_tag,
+    )
+
+
+def cleanup_network_security_groups(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('azure_import_network_security_groups_cleanup.json', neo4j_session, common_job_parameters)
+
+
+def sync_network_security_groups(
+    neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
+    common_job_parameters: Dict,
+) -> None:
+    network_security_groups = get_network_security_groups_list(credentials, subscription_id)
+    load_network_security_groups(neo4j_session, subscription_id, network_security_groups, update_tag)
+    cleanup_network_security_groups(neo4j_session, common_job_parameters)
 
 
 @ timeit
@@ -280,4 +338,5 @@ def sync(
     sync_networks(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
     sync_networks_subnets(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
     sync_network_routetables(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
-    sync_networks_routes(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
+    sync_network_routes(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
+    sync_network_security_groups(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
