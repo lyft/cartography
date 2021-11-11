@@ -34,6 +34,10 @@ def load_network_security_groups(session: neo4j.Session, subscription_id: str, d
     session.write_transaction(_load_network_security_groups_tx, subscription_id, data_list, update_tag)
 
 
+def load_network_security_rules(session: neo4j.Session, data_list: List[Dict], update_tag: int) -> None:
+    session.write_transaction(_load_network_security_rules_tx, data_list, update_tag)
+
+
 @timeit
 def get_network_client(credentials: Credentials, subscription_id: str) -> NetworkManagementClient:
     client = NetworkManagementClient(credentials, subscription_id)
@@ -329,6 +333,67 @@ def sync_network_security_groups(
 
 
 @ timeit
+def get_network_security_rules_list(credentials: Credentials, subscription_id: str) -> List[Dict]:
+    try:
+        client = get_network_client(credentials, subscription_id)
+        network_security_groups_list = get_network_security_groups_list(credentials, subscription_id)
+        network_security_rules_list = []
+        for security_group in network_security_groups_list:
+            network_security_rules_list = network_security_rules_list + \
+                list(map(lambda x: x.as_dict(), client.security_rules.list(resource_group_name=security_group['resource_group'], network_security_group_name=security_group['name'])))
+
+        for rule in network_security_rules_list:
+            x = rule['id'].split('/')
+            rule['resource_group'] = x[x.index('resourceGroups') + 1]
+            rule['security_group_id'] = rule['id'][:rule['id'].index("/securityRules")]
+        return network_security_rules_list
+
+    except HttpResponseError as e:
+        logger.warning(f"Error while retrieving network_security_rules - {e}")
+        return []
+
+
+def _load_network_security_rules_tx(
+    tx: neo4j.Transaction,
+    network_security_rules_list: List[Dict],
+    update_tag: int,
+) -> None:
+    ingest_network_rule = """
+    UNWIND {network_security_rules_list} as rule
+    MERGE (n:AzureNetworkSecurityRule{id: rule.id})
+    ON CREATE SET n.firstseen = timestamp(),
+    n.type = rule.type
+    SET n.name = rule.name,
+    n.lastupdated = {azure_update_tag},
+    n.etag=rule.etag
+    WITH n, rule
+    MATCH (s:AzureNetworkSecurityGroup{id: rule.security_group_id})
+    MERGE (s)-[r:CONTAIN]->(n)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {azure_update_tag}
+    """
+
+    tx.run(
+        ingest_network_rule,
+        network_security_rules_list=network_security_rules_list,
+        azure_update_tag=update_tag,
+    )
+
+
+def cleanup_network_security_rules(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('azure_import_network_security_rules_cleanup.json', neo4j_session, common_job_parameters)
+
+
+def sync_network_security_rules(
+    neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
+    common_job_parameters: Dict,
+) -> None:
+    network_security_rules_list = get_network_security_rules_list(credentials, subscription_id)
+    load_network_security_rules(neo4j_session, network_security_rules_list, update_tag)
+    cleanup_network_security_rules(neo4j_session, common_job_parameters)
+
+
+@ timeit
 def sync(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
     common_job_parameters: Dict,
@@ -340,3 +405,4 @@ def sync(
     sync_network_routetables(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
     sync_network_routes(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
     sync_network_security_groups(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
+    sync_network_security_rules(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
