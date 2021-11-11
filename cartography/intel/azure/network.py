@@ -38,6 +38,10 @@ def load_network_security_rules(session: neo4j.Session, data_list: List[Dict], u
     session.write_transaction(_load_network_security_rules_tx, data_list, update_tag)
 
 
+def load_public_ip_addresses(session: neo4j.Session, subscription_id: str, data_list: List[Dict], update_tag: int) -> None:
+    session.write_transaction(_load_public_ip_addresses_tx, subscription_id, data_list, update_tag)
+
+
 @timeit
 def get_network_client(credentials: Credentials, subscription_id: str) -> NetworkManagementClient:
     client = NetworkManagementClient(credentials, subscription_id)
@@ -393,6 +397,60 @@ def sync_network_security_rules(
     cleanup_network_security_rules(neo4j_session, common_job_parameters)
 
 
+def get_public_ip_addresses_list(credentials: Credentials, subscription_id: str) -> List[Dict]:
+    try:
+        client = get_network_client(credentials, subscription_id)
+        public_ip_addresses_list = list(map(lambda x: x.as_dict(), client.public_ip_addresses.list_all()))
+
+        for address in public_ip_addresses_list:
+            x = address['id'].split('/')
+            address['resource_group'] = x[x.index('resourceGroups') + 1]
+        return public_ip_addresses_list
+
+    except HttpResponseError as e:
+        logger.warning(f"Error while retrieving public_ip_addresses - {e}")
+        return []
+
+
+def _load_public_ip_addresses_tx(tx: neo4j.Transaction, subscription_id: str, public_ip_addresses_list: List[Dict], update_tag: int) -> None:
+    ingest_address = """
+    UNWIND {public_ip_addresses_list} AS address
+    MERGE (n:AzurePublicIPAddress{id: address.id})
+    ON CREATE SET n.firstseen = timestamp(),
+    n.type = address.type,
+    n.location = address.location,
+    n.resourcegroup = address.resource_group
+    SET n.lastupdated = {update_tag},
+    n.name = address.name,
+    n.etag=address.etag
+    WITH n
+    MATCH (owner:AzureSubscription{id: {SUBSCRIPTION_ID}})
+    MERGE (owner)-[r:RESOURCE]->(n)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {update_tag}
+    """
+
+    tx.run(
+        ingest_address,
+        public_ip_addresses_list=public_ip_addresses_list,
+        SUBSCRIPTION_ID=subscription_id,
+        update_tag=update_tag,
+    )
+
+
+def cleanup_public_ip_addresses(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('azure_import_public_ip_addresses_cleanup.json', neo4j_session, common_job_parameters)
+
+
+def sync_public_ip_addresses(
+    neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
+    common_job_parameters: Dict,
+) -> None:
+    public_ip_addresses_list = get_public_ip_addresses_list(credentials, subscription_id)
+    load_public_ip_addresses(neo4j_session, subscription_id, public_ip_addresses_list, update_tag)
+    cleanup_public_ip_addresses(neo4j_session, common_job_parameters)
+
+
 @ timeit
 def sync(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
@@ -406,3 +464,4 @@ def sync(
     sync_network_routes(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
     sync_network_security_groups(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
     sync_network_security_rules(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
+    sync_public_ip_addresses(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
