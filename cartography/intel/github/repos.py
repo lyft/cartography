@@ -255,8 +255,8 @@ def _transform_requirements_txt(
     """
     if req_file_contents and req_file_contents.get('text'):
         text_contents = req_file_contents['text']
-        reqs_list = text_contents.split("\n")
-        _transform_python_requirements(reqs_list, repo_url, out_requirements_files)
+        requirements_list = text_contents.split("\n")
+        _transform_python_requirements(requirements_list, repo_url, out_requirements_files)
 
 
 def _transform_setup_cfg_requirements(
@@ -283,8 +283,8 @@ def _transform_setup_cfg_requirements(
             exc_info=True,
         )
         return
-    reqs_list = parse_setup_cfg(setup_cfg)
-    _transform_python_requirements(reqs_list, repo_url, out_requirements_files)
+    requirements_list = parse_setup_cfg(setup_cfg)
+    _transform_python_requirements(requirements_list, repo_url, out_requirements_files)
 
 
 def _transform_python_requirements(
