@@ -2,7 +2,6 @@ import json
 import logging
 from typing import Dict
 from typing import List
-from typing import Optional
 
 
 import neo4j
@@ -77,7 +76,7 @@ def get_gcp_functions(function: Resource, project_id: str) -> List[Dict]:
 
 
 @timeit
-def load_functions(session: neo4j.Session, data_list: List[Dict[str, Optional[str]]], project_id: str, update_tag: int) -> None:
+def load_functions(session: neo4j.Session, data_list: List[Dict], project_id: str, update_tag: int) -> None:
     session.write_transaction(_load_functions_tx, data_list, project_id, update_tag)
 
 
