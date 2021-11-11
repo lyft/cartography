@@ -1,7 +1,6 @@
 import logging
 from typing import Dict
 from typing import List
-from typing import Optional
 
 import neo4j
 
@@ -17,12 +16,12 @@ logger = logging.getLogger(__name__)
 
 
 def load_networks(session: neo4j.Session, subscription_id: str,
-                  data_list: List[Dict[str, Optional[str]]],
+                  data_list: List[Dict],
                   update_tag: int) -> None:
     session.write_transaction(_load_networks_tx, subscription_id, data_list, update_tag)
 
 
-def load_networks_subnets(session: neo4j.Session, data_list: List[Dict[str, Optional[str]]], update_tag: int) -> None:
+def load_networks_subnets(session: neo4j.Session, data_list: List[Dict], update_tag: int) -> None:
     session.write_transaction(_load_networks_subnets_tx, data_list, update_tag)
 
 
