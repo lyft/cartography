@@ -227,3 +227,4 @@ CREATE INDEX ON :AzureNetworkSecurityGroup(id);
 CREATE INDEX ON :AzureNetworkSecurityRule(id);
 CREATE INDEX ON :AzurePublicIPAddress(id);
 CREATE INDEX ON :AzureLocation(id);
+CREATE INDEX ON :AzureUseges(id);

@@ -47,6 +47,10 @@ def load_locations(session: neo4j.Session, subscription_id: str, data_list: List
     session.write_transaction(_load_locations_tx, subscription_id, data_list, update_tag)
 
 
+def load_usages(session: neo4j.Session, data_list: List[Dict], update_tag: int) -> None:
+    session.write_transaction(_load_usages_tx, data_list, update_tag)
+
+
 @timeit
 def get_network_client(credentials: Credentials, subscription_id: str) -> NetworkManagementClient:
     client = NetworkManagementClient(credentials, subscription_id)
@@ -461,6 +465,14 @@ def get_locations_list(credentials: Credentials, subscription_id: str) -> List[D
     try:
         client = get_subscription_client(credentials)
         locations_list = list(map(lambda x: x.as_dict(), client.subscriptions.list_locations(subscription_id)))
+        # The API only works for below locations
+        valied_locations_list = ["westus", "eastus", "northeurope", "westeurope", "eastasia", "southeastasia", "northcentralus", "southcentralus", "centralus", "eastus2", "japaneast", "japanwest", "brazilsouth", "australiaeast", "australiasoutheast", "centralindia", "southindia",
+                                 "westindia", "canadacentral", "canadaeast", "westcentralus", "westus2", "ukwest", "uksouth", "koreacentral", "francecentral", "australiacentral", "southafricanorth", "switzerlandnorth", "germanywestcentral", "norwayeast", "westus3", "uaenorth", "jioindiawest", "koreasouth"]
+        locations_list_2 = list(locations_list)
+        for location in locations_list_2:
+            if location["name"] not in valied_locations_list:
+                locations_list.remove(location)
+
         return locations_list
 
     except HttpResponseError as e:
@@ -505,6 +517,64 @@ def sync_locations(
 
 
 @ timeit
+def get_usages_list(credentials: Credentials, subscription_id: str) -> List[Dict]:
+    try:
+        client = get_network_client(credentials, subscription_id)
+        locations_list = get_locations_list(credentials, subscription_id)
+        usages_list = []
+        for location in locations_list:
+            usages_list = usages_list + list(map(lambda x: x.as_dict(), client.usages.list(location['name'])))
+
+        for usage in usages_list:
+            x = usage['id'].split('/')
+            usage['location_name'] = x[x.index('locations') + 1]
+        return usages_list
+
+    except HttpResponseError as e:
+        logger.warning(f"Error while retrieving usages - {e}")
+        return []
+
+
+def _load_usages_tx(
+    tx: neo4j.Transaction,
+    usages_list: List[Dict],
+    update_tag: int,
+) -> None:
+    ingest_usages = """
+    UNWIND {usages_list} as usage
+    MERGE (n:AzureUseges{id: usage.id})
+    ON CREATE SET n.firstseen = timestamp()
+    SET n.currentValue = usage.currentValue,
+    n.lastupdated = {azure_update_tag},
+    n.limit=usage.limit
+    WITH n, usage
+    MATCH (s:AzureLocation{name: usage.location_name})
+    MERGE (s)-[r:CONTAIN]->(n)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {azure_update_tag}
+    """
+
+    tx.run(
+        ingest_usages,
+        usages_list=usages_list,
+        azure_update_tag=update_tag,
+    )
+
+
+def cleanup_usages(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('azure_import_usages_cleanup.json', neo4j_session, common_job_parameters)
+
+
+def sync_usages(
+    neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
+    common_job_parameters: Dict,
+) -> None:
+    networks_routes_list = get_usages_list(credentials, subscription_id)
+    load_usages(neo4j_session, networks_routes_list, update_tag)
+    cleanup_usages(neo4j_session, common_job_parameters)
+
+
+@ timeit
 def sync(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
     common_job_parameters: Dict,
@@ -519,3 +589,4 @@ def sync(
     sync_network_security_rules(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
     sync_public_ip_addresses(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
     sync_locations(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
+    sync_usages(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
