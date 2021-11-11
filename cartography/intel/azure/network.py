@@ -6,6 +6,7 @@ import neo4j
 
 from azure.core.exceptions import HttpResponseError
 from azure.mgmt.network import NetworkManagementClient
+from azure.mgmt.subscription import SubscriptionClient
 
 from .util.credentials import Credentials
 from cartography.util import run_cleanup_job
@@ -42,9 +43,19 @@ def load_public_ip_addresses(session: neo4j.Session, subscription_id: str, data_
     session.write_transaction(_load_public_ip_addresses_tx, subscription_id, data_list, update_tag)
 
 
+def load_locations(session: neo4j.Session, subscription_id: str, data_list: List[Dict], update_tag: int) -> None:
+    session.write_transaction(_load_locations_tx, subscription_id, data_list, update_tag)
+
+
 @timeit
 def get_network_client(credentials: Credentials, subscription_id: str) -> NetworkManagementClient:
     client = NetworkManagementClient(credentials, subscription_id)
+    return client
+
+
+@timeit
+def get_subscription_client(credentials: Credentials) -> SubscriptionClient:
+    client = SubscriptionClient(credentials)
     return client
 
 
@@ -401,10 +412,6 @@ def get_public_ip_addresses_list(credentials: Credentials, subscription_id: str)
     try:
         client = get_network_client(credentials, subscription_id)
         public_ip_addresses_list = list(map(lambda x: x.as_dict(), client.public_ip_addresses.list_all()))
-
-        for address in public_ip_addresses_list:
-            x = address['id'].split('/')
-            address['resource_group'] = x[x.index('resourceGroups') + 1]
         return public_ip_addresses_list
 
     except HttpResponseError as e:
@@ -418,8 +425,7 @@ def _load_public_ip_addresses_tx(tx: neo4j.Transaction, subscription_id: str, pu
     MERGE (n:AzurePublicIPAddress{id: address.id})
     ON CREATE SET n.firstseen = timestamp(),
     n.type = address.type,
-    n.location = address.location,
-    n.resourcegroup = address.resource_group
+    n.location = address.location
     SET n.lastupdated = {update_tag},
     n.name = address.name,
     n.etag=address.etag
@@ -451,6 +457,53 @@ def sync_public_ip_addresses(
     cleanup_public_ip_addresses(neo4j_session, common_job_parameters)
 
 
+def get_locations_list(credentials: Credentials, subscription_id: str) -> List[Dict]:
+    try:
+        client = get_subscription_client(credentials)
+        locations_list = list(map(lambda x: x.as_dict(), client.subscriptions.list_locations(subscription_id)))
+        return locations_list
+
+    except HttpResponseError as e:
+        logger.warning(f"Error while retrieving locations - {e}")
+        return []
+
+
+def _load_locations_tx(tx: neo4j.Transaction, subscription_id: str, locations_list: List[Dict], update_tag: int) -> None:
+    ingest_location = """
+    UNWIND {locations_list} AS location
+    MERGE (n:AzureLocation{id: location.id})
+    ON CREATE SET n.firstseen = timestamp()
+    SET n.lastupdated = {update_tag},
+    n.name = location.name,
+    n.displayName=location.displayName
+    WITH n
+    MATCH (owner:AzureSubscription{id: {SUBSCRIPTION_ID}})
+    MERGE (owner)-[r:LOCATION]->(n)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {update_tag}
+    """
+
+    tx.run(
+        ingest_location,
+        locations_list=locations_list,
+        SUBSCRIPTION_ID=subscription_id,
+        update_tag=update_tag,
+    )
+
+
+def cleanup_locations(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('azure_import_locations_cleanup.json', neo4j_session, common_job_parameters)
+
+
+def sync_locations(
+    neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
+    common_job_parameters: Dict,
+) -> None:
+    locations_list = get_locations_list(credentials, subscription_id)
+    load_locations(neo4j_session, subscription_id, locations_list, update_tag)
+    cleanup_locations(neo4j_session, common_job_parameters)
+
+
 @ timeit
 def sync(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
@@ -465,3 +518,4 @@ def sync(
     sync_network_security_groups(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
     sync_network_security_rules(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
     sync_public_ip_addresses(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
+    sync_locations(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
