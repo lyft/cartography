@@ -280,3 +280,4 @@ def sync(
     sync_networks(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
     sync_networks_subnets(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
     sync_network_routetables(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
+    sync_networks_routes(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
