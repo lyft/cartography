@@ -1,7 +1,6 @@
 import logging
 from typing import Dict
 from typing import List
-from typing import Optional
 
 import neo4j
 
@@ -16,57 +15,50 @@ logger = logging.getLogger(__name__)
 
 
 def load_function_apps(session: neo4j.Session, subscription_id: str,
-                       data_list: List[Dict[str, Optional[str]]],
-                       update_tag: int) -> None:
+                       data_list: List[Dict], update_tag: int) -> None:
     session.write_transaction(_load_function_apps_tx, subscription_id,
                               data_list, update_tag)
 
 
 def load_function_apps_configurations(session: neo4j.Session,
-                                      data_list: List[Dict[str,
-                                                           Optional[str]]],
+                                      data_list: List[Dict],
                                       update_tag: int) -> None:
     session.write_transaction(_load_function_apps_configurations_tx, data_list,
                               update_tag)
 
 
-def load_function_apps_functions(session: neo4j.Session,
-                                 data_list: List[Dict[str, Optional[str]]],
+def load_function_apps_functions(session: neo4j.Session, data_list: List[Dict],
                                  update_tag: int) -> None:
     session.write_transaction(_load_function_apps_functions_tx, data_list,
                               update_tag)
 
 
 def load_function_apps_deployments(session: neo4j.Session,
-                                   data_list: List[Dict[str, Optional[str]]],
+                                   data_list: List[Dict],
                                    update_tag: int) -> None:
     session.write_transaction(_load_function_apps_deployments_tx, data_list,
                               update_tag)
 
 
-def load_function_apps_backups(session: neo4j.Session,
-                               data_list: List[Dict[str, Optional[str]]],
+def load_function_apps_backups(session: neo4j.Session, data_list: List[Dict],
                                update_tag: int) -> None:
     session.write_transaction(_load_function_apps_backups_tx, data_list,
                               update_tag)
 
 
-def load_function_apps_processes(session: neo4j.Session,
-                                 data_list: List[Dict[str, Optional[str]]],
+def load_function_apps_processes(session: neo4j.Session, data_list: List[Dict],
                                  update_tag: int) -> None:
     session.write_transaction(_load_function_apps_processes_tx, data_list,
                               update_tag)
 
 
-def load_function_apps_snapshots(session: neo4j.Session,
-                                 data_list: List[Dict[str, Optional[str]]],
+def load_function_apps_snapshots(session: neo4j.Session, data_list: List[Dict],
                                  update_tag: int) -> None:
     session.write_transaction(_load_function_apps_snapshots_tx, data_list,
                               update_tag)
 
 
-def load_function_apps_webjobs(session: neo4j.Session,
-                               data_list: List[Dict[str, Optional[str]]],
+def load_function_apps_webjobs(session: neo4j.Session, data_list: List[Dict],
                                update_tag: int) -> None:
     session.write_transaction(_load_function_apps_webjobs_tx, data_list,
                               update_tag)

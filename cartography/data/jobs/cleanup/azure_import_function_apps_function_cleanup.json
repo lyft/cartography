@@ -11,5 +11,5 @@
       "iterationsize": 100
     }
   ],
-  "name": "cleanup Azure function related resources"
+  "name": "cleanup Azure function app function resources"
 }
