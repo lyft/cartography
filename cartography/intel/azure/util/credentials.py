@@ -38,6 +38,9 @@ class Credentials:
     def get_current_user(self) -> Optional[str]:
         return self.current_user
 
+    def get_current_subscription_id(self) -> Optional[str]:
+        return self.subscription_id
+
     def get_tenant_id(self) -> Any:
         if self.tenant_id:
             return self.tenant_id

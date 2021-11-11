@@ -221,3 +221,5 @@ CREATE INDEX ON :KubernetesService(name);
 CREATE INDEX ON :AzureFunction(id);
 CREATE INDEX ON :AzureNetwork(id);
 CREATE INDEX ON :AzureNetworkSubnet(id);
+CREATE INDEX ON :AzureRoutetable(id);
+CREATE INDEX ON :AzureNetworkRoute(id);
