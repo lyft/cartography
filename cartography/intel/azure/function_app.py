@@ -72,10 +72,8 @@ def get_client(credentials: Credentials,
 
 
 @timeit
-def get_function_apps_list(credentials: Credentials,
-                           subscription_id: str) -> List[Dict]:
+def get_function_apps_list(client: WebSiteManagementClient) -> List[Dict]:
     try:
-        client = get_client(credentials, subscription_id)
         function_app_list = list(
             map(lambda x: x.as_dict(), client.web_apps.list()))
         for function in function_app_list:
@@ -137,26 +135,38 @@ def sync_function_apps(
     update_tag: int,
     common_job_parameters: Dict,
 ) -> None:
-    function_apps_list = get_function_apps_list(credentials, subscription_id)
+    client = get_client(credentials, subscription_id)
+    function_apps_list = get_function_apps_list(client)
     load_function_apps(neo4j_session, subscription_id, function_apps_list,
                        update_tag)
     cleanup_function_apps(neo4j_session, common_job_parameters)
+    sync_function_apps_conf(neo4j_session, function_apps_list, client,
+                            update_tag, common_job_parameters)
+    sync_function_apps_functions(neo4j_session, function_apps_list, client,
+                                 update_tag, common_job_parameters)
+    sync_function_apps_deployements(neo4j_session, function_apps_list, client,
+                                    update_tag, common_job_parameters)
+    sync_function_apps_processes(neo4j_session, function_apps_list, client,
+                                 update_tag, common_job_parameters)
+    sync_function_apps_backups(neo4j_session, function_apps_list, client,
+                               update_tag, common_job_parameters)
+    sync_function_apps_snapshots(neo4j_session, function_apps_list, client,
+                                 update_tag, common_job_parameters)
+    sync_function_apps_webjobs(neo4j_session, function_apps_list, client,
+                               update_tag, common_job_parameters)
 
 
-def get_function_apps_configuration_list(credentials: Credentials,
-                                         subscription_id: str) -> List[Dict]:
+def get_function_apps_configuration_list(
+        function_apps_list: List[Dict],
+        client: WebSiteManagementClient) -> List[Dict]:
     try:
-        client = get_client(credentials, subscription_id)
-        function_apps_list = get_function_apps_list(credentials,
-                                                    subscription_id)
         function_apps_conf_list = []
         for function in function_apps_list:
-            function_apps_conf_list.append(
-                list(
-                    map(
-                        lambda x: x.as_dict(),
-                        client.web_apps.list_configurations(
-                            function['resource_group'], function['name'])))[0])
+            function_apps_conf_list = function_apps_conf_list + list(
+                map(
+                    lambda x: x.as_dict(),
+                    client.web_apps.list_configurations(
+                        function['resource_group'], function['name'])))
 
         for conf in function_apps_conf_list:
             x = conf['id'].split('/')
@@ -223,24 +233,22 @@ def cleanup_function_apps_conf(neo4j_session: neo4j.Session,
 
 def sync_function_apps_conf(
     neo4j_session: neo4j.Session,
-    credentials: Credentials,
-    subscription_id: str,
+    function_apps_list: List[Dict],
+    client: WebSiteManagementClient,
     update_tag: int,
     common_job_parameters: Dict,
 ) -> None:
     function_app_conf_list = get_function_apps_configuration_list(
-        credentials, subscription_id)
+        function_apps_list, client)
     load_function_apps_configurations(neo4j_session, function_app_conf_list,
                                       update_tag)
     cleanup_function_apps_conf(neo4j_session, common_job_parameters)
 
 
-def get_function_apps_functions_list(credentials: Credentials,
-                                     subscription_id: str) -> List[Dict]:
+def get_function_apps_functions_list(
+        function_apps_list: List[Dict],
+        client: WebSiteManagementClient) -> List[Dict]:
     try:
-        client = get_client(credentials, subscription_id)
-        function_apps_list = get_function_apps_list(credentials,
-                                                    subscription_id)
         function_apps_functions_list = []
         for function in function_apps_list:
             function_apps_functions_list = function_apps_functions_list + list(
@@ -299,24 +307,22 @@ def cleanup_function_apps_functions(neo4j_session: neo4j.Session,
 
 def sync_function_apps_functions(
     neo4j_session: neo4j.Session,
-    credentials: Credentials,
-    subscription_id: str,
+    function_apps_list: List[Dict],
+    client: WebSiteManagementClient,
     update_tag: int,
     common_job_parameters: Dict,
 ) -> None:
     function_apps_function_list = get_function_apps_functions_list(
-        credentials, subscription_id)
+        function_apps_list, client)
     load_function_apps_functions(neo4j_session, function_apps_function_list,
                                  update_tag)
     cleanup_function_apps_functions(neo4j_session, common_job_parameters)
 
 
-def get_function_apps_deployments_list(credentials: Credentials,
-                                       subscription_id: str) -> List[Dict]:
+def get_function_apps_deployments_list(
+        function_apps_list: List[Dict],
+        client: WebSiteManagementClient) -> List[Dict]:
     try:
-        client = get_client(credentials, subscription_id)
-        function_apps_list = get_function_apps_list(credentials,
-                                                    subscription_id)
         function_apps_deployments_list = []
         for function in function_apps_list:
             function_apps_deployments_list = function_apps_deployments_list + list(
@@ -373,24 +379,22 @@ def cleanup_function_apps_deployements(neo4j_session: neo4j.Session,
 
 def sync_function_apps_deployements(
     neo4j_session: neo4j.Session,
-    credentials: Credentials,
-    subscription_id: str,
+    function_apps_list: List[Dict],
+    client: WebSiteManagementClient,
     update_tag: int,
     common_job_parameters: Dict,
 ) -> None:
     function_apps_deployments_list = get_function_apps_deployments_list(
-        credentials, subscription_id)
+        function_apps_list, client)
     load_function_apps_deployments(neo4j_session,
                                    function_apps_deployments_list, update_tag)
     cleanup_function_apps_deployements(neo4j_session, common_job_parameters)
 
 
-def get_function_apps_backups_list(credentials: Credentials,
-                                   subscription_id: str) -> List[Dict]:
+def get_function_apps_backups_list(
+        function_apps_list: List[Dict],
+        client: WebSiteManagementClient) -> List[Dict]:
     try:
-        client = get_client(credentials, subscription_id)
-        function_apps_list = get_function_apps_list(credentials,
-                                                    subscription_id)
         function_apps_backups_list = []
         for function in function_apps_list:
             function_apps_backups_list = function_apps_backups_list + list(
@@ -446,24 +450,22 @@ def cleanup_function_apps_backups(neo4j_session: neo4j.Session,
 
 def sync_function_apps_backups(
     neo4j_session: neo4j.Session,
-    credentials: Credentials,
-    subscription_id: str,
+    function_apps_list: List[Dict],
+    client: WebSiteManagementClient,
     update_tag: int,
     common_job_parameters: Dict,
 ) -> None:
     function_apps_backups_list = get_function_apps_backups_list(
-        credentials, subscription_id)
+        function_apps_list, client)
     load_function_apps_backups(neo4j_session, function_apps_backups_list,
                                update_tag)
     cleanup_function_apps_backups(neo4j_session, common_job_parameters)
 
 
-def get_function_apps_processes_list(credentials: Credentials,
-                                     subscription_id: str) -> List[Dict]:
+def get_function_apps_processes_list(
+        function_apps_list: List[Dict],
+        client: WebSiteManagementClient) -> List[Dict]:
     try:
-        client = get_client(credentials, subscription_id)
-        function_apps_list = get_function_apps_list(credentials,
-                                                    subscription_id)
         function_apps_processes_list = []
         for function in function_apps_list:
             function_apps_processes_list = function_apps_processes_list + list(
@@ -519,24 +521,22 @@ def cleanup_function_apps_processes(neo4j_session: neo4j.Session,
 
 def sync_function_apps_processes(
     neo4j_session: neo4j.Session,
-    credentials: Credentials,
-    subscription_id: str,
+    function_apps_list: List[Dict],
+    client: WebSiteManagementClient,
     update_tag: int,
     common_job_parameters: Dict,
 ) -> None:
     function_apps_processes_list = get_function_apps_processes_list(
-        credentials, subscription_id)
+        function_apps_list, client)
     load_function_apps_processes(neo4j_session, function_apps_processes_list,
                                  update_tag)
     cleanup_function_apps_processes(neo4j_session, common_job_parameters)
 
 
-def get_function_apps_snapshots_list(credentials: Credentials,
-                                     subscription_id: str) -> List[Dict]:
+def get_function_apps_snapshots_list(
+        function_apps_list: List[Dict],
+        client: WebSiteManagementClient) -> List[Dict]:
     try:
-        client = get_client(credentials, subscription_id)
-        function_apps_list = get_function_apps_list(credentials,
-                                                    subscription_id)
         function_apps_snapshots_list = []
         for function in function_apps_list:
             function_apps_snapshots_list = function_apps_snapshots_list + list(
@@ -592,24 +592,22 @@ def cleanup_function_apps_snapshots(neo4j_session: neo4j.Session,
 
 def sync_function_apps_snapshots(
     neo4j_session: neo4j.Session,
-    credentials: Credentials,
-    subscription_id: str,
+    function_apps_list: List[Dict],
+    client: WebSiteManagementClient,
     update_tag: int,
     common_job_parameters: Dict,
 ) -> None:
     function_apps_snapshots_list = get_function_apps_snapshots_list(
-        credentials, subscription_id)
+        function_apps_list, client)
     load_function_apps_snapshots(neo4j_session, function_apps_snapshots_list,
                                  update_tag)
     cleanup_function_apps_snapshots(neo4j_session, common_job_parameters)
 
 
-def get_function_apps_webjobs_list(credentials: Credentials,
-                                   subscription_id: str) -> List[Dict]:
+def get_function_apps_webjobs_list(
+        function_apps_list: List[Dict],
+        client: WebSiteManagementClient) -> List[Dict]:
     try:
-        client = get_client(credentials, subscription_id)
-        function_apps_list = get_function_apps_list(credentials,
-                                                    subscription_id)
         function_apps_webjobs_list = []
         for function in function_apps_list:
             function_apps_webjobs_list = function_apps_webjobs_list + list(
@@ -665,13 +663,13 @@ def cleanup_function_apps_webjobs(neo4j_session: neo4j.Session,
 
 def sync_function_apps_webjobs(
     neo4j_session: neo4j.Session,
-    credentials: Credentials,
-    subscription_id: str,
+    function_apps_list: List[Dict],
+    client: WebSiteManagementClient,
     update_tag: int,
     common_job_parameters: Dict,
 ) -> None:
     function_apps_webjobs_list = get_function_apps_webjobs_list(
-        credentials, subscription_id)
+        function_apps_list, client)
     load_function_apps_webjobs(neo4j_session, function_apps_webjobs_list,
                                update_tag)
     cleanup_function_apps_webjobs(neo4j_session, common_job_parameters)
@@ -690,18 +688,3 @@ def sync(
 
     sync_function_apps(neo4j_session, credentials, subscription_id, update_tag,
                        common_job_parameters)
-    sync_function_apps_conf(neo4j_session, credentials, subscription_id,
-                            update_tag, common_job_parameters)
-    sync_function_apps_functions(neo4j_session, credentials, subscription_id,
-                                 update_tag, common_job_parameters)
-    sync_function_apps_deployements(neo4j_session, credentials,
-                                    subscription_id, update_tag,
-                                    common_job_parameters)
-    sync_function_apps_processes(neo4j_session, credentials, subscription_id,
-                                 update_tag, common_job_parameters)
-    sync_function_apps_backups(neo4j_session, credentials, subscription_id,
-                               update_tag, common_job_parameters)
-    sync_function_apps_snapshots(neo4j_session, credentials, subscription_id,
-                                 update_tag, common_job_parameters)
-    sync_function_apps_webjobs(neo4j_session, credentials, subscription_id,
-                               update_tag, common_job_parameters)
