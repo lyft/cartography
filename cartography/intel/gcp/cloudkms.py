@@ -319,5 +319,4 @@ def sync_kms(
     # KMS CRYPTOKEYS
     crypto_keys = get_kms_crypto_keys(kms, key_rings, project_id)
     load_kms_crypto_keys(neo4j_session, crypto_keys, project_id, gcp_update_tag)
-    # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gcp_kms(neo4j_session, common_job_parameters)
