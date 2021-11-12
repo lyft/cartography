@@ -64,10 +64,8 @@ def get_subscription_client(credentials: Credentials) -> SubscriptionClient:
 
 
 @timeit
-def get_networks_list(credentials: Credentials, subscription_id: str) -> List[Dict]:
+def get_networks_list(client: NetworkManagementClient) -> List[Dict]:
     try:
-        client = get_network_client(credentials, subscription_id)
-
         networks_list = list(map(lambda x: x.as_dict(), client.virtual_networks.list_all()))
 
         for network in networks_list:
@@ -117,16 +115,20 @@ def sync_networks(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
     common_job_parameters: Dict,
 ) -> None:
-    networks_list = get_networks_list(credentials, subscription_id)
+    client = get_network_client(credentials, subscription_id)
+    networks_list = get_networks_list(client)
     load_networks(neo4j_session, subscription_id, networks_list, update_tag)
     cleanup_networks(neo4j_session, common_job_parameters)
+    sync_networks_subnets(neo4j_session, networks_list, client, update_tag, common_job_parameters)
+    sync_network_routetables(neo4j_session, client, subscription_id, update_tag, common_job_parameters)
+    sync_network_security_groups(neo4j_session, client, subscription_id, update_tag, common_job_parameters)
+    sync_public_ip_addresses(neo4j_session, client, subscription_id, update_tag, common_job_parameters)
+    sync_locations(neo4j_session, credentials, subscription_id, client, update_tag, common_job_parameters)
 
 
 @ timeit
-def get_networks_subnets_list(credentials: Credentials, subscription_id: str) -> List[Dict]:
+def get_networks_subnets_list(networks_list: List[Dict], client: NetworkManagementClient) -> List[Dict]:
     try:
-        client = get_network_client(credentials, subscription_id)
-        networks_list = get_networks_list(credentials, subscription_id)
         networks_subnets_list = []
         for network in networks_list:
             networks_subnets_list = networks_subnets_list + list(map(lambda x: x.as_dict(), client.subnets.list(resource_group_name=network['resource_group'], virtual_network_name=network["name"])))
@@ -177,15 +179,14 @@ def cleanup_networks_subnets(neo4j_session: neo4j.Session, common_job_parameters
     run_cleanup_job('azure_import_networks_subnets_cleanup.json', neo4j_session, common_job_parameters)
 
 
-def sync_networks_subnets(neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int, common_job_parameters: Dict,) -> None:
-    networks_subnets_list = get_networks_subnets_list(credentials, subscription_id)
+def sync_networks_subnets(neo4j_session: neo4j.Session, networks_list: List[Dict], client: NetworkManagementClient, update_tag: int, common_job_parameters: Dict,) -> None:
+    networks_subnets_list = get_networks_subnets_list(networks_list, client)
     load_networks_subnets(neo4j_session, networks_subnets_list, update_tag)
     cleanup_networks_subnets(neo4j_session, common_job_parameters)
 
 
-def get_network_routetables_list(credentials: Credentials, subscription_id: str) -> List[Dict]:
+def get_network_routetables_list(client: NetworkManagementClient) -> List[Dict]:
     try:
-        client = get_network_client(credentials, subscription_id)
         network_routetables_list = list(map(lambda x: x.as_dict(), client.route_tables.list_all()))
 
         for routetable in network_routetables_list:
@@ -229,19 +230,18 @@ def cleanup_network_routetables(neo4j_session: neo4j.Session, common_job_paramet
 
 
 def sync_network_routetables(
-    neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
+    neo4j_session: neo4j.Session, client: NetworkManagementClient, subscription_id: str, update_tag: int,
     common_job_parameters: Dict,
 ) -> None:
-    networks_list = get_network_routetables_list(credentials, subscription_id)
-    load_network_routetables(neo4j_session, subscription_id, networks_list, update_tag)
+    network_routetables_list = get_network_routetables_list(client)
+    load_network_routetables(neo4j_session, subscription_id, network_routetables_list, update_tag)
     cleanup_network_routetables(neo4j_session, common_job_parameters)
+    sync_network_routes(neo4j_session, network_routetables_list, client, update_tag, common_job_parameters)
 
 
 @ timeit
-def get_network_routes_list(credentials: Credentials, subscription_id: str) -> List[Dict]:
+def get_network_routes_list(network_routetables_list: List[Dict], client: NetworkManagementClient) -> List[Dict]:
     try:
-        client = get_network_client(credentials, subscription_id)
-        network_routetables_list = get_network_routetables_list(credentials, subscription_id)
         network_routes_list = []
         for routetable in network_routetables_list:
             network_routes_list = network_routes_list + list(map(lambda x: x.as_dict(), client.routes.list(resource_group_name=routetable['resource_group'], route_table_name=routetable['name'])))
@@ -289,17 +289,16 @@ def cleanup_network_routes(neo4j_session: neo4j.Session, common_job_parameters: 
 
 
 def sync_network_routes(
-    neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
+    neo4j_session: neo4j.Session, network_routetables_list: List[Dict], client: NetworkManagementClient, update_tag: int,
     common_job_parameters: Dict,
 ) -> None:
-    networks_routes_list = get_network_routes_list(credentials, subscription_id)
+    networks_routes_list = get_network_routes_list(network_routetables_list, client)
     load_network_routes(neo4j_session, networks_routes_list, update_tag)
     cleanup_network_routes(neo4j_session, common_job_parameters)
 
 
-def get_network_security_groups_list(credentials: Credentials, subscription_id: str) -> List[Dict]:
+def get_network_security_groups_list(client: NetworkManagementClient) -> List[Dict]:
     try:
-        client = get_network_client(credentials, subscription_id)
         network_security_groups_list = list(map(lambda x: x.as_dict(), client.network_security_groups.list_all()))
 
         for network in network_security_groups_list:
@@ -343,23 +342,22 @@ def cleanup_network_security_groups(neo4j_session: neo4j.Session, common_job_par
 
 
 def sync_network_security_groups(
-    neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
+    neo4j_session: neo4j.Session, client: NetworkManagementClient, subscription_id: str, update_tag: int,
     common_job_parameters: Dict,
 ) -> None:
-    network_security_groups = get_network_security_groups_list(credentials, subscription_id)
-    load_network_security_groups(neo4j_session, subscription_id, network_security_groups, update_tag)
+    network_security_groups_list = get_network_security_groups_list(client)
+    load_network_security_groups(neo4j_session, subscription_id, network_security_groups_list, update_tag)
     cleanup_network_security_groups(neo4j_session, common_job_parameters)
+    sync_network_security_rules(neo4j_session, network_security_groups_list, client, update_tag, common_job_parameters)
 
 
 @ timeit
-def get_network_security_rules_list(credentials: Credentials, subscription_id: str) -> List[Dict]:
+def get_network_security_rules_list(network_security_groups_list: List[Dict], client: NetworkManagementClient) -> List[Dict]:
     try:
-        client = get_network_client(credentials, subscription_id)
-        network_security_groups_list = get_network_security_groups_list(credentials, subscription_id)
         network_security_rules_list = []
         for security_group in network_security_groups_list:
-            network_security_rules_list = network_security_rules_list + \
-                list(map(lambda x: x.as_dict(), client.security_rules.list(resource_group_name=security_group['resource_group'], network_security_group_name=security_group['name'])))
+            network_security_rules_list = network_security_rules_list + list(
+                map(lambda x: x.as_dict(), client.security_rules.list(resource_group_name=security_group['resource_group'], network_security_group_name=security_group['name'])))
 
         for rule in network_security_rules_list:
             x = rule['id'].split('/')
@@ -404,17 +402,16 @@ def cleanup_network_security_rules(neo4j_session: neo4j.Session, common_job_para
 
 
 def sync_network_security_rules(
-    neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
+    neo4j_session: neo4j.Session, network_security_groups_list: List[Dict], client: NetworkManagementClient, update_tag: int,
     common_job_parameters: Dict,
 ) -> None:
-    network_security_rules_list = get_network_security_rules_list(credentials, subscription_id)
+    network_security_rules_list = get_network_security_rules_list(network_security_groups_list, client)
     load_network_security_rules(neo4j_session, network_security_rules_list, update_tag)
     cleanup_network_security_rules(neo4j_session, common_job_parameters)
 
 
-def get_public_ip_addresses_list(credentials: Credentials, subscription_id: str) -> List[Dict]:
+def get_public_ip_addresses_list(client: NetworkManagementClient) -> List[Dict]:
     try:
-        client = get_network_client(credentials, subscription_id)
         public_ip_addresses_list = list(map(lambda x: x.as_dict(), client.public_ip_addresses.list_all()))
         return public_ip_addresses_list
 
@@ -453,10 +450,10 @@ def cleanup_public_ip_addresses(neo4j_session: neo4j.Session, common_job_paramet
 
 
 def sync_public_ip_addresses(
-    neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
+    neo4j_session: neo4j.Session, client: NetworkManagementClient, subscription_id: str, update_tag: int,
     common_job_parameters: Dict,
 ) -> None:
-    public_ip_addresses_list = get_public_ip_addresses_list(credentials, subscription_id)
+    public_ip_addresses_list = get_public_ip_addresses_list(client)
     load_public_ip_addresses(neo4j_session, subscription_id, public_ip_addresses_list, update_tag)
     cleanup_public_ip_addresses(neo4j_session, common_job_parameters)
 
@@ -465,14 +462,6 @@ def get_locations_list(credentials: Credentials, subscription_id: str) -> List[D
     try:
         client = get_subscription_client(credentials)
         locations_list = list(map(lambda x: x.as_dict(), client.subscriptions.list_locations(subscription_id)))
-        # The API only works for below locations
-        valied_locations_list = ["westus", "eastus", "northeurope", "westeurope", "eastasia", "southeastasia", "northcentralus", "southcentralus", "centralus", "eastus2", "japaneast", "japanwest", "brazilsouth", "australiaeast", "australiasoutheast", "centralindia", "southindia",
-                                 "westindia", "canadacentral", "canadaeast", "westcentralus", "westus2", "ukwest", "uksouth", "koreacentral", "francecentral", "australiacentral", "southafricanorth", "switzerlandnorth", "germanywestcentral", "norwayeast", "westus3", "uaenorth", "jioindiawest", "koreasouth"]
-        locations_list_2 = list(locations_list)
-        for location in locations_list_2:
-            if location["name"] not in valied_locations_list:
-                locations_list.remove(location)
-
         return locations_list
 
     except HttpResponseError as e:
@@ -508,31 +497,27 @@ def cleanup_locations(neo4j_session: neo4j.Session, common_job_parameters: Dict)
 
 
 def sync_locations(
-    neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
+    neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, client: NetworkManagementClient, update_tag: int,
     common_job_parameters: Dict,
 ) -> None:
     locations_list = get_locations_list(credentials, subscription_id)
     load_locations(neo4j_session, subscription_id, locations_list, update_tag)
     cleanup_locations(neo4j_session, common_job_parameters)
+    sync_usages(neo4j_session, locations_list, client, update_tag, common_job_parameters)
 
 
 @ timeit
-def get_usages_list(credentials: Credentials, subscription_id: str) -> List[Dict]:
-    try:
-        client = get_network_client(credentials, subscription_id)
-        locations_list = get_locations_list(credentials, subscription_id)
-        usages_list = []
-        for location in locations_list:
+def get_usages_list(locations_list: List[Dict], client: NetworkManagementClient) -> List[Dict]:
+    usages_list = []
+    for location in locations_list:
+        try:
             usages_list = usages_list + list(map(lambda x: x.as_dict(), client.usages.list(location['name'])))
-
-        for usage in usages_list:
-            x = usage['id'].split('/')
-            usage['location_name'] = x[x.index('locations') + 1]
-        return usages_list
-
-    except HttpResponseError as e:
-        logger.warning(f"Error while retrieving usages - {e}")
-        return []
+        except:
+            logger.warning(f"No registered resource provider found for location: {location['name']}")
+    for usage in usages_list:
+        x = usage['id'].split('/')
+        usage['location_name'] = x[x.index('locations') + 1]
+    return usages_list
 
 
 def _load_usages_tx(
@@ -566,11 +551,11 @@ def cleanup_usages(neo4j_session: neo4j.Session, common_job_parameters: Dict) ->
 
 
 def sync_usages(
-    neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
+    neo4j_session: neo4j.Session, locations_list: List[Dict], client: NetworkManagementClient, update_tag: int,
     common_job_parameters: Dict,
 ) -> None:
-    networks_routes_list = get_usages_list(credentials, subscription_id)
-    load_usages(neo4j_session, networks_routes_list, update_tag)
+    networks_usages_list = get_usages_list(locations_list, client)
+    load_usages(neo4j_session, networks_usages_list, update_tag)
     cleanup_usages(neo4j_session, common_job_parameters)
 
 
@@ -582,11 +567,3 @@ def sync(
     logger.info("Syncing networks for subscription '%s'.", subscription_id)
 
     sync_networks(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
-    sync_networks_subnets(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
-    sync_network_routetables(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
-    sync_network_routes(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
-    sync_network_security_groups(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
-    sync_network_security_rules(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
-    sync_public_ip_addresses(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
-    sync_locations(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
-    sync_usages(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
