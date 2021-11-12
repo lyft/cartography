@@ -182,5 +182,4 @@ def sync(
     # FUNCTIONS
     functions = get_gcp_functions(function, project_id)
     load_functions(functions, project_id, gcp_update_tag)
-    # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gcp_functions(neo4j_session, common_job_parameters)
