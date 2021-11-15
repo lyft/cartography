@@ -527,7 +527,7 @@ def _load_usages_tx(
 ) -> None:
     ingest_usages = """
     UNWIND {usages_list} as usage
-    MERGE (n:AzureUseges{id: usage.id})
+    MERGE (n:AzureUsege{id: usage.id})
     ON CREATE SET n.firstseen = timestamp()
     SET n.currentValue = usage.currentValue,
     n.lastupdated = {azure_update_tag},
