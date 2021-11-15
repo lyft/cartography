@@ -35,7 +35,8 @@
 - [IpRule::IpPermissionInbound::GCPIpRule](#ipruleippermissioninboundgcpiprule)
   - [Relationships](#relationships-14)
 - [IpRange](#iprange)
-
+- [GCPFunction](#gcpfunction)
+  - [Rrelationships](#realtionships-15)
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 ## GCPOrganization
@@ -675,3 +676,37 @@ Representation of an IP range or subnet.
 	```
 	(GCPIpRule, IpRule, IpPermissionInbound)<-[MEMBER_OF_IP_RULE)-(:IpRange)
 	```
+
+## GCPFunction
+
+Representation of a GCP [Function](https://cloud.google.com/functions/docs/reference/rest)
+
+| Field                        | Description                                                                                                |
+|------------------------------|------------------------------------------------------------------------------------------------------------|
+| name                         | A user-defined name of the function.                                                                       |
+| description                  | User-provided description of a function.                                                                   |
+| status                       | Status of the function deployment.                                                                         |
+| entryPoint                   | The name of the function (as defined in source code) that will be executed.                                |
+| runtime                      | The runtime in which to run the function.                                                                  |
+| timeout                      | The function execution timeout                                                                             |
+| availableMemoryMb            | The amount of memory in MB available for a function. Defaults to 256MB.                                    |
+| serviceAccountEmail          | The email of the function's service account.                                                               |
+| updateTime                   | Output only. The last update timestamp of a Cloud Function.                                                |
+| versionId                    | Output only. The version identifier of the Cloud Function.                                                 |
+| network                      | The VPC Network that this cloud function can connect to.                                                   | 
+| maxInstances                 | The limit on the maximum number of function instances that may coexist at a given time.                    |
+| vpcConnector                 | The VPC Network Connector that this cloud function can connect to.                                         |
+| vpcConnectorEgressSettings   | The egress settings for the connector, controlling what traffic is diverted through it.                    |
+| ingressSettings              | The ingress settings for the function, controlling what traffic can reach it.                              |
+| buildWorkerPool              | Name of the Cloud Build Custom Worker Pool that should be used to build the function.                      |
+| buildId                      | Output only. The Cloud Build ID of the latest successful deployment of the function.                       |
+| sourceToken                  | Input only. An identifier for Firebase function sources.                                                   |
+| sourceArchiveUrl             | The Google Cloud Storage URL, starting with gs://, pointing to the zip archive which contains the function.|
+
+### Relationships
+
+- GCP Functions are part of GCP Projects
+
+    ```
+    (GCPProject)-[RESOURCE]->(GCPFunction)
+    ```
