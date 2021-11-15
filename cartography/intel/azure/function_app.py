@@ -620,7 +620,7 @@ def get_function_apps_webjobs_list(
             x = webjob['id'].split('/')
             webjob['resource_group'] = x[x.index('resourceGroups') + 1]
             webjob['function_app_id'] = webjob['id'][:webjob['id'].
-                                                     index("/snapshots")]
+                                                     index("/webjobs")]
         return function_apps_webjobs_list
 
     except HttpResponseError as e:

@@ -86,6 +86,22 @@
   - [Relationships](#relationships-39)
 - [AzureCosmosDBMongoDBCollection](#azurecosmosdbmongodbcollection)
   - [Relationships](#relationships-40)
+- [AzureFunctionApp](#azurefunctionapp)
+  - [Relationships](#relationships-41)
+- [AzureFunctionAppConfiguration](#azurefunctionappconfiguration)
+  - [Relationships](#relationships-42)
+- [AzureFunctionAppFunction](#azurefunctionappfunction)
+  - [Relationships](#relationships-43)
+- [AzureFunctionAppDeployment](#azurefunctionappdeployment)
+  - [Relationships](#relationships-44)
+- [AzureFunctionAppBackup](#azurefunctionappbackup)
+  - [Relationships](#relationships-45)
+- [AzureFunctionAppProcess](#azurefunctionappprocess)
+  - [Relationships](#relationships-46)
+- [AzureFunctionAppSnapshot](#azurefunctionappsnapshot)
+  - [Relationships](#relationships-47)
+- [AzureFunctionAppWebjob](#azurefunctionappwebjob)
+  - [Relationships](#relationships-48)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -162,7 +178,6 @@ Representation of an [Azure Virtual Machine](https://docs.microsoft.com/en-us/re
 |name | The friendly name that identifies the Virtual Machine|
 |plan | The plan associated with the Virtual Machine|
 |size | The size of the Virtual Machine|
-|license_type | The type of license|
 |computer_name | The computer name|
 |identity_type | The type of identity used for the virtual machine|
 |zones | The Virtual Machine zones|
@@ -1258,4 +1273,181 @@ Representation of an [AzureCosmosDBMongoDBCollection](https://docs.microsoft.com
 
         ```
         (AzureCosmosDBMongoDBDatabase)-[CONTAINS]->(AzureCosmosDBMongoDBCollection)
+        ```
+
+## AzureFunctionApp
+
+Representation of an [AzureFunctionApp](https://docs.microsoft.com/en-us/rest/api/appservice/web-apps).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The Azure Function App ID number|
+|type | The type of the resource|
+|location | The location where function app is created|
+|resourcegroup | The Resource Group where function app is created|
+|name | The friendly name that identifies the function app|
+|container size | Size of the function container|
+|default host name | Default hostname of the app|
+|last modified time utc | Last time the app was modified|
+|state | Current state of the app|
+|repository site name | Name of the repository site|
+|daily memory time quota | Maximum allowed daily memory-time quota|
+|availability state | Management information availability state for the app|
+|usage state | State indicating whether the app has exceeded its quota usage|
+
+### Relationships
+
+- Azure Subscription contains one or more Function Apps.
+
+        ```
+        (AzureSubscription)-[RESOURCE]->(AzureFunctionApp)
+        ```
+## AzureFunctionAppConfiguration
+
+Representation of an [AzureFunctionAppConfiguration](https://docs.microsoft.com/en-us/rest/api/appservice/web-apps/list-configurations).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The Azure Function App Configuration ID number|
+|type | The type of the resource|
+|number_of_workers | Number of workers|
+|resourcegroup | The Resource Group where function app is created|
+|name | The friendly name that identifies the function app Configuration|
+|net_framework_version | .NET Framework version|
+|php_version | Version of PHP|
+|python_version | Version of Python|
+|node_version | Version of Node.js|
+|linux_fx_version | Linux App Framework and version|
+|windows_fx_version | Xenon App Framework and version|
+|request_tracing_enabled | true if request tracing is enabled otherwise, false|
+|ftps_state | State of FTP / FTPS service|
+
+### Relationships
+
+- Azure Function Apps contains one or more Function App Configurations.
+
+        ```
+        (AzureFunctionApp)-[CONTAIN]->(AzureFunctionAppConfiguration)
+        ```
+## AzureFunctionAppFunction
+
+Representation of an [AzureFunctionAppFunction](https://docs.microsoft.com/en-us/rest/api/appservice/web-apps/list-functions).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The Azure Function App Function ID number|
+|type | The type of the resource|
+|resourcegroup | The Resource Group where function app is created|
+|name | The friendly name that identifies the function app Function|
+|href | Function URI|
+|language | The function language|
+|is_disabled | Gets or sets a value indicating whether the function is disabled|
+
+### Relationships
+
+- Azure Function Apps contains one or more Function App Functions.
+
+        ```
+        (AzureFunctionApp)-[CONTAIN]->(AzureFunctionAppFunction)
+        ```
+## AzureFunctionAppDeployment
+
+Representation of an [AzureFunctionAppDeployment](https://docs.microsoft.com/en-us/rest/api/appservice/web-apps/list-deployments).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The Azure Function App Deployement ID number|
+|type | The type of the resource|
+|resourcegroup | The Resource Group where function app is created|
+
+### Relationships
+
+- Azure Function Apps contains one or more Function App Deployements.
+
+        ```
+        (AzureFunctionApp)-[CONTAIN]->(AzureFunctionAppDeployment)
+        ```
+## AzureFunctionAppBackup
+
+Representation of an [AzureFunctionAppBackup](https://docs.microsoft.com/en-us/rest/api/appservice/web-apps/list-backups).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The Azure Function App Backup ID number|
+|type | The type of the resource|
+|resourcegroup | The Resource Group where function app is created|
+
+### Relationships
+
+- Azure Function Apps contains one or more Function App Backups.
+
+        ```
+        (AzureFunctionApp)-[CONTAIN]->(AzureFunctionAppBackup)
+        ```
+## AzureFunctionAppProcess
+
+Representation of an [AzureFunctionAppProcess](https://docs.microsoft.com/en-us/rest/api/appservice/web-apps/list-processes).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The Azure Function App Process ID number|
+|type | The type of the resource|
+|resourcegroup | The Resource Group where function app is created|
+
+### Relationships
+
+- Azure Function Apps contains one or more Function App Process.
+
+        ```
+        (AzureFunctionApp)-[CONTAIN]->(AzureFunctionAppProcess)
+        ```
+## AzureFunctionAppSnapshot
+
+Representation of an [AzureFunctionAppSnapshot](https://docs.microsoft.com/en-us/rest/api/appservice/web-apps/list-snapshots).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The Azure Function App Snapshot ID number|
+|type | The type of the resource|
+|resourcegroup | The Resource Group where function app is created|
+
+### Relationships
+
+- Azure Function Apps contains one or more Function App Snapshots.
+
+        ```
+        (AzureFunctionApp)-[CONTAIN]->(AzureFunctionAppSnapshot)
+        ```
+## AzureFunctionAppWebjob
+
+Representation of an [AzureFunctionAppWebjob](https://docs.microsoft.com/en-us/rest/api/appservice/web-apps/list-web-jobs).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The Azure Function App Webjob ID number|
+|type | The type of the resource|
+|resourcegroup | The Resource Group where function app is created|
+
+### Relationships
+
+- Azure Function Apps contains one or more Function App Webjobs.
+
+        ```
+        (AzureFunctionApp)-[CONTAIN]->(AzureFunctionAppWebjob)
         ```
