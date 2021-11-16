@@ -70,6 +70,7 @@ CREATE INDEX ON :ECRScanFinding(id);
 CREATE INDEX ON :EKSCluster(id);
 CREATE INDEX ON :ElasticacheCluster(id);
 CREATE INDEX ON :ElasticacheCluster(arn);
+CREATE INDEX ON :ElasticIPAddress(id);
 CREATE INDEX ON :ELBListener(id);
 CREATE INDEX ON :ELBV2Listener(id);
 CREATE INDEX ON :EMRCluster(id);
