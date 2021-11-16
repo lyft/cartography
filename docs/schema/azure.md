@@ -178,6 +178,7 @@ Representation of an [Azure Virtual Machine](https://docs.microsoft.com/en-us/re
 |name | The friendly name that identifies the Virtual Machine|
 |plan | The plan associated with the Virtual Machine|
 |size | The size of the Virtual Machine|
+|license_type | The type of license|
 |computer_name | The computer name|
 |identity_type | The type of identity used for the virtual machine|
 |zones | The Virtual Machine zones|

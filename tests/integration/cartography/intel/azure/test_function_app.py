@@ -1,5 +1,12 @@
 from cartography.intel.azure import function_app
-from tests.data.azure.function_app import DESCRIBE_FunctionAppBackups, DESCRIBE_FunctionAppConfiguration, DESCRIBE_FunctionAppDeployments, DESCRIBE_FunctionAppFunctions, DESCRIBE_FunctionAppProcess, DESCRIBE_FunctionAppSnapshots, DESCRIBE_FunctionAppWebjob, DESCRIBE_FunctionApps
+from tests.data.azure.function_app import DESCRIBE_FUNCTIONAPPS
+from tests.data.azure.function_app import DESCRIBE_FUNCTIONAPPBACKUPS
+from tests.data.azure.function_app import DESCRIBE_FUNCTIONAPPCONFIGURATIONS
+from tests.data.azure.function_app import DESCRIBE_FUNCTIONAPPFUNCTIONS
+from tests.data.azure.function_app import DESCRIBE_FUNCTIONAPPPROCESSES
+from tests.data.azure.function_app import DESCRIBE_FUNCTIONAPPDEPLOYMENTS
+from tests.data.azure.function_app import DESCRIBE_FUNCTIONAPPSNAPSHOTS
+from tests.data.azure.function_app import DESCRIBE_FUNCTIONAPPWEBJOBS
 
 TEST_SUBSCRIPTION_ID = '00-00-00-00'
 TEST_RESOURCE_GROUP = 'TestRG'
@@ -10,7 +17,7 @@ def test_load_function_apps(neo4j_session):
     function_app.load_function_apps(
         neo4j_session,
         TEST_SUBSCRIPTION_ID,
-        DESCRIBE_FunctionApps,
+        DESCRIBE_FUNCTIONAPPS,
         TEST_UPDATE_TAG,
     )
 
@@ -42,7 +49,7 @@ def test_load_function_app_relationships(neo4j_session):
     function_app.load_function_apps(
         neo4j_session,
         TEST_SUBSCRIPTION_ID,
-        DESCRIBE_FunctionApps,
+        DESCRIBE_FUNCTIONAPPS,
         TEST_UPDATE_TAG,
     )
 
@@ -70,7 +77,7 @@ def test_load_function_app_relationships(neo4j_session):
 def test_load_function_app_configurations(neo4j_session):
     function_app.load_function_apps_configurations(
         neo4j_session,
-        DESCRIBE_FunctionAppConfiguration,
+        DESCRIBE_FUNCTIONAPPCONFIGURATIONS,
         TEST_UPDATE_TAG,
     )
 
@@ -92,13 +99,13 @@ def test_load_function_app_configuration_relationships(neo4j_session):
     function_app.load_function_apps(
         neo4j_session,
         TEST_SUBSCRIPTION_ID,
-        DESCRIBE_FunctionApps,
+        DESCRIBE_FUNCTIONAPPS,
         TEST_UPDATE_TAG,
     )
 
     function_app.load_function_apps_configurations(
         neo4j_session,
-        DESCRIBE_FunctionAppConfiguration,
+        DESCRIBE_FUNCTIONAPPCONFIGURATIONS,
         TEST_UPDATE_TAG,
     )
 
@@ -126,7 +133,7 @@ def test_load_function_app_configuration_relationships(neo4j_session):
 def test_load_function_app_functions(neo4j_session):
     function_app.load_function_apps_functions(
         neo4j_session,
-        DESCRIBE_FunctionAppFunctions,
+        DESCRIBE_FUNCTIONAPPFUNCTIONS,
         TEST_UPDATE_TAG,
     )
 
@@ -148,13 +155,13 @@ def test_load_function_app_function_relationships(neo4j_session):
     function_app.load_function_apps(
         neo4j_session,
         TEST_SUBSCRIPTION_ID,
-        DESCRIBE_FunctionApps,
+        DESCRIBE_FUNCTIONAPPS,
         TEST_UPDATE_TAG,
     )
 
     function_app.load_function_apps_functions(
         neo4j_session,
-        DESCRIBE_FunctionAppFunctions,
+        DESCRIBE_FUNCTIONAPPFUNCTIONS,
         TEST_UPDATE_TAG,
     )
 
@@ -182,7 +189,7 @@ def test_load_function_app_function_relationships(neo4j_session):
 def test_load_function_app_deployments(neo4j_session):
     function_app.load_function_apps_deployments(
         neo4j_session,
-        DESCRIBE_FunctionAppDeployments,
+        DESCRIBE_FUNCTIONAPPDEPLOYMENTS,
         TEST_UPDATE_TAG,
     )
 
@@ -204,13 +211,13 @@ def test_load_function_app_deployment_relationships(neo4j_session):
     function_app.load_function_apps(
         neo4j_session,
         TEST_SUBSCRIPTION_ID,
-        DESCRIBE_FunctionApps,
+        DESCRIBE_FUNCTIONAPPS,
         TEST_UPDATE_TAG,
     )
 
     function_app.load_function_apps_deployments(
         neo4j_session,
-        DESCRIBE_FunctionAppDeployments,
+        DESCRIBE_FUNCTIONAPPDEPLOYMENTS,
         TEST_UPDATE_TAG,
     )
 
@@ -238,7 +245,7 @@ def test_load_function_app_deployment_relationships(neo4j_session):
 def test_load_function_app_backups(neo4j_session):
     function_app.load_function_apps_backups(
         neo4j_session,
-        DESCRIBE_FunctionAppBackups,
+        DESCRIBE_FUNCTIONAPPBACKUPS,
         TEST_UPDATE_TAG,
     )
 
@@ -260,13 +267,13 @@ def test_load_function_app_backup_relationships(neo4j_session):
     function_app.load_function_apps(
         neo4j_session,
         TEST_SUBSCRIPTION_ID,
-        DESCRIBE_FunctionApps,
+        DESCRIBE_FUNCTIONAPPS,
         TEST_UPDATE_TAG,
     )
 
     function_app.load_function_apps_backups(
         neo4j_session,
-        DESCRIBE_FunctionAppBackups,
+        DESCRIBE_FUNCTIONAPPBACKUPS,
         TEST_UPDATE_TAG,
     )
 
@@ -294,7 +301,7 @@ def test_load_function_app_backup_relationships(neo4j_session):
 def test_load_function_app_process(neo4j_session):
     function_app.load_function_apps_processes(
         neo4j_session,
-        DESCRIBE_FunctionAppProcess,
+        DESCRIBE_FUNCTIONAPPPROCESSES,
         TEST_UPDATE_TAG,
     )
 
@@ -316,13 +323,13 @@ def test_load_function_app_process_relationships(neo4j_session):
     function_app.load_function_apps(
         neo4j_session,
         TEST_SUBSCRIPTION_ID,
-        DESCRIBE_FunctionApps,
+        DESCRIBE_FUNCTIONAPPS,
         TEST_UPDATE_TAG,
     )
 
     function_app.load_function_apps_processes(
         neo4j_session,
-        DESCRIBE_FunctionAppProcess,
+        DESCRIBE_FUNCTIONAPPPROCESSES,
         TEST_UPDATE_TAG,
     )
 
@@ -350,7 +357,7 @@ def test_load_function_app_process_relationships(neo4j_session):
 def test_load_function_app_snapshots(neo4j_session):
     function_app.load_function_apps_snapshots(
         neo4j_session,
-        DESCRIBE_FunctionAppSnapshots,
+        DESCRIBE_FUNCTIONAPPSNAPSHOTS,
         TEST_UPDATE_TAG,
     )
 
@@ -372,13 +379,13 @@ def test_load_function_app_snapshot_relationships(neo4j_session):
     function_app.load_function_apps(
         neo4j_session,
         TEST_SUBSCRIPTION_ID,
-        DESCRIBE_FunctionApps,
+        DESCRIBE_FUNCTIONAPPS,
         TEST_UPDATE_TAG,
     )
 
     function_app.load_function_apps_snapshots(
         neo4j_session,
-        DESCRIBE_FunctionAppSnapshots,
+        DESCRIBE_FUNCTIONAPPSNAPSHOTS,
         TEST_UPDATE_TAG,
     )
 
@@ -406,7 +413,7 @@ def test_load_function_app_snapshot_relationships(neo4j_session):
 def test_load_function_app_webjobs(neo4j_session):
     function_app.load_function_apps_webjobs(
         neo4j_session,
-        DESCRIBE_FunctionAppWebjob,
+        DESCRIBE_FUNCTIONAPPWEBJOBS,
         TEST_UPDATE_TAG,
     )
 
@@ -428,13 +435,13 @@ def test_load_function_app_webjob_relationships(neo4j_session):
     function_app.load_function_apps(
         neo4j_session,
         TEST_SUBSCRIPTION_ID,
-        DESCRIBE_FunctionApps,
+        DESCRIBE_FUNCTIONAPPS,
         TEST_UPDATE_TAG,
     )
 
     function_app.load_function_apps_webjobs(
         neo4j_session,
-        DESCRIBE_FunctionAppWebjob,
+        DESCRIBE_FUNCTIONAPPWEBJOBS,
         TEST_UPDATE_TAG,
     )
 

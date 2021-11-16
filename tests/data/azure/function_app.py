@@ -1,4 +1,4 @@
-DESCRIBE_FunctionApps = [
+DESCRIBE_FUNCTIONAPPS = [
     {
         "id":
         "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp1",
@@ -32,7 +32,8 @@ DESCRIBE_FunctionApps = [
         "usage_state": "Normal",
     },
 ]
-DESCRIBE_FunctionAppConfiguration = [
+
+DESCRIBE_FUNCTIONAPPCONFIGURATIONS = [
     {
         "id":
         "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp1/config/Conf1",
@@ -131,7 +132,7 @@ DESCRIBE_FunctionAppConfiguration = [
     },
 ]
 
-DESCRIBE_FunctionAppFunctions = [
+DESCRIBE_FUNCTIONAPPFUNCTIONS = [
     {
         "id":
         "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp1/functions/functon1",
@@ -170,7 +171,7 @@ DESCRIBE_FunctionAppFunctions = [
     },
 ]
 
-DESCRIBE_FunctionAppDeployments = [
+DESCRIBE_FUNCTIONAPPDEPLOYMENTS = [
     {
         "id":
         "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp1/deployments/deploy1",
@@ -197,7 +198,7 @@ DESCRIBE_FunctionAppDeployments = [
     },
 ]
 
-DESCRIBE_FunctionAppBackups = [
+DESCRIBE_FUNCTIONAPPBACKUPS = [
     {
         "id":
         "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp1/backups/backup1",
@@ -224,7 +225,7 @@ DESCRIBE_FunctionAppBackups = [
     },
 ]
 
-DESCRIBE_FunctionAppProcess = [
+DESCRIBE_FUNCTIONAPPPROCESSES = [
     {
         "id":
         "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp1/processes/process1",
@@ -251,7 +252,7 @@ DESCRIBE_FunctionAppProcess = [
     },
 ]
 
-DESCRIBE_FunctionAppSnapshots = [
+DESCRIBE_FUNCTIONAPPSNAPSHOTS = [
     {
         "id":
         "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp1/snapshots/snap1",
@@ -278,7 +279,7 @@ DESCRIBE_FunctionAppSnapshots = [
     },
 ]
 
-DESCRIBE_FunctionAppWebjob = [
+DESCRIBE_FUNCTIONAPPWEBJOBS = [
     {
         "id":
         "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp1/webjobs/webjob1",
