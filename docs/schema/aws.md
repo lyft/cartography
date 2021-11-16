@@ -155,7 +155,7 @@
   - [Relationships](#relationships-72)
 - [LaunchTemplateVersion](#launchtemplateversion)
   - [Relationships](#relationships-73)
-- [ElasticIpAddress](#elasticipaddress)
+- [ElasticIPAddress](#elasticipaddress)
   - [Relationships](#relationships-74)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -192,7 +192,7 @@ Representation of an AWS Account.
                               EC2Reservation,
                               EC2ReservedInstance,
                               EC2SecurityGroup,
-                              ElasticIpAddress,
+                              ElasticIPAddress,
                               ESDomain,
                               LaunchConfiguration,
                               LaunchTemplate,
@@ -2776,7 +2776,7 @@ Representation of an AWS [Launch Template Version]()
         (AWSAccount)-[RESOURCE]->(LaunchTemplateVersion)
         ```
 
-## ElasticIpAddress
+## ElasticIPAddress
 
 Representation of an AWS EC2 [Elastic IP address](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_Address.html)
 
@@ -2804,17 +2804,17 @@ Representation of an AWS EC2 [Elastic IP address](https://docs.aws.amazon.com/AW
 - Elastic IPs are a resource under the AWS Account.
 
         ```
-        (AWSAccount)-[RESOURCE]->(ElasticIpAddress)
+        (AWSAccount)-[RESOURCE]->(ElasticIPAddress)
         ```
 
 - Elastic IPs can be attached to EC2 instances
 
         ```
-        (EC2Instance)-[ELASTIC_IP_ADDRESS]->(ElasticIpAddress)
+        (EC2Instance)-[ELASTIC_IP_ADDRESS]->(ElasticIPAddress)
         ```
 
 - Elastic IPs can be attached to NetworkInterfaces
 
         ```
-        (NetworkInterface)-[ELASTIC_IP_ADDRESS]->(ElasticIpAddress)
+        (NetworkInterface)-[ELASTIC_IP_ADDRESS]->(ElasticIPAddress)
         ```

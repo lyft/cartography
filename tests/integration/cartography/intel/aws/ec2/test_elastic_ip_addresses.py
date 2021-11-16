@@ -34,7 +34,7 @@ def test_load_elastic_ip_addresses(neo4j_session, *args):
 
     nodes = neo4j_session.run(
         """
-        MATCH (n:ElasticIpAddress)
+        MATCH (n:ElasticIPAddress)
         RETURN n.id, n.association_id, n.public_ip, n.private_ip_address,
         n.network_interface_id, n.network_interface_owner_id,
         n.region
