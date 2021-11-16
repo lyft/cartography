@@ -155,6 +155,8 @@
   - [Relationships](#relationships-72)
 - [LaunchTemplateVersion](#launchtemplateversion)
   - [Relationships](#relationships-73)
+- [ElasticIpAddress](#elasticipaddress)
+  - [Relationships](#relationships-74)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -190,6 +192,7 @@ Representation of an AWS Account.
                               EC2Reservation,
                               EC2ReservedInstance,
                               EC2SecurityGroup,
+                              ElasticIpAddress,
                               ESDomain,
                               LaunchConfiguration,
                               LaunchTemplate,
@@ -2771,4 +2774,47 @@ Representation of an AWS [Launch Template Version]()
 
         ```
         (AWSAccount)-[RESOURCE]->(LaunchTemplateVersion)
+        ```
+
+## ElasticIpAddress
+
+Representation of an AWS EC2 [Elastic IP address](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_Address.html)
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The Allocation ID of the elastic IP address |
+| instance\_id | The ID of the instance that the address is associated with (if any). |
+| public\_ip | The Elastic IP address. |
+| allocation\_id | The ID representing the allocation of the address for use with EC2-VPC. |
+| association\_id | The ID representing the association of the address with an instance in a VPC. |
+| domain | Indicates whether this Elastic IP address is for use with instances in EC2-Classic (standard) or instances in a VPC (vpc). |
+| network\_interface\_id | The ID of the network interface. |
+| private\_ip\_address | The private IP address associated with the Elastic IP address. |
+| public\_ipv4\_pool | The ID of an address pool. |
+| network\_border\_group | The name of the unique set of Availability Zones, Local Zones, or Wavelength Zones from which AWS advertises IP addresses. |
+| customer\_owned\_ip | The customer-owned IP address. |
+| customer\_owned\_ipv4\_pool | The ID of the customer-owned address pool. |
+| carrier\_ip | The carrier IP address associated. This option is only available for network interfaces which reside in a subnet in a Wavelength Zone (for example an EC2 instance). |
+| region | The region of the IP. |
+
+### Relationships
+
+- Elastic IPs are a resource under the AWS Account.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(ElasticIpAddress)
+        ```
+
+- Elastic IPs can be attached to EC2 instances
+
+        ```
+        (EC2Instance)-[ELASTIC_IP_ADDRESS]->(ElasticIpAddress)
+        ```
+
+- Elastic IPs can be attached to NetworkInterfaces
+
+        ```
+        (NetworkInterface)-[ELASTIC_IP_ADDRESS]->(ElasticIpAddress)
         ```

@@ -72,10 +72,10 @@ def load_elastic_ip_addresses(
 
     neo4j_session.run(
         ingest_addresses,
-        elastic_ip_addresses = elastic_ip_addresses,
-        Region = region,
-        aws_account_id = current_aws_account_id,
-        update_tag = update_tag,
+        elastic_ip_addresses=elastic_ip_addresses,
+        Region=region,
+        aws_account_id=current_aws_account_id,
+        update_tag=update_tag,
     )
 
 
