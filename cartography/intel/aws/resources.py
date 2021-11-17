@@ -21,6 +21,7 @@ from . import secretsmanager
 from . import securityhub
 from . import sqs
 from .ec2.auto_scaling_groups import sync_ec2_auto_scaling_groups
+from .ec2.elastic_ip_addresses import sync_elastic_ip_addresses
 from .ec2.images import sync_ec2_images
 from .ec2.instances import sync_ec2_instances
 from .ec2.internet_gateways import sync_internet_gateways
@@ -62,6 +63,7 @@ RESOURCE_FUNCTIONS: Dict = {
     'ecr': ecr.sync,
     'eks': eks.sync,
     'elasticache': elasticache.sync,
+    'elastic_ip_addresses': sync_elastic_ip_addresses,
     'emr': emr.sync,
     'lambda_function': lambda_function.sync,
     'kms': kms.sync,
