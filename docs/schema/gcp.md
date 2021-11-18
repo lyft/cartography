@@ -35,6 +35,11 @@
 - [IpRule::IpPermissionInbound::GCPIpRule](#ipruleippermissioninboundgcpiprule)
   - [Relationships](#relationships-14)
 - [IpRange](#iprange)
+  -[Relationshipe](#relationships15)
+- [GCPKMS](#gcpkms)
+  - [Relationships](#relationships-24)
+  - [Relationships](#relationships-25)
+  - [Relationships](#relationships-26)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -675,3 +680,63 @@ Representation of an IP range or subnet.
 	```
 	(GCPIpRule, IpRule, IpPermissionInbound)<-[MEMBER_OF_IP_RULE)-(:IpRange)
 	```
+
+
+## GCP Key Management
+
+## GCP KMS Locations
+
+Representation of [GCP KMS Locations](https://cloud.google.com/kms/docs/reference/rest/v1/Location)
+
+| Field                 | Description                                                                 |
+|-----------------------|-----------------------------------------------------------------------------|
+| name                  | Resource name for the location, which may vary between implementations.     |
+| locationId            | The canonical id for this location.                                         |
+| displayName           | The friendly name for this location, typically a nearby city name.          |
+
+### Relationships
+
+- GCP KMS Locations are defined in GCP Projects
+
+    ```
+    (GCPProjects)-[RESOURCE]->(GCPKMSLocation)
+    ```
+
+## GCP KMS Keyrings
+
+Representation of [GCP KMS Keyrings](https://cloud.google.com/kms/docs/reference/rest/v1/projects.locations.keyRings)
+
+| Field                    | Description                                                              |
+|--------------------------|--------------------------------------------------------------------------|
+| name                     | The resource name for the KeyRing.                                       |
+| createTime               | The time at which this KeyRing was created.                              |
+
+### Relationships
+
+- GCP KMS Keyrings are defined in GCP KMS Locations
+
+    ```
+    (GCPKMSLocation)-[RESOURCE->(GCPKMSKeyring)
+    ```
+
+## GCP KMS Crypto Keys
+
+Representation of [GCP KMS Crypto Keys](https://cloud.google.com/kms/docs/reference/rest/v1/projects.locations.keyRings.cryptoKeys)
+
+| Field                        | Description                                                                                     |
+|------------------------------|-------------------------------------------------------------------------------------------------|
+| name                         | The resource name for this CryptoKey.                                                           |
+| purpose                      | The immutable purpose of this CryptoKey.                                                        |
+| createTime                   | The time at which this CryptoKey was created.                                                   |
+| nextRotationTime             | At nextRotationTime, the Key Management Service will automatically:                             |  
+|                              | 1.Create a new version of this CryptoKey.                                                       |
+|                              | 2.Mark the new version as primary.                                                              |
+| rotationPeriod               | nextRotationTime will be advanced by this period when the service automatically rotates a key.  |
+
+### Relationships
+
+- GCP Crypto Keys are defined in GCP Keyrings
+
+    ```
+    (GCPKMSKeyring)-[RESOURCE]->(GCPKMSCryptokey)
+    ```

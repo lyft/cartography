@@ -162,8 +162,9 @@ def _load_kms_locations_tx(tx: neo4j.Transaction, locations: List[Resource], pro
     ON CREATE SET
         location.firstseen = timestamp()
     SET
-        location.hsmAvailable = loc.hsmAvailable,
-        location.ekmAvailable = loc.ekmAvailable
+        location.name = loc.name,
+        location.locationId = loc.locationId,
+        location.displayName = loc.displayName
     WITH location, loc
     MATCH (owner:GCPProject{id:{ProjectId}})
     MERGE (owner)-[r:RESOURCE]->(location)
