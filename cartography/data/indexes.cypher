@@ -184,3 +184,4 @@ CREATE INDEX ON :AzureContainerRegistryRun(id);
 CREATE INDEX ON :AzureContainerRegistryTask(id);
 CREATE INDEX ON :AzureContainerRegistryWebhook(id);
 CREATE INDEX ON :AzureContainerGroup(id);
+CREATE INDEX ON :AzureContainer(id);

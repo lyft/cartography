@@ -86,6 +86,20 @@
   - [Relationships](#relationships-39)
 - [AzureCosmosDBMongoDBCollection](#azurecosmosdbmongodbcollection)
   - [Relationships](#relationships-40)
+- [AzureCluster](#azurecluster)
+  - [Relationships](#relationships-41)
+- [AzureContainerRegistry](#azurecontainerregistry)
+  - [Relationships](#relationships-42)
+- [AzureContainerRegistryReplication](#azurecontainerregistryreplication)
+  - [Relationships](#relationships-43)
+- [AzureContainerRegistryRun](#azurecontainerregistryrun)
+  - [Relationships](#relationships-44)
+- [AzureContainerRegistryTask](#azurecontainerregistrytask)
+  - [Relationships](#relationships-45)
+- [AzureContainerRegistryWebhook](#azurecontainerregistrywebhook)
+  - [Relationships](#relationships-46)
+- [AzureContainerGroup](#azurecontainergroup)
+  - [Relationships](#relationships-47)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -1258,4 +1272,151 @@ Representation of an [AzureCosmosDBMongoDBCollection](https://docs.microsoft.com
 
         ```
         (AzureCosmosDBMongoDBDatabase)-[CONTAINS]->(AzureCosmosDBMongoDBCollection)
+        ```
+
+## AzureCluster
+
+Representation of an [AzureCluster](https://docs.microsoft.com/en-us/rest/api/aks/managed-clusters/list).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The Azure Cluster ID number|
+|type | The type of the resource|
+|location | The location where Cluster is created|
+|resourcegroup | The Resource Group where Cluster is created|
+
+### Relationships
+
+- Azure Subscription contains one or more Clusters.
+
+        ```
+        (AzureSubscription)-[RESOURCE]->(AzureCluster)
+        ```
+
+## AzureContainerRegistry
+
+Representation of an [AzureContainerRegistry](https://docs.microsoft.com/en-us/rest/api/containerregistry/registries).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The Azure Container Registry ID number|
+|type | The type of the resource|
+|location | The location where Container Registry is created|
+|resourcegroup | The Resource Group where Container Registry is created|
+
+### Relationships
+
+- Azure Subscription contains one or more Container Registries.
+
+        ```
+        (AzureSubscription)-[RESOURCE]->(AzureContainerRegistry)
+        ```
+
+## AzureContainerRegistryReplication
+
+Representation of an [AzureContainerRegistryReplication](https://docs.microsoft.com/en-us/rest/api/containerregistry/replications).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The Azure Container Registry Replication ID number|
+|type | The type of the resource|
+|resourcegroup | The Resource Group where Container Registry Replication is created|
+|name | The friendly name that identifies the Container Registry Replication|
+
+### Relationships
+
+- Azure Container Registry contains one or more AzureContainer Registry Replications.
+
+        ```
+        (AzureContainerRegistry)-[CONTAIN]->(AzureContainerRegistryReplication)
+        ```
+
+## AzureContainerRegistryRun
+
+Representation of an [AzureContainerRegistryRun](https://docs.microsoft.com/en-us/rest/api/containerregistry/runs/list).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The Azure Container Registry Run ID number|
+|type | The type of the resource|
+|resourcegroup | The Resource Group where Container Registry Run is created|
+|name | The friendly name that identifies the Container Registry Run|
+
+### Relationships
+
+- Azure Container Registry contains one or more AzureContainer Registry Runs.
+
+        ```
+        (AzureContainerRegistry)-[CONTAIN]->(AzureContainerRegistryRun)
+        ```
+
+## AzureContainerRegistryTask
+
+Representation of an [AzureContainerRegistryTask](https://docs.microsoft.com/en-us/rest/api/containerregistry/tasks/list).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The Azure Container Registry Task ID number|
+|type | The type of the resource|
+|resourcegroup | The Resource Group where Container Registry Task is created|
+|name | The friendly name that identifies the Container Registry Task|
+
+### Relationships
+
+- Azure Container Registry contains one or more AzureContainer Registry Tasks.
+
+        ```
+        (AzureContainerRegistry)-[CONTAIN]->(AzureContainerRegistryTask)
+        ```
+
+## AzureContainerRegistryWebhook
+
+Representation of an [AzureContainerRegistryWebhook](https://docs.microsoft.com/en-us/rest/api/containerregistry/webhooks/list).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The Azure Container Registry Webhook ID number|
+|type | The type of the resource|
+|resourcegroup | The Resource Group where Container Registry Webhook is created|
+|name | The friendly name that identifies the Container Registry Webhook|
+
+### Relationships
+
+- Azure Container Registry contains one or more AzureContainer Registry Webhooks.
+
+        ```
+        (AzureContainerRegistry)-[CONTAIN]->(AzureContainerRegistryWebhook)
+        ```
+
+## AzureContainerGroup
+
+Representation of an [AzureContainerGroup](https://docs.microsoft.com/en-us/rest/api/container-instances/container-groups/list).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The Azure Cluster ID number|
+|type | The type of the resource|
+|location | The location where Cluster is created|
+|resourcegroup | The Resource Group where Cluster is created|
+
+### Relationships
+
+- Azure Subscription contains one or more Clusters.
+
+        ```
+        (AzureSubscription)-[RESOURCE]->(AzureContainerGroup)
         ```

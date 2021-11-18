@@ -44,6 +44,10 @@ def load_container_groups(session: neo4j.Session, subscription_id: str, data_lis
     session.write_transaction(_load_container_groups_tx, subscription_id, data_list, update_tag)
 
 
+def load_containers(session: neo4j.Session, data_list: List[Dict], update_tag: int) -> None:
+    session.write_transaction(_load_containers_tx, data_list, update_tag)
+
+
 @ timeit
 def get_client(credentials: Credentials, subscription_id: str) -> ContainerServiceClient:
     client = ContainerServiceClient(credentials, subscription_id)
@@ -456,6 +460,61 @@ def sync_container_groups(
     container_groups_list = get_container_groups_list(client)
     load_container_groups(neo4j_session, subscription_id, container_groups_list, update_tag)
     cleanup_container_groups(neo4j_session, common_job_parameters)
+    sync_containers(neo4j_session, container_groups_list, update_tag)
+
+
+@ timeit
+def get_containers_list(container_groups_list: List[Dict]) -> List[Dict]:
+    try:
+        containers_list = []
+        for container_group in container_groups_list:
+            container_list = container_group['properties']['containers']
+            for container in container_list:
+                container["container_group_id"] = container_group['id']
+                container["resource_group"] = container_group["resource_group"]
+                container["type"] = "Microsoft.ContainerInstance/containers"
+            containers_list = containers_list + container_list
+
+        return containers_list
+
+    except HttpResponseError as e:
+        logger.warning(f"Error while retrieving containers - {e}")
+        return []
+
+
+def _load_containers_tx(tx: neo4j.Transaction, containers_list: List[Dict], update_tag: int) -> None:
+    ingest_container = """
+    UNWIND {containers_list} AS container
+    MERGE (a:AzureContainer{name: container.name})
+    ON CREATE SET a.firstseen = timestamp(),
+    a.type = container.type,
+    a.resourcegroup = container.resource_group
+    SET a.lastupdated = {update_tag}
+    WITH a,container
+    MATCH (owner:AzureContainerGroup{id: container.container_group_id})
+    MERGE (owner)-[r:CONTAIN]->(a)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {update_tag}
+    """
+
+    tx.run(
+        ingest_container,
+        containers_list=containers_list,
+        update_tag=update_tag,
+    )
+
+
+def cleanup_containers(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('azure_import_containers_cleanup.json', neo4j_session, common_job_parameters)
+
+
+def sync_containers(
+    neo4j_session: neo4j.Session, container_groups_list: List[Dict], update_tag: int,
+    common_job_parameters: Dict,
+) -> None:
+    containers_list = get_containers_list(container_groups_list)
+    load_containers(neo4j_session, containers_list, update_tag)
+    cleanup_containers(neo4j_session, common_job_parameters)
 
 
 @ timeit
