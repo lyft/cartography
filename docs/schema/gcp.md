@@ -35,11 +35,14 @@
 - [IpRule::IpPermissionInbound::GCPIpRule](#ipruleippermissioninboundgcpiprule)
   - [Relationships](#relationships-14)
 - [IpRange](#iprange)
-  -[Relationships](#relationships15)
-- [GCPKMS](#gcpkms)
-  - [Relationships](#relationships-24)
-  - [Relationships](#relationships-25)
-  - [Relationships](#relationships-26)
+  - [Relationships](#relationships-15)
+- [GCP Key Management](#gcp-key-management)
+  - [GCP KMS Locations](#gcp-kms-locations)
+    - [Relationships](#relationships-16)
+  - [GCP KMS Keyrings](#gcp-kms-keyrings)
+    - [Relationships](#relationships-17)
+  - [GCP KMS Crypto Keys](#gcp-kms-crypto-keys)
+    - [Relationships](#relationships-18)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -686,7 +689,7 @@ Representation of an IP range or subnet.
 
 ## GCP Key Management
 
-## GCP KMS Locations
+### GCP KMS Locations
 
 Representation of [GCP KMS Locations](https://cloud.google.com/kms/docs/reference/rest/v1/Location)
 
@@ -696,7 +699,7 @@ Representation of [GCP KMS Locations](https://cloud.google.com/kms/docs/referenc
 | locationId            | The canonical id for this location.                                         |
 | displayName           | The friendly name for this location, typically a nearby city name.          |
 
-### Relationships
+#### Relationships
 
 - GCP KMS Locations are defined in GCP Projects
 
@@ -704,7 +707,7 @@ Representation of [GCP KMS Locations](https://cloud.google.com/kms/docs/referenc
     (GCPProjects)-[RESOURCE]->(GCPKMSLocation)
     ```
 
-## GCP KMS Keyrings
+### GCP KMS Keyrings
 
 Representation of [GCP KMS Keyrings](https://cloud.google.com/kms/docs/reference/rest/v1/projects.locations.keyRings)
 
@@ -713,7 +716,7 @@ Representation of [GCP KMS Keyrings](https://cloud.google.com/kms/docs/reference
 | name                     | The resource name for the KeyRing.                                       |
 | createTime               | The time at which this KeyRing was created.                              |
 
-### Relationships
+#### Relationships
 
 - GCP KMS Keyrings are defined in GCP KMS Locations
 
@@ -721,7 +724,7 @@ Representation of [GCP KMS Keyrings](https://cloud.google.com/kms/docs/reference
     (GCPKMSLocation)-[RESOURCE->(GCPKMSKeyring)
     ```
 
-## GCP KMS Crypto Keys
+### GCP KMS Crypto Keys
 
 Representation of [GCP KMS Crypto Keys](https://cloud.google.com/kms/docs/reference/rest/v1/projects.locations.keyRings.cryptoKeys)
 
@@ -735,7 +738,7 @@ Representation of [GCP KMS Crypto Keys](https://cloud.google.com/kms/docs/refere
 |                              | 2.Mark the new version as primary.                                                              |
 | rotationPeriod               | nextRotationTime will be advanced by this period when the service automatically rotates a key.  |
 
-### Relationships
+#### Relationships
 
 - GCP Crypto Keys are defined in GCP Keyrings
 
