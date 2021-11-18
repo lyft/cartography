@@ -100,6 +100,8 @@
   - [Relationships](#relationships-46)
 - [AzureContainerGroup](#azurecontainergroup)
   - [Relationships](#relationships-47)
+- [AzureContainer](#azurecontainer)
+  - [Relationships](#relationships-48)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -1408,15 +1410,35 @@ Representation of an [AzureContainerGroup](https://docs.microsoft.com/en-us/rest
 |-------|-------------|
 |firstseen| Timestamp of when a sync job discovered this node|
 |lastupdated| Timestamp of the last time the node was updated|
-|**id**| The Azure Cluster ID number|
+|**id**| The Azure Container Group ID number|
 |type | The type of the resource|
-|location | The location where Cluster is created|
-|resourcegroup | The Resource Group where Cluster is created|
+|location | The location where Container Group is created|
+|resourcegroup | The Resource Group where Container Group is created|
 
 ### Relationships
 
-- Azure Subscription contains one or more Clusters.
+- Azure Subscription contains one or more Container Groups.
 
         ```
         (AzureSubscription)-[RESOURCE]->(AzureContainerGroup)
+        ```
+
+## AzureContainer
+
+Representation of an [AzureContainer](https://docs.microsoft.com/en-us/rest/api/container-instances/container-groups/list).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|name | The friendly name that identifies the Container|
+|type | The type of the resource|
+|resourcegroup | The Resource Group where Container is created|
+
+### Relationships
+
+- Azure Container Group contains one or more Container.
+
+        ```
+        (AzureContainerGroup)-[CONTAIN]->(AzureContainer)
         ```
