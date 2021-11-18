@@ -35,7 +35,7 @@
 - [IpRule::IpPermissionInbound::GCPIpRule](#ipruleippermissioninboundgcpiprule)
   - [Relationships](#relationships-14)
 - [IpRange](#iprange)
-  -[Relationshipe](#relationships15)
+  -[Relationships](#relationships15)
 - [GCPKMS](#gcpkms)
   - [Relationships](#relationships-24)
   - [Relationships](#relationships-25)
