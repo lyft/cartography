@@ -82,6 +82,7 @@ def aws_handle_regions(func):
         'UnrecognizedClientException',
         'InvalidClientTokenId',
         'AuthFailure',
+        'AccessDenied',
     ]
 
     def inner_function(*args, **kwargs):
