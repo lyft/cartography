@@ -95,6 +95,12 @@ CREATE INDEX ON :GCPFunction(id)
 CREATE INDEX ON :GCPKMSLocation(id);
 CREATE INDEX ON :GCPKMSKeyring(id);
 CREATE INDEX ON :GCPKMSCryptokey(id);
+CREATE INDEX ON :GCPCloudRunAuthorizedDomains(id);
+CREATE INDEX ON :GCPCloudRunConfiguration(id);
+CREATE INDEX ON :GCPCloudRunDomainMap(id);
+CREATE INDEX ON :GCPCloudRunRevision(id);
+CREATE INDEX ON :GCPCloudRunRoute(id);
+CREATE INDEX ON :GCPCloudRunService(id);
 CREATE INDEX ON :Ip(id);
 CREATE INDEX ON :Ip(ip);
 CREATE INDEX ON :IpPermissionInbound(ruleid);

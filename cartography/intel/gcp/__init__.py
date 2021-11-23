@@ -19,15 +19,16 @@ from cartography.intel.gcp import gke
 from cartography.intel.gcp import storage
 from cartography.intel.gcp import cloudfunction
 from cartography.intel.gcp import cloudkms
+from cartography.intel.gcp import cloudrun
 from cartography.util import run_analysis_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
-Resources = namedtuple('Resources', 'compute container crm_v1 crm_v2 dns storage serviceusage cloudfunction cloudkms')
+Resources = namedtuple('Resources', 'compute container crm_v1 crm_v2 dns storage serviceusage cloudfunction cloudkms cloudrun')
 
 # Mapping of service short names to their full names as in docs. See https://developers.google.com/apis-explorer,
 # and https://cloud.google.com/service-usage/docs/reference/rest/v1/services#ServiceConfig
-Services = namedtuple('Services', 'compute storage gke dns cloudfunction cloudkms')
+Services = namedtuple('Services', 'compute storage gke dns cloudfunction cloudkms cloudrun')
 service_names = Services(
     compute='compute.googleapis.com',
     storage='storage.googleapis.com',
@@ -35,6 +36,7 @@ service_names = Services(
     dns='dns.googleapis.com',
     cloudfunction='cloudfunctions.googleapis.com',
     cloudkms='cloudkms.googleapis.com',
+    cloudrun='run.googleapis.com',
 )
 
 
@@ -137,6 +139,17 @@ def _get_cloudkms_resource(credentials: GoogleCredentials) -> Resource:
     return googleapiclient.discovery.build('cloudkms', 'v1', credentials=credentials, cache_discovery=False)
 
 
+def _get_cloudrun_resource(credentials: GoogleCredentials) -> Resource:
+    """
+    Instantiates a cloud run resource object.
+    See: https://cloud.google.com/run/docs/reference/rest
+
+    :param credentials: The GoogleCredentials object
+    :return: A serviceusage resource object
+    """
+    return googleapiclient.discovery.build('run', 'v1', credentials=credentials, cache_discovery=None)
+
+
 def _initialize_resources(credentials: GoogleCredentials) -> Resource:
     """
     Create namedtuple of all resource objects necessary for GCP data gathering.
@@ -153,6 +166,7 @@ def _initialize_resources(credentials: GoogleCredentials) -> Resource:
         dns=_get_dns_resource(credentials),
         cloudfunction=_get_cloudfunction_resource(credentials),
         cloudkms=_get_cloudkms_resource(credentials),
+        cloudrun=_get_cloudrun_resource(credentials),
     )
 
 
@@ -213,6 +227,8 @@ def _sync_single_project(
         cloudfunction.sync(neo4j_session, resources.cloudfunction, project_id, gcp_update_tag, common_job_parameters)
     if service_names.cloudkms in enabled_services:
         cloudkms.sync_kms(neo4j_session, resources.cloudkms, project_id, gcp_update_tag, common_job_parameters)
+    if service_names.cloudrun in enabled_services:
+        cloudrun.sync_cloudrun(neo4j_session, resources.cloudrun, project_id, gcp_update_tag, common_job_parameters)
 
 
 def _sync_multiple_projects(
