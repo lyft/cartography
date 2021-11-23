@@ -17,6 +17,10 @@ def run(neo4j_session, config):
 
 
 def load_cloudanix_workspace(neo4j_session, update_tag, common_job_parameters):
+    neo4j_session.write_transaction(load_cloudanix_workspace_tx, update_tag, common_job_parameters)
+
+
+def load_cloudanix_workspace_tx(tx, update_tag, common_job_parameters):
     query = """
     MERGE (w:CloudanixWorkspace{id: {WORKSPACE_ID}})
     ON CREATE SET w.firstseen = timestamp(), w.lastupdated = {UPDATE_TAG},
@@ -24,7 +28,7 @@ def load_cloudanix_workspace(neo4j_session, update_tag, common_job_parameters):
     SET w.lastupdated = {UPDATE_TAG}, w.name = {WORKSPACE_NAME}, w.account_id= {WORKSPACE_ACCOUNT_ID}
     """
 
-    neo4j_session.run(
+    tx.run(
         query,
         WORKSPACE_ID=common_job_parameters['WORKSPACE_ID'],
         WORKSPACE_NAME=common_job_parameters['WORKSPACE_NAME'],
