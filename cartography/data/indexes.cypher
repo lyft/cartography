@@ -180,3 +180,4 @@ CREATE INDEX ON :AzureSnapshot(id);
 CREATE INDEX ON :AzureVirtualMachineExtension(id);
 CREATE INDEX ON :AzureVirtualMachineAvailableSize(id);
 CREATE INDEX ON :AzureVirtualMachineScaleSet(id);
+CREATE INDEX ON :AzureVirtualMachineScaleSetExtension(id);

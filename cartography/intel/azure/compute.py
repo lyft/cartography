@@ -6,7 +6,8 @@ import neo4j
 from azure.core.exceptions import HttpResponseError
 from azure.mgmt.compute import ComputeManagementClient
 
-from .util.credentials import Credentials
+from util.credentials import Credentials
+from util.credentials import Authenticator
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
@@ -23,6 +24,10 @@ def load_vm_available_sizes(session: neo4j.Session, data_list: List[Dict], updat
 
 def load_vm_scale_sets(session: neo4j.Session, subscription_id: str, data_list: List[Dict], update_tag: int) -> None:
     session.write_transaction(_load_vm_scale_sets_tx, subscription_id, data_list, update_tag)
+
+
+def load_vm_scale_sets_extensions(session: neo4j.Session, data_list: List[Dict], update_tag: int) -> None:
+    session.write_transaction(_load_vm_scale_sets_extensions_tx, data_list, update_tag)
 
 
 def get_client(credentials: Credentials, subscription_id: str) -> ComputeManagementClient:
@@ -237,9 +242,67 @@ def sync_vm_scale_sets(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
     common_job_parameters: Dict,
 ) -> None:
+    client = get_client(credentials, subscription_id)
     vm_scale_sets_list = get_vm_scale_sets_list(credentials, subscription_id)
     load_vm_scale_sets(neo4j_session, subscription_id, vm_scale_sets_list, update_tag)
     cleanup_vm_scale_sets(neo4j_session, common_job_parameters)
+    sync_virtual_machine_scale_sets_extensions(
+        neo4j_session, client, vm_scale_sets_list, update_tag, common_job_parameters)
+
+
+def get_vm_scale_sets_extensions_list(vm_scale_sets_list: List[Dict], client: ComputeManagementClient) -> List[Dict]:
+    try:
+        vm_scale_sets_extensions_list = []
+        for set in vm_scale_sets_list:
+            vm_scale_sets_extensions_list = vm_scale_sets_extensions_list + \
+                list(map(lambda x: x.as_dict(), client.virtual_machine_scale_set_extensions.list(
+                    resource_group_name=set['resource_group'], vm_name=set['name'])))
+
+        for extension in vm_scale_sets_extensions_list:
+            x = extension['id'].split('/')
+            extension['resource_group'] = x[x.index('resourceGroups') + 1]
+            extension['set_id'] = extension['id'][:extension['id'].index("/extensions")]
+
+        return vm_scale_sets_extensions_list
+
+    except HttpResponseError as e:
+        logger.warning(f"Error while retrieving virtual machine scale set extensions- {e}")
+        return []
+
+
+def _load_vm_scale_sets_extensions_tx(tx: neo4j.Transaction, vm_scale_sets_extensions_list: List[Dict], update_tag: int) -> None:
+    ingest_vm_scale_sets_extension = """
+    UNWIND {vm_scale_sets_extensions_list} AS extension
+    MERGE (v:AzureVirtualMachineScaleSetExtension{id: extension.id})
+    ON CREATE SET v.firstseen = timestamp()
+    SET v.lastupdated = {update_tag}, v.name = extension.name,
+    v.type = extension.type
+    WITH v,extension
+    MATCH (owner:AzureVirtualMachineScaleSet{id: extension.set_id})
+    MERGE (owner)-[r:CONTAIN]->(v)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {update_tag}
+    """
+
+    tx.run(
+        ingest_vm_scale_sets_extension,
+        vm_scale_sets_extensions_list=vm_scale_sets_extensions_list,
+        update_tag=update_tag,
+    )
+
+
+def cleanup_virtual_machine_scale_sets_extensions(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('azure_import_virtual_machines_scale_sets_extensions_cleanup.json',
+                    neo4j_session, common_job_parameters)
+
+
+def sync_virtual_machine_scale_sets_extensions(
+    neo4j_session: neo4j.Session, client: ComputeManagementClient, vm_list: List[Dict], update_tag: int,
+    common_job_parameters: Dict,
+) -> None:
+    vm_scale_sets_extensions_list = get_vm_scale_sets_extensions_list(vm_list, client)
+    load_vm_scale_sets_extensions(neo4j_session, vm_scale_sets_extensions_list, update_tag)
+    cleanup_virtual_machine_scale_sets_extensions(neo4j_session, common_job_parameters)
 
 
 def load_vm_data_disks(neo4j_session: neo4j.Session, vm_id: str, data_disks: List[Dict], update_tag: int) -> None:
@@ -406,3 +469,10 @@ def sync(
     sync_vm_scale_sets(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
     sync_disk(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
     sync_snapshot(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
+
+
+if __name__ == "__main__":
+    credentials = Authenticator.authenticate_cli(self="")
+    subscription_id = Credentials.get_subscription_id(credentials)
+    credentials = Credentials.get_credentials(credentials, resource="arm")
+    print(get_vm_list(credentials, subscription_id))
