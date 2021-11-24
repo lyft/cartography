@@ -6,8 +6,7 @@ import neo4j
 from azure.core.exceptions import HttpResponseError
 from azure.mgmt.compute import ComputeManagementClient
 
-from util.credentials import Credentials
-from util.credentials import Authenticator
+from .util.credentials import Credentials
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
@@ -469,10 +468,3 @@ def sync(
     sync_vm_scale_sets(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
     sync_disk(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
     sync_snapshot(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
-
-
-if __name__ == "__main__":
-    credentials = Authenticator.authenticate_cli(self="")
-    subscription_id = Credentials.get_subscription_id(credentials)
-    credentials = Credentials.get_credentials(credentials, resource="arm")
-    print(get_vm_list(credentials, subscription_id))
