@@ -86,6 +86,8 @@
   - [Relationships](#relationships-39)
 - [AzureCosmosDBMongoDBCollection](#azurecosmosdbmongodbcollection)
   - [Relationships](#relationships-40)
+- [AzureKeyVault](#azurekeyvault)
+  - [Relationships](#relationships-41)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -1259,3 +1261,26 @@ Representation of an [AzureCosmosDBMongoDBCollection](https://docs.microsoft.com
         ```
         (AzureCosmosDBMongoDBDatabase)-[CONTAINS]->(AzureCosmosDBMongoDBCollection)
         ```
+
+## AzureKeyVault
+
+Representation of an [AzureKeyVault](https://docs.microsoft.com/en-us/rest/api/keyvault/vaults/list-by-subscription#vault).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The Azure Key Vault ID number|
+|type | The type of the resource|
+|location | The location where Key Vault is created|
+|resourcegroup | The Resource Group where Key Vault is created|
+|name | The name of the Azure Key Vault resource.|
+
+### Relationships
+
+- Azure Subscription contains one or more Key Vaults.
+
+        ```
+        (AzureSubscription)-[RESOURCE]->(AzureKeyVault)
+        ```
+        
