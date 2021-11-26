@@ -36,7 +36,7 @@ Start [here](docs/setup/install.md).
 
 ## Supported platforms
 - [Amazon Web Services](docs/setup/config/aws.md) -  API Gateway, EC2, Elasticsearch, Elastic Kubernetes Service, DynamoDB, IAM, KMS, Lambda, RDS, Redshift, Route53, S3, STS, Tags
-- [Google Cloud Platform](docs/setup/config/gcp.md) - Cloud Resource Manager, Compute, DNS, Storage, Google Kubernetes Engine
+- [Google Cloud Platform](docs/setup/config/gcp.md) - Cloud Resource Manager, Compute, DNS, Storage, Google Kubernetes Engine, IAM
 - [Google GSuite](docs/setup/config/gsuite.md) - users, groups
 - [Duo CRXcavator](docs/setup/config/crxcavator.md) - Chrome extensions, GSuite users
 - [Okta](docs/setup/config/okta.md) - users, groups, organizations, roles, applications, factors, trusted origins, reply URIs

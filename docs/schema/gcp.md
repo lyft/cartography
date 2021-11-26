@@ -35,6 +35,16 @@
 - [IpRule::IpPermissionInbound::GCPIpRule](#ipruleippermissioninboundgcpiprule)
   - [Relationships](#relationships-14)
 - [IpRange](#iprange)
+  - [Relationships](#relationships-15)
+- [GCP IAM](#gcp-iam)
+  - [GCP IAM Roles](#gcp-iam-roles)
+    - [Relationships](#relationships-16)
+  - [GCP IAM Workloadidentitypools](#gcp-iam-workloadidentitypools)
+    - [Relationships](#relationships-17)
+  - [GCP IAM Workloadidentitypoolsproviders](#gcp-iam-workloadidentitypoolsproviders)
+    - [Relationships](#relationships-18)
+  - [GCP IAM Service Accounts](#gcp-iam-service-accounts)
+    - [Relationships](#relationships-19)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -670,8 +680,91 @@ Representation of an IP range or subnet.
 | lastupdated | Timestamp of the last time the node was updated                          |
 | id          | CIDR notation for the IP range. E.g. "0.0.0.0/0" for the whole internet. |
 
+
+### Relationships
+
 - GCP Firewall rules are defined on IpRange objects.
 
 	```
 	(GCPIpRule, IpRule, IpPermissionInbound)<-[MEMBER_OF_IP_RULE)-(:IpRange)
 	```
+
+
+## GCP IAM
+
+### GCP IAM Roles
+
+Representation of [GCP IAM Roles](https://cloud.google.com/iam/docs/reference/rest/v1/roles)
+
+| Field           | Description                                                                |
+|-----------------|----------------------------------------------------------------------------|
+| name            | The name of the role.                                                      |
+| title           | A human-readable title for the role.                                       |
+| stage           | The current launch stage of the role.                                      |
+| deleted         | The current deleted state of the role.                                     |
+
+#### Relationships
+
+- GCP IAM roles are defined in GCP Projects
+
+    ```
+    (GCPProjects)-[RESOURCE]->(GCPIAMRoles)
+    ```
+
+### GCP IAM Workloadidentitypools
+
+Representation of [GCP IAM Workloadidentitypools](https://cloud.google.com/iam/docs/reference/rest/v1/projects.locations.workloadIdentityPools)
+
+| Field           | Description                                             |
+|-----------------|---------------------------------------------------------|
+| name            | The resource name of the pool.                          |
+| displayName     | A display name for the pool.                            |
+| state           | The state of the pool.                                  |
+| disabled        | Whether the pool is disabled.                           |
+
+#### Relationships
+
+- GCP IAM Workloadidentitypools are defined in GCP Projects
+
+    ```
+    (GCPProjects)-[RESOURCE]->(GCPIAMWorkloadidentitypools)
+    ```
+
+### GCP IAM Workloadidentitypoolsproviders
+
+Representation of [GCP IAM Workloadidentitypoolsproviders](https://cloud.google.com/iam/docs/reference/rest/v1/projects.locations.workloadIdentityPools.providers)
+
+| Field               | Description                                                     |
+|---------------------|-----------------------------------------------------------------|
+| name                | The resource name of the provider.                              |
+| displayName         | A display name for the provider.                                |
+| state               | The state of the provider.                                      |
+| disabled            | Whether the provider is disabled.                               |
+
+#### Relationships
+
+- GCP Workloadidentitypools Providers are defined in Workloadidentitypools
+
+    ```
+    (GCPWorkloadidentitypools)-[PROVIDES]->(GCPWorkloadidentitypoolsproviders)
+    ```
+
+### GCP IAM Service Accounts
+
+Representation of [GCP IAM Service Accounts](https://cloud.google.com/iam/docs/reference/rest/v1/projects.serviceAccounts)
+
+| Field                 | Description                                                           |
+|-----------------------|-----------------------------------------------------------------------|
+| name                  | The resource name of the service account.                             |
+| projectId             | The ID of the project that owns the service account.                  |
+| uniqueId              | The unique, stable numeric ID for the service account.                |
+| displayName           | A user-specified, human-readable name for the service account.        |
+| disabled              | Whether the service account is disabled.                              |
+
+#### Relationships
+
+- GCP IAM Service Accounts are defined in GCP Projects
+
+    ```
+    (GCPProjects)-[RESOURCE]->(GCPIAMServiceAccounts)
+    ```
