@@ -91,16 +91,16 @@ def fetch_all(
             retry += 1
         except requests.exceptions.ChunkedEncodingError:
             retry += 1
-        finally:
-            if retry >= retries:
-                logger.error(
-                    f"GitHub: Could not retrieve page of resource `{resource_type}` due to HTTP error.",
-                    exc_info=True,
-                )
-                raise
-            elif retry > 0:
-                time.sleep(1 * retry)
-                continue
+
+        if retry >= retries:
+            logger.error(
+                f"GitHub: Could not retrieve page of resource `{resource_type}` due to HTTP error.",
+                exc_info=True,
+            )
+            raise
+        elif retry > 0:
+            time.sleep(1 * retry)
+            continue
 
         resource = resp['data']['organization'][resource_type]
         data.extend(resource[field_name])
