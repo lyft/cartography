@@ -86,6 +86,14 @@
   - [Relationships](#relationships-39)
 - [AzureCosmosDBMongoDBCollection](#azurecosmosdbmongodbcollection)
   - [Relationships](#relationships-40)
+- [AzureUser](#azureuser)
+  - [Relationships](#relationships-41)
+- [AzureGroup](#azuregroup)
+  - [Relationships](#relationships-42)
+- [AzureApplication](#azureapplication)
+  - [Relationships](#relationships-43)
+- [AzureServiceAccount](#azureserviceaccount)
+  - [Relationships](#relationships-44)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -1258,4 +1266,92 @@ Representation of an [AzureCosmosDBMongoDBCollection](https://docs.microsoft.com
 
         ```
         (AzureCosmosDBMongoDBDatabase)-[CONTAINS]->(AzureCosmosDBMongoDBCollection)
+        ```
+
+## AzureUser
+
+Representation of an [AzureUser](https://docs.microsoft.com/en-us/graph/api/user-list?view=graph-rest-1.0&tabs=http)
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|display_name | The name displayed in the address book for the user|
+|given_name | The given name (first name) of the user|
+|surname| The user's surname |
+|user_type| A string value that can be used to classify user types in your directory, such as Member and Guest|
+|mobile | The primary cellular telephone number for the user|
+|user_principal_name | The user principal name (UPN) of the user|
+
+### Relationships
+
+- Azure Tenant contains one or more Azure Users.
+
+        ```
+        (AzureTenant)-[RESOURCE]->(AzureUser)
+        ```
+
+## AzureGroup
+
+Representation of an [AzureGroup](https://docs.microsoft.com/en-us/graph/api/group-list?view=graph-rest-1.0&tabs=http)
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The unique resource identifier of the Azure Group resource.|
+|visibility | Specifies the group join policy and group content visibility for groups|
+|classification | Describes a classification for the group|
+|createdDateTime| Timestamp of when the group was created|
+|securityEnabled| Specifies whether the group is a security group|
+|mail | The SMTP address for the group|
+
+### Relationships
+
+- Azure Tenant contains one or more Azure Groups.
+
+        ```
+        (AzureTenant)-[RESOURCE]->(AzureGroup)
+        ```
+
+## AzureApplication
+
+Representation of an [AzureApplication](https://docs.microsoft.com/en-us/graph/api/application-list?view=graph-rest-1.0&tabs=http)
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The unique resource identifier of the Azure Group resource.|
+|displayName | The display name for the application|
+|publisherDomain | The verified publisher domain for the application|
+|signInAudience| Specifies the Microsoft accounts that are supported for the current application|
+
+### Relationships
+
+- Azure Tenant contains one or more Azure Applications.
+
+        ```
+        (AzureTenant)-[RESOURCE]->(AzureApplication)
+        ```
+
+## AzureServiceAccount
+
+Representation of an [AzureServiceAccount](https://docs.microsoft.com/en-us/graph/api/serviceprincipal-list?view=graph-rest-1.0&tabs=http)
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|displayName | The display name for the account|
+|accountEnabled | true if the service principal account is enabled; otherwise, false|
+|servicePrincipalType| Identifies whether the service principal represents an application|
+|signInAudience| Specifies the Microsoft accounts that are supported for the current application|
+
+### Relationships
+
+- Azure Tenant contains one or more Azure Service Accounts.
+
+        ```
+        (AzureTenant)-[RESOURCE]->(AzureServiceAccount)
         ```
