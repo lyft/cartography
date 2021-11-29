@@ -11,5 +11,5 @@
             "iterationsize": 100
         }
     ],
-    "name": "cleanup Azure Groups"
+    "name": "cleanup Azure Applications"
 }
