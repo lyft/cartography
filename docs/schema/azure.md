@@ -94,6 +94,8 @@
   - [Relationships](#relationships-43)
 - [AzureServiceAccount](#azureserviceaccount)
   - [Relationships](#relationships-44)
+- [AzureDomain](#azuredomain)
+  - [Relationships](#relationships-45)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -1354,4 +1356,26 @@ Representation of an [AzureServiceAccount](https://docs.microsoft.com/en-us/grap
 
         ```
         (AzureTenant)-[RESOURCE]->(AzureServiceAccount)
+        ```
+
+## AzureDomain
+
+Representation of an [AzureDomain](https://docs.microsoft.com/en-us/graph/api/domain-list?view=graph-rest-1.0&tabs=http)
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The unique resource identifier of the Azure domain resource.|
+|isRoot | true if the domain is a verified root domain|
+|isInitial | true if this is the initial domain created by Microsoft Online Services|
+|authenticationType| ndicates the configured authentication type for the domain|
+|availabilityStatus| This property is always null except when the verify action is used|
+
+### Relationships
+
+- Azure Tenant contains one or more Azure Domains.
+
+        ```
+        (AzureTenant)-[RESOURCE]->(AzureDomain)
         ```

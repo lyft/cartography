@@ -83,7 +83,7 @@ DESCRIBE_GROUPS = [
         "theme": None,
         "visibility": None,
         "onPremisesProvisioningErrors": [],
-    }
+    },
 ]
 
 
@@ -101,7 +101,7 @@ DESCRIBE_APPLICATIONS = [
         "displayName": "My app2",
         "publisherDomain": "contoso.com",
         "signInAudience": "AzureADMyOrg",
-    }
+    },
 ]
 
 
@@ -116,6 +116,35 @@ DESCRIBE_SERVICE_ACCOUNTS = [
         "accountEnabled": True,
         "displayName": "amasf2",
         "servicePrincipalType": "Application",
-        "signInAudience": "AzureADMyOrg"
-    }
+        "signInAudience": "AzureADMyOrg",
+    },
+]
+
+DESCRIBE_DOMAINS = [
+    {
+        "authenticationType": "authenticationType-value",
+        "availabilityStatus": "availabilityStatus-value",
+        "isAdminManaged": True,
+        "isDefault": True,
+        "isInitial": True,
+        "isRoot": True,
+        "id": "contoso1.com",
+        "supportedServices": [
+            "Email",
+            "OfficeCommunicationsOnline",
+        ],
+    },
+    {
+        "authenticationType": "authenticationType-value",
+        "availabilityStatus": "availabilityStatus-value",
+        "isAdminManaged": True,
+        "isDefault": True,
+        "isInitial": True,
+        "isRoot": True,
+        "id": "contoso2.com",
+        "supportedServices": [
+            "Email",
+            "OfficeCommunicationsOnline",
+        ],
+    },
 ]

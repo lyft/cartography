@@ -3,6 +3,7 @@ from tests.data.azure.iam import DESCRIBE_USERS
 from tests.data.azure.iam import DESCRIBE_GROUPS
 from tests.data.azure.iam import DESCRIBE_APPLICATIONS
 from tests.data.azure.iam import DESCRIBE_SERVICE_ACCOUNTS
+from tests.data.azure.iam import DESCRIBE_DOMAINS
 
 TEST_TENANT_ID = '00-00-00-00'
 TEST_UPDATE_TAG = 123456789
@@ -248,5 +249,66 @@ def test_load_service_account_relationships(neo4j_session):
         """, )
 
     actual = {(r['n1.id'], r['n2.name']) for r in result}
+
+    assert actual == expected
+
+
+def test_load_domains(neo4j_session):
+    iam.load_tenant_domains(
+        neo4j_session,
+        TEST_TENANT_ID,
+        DESCRIBE_DOMAINS,
+        TEST_UPDATE_TAG,
+    )
+
+    expected_nodes = {
+        "contoso1.com",
+        "contoso2.com",
+    }
+
+    nodes = neo4j_session.run(
+        """
+        MATCH (r:AzureDomain) RETURN r.id;
+        """, )
+    actual_nodes = {n['r.id'] for n in nodes}
+
+    assert actual_nodes == expected_nodes
+
+
+def test_load_domain_relationships(neo4j_session):
+    neo4j_session.run(
+        """
+        MERGE (as:AzureTenant{id: {tenant_id}})
+        ON CREATE SET as.firstseen = timestamp()
+        SET as.lastupdated = {update_tag}
+        """,
+        tenant_id=TEST_TENANT_ID,
+        update_tag=TEST_UPDATE_TAG,
+    )
+
+    iam.load_tenant_domains(
+        neo4j_session,
+        TEST_TENANT_ID,
+        DESCRIBE_DOMAINS,
+        TEST_UPDATE_TAG,
+    )
+
+    expected = {
+        (
+            TEST_TENANT_ID,
+            "contoso2.com",
+        ),
+        (
+            TEST_TENANT_ID,
+            "contoso2.com",
+        ),
+    }
+
+    result = neo4j_session.run(
+        """
+        MATCH (n1:AzureTenant)-[:RESOURCE]->(n2:AzureDomain) RETURN n1.id, n2.id;
+        """, )
+
+    actual = {(r['n1.id'], r['n2.id']) for r in result}
 
     assert actual == expected

@@ -30,6 +30,10 @@ def load_tenant_service_accounts(session: neo4j.Session, tenant_id: str, data_li
     session.write_transaction(_load_tenant_service_accounts_tx, tenant_id, data_list, update_tag)
 
 
+def load_tenant_domains(session: neo4j.Session, tenant_id: str, data_list: List[Dict], update_tag: int) -> None:
+    session.write_transaction(_load_tenant_domains_tx, tenant_id, data_list, update_tag)
+
+
 @timeit
 def get_graph_client(credentials: Credentials, tenant_id: str) -> GraphRbacManagementClient:
     client = GraphRbacManagementClient(credentials, tenant_id)
@@ -241,6 +245,57 @@ def sync_tenant_service_accounts(
     cleanup_tenant_service_accounts(neo4j_session, common_job_parameters)
 
 
+@timeit
+def get_tenant_domains_list(client: GraphRbacManagementClient) -> List[Dict]:
+    try:
+        tenant_domains_list = list(map(lambda x: x.as_dict(), client.domains.list()))
+
+        return tenant_domains_list
+
+    except HttpResponseError as e:
+        logger.warning(f"Error while retrieving tenant domains - {e}")
+        return []
+
+
+def _load_tenant_domains_tx(tx: neo4j.Transaction, tenant_id: str, tenant_domains_list: List[Dict], update_tag: int) -> None:
+    ingest_domain = """
+    UNWIND {tenant_domains_list} AS domain
+    MERGE (i:AzureDomain{id: domain.id})
+    ON CREATE SET i.firstseen = timestamp(),
+    i.isRoot = domain.isRoot,
+    i.isInitial = domain.isInitial
+    SET i.lastupdated = {update_tag},
+    i.authenticationType = domain.authenticationType
+    i.availabilityStatus = domain.availabilityStatus
+    WITH i
+    MATCH (owner:AzureTenant{id: {tenant_id}})
+    MERGE (owner)-[r:RESOURCE]->(i)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {update_tag}
+    """
+
+    tx.run(
+        ingest_domain,
+        tenant_domains_list=tenant_domains_list,
+        tenant_id=tenant_id,
+        update_tag=update_tag,
+    )
+
+
+def cleanup_tenant_domains(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('azure_import_tenant_domains_cleanup.json', neo4j_session, common_job_parameters)
+
+
+def sync_tenant_domains(
+    neo4j_session: neo4j.Session, credentials: Credentials, tenant_id: str, update_tag: int,
+    common_job_parameters: Dict,
+) -> None:
+    client = get_graph_client(credentials, tenant_id)
+    tenant_domains_list = get_tenant_domains_list(client)
+    load_tenant_domains(neo4j_session, tenant_id, tenant_domains_list, update_tag)
+    cleanup_tenant_domains(neo4j_session, common_job_parameters)
+
+
 @ timeit
 def sync(
     neo4j_session: neo4j.Session, credentials: Credentials, tenant_id: str, update_tag: int,
@@ -252,3 +307,4 @@ def sync(
     sync_tenant_groups(neo4j_session, credentials, tenant_id, update_tag, common_job_parameters)
     sync_tenant_applications(neo4j_session, credentials, tenant_id, update_tag, common_job_parameters)
     sync_tenant_service_accounts(neo4j_session, credentials, tenant_id, update_tag, common_job_parameters)
+    sync_tenant_domains(neo4j_session, credentials, tenant_id, update_tag, common_job_parameters)
