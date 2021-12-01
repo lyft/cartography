@@ -177,3 +177,5 @@ CREATE INDEX ON :AzureVirtualMachine(id);
 CREATE INDEX ON :AzureDataDisk(id);
 CREATE INDEX ON :AzureDisk(id);
 CREATE INDEX ON :AzureSnapshot(id);
+CREATE INDEX ON :AzureResourceGroup(id);
+CREATE INDEX ON :AzureTag(id);
