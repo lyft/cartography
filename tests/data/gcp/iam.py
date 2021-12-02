@@ -2,42 +2,20 @@ IAM_ROLES = [
     {
         'name': 'projects/project123/roles/logging.viewer',
         'title': 'logging.viewer',
-        'stage': 'GA',
-        'deleted': False
+        'description': 'Can view logs',
+        'deleted': False,
+        'includedPermissions': {
+            'logging.buckets.get'
+        }
     },
     {
         'name': 'projects/project123/roles/compute.viewer',
         'title': 'compute.viewer',
-        'stage': 'GA',
-        'deleted': False
-    }
-]
-IAM_WORKLOADIDENTITYPOOLS = [
-    {
-        'name': 'workloadidentitypool123',
-        'displayName': 'pool123',
-        'state': 'ACTIVE',
-        'disabled': False
-    },
-    {
-        'name': 'workloadidentitypool456',
-        'displayName': 'pool456',
-        'state': 'ACTIVE',
-        'disabled': False
-    }
-]
-IAM_WORKLOADIDENTITYPOOLPROVIDERS = [
-    {
-        'name': 'workloadidentitypoolprovider123',
-        'dispalyName': 'provider123',
-        'state': 'ACTIVE',
-        'disabled': False
-    },
-    {
-        'name': 'workloadidentitypoolprovider456',
-        'dispalyName': 'provider456',
-        'state': 'ACTIVE',
-        'disabled': False
+        'description': 'Can view compute instances',
+        'deleted': False,
+        'includedPermissions': {
+            'compute.instances.get'
+        }
     }
 ]
 IAM_SERVICE_ACCOUNTS = [
@@ -54,5 +32,107 @@ IAM_SERVICE_ACCOUNTS = [
         'uniqueId': 'defgproject123',
         'displayName': 'defg',
         'disabled': False
+    }
+]
+IAM_SERVICE_ACCOUNT_KEYS = [
+    {
+        'name': 'abc@gmail.com/key123',
+        'keyType': 'USER_MANAGED',
+        'keyOrigin': 'USER_PROVIDED',
+        'keyAlgorithm': 'KEY_ALG_RSA_2048',
+        'validBeforeTime': '2019-10-02T15:01:23Z',
+        'validAfterTime': '2020-10-02T15:01:23Z'
+    },
+    {
+        'name': 'defg@gmail.com/key456',
+        'keyType': 'SYSTEM_MANAGED',
+        'keyOrigin': 'GOOGLE_PROVIDED',
+        'keyAlgorithm': 'KEY_ALG_RSA_2048',
+        'validBeforeTime': '2019-10-02T15:01:23Z',
+        'validAfterTime': '2020-10-02T15:01:23Z'
+    }
+]
+IAM_USERS = [
+    {
+        'id': 'user123',
+        'primaryEmail': 'abc@example.com',
+        'isAdmin': False,
+        'isDelegatedAdmin': False,
+        'agreedToTerms': True,
+        'suspended': False,
+        'changePasswordAtNextLogin': False,
+        'ipWhitelisted': True,
+        'name': {
+            'fullName': 'abc',
+            'familyName': '123',
+            'givenName': 'abc'
+        },
+        'isMailboxSetup': True,
+        'customerId': 'customer123',
+        'addresses': 'street123',
+        'organizations': 'org123',
+        'lastLoginTime': '2020-10-02T15:01:23Z',
+        'suspensionReason': [],
+        'creationTime': '2019-10-02T15:01:23Z',
+        'deletionTime': '2021-10-02T15:01:23Z',
+        'gender': 'Male'
+    },
+    {
+        'id': 'user456',
+        'primaryEmail': 'def@example.com',
+        'isAdmin': False,
+        'isDelegatedAdmin': False,
+        'agreedToTerms': True,
+        'suspended': False,
+        'changePasswordAtNextLogin': False,
+        'ipWhitelisted': True,
+        'name': {
+            'fullName': 'def',
+            'familyName': '456',
+            'givenName': 'def'
+        },
+        'isMailboxSetup': True,
+        'customerId': 'customer123',
+        'addresses': 'street456',
+        'organizations': 'org456',
+        'lastLoginTime': '2020-10-02T15:01:23Z',
+        'suspensionReason': [],
+        'creationTime': '2020-01-01T15:01:23Z',
+        'deletionTime': '2020-12-31T15:01:23Z',
+        'gender': 'Female'
+    }
+]
+IAM_GROUPS = [
+    {
+        'id': 'group123',
+        'groupEmail': 'group123@example.com',
+        'adminCreated': True,
+        'directMembersCount': 5
+    },
+    {
+        'id': 'group456',
+        'groupEmail': 'group456@example.com',
+        'adminCreated': True,
+        'directMembersCount': 10
+    }
+]
+IAM_DOMAINS = [
+    {
+        'domainAliases': {
+            'parentDomainName': 'www.xyz.com',
+            'domainAliasName': 'helloworld.com'
+        },
+        'verified': True,
+        'isPrimary': True,
+        'domainName': 'xyz.com'
+    },
+    {
+        'domainAliases': {
+            'parentDomainName': 'www.pqr.com',
+            'domainAliasName': 'hellouniverse.com'
+        },
+        'verified': True,
+        'isPrimary': True,
+        'domainName': 'pqr.com'
     }
 ]

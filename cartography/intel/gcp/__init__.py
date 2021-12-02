@@ -22,17 +22,20 @@ from cartography.util import run_analysis_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
-Resources = namedtuple('Resources', 'compute container crm_v1 crm_v2 dns storage serviceusage iam')
+Resources = namedtuple('Resources', 'compute container crm_v1 crm_v2 dns storage serviceusage iam admin')
 
 # Mapping of service short names to their full names as in docs. See https://developers.google.com/apis-explorer,
 # and https://cloud.google.com/service-usage/docs/reference/rest/v1/services#ServiceConfig
-Services = namedtuple('Services', 'compute storage gke dns iam')
+Services = namedtuple('Services', 'compute storage gke dns iam admin crm_v1 crm_v2')
 service_names = Services(
     compute='compute.googleapis.com',
     storage='storage.googleapis.com',
     gke='container.googleapis.com',
     dns='dns.googleapis.com',
     iam='iam.googleapis.com',
+    admin='admin.googleapis.com',
+    crm_v1='cloudresourcemanager.googleapis.com',
+    crm_v2='cloudresourcemanager.googleapis.com',
 )
 
 
@@ -124,6 +127,17 @@ def _get_iam_resource(credentials: GoogleCredentials) -> Resource:
     return googleapiclient.discovery.build('iam', 'v1', credentials=credentials, cache_discovery=False)
 
 
+def _get_admin_resource(credentials: GoogleCredentials) -> Resource:
+    """
+    Instantiates a Admin resource object
+    See: https://developers.google.com/admin-sdk/directory/reference/rest
+
+    :param credentails: The GoogleCredentails object
+    :return: A admin resource object
+    """
+    return googleapiclient.discovery.build('admin', 'directory_v1', credentials=credentials, cache_discovery=False)
+
+
 def _initialize_resources(credentials: GoogleCredentials) -> Resource:
     """
     Create namedtuple of all resource objects necessary for GCP data gathering.
@@ -139,6 +153,7 @@ def _initialize_resources(credentials: GoogleCredentials) -> Resource:
         serviceusage=_get_serviceusage_resource(credentials),
         dns=_get_dns_resource(credentials),
         iam=_get_iam_resource(credentials),
+        admin=_get_admin_resource(credentials),
     )
 
 
@@ -196,7 +211,7 @@ def _sync_single_project(
     if service_names.dns in enabled_services:
         dns.sync(neo4j_session, resources.dns, project_id, gcp_update_tag, common_job_parameters)
     if service_names.iam in enabled_services:
-        iam.sync_iam(neo4j_session, resources.iam, project_id, gcp_update_tag, common_job_parameters)
+        iam.sync(neo4j_session, resources.iam, resources.crm_v1, resources.admin, project_id, gcp_update_tag, common_job_parameters)
 
 
 def _sync_multiple_projects(

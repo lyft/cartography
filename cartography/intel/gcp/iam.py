@@ -9,42 +9,27 @@ from googleapiclient.discovery import Resource
 
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
-
 logger = logging.getLogger(__name__)
 
 
 @timeit
-def get_project_roles(iam: Resource, project_id: str) -> List[Dict]:
-    """
-        Returns a list of Roles within the given project .
-
-        :type iam: The GCP IAM resource object
-        :param iam: The IAM resource object created by googleapiclient.discovery.build()
-
-        :type project_id: str
-        :param project_id: Current Google Project Id
-
-        :rtype: list
-        :return: List of Project roles
-    """
+def get_users(admin: Resource) -> List[Dict]:
+    users = []
     try:
-        roles = []
-        request = iam.projects().roles().list(parent=f'projects/{project_id}')
-        while request is not None:
-            response = request.execute()
-            if response.get('roles', []):
-                for role in response['roles']:
-                    role['id'] = role['name']
-                    roles.append(role)
-            request = iam.projects().roles().list_next(previous_request=request, previous_response=response)
-        return roles
+        req = admin.users().list()
+        while req is not None:
+            res = req.execute()
+            page = res.get('users', [])
+            users.append(page)
+            req = admin.users().list_next(previous_request=req, previous_response=res)
+        return users
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
-        if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
+        if err['status'] == 'PERMISSION_DENIED':
             logger.warning(
                 (
-                    "Could not retrieve roles on project %s due to permissions issues. Code: %s, Message: %s"
-                ), project_id, err['code'], err['message'],
+                    "Could not retrieve users due to permissions issue. Code: %s, Message: %s"
+                ), err['code'], err['message'],
             )
             return []
         else:
@@ -52,37 +37,24 @@ def get_project_roles(iam: Resource, project_id: str) -> List[Dict]:
 
 
 @timeit
-def get_workloadidentitypools(iam: Resource, project_id: str) -> List[Dict]:
-    """
-        Returns a list of Workload Identity Pools within the given project .
-
-        :type iam: The GCP IAM resource object
-        :param iam: The IAM resource object created by googleapiclient.discovery.build()
-
-        :type project_id: str
-        :param project_id: Current Google Project Id
-
-        :rtype: list
-        :return: List of Workload Identity Pools
-    """
+def get_domains(admin: Resource, customer_id: str) -> List[Dict]:
+    domains = []
     try:
-        pools = []
-        request = iam.projects().locations().workloadIdentityPools.list(parent=f'projects/{project_id}/locations/*')
-        while request is not None:
-            response = request.execute()
-            if response.get('workloadIdentityPools', []):
-                for pool in response('workloadIdentityPools'):
-                    pool['id'] = f"project/{project_id}/worloadIdentityPools/{pool['name']}"
-                    pools.append(pool)
-            request = iam.projects().locations().workloadIdentityPools.list_next(previous_request=request, previous_response=response)
-        return pools
+        req = admin.domains().list(customer=customer_id)
+        while req is not None:
+            res = req.execute()
+            page = res.get('domains', [])
+            page['customer_id'] = customer_id
+            page['id'] = f"customers/{customer_id}/domains/{page['domainName']}"
+            domains.append(page)
+        return domains
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
-        if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
+        if err['status'] == 'PERMISSION_DENIED':
             logger.warning(
                 (
-                    "Could not retrieve workloadIdentityPools on project %s due to permissions issues. Code: %s, Message: %s"
-                ), project_id, err['code'], err['message'],
+                    "Could not retrieve domains due to permissions issue. Code: %s, Message: %s"
+                ), err['code'], err['message'],
             )
             return []
         else:
@@ -90,39 +62,24 @@ def get_workloadidentitypools(iam: Resource, project_id: str) -> List[Dict]:
 
 
 @timeit
-def get_workloadidentitypoolproviders(iam: Resource, pools: List[Resource], project_id: str) -> List[Dict]:
-    """
-        Returns a list of Workload Identity Pools Providers within the given project and workloadidentitypool .
-
-        :type iam: The GCP IAM resource object
-        :param iam: The IAM resource object created by googleapiclient.discovery.build()
-
-        :type project_id: str
-        :param project_id: Current Google Project Id
-
-        :rtype: list
-        :return: List of Workload Identity Pools Providers
-    """
+def get_groups(admin: Resource, customer_id: str) -> List[Dict]:
+    groups = []
     try:
-        providers = []
-        for pool in pools:
-            request = iam.projects().locations().workloadIdentityPools().providers().list(parent=f"projects/{project_id}/locations/*/worloadIdentityPools/{pool['name']}")
-            while request is not None:
-                response = request.execute()
-                if response.get('workloadIdentityPoolProviders', []):
-                    for provider in response['workloadIdentityPoolProviders']:
-                        provider['id'] = f"projects/{project_id}/workloadIdentityPools/{pool['name']}/workloadIdentityPoolsProviders/{provider['name']}"
-                        provider['pool'] = pool['name']
-                        providers.append(provider)
-                request = iam.projects().locations().workloadIdentityPools().providers().list_next(previous_request=request, previous_response=response)
-            return providers
+        req = admin.groups().list(customer=customer_id)
+        while req is not None:
+            res = req.execute()
+            page = res.get('groups', [])
+            page['customer_d'] = customer_id
+            groups.append(page)
+            req = admin.groups().list_next(previous_request=req, previous_response=res)
+        return groups
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
-        if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
+        if err['status'] == 'PERMISSION_DENIED':
             logger.warning(
                 (
-                    "Could not retrieve workloadIdentityPools providers on workload identity pools %s due to permissions issues. Code: %s, Message: %s"
-                ), project_id, err['code'], err['message'],
+                    "Could not retrieve groups due to permissions issue. Code: %s, Message: %s"
+                ), err['code'], err['message'],
             )
             return []
         else:
@@ -131,35 +88,22 @@ def get_workloadidentitypoolproviders(iam: Resource, pools: List[Resource], proj
 
 @timeit
 def get_service_accounts(iam: Resource, project_id: str) -> List[Dict]:
-    """
-        Returns a list of service accounts within a project.
-
-        :type iam: The GCP IAM resource object
-        :param iam: The IAM resource object created by googleapiclient.discovery.build()
-
-        :type project_id: str
-        :param project_id: Current Google Project Id
-
-        :rtype: list
-        :return: List of service accounts
-    """
+    service_accounts: List[Dict] = []
     try:
-        accounts = []
-        request = iam.projects().serviceAccounts().list(name=f"projects/{project_id}")
-        while request is not None:
-            response = request.execute()
-            if response.get('accounts', []):
-                for account in response['accounts']:
-                    account['id'] = account['name']
-                    accounts.append(account)
-            request = iam.projects().serviceAccounts().list_next(previous_request=request, previous_response=response)
-        return accounts
+        req = iam.projects().serviceAccounts().list(name='projects/{}'.format(project_id))
+        while req is not None:
+            res = req.execute()
+            page = res.get('accounts', [])
+            page['id'] = res['name']
+            service_accounts.extend(page)
+            req = iam.projects().serviceAccounts().list_next(previous_request=req, previous_response=res)
+        return service_accounts
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
-        if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
+        if err['status'] == 'PERMISSION_DENIED':
             logger.warning(
                 (
-                    "Could not retrieve service accounts on projects %s due to permissions issues. Code: %s, Message: %s"
+                    "Could not retrieve IAM Policy on project %s due to permissions issue. Code: %s, Message: %s"
                 ), project_id, err['code'], err['message'],
             )
             return []
@@ -168,240 +112,531 @@ def get_service_accounts(iam: Resource, project_id: str) -> List[Dict]:
 
 
 @timeit
-def load_iam_roles(session: neo4j.Session, data_list: List[Dict], project_id: str, update_tag: int) -> None:
-    session.write_transaction(_load_iam_roles_tx, data_list, project_id, update_tag)
+def transform_service_accounts(service_accounts: List[Dict]) -> List[Dict]:
+    for account in service_accounts:
+        account['firstName'] = account['name'].split('@')[0]
+
+    return service_accounts
 
 
 @timeit
-def _load_iam_roles_tx(tx: neo4j.Transaction, roles: List[Dict], project_id: str, gcp_update_tag: int) -> None:
-    """
-        :type neo4j_transaction: Neo4j transaction object
-        :param neo4j transaction: The Neo4j transaction object
+def get_service_account_keys(iam: Resource, project_id: str, service_account: str) -> List[Dict]:
+    service_keys: List[Dict] = []
+    try:
+        res = iam.projects().serviceAccounts().keys().list(name=service_account).execute()
+        keys = res.get('keys', [])
+        for key in keys:
+            key['id'] = key['name'].split('/')[-1]
+            key['serviceaccount'] = service_account
 
-        :type roles_resp: List
-        :param roles_resp: A list GCP IAM roles
+        service_keys.extend(keys)
 
-        :type project_id: str
-        :param project_id: Current Google Project Id
-
-        :type gcp_update_tag: timestamp
-        :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
-    """
-    ingest_iam_roles = """
-    UNWIND{roles} as rl
-    MERGE (roles:GCPIAMRole{id:rl.id})
-    ON CREATE SET
-        role.firstseen = timestamp()
-    SET
-        role.name = rl.name,
-        role.title = rl.title,
-        role.stage = rl.stage,
-        role.deleted = rl.deleted
-    WITH roles,rl
-    MATCH (owner:GCPProject{id:{ProjectId}})
-    MERGE (owner)-[r:RESOURCE]->(role)
-    ON CREATE SET
-        r.firstseen = timestamp(),
-        r.lastupdated = {gcp_update_tag}
-    """
-    tx.run(
-        ingest_iam_roles,
-        roles=roles,
-        ProjectId=project_id,
-        gcp_update_tag=gcp_update_tag,
-    )
+        return service_keys
+    except HttpError as e:
+        err = json.loads(e.content.decode('utf-8'))['error']
+        if err['status'] == 'PERMISSION_DENIED':
+            logger.warning(
+                (
+                    "Could not retrieve Keys on project %s & account %s due to permissions issue. Code: %s, Message: %s"
+                ), project_id, service_account, err['code'], err['message'],
+            )
+            return []
+        else:
+            raise
 
 
 @timeit
-def load_workloadidentitypools(session: neo4j.Session, data_list: List[Dict], project_id: str, update_tag: int) -> None:
-    session.write_transaction(_load_workloadidentitypools_tx, data_list, project_id, update_tag)
+def get_roles(iam: Resource, project_id: str) -> List[Dict]:
+    roles: List[Dict] = []
+    try:
+        req = iam.roles().list(view="FULL")
+        while req is not None:
+            res = req.execute()
+            page = res.get('roles', [])
+            roles.extend(page)
+            req = iam.roles().list_next(previous_request=req, previous_response=res)
+        return roles
+    except HttpError as e:
+        err = json.loads(e.content.decode('utf-8'))['error']
+        if err['status'] == 'PERMISSION_DENIED':
+            logger.warning(
+                (
+                    "Could not retrieve IAM Policy on project %s due to permissions issue. Code: %s, Message: %s"
+                ), project_id, err['code'], err['message'],
+            )
+            return []
+        else:
+            raise
 
 
 @timeit
-def _load_workloadidentitypools_tx(tx: neo4j.Transaction, pools: List[Dict], project_id: str, gcp_update_tag: int) -> None:
-    """
-        :type neo4j_transaction: Neo4j transaction object
-        :param neo4j transaction: The Neo4j transaction object
-
-        :type pools_resp: List
-        :param pools_resp: A list GCP IAM Workload Identity Pools
-
-        :type project_id: str
-        :param project_id: Current Google Project Id
-
-        :type gcp_update_tag: timestamp
-        :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
-    """
-    ingest_workloadidentitypools = """
-    UNWIND{pools} as pl
-    MERGE (pool:GCPIAMWorkloadidentitypool{id:pl.id})
-    ON CREATE SET
-        pool.firstseen = timestamp()
-    SET
-        pool.name = pl.name,
-        pool.displayName = pl.displayName,
-        pool.state = pl.state,
-        pool.disabled = pl.disabled
-    WITH pool,pl
-    MATCH (owner:GCPProject{id:{ProjectId}})
-    MERGE (owner)-[r:RESOURCE]-(pool)
-    ON CREATE SET
-        r.firstseen = timestamp(),
-        r.lastupdated = {gcp_update_tag}
-    """
-    tx.run(
-        ingest_workloadidentitypools,
-        pools=pools,
-        ProjectId=project_id,
-        gcp_update_tag=gcp_update_tag,
-    )
+def get_project_roles(iam: Resource, project_id: str) -> List[Dict]:
+    roles: List[Dict] = []
+    try:
+        req = iam.projects().roles().list(parent='projects/{}'.format(project_id), view="FULL")
+        while req is not None:
+            res = req.execute()
+            page = res.get('roles', [])
+            roles.extend(page)
+            req = iam.projects().roles().list_next(previous_request=req, previous_response=res)
+        return roles
+    except HttpError as e:
+        err = json.loads(e.content.decode('utf-8'))['error']
+        if err['status'] == 'PERMISSION_DENIED':
+            logger.warning(
+                (
+                    "Could not retrieve IAM Policy on project %s due to permissions issue. Code: %s, Message: %s"
+                ), project_id, err['code'], err['message'],
+            )
+            return []
+        else:
+            raise
 
 
 @timeit
-def load_workloadidentitypools_providers(session: neo4j.Session, data_list: List[Dict], project_id: str, update_tag: int) -> None:
-    session.write_transaction(_load_workloadidentitypools_providers_tx, data_list, project_id, update_tag)
+def transform_roles(roles_list: List[Dict], project_id: str) -> List[Dict]:
+    for role in roles_list:
+        role['id'] = get_role_id(role['name'], project_id)
+
+    return roles_list
 
 
 @timeit
-def _load_workloadidentitypools_providers_tx(tx: neo4j.Transaction, providers: List[Dict], project_id: str, gcp_update_tag: int) -> None:
-    """
-        :type neo4j_transaction: Neo4j transaction object
-        :param neo4j transaction: The Neo4j transaction object
+def get_role_id(role_name: str, project_id: str) -> str:
+    if role_name.startswith('organizations/'):
+        return role_name
 
-        :type providers_resp: List
-        :param providers_resp: A list GCP IAM Workload Identity Pool Providers
+    elif role_name.startswith('projects/'):
+        return role_name
 
-        :type project_id: str
-        :param project_id: Current Google Project Id
-
-        :type gcp_update_tag: timestamp
-        :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
-    """
-    ingest_workloadidentitypools_providers = """
-    UNWIND{providers} as prov
-    MERGE (provider:GCPIAMWorloadidentitypoolprovider{id:prov.id})
-    ON CREATE SET
-        provider.firstseen = timestamp()
-    SET
-        provider.name = prov.name,
-        provider.displayName = prov.displayName,
-        provider.state = prov.state,
-        provider.disabled = prov.disabled
-    WITH provider, prov
-    MATCH (pool:GCPIAMWorkloadidentitypool{id:provider.pool})
-    MERGE (pool)-[r:PROVIDES]->(provider)
-    ON CREATE SET
-        r.firstseen = timestamp(),
-        r.lastupdated = {gcp_update_tag}
-    """
-    tx.run(
-        ingest_workloadidentitypools_providers,
-        providers=providers,
-        ProjectId=project_id,
-        gcp_update_tag=gcp_update_tag,
-    )
+    elif role_name.startswith('roles/'):
+        return f'projects/{project_id}/roles/{role_name}'
 
 
 @timeit
-def load_service_accounts(session: neo4j.Session, data_list: List[Dict], project_id: str, update_tag: int) -> None:
-    session.write_transaction(_load_service_accounts_tx, data_list, project_id, update_tag)
+def get_policy_bindings(crm: Resource, project_id: str) -> List[Dict]:
+    try:
+        req = crm.projects().getIamPolicy(resource=project_id, body={'options': {'requestedPolicyVersion': 3}})
+        res = req.execute()
+
+        if res.get('bindings'):
+            return res['bindings']
+
+        return []
+    except HttpError as e:
+        err = json.loads(e.content.decode('utf-8'))['error']
+        if err['status'] == 'PERMISSION_DENIED':
+            logger.warning(
+                (
+                    "Could not retrieve IAM Policy on project %s due to permissions issue. Code: %s, Message: %s"
+                ), project_id, err['code'], err['message'],
+            )
+            return {}
+        else:
+            raise
+
+
+def transform_bindings(bindings, project_id):
+    users = []
+    groups = []
+    domains = []
+
+    for binding in bindings:
+        for member in binding['members']:
+            if member.startswith('user:'):
+                usr = member[len('user:'):]
+                users.append({
+                    "id": f'projects/{project_id}/users/{usr}',
+                    "email": usr,
+                    "name": usr.split("@")[0]
+                })
+
+            elif member.startswith('group:'):
+                grp = member[len('group:'):]
+                groups.append({
+                    "id": f'projects/{project_id}/groups/{grp}',
+                    "email": grp,
+                    "name": grp.split('@')[0]
+                })
+
+            elif member.startswith('domain:'):
+                dmn = member[len('domain:'):]
+                domains.append({
+                    "id": f'projects/{project_id}/domains/{dmn}',
+                    "email": dmn,
+                    "name": dmn
+                })
+
+    return [dict(s) for s in set(frozenset(d.items()) for d in users)], [dict(s) for s in set(frozenset(d.items()) for d in groups)], [dict(s) for s in set(frozenset(d.items()) for d in domains)]
 
 
 @timeit
-def _load_service_accounts_tx(tx: neo4j.Transaction, accounts: List[Dict], project_id: str, gcp_update_tag: int) -> None:
-    """
-        :type neo4j_transaction: Neo4j transaction object
-        :param neo4j transaction: The Neo4j transaction object
-
-        :type accounts_resp: List
-        :param accounts_resp: A list GCP IAM Service Accounts
-
-        :type project_id: str
-        :param project_id: Current Google Project Id
-
-        :type gcp_update_tag: timestamp
-        :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
-    """
+def load_service_accounts(neo4j_session: neo4j.Session, service_accounts: List[Dict], project_id: str, gcp_update_tag: int) -> None:
     ingest_service_accounts = """
-    UNWIND{accounts} as acc
-    MERGE (account:GCPIAMServiceAccount{id:acc.id})
-    ON CREATE SET
-        account.firstseen = timestamp()
-    SET
-        account.name = acc.name,
-        account.projectID = acc.projectId,
-        account.uniqueId = acc.uniqueId,
-        account.displayName = acc.displayName,
-        account.disabled = acc.disabled
-    WITH account,acc
-    MATCH (owner:GCPProject{id:{ProjectId}})
-    MERGE (owner)-[r:RESOURCE]->(account)
-    ON CREATE SET
-        r.firstseen = timestamp(),
-        r.lastupdated = {gcp_update_tag}
+    UNWIND {service_accounts_list} AS sa
+    MERGE (u:GCPServiceAccount{id: sa.name})
+    ON CREATE SET u.firstseen = timestamp()
+    SET u.name = sa.name, u.displayname = sa.displayName,
+    u.disabled = sa.disabled, u.serviceaccountid = sa.uniqueId,
+    u.lastupdated = {gcp_update_tag}
+    WITH u, sa
+    MATCH (d:GCPProject{id: {project_id}})
+    MERGE (d)-[r:RESOURCE]->(u)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}
     """
-    tx.run(
+
+    neo4j_session.run(
         ingest_service_accounts,
-        accounts=accounts,
-        ProjectId=project_id,
+        service_accounts_list=service_accounts,
+        project_id=project_id,
         gcp_update_tag=gcp_update_tag,
     )
 
 
 @timeit
-def cleanup_iam(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
-    """
-        Delete out-of-date GCP IAM resources and relationships
-
-        :type neo4j_session: The Neo4j session object
-        :param neo4j_session: The Neo4j session
-
-        :type common_job_parameters: dict
-        :param common_job_parameters: Dictionary of other job parameters to pass to Neo4j
-
-        :rtype: NoneType
-        :return: Nothing
-    """
-    run_cleanup_job('gcp_iam_cleanup.json', neo4j_session, common_job_parameters)
+def cleanup_service_accounts(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('gcp_iam_service_accounts_cleanup.json', neo4j_session, common_job_parameters)
 
 
 @timeit
-def sync_iam(
-    neo4j_session: neo4j.Session, iam: Resource, project_id: str, gcp_update_tag: int,
-    common_job_parameters: Dict,
+def load_service_account_keys(neo4j_session: neo4j.Session, service_account_keys: List[Dict], service_account: str, gcp_update_tag: int) -> None:
+    ingest_service_accounts = """
+    UNWIND {service_account_keys_list} AS sa
+    MERGE (u:GCPServiceAccountKey{id: sa.id})
+    ON CREATE SET u.firstseen = timestamp()
+    SET u.name=sa.name, u.serviceaccountid={serviceaccount},
+    u.keytype = sa.keyType, u.origin = sa.keyOrigin,
+    u.algorithm = sa.keyAlgorithm, u.validbeforetime = sa.validBeforeTime,
+    u.validaftertime = sa.validAfterTime, u.lastupdated = {gcp_update_tag}
+    WITH u, sa
+    MATCH (d:GCPServiceAccount{id: {serviceaccount}})
+    MERGE (d)-[r:HAS_KEY]->(u)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}
+    """
+
+    neo4j_session.run(
+        ingest_service_accounts,
+        service_account_keys_list=service_account_keys,
+        serviceaccount=service_account,
+        gcp_update_tag=gcp_update_tag,
+    )
+
+
+@timeit
+def cleanup_service_account_keys(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('gcp_iam_service_account_keys_cleanup.json', neo4j_session, common_job_parameters)
+
+
+@timeit
+def load_roles(neo4j_session: neo4j.Session, roles: List[Dict], project_id: str, gcp_update_tag: int) -> None:
+    ingest_roles = """
+    UNWIND {roles_list} AS d
+    MERGE (u:GCPRole{id: d.id})
+    ON CREATE SET u.firstseen = timestamp()
+    SET u.name = d.name, u.title = d.title,
+    u.description = d.description, u.deleted = d.deleted,
+    u.permissions = d.includedPermissions, u.roleid = d.id,
+    u.lastupdated = {gcp_update_tag}
+    WITH u, d
+    MATCH (d:GCPProject{id: {project_id}})
+    MERGE (d)-[r:RESOURCE]->(u)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}
+    """
+
+    neo4j_session.run(
+        ingest_roles,
+        roles_list=roles,
+        project_id=project_id,
+        gcp_update_tag=gcp_update_tag,
+    )
+
+
+@timeit
+def cleanup_roles(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('gcp_iam_roles_cleanup.json', neo4j_session, common_job_parameters)
+
+
+@timeit
+def load_users(session: neo4j.Session, data_list: List[Dict], update_tag: int) -> None:
+    session.write_transaction(_load_users_tx, data_list, update_tag)
+
+
+@timeit
+def _load_users_tx(tx: neo4j.Transaction, users: List[Dict], gcp_update_tag) -> None:
+    ingest_users = """
+    UNWIND {users} as usr
+    MERGE (user:GCPUser{id:usr.id})
+    ON CREATE SET
+        user.firstseen = timestamp()
+    SET
+        user.id = usr.id,
+        user.primaryEmail = usr.primaryEmail,
+        user.isAdmin = usr.isAdmin,
+        user.isDelegatedAdmin = usr.isDelegatedAdmin,
+        user.agreedToTerms = usr.agreedToTerms,
+        user.suspended = usr.suspended,
+        user.changePasswordAtNextLogin = usr.changePasswordAtNextLogin,
+        user.ipWhitelisted = usr.ipWhitelisted,
+        user.fullName = usr.name.fullName,
+        user.familyName = usr.name.familyName,
+        user.givenName = usr.name.givenName,
+        user.isMailboxSetup = usr.isMailboxSetup,
+        user.customerId = usr.customerId,
+        user.addresses = usr.addresses,
+        user.organizations = usr.organizations,
+        user.lastLoginTime = usr.lastLoginTime,
+        user.suspensionReason = usr.suspensionReason,
+        user.creationTime = usr.creationTime,
+        user.deletionTime = usr.deletionTime,
+        user.gender = usr.gender
+    WITH user, usr
+    MATCH (customer:GCPCustomer{id:usr.customerId})
+    MERGE (customer)-[r:HAS_USER]->(user)
+    ON CREATE SET
+        r.firstseen = timestamp()
+        r.lastupdated = {gcp_update_tag}
+    """
+    tx.run(
+        ingest_users,
+        users2=users,
+        gcp_update_tag=gcp_update_tag,
+    )
+
+
+@timeit
+def cleanup_users(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('gcp_users_cleanup.json', neo4j_session, common_job_parameters)
+
+
+@timeit
+def load_groups(session: neo4j.Session, data_list: List[Dict], update_tag: int) -> None:
+    session.write_transaction(_load_groups_tx, data_list, update_tag)
+
+
+@timeit
+def _load_groups_tx(tx: neo4j.Transaction, groups: List[Dict], gcp_update_tag) -> None:
+    ingest_groups = """
+    UNWIND {groups} as grp
+    MERGE (group:GCPGroup{id:grp.id})
+    ON CREATE SET
+        group.firstseen = timestamp()
+    SET
+        group.id = grp.id,
+        group.email = grp.email,
+        group.adminCreated = grp.adminCreated,
+        group.directMembersCount = grp.directMembersCount
+    WITH group,grp
+    MATCH (customer:GCPCustomer{id:grp.customer_id})
+    MERGE (customer)-[r:HAS_GROUP]->(group)
+    ON CREATE SET
+        r.firstseen = timestamp()
+        r.lastupdated = {gcp_update_tag}
+    """
+    tx.run(
+        ingest_groups,
+        groups2=groups,
+        gcp_update_tag=gcp_update_tag,
+    )
+
+
+@timeit
+def cleanup_groups(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('gcp_groups_cleanup.json', neo4j_session, common_job_parameters)
+
+
+@timeit
+def load_domains(session: neo4j.Session, data_list: List[Dict], update_tag: int) -> None:
+    session.write_transaction(_load_domains_tx, data_list, update_tag)
+
+
+@timeit
+def _load_domains_tx(tx: neo4j.Transaction, domains: List[Dict], gcp_update_tag) -> None:
+    ingest_domains = """
+    UNWIND {domains} as dmn
+    MERGE (domain:GCPDomain{id:dmn.id})
+    ON CREATE SET
+        domain.firstseen = timestamp()
+    SET
+        domain.parentDomainName = dmn.domainAliases.parentDomainName,
+        domain.domainAliasName = dmn.domainAlioases.domainAliasName,
+        domain.verified = dm.verified,
+        domain.creationTime = dmn.creationTime,
+        domain.isPrimary = dmn.isPrimary,
+        domain.domainName = dmn.domainName
+    WITH domain,dmn
+    MATCH (customer:GCPCustomer{id:domain.customer_id})
+    MERGE (customer)-[r:HAS_DOMAIN]->(domain)
+    ON CREATE SET
+        r.firstseen = timestamp()
+        r.lastupdated = {gcp_update_tag}
+    """
+    tx.run(
+        ingest_domains,
+        domains2=domains,
+        gcp_update_tag=gcp_update_tag,
+    )
+
+
+@timeit
+def cleanup_domains(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('gcp_domains_cleanup.json', neo4j_session, common_job_parameters)
+
+
+@timeit
+def load_bindings(neo4j_session: neo4j.Session, bindings: List[Dict], project_id: str, gcp_update_tag: int) -> None:
+    for binding in bindings:
+        role_id = get_role_id(binding['role'], project_id)
+
+        for member in binding['members']:
+            if member.startswith('user:'):
+                attach_role_to_user(neo4j_session, role_id, f"projects/{project_id}/users/{member[len('user:'):]}", project_id, gcp_update_tag)
+
+            elif member.startswith('serviceAccount:'):
+                attach_role_to_service_account(neo4j_session, role_id, f"projects/{project_id}/serviceAccounts/{member[len('serviceAccount:'):]}", project_id, gcp_update_tag)
+
+            elif member.startswith('group:'):
+                attach_role_to_group(neo4j_session, role_id, f"projects/{project_id}/groups/{member[len('group:'):]}", project_id, gcp_update_tag)
+
+            elif member.startswith('domain:'):
+                attach_role_to_domain(neo4j_session, role_id, f"projects/{project_id}/domains/{member[len('domain:'):]}", project_id, gcp_update_tag)
+
+
+@timeit
+def attach_role_to_user(neo4j_session: neo4j.Session, role_id: str, user_id: str, project_id: str, gcp_update_tag: int) -> None:
+    ingest_script = """
+    MATCH (role:GCPRole{id:{RoleId}})
+    MERGE (user:GCPUser{id:{UserId}})
+    MERGE (user)-[r:ASSUME_ROLE]->(role)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}
+    """
+
+    neo4j_session.run(
+        ingest_script,
+        RoleId=role_id,
+        UserId=user_id,
+        gcp_update_tag=gcp_update_tag,
+    )
+
+
+@timeit
+def attach_role_to_service_account(neo4j_session: neo4j.Session, role_id: str, service_account_id: str, project_id: str, gcp_update_tag: int) -> None:
+    ingest_script = """
+    MATCH (role:GCPRole{id:{RoleId}})
+    MERGE (sa:GCPServiceAccount{id:{saId}})
+    MERGE (sa)-[r:ASSUME_ROLE]->(role)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}
+    """
+
+    neo4j_session.run(
+        ingest_script,
+        RoleId=role_id,
+        saId=service_account_id,
+        gcp_update_tag=gcp_update_tag,
+    )
+
+
+@timeit
+def attach_role_to_group(neo4j_session: neo4j.Session, role_id: str, group_id: str, project_id: str, gcp_update_tag: int) -> None:
+    ingest_script = """
+    MATCH (role:GCPRole{id:{RoleId}})
+    MERGE (group:GCPGroup{id:{GroupId}})
+    MERGE (group)-[r:ASSUME_ROLE]->(role)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}
+    """
+
+    neo4j_session.run(
+        ingest_script,
+        RoleId=role_id,
+        GroupId=group_id,
+        gcp_update_tag=gcp_update_tag,
+    )
+
+
+@timeit
+def attach_role_to_domain(neo4j_session: neo4j.Session, role_id: str, domain_id: str, project_id: str, gcp_update_tag: int) -> None:
+    ingest_script = """
+    MATCH (role:GCPRole{id:{RoleId}})
+    MERGE (domain:GCPDomain{id:{DomainId}})
+    MERGE (domain)-[r:ASSUME_ROLE]->(role)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}
+    """
+
+    neo4j_session.run(
+        ingest_script,
+        RoleId=role_id,
+        DomainId=domain_id,
+        gcp_update_tag=gcp_update_tag,
+    )
+
+
+@timeit
+def sync(
+    neo4j_session: neo4j.Session, iam: Resource, crm: Resource, admin: Resource, project_id: str, gcp_update_tag: int,
+    common_job_parameters: Dict, regions: List[str],
 ) -> None:
-    """
-        Get GCP DNS IAM roles, Workload Identity Pools, Workload Identity Pool Providers and Service Accounts using the IAM resource object, ingest to Neo4j, and clean up old data.
+    logger.info("Syncing IAM objects for project %s.", project_id)
 
-        :type neo4j_session: The Neo4j session object
-        :param neo4j_session: The Neo4j session
+    service_accounts_list = get_service_accounts(iam, project_id)
+    service_accounts_list = transform_service_accounts(service_accounts_list)
+    load_service_accounts(neo4j_session, service_accounts_list, project_id, gcp_update_tag)
+    cleanup_service_accounts(neo4j_session, common_job_parameters)
 
-        :type iam: The IAM resource object created by googleapiclient.discovery.build()
-        :param dns: The GCP IAM resource object
+    for service_account in service_accounts_list:
+        service_account_keys = get_service_account_keys(iam, project_id, service_account['name'])
+        load_service_account_keys(neo4j_session, service_account_keys, service_account['name'], gcp_update_tag)
 
-        :type project_id: str
-        :param project_id: The project ID of the corresponding project
+    cleanup_service_account_keys(neo4j_session, common_job_parameters)
 
-        :type gcp_update_tag: timestamp
-        :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
+    roles_list = get_roles(iam, project_id)
+    custom_roles_list = get_project_roles(iam, project_id)
+    roles_list.extend(custom_roles_list)
 
-        :type common_job_parameters: dict
-        :param common_job_parameters: Dictionary of other job parameters to pass to Neo4j
+    roles_list = transform_roles(roles_list, project_id)
 
-        :rtype: NoneType
-        :return: Nothing
-    """
-    logger.info("Syncing IAM resources for project %s.", project_id)
-    # IAM roles
-    roles = get_project_roles(iam, project_id)
-    load_iam_roles(neo4j_session, roles, project_id, gcp_update_tag)
-    # IAM Workloadidentitypools
-    pools = get_workloadidentitypools(iam, project_id)
-    load_workloadidentitypools(neo4j_session, pools, project_id, gcp_update_tag)
-    # IAM Workloadidentitypool Providers
-    providers = get_workloadidentitypoolproviders(iam, pools, project_id)
-    load_workloadidentitypools_providers(neo4j_session, providers, project_id, gcp_update_tag)
-    # IAM Service Accounts
-    accounts = get_service_accounts(iam, project_id)
-    load_service_accounts(neo4j_session, accounts, project_id, gcp_update_tag)
-    cleanup_iam(neo4j_session, common_job_parameters)
+    load_roles(neo4j_session, roles_list, project_id, gcp_update_tag)
+    cleanup_roles(neo4j_session, common_job_parameters)
+
+    bindings = get_policy_bindings(crm, project_id)
+
+    users_from_bindings, groups_from_bindings, domains_from_bindings = transform_bindings(bindings, project_id)
+
+    load_bindings(neo4j_session, bindings, project_id, gcp_update_tag)
+
+    for user_binding in users_from_bindings:
+        users = []
+        users_from_admin = get_users(admin)
+        for user_admin in users_from_admin:
+            if user_admin['primaryEmail'].split('@')[0] == user_binding['name']:
+                users.append(user_admin)
+        load_users(neo4j_session, users, gcp_update_tag)
+
+    cleanup_users(neo4j_session, common_job_parameters)
+
+    for user in users:
+        for domain_binding in domains_from_bindings:
+            domains = []
+            domains_from_admin = get_domains(admin, user['customerId'])
+            for domain_admin in domains_from_admin:
+                if domain_admin['domainName'] == domain_binding['name']:
+                    domains.append(domain_admin)
+            load_domains(neo4j_session, domains, gcp_update_tag)
+
+    cleanup_domains(neo4j_session, common_job_parameters)
+
+    for user in users:
+        for group_binding in groups_from_bindings:
+            groups = []
+            groups_from_admin = get_groups(neo4j_session, user['customerId'])
+            for group_admin in groups_from_admin:
+                if group_admin['email'].split('@')[0] == group_binding['name']:
+                    groups.append(group_admin)
+            load_groups(neo4j_session, groups, gcp_update_tag)
+
+    cleanup_groups(neo4j_session, common_job_parameters)

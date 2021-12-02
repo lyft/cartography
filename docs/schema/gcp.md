@@ -696,12 +696,13 @@ Representation of an IP range or subnet.
 
 Representation of [GCP IAM Roles](https://cloud.google.com/iam/docs/reference/rest/v1/roles)
 
-| Field           | Description                                                                |
-|-----------------|----------------------------------------------------------------------------|
-| name            | The name of the role.                                                      |
-| title           | A human-readable title for the role.                                       |
-| stage           | The current launch stage of the role.                                      |
-| deleted         | The current deleted state of the role.                                     |
+| Field                 | Description                                                                |
+|-----------------------|----------------------------------------------------------------------------|
+| name                  | The name of the role.                                                      |
+| title                 | A human-readable title for the role.                                       |
+| description           | A human-readable description for the role.                                 |
+| deleted               | The current deleted state of the role.                                     |
+| includedPermissions   | The names of the permissions this role grants when bound in an IAM policy. |
 
 #### Relationships
 
@@ -709,44 +710,6 @@ Representation of [GCP IAM Roles](https://cloud.google.com/iam/docs/reference/re
 
     ```
     (GCPProjects)-[RESOURCE]->(GCPIAMRoles)
-    ```
-
-### GCP IAM Workloadidentitypools
-
-Representation of [GCP IAM Workloadidentitypools](https://cloud.google.com/iam/docs/reference/rest/v1/projects.locations.workloadIdentityPools)
-
-| Field           | Description                                             |
-|-----------------|---------------------------------------------------------|
-| name            | The resource name of the pool.                          |
-| displayName     | A display name for the pool.                            |
-| state           | The state of the pool.                                  |
-| disabled        | Whether the pool is disabled.                           |
-
-#### Relationships
-
-- GCP IAM Workloadidentitypools are defined in GCP Projects
-
-    ```
-    (GCPProjects)-[RESOURCE]->(GCPIAMWorkloadidentitypools)
-    ```
-
-### GCP IAM Workloadidentitypoolsproviders
-
-Representation of [GCP IAM Workloadidentitypoolsproviders](https://cloud.google.com/iam/docs/reference/rest/v1/projects.locations.workloadIdentityPools.providers)
-
-| Field               | Description                                                     |
-|---------------------|-----------------------------------------------------------------|
-| name                | The resource name of the provider.                              |
-| displayName         | A display name for the provider.                                |
-| state               | The state of the provider.                                      |
-| disabled            | Whether the provider is disabled.                               |
-
-#### Relationships
-
-- GCP Workloadidentitypools Providers are defined in Workloadidentitypools
-
-    ```
-    (GCPWorkloadidentitypools)-[PROVIDES]->(GCPWorkloadidentitypoolsproviders)
     ```
 
 ### GCP IAM Service Accounts
@@ -767,4 +730,99 @@ Representation of [GCP IAM Service Accounts](https://cloud.google.com/iam/docs/r
 
     ```
     (GCPProjects)-[RESOURCE]->(GCPIAMServiceAccounts)
+    ```
+
+### GCP IAM Service Account Keys
+
+Representation of [GCP IAM Service Account Keys](https://cloud.google.com/iam/docs/reference/rest/v1/projects.serviceAccounts.keys)
+
+| Field                   | Description                                                           |
+|-------------------------|-----------------------------------------------------------------------|
+| name                    | The resource name of the service account key                          |
+| keyType                 | The key type.                                                         |
+| keyOrigin               | The key origin.                                                       |
+| keyAlgorithm            | Specifies the algorithm (and possibly key size) for the key.          |
+| validBeforeTime         | The key can be used before this timestamp.                            |
+| validAfterTime          | The key can be used after this timestamp.                             |
+
+#### Relationships
+
+GCP IAM Service Account keys are defined in Service Accounts
+
+    ```
+    (GCPServiceAccounts)-[HAS_KEY]->(GCPServiceAccountKeys)
+    ```
+
+### GCP Users
+
+Representation of [GCP Users](https://developers.google.com/admin-sdk/directory/reference/rest/v1/users)
+
+| Field                     | Description                                                                                                       |
+|---------------------------|-------------------------------------------------------------------------------------------------------------------|
+| id                        | The unique ID for the user.                                                                                       |
+| primaryEmail              | The user's primary email address.                                                                                 |
+| isAdmin                   | Indicates a user with super admininistrator privileges.                                                           |
+| isDelegatedAdmin          | Indicates if the user is a delegated administrator.                                                               |
+| agreedToTerms             | This property is true if the user has completed an initial login and accepted the Terms of Service agreement.     |
+| suspended                 | Indicates if user is suspended.                                                                                   |
+| changePasswordAtNextLogin | Indicates if the user is forced to change their password at next login                                            |
+| ipWhitelisted             | If true, the user's IP address is whitelisted.                                                                    |
+| name                      | Holds the given and family names of the user, and the read-only fullName value                                    |
+| isMailboxSetup            | Indicates if the user's Google mailbox is created.                                                                |
+| customerId                | The customer ID to retrieve all account users.                                                                    |
+| addresses                 | A list of the user's addresses.                                                                                   |
+| organizations             | A list of organizations the user belongs to.                                                                      |
+| lastLoginTim              | The last time the user logged into the user's account.                                                            |
+| suspensionReason          | Has the reason a user account is suspended either by the administrator or by Google at the time of suspension.    |
+| creationTime              | The time the user's account was created.                                                                          |
+| deletionTime              | The time the user's account was deleted.                                                                          |
+| gender                    | A nested object containing the user's gender.                                                                     |
+
+
+#### Relationships
+
+GCP Users are defined for Customers
+
+    ```
+    (GCPCustomer)-[HAS_USER]->(GCPUSer)
+    ```
+
+
+### GCP Groups
+
+Representation of [GCP Groups](https://developers.google.com/admin-sdk/directory/reference/rest/v1/groups)
+
+| Field                 | Description                                                     |
+|-----------------------|-----------------------------------------------------------------|
+| id                    | The unique ID of a group.                                       |
+| groupEmail            | The group's email address.                                      |
+| adminCreated          | Value is true if this group was created by an administrator.    |
+| directMembersCount    | The number of users that are direct members of the group.       |
+
+#### Representation
+
+GCP Groups are defined for GCP Customers
+
+    ```
+    (GCPCusteomers)-[HAS_GROUPS]->(GCPGroups)
+    ```
+
+### GCP Domins
+
+Representation of [GCP Domains](https://developers.google.com/admin-sdk/directory/reference/rest/v1/domains)
+
+| Field             | Description                                                         |
+|-------------------|---------------------------------------------------------------------|
+| parentDomainName  | The parent domain name that the domain alias is associated with.    |
+| domainAliasName   | The domain alias name.                                              |
+| verified          | Indicates the verification state of a domain.                       |
+| isPrimary         | Indicates if the domain is a primary domain.                        |
+| domainName        | The domain name of the customer.                                    |
+
+#### Relationships
+
+GCP Domains are defined in GCP Customers
+
+    ```
+    (GCPCustomers)-[HAS_DOMAIN]->(GCPDomains)
     ```
