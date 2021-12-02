@@ -46,7 +46,6 @@ def get_images(boto3_session: boto3.session.Session, region: str, image_ids: Lis
         images.extend(self_images)
     except ClientError as e:
         logger.warning(f"Failed retrieve images for region - {region}. Error - {e}")
-        raise
     try:
         if image_ids:
             images_in_use = client.describe_images(ImageIds=image_ids)['Images']
@@ -57,7 +56,6 @@ def get_images(boto3_session: boto3.session.Session, region: str, image_ids: Lis
                     images.append(image)
     except ClientError as e:
         logger.warning(f"Failed retrieve images for region - {region}. Error - {e}")
-        raise
     return images
 
 
