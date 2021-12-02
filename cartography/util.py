@@ -78,10 +78,11 @@ def timeit(method):
 # TODO Move this to cartography.intel.aws.util.common
 def aws_handle_regions(func):
     ERROR_CODES = [
+        'AccessDenied',
         'AccessDeniedException',
-        'UnrecognizedClientException',
-        'InvalidClientTokenId',
         'AuthFailure',
+        'InvalidClientTokenId',
+        'UnrecognizedClientException',
     ]
 
     def inner_function(*args, **kwargs):
