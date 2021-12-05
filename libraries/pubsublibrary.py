@@ -1,6 +1,5 @@
 # https://github.com/GoogleCloudPlatform/python-docs-samples/blob/master/pubsub/cloud-client/publisher.py
 # https://google-cloud-python.readthedocs.io/en/0.32.0/pubsub/index.html#publishing
-
 from google.cloud import pubsub_v1
 
 from utils.errors import PubSubPublishError

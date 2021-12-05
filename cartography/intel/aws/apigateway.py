@@ -1,6 +1,5 @@
 import json
 import logging
-
 from typing import Any
 from typing import Dict
 from typing import Generator
@@ -30,7 +29,7 @@ def get_apigateway_rest_apis(boto3_session: boto3.session.Session, region: str) 
         retries={
             'max_attempts': 5,
             'mode': 'standard',
-        }
+        },
     )
 
     client = boto3_session.client('apigateway', config=config)
@@ -62,7 +61,7 @@ def get_rest_api_details(
         retries={
             'max_attempts': 5,
             'mode': 'standard',
-        }
+        },
     )
 
     client = boto3_session.client('apigateway', config=config)
@@ -390,7 +389,7 @@ def sync_apigateway_rest_apis(
 
     stages_certificate_resources = get_rest_api_details(boto3_session, rest_apis, region)
     load_rest_api_details(
-        neo4j_session, stages_certificate_resources, current_aws_account_id, aws_update_tag, common_job_parameters
+        neo4j_session, stages_certificate_resources, current_aws_account_id, aws_update_tag, common_job_parameters,
     )
 
 
@@ -402,6 +401,6 @@ def sync(
     for region in regions:
         logger.info(f"Syncing AWS APIGateway Rest APIs for region '{region}' in account '{current_aws_account_id}'.")
         sync_apigateway_rest_apis(
-            neo4j_session, boto3_session, region, current_aws_account_id, update_tag, common_job_parameters
+            neo4j_session, boto3_session, region, current_aws_account_id, update_tag, common_job_parameters,
         )
     cleanup(neo4j_session, common_job_parameters)

@@ -108,7 +108,7 @@ class AppContext:
         aws_cost_anomaly_total_days_to_prefill=None,
         aws_cost_anomaly_services=None,
         aws_cost_saving_request_topic=None,
-        aws_cost_saving_response_topic=None
+        aws_cost_saving_response_topic=None,
     ):
         self.region = region
         self.log_level = log_level

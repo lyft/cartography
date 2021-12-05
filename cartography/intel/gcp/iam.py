@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 def get_service_accounts(iam: Resource, project_id: str) -> List[Dict]:
     service_accounts: List[Dict] = []
     try:
-        req = iam.projects().serviceAccounts().list(name='projects/{}'.format(project_id))
+        req = iam.projects().serviceAccounts().list(name=f'projects/{project_id}')
         while req is not None:
             res = req.execute()
             page = res.get('accounts', [])
@@ -98,7 +98,7 @@ def get_roles(iam: Resource, project_id: str) -> List[Dict]:
 def get_project_roles(iam: Resource, project_id: str) -> List[Dict]:
     roles: List[Dict] = []
     try:
-        req = iam.projects().roles().list(parent='projects/{}'.format(project_id), view="FULL")
+        req = iam.projects().roles().list(parent=f'projects/{project_id}', view="FULL")
         while req is not None:
             res = req.execute()
             page = res.get('roles', [])
@@ -173,7 +173,7 @@ def transform_bindings(bindings, project_id):
                 users.append({
                     "id": f'projects/{project_id}/users/{usr}',
                     "email": usr,
-                    "name": usr.split("@")[0]
+                    "name": usr.split("@")[0],
                 })
 
             elif member.startswith('group:'):
@@ -181,7 +181,7 @@ def transform_bindings(bindings, project_id):
                 groups.append({
                     "id": f'projects/{project_id}/groups/{grp}',
                     "email": grp,
-                    "name": grp.split('@')[0]
+                    "name": grp.split('@')[0],
                 })
 
             elif member.startswith('domain:'):
@@ -189,10 +189,10 @@ def transform_bindings(bindings, project_id):
                 domains.append({
                     "id": f'projects/{project_id}/domains/{dmn}',
                     "email": dmn,
-                    "name": dmn
+                    "name": dmn,
                 })
 
-    return [dict(s) for s in set(frozenset(d.items()) for d in users)], [dict(s) for s in set(frozenset(d.items()) for d in groups)], [dict(s) for s in set(frozenset(d.items()) for d in domains)]
+    return [dict(s) for s in {frozenset(d.items()) for d in users}], [dict(s) for s in {frozenset(d.items()) for d in groups}], [dict(s) for s in {frozenset(d.items()) for d in domains}]
 
 
 @timeit

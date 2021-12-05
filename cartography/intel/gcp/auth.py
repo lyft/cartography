@@ -1,8 +1,8 @@
 # https://google-auth.readthedocs.io/en/latest/user-guide.html#user-credentials
 # https://google-auth.readthedocs.io/en/latest/reference/google.oauth2.service_account.html#google.oauth2.service_account.Credentials
+import uuid
 
 import requests
-import uuid
 from google.oauth2 import credentials
 
 

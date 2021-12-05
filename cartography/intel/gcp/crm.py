@@ -152,7 +152,7 @@ def load_gcp_folders(neo4j_session: neo4j.Session, data: List[Dict], gcp_update_
 
 @timeit
 def load_gcp_projects(
-    neo4j_session: neo4j.Session, data: List[Dict], gcp_update_tag: int, common_job_parameters: Dict
+    neo4j_session: neo4j.Session, data: List[Dict], gcp_update_tag: int, common_job_parameters: Dict,
 ) -> None:
     """
     Ingest the GCP projects to Neo4j

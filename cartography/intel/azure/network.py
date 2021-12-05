@@ -1,5 +1,7 @@
 import logging
+
 from azure.mgmt.compute import ComputeManagementClient
+
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 

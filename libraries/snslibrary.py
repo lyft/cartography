@@ -1,7 +1,6 @@
 # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/sns.html
 # https://github.com/awsdocs/aws-doc-sdk-examples/tree/master/python/example_code/sns
 # https://docs.aws.amazon.com/sns/latest/api/CommonErrors.html
-
 import os
 
 from boto3.session import Session
@@ -33,7 +32,8 @@ class SNSLibrary:
             if self.context.app_env == 'production':
                 self.sns_client.publish(
                     Message=message,
-                    TopicArn=topic)
+                    TopicArn=topic,
+                )
 
                 return True
 

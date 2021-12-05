@@ -146,7 +146,7 @@ def _sync_multiple_accounts(
                 # profile_name=profile_name,
                 aws_access_key_id=config.credentials['aws_access_key_id'],
                 aws_secret_access_key=config.credentials['aws_secret_access_key'],
-                aws_session_token=config.credentials['session_token']
+                aws_session_token=config.credentials['session_token'],
             )
 
         _autodiscover_accounts(neo4j_session, boto3_session, account_id, config.update_tag, common_job_parameters)
@@ -180,7 +180,7 @@ def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
     common_job_parameters = {
         "UPDATE_TAG": config.update_tag,
         "permission_relationships_file": config.permission_relationships_file,
-        "WORKSPACE_ID": config.params['workspace']['id_string']
+        "WORKSPACE_ID": config.params['workspace']['id_string'],
     }
 
     try:
@@ -189,14 +189,14 @@ def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
         if config.credentials['type'] == 'self':
             boto3_session = boto3.Session(
                 aws_access_key_id=config.credentials['aws_access_key_id'],
-                aws_secret_access_key=config.credentials['aws_secret_access_key']
+                aws_secret_access_key=config.credentials['aws_secret_access_key'],
             )
 
         elif config.credentials['type'] == 'assumerole':
             boto3_session = boto3.Session(
                 aws_access_key_id=config.credentials['aws_access_key_id'],
                 aws_secret_access_key=config.credentials['aws_secret_access_key'],
-                aws_session_token=config.credentials['session_token']
+                aws_session_token=config.credentials['session_token'],
             )
 
     except (botocore.exceptions.BotoCoreError, botocore.exceptions.ClientError) as e:

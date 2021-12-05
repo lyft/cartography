@@ -108,7 +108,7 @@ class Config:
         statsd_port=None,
         credentials=None,
         params=None,
-        pagerduty_api_key=None
+        pagerduty_api_key=None,
     ):
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user

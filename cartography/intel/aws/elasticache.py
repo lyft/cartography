@@ -97,7 +97,7 @@ def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job(
         'aws_import_elasticache_cleanup.json',
         neo4j_session,
-        common_job_parameters
+        common_job_parameters,
     )
 
 

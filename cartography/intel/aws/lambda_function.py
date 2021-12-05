@@ -8,7 +8,6 @@ from typing import Tuple
 import boto3
 import botocore
 import neo4j
-import botocore
 
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job

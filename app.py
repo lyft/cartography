@@ -1,11 +1,12 @@
-import os
 import json
+import os
+
 import cartography.cli
-from utils.logger import get_logger
 from libraries.authlibrary import AuthLibrary
-from libraries.snslibrary import SNSLibrary
 from libraries.kmslibrary import KMSLibrary
+from libraries.snslibrary import SNSLibrary
 from utils.context import AppContext
+from utils.logger import get_logger
 
 
 lambda_init = None
@@ -52,7 +53,7 @@ def load_cartography(event, ctx):
 
         return {
             "status": 'failure',
-            "message": 'unable to parse request'
+            "message": 'unable to parse request',
         }
 
     process_request(context, params)
@@ -60,8 +61,8 @@ def load_cartography(event, ctx):
     return {
         'statusCode': 200,
         'body': json.dumps({
-            "status": 'success'
-        })
+            "status": 'success',
+        }),
     }
 
 
@@ -77,7 +78,7 @@ def process_request(context, args):
             "uri": context.neo4j_uri,
             "user": context.neo4j_user,
             "pwd": context.neo4j_pwd,
-            "connection_lifetime": 3600
+            "connection_lifetime": 3600,
         },
         "logging": {
             "mode": "verbose",
@@ -88,8 +89,8 @@ def process_request(context, args):
             "templateType": args['templateType'],
             "workspace": args['workspace'],
             "actions": args['actions'],
-            "resultTopic": args['resultTopic']
-        }
+            "resultTopic": args['resultTopic'],
+        },
     }
 
     resp = cartography.cli.run_aws(body)
@@ -123,7 +124,7 @@ def publish_response(context, req, resp):
             "templateType": req['params']['templateType'],
             "workspace": req['params']['workspace'],
             "actions": req['params']['actions'],
-            "response": resp
+            "response": resp,
         }
 
         sns_helper = SNSLibrary(context)
@@ -147,7 +148,7 @@ def get_auth_creds(context, args):
             'aws_secret_access_key': auth_helper.get_assume_role_access_secret(),
             'role_session_name': args['sessionString'],
             'role_arn': args['externalRoleArn'],
-            'external_id': args['externalId']
+            'external_id': args['externalId'],
         }
 
         auth_creds = auth_helper.assume_role(auth_params)
@@ -157,7 +158,7 @@ def get_auth_creds(context, args):
         auth_creds = {
             'type': 'self',
             'aws_access_key_id': args['credentials']['awsAccessKeyID'] if 'credentials' in args else None,
-            'aws_secret_access_key': args['credentials']['awsSecretAccessKey'] if 'credentials' in args else None
+            'aws_secret_access_key': args['credentials']['awsSecretAccessKey'] if 'credentials' in args else None,
         }
 
     return auth_creds
