@@ -7,11 +7,11 @@ import neo4j
 
 from . import compute
 from . import cosmosdb
+from . import key_vaults
 from . import sql
 from . import storage
 from . import subscription
 from . import tenant
-from . import key_vaults
 from .util.credentials import Authenticator
 from .util.credentials import Credentials
 from cartography.config import Config

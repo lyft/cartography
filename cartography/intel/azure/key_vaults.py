@@ -3,7 +3,6 @@ from typing import Dict
 from typing import List
 
 import neo4j
-
 from azure.core.exceptions import HttpResponseError
 from azure.mgmt.keyvault import KeyVaultManagementClient
 
@@ -39,7 +38,9 @@ def get_key_vaults_list(client: KeyVaultManagementClient) -> List[Dict]:
         return []
 
 
-def _load_key_vaults_tx(tx: neo4j.Transaction, subscription_id: str, key_vaults_list: List[Dict], update_tag: int) -> None:
+def _load_key_vaults_tx(
+    tx: neo4j.Transaction, subscription_id: str, key_vaults_list: List[Dict], update_tag: int,
+) -> None:
     ingest_vault = """
     UNWIND {key_vaults_list} AS vault
     MERGE (k:AzureKeyVault{id: vault.id})

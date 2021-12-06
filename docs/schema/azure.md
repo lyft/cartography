@@ -1283,4 +1283,3 @@ Representation of an [AzureKeyVault](https://docs.microsoft.com/en-us/rest/api/k
         ```
         (AzureSubscription)-[RESOURCE]->(AzureKeyVault)
         ```
-        
