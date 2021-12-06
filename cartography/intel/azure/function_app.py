@@ -3,7 +3,6 @@ from typing import Dict
 from typing import List
 
 import neo4j
-
 from azure.core.exceptions import HttpResponseError
 from azure.mgmt.web import WebSiteManagementClient
 
@@ -14,59 +13,93 @@ from cartography.util import timeit
 logger = logging.getLogger(__name__)
 
 
-def load_function_apps(session: neo4j.Session, subscription_id: str,
-                       data_list: List[Dict], update_tag: int) -> None:
-    session.write_transaction(_load_function_apps_tx, subscription_id,
-                              data_list, update_tag)
+def load_function_apps(
+    session: neo4j.Session, subscription_id: str,
+    data_list: List[Dict], update_tag: int,
+) -> None:
+    session.write_transaction(
+        _load_function_apps_tx, subscription_id,
+        data_list, update_tag,
+    )
 
 
-def load_function_apps_configurations(session: neo4j.Session,
-                                      data_list: List[Dict],
-                                      update_tag: int) -> None:
-    session.write_transaction(_load_function_apps_configurations_tx, data_list,
-                              update_tag)
+def load_function_apps_configurations(
+    session: neo4j.Session,
+    data_list: List[Dict],
+    update_tag: int,
+) -> None:
+    session.write_transaction(
+        _load_function_apps_configurations_tx, data_list,
+        update_tag,
+    )
 
 
-def load_function_apps_functions(session: neo4j.Session, data_list: List[Dict],
-                                 update_tag: int) -> None:
-    session.write_transaction(_load_function_apps_functions_tx, data_list,
-                              update_tag)
+def load_function_apps_functions(
+    session: neo4j.Session, data_list: List[Dict],
+    update_tag: int,
+) -> None:
+    session.write_transaction(
+        _load_function_apps_functions_tx, data_list,
+        update_tag,
+    )
 
 
-def load_function_apps_deployments(session: neo4j.Session,
-                                   data_list: List[Dict],
-                                   update_tag: int) -> None:
-    session.write_transaction(_load_function_apps_deployments_tx, data_list,
-                              update_tag)
+def load_function_apps_deployments(
+    session: neo4j.Session,
+    data_list: List[Dict],
+    update_tag: int,
+) -> None:
+    session.write_transaction(
+        _load_function_apps_deployments_tx, data_list,
+        update_tag,
+    )
 
 
-def load_function_apps_backups(session: neo4j.Session, data_list: List[Dict],
-                               update_tag: int) -> None:
-    session.write_transaction(_load_function_apps_backups_tx, data_list,
-                              update_tag)
+def load_function_apps_backups(
+    session: neo4j.Session, data_list: List[Dict],
+    update_tag: int,
+) -> None:
+    session.write_transaction(
+        _load_function_apps_backups_tx, data_list,
+        update_tag,
+    )
 
 
-def load_function_apps_processes(session: neo4j.Session, data_list: List[Dict],
-                                 update_tag: int) -> None:
-    session.write_transaction(_load_function_apps_processes_tx, data_list,
-                              update_tag)
+def load_function_apps_processes(
+    session: neo4j.Session, data_list: List[Dict],
+    update_tag: int,
+) -> None:
+    session.write_transaction(
+        _load_function_apps_processes_tx, data_list,
+        update_tag,
+    )
 
 
-def load_function_apps_snapshots(session: neo4j.Session, data_list: List[Dict],
-                                 update_tag: int) -> None:
-    session.write_transaction(_load_function_apps_snapshots_tx, data_list,
-                              update_tag)
+def load_function_apps_snapshots(
+    session: neo4j.Session, data_list: List[Dict],
+    update_tag: int,
+) -> None:
+    session.write_transaction(
+        _load_function_apps_snapshots_tx, data_list,
+        update_tag,
+    )
 
 
-def load_function_apps_webjobs(session: neo4j.Session, data_list: List[Dict],
-                               update_tag: int) -> None:
-    session.write_transaction(_load_function_apps_webjobs_tx, data_list,
-                              update_tag)
+def load_function_apps_webjobs(
+    session: neo4j.Session, data_list: List[Dict],
+    update_tag: int,
+) -> None:
+    session.write_transaction(
+        _load_function_apps_webjobs_tx, data_list,
+        update_tag,
+    )
 
 
 @timeit
-def get_client(credentials: Credentials,
-               subscription_id: str) -> WebSiteManagementClient:
+def get_client(
+    credentials: Credentials,
+    subscription_id: str,
+) -> WebSiteManagementClient:
     client = WebSiteManagementClient(credentials, subscription_id)
     return client
 
@@ -75,7 +108,8 @@ def get_client(credentials: Credentials,
 def get_function_apps_list(client: WebSiteManagementClient) -> List[Dict]:
     try:
         function_app_list = list(
-            map(lambda x: x.as_dict(), client.web_apps.list()))
+            map(lambda x: x.as_dict(), client.web_apps.list()),
+        )
         for function in function_app_list:
             x = function['id'].split('/')
             function['resource_group'] = x[x.index('resourceGroups') + 1]
@@ -87,9 +121,11 @@ def get_function_apps_list(client: WebSiteManagementClient) -> List[Dict]:
         return []
 
 
-def _load_function_apps_tx(tx: neo4j.Transaction, subscription_id: str,
-                           function_apps_list: List[Dict],
-                           update_tag: int) -> None:
+def _load_function_apps_tx(
+    tx: neo4j.Transaction, subscription_id: str,
+    function_apps_list: List[Dict],
+    update_tag: int,
+) -> None:
     ingest_function_apps = """
     UNWIND {function_apps_list} AS function_app
     MERGE (f:AzureFunctionApp{id: function_app.id})
@@ -122,10 +158,14 @@ def _load_function_apps_tx(tx: neo4j.Transaction, subscription_id: str,
     )
 
 
-def cleanup_function_apps(neo4j_session: neo4j.Session,
-                          common_job_parameters: Dict) -> None:
-    run_cleanup_job('azure_import_function_apps_cleanup.json', neo4j_session,
-                    common_job_parameters)
+def cleanup_function_apps(
+    neo4j_session: neo4j.Session,
+    common_job_parameters: Dict,
+) -> None:
+    run_cleanup_job(
+        'azure_import_function_apps_cleanup.json', neo4j_session,
+        common_job_parameters,
+    )
 
 
 def sync_function_apps(
@@ -137,47 +177,70 @@ def sync_function_apps(
 ) -> None:
     client = get_client(credentials, subscription_id)
     function_apps_list = get_function_apps_list(client)
-    load_function_apps(neo4j_session, subscription_id, function_apps_list,
-                       update_tag)
+    load_function_apps(
+        neo4j_session, subscription_id, function_apps_list,
+        update_tag,
+    )
     cleanup_function_apps(neo4j_session, common_job_parameters)
-    sync_function_apps_conf(neo4j_session, function_apps_list, client,
-                            update_tag, common_job_parameters)
-    sync_function_apps_functions(neo4j_session, function_apps_list, client,
-                                 update_tag, common_job_parameters)
-    sync_function_apps_deployements(neo4j_session, function_apps_list, client,
-                                    update_tag, common_job_parameters)
-    sync_function_apps_processes(neo4j_session, function_apps_list, client,
-                                 update_tag, common_job_parameters)
-    sync_function_apps_backups(neo4j_session, function_apps_list, client,
-                               update_tag, common_job_parameters)
-    sync_function_apps_snapshots(neo4j_session, function_apps_list, client,
-                                 update_tag, common_job_parameters)
-    sync_function_apps_webjobs(neo4j_session, function_apps_list, client,
-                               update_tag, common_job_parameters)
+    sync_function_apps_conf(
+        neo4j_session, function_apps_list, client,
+        update_tag, common_job_parameters,
+    )
+    sync_function_apps_functions(
+        neo4j_session, function_apps_list, client,
+        update_tag, common_job_parameters,
+    )
+    sync_function_apps_deployements(
+        neo4j_session, function_apps_list, client,
+        update_tag, common_job_parameters,
+    )
+    sync_function_apps_processes(
+        neo4j_session, function_apps_list, client,
+        update_tag, common_job_parameters,
+    )
+    sync_function_apps_backups(
+        neo4j_session, function_apps_list, client,
+        update_tag, common_job_parameters,
+    )
+    sync_function_apps_snapshots(
+        neo4j_session, function_apps_list, client,
+        update_tag, common_job_parameters,
+    )
+    sync_function_apps_webjobs(
+        neo4j_session, function_apps_list, client,
+        update_tag, common_job_parameters,
+    )
 
 
 def get_function_apps_configuration_list(
         function_apps_list: List[Dict],
-        client: WebSiteManagementClient) -> List[Dict]:
+        client: WebSiteManagementClient,
+) -> List[Dict]:
     try:
-        function_apps_conf_list = []
+        function_apps_conf_list: List[Dict] = []
         for function in function_apps_list:
             function_apps_conf_list = function_apps_conf_list + list(
                 map(
                     lambda x: x.as_dict(),
                     client.web_apps.list_configurations(
-                        function['resource_group'], function['name'])))
+                        function['resource_group'], function['name'],
+                    ),
+                ),
+            )
 
         for conf in function_apps_conf_list:
             x = conf['id'].split('/')
             conf['resource_group'] = x[x.index('resourceGroups') + 1]
-            conf['function_app_id'] = conf['id'][:conf['id'].
-                                                 index("/config/web")]
+            conf['function_app_id'] = conf['id'][
+                :conf['id'].
+                index("/config/web")
+            ]
         return function_apps_conf_list
 
     except HttpResponseError as e:
         logger.warning(
-            f"Error while retrieving function app configurations - {e}")
+            f"Error while retrieving function app configurations - {e}",
+        )
         return []
 
 
@@ -225,10 +288,14 @@ def _load_function_apps_configurations_tx(
     )
 
 
-def cleanup_function_apps_conf(neo4j_session: neo4j.Session,
-                               common_job_parameters: Dict) -> None:
-    run_cleanup_job('azure_import_function_apps_conf_cleanup.json',
-                    neo4j_session, common_job_parameters)
+def cleanup_function_apps_conf(
+    neo4j_session: neo4j.Session,
+    common_job_parameters: Dict,
+) -> None:
+    run_cleanup_job(
+        'azure_import_function_apps_conf_cleanup.json',
+        neo4j_session, common_job_parameters,
+    )
 
 
 def sync_function_apps_conf(
@@ -239,29 +306,39 @@ def sync_function_apps_conf(
     common_job_parameters: Dict,
 ) -> None:
     function_app_conf_list = get_function_apps_configuration_list(
-        function_apps_list, client)
-    load_function_apps_configurations(neo4j_session, function_app_conf_list,
-                                      update_tag)
+        function_apps_list, client,
+    )
+    load_function_apps_configurations(
+        neo4j_session, function_app_conf_list,
+        update_tag,
+    )
     cleanup_function_apps_conf(neo4j_session, common_job_parameters)
 
 
 def get_function_apps_functions_list(
         function_apps_list: List[Dict],
-        client: WebSiteManagementClient) -> List[Dict]:
+        client: WebSiteManagementClient,
+) -> List[Dict]:
     try:
-        function_apps_functions_list = []
+        function_apps_functions_list: List[Dict] = []
         for function in function_apps_list:
             function_apps_functions_list = function_apps_functions_list + list(
                 map(
                     lambda x: x.as_dict(),
-                    client.web_apps.list_functions(function['resource_group'],
-                                                   function['name'])))
+                    client.web_apps.list_functions(
+                        function['resource_group'],
+                        function['name'],
+                    ),
+                ),
+            )
 
         for function in function_apps_functions_list:
             x = function['id'].split('/')
             function['resource_group'] = x[x.index('resourceGroups') + 1]
-            function['function_app_id'] = function['id'][:function['id'].
-                                                         index("/functions")]
+            function['function_app_id'] = function['id'][
+                :function['id'].
+                index("/functions")
+            ]
         return function_apps_functions_list
 
     except HttpResponseError as e:
@@ -299,10 +376,14 @@ def _load_function_apps_functions_tx(
     )
 
 
-def cleanup_function_apps_functions(neo4j_session: neo4j.Session,
-                                    common_job_parameters: Dict) -> None:
-    run_cleanup_job('azure_import_function_apps_function_cleanup.json',
-                    neo4j_session, common_job_parameters)
+def cleanup_function_apps_functions(
+    neo4j_session: neo4j.Session,
+    common_job_parameters: Dict,
+) -> None:
+    run_cleanup_job(
+        'azure_import_function_apps_function_cleanup.json',
+        neo4j_session, common_job_parameters,
+    )
 
 
 def sync_function_apps_functions(
@@ -313,34 +394,44 @@ def sync_function_apps_functions(
     common_job_parameters: Dict,
 ) -> None:
     function_apps_function_list = get_function_apps_functions_list(
-        function_apps_list, client)
-    load_function_apps_functions(neo4j_session, function_apps_function_list,
-                                 update_tag)
+        function_apps_list, client,
+    )
+    load_function_apps_functions(
+        neo4j_session, function_apps_function_list,
+        update_tag,
+    )
     cleanup_function_apps_functions(neo4j_session, common_job_parameters)
 
 
 def get_function_apps_deployments_list(
         function_apps_list: List[Dict],
-        client: WebSiteManagementClient) -> List[Dict]:
+        client: WebSiteManagementClient,
+) -> List[Dict]:
     try:
-        function_apps_deployments_list = []
+        function_apps_deployments_list: List[Dict] = []
         for function in function_apps_list:
             function_apps_deployments_list = function_apps_deployments_list + list(
                 map(
                     lambda x: x.as_dict(),
-                    client.web_apps.list_backups(function['resource_group'],
-                                                 function['name'])))
+                    client.web_apps.list_backups(
+                        function['resource_group'],
+                        function['name'],
+                    ),
+                ),
+            )
 
         for deployment in function_apps_deployments_list:
             x = deployment['id'].split('/')
             deployment['resource_group'] = x[x.index('resourceGroups') + 1]
             deployment['function_app_id'] = deployment[
-                'id'][:deployment['id'].index("/deployments")]
+                'id'
+            ][:deployment['id'].index("/deployments")]
         return function_apps_deployments_list
 
     except HttpResponseError as e:
         logger.warning(
-            f"Error while retrieving function apps deployments - {e}")
+            f"Error while retrieving function apps deployments - {e}",
+        )
         return []
 
 
@@ -371,10 +462,14 @@ def _load_function_apps_deployments_tx(
     )
 
 
-def cleanup_function_apps_deployements(neo4j_session: neo4j.Session,
-                                       common_job_parameters: Dict) -> None:
-    run_cleanup_job('azure_import_function_apps_deployements_cleanup.json',
-                    neo4j_session, common_job_parameters)
+def cleanup_function_apps_deployements(
+    neo4j_session: neo4j.Session,
+    common_job_parameters: Dict,
+) -> None:
+    run_cleanup_job(
+        'azure_import_function_apps_deployements_cleanup.json',
+        neo4j_session, common_job_parameters,
+    )
 
 
 def sync_function_apps_deployements(
@@ -385,29 +480,39 @@ def sync_function_apps_deployements(
     common_job_parameters: Dict,
 ) -> None:
     function_apps_deployments_list = get_function_apps_deployments_list(
-        function_apps_list, client)
-    load_function_apps_deployments(neo4j_session,
-                                   function_apps_deployments_list, update_tag)
+        function_apps_list, client,
+    )
+    load_function_apps_deployments(
+        neo4j_session,
+        function_apps_deployments_list, update_tag,
+    )
     cleanup_function_apps_deployements(neo4j_session, common_job_parameters)
 
 
 def get_function_apps_backups_list(
         function_apps_list: List[Dict],
-        client: WebSiteManagementClient) -> List[Dict]:
+        client: WebSiteManagementClient,
+) -> List[Dict]:
     try:
-        function_apps_backups_list = []
+        function_apps_backups_list: List[Dict] = []
         for function in function_apps_list:
             function_apps_backups_list = function_apps_backups_list + list(
                 map(
                     lambda x: x.as_dict(),
-                    client.web_apps.list_backups(function['resource_group'],
-                                                 function['name'])))
+                    client.web_apps.list_backups(
+                        function['resource_group'],
+                        function['name'],
+                    ),
+                ),
+            )
 
         for backup in function_apps_backups_list:
             x = backup['id'].split('/')
             backup['resource_group'] = x[x.index('resourceGroups') + 1]
-            backup['function_app_id'] = backup['id'][:backup['id'].
-                                                     index("/backups")]
+            backup['function_app_id'] = backup['id'][
+                :backup['id'].
+                index("/backups")
+            ]
         return function_apps_backups_list
 
     except HttpResponseError as e:
@@ -442,10 +547,14 @@ def _load_function_apps_backups_tx(
     )
 
 
-def cleanup_function_apps_backups(neo4j_session: neo4j.Session,
-                                  common_job_parameters: Dict) -> None:
-    run_cleanup_job('azure_import_function_apps_backups_cleanup.json',
-                    neo4j_session, common_job_parameters)
+def cleanup_function_apps_backups(
+    neo4j_session: neo4j.Session,
+    common_job_parameters: Dict,
+) -> None:
+    run_cleanup_job(
+        'azure_import_function_apps_backups_cleanup.json',
+        neo4j_session, common_job_parameters,
+    )
 
 
 def sync_function_apps_backups(
@@ -456,29 +565,39 @@ def sync_function_apps_backups(
     common_job_parameters: Dict,
 ) -> None:
     function_apps_backups_list = get_function_apps_backups_list(
-        function_apps_list, client)
-    load_function_apps_backups(neo4j_session, function_apps_backups_list,
-                               update_tag)
+        function_apps_list, client,
+    )
+    load_function_apps_backups(
+        neo4j_session, function_apps_backups_list,
+        update_tag,
+    )
     cleanup_function_apps_backups(neo4j_session, common_job_parameters)
 
 
 def get_function_apps_processes_list(
         function_apps_list: List[Dict],
-        client: WebSiteManagementClient) -> List[Dict]:
+        client: WebSiteManagementClient,
+) -> List[Dict]:
     try:
-        function_apps_processes_list = []
+        function_apps_processes_list: List[Dict] = []
         for function in function_apps_list:
             function_apps_processes_list = function_apps_processes_list + list(
                 map(
                     lambda x: x.as_dict(),
-                    client.web_apps.list_processes(function['resource_group'],
-                                                   function['name'])))
+                    client.web_apps.list_processes(
+                        function['resource_group'],
+                        function['name'],
+                    ),
+                ),
+            )
 
         for process in function_apps_processes_list:
             x = process['id'].split('/')
             process['resource_group'] = x[x.index('resourceGroups') + 1]
-            process['function_app_id'] = process['id'][:process['id'].
-                                                       index("/processes")]
+            process['function_app_id'] = process['id'][
+                :process['id'].
+                index("/processes")
+            ]
         return function_apps_processes_list
 
     except HttpResponseError as e:
@@ -513,10 +632,14 @@ def _load_function_apps_processes_tx(
     )
 
 
-def cleanup_function_apps_processes(neo4j_session: neo4j.Session,
-                                    common_job_parameters: Dict) -> None:
-    run_cleanup_job('azure_import_function_apps_processes_cleanup.json',
-                    neo4j_session, common_job_parameters)
+def cleanup_function_apps_processes(
+    neo4j_session: neo4j.Session,
+    common_job_parameters: Dict,
+) -> None:
+    run_cleanup_job(
+        'azure_import_function_apps_processes_cleanup.json',
+        neo4j_session, common_job_parameters,
+    )
 
 
 def sync_function_apps_processes(
@@ -527,29 +650,39 @@ def sync_function_apps_processes(
     common_job_parameters: Dict,
 ) -> None:
     function_apps_processes_list = get_function_apps_processes_list(
-        function_apps_list, client)
-    load_function_apps_processes(neo4j_session, function_apps_processes_list,
-                                 update_tag)
+        function_apps_list, client,
+    )
+    load_function_apps_processes(
+        neo4j_session, function_apps_processes_list,
+        update_tag,
+    )
     cleanup_function_apps_processes(neo4j_session, common_job_parameters)
 
 
 def get_function_apps_snapshots_list(
         function_apps_list: List[Dict],
-        client: WebSiteManagementClient) -> List[Dict]:
+        client: WebSiteManagementClient,
+) -> List[Dict]:
     try:
-        function_apps_snapshots_list = []
+        function_apps_snapshots_list: List[Dict] = []
         for function in function_apps_list:
             function_apps_snapshots_list = function_apps_snapshots_list + list(
                 map(
                     lambda x: x.as_dict(),
-                    client.web_apps.list_snapshots(function['resource_group'],
-                                                   function['name'])))
+                    client.web_apps.list_snapshots(
+                        function['resource_group'],
+                        function['name'],
+                    ),
+                ),
+            )
 
         for snapshot in function_apps_snapshots_list:
             x = snapshot['id'].split('/')
             snapshot['resource_group'] = x[x.index('resourceGroups') + 1]
-            snapshot['function_app_id'] = snapshot['id'][:snapshot['id'].
-                                                         index("/snapshots")]
+            snapshot['function_app_id'] = snapshot['id'][
+                :snapshot['id'].
+                index("/snapshots")
+            ]
         return function_apps_snapshots_list
 
     except HttpResponseError as e:
@@ -584,10 +717,14 @@ def _load_function_apps_snapshots_tx(
     )
 
 
-def cleanup_function_apps_snapshots(neo4j_session: neo4j.Session,
-                                    common_job_parameters: Dict) -> None:
-    run_cleanup_job('azure_import_function_apps_snapshots_cleanup.json',
-                    neo4j_session, common_job_parameters)
+def cleanup_function_apps_snapshots(
+    neo4j_session: neo4j.Session,
+    common_job_parameters: Dict,
+) -> None:
+    run_cleanup_job(
+        'azure_import_function_apps_snapshots_cleanup.json',
+        neo4j_session, common_job_parameters,
+    )
 
 
 def sync_function_apps_snapshots(
@@ -598,29 +735,39 @@ def sync_function_apps_snapshots(
     common_job_parameters: Dict,
 ) -> None:
     function_apps_snapshots_list = get_function_apps_snapshots_list(
-        function_apps_list, client)
-    load_function_apps_snapshots(neo4j_session, function_apps_snapshots_list,
-                                 update_tag)
+        function_apps_list, client,
+    )
+    load_function_apps_snapshots(
+        neo4j_session, function_apps_snapshots_list,
+        update_tag,
+    )
     cleanup_function_apps_snapshots(neo4j_session, common_job_parameters)
 
 
 def get_function_apps_webjobs_list(
         function_apps_list: List[Dict],
-        client: WebSiteManagementClient) -> List[Dict]:
+        client: WebSiteManagementClient,
+) -> List[Dict]:
     try:
-        function_apps_webjobs_list = []
+        function_apps_webjobs_list: List[Dict] = []
         for function in function_apps_list:
             function_apps_webjobs_list = function_apps_webjobs_list + list(
                 map(
                     lambda x: x.as_dict(),
-                    client.web_apps.list_web_jobs(function['resource_group'],
-                                                  function['name'])))
+                    client.web_apps.list_web_jobs(
+                        function['resource_group'],
+                        function['name'],
+                    ),
+                ),
+            )
 
         for webjob in function_apps_webjobs_list:
             x = webjob['id'].split('/')
             webjob['resource_group'] = x[x.index('resourceGroups') + 1]
-            webjob['function_app_id'] = webjob['id'][:webjob['id'].
-                                                     index("/webjobs")]
+            webjob['function_app_id'] = webjob['id'][
+                :webjob['id'].
+                index("/webjobs")
+            ]
         return function_apps_webjobs_list
 
     except HttpResponseError as e:
@@ -655,10 +802,14 @@ def _load_function_apps_webjobs_tx(
     )
 
 
-def cleanup_function_apps_webjobs(neo4j_session: neo4j.Session,
-                                  common_job_parameters: Dict) -> None:
-    run_cleanup_job('azure_import_function_apps_webjobs_cleanup.json',
-                    neo4j_session, common_job_parameters)
+def cleanup_function_apps_webjobs(
+    neo4j_session: neo4j.Session,
+    common_job_parameters: Dict,
+) -> None:
+    run_cleanup_job(
+        'azure_import_function_apps_webjobs_cleanup.json',
+        neo4j_session, common_job_parameters,
+    )
 
 
 def sync_function_apps_webjobs(
@@ -669,9 +820,12 @@ def sync_function_apps_webjobs(
     common_job_parameters: Dict,
 ) -> None:
     function_apps_webjobs_list = get_function_apps_webjobs_list(
-        function_apps_list, client)
-    load_function_apps_webjobs(neo4j_session, function_apps_webjobs_list,
-                               update_tag)
+        function_apps_list, client,
+    )
+    load_function_apps_webjobs(
+        neo4j_session, function_apps_webjobs_list,
+        update_tag,
+    )
     cleanup_function_apps_webjobs(neo4j_session, common_job_parameters)
 
 
@@ -683,8 +837,12 @@ def sync(
     update_tag: int,
     common_job_parameters: Dict,
 ) -> None:
-    logger.info("Syncing function apps for subscription '%s'.",
-                subscription_id)
+    logger.info(
+        "Syncing function apps for subscription '%s'.",
+        subscription_id,
+    )
 
-    sync_function_apps(neo4j_session, credentials, subscription_id, update_tag,
-                       common_job_parameters)
+    sync_function_apps(
+        neo4j_session, credentials, subscription_id, update_tag,
+        common_job_parameters,
+    )

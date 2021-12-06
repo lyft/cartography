@@ -47,11 +47,13 @@ class Credentials:
                 h = {
                     'Authorization':
                     'Bearer {}'.format(
-                        self.arm_credentials.token['access_token'])
+                        self.arm_credentials.token['access_token'],
+                    ),
                 }
                 r = requests.get(
                     'https://management.azure.com/tenants?api-version=2020-01-01',
-                    headers=h)
+                    headers=h,
+                )
                 r2 = r.json()
                 return r2.get('value')[0].get('tenantId')
             except requests.ConnectionError as e:
@@ -61,11 +63,13 @@ class Credentials:
     def get_credentials(self, resource: str) -> Any:
         if resource == 'arm':
             self.arm_credentials = self.get_fresh_credentials(
-                self.arm_credentials)
+                self.arm_credentials,
+            )
             return self.arm_credentials
         elif resource == 'aad_graph':
             self.aad_graph_credentials = self.get_fresh_credentials(
-                self.aad_graph_credentials)
+                self.aad_graph_credentials,
+            )
             return self.aad_graph_credentials
         else:
             raise Exception('Invalid credentials resource type')
@@ -76,7 +80,8 @@ class Credentials:
         """
         if self.context and hasattr(credentials, 'token'):
             expiration_datetime = datetime.fromtimestamp(
-                credentials.token['expires_on'])
+                credentials.token['expires_on'],
+            )
             current_datetime = datetime.now()
             expiration_delta = expiration_datetime - current_datetime
             if expiration_delta < timedelta(minutes=5):
@@ -91,8 +96,10 @@ class Credentials:
         authority_uri = AUTHORITY_HOST_URI + '/' + self.get_tenant_id()
         if self.context:
             existing_cache = self.context.cache
-            context = adal.AuthenticationContext(authority_uri,
-                                                 cache=existing_cache)
+            context = adal.AuthenticationContext(
+                authority_uri,
+                cache=existing_cache,
+            )
 
         else:
             context = adal.AuthenticationContext(authority_uri)
@@ -104,7 +111,8 @@ class Credentials:
         )
 
         new_credentials = AADTokenCredentials(
-            new_token, credentials.token.get('_client_id'))
+            new_token, credentials.token.get('_client_id'),
+        )
         return new_credentials
 
 
@@ -119,11 +127,13 @@ class Authenticator:
             logging.getLogger('adal-python').setLevel(logging.ERROR)
             logging.getLogger('msrest').setLevel(logging.ERROR)
             logging.getLogger('msrestazure.azure_active_directory').setLevel(
-                logging.ERROR)
+                logging.ERROR,
+            )
             logging.getLogger('urllib3').setLevel(logging.ERROR)
 
             arm_credentials, subscription_id, tenant_id = get_azure_cli_credentials(
-                with_tenant=True)
+                with_tenant=True,
+            )
             aad_graph_credentials, placeholder_1, placeholder_2 = get_azure_cli_credentials(
                 with_tenant=True,
                 resource='https://graph.windows.net',
@@ -149,10 +159,12 @@ class Authenticator:
 
             raise e
 
-    def authenticate_sp(self,
-                        tenant_id: str = None,
-                        client_id: str = None,
-                        client_secret: str = None) -> Credentials:
+    def authenticate_sp(
+        self,
+        tenant_id: str = None,
+        client_id: str = None,
+        client_secret: str = None,
+    ) -> Credentials:
         """
         Implements authentication for the Azure provider
         """
@@ -162,7 +174,8 @@ class Authenticator:
             logging.getLogger('adal-python').setLevel(logging.ERROR)
             logging.getLogger('msrest').setLevel(logging.ERROR)
             logging.getLogger('msrestazure.azure_active_directory').setLevel(
-                logging.ERROR)
+                logging.ERROR,
+            )
             logging.getLogger('urllib3').setLevel(logging.ERROR)
 
             arm_credentials = ClientSecretCredential(

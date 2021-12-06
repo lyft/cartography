@@ -7,12 +7,11 @@ import neo4j
 
 from . import compute
 from . import cosmosdb
+from . import function_app
 from . import sql
 from . import storage
 from . import subscription
 from . import tenant
-from . import function_app
-
 from .util.credentials import Authenticator
 from .util.credentials import Credentials
 from cartography.config import Config
@@ -28,16 +27,26 @@ def _sync_one_subscription(
     update_tag: int,
     common_job_parameters: Dict,
 ) -> None:
-    compute.sync(neo4j_session, credentials.arm_credentials, subscription_id,
-                 update_tag, common_job_parameters)
-    cosmosdb.sync(neo4j_session, credentials.arm_credentials, subscription_id,
-                  update_tag, common_job_parameters)
-    sql.sync(neo4j_session, credentials.arm_credentials, subscription_id,
-             update_tag, common_job_parameters)
-    function_app.sync(neo4j_session, credentials.arm_credentials,
-                      subscription_id, update_tag, common_job_parameters)
-    storage.sync(neo4j_session, credentials.arm_credentials, subscription_id,
-                 update_tag, common_job_parameters)
+    compute.sync(
+        neo4j_session, credentials.arm_credentials, subscription_id,
+        update_tag, common_job_parameters,
+    )
+    cosmosdb.sync(
+        neo4j_session, credentials.arm_credentials, subscription_id,
+        update_tag, common_job_parameters,
+    )
+    sql.sync(
+        neo4j_session, credentials.arm_credentials, subscription_id,
+        update_tag, common_job_parameters,
+    )
+    function_app.sync(
+        neo4j_session, credentials.arm_credentials,
+        subscription_id, update_tag, common_job_parameters,
+    )
+    storage.sync(
+        neo4j_session, credentials.arm_credentials, subscription_id,
+        update_tag, common_job_parameters,
+    )
 
 
 def _sync_tenant(
@@ -48,8 +57,10 @@ def _sync_tenant(
     common_job_parameters: Dict,
 ) -> None:
     logger.info("Syncing Azure Tenant: %s", tenant_id)
-    tenant.sync(neo4j_session, tenant_id, current_user, update_tag,
-                common_job_parameters)
+    tenant.sync(
+        neo4j_session, tenant_id, current_user, update_tag,
+        common_job_parameters,
+    )
 
 
 def _sync_multiple_subscriptions(
@@ -62,24 +73,32 @@ def _sync_multiple_subscriptions(
 ) -> None:
     logger.info("Syncing Azure subscriptions")
 
-    subscription.sync(neo4j_session, tenant_id, subscriptions, update_tag,
-                      common_job_parameters)
+    subscription.sync(
+        neo4j_session, tenant_id, subscriptions, update_tag,
+        common_job_parameters,
+    )
 
     for sub in subscriptions:
-        logger.info("Syncing Azure Subscription with ID '%s'",
-                    sub['subscriptionId'])
+        logger.info(
+            "Syncing Azure Subscription with ID '%s'",
+            sub['subscriptionId'],
+        )
         common_job_parameters['AZURE_SUBSCRIPTION_ID'] = sub['subscriptionId']
 
-        _sync_one_subscription(neo4j_session, credentials,
-                               sub['subscriptionId'], update_tag,
-                               common_job_parameters)
+        _sync_one_subscription(
+            neo4j_session, credentials,
+            sub['subscriptionId'], update_tag,
+            common_job_parameters,
+        )
 
     del common_job_parameters["AZURE_SUBSCRIPTION_ID"]
 
 
 @timeit
-def start_azure_ingestion(neo4j_session: neo4j.Session,
-                          config: Config) -> None:
+def start_azure_ingestion(
+    neo4j_session: neo4j.Session,
+    config: Config,
+) -> None:
     common_job_parameters = {
         "UPDATE_TAG": config.update_tag,
         "permission_relationships_file": config.permission_relationships_file,
@@ -97,9 +116,10 @@ def start_azure_ingestion(neo4j_session: neo4j.Session,
 
     except Exception as e:
         logger.error(
-            ("Unable to authenticate with Azure Service Principal, an error occurred: %s."
-             "Make sure your Azure Service Principal details are provided correctly."
-             ),
+            (
+                "Unable to authenticate with Azure Service Principal, an error occurred: %s."
+                "Make sure your Azure Service Principal details are provided correctly."
+            ),
             e,
         )
         return
@@ -117,7 +137,8 @@ def start_azure_ingestion(neo4j_session: neo4j.Session,
 
     else:
         subscriptions = subscription.get_current_azure_subscription(
-            credentials, credentials.subscription_id)
+            credentials, credentials.subscription_id,
+        )
 
     if not subscriptions:
         logger.warning(
