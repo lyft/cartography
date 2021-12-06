@@ -86,6 +86,22 @@
   - [Relationships](#relationships-39)
 - [AzureCosmosDBMongoDBCollection](#azurecosmosdbmongodbcollection)
   - [Relationships](#relationships-40)
+- [AzureNetwork](#azurenetwork)
+  - [Relationships](#relationships-41)
+- [AzureNetworkSubnet](#azurenetworksubnet)
+  - [Relationships](#relationships-42)
+- [AzureRoutetable](#azureroutetable)
+  - [Relationships](#relationships-43)
+- [AzureNetworkRoute](#azurenetworkroute)
+  - [Relationships](#relationships-44)
+- [AzureNetworkSecurityGroup](#azurenetworksecuritygroup)
+  - [Relationships](#relationships-45)
+- [AzureNetworkSecurityRule](#azurenetworksecurityrule)
+  - [Relationships](#relationships-46)
+- [AzurePublicIPAddress](#azurepublicipaddress)
+  - [Relationships](#relationships-47)
+- [AzureNetworkUsage](#azurenetworkusage)
+  - [Relationships](#relationships-48)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -1258,4 +1274,185 @@ Representation of an [AzureCosmosDBMongoDBCollection](https://docs.microsoft.com
 
         ```
         (AzureCosmosDBMongoDBDatabase)-[CONTAINS]->(AzureCosmosDBMongoDBCollection)
+        ```
+
+## AzureNetwork
+
+Representation of an [AzureNetwork](https://docs.microsoft.com/en-us/rest/api/virtualnetwork/virtual-networks/list-all).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The Azure Network ID number|
+|type | The type of the resource|
+|location | The location where Network is created|
+|resourcegroup | The Resource Group where Network is created|
+|name | The friendly name that identifies the Network|
+|resource_guid | The resourceGuid property of the Virtual Network peering resource|
+|provisioning_state | The provisioning state of the virtual network resource|
+|enable_ddos_protection | Indicates if DDoS protection is enabled for all the protected resources in the virtual network. It requires a DDoS protection plan associated with the resource |
+|etag | A unique read-only string that changes whenever the resource is updated|
+
+### Relationships
+
+- Azure Subscription contains one or more Networks.
+
+        ```
+        (AzureSubscription)-[RESOURCE]->(AzureNetwork)
+        ```
+
+## AzureNetworkSubnet
+
+Representation of an [AzureNetworkSubnet](https://docs.microsoft.com/en-us/rest/api/virtualnetwork/subnets).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The Azure Network Subnet ID number|
+|type | The type of the resource|
+|resourcegroup | The Resource Group where Network Subnet is created|
+|name | The friendly name that identifies the Network Subnet|
+|private_endpoint_network_policies | Enable or Disable apply network policies on private end point in the subnet|
+|private_link_service_network_policies | Enable or Disable apply network policies on private link service in the subnet|
+|etag | A unique read-only string that changes whenever the resource is updated|
+
+### Relationships
+
+- Azure Network contains one or more Subnets.
+
+        ```
+        (AzureNetwork)-[CONTAIN]->(AzureNetworkSubnet)
+        ```
+
+## AzureRoutetable
+
+Representation of an [AzureRoutetable](https://docs.microsoft.com/en-us/rest/api/virtualnetwork/route-tables).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The Azure Network Routetable ID number|
+|location | The location where Network Routetable is created|
+|type | The type of the resource|
+|resourcegroup | The Resource Group where Network Routetable is created|
+|name | The friendly name that identifies the Network Routetable|
+|etag | A unique read-only string that changes whenever the resource is updated|
+
+### Relationships
+
+- Azure Subscription contains one or more Routetables.
+
+        ```
+        (AzureSubscription)-[RESOURCE]->(AzureRoutetable)
+        ```
+
+## AzureNetworkRoute
+
+Representation of an [AzureNetworkRoute](https://docs.microsoft.com/en-us/rest/api/virtualnetwork/routes).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The Azure Network Route ID number|
+|type | The type of the resource|
+|name | The friendly name that identifies the Network Route|
+|etag | A unique read-only string that changes whenever the resource is updated|
+
+### Relationships
+
+- Azure Network contains one or more Routes.
+
+        ```
+        (AzureRoutetable)-[CONTAIN]->(AzureNetworkRoute)
+        ```
+
+## AzureNetworkSecurityGroup
+
+Representation of an [AzureNetworkSecurityGroup](https://docs.microsoft.com/en-us/rest/api/virtualnetwork/network-security-groups/list-all).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The Azure Network SecurityGroup ID number|
+|location | The location where Network SecurityGroup is created|
+|type | The type of the resource|
+|resourcegroup | The Resource Group where Network SecurityGroup is created|
+|name | The friendly name that identifies the Network Routetable|
+|etag | A unique read-only string that changes whenever the resource is updated|
+
+### Relationships
+
+- Azure Subscription contains one or more SecurityGroups.
+
+        ```
+        (AzureSubscription)-[RESOURCE]->(AzureNetworkSecurityGroup)
+        ```
+
+## AzureNetworkSecurityRule
+
+Representation of an [AzureNetworkSecurityRule](https://docs.microsoft.com/en-us/rest/api/virtualnetwork/security-rules/list).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The Azure Network SecurityRule ID number|
+|type | The type of the resource|
+|name | The friendly name that identifies the Network SecurityRule|
+|etag | A unique read-only string that changes whenever the resource is updated|
+
+### Relationships
+
+- Azure Network contains one or more SecurityRule.
+
+        ```
+        (AzureNetworkSecurityGroup)-[CONTAIN]->(AzureNetworkSecurityRule)
+        ```
+
+## AzurePublicIPAddress
+
+Representation of an [AzurePublicIPAddress](https://docs.microsoft.com/en-us/rest/api/virtualnetwork/public-ip-addresses/list-all).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The Azure Network PublicIPAddress ID number|
+|location | The location where Network PublicIPAddress is created|
+|type | The type of the resource|
+|resourcegroup | The Resource Group where Network PublicIPAddress is created|
+|name | The friendly name that identifies the Network PublicIPAddress|
+|etag | A unique read-only string that changes whenever the resource is updated|
+
+### Relationships
+
+- Azure Subscription contains one or more Public IP Address.
+
+        ```
+        (AzureSubscription)-[RESOURCE]->(AzurePublicIPAddress)
+        ```
+
+## AzureNetworkUsage
+
+Representation of an [AzureNetworkUsage](https://docs.microsoft.com/en-us/rest/api/virtualnetwork/virtual-networks/list-usage).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The Azure Network Useges ID number|
+|currentValue | The current value of the usage|
+|limit | The limit of usage|
+
+### Relationships
+
+- Azure Network contains one or more Usages.
+
+        ```
+        (AzureNetwork)-[CONTAIN]->(AzureNetworkUsage)
         ```
