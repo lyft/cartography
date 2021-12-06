@@ -1,8 +1,8 @@
 from cartography.intel.azure import aks
 from tests.data.azure.aks import DESCRIBE_CLUSTERS
+from tests.data.azure.aks import DESCRIBE_CONTAINERGROUPS
 from tests.data.azure.aks import DESCRIBE_CONTAINERREGISTRIES
 from tests.data.azure.aks import DESCRIBE_CONTAINERREGISTRYREPLICATIONS
-from tests.data.azure.aks import DESCRIBE_CONTAINERGROUPS
 from tests.data.azure.aks import DESCRIBE_CONTAINERREGISTRYRUNS
 from tests.data.azure.aks import DESCRIBE_CONTAINERREGISTRYTASKS
 from tests.data.azure.aks import DESCRIBE_CONTAINERREGISTRYWEBHOOKS
@@ -22,8 +22,10 @@ def test_load_clusters(neo4j_session):
     )
 
     expected_nodes = {
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerService/managedClusters/TestCluster1",
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerService/managedClusters/TestCluster2",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerService/managedClusters/\
+            TestCluster1",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerService/managedClusters/\
+            TestCluster2",
     }
 
     nodes = neo4j_session.run(
@@ -56,11 +58,13 @@ def test_load_network_relationships(neo4j_session):
     expected = {
         (
             TEST_SUBSCRIPTION_ID,
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerService/managedClusters/TestCluster1",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerService/managedClusters/\
+                TestCluster1",
         ),
         (
             TEST_SUBSCRIPTION_ID,
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerService/managedClusters/TestCluster2",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerService/managedClusters/\
+                TestCluster2",
         ),
     }
 
@@ -83,8 +87,10 @@ def test_load_container_registries(neo4j_session):
     )
 
     expected_nodes = {
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/TestContainerRegistry1",
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/TestContainerRegistry2",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/\
+            TestContainerRegistry1",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/\
+            TestContainerRegistry2",
     }
 
     nodes = neo4j_session.run(
@@ -117,11 +123,13 @@ def test_load_container_registry_relationships(neo4j_session):
     expected = {
         (
             TEST_SUBSCRIPTION_ID,
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/TestContainerRegistry1",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/\
+                TestContainerRegistry1",
         ),
         (
             TEST_SUBSCRIPTION_ID,
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/TestContainerRegistry2",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/\
+                TestContainerRegistry2",
         ),
     }
 
@@ -143,8 +151,10 @@ def test_load_container_registry_replications(neo4j_session):
     )
 
     expected_nodes = {
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/TestContainerRegistry1/replications/repli1",
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/TestContainerRegistry2/replications/repli2",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/\
+            TestContainerRegistry1/replications/repli1",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/\
+            TestContainerRegistry2/replications/repli2",
     }
 
     nodes = neo4j_session.run(
@@ -172,12 +182,16 @@ def test_load_container_registry_replication_relationships(neo4j_session):
 
     expected = {
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/TestContainerRegistry1",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/TestContainerRegistry1/replications/repli1",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/\
+                TestContainerRegistry1",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/\
+                TestContainerRegistry1/replications/repli1",
         ),
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/TestContainerRegistry2",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/TestContainerRegistry2/replications/repli2",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/\
+                TestContainerRegistry2",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/\
+                TestContainerRegistry2/replications/repli2",
         ),
     }
 
@@ -199,8 +213,10 @@ def test_load_container_registry_runs(neo4j_session):
     )
 
     expected_nodes = {
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/TestContainerRegistry1/runs/run1",
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/TestContainerRegistry2/runs/run2",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/\
+            TestContainerRegistry1/runs/run1",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/\
+            TestContainerRegistry2/runs/run2",
     }
 
     nodes = neo4j_session.run(
@@ -228,12 +244,16 @@ def test_load_container_registry_run_relationships(neo4j_session):
 
     expected = {
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/TestContainerRegistry1",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/TestContainerRegistry1/runs/run1",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/\
+                TestContainerRegistry1",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/\
+                TestContainerRegistry1/runs/run1",
         ),
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/TestContainerRegistry2",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/TestContainerRegistry2/runs/run2",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/\
+                TestContainerRegistry2",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/\
+                TestContainerRegistry2/runs/run2",
         ),
     }
 
@@ -255,8 +275,10 @@ def test_load_container_registry_tasks(neo4j_session):
     )
 
     expected_nodes = {
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/TestContainerRegistry1/tasks/task1",
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/TestContainerRegistry2/tasks/task2",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/\
+            TestContainerRegistry1/tasks/task1",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/\
+            TestContainerRegistry2/tasks/task2",
     }
 
     nodes = neo4j_session.run(
@@ -284,12 +306,16 @@ def test_load_container_registry_task_relationships(neo4j_session):
 
     expected = {
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/TestContainerRegistry1",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/TestContainerRegistry1/task/task1",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/\
+                TestContainerRegistry1",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/\
+                TestContainerRegistry1/task/task1",
         ),
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/TestContainerRegistry2",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/TestContainerRegistry2/tasks/task2",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/\
+                TestContainerRegistry2",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/\
+                TestContainerRegistry2/tasks/task2",
         ),
     }
 
@@ -311,8 +337,10 @@ def test_load_container_registry_webhooks(neo4j_session):
     )
 
     expected_nodes = {
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/TestContainerRegistry1/webhooks/webhook1",
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/TestContainerRegistry2/webhooks/webhook2",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/\
+            TestContainerRegistry1/webhooks/webhook1",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/\
+            TestContainerRegistry2/webhooks/webhook2",
     }
 
     nodes = neo4j_session.run(
@@ -340,12 +368,16 @@ def test_load_container_registry_webhook_relationships(neo4j_session):
 
     expected = {
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/TestContainerRegistry1",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/TestContainerRegistry1/webhooks/webhook1",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/\
+                TestContainerRegistry1",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/\
+                TestContainerRegistry1/webhooks/webhook1",
         ),
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/TestContainerRegistry2",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/TestContainerRegistry2/webhooks/webhook2",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/\
+                TestContainerRegistry2",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/\
+                TestContainerRegistry2/webhooks/webhook2",
         ),
     }
 
@@ -402,11 +434,13 @@ def test_load_container_group_relationships(neo4j_session):
     expected = {
         (
             TEST_SUBSCRIPTION_ID,
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerInstance/containerGroups/demo1",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerInstance/containerGroups/\
+                demo1",
         ),
         (
             TEST_SUBSCRIPTION_ID,
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerInstance/containerGroups/demo2",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerInstance/containerGroups/\
+                demo2",
         ),
     }
 
@@ -457,11 +491,13 @@ def test_load_container_relationships(neo4j_session):
 
     expected = {
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerInstance/containerGroups/demo1",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerInstance/containerGroups/\
+                demo1",
             "container1",
         ),
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerInstance/containerGroups/demo2",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerInstance/containerGroups/\
+                demo2",
             "container2",
         ),
     }

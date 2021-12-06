@@ -5,14 +5,13 @@ from typing import Optional
 
 import neo4j
 
+from . import aks
 from . import compute
 from . import cosmosdb
 from . import sql
 from . import storage
 from . import subscription
 from . import tenant
-from . import aks
-
 from .util.credentials import Authenticator
 from .util.credentials import Credentials
 from cartography.config import Config

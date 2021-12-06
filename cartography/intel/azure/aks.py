@@ -3,11 +3,10 @@ from typing import Dict
 from typing import List
 
 import neo4j
-
 from azure.core.exceptions import HttpResponseError
-from azure.mgmt.containerservice import ContainerServiceClient
-from azure.mgmt.containerregistry import ContainerRegistryManagementClient
 from azure.mgmt.containerinstance import ContainerInstanceManagementClient
+from azure.mgmt.containerregistry import ContainerRegistryManagementClient
+from azure.mgmt.containerservice import ContainerServiceClient
 
 from .util.credentials import Credentials
 from cartography.util import run_cleanup_job
@@ -20,7 +19,9 @@ def load_aks(session: neo4j.Session, subscription_id: str, data_list: List[Dict]
     session.write_transaction(_load_aks_tx, subscription_id, data_list, update_tag)
 
 
-def load_container_registries(session: neo4j.Session, subscription_id: str, data_list: List[Dict], update_tag: int) -> None:
+def load_container_registries(
+    session: neo4j.Session, subscription_id: str, data_list: List[Dict], update_tag: int,
+) -> None:
     session.write_transaction(_load_container_registries_tx, subscription_id, data_list, update_tag)
 
 
@@ -137,7 +138,9 @@ def get_container_registries_list(client: ContainerRegistryManagementClient) -> 
         return []
 
 
-def _load_container_registries_tx(tx: neo4j.Transaction, subscription_id: str, container_registries_list: List[Dict], update_tag: int) -> None:
+def _load_container_registries_tx(
+    tx: neo4j.Transaction, subscription_id: str, container_registries_list: List[Dict], update_tag: int,
+) -> None:
     ingest_container_registry = """
     UNWIND {container_registries_list} AS registry
     MERGE (a:AzureContainerRegistry{id: registry.id})
@@ -174,19 +177,36 @@ def sync_container_registries(
     container_registries_list = get_container_registries_list(client)
     load_container_registries(neo4j_session, subscription_id, container_registries_list, update_tag)
     cleanup_container_registries(neo4j_session, common_job_parameters)
-    sync_container_registry_replications(neo4j_session, client, container_registries_list, update_tag)
-    sync_container_registry_runs(neo4j_session, client, container_registries_list, update_tag)
-    sync_container_registry_tasks(neo4j_session, client, container_registries_list, update_tag)
-    sync_container_registry_webhooks(neo4j_session, client, container_registries_list, update_tag)
+    sync_container_registry_replications(
+        neo4j_session, client, container_registries_list, update_tag, common_job_parameters,
+    )
+    sync_container_registry_runs(
+        neo4j_session, client, container_registries_list, update_tag, common_job_parameters,
+    )
+    sync_container_registry_tasks(
+        neo4j_session, client, container_registries_list, update_tag, common_job_parameters,
+    )
+    sync_container_registry_webhooks(
+        neo4j_session, client, container_registries_list, update_tag, common_job_parameters,
+    )
 
 
 @ timeit
-def get_container_registry_replications_list(client: ContainerRegistryManagementClient, container_registries_list: List[Dict]) -> List[Dict]:
+def get_container_registry_replications_list(
+    client: ContainerRegistryManagementClient, container_registries_list: List[Dict],
+) -> List[Dict]:
     try:
-        container_registry_replications_list = []
+        container_registry_replications_list: List[Dict] = []
         for container_registry in container_registries_list:
             container_registry_replications_list = container_registry_replications_list + \
-                list(map(lambda x: x.as_dict(), client.replications.list(registry_name=container_registry['name'], resource_group_name=container_registry['resource_group'])))
+                list(
+                    map(
+                        lambda x: x.as_dict(), client.replications.list(
+                            registry_name=container_registry['name'],
+                            resource_group_name=container_registry['resource_group'],
+                        ),
+                    ),
+                )
 
         for replication in container_registry_replications_list:
             x = replication['id'].split('/')
@@ -200,7 +220,9 @@ def get_container_registry_replications_list(client: ContainerRegistryManagement
         return []
 
 
-def _load_container_registry_replications_tx(tx: neo4j.Transaction, container_registry_replications_list: List[Dict], update_tag: int) -> None:
+def _load_container_registry_replications_tx(
+    tx: neo4j.Transaction, container_registry_replications_list: List[Dict], update_tag: int,
+) -> None:
     ingest_container_replication = """
     UNWIND {container_registry_replications_list} AS replication
     MERGE (a:AzureContainerRegistryReplication{id: replication.id})
@@ -229,7 +251,8 @@ def cleanup_container_registry_replications(neo4j_session: neo4j.Session, common
 
 
 def sync_container_registry_replications(
-    neo4j_session: neo4j.Session, client: ContainerRegistryManagementClient, container_registries_list: List[Dict], update_tag: int,
+    neo4j_session: neo4j.Session, client: ContainerRegistryManagementClient,
+    container_registries_list: List[Dict], update_tag: int,
     common_job_parameters: Dict,
 ) -> None:
     container_registry_replications_list = get_container_registry_replications_list(client, container_registries_list)
@@ -238,12 +261,22 @@ def sync_container_registry_replications(
 
 
 @ timeit
-def get_container_registry_runs_list(client: ContainerRegistryManagementClient, container_registries_list: List[Dict]) -> List[Dict]:
+def get_container_registry_runs_list(
+    client: ContainerRegistryManagementClient,
+    container_registries_list: List[Dict],
+) -> List[Dict]:
     try:
-        container_registry_runs_list = []
+        container_registry_runs_list: List[Dict] = []
         for container_registry in container_registries_list:
             container_registry_runs_list = container_registry_runs_list + \
-                list(map(lambda x: x.as_dict(), client.runs.list(registry_name=container_registry['name'], resource_group_name=container_registry['resource_group'])))
+                list(
+                    map(
+                        lambda x: x.as_dict(), client.runs.list(
+                            registry_name=container_registry['name'],
+                            resource_group_name=container_registry['resource_group'],
+                        ),
+                    ),
+                )
 
         for run in container_registry_runs_list:
             x = run['id'].split('/')
@@ -257,7 +290,9 @@ def get_container_registry_runs_list(client: ContainerRegistryManagementClient, 
         return []
 
 
-def _load_container_registry_runs_tx(tx: neo4j.Transaction, container_registry_runs_list: List[Dict], update_tag: int) -> None:
+def _load_container_registry_runs_tx(
+    tx: neo4j.Transaction, container_registry_runs_list: List[Dict], update_tag: int,
+) -> None:
     ingest_container_run = """
     UNWIND {container_registry_runs_list} AS run
     MERGE (a:AzureContainerRegistryRun{id: run.id})
@@ -285,7 +320,8 @@ def cleanup_container_registry_runs(neo4j_session: neo4j.Session, common_job_par
 
 
 def sync_container_registry_runs(
-    neo4j_session: neo4j.Session, client: ContainerRegistryManagementClient, container_registries_list: List[Dict], update_tag: int,
+    neo4j_session: neo4j.Session, client: ContainerRegistryManagementClient,
+    container_registries_list: List[Dict], update_tag: int,
     common_job_parameters: Dict,
 ) -> None:
     container_registry_runs_list = get_container_registry_runs_list(client, container_registries_list)
@@ -294,12 +330,21 @@ def sync_container_registry_runs(
 
 
 @ timeit
-def get_container_registry_tasks_list(client: ContainerRegistryManagementClient, container_registries_list: List[Dict]) -> List[Dict]:
+def get_container_registry_tasks_list(
+    client: ContainerRegistryManagementClient, container_registries_list: List[Dict],
+) -> List[Dict]:
     try:
-        container_registry_tasks_list = []
+        container_registry_tasks_list: List[Dict] = []
         for container_registry in container_registries_list:
             container_registry_tasks_list = container_registry_tasks_list + \
-                list(map(lambda x: x.as_dict(), client.runs.list(registry_name=container_registry['name'], resource_group_name=container_registry['resource_group'])))
+                list(
+                    map(
+                        lambda x: x.as_dict(), client.runs.list(
+                            registry_name=container_registry['name'],
+                            resource_group_name=container_registry['resource_group'],
+                        ),
+                    ),
+                )
 
         for task in container_registry_tasks_list:
             x = task['id'].split('/')
@@ -313,7 +358,9 @@ def get_container_registry_tasks_list(client: ContainerRegistryManagementClient,
         return []
 
 
-def _load_container_registry_tasks_tx(tx: neo4j.Transaction, container_registry_tasks_list: List[Dict], update_tag: int) -> None:
+def _load_container_registry_tasks_tx(
+    tx: neo4j.Transaction, container_registry_tasks_list: List[Dict], update_tag: int,
+) -> None:
     ingest_container_task = """
     UNWIND {container_registry_tasks_list} AS task
     MERGE (a:AzureContainerRegistryTask{id: task.id})
@@ -342,7 +389,8 @@ def cleanup_container_registry_tasks(neo4j_session: neo4j.Session, common_job_pa
 
 
 def sync_container_registry_tasks(
-    neo4j_session: neo4j.Session, client: ContainerRegistryManagementClient, container_registries_list: List[Dict], update_tag: int,
+    neo4j_session: neo4j.Session, client: ContainerRegistryManagementClient,
+    container_registries_list: List[Dict], update_tag: int,
     common_job_parameters: Dict,
 ) -> None:
     container_registry_tasks_list = get_container_registry_tasks_list(client, container_registries_list)
@@ -351,12 +399,21 @@ def sync_container_registry_tasks(
 
 
 @ timeit
-def get_container_registry_webhooks_list(client: ContainerRegistryManagementClient, container_registries_list: List[Dict]) -> List[Dict]:
+def get_container_registry_webhooks_list(
+    client: ContainerRegistryManagementClient, container_registries_list: List[Dict],
+) -> List[Dict]:
     try:
-        container_registry_webhooks_list = []
+        container_registry_webhooks_list: List[Dict] = []
         for container_registry in container_registries_list:
             container_registry_webhooks_list = container_registry_webhooks_list + \
-                list(map(lambda x: x.as_dict(), client.webhooks.list(registry_name=container_registry['name'], resource_group_name=container_registry['resource_group'])))
+                list(
+                    map(
+                        lambda x: x.as_dict(), client.webhooks.list(
+                            registry_name=container_registry['name'],
+                            resource_group_name=container_registry['resource_group'],
+                        ),
+                    ),
+                )
 
         for webhook in container_registry_webhooks_list:
             x = webhook['id'].split('/')
@@ -370,7 +427,9 @@ def get_container_registry_webhooks_list(client: ContainerRegistryManagementClie
         return []
 
 
-def _load_container_registry_webhooks_tx(tx: neo4j.Transaction, container_registry_webhooks_list: List[Dict], update_tag: int) -> None:
+def _load_container_registry_webhooks_tx(
+    tx: neo4j.Transaction, container_registry_webhooks_list: List[Dict], update_tag: int,
+) -> None:
     ingest_container_webhook = """
     UNWIND {container_registry_webhooks_list} AS webhook
     MERGE (a:AzureContainerRegistryWebhook{id: webhook.id})
@@ -399,7 +458,8 @@ def cleanup_container_registry_webhooks(neo4j_session: neo4j.Session, common_job
 
 
 def sync_container_registry_webhooks(
-    neo4j_session: neo4j.Session, client: ContainerRegistryManagementClient, container_registries_list: List[Dict], update_tag: int,
+    neo4j_session: neo4j.Session, client: ContainerRegistryManagementClient,
+    container_registries_list: List[Dict], update_tag: int,
     common_job_parameters: Dict,
 ) -> None:
     container_registry_webhooks_list = get_container_registry_webhooks_list(client, container_registries_list)
@@ -423,7 +483,9 @@ def get_container_groups_list(client: ContainerInstanceManagementClient) -> List
         return []
 
 
-def _load_container_groups_tx(tx: neo4j.Transaction, subscription_id: str, container_groups_list: List[Dict], update_tag: int) -> None:
+def _load_container_groups_tx(
+    tx: neo4j.Transaction, subscription_id: str, container_groups_list: List[Dict], update_tag: int,
+) -> None:
     ingest_container_group = """
     UNWIND {container_groups_list} AS group
     MERGE (a:AzureContainerGroup{id: group.id})
@@ -460,13 +522,13 @@ def sync_container_groups(
     container_groups_list = get_container_groups_list(client)
     load_container_groups(neo4j_session, subscription_id, container_groups_list, update_tag)
     cleanup_container_groups(neo4j_session, common_job_parameters)
-    sync_containers(neo4j_session, container_groups_list, update_tag)
+    sync_containers(neo4j_session, container_groups_list, update_tag, common_job_parameters)
 
 
 @ timeit
 def get_containers_list(container_groups_list: List[Dict]) -> List[Dict]:
     try:
-        containers_list = []
+        containers_list: List[Dict] = []
         for container_group in container_groups_list:
             container_list = container_group['properties']['containers']
             for container in container_list:
