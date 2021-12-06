@@ -53,6 +53,7 @@ setup(
         "azure-mgmt-storage>=16.0.0",
         "azure-mgmt-sql>=0.11.0",
         "azure-identity>=1.5.0",
+        "azure-mgmt-resource>=10.2.0",
     ],
     extras_require={
         ':python_version<"3.7"': [
