@@ -5,7 +5,7 @@ from typing import List
 import neo4j
 from azure.core.exceptions import HttpResponseError
 from azure.graphrbac import GraphRbacManagementClient
-from util.credentials import Credentials
+from .util.credentials import Credentials
 
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
