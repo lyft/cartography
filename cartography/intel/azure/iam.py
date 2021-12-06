@@ -60,7 +60,7 @@ def _load_tenant_users_tx(
 ) -> None:
     ingest_user = """
     UNWIND {tenant_users_list} AS user
-    MERGE (i:AzureUser{name: user.display_name})
+    MERGE (i:AzureUser{displayName: user.displayName})
     ON CREATE SET i.firstseen = timestamp(),
     i.given_name = user.given_name,
     i.surname = user.surname,
