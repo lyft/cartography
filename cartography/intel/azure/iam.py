@@ -277,7 +277,7 @@ def _load_tenant_domains_tx(
     i.isRoot = domain.isRoot,
     i.isInitial = domain.isInitial
     SET i.lastupdated = {update_tag},
-    i.authenticationType = domain.authenticationType
+    i.authenticationType = domain.authenticationType,
     i.availabilityStatus = domain.availabilityStatus
     WITH i
     MATCH (owner:AzureTenant{id: {tenant_id}})
