@@ -3,11 +3,10 @@ from typing import Dict
 from typing import List
 
 import neo4j
-
 from azure.core.exceptions import HttpResponseError
 from azure.graphrbac import GraphRbacManagementClient
-
 from util.credentials import Credentials
+
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
@@ -26,7 +25,9 @@ def load_tenant_applications(session: neo4j.Session, tenant_id: str, data_list: 
     session.write_transaction(_load_tenant_applications_tx, tenant_id, data_list, update_tag)
 
 
-def load_tenant_service_accounts(session: neo4j.Session, tenant_id: str, data_list: List[Dict], update_tag: int) -> None:
+def load_tenant_service_accounts(
+    session: neo4j.Session, tenant_id: str, data_list: List[Dict], update_tag: int,
+) -> None:
     session.write_transaction(_load_tenant_service_accounts_tx, tenant_id, data_list, update_tag)
 
 
@@ -44,7 +45,8 @@ def get_graph_client(credentials: Credentials, tenant_id: str) -> GraphRbacManag
 def get_tenant_users_list(client: GraphRbacManagementClient) -> List[Dict]:
     try:
         tenant_users_list = list(
-            map(lambda x: x.as_dict(), client.users.list()))
+            map(lambda x: x.as_dict(), client.users.list()),
+        )
 
         return tenant_users_list
 
@@ -53,7 +55,9 @@ def get_tenant_users_list(client: GraphRbacManagementClient) -> List[Dict]:
         return []
 
 
-def _load_tenant_users_tx(tx: neo4j.Transaction, tenant_id: str, tenant_users_list: List[Dict], update_tag: int) -> None:
+def _load_tenant_users_tx(
+    tx: neo4j.Transaction, tenant_id: str, tenant_users_list: List[Dict], update_tag: int,
+) -> None:
     ingest_user = """
     UNWIND {tenant_users_list} AS user
     MERGE (i:AzureUser{name: user.display_name})
@@ -105,7 +109,9 @@ def get_tenant_groups_list(client: GraphRbacManagementClient) -> List[Dict]:
         return []
 
 
-def _load_tenant_groups_tx(tx: neo4j.Transaction, tenant_id: str, tenant_groups_list: List[Dict], update_tag: int) -> None:
+def _load_tenant_groups_tx(
+    tx: neo4j.Transaction, tenant_id: str, tenant_groups_list: List[Dict], update_tag: int,
+) -> None:
     ingest_group = """
     UNWIND {tenant_groups_list} AS group
     MERGE (i:AzureGroup{id: group.id})
@@ -157,7 +163,9 @@ def get_tenant_applications_list(client: GraphRbacManagementClient) -> List[Dict
         return []
 
 
-def _load_tenant_applications_tx(tx: neo4j.Transaction, tenant_id: str, tenant_applications_list: List[Dict], update_tag: int) -> None:
+def _load_tenant_applications_tx(
+    tx: neo4j.Transaction, tenant_id: str, tenant_applications_list: List[Dict], update_tag: int,
+) -> None:
     ingest_app = """
     UNWIND {tenant_applications_list} AS app
     MERGE (i:AzureApplication{id: app.appId})
@@ -207,7 +215,9 @@ def get_tenant_service_accounts_list(client: GraphRbacManagementClient) -> List[
         return []
 
 
-def _load_tenant_service_accounts_tx(tx: neo4j.Transaction, tenant_id: str, tenant_service_accounts_list: List[Dict], update_tag: int) -> None:
+def _load_tenant_service_accounts_tx(
+    tx: neo4j.Transaction, tenant_id: str, tenant_service_accounts_list: List[Dict], update_tag: int,
+) -> None:
     ingest_app = """
     UNWIND {tenant_service_accounts_list} AS service
     MERGE (i:AzureServiceAccount{name: service.displayName})
@@ -257,7 +267,9 @@ def get_tenant_domains_list(client: GraphRbacManagementClient) -> List[Dict]:
         return []
 
 
-def _load_tenant_domains_tx(tx: neo4j.Transaction, tenant_id: str, tenant_domains_list: List[Dict], update_tag: int) -> None:
+def _load_tenant_domains_tx(
+    tx: neo4j.Transaction, tenant_id: str, tenant_domains_list: List[Dict], update_tag: int,
+) -> None:
     ingest_domain = """
     UNWIND {tenant_domains_list} AS domain
     MERGE (i:AzureDomain{id: domain.id})

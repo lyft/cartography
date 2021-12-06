@@ -27,7 +27,7 @@ DESCRIBE_GROUPS = [
         "displayName": "Golf Assist",
         "expirationDateTime": None,
         "groupTypes": [
-            "Unified"
+            "Unified",
         ],
         "isAssignableToRole": None,
         "mail": "golfassist@contoso.com",
@@ -42,7 +42,7 @@ DESCRIBE_GROUPS = [
         "preferredLanguage": None,
         "proxyAddresses": [
             "smtp:golfassist@contoso.onmicrosoft.com",
-            "SMTP:golfassist@contoso.com"
+            "SMTP:golfassist@contoso.com",
         ],
         "renewedDateTime": "2018-12-22T02:21:05Z",
         "resourceBehaviorOptions": [],
@@ -74,7 +74,7 @@ DESCRIBE_GROUPS = [
         "preferredLanguage": None,
         "proxyAddresses": [
             "smtp:golftalk@contoso.onmicrosoft.com",
-            "SMTP:golftalk@contoso.com"
+            "SMTP:golftalk@contoso.com",
         ],
         "renewedDateTime": "2018-11-19T20:29:40Z",
         "resourceBehaviorOptions": [],
