@@ -3,7 +3,6 @@ from typing import Dict
 from typing import List
 
 import neo4j
-
 from azure.core.exceptions import HttpResponseError
 from azure.mgmt.resource import ResourceManagementClient
 
@@ -40,7 +39,9 @@ def get_resource_groups_list(client: ResourceManagementClient) -> List[Dict]:
         return []
 
 
-def _load_resource_groups_tx(tx: neo4j.Transaction, subscription_id: str, resource_groups_list: List[Dict], update_tag: int) -> None:
+def _load_resource_groups_tx(
+    tx: neo4j.Transaction, subscription_id: str, resource_groups_list: List[Dict], update_tag: int,
+) -> None:
     ingest_group = """
     UNWIND {resource_groups_list} AS group
     MERGE (t:AzureResourceGroup{id: group.id})
@@ -70,21 +71,31 @@ def cleanup_resource_groups(neo4j_session: neo4j.Session, common_job_parameters:
 
 
 @timeit
-def get_tags_list(neo4j_session: neo4j.Session, client: ResourceManagementClient, resource_groups_list: List[Dict]) -> List[Dict]:
+def get_tags_list(
+    neo4j_session: neo4j.Session, client: ResourceManagementClient, resource_groups_list: List[Dict],
+) -> List[Dict]:
     try:
-        tags_list = []
+        tags_list: List[Dict] = []
         for resorce_group in resource_groups_list:
             if "tags" in resorce_group.keys() and len(resorce_group['tags']) != 0:
                 for tagname in resorce_group['tags']:
-                    tags_list = tags_list + [{'id': resorce_group['id'] + "/providers/Microsoft.Resources/tags/" + tagname, 'name': tagname, 'value': resorce_group['tags']
-                                              [tagname], 'type': 'Microsoft.Resources/tags', 'resource_id': resorce_group['id'], 'resource_group': resorce_group['name']}]
+                    tags_list = tags_list + [{
+                        'id': resorce_group['id'] + "/providers/Microsoft.Resources/tags/" + tagname,
+                        'name': tagname, 'value': resorce_group['tags']
+                        [tagname], 'type': 'Microsoft.Resources/tags', 'resource_id': resorce_group['id'],
+                        'resource_group': resorce_group['name'],
+                    }]
             for resource in client.resources.list_by_resource_group(resource_group_name=resorce_group['name']):
                 if neo4j_session.run("MATCH (n) WHERE n.id={id} return count(*)", id=resource.id).single().value() == 1:
                     if resource.tags:
                         for tagname in resource.tags:
                             tags_list = tags_list + \
-                                [{'id': resource.id + "/providers/Microsoft.Resources/tags/" + tagname, 'name': tagname, 'value': resource.tags[tagname], 'type': 'Microsoft.Resources/tags',
-                                    'resource_id': resource.id, 'resource_group': resorce_group['name']}]
+                                [{
+                                    'id': resource.id + "/providers/Microsoft.Resources/tags/" + tagname,
+                                    'name': tagname, 'value': resource.tags[tagname],
+                                    'type': 'Microsoft.Resources/tags',
+                                    'resource_id': resource.id, 'resource_group': resorce_group['name'],
+                                }]
 
         return tags_list
 

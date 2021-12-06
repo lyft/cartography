@@ -10,8 +10,8 @@ from . import cosmosdb
 from . import sql
 from . import storage
 from . import subscription
-from . import tenant
 from . import tag
+from . import tenant
 from .util.credentials import Authenticator
 from .util.credentials import Credentials
 from cartography.config import Config
