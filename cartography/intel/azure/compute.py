@@ -84,11 +84,16 @@ def load_vms(neo4j_session: neo4j.Session, subscription_id: str, vm_list: List[D
 
 def get_vm_extensions_list(vm_list: List[Dict], client: ComputeManagementClient) -> List[Dict]:
     try:
-        vm_extensions_list = []
+        vm_extensions_list: List[Dict] = []
         for vm in vm_list:
             vm_extensions_list = vm_extensions_list + \
-                list(map(lambda x: x.as_dict(), client.virtual_machine_extensions.list(
-                    resource_group_name=vm['resource_group'], vm_name=vm['name'])))
+                list(
+                    map(
+                        lambda x: x.as_dict(), client.virtual_machine_extensions.list(
+                            resource_group_name=vm['resource_group'], vm_name=vm['name'],
+                        ),
+                    ),
+                )
 
         for extension in vm_extensions_list:
             x = extension['id'].split('/')
@@ -138,10 +143,15 @@ def sync_virtual_machine_extensions(
 
 def get_vm_available_sizes_list(vm_list: List[Dict], client: ComputeManagementClient) -> List[Dict]:
     try:
-        vm_available_sizes_list = []
+        vm_available_sizes_list: List[Dict] = []
         for vm in vm_list:
-            vm_available_size_list = list(map(lambda x: x.as_dict(), client.virtual_machines.list_available_sizes(
-                resource_group_name=vm['resource_group'], vm_name=vm['name'])))
+            vm_available_size_list = list(
+                map(
+                    lambda x: x.as_dict(), client.virtual_machines.list_available_sizes(
+                        resource_group_name=vm['resource_group'], vm_name=vm['name'],
+                    ),
+                ),
+            )
 
             for size in vm_available_size_list:
                 size['resource_group'] = vm['resource_group']
@@ -179,8 +189,10 @@ def _load_vm_available_sizes_tx(tx: neo4j.Transaction, vm_available_sizes_list: 
 
 
 def cleanup_virtual_machine_available_sizes(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
-    run_cleanup_job('azure_import_virtual_machines_vm_available_sizes_list_cleanup.json',
-                    neo4j_session, common_job_parameters)
+    run_cleanup_job(
+        'azure_import_virtual_machines_vm_available_sizes_list_cleanup.json',
+        neo4j_session, common_job_parameters,
+    )
 
 
 def sync_virtual_machine_available_sizes(
@@ -208,7 +220,9 @@ def get_vm_scale_sets_list(credentials: Credentials, subscription_id: str) -> Li
         return []
 
 
-def _load_vm_scale_sets_tx(tx: neo4j.Transaction, subscription_id: str, vm_scale_sets_list: List[Dict], update_tag: int) -> None:
+def _load_vm_scale_sets_tx(
+    tx: neo4j.Transaction, subscription_id: str, vm_scale_sets_list: List[Dict], update_tag: int,
+) -> None:
     ingest_scale_set = """
     UNWIND {vm_scale_sets_list} AS set
     MERGE (a:AzureVirtualMachineScaleSet{id: set.id})
@@ -246,16 +260,22 @@ def sync_vm_scale_sets(
     load_vm_scale_sets(neo4j_session, subscription_id, vm_scale_sets_list, update_tag)
     cleanup_vm_scale_sets(neo4j_session, common_job_parameters)
     sync_virtual_machine_scale_sets_extensions(
-        neo4j_session, client, vm_scale_sets_list, update_tag, common_job_parameters)
+        neo4j_session, client, vm_scale_sets_list, update_tag, common_job_parameters,
+    )
 
 
 def get_vm_scale_sets_extensions_list(vm_scale_sets_list: List[Dict], client: ComputeManagementClient) -> List[Dict]:
     try:
-        vm_scale_sets_extensions_list = []
+        vm_scale_sets_extensions_list: List[Dict] = []
         for set in vm_scale_sets_list:
             vm_scale_sets_extensions_list = vm_scale_sets_extensions_list + \
-                list(map(lambda x: x.as_dict(), client.virtual_machine_scale_set_extensions.list(
-                    resource_group_name=set['resource_group'], vm_name=set['name'])))
+                list(
+                    map(
+                        lambda x: x.as_dict(), client.virtual_machine_scale_set_extensions.list(
+                            resource_group_name=set['resource_group'], vm_name=set['name'],
+                        ),
+                    ),
+                )
 
         for extension in vm_scale_sets_extensions_list:
             x = extension['id'].split('/')
@@ -269,7 +289,9 @@ def get_vm_scale_sets_extensions_list(vm_scale_sets_list: List[Dict], client: Co
         return []
 
 
-def _load_vm_scale_sets_extensions_tx(tx: neo4j.Transaction, vm_scale_sets_extensions_list: List[Dict], update_tag: int) -> None:
+def _load_vm_scale_sets_extensions_tx(
+    tx: neo4j.Transaction, vm_scale_sets_extensions_list: List[Dict], update_tag: int,
+) -> None:
     ingest_vm_scale_sets_extension = """
     UNWIND {vm_scale_sets_extensions_list} AS extension
     MERGE (v:AzureVirtualMachineScaleSetExtension{id: extension.id})
@@ -291,8 +313,10 @@ def _load_vm_scale_sets_extensions_tx(tx: neo4j.Transaction, vm_scale_sets_exten
 
 
 def cleanup_virtual_machine_scale_sets_extensions(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
-    run_cleanup_job('azure_import_virtual_machines_scale_sets_extensions_cleanup.json',
-                    neo4j_session, common_job_parameters)
+    run_cleanup_job(
+        'azure_import_virtual_machines_scale_sets_extensions_cleanup.json',
+        neo4j_session, common_job_parameters,
+    )
 
 
 def sync_virtual_machine_scale_sets_extensions(

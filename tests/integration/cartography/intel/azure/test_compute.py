@@ -2,9 +2,9 @@ from cartography.intel.azure import compute
 from tests.data.azure.compute import DESCRIBE_DISKS
 from tests.data.azure.compute import DESCRIBE_SNAPSHOTS
 from tests.data.azure.compute import DESCRIBE_VM_DATA_DISKS
-from tests.data.azure.compute import DESCRIBE_VMS
 from tests.data.azure.compute import DESCRIBE_VMAVAILABLESIZES
 from tests.data.azure.compute import DESCRIBE_VMEXTENSIONS
+from tests.data.azure.compute import DESCRIBE_VMS
 from tests.data.azure.compute import DESCRIBE_VMSCALESETEXTENSIONS
 from tests.data.azure.compute import DESCRIBE_VMSCALESETS
 
@@ -289,8 +289,10 @@ def test_load_vm_extensions(neo4j_session):
     )
 
     expected_nodes = {
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachines/TestVM/extensions/extensions1",
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachines/TestVM1/extensions/extensions2",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachines/TestVM/\
+            extensions/extensions1",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachines/TestVM1/\
+            extensions/extensions2",
     }
 
     nodes = neo4j_session.run(
@@ -319,11 +321,13 @@ def test_load_vm_extensions_relationships(neo4j_session):
     expected = {
         (
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachines/TestVM",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachines/TestVM/extensions/extensions1",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachines/TestVM/\
+                extensions/extensions1",
         ),
         (
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachines/TestVM1",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachines/TestVM1/extensions/extensions2",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachines/TestVM1/\
+                extensions/extensions2",
         ),
     }
 
@@ -437,11 +441,13 @@ def test_load_vms_scale_sets_relationships(neo4j_session):
     expected = {
         (
             TEST_SUBSCRIPTION_ID,
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachineScaleSets/set1",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachineScaleSets/\
+                set1",
         ),
         (
             TEST_SUBSCRIPTION_ID,
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachineScaleSets/set2",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachineScaleSets/\
+                set2",
         ),
     }
 
@@ -466,8 +472,10 @@ def test_load_vm_scale_set_extensions(neo4j_session):
     )
 
     expected_nodes = {
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachineScaleSets/set1/extensions/extension1",
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachineScaleSets/set2/extensions/extension2",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachineScaleSets/\
+            set1/extensions/extension1",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachineScaleSets/\
+            set2/extensions/extension2",
     }
 
     nodes = neo4j_session.run(
@@ -495,18 +503,23 @@ def test_load_vm_scale_set_extensions_relationships(neo4j_session):
 
     expected = {
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachineScaleSets/set1",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachineScaleSets/set1/extensions/extension1",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachineScaleSets/\
+                set1",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachineScaleSets/\
+                set1/extensions/extension1",
         ),
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachineScaleSets/set2",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachineScaleSets/set2/extensions/extension2",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachineScaleSets/\
+                set2",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachineScaleSets/\
+                set2/extensions/extension2",
         ),
     }
 
     result = neo4j_session.run(
         """
-        MATCH (n1:AzureVirtualMachineScaleSet)-[:CONTAIN]->(n2:AzureVirtualMachineScaleSetExtension) RETURN n1.id, n2.id;
+        MATCH (n1:AzureVirtualMachineScaleSet)-[:CONTAIN]->(n2:AzureVirtualMachineScaleSetExtension)
+         RETURN n1.id, n2.id;
         """, )
 
     actual = {(r['n1.id'], r['n2.id']) for r in result}
