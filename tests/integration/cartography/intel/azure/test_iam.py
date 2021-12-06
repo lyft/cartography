@@ -26,7 +26,7 @@ def test_load_users(neo4j_session):
         """
         MATCH (r:AzureUser) RETURN r.name;
         """, )
-    actual_nodes = {n['r.name'] for n in nodes}
+    actual_nodes = {n['r.displayName'] for n in nodes}
 
     assert actual_nodes == expected_nodes
 
@@ -65,7 +65,7 @@ def test_load_user_relationships(neo4j_session):
         MATCH (n1:AzureTenant)-[:RESOURCE]->(n2:AzureUser) RETURN n1.id, n2.name;
         """, )
 
-    actual = {(r['n1.id'], r['n2.name']) for r in result}
+    actual = {(r['n1.id'], r['n2.displayName']) for r in result}
 
     assert actual == expected
 
@@ -296,7 +296,7 @@ def test_load_domain_relationships(neo4j_session):
     expected = {
         (
             TEST_TENANT_ID,
-            "contoso2.com",
+            "contoso1.com",
         ),
         (
             TEST_TENANT_ID,
