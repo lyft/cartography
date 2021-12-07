@@ -130,6 +130,7 @@ class Authenticator:
                 logging.ERROR,
             )
             logging.getLogger('urllib3').setLevel(logging.ERROR)
+            logging.getLogger('azure.core.pipeline.policies.http_logging_policy').setLevel(logging.ERROR)
 
             arm_credentials, subscription_id, tenant_id = get_azure_cli_credentials(
                 with_tenant=True,
@@ -177,6 +178,7 @@ class Authenticator:
                 logging.ERROR,
             )
             logging.getLogger('urllib3').setLevel(logging.ERROR)
+            logging.getLogger('azure.core.pipeline.policies.http_logging_policy').setLevel(logging.ERROR)
 
             arm_credentials = ClientSecretCredential(
                 client_id=client_id,

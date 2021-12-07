@@ -116,7 +116,7 @@ def sync_trusted_origins(
     :return: Nothing
     """
 
-    logger.debug("Syncing Okta Trusted Origins")
+    logger.info("Syncing Okta Trusted Origins")
 
     api_client = create_api_client(okta_org_id, "/api/v1/trustedOrigins", okta_api_key)
 
