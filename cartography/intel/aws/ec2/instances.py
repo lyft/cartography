@@ -71,8 +71,8 @@ def load_ec2_instance_network_interfaces(neo4j_session: neo4j.Session, instance_
 
 @timeit
 def load_ec2_instances(
-    neo4j_session: neo4j.Session, data: List[Dict], region: str, current_aws_account_id: str,
-    update_tag: int,
+        neo4j_session: neo4j.Session, data: List[Dict], region: str, current_aws_account_id: str,
+        update_tag: int,
 ) -> None:
     ingest_reservation = """
     MERGE (reservation:EC2Reservation{reservationid: {ReservationId}})
@@ -246,6 +246,48 @@ def load_ec2_instances(
                     ).consume()  # TODO see issue 170
 
             load_ec2_instance_network_interfaces(neo4j_session, instance, update_tag)
+            instance_ebs_volumes_list = get_ec2_instance_ebs_volumes(instance)
+            load_ec2_instance_ebs_volumes(neo4j_session, instance_ebs_volumes_list, current_aws_account_id, update_tag)
+
+
+@timeit
+def get_ec2_instance_ebs_volumes(instance: Dict) -> List[Dict]:
+    instance_ebs_volumes_list: List[Dict] = []
+    if 'BlockDeviceMappings' in instance and len(instance['BlockDeviceMappings']) > 0:
+        for mapping in instance['BlockDeviceMappings']:
+            if 'VolumeId' in mapping['Ebs']:
+                mapping['InstanceId'] = instance["InstanceId"]
+                instance_ebs_volumes_list.append(mapping)
+    return instance_ebs_volumes_list
+
+
+@timeit
+def load_ec2_instance_ebs_volumes(
+        neo4j_session: neo4j.Session, data: List[Dict], current_aws_account_id: str, update_tag: int,
+) -> None:
+    ingest_volume = """
+    UNWIND {ebs_mappings_list} as em
+        MERGE (vol:EBSVolume{id: em.Ebs.VolumeId})
+        ON CREATE SET vol.firstseen = timestamp()
+        SET vol.lastupdated = {update_tag}, vol.deleteontermination = em.Ebs.DeleteOnTermination
+        WITH vol, em
+        MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+        MERGE (aa)-[r:RESOURCE]->(vol)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {update_tag}
+        WITH vol, em
+        MATCH (instance:EC2Instance{instanceid: em.InstanceId})
+        MERGE (vol)-[r:ATTACHED_TO]->(instance)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {update_tag}
+    """
+
+    neo4j_session.run(
+        ingest_volume,
+        ebs_mappings_list=data,
+        update_tag=update_tag,
+        AWS_ACCOUNT_ID=current_aws_account_id,
+    )
 
 
 @timeit
@@ -255,8 +297,8 @@ def cleanup_ec2_instances(neo4j_session: neo4j.Session, common_job_parameters: D
 
 @timeit
 def sync_ec2_instances(
-    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
-    update_tag: int, common_job_parameters: Dict,
+        neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str],
+        current_aws_account_id: str, update_tag: int, common_job_parameters: Dict,
 ) -> None:
     for region in regions:
         logger.info("Syncing EC2 instances for region '%s' in account '%s'.", region, current_aws_account_id)

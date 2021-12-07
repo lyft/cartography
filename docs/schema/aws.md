@@ -131,6 +131,32 @@
   - [Relationships](#relationships-60)
 - [EC2Image](#ec2image)
   - [Relationships](#relationships-61)
+- [EC2ReservedInstance](#ec2reservedinstance)
+  - [Relationships](#relationships-62)
+- [SecretsManagerSecret](#secretsmanagersecret)
+  - [Relationships](#relationships-63)
+- [EBSVolume](#ebsvolume)
+  - [Relationships](#relationships-64)
+- [EBSSnapshot](#ebssnapshot)
+  - [Relationships](#relationships-65)
+- [SQSQueue](#sqsqueue)
+  - [Relationships](#relationships-66)
+- [SecurityHub](#securityhub)
+  - [Relationships](#relationships-67)
+- [AWSConfigurationRecorder](#awsconfigurationrecorder)
+  - [Relationships](#relationships-68)
+- [AWSConfigDeliveryChannel](#awsconfigdeliverychannel)
+  - [Relationships](#relationships-69)
+- [AWSConfigRule](#awsconfigrule)
+  - [Relationships](#relationships-70)
+- [LaunchConfiguration](#launchconfiguration)
+  - [Relationships](#relationships-71)
+- [LaunchTemplate](#launchtemplate)
+  - [Relationships](#relationships-72)
+- [LaunchTemplateVersion](#launchtemplateversion)
+  - [Relationships](#relationships-73)
+- [ElasticIPAddress](#elasticipaddress)
+  - [Relationships](#relationships-74)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -152,18 +178,31 @@ Representation of an AWS Account.
         ```
         (AWSAccount)-[RESOURCE]->(AWSDNSZone,
                               AWSGroup,
+                              AWSLambda,
                               AWSPrincipal,
                               AWSUser,
+                              AWSVpc,
                               AutoScalingGroup,
                               DNSZone,
                               DynamoDBTable,
+                              EBSSnapshot,
+                              EBSVolume,
                               EC2Image,
                               EC2Instance,
                               EC2Reservation,
+                              EC2ReservedInstance,
                               EC2SecurityGroup,
+                              ElasticIPAddress,
                               ESDomain,
+                              LaunchConfiguration,
+                              LaunchTemplate,
+                              LaunchTemplateVersion,
                               LoadBalancer,
-                              AWSVpc)
+                              RDSCluster,
+                              RDSInstance,
+                              SecretsManagerSecret,
+                              SecurityHub,
+                              SQSQueue)
         ```
 
 - An `AWSPolicy` node is defined for an `AWSAccount`.
@@ -975,6 +1014,12 @@ Our representation of an AWS [EC2 Instance](https://docs.aws.amazon.com/AWSEC2/l
 
         ```
         (EC2Instance)-[TAGGED]->(AWSTag)
+        ```
+
+- AWS EBS Volumes are attached to an EC2 Instance
+
+        ```
+        (EBSVolume)-[ATTACHED_TO]->(EC2Instance)
         ```
 
 -  EC2 Instances can assume IAM Roles.
@@ -2037,6 +2082,10 @@ Representation of an AWS S3 [Bucket](https://docs.aws.amazon.com/AmazonS3/latest
 | anonymous\_actions |  List of anonymous internet accessible actions that may be run on the bucket.  This list is taken by running [policyuniverse](https://github.com/Netflix-Skunkworks/policyuniverse#internet-accessible-policy) on the policy that applies to the bucket.   |
 | anonymous\_access | True if this bucket has a policy applied to it that allows anonymous access or if it is open to the internet.  These policy determinations are made by using the [policyuniverse](https://github.com/Netflix-Skunkworks/policyuniverse) library.  |
 | region | The region that the bucket is in. Only defined if the S3 bucket has a [location constraint](https://docs.aws.amazon.com/AmazonS3/latest/dev/UsingBucket.html#access-bucket-intro) |
+| default\_encryption | True if this bucket has [default encryption](https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucket-encryption.html) enabled. |
+| encryption\_algorithm | The encryption algorithm used for default encryption. Only defined if the S3 bucket has default encryption enabled. |
+| encryption\_key\_id | The KMS key ID used for default encryption. Only defined if the S3 bucket has SSE-KMS enabled as the default encryption method. |
+| bucket\_key\_enabled | True if a bucket key is enabled, when using SSE-KMS as the default encryption method. |
 
 ### Relationships
 
@@ -2256,6 +2305,9 @@ Representation of an AWS [Auto Scaling Group Resource](https://docs.aws.amazon.c
 | name |  The name of the Auto Scaling group. |
 | createdtime | The date and time the group was created. |
 | launchconfigurationname | The name of the associated launch configuration. |
+| launchtemplatename | The name of the launch template. |
+| launchtemplateid | The ID of the launch template. |
+| launchtemplateversion | The version number of the launch template. |
 | maxsize | The maximum size of the group.|
 | minsize | The minimum size of the group.|
 | defaultcooldown | The duration of the default cooldown period, in seconds. |
@@ -2267,6 +2319,7 @@ Representation of an AWS [Auto Scaling Group Resource](https://docs.aws.amazon.c
 | maxinstancelifetime | The maximum amount of time, in seconds, that an instance can be in service. |
 | capacityrebalance | Indicates whether Capacity Rebalancing is enabled. |
 | region | The region of the auto scaling group. |
+
 
 [Link to API Documentation](https://docs.aws.amazon.com/autoscaling/ec2/APIReference/API_AutoScalingGroup.html) of AWS Auto Scaling Groups
 
@@ -2286,6 +2339,16 @@ Representation of an AWS [Auto Scaling Group Resource](https://docs.aws.amazon.c
 
         ```
         (EC2Instance)-[MEMBER_AUTO_SCALE_GROUP]->(AutoScalingGroup)
+        ```
+- AWS Auto Scaling Groups have Launch Configurations
+
+        ```
+        (AutoScalingGroup)-[HAS_LAUNCH_CONFIG]->(LaunchConfiguration)
+        ```
+- AWS Auto Scaling Groups have Launch Templates
+
+        ```
+        (AutoScalingGroup)-[HAS_LAUNCH_TEMPLATE]->(LaunchTemplate)
         ```
 
 ## EC2Image
@@ -2315,6 +2378,7 @@ Representation of an AWS [EC2 Images (AMIs)](https://docs.aws.amazon.com/AWSEC2/
 | bootmode | The boot mode of the image. |
 | region | The region of the image. |
 
+
 [Link to API Documentation](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_Image.html) of EC2 Images
 
 ### Relationships
@@ -2323,4 +2387,441 @@ Representation of an AWS [EC2 Images (AMIs)](https://docs.aws.amazon.com/AWSEC2/
 
         ```
         (AWSAccount)-[RESOURCE]->(EC2Image)
+        ```
+
+## EC2ReservedInstance
+
+Representation of an AWS [EC2 Reserved Instance](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-reserved-instances.html).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The ID of the Reserved Instance.|
+| availabilityzone | The Availability Zone in which the Reserved Instance can be used. |
+| duration | The duration of the Reserved Instance, in seconds. |
+| end | The time when the Reserved Instance expires. |
+| start | The date and time the Reserved Instance started.|
+| count | The number of reservations purchased.|
+| type | The instance type on which the Reserved Instance can be used. |
+| productdescription | The Reserved Instance product platform description. |
+| state | The state of the Reserved Instance purchase.  |
+| currencycode | The currency of the Reserved Instance. It's specified using ISO 4217 standard currency codes.|
+| instancetenancy | The tenancy of the instance.|
+| offeringclass | The offering class of the Reserved Instance.|
+| offeringtype | The Reserved Instance offering type.|
+| scope | The scope of the Reserved Instance.|
+| fixedprice | The purchase price of the Reserved Instance. |
+| region | The region of the reserved instance. |
+
+### Relationships
+
+- AWS EC2 Reserved Instances are a resource under the AWS Account.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(EC2ReservedInstance)
+        ```
+
+## SecretsManagerSecret
+
+Representation of an AWS [Secrets Manager Secret](https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_SecretListEntry.html)
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The arn of the secret. |
+| created\_date | The date and time when a secret was created. |
+| deleted\_date | The date and time the deletion of the secret occurred. Not present on active secrets. The secret can be recovered until the number of days in the recovery window has passed, as specified in the RecoveryWindowInDays parameter of the DeleteSecret operation. |
+| description | The user-provided description of the secret. |
+| kms\_key\_id | The ARN or alias of the AWS KMS customer master key (CMK) used to encrypt the SecretString and SecretBinary fields in each version of the secret. If you don't provide a key, then Secrets Manager defaults to encrypting the secret fields with the default KMS CMK, the key named awssecretsmanager, for this account. |
+| last\_accessed\_date | The last date that this secret was accessed. This value is truncated to midnight of the date and therefore shows only the date, not the time. |
+| last\_changed\_date | The last date and time that this secret was modified in any way. |
+| last\_rotated\_date | The most recent date and time that the Secrets Manager rotation process was successfully completed. This value is null if the secret hasn't ever rotated. |
+| name | The friendly name of the secret. You can use forward slashes in the name to represent a path hierarchy. For example, /prod/databases/dbserver1 could represent the secret for a server named dbserver1 in the folder databases in the folder prod. |
+| owning\_service | Returns the name of the service that created the secret. |
+| primary\_region | The Region where Secrets Manager originated the secret. |
+| rotation\_enabled | Indicates whether automatic, scheduled rotation is enabled for this secret. |
+| rotation\_lambda\_arn | The ARN of an AWS Lambda function invoked by Secrets Manager to rotate and expire the secret either automatically per the schedule or manually by a call to RotateSecret. |
+| rotation\_rules\_automatically\_after\_days | Specifies the number of days between automatic scheduled rotations of the secret. |
+
+### Relationships
+
+- AWS Secrets Manager Secrets are a resource under the AWS Account.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(SecretsManagerSecret)
+        ```
+
+## EBSVolume
+
+Representation of an AWS [EBS Volume](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-volumes.html).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The ID of the EBS Volume.|
+| availabilityzone | The Availability Zone for the volume. |
+| createtime | The time stamp when volume creation was initiated. |
+| encrypted | Indicates whether the volume is encrypted. |
+| size | The size of the volume, in GiBs.|
+| state | The volume state.|
+| outpostarn | The Amazon Resource Name (ARN) of the Outpost. |
+| snapshotid | The snapshot ID. |
+| iops | The number of I/O operations per second (IOPS).  |
+| type | The volume type.|
+| fastrestored | Indicates whether the volume was created using fast snapshot restore.|
+| multiattachenabled |Indicates whether Amazon EBS Multi-Attach is enabled.|
+| throughput | The throughput that the volume supports, in MiB/s.|
+| kmskeyid | The Amazon Resource Name (ARN) of the AWS Key Management Service (AWS KMS) customer master key (CMK) that was used to protect the volume encryption key for the volume.|
+| deleteontermination | Indicates whether the volume is deleted on instance termination. |
+| region | The region of the volume. |
+
+### Relationships
+
+- AWS EBS Volumes are a resource under the AWS Account.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(EBSVolume)
+        ```
+
+- AWS EBS Snapshots are created using EBS Volumes
+
+        ```
+        (EBSSnapshot)-[CREATED_FROM]->(EBSVolume)
+        ```
+
+- AWS EBS Volumes are attached to an EC2 Instance
+
+        ```
+        (EBSVolume)-[ATTACHED_TO]->(EC2Instance)
+        ```
+
+- `AWSTag`
+        ```
+        (EBSVolume)-[TAGGED]->(AWSTag)
+        ```
+
+## EBSSnapshot
+
+Representation of an AWS [EBS Snapshot](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSSnapshots.html).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The ID of the EBS Snapshot.|
+| description | The description of the snapshot. |
+| progress | The progress of the snapshot, as a percentage. |
+| encrypted |Indicates whether the snapshot is encrypted. |
+| starttime | The time stamp when the snapshot was initiated.|
+| state | The snapshot state.|
+| statemessage | Encrypted Amazon EBS snapshots are copied asynchronously. If a snapshot copy operation fails (for example, if the proper AWS Key Management Service (AWS KMS) permissions are not obtained) this field displays error state details to help you diagnose why the error occurred. This parameter is only returned by DescribeSnapshots .|
+| volumeid | The volume ID. |
+| volumesize | The size of the volume, in GiB.|
+| outpostarn | The ARN of the AWS Outpost on which the snapshot is stored. |
+| dataencryptionkeyid | The data encryption key identifier for the snapshot.|
+| kmskeyid | The Amazon Resource Name (ARN) of the AWS Key Management Service (AWS KMS) customer master key (CMK) that was used to protect the volume encryption key for the parent volume.|
+| region | The region of the snapshot. |
+
+### Relationships
+
+- AWS EBS Snapshots are a resource under the AWS Account.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(EBSSnapshot)
+        ```
+
+- AWS EBS Snapshots are created using EBS Volumes
+
+        ```
+        (EBSSnapshot)-[CREATED_FROM]->(EBSVolume)
+        ```
+
+## SQSQueue
+
+Representation of an AWS [SQS Queue](https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_GetQueueAttributes.html)
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The arn of the sqs queue. |
+| created\_timestamp | The time when the queue was created in seconds |
+| delay\_seconds | The default delay on the queue in seconds. |
+| last\_modified\_timestamp | The time when the queue was last changed in seconds. |
+| maximum\_message\_size | The limit of how many bytes a message can contain before Amazon SQS rejects it. |
+| message\_retention\_period | he length of time, in seconds, for which Amazon SQS retains a message. |
+| policy | The IAM policy of the queue. |
+| arn | The arn of the sqs queue. |
+| receive\_message\_wait\_time\_seconds | The length of time, in seconds, for which the ReceiveMessage action waits for a message to arrive. |
+| redrive\_policy\_dead\_letter\_target\_arn | The Amazon Resource Name (ARN) of the dead-letter queue to which Amazon SQS moves messages after the value of maxReceiveCount is exceeded. |
+| redrive\_policy\_max\_receive\_count | The number of times a message is delivered to the source queue before being moved to the dead-letter queue. When the ReceiveCount for a message exceeds the maxReceiveCount for a queue, Amazon SQS moves the message to the dead-letter-queue. |
+| visibility\_timeout | The visibility timeout for the queue. |
+| kms\_master\_key\_id | The ID of an AWS managed customer master key (CMK) for Amazon SQS or a custom CMK. |
+| kms\_data\_key\_reuse\_period\_seconds | The length of time, in seconds, for which Amazon SQS can reuse a data key to encrypt or decrypt messages before calling AWS KMS again. |
+| fifo\_queue | Whether or not the queue is FIFO. |
+| content\_based\_deduplication | Whether or not content-based deduplication is enabled for the queue. |
+| deduplication\_scope | Specifies whether message deduplication occurs at the message group or queue level. |
+| fifo\_throughput\_limit | Specifies whether the FIFO queue throughput quota applies to the entire queue or per message group. |
+
+### Relationships
+
+- AWS SQS Queues are a resource under the AWS Account.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(SQSQueue)
+        ```
+
+- AWS SQS Queues can have other SQS Queues configured as dead letter queues
+
+        ```
+        (SQSQueue)-[HAS_DEADLETTER_QUEUE]->(SQSQueue)
+        ```
+
+## SecurityHub
+
+Representation of the configuration of AWS [Security Hub](https://docs.aws.amazon.com/securityhub/1.0/APIReference/API_DescribeHub.html)
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The arn of the hub resource. |
+| subscribed\_at | The date and time when Security Hub was enabled in the account. |
+| auto\_enable\_controls | Whether to automatically enable new controls when they are added to standards that are enabled. |
+
+### Relationships
+
+- AWS Security Hub nodes are a resource under the AWS Account.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(SecurityHub)
+        ```
+
+## AWSConfigurationRecorder
+
+Representation of an AWS [Config Configuration Recorder](https://docs.aws.amazon.com/config/latest/APIReference/API_ConfigurationRecorder.html)
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | A combination of name:account\_id:region |
+| name | The name of the recorder. |
+| role\_arn | Amazon Resource Name (ARN) of the IAM role used to describe the AWS resources associated with the account. |
+| recording\_group\_all\_supported | Specifies whether AWS Config records configuration changes for every supported type of regional resource. |
+| recording\_group\_include\_global\_resource\_types | Specifies whether AWS Config includes all supported types of global resources (for example, IAM resources) with the resources that it records. |
+| recording\_group\_resource\_types | A comma-separated list that specifies the types of AWS resources for which AWS Config records configuration changes (for example, AWS::EC2::Instance or AWS::CloudTrail::Trail). |
+| region | The region of the configuration recorder. |
+
+### Relationships
+
+- AWS Configuration Recorders are a resource under the AWS Account.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(AWSConfigurationRecorder)
+        ```
+
+## AWSConfigDeliveryChannel
+
+Representation of an AWS [Config Delivery Channel](https://docs.aws.amazon.com/config/latest/APIReference/API_DeliveryChannel.html)
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | A combination of name:account\_id:region |
+| name | The name of the delivery channel. |
+| s3\_bucket\_name | The name of the Amazon S3 bucket to which AWS Config delivers configuration snapshots and configuration history files. |
+| s3\_key\_prefix | The prefix for the specified Amazon S3 bucket. |
+| s3\_kms\_key\_arn | The Amazon Resource Name (ARN) of the AWS Key Management Service (KMS) customer managed key (CMK) used to encrypt objects delivered by AWS Config. Must belong to the same Region as the destination S3 bucket. |
+| sns\_topic\_arn | The Amazon Resource Name (ARN) of the Amazon SNS topic to which AWS Config sends notifications about configuration changes. |
+| config\_snapshot\_delivery\_properties\_delivery\_frequency | The frequency with which AWS Config delivers configuration snapshots. |
+| region | The region of the delivery channel. |
+
+### Relationships
+
+- AWS Config Delivery Channels are a resource under the AWS Account.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(AWSConfigDeliveryChannel)
+        ```
+
+## AWSConfigRule
+
+Representation of an AWS [Config Rule](https://docs.aws.amazon.com/config/latest/APIReference/API_DeliveryChannel.html)
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The ARN of the config rule. |
+| name | The name of the delivery channel. |
+| description | The description that you provide for the AWS Config rule. |
+| arn | The ARN of the config rule. |
+| rule\_id | The ID of the AWS Config rule. |
+| scope\_compliance\_resource\_types | The resource types of only those AWS resources that you want to trigger an evaluation for the rule. You can only specify one type if you also specify a resource ID for ComplianceResourceId. |
+| scope\_tag\_key | The tag key that is applied to only those AWS resources that you want to trigger an evaluation for the rule. |
+| scope\_tag\_value | The tag value applied to only those AWS resources that you want to trigger an evaluation for the rule. If you specify a value for TagValue, you must also specify a value for TagKey. |
+| scope\_tag\_compliance\_resource\_id | The resource types of only those AWS resources that you want to trigger an evaluation for the rule. You can only specify one type if you also specify a resource ID for ComplianceResourceId. |
+| source\_owner | Indicates whether AWS or the customer owns and manages the AWS Config rule. |
+| source\_identifier | For AWS Config managed rules, a predefined identifier from a list. For example, IAM\_PASSWORD\_POLICY is a managed rule. |
+| source\_details | Provides the source and type of the event that causes AWS Config to evaluate your AWS resources. |
+| input\_parameters | A string, in JSON format, that is passed to the AWS Config rule Lambda function. |
+| maximum\_execution\_frequency | The maximum frequency with which AWS Config runs evaluations for a rule. |
+| created\_by | Service principal name of the service that created the rule. |
+| region | The region of the delivery channel. |
+
+### Relationships
+
+- AWS Config Rules are a resource under the AWS Account.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(AWSConfigRule)
+        ```
+
+## LaunchConfiguration
+
+Representation of an AWS [Launch Configuration](https://docs.aws.amazon.com/autoscaling/ec2/APIReference/API_LaunchConfiguration.html)
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The ARN of the launch configuration. |
+| name | The name of the launch configuration. |
+| arn | The ARN of the launch configuration. |
+| created\_time| The creation date and time for the launch configuration. |
+| image\_id | The ID of the Amazon Machine Image (AMI) to use to launch your EC2 instances. |
+| key\_name | The name of the key pair. |
+| security\_groups | A list that contains the security groups to assign to the instances in the Auto Scaling group. |
+| instance\_type | The instance type for the instances. |
+| kernel\_id | The ID of the kernel associated with the AMI. |
+| ramdisk\_id | The ID of the RAM disk associated with the AMI. |
+| instance\_monitoring\_enabled | If true, detailed monitoring is enabled. Otherwise, basic monitoring is enabled. |
+| spot\_price | The maximum hourly price to be paid for any Spot Instance launched to fulfill the request. |
+| iam\_instance\_profile | The name or the Amazon Resource Name (ARN) of the instance profile associated with the IAM role for the instance. |
+| ebs\_optimized | Specifies whether the launch configuration is optimized for EBS I/O (true) or not (false). |
+| associate\_public\_ip\_address | For Auto Scaling groups that are running in a VPC, specifies whether to assign a public IP address to the group's instances. |
+| placement\_tenancy | The tenancy of the instance, either default or dedicated. An instance with dedicated tenancy runs on isolated, single-tenant hardware and can only be launched into a VPC. |
+| region | The region of the launch configuration. |
+
+### Relationships
+
+- Launch Configurations are a resource under the AWS Account.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(LaunchConfiguration)
+        ```
+
+## LaunchTemplate
+
+Representation of an AWS [Launch Template]()
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The ID of the launch template. |
+| name | The name of the launch template. |
+| create\_time | The time launch template was created. |
+| created\_by | The principal that created the launch template. |
+| default\_version\_number | The version number of the default version of the launch template. |
+| latest\_version\_number | The version number of the latest version of the launch template. |
+| region | The region of the launch template. |
+
+### Relationships
+
+- Launch Templates are a resource under the AWS Account.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(LaunchTemplate)
+        ```
+- Launch templates have Launch Template Versions
+
+        ```
+        (LaunchTemplate)-[VERSION]->(LaunchTemplateVersion)
+        ```
+
+## LaunchTemplateVersion
+
+Representation of an AWS [Launch Template Version]()
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The ID of the launch template version (ID-version). |
+| name | The name of the launch template. |
+| create\_time | The time the version was created. |
+| created\_by | The principal that created the version. |
+| default\_version | Indicates whether the version is the default version. |
+| version\_number | The version number. |
+| version\_description | The description of the version. |
+| kernel\_id | The ID of the kernel, if applicable. |
+| ebs\_optimized | Indicates whether the instance is optimized for Amazon EBS I/O. |
+| iam\_instance\_profile\_arn | The Amazon Resource Name (ARN) of the instance profile. |
+| iam\_instance\_profile\_name | The name of the instance profile. |
+| image\_id | The ID of the AMI that was used to launch the instance. |
+| instance\_type | The instance type. |
+| key\_name | The name of the key pair. |
+| monitoring\_enabled | Indicates whether detailed monitoring is enabled. Otherwise, basic monitoring is enabled. |
+| ramdisk\_id | The ID of the RAM disk, if applicable. |
+| disable\_api\_termination | If set to true, indicates that the instance cannot be terminated using the Amazon EC2 console, command line tool, or API. |
+| instance\_initiated\_shutdown\_behavior | Indicates whether an instance stops or terminates when you initiate shutdown from the instance (using the operating system command for system shutdown). |
+| security\_group\_ids | The security group IDs. |
+| security\_groups | The security group names. |
+| region | The region of the launch template. |
+
+### Relationships
+
+- Launch Template Versions are a resource under the AWS Account.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(LaunchTemplateVersion)
+        ```
+
+## ElasticIPAddress
+
+Representation of an AWS EC2 [Elastic IP address](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_Address.html)
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The Allocation ID of the elastic IP address |
+| instance\_id | The ID of the instance that the address is associated with (if any). |
+| public\_ip | The Elastic IP address. |
+| allocation\_id | The ID representing the allocation of the address for use with EC2-VPC. |
+| association\_id | The ID representing the association of the address with an instance in a VPC. |
+| domain | Indicates whether this Elastic IP address is for use with instances in EC2-Classic (standard) or instances in a VPC (vpc). |
+| network\_interface\_id | The ID of the network interface. |
+| private\_ip\_address | The private IP address associated with the Elastic IP address. |
+| public\_ipv4\_pool | The ID of an address pool. |
+| network\_border\_group | The name of the unique set of Availability Zones, Local Zones, or Wavelength Zones from which AWS advertises IP addresses. |
+| customer\_owned\_ip | The customer-owned IP address. |
+| customer\_owned\_ipv4\_pool | The ID of the customer-owned address pool. |
+| carrier\_ip | The carrier IP address associated. This option is only available for network interfaces which reside in a subnet in a Wavelength Zone (for example an EC2 instance). |
+| region | The region of the IP. |
+
+### Relationships
+
+- Elastic IPs are a resource under the AWS Account.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(ElasticIPAddress)
+        ```
+
+- Elastic IPs can be attached to EC2 instances
+
+        ```
+        (EC2Instance)-[ELASTIC_IP_ADDRESS]->(ElasticIPAddress)
+        ```
+
+- Elastic IPs can be attached to NetworkInterfaces
+
+        ```
+        (NetworkInterface)-[ELASTIC_IP_ADDRESS]->(ElasticIPAddress)
         ```
