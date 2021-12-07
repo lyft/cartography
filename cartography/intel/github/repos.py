@@ -1,3 +1,4 @@
+import configparser
 import logging
 from string import Template
 from typing import Any
@@ -13,7 +14,6 @@ from packaging.utils import canonicalize_name
 from cartography.intel.github.util import fetch_all
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
-
 
 logger = logging.getLogger(__name__)
 
@@ -76,6 +76,11 @@ GITHUB_ORG_REPOS_PAGINATED_GRAPHQL = """
                             text
                         }
                     }
+                    setupCfg:object(expression: "HEAD:setup.cfg") {
+                        ... on Blob {
+                            text
+                        }
+                    }
                 }
             }
         }
@@ -121,7 +126,8 @@ def transform(repos_json: List[Dict]) -> Dict:
         _transform_repo_objects(repo_object, transformed_repo_list)
         _transform_repo_owners(repo_object['owner']['url'], repo_object, transformed_repo_owners)
         _transform_collaborators(repo_object['collaborators'], repo_object['url'], transformed_collaborators)
-        _transform_python_requirements(repo_object['requirements'], repo_object['url'], transformed_requirements_files)
+        _transform_requirements_txt(repo_object['requirements'], repo_object['url'], transformed_requirements_files)
+        _transform_setup_cfg_requirements(repo_object['setupCfg'], repo_object['url'], transformed_requirements_files)
     results = {
         'repos': transformed_repo_list,
         'repo_languages': transformed_repo_languages,
@@ -235,56 +241,125 @@ def _transform_collaborators(collaborators: Dict, repo_url: str, transformed_col
             transformed_collaborators[user_permission].append(user)
 
 
-def _transform_python_requirements(req_file_contents: Dict, repo_url: str, out_requirements_files: List[Dict]) -> None:
+def _transform_requirements_txt(
+    req_file_contents: Optional[Dict],
+    repo_url: str,
+    out_requirements_files: List[Dict],
+) -> None:
     """
-    Performs data transformations for the requirements.txt files in a GitHub repo, if available.
-    :param req_file_contents: str: The text contents of the requirements file.
+    Performs data transformations for the requirements.txt file in a GitHub repo, if available.
+    :param req_file_contents: Dict: The contents of the requirements.txt file.
     :param repo_url: str: The URL of the GitHub repo.
     :param out_requirements_files: Output array to append transformed results to.
     :return: Nothing.
     """
     if req_file_contents and req_file_contents.get('text'):
         text_contents = req_file_contents['text']
+        requirements_list = text_contents.split("\n")
+        _transform_python_requirements(requirements_list, repo_url, out_requirements_files)
 
-        parsed_list = []
-        for line in text_contents.split("\n"):
-            try:
-                # Remove trailing comments and extra whitespace
-                line = line.partition('#')[0].strip()
-                req = Requirement(line)
-                parsed_list.append(req)
-            except InvalidRequirement as e:
-                logger.info(
-                    f"Failed to parse line \"{line}\" in repo {repo_url}'s requirements.txt; skipping line. "
-                    f"Details: {e}. This is probably ok since we don't support all ways to specify Python "
-                    f"requirements.",
-                )
-                continue
 
-        for req in parsed_list:
-            pinned_version = None
-            if len(req.specifier) == 1:
-                specifier = next(iter(req.specifier))
-                if specifier.operator == '==':
-                    pinned_version = specifier.version
+def _transform_setup_cfg_requirements(
+    setup_cfg_contents: Optional[Dict],
+    repo_url: str,
+    out_requirements_files: List[Dict],
+) -> None:
+    """
+    Performs data transformations for the setup.cfg file in a GitHub repo, if available.
+    :param setup_cfg_contents: Dict: Contains contents of a repo's setup.cfg file.
+    :param repo_url: str: The URL of the GitHub repo.
+    :param out_requirements_files: Output array to append transformed results to.
+    :return: Nothing.
+    """
+    if not setup_cfg_contents or not setup_cfg_contents.get('text'):
+        return
+    text_contents = setup_cfg_contents['text']
+    setup_cfg = configparser.ConfigParser()
+    try:
+        setup_cfg.read_string(text_contents)
+    except configparser.Error:
+        logger.info(
+            f"Failed to parse {repo_url}'s setup.cfg; skipping.",
+            exc_info=True,
+        )
+        return
+    requirements_list = parse_setup_cfg(setup_cfg)
+    _transform_python_requirements(requirements_list, repo_url, out_requirements_files)
 
-            # Set `spec` to a default value. Example values for str(req.specifier): "<4.0,>=3.0" or "==1.0.0".
-            spec: Optional[str] = str(req.specifier)
-            # Set spec to `None` instead of empty string so that the Neo4j driver will leave the library.specifier field
-            # undefined. As convention, we prefer undefined values over empty strings in the graph.
-            if spec == '':
-                spec = None
 
-            canon_name = canonicalize_name(req.name)
-            requirement_id = f"{canon_name}|{pinned_version}" if pinned_version else canon_name
+def _transform_python_requirements(
+    requirements_list: List[str],
+    repo_url: str,
+    out_requirements_files: List[Dict],
+) -> None:
+    """
+    Helper function to perform data transformations on an arbitrary list of requirements.
+    :param requirements_list: List[str]: List of requirements
+    :param repo_url: str: The URL of the GitHub repo.
+    :param out_requirements_files: Output array to append transformed results to.
+    :return: Nothing.
+    """
+    parsed_list = []
+    for line in requirements_list:
+        stripped_line = line.partition('#')[0].strip()
+        if stripped_line == '':
+            continue
+        try:
+            req = Requirement(stripped_line)
+        except InvalidRequirement:
+            # INFO and not WARN/ERROR as we intentionally don't support all ways to specify Python requirements
+            logger.info(
+                f"Failed to parse line \"{line}\" in repo {repo_url}'s requirements.txt; skipping line.",
+                exc_info=True,
+            )
+            continue
+        parsed_list.append(req)
 
-            out_requirements_files.append({
-                "id": requirement_id,
-                "name": canon_name,
-                "specifier": spec,
-                "version": pinned_version,
-                "repo_url": repo_url,
-            })
+    for req in parsed_list:
+        pinned_version = None
+        if len(req.specifier) == 1:
+            specifier = next(iter(req.specifier))
+            if specifier.operator == '==':
+                pinned_version = specifier.version
+
+        # Set `spec` to a default value. Example values for str(req.specifier): "<4.0,>=3.0" or "==1.0.0".
+        spec: Optional[str] = str(req.specifier)
+        # Set spec to `None` instead of empty string so that the Neo4j driver will leave the library.specifier field
+        # undefined. As convention, we prefer undefined values over empty strings in the graph.
+        if spec == '':
+            spec = None
+
+        canon_name = canonicalize_name(req.name)
+        requirement_id = f"{canon_name}|{pinned_version}" if pinned_version else canon_name
+
+        out_requirements_files.append({
+            "id": requirement_id,
+            "name": canon_name,
+            "specifier": spec,
+            "version": pinned_version,
+            "repo_url": repo_url,
+        })
+
+
+def parse_setup_cfg(config: configparser.ConfigParser) -> List[str]:
+    reqs: List[str] = []
+    reqs.extend(_parse_setup_cfg_requirements(config.get("options", "install_requires", fallback="")))
+    reqs.extend(_parse_setup_cfg_requirements(config.get("options", "setup_requires", fallback="")))
+    if config.has_section("options.extras_require"):
+        for _, val in config.items("options.extras_require"):
+            reqs.extend(_parse_setup_cfg_requirements(val))
+    return reqs
+
+
+# logic taken from setuptools:
+# https://github.com/pypa/setuptools/blob/f359b8a7608c7f118710af02cb5edab4e6abb942/setuptools/config.py#L241-L258
+def _parse_setup_cfg_requirements(reqs: str, separator: str = ";") -> List[str]:
+    if "\n" in reqs:
+        reqs_list = reqs.splitlines()
+    else:
+        reqs_list = reqs.split(separator)
+
+    return [req.strip() for req in reqs_list if req.strip()]
 
 
 @timeit
