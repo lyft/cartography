@@ -3,7 +3,6 @@ import logging
 import neo4j
 from digitalocean import Account
 
-from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 
@@ -30,7 +29,6 @@ def sync_account(
     logger.info("Syncing Account")
     account_transformed = transform_account(account)
     load_account(neo4j_session, account_transformed, digitalocean_update_tag)
-    cleanup_account(neo4j_session, common_job_parameters)
     return
 
 
@@ -66,16 +64,4 @@ def load_account(neo4j_session: neo4j.Session, account: dict, digitalocean_updat
         Status=account['status'],
         digitalocean_update_tag=digitalocean_update_tag,
     )
-    return
-
-
-@timeit
-def cleanup_account(neo4j_session: neo4j.Session, common_job_parameters: dict) -> None:
-    """
-            Delete out-of-date DigitalOcean accounts and relationships
-            :param neo4j_session: The Neo4j session
-            :param common_job_parameters: dict of other job parameters to pass to Neo4j
-            :return: Nothing
-            """
-    run_cleanup_job('digitalocean_account_cleanup.json', neo4j_session, common_job_parameters)
     return

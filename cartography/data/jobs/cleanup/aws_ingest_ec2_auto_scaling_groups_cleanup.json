@@ -23,6 +23,16 @@
     "query": "MATCH (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(:EC2Instance)-[r:MEMBER_OF_EC2_SECURITY_GROUP]->(:EC2SecurityGroup) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
     "iterative": true,
     "iterationsize": 100
+  },
+  {
+    "query": "MATCH (:LaunchTemplate)<-[r:HAS_LAUNCH_TEMPLATE]-(:AutoScalingGroup)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+    "iterative": true,
+    "iterationsize": 100
+  },
+  {
+    "query": "MATCH (:LaunchConfiguration)<-[r:HAS_LAUNCH_CONFIG]-(:AutoScalingGroup)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+    "iterative": true,
+    "iterationsize": 100
   }],
   "name": "cleanup EC2Instance|EC2SecurityGroup"
 }

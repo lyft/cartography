@@ -320,7 +320,7 @@ def sync_extensions(
     try:
         user_extensions_json = get_users_extensions(crxcavator_api_key, crxcavator_base_url)
     except requests.exceptions.Timeout:
-        logger.warning(f"get_users_extensions() failed due to timeout. Skipping CRXcavator sync.")
+        logger.warning("get_users_extensions() failed due to timeout. Skipping CRXcavator sync.")
         return
     users, extensions_list, user_extensions = transform_user_extensions(user_extensions_json)
     extension_details = get_extensions(crxcavator_api_key, crxcavator_base_url, extensions_list)
