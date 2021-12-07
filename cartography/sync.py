@@ -15,6 +15,7 @@ import cartography.intel.digitalocean
 import cartography.intel.gcp
 import cartography.intel.github
 import cartography.intel.gsuite
+import cartography.intel.kubernetes
 import cartography.intel.okta
 from cartography.stats import set_stats_client
 
@@ -168,6 +169,7 @@ def build_default_sync():
         ('okta', cartography.intel.okta.start_okta_ingestion),
         ('github', cartography.intel.github.start_github_ingestion),
         ('digitalocean', cartography.intel.digitalocean.start_digitalocean_ingestion),
+        ('kubernetes', cartography.intel.kubernetes.start_k8s_ingestion),
         ('analysis', cartography.intel.analysis.run),
     ])
     return sync
