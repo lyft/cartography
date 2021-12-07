@@ -182,8 +182,8 @@ DESCRIBE_SNAPSHOTS = [
 DESCRIBE_VMEXTENSIONS = [
     {
         "id":
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachines/TestVM/\
-            extensions/extensions1",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/\
+            virtualMachines/TestVM/extensions/extensions1",
         "type":
         "Microsoft.Compute/virtualMachines/extensions",
         "resource_group":
@@ -196,8 +196,8 @@ DESCRIBE_VMEXTENSIONS = [
     },
     {
         "id":
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachines/TestVM1/\
-            extensions/extensions2",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/\
+            virtualMachines/TestVM1/extensions/extensions2",
         "type":
         "Microsoft.Compute/virtualMachines/extensions",
         "resource_group":
@@ -252,7 +252,8 @@ DESCRIBE_VMAVAILABLESIZES = [
 DESCRIBE_VMSCALESETS = [
     {
         "id":
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachineScaleSets/set1",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/\
+            virtualMachineScaleSets/set1",
         "type":
         "Microsoft.Compute/virtualMachineScaleSets",
         "resource_group":
@@ -263,7 +264,8 @@ DESCRIBE_VMSCALESETS = [
     },
     {
         "id":
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachineScaleSets/set2",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/\
+            virtualMachineScaleSets/set2",
         "type":
         "Microsoft.Compute/virtualMachineScaleSets",
         "resource_group":
@@ -277,8 +279,8 @@ DESCRIBE_VMSCALESETS = [
 DESCRIBE_VMSCALESETEXTENSIONS = [
     {
         "id":
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachineScaleSets/set1/\
-            extensions/extension1",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/\
+            virtualMachineScaleSets/set1/extensions/extension1",
         "type":
         "Microsoft.Compute/virtualMachineScaleSets/extensions",
         "resource_group":
@@ -286,12 +288,13 @@ DESCRIBE_VMSCALESETEXTENSIONS = [
         "name":
         "extension1",
         "set_id":
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachineScaleSets/set1",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/\
+            virtualMachineScaleSets/set1",
     },
     {
         "id":
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachineScaleSets/set2/\
-            extensions/extension2",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/\
+            virtualMachineScaleSets/set2/extensions/extension2",
         "type":
         "Microsoft.Compute/virtualMachineScaleSets/extensions",
         "resource_group":
@@ -299,6 +302,7 @@ DESCRIBE_VMSCALESETEXTENSIONS = [
         "name":
         "extension2",
         "set_id":
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachineScaleSets/set2",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/\
+            virtualMachineScaleSets/set2",
     },
 ]
