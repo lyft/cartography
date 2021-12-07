@@ -1,7 +1,7 @@
 import cartography.intel.gcp.apigateway
 import tests.data.gcp.apigateway
 
-TEST_PROJECT_NUMBER = '000000000000'
+TEST_PROJECT_ID = '000000000000'
 TEST_UPDATE_TAG = 123456789
 
 
@@ -10,7 +10,7 @@ def test_apigateway_locations(neo4j_session):
     cartography.intel.gcp.apigateway.load_apigateway_locations(
         neo4j_session,
         data,
-        TEST_PROJECT_NUMBER,
+        TEST_PROJECT_ID,
         TEST_UPDATE_TAG,
     )
 
@@ -35,7 +35,7 @@ def test_apigateway_api(neo4j_session):
     cartography.intel.gcp.apigateway.load_apis(
         neo4j_session,
         data,
-        TEST_PROJECT_NUMBER,
+        TEST_PROJECT_ID,
         TEST_UPDATE_TAG,
     )
 
@@ -60,7 +60,7 @@ def test_apigateway_apiconfig(neo4j_session):
     cartography.intel.gcp.apigateway.load_api_configs(
         neo4j_session,
         data,
-        TEST_PROJECT_NUMBER,
+        TEST_PROJECT_ID,
         TEST_UPDATE_TAG,
     )
 
@@ -85,7 +85,7 @@ def test_apigateway_gateway(neo4j_session):
     cartography.intel.gcp.apigateway.load_gateways(
         neo4j_session,
         data,
-        TEST_PROJECT_NUMBER,
+        TEST_PROJECT_ID,
         TEST_UPDATE_TAG,
     )
 
@@ -109,11 +109,11 @@ def test_apigateway_location_relationships(neo4j_session):
     # Create Test GCP Project
     neo4j_session.run(
         """
-        MERGE (gcp:GCPProject{id: {PROJECT_NUMBER}})
+        MERGE (gcp:GCPProject{id: {ProjectId}})
         ON CREATE SET gcp.firstseen = timestamp()
         SET gcp.lastupdated = {UPDATE_TAG}
         """,
-        PROJECT_NUMBER=TEST_PROJECT_NUMBER,
+        ProjectID=TEST_PROJECT_ID,
         UPDATE_TAG=TEST_UPDATE_TAG,
     )
 
@@ -122,13 +122,13 @@ def test_apigateway_location_relationships(neo4j_session):
     cartography.intel.gcp.apigateway.load_apigateway_locations(
         neo4j_session,
         data,
-        TEST_PROJECT_NUMBER,
+        TEST_PROJECT_ID,
         TEST_UPDATE_TAG,
     )
 
     expected = {
-        (TEST_PROJECT_NUMBER, 'projects/project123/locations/us-east1'),
-        (TEST_PROJECT_NUMBER, 'projects/project123/locations/us-east4'),
+        (TEST_PROJECT_ID, 'projects/project123/locations/us-east1'),
+        (TEST_PROJECT_ID, 'projects/project123/locations/us-east4'),
     }
 
     # Fetch relationships
@@ -149,11 +149,11 @@ def test_apigateway_api_relationships(neo4j_session):
     # Create Test GCP Project
     neo4j_session.run(
         """
-        MERGE (gcp:GCPProject{id: {PROJECT_NUMBER}})
+        MERGE (gcp:GCPProject{id: {ProjectID}})
         ON CREATE SET gcp.firstseen = timestamp()
         SET gcp.lastupdated = {UPDATE_TAG}
         """,
-        PROJECT_NUMBER=TEST_PROJECT_NUMBER,
+        ProjectId=TEST_PROJECT_ID,
         UPDATE_TAG=TEST_UPDATE_TAG,
     )
 
@@ -162,13 +162,13 @@ def test_apigateway_api_relationships(neo4j_session):
     cartography.intel.gcp.apigateway.load_apis(
         neo4j_session,
         data,
-        TEST_PROJECT_NUMBER,
+        TEST_PROJECT_ID,
         TEST_UPDATE_TAG,
     )
 
     expected = {
-        (TEST_PROJECT_NUMBER, 'projects/project123/locations/global/apis/compute'),
-        (TEST_PROJECT_NUMBER, 'projects/project123/locations/global/apis/storage'),
+        (TEST_PROJECT_ID, 'projects/project123/locations/global/apis/compute'),
+        (TEST_PROJECT_ID, 'projects/project123/locations/global/apis/storage'),
     }
 
     # Fetch relationships
@@ -191,7 +191,7 @@ def test_apigateway_apiconfigs_relationships(neo4j_session):
     cartography.intel.gcp.apigateway.load_apis(
         neo4j_session,
         data,
-        TEST_PROJECT_NUMBER,
+        TEST_PROJECT_ID,
         TEST_UPDATE_TAG,
     )
 
@@ -200,7 +200,7 @@ def test_apigateway_apiconfigs_relationships(neo4j_session):
     cartography.intel.gcp.apigateway.load_api_configs(
         neo4j_session,
         data,
-        TEST_PROJECT_NUMBER,
+        TEST_PROJECT_ID,
         TEST_UPDATE_TAG,
     )
 
@@ -235,7 +235,7 @@ def test_apigateway_gateway_relationships(neo4j_session):
     cartography.intel.gcp.apigateway.load_api_configs(
         neo4j_session,
         data,
-        TEST_PROJECT_NUMBER,
+        TEST_PROJECT_ID,
         TEST_UPDATE_TAG,
     )
 
@@ -244,7 +244,7 @@ def test_apigateway_gateway_relationships(neo4j_session):
     cartography.intel.gcp.apigateway.load_gateways(
         neo4j_session,
         data,
-        TEST_PROJECT_NUMBER,
+        TEST_PROJECT_ID,
         TEST_UPDATE_TAG,
     )
 
