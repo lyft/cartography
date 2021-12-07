@@ -1,10 +1,14 @@
 import logging
 import sys
 from functools import wraps
+from typing import Dict
+from typing import Optional
 
 import botocore
+import neo4j
 
 from cartography.graph.job import GraphJob
+from cartography.graph.statement import get_job_shortname
 from cartography.stats import get_stats_client
 
 if sys.version_info >= (3, 7):
@@ -23,10 +27,14 @@ def run_analysis_job(filename, neo4j_session, common_job_parameters, package='ca
             filename,
         ),
         common_job_parameters,
+        get_job_shortname(filename),
     )
 
 
-def run_cleanup_job(filename, neo4j_session, common_job_parameters, package='cartography.data.jobs.cleanup'):
+def run_cleanup_job(
+    filename: str, neo4j_session: neo4j.Session, common_job_parameters: Dict,
+    package: str = 'cartography.data.jobs.cleanup',
+) -> None:
     GraphJob.run_from_json(
         neo4j_session,
         read_text(
@@ -34,6 +42,7 @@ def run_cleanup_job(filename, neo4j_session, common_job_parameters, package='car
             filename,
         ),
         common_job_parameters,
+        get_job_shortname(filename),
     )
 
 
@@ -69,10 +78,11 @@ def timeit(method):
 # TODO Move this to cartography.intel.aws.util.common
 def aws_handle_regions(func):
     ERROR_CODES = [
+        'AccessDenied',
         'AccessDeniedException',
-        'UnrecognizedClientException',
-        'InvalidClientTokenId',
         'AuthFailure',
+        'InvalidClientTokenId',
+        'UnrecognizedClientException',
     ]
 
     def inner_function(*args, **kwargs):
@@ -87,3 +97,27 @@ def aws_handle_regions(func):
             else:
                 raise
     return inner_function
+
+
+def dict_value_to_str(obj: Dict, key: str) -> Optional[str]:
+    """
+    Convert the value referenced by the key in the dict to a string, if it exists, and return it. If it doesn't exist,
+    return None.
+    """
+    value = obj.get(key)
+    if value is not None:
+        return str(value)
+    else:
+        return None
+
+
+def dict_date_to_epoch(obj: Dict, key: str) -> Optional[int]:
+    """
+    Convert the date referenced by the key in the dict to an epoch timestamp, if it exists, and return it. If it
+    doesn't exist, return None.
+    """
+    value = obj.get(key)
+    if value is not None:
+        return int(value.timestamp())
+    else:
+        return None
