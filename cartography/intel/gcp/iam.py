@@ -90,7 +90,7 @@ def get_groups(admin: Resource, customer_id: str) -> List[Dict]:
 def get_service_accounts(iam: Resource, project_id: str) -> List[Dict]:
     service_accounts: List[Dict] = []
     try:
-        req = iam.projects().serviceAccounts().list(name='projects/{}'.format(project_id))
+        req = iam.projects().serviceAccounts().list(name=f'projects/{project_id}')
         while req is not None:
             res = req.execute()
             page = res.get('accounts', [])
@@ -173,7 +173,7 @@ def get_roles(iam: Resource, project_id: str) -> List[Dict]:
 def get_project_roles(iam: Resource, project_id: str) -> List[Dict]:
     roles: List[Dict] = []
     try:
-        req = iam.projects().roles().list(parent='projects/{}'.format(project_id), view="FULL")
+        req = iam.projects().roles().list(parent=f'projects/{project_id}', view="FULL")
         while req is not None:
             res = req.execute()
             page = res.get('roles', [])
@@ -211,6 +211,7 @@ def get_role_id(role_name: str, project_id: str) -> str:
 
     elif role_name.startswith('roles/'):
         return f'projects/{project_id}/roles/{role_name}'
+    return ''
 
 
 @timeit
@@ -231,12 +232,12 @@ def get_policy_bindings(crm: Resource, project_id: str) -> List[Dict]:
                     "Could not retrieve IAM Policy on project %s due to permissions issue. Code: %s, Message: %s"
                 ), project_id, err['code'], err['message'],
             )
-            return {}
+            return []
         else:
             raise
 
 
-def transform_bindings(bindings, project_id):
+def transform_bindings(bindings: List[Dict], project_id: str) -> tuple:
     users = []
     groups = []
     domains = []
@@ -248,7 +249,7 @@ def transform_bindings(bindings, project_id):
                 users.append({
                     "id": f'projects/{project_id}/users/{usr}',
                     "email": usr,
-                    "name": usr.split("@")[0]
+                    "name": usr.split("@")[0],
                 })
 
             elif member.startswith('group:'):
@@ -256,7 +257,7 @@ def transform_bindings(bindings, project_id):
                 groups.append({
                     "id": f'projects/{project_id}/groups/{grp}',
                     "email": grp,
-                    "name": grp.split('@')[0]
+                    "name": grp.split('@')[0],
                 })
 
             elif member.startswith('domain:'):
@@ -264,14 +265,21 @@ def transform_bindings(bindings, project_id):
                 domains.append({
                     "id": f'projects/{project_id}/domains/{dmn}',
                     "email": dmn,
-                    "name": dmn
+                    "name": dmn,
                 })
 
-    return [dict(s) for s in set(frozenset(d.items()) for d in users)], [dict(s) for s in set(frozenset(d.items()) for d in groups)], [dict(s) for s in set(frozenset(d.items()) for d in domains)]
+    return (
+        [dict(s) for s in {frozenset(d.items()) for d in users}],
+        [dict(s) for s in {frozenset(d.items()) for d in groups}],
+        [dict(s) for s in {frozenset(d.items()) for d in domains}],
+    )
 
 
 @timeit
-def load_service_accounts(neo4j_session: neo4j.Session, service_accounts: List[Dict], project_id: str, gcp_update_tag: int) -> None:
+def load_service_accounts(
+    neo4j_session: neo4j.Session,
+    service_accounts: List[Dict], project_id: str, gcp_update_tag: int,
+) -> None:
     ingest_service_accounts = """
     UNWIND {service_accounts_list} AS sa
     MERGE (u:GCPServiceAccount{id: sa.name})
@@ -300,7 +308,10 @@ def cleanup_service_accounts(neo4j_session: neo4j.Session, common_job_parameters
 
 
 @timeit
-def load_service_account_keys(neo4j_session: neo4j.Session, service_account_keys: List[Dict], service_account: str, gcp_update_tag: int) -> None:
+def load_service_account_keys(
+    neo4j_session: neo4j.Session, service_account_keys: List[Dict],
+    service_account: str, gcp_update_tag: int,
+) -> None:
     ingest_service_accounts = """
     UNWIND {service_account_keys_list} AS sa
     MERGE (u:GCPServiceAccountKey{id: sa.id})
@@ -365,7 +376,7 @@ def load_users(session: neo4j.Session, data_list: List[Dict], update_tag: int) -
 
 
 @timeit
-def _load_users_tx(tx: neo4j.Transaction, users: List[Dict], gcp_update_tag) -> None:
+def _load_users_tx(tx: neo4j.Transaction, users: List[Dict], gcp_update_tag: int) -> None:
     ingest_users = """
     UNWIND {users} as usr
     MERGE (user:GCPUser{id:usr.id})
@@ -417,7 +428,7 @@ def load_groups(session: neo4j.Session, data_list: List[Dict], update_tag: int) 
 
 
 @timeit
-def _load_groups_tx(tx: neo4j.Transaction, groups: List[Dict], gcp_update_tag) -> None:
+def _load_groups_tx(tx: neo4j.Transaction, groups: List[Dict], gcp_update_tag: int) -> None:
     ingest_groups = """
     UNWIND {groups} as grp
     MERGE (group:GCPGroup{id:grp.id})
@@ -453,7 +464,7 @@ def load_domains(session: neo4j.Session, data_list: List[Dict], update_tag: int)
 
 
 @timeit
-def _load_domains_tx(tx: neo4j.Transaction, domains: List[Dict], gcp_update_tag) -> None:
+def _load_domains_tx(tx: neo4j.Transaction, domains: List[Dict], gcp_update_tag: int) -> None:
     ingest_domains = """
     UNWIND {domains} as dmn
     MERGE (domain:GCPDomain{id:dmn.id})
@@ -492,20 +503,41 @@ def load_bindings(neo4j_session: neo4j.Session, bindings: List[Dict], project_id
 
         for member in binding['members']:
             if member.startswith('user:'):
-                attach_role_to_user(neo4j_session, role_id, f"projects/{project_id}/users/{member[len('user:'):]}", project_id, gcp_update_tag)
+                attach_role_to_user(
+                    neo4j_session, role_id, f"projects/{project_id}/users/{member[len('user:'):]}",
+                    project_id, gcp_update_tag,
+                )
 
             elif member.startswith('serviceAccount:'):
-                attach_role_to_service_account(neo4j_session, role_id, f"projects/{project_id}/serviceAccounts/{member[len('serviceAccount:'):]}", project_id, gcp_update_tag)
+                attach_role_to_service_account(
+                    neo4j_session,
+                    role_id, f"projects/{project_id}/serviceAccounts/\
+                                                   {member[len('serviceAccount:'):]}",
+                    project_id,
+                    gcp_update_tag,
+                )
 
             elif member.startswith('group:'):
-                attach_role_to_group(neo4j_session, role_id, f"projects/{project_id}/groups/{member[len('group:'):]}", project_id, gcp_update_tag)
+                attach_role_to_group(
+                    neo4j_session, role_id,
+                    f"projects/{project_id}/groups/{member[len('group:'):]}",
+                    project_id, gcp_update_tag,
+                )
 
             elif member.startswith('domain:'):
-                attach_role_to_domain(neo4j_session, role_id, f"projects/{project_id}/domains/{member[len('domain:'):]}", project_id, gcp_update_tag)
+                attach_role_to_domain(
+                    neo4j_session, role_id,
+                    f"projects/{project_id}/domains/{member[len('domain:'):]}",
+                    project_id,
+                    gcp_update_tag,
+                )
 
 
 @timeit
-def attach_role_to_user(neo4j_session: neo4j.Session, role_id: str, user_id: str, project_id: str, gcp_update_tag: int) -> None:
+def attach_role_to_user(
+    neo4j_session: neo4j.Session, role_id: str, user_id: str,
+    project_id: str, gcp_update_tag: int,
+) -> None:
     ingest_script = """
     MATCH (role:GCPRole{id:{RoleId}})
     MERGE (user:GCPUser{id:{UserId}})
@@ -523,7 +555,10 @@ def attach_role_to_user(neo4j_session: neo4j.Session, role_id: str, user_id: str
 
 
 @timeit
-def attach_role_to_service_account(neo4j_session: neo4j.Session, role_id: str, service_account_id: str, project_id: str, gcp_update_tag: int) -> None:
+def attach_role_to_service_account(
+    neo4j_session: neo4j.Session, role_id: str,
+    service_account_id: str, project_id: str, gcp_update_tag: int,
+) -> None:
     ingest_script = """
     MATCH (role:GCPRole{id:{RoleId}})
     MERGE (sa:GCPServiceAccount{id:{saId}})
@@ -541,7 +576,10 @@ def attach_role_to_service_account(neo4j_session: neo4j.Session, role_id: str, s
 
 
 @timeit
-def attach_role_to_group(neo4j_session: neo4j.Session, role_id: str, group_id: str, project_id: str, gcp_update_tag: int) -> None:
+def attach_role_to_group(
+    neo4j_session: neo4j.Session, role_id: str, group_id: str,
+    project_id: str, gcp_update_tag: int,
+) -> None:
     ingest_script = """
     MATCH (role:GCPRole{id:{RoleId}})
     MERGE (group:GCPGroup{id:{GroupId}})
@@ -559,7 +597,10 @@ def attach_role_to_group(neo4j_session: neo4j.Session, role_id: str, group_id: s
 
 
 @timeit
-def attach_role_to_domain(neo4j_session: neo4j.Session, role_id: str, domain_id: str, project_id: str, gcp_update_tag: int) -> None:
+def attach_role_to_domain(
+    neo4j_session: neo4j.Session, role_id: str, domain_id: str,
+    project_id: str, gcp_update_tag: int,
+) -> None:
     ingest_script = """
     MATCH (role:GCPRole{id:{RoleId}})
     MERGE (domain:GCPDomain{id:{DomainId}})

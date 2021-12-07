@@ -5,8 +5,8 @@ IAM_ROLES = [
         'description': 'Can view logs',
         'deleted': False,
         'includedPermissions': {
-            'logging.buckets.get'
-        }
+            'logging.buckets.get',
+        },
     },
     {
         'name': 'projects/project123/roles/compute.viewer',
@@ -14,9 +14,9 @@ IAM_ROLES = [
         'description': 'Can view compute instances',
         'deleted': False,
         'includedPermissions': {
-            'compute.instances.get'
-        }
-    }
+            'compute.instances.get',
+        },
+    },
 ]
 IAM_SERVICE_ACCOUNTS = [
     {
@@ -24,15 +24,15 @@ IAM_SERVICE_ACCOUNTS = [
         'projectId': 'project123',
         'uniqueId': 'abcproject123',
         'displayName': 'abc',
-        'disabled': False
+        'disabled': False,
     },
     {
         'name': 'projects/project123/serviceAccounts/defg@gmail.com',
         'projectId': 'project123',
         'uniqueId': 'defgproject123',
         'displayName': 'defg',
-        'disabled': False
-    }
+        'disabled': False,
+    },
 ]
 IAM_SERVICE_ACCOUNT_KEYS = [
     {
@@ -41,7 +41,7 @@ IAM_SERVICE_ACCOUNT_KEYS = [
         'keyOrigin': 'USER_PROVIDED',
         'keyAlgorithm': 'KEY_ALG_RSA_2048',
         'validBeforeTime': '2019-10-02T15:01:23Z',
-        'validAfterTime': '2020-10-02T15:01:23Z'
+        'validAfterTime': '2020-10-02T15:01:23Z',
     },
     {
         'name': 'defg@gmail.com/key456',
@@ -49,8 +49,8 @@ IAM_SERVICE_ACCOUNT_KEYS = [
         'keyOrigin': 'GOOGLE_PROVIDED',
         'keyAlgorithm': 'KEY_ALG_RSA_2048',
         'validBeforeTime': '2019-10-02T15:01:23Z',
-        'validAfterTime': '2020-10-02T15:01:23Z'
-    }
+        'validAfterTime': '2020-10-02T15:01:23Z',
+    },
 ]
 IAM_USERS = [
     {
@@ -65,7 +65,7 @@ IAM_USERS = [
         'name': {
             'fullName': 'abc',
             'familyName': '123',
-            'givenName': 'abc'
+            'givenName': 'abc',
         },
         'isMailboxSetup': True,
         'customerId': 'customer123',
@@ -75,7 +75,7 @@ IAM_USERS = [
         'suspensionReason': [],
         'creationTime': '2019-10-02T15:01:23Z',
         'deletionTime': '2021-10-02T15:01:23Z',
-        'gender': 'Male'
+        'gender': 'Male',
     },
     {
         'id': 'user456',
@@ -89,7 +89,7 @@ IAM_USERS = [
         'name': {
             'fullName': 'def',
             'familyName': '456',
-            'givenName': 'def'
+            'givenName': 'def',
         },
         'isMailboxSetup': True,
         'customerId': 'customer123',
@@ -99,40 +99,40 @@ IAM_USERS = [
         'suspensionReason': [],
         'creationTime': '2020-01-01T15:01:23Z',
         'deletionTime': '2020-12-31T15:01:23Z',
-        'gender': 'Female'
-    }
+        'gender': 'Female',
+    },
 ]
 IAM_GROUPS = [
     {
         'id': 'group123',
         'groupEmail': 'group123@example.com',
         'adminCreated': True,
-        'directMembersCount': 5
+        'directMembersCount': 5,
     },
     {
         'id': 'group456',
         'groupEmail': 'group456@example.com',
         'adminCreated': True,
-        'directMembersCount': 10
-    }
+        'directMembersCount': 10,
+    },
 ]
 IAM_DOMAINS = [
     {
         'domainAliases': {
             'parentDomainName': 'www.xyz.com',
-            'domainAliasName': 'helloworld.com'
+            'domainAliasName': 'helloworld.com',
         },
         'verified': True,
         'isPrimary': True,
-        'domainName': 'xyz.com'
+        'domainName': 'xyz.com',
     },
     {
         'domainAliases': {
             'parentDomainName': 'www.pqr.com',
-            'domainAliasName': 'hellouniverse.com'
+            'domainAliasName': 'hellouniverse.com',
         },
         'verified': True,
         'isPrimary': True,
-        'domainName': 'pqr.com'
-    }
+        'domainName': 'pqr.com',
+    },
 ]

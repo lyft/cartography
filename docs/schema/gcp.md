@@ -39,12 +39,16 @@
 - [GCP IAM](#gcp-iam)
   - [GCP IAM Roles](#gcp-iam-roles)
     - [Relationships](#relationships-16)
-  - [GCP IAM Workloadidentitypools](#gcp-iam-workloadidentitypools)
-    - [Relationships](#relationships-17)
-  - [GCP IAM Workloadidentitypoolsproviders](#gcp-iam-workloadidentitypoolsproviders)
-    - [Relationships](#relationships-18)
   - [GCP IAM Service Accounts](#gcp-iam-service-accounts)
+    - [Relationships](#relationships-17)
+  - [GCP IAM Service Account Keys](#gcp-iam-service-account-keys)
+    - [Relationships](#relationships-18)
+  - [GCP Users](#gcp-users)
     - [Relationships](#relationships-19)
+  - [GCP Groups](#gcp-groups)
+    - [Representation](#representation)
+  - [GCP Domins](#gcp-domins)
+    - [Relationships](#relationships-20)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 

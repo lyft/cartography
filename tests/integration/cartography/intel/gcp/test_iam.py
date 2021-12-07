@@ -13,7 +13,7 @@ def test_load_iam_roles(neo4j_session):
         neo4j_session,
         data,
         TEST_PROJECT_NUMBER,
-        TEST_UPDATE_TAG
+        TEST_UPDATE_TAG,
     )
 
     expected_nodes = {
@@ -38,7 +38,7 @@ def test_load_service_accounts(neo4j_session):
         neo4j_session,
         data,
         TEST_PROJECT_NUMBER,
-        TEST_UPDATE_TAG
+        TEST_UPDATE_TAG,
     )
 
     expected_nodes = {
@@ -63,7 +63,7 @@ def test_load_service_account_keys(neo4j_session):
         neo4j_session,
         data,
         TEST_PROJECT_NUMBER,
-        TEST_UPDATE_TAG
+        TEST_UPDATE_TAG,
     )
 
     expected_nodes = {
@@ -87,7 +87,7 @@ def test_load_iam_users(neo4j_session):
     cartography.intel.gcp.iam.load_users(
         neo4j_session,
         data,
-        TEST_UPDATE_TAG
+        TEST_UPDATE_TAG,
     )
 
     expected_nodes = {
@@ -111,7 +111,7 @@ def test_load_groups(neo4j_session):
     cartography.intel.gcp.iam.load_groups(
         neo4j_session,
         data,
-        TEST_UPDATE_TAG
+        TEST_UPDATE_TAG,
     )
 
     expected_nodes = {
@@ -135,7 +135,7 @@ def test_load_domains(neo4j_session):
     cartography.intel.gcp.iam.load_domains(
         neo4j_session,
         data,
-        TEST_UPDATE_TAG
+        TEST_UPDATE_TAG,
     )
 
     expected_nodes = {
@@ -172,7 +172,7 @@ def test_roles_relationships(neo4j_session):
         neo4j_session,
         data,
         TEST_PROJECT_NUMBER,
-        TEST_UPDATE_TAG
+        TEST_UPDATE_TAG,
     )
 
     expected = {
@@ -212,7 +212,7 @@ def test_service_accounts_relationships(neo4j_session):
         neo4j_session,
         data,
         TEST_PROJECT_NUMBER,
-        TEST_UPDATE_TAG
+        TEST_UPDATE_TAG,
     )
 
     expected = {
@@ -242,7 +242,7 @@ def test_service_accounts_keys_relationships(neo4j_session):
         neo4j_session,
         data,
         TEST_PROJECT_NUMBER,
-        TEST_UPDATE_TAG
+        TEST_UPDATE_TAG,
     )
 
     # Load Service Account Keys
@@ -251,7 +251,7 @@ def test_service_accounts_keys_relationships(neo4j_session):
         neo4j_session,
         data,
         TEST_PROJECT_NUMBER,
-        TEST_UPDATE_TAG
+        TEST_UPDATE_TAG,
     )
 
     expected = {
@@ -290,7 +290,7 @@ def test_users_relationships(neo4j_session):
     cartography.intel.gcp.iam.load_users(
         neo4j_session,
         data,
-        TEST_UPDATE_TAG
+        TEST_UPDATE_TAG,
     )
 
     expected = {
@@ -329,7 +329,7 @@ def test_groups_relationships(neo4j_session):
     cartography.intel.gcp.iam.load_groups(
         neo4j_session,
         data,
-        TEST_UPDATE_TAG
+        TEST_UPDATE_TAG,
     )
 
     expected = {
@@ -368,7 +368,7 @@ def test_domains_relationships(neo4j_session):
     cartography.intel.gcp.iam.load_domains(
         neo4j_session,
         data,
-        TEST_UPDATE_TAG
+        TEST_UPDATE_TAG,
     )
 
     expected = {
