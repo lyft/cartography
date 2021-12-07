@@ -208,6 +208,9 @@ DESCRIBE_NETWORKUSAGES = [
         "unit": "unit",
         "currentValue": 1234,
         "limit": 9999,
+        "network_id":
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
+            virtualNetworks/TestNetwork1",
     },
     {
         "id":
@@ -216,5 +219,8 @@ DESCRIBE_NETWORKUSAGES = [
         "unit": "unit",
         "currentValue": 1234,
         "limit": 9999,
+        "network_id":
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
+            virtualNetworks/TestNetwork2",
     },
 ]
