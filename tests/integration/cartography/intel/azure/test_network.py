@@ -22,9 +22,9 @@ def test_load_networks(neo4j_session):
     )
 
     expected_nodes = {
-        "subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
             virtualNetworks/TestNetwork1",
-        "subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
             virtualNetworks/TestNetwork2",
     }
 
@@ -58,12 +58,12 @@ def test_load_network_relationships(neo4j_session):
     expected = {
         (
             TEST_SUBSCRIPTION_ID,
-            "subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
             virtualNetworks/TestNetwork1",
         ),
         (
             TEST_SUBSCRIPTION_ID,
-            "subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
             virtualNetworks/TestNetwork2",
         ),
     }
