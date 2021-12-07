@@ -24,8 +24,8 @@ DESCRIBE_CLUSTERS = [
 DESCRIBE_CONTAINERREGISTRIES = [
     {
         "id":
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/\
-            registries/TestContainerRegistry1",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/\
+            Microsoft.ContainerRegistry/registries/TestContainerRegistry1",
         "type": "Microsoft.ContainerRegistry/registries",
         "location": "West US",
         "resource_group": "TestRG",
@@ -33,8 +33,8 @@ DESCRIBE_CONTAINERREGISTRIES = [
     },
     {
         "id":
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/\
-            registries/TestContainerRegistry2",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/\
+            Microsoft.ContainerRegistry/registries/TestContainerRegistry2",
         "type": "Microsoft.ContainerRegistry/registries",
         "location": "West US",
         "resource_group": "TestRG",
@@ -145,8 +145,8 @@ DESCRIBE_CONTAINERREGISTRYWEBHOOKS = [
 DESCRIBE_CONTAINERGROUPS = [
     {
         "id":
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerInstance/\
-            containerGroups/demo1",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/\
+            Microsoft.ContainerInstance/containerGroups/demo1",
         "type": "Microsoft.ContainerInstance/containerGroups",
         "location": "West US",
         "resource_group": "TestRG",
@@ -154,8 +154,8 @@ DESCRIBE_CONTAINERGROUPS = [
     },
     {
         "id":
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerInstance/\
-            containerGroups/demo2",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/\
+            Microsoft.ContainerInstance/containerGroups/demo2",
         "type": "Microsoft.ContainerInstance/containerGroups",
         "location": "West US",
         "resource_group": "TestRG",
