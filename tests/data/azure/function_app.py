@@ -36,7 +36,8 @@ DESCRIBE_FUNCTIONAPPS = [
 DESCRIBE_FUNCTIONAPPCONFIGURATIONS = [
     {
         "id":
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp1/config/Conf1",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
+            TestFunctionApp1/config/Conf1",
         "type":
         "Microsoft.Web/sites/config",
         "location":
@@ -84,7 +85,8 @@ DESCRIBE_FUNCTIONAPPCONFIGURATIONS = [
     },
     {
         "id":
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp2/config/Conf2",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
+            TestFunctionApp2/config/Conf2",
         "type":
         "Microsoft.Web/sites/config",
         "location":
@@ -135,8 +137,8 @@ DESCRIBE_FUNCTIONAPPCONFIGURATIONS = [
 DESCRIBE_FUNCTIONAPPFUNCTIONS = [
     {
         "id":
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp1/functions/\
-            functon1",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
+            TestFunctionApp1/functions/functon1",
         "type":
         "Microsoft.Web/sites/functions",
         "resource_group":
@@ -154,8 +156,8 @@ DESCRIBE_FUNCTIONAPPFUNCTIONS = [
     },
     {
         "id":
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp2/functions/\
-            functon2",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
+            TestFunctionApp2/functions/functon2",
         "type":
         "Microsoft.Web/sites/functions",
         "resource_group":
@@ -176,8 +178,8 @@ DESCRIBE_FUNCTIONAPPFUNCTIONS = [
 DESCRIBE_FUNCTIONAPPDEPLOYMENTS = [
     {
         "id":
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp1/deployments/\
-            deploy1",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
+            TestFunctionApp1/deployments/deploy1",
         "type":
         "Microsoft.Web/sites/deployments",
         "resource_group":
@@ -189,8 +191,8 @@ DESCRIBE_FUNCTIONAPPDEPLOYMENTS = [
     },
     {
         "id":
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp2/deployments/\
-            deploy2",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
+            TestFunctionApp2/deployments/deploy2",
         "type":
         "Microsoft.Web/sites/deployments",
         "resource_group":
@@ -205,8 +207,8 @@ DESCRIBE_FUNCTIONAPPDEPLOYMENTS = [
 DESCRIBE_FUNCTIONAPPBACKUPS = [
     {
         "id":
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp1/backups/\
-            backup1",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
+            TestFunctionApp1/backups/backup1",
         "type":
         "Microsoft.Web/sites/backups",
         "resource_group":
@@ -218,8 +220,8 @@ DESCRIBE_FUNCTIONAPPBACKUPS = [
     },
     {
         "id":
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp2/backups/\
-            backup2",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
+            TestFunctionApp2/backups/backup2",
         "type":
         "Microsoft.Web/sites/backups",
         "resource_group":
@@ -234,8 +236,8 @@ DESCRIBE_FUNCTIONAPPBACKUPS = [
 DESCRIBE_FUNCTIONAPPPROCESSES = [
     {
         "id":
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp1/processes/\
-            process1",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
+            TestFunctionApp1/processes/process1",
         "type":
         "Microsoft.Web/sites/processes",
         "resource_group":
@@ -247,8 +249,8 @@ DESCRIBE_FUNCTIONAPPPROCESSES = [
     },
     {
         "id":
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp2/processes/\
-            process2",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
+            TestFunctionApp2/processes/process2",
         "type":
         "Microsoft.Web/sites/processes",
         "resource_group":
@@ -263,8 +265,8 @@ DESCRIBE_FUNCTIONAPPPROCESSES = [
 DESCRIBE_FUNCTIONAPPSNAPSHOTS = [
     {
         "id":
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp1/snapshots/\
-            snap1",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
+            TestFunctionApp1/snapshots/snap1",
         "type":
         "Microsoft.Web/sites/snapshots",
         "resource_group":
@@ -276,8 +278,8 @@ DESCRIBE_FUNCTIONAPPSNAPSHOTS = [
     },
     {
         "id":
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp2/snapshots/\
-            snap2",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
+            TestFunctionApp2/snapshots/snap2",
         "type":
         "Microsoft.Web/sites/snapshots",
         "resource_group":
@@ -292,8 +294,8 @@ DESCRIBE_FUNCTIONAPPSNAPSHOTS = [
 DESCRIBE_FUNCTIONAPPWEBJOBS = [
     {
         "id":
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp1/webjobs/\
-            webjob1",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
+            TestFunctionApp1/webjobs/webjob1",
         "type":
         "Microsoft.Web/sites/webjobs",
         "resource_group":
@@ -305,8 +307,8 @@ DESCRIBE_FUNCTIONAPPWEBJOBS = [
     },
     {
         "id":
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp2/webjobs/\
-            webjob2",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
+            TestFunctionApp2/webjobs/webjob2",
         "type":
         "Microsoft.Web/sites/webjobs",
         "resource_group":
