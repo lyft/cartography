@@ -185,7 +185,7 @@ def sync_okta_users(
     :return: Nothing
     """
 
-    logger.debug("Syncing Okta users")
+    logger.info("Syncing Okta users")
     user_client = _create_user_client(okta_org_id, okta_api_key)
     data = _get_okta_users(user_client)
     users_data, user_ids = transform_okta_user_list(data)

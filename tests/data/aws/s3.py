@@ -21,3 +21,11 @@ LIST_BUCKETS = {
         'ID': 'OWNER_ID',
     },
 }
+
+GET_ENCRYPTION = {
+    'bucket': 'bucket-1',
+    'default_encryption': True,
+    'encryption_algorithm': 'aws:kms',
+    'encryption_key_id': 'arn:aws:kms:eu-east-1:000000000000:key/9a1ad414-6e3b-47ce-8366-6b8f26ba467d',
+    'bucket_key_enabled': False,
+}

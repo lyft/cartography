@@ -121,7 +121,7 @@ def sync_okta_aws_saml(neo4j_session: neo4j.Session, mapping_regex: str, okta_up
     :param okta_api_key: Okta api key
     :return: Nothing
     """
-    logger.debug("Syncing Okta SAML Integration")
+    logger.info("Syncing Okta SAML Integration")
 
     # Query for the aws application and its associated groups
     group_to_role_mapping = query_for_okta_to_aws_role_mapping(neo4j_session, mapping_regex)
