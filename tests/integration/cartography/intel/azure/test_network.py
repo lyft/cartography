@@ -82,8 +82,10 @@ def test_load_network_subnets(neo4j_session):
     )
 
     expected_nodes = {
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/virtualNetworks/TestNetwork1/subnets/subnet1",
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/virtualNetworks/TestNetwork2/subnets/subnet2",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/virtualNetworks/\
+            TestNetwork1/subnets/subnet1",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/virtualNetworks/\
+            TestNetwork2/subnets/subnet2",
     }
 
     nodes = neo4j_session.run(
@@ -111,12 +113,16 @@ def test_load_network_subnet_relationships(neo4j_session):
 
     expected = {
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/virtualNetworks/TestNetwork1",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/virtualNetworks/TestNetwork1/subnets/subnet1",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/virtualNetworks/\
+                TestNetwork1",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/virtualNetworks/\
+                TestNetwork1/subnets/subnet1",
         ),
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/virtualNetworks/TestNetwork2",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/virtualNetworks/TestNetwork2/subnets/subnet2",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/virtualNetworks/\
+                TestNetwork2",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/virtualNetworks/\
+                TestNetwork2/subnets/subnet2",
         ),
     }
 
@@ -173,11 +179,13 @@ def test_load_routetable_relationships(neo4j_session):
     expected = {
         (
             TEST_SUBSCRIPTION_ID,
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/routeTables/TestRoutetable1",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/routeTables/\
+                TestRoutetable1",
         ),
         (
             TEST_SUBSCRIPTION_ID,
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/routeTables/TestRoutetable2",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/routeTables/\
+                TestRoutetable2",
         ),
     }
 
@@ -199,8 +207,10 @@ def test_load_network_routes(neo4j_session):
     )
 
     expected_nodes = {
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/routeTables/TestRoutetable1/routes1",
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/routeTables/TestRoutetable2/routes2",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/routeTables/\
+            TestRoutetable1/routes1",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/routeTables/\
+            TestRoutetable2/routes2",
     }
 
     nodes = neo4j_session.run(
@@ -228,12 +238,16 @@ def test_load_network_route_relationships(neo4j_session):
 
     expected = {
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/routeTables/TestRoutetable1",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/routeTables/TestRoutetable1/routes1",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/routeTables/\
+                TestRoutetable1",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/routeTables/\
+                TestRoutetable1/routes1",
         ),
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/routeTables/TestRoutetable2",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/routeTables/TestRoutetable2/routes2",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/routeTables/\
+                TestRoutetable2",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/routeTables/\
+                TestRoutetable2/routes2",
         ),
     }
 
@@ -256,8 +270,10 @@ def test_load_network_security_groups(neo4j_session):
     )
 
     expected_nodes = {
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/networkSecurityGroups/Testgroup1",
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/networkSecurityGroups/Testgroup2",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/networkSecurityGroups/\
+            Testgroup1",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/networkSecurityGroups/\
+            Testgroup2",
     }
 
     nodes = neo4j_session.run(
@@ -290,11 +306,13 @@ def test_load_network_security_group_relationships(neo4j_session):
     expected = {
         (
             TEST_SUBSCRIPTION_ID,
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/networkSecurityGroups/Testgroup1",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/networkSecurityGroups/\
+                Testgroup1",
         ),
         (
             TEST_SUBSCRIPTION_ID,
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/networkSecurityGroups/Testgroup2",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/networkSecurityGroups/\
+                Testgroup2",
         ),
     }
 
@@ -316,8 +334,10 @@ def test_load_network_security_rule(neo4j_session):
     )
 
     expected_nodes = {
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/networkSecurityGroups/Testgroup1/securityRules/rule1",
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/networkSecurityGroups/Testgroup2/securityRules/rule2",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/networkSecurityGroups/\
+            Testgroup1/securityRules/rule1",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/networkSecurityGroups/\
+            Testgroup2/securityRules/rule2",
     }
 
     nodes = neo4j_session.run(
@@ -345,12 +365,16 @@ def test_load_network_security_rule_relationships(neo4j_session):
 
     expected = {
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/networkSecurityGroups/Testgroup1",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/networkSecurityGroups/Testgroup1/securityRules/rule1",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/networkSecurityGroups/\
+                Testgroup1",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/networkSecurityGroups/\
+                Testgroup1/securityRules/rule1",
         ),
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/networkSecurityGroups/Testgroup2",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/networkSecurityGroups/Testgroup2/securityRules/rule2",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/networkSecurityGroups/\
+                Testgroup2",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/networkSecurityGroups/\
+                Testgroup2/securityRules/rule2",
         ),
     }
 
@@ -433,8 +457,10 @@ def test_load_network_usages(neo4j_session):
     )
 
     expected_nodes = {
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/virtualNetworks/TestNetwork1/subnets/subnet1",
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/virtualNetworks/TestNetwork2/subnets/subnet2",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/virtualNetworks/TestNetwork1/\
+            subnets/subnet1",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/virtualNetworks/TestNetwork2/\
+            subnets/subnet2",
     }
 
     nodes = neo4j_session.run(
@@ -462,12 +488,16 @@ def test_load_network_usage_relationships(neo4j_session):
 
     expected = {
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/virtualNetworks/TestNetwork1",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/virtualNetworks/TestNetwork1/subnets/subnet1",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/virtualNetworks/\
+                TestNetwork1",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/virtualNetworks/\
+                TestNetwork1/subnets/subnet1",
         ),
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/virtualNetworks/TestNetwork2",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/virtualNetworks/TestNetwork2/subnets/subnet2",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/virtualNetworks/\
+                TestNetwork2",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/virtualNetworks/\
+                TestNetwork2/subnets/subnet2",
         ),
     }
 
