@@ -105,15 +105,22 @@ def get_api_configs(apigateway: Resource, project_id: str) -> List[Dict]:
     """
     api_configs = []
     try:
-        req = apigateway.projects().locations().apis().configs().list(parent=f'projects/{project_id}/locations/global/apis/*')
+        req = apigateway.projects().locations().apis().configs().list(
+            parent=f'projects/{project_id}/locations/\
+                                                                    global/apis/*',
+        )
         while req is not None:
             res = req.execute()
             if res.get('apiConfigs', []):
                 for apiConfig in res['apiConfigs']:
-                    apiConfig['api_id'] = f"projects/{project_id}/locations/global/apis/{apiConfig.get('name').split('/')[-3]}"
+                    apiConfig['api_id'] = f"projects/{project_id}/locations/global/apis/\
+                        {apiConfig.get('name').split('/')[-3]}"
                     apiConfig['id'] = apiConfig['name']
                     api_configs.append(apiConfig)
-            req = apigateway.projects().locations().apis().configs().list_next(previous_request=req, previous_response=res)
+            req = apigateway.projects().locations().apis().configs().list_next(
+                previous_request=req,
+                previous_response=res,
+            )
         return api_configs
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -172,7 +179,10 @@ def load_apigateway_locations(session: neo4j.Session, data_list: List[Dict], pro
 
 
 @timeit
-def load_apigateway_locations_tx(tx: neo4j.Transaction, locations: List[Dict], project_id: str, gcp_update_tag: int) -> None:
+def load_apigateway_locations_tx(
+    tx: neo4j.Transaction, locations: List[Dict],
+    project_id: str, gcp_update_tag: int,
+) -> None:
     """
         Ingest GCP Project Locations into Neo4j
 

@@ -128,7 +128,7 @@ def test_apigateway_location_relationships(neo4j_session):
 
     expected = {
         (TEST_PROJECT_NUMBER, 'projects/project123/locations/us-east1'),
-        (TEST_PROJECT_NUMBER, 'projects/project123/locations/us-east4')
+        (TEST_PROJECT_NUMBER, 'projects/project123/locations/us-east4'),
     }
 
     # Fetch relationships
@@ -168,7 +168,7 @@ def test_apigateway_api_relationships(neo4j_session):
 
     expected = {
         (TEST_PROJECT_NUMBER, 'projects/project123/locations/global/apis/compute'),
-        (TEST_PROJECT_NUMBER, 'projects/project123/locations/global/apis/storage')
+        (TEST_PROJECT_NUMBER, 'projects/project123/locations/global/apis/storage'),
     }
 
     # Fetch relationships
@@ -205,8 +205,14 @@ def test_apigateway_apiconfigs_relationships(neo4j_session):
     )
 
     expected = {
-        ('projects/project123/locations/global/apis/compute', 'projects/project123/locations/global/apis/compute/configs/config123'),
-        ('projects/project123/locations/global/apis/storage', 'projects/project123/locations/global/apis/compute/configs/config456')
+        (
+            'projects/project123/locations/global/apis/compute',
+            'projects/project123/locations/global/apis/compute/configs/config123',
+        ),
+        (
+            'projects/project123/locations/global/apis/storage',
+            'projects/project123/locations/global/apis/compute/configs/config456',
+        ),
     }
 
     # Fetch relationships
@@ -243,8 +249,14 @@ def test_apigateway_gateway_relationships(neo4j_session):
     )
 
     expected = {
-        ('projects/project123/locations/global/apis/compute/configs/config123', 'projects/project123/locations/us-east1/gateways/gateway123'),
-        ('projects/project123/locations/global/apis/compute/configs/config456', 'projects/project123/locations/us-east1/gateways/gateway456')
+        (
+            'projects/project123/locations/global/apis/compute/configs/config123',
+            'projects/project123/locations/us-east1/gateways/gateway123',
+        ),
+        (
+            'projects/project123/locations/global/apis/compute/configs/config456',
+            'projects/project123/locations/us-east1/gateways/gateway456',
+        ),
     }
 
     # Fetch relationships

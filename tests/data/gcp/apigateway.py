@@ -2,13 +2,13 @@ TEST_APIGATEWAY_LOCATIONS = [
     {
         'name': 'projects/project123/locations/us-east1',
         'locationId': 'us-east1',
-        'displayName': 'South Carolina'
+        'displayName': 'South Carolina',
     },
     {
         'name': 'projects/project123/locations/us-east4',
         'locationId': 'us-east1',
-        'displayName': 'Virginia'
-    }
+        'displayName': 'Virginia',
+    },
 ]
 TEST_APIGATEWAY_APIS = [
     {
@@ -16,15 +16,15 @@ TEST_APIGATEWAY_APIS = [
         'createTime': '2020-10-02T15:01:23Z',
         'updateTime': '2020-11-02T15:01:23Z',
         'displayName': 'compute',
-        'managedService': 'compute'
+        'managedService': 'compute',
     },
     {
         'name': 'projects/project123/locations/global/apis/storage',
         'createTime': '2020-10-02T15:01:23Z',
         'updateTime': '2020-11-02T15:01:23Z',
         'displayName': 'storage',
-        'managedService': 'storage'
-    }
+        'managedService': 'storage',
+    },
 ]
 TEST_API_CONFIGS = [
     {
@@ -34,7 +34,7 @@ TEST_API_CONFIGS = [
         'displayName': 'config123',
         'gatewayServiceAccount': 'abc@example.com',
         'serviceConfigId': '123',
-        'state': 'ACTIVE'
+        'state': 'ACTIVE',
     },
     {
         'name': 'projects/project123/locations/global/apis/compute/configs/config456',
@@ -43,8 +43,8 @@ TEST_API_CONFIGS = [
         'displayName': 'config123',
         'gatewayServiceAccount': 'abc@example.com',
         'serviceConfigId': '456',
-        'state': 'ACTIVE'
-    }
+        'state': 'ACTIVE',
+    },
 ]
 TEST_GATEWAYS = [
     {
@@ -54,7 +54,7 @@ TEST_GATEWAYS = [
         'displayName': 'gateway123',
         'apiConfig': 'projects/project123/locations/global/apis/compute/configs/config123',
         'state': 'ACTIVE',
-        'defaultHostname': 'host123'
+        'defaultHostname': 'host123',
     },
     {
         'name': 'projects/project123/locations/us-east1/gateways/gateway456',
@@ -63,6 +63,6 @@ TEST_GATEWAYS = [
         'displayName': 'gateway123',
         'apiConfig': 'projects/project123/locations/global/apis/compute/configs/config456',
         'state': 'ACTIVE',
-        'defaultHostname': 'host456'
-    }
+        'defaultHostname': 'host456',
+    },
 ]
