@@ -115,12 +115,12 @@ def test_load_function_app_configuration_relationships(neo4j_session):
         (
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp1",
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
-                TestFunctionApp1/config/Conf1",
+            TestFunctionApp1/config/Conf1",
         ),
         (
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp2",
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
-                TestFunctionApp2/config/Conf2",
+            TestFunctionApp2/config/Conf2",
         ),
     }
 
@@ -175,12 +175,12 @@ def test_load_function_app_function_relationships(neo4j_session):
         (
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp1",
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
-                TestFunctionApp1/functions/functon1",
+            TestFunctionApp1/functions/functon1",
         ),
         (
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp2",
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
-                TestFunctionApp2/functions/functon2",
+            TestFunctionApp2/functions/functon2",
         ),
     }
 
@@ -235,12 +235,12 @@ def test_load_function_app_deployment_relationships(neo4j_session):
         (
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp1",
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
-                TestFunctionApp1/deployments/deploy1",
+            TestFunctionApp1/deployments/deploy1",
         ),
         (
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp2",
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
-                TestFunctionApp2/deployments/deploy2",
+            TestFunctionApp2/deployments/deploy2",
         ),
     }
 
@@ -295,12 +295,12 @@ def test_load_function_app_backup_relationships(neo4j_session):
         (
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp1",
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
-                TestFunctionApp1/backups/backup1",
+            TestFunctionApp1/backups/backup1",
         ),
         (
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp2",
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
-                TestFunctionApp2/backups/backup2",
+            TestFunctionApp2/backups/backup2",
         ),
     }
 
@@ -355,12 +355,12 @@ def test_load_function_app_process_relationships(neo4j_session):
         (
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp1",
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
-                TestFunctionApp1/processes/process1",
+            TestFunctionApp1/processes/process1",
         ),
         (
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp2",
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
-                TestFunctionApp2/processes/process2",
+            TestFunctionApp2/processes/process2",
         ),
     }
 
@@ -415,12 +415,12 @@ def test_load_function_app_snapshot_relationships(neo4j_session):
         (
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp1",
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
-                TestFunctionApp1/snapshots/snap1",
+            TestFunctionApp1/snapshots/snap1",
         ),
         (
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp2",
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
-                TestFunctionApp2/snapshots/snap2",
+            TestFunctionApp2/snapshots/snap2",
         ),
     }
 
@@ -475,12 +475,12 @@ def test_load_function_app_webjob_relationships(neo4j_session):
         (
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp1",
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
-                TestFunctionApp1/webjobs/webjob1",
+            TestFunctionApp1/webjobs/webjob1",
         ),
         (
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp2",
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
-                TestFunctionApp2/webjobs/webjob2",
+            TestFunctionApp2/webjobs/webjob2",
         ),
     }
 
