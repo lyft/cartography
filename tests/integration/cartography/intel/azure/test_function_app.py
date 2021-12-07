@@ -82,8 +82,10 @@ def test_load_function_app_configurations(neo4j_session):
     )
 
     expected_nodes = {
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp1/config/Conf1",
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp2/config/Conf2",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
+            TestFunctionApp1/config/Conf1",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
+            TestFunctionApp2/config/Conf2",
     }
 
     nodes = neo4j_session.run(
@@ -112,13 +114,13 @@ def test_load_function_app_configuration_relationships(neo4j_session):
     expected = {
         (
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp1",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp1/config/\
-                Conf1",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
+                TestFunctionApp1/config/Conf1",
         ),
         (
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp2",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp2/config/\
-                Conf2",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
+                TestFunctionApp2/config/Conf2",
         ),
     }
 
@@ -140,10 +142,10 @@ def test_load_function_app_functions(neo4j_session):
     )
 
     expected_nodes = {
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp1/functions/\
-            functon1",
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp2/functions/\
-            functon2",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
+            TestFunctionApp1/functions/functon1",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
+            TestFunctionApp2/functions/functon2",
     }
 
     nodes = neo4j_session.run(
@@ -172,13 +174,13 @@ def test_load_function_app_function_relationships(neo4j_session):
     expected = {
         (
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp1",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp1/\
-                functions/functon1",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
+                TestFunctionApp1/functions/functon1",
         ),
         (
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp2",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp2/\
-                functions/functon2",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
+                TestFunctionApp2/functions/functon2",
         ),
     }
 
@@ -200,10 +202,10 @@ def test_load_function_app_deployments(neo4j_session):
     )
 
     expected_nodes = {
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp1/\
-            deployments/deploy1",
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp2/\
-            deployments/deploy2",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
+            TestFunctionApp1/deployments/deploy1",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
+            TestFunctionApp2/deployments/deploy2",
     }
 
     nodes = neo4j_session.run(
@@ -232,13 +234,13 @@ def test_load_function_app_deployment_relationships(neo4j_session):
     expected = {
         (
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp1",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp1/\
-                deployments/deploy1",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
+                TestFunctionApp1/deployments/deploy1",
         ),
         (
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp2",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp2/\
-                deployments/deploy2",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
+                TestFunctionApp2/deployments/deploy2",
         ),
     }
 
@@ -260,10 +262,10 @@ def test_load_function_app_backups(neo4j_session):
     )
 
     expected_nodes = {
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp1/backups/\
-            backup1",
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp2/backups/\
-            backup2",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
+            TestFunctionApp1/backups/backup1",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
+            TestFunctionApp2/backups/backup2",
     }
 
     nodes = neo4j_session.run(
@@ -292,13 +294,13 @@ def test_load_function_app_backup_relationships(neo4j_session):
     expected = {
         (
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp1",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp1/\
-                backups/backup1",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
+                TestFunctionApp1/backups/backup1",
         ),
         (
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp2",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp2/\
-                backups/backup2",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
+                TestFunctionApp2/backups/backup2",
         ),
     }
 
@@ -320,10 +322,10 @@ def test_load_function_app_process(neo4j_session):
     )
 
     expected_nodes = {
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp1/\
-            processes/process1",
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp2/\
-            processes/process2",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
+            TestFunctionApp1/processes/process1",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
+            TestFunctionApp2/processes/process2",
     }
 
     nodes = neo4j_session.run(
@@ -352,13 +354,13 @@ def test_load_function_app_process_relationships(neo4j_session):
     expected = {
         (
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp1",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp1/\
-                processes/process1",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
+                TestFunctionApp1/processes/process1",
         ),
         (
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp2",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp2/\
-                processes/process2",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
+                TestFunctionApp2/processes/process2",
         ),
     }
 
@@ -380,10 +382,10 @@ def test_load_function_app_snapshots(neo4j_session):
     )
 
     expected_nodes = {
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp1/\
-            snapshots/snap1",
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp2/\
-            snapshots/snap2",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
+            TestFunctionApp1/snapshots/snap1",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
+            TestFunctionApp2/snapshots/snap2",
     }
 
     nodes = neo4j_session.run(
@@ -412,13 +414,13 @@ def test_load_function_app_snapshot_relationships(neo4j_session):
     expected = {
         (
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp1",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp1/\
-                snapshots/snap1",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
+                TestFunctionApp1/snapshots/snap1",
         ),
         (
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp2",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp2/\
-                snapshots/snap2",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
+                TestFunctionApp2/snapshots/snap2",
         ),
     }
 
@@ -440,10 +442,10 @@ def test_load_function_app_webjobs(neo4j_session):
     )
 
     expected_nodes = {
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp1/\
-            webjobs/webjob1",
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp2/\
-            webjobs/webjob2",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
+            TestFunctionApp1/webjobs/webjob1",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
+            TestFunctionApp2/webjobs/webjob2",
     }
 
     nodes = neo4j_session.run(
@@ -472,13 +474,13 @@ def test_load_function_app_webjob_relationships(neo4j_session):
     expected = {
         (
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp1",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp1/\
-                webjobs/webjob1",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
+                TestFunctionApp1/webjobs/webjob1",
         ),
         (
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp2",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/TestFunctionApp2/\
-                webjobs/webjob2",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Web/sites/\
+                TestFunctionApp2/webjobs/webjob2",
         ),
     }
 
