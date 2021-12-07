@@ -168,7 +168,7 @@ def get_vm_available_sizes_list(vm_list: List[Dict], client: ComputeManagementCl
 def _load_vm_available_sizes_tx(tx: neo4j.Transaction, vm_available_sizes_list: List[Dict], update_tag: int) -> None:
     ingest_vm_size = """
     UNWIND {vm_available_sizes_list} AS size
-    MERGE (v:AzureVirtualMachineAvailableSize{id: size.name})
+    MERGE (v:AzureVirtualMachineAvailableSize{name: size.name})
     ON CREATE SET v.firstseen = timestamp(), v.numberOfCores = size.numberOfCores
     SET v.lastupdated = {update_tag}, v.osDiskSizeInMB = size.osDiskSizeInMB,
     v.resourceDiskSizeInMB = size.resourceDiskSizeInMB,
