@@ -164,7 +164,7 @@ def sync_roles(
     :return: None
     """
 
-    logger.debug("Syncing Okta Roles")
+    logger.info("Syncing Okta Roles")
 
     # get API client
     api_client = create_api_client(okta_org_id, "/api/v1/users", okta_api_key)

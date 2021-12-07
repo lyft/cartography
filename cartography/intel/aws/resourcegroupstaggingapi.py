@@ -62,13 +62,22 @@ def get_short_id_from_lb2_arn(alb_arn: str) -> str:
 # cartography uses.
 # TODO - we should make EC2 and S3 assets query-able by their full ARN so that we don't need this workaround.
 TAG_RESOURCE_TYPE_MAPPINGS: Dict = {
+    'autoscaling:autoScalingGroup': {'label': 'AutoScalingGroup', 'property': 'arn'},
+    'dynamodb:table': {'label': 'DynamoDBTable', 'property': 'id'},
     'ec2:instance': {'label': 'EC2Instance', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},
+    'ec2:internet-gateway': {'label': 'AWSInternetGateway', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},
+    'ec2:key-pair': {'label': 'EC2KeyPair', 'property': 'id'},
     'ec2:network-interface': {'label': 'NetworkInterface', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},
+    'ecr:repository': {'label': 'ECRRepository', 'property': 'id'},
     'ec2:security-group': {'label': 'EC2SecurityGroup', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},
     'ec2:subnet': {'label': 'EC2Subnet', 'property': 'subnetid', 'id_func': get_short_id_from_ec2_arn},
-    'ec2:vpc': {'label': 'AWSVpc', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},
     'ec2:transit-gateway': {'label': 'AWSTransitGateway', 'property': 'id'},
     'ec2:transit-gateway-attachment': {'label': 'AWSTransitGatewayAttachment', 'property': 'id'},
+    'ec2:vpc': {'label': 'AWSVpc', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},
+    'ec2:volume': {'label': 'EBSVolume', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},
+    'ec2:elastic-ip-address': {'label': 'ElasticIPAddress', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},
+    'eks:cluster': {'label': 'EKSCluster', 'property': 'id'},
+    'elasticache:cluster': {'label': 'ElasticacheCluster', 'property': 'arn'},
     'elasticloadbalancing:loadbalancer': {
         'label': 'LoadBalancer', 'property':
         'name', 'id_func': get_short_id_from_elb_arn,
@@ -81,13 +90,18 @@ TAG_RESOURCE_TYPE_MAPPINGS: Dict = {
         'label': 'LoadBalancerV2',
         'property': 'name', 'id_func': get_short_id_from_lb2_arn,
     },
-    'es:domain': {'label': 'ESDomain', 'property': 'id'},
+    'elasticmapreduce:cluster': {'label': 'EMRCluster', 'property': 'arn'},
+    'es:domain': {'label': 'ESDomain', 'property': 'arn'},
+    'kms:key': {'label': 'KMSKey', 'property': 'arn'},
+    'lambda:function': {'label': 'AWSLambda', 'property': 'id'},
     'redshift:cluster': {'label': 'RedshiftCluster', 'property': 'id'},
     'rds:db': {'label': 'RDSInstance', 'property': 'id'},
     'rds:subgrp': {'label': 'DBSubnetGroup', 'property': 'id'},
     'rds:cluster': {'label': 'RDSCluster', 'property': 'id'},
     # Buckets are the only objects in the S3 service: https://docs.aws.amazon.com/AmazonS3/latest/dev/s3-arn-format.html
     's3': {'label': 'S3Bucket', 'property': 'id', 'id_func': get_bucket_name_from_arn},
+    'secretsmanager:secret': {'label': 'SecretsManagerSecret', 'property': 'id'},
+    'sqs': {'label': 'SQSQueue', 'property': 'id'},
 }
 
 
