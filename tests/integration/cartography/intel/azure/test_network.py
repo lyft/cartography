@@ -411,7 +411,7 @@ def test_load_public_ip_addresses(neo4j_session):
 
     nodes = neo4j_session.run(
         """
-        MATCH (r:AzureNetworkSecurityGroup) RETURN r.id;
+        MATCH (r:AzurePublicIPAddress) RETURN r.id;
         """, )
     actual_nodes = {n['r.id'] for n in nodes}
 
