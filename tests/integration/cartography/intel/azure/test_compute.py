@@ -289,10 +289,10 @@ def test_load_vm_extensions(neo4j_session):
     )
 
     expected_nodes = {
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachines/TestVM/\
-            extensions/extensions1",
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachines/TestVM1/\
-            extensions/extensions2",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/\
+            virtualMachines/TestVM/extensions/extensions1",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/\
+            virtualMachines/TestVM1/extensions/extensions2",
     }
 
     nodes = neo4j_session.run(
@@ -321,13 +321,13 @@ def test_load_vm_extensions_relationships(neo4j_session):
     expected = {
         (
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachines/TestVM",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachines/TestVM/\
-                extensions/extensions1",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/\
+            virtualMachines/TestVM/extensions/extensions1",
         ),
         (
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachines/TestVM1",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachines/TestVM1/\
-                extensions/extensions2",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/\
+            virtualMachines/TestVM1/extensions/extensions2",
         ),
     }
 
@@ -406,8 +406,10 @@ def test_load_vm_scale_sets(neo4j_session):
     )
 
     expected_nodes = {
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachineScaleSets/set1",
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachineScaleSets/set2",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/\
+            virtualMachineScaleSets/set1",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/\
+            virtualMachineScaleSets/set2",
     }
 
     nodes = neo4j_session.run(
@@ -441,13 +443,13 @@ def test_load_vms_scale_sets_relationships(neo4j_session):
     expected = {
         (
             TEST_SUBSCRIPTION_ID,
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachineScaleSets/\
-                set1",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/\
+            virtualMachineScaleSets/set1",
         ),
         (
             TEST_SUBSCRIPTION_ID,
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachineScaleSets/\
-                set2",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/\
+            virtualMachineScaleSets/set2",
         ),
     }
 
@@ -472,10 +474,10 @@ def test_load_vm_scale_set_extensions(neo4j_session):
     )
 
     expected_nodes = {
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachineScaleSets/\
-            set1/extensions/extension1",
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachineScaleSets/\
-            set2/extensions/extension2",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/\
+            virtualMachineScaleSets/set1/extensions/extension1",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/\
+            virtualMachineScaleSets/set2/extensions/extension2",
     }
 
     nodes = neo4j_session.run(
@@ -503,16 +505,16 @@ def test_load_vm_scale_set_extensions_relationships(neo4j_session):
 
     expected = {
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachineScaleSets/\
-                set1",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachineScaleSets/\
-                set1/extensions/extension1",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/\
+            virtualMachineScaleSets/set1",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/\
+            virtualMachineScaleSets/set1/extensions/extension1",
         ),
         (
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachineScaleSets/\
-                set2",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachineScaleSets/\
-                set2/extensions/extension2",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/\
+            virtualMachineScaleSets/set2",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/\
+            virtualMachineScaleSets/set2/extensions/extension2",
         ),
     }
 
