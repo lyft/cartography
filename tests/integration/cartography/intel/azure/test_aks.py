@@ -184,8 +184,8 @@ def test_load_container_registry_replication_relationships(neo4j_session):
         (
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/\
             Microsoft.ContainerRegistry/registries/TestContainerRegistry1",
-            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/registries/\
-            TestContainerRegistry1/replications/repli1",
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/\
+            registries/TestContainerRegistry1/replications/repli1",
         ),
         (
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/\
@@ -309,7 +309,7 @@ def test_load_container_registry_task_relationships(neo4j_session):
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/\
             Microsoft.ContainerRegistry/registries/TestContainerRegistry1",
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.ContainerRegistry/\
-            registries/TestContainerRegistry1/task/task1",
+            registries/TestContainerRegistry1/tasks/task1",
         ),
         (
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/\
