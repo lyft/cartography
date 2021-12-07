@@ -1,7 +1,8 @@
 DESCRIBE_NETWORKS = [
     {
         "id":
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/virtualNetworks/TestNetwork1",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
+            virtualNetworks/TestNetwork1",
         "type": "Microsoft.Network/virtualNetworks",
         "location": "West US",
         "resource_group": "TestRG",
@@ -13,7 +14,8 @@ DESCRIBE_NETWORKS = [
     },
     {
         "id":
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/virtualNetworks/TestNetwork2",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
+            virtualNetworks/TestNetwork2",
         "type": "Microsoft.Network/virtualNetworks",
         "location": "West US",
         "resource_group": "TestRG",
@@ -28,8 +30,8 @@ DESCRIBE_NETWORKS = [
 DESCRIBE_NETWORKSUBNETS = [
     {
         "id":
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/virtualNetworks/TestNetwork1/\
-            subnets/subnet1",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
+            virtualNetworks/TestNetwork1/subnets/subnet1",
         "type":
         "Microsoft.Network/virtualNetworks/subnets",
         "resource_group":
@@ -43,12 +45,13 @@ DESCRIBE_NETWORKSUBNETS = [
         "etag":
         "hhd-fftt-fsc",
         "network_id":
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/virtualNetworks/TestNetwork1",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
+            virtualNetworks/TestNetwork1",
     },
     {
         "id":
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/virtualNetworks/TestNetwork2/\
-            subnets/subnet2",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
+            virtualNetworks/TestNetwork2/subnets/subnet2",
         "type":
         "Microsoft.Network/virtualNetworks/subnets",
         "resource_group":
@@ -62,14 +65,16 @@ DESCRIBE_NETWORKSUBNETS = [
         "etag":
         "hhd-fftt-fsc",
         "network_id":
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/virtualNetworks/TestNetwork2",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
+            virtualNetworks/TestNetwork2",
     },
 ]
 
 DESCRIBE_ROUTETABLE = [
     {
         "id":
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/routeTables/TestRoutetable1",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
+            routeTables/TestRoutetable1",
         "type": "Microsoft.Network/routeTables",
         "location": "West US",
         "resource_group": "TestRG",
@@ -78,7 +83,8 @@ DESCRIBE_ROUTETABLE = [
     },
     {
         "id":
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/routeTables/TestRoutetable2",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
+            routeTables/TestRoutetable2",
         "type": "Microsoft.Network/routeTables",
         "location": "West US",
         "resource_group": "TestRG",
@@ -90,8 +96,8 @@ DESCRIBE_ROUTETABLE = [
 DESCRIBE_NETWORKROUTE = [
     {
         "id":
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/routeTables/TestRoutetable1/\
-            routes1",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
+            routeTables/TestRoutetable1/routes1",
         "type":
         "Microsoft.Network/routeTables/routes",
         "name":
@@ -99,12 +105,13 @@ DESCRIBE_NETWORKROUTE = [
         "etag":
         "hhd-fftt-fsc",
         "routetable_id":
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/routeTables/TestRoutetable1",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
+            routeTables/TestRoutetable1",
     },
     {
         "id":
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/routeTables/TestRoutetable2/\
-            routes2",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
+            routeTables/TestRoutetable2/routes2",
         "type":
         "Microsoft.Network/routeTables/routes",
         "name":
@@ -112,15 +119,16 @@ DESCRIBE_NETWORKROUTE = [
         "etag":
         "hhd-fftt-fsc",
         "routetable_id":
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/routeTables/TestRoutetable2",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
+            routeTables/TestRoutetable2",
     },
 ]
 
 DESCRIBE_NETWORKSECURITYGROUPS = [
     {
         "id":
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/networkSecurityGroups/\
-            Testgroup1",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
+            networkSecurityGroups/Testgroup1",
         "type": "Microsoft.Network/networkSecurityGroups",
         "location": "West US",
         "resource_group": "TestRG",
@@ -129,8 +137,8 @@ DESCRIBE_NETWORKSECURITYGROUPS = [
     },
     {
         "id":
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/networkSecurityGroups/\
-            Testgroup2",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
+            networkSecurityGroups/Testgroup2",
         "type": "Microsoft.Network/networkSecurityGroups",
         "location": "West US",
         "resource_group": "TestRG",
@@ -142,8 +150,8 @@ DESCRIBE_NETWORKSECURITYGROUPS = [
 DESCRIBE_NETWORKSECURITYRULES = [
     {
         "id":
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/networkSecurityGroups/\
-            Testgroup1/securityRules/rule1",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
+            networkSecurityGroups/Testgroup1/securityRules/rule1",
         "type":
         "Microsoft.Network/networkSecurityGroups/securityRules",
         "name":
@@ -151,13 +159,13 @@ DESCRIBE_NETWORKSECURITYRULES = [
         "etag":
         "hhd-fftt-fsc",
         "routetable_id":
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/networkSecurityGroups/\
-            Testgroup1",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
+            networkSecurityGroups/Testgroup1",
     },
     {
         "id":
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/networkSecurityGroups/\
-            Testgroup2/securityRules/rule2",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
+            networkSecurityGroups/Testgroup2/securityRules/rule2",
         "type":
         "Microsoft.Network/networkSecurityGroups/securityRules",
         "name":
@@ -165,15 +173,16 @@ DESCRIBE_NETWORKSECURITYRULES = [
         "etag":
         "hhd-fftt-fsc",
         "routetable_id":
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/networkSecurityGroups/\
-            Testgroup2",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
+            networkSecurityGroups/Testgroup2",
     },
 ]
 
 DESCRIBE_PUBLICIPADDRESSES = [
     {
         "id":
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/publicIPAddresses/ip1",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
+            publicIPAddresses/ip1",
         "type": "Microsoft.Network/publicIPAddresses",
         "location": "West US",
         "name": "ip1",
@@ -181,7 +190,8 @@ DESCRIBE_PUBLICIPADDRESSES = [
     },
     {
         "id":
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/publicIPAddresses/ip2",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
+            publicIPAddresses/ip2",
         "type": "Microsoft.Network/publicIPAddresses",
         "location": "West US",
         "resource_group": "TestRG",
@@ -193,16 +203,16 @@ DESCRIBE_PUBLICIPADDRESSES = [
 DESCRIBE_NETWORKUSAGES = [
     {
         "id":
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/virtualNetworks/\
-            TestNetwork1/subnets/subnet1",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
+            virtualNetworks/TestNetwork1/subnets/subnet1",
         "unit": "unit",
         "currentValue": 1234,
         "limit": 9999,
     },
     {
         "id":
-        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/virtualNetworks/\
-            TestNetwork2/subnets/subnet2",
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
+            virtualNetworks/TestNetwork2/subnets/subnet2",
         "unit": "unit",
         "currentValue": 1234,
         "limit": 9999,
