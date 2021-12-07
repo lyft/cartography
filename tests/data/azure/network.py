@@ -158,7 +158,7 @@ DESCRIBE_NETWORKSECURITYRULES = [
         "rule1",
         "etag":
         "hhd-fftt-fsc",
-        "routetable_id":
+        "security_group_id":
         "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
             networkSecurityGroups/Testgroup1",
     },
@@ -172,7 +172,7 @@ DESCRIBE_NETWORKSECURITYRULES = [
         "rule2",
         "etag":
         "hhd-fftt-fsc",
-        "routetable_id":
+        "security_group_id":
         "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
             networkSecurityGroups/Testgroup2",
     },
