@@ -153,8 +153,8 @@ def test_apigateway_api_relationships(neo4j_session):
         ON CREATE SET gcp.firstseen = timestamp()
         SET gcp.lastupdated = {UPDATE_TAG}
         """,
-        TEST_PROJECT_ID,
-        TEST_UPDATE_TAG,
+        ProjectId=TEST_PROJECT_ID,
+        UPDATE_TAG=TEST_UPDATE_TAG,
     )
 
     # Create Test API Gateway APIs
@@ -174,7 +174,7 @@ def test_apigateway_api_relationships(neo4j_session):
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:GCPProject)-[:RESOURCE]->(n2:GCPAPI) RETURN n1.id, n2.id;
+        MATCH (n1:GCPProject)-[:HAS_API_ENABLED]->(n2:GCPAPI) RETURN n1.id, n2.id;
         """,
     )
 
@@ -218,7 +218,7 @@ def test_apigateway_apiconfigs_relationships(neo4j_session):
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:GCPAPI)-[:RESOURCE]->(n2:GCPAPIConfig) RETURN n1.id, n2.id;
+        MATCH (n1:GCPAPI)-[:HAS_CONFIG]->(n2:GCPAPIConfig) RETURN n1.id, n2.id;
         """,
     )
 
@@ -262,7 +262,7 @@ def test_apigateway_gateway_relationships(neo4j_session):
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:GCPAPIConfig)-[:RESOURCE]->(n2:GCPAPIGateway) RETURN n1.id, n2.id;
+        MATCH (n1:GCPAPIConfig)-[:HAS_GATEWAY]->(n2:GCPAPIGateway) RETURN n1.id, n2.id;
         """,
     )
 

@@ -207,7 +207,7 @@ def load_apigateway_locations_tx(
     """
     ingest_project_locations = """
     UNWIND {locations} as loc
-    MATCH (location:GCPLocation{id:location.id})
+    MATCH (location:GCPLocation{id:loc.id})
     ON CREATE SET
         location.firstseen = timestamp()
     SET
