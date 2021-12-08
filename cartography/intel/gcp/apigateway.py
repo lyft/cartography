@@ -34,6 +34,7 @@ def get_apigateway_locations(apigateway: Resource, project_id: str) -> List[Dict
             res = req.execute()
             if res.get('locations', []):
                 for location in req['locations']:
+                    location['project_id'] = project_id
                     location['id'] = location['name']
                     locations.append(location)
             req = apigateway.projects().locations().list_next(previous_request=req, previous_response=res)
@@ -72,6 +73,7 @@ def get_apis(apigateway: Resource, project_id: str) -> List[Dict]:
             res = req.execute()
             if res.get('apis', []):
                 for api in res['apis']:
+                    api['project_id'] = project_id
                     api['id'] = api['name']
                     apis.append(api)
             req = apigateway.project().locations().apis().list_next(previous_request=req, previous_response=res)
@@ -116,6 +118,7 @@ def get_api_configs(apigateway: Resource, project_id: str) -> List[Dict]:
                     apiConfig['api_id'] = f"projects/{project_id}/locations/global/apis/\
                         {apiConfig.get('name').split('/')[-3]}"
                     apiConfig['id'] = apiConfig['name']
+                    apiConfig['project_id'] = project_id
                     api_configs.append(apiConfig)
             req = apigateway.projects().locations().apis().configs().list_next(
                 previous_request=req,
@@ -157,6 +160,7 @@ def get_gateways(apigateway: Resource, project_id: str) -> List[Dict]:
             if res.get('gateways', []):
                 for gateway in res['gateways']:
                     gateway['id'] = gateway['name']
+                    gateway['project_id'] = project_id
                     gateways.append(gateway)
             req = apigateway.projects().locations().gateways().list_next(previous_request=req, previous_response=res)
         return gateways
@@ -212,7 +216,7 @@ def load_apigateway_locations_tx(
         location.displayName = loc.displayName,
         location.lastupdated = {gcp_update_tag}
     WITH location,loc
-    MATCH (owner:GCPProject{id:ProjectId})
+    MATCH (owner:GCPProject{id:loc.project_id})
     MERGE (owner)-[r:RESOURCE]->(location)
     ON CREATE SET
         r.firstseen = timestamp()
@@ -280,7 +284,7 @@ def load_apis_tx(tx: neo4j.Transaction, apis: List[Dict], project_id: str, gcp_u
         api.displayName = ap.displayName,
         api.managedService = ap.managedService
     WITH api,ap
-    MATCH (owner:GCPProject{id:ProjectId})
+    MATCH (owner:GCPProject{id:ap.project_id})
     MERGE (owner)-[r:HAS_API_ENABLED]->(api)
     ON CREATE SET
         r.firstseen = timestamp(),
