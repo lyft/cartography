@@ -42,7 +42,7 @@ Start [here](docs/setup/install.md).
 - [Okta](docs/setup/config/okta.md) - users, groups, organizations, roles, applications, factors, trusted origins, reply URIs
 - [Github](docs/setup/config/github.md) - repos, branches, users
 - [DigitalOcean](docs/setup/config/digitalocean.md)
-- [Microsoft Azure](docs/setup/config/azure.md) -  CosmosDB, SQL, Storage, Virtual Machine, Network
+- [Microsoft Azure](docs/setup/config/azure.md) -  CosmosDB, SQL, Storage, Virtual Machine, Function App, Network
 - [Kubernetes](docs/setup/config/kubernetes.md) - Cluster, Namespace, Service, Pod, Container
 - [PagerDuty](docs/setup/config/pagerduty.md) - Users, teams, services, schedules, escalation policies, integrations, vendors
 
