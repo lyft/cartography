@@ -15,8 +15,8 @@ def test_apigateway_locations(neo4j_session):
     )
 
     expected_nodes = {
-        'projects/project123/locations/us-east1',
-        'projects/project123/locations/us-east4',
+        "projects/project123/locations/us-east1",
+        "projects/project123/locations/us-east4",
     }
 
     nodes = neo4j_session.run(
@@ -40,8 +40,8 @@ def test_apigateway_api(neo4j_session):
     )
 
     expected_nodes = {
-        'projects/project123/locations/global/apis/compute',
-        'projects/project123/locations/global/apis/storage',
+        "projects/project123/locations/global/apis/compute",
+        "projects/project123/locations/global/apis/storage",
     }
 
     nodes = neo4j_session.run(
@@ -65,8 +65,8 @@ def test_apigateway_apiconfig(neo4j_session):
     )
 
     expected_nodes = {
-        'projects/project123/locations/global/apis/compute/configs/config123',
-        'projects/project123/locations/global/apis/storage/configs/config456',
+        "projects/project123/locations/global/apis/compute/configs/config123",
+        "projects/project123/locations/global/apis/storage/configs/config456",
     }
 
     nodes = neo4j_session.run(
@@ -90,8 +90,8 @@ def test_apigateway_gateway(neo4j_session):
     )
 
     expected_nodes = {
-        'projects/project123/locations/us-east1/gateways/gateway123',
-        'projects/project123/locations/us-east1/gateways/gateway456',
+        "projects/project123/locations/us-east1/gateways/gateway123",
+        "projects/project123/locations/us-east1/gateways/gateway456",
     }
 
     nodes = neo4j_session.run(
@@ -127,10 +127,14 @@ def test_apigateway_location_relationships(neo4j_session):
     )
 
     expected = {
-        (TEST_PROJECT_ID,
-         'projects/project123/locations/us-east1'),
-        (TEST_PROJECT_ID,
-         'projects/project123/locations/us-east4'),
+        (
+            TEST_PROJECT_ID,
+            "projects/project123/locations/us-east1",
+        ),
+        (
+            TEST_PROJECT_ID,
+            "projects/project123/locations/us-east4",
+        ),
     }
 
     # Fetch relationships
@@ -169,10 +173,14 @@ def test_apigateway_api_relationships(neo4j_session):
     )
 
     expected = {
-        (TEST_PROJECT_ID,
-         'projects/project123/locations/global/apis/compute'),
-        (TEST_PROJECT_ID,
-         'projects/project123/locations/global/apis/storage'),
+        (
+            TEST_PROJECT_ID,
+            "projects/project123/locations/global/apis/compute",
+        ),
+        (
+            TEST_PROJECT_ID,
+            "projects/project123/locations/global/apis/storage",
+        ),
     }
 
     # Fetch relationships
@@ -210,12 +218,12 @@ def test_apigateway_apiconfigs_relationships(neo4j_session):
 
     expected = {
         (
-            'projects/project123/locations/global/apis/compute',
-            'projects/project123/locations/global/apis/compute/configs/config123',
+            "projects/project123/locations/global/apis/compute",
+            "projects/project123/locations/global/apis/compute/configs/config123",
         ),
         (
-            'projects/project123/locations/global/apis/storage',
-            'projects/project123/locations/global/apis/storage/configs/config456',
+            "projects/project123/locations/global/apis/storage",
+            "projects/project123/locations/global/apis/storage/configs/config456",
         ),
     }
 
@@ -254,12 +262,12 @@ def test_apigateway_gateway_relationships(neo4j_session):
 
     expected = {
         (
-            'projects/project123/locations/global/apis/compute/configs/config123',
-            'projects/project123/locations/us-east1/gateways/gateway123',
+            "projects/project123/locations/global/apis/compute/configs/config123",
+            "projects/project123/locations/us-east1/gateways/gateway123",
         ),
         (
-            'projects/project123/locations/global/apis/storage/configs/config456',
-            'projects/project123/locations/us-east1/gateways/gateway456',
+            "projects/project123/locations/global/apis/storage/configs/config456",
+            "projects/project123/locations/us-east1/gateways/gateway456",
         ),
     }
 
