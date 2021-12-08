@@ -134,6 +134,14 @@
   - [Relationships](#relationships-63)
 - [AzureKeyVault](#azurekeyvault)
   - [Relationships](#relationships-64)
+- [AzureVirtualMachineExtension](#azurevirtualmachineextension)
+  - [Relationships](#relationships-65)
+- [AzureVirtualMachineAvailableSize](#azurevirtualmachineavailablesize)
+  - [Relationships](#relationships-66)
+- [AzureVirtualMachineScaleSet](#azurevirtualmachinescaleset)
+  - [Relationships](#relationships-67)
+- [AzureVirtualMachineScaleSetExtension](#azurevirtualmachinescalesetextension)
+  - [Relationships](#relationships-68)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -1848,4 +1856,89 @@ Representation of an [AzureKeyVault](https://docs.microsoft.com/en-us/rest/api/k
 
         ```
         (AzureSubscription)-[RESOURCE]->(AzureKeyVault)
+        ```
+
+## AzureVirtualMachineExtension
+
+Representation of an [AzureVirtualMachineExtension](https://docs.microsoft.com/en-us/rest/api/compute/virtual-machine-extensions/list).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The  Azure Virtual Machine Extension ID number|
+|type | The type of the resource|
+|resourcegroup | The Resource Group where Azure Virtual Machine Extension is created|
+|name | The friendly name that identifies the Azure Virtual Machine Extension|
+
+### Relationships
+
+- Azure Virtual Machine contains one or more Extensions.
+
+        ```
+        (AzureVirtualMachine)-[CONTAIN]->(AzureVirtualMachineExtension)
+        ```
+
+## AzureVirtualMachineAvailableSize
+
+Representation of an [AzureVirtualMachineAvailableSize](https://docs.microsoft.com/en-us/rest/api/compute/virtual-machines/list-available-sizes).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|numberOfCores | The number of cores supported by the virtual machine size|
+|osDiskSizeInMB | The OS disk size, in MB, allowed by the virtual machine size|
+|resourceDiskSizeInMB | The resource disk size, in MB, allowed by the virtual machine size|
+|name | The name of the virtual machine size|
+|memoryInMB | The amount of memory, in MB, supported by the virtual machine size|
+|maxDataDiskCount | The maximum number of data disks that can be attached to the virtual machine size|
+
+### Relationships
+
+- Azure Virtual Machine contains one or more Available Sizes.
+
+        ```
+        (AzureVirtualMachine)-[CONTAIN]->(AzureVirtualMachineAvailableSize)
+        ```
+
+## AzureVirtualMachineScaleSet
+
+Representation of an [AzureVirtualMachineScaleSet](https://docs.microsoft.com/en-us/rest/api/compute/virtual-machine-scale-sets/list-all).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The Azure Virtual Machine Scale Set ID number|
+|location | The location where Azure Virtual Machine Scale Set is created|
+|type | The type of the resource|
+|resourcegroup | The Resource Group where Azure Virtual Machine Scale Set is created|
+|name | The friendly name that identifies the Azure Virtual Machine Scale Set|
+
+### Relationships
+
+- Azure Subscription contains one or more Azure Virtual Machine Scale Sets.
+
+        ```
+        (AzureSubscription)-[RESOURCE]->(AzureVirtualMachineScaleSet)
+        ```
+
+## AzureVirtualMachineScaleSetExtension
+
+Representation of an [AzureVirtualMachineScaleSetExtension](https://docs.microsoft.com/en-us/rest/api/compute/virtual-machine-scale-set-extensions/list).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|name | The name of the Azure Virtual Machine Scale Set Extension|
+|type | The type of the resource|
+
+### Relationships
+
+- Azure Azure Virtual Machine Scale Set contains one or more Azure Virtual Machine Scale Set Extensions.
+
+        ```
+        (AzureVirtualMachineScaleSet)-[CONTAIN]->(AzureVirtualMachineScaleSetExtension)
         ```
