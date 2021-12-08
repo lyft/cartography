@@ -211,15 +211,15 @@ def load_apigateway_locations_tx(
     ON CREATE SET
         location.firstseen = timestamp()
     SET
-        location.name = loc.name
+        location.name = loc.name,
         location.locationId = loc.locationId,
         location.displayName = loc.displayName,
         location.lastupdated = {gcp_update_tag}
     WITH location,loc
-    MATCH (owner:GCPProject{id:ProjectId})
+    MATCH (owner:GCPProject{id:{ProjectId}})
     MERGE (owner)-[r:RESOURCE]->(location)
     ON CREATE SET
-        r.firstseen = timestamp()
+        r.firstseen = timestamp(),
         r.lastupdated = {gcp_update_tag}
     """
     tx.run(
@@ -284,7 +284,7 @@ def load_apis_tx(tx: neo4j.Transaction, apis: List[Dict], project_id: str, gcp_u
         api.displayName = ap.displayName,
         api.managedService = ap.managedService
     WITH api,ap
-    MATCH (owner:GCPProject{id:ProjectId})
+    MATCH (owner:GCPProject{id:{ProjectId}})
     MERGE (owner)-[r:HAS_API_ENABLED]->(api)
     ON CREATE SET
         r.firstseen = timestamp(),
@@ -352,7 +352,7 @@ def load_api_configs_tx(tx: neo4j.Transaction, configs: List[Dict], project_id: 
         config.displayName = conf.displayName,
         config.gatewayServiceAccount = conf.gatewayServiceAccount,
         config.serviceConfigId = conf.serviceConfigId,
-        config.state = conf.state,
+        config.state = conf.state
     WITH config,conf
     MATCH (api:GCPAPI{id:conf.api_id})
     MERGE (api)-[r:HAS_CONFIG]->(config)
@@ -427,7 +427,7 @@ def load_gateways_tx(tx: neo4j.Transaction, gateways: List[Dict], project_id: st
     MATCH (apiconfig:GCPAPIConfig{id:g.apiConfig})
     MERGE (apiconfig)-[r:HAS_GATEWAY]->(gateway)
     ON CREATE SET
-        r.firstseen = timestamp()
+        r.firstseen = timestamp(),
         r.lastupdated = {gcp_update_tag}
     """
     tx.run(

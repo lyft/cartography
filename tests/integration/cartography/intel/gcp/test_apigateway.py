@@ -1,7 +1,7 @@
 import cartography.intel.gcp.apigateway
 import tests.data.gcp.apigateway
 
-TEST_PROJECT_ID = '000000000000'
+TEST_PROJECT_ID = 'project123'
 TEST_UPDATE_TAG = 123456789
 
 
