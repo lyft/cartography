@@ -8,6 +8,7 @@ import neo4j
 from . import compute
 from . import cosmosdb
 from . import function_app
+from . import network
 from . import sql
 from . import storage
 from . import subscription
@@ -27,26 +28,15 @@ def _sync_one_subscription(
     update_tag: int,
     common_job_parameters: Dict,
 ) -> None:
-    compute.sync(
-        neo4j_session, credentials.arm_credentials, subscription_id,
-        update_tag, common_job_parameters,
-    )
-    cosmosdb.sync(
-        neo4j_session, credentials.arm_credentials, subscription_id,
-        update_tag, common_job_parameters,
-    )
-    sql.sync(
-        neo4j_session, credentials.arm_credentials, subscription_id,
-        update_tag, common_job_parameters,
-    )
+    compute.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
+    cosmosdb.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
     function_app.sync(
         neo4j_session, credentials.arm_credentials,
         subscription_id, update_tag, common_job_parameters,
     )
-    storage.sync(
-        neo4j_session, credentials.arm_credentials, subscription_id,
-        update_tag, common_job_parameters,
-    )
+    sql.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
+    storage.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
+    network.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
 
 
 def _sync_tenant(
