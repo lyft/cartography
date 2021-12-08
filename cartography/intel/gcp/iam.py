@@ -44,7 +44,7 @@ def get_domains(admin: Resource, customer_id: str) -> List[Dict]:
         while req is not None:
             res = req.execute()
             page = res.get('domains', [])
-            page['customer_id'] = customer_id
+            page['customerId'] = customer_id
             page['id'] = f"customers/{customer_id}/domains/{page['domainName']}"
             domains.append(page)
         return domains
@@ -69,7 +69,7 @@ def get_groups(admin: Resource, customer_id: str) -> List[Dict]:
         while req is not None:
             res = req.execute()
             page = res.get('groups', [])
-            page['customer_d'] = customer_id
+            page['customerId'] = customer_id
             groups.append(page)
             req = admin.groups().list_next(previous_request=req, previous_response=res)
         return groups
@@ -287,7 +287,7 @@ def load_service_accounts(
     SET u.name = sa.name, u.displayname = sa.displayName,
     u.disabled = sa.disabled, u.serviceaccountid = sa.uniqueId,
     u.lastupdated = {gcp_update_tag}
-    WITH u, sa
+    WITH u,
     MATCH (d:GCPProject{id: {project_id}})
     MERGE (d)-[r:RESOURCE]->(u)
     ON CREATE SET r.firstseen = timestamp()
@@ -440,7 +440,7 @@ def _load_groups_tx(tx: neo4j.Transaction, groups: List[Dict], gcp_update_tag: i
         group.adminCreated = grp.adminCreated,
         group.directMembersCount = grp.directMembersCount
     WITH group,grp
-    MATCH (customer:GCPCustomer{id:grp.customer_id})
+    MATCH (customer:GCPCustomer{id:grp.customerId})
     MERGE (customer)-[r:HAS_GROUP]->(group)
     ON CREATE SET
         r.firstseen = timestamp()
@@ -478,7 +478,7 @@ def _load_domains_tx(tx: neo4j.Transaction, domains: List[Dict], gcp_update_tag:
         domain.isPrimary = dmn.isPrimary,
         domain.domainName = dmn.domainName
     WITH domain,dmn
-    MATCH (customer:GCPCustomer{id:domain.customer_id})
+    MATCH (customer:GCPCustomer{id:domain.customerId})
     MERGE (customer)-[r:HAS_DOMAIN]->(domain)
     ON CREATE SET
         r.firstseen = timestamp()

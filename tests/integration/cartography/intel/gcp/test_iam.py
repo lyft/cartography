@@ -168,7 +168,7 @@ def test_roles_relationships(neo4j_session):
 
     # Load IAM Roles
     data = tests.data.gcp.iam.IAM_ROLES
-    cartography.intel.gcp.iam.load_iam_roles(
+    cartography.intel.gcp.iam.load_roles(
         neo4j_session,
         data,
         TEST_PROJECT_NUMBER,

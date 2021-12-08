@@ -37,6 +37,7 @@ IAM_SERVICE_ACCOUNTS = [
 IAM_SERVICE_ACCOUNT_KEYS = [
     {
         'name': 'abc@gmail.com/key123',
+        'serviceaccount': 'projects/project123/serviceAccounts/abc@gmail.com',
         'keyType': 'USER_MANAGED',
         'keyOrigin': 'USER_PROVIDED',
         'keyAlgorithm': 'KEY_ALG_RSA_2048',
@@ -45,6 +46,7 @@ IAM_SERVICE_ACCOUNT_KEYS = [
     },
     {
         'name': 'defg@gmail.com/key456',
+        'serviceaccount': 'projects/project123/serviceAccounts/defg@gmail.com',
         'keyType': 'SYSTEM_MANAGED',
         'keyOrigin': 'GOOGLE_PROVIDED',
         'keyAlgorithm': 'KEY_ALG_RSA_2048',
@@ -55,6 +57,7 @@ IAM_SERVICE_ACCOUNT_KEYS = [
 IAM_USERS = [
     {
         'id': 'user123',
+        'customerId': 'customer123',
         'primaryEmail': 'abc@example.com',
         'isAdmin': False,
         'isDelegatedAdmin': False,
@@ -79,6 +82,7 @@ IAM_USERS = [
     },
     {
         'id': 'user456',
+        'customerId': 'customer123',
         'primaryEmail': 'def@example.com',
         'isAdmin': False,
         'isDelegatedAdmin': False,
@@ -105,12 +109,14 @@ IAM_USERS = [
 IAM_GROUPS = [
     {
         'id': 'group123',
+        'customerId': 'customer123',
         'groupEmail': 'group123@example.com',
         'adminCreated': True,
         'directMembersCount': 5,
     },
     {
         'id': 'group456',
+        'customerId': 'customer123',
         'groupEmail': 'group456@example.com',
         'adminCreated': True,
         'directMembersCount': 10,
@@ -122,6 +128,7 @@ IAM_DOMAINS = [
             'parentDomainName': 'www.xyz.com',
             'domainAliasName': 'helloworld.com',
         },
+        'customerId': 'customer123',
         'verified': True,
         'isPrimary': True,
         'domainName': 'xyz.com',
@@ -131,6 +138,7 @@ IAM_DOMAINS = [
             'parentDomainName': 'www.pqr.com',
             'domainAliasName': 'hellouniverse.com',
         },
+        'customerId': 'customer123',
         'verified': True,
         'isPrimary': True,
         'domainName': 'pqr.com',
