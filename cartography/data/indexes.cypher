@@ -213,6 +213,7 @@ CREATE INDEX ON :AzureVirtualMachine(id);
 CREATE INDEX ON :AzureDataDisk(id);
 CREATE INDEX ON :AzureDisk(id);
 CREATE INDEX ON :AzureSnapshot(id);
+CREATE INDEX ON :AzureKeyVault(id);
 CREATE INDEX ON :AzureUser(name);
 CREATE INDEX ON :AzureGroup(id);
 CREATE INDEX ON :AzureApplication(id);

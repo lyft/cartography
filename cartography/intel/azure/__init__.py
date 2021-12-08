@@ -9,6 +9,7 @@ from . import compute
 from . import cosmosdb
 from . import function_app
 from . import iam
+from . import key_vaults
 from . import network
 from . import sql
 from . import storage
@@ -38,11 +39,12 @@ def _sync_one_subscription(
     )
     sql.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
     storage.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
+    key_vaults.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
     iam.sync(
         neo4j_session, credentials.aad_graph_credentials, credentials.tenant_id, update_tag, common_job_parameters,
     )
-    tag.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
     network.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
+    tag.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
 
 
 def _sync_tenant(

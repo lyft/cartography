@@ -52,6 +52,7 @@ setup(
         "azure-mgmt-storage>=16.0.0",
         "azure-mgmt-sql<=1.0.0",
         "azure-identity>=1.5.0",
+        "azure-mgmt-keyvault>=1.1.0",
         "azure-graphrbac>=0.61.1",
         "azure-mgmt-resource>=10.2.0",
         "azure-mgmt-network>=2.7.0",
