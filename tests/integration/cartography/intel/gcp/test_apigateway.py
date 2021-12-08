@@ -213,7 +213,7 @@ def test_apigateway_apiconfigs_relationships(neo4j_session):
     )
 
     expected = {
-        ("compute", "config123"), ("storage", "config456"),
+        ('compute', 'config123'), ('storage', 'config456'),
     }
 
     # Fetch relationships
@@ -250,7 +250,7 @@ def test_apigateway_gateway_relationships(neo4j_session):
     )
 
     expected = {
-        ("config123", "gateway123"), ("config456", "gateway456"),
+        ('config123', 'gateway123'), ('config456', 'gateway456'),
     }
 
     # Fetch relationships
