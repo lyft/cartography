@@ -254,7 +254,7 @@ def test_apigateway_gateway_relationships(neo4j_session):
             'projects/project123/locations/us-east1/gateways/gateway123',
         ),
         (
-            'projects/project123/locations/global/apis/compute/configs/config456',
+            'projects/project123/locations/global/apis/storage/configs/config456',
             'projects/project123/locations/us-east1/gateways/gateway456',
         ),
     }
