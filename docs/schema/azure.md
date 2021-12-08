@@ -86,16 +86,52 @@
   - [Relationships](#relationships-39)
 - [AzureCosmosDBMongoDBCollection](#azurecosmosdbmongodbcollection)
   - [Relationships](#relationships-40)
-- [AzureUser](#azureuser)
+- [AzureFunctionApp](#azurefunctionapp)
   - [Relationships](#relationships-41)
-- [AzureGroup](#azuregroup)
+- [AzureFunctionAppConfiguration](#azurefunctionappconfiguration)
   - [Relationships](#relationships-42)
-- [AzureApplication](#azureapplication)
+- [AzureFunctionAppFunction](#azurefunctionappfunction)
   - [Relationships](#relationships-43)
-- [AzureServiceAccount](#azureserviceaccount)
+- [AzureFunctionAppDeployment](#azurefunctionappdeployment)
   - [Relationships](#relationships-44)
-- [AzureDomain](#azuredomain)
+- [AzureFunctionAppBackup](#azurefunctionappbackup)
   - [Relationships](#relationships-45)
+- [AzureFunctionAppProcess](#azurefunctionappprocess)
+  - [Relationships](#relationships-46)
+- [AzureFunctionAppSnapshot](#azurefunctionappsnapshot)
+  - [Relationships](#relationships-47)
+- [AzureFunctionAppWebjob](#azurefunctionappwebjob)
+  - [Relationships](#relationships-48)
+- [AzureNetwork](#azurenetwork)
+  - [Relationships](#relationships-49)
+- [AzureNetworkSubnet](#azurenetworksubnet)
+  - [Relationships](#relationships-50)
+- [AzureRoutetable](#azureroutetable)
+  - [Relationships](#relationships-51)
+- [AzureNetworkRoute](#azurenetworkroute)
+  - [Relationships](#relationships-52)
+- [AzureNetworkSecurityGroup](#azurenetworksecuritygroup)
+  - [Relationships](#relationships-53)
+- [AzureNetworkSecurityRule](#azurenetworksecurityrule)
+  - [Relationships](#relationships-54)
+- [AzurePublicIPAddress](#azurepublicipaddress)
+  - [Relationships](#relationships-55)
+- [AzureNetworkUsage](#azurenetworkusage)
+  - [Relationships](#relationships-56)
+- [AzureResourceGroup](#azureresourcegroup)
+  - [Relationships](#relationships-57)
+- [AzureTag](#azuretag)
+  - [Relationships](#relationships-58)
+- [AzureUser](#azureuser)
+  - [Relationships](#relationships-59)
+- [AzureGroup](#azuregroup)
+  - [Relationships](#relationships-60)
+- [AzureApplication](#azureapplication)
+  - [Relationships](#relationships-61)
+- [AzureServiceAccount](#azureserviceaccount)
+  - [Relationships](#relationships-62)
+- [AzureDomain](#azuredomain)
+  - [Relationships](#relationships-63)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -1268,6 +1304,416 @@ Representation of an [AzureCosmosDBMongoDBCollection](https://docs.microsoft.com
 
         ```
         (AzureCosmosDBMongoDBDatabase)-[CONTAINS]->(AzureCosmosDBMongoDBCollection)
+        ```
+
+## AzureFunctionApp
+
+Representation of an [AzureFunctionApp](https://docs.microsoft.com/en-us/rest/api/appservice/web-apps).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The Azure Function App ID number|
+|type | The type of the resource|
+|location | The location where function app is created|
+|resourcegroup | The Resource Group where function app is created|
+|name | The friendly name that identifies the function app|
+|container size | Size of the function container|
+|default host name | Default hostname of the app|
+|last modified time utc | Last time the app was modified|
+|state | Current state of the app|
+|repository site name | Name of the repository site|
+|daily memory time quota | Maximum allowed daily memory-time quota|
+|availability state | Management information availability state for the app|
+|usage state | State indicating whether the app has exceeded its quota usage|
+
+### Relationships
+
+- Azure Subscription contains one or more Function Apps.
+
+        ```
+        (AzureSubscription)-[RESOURCE]->(AzureFunctionApp)
+        ```
+
+## AzureFunctionAppConfiguration
+
+Representation of an [AzureFunctionAppConfiguration](https://docs.microsoft.com/en-us/rest/api/appservice/web-apps/list-configurations).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The Azure Function App Configuration ID number|
+|type | The type of the resource|
+|number_of_workers | Number of workers|
+|resourcegroup | The Resource Group where function app is created|
+|name | The friendly name that identifies the function app Configuration|
+|net_framework_version | .NET Framework version|
+|php_version | Version of PHP|
+|python_version | Version of Python|
+|node_version | Version of Node.js|
+|linux_fx_version | Linux App Framework and version|
+|windows_fx_version | Xenon App Framework and version|
+|request_tracing_enabled | true if request tracing is enabled otherwise, false|
+|ftps_state | State of FTP / FTPS service|
+
+### Relationships
+
+- Azure Function Apps contains one or more Function App Configurations.
+
+        ```
+        (AzureFunctionApp)-[CONTAIN]->(AzureFunctionAppConfiguration)
+        ```
+
+## AzureFunctionAppFunction
+
+Representation of an [AzureFunctionAppFunction](https://docs.microsoft.com/en-us/rest/api/appservice/web-apps/list-functions).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The Azure Function App Function ID number|
+|type | The type of the resource|
+|resourcegroup | The Resource Group where function app is created|
+|name | The friendly name that identifies the function app Function|
+|href | Function URI|
+|language | The function language|
+|is_disabled | Gets or sets a value indicating whether the function is disabled|
+
+### Relationships
+
+- Azure Function Apps contains one or more Function App Functions.
+
+        ```
+        (AzureFunctionApp)-[CONTAIN]->(AzureFunctionAppFunction)
+        ```
+
+## AzureFunctionAppDeployment
+
+Representation of an [AzureFunctionAppDeployment](https://docs.microsoft.com/en-us/rest/api/appservice/web-apps/list-deployments).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The Azure Function App Deployement ID number|
+|type | The type of the resource|
+|resourcegroup | The Resource Group where function app is created|
+
+### Relationships
+
+- Azure Function Apps contains one or more Function App Deployements.
+
+        ```
+        (AzureFunctionApp)-[CONTAIN]->(AzureFunctionAppDeployment)
+        ```
+
+## AzureFunctionAppBackup
+
+Representation of an [AzureFunctionAppBackup](https://docs.microsoft.com/en-us/rest/api/appservice/web-apps/list-backups).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The Azure Function App Backup ID number|
+|type | The type of the resource|
+|resourcegroup | The Resource Group where function app is created|
+
+### Relationships
+
+- Azure Function Apps contains one or more Function App Backups.
+
+        ```
+        (AzureFunctionApp)-[CONTAIN]->(AzureFunctionAppBackup)
+        ```
+
+## AzureFunctionAppProcess
+
+Representation of an [AzureFunctionAppProcess](https://docs.microsoft.com/en-us/rest/api/appservice/web-apps/list-processes).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The Azure Function App Process ID number|
+|type | The type of the resource|
+|resourcegroup | The Resource Group where function app is created|
+
+### Relationships
+
+- Azure Function Apps contains one or more Function App Process.
+
+        ```
+        (AzureFunctionApp)-[CONTAIN]->(AzureFunctionAppProcess)
+        ```
+
+## AzureFunctionAppSnapshot
+
+Representation of an [AzureFunctionAppSnapshot](https://docs.microsoft.com/en-us/rest/api/appservice/web-apps/list-snapshots).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The Azure Function App Snapshot ID number|
+|type | The type of the resource|
+|resourcegroup | The Resource Group where function app is created|
+
+### Relationships
+
+- Azure Function Apps contains one or more Function App Snapshots.
+
+        ```
+        (AzureFunctionApp)-[CONTAIN]->(AzureFunctionAppSnapshot)
+        ```
+
+## AzureFunctionAppWebjob
+
+Representation of an [AzureFunctionAppWebjob](https://docs.microsoft.com/en-us/rest/api/appservice/web-apps/list-web-jobs).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The Azure Function App Webjob ID number|
+|type | The type of the resource|
+|resourcegroup | The Resource Group where function app is created|
+
+### Relationships
+
+- Azure Function Apps contains one or more Function App Webjobs.
+
+        ```
+        (AzureFunctionApp)-[CONTAIN]->(AzureFunctionAppWebjob)
+        ```
+
+
+## AzureNetwork
+
+Representation of an [AzureNetwork](https://docs.microsoft.com/en-us/rest/api/virtualnetwork/virtual-networks/list-all).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The Azure Network ID number|
+|type | The type of the resource|
+|location | The location where Network is created|
+|resourcegroup | The Resource Group where Network is created|
+|name | The friendly name that identifies the Network|
+|resource_guid | The resourceGuid property of the Virtual Network peering resource|
+|provisioning_state | The provisioning state of the virtual network resource|
+|enable_ddos_protection | Indicates if DDoS protection is enabled for all the protected resources in the virtual network. It requires a DDoS protection plan associated with the resource |
+|etag | A unique read-only string that changes whenever the resource is updated|
+
+### Relationships
+
+- Azure Subscription contains one or more Networks.
+
+        ```
+        (AzureSubscription)-[RESOURCE]->(AzureNetwork)
+        ```
+
+## AzureNetworkSubnet
+
+Representation of an [AzureNetworkSubnet](https://docs.microsoft.com/en-us/rest/api/virtualnetwork/subnets).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The Azure Network Subnet ID number|
+|type | The type of the resource|
+|resourcegroup | The Resource Group where Network Subnet is created|
+|name | The friendly name that identifies the Network Subnet|
+|private_endpoint_network_policies | Enable or Disable apply network policies on private end point in the subnet|
+|private_link_service_network_policies | Enable or Disable apply network policies on private link service in the subnet|
+|etag | A unique read-only string that changes whenever the resource is updated|
+
+### Relationships
+
+- Azure Network contains one or more Subnets.
+
+        ```
+        (AzureNetwork)-[CONTAIN]->(AzureNetworkSubnet)
+        ```
+
+## AzureRoutetable
+
+Representation of an [AzureRoutetable](https://docs.microsoft.com/en-us/rest/api/virtualnetwork/route-tables).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The Azure Network Routetable ID number|
+|location | The location where Network Routetable is created|
+|type | The type of the resource|
+|resourcegroup | The Resource Group where Network Routetable is created|
+|name | The friendly name that identifies the Network Routetable|
+|etag | A unique read-only string that changes whenever the resource is updated|
+
+### Relationships
+
+- Azure Subscription contains one or more Routetables.
+
+        ```
+        (AzureSubscription)-[RESOURCE]->(AzureRoutetable)
+        ```
+
+## AzureNetworkRoute
+
+Representation of an [AzureNetworkRoute](https://docs.microsoft.com/en-us/rest/api/virtualnetwork/routes).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The Azure Network Route ID number|
+|type | The type of the resource|
+|name | The friendly name that identifies the Network Route|
+|etag | A unique read-only string that changes whenever the resource is updated|
+
+### Relationships
+
+- Azure Network contains one or more Routes.
+
+        ```
+        (AzureRoutetable)-[CONTAIN]->(AzureNetworkRoute)
+        ```
+
+## AzureNetworkSecurityGroup
+
+Representation of an [AzureNetworkSecurityGroup](https://docs.microsoft.com/en-us/rest/api/virtualnetwork/network-security-groups/list-all).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The Azure Network SecurityGroup ID number|
+|location | The location where Network SecurityGroup is created|
+|type | The type of the resource|
+|resourcegroup | The Resource Group where Network SecurityGroup is created|
+|name | The friendly name that identifies the Network Routetable|
+|etag | A unique read-only string that changes whenever the resource is updated|
+
+### Relationships
+
+- Azure Subscription contains one or more SecurityGroups.
+
+        ```
+        (AzureSubscription)-[RESOURCE]->(AzureNetworkSecurityGroup)
+        ```
+
+## AzureNetworkSecurityRule
+
+Representation of an [AzureNetworkSecurityRule](https://docs.microsoft.com/en-us/rest/api/virtualnetwork/security-rules/list).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The Azure Network SecurityRule ID number|
+|type | The type of the resource|
+|name | The friendly name that identifies the Network SecurityRule|
+|etag | A unique read-only string that changes whenever the resource is updated|
+
+### Relationships
+
+- Azure Network contains one or more SecurityRule.
+
+        ```
+        (AzureNetworkSecurityGroup)-[CONTAIN]->(AzureNetworkSecurityRule)
+        ```
+
+## AzurePublicIPAddress
+
+Representation of an [AzurePublicIPAddress](https://docs.microsoft.com/en-us/rest/api/virtualnetwork/public-ip-addresses/list-all).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The Azure Network PublicIPAddress ID number|
+|location | The location where Network PublicIPAddress is created|
+|type | The type of the resource|
+|resourcegroup | The Resource Group where Network PublicIPAddress is created|
+|name | The friendly name that identifies the Network PublicIPAddress|
+|etag | A unique read-only string that changes whenever the resource is updated|
+
+### Relationships
+
+- Azure Subscription contains one or more Public IP Address.
+
+        ```
+        (AzureSubscription)-[RESOURCE]->(AzurePublicIPAddress)
+        ```
+
+## AzureNetworkUsage
+
+Representation of an [AzureNetworkUsage](https://docs.microsoft.com/en-us/rest/api/virtualnetwork/virtual-networks/list-usage).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The Azure Network Useges ID number|
+|currentValue | The current value of the usage|
+|limit | The limit of usage|
+
+### Relationships
+
+- Azure Network contains one or more Usages.
+
+        ```
+        (AzureNetwork)-[CONTAIN]->(AzureNetworkUsage)
+        ```
+
+## AzureResourceGroup
+
+Representation of an [AzureResourceGroup](https://docs.microsoft.com/en-us/rest/api/resources/resource-groups/list).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The ID of the resource group|
+|name | The name of the resource group|
+|type| The type of Azure resource|
+|location| The location of the resource group|
+|managedBy| The ID of the resource that manages this resource group|
+
+### Relationships
+
+- Azure Subscription contains one or more Azure Resource Groups.
+
+        ```
+        (AzureSubscription)-[RESOURCE]->(AzureResourceGroup)
+        ```
+
+## AzureTag
+
+Representation of an [AzureTag](https://docs.microsoft.com/en-us/rest/api/resources/tags/list).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The ID of the tag|
+|name | The name of the tag|
+|type| The type of Azure resource|
+|resource_group| The name of the resource group|
+|value| The value of tag|
+
+### Relationships
+
+- Azure resource contains one or more tags.
+
+        ```
+        (AzureResource)-[TAGGED]->(AzureTag)
         ```
 
 ## AzureUser
