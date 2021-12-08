@@ -68,7 +68,7 @@ def test_load_service_account_keys(neo4j_session):
 
     expected_nodes = {
         'abc@gmail.com/key123',
-        'abc@gmail.com/key456',
+        'defg@gmail.com/key456',
     }
 
     nodes = neo4j_session.run(
@@ -294,8 +294,8 @@ def test_users_relationships(neo4j_session):
     )
 
     expected = {
-        ('customer123', 'user123'),
-        ('customer123', 'user456'),
+        (TEST_CUSTOMER_ID, 'user123'),
+        (TEST_CUSTOMER_ID, 'user456'),
     }
 
     # Fetch relationships
@@ -333,8 +333,8 @@ def test_groups_relationships(neo4j_session):
     )
 
     expected = {
-        ('customer123', 'group123'),
-        ('customer123', 'group456'),
+        (TEST_CUSTOMER_ID, 'group123'),
+        (TEST_CUSTOMER_ID, 'group456'),
     }
 
     # Fetch relationships
@@ -372,8 +372,8 @@ def test_domains_relationships(neo4j_session):
     )
 
     expected = {
-        ('customer123', 'customers/customer123/domains/xyz.com'),
-        ('customer123', 'customers/customer123/domains/pqr.com'),
+        (TEST_CUSTOMER_ID, 'customers/customer123/domains/xyz.com'),
+        (TEST_CUSTOMER_ID, 'customers/customer123/domains/pqr.com'),
     }
 
     # Fetch relationships

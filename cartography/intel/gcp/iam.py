@@ -486,7 +486,7 @@ def _load_domains_tx(tx: neo4j.Transaction, domains: List[Dict], gcp_update_tag:
     """
     tx.run(
         ingest_domains,
-        domains2=domains,
+        domains=domains,
         gcp_update_tag=gcp_update_tag,
     )
 
