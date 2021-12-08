@@ -15,8 +15,7 @@ def test_apigateway_locations(neo4j_session):
     )
 
     expected_nodes = {
-        "us-east1",
-        "us-east4",
+        "us-east1", "us-east4",
     }
 
     nodes = neo4j_session.run(
@@ -40,8 +39,7 @@ def test_apigateway_api(neo4j_session):
     )
 
     expected_nodes = {
-        "compute",
-        "storage",
+        "compute", "storage",
     }
 
     nodes = neo4j_session.run(
@@ -65,8 +63,7 @@ def test_apigateway_apiconfig(neo4j_session):
     )
 
     expected_nodes = {
-        "config123",
-        "config456",
+        "config123", "config456",
     }
 
     nodes = neo4j_session.run(
@@ -90,8 +87,7 @@ def test_apigateway_gateway(neo4j_session):
     )
 
     expected_nodes = {
-        "gateway123",
-        "gateway456",
+        "gateway123", "gateway456",
     }
 
     nodes = neo4j_session.run(
@@ -217,8 +213,7 @@ def test_apigateway_apiconfigs_relationships(neo4j_session):
     )
 
     expected = {
-        ("compute", "config123"),
-        ("storage", "config456"),
+        ("compute", "config123"), ("storage", "config456"),
     }
 
     # Fetch relationships
@@ -255,8 +250,7 @@ def test_apigateway_gateway_relationships(neo4j_session):
     )
 
     expected = {
-        ("config123", "gateway123"),
-        ("config456", "gateway456"),
+        ("config123", "gateway123"), ("config456", "gateway456"),
     }
 
     # Fetch relationships
