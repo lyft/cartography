@@ -287,7 +287,7 @@ def load_service_accounts(
     SET u.name = sa.name, u.displayname = sa.displayName,
     u.disabled = sa.disabled, u.serviceaccountid = sa.uniqueId,
     u.lastupdated = {gcp_update_tag}
-    WITH u,
+    WITH u
     MATCH (d:GCPProject{id: {project_id}})
     MERGE (d)-[r:RESOURCE]->(u)
     ON CREATE SET r.firstseen = timestamp()
@@ -407,7 +407,7 @@ def _load_users_tx(tx: neo4j.Transaction, users: List[Dict], gcp_update_tag: int
     MATCH (customer:GCPCustomer{id:usr.customerId})
     MERGE (customer)-[r:HAS_USER]->(user)
     ON CREATE SET
-        r.firstseen = timestamp()
+        r.firstseen = timestamp(),
         r.lastupdated = {gcp_update_tag}
     """
     tx.run(
@@ -443,7 +443,7 @@ def _load_groups_tx(tx: neo4j.Transaction, groups: List[Dict], gcp_update_tag: i
     MATCH (customer:GCPCustomer{id:grp.customerId})
     MERGE (customer)-[r:HAS_GROUP]->(group)
     ON CREATE SET
-        r.firstseen = timestamp()
+        r.firstseen = timestamp(),
         r.lastupdated = {gcp_update_tag}
     """
     tx.run(
@@ -478,10 +478,10 @@ def _load_domains_tx(tx: neo4j.Transaction, domains: List[Dict], gcp_update_tag:
         domain.isPrimary = dmn.isPrimary,
         domain.domainName = dmn.domainName
     WITH domain,dmn
-    MATCH (customer:GCPCustomer{id:domain.customerId})
+    MATCH (customer:GCPCustomer{id:dmn.customerId})
     MERGE (customer)-[r:HAS_DOMAIN]->(domain)
     ON CREATE SET
-        r.firstseen = timestamp()
+        r.firstseen = timestamp(),
         r.lastupdated = {gcp_update_tag}
     """
     tx.run(

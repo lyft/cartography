@@ -1,6 +1,7 @@
 IAM_ROLES = [
     {
         'name': 'projects/project123/roles/logging.viewer',
+        'id': 'projects/project123/roles/logging.viewer',
         'title': 'logging.viewer',
         'description': 'Can view logs',
         'deleted': False,
@@ -8,6 +9,7 @@ IAM_ROLES = [
     },
     {
         'name': 'projects/project123/roles/compute.viewer',
+        'id': 'projects/project123/roles/compute.viewer',
         'title': 'compute.viewer',
         'description': 'Can view compute instances',
         'deleted': False,
@@ -33,6 +35,7 @@ IAM_SERVICE_ACCOUNTS = [
 IAM_SERVICE_ACCOUNT_KEYS = [
     {
         'name': 'abc@gmail.com/key123',
+        'id': 'abc@gmail.com/key123',
         'serviceaccount': 'projects/project123/serviceAccounts/abc@gmail.com',
         'keyType': 'USER_MANAGED',
         'keyOrigin': 'USER_PROVIDED',
@@ -42,6 +45,7 @@ IAM_SERVICE_ACCOUNT_KEYS = [
     },
     {
         'name': 'defg@gmail.com/key456',
+        'id': 'defg@gmail.com/key456',
         'serviceaccount': 'projects/project123/serviceAccounts/defg@gmail.com',
         'keyType': 'SYSTEM_MANAGED',
         'keyOrigin': 'GOOGLE_PROVIDED',
