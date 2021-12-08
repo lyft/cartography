@@ -7,9 +7,9 @@ import neo4j
 
 from . import compute
 from . import cosmosdb
-from . import key_vaults
 from . import function_app
 from . import iam
+from . import key_vaults
 from . import network
 from . import sql
 from . import storage
