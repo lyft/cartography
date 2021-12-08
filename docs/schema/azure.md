@@ -1321,7 +1321,7 @@ Representation of an [AzureFunctionApp](https://docs.microsoft.com/en-us/rest/ap
         ```
         (AzureSubscription)-[RESOURCE]->(AzureFunctionApp)
         ```
-        
+
 ## AzureFunctionAppConfiguration
 
 Representation of an [AzureFunctionAppConfiguration](https://docs.microsoft.com/en-us/rest/api/appservice/web-apps/list-configurations).
@@ -1351,7 +1351,7 @@ Representation of an [AzureFunctionAppConfiguration](https://docs.microsoft.com/
         ```
         (AzureFunctionApp)-[CONTAIN]->(AzureFunctionAppConfiguration)
         ```
-        
+
 ## AzureFunctionAppFunction
 
 Representation of an [AzureFunctionAppFunction](https://docs.microsoft.com/en-us/rest/api/appservice/web-apps/list-functions).
@@ -1375,7 +1375,7 @@ Representation of an [AzureFunctionAppFunction](https://docs.microsoft.com/en-us
         ```
         (AzureFunctionApp)-[CONTAIN]->(AzureFunctionAppFunction)
         ```
-        
+
 ## AzureFunctionAppDeployment
 
 Representation of an [AzureFunctionAppDeployment](https://docs.microsoft.com/en-us/rest/api/appservice/web-apps/list-deployments).
@@ -1395,7 +1395,7 @@ Representation of an [AzureFunctionAppDeployment](https://docs.microsoft.com/en-
         ```
         (AzureFunctionApp)-[CONTAIN]->(AzureFunctionAppDeployment)
         ```
-        
+
 ## AzureFunctionAppBackup
 
 Representation of an [AzureFunctionAppBackup](https://docs.microsoft.com/en-us/rest/api/appservice/web-apps/list-backups).
@@ -1415,7 +1415,7 @@ Representation of an [AzureFunctionAppBackup](https://docs.microsoft.com/en-us/r
         ```
         (AzureFunctionApp)-[CONTAIN]->(AzureFunctionAppBackup)
         ```
-        
+
 ## AzureFunctionAppProcess
 
 Representation of an [AzureFunctionAppProcess](https://docs.microsoft.com/en-us/rest/api/appservice/web-apps/list-processes).
@@ -1435,7 +1435,7 @@ Representation of an [AzureFunctionAppProcess](https://docs.microsoft.com/en-us/
         ```
         (AzureFunctionApp)-[CONTAIN]->(AzureFunctionAppProcess)
         ```
-        
+
 ## AzureFunctionAppSnapshot
 
 Representation of an [AzureFunctionAppSnapshot](https://docs.microsoft.com/en-us/rest/api/appservice/web-apps/list-snapshots).
@@ -1455,7 +1455,7 @@ Representation of an [AzureFunctionAppSnapshot](https://docs.microsoft.com/en-us
         ```
         (AzureFunctionApp)-[CONTAIN]->(AzureFunctionAppSnapshot)
         ```
-        
+
 ## AzureFunctionAppWebjob
 
 Representation of an [AzureFunctionAppWebjob](https://docs.microsoft.com/en-us/rest/api/appservice/web-apps/list-web-jobs).

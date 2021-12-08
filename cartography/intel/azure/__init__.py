@@ -37,7 +37,7 @@ def _sync_one_subscription(
     sql.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
     storage.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
     network.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
-    
+
 
 def _sync_tenant(
     neo4j_session: neo4j.Session,
