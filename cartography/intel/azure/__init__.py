@@ -7,8 +7,8 @@ import neo4j
 
 from . import compute
 from . import cosmosdb
-from . import iam
 from . import function_app
+from . import iam
 from . import network
 from . import sql
 from . import storage
