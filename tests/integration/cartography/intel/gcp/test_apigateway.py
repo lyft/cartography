@@ -127,8 +127,10 @@ def test_apigateway_location_relationships(neo4j_session):
     )
 
     expected = {
-        (TEST_PROJECT_ID, 'projects/project123/locations/us-east1'),
-        (TEST_PROJECT_ID, 'projects/project123/locations/us-east4'),
+        (TEST_PROJECT_ID,
+         'projects/project123/locations/us-east1'),
+        (TEST_PROJECT_ID,
+         'projects/project123/locations/us-east4'),
     }
 
     # Fetch relationships
@@ -167,8 +169,10 @@ def test_apigateway_api_relationships(neo4j_session):
     )
 
     expected = {
-        (TEST_PROJECT_ID, 'projects/project123/locations/global/apis/compute'),
-        (TEST_PROJECT_ID, 'projects/project123/locations/global/apis/storage'),
+        (TEST_PROJECT_ID,
+         'projects/project123/locations/global/apis/compute'),
+        (TEST_PROJECT_ID,
+         'projects/project123/locations/global/apis/storage'),
     }
 
     # Fetch relationships
