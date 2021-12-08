@@ -4,18 +4,14 @@ IAM_ROLES = [
         'title': 'logging.viewer',
         'description': 'Can view logs',
         'deleted': False,
-        'includedPermissions': {
-            'logging.buckets.get',
-        },
+        'includedPermissions': 'logging.buckets.get',
     },
     {
         'name': 'projects/project123/roles/compute.viewer',
         'title': 'compute.viewer',
         'description': 'Can view compute instances',
         'deleted': False,
-        'includedPermissions': {
-            'compute.instances.get',
-        },
+        'includedPermissions': 'compute.instances.get',
     },
 ]
 IAM_SERVICE_ACCOUNTS = [

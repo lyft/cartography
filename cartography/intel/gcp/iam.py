@@ -350,9 +350,9 @@ def load_roles(neo4j_session: neo4j.Session, roles: List[Dict], project_id: str,
     u.description = d.description, u.deleted = d.deleted,
     u.permissions = d.includedPermissions, u.roleid = d.id,
     u.lastupdated = {gcp_update_tag}
-    WITH u, d
-    MATCH (d:GCPProject{id: {project_id}})
-    MERGE (d)-[r:RESOURCE]->(u)
+    WITH u
+    MATCH (owner:GCPProject{id: {project_id}})
+    MERGE (owner)-[r:RESOURCE]->(u)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {gcp_update_tag}
     """
