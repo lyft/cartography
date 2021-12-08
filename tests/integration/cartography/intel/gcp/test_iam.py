@@ -67,13 +67,13 @@ def test_load_service_account_keys(neo4j_session):
     )
 
     expected_nodes = {
-        'key123',
-        'key456',
+        'abc@gmail.com/key123',
+        'abc@gmail.com/key456',
     }
 
     nodes = neo4j_session.run(
         """
-        MATCH (r:GCPIAMServiceAccountKey) RETURN r.id;
+        MATCH (r:GCPServiceAccountKey) RETURN r.id;
         """,
     )
 
@@ -255,14 +255,14 @@ def test_service_accounts_keys_relationships(neo4j_session):
     )
 
     expected = {
-        ("projects/project123/serviceAccounts/abc@gmail.com", 'key123'),
-        ("projects/project123/serviceAccounts/defg@gmail.com", 'key456'),
+        ("projects/project123/serviceAccounts/abc@gmail.com", 'abc@gmail.com/key123'),
+        ("projects/project123/serviceAccounts/defg@gmail.com", 'defg@gmail.com/key456'),
     }
 
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:GCPServiceAccount)-[:RESOURCE]->(n2:GCPServiceAccountKey) RETURN n1.id, n2.id;
+        MATCH (n1:GCPIAMServiceAccount)-[:RESOURCE]->(n2:GCPServiceAccountKey) RETURN n1.id, n2.id;
         """,
     )
 

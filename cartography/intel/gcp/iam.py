@@ -282,7 +282,7 @@ def load_service_accounts(
 ) -> None:
     ingest_service_accounts = """
     UNWIND {service_accounts_list} AS sa
-    MERGE (u:GCPServiceAccount{id: sa.name})
+    MERGE (u:GCPIAMServiceAccount{id: sa.name})
     ON CREATE SET u.firstseen = timestamp()
     SET u.name = sa.name, u.displayname = sa.displayName,
     u.disabled = sa.disabled, u.serviceaccountid = sa.uniqueId,
@@ -344,7 +344,7 @@ def cleanup_service_account_keys(neo4j_session: neo4j.Session, common_job_parame
 def load_roles(neo4j_session: neo4j.Session, roles: List[Dict], project_id: str, gcp_update_tag: int) -> None:
     ingest_roles = """
     UNWIND {roles_list} AS d
-    MERGE (u:GCPRole{id: d.id})
+    MERGE (u:GCPIAMRole{id: d.id})
     ON CREATE SET u.firstseen = timestamp()
     SET u.name = d.name, u.title = d.title,
     u.description = d.description, u.deleted = d.deleted,
@@ -412,7 +412,7 @@ def _load_users_tx(tx: neo4j.Transaction, users: List[Dict], gcp_update_tag: int
     """
     tx.run(
         ingest_users,
-        users2=users,
+        users=users,
         gcp_update_tag=gcp_update_tag,
     )
 
@@ -448,7 +448,7 @@ def _load_groups_tx(tx: neo4j.Transaction, groups: List[Dict], gcp_update_tag: i
     """
     tx.run(
         ingest_groups,
-        groups2=groups,
+        groups=groups,
         gcp_update_tag=gcp_update_tag,
     )
 
@@ -473,7 +473,7 @@ def _load_domains_tx(tx: neo4j.Transaction, domains: List[Dict], gcp_update_tag:
     SET
         domain.parentDomainName = dmn.domainAliases.parentDomainName,
         domain.domainAliasName = dmn.domainAlioases.domainAliasName,
-        domain.verified = dm.verified,
+        domain.verified = dmn.verified,
         domain.creationTime = dmn.creationTime,
         domain.isPrimary = dmn.isPrimary,
         domain.domainName = dmn.domainName
