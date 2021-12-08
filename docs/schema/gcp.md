@@ -35,6 +35,15 @@
 - [IpRule::IpPermissionInbound::GCPIpRule](#ipruleippermissioninboundgcpiprule)
   - [Relationships](#relationships-14)
 - [IpRange](#iprange)
+- [GCP API Gateway](#gcp-api-gateway)
+  - [GCP API Gateway Locations](#gcp-api-gateway-locations)
+    - [Relationships](#relationships-15)
+  - [GCP APIGATEWAY APIs](#gcp-apigateway-apis)
+    - [Relationships](#relationships-16)
+  - [GCP APIGATEWAY CONFIGS](#gcp-apigateway-configs)
+    - [Relationships](#relationships-17)
+  - [GCP APIGATEWAY GATEWAYS](#gcp-apigateway-gateways)
+    - [Relationships](#relationships-18)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -675,3 +684,88 @@ Representation of an IP range or subnet.
 	```
 	(GCPIpRule, IpRule, IpPermissionInbound)<-[MEMBER_OF_IP_RULE)-(:IpRange)
 	```
+
+
+## GCP API Gateway
+
+### GCP API Gateway Locations
+
+Representation of [GCP API Gateway Locations](https://cloud.google.com/api-gateway/docs/reference/rest/v1/projects.locations.apis)
+
+| Field                   | Description                                                     |
+|-------------------------|-----------------------------------------------------------------|
+| name                    | Resource name for the location.                                 |
+| locationId              | The canonical id for this location.                             |
+| displayName             | The friendly name for this location.                            |
+
+#### Relationships
+
+GCP APIGateway Locations are specified in GCP Projects
+
+    ```
+    (GCPProjects)-[RESOURCE]->(GCPLocations)
+    ```
+
+### GCP APIGATEWAY APIs
+
+Representation of [GCP APIGateway APIs](https://cloud.google.com/api-gateway/docs/reference/rest/v1/projects.locations.apis)
+
+| Field                  | Description                                                          |
+|------------------------|----------------------------------------------------------------------|
+| name                   | Resource name of the API.                                            |
+| createTime             | Created time.                                                        |
+| updateTime             | Updated time.                                                        |
+| displayName            | Display name.                                                        |
+| managedService         | The name of a Google Managed Service                                 |
+
+#### Relationships
+
+GCP APIGateway APIs are defined in GCP Projects
+
+    ```
+    (GCPProjects)-[HAS_API_ENABLED]->(GCPAPI)
+    ```
+
+### GCP APIGATEWAY CONFIGS
+
+Representation of [GCP API Gateway Configs](https://cloud.google.com/api-gateway/docs/reference/rest/v1/projects.locations.apis.configs)
+
+| Field                      | Description                                                      |
+|----------------------------|------------------------------------------------------------------|
+| name                       | Resource name of the API Config.                                 |
+| createTime                 | Created time.                                                    |
+| updateTime                 | Updated time.                                                    |
+| displayName                | Display name.                                                    |
+| gatewayServiceAccount      | The Google Cloud IAM Service Account.                            |
+| serviceConfigId            | The ID of the associated Service Config.                         |
+| state                      | State of the API Config.                                         |
+
+#### Relationships
+
+GCP API Configs are defined in GCP APIs
+
+    ```
+    (GCPAPIs)-[HAS_CONFIG]->(GCPAPIConfigs)
+    ```
+
+### GCP APIGATEWAY GATEWAYS
+
+Representation of [GCP APIGateway Gateways](https://cloud.google.com/api-gateway/docs/reference/rest/v1/projects.locations.gateways)
+
+| Field                     | Description                                                          |
+|---------------------------|----------------------------------------------------------------------|
+| name                      | Resource name of the Gateway.                                        |
+| createTime                | Created time.                                                        |
+| updateTime                | Updated time.                                                        |
+| displayName               | Display name.                                                        |
+| apiConfig                 | Resource name of the API Config for this Gateway.                    |
+| state                     | The current state of the Gateway.                                    |
+| defaultHostname           | The default API Gateway host name .                                  |
+
+#### Relationships
+
+GCP APIGateway gateways are defined in GCP APIGateways API Configs
+
+    ```
+    (GCPAPIConfigs)-[HAS_GATEWAY]->(GCPAPIGateway)
+    ```
