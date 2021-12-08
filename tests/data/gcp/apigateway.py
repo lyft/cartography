@@ -1,11 +1,13 @@
 TEST_APIGATEWAY_LOCATIONS = [
     {
         'name': 'projects/project123/locations/us-east1',
+        'id': 'projects/project123/locations/us-east1',
         'locationId': 'us-east1',
         'displayName': 'South Carolina',
     },
     {
         'name': 'projects/project123/locations/us-east4',
+        'id': 'projects/project123/locations/us-east4',
         'locationId': 'us-east1',
         'displayName': 'Virginia',
     },
@@ -13,6 +15,7 @@ TEST_APIGATEWAY_LOCATIONS = [
 TEST_APIGATEWAY_APIS = [
     {
         'name': 'projects/project123/locations/global/apis/compute',
+        'id': 'projects/project123/locations/global/apis/compute',
         'createTime': '2020-10-02T15:01:23Z',
         'updateTime': '2020-11-02T15:01:23Z',
         'displayName': 'compute',
@@ -20,6 +23,7 @@ TEST_APIGATEWAY_APIS = [
     },
     {
         'name': 'projects/project123/locations/global/apis/storage',
+        'id': 'projects/project123/locations/global/apis/storage',
         'createTime': '2020-10-02T15:01:23Z',
         'updateTime': '2020-11-02T15:01:23Z',
         'displayName': 'storage',
@@ -29,6 +33,7 @@ TEST_APIGATEWAY_APIS = [
 TEST_API_CONFIGS = [
     {
         'name': 'projects/project123/locations/global/apis/compute/configs/config123',
+        'id': 'projects/project123/locations/global/apis/compute/configs/config123',
         'createTime': '2020-10-02T15:01:23Z',
         'updateTime': '2020-11-02T15:01:23Z',
         'displayName': 'config123',
@@ -38,6 +43,7 @@ TEST_API_CONFIGS = [
     },
     {
         'name': 'projects/project123/locations/global/apis/compute/configs/config456',
+        'id': 'projects/project123/locations/global/apis/compute/configs/config456',
         'createTime': '2020-10-02T15:01:23Z',
         'updateTime': '2020-11-02T15:01:23Z',
         'displayName': 'config123',
@@ -49,6 +55,7 @@ TEST_API_CONFIGS = [
 TEST_GATEWAYS = [
     {
         'name': 'projects/project123/locations/us-east1/gateways/gateway123',
+        'id': 'projects/project123/locations/us-east1/gateways/gateway123',
         'createTime': '2020-10-02T15:01:23Z',
         'updateTime': '2020-11-02T15:01:23Z',
         'displayName': 'gateway123',
@@ -58,6 +65,7 @@ TEST_GATEWAYS = [
     },
     {
         'name': 'projects/project123/locations/us-east1/gateways/gateway456',
+        'id': 'projects/project123/locations/us-east1/gateways/gateway456',
         'createTime': '2020-10-02T15:01:23Z',
         'updateTime': '2020-11-02T15:01:23Z',
         'displayName': 'gateway123',
