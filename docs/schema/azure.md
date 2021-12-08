@@ -118,6 +118,10 @@
   - [Relationships](#relationships-55)
 - [AzureNetworkUsage](#azurenetworkusage)
   - [Relationships](#relationships-56)
+- [AzureResourceGroup](#azureresourcegroup)
+  - [Relationships](#relationships-57)
+- [AzureTag](#azuretag)
+  - [Relationships](#relationships-58)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -1656,4 +1660,48 @@ Representation of an [AzureNetworkUsage](https://docs.microsoft.com/en-us/rest/a
 
         ```
         (AzureNetwork)-[CONTAIN]->(AzureNetworkUsage)
+        ```
+
+## AzureResourceGroup
+
+Representation of an [AzureResourceGroup](https://docs.microsoft.com/en-us/rest/api/resources/resource-groups/list).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The ID of the resource group|
+|name | The name of the resource group|
+|type| The type of Azure resource|
+|location| The location of the resource group|
+|managedBy| The ID of the resource that manages this resource group|
+
+### Relationships
+
+- Azure Subscription contains one or more Azure Resource Groups.
+
+        ```
+        (AzureSubscription)-[RESOURCE]->(AzureResourceGroup)
+        ```
+
+## AzureTag
+
+Representation of an [AzureTag](https://docs.microsoft.com/en-us/rest/api/resources/tags/list).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The ID of the tag|
+|name | The name of the tag|
+|type| The type of Azure resource|
+|resource_group| The name of the resource group|
+|value| The value of tag|
+
+### Relationships
+
+- Azure resource contains one or more tags.
+
+        ```
+        (AzureResource)-[TAGGED]->(AzureTag)
         ```

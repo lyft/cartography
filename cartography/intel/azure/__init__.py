@@ -12,6 +12,7 @@ from . import network
 from . import sql
 from . import storage
 from . import subscription
+from . import tag
 from . import tenant
 from .util.credentials import Authenticator
 from .util.credentials import Credentials
@@ -36,6 +37,7 @@ def _sync_one_subscription(
     )
     sql.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
     storage.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
+    tag.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
     network.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
 
 
