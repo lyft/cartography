@@ -118,7 +118,7 @@
   - [Relationships](#relationships-55)
 - [AzureNetworkUsage](#azurenetworkusage)
   - [Relationships](#relationships-56)
- - [AzureResourceGroup](#azureresourcegroup)
+- [AzureResourceGroup](#azureresourcegroup)
   - [Relationships](#relationships-57)
 - [AzureTag](#azuretag)
   - [Relationships](#relationships-58)
