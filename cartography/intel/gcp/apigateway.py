@@ -207,7 +207,7 @@ def load_apigateway_locations_tx(
     """
     ingest_project_locations = """
     UNWIND {locations} as loc
-    MATCH (location:GCPLocation{id:loc.id})
+    MERGE (location:GCPLocation{id:loc.id})
     ON CREATE SET
         location.firstseen = timestamp()
     SET
@@ -215,7 +215,7 @@ def load_apigateway_locations_tx(
         location.locationId = loc.locationId,
         location.displayName = loc.displayName,
         location.lastupdated = {gcp_update_tag}
-    WITH location,loc
+    WITH location
     MATCH (owner:GCPProject{id:{ProjectId}})
     MERGE (owner)-[r:RESOURCE]->(location)
     ON CREATE SET
@@ -283,7 +283,7 @@ def load_apis_tx(tx: neo4j.Transaction, apis: List[Dict], project_id: str, gcp_u
         api.updateTime = ap.updateTime,
         api.displayName = ap.displayName,
         api.managedService = ap.managedService
-    WITH api,ap
+    WITH api
     MATCH (owner:GCPProject{id:{ProjectId}})
     MERGE (owner)-[r:HAS_API_ENABLED]->(api)
     ON CREATE SET
