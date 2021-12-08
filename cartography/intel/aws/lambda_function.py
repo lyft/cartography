@@ -40,6 +40,7 @@ def load_lambda_functions(
     MERGE (lambda:AWSLambda{id: lf.FunctionArn})
     ON CREATE SET lambda.firstseen = timestamp()
     SET lambda.name = lf.FunctionName,
+    lambda.arn = lf.FunctionArn,
     lambda.modifieddate = lf.LastModified,
     lambda.runtime = lf.Runtime,
     lambda.description = lf.Description,

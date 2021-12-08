@@ -1,5 +1,7 @@
 """Error handler class"""
 # define Python user-defined exceptions
+
+
 class ServerError(Exception):
     """Base Class for all other application exceptions"""
 

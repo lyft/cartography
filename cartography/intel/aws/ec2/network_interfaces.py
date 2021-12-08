@@ -55,7 +55,8 @@ def load_network_interfaces(
             netinf.requester_managed = network_interface.RequesterManaged,
             netinf.source_dest_check = network_interface.SourceDestCheck,
             netinf.requester_id = network_interface.RequesterId,
-            netinf.public_ip = network_interface.Association.PublicIp
+            netinf.public_ip = network_interface.Association.PublicIp,
+            netinf.arn = network_interface.Arn
         WITH network_interface, netinf
 
         UNWIND network_interface.PrivateIpAddresses AS private_ip_address
@@ -98,6 +99,10 @@ def load_network_interfaces(
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = {update_tag}
     """
+
+    for item in data:
+        item['Arn'] = f"arn:aws:ec2:{region}:{aws_account_id}:network-interface/{item['NetworkInterfaceId']}"
+
     neo4j_session.run(
         ingest_network_interfaces, network_interfaces=data, update_tag=update_tag,
         region=region, aws_account_id=aws_account_id,

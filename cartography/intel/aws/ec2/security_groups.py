@@ -109,7 +109,7 @@ def load_ec2_security_groupinfo(
     MERGE (group:EC2SecurityGroup{id: {GroupId}})
     ON CREATE SET group.firstseen = timestamp(), group.groupid = {GroupId}
     SET group.name = {GroupName}, group.description = {Description}, group.region = {Region},
-    group.lastupdated = {update_tag}
+    group.lastupdated = {update_tag}, group.arn = {GroupArn}
     WITH group
     MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
     MERGE (aa)-[r:RESOURCE]->(group)
@@ -123,10 +123,12 @@ def load_ec2_security_groupinfo(
 
     for group in data:
         group_id = group["GroupId"]
+        group_arn = f"arn:aws:ec2:{region}:{current_aws_account_id}:security-group/{group_id}"
 
         neo4j_session.run(
             ingest_security_group,
             GroupId=group_id,
+            GroupArn=group_arn,
             GroupName=group.get("GroupName"),
             Description=group.get("Description"),
             VpcId=group.get("VpcId", None),

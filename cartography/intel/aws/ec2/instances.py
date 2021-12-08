@@ -96,7 +96,7 @@ def load_ec2_instances(
     instance.tenancy = {Tenancy}, instance.hostresourcegrouparn = {HostResourceGroupArn},
     instance.platform = {Platform}, instance.architecture = {Architecture}, instance.ebsoptimized = {EbsOptimized},
     instance.bootmode = {BootMode}, instance.instancelifecycle = {InstanceLifecycle},
-    instance.hibernationoptions = {HibernationOptions}
+    instance.hibernationoptions = {HibernationOptions}, instance.arn = {InstanceArn}
     WITH instance
     MATCH (rez:EC2Reservation{reservationid: {ReservationId}})
     MERGE (instance)-[r:MEMBER_OF_EC2_RESERVATION]->(rez)
@@ -167,6 +167,7 @@ def load_ec2_instances(
 
         for instance in reservation["Instances"]:
             instanceid = instance["InstanceId"]
+            instancearn = f"arn:aws:ec2:{region}:{current_aws_account_id}:instance/{instanceid}"
 
             monitoring_state = instance.get("Monitoring", {}).get("State")
 
@@ -182,6 +183,7 @@ def load_ec2_instances(
             neo4j_session.run(
                 ingest_instance,
                 InstanceId=instanceid,
+                InstanceArn=instancearn,
                 PublicDnsName=instance.get("PublicDnsName"),
                 PublicIpAddress=instance.get("PublicIpAddress"),
                 PrivateIpAddress=instance.get("PrivateIpAddress"),
