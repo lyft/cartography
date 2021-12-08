@@ -42,8 +42,8 @@ TEST_API_CONFIGS = [
         'state': 'ACTIVE',
     },
     {
-        'name': 'projects/project123/locations/global/apis/compute/configs/config456',
-        'id': 'projects/project123/locations/global/apis/compute/configs/config456',
+        'name': 'projects/project123/locations/global/apis/storage/configs/config456',
+        'id': 'projects/project123/locations/global/apis/storage/configs/config456',
         'createTime': '2020-10-02T15:01:23Z',
         'updateTime': '2020-11-02T15:01:23Z',
         'displayName': 'config123',
