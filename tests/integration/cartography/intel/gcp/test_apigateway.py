@@ -15,8 +15,8 @@ def test_apigateway_locations(neo4j_session):
     )
 
     expected_nodes = {
-        "projects/project123/locations/us-east1",
-        "projects/project123/locations/us-east4",
+        "us-east1",
+        "us-east4",
     }
 
     nodes = neo4j_session.run(
@@ -40,8 +40,8 @@ def test_apigateway_api(neo4j_session):
     )
 
     expected_nodes = {
-        "projects/project123/locations/global/apis/compute",
-        "projects/project123/locations/global/apis/storage",
+        "compute",
+        "storage",
     }
 
     nodes = neo4j_session.run(
@@ -65,8 +65,8 @@ def test_apigateway_apiconfig(neo4j_session):
     )
 
     expected_nodes = {
-        "projects/project123/locations/global/apis/compute/configs/config123",
-        "projects/project123/locations/global/apis/storage/configs/config456",
+        "config123",
+        "config456",
     }
 
     nodes = neo4j_session.run(
@@ -90,8 +90,8 @@ def test_apigateway_gateway(neo4j_session):
     )
 
     expected_nodes = {
-        "projects/project123/locations/us-east1/gateways/gateway123",
-        "projects/project123/locations/us-east1/gateways/gateway456",
+        "gateway123",
+        "gateway456",
     }
 
     nodes = neo4j_session.run(
@@ -129,11 +129,11 @@ def test_apigateway_location_relationships(neo4j_session):
     expected = {
         (
             TEST_PROJECT_ID,
-            "projects/project123/locations/us-east1",
+            "us-east1",
         ),
         (
             TEST_PROJECT_ID,
-            "projects/project123/locations/us-east4",
+            "us-east4",
         ),
     }
 
@@ -155,7 +155,7 @@ def test_apigateway_api_relationships(neo4j_session):
     # Create Test GCP Project
     neo4j_session.run(
         """
-        MERGE (gcp:GCPProject{id: {ProjectID}})
+        MERGE (gcp:GCPProject{id: {ProjectId}})
         ON CREATE SET gcp.firstseen = timestamp()
         SET gcp.lastupdated = {UPDATE_TAG}
         """,
@@ -175,11 +175,11 @@ def test_apigateway_api_relationships(neo4j_session):
     expected = {
         (
             TEST_PROJECT_ID,
-            "projects/project123/locations/global/apis/compute",
+            "compute",
         ),
         (
             TEST_PROJECT_ID,
-            "projects/project123/locations/global/apis/storage",
+            "storage",
         ),
     }
 
@@ -217,14 +217,8 @@ def test_apigateway_apiconfigs_relationships(neo4j_session):
     )
 
     expected = {
-        (
-            "projects/project123/locations/global/apis/compute",
-            "projects/project123/locations/global/apis/compute/configs/config123",
-        ),
-        (
-            "projects/project123/locations/global/apis/storage",
-            "projects/project123/locations/global/apis/storage/configs/config456",
-        ),
+        ("compute", "config123"),
+        ("storage", "config456"),
     }
 
     # Fetch relationships
@@ -261,14 +255,8 @@ def test_apigateway_gateway_relationships(neo4j_session):
     )
 
     expected = {
-        (
-            "projects/project123/locations/global/apis/compute/configs/config123",
-            "projects/project123/locations/us-east1/gateways/gateway123",
-        ),
-        (
-            "projects/project123/locations/global/apis/storage/configs/config456",
-            "projects/project123/locations/us-east1/gateways/gateway456",
-        ),
+        ("config123", "gateway123"),
+        ("config456", "gateway456"),
     }
 
     # Fetch relationships
