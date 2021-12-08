@@ -34,6 +34,7 @@ TEST_API_CONFIGS = [
     {
         'name': 'projects/project123/locations/global/apis/compute/configs/config123',
         'id': 'config123',
+        'api_id': 'compute',
         'createTime': '2020-10-02T15:01:23Z',
         'updateTime': '2020-11-02T15:01:23Z',
         'displayName': 'config123',
@@ -44,6 +45,7 @@ TEST_API_CONFIGS = [
     {
         'name': 'projects/project123/locations/global/apis/storage/configs/config456',
         'id': 'config456',
+        'api_id': 'storage',
         'createTime': '2020-10-02T15:01:23Z',
         'updateTime': '2020-11-02T15:01:23Z',
         'displayName': 'config123',
@@ -56,20 +58,20 @@ TEST_GATEWAYS = [
     {
         'name': 'projects/project123/locations/us-east1/gateways/gateway123',
         'id': 'gateway123',
+        'apiConfig': 'config123',
         'createTime': '2020-10-02T15:01:23Z',
         'updateTime': '2020-11-02T15:01:23Z',
         'displayName': 'gateway123',
-        'apiConfig': 'projects/project123/locations/global/apis/compute/configs/config123',
         'state': 'ACTIVE',
         'defaultHostname': 'host123',
     },
     {
         'name': 'projects/project123/locations/us-east1/gateways/gateway456',
         'id': 'gateway456',
+        'apiConfig': 'config456',
         'createTime': '2020-10-02T15:01:23Z',
         'updateTime': '2020-11-02T15:01:23Z',
         'displayName': 'gateway123',
-        'apiConfig': 'projects/project123/locations/global/apis/compute/configs/config456',
         'state': 'ACTIVE',
         'defaultHostname': 'host456',
     },
