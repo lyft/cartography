@@ -15,6 +15,7 @@
 
 ## Testing
 
+_If you'd like to test using Docker and Docker Compose, see [here](/docs/containers/testing-with-docker.md)_
 ### Running from source
 
 1. **Install**

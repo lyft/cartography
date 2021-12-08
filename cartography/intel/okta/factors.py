@@ -144,7 +144,7 @@ def sync_users_factors(
     :return: Nothing
     """
 
-    logger.debug("Syncing Okta User Factors")
+    logger.info("Syncing Okta User Factors")
 
     factor_client = _create_factor_client(okta_org_id, okta_api_key)
 
