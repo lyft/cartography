@@ -12,9 +12,9 @@ from oauth2client.client import ApplicationDefaultCredentialsError
 from oauth2client.client import GoogleCredentials
 
 from cartography.config import Config
+from cartography.intel.gcp import apigateway
 from cartography.intel.gcp import cloudkms
 from cartography.intel.gcp import cloudrun
-from cartography.intel.gcp import apigateway
 from cartography.intel.gcp import compute
 from cartography.intel.gcp import crm
 from cartography.intel.gcp import dns
@@ -27,8 +27,10 @@ from cartography.util import timeit
 logger = logging.getLogger(__name__)
 
 
-Resources = namedtuple('Resources', 'compute container crm_v1 crm_v2 dns storage serviceusage iam admin apigateway \
-                                        cloudkms cloudrun')
+Resources = namedtuple(
+    'Resources', 'compute container crm_v1 crm_v2 dns storage serviceusage iam admin apigateway \
+                                        cloudkms cloudrun',
+)
 
 # Mapping of service short names to their full names as in docs. See https://developers.google.com/apis-explorer,
 # and https://cloud.google.com/service-usage/docs/reference/rest/v1/services#ServiceConfig
@@ -140,7 +142,7 @@ def _get_cloudrun_resource(credentials: GoogleCredentials) -> Resource:
     """
     Instantiates a cloud run resource object.
     See: https://cloud.google.com/run/docs/reference/rest
-    
+
     :param credentials: The GoogleCredentials object
     :return: A serviceusage resource object
     """

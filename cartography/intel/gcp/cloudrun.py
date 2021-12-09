@@ -272,12 +272,12 @@ def _load_cloudrun_authorized_domains_tx(
     """
     ingest_cloudrun_authorized_domains = """
     UNWIND{authorized_domains} as ad
-    MERGE(authorized_domains:GCPCloudRunAuthorizedDomain{id:ad.id})
+    MERGE(authorized_domain:GCPCloudRunAuthorizedDomain{id:ad.id})
     ON CREATE SET
         authorized_domain.firstseen = timestamp()
     SET
         authorized_domain.id = ad.id
-    WITH authorized_domain,ad
+    WITH authorized_domain
     MATCH (owner:GCPProject{id:{ProjectId}})
     MERGE (owner)-[r:RESOURCE]->(authorized_domain)
     ON CREATE SET
@@ -320,7 +320,7 @@ def _load_cloudrun_configurations_tx(
     """
     ingest_cloudrun_configurations = """
     UNWIND{configurations} as config
-    MERGE(configuration:GCPCloudRunConfiguration:{id:config.id})
+    MERGE(configuration:GCPCloudRunConfiguration{id:config.id})
     ON CREATE SET
         configuration.firstseen = timestamp()
     SET
@@ -335,7 +335,7 @@ def _load_cloudrun_configurations_tx(
         configuration.observedGeneration = config.spec.observedGeneration,
         configuration.latestCreatedRevisionName = config.spec.latestCreatedRevisionName,
         configuration.latestReadyRevisionName = config.spec.latestReadyRevisionName
-    WITH configuration,config
+    WITH configuration
     MATCH (owner:GCPProject{id:{ProjectId}})
     MERGE (owner)-[r:RESOURCE]->(configuration)
     ON CREATE SET
@@ -378,7 +378,7 @@ def _load_cloudrun_domainmappings_tx(
     """
     ingest_cloudrun_domainmappings = """
     UNWIND{domainmappings} as domainmap
-    MERGE(domainmapping:GCPCloudRunDomainMap:{id:domainmap.id})
+    MERGE(domainmapping:GCPCloudRunDomainMap{id:domainmap.id})
     ON CREATE SET
         domainmapping.firstseen = timestamp()
     SET
@@ -392,7 +392,7 @@ def _load_cloudrun_domainmappings_tx(
         domainmapping.routeName = domainmap.spec.routeName,
         domainmapping.certificateMode = domainmap.spec.certificateMode,
         domainmapping.forceOverride = domainmap.spec.forceOveride
-    WITH domainmapping,domainmap
+    WITH domainmapping
     MATCH (owner:GCPProject{id:{ProjectId}})
     MERGE (owner)-[r:RESOURCE]->(domainmapping)
     ON CREATE SET
@@ -432,7 +432,7 @@ def _load_cloudrun_revisions_tx(
     """
     ingest_cloudrun_revisions = """
     UNWIND{revisions} as rev
-    MERGE (revision:GCPCloudRunRevision:{id:rev.id})
+    MERGE (revision:GCPCloudRunRevision{id:rev.id})
     ON CREATE SET
         revision.firstseen = timestamp()
     SET
@@ -445,7 +445,7 @@ def _load_cloudrun_revisions_tx(
         revision.deletionTimestamp = rev.metadata.deletionTimestamp,
         revision.containerConcurrency = rev.specs.containerConcurrency,
         revision.timeoutSeconds = rev.specs.timeoutSeconds
-    WITH revision,rev
+    WITH revision
     MATCH (owner:GCPProject{id:{ProjectId}})
     MERGE (owner)-[r:RESOURCE]->(revision)
     ON CREATE SET
@@ -485,7 +485,7 @@ def _load_cloudrun_routes_tx(
     """
     ingest_cloudrun_routes = """
     UNWIND{routes} as rt
-    MERGE (route:GCPCloudRunRoute:{id:rt.id})
+    MERGE (route:GCPCloudRunRoute{id:rt.id})
     ON CREATE SET
         route.firstseen = timestamp()
     SET
@@ -498,7 +498,7 @@ def _load_cloudrun_routes_tx(
         route.deletionTimestamp = rt.metadata.deletionTimestamp,
         route.observedGeneration = rt.status.observedGeneration,
         route.url = rt.status.url
-    WITH route,rt
+    WITH route
     MATCH (owner:GCPProject{id:{ProjectId}})
     MERGE (owner)-[r:RESOURCE]->(route)
     ON CREATE SET
@@ -538,7 +538,7 @@ def _load_cloudrun_services_tx(
     """
     ingest_cloudrun_services = """
     UNWIND{services} as svc
-    MERGE (service:GCPCloudRunService:{id:svc.id})
+    MERGE (service:GCPCloudRunService{id:svc.id})
     ON CREATE SET
         service.firstseen = timestamp()
     SET
@@ -552,7 +552,7 @@ def _load_cloudrun_services_tx(
         service.observedGeneration = svc.status.observedGeneration,
         service.latestReadyRevisionName = svc.status.latestReadyRevisionName,
         service.latestCreatedRevisionName = svc.status.latestCreatedRevisionName
-    WITH service,svc
+    WITH service
     MATCH (owner:GCPProject{id:{ProjectId}})
     MERGE (owner)-[r:RESOURCE]->(service)
     ON CREATE SET

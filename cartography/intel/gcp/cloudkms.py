@@ -168,7 +168,7 @@ def _load_kms_locations_tx(
     """
     ingest_kms_locations = """
     UNWIND{locations} as loc
-    MERGE(location:GCPKMSLocation:{id:loc.id})
+    MERGE(location:GCPKMSLocation{id:loc.id})
     ON CREATE SET
         location.firstseen = timestamp()
     SET
@@ -213,14 +213,14 @@ def _load_kms_key_rings_tx(
     """
     ingest_kms_key_rings = """
     UNWIND{key_rings} as keyr
-    MERGE(keyring:GCPKMSKeyring:{id:keyr.id})
+    MERGE(keyring:GCPKMSKeyring{id:keyr.id})
     ON CREATE SET
         keyring.firstseen = timestamp()
     SET
         keyring.name = keyr.name,
         keyring.createTime = keyr.createTime
     WITH keyring, keyr
-    MATCH (location:GCPKMSLocation{id:{keyr.loc_id}})
+    MATCH (location:GCPKMSLocation{id:keyr.loc_id})
     MERGE(location)-[r:RESOURCE]->(keyring)
     ON CREATE SET
         r.firstseen = timestamp(),
@@ -259,7 +259,7 @@ def _load_kms_crypto_keys_tx(
     """
     ingest_crypto_keys = """
     UNWIND{crypto_keys} as ck
-    MERGE (crypto_key:GCPKMSCryptokey:{id:{ck.id}})
+    MERGE (crypto_key:GCPKMSCryptokey{id:ck.id})
     ON CREATE SET
         crypto_key.firstseen = timestamp()
     SET
@@ -269,7 +269,7 @@ def _load_kms_crypto_keys_tx(
         crypto_key.nextRotationTime = ck.nextRotationTime,
         crypto_key.rotationPeriod = ck.rotationPeriod
     WITH crypt_key, ck
-    MATCH (key_ring:GCPKMSKeyring:{id:{ck.keyring_id}})
+    MATCH (key_ring:GCPKMSKeyring{id:ck.keyring_id})
     MERGE (key_ring)-[r:RESOURCE]->(crypto_key)
     ON CREATE SET
         r.firstseen = timestamp(),
