@@ -3,7 +3,6 @@ import logging
 from typing import Dict
 from typing import List
 
-
 import neo4j
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
@@ -37,14 +36,18 @@ def get_cloudrun_authorized_domains(cloudrun: Resource, project_id: str) -> List
                 for domain in response['domains']:
                     domain['id'] = f"projects/{project_id}/domains/{domain['id']}"
                     authorized_domains.append(domain)
-            request = cloudrun.namespaces().authorizeddomains().list_next(previous_request=request, previous_response=response)
+            request = cloudrun.namespaces().authorizeddomains().list_next(
+                previous_request=request,
+                previous_response=response,
+            )
         return authorized_domains
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
         if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
             logger.warning(
                 (
-                    "Could not retrieve CloudRun authorizeddomains on project %s due to permissions issues. Code: %s, Message: %s"
+                    "Could not retrieve CloudRun authorizeddomains on project %s due to permissions issues.\
+                         Code: %s, Message: %s"
                 ), project_id, err['code'], err['message'],
             )
             return []
@@ -81,7 +84,8 @@ def get_cloudrun_configurations(cloudrun: Resource, project_id: str) -> List[Dic
         if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
             logger.warning(
                 (
-                    "Could not retrieve CloudRun configurations on project %s due to permissions issues. Code: %s, Message: %s"
+                    "Could not retrieve CloudRun configurations on project %s due to permissions issues.\
+                         Code: %s, Message: %s"
                 ), project_id, err['code'], err['message'],
             )
             return []
@@ -118,7 +122,8 @@ def get_cloudrun_domainmappings(cloudrun: Resource, project_id: str) -> List[Dic
         if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
             logger.warning(
                 (
-                    "Could not retrieve CloudRun Domain Mappings on project %s due to permissions issues. Code: %s, Message: %s"
+                    "Could not retrieve CloudRun Domain Mappings on project %s due to permissions issues.\
+                         Code: %s, Message: %s"
                 ), project_id, err['code'], err['message'],
             )
             return []
@@ -155,7 +160,8 @@ def get_cloudrun_revisions(cloudrun: Resource, project_id: str) -> List[Dict]:
         if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
             logger.warning(
                 (
-                    "Could not retrieve CloudRun Revisions on project %s due to permissions issues. Code: %s, Message: %s"
+                    "Could not retrieve CloudRun Revisions on project %s due to permissions issues.\
+                         Code: %s, Message: %s"
                 ), project_id, err['code'], err['message'],
             )
             return []
@@ -229,7 +235,8 @@ def get_cloudrun_services(cloudrun: Resource, project_id: str) -> List[Dict]:
         if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
             logger.warning(
                 (
-                    "Could not retrieve CloudRun Services on project %s due to permissions issues. Code: %s, Message: %s"
+                    "Could not retrieve CloudRun Services on project %s due to permissions issues. \
+                        Code: %s, Message: %s"
                 ), project_id, err['code'], err['message'],
             )
             return []
@@ -238,12 +245,18 @@ def get_cloudrun_services(cloudrun: Resource, project_id: str) -> List[Dict]:
 
 
 @timeit
-def load_cloudrun_authorized_domains(session: neo4j.Session, data_list: List[Dict], project_id: str, update_tag: int) -> None:
+def load_cloudrun_authorized_domains(
+    session: neo4j.Session, data_list: List[Dict],
+    project_id: str, update_tag: int,
+) -> None:
     session.write_transaction(_load_cloudrun_authorized_domains_tx, data_list, project_id, update_tag)
 
 
 @timeit
-def _load_cloudrun_authorized_domains_tx(tx: neo4j.Transaction, authorized_domains: List[Resource], project_id: str, gcp_update_tag: int) -> None:
+def _load_cloudrun_authorized_domains_tx(
+    tx: neo4j.Transaction, authorized_domains: List[Resource],
+    project_id: str, gcp_update_tag: int,
+) -> None:
     """
         :type neo4j_transaction: Neo4j transaction object
         :param neo4j transaction: The Neo4j transaction object
@@ -280,12 +293,18 @@ def _load_cloudrun_authorized_domains_tx(tx: neo4j.Transaction, authorized_domai
 
 
 @timeit
-def load_cloudrun_configurations(session: neo4j.Session, data_list: List[Dict], project_id: str, update_tag: int) -> None:
+def load_cloudrun_configurations(
+    session: neo4j.Session, data_list: List[Dict],
+    project_id: str, update_tag: int,
+) -> None:
     session.write_transaction(_load_cloudrun_configurations_tx, data_list, project_id, update_tag)
 
 
 @timeit
-def _load_cloudrun_configurations_tx(tx: neo4j.Transaction, configurations: List[Resource], project_id: str, gcp_update_tag: int) -> None:
+def _load_cloudrun_configurations_tx(
+    tx: neo4j.Transaction, configurations: List[Resource],
+    project_id: str, gcp_update_tag: int,
+) -> None:
     """
         :type neo4j_transaction: Neo4j transaction object
         :param neo4j transaction: The Neo4j transaction object
@@ -332,12 +351,18 @@ def _load_cloudrun_configurations_tx(tx: neo4j.Transaction, configurations: List
 
 
 @timeit
-def load_cloudrun_domainmappings(session: neo4j.Session, data_list: List[Dict], project_id: str, update_tag: int) -> None:
+def load_cloudrun_domainmappings(
+    session: neo4j.Session, data_list: List[Dict],
+    project_id: str, update_tag: int,
+) -> None:
     session.write_transaction(_load_cloudrun_domainmappings_tx, data_list, project_id, update_tag)
 
 
 @timeit
-def _load_cloudrun_domainmappings_tx(tx: neo4j.Transaction, domainmappings: List[Resource], project_id: str, gcp_update_tag: int) -> None:
+def _load_cloudrun_domainmappings_tx(
+    tx: neo4j.Transaction, domainmappings: List[Resource],
+    project_id: str, gcp_update_tag: int,
+) -> None:
     """
         :type neo4j_transaction: Neo4j transaction object
         :param neo4j transaction: The Neo4j transaction object
@@ -388,7 +413,10 @@ def load_cloudrun_revisions(session: neo4j.Session, data_list: List[Dict], proje
 
 
 @timeit
-def _load_cloudrun_revisions_tx(tx: neo4j.Transaction, revisions: List[Resource], project_id: str, gcp_update_tag: int) -> None:
+def _load_cloudrun_revisions_tx(
+    tx: neo4j.Transaction, revisions: List[Resource],
+    project_id: str, gcp_update_tag: int,
+) -> None:
     """
         :type neo4j_transaction: Neo4j transaction object
         :param neo4j transaction: The Neo4j transaction object
@@ -438,7 +466,10 @@ def load_cloudrun_routes(session: neo4j.Session, data_list: List[Dict], project_
 
 
 @timeit
-def _load_cloudrun_routes_tx(tx: neo4j.Transaction, routes: List[Resource], project_id: str, gcp_update_tag: int) -> None:
+def _load_cloudrun_routes_tx(
+    tx: neo4j.Transaction, routes: List[Resource],
+    project_id: str, gcp_update_tag: int,
+) -> None:
     """
         :type neo4j_transaction: Neo4j transaction object
         :param neo4j transaction: The Neo4j transaction object
@@ -488,7 +519,10 @@ def load_cloudrun_services(session: neo4j.Session, data_list: List[Dict], projec
 
 
 @timeit
-def _load_cloudrun_services_tx(tx: neo4j.Transaction, services: List[Resource], project_id: str, gcp_update_tag: int) -> None:
+def _load_cloudrun_services_tx(
+    tx: neo4j.Transaction, services: List[Resource],
+    project_id: str, gcp_update_tag: int,
+) -> None:
     """
         :type neo4j_transaction: Neo4j transaction object
         :param neo4j transaction: The Neo4j transaction object
@@ -553,7 +587,7 @@ def cleanup_gcp_cloudrun(neo4j_session: neo4j.Session, common_job_parameters: Di
 @timeit
 def sync_cloudrun(
     neo4j_session: neo4j.Session, cloudrun: Resource, project_id: str, gcp_update_tag: int,
-    common_job_parameters: Dict
+    common_job_parameters: Dict,
 ) -> None:
     """
         Get GCP Cloud Cloudrun using the Cloud Cloudrun resource object, ingest to Neo4j, and clean up old data.

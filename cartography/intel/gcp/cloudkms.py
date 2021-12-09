@@ -3,7 +3,6 @@ import logging
 from typing import Dict
 from typing import List
 
-
 import neo4j
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
@@ -80,19 +79,23 @@ def get_kms_keyrings(kms: Resource, kms_locations: List[Dict], project_id: str) 
                         key_ring['loc_id'] = loc['id']
                         key_ring['id'] = key_ring['name']
                         key_rings.append(key_ring)
-                request = kms.projects().locations().keyrings().list_next(previous_request=request, previous_response=response)
-            return key_rings
+                request = kms.projects().locations().keyrings().list_next(
+                    previous_request=request,
+                    previous_response=response,
+                )
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
         if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
             logger.warning(
                 (
-                    "Could not retrieve KMS keyrings in locations on project %s due to permissions issues. Code: %s, Message: %s"
+                    "Could not retrieve KMS keyrings in locations on project %s due to permissions issues.\
+                         Code: %s, Message: %s"
                 ), project_id, err['code'], err['message'],
             )
             return []
         else:
             raise
+    return key_rings
 
 
 @timeit
@@ -123,14 +126,18 @@ def get_kms_crypto_keys(kms: Resource, key_rings: List[Dict], project_id: str) -
                         crypto_key['keyring_id'] = key_ring['id']
                         crypto_key['id'] = crypto_key['name']
                         crypto_keys.append(crypto_key)
-                request = kms.projects().locations().keyrings().cryptokeys().list_next(previous_request=request, previous_response=response)
+                request = kms.projects().locations().keyrings().cryptokeys().list_next(
+                    previous_request=request,
+                    previous_response=response,
+                )
         return crypto_keys
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
         if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
             logger.warning(
                 (
-                    "Could not retrieve KMS cryptokeys for keyrings in locations on project %s due to permissions issues. Code: %s, Message: %s"
+                    "Could not retrieve KMS cryptokeys for keyrings in locations on project %s \
+                        due to permissions issues. Code: %s, Message: %s"
                 ), project_id, err['code'], err['message'],
             )
             return []
@@ -142,7 +149,10 @@ def load_kms_locations(session: neo4j.Session, data_list: List[Dict], project_id
     session.write_transaction(_load_kms_locations_tx, data_list, project_id, update_tag)
 
 
-def _load_kms_locations_tx(tx: neo4j.Transaction, locations: List[Resource], project_id: str, gcp_update_tag: int) -> None:
+def _load_kms_locations_tx(
+    tx: neo4j.Transaction, locations: List[Resource],
+    project_id: str, gcp_update_tag: int,
+) -> None:
     """
         :type neo4j_transaction: Neo4j transaction object
         :param neo4j transaction: The Neo4j transaction object
@@ -158,7 +168,7 @@ def _load_kms_locations_tx(tx: neo4j.Transaction, locations: List[Resource], pro
     """
     ingest_kms_locations = """
     UNWIND{locations} as loc
-    MERGE(location:GCPKMSLocation:{id:{location.id}})
+    MERGE(location:GCPKMSLocation:{id:loc.id})
     ON CREATE SET
         location.firstseen = timestamp()
     SET
@@ -184,7 +194,10 @@ def load_kms_key_rings(session: neo4j.Session, data_list: List[Dict], project_id
     session.write_transaction(_load_kms_key_rings_tx, data_list, project_id, update_tag)
 
 
-def _load_kms_key_rings_tx(tx: neo4j.Transaction, key_rings: List[Resource], project_id: str, gcp_update_tag: int) -> None:
+def _load_kms_key_rings_tx(
+    tx: neo4j.Transaction, key_rings: List[Resource],
+    project_id: str, gcp_update_tag: int,
+) -> None:
     """
         :type neo4j_transaction: Neo4j transaction object
         :param neo4j transaction: The Neo4j transaction object
@@ -200,7 +213,7 @@ def _load_kms_key_rings_tx(tx: neo4j.Transaction, key_rings: List[Resource], pro
     """
     ingest_kms_key_rings = """
     UNWIND{key_rings} as keyr
-    MERGE(keyring:GCPKMSKeyring:{id:{keyr.id}})
+    MERGE(keyring:GCPKMSKeyring:{id:keyr.id})
     ON CREATE SET
         keyring.firstseen = timestamp()
     SET
@@ -227,7 +240,10 @@ def load_kms_crypto_keys(session: neo4j.Session, data_list: List[Dict], project_
 
 
 @timeit
-def _load_kms_crypto_keys_tx(tx: neo4j.Transaction, crypto_keys: List[Resource], project_id: str, gcp_update_tag: int) -> None:
+def _load_kms_crypto_keys_tx(
+    tx: neo4j.Transaction, crypto_keys: List[Resource],
+    project_id: str, gcp_update_tag: int,
+) -> None:
     """
         :type neo4j_transaction: Neo4j transaction object
         :param neo4j transaction: The Neo4j transaction object
@@ -287,7 +303,7 @@ def cleanup_gcp_kms(neo4j_session: neo4j.Session, common_job_parameters: Dict) -
 @timeit
 def sync_kms(
     neo4j_session: neo4j.Session, kms: Resource, project_id: str, gcp_update_tag: int,
-    common_job_parameters: Dict
+    common_job_parameters: Dict,
 ) -> None:
     """
     Get GCP Cloud KMS using the Cloud KMS resource object, ingest to Neo4j, and clean up old data.

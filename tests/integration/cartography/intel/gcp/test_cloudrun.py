@@ -15,8 +15,8 @@ def test_load_cloudrun_authorized_domains(neo4j_session):
     )
 
     expected_nodes = {
-        'projects/000000000000/domains/example123',
-        'projects/000000000000/domains/example456'
+        'example123.com',
+        'example456.com',
     }
 
     nodes = neo4j_session.run(
@@ -40,8 +40,8 @@ def test_load_cloudrun_configurations(neo4j_session):
     )
 
     expected_nodes = {
-        'projects/000000000000/configurations/configuration123',
-        'projects/000000000000/configurations/configuration456'
+        'configuration123',
+        'configuration456',
     }
 
     nodes = neo4j_session.run(
@@ -65,8 +65,8 @@ def test_load_cloudrun_domainmappings(neo4j_session):
     )
 
     expected_nodes = {
-        'projects/000000000000/domainmappings/domainmap123',
-        'projects/000000000000/domainmappings/domainmap456'
+        'domainmap123',
+        'domainmap456',
     }
 
     nodes = neo4j_session.run(
@@ -90,8 +90,8 @@ def test_load_cloudrun_revisions(neo4j_session):
     )
 
     expected_nodes = {
-        'projects/000000000000/revisions/revision123',
-        'projects/000000000000/revisions/revision456'
+        'revision123',
+        'revision456',
     }
 
     nodes = neo4j_session.run(
@@ -115,8 +115,8 @@ def test_load_cloudrun_routes(neo4j_session):
     )
 
     expected_nodes = {
-        'projects/000000000000/routes/route123',
-        'projects/000000000000/routes/route456'
+        'route123',
+        'route456',
     }
 
     nodes = neo4j_session.run(
@@ -140,8 +140,8 @@ def test_load_cloudrun_services(neo4j_session):
     )
 
     expected_nodes = {
-        'projects/000000000000/services/service123',
-        'projects/000000000000/services/service456'
+        'service123',
+        'service456',
     }
 
     nodes = neo4j_session.run(
@@ -177,8 +177,8 @@ def test_authorized_domains_relationships(neo4j_session):
     )
 
     expected = {
-        (TEST_PROJECT_NUMBER, "projects/000000000000/domains/example123"),
-        (TEST_PROJECT_NUMBER, "projects/000000000000/domains/example456"),
+        (TEST_PROJECT_NUMBER, "example123"),
+        (TEST_PROJECT_NUMBER, "example456"),
     }
 
     # Fetch relationships
@@ -217,8 +217,8 @@ def test_configurations_relationships(neo4j_session):
     )
 
     expected = {
-        (TEST_PROJECT_NUMBER, "projects/000000000000/configurations/configuration123"),
-        (TEST_PROJECT_NUMBER, "projects/000000000000/configurations/configuration456"),
+        (TEST_PROJECT_NUMBER, "configuration123"),
+        (TEST_PROJECT_NUMBER, "configuration456"),
     }
 
     # Fetch relationships
@@ -257,8 +257,8 @@ def test_domainmappings_relationships(neo4j_session):
     )
 
     expected = {
-        (TEST_PROJECT_NUMBER, "projects/000000000000/domainmappings/domainmap123"),
-        (TEST_PROJECT_NUMBER, "projects/000000000000/domainmappings/domainmap456"),
+        (TEST_PROJECT_NUMBER, "domainmap123"),
+        (TEST_PROJECT_NUMBER, "domainmap456"),
     }
 
     # Fetch relationships
@@ -297,8 +297,8 @@ def test_revisions_relationships(neo4j_session):
     )
 
     expected = {
-        (TEST_PROJECT_NUMBER, "projects/000000000000/revisions/revision123"),
-        (TEST_PROJECT_NUMBER, "projects/000000000000/revisions/revision456"),
+        (TEST_PROJECT_NUMBER, "revision123"),
+        (TEST_PROJECT_NUMBER, "revision456"),
     }
 
     # Fetch relationships
@@ -337,8 +337,8 @@ def test_routes_relationships(neo4j_session):
     )
 
     expected = {
-        (TEST_PROJECT_NUMBER, "projects/000000000000/routes/route123"),
-        (TEST_PROJECT_NUMBER, "projects/000000000000/routes/route456"),
+        (TEST_PROJECT_NUMBER, "route123"),
+        (TEST_PROJECT_NUMBER, "route456"),
     }
 
     # Fetch relationships
@@ -377,8 +377,8 @@ def test_services_relationships(neo4j_session):
     )
 
     expected = {
-        (TEST_PROJECT_NUMBER, "projects/000000000000/services/service123"),
-        (TEST_PROJECT_NUMBER, "projects/000000000000/services/service456"),
+        (TEST_PROJECT_NUMBER, "service123"),
+        (TEST_PROJECT_NUMBER, "service456"),
     }
 
     # Fetch relationships

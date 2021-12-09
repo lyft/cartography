@@ -104,7 +104,7 @@ def test_kms_location_relationship(neo4j_session):
 
     expected = {
         (TEST_PROJECT_NUMBER, 'us-east1'),
-        (TEST_PROJECT_NUMBER, 'us-east4')
+        (TEST_PROJECT_NUMBER, 'us-east4'),
     }
 
     # Fetch relationships
@@ -142,7 +142,7 @@ def test_kms_keyring_relationship(neo4j_session):
 
     expected = {
         ('us-east1', 'keyring1'),
-        ('us-east4', 'keyring2')
+        ('us-east4', 'keyring2'),
     }
 
     # Fetch relationships
@@ -180,7 +180,7 @@ def test_kms_crypto_key_relationship(neo4j_session):
 
     expected = {
         ('keyring1', 'cryptokey123'),
-        ('keyring2', 'cryptokey456')
+        ('keyring2', 'cryptokey456'),
     }
 
     # Fetch relationships

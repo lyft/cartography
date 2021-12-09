@@ -746,7 +746,7 @@ Representation of [GCP KMS Crypto Keys](https://cloud.google.com/kms/docs/refere
 | name                         | The resource name for this CryptoKey.                                                           |
 | purpose                      | The immutable purpose of this CryptoKey.                                                        |
 | createTime                   | The time at which this CryptoKey was created.                                                   |
-| nextRotationTime             | At nextRotationTime, the Key Management Service will automatically:                             |  
+| nextRotationTime             | At nextRotationTime, the Key Management Service will automatically:                             |
 |                              | 1.Create a new version of this CryptoKey.                                                       |
 |                              | 2.Mark the new version as primary.                                                              |
 | rotationPeriod               | nextRotationTime will be advanced by this period when the service automatically rotates a key.  |

@@ -1,9 +1,9 @@
 CLOUDRUN_AUTHORIZED_DOMAINS = [
     {
-        'id': 'example123.com'
+        'id': 'example123.com',
     },
     {
-        'id': 'example456.com'
+        'id': 'example456.com',
     },
 ]
 CLOUDRUN_CONFIGURATIONS = [
@@ -17,13 +17,13 @@ CLOUDRUN_CONFIGURATIONS = [
             'resourceVersion': 'version1.1',
             'creationTimestamp': '2020-10-02T15:01:23Z',
             'deletionTimestamp': '2021-10-02T15:01:23Z',
-            'clusterName': 'cluster123'
+            'clusterName': 'cluster123',
         },
         'spec': {
             'observedGeneration': 2,
             'latestCreatedRevisionName': 'revision1',
-            'latestReadyRevisionName': 'revision2'
-        }
+            'latestReadyRevisionName': 'revision2',
+        },
     },
     {
         'id': 'configuration456',
@@ -35,14 +35,14 @@ CLOUDRUN_CONFIGURATIONS = [
             'resourceVersion': 'version1.2',
             'creationTimestamp': '2019-10-02T15:01:23Z',
             'deletionTimestamp': '2020-10-02T15:01:23Z',
-            'clusterName': 'cluster456'
+            'clusterName': 'cluster456',
         },
         'spec': {
             'observedGeneration': 3,
             'latestCreatedRevisionName': 'revision1',
-            'latestReadyRevisionName': 'revision2'
-        }
-    }
+            'latestReadyRevisionName': 'revision2',
+        },
+    },
 ]
 CLOUDRUN_DOMAIN_MAPPINGS = [
     {
@@ -54,13 +54,13 @@ CLOUDRUN_DOMAIN_MAPPINGS = [
             'uid': 'domainmap123',
             'resourceVersion': 'version1.1',
             'creationTimestamp': '2020-10-02T15:01:23Z',
-            'deletionTimestamp': '2021-10-02T15:01:23Z'
+            'deletionTimestamp': '2021-10-02T15:01:23Z',
         },
         'spec': {
             'routeName': 'route123',
             'certificateMode': 'AUTOMATIC',
-            'forceOverride': True
-        }
+            'forceOverride': True,
+        },
     },
     {
         'id': 'domainmap456',
@@ -71,14 +71,14 @@ CLOUDRUN_DOMAIN_MAPPINGS = [
             'uid': 'domainmap456',
             'resourceVersion': 'version1.2',
             'creationTimestamp': '2019-10-02T15:01:23Z',
-            'deletionTimestamp': '2020-10-02T15:01:23Z'
+            'deletionTimestamp': '2020-10-02T15:01:23Z',
         },
         'spec': {
             'routeName': 'route456',
             'certificateMode': 'AUTOMATIC',
-            'forceOverride': True
-        }
-    }
+            'forceOverride': True,
+        },
+    },
 ]
 CLOUDRUN_REVISIONS = [
     {
@@ -90,12 +90,12 @@ CLOUDRUN_REVISIONS = [
             'uid': 'revision123',
             'resourceVersion': 'version1.1',
             'creationTimestamp': '2020-10-02T15:01:23Z',
-            'deletionTimestamp': '2021-10-02T15:01:23Z'
+            'deletionTimestamp': '2021-10-02T15:01:23Z',
         },
         'spec': {
             'containerConcurrency': 80,
-            'timeoutSeconds': 300
-        }
+            'timeoutSeconds': 300,
+        },
     },
     {
         'id': 'revision456',
@@ -106,13 +106,13 @@ CLOUDRUN_REVISIONS = [
             'uid': 'revision456',
             'resourceVersion': 'version1.2',
             'creationTimestamp': '2019-10-02T15:01:23Z',
-            'deletionTimestamp': '2020-10-02T15:01:23Z'
+            'deletionTimestamp': '2020-10-02T15:01:23Z',
         },
         'spec': {
             'containerConcurrency': 80,
-            'timeoutSeconds': 300
-        }
-    }
+            'timeoutSeconds': 300,
+        },
+    },
 ]
 CLOUDRUN_ROUTES = [
     {
@@ -124,12 +124,12 @@ CLOUDRUN_ROUTES = [
             'uid': 'route123',
             'resourceVersion': 'version1.1',
             'creationTimestamp': '2020-10-02T15:01:23Z',
-            'deletionTimestamp': '2021-10-02T15:01:23Z'
+            'deletionTimestamp': '2021-10-02T15:01:23Z',
         },
         'status': {
             'observedGeneration': 2,
-            'url': 'example123.com'
-        }
+            'url': 'example123.com',
+        },
     },
     {
         'id': 'route456',
@@ -140,13 +140,13 @@ CLOUDRUN_ROUTES = [
             'uid': 'route456',
             'resourceVersion': 'version1.2',
             'creationTimestamp': '2019-10-02T15:01:23Z',
-            'deletionTimestamp': '2020-10-02T15:01:23Z'
+            'deletionTimestamp': '2020-10-02T15:01:23Z',
         },
         'status': {
             'observedGeneration': 3,
-            'url': 'example123.com'
-        }
-    }
+            'url': 'example123.com',
+        },
+    },
 ]
 CLOUDRUN_SERVICES = [
     {
@@ -158,13 +158,13 @@ CLOUDRUN_SERVICES = [
             'uid': 'service123',
             'resourceVersion': 'version1.1',
             'creationTimestamp': '2020-10-02T15:01:23Z',
-            'deletionTimestamp': '2021-10-02T15:01:23Z'
+            'deletionTimestamp': '2021-10-02T15:01:23Z',
         },
         'status': {
             'observedGeneration': 1,
             'latestReadyRevisionName': 'revision1.1',
-            'latestCreatedRevisionName': 'revision1.2'
-        }
+            'latestCreatedRevisionName': 'revision1.2',
+        },
     },
     {
         'id': 'service456',
@@ -175,12 +175,12 @@ CLOUDRUN_SERVICES = [
             'uid': 'service456',
             'resourceVersion': 'version1.2',
             'creationTimestamp': '2019-10-02T15:01:23Z',
-            'deletionTimestamp': '2020-10-02T15:01:23Z'
+            'deletionTimestamp': '2020-10-02T15:01:23Z',
         },
         'status': {
             'observedGeneration': 2,
             'latestReadyRevisionName': 'revision1.2',
-            'latestCreatedRevisionName': 'revision1.3'
-        }
-    }
+            'latestCreatedRevisionName': 'revision1.3',
+        },
+    },
 ]
