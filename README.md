@@ -36,15 +36,16 @@ Start [here](docs/setup/install.md).
 
 ## Supported platforms
 - [Amazon Web Services](docs/setup/config/aws.md) -  API Gateway, Config, EC2, Elasticsearch, Elastic Kubernetes Service, DynamoDB, IAM, KMS, Launch Configurations, Launch Templates, Lambda, RDS, Redshift, Route53, S3, Secrets Manager, Security Hub, SQS, STS, Tags
-- [Google Cloud Platform](docs/setup/config/gcp.md) - Cloud Resource Manager, Compute, DNS, Storage, Google Kubernetes Engine, IAM
+- [Google Cloud Platform](docs/setup/config/gcp.md) - Cloud Resource Manager, Compute, DNS, Storage, Google Kubernetes Engine, IAM API Gateway
 - [Google GSuite](docs/setup/config/gsuite.md) - users, groups
 - [Duo CRXcavator](docs/setup/config/crxcavator.md) - Chrome extensions, GSuite users
 - [Okta](docs/setup/config/okta.md) - users, groups, organizations, roles, applications, factors, trusted origins, reply URIs
 - [Github](docs/setup/config/github.md) - repos, branches, users
 - [DigitalOcean](docs/setup/config/digitalocean.md)
-- [Microsoft Azure](docs/setup/config/azure.md) -  CosmosDB, SQL, Storage, Virtual Machine
+- [Microsoft Azure](docs/setup/config/azure.md) -  CosmosDB, SQL, Storage, Virtual Machine, Function App, Network, Resource Group, Tag, IAM, Key Vaults, AKS
 - [Kubernetes](docs/setup/config/kubernetes.md) - Cluster, Namespace, Service, Pod, Container
 - [PagerDuty](docs/setup/config/pagerduty.md) - Users, teams, services, schedules, escalation policies, integrations, vendors
+
 
 ## Usage
 Start with our [tutorial](docs/usage/tutorial.md). Our [data schema](docs/schema) is a helpful reference when you get stuck.

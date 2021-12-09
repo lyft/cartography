@@ -12,6 +12,7 @@ from oauth2client.client import ApplicationDefaultCredentialsError
 from oauth2client.client import GoogleCredentials
 
 from cartography.config import Config
+from cartography.intel.gcp import apigateway
 from cartography.intel.gcp import compute
 from cartography.intel.gcp import crm
 from cartography.intel.gcp import dns
@@ -22,11 +23,12 @@ from cartography.util import run_analysis_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
-Resources = namedtuple('Resources', 'compute container crm_v1 crm_v2 dns storage serviceusage iam admin')
+
+Resources = namedtuple('Resources', 'compute container crm_v1 crm_v2 dns storage serviceusage iam admin apigateway')
 
 # Mapping of service short names to their full names as in docs. See https://developers.google.com/apis-explorer,
 # and https://cloud.google.com/service-usage/docs/reference/rest/v1/services#ServiceConfig
-Services = namedtuple('Services', 'compute storage gke dns iam admin crm_v1 crm_v2')
+Services = namedtuple('Services', 'compute storage gke dns iam admin crm_v1 crm_v2 apigateway')
 service_names = Services(
     compute='compute.googleapis.com',
     storage='storage.googleapis.com',
@@ -36,6 +38,7 @@ service_names = Services(
     admin='admin.googleapis.com',
     crm_v1='cloudresourcemanager.googleapis.com',
     crm_v2='cloudresourcemanager.googleapis.com',
+    apigateway='apigateway.googleapis.com',
 )
 
 
@@ -137,6 +140,17 @@ def _get_admin_resource(credentials: GoogleCredentials) -> Resource:
     """
     return googleapiclient.discovery.build('admin', 'directory_v1', credentials=credentials, cache_discovery=False)
 
+  
+def _get_apigateway_resource(credentials: GoogleCredentials) -> Resource:
+    """
+    Instantiates a apigateway resource object.
+    See: https://cloud.google.com/api-gateway/docs/reference/rest.
+
+    :param credentials: The GoogleCredentials object
+    :return: A serviceusage resource object
+    """
+    return googleapiclient.discovery.build('apigateway', 'v1', credentials=credentials, cache_discovery=False)
+
 
 def _initialize_resources(credentials: GoogleCredentials) -> Resource:
     """
@@ -154,6 +168,7 @@ def _initialize_resources(credentials: GoogleCredentials) -> Resource:
         dns=_get_dns_resource(credentials),
         iam=_get_iam_resource(credentials),
         admin=_get_admin_resource(credentials),
+        apigateway=_get_apigateway_resource(credentials),
     )
 
 
@@ -213,6 +228,10 @@ def _sync_single_project(
     if service_names.iam in enabled_services:
         iam.sync(
             neo4j_session, resources.iam, resources.crm_v1, resources.admin,
+        )
+    if service_names.apigateway in enabled_services:
+        apigateway.sync_apigateways(
+            neo4j_session, resources.apigateway,
             project_id, gcp_update_tag, common_job_parameters,
         )
 
