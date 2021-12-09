@@ -259,7 +259,7 @@ def _load_cloudrun_authorized_domains_tx(tx: neo4j.Transaction, authorized_domai
     """
     ingest_cloudrun_authorized_domains = """
     UNWIND{authorized_domains} as ad
-    MERGE(authorized_domains:GCPCloudRunAuthorizedDomain:{id:{ad.id}})
+    MERGE(authorized_domains:GCPCloudRunAuthorizedDomain{id:ad.id})
     ON CREATE SET
         authorized_domain.firstseen = timestamp()
     SET
@@ -301,7 +301,7 @@ def _load_cloudrun_configurations_tx(tx: neo4j.Transaction, configurations: List
     """
     ingest_cloudrun_configurations = """
     UNWIND{configurations} as config
-    MERGE(configuration:GCPCloudRunConfiguration:{id:{config.id}})
+    MERGE(configuration:GCPCloudRunConfiguration:{id:config.id})
     ON CREATE SET
         configuration.firstseen = timestamp()
     SET
@@ -353,7 +353,7 @@ def _load_cloudrun_domainmappings_tx(tx: neo4j.Transaction, domainmappings: List
     """
     ingest_cloudrun_domainmappings = """
     UNWIND{domainmappings} as domainmap
-    MERGE(domainmapping:GCPCloudRunDomainMap:{id:{domainmap.id}})
+    MERGE(domainmapping:GCPCloudRunDomainMap:{id:domainmap.id})
     ON CREATE SET
         domainmapping.firstseen = timestamp()
     SET
@@ -404,7 +404,7 @@ def _load_cloudrun_revisions_tx(tx: neo4j.Transaction, revisions: List[Resource]
     """
     ingest_cloudrun_revisions = """
     UNWIND{revisions} as rev
-    MERGE (revision:GCPCloudRunRevision:{id:{rev.id}})
+    MERGE (revision:GCPCloudRunRevision:{id:rev.id})
     ON CREATE SET
         revision.firstseen = timestamp()
     SET
@@ -454,7 +454,7 @@ def _load_cloudrun_routes_tx(tx: neo4j.Transaction, routes: List[Resource], proj
     """
     ingest_cloudrun_routes = """
     UNWIND{routes} as rt
-    MERGE (route:GCPCloudRunRoute:{id:{rt.id}})
+    MERGE (route:GCPCloudRunRoute:{id:rt.id})
     ON CREATE SET
         route.firstseen = timestamp()
     SET
@@ -504,7 +504,7 @@ def _load_cloudrun_services_tx(tx: neo4j.Transaction, services: List[Resource], 
     """
     ingest_cloudrun_services = """
     UNWIND{services} as svc
-    MERGE (service:GCPCloudRunService:{id:{svc.id}})
+    MERGE (service:GCPCloudRunService:{id:svc.id})
     ON CREATE SET
         service.firstseen = timestamp()
     SET

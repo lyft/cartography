@@ -8,6 +8,7 @@ CLOUDRUN_AUTHORIZED_DOMAINS = [
 ]
 CLOUDRUN_CONFIGURATIONS = [
     {
+        'id': 'configuration123',
         'metadata': {
             'name': 'configuration123',
             'namespace': 'project123',
@@ -25,6 +26,7 @@ CLOUDRUN_CONFIGURATIONS = [
         }
     },
     {
+        'id': 'configuration456',
         'metadata': {
             'name': 'configuration456',
             'namespace': 'project123',
@@ -44,6 +46,7 @@ CLOUDRUN_CONFIGURATIONS = [
 ]
 CLOUDRUN_DOMAIN_MAPPINGS = [
     {
+        'id': 'domainmap123',
         'metadata': {
             'name': 'domainmap123',
             'namespace': 'project123',
@@ -60,6 +63,7 @@ CLOUDRUN_DOMAIN_MAPPINGS = [
         }
     },
     {
+        'id': 'domainmap456',
         'metadata': {
             'name': 'domainmap456',
             'namespace': 'project123',
@@ -78,6 +82,7 @@ CLOUDRUN_DOMAIN_MAPPINGS = [
 ]
 CLOUDRUN_REVISIONS = [
     {
+        'id': 'revision123',
         'metadata': {
             'name': 'revision123',
             'namespace': 'project123',
@@ -93,6 +98,7 @@ CLOUDRUN_REVISIONS = [
         }
     },
     {
+        'id': 'revision456',
         'metadata': {
             'name': 'revision456',
             'namespace': 'project123',
@@ -110,6 +116,7 @@ CLOUDRUN_REVISIONS = [
 ]
 CLOUDRUN_ROUTES = [
     {
+        'id': 'route123',
         'metadata': {
             'name': 'route123',
             'namespace': 'project123',
@@ -125,6 +132,7 @@ CLOUDRUN_ROUTES = [
         }
     },
     {
+        'id': 'route456',
         'metadata': {
             'name': 'route456',
             'namespace': 'project123',
@@ -142,6 +150,7 @@ CLOUDRUN_ROUTES = [
 ]
 CLOUDRUN_SERVICES = [
     {
+        'id': 'service123',
         'metadata': {
             'name': 'service123',
             'namespace': 'project123',
@@ -158,6 +167,7 @@ CLOUDRUN_SERVICES = [
         }
     },
     {
+        'id': 'service456',
         'metadata': {
             'name': 'service456',
             'namespace': 'project123',
