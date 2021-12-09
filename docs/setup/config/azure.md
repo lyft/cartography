@@ -3,20 +3,22 @@
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
 - [Microsoft Azure Configuration](#microsoft-azure-configuration)
-    - [Single Subscription Setup](#single-subscription-setup)
-    - [Multiple Subscription Setup](#multiple-subscription-setup)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 # Microsoft Azure Configuration
 
-Follow these steps to analyze Microsoft Azure assets with Cartography.
+Follow these steps to analyze Microsoft Azure assets with Cartography:
 
-### Single Subscription Setup
-
-1. Set up an Azure identity (user) for Cartography to use. Ensure that this identity has the built-in Azure [Reader role](https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#reader) attached.  This Role grants access to read resources metadata.
-1. Set up Azure credentials to this identity on your server, using a `az login`.  For details, see Azure' [official guide](https://docs.microsoft.com/en-us/cli/azure/authenticate-azure-cli).
-
-
-### Multiple Subscription Setup
-To allow Cartography to pull from more than one Subscription, grant Reader Role to the user for each subscriptions.
+1. Set up an Azure identity for Cartography to use, and ensure that this identity has the built-in Azure [Reader role](https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#reader) attached:
+    * Authenticate: `$ az login`
+    * Create a Service Principal: `$ az ad sp create-for-rbac --name cartography --role Reader`
+    * Note the values of the `tenant`, `appId`, and `password` fields
+1. Populate environment variables with the values generated in the previous step (e.g., `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`)
+1. Call the `cartography` CLI with:
+    ```bash
+    --azure-sp-auth --azure-sync-all-subscriptions      \
+    --azure-tenant-id ${AZURE_TENANT_ID}                \
+    --azure-client-id ${AZURE_CLIENT_ID}                \
+    --azure-client-secret-env-var AZURE_CLIENT_SECRET
+    ```

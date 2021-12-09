@@ -281,6 +281,14 @@ class CLI:
             help='The name of an environment variable containing a password with which to authenticate to Jamf.',
         )
         parser.add_argument(
+            '--k8s-kubeconfig',
+            default=None,
+            type=str,
+            help=(
+                'The path to kubeconfig file specifying context to access K8s cluster(s).'
+            ),
+        )
+        parser.add_argument(
             '--statsd-enabled',
             action='store_true',
             help=(
@@ -309,6 +317,14 @@ class CLI:
             default=8125,
             help=(
                 'The port of your statsd server. Only used if --statsd-enabled is on. Default = UDP 8125.'
+            ),
+        )
+        parser.add_argument(
+            '--pagerduty-api-key-env-var',
+            type=str,
+            default=None,
+            help=(
+                'The name of environment variable containing the pagerduty API key for authentication.'
             ),
         )
         return parser
@@ -415,6 +431,13 @@ class CLI:
                 f'statsd enabled. Sending metrics to server {config.statsd_host}:{config.statsd_port}. '
                 f'Metrics have prefix "{config.statsd_prefix}".',
             )
+
+        # Pagerduty config
+        if config.pagerduty_api_key_env_var:
+            logger.debug(f"Reading API key for PagerDuty from environment variable {config.pagerduty_api_key_env_var}")
+            config.pagerduty_api_key = os.environ.get(config.pagerduty_api_key_env_var)
+        else:
+            config.pagerduty_api_key = None
 
         # Run cartography
         try:

@@ -1,7 +1,7 @@
 from setuptools import find_packages
 from setuptools import setup
 
-__version__ = '0.39.0'
+__version__ = '0.49.0'
 
 
 setup(
@@ -43,16 +43,25 @@ setup(
         "packaging",
         "cryptography<3.4,>=3.2",
         "python-digitalocean>=1.16.0",
-        "PyJWT==1.7.1",     # azure-cli-core has pinned the PyJWT version as 1.7.1
         "adal>=1.2.4",
-        "azure-cli-core>=2.12.0",
+        "azure-cli-core>=2.26.0",
         "azure-mgmt-compute>=5.0.0",
         "azure-mgmt-resource>=10.2.0",
         "azure-mgmt-cosmosdb>=6.0.0",
         "msrestazure >= 0.6.4",
         "azure-mgmt-storage>=16.0.0",
-        "azure-mgmt-sql>=0.11.0",
+        "azure-mgmt-sql<=1.0.0",
         "azure-identity>=1.5.0",
+        "azure-mgmt-containerinstance>=1.5.0",
+        "azure-mgmt-containerregistry>=2.8.0",
+        "azure-mgmt-containerservice>=4.4.0",
+        "azure-mgmt-keyvault>=1.1.0",
+        "azure-graphrbac>=0.61.1",
+        "azure-mgmt-resource>=10.2.0",
+        "azure-mgmt-network>=2.7.0",
+        "azure-mgmt-web>=0.35.0",
+        "kubernetes>=18.20.0",
+        "pdpyras>=4.3.0",
     ],
     extras_require={
         ':python_version<"3.7"': [

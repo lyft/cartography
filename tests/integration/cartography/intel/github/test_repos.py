@@ -190,7 +190,7 @@ def test_repository_to_collaborators(neo4j_session):
 
 def test_pinned_python_library_to_repo(neo4j_session):
     """
-    Ensure that repositories are connected to pinned Python libraries.
+    Ensure that repositories are connected to pinned Python libraries stated as dependencies in requirements.txt.
     Create the path (:RepoA)-[:REQUIRES{specifier:"0.1.0"}]->(:PythonLibrary{'Cartography'})<-[:REQUIRES]-(:RepoB),
     and verify that exactly 1 repo is connected to the PythonLibrary with a specifier (RepoA).
     """
@@ -210,7 +210,7 @@ def test_pinned_python_library_to_repo(neo4j_session):
 
 def test_upinned_python_library_to_repo(neo4j_session):
     """
-    Ensure that repositories are connected to un-pinned Python libraries.
+    Ensure that repositories are connected to un-pinned Python libraries stated as dependencies in requirements.txt.
     That is, create the path
     (:RepoA)-[r:REQUIRES{specifier:"0.1.0"}]->(:PythonLibrary{'Cartography'})<-[:REQUIRES]-(:RepoB),
     and verify that exactly 1 repo is connected to the PythonLibrary without using a pinned specifier (RepoB).
@@ -227,3 +227,39 @@ def test_upinned_python_library_to_repo(neo4j_session):
     actual_nodes = {n['repo_count'] for n in nodes}
     expected_nodes = {1}
     assert actual_nodes == expected_nodes
+
+
+def test_setup_cfg_library_to_repo(neo4j_session):
+    """
+    Ensure that repositories are connected to Python libraries stated as dependencies in setup.cfg.
+    and verify that exactly 2 repos are connected to the PythonLibrary.
+    """
+    _ensure_local_neo4j_has_test_data(neo4j_session)
+
+    # Note: don't query for relationship attributes in code that needs to be fast.
+    query = """
+    MATCH (repo:GitHubRepository)-[r:REQUIRES]->(lib:PythonLibrary{id:'neo4j'})
+    RETURN count(repo) as repo_count
+    """
+    nodes = neo4j_session.run(query)
+    actual_nodes = {n['repo_count'] for n in nodes}
+    expected_nodes = {2}
+    assert actual_nodes == expected_nodes
+
+
+def test_python_library_in_multiple_requirements_files(neo4j_session):
+    """
+   Ensure that repositories are connected to Python libraries stated as dependencies in
+   both setup.cfg and requirements.txt. Ensures that if the dependency has different
+   specifiers in each file, a separate node is created for each.
+   """
+    _ensure_local_neo4j_has_test_data(neo4j_session)
+
+    query = """
+    MATCH (repo:GitHubRepository)-[r:REQUIRES]->(lib:PythonLibrary{name:'okta'})
+    RETURN lib.id as lib_ids
+    """
+    nodes = neo4j_session.run(query)
+    node_ids = {n['lib_ids'] for n in nodes}
+    assert len(node_ids) == 2
+    assert node_ids == {'okta', 'okta|0.9.0'}

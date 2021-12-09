@@ -2,29 +2,16 @@ import logging
 from typing import Any
 from typing import Dict
 from typing import List
-from typing import Optional
 
 import boto3
 import neo4j
 
 from cartography.util import aws_handle_regions
+from cartography.util import dict_value_to_str
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
-
-
-@timeit
-def _dict_value_to_str(obj: Dict, key: str) -> Optional[str]:
-    """
-    Convert the value referenced by the key in the dict to a string, if it exists, and return it. If it doesn't exist,
-    return None.
-    """
-    value = obj.get(key)
-    if value is not None:
-        return str(value)
-    else:
-        return None
 
 
 @timeit
@@ -103,10 +90,10 @@ def load_rds_clusters(
         # TODO: track security groups
         # TODO: track subnet groups
 
-        cluster['EarliestRestorableTime'] = _dict_value_to_str(cluster, 'EarliestRestorableTime')
-        cluster['LatestRestorableTime'] = _dict_value_to_str(cluster, 'LatestRestorableTime')
-        cluster['ClusterCreateTime'] = _dict_value_to_str(cluster, 'ClusterCreateTime')
-        cluster['EarliestBacktrackTime'] = _dict_value_to_str(cluster, 'EarliestBacktrackTime')
+        cluster['EarliestRestorableTime'] = dict_value_to_str(cluster, 'EarliestRestorableTime')
+        cluster['LatestRestorableTime'] = dict_value_to_str(cluster, 'LatestRestorableTime')
+        cluster['ClusterCreateTime'] = dict_value_to_str(cluster, 'ClusterCreateTime')
+        cluster['EarliestBacktrackTime'] = dict_value_to_str(cluster, 'EarliestBacktrackTime')
         cluster['ScalingConfigurationInfoMinCapacity'] = cluster.get('ScalingConfigurationInfo', {}).get('MinCapacity')
         cluster['ScalingConfigurationInfoMaxCapacity'] = cluster.get('ScalingConfigurationInfo', {}).get('MaxCapacity')
         cluster['ScalingConfigurationInfoAutoPause'] = cluster.get('ScalingConfigurationInfo', {}).get('AutoPause')
@@ -207,8 +194,8 @@ def load_rds_instances(
         if rds.get('DBSubnetGroup'):
             subnets.append(rds)
 
-        rds['InstanceCreateTime'] = _dict_value_to_str(rds, 'InstanceCreateTime')
-        rds['LatestRestorableTime'] = _dict_value_to_str(rds, 'LatestRestorableTime')
+        rds['InstanceCreateTime'] = dict_value_to_str(rds, 'InstanceCreateTime')
+        rds['LatestRestorableTime'] = dict_value_to_str(rds, 'LatestRestorableTime')
         rds['EndpointAddress'] = ep.get('Address')
         rds['EndpointHostedZoneId'] = ep.get('HostedZoneId')
         rds['EndpointPort'] = ep.get('Port')
