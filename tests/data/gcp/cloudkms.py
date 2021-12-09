@@ -31,7 +31,7 @@ CLOUD_KMS_KEYRINGS = [
 CLOUD_KMS_CRYPTO_KEYS = [
     {
         'id': 'cryptokey123',
-        'keyring_id': 'keyring123',
+        'keyring_id': 'keyring1',
         'name': 'cryptokey123',
         'purpose': 'ENCRYPT_DECRYPT',
         'createTime': '2020-01-01T00:00:00Z',
@@ -40,7 +40,7 @@ CLOUD_KMS_CRYPTO_KEYS = [
     },
     {
         'id': 'cryptokey456',
-        'keyring_id': 'keyring456',
+        'keyring_id': 'keyring2',
         'name': 'cryptokey456',
         'purpose': 'ENCRYPT_DECRYPT',
         'createTime': '2020-02-01T00:00:00Z',
