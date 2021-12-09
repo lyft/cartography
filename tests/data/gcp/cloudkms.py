@@ -16,7 +16,7 @@ CLOUD_KMS_LOCATIONS = [
 CLOUD_KMS_KEYRINGS = [
     {
         'id': 'keyring1',
-        'loc_id': 'use-east1',
+        'loc_id': 'us-east1',
         'name': 'keyring1',
         'createTime': '2021-10-02T15:01:23Z',
     },

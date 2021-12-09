@@ -177,8 +177,8 @@ def test_authorized_domains_relationships(neo4j_session):
     )
 
     expected = {
-        (TEST_PROJECT_NUMBER, "example123"),
-        (TEST_PROJECT_NUMBER, "example456"),
+        (TEST_PROJECT_NUMBER, "example123.com"),
+        (TEST_PROJECT_NUMBER, "example456.com"),
     }
 
     # Fetch relationships

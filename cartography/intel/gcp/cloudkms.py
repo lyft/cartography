@@ -264,7 +264,7 @@ def _load_kms_crypto_keys_tx(
         crypto_key.firstseen = timestamp()
     SET
         crypto_key.name = ck.name,
-        crypto_key.purpose = ck,purpose,
+        crypto_key.purpose = ck.purpose,
         crypto_key.createTime = ck.createTime,
         crypto_key.nextRotationTime = ck.nextRotationTime,
         crypto_key.rotationPeriod = ck.rotationPeriod
