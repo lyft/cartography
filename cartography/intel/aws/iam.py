@@ -604,7 +604,7 @@ def sync_users(
     data = get_user_list_data(boto3_session)
     load_users(neo4j_session, data['Users'], current_aws_account_id, aws_update_tag)
 
-    sync_user_inline_policies(boto3_session, data, neo4j_session, aws_update_tag)
+    sync_user_inline_policies(boto3_session, data, neo4j_session, current_aws_account_id, aws_update_tag)
 
     sync_user_managed_policies(boto3_session, data, neo4j_session, current_aws_account_id, aws_update_tag)
 
@@ -785,11 +785,11 @@ def sync_user_managed_policies(
 @timeit
 def sync_user_inline_policies(
     boto3_session: boto3.session.Session, data: Dict, neo4j_session: neo4j.Session,
-    aws_update_tag: int,
+    current_aws_account_id: str, aws_update_tag: int,
 ) -> None:
     policy_data = get_user_policy_data(boto3_session, data['Users'])
     transform_policy_data(policy_data, PolicyType.inline.value)
-    load_policy_data(neo4j_session, policy_data, PolicyType.inline.value, aws_update_tag)
+    load_policy_data(neo4j_session, policy_data, PolicyType.inline.value, current_aws_account_id, aws_update_tag)
 
 
 @timeit
@@ -801,9 +801,9 @@ def sync_groups(
     data = get_group_list_data(boto3_session)
     load_groups(neo4j_session, data['Groups'], current_aws_account_id, aws_update_tag)
 
-    sync_groups_inline_policies(boto3_session, data, neo4j_session, aws_update_tag)
+    sync_groups_inline_policies(boto3_session, data, neo4j_session, current_aws_account_id, aws_update_tag)
 
-    sync_group_managed_policies(boto3_session, data, neo4j_session, aws_update_tag)
+    sync_group_managed_policies(boto3_session, data, neo4j_session, current_aws_account_id, aws_update_tag)
 
     # sync_group_service_access_details(boto3_session, data['Groups'], neo4j_session, aws_update_tag)
 
@@ -812,20 +812,20 @@ def sync_groups(
 
 def sync_group_managed_policies(
     boto3_session: boto3.session.Session, data: Dict, neo4j_session: neo4j.Session,
-    aws_update_tag: int,
+    current_aws_account_id: str, aws_update_tag: int,
 ) -> None:
     managed_policy_data = get_group_managed_policy_data(boto3_session, data["Groups"])
     transform_policy_data(managed_policy_data, PolicyType.managed.value)
-    load_policy_data(neo4j_session, managed_policy_data, PolicyType.managed.value, aws_update_tag)
+    load_policy_data(neo4j_session, managed_policy_data, PolicyType.managed.value, current_aws_account_id, aws_update_tag)
 
 
 def sync_groups_inline_policies(
     boto3_session: boto3.session.Session, data: Dict, neo4j_session: neo4j.Session,
-    aws_update_tag: int,
+    current_aws_account_id: str, aws_update_tag: int,
 ) -> None:
     policy_data = get_group_policy_data(boto3_session, data["Groups"])
     transform_policy_data(policy_data, PolicyType.inline.value)
-    load_policy_data(neo4j_session, policy_data, PolicyType.inline.value, aws_update_tag)
+    load_policy_data(neo4j_session, policy_data, PolicyType.inline.value, current_aws_account_id, aws_update_tag)
 
 
 @timeit
@@ -853,7 +853,7 @@ def sync_role_managed_policies(
     logger.info("Syncing IAM role managed policies for account '%s'.", current_aws_account_id)
     managed_policy_data = get_role_managed_policy_data(boto3_session, data["Roles"])
     transform_policy_data(managed_policy_data, PolicyType.managed.value)
-    load_policy_data(neo4j_session, managed_policy_data, PolicyType.managed.value, aws_update_tag)
+    load_policy_data(neo4j_session, managed_policy_data, PolicyType.managed.value, current_aws_account_id, aws_update_tag)
 
 
 def sync_role_inline_policies(
@@ -863,7 +863,7 @@ def sync_role_inline_policies(
     logger.info("Syncing IAM role inline policies for account '%s'.", current_aws_account_id)
     inline_policy_data = get_role_policy_data(boto3_session, data["Roles"])
     transform_policy_data(inline_policy_data, PolicyType.inline.value)
-    load_policy_data(neo4j_session, inline_policy_data, PolicyType.inline.value, aws_update_tag)
+    load_policy_data(neo4j_session, inline_policy_data, PolicyType.inline.value, current_aws_account_id, aws_update_tag)
 
 
 @timeit

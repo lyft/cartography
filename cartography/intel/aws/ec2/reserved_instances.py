@@ -53,7 +53,7 @@ def load_reserved_instances(
     for r_instance in data:
         r_instance['Start'] = str(r_instance['Start'])
         r_instance['End'] = str(r_instance['End'])
-        r_instance['Arn'] = f"arn:aws:ec2:{region}:{current_aws_account_id}:reserved-instances/{r_instance['ReservationId']}"
+        r_instance['Arn'] = f"arn:aws:ec2:{region}:{current_aws_account_id}:reserved-instances/{r_instance['ReservedInstancesId']}"
 
     neo4j_session.run(
         ingest_reserved_instances,
