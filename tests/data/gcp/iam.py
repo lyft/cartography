@@ -124,21 +124,23 @@ IAM_GROUPS = [
 ]
 IAM_DOMAINS = [
     {
+        'id': 'xyz.com',
+        'customerId': 'customer123',
         'domainAliases': {
             'parentDomainName': 'www.xyz.com',
             'domainAliasName': 'helloworld.com',
         },
-        'customerId': 'customer123',
         'verified': True,
         'isPrimary': True,
         'domainName': 'xyz.com',
     },
     {
+        'id': 'pqr.com',
+        'customerId': 'customer123',
         'domainAliases': {
             'parentDomainName': 'www.pqr.com',
             'domainAliasName': 'hellouniverse.com',
         },
-        'customerId': 'customer123',
         'verified': True,
         'isPrimary': True,
         'domainName': 'pqr.com',

@@ -321,7 +321,7 @@ def load_service_account_keys(
     u.algorithm = sa.keyAlgorithm, u.validbeforetime = sa.validBeforeTime,
     u.validaftertime = sa.validAfterTime, u.lastupdated = {gcp_update_tag}
     WITH u, sa
-    MATCH (d:GCPServiceAccount{id: {serviceaccount}})
+    MATCH (d:GCPIAMServiceAccount{id: {serviceaccount}})
     MERGE (d)-[r:HAS_KEY]->(u)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {gcp_update_tag}
@@ -472,7 +472,7 @@ def _load_domains_tx(tx: neo4j.Transaction, domains: List[Dict], gcp_update_tag:
         domain.firstseen = timestamp()
     SET
         domain.parentDomainName = dmn.domainAliases.parentDomainName,
-        domain.domainAliasName = dmn.domainAlioases.domainAliasName,
+        domain.domainAliasName = dmn.domainAliases.domainAliasName,
         domain.verified = dmn.verified,
         domain.creationTime = dmn.creationTime,
         domain.isPrimary = dmn.isPrimary,

@@ -139,8 +139,8 @@ def test_load_domains(neo4j_session):
     )
 
     expected_nodes = {
-        'customers/customer123/domains/xyz.com',
-        'customers/customer123/domains/pqr.com',
+        'xyz.com',
+        'pqr.com',
     }
 
     nodes = neo4j_session.run(
@@ -372,14 +372,14 @@ def test_domains_relationships(neo4j_session):
     )
 
     expected = {
-        (TEST_CUSTOMER_ID, 'customers/customer123/domains/xyz.com'),
-        (TEST_CUSTOMER_ID, 'customers/customer123/domains/pqr.com'),
+        (TEST_CUSTOMER_ID, 'xyz.com'),
+        (TEST_CUSTOMER_ID, 'pqr.com'),
     }
 
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:GCPCustomer)-[:RESOURCE]->(n2:GCPDomain) RETURN n1.id, n2.id;
+        MATCH (n1:GCPCustomer)-[:HAS_DOMAIN]->(n2:GCPDomain) RETURN n1.id, n2.id;
         """,
     )
 

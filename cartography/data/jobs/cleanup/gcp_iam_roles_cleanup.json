@@ -1,29 +1,17 @@
 {
     "statements": [
         {
-            "query": "MATCH (n:GCPIAMRole)<-[:RESOURCE]-(:GCPProject) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+            "query": "MATCH (n:GCPIAMRole)<-[:RESOURCE]-(:GCPProject{accountid: {GCP_PROJECT_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
             "iterative": true,
             "iterationsize": 100,
             "__comment__": "Delete GCP IAM roles that no longer exist and detach them from all previously connected nodes."
         },
         {
-            "query": "MATCH (:GCPIAMRole)<-[r:RESOURCE]-(:GCPProject) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+            "query": "MATCH (:GCPIAMRole)<-[r:RESOURCE]-(:GCPProject{accountid: {GCP_PROJECT_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
             "iterative": true,
             "iterationsize": 100,
             "__comment__": "Remove GCP GCPIAMRole-to-Project relationships that are out of date."
-        },
-        {
-            "query": "MATCH (:CloudanixWorkspace)-[:OWNER]->(:GCPProject)-[:RESOURCE]->(n:GCPRole) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
-            "iterative": true,
-            "iterationsize": 100,
-            "__comment__": "Delete GCP IAM Roles that no longer exist and detach them from all previously connected nodes."
-        },
-        {
-            "query": "MATCH (:CloudanixWorkspace)-[:OWNER]->(:GCPProject)-[r:RESOURCE]->(:GCPRole) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
-            "iterative": true,
-            "iterationsize": 100,
-            "__comment__": "Remove GCP Project to IAM Roles relationships that are out of date"
         }
     ],
-    "name": "Cleanup GCP IAM roles, workloadIdentityPools, workloadIdentityPoolsProviders and Service Accounts."
+    "name": "Cleanup GCP IAM roles and all relationships."
 }
