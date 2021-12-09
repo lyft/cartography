@@ -152,7 +152,8 @@ def _load_lambda_function_aliases(neo4j_session: neo4j.Session, lambda_aliases: 
     a.functionversion = alias.FunctionVersion,
     a.description = alias.Description,
     a.revisionid = alias.RevisionId,
-    a.lastupdated = {aws_update_tag}
+    a.lastupdated = {aws_update_tag},
+    a.arn = alias.AliasArn
     WITH a, alias
     MATCH (lambda:AWSLambda{id: alias.FunctionArn})
     MERGE (lambda)-[r:KNOWN_AS]->(a)
@@ -189,7 +190,8 @@ def _load_lambda_event_source_mappings(
     e.bisectbatchonfunctionerror = esm.BisectBatchOnFunctionError,
     e.maximumretryattempts = esm.MaximumRetryAttempts,
     e.tumblingwindowinseconds = esm.TumblingWindowInSeconds,
-    e.lastupdated = {aws_update_tag}
+    e.lastupdated = {aws_update_tag},
+    e.arn = esm.EventSourceArn
     WITH e, esm
     MATCH (lambda:AWSLambda{id: esm.FunctionArn})
     MERGE (lambda)-[r:RESOURCE]->(e)
@@ -213,7 +215,8 @@ def _load_lambda_layers(neo4j_session: neo4j.Session, lambda_layers: List[Dict],
     SET l.codesize = layer.CodeSize,
     l.signingprofileversionarn  = layer.SigningProfileVersionArn,
     l.signingjobarn = layer.SigningJobArn,
-    l.lastupdated = {aws_update_tag}
+    l.lastupdated = {aws_update_tag},
+    l.arn = layer.Arn
     WITH l, layer
     MATCH (lambda:AWSLambda{id: layer.FunctionArn})
     MERGE (lambda)-[r:HAS]->(l)

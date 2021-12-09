@@ -25,7 +25,9 @@ def get_ec2_instances(boto3_session: boto3.session.Session, region: str) -> List
 
 
 @timeit
-def load_ec2_instance_network_interfaces(neo4j_session: neo4j.Session, instance_data: Dict, update_tag: int) -> None:
+def load_ec2_instance_network_interfaces(
+    neo4j_session: neo4j.Session, instance_data: Dict, region: str, current_aws_account_id: str, update_tag: int
+) -> None:
     ingest_interfaces = """
     MATCH (instance:EC2Instance{instanceid: {InstanceId}})
     UNWIND {Interfaces} as interface
@@ -36,6 +38,7 @@ def load_ec2_instance_network_interfaces(neo4j_session: neo4j.Session, instance_
         nic.description = interface.Description,
         nic.private_dns_name = interface.PrivateDnsName,
         nic.private_ip_address = interface.PrivateIpAddress,
+        nic.arn = interface.Arn,
         nic.lastupdated = {update_tag}
 
         MERGE (instance)-[r:NETWORK_INTERFACE]->(nic)
@@ -60,9 +63,14 @@ def load_ec2_instance_network_interfaces(neo4j_session: neo4j.Session, instance_
             SET r.lastupdated = {update_tag}
     """
     instance_id = instance_data["InstanceId"]
+
+    network_interfaces = instance_data['NetworkInterfaces']
+    for network_interface in network_interfaces:
+        network_interface['Arn'] = f"arn:aws:ec2:{region}:{current_aws_account_id}:network-interface/{network_interface['NetworkInterfaceId']}"
+
     neo4j_session.run(
         ingest_interfaces,
-        Interfaces=instance_data['NetworkInterfaces'],
+        Interfaces=network_interfaces,
         InstanceId=instance_id,
         update_tag=update_tag,
     ).consume()  # TODO see issue 170
@@ -245,7 +253,7 @@ def load_ec2_instances(
                         update_tag=update_tag,
                     ).consume()  # TODO see issue 170
 
-            load_ec2_instance_network_interfaces(neo4j_session, instance, update_tag)
+            load_ec2_instance_network_interfaces(neo4j_session, instance, region, current_aws_account_id, update_tag)
             sync_ec2_instance_ebs_volumes(neo4j_session, instance, current_aws_account_id, update_tag)
 
 

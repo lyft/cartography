@@ -36,7 +36,7 @@ def load_volumes(
     vol.state = volume.State,
     vol.outpostarn = volume.OutpostArn, vol.snapshotid = volume.SnapshotId, vol.iops = volume.Iops,
     vol.fastrestored = volume.FastRestored, vol.multiattachenabled = volume.MultiAttachEnabled,
-    vol.type = volume.VolumeType, vol.kmskeyid = volume.KmsKeyId, vol.region={Region}
+    vol.type = volume.VolumeType, vol.kmskeyid = volume.KmsKeyId, vol.region = {Region}, vol.arn = vol.Arn
     WITH vol
     MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
     MERGE (aa)-[r:RESOURCE]->(vol)
@@ -48,6 +48,7 @@ def load_volumes(
     # these values to string.
     for volume in data:
         volume['CreateTime'] = str(volume['CreateTime'])
+        volume['Arn'] = f"arn:aws:ec2:{region}:{current_aws_account_id}:volume/{volume['VolumeId']}"
 
     neo4j_session.run(
         ingest_volumes,

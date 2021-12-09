@@ -43,7 +43,7 @@ def load_secrets(
             s.last_accessed_date = secret.LastAccessedDate, s.deleted_date = secret.DeletedDate,
             s.owning_service = secret.OwningService, s.created_date = secret.CreatedDate,
             s.primary_region = secret.PrimaryRegion, s.region = {Region},
-            s.lastupdated = {aws_update_tag}
+            s.lastupdated = {aws_update_tag}, s.arn = secret.ARN
         WITH s
         MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
         MERGE (owner)-[r:RESOURCE]->(s)

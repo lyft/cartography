@@ -85,7 +85,7 @@ def load_load_balancers(
     ON CREATE SET elb.firstseen = timestamp(), elb.createdtime = {CREATED_TIME}
     SET elb.lastupdated = {update_tag}, elb.name = {NAME}, elb.dnsname = {DNS_NAME},
     elb.canonicalhostedzonename = {HOSTED_ZONE_NAME}, elb.canonicalhostedzonenameid = {HOSTED_ZONE_NAME_ID},
-    elb.scheme = {SCHEME}, elb.region = {Region}
+    elb.scheme = {SCHEME}, elb.region = {Region}, elb.arn = {Arn}
     WITH elb
     MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
     MERGE (aa)-[r:RESOURCE]->(elb)
@@ -123,6 +123,7 @@ def load_load_balancers(
 
     for lb in data:
         load_balancer_id = lb["DNSName"]
+        load_balancer_arn = f"arn:aws:elasticloadbalancing:{region}:{current_aws_account_id}:loadbalancer/{load_balancer_id}"
 
         neo4j_session.run(
             ingest_load_balancer,
@@ -135,6 +136,7 @@ def load_load_balancers(
             SCHEME=lb.get("Scheme", ""),
             AWS_ACCOUNT_ID=current_aws_account_id,
             Region=region,
+            Arn=load_balancer_arn,
             update_tag=update_tag,
         )
 

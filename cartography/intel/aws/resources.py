@@ -42,7 +42,6 @@ RESOURCE_FUNCTIONS: Dict = {
     's3': s3.sync,
     'dynamodb': dynamodb.sync,
     'ec2:autoscalinggroup': sync_ec2_auto_scaling_groups,
-    'ec2:images': sync_ec2_images,
     'ec2:instance': sync_ec2_instances,
     'ec2:images': sync_ec2_images,
     'ec2:keypair': sync_ec2_key_pairs,

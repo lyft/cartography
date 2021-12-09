@@ -148,6 +148,7 @@ def load_tgw_attachments(
     SET tgwa.region = {Region},
     tgwa.resource_type = {ResourceType},
     tgwa.state = {State},
+    tgwa.arn = {Arn},
     tgwa.lastupdated = {update_tag}
 
     WITH tgwa
@@ -165,6 +166,7 @@ def load_tgw_attachments(
 
     for tgwa in data:
         tgwa_id = tgwa["TransitGatewayAttachmentId"]
+        tgwa_arn = f"arn:aws:ec2:{region}:{current_aws_account_id}:transit-gateway-attachment/{tgwa_id}"
 
         neo4j_session.run(
             ingest_transit_gateway,
@@ -175,6 +177,7 @@ def load_tgw_attachments(
             AWS_ACCOUNT_ID=current_aws_account_id,
             ResourceType=tgwa.get("ResourceType"),
             State=tgwa["State"],
+            Arn=tgwa_arn,
             update_tag=update_tag,
         )
 

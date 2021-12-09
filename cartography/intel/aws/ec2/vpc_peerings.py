@@ -40,7 +40,9 @@ def load_vpc_peerings(
     pcx.requester_region = vpc_peering.RequesterVpcInfo.Region,
     pcx.accepter_region = vpc_peering.AccepterVpcInfo.Region,
     pcx.status_code = vpc_peering.Status.Code,
-    pcx.status_message = vpc_peering.Status.Message
+    pcx.status_message = vpc_peering.Status.Message,
+    pcx.arn = vpc_peering.Arn
+    
 
     MERGE (avpc:AWSVpc{id: vpc_peering.AccepterVpcInfo.VpcId})
     ON CREATE SET avpc.firstseen = timestamp()
@@ -75,6 +77,9 @@ def load_vpc_peerings(
     SET rr.lastupdated = {update_tag}
 
     """
+
+    for item in data:
+        item['arn'] = f"arn:aws:ec2:{region}:{aws_account_id}:vpc-peering-connection/{item['VpcPeeringConnectionId']}"
 
     neo4j_session.run(
         ingest_vpc_peerings, vpc_peerings=data, update_tag=update_tag,

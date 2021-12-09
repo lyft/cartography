@@ -147,7 +147,8 @@ def load_apigateway_rest_apis(
     rest_api.minimumcompressionsize = r.minimumCompressionSize,
     rest_api.disableexecuteapiendpoint = r.disableExecuteApiEndpoint,
     rest_api.lastupdated = {aws_update_tag},
-    rest_api.region = {Region}
+    rest_api.region = {Region},
+    rest_api.arn = r.Arn
     WITH rest_api
     MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
     MERGE (aa)-[r:RESOURCE]->(rest_api)
@@ -159,6 +160,7 @@ def load_apigateway_rest_apis(
     # these values to string.
     for api in rest_apis:
         api['createdDate'] = str(api['createdDate']) if 'createdDate' in api else None
+        api['Arn'] = f"arn:aws:apigateway:{region}::restapis/{api['RestApiId']}"
 
     neo4j_session.run(
         ingest_rest_apis,
@@ -206,7 +208,7 @@ def _set_default_values(neo4j_session: neo4j.Session, aws_account_id: str) -> No
 
 @timeit
 def _load_apigateway_stages(
-        neo4j_session: neo4j.Session, stages: List, update_tag: int,
+        neo4j_session: neo4j.Session, stages: List, region: str, update_tag: int,
 ) -> None:
     """
     Ingest the Stage resource details into neo4j.
@@ -222,7 +224,8 @@ def _load_apigateway_stages(
     s.cacheclusterstatus = stage.cacheClusterStatus,
     s.tracingenabled = stage.tracingEnabled,
     s.webaclarn = stage.webAclArn,
-    s.lastupdated = {UpdateTag}
+    s.lastupdated = {UpdateTag},
+    s.arn = stage.arn
     WITH s, stage
     MATCH (rest_api:APIGatewayRestAPI{id: stage.apiId})
     MERGE (rest_api)-[r:ASSOCIATED_WITH]->(s)
@@ -234,7 +237,7 @@ def _load_apigateway_stages(
     # these values to string.
     for stage in stages:
         stage['createdDate'] = str(stage['createdDate'])
-        stage['arn'] = "arn:aws:apigateway:::" + stage['apiId'] + "/" + stage['stageName']
+        stage['arn'] = f"arn:aws:apigateway:{region}::restapis/{stage['apiId']}/stages/{stage['stageName']}"
 
     neo4j_session.run(
         ingest_stages,
@@ -245,7 +248,7 @@ def _load_apigateway_stages(
 
 @timeit
 def _load_apigateway_certificates(
-        neo4j_session: neo4j.Session, certificates: List, update_tag: int,
+        neo4j_session: neo4j.Session, certificates: List, region: str, update_tag: int,
 ) -> None:
     """
     Ingest the API Gateway Client Certificate details into neo4j.
@@ -254,9 +257,10 @@ def _load_apigateway_certificates(
     UNWIND {certificates_list} as certificate
     MERGE (c:APIGatewayClientCertificate{id: certificate.clientCertificateId})
     ON CREATE SET c.firstseen = timestamp(), c.createddate = certificate.createdDate
-    SET c.lastupdated = {UpdateTag}, c.expirationdate = certificate.expirationDate
+    SET c.lastupdated = {UpdateTag}, c.expirationdate = certificate.expirationDate,
+    c.arn = certificate.arn
     WITH c, certificate
-    MATCH (stage:APIGatewayStage{id: certificate.stageArn})
+    MATCH (stage:APIGatewayStage{clientcertificateid: certificate.clientCertificateId})
     MERGE (stage)-[r:HAS_CERTIFICATE]->(c)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {UpdateTag}
@@ -267,7 +271,7 @@ def _load_apigateway_certificates(
     for certificate in certificates:
         certificate['createdDate'] = str(certificate['createdDate'])
         certificate['expirationDate'] = str(certificate.get('expirationDate'))
-        certificate['stageArn'] = "arn:aws:apigateway:::" + certificate['apiId'] + "/" + certificate['stageName']
+        certificate['arn'] = f"arn:aws:apigateway:{region}::restapis/{certificate['apiId']}/clientcertificates/{certificate['clientCertificateId']}"
 
     neo4j_session.run(
         ingest_certificates,
@@ -278,7 +282,7 @@ def _load_apigateway_certificates(
 
 @timeit
 def _load_apigateway_resources(
-        neo4j_session: neo4j.Session, resources: List, update_tag: int,
+        neo4j_session: neo4j.Session, resources: List, region: str, update_tag: int,
 ) -> None:
     """
     Ingest the API Gateway Resource details into neo4j.
@@ -290,13 +294,17 @@ def _load_apigateway_resources(
     SET s.path = res.path,
     s.pathpart = res.pathPart,
     s.parentid = res.parentId,
-    s.lastupdated ={UpdateTag}
+    s.lastupdated ={UpdateTag},
+    s.arn = res.arn
     WITH s, res
     MATCH (rest_api:APIGatewayRestAPI{id: res.apiId})
     MERGE (rest_api)-[r:RESOURCE]->(s)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {UpdateTag}
     """
+
+    for resource in resources:
+        resource['arn'] = f"arn:aws:apigateway:{region}::restapis/{resource['apiId']}/resources/{resource['ResourceId']}"
 
     neo4j_session.run(
         ingest_resources,
@@ -308,7 +316,7 @@ def _load_apigateway_resources(
 @timeit
 def load_rest_api_details(
         neo4j_session: neo4j.Session, stages_certificate_resources: List[Tuple[Any, Any, Any, Any, Any]],
-        aws_account_id: str, update_tag: int, common_job_parameters: Dict,
+        region: str, aws_account_id: str, update_tag: int, common_job_parameters: Dict,
 ) -> None:
     """
     Create dictionaries for Stages, Client certificates, policies and Resource resources
@@ -342,9 +350,9 @@ def load_rest_api_details(
     )
 
     _load_apigateway_policies(neo4j_session, policies, update_tag)
-    _load_apigateway_stages(neo4j_session, stages, update_tag)
-    _load_apigateway_certificates(neo4j_session, certificates, update_tag)
-    _load_apigateway_resources(neo4j_session, resources, update_tag)
+    _load_apigateway_stages(neo4j_session, stages, region, update_tag)
+    _load_apigateway_certificates(neo4j_session, certificates, region, update_tag)
+    _load_apigateway_resources(neo4j_session, resources, region, update_tag)
     _set_default_values(neo4j_session, aws_account_id)
 
 
@@ -355,7 +363,7 @@ def parse_policy(api_id: str, policy: Policy) -> Optional[Dict[Any, Any]]:
     """
 
     if policy is not None:
-        # unescape doubly escapped JSON
+        # unescape doubly escaped JSON
         policy = policy.replace("\\", "")
         try:
             policy = Policy(json.loads(policy))
@@ -389,7 +397,7 @@ def sync_apigateway_rest_apis(
 
     stages_certificate_resources = get_rest_api_details(boto3_session, rest_apis, region)
     load_rest_api_details(
-        neo4j_session, stages_certificate_resources, current_aws_account_id, aws_update_tag, common_job_parameters,
+        neo4j_session, stages_certificate_resources, region, current_aws_account_id, aws_update_tag, common_job_parameters,
     )
 
 

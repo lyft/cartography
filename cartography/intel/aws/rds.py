@@ -229,7 +229,8 @@ def _attach_ec2_subnet_groups(
             sng.vpc_id = rds_sng.VpcId,
             sng.description = rds_sng.DBSubnetGroupDescription,
             sng.status = rds_sng.DBSubnetGroupStatus,
-            sng.lastupdated = {aws_update_tag}
+            sng.lastupdated = {aws_update_tag},
+            sng.arn = rds_sng.arn
         WITH sng, rds_sng.instance_arn AS instance_arn
         MATCH(rds:RDSInstance{id: instance_arn})
         MERGE(rds)-[r:MEMBER_OF_DB_SUBNET_GROUP]->(sng)

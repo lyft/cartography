@@ -38,7 +38,7 @@ def load_snapshots(
     s.progress = snapshot.Progress, s.starttime = snapshot.StartTime, s.state = snapshot.State,
     s.statemessage = snapshot.StateMessage, s.volumeid = snapshot.VolumeId, s.volumesize = snapshot.VolumeSize,
     s.outpostarn = snapshot.OutpostArn, s.dataencryptionkeyid = snapshot.DataEncryptionKeyId,
-    s.kmskeyid = snapshot.KmsKeyId, s.region={Region}
+    s.kmskeyid = snapshot.KmsKeyId, s.region = {Region}, s.arn = snapshot.Arn
     WITH s
     MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
     MERGE (aa)-[r:RESOURCE]->(s)
@@ -50,6 +50,7 @@ def load_snapshots(
     # these values to string.
     for snapshot in data:
         snapshot['StartTime'] = str(snapshot['StartTime'])
+        snapshot['Arn'] = f"arn:aws:ec2:{region}:{current_aws_account_id}:snapshot/{snapshot['SnapshotId']}"
 
     neo4j_session.run(
         ingest_snapshots,

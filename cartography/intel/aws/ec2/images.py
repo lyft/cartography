@@ -79,7 +79,7 @@ def load_images(
     i.sriov_net_support = image.SriovNetSupport,
     i.bootmode = image.BootMode, i.owner = image.OwnerId, i.image_owner_alias = image.ImageOwnerAlias,
     i.kernel_id = image.KernelId, i.ramdisk_id = image.RamdiskId,
-    i.region={Region}
+    i.region={Region}, i.arn=image.arn
     WITH i
     MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
     MERGE (aa)-[r:RESOURCE]->(i)
@@ -90,6 +90,7 @@ def load_images(
     # AMI IDs are unique to each AWS Region. Hence we make an 'ID' string that is a combo of ImageId and region
     for image in data:
         image['ID'] = image['ImageId'] + '|' + region
+        image['arn'] = f"arn:aws:ec2:{region}:{current_aws_account_id}:image/{image['ImageId']}"
 
     neo4j_session.run(
         ingest_images,

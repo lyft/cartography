@@ -120,7 +120,8 @@ def load_zone(neo4j_session: neo4j.Session, zone: Dict, current_aws_id: str, upd
     ingest_z = """
     MERGE (zone:DNSZone:AWSDNSZone{zoneid:{ZoneId}})
     ON CREATE SET zone.firstseen = timestamp(), zone.name = {ZoneName}
-    SET zone.lastupdated = {update_tag}, zone.comment = {Comment}, zone.privatezone = {PrivateZone}
+    SET zone.lastupdated = {update_tag}, zone.comment = {Comment}, zone.privatezone = {PrivateZone},
+    zone.arn = {Arn}
     WITH zone
     MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
     MERGE (aa)-[r:RESOURCE]->(zone)
@@ -133,6 +134,7 @@ def load_zone(neo4j_session: neo4j.Session, zone: Dict, current_aws_id: str, upd
         ZoneId=zone['zoneid'],
         Comment=zone['comment'],
         PrivateZone=zone['privatezone'],
+        Arn=zone['arn'],
         AWS_ACCOUNT_ID=current_aws_id,
         update_tag=update_tag,
     )
@@ -360,6 +362,7 @@ def get_zones(client: botocore.client.BaseClient) -> List[Tuple[Dict, List[Dict]
 
     results: List[Tuple[Dict, List[Dict]]] = []
     for hosted_zone in hosted_zones:
+        hosted_zone['arn'] = f"arn:aws:route53:::hostedzone/{hosted_zone['Id']}"
         record_sets = get_zone_record_sets(client, hosted_zone['Id'])
         results.append((hosted_zone, record_sets))
     return results

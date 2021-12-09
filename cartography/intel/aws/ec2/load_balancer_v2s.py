@@ -69,7 +69,8 @@ def load_load_balancer_v2s(
     SET elbv2.lastupdated = {update_tag}, elbv2.name = {NAME}, elbv2.dnsname = {DNS_NAME},
     elbv2.canonicalhostedzonenameid = {HOSTED_ZONE_NAME_ID},
     elbv2.type = {ELBv2_TYPE},
-    elbv2.scheme = {SCHEME}, elbv2.region = {Region}
+    elbv2.scheme = {SCHEME}, elbv2.region = {Region},
+    elbv2.arn = {Arn}
     WITH elbv2
     MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
     MERGE (aa)-[r:RESOURCE]->(elbv2)
@@ -78,6 +79,7 @@ def load_load_balancer_v2s(
     """
     for lb in data:
         load_balancer_id = lb["DNSName"]
+        load_balancer_arn = lb["LoadBalancerArn"]
 
         neo4j_session.run(
             ingest_load_balancer_v2,
@@ -90,6 +92,7 @@ def load_load_balancer_v2s(
             SCHEME=lb.get("Scheme"),
             AWS_ACCOUNT_ID=current_aws_account_id,
             Region=region,
+            Arn=load_balancer_arn,
             update_tag=update_tag,
         )
 
@@ -201,7 +204,8 @@ def load_load_balancer_v2_listeners(
         l.firstseen = timestamp(),
         l.targetgrouparn = data.TargetGroupArn
         SET l.lastupdated = {update_tag},
-        l.ssl_policy = data.SslPolicy
+        l.ssl_policy = data.SslPolicy,
+        l.arn = data.ListenerArn
         WITH l, elbv2
         MERGE (elbv2)-[r:ELBV2_LISTENER]->(l)
         ON CREATE SET r.firstseen = timestamp()

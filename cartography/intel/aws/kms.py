@@ -121,7 +121,7 @@ def _load_kms_key_aliases(neo4j_session: neo4j.Session, aliases: List[Dict], upd
     UNWIND {alias_list} AS alias
     MERGE (a:KMSAlias{id: alias.AliasArn})
     ON CREATE SET a.firstseen = timestamp(), a.targetkeyid = alias.TargetKeyId
-    SET a.aliasname = alias.AliasName, a.lastupdated = {UpdateTag}
+    SET a.aliasname = alias.AliasName, a.lastupdated = {UpdateTag}, a.arn = alias.AliasArn
     WITH a, alias
     MATCH (kmskey:KMSKey{id: alias.TargetKeyId})
     MERGE (a)-[r:KNOWN_AS]->(kmskey)
@@ -137,7 +137,9 @@ def _load_kms_key_aliases(neo4j_session: neo4j.Session, aliases: List[Dict], upd
 
 
 @timeit
-def _load_kms_key_grants(neo4j_session: neo4j.Session, grants_list: List[Dict], update_tag: int) -> None:
+def _load_kms_key_grants(
+    neo4j_session: neo4j.Session, grants_list: List[Dict], region: str, aws_account_id: str, update_tag: int
+) -> None:
     """
     Ingest KMS Key Grants into neo4j.
     """
@@ -228,7 +230,7 @@ def load_kms_key_details(
 
     _load_kms_key_policies(neo4j_session, policies, update_tag)
     _load_kms_key_aliases(neo4j_session, aliases, update_tag)
-    _load_kms_key_grants(neo4j_session, grants, update_tag)
+    _load_kms_key_grants(neo4j_session, grants, region, aws_account_id, update_tag)
     _set_default_values(neo4j_session, aws_account_id)
 
 

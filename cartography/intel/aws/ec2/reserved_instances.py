@@ -39,7 +39,8 @@ def load_reserved_instances(
     ri.end = res.End, ri.start = res.Start, ri.count = res.InstanceCount, ri.type = res.InstanceType,
     ri.productdescription = res.ProductDescription, ri.state = res.State, ri.currencycode = res.CurrencyCode,
     ri.instancetenancy = res.InstanceTenancy, ri.offeringclass = res.OfferingClass,
-    ri.offeringtype = res.OfferingType, ri.scope = res.Scope, ri.fixedprice = res.FixedPrice, ri.region={Region}
+    ri.offeringtype = res.OfferingType, ri.scope = res.Scope, ri.fixedprice = res.FixedPrice, ri.region={Region},
+    ri.arn = ri.Arn
     WITH ri
     MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
     MERGE (aa)-[r:RESOURCE]->(ri)
@@ -52,6 +53,7 @@ def load_reserved_instances(
     for r_instance in data:
         r_instance['Start'] = str(r_instance['Start'])
         r_instance['End'] = str(r_instance['End'])
+        r_instance['Arn'] = f"arn:aws:ec2:{region}:{current_aws_account_id}:reserved-instances/{r_instance['ReservationId']}"
 
     neo4j_session.run(
         ingest_reserved_instances,
