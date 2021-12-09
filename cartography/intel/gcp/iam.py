@@ -321,7 +321,7 @@ def load_service_account_keys(
     u.algorithm = sa.keyAlgorithm, u.validbeforetime = sa.validBeforeTime,
     u.validaftertime = sa.validAfterTime, u.lastupdated = {gcp_update_tag}
     WITH u, sa
-    MATCH (d:GCPIAMServiceAccount{id: {serviceaccount}})
+    MATCH (d:GCPIAMServiceAccount{id: sa.serviceaccount})
     MERGE (d)-[r:HAS_KEY]->(u)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {gcp_update_tag}
