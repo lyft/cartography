@@ -839,7 +839,7 @@ GCP Domains are defined in GCP Customers
     ```
     (GCPCustomers)-[HAS_DOMAIN]->(GCPDomains)
     ```
-  
+
 ## GCP API Gateway
 
 ### GCP API Gateway Locations
