@@ -268,7 +268,7 @@ def _load_kms_crypto_keys_tx(
         crypto_key.createTime = ck.createTime,
         crypto_key.nextRotationTime = ck.nextRotationTime,
         crypto_key.rotationPeriod = ck.rotationPeriod
-    WITH crypt_key, ck
+    WITH crypto_key, ck
     MATCH (key_ring:GCPKMSKeyring{id:ck.keyring_id})
     MERGE (key_ring)-[r:RESOURCE]->(crypto_key)
     ON CREATE SET
