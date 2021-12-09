@@ -140,7 +140,7 @@ def _get_admin_resource(credentials: GoogleCredentials) -> Resource:
     """
     return googleapiclient.discovery.build('admin', 'directory_v1', credentials=credentials, cache_discovery=False)
 
-  
+
 def _get_apigateway_resource(credentials: GoogleCredentials) -> Resource:
     """
     Instantiates a apigateway resource object.
