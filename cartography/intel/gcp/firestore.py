@@ -177,7 +177,7 @@ def _load_firestore_indexes_tx(
     UNWIND {firestore_indexes} as index
     MERGE (ix:GCPFirestoreIndex{id:index.id})
     ON CREATE SET
-        d.firstseen = timestamp()
+        ix.firstseen = timestamp()
     SET
         ix.name = index.name,
         ix.queryScope = index.queryScope,

@@ -186,9 +186,9 @@ def _load_sql_users_tx(tx: neo4j.Transaction, sql_users: List[Dict], project_id:
         u.type = user.type
     WITH u,user
     MATCH (i:GCPSQLInstance{id:user.instance_id})
-    MERGE (i)-[r:USED_BY]<-(u)
+    MERGE (i)-[r:USED_BY]->(u)
     ON CREATE SET
-        r.firstseen = timestamp,
+        r.firstseen = timestamp(),
         r.lastupdated = {gcp_update_tag}
     """
     tx.run(
