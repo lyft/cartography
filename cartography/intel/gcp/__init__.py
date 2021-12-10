@@ -13,6 +13,8 @@ from oauth2client.client import GoogleCredentials
 
 from cartography.config import Config
 from cartography.intel.gcp import apigateway
+from cartography.intel.gcp import cloudkms
+from cartography.intel.gcp import cloudrun
 from cartography.intel.gcp import compute
 from cartography.intel.gcp import crm
 from cartography.intel.gcp import dns
@@ -24,16 +26,22 @@ from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 
-Resources = namedtuple('Resources', 'compute container crm_v1 crm_v2 dns storage serviceusage iam admin apigateway')
+
+Resources = namedtuple(
+    'Resources', 'compute container crm_v1 crm_v2 dns storage serviceusage iam admin apigateway \
+                                        cloudkms cloudrun',
+)
 
 # Mapping of service short names to their full names as in docs. See https://developers.google.com/apis-explorer,
 # and https://cloud.google.com/service-usage/docs/reference/rest/v1/services#ServiceConfig
-Services = namedtuple('Services', 'compute storage gke dns iam admin crm_v1 crm_v2 apigateway')
+Services = namedtuple('Services', 'compute storage gke dns cloudkms cloudrun iam admin crm_v1 crm_v2 apigateway')
 service_names = Services(
     compute='compute.googleapis.com',
     storage='storage.googleapis.com',
     gke='container.googleapis.com',
     dns='dns.googleapis.com',
+    cloudkms='cloudkms.googleapis.com',
+    cloudrun='run.googleapis.com',
     iam='iam.googleapis.com',
     admin='admin.googleapis.com',
     crm_v1='cloudresourcemanager.googleapis.com',
@@ -119,6 +127,28 @@ def _get_serviceusage_resource(credentials: GoogleCredentials) -> Resource:
     return googleapiclient.discovery.build('serviceusage', 'v1', credentials=credentials, cache_discovery=False)
 
 
+def _get_cloudkms_resource(credentials: GoogleCredentials) -> Resource:
+    """
+    Instantiates a cloud kms resource object.
+    See: https://cloud.google.com/kms/docs/reference/rest
+
+    :param credentials: The GoogleCredentials object
+    :return: A serviceusage resource object
+    """
+    return googleapiclient.discovery.build('cloudkms', 'v1', credentials=credentials, cache_discovery=False)
+
+
+def _get_cloudrun_resource(credentials: GoogleCredentials) -> Resource:
+    """
+    Instantiates a cloud run resource object.
+    See: https://cloud.google.com/run/docs/reference/rest
+
+    :param credentials: The GoogleCredentials object
+    :return: A serviceusage resource object
+    """
+    return googleapiclient.discovery.build('run', 'v1', credentials=credentials, cache_discovery=None)
+
+
 def _get_iam_resource(credentials: GoogleCredentials) -> Resource:
     """
     Instantiates a IAM resource object
@@ -166,6 +196,8 @@ def _initialize_resources(credentials: GoogleCredentials) -> Resource:
         container=_get_container_resource(credentials),
         serviceusage=_get_serviceusage_resource(credentials),
         dns=_get_dns_resource(credentials),
+        cloudkms=_get_cloudkms_resource(credentials),
+        cloudrun=_get_cloudrun_resource(credentials),
         iam=_get_iam_resource(credentials),
         admin=_get_admin_resource(credentials),
         apigateway=_get_apigateway_resource(credentials),
@@ -225,6 +257,10 @@ def _sync_single_project(
         gke.sync_gke_clusters(neo4j_session, resources.container, project_id, gcp_update_tag, common_job_parameters)
     if service_names.dns in enabled_services:
         dns.sync(neo4j_session, resources.dns, project_id, gcp_update_tag, common_job_parameters)
+    if service_names.cloudkms in enabled_services:
+        cloudkms.sync_kms(neo4j_session, resources.cloudkms, project_id, gcp_update_tag, common_job_parameters)
+    if service_names.cloudrun in enabled_services:
+        cloudrun.sync_cloudrun(neo4j_session, resources.cloudrun, project_id, gcp_update_tag, common_job_parameters)
     if service_names.iam in enabled_services:
         iam.sync(
             neo4j_session, resources.iam, resources.crm_v1, resources.admin,
@@ -257,8 +293,11 @@ def _sync_multiple_projects(
 
     for project in projects:
         project_id = project['projectId']
+        common_job_parameters["GCP_PROJECT_ID"] = project_id
         logger.info("Syncing GCP project %s.", project_id)
         _sync_single_project(neo4j_session, resources, project_id, gcp_update_tag, common_job_parameters)
+
+    del common_job_parameters["GCP_PROJECT_ID"]
 
 
 @timeit

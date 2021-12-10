@@ -106,6 +106,16 @@ CREATE INDEX ON :GSuiteGroup(email);
 CREATE INDEX ON :GSuiteGroup(id);
 CREATE INDEX ON :GSuiteUser(email);
 CREATE INDEX ON :GSuiteUser(id);
+CREATE INDEX ON :GCPFunction(id)
+CREATE INDEX ON :GCPKMSLocation(id);
+CREATE INDEX ON :GCPKMSKeyring(id);
+CREATE INDEX ON :GCPKMSCryptokey(id);
+CREATE INDEX ON :GCPCloudRunAuthorizedDomains(id);
+CREATE INDEX ON :GCPCloudRunConfiguration(id);
+CREATE INDEX ON :GCPCloudRunDomainMap(id);
+CREATE INDEX ON :GCPCloudRunRevision(id);
+CREATE INDEX ON :GCPCloudRunRoute(id);
+CREATE INDEX ON :GCPCloudRunService(id);
 CREATE INDEX ON :GCPRole(id);
 CREATE INDEX ON :GCPServiceAccount(id);
 CREATE INDEX ON :GCPServiceAccountKey(id);
