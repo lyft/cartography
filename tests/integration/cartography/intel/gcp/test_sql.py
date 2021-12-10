@@ -115,8 +115,8 @@ def test_sql_user_relationship(neo4j_session):
     )
 
     expected = {
-        'instance123', 'user123',
-        'instance456', 'user456',
+        ('instance123', 'user123'),
+        ('instance456', 'user456'),
     }
 
     # Fetch relationships

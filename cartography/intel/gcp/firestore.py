@@ -137,7 +137,7 @@ def _load_firestore_databases_tx(
         d.concurrencyMode = database.concurrencyMode
     WITH d
     MATCH (owner:GCPProject{id:{ProjectId}})
-    MERGE (owner)-[r:Resource]->(d)
+    MERGE (owner)-[r:RESOURCE]->(d)
     ON CREATE SET
         r.firstseen = timestamp(),
         r.lastupdated = {gcp_update_tag}
