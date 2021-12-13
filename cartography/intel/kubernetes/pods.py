@@ -24,6 +24,27 @@ def sync_pods(
 def get_pods(client: K8sClient, cluster: Dict) -> List[Dict]:
     pods = list()
     for pod in client.core.list_pod_for_all_namespaces().items:
+        containers = {}
+        for container in pod.spec.containers:
+            containers[container.name] = {
+                "name": container.name,
+                "image": container.image,
+                "uid": f"{pod.metadata.uid}-{container.name}",
+            }
+        if pod.status and pod.status.container_statuses:
+            for status in pod.status.container_statuses:
+                if status.name in containers:
+                    _state = 'waiting'
+                    if status.state.running:
+                        _state = 'running'
+                    elif status.state.terminated:
+                        _state = 'terminated'
+                    containers[status.name]["status"] = {
+                        "image_id": status.image_id,
+                        "ready": status.ready,
+                        "started": status.started,
+                        "state": _state,
+                    }
         pods.append(
             {
                 "uid": pod.metadata.uid,
@@ -34,14 +55,7 @@ def get_pods(client: K8sClient, cluster: Dict) -> List[Dict]:
                 "node": pod.spec.node_name,
                 "cluster_uid": cluster["uid"],
                 "labels": pod.metadata.labels,
-                "containers": [
-                    {
-                        "name": container.name,
-                        "image": container.image,
-                        "uid": f"{pod.metadata.uid}-{container.name}",
-                    }
-                    for container in pod.spec.containers
-                ],
+                "containers": list(containers.values()),
             },
         )
     return pods
@@ -66,6 +80,10 @@ def load_pods(session: Session, data: List[Dict], update_tag: int) -> None:
             MERGE (container: KubernetesContainer {id: k8container.uid})
             ON CREATE SET container.firstseen = timestamp()
             SET container.image = k8container.image,
+                container.status_image_id = k8container.status.image_id,
+                container.status_ready = k8container.status.ready,
+                container.status_started = k8container.status.started,
+                container.status_state = k8container.status.state,
                 container.name = k8container.name,
                 container.lastupdated = {update_tag}
             WITH pod, space, cluster, container
