@@ -22,6 +22,7 @@ def start_k8s_ingestion(session: Session, config: Config) -> None:
         return
 
     for client in get_k8s_clients(config.k8s_kubeconfig):
+        logger.info(f"Syncing data for k8s cluster {client.name}...")
         cluster = sync_namespaces(session, client, config.update_tag)
         pods = sync_pods(session, client, config.update_tag, cluster)
         sync_services(session, client, config.update_tag, cluster, pods)
