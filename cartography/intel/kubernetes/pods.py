@@ -28,6 +28,7 @@ def get_pods(client: K8sClient, cluster: Dict) -> List[Dict]:
             {
                 "uid": pod.metadata.uid,
                 "name": pod.metadata.name,
+                "status_phase": pod.status.phase,
                 "creation_timestamp": get_epoch(pod.metadata.creation_timestamp),
                 "deletion_timestamp": get_epoch(pod.metadata.deletion_timestamp),
                 "namespace": pod.metadata.namespace,
@@ -54,6 +55,7 @@ def load_pods(session: Session, data: List[Dict], update_tag: int) -> None:
         ON CREATE SET pod.firstseen = timestamp()
         SET pod.lastupdated = {update_tag},
             pod.name = k8pod.name,
+            pod.status_phase = k8pod.status_phase,
             pod.created_at = k8pod.creation_timestamp,
             pod.deleted_at = k8pod.deletion_timestamp
         WITH pod, k8pod.namespace as ns, k8pod.cluster_uid as cuid, k8pod.containers as k8containers
