@@ -29,7 +29,7 @@ jobs:
           wget -O - https://debian.neo4j.com/neotechnology.gpg.key | sudo apt-key add -
           echo 'deb https://debian.neo4j.com stable 3.5' | sudo tee /etc/apt/sources.list.d/neo4j.list
           sudo apt-get update
-      - name: Install  Neo4j
+      - name: Install Neo4j
         run: sudo apt-get install neo4j
       - name: Disable auth for neo4j
         run: |
