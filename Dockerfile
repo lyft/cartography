@@ -9,6 +9,7 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 COPY . /srv/cartography
 
+# Installs pip supported by python3.8
 RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && python3.8 get-pip.py
 
 RUN pip install -e . && \
