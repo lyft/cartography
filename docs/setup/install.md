@@ -8,7 +8,7 @@
 
 # Cartography Installation
 
-Time to set up the server that will run Cartography.  Cartography _should_ work on both Linux and Windows servers, but bear in mind we've only tested it in Linux so far.  Cartography requires Python 3.6 or greater.
+Time to set up the server that will run Cartography.  Cartography _should_ work on both Linux and Windows servers, but bear in mind we've only tested it in Linux so far.  Cartography supports Python 3.8. Older versions of Python may work but are not explicitly supported.
 
 1. **Get and install the Neo4j graph database** on your server.
     1. Neo4j requires a JVM (JDK/JRE 11 or higher) to be installed. One option is to install [Amazon Coretto 11](https://docs.aws.amazon.com/corretto/latest/corretto-11-ug/what-is-corretto-11.html).
