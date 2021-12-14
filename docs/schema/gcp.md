@@ -35,6 +35,7 @@
 - [IpRule::IpPermissionInbound::GCPIpRule](#ipruleippermissioninboundgcpiprule)
   - [Relationships](#relationships-14)
 - [IpRange](#iprange)
+  - [Relationships](#relationships-15)
 - [GCPSQL](#gcpsql)
 - [GCP SQL Instances](#gcp-sql-instances)
   - [Relationships](#relationships-16)
