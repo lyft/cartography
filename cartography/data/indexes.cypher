@@ -91,7 +91,6 @@ CREATE INDEX ON :GSuiteGroup(email);
 CREATE INDEX ON :GSuiteGroup(id);
 CREATE INDEX ON :GSuiteUser(email);
 CREATE INDEX ON :GSuiteUser(id);
-CREATE INDEX ON :GCPFunction(id);
 CREATE INDEX ON :GCPSQLInstance(id);
 CREATE INDEX ON :GCPSQLUser(id);
 CREATE INDEX ON :GCPBigtableInstance(id);
