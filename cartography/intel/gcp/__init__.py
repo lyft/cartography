@@ -168,9 +168,11 @@ def _initialize_resources(credentials: GoogleCredentials) -> Resource:
         container=_get_container_resource(credentials),
         serviceusage=_get_serviceusage_resource(credentials),
         dns=_get_dns_resource(credentials),
-        cloudsql=_get_cloudsql_resource(credentials),
-        cloudbigtable=_get_cloudbigtable_resource(credentials),
-        firestore=_get_firestore_resource(credentials),
+        cloudkms=_get_cloudkms_resource(credentials),
+        cloudrun=_get_cloudrun_resource(credentials),
+        iam=_get_iam_resource(credentials),
+        admin=_get_admin_resource(credentials),
+        apigateway=_get_apigateway_resource(credentials),
     )
 
 
@@ -227,15 +229,19 @@ def _sync_single_project(
         gke.sync_gke_clusters(neo4j_session, resources.container, project_id, gcp_update_tag, common_job_parameters)
     if service_names.dns in enabled_services:
         dns.sync(neo4j_session, resources.dns, project_id, gcp_update_tag, common_job_parameters)
-    if service_names.cloudsql in enabled_services:
-        sql.sync_sql(neo4j_session, resources.cloudsql, project_id, gcp_update_tag, common_job_parameters)
-    if service_names.cloudbigtable in enabled_services:
-        bigtable.sync_bigtable(
-            neo4j_session, resources.cloudbigtable, project_id, gcp_update_tag,
-            common_job_parameters,
+    if service_names.cloudkms in enabled_services:
+        cloudkms.sync_kms(neo4j_session, resources.cloudkms, project_id, gcp_update_tag, common_job_parameters)
+    if service_names.cloudrun in enabled_services:
+        cloudrun.sync_cloudrun(neo4j_session, resources.cloudrun, project_id, gcp_update_tag, common_job_parameters)
+    if service_names.iam in enabled_services:
+        iam.sync(
+            neo4j_session, resources.iam, resources.crm_v1, resources.admin,
         )
-    if service_names.firestore in enabled_services:
-        firestore.sync_firestore(neo4j_session, resources.firestore, project_id, gcp_update_tag, common_job_parameters)
+    if service_names.apigateway in enabled_services:
+        apigateway.sync_apigateways(
+            neo4j_session, resources.apigateway,
+            project_id, gcp_update_tag, common_job_parameters,
+        )
 
 
 def _sync_multiple_projects(
