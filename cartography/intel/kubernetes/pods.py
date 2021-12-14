@@ -39,8 +39,13 @@ def get_pods(client: K8sClient, cluster: Dict) -> List[Dict]:
                         _state = 'running'
                     elif status.state.terminated:
                         _state = 'terminated'
+                    try:
+                        image_sha = status.image_id.split("@")[1]
+                    except IndexError:
+                        image_sha = None
                     containers[status.name]["status"] = {
                         "image_id": status.image_id,
+                        "image_sha": image_sha,
                         "ready": status.ready,
                         "started": status.started,
                         "state": _state,
@@ -83,6 +88,7 @@ def load_pods(session: Session, data: List[Dict], update_tag: int) -> None:
             ON CREATE SET container.firstseen = timestamp()
             SET container.image = k8container.image,
                 container.status_image_id = k8container.status.image_id,
+                container.status_image_sha = k8container.status.image_sha,
                 container.status_ready = k8container.status.ready,
                 container.status_started = k8container.status.started,
                 container.status_state = k8container.status.state,
