@@ -97,7 +97,7 @@ def _load_functions_tx(tx: neo4j.Transaction, functions: List[Resource], project
     """
     ingest_functions = """
     UNWIND {functions} as func
-    MERGE(function:GCPFunction:{id:func.id})
+    MERGE(function:GCPFunction{id:func.id})
     ON CREATE SET
         function.firstseen = timestamp()
     SET
@@ -120,7 +120,7 @@ def _load_functions_tx(tx: neo4j.Transaction, functions: List[Resource], project
         function.buildId = func.buildId,
         fucntion.sourceToken = func.sourceToken,
         function.sourceArchiveUrl = func.sourceArchiveUrl
-    WITH function, func
+    WITH function
     MATCH (owner:GCPProject{id:{ProjectId}})
     MERGE (owner)-[r:RESOURCE]->(function)
     ON CREATE SET

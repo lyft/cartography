@@ -1,6 +1,7 @@
 CLOUD_FUNCTION = [
     {
         "name": "function123",
+        "id": "function123",
         "description": "Cloud Function123",
         "status": "ACTIVE",
         "entryPoint": "function123.cloud.google.com",
@@ -22,6 +23,7 @@ CLOUD_FUNCTION = [
     },
     {
         "name": "function456",
+        "id": "function456",
         "description": "Cloud Function456",
         "status": "ACTIVE",
         "entryPoint": "function456.cloud.google.com",

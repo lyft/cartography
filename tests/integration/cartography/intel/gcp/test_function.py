@@ -16,8 +16,8 @@ def test_load_cloud_functions(neo4j_session):
     )
 
     expected_nodes = {
-        "projects/abcd12345/locations/us-east-1a/functions/function123",
-        "projects/abcd12345/locations/us-east-1a/functions/function456",
+        "function123",
+        "function456",
     }
 
     nodes = neo4j_session.run(
@@ -53,8 +53,8 @@ def test_function_relationships(neo4j_session):
     )
 
     expected = {
-        (TEST_PROJECT_NUMBER, "111111111111111111111"),
-        (TEST_PROJECT_NUMBER, "2222222222222222222"),
+        (TEST_PROJECT_NUMBER, "function123"),
+        (TEST_PROJECT_NUMBER, "function456"),
     }
 
     # Fetch relationships
