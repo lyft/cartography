@@ -3,7 +3,6 @@ import logging
 from typing import Dict
 from typing import List
 
-
 import neo4j
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
@@ -44,7 +43,8 @@ def get_gcp_functions(function: Resource, project_id: str) -> List[Dict]:
         if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
             logger.warning(
                 (
-                    "Could not retrieve Functions locations on project %s due to permissions issues. Code: %s, Message: %s"
+                    "Could not retrieve Functions locations on project %s due to permissions issues.\
+                         Code: %s, Message: %s"
                 ), project_id, err['code'], err['message'],
             )
             return []
@@ -54,13 +54,18 @@ def get_gcp_functions(function: Resource, project_id: str) -> List[Dict]:
     try:
         functions = []
         for region in regions:
-            request = function.projects().locations().functions().list(parent=f"projects/{project_id}/locations/{region}")
+            request = function.projects().locations().functions().list(
+                parent=f"projects/{project_id}/locations/{region}",
+            )
             while request is not None:
                 response = request.execute()
                 for func in response['functions']:
                     func['id'] = f"projects/{project_id}/locations/{region}/functions/{func['name']}"
                     functions.append(func)
-                request = function.projects().locations().functions().list_next(previous_request=request, previous_response=response)
+                request = function.projects().locations().functions().list_next(
+                    previous_request=request,
+                    previous_response=response,
+                )
         return functions
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -111,7 +116,7 @@ def _load_functions_tx(tx: neo4j.Transaction, functions: List[Resource], project
         function.serviceAccountEmail = func.serviceAccountEmail,
         function.updateTime = func.updateTime,
         function.versionId = func.versionId,
-        funtion.network = func.network,
+        function.network = func.network,
         function.maxInstances = func.maxInstances,
         function.vpcConnector = func.vpcConnector,
         function.vpcConnectorEgressSettings = func.vpcConnectorEgressSettings,
@@ -155,7 +160,7 @@ def cleanup_gcp_functions(neo4j_session: neo4j.Session, common_job_parameters: D
 @timeit
 def sync(
     neo4j_session: neo4j.Session, function: Resource, project_id: str, gcp_update_tag: int,
-    common_job_parameters: Dict
+    common_job_parameters: Dict,
 ) -> None:
     """
     Get GCP Cloud Fucntions using the Cloud Function resource object, ingest to Neo4j, and clean up old data.
