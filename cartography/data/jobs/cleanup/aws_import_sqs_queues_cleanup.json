@@ -1,0 +1,16 @@
+{
+  "statements": [
+    {
+      "query": "MATCH (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(q:SQSQueue) WHERE q.lastupdated <> {UPDATE_TAG} WITH q LIMIT {LIMIT_SIZE} DETACH DELETE (q) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (:SQSQueue)-[r:HAS_DEADLETTER_QUEUE]->(:SQSQueue) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+      "iterative": true,
+      "iterationsize": 100,
+      "__comment__": "Cleanup HAS_DEADLETTER_QUEUE for queues that no longer have a deadletter queue."
+    }
+  ],
+  "name": "cleanup SQSQueue"
+}

@@ -1,5 +1,6 @@
 import json
 import logging
+import time
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -58,7 +59,7 @@ def fetch_page(token: str, api_url: str, organization: str, query: str, cursor: 
 
 
 def fetch_all(
-    token: str, api_url: str, organization: str, query: str, resource_type: str, field_name: str,
+    token: str, api_url: str, organization: str, query: str, resource_type: str, field_name: str, retries: int = 5,
 ) -> Tuple[List[Dict], Dict]:
     """
     Fetch and return all data items of the given `resource_type` and `field_name` from Github's paginated GraphQL API as
@@ -72,27 +73,35 @@ def fetch_all(
     list.
     :param field_name: The field name of the resource_type to append items from - this is usually "nodes" or "edges".
     See the field list in https://docs.github.com/en/graphql/reference/objects#repositoryconnection for other examples.
+    :param retries: Number of retries to perform.  Github APIs are often flakey and retrying the request helps.
     :return: A 2-tuple containing 1. A list of data items of the given `resource_type` and `field_name`,  and 2. a dict
     containing the `url` and the `login` fields of the organization that the items belong to.
     """
     cursor = None
     has_next_page = True
     data: List[Dict] = []
+    retry = 0
     while has_next_page:
         try:
             resp = fetch_page(token, api_url, organization, query, cursor)
+            retry = 0
         except requests.exceptions.Timeout:
-            logger.error(
-                f"GitHub: Could not retrieve page of resource {resource_type} due to API timeout.",
-                exc_info=True,
-            )
-            raise
+            retry += 1
         except requests.exceptions.HTTPError:
+            retry += 1
+        except requests.exceptions.ChunkedEncodingError:
+            retry += 1
+
+        if retry >= retries:
             logger.error(
                 f"GitHub: Could not retrieve page of resource `{resource_type}` due to HTTP error.",
                 exc_info=True,
             )
             raise
+        elif retry > 0:
+            time.sleep(1 * retry)
+            continue
+
         resource = resp['data']['organization'][resource_type]
         data.extend(resource[field_name])
         cursor = resource['pageInfo']['endCursor']
