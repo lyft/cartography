@@ -346,7 +346,7 @@ def _sync_multiple_projects(
     del common_job_parameters["GCP_PROJECT_ID"]
 
 
-@ timeit
+@timeit
 def start_gcp_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
     """
     Starts the GCP ingestion process by initializing Google Application Default Credentials, creating the necessary
