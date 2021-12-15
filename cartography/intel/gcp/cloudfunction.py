@@ -123,7 +123,7 @@ def _load_functions_tx(tx: neo4j.Transaction, functions: List[Resource], project
         function.ingressSettings = func.ingressSettings,
         function.buildWorkerPool = func.buildWorkerPool,
         function.buildId = func.buildId,
-        fucntion.sourceToken = func.sourceToken,
+        function.sourceToken = func.sourceToken,
         function.sourceArchiveUrl = func.sourceArchiveUrl
     WITH function
     MATCH (owner:GCPProject{id:{ProjectId}})
