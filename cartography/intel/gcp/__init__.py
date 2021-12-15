@@ -13,40 +13,47 @@ from oauth2client.client import GoogleCredentials
 
 from cartography.config import Config
 from cartography.intel.gcp import apigateway
+from cartography.intel.gcp import bigtable
 from cartography.intel.gcp import cloudkms
 from cartography.intel.gcp import cloudrun
 from cartography.intel.gcp import compute
 from cartography.intel.gcp import crm
 from cartography.intel.gcp import dns
+from cartography.intel.gcp import firestore
 from cartography.intel.gcp import gke
 from cartography.intel.gcp import iam
+from cartography.intel.gcp import sql
 from cartography.intel.gcp import storage
 from cartography.util import run_analysis_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
-
-
 Resources = namedtuple(
-    'Resources', 'compute container crm_v1 crm_v2 dns storage serviceusage iam admin apigateway \
-                                        cloudkms cloudrun',
+    'Resources', 'compute container crm_v1 crm_v2 dns storage serviceusage \
+     iam admin apigateway cloudkms cloudrun cloudsql cloudbigtable firestore',
 )
 
 # Mapping of service short names to their full names as in docs. See https://developers.google.com/apis-explorer,
 # and https://cloud.google.com/service-usage/docs/reference/rest/v1/services#ServiceConfig
-Services = namedtuple('Services', 'compute storage gke dns cloudkms cloudrun iam admin crm_v1 crm_v2 apigateway')
+Services = namedtuple(
+    'Services', 'compute storage gke dns crm_v1 crm_v2 \
+    cloudkms cloudrun iam admin apigateway cloudsql cloudbigtable firestore',
+)
 service_names = Services(
     compute='compute.googleapis.com',
     storage='storage.googleapis.com',
     gke='container.googleapis.com',
     dns='dns.googleapis.com',
+    crm_v1='cloudresourcemanager.googleapis.com',
+    crm_v2='cloudresourcemanager.googleapis.com',
     cloudkms='cloudkms.googleapis.com',
     cloudrun='run.googleapis.com',
     iam='iam.googleapis.com',
     admin='admin.googleapis.com',
-    crm_v1='cloudresourcemanager.googleapis.com',
-    crm_v2='cloudresourcemanager.googleapis.com',
     apigateway='apigateway.googleapis.com',
+    cloudsql='sqladmin.googleapis.com',
+    cloudbigtable='bigtableadmin.googleapis.com',
+    firestore='firestore.googleapis.com',
 )
 
 
@@ -131,18 +138,27 @@ def _get_cloudkms_resource(credentials: GoogleCredentials) -> Resource:
     """
     Instantiates a cloud kms resource object.
     See: https://cloud.google.com/kms/docs/reference/rest
-
     :param credentials: The GoogleCredentials object
     :return: A serviceusage resource object
     """
     return googleapiclient.discovery.build('cloudkms', 'v1', credentials=credentials, cache_discovery=False)
 
 
+def _get_cloudsql_resource(credentials: GoogleCredentials) -> Resource:
+    """
+    Instantiates a cloud sql resource object.
+    See: https://cloud.google.com/sql/docs/mysql/admin-api/rest
+
+    :param credentials: The GoogleCredentials object
+    :return: A serviceusage resource object
+    """
+    return googleapiclient.discovery.build('sqladmin', 'v1', credentials=credentials, cache_discovery=False)
+
+
 def _get_cloudrun_resource(credentials: GoogleCredentials) -> Resource:
     """
     Instantiates a cloud run resource object.
     See: https://cloud.google.com/run/docs/reference/rest
-
     :param credentials: The GoogleCredentials object
     :return: A serviceusage resource object
     """
@@ -153,7 +169,6 @@ def _get_iam_resource(credentials: GoogleCredentials) -> Resource:
     """
     Instantiates a IAM resource object
     See: https://cloud.google.com/iam/docs/reference/rest
-
     :param credentails: The GoogleCredentails object
     :return: A IAM resource object
     """
@@ -164,7 +179,6 @@ def _get_admin_resource(credentials: GoogleCredentials) -> Resource:
     """
     Instantiates a Admin resource object
     See: https://developers.google.com/admin-sdk/directory/reference/rest
-
     :param credentails: The GoogleCredentails object
     :return: A admin resource object
     """
@@ -175,11 +189,31 @@ def _get_apigateway_resource(credentials: GoogleCredentials) -> Resource:
     """
     Instantiates a apigateway resource object.
     See: https://cloud.google.com/api-gateway/docs/reference/rest.
-
     :param credentials: The GoogleCredentials object
     :return: A serviceusage resource object
     """
     return googleapiclient.discovery.build('apigateway', 'v1', credentials=credentials, cache_discovery=False)
+
+
+def _get_cloudbigtable_resource(credentials: GoogleCredentials) -> Resource:
+    """
+    Instantiates a cloud bigtable resource object.
+    See: https://cloud.google.com/bigtable/docs/reference/admin/rest
+
+    :param credentials: The GoogleCredentials object
+    :return: A serviceusage resource object
+    """
+    return googleapiclient.discovery.build('bigtableadmin', 'v2', credentials=credentials, cache_discovery=False)
+
+
+def _get_firestore_resource(credentials: GoogleCredentials) -> Resource:
+    """
+    Instantiates a cloud firestore resource object.
+    See: https://cloud.google.com/firestore/docs/reference/rest
+    :param credentials: The GoogleCredentials object
+    :return: A serviceusage resource object
+    """
+    return googleapiclient.discovery.build('firestore', 'v1', credentials=credentials, cache_discovery=False)
 
 
 def _initialize_resources(credentials: GoogleCredentials) -> Resource:
@@ -196,6 +230,9 @@ def _initialize_resources(credentials: GoogleCredentials) -> Resource:
         container=_get_container_resource(credentials),
         serviceusage=_get_serviceusage_resource(credentials),
         dns=_get_dns_resource(credentials),
+        cloudsql=_get_cloudsql_resource(credentials),
+        cloudbigtable=_get_cloudbigtable_resource(credentials),
+        firestore=_get_firestore_resource(credentials),
         cloudkms=_get_cloudkms_resource(credentials),
         cloudrun=_get_cloudrun_resource(credentials),
         iam=_get_iam_resource(credentials),
@@ -257,6 +294,13 @@ def _sync_single_project(
         gke.sync_gke_clusters(neo4j_session, resources.container, project_id, gcp_update_tag, common_job_parameters)
     if service_names.dns in enabled_services:
         dns.sync(neo4j_session, resources.dns, project_id, gcp_update_tag, common_job_parameters)
+    if service_names.cloudsql in enabled_services:
+        sql.sync_sql(neo4j_session, resources.cloudsql, project_id, gcp_update_tag, common_job_parameters)
+    if service_names.cloudbigtable in enabled_services:
+        bigtable.sync_bigtable(
+            neo4j_session, resources.cloudbigtable, project_id, gcp_update_tag,
+            common_job_parameters,
+        )
     if service_names.cloudkms in enabled_services:
         cloudkms.sync_kms(neo4j_session, resources.cloudkms, project_id, gcp_update_tag, common_job_parameters)
     if service_names.cloudrun in enabled_services:
@@ -270,6 +314,8 @@ def _sync_single_project(
             neo4j_session, resources.apigateway,
             project_id, gcp_update_tag, common_job_parameters,
         )
+    if service_names.firestore in enabled_services:
+        firestore.sync_firestore(neo4j_session, resources.firestore, project_id, gcp_update_tag, common_job_parameters)
 
 
 def _sync_multiple_projects(
