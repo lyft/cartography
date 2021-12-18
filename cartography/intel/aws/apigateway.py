@@ -304,7 +304,7 @@ def _load_apigateway_resources(
     """
 
     for resource in resources:
-        resource['arn'] = f"arn:aws:apigateway:{region}::restapis/{resource['apiId']}/resources/{resource['ResourceId']}"
+        resource['arn'] = f"arn:aws:apigateway:{region}::restapis/{resource['apiId']}/resources/{resource['id']}"
 
     neo4j_session.run(
         ingest_resources,
