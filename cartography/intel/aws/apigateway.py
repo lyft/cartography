@@ -160,7 +160,7 @@ def load_apigateway_rest_apis(
     # these values to string.
     for api in rest_apis:
         api['createdDate'] = str(api['createdDate']) if 'createdDate' in api else None
-        api['Arn'] = f"arn:aws:apigateway:{region}::restapis/{api['RestApiId']}"
+        api['Arn'] = f"arn:aws:apigateway:{region}::restapis/{api['id']}"
 
     neo4j_session.run(
         ingest_rest_apis,
