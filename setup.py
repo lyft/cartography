@@ -53,6 +53,7 @@ setup(
         "azure-mgmt-sql<=1.0.0",
         "azure-identity>=1.5.0",
         "azure-graphrbac>=0.61.1",
+        "azure-mgmt-authorization==0.50.0",
         "azure-mgmt-resource>=10.2.0",
         "azure-mgmt-network>=2.7.0",
         "azure-mgmt-web>=0.35.0",

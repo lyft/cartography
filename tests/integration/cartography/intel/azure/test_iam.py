@@ -4,6 +4,7 @@ from tests.data.azure.iam import DESCRIBE_DOMAINS
 from tests.data.azure.iam import DESCRIBE_GROUPS
 from tests.data.azure.iam import DESCRIBE_SERVICE_ACCOUNTS
 from tests.data.azure.iam import DESCRIBE_USERS
+from tests.data.azure.iam import DESCRIBE_ROLES
 
 TEST_TENANT_ID = '00-00-00-00'
 TEST_UPDATE_TAG = 123456789
@@ -18,15 +19,15 @@ def test_load_users(neo4j_session):
     )
 
     expected_nodes = {
-        "contoso1",
-        "contoso2",
+        "gdvsd43562",
+        "gdvsd43562we34",
     }
 
     nodes = neo4j_session.run(
         """
-        MATCH (r:AzureUser) RETURN r.name;
+        MATCH (r:AzureUser) RETURN r.id;
         """, )
-    actual_nodes = {n['r.name'] for n in nodes}
+    actual_nodes = {n['r.id'] for n in nodes}
 
     assert actual_nodes == expected_nodes
 
@@ -52,20 +53,20 @@ def test_load_user_relationships(neo4j_session):
     expected = {
         (
             TEST_TENANT_ID,
-            "contoso1",
+            "gdvsd43562",
         ),
         (
             TEST_TENANT_ID,
-            "contoso2",
+            "gdvsd43562we34",
         ),
     }
 
     result = neo4j_session.run(
         """
-        MATCH (n1:AzureTenant)-[:RESOURCE]->(n2:AzureUser) RETURN n1.id, n2.name;
+        MATCH (n1:AzureTenant)-[:RESOURCE]->(n2:AzureUser) RETURN n1.id, n2.id;
         """, )
 
-    actual = {(r['n1.id'], r['n2.name']) for r in result}
+    actual = {(r['n1.id'], r['n2.id']) for r in result}
 
     assert actual == expected
 
@@ -201,15 +202,15 @@ def test_load_service_accounts(neo4j_session):
     )
 
     expected_nodes = {
-        "amasf1",
-        "amasf2",
+        "86823hkhjhd",
+        "hvhg575757g",
     }
 
     nodes = neo4j_session.run(
         """
-        MATCH (r:AzureServiceAccount) RETURN r.name;
+        MATCH (r:AzureServiceAccount) RETURN r.id;
         """, )
-    actual_nodes = {n['r.name'] for n in nodes}
+    actual_nodes = {n['r.id'] for n in nodes}
 
     assert actual_nodes == expected_nodes
 
@@ -235,20 +236,20 @@ def test_load_service_account_relationships(neo4j_session):
     expected = {
         (
             TEST_TENANT_ID,
-            "amasf1",
+            "86823hkhjhd",
         ),
         (
             TEST_TENANT_ID,
-            "amasf2",
+            "hvhg575757g",
         ),
     }
 
     result = neo4j_session.run(
         """
-        MATCH (n1:AzureTenant)-[:RESOURCE]->(n2:AzureServiceAccount) RETURN n1.id, n2.name;
+        MATCH (n1:AzureTenant)-[:RESOURCE]->(n2:AzureServiceAccount) RETURN n1.id, n2.id;
         """, )
 
-    actual = {(r['n1.id'], r['n2.name']) for r in result}
+    actual = {(r['n1.id'], r['n2.id']) for r in result}
 
     assert actual == expected
 
@@ -268,9 +269,9 @@ def test_load_domains(neo4j_session):
 
     nodes = neo4j_session.run(
         """
-        MATCH (r:AzureDomain) RETURN r.id;
+        MATCH (r:AzureDomain) RETURN r.name;
         """, )
-    actual_nodes = {n['r.id'] for n in nodes}
+    actual_nodes = {n['r.name'] for n in nodes}
 
     assert actual_nodes == expected_nodes
 
@@ -306,7 +307,73 @@ def test_load_domain_relationships(neo4j_session):
 
     result = neo4j_session.run(
         """
-        MATCH (n1:AzureTenant)-[:RESOURCE]->(n2:AzureDomain) RETURN n1.id, n2.id;
+        MATCH (n1:AzureTenant)-[:RESOURCE]->(n2:AzureDomain) RETURN n1.id, n2.name;
+        """, )
+
+    actual = {(r['n1.id'], r['n2.name']) for r in result}
+
+    assert actual == expected
+
+
+def test_load_roles(neo4j_session):
+    iam.load_roles(
+        neo4j_session,
+        DESCRIBE_ROLES,
+        TEST_UPDATE_TAG,
+    )
+
+    expected_nodes = {
+        "97254c67-852d-61c20eb66ffc",
+        "97254c67-852d-61c20eb66ffcsdds",
+    }
+
+    nodes = neo4j_session.run(
+        """
+        MATCH (r:AzureRole) RETURN r.id;
+        """, )
+    actual_nodes = {n['r.id'] for n in nodes}
+
+    assert actual_nodes == expected_nodes
+
+
+def test_load_role_relationships(neo4j_session):
+    neo4j_session.run(
+        """
+        MERGE (as:AzureTenant{id: {tenant_id}})
+        ON CREATE SET as.firstseen = timestamp()
+        SET as.lastupdated = {update_tag}
+        """,
+        tenant_id=TEST_TENANT_ID,
+        update_tag=TEST_UPDATE_TAG,
+    )
+
+    iam.load_tenant_service_accounts(
+        neo4j_session,
+        TEST_TENANT_ID,
+        DESCRIBE_SERVICE_ACCOUNTS,
+        TEST_UPDATE_TAG,
+    )
+
+    iam.load_roles(
+        neo4j_session,
+        DESCRIBE_ROLES,
+        TEST_UPDATE_TAG,
+    )
+
+    expected = {
+        (
+            "97254c67-852d-61c20eb66ffc",
+            "86823hkhjhd",
+        ),
+        (
+            "97254c67-852d-61c20eb66ffcsdds",
+            "hvhg575757g",
+        ),
+    }
+
+    result = neo4j_session.run(
+        """
+        MATCH (n1:AzureServiceAccount)-[:ASSUME_ROLE]->(n2:AzureRole) RETURN n1.id, n2.id;
         """, )
 
     actual = {(r['n1.id'], r['n2.id']) for r in result}
