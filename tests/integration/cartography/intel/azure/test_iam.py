@@ -362,12 +362,12 @@ def test_load_role_relationships(neo4j_session):
 
     expected = {
         (
-            "97254c67-852d-61c20eb66ffc",
             "86823hkhjhd",
+            "97254c67-852d-61c20eb66ffc",
         ),
         (
-            "97254c67-852d-61c20eb66ffcsdds",
             "hvhg575757g",
+            "97254c67-852d-61c20eb66ffcsdds",
         ),
     }
 
