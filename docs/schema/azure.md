@@ -134,6 +134,32 @@
   - [Relationships](#relationships-63)
 - [AzureRole](#azurerole)
   - [Relationships](#relationships-64)
+- [AzureKeyVault](#azurekeyvault)
+  - [Relationships](#relationships-65)
+- [AzureVirtualMachineExtension](#azurevirtualmachineextension)
+  - [Relationships](#relationships-66)
+- [AzureVirtualMachineAvailableSize](#azurevirtualmachineavailablesize)
+  - [Relationships](#relationships-67)
+- [AzureVirtualMachineScaleSet](#azurevirtualmachinescaleset)
+  - [Relationships](#relationships-68)
+- [AzureVirtualMachineScaleSetExtension](#azurevirtualmachinescalesetextension)
+  - [Relationships](#relationships-69)
+- [AzureCluster](#azurecluster)
+  - [Relationships](#relationships-70)
+- [AzureContainerRegistry](#azurecontainerregistry)
+  - [Relationships](#relationships-71)
+- [AzureContainerRegistryReplication](#azurecontainerregistryreplication)
+  - [Relationships](#relationships-72)
+- [AzureContainerRegistryRun](#azurecontainerregistryrun)
+  - [Relationships](#relationships-73)
+- [AzureContainerRegistryTask](#azurecontainerregistrytask)
+  - [Relationships](#relationships-74)
+- [AzureContainerRegistryWebhook](#azurecontainerregistrywebhook)
+  - [Relationships](#relationships-75)
+- [AzureContainerGroup](#azurecontainergroup)
+  - [Relationships](#relationships-76)
+- [AzureContainer](#azurecontainer)
+  - [Relationships](#relationships-77)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -1833,7 +1859,6 @@ Representation of an [AzureDomain](https://docs.microsoft.com/en-us/graph/api/do
 ## AzureRole
 
 Representation of an [AzureRole](https://docs.microsoft.com/en-us/azure/role-based-access-control/role-assignments-list-cli)
-
 | Field | Description |
 |-------|-------------|
 |firstseen| Timestamp of when a sync job discovered this node|
@@ -1850,4 +1875,277 @@ Representation of an [AzureRole](https://docs.microsoft.com/en-us/azure/role-bas
 
         ```
         (AzureTenantResource)-[ASSUME_ROLE]->(AzureRole)
+        ```
+        
+## AzureKeyVault
+
+Representation of an [AzureKeyVault](https://docs.microsoft.com/en-us/rest/api/keyvault/vaults/list-by-subscription#vault).
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The Azure Key Vault ID number|
+|type | The type of the resource|
+|location | The location where Key Vault is created|
+|resourcegroup | The Resource Group where Key Vault is created|
+|name | The name of the Azure Key Vault resource.|
+
+### Relationships
+
+- Azure Subscription contains one or more Key Vaults.
+
+        ```
+        (AzureSubscription)-[RESOURCE]->(AzureKeyVault)
+        ```
+
+## AzureVirtualMachineExtension
+
+Representation of an [AzureVirtualMachineExtension](https://docs.microsoft.com/en-us/rest/api/compute/virtual-machine-extensions/list).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The  Azure Virtual Machine Extension ID number|
+|type | The type of the resource|
+|resourcegroup | The Resource Group where Azure Virtual Machine Extension is created|
+|name | The friendly name that identifies the Azure Virtual Machine Extension|
+
+### Relationships
+
+- Azure Virtual Machine contains one or more Extensions.
+
+        ```
+        (AzureVirtualMachine)-[CONTAIN]->(AzureVirtualMachineExtension)
+        ```
+
+## AzureVirtualMachineAvailableSize
+
+Representation of an [AzureVirtualMachineAvailableSize](https://docs.microsoft.com/en-us/rest/api/compute/virtual-machines/list-available-sizes).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|numberOfCores | The number of cores supported by the virtual machine size|
+|osDiskSizeInMB | The OS disk size, in MB, allowed by the virtual machine size|
+|resourceDiskSizeInMB | The resource disk size, in MB, allowed by the virtual machine size|
+|name | The name of the virtual machine size|
+|memoryInMB | The amount of memory, in MB, supported by the virtual machine size|
+|maxDataDiskCount | The maximum number of data disks that can be attached to the virtual machine size|
+
+### Relationships
+
+- Azure Virtual Machine contains one or more Available Sizes.
+
+        ```
+        (AzureVirtualMachine)-[CONTAIN]->(AzureVirtualMachineAvailableSize)
+        ```
+
+## AzureVirtualMachineScaleSet
+
+Representation of an [AzureVirtualMachineScaleSet](https://docs.microsoft.com/en-us/rest/api/compute/virtual-machine-scale-sets/list-all).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The Azure Virtual Machine Scale Set ID number|
+|location | The location where Azure Virtual Machine Scale Set is created|
+|type | The type of the resource|
+|resourcegroup | The Resource Group where Azure Virtual Machine Scale Set is created|
+|name | The friendly name that identifies the Azure Virtual Machine Scale Set|
+
+### Relationships
+
+- Azure Subscription contains one or more Azure Virtual Machine Scale Sets.
+
+        ```
+        (AzureSubscription)-[RESOURCE]->(AzureVirtualMachineScaleSet)
+        ```
+
+## AzureVirtualMachineScaleSetExtension
+
+Representation of an [AzureVirtualMachineScaleSetExtension](https://docs.microsoft.com/en-us/rest/api/compute/virtual-machine-scale-set-extensions/list).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|name | The name of the Azure Virtual Machine Scale Set Extension|
+|type | The type of the resource|
+
+### Relationships
+
+- Azure Azure Virtual Machine Scale Set contains one or more Azure Virtual Machine Scale Set Extensions.
+
+        ```
+        (AzureVirtualMachineScaleSet)-[CONTAIN]->(AzureVirtualMachineScaleSetExtension)
+        ```
+
+## AzureCluster
+
+Representation of an [AzureCluster](https://docs.microsoft.com/en-us/rest/api/aks/managed-clusters/list).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The Azure Cluster ID number|
+|type | The type of the resource|
+|location | The location where Cluster is created|
+|resourcegroup | The Resource Group where Cluster is created|
+
+### Relationships
+
+- Azure Subscription contains one or more Clusters.
+
+        ```
+        (AzureSubscription)-[RESOURCE]->(AzureCluster)
+        ```
+
+## AzureContainerRegistry
+
+Representation of an [AzureContainerRegistry](https://docs.microsoft.com/en-us/rest/api/containerregistry/registries).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The Azure Container Registry ID number|
+|type | The type of the resource|
+|location | The location where Container Registry is created|
+|resourcegroup | The Resource Group where Container Registry is created|
+
+### Relationships
+
+- Azure Subscription contains one or more Container Registries.
+
+        ```
+        (AzureSubscription)-[RESOURCE]->(AzureContainerRegistry)
+        ```
+
+## AzureContainerRegistryReplication
+
+Representation of an [AzureContainerRegistryReplication](https://docs.microsoft.com/en-us/rest/api/containerregistry/replications).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The Azure Container Registry Replication ID number|
+|type | The type of the resource|
+|resourcegroup | The Resource Group where Container Registry Replication is created|
+|name | The friendly name that identifies the Container Registry Replication|
+
+### Relationships
+
+- Azure Container Registry contains one or more AzureContainer Registry Replications.
+
+        ```
+        (AzureContainerRegistry)-[CONTAIN]->(AzureContainerRegistryReplication)
+        ```
+
+## AzureContainerRegistryRun
+
+Representation of an [AzureContainerRegistryRun](https://docs.microsoft.com/en-us/rest/api/containerregistry/runs/list).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The Azure Container Registry Run ID number|
+|type | The type of the resource|
+|resourcegroup | The Resource Group where Container Registry Run is created|
+|name | The friendly name that identifies the Container Registry Run|
+
+### Relationships
+
+- Azure Container Registry contains one or more AzureContainer Registry Runs.
+
+        ```
+        (AzureContainerRegistry)-[CONTAIN]->(AzureContainerRegistryRun)
+        ```
+
+## AzureContainerRegistryTask
+
+Representation of an [AzureContainerRegistryTask](https://docs.microsoft.com/en-us/rest/api/containerregistry/tasks/list).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The Azure Container Registry Task ID number|
+|type | The type of the resource|
+|resourcegroup | The Resource Group where Container Registry Task is created|
+|name | The friendly name that identifies the Container Registry Task|
+
+### Relationships
+
+- Azure Container Registry contains one or more AzureContainer Registry Tasks.
+
+        ```
+        (AzureContainerRegistry)-[CONTAIN]->(AzureContainerRegistryTask)
+        ```
+
+## AzureContainerRegistryWebhook
+
+Representation of an [AzureContainerRegistryWebhook](https://docs.microsoft.com/en-us/rest/api/containerregistry/webhooks/list).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The Azure Container Registry Webhook ID number|
+|type | The type of the resource|
+|resourcegroup | The Resource Group where Container Registry Webhook is created|
+|name | The friendly name that identifies the Container Registry Webhook|
+
+### Relationships
+
+- Azure Container Registry contains one or more AzureContainer Registry Webhooks.
+
+        ```
+        (AzureContainerRegistry)-[CONTAIN]->(AzureContainerRegistryWebhook)
+        ```
+
+## AzureContainerGroup
+
+Representation of an [AzureContainerGroup](https://docs.microsoft.com/en-us/rest/api/container-instances/container-groups/list).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The Azure Container Group ID number|
+|type | The type of the resource|
+|location | The location where Container Group is created|
+|resourcegroup | The Resource Group where Container Group is created|
+
+### Relationships
+
+- Azure Subscription contains one or more Container Groups.
+
+        ```
+        (AzureSubscription)-[RESOURCE]->(AzureContainerGroup)
+        ```
+
+## AzureContainer
+
+Representation of an [AzureContainer](https://docs.microsoft.com/en-us/rest/api/container-instances/container-groups/list).
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|name | The friendly name that identifies the Container|
+|type | The type of the resource|
+|resourcegroup | The Resource Group where Container is created|
+
+### Relationships
+
+- Azure Container Group contains one or more Container.
+
+        ```
+        (AzureContainerGroup)-[CONTAIN]->(AzureContainer)
         ```

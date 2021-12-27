@@ -5,10 +5,12 @@ from typing import Optional
 
 import neo4j
 
+from . import aks
 from . import compute
 from . import cosmosdb
 from . import function_app
 from . import iam
+from . import key_vaults
 from . import network
 from . import sql
 from . import storage
@@ -32,12 +34,14 @@ def _sync_one_subscription(
 ) -> None:
     compute.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
     cosmosdb.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
+    aks.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
     function_app.sync(
         neo4j_session, credentials.arm_credentials,
         subscription_id, update_tag, common_job_parameters,
     )
     sql.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
     storage.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
+    key_vaults.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
     iam.sync(
         neo4j_session, credentials, credentials.tenant_id, update_tag, common_job_parameters,
     )
