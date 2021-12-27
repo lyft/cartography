@@ -73,7 +73,7 @@ def _load_tenant_users_tx(
     UNWIND {tenant_users_list} AS user
     MERGE (i:AzureUser{id: user.object_id})
     ON CREATE SET i.firstseen = timestamp(),
-    i.name = display_name,
+    i.name = user.display_name,
     i.given_name = user.given_name,
     i.surname = user.surname,
     i.user_type = user.user_type,
@@ -372,10 +372,10 @@ def cleanup_roles(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> 
 
 
 def sync_roles(
-    neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
+    neo4j_session: neo4j.Session, credentials: Credentials, update_tag: int,
     common_job_parameters: Dict,
 ) -> None:
-    client = get_authorization_client(credentials, subscription_id)
+    client = get_authorization_client(credentials.arm_credentials, credentials.subscription_id)
     roles_list = get_roles_list(client)
     load_roles(neo4j_session, roles_list, update_tag)
     cleanup_roles(neo4j_session, common_job_parameters)
@@ -390,10 +390,15 @@ def sync(
 
     sync_tenant_users(neo4j_session, credentials.aad_graph_credentials, tenant_id, update_tag, common_job_parameters)
     sync_tenant_groups(neo4j_session, credentials.aad_graph_credentials, tenant_id, update_tag, common_job_parameters)
-    sync_tenant_applications(neo4j_session, credentials.aad_graph_credentials,
-                             tenant_id, update_tag, common_job_parameters)
-    sync_tenant_service_accounts(neo4j_session, credentials.aad_graph_credentials,
-                                 tenant_id, update_tag, common_job_parameters)
+    sync_tenant_applications(
+        neo4j_session, credentials.aad_graph_credentials,
+        tenant_id, update_tag, common_job_parameters,
+    )
+    sync_tenant_service_accounts(
+        neo4j_session, credentials.aad_graph_credentials,
+        tenant_id, update_tag, common_job_parameters,
+    )
     sync_tenant_domains(neo4j_session, credentials.aad_graph_credentials, tenant_id, update_tag, common_job_parameters)
-    sync_roles(neo4j_session, credentials.arm_credentials,
-               credentials.subscription_id, update_tag, common_job_parameters)
+    sync_roles(
+        neo4j_session, credentials.arm_credentials, update_tag, common_job_parameters,
+    )
