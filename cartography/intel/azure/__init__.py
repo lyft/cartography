@@ -43,9 +43,10 @@ def _sync_one_subscription(
     storage.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
     key_vaults.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
     iam.sync(
-        neo4j_session, credentials.aad_graph_credentials, credentials.tenant_id, update_tag, common_job_parameters,
+        neo4j_session, credentials, credentials.tenant_id, update_tag, common_job_parameters,
     )
     network.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
+    # call tag.sync() at the last, don't change position of tag.sync()
     tag.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
 
 

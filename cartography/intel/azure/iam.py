@@ -5,6 +5,7 @@ from typing import List
 import neo4j
 from azure.core.exceptions import HttpResponseError
 from azure.graphrbac import GraphRbacManagementClient
+from azure.mgmt.authorization import AuthorizationManagementClient
 
 from .util.credentials import Credentials
 from cartography.util import run_cleanup_job
@@ -15,6 +16,10 @@ logger = logging.getLogger(__name__)
 
 def load_tenant_users(session: neo4j.Session, tenant_id: str, data_list: List[Dict], update_tag: int) -> None:
     session.write_transaction(_load_tenant_users_tx, tenant_id, data_list, update_tag)
+
+
+def load_roles(session: neo4j.Session, data_list: List[Dict], update_tag: int) -> None:
+    session.write_transaction(_load_roles_tx, data_list, update_tag)
 
 
 def load_tenant_groups(session: neo4j.Session, tenant_id: str, data_list: List[Dict], update_tag: int) -> None:
@@ -42,6 +47,12 @@ def get_graph_client(credentials: Credentials, tenant_id: str) -> GraphRbacManag
 
 
 @timeit
+def get_authorization_client(credentials: Credentials, subscription_id: str) -> AuthorizationManagementClient:
+    client = AuthorizationManagementClient(credentials, subscription_id)
+    return client
+
+
+@timeit
 def get_tenant_users_list(client: GraphRbacManagementClient) -> List[Dict]:
     try:
         tenant_users_list = list(
@@ -60,8 +71,9 @@ def _load_tenant_users_tx(
 ) -> None:
     ingest_user = """
     UNWIND {tenant_users_list} AS user
-    MERGE (i:AzureUser{name: user.displayName})
+    MERGE (i:AzureUser{id: user.object_id})
     ON CREATE SET i.firstseen = timestamp(),
+    i.name = user.display_name,
     i.given_name = user.given_name,
     i.surname = user.surname,
     i.user_type = user.user_type,
@@ -114,12 +126,12 @@ def _load_tenant_groups_tx(
 ) -> None:
     ingest_group = """
     UNWIND {tenant_groups_list} AS group
-    MERGE (i:AzureGroup{id: group.id})
+    MERGE (i:AzureGroup{id: group.object_id})
     ON CREATE SET i.firstseen = timestamp(),
     i.visibility = group.visibility,
     i.classification = group.classification,
     i.createdDateTime = group.createdDateTime,
-    i.securityEnabled = group.securityEnabled
+    i.securityEnabled = group.security_enabled
     SET i.lastupdated = {update_tag},
     i.mail = group.mail
     WITH i
@@ -168,12 +180,12 @@ def _load_tenant_applications_tx(
 ) -> None:
     ingest_app = """
     UNWIND {tenant_applications_list} AS app
-    MERGE (i:AzureApplication{id: app.appId})
+    MERGE (i:AzureApplication{id: app.object_id})
     ON CREATE SET i.firstseen = timestamp(),
-    i.displayName = app.displayName,
-    i.publisherDomain = app.publisherDomain
+    i.displayName = app.display_name,
+    i.publisherDomain = app.publisher_domain
     SET i.lastupdated = {update_tag},
-    i.signInAudience = app.signInAudience
+    i.signInAudience = app.sign_in_audience
     WITH i
     MATCH (owner:AzureTenant{id: {tenant_id}})
     MERGE (owner)-[r:RESOURCE]->(i)
@@ -220,10 +232,11 @@ def _load_tenant_service_accounts_tx(
 ) -> None:
     ingest_app = """
     UNWIND {tenant_service_accounts_list} AS service
-    MERGE (i:AzureServiceAccount{name: service.displayName})
+    MERGE (i:AzureServiceAccount{id: service.object_id})
     ON CREATE SET i.firstseen = timestamp(),
-    i.accountEnabled = service.accountEnabled,
-    i.servicePrincipalType = service.servicePrincipalType
+    i.name = service.display_name,
+    i.accountEnabled = service.account_enabled,
+    i.servicePrincipalType = service.service_principal_type
     SET i.lastupdated = {update_tag},
     i.signInAudience = service.signInAudience
     WITH i
@@ -272,12 +285,12 @@ def _load_tenant_domains_tx(
 ) -> None:
     ingest_domain = """
     UNWIND {tenant_domains_list} AS domain
-    MERGE (i:AzureDomain{id: domain.id})
+    MERGE (i:AzureDomain{name: domain.name})
     ON CREATE SET i.firstseen = timestamp(),
     i.isRoot = domain.isRoot,
     i.isInitial = domain.isInitial
     SET i.lastupdated = {update_tag},
-    i.authenticationType = domain.authenticationType,
+    i.authenticationType = domain.authentication_type,
     i.availabilityStatus = domain.availabilityStatus
     WITH i
     MATCH (owner:AzureTenant{id: {tenant_id}})
@@ -308,15 +321,84 @@ def sync_tenant_domains(
     cleanup_tenant_domains(neo4j_session, common_job_parameters)
 
 
+@timeit
+def get_roles_list(client: AuthorizationManagementClient) -> List[Dict]:
+    try:
+        roles_list = list(
+            map(lambda x: x.as_dict(), client.role_assignments.list()),
+        )
+
+        for role in roles_list:
+            result = client.role_definitions.get_by_id(role["role_definition_id"], raw=True)
+            result = result.response.json()
+            role['roleName'] = result['properties']['roleName']
+            role['permissions'] = result['properties']['permissions']
+
+        return roles_list
+
+    except HttpResponseError as e:
+        logger.warning(f"Error while retrieving roles - {e}")
+        return []
+
+
+def _load_roles_tx(
+    tx: neo4j.Transaction, roles_list: List[Dict], update_tag: int,
+) -> None:
+    ingest_role = """
+    UNWIND {roles_list} AS role
+    MERGE (i:AzureRole{id: role.id})
+    ON CREATE SET i.firstseen = timestamp(),
+    i.name = role.name,
+    i.type = role.type
+    SET i.lastupdated = {update_tag},
+    i.roleName = role.roleName,
+    i.permissions = role.permissions
+    WITH i,role
+    MATCH (owner) where owner.id = role.principal_id
+    MERGE (owner)-[r:ASSUME_ROLE]->(i)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {update_tag}
+    """
+
+    tx.run(
+        ingest_role,
+        roles_list=roles_list,
+        update_tag=update_tag,
+    )
+
+
+def cleanup_roles(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('azure_import_roles_cleanup.json', neo4j_session, common_job_parameters)
+
+
+def sync_roles(
+    neo4j_session: neo4j.Session, credentials: Credentials, update_tag: int,
+    common_job_parameters: Dict,
+) -> None:
+    client = get_authorization_client(credentials.arm_credentials, credentials.subscription_id)
+    roles_list = get_roles_list(client)
+    load_roles(neo4j_session, roles_list, update_tag)
+    cleanup_roles(neo4j_session, common_job_parameters)
+
+
 @ timeit
 def sync(
     neo4j_session: neo4j.Session, credentials: Credentials, tenant_id: str, update_tag: int,
     common_job_parameters: Dict,
 ) -> None:
-    logger.info("Syncing users for Tenant '%s'.", tenant_id)
+    logger.info("Syncing IAM for Tenant '%s'.", tenant_id)
 
-    sync_tenant_users(neo4j_session, credentials, tenant_id, update_tag, common_job_parameters)
-    sync_tenant_groups(neo4j_session, credentials, tenant_id, update_tag, common_job_parameters)
-    sync_tenant_applications(neo4j_session, credentials, tenant_id, update_tag, common_job_parameters)
-    sync_tenant_service_accounts(neo4j_session, credentials, tenant_id, update_tag, common_job_parameters)
-    sync_tenant_domains(neo4j_session, credentials, tenant_id, update_tag, common_job_parameters)
+    sync_tenant_users(neo4j_session, credentials.aad_graph_credentials, tenant_id, update_tag, common_job_parameters)
+    sync_tenant_groups(neo4j_session, credentials.aad_graph_credentials, tenant_id, update_tag, common_job_parameters)
+    sync_tenant_applications(
+        neo4j_session, credentials.aad_graph_credentials,
+        tenant_id, update_tag, common_job_parameters,
+    )
+    sync_tenant_service_accounts(
+        neo4j_session, credentials.aad_graph_credentials,
+        tenant_id, update_tag, common_job_parameters,
+    )
+    sync_tenant_domains(neo4j_session, credentials.aad_graph_credentials, tenant_id, update_tag, common_job_parameters)
+    sync_roles(
+        neo4j_session, credentials.arm_credentials, update_tag, common_job_parameters,
+    )

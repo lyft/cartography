@@ -132,32 +132,34 @@
   - [Relationships](#relationships-62)
 - [AzureDomain](#azuredomain)
   - [Relationships](#relationships-63)
-- [AzureKeyVault](#azurekeyvault)
+- [AzureRole](#azurerole)
   - [Relationships](#relationships-64)
-- [AzureVirtualMachineExtension](#azurevirtualmachineextension)
+- [AzureKeyVault](#azurekeyvault)
   - [Relationships](#relationships-65)
-- [AzureVirtualMachineAvailableSize](#azurevirtualmachineavailablesize)
+- [AzureVirtualMachineExtension](#azurevirtualmachineextension)
   - [Relationships](#relationships-66)
-- [AzureVirtualMachineScaleSet](#azurevirtualmachinescaleset)
+- [AzureVirtualMachineAvailableSize](#azurevirtualmachineavailablesize)
   - [Relationships](#relationships-67)
-- [AzureVirtualMachineScaleSetExtension](#azurevirtualmachinescalesetextension)
+- [AzureVirtualMachineScaleSet](#azurevirtualmachinescaleset)
   - [Relationships](#relationships-68)
-- [AzureCluster](#azurecluster)
+- [AzureVirtualMachineScaleSetExtension](#azurevirtualmachinescalesetextension)
   - [Relationships](#relationships-69)
-- [AzureContainerRegistry](#azurecontainerregistry)
+- [AzureCluster](#azurecluster)
   - [Relationships](#relationships-70)
-- [AzureContainerRegistryReplication](#azurecontainerregistryreplication)
+- [AzureContainerRegistry](#azurecontainerregistry)
   - [Relationships](#relationships-71)
-- [AzureContainerRegistryRun](#azurecontainerregistryrun)
+- [AzureContainerRegistryReplication](#azurecontainerregistryreplication)
   - [Relationships](#relationships-72)
-- [AzureContainerRegistryTask](#azurecontainerregistrytask)
+- [AzureContainerRegistryRun](#azurecontainerregistryrun)
   - [Relationships](#relationships-73)
-- [AzureContainerRegistryWebhook](#azurecontainerregistrywebhook)
+- [AzureContainerRegistryTask](#azurecontainerregistrytask)
   - [Relationships](#relationships-74)
-- [AzureContainerGroup](#azurecontainergroup)
+- [AzureContainerRegistryWebhook](#azurecontainerregistrywebhook)
   - [Relationships](#relationships-75)
-- [AzureContainer](#azurecontainer)
+- [AzureContainerGroup](#azurecontainergroup)
   - [Relationships](#relationships-76)
+- [AzureContainer](#azurecontainer)
+  - [Relationships](#relationships-77)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -1750,7 +1752,8 @@ Representation of an [AzureUser](https://docs.microsoft.com/en-us/graph/api/user
 |-------|-------------|
 |firstseen| Timestamp of when a sync job discovered this node|
 |lastupdated| Timestamp of the last time the node was updated|
-|display_name | The name displayed in the address book for the user|
+|name | The name displayed in the address book for the user|
+|**id**| The ID of the user|
 |given_name | The given name (first name) of the user|
 |surname| The user's surname |
 |user_type| A string value that can be used to classify user types in your directory, such as Member and Guest|
@@ -1817,7 +1820,8 @@ Representation of an [AzureServiceAccount](https://docs.microsoft.com/en-us/grap
 |-------|-------------|
 |firstseen| Timestamp of when a sync job discovered this node|
 |lastupdated| Timestamp of the last time the node was updated|
-|displayName | The display name for the account|
+|**id**| The unique resource identifier of the Azure account resource.|
+|name | The display name for the account|
 |accountEnabled | true if the service principal account is enabled; otherwise, false|
 |servicePrincipalType| Identifies whether the service principal represents an application|
 |signInAudience| Specifies the Microsoft accounts that are supported for the current application|
@@ -1838,7 +1842,7 @@ Representation of an [AzureDomain](https://docs.microsoft.com/en-us/graph/api/do
 |-------|-------------|
 |firstseen| Timestamp of when a sync job discovered this node|
 |lastupdated| Timestamp of the last time the node was updated|
-|**id**| The unique resource identifier of the Azure domain resource.|
+|name | The display name for the domain|
 |isRoot | true if the domain is a verified root domain|
 |isInitial | true if this is the initial domain created by Microsoft Online Services|
 |authenticationType| ndicates the configured authentication type for the domain|
@@ -1850,6 +1854,28 @@ Representation of an [AzureDomain](https://docs.microsoft.com/en-us/graph/api/do
 
         ```
         (AzureTenant)-[RESOURCE]->(AzureDomain)
+        ```
+
+## AzureRole
+
+Representation of an [AzureRole](https://docs.microsoft.com/en-us/azure/role-based-access-control/role-assignments-list-cli)
+
+| Field | Description |
+|-------|-------------|
+|firstseen| Timestamp of when a sync job discovered this node|
+|lastupdated| Timestamp of the last time the node was updated|
+|**id**| The unique resource identifier of the Azure role resource.|
+|name | The name of role|
+|type | The type of role|
+|roleName| The name of role defination|
+|permissions| The role permissions|
+
+### Relationships
+
+- Azure Tenant contains one or more Azure Roles.
+
+        ```
+        (AzureTenantResource)-[ASSUME_ROLE]->(AzureRole)
         ```
 
 ## AzureKeyVault
