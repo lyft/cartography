@@ -282,7 +282,7 @@ def load_service_accounts(
 ) -> None:
     ingest_service_accounts = """
     UNWIND {service_accounts_list} AS sa
-    MERGE (u:GCPIAMServiceAccount{id: sa.name})
+    MERGE (u:GCPServiceAccount{id: sa.name})
     ON CREATE SET u.firstseen = timestamp()
     SET u.name = sa.name, u.displayname = sa.displayName,
     u.disabled = sa.disabled, u.serviceaccountid = sa.uniqueId,
@@ -321,7 +321,7 @@ def load_service_account_keys(
     u.algorithm = sa.keyAlgorithm, u.validbeforetime = sa.validBeforeTime,
     u.validaftertime = sa.validAfterTime, u.lastupdated = {gcp_update_tag}
     WITH u, sa
-    MATCH (d:GCPIAMServiceAccount{id: sa.serviceaccount})
+    MATCH (d:GCPServiceAccount{id: sa.serviceaccount})
     MERGE (d)-[r:HAS_KEY]->(u)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {gcp_update_tag}
