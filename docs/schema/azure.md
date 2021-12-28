@@ -106,7 +106,7 @@
   - [Relationships](#relationships-49)
 - [AzureNetworkSubnet](#azurenetworksubnet)
   - [Relationships](#relationships-50)
-- [AzureRoutetable](#azureroutetable)
+- [AzureRouteTable](#AzureRouteTable)
   - [Relationships](#relationships-51)
 - [AzureNetworkRoute](#azurenetworkroute)
   - [Relationships](#relationships-52)
@@ -1569,9 +1569,9 @@ Representation of an [AzureNetworkSubnet](https://docs.microsoft.com/en-us/rest/
         (AzureNetwork)-[CONTAIN]->(AzureNetworkSubnet)
         ```
 
-## AzureRoutetable
+## AzureRouteTable
 
-Representation of an [AzureRoutetable](https://docs.microsoft.com/en-us/rest/api/virtualnetwork/route-tables).
+Representation of an [AzureRouteTable](https://docs.microsoft.com/en-us/rest/api/virtualnetwork/route-tables).
 
 | Field | Description |
 |-------|-------------|
@@ -1589,7 +1589,7 @@ Representation of an [AzureRoutetable](https://docs.microsoft.com/en-us/rest/api
 - Azure Subscription contains one or more Routetables.
 
         ```
-        (AzureSubscription)-[RESOURCE]->(AzureRoutetable)
+        (AzureSubscription)-[RESOURCE]->(AzureRouteTable)
         ```
 
 ## AzureNetworkRoute
@@ -1610,7 +1610,7 @@ Representation of an [AzureNetworkRoute](https://docs.microsoft.com/en-us/rest/a
 - Azure Network contains one or more Routes.
 
         ```
-        (AzureRoutetable)-[CONTAIN]->(AzureNetworkRoute)
+        (AzureRouteTable)-[CONTAIN]->(AzureNetworkRoute)
         ```
 
 ## AzureNetworkSecurityGroup
