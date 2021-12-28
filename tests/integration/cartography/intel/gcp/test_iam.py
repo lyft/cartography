@@ -48,7 +48,7 @@ def test_load_service_accounts(neo4j_session):
 
     nodes = neo4j_session.run(
         """
-        MATCH (r:GCPIAMServiceAccount) RETURN r.id;
+        MATCH (r:GCPServiceAccount) RETURN r.id;
         """,
     )
 
@@ -223,7 +223,7 @@ def test_service_accounts_relationships(neo4j_session):
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:GCPProject)-[:RESOURCE]->(n2:GCPIAMServiceAccount) RETURN n1.id, n2.id;
+        MATCH (n1:GCPProject)-[:RESOURCE]->(n2:GCPServiceAccount) RETURN n1.id, n2.id;
         """,
     )
 
@@ -262,7 +262,7 @@ def test_service_accounts_keys_relationships(neo4j_session):
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:GCPIAMServiceAccount)-[:HAS_KEY]->(n2:GCPServiceAccountKey) RETURN n1.id, n2.id;
+        MATCH (n1:GCPServiceAccount)-[:HAS_KEY]->(n2:GCPServiceAccountKey) RETURN n1.id, n2.id;
         """,
     )
 
