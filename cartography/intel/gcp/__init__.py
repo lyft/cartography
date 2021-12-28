@@ -30,7 +30,7 @@ from cartography.util import timeit
 logger = logging.getLogger(__name__)
 Resources = namedtuple(
     'Resources', 'compute container crm_v1 crm_v2 dns storage serviceusage \
-     iam admin apigateway cloudkms cloudrun cloudsql cloudbigtable firestore',
+        iam admin apigateway cloudkms cloudrun cloudsql cloudbigtable firestore',
 )
 
 # Mapping of service short names to their full names as in docs. See https://developers.google.com/apis-explorer,

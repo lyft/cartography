@@ -92,7 +92,7 @@ def _load_functions_tx(tx: neo4j.Transaction, functions: List[Resource], project
         :param neo4j transaction: The Neo4j transaction object
 
         :type function_resp: List
-        :param fucntion_resp: A list GCP Functions
+        :param function_resp: A list GCP Functions
 
         :type project_id: str
         :param project_id: Current Google Project Id
@@ -163,7 +163,7 @@ def sync(
     common_job_parameters: Dict,
 ) -> None:
     """
-    Get GCP Cloud Fucntions using the Cloud Function resource object, ingest to Neo4j, and clean up old data.
+    Get GCP Cloud Functions using the Cloud Function resource object, ingest to Neo4j, and clean up old data.
 
     :type neo4j_session: The Neo4j session object
     :param neo4j_session: The Neo4j session
