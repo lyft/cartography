@@ -466,7 +466,7 @@ def sync_apigateways(
         :type neo4j_session: The Neo4j session object
         :param neo4j_session: The Neo4j session
 
-        :type apigateawy: The apigateway resource object created by googleapiclient.discovery.build()
+        :type apigateway: The apigateway resource object created by googleapiclient.discovery.build()
         :param dns: The GCP apigateway resource object
 
         :type project_id: str
@@ -485,7 +485,7 @@ def sync_apigateways(
     # API Gateway Locations
     locations = get_apigateway_locations(apigateway, project_id)
     load_apigateway_locations(neo4j_session, locations, project_id, gcp_update_tag)
-    # Cleanup Loactions
+    # Cleanup Locations
     cleanup_apigateway_locations(neo4j_session, common_job_parameters)
     # API Gateway APIs
     apis = get_apis(apigateway, project_id)
