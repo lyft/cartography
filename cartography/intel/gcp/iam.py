@@ -344,7 +344,7 @@ def cleanup_service_account_keys(neo4j_session: neo4j.Session, common_job_parame
 def load_roles(neo4j_session: neo4j.Session, roles: List[Dict], project_id: str, gcp_update_tag: int) -> None:
     ingest_roles = """
     UNWIND {roles_list} AS d
-    MERGE (u:GCPIAMRole{id: d.id})
+    MERGE (u:GCPRole{id: d.id})
     ON CREATE SET u.firstseen = timestamp()
     SET u.name = d.name, u.title = d.title,
     u.description = d.description, u.deleted = d.deleted,
