@@ -106,7 +106,7 @@
   - [Relationships](#relationships-49)
 - [AzureNetworkSubnet](#azurenetworksubnet)
   - [Relationships](#relationships-50)
-- [AzureRouteTable](#AzureRouteTable)
+- [AzureRouteTable](#azureroutetable)
   - [Relationships](#relationships-51)
 - [AzureNetworkRoute](#azurenetworkroute)
   - [Relationships](#relationships-52)

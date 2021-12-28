@@ -274,10 +274,10 @@ def test_service_accounts_keys_relationships(neo4j_session):
 
 
 def test_users_relationships(neo4j_session):
-    # Create Test GCPCustomer
+    # Create Test GCPProject
     neo4j_session.run(
         """
-        MERGE (gcp:GCPCustomer{id: {CUSTOMER_ID}})
+        MERGE (gcp:GCPProject{id: {CUSTOMER_ID}})
         ON CREATE SET gcp.firstseen = timestamp()
         SET gcp.lastupdated = {UPDATE_TAG}
         """,
@@ -301,7 +301,7 @@ def test_users_relationships(neo4j_session):
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:GCPCustomer)-[:HAS_USER]->(n2:GCPUser) RETURN n1.id, n2.id;
+        MATCH (n1:GCPProject)-[:RESOURCE]->(n2:GCPUser) RETURN n1.id, n2.id;
         """,
     )
 
@@ -313,10 +313,10 @@ def test_users_relationships(neo4j_session):
 
 
 def test_groups_relationships(neo4j_session):
-    # Create Test GCPCustomer
+    # Create Test GCPProject
     neo4j_session.run(
         """
-        MERGE (gcp:GCPCustomer{id: {CUSTOMER_ID}})
+        MERGE (gcp:GCPProject{id: {CUSTOMER_ID}})
         ON CREATE SET gcp.firstseen = timestamp()
         SET gcp.lastupdated = {UPDATE_TAG}
         """,
@@ -340,7 +340,7 @@ def test_groups_relationships(neo4j_session):
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:GCPCustomer)-[:HAS_GROUP]->(n2:GCPGroup) RETURN n1.id, n2.id;
+        MATCH (n1:GCPProject)-[:RESOURCE]->(n2:GCPGroup) RETURN n1.id, n2.id;
         """,
     )
 
@@ -352,10 +352,10 @@ def test_groups_relationships(neo4j_session):
 
 
 def test_domains_relationships(neo4j_session):
-    # Create Test GCPCustomer
+    # Create Test GCPProject
     neo4j_session.run(
         """
-        MERGE (gcp:GCPCustomer{id: {CUSTOMER_ID}})
+        MERGE (gcp:GCPProject{id: {CUSTOMER_ID}})
         ON CREATE SET gcp.firstseen = timestamp()
         SET gcp.lastupdated = {UPDATE_TAG}
         """,
@@ -379,7 +379,7 @@ def test_domains_relationships(neo4j_session):
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:GCPCustomer)-[:HAS_DOMAIN]->(n2:GCPDomain) RETURN n1.id, n2.id;
+        MATCH (n1:GCPProject)-[:RESOURCE]->(n2:GCPDomain) RETURN n1.id, n2.id;
         """,
     )
 

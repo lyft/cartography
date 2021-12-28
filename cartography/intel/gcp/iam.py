@@ -37,15 +37,13 @@ def get_users(admin: Resource) -> List[Dict]:
 
 
 @timeit
-def get_domains(admin: Resource, customer_id: str) -> List[Dict]:
+def get_domains(admin: Resource) -> List[Dict]:
     domains = []
     try:
-        req = admin.domains().list(customer=customer_id)
+        req = admin.domains().list()
         while req is not None:
             res = req.execute()
             page = res.get('domains', [])
-            page['customerId'] = customer_id
-            page['id'] = f"customers/{customer_id}/domains/{page['domainName']}"
             domains.append(page)
         return domains
     except HttpError as e:
@@ -62,14 +60,13 @@ def get_domains(admin: Resource, customer_id: str) -> List[Dict]:
 
 
 @timeit
-def get_groups(admin: Resource, customer_id: str) -> List[Dict]:
+def get_groups(admin: Resource) -> List[Dict]:
     groups = []
     try:
-        req = admin.groups().list(customer=customer_id)
+        req = admin.groups().list()
         while req is not None:
             res = req.execute()
             page = res.get('groups', [])
-            page['customerId'] = customer_id
             groups.append(page)
             req = admin.groups().list_next(previous_request=req, previous_response=res)
         return groups
@@ -288,8 +285,8 @@ def load_service_accounts(
     u.disabled = sa.disabled, u.serviceaccountid = sa.uniqueId,
     u.lastupdated = {gcp_update_tag}
     WITH u
-    MATCH (d:GCPProject{id: {project_id}})
-    MERGE (d)-[r:RESOURCE]->(u)
+    MATCH (p:GCPProject{id: {project_id}})
+    MERGE (p)-[r:RESOURCE]->(u)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {gcp_update_tag}
     """
@@ -351,8 +348,8 @@ def load_roles(neo4j_session: neo4j.Session, roles: List[Dict], project_id: str,
     u.permissions = d.includedPermissions, u.roleid = d.id,
     u.lastupdated = {gcp_update_tag}
     WITH u
-    MATCH (owner:GCPProject{id: {project_id}})
-    MERGE (owner)-[r:RESOURCE]->(u)
+    MATCH (p:GCPProject{id: {project_id}})
+    MERGE (p)-[r:RESOURCE]->(u)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {gcp_update_tag}
     """
@@ -404,8 +401,8 @@ def _load_users_tx(tx: neo4j.Transaction, users: List[Dict], gcp_update_tag: int
         user.deletionTime = usr.deletionTime,
         user.gender = usr.gender
     WITH user, usr
-    MATCH (customer:GCPCustomer{id:usr.customerId})
-    MERGE (customer)-[r:HAS_USER]->(user)
+    MATCH (p:GCPProject{id: {project_id}})
+    MERGE (p)-[r:RESOURCE]->(user)
     ON CREATE SET
         r.firstseen = timestamp(),
         r.lastupdated = {gcp_update_tag}
@@ -440,8 +437,8 @@ def _load_groups_tx(tx: neo4j.Transaction, groups: List[Dict], gcp_update_tag: i
         group.adminCreated = grp.adminCreated,
         group.directMembersCount = grp.directMembersCount
     WITH group,grp
-    MATCH (customer:GCPCustomer{id:grp.customerId})
-    MERGE (customer)-[r:HAS_GROUP]->(group)
+    MATCH (p:GCPProject{id: {project_id}})
+    MERGE (p)-[r:RESOURCE]->(group)
     ON CREATE SET
         r.firstseen = timestamp(),
         r.lastupdated = {gcp_update_tag}
@@ -478,8 +475,8 @@ def _load_domains_tx(tx: neo4j.Transaction, domains: List[Dict], gcp_update_tag:
         domain.isPrimary = dmn.isPrimary,
         domain.domainName = dmn.domainName
     WITH domain,dmn
-    MATCH (customer:GCPCustomer{id:dmn.customerId})
-    MERGE (customer)-[r:HAS_DOMAIN]->(domain)
+    MATCH (p:GCPProject{id: {project_id}})
+    MERGE (p)-[r:RESOURCE]->(domain)
     ON CREATE SET
         r.firstseen = timestamp(),
         r.lastupdated = {gcp_update_tag}
@@ -660,24 +657,22 @@ def sync(
 
     cleanup_users(neo4j_session, common_job_parameters)
 
-    for user in users:
-        for domain_binding in domains_from_bindings:
-            domains = []
-            domains_from_admin = get_domains(admin, user['customerId'])
-            for domain_admin in domains_from_admin:
-                if domain_admin['domainName'] == domain_binding['name']:
-                    domains.append(domain_admin)
-            load_domains(neo4j_session, domains, gcp_update_tag)
+    for domain_binding in domains_from_bindings:
+        domains = []
+        domains_from_admin = get_domains(admin)
+        for domain_admin in domains_from_admin:
+            if domain_admin['domainName'] == domain_binding['name']:
+                domains.append(domain_admin)
+        load_domains(neo4j_session, domains, gcp_update_tag)
 
     cleanup_domains(neo4j_session, common_job_parameters)
 
-    for user in users:
-        for group_binding in groups_from_bindings:
-            groups = []
-            groups_from_admin = get_groups(neo4j_session, user['customerId'])
-            for group_admin in groups_from_admin:
-                if group_admin['email'].split('@')[0] == group_binding['name']:
-                    groups.append(group_admin)
-            load_groups(neo4j_session, groups, gcp_update_tag)
+    for group_binding in groups_from_bindings:
+        groups = []
+        groups_from_admin = get_groups(admin)
+        for group_admin in groups_from_admin:
+            if group_admin['email'].split('@')[0] == group_binding['name']:
+                groups.append(group_admin)
+        load_groups(neo4j_session, groups, gcp_update_tag)
 
     cleanup_groups(neo4j_session, common_job_parameters)
