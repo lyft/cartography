@@ -23,7 +23,7 @@ def test_load_iam_roles(neo4j_session):
 
     nodes = neo4j_session.run(
         """
-        MATCH (r:GCPIAMRole) RETURN r.id;
+        MATCH (r:GCPRole) RETURN r.id;
         """,
     )
 
@@ -183,7 +183,7 @@ def test_roles_relationships(neo4j_session):
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:GCPProject)-[:RESOURCE]->(n2:GCPIAMRole) RETURN n1.id, n2.id;
+        MATCH (n1:GCPProject)-[:RESOURCE]->(n2:GCPRole) RETURN n1.id, n2.id;
         """,
     )
 
