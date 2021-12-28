@@ -35,7 +35,7 @@ def get_kms_key_list(boto3_session: boto3.session.Session, region: str) -> List[
             response = client.describe_key(KeyId=key["KeyId"])['KeyMetadata']
         except ClientError as e:
             logger.warning("Failed to describe key with key id - {}. Error - {}".format(key["KeyId"], e))
-            raise
+            continue
 
         described_key_list.append(response)
 

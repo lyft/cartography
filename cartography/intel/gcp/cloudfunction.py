@@ -32,7 +32,7 @@ def get_gcp_functions(function: Resource, project_id: str) -> List[Dict]:
     """
     try:
         regions = []
-        request = function.projects().locations().list(name=f"projects/{project_id}")
+        request = function.projects().locations().list(name=project_id)
         while request is not None:
             response = request.execute()
             for location in response['locations']:
@@ -43,7 +43,8 @@ def get_gcp_functions(function: Resource, project_id: str) -> List[Dict]:
         if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
             logger.warning(
                 (
-                    "Could not retrieve Functions locations on project %s due to permissions issues. Code: %s, Message: %s"
+                    "Could not retrieve Functions locations on project %s due to permissions issues.\
+                         Code: %s, Message: %s"
                 ), project_id, err['code'], err['message'],
             )
             return []
@@ -53,13 +54,18 @@ def get_gcp_functions(function: Resource, project_id: str) -> List[Dict]:
     try:
         functions = []
         for region in regions:
-            request = function.projects().locations().functions().list(parent=f"projects/{project_id}/locations/{region['locationId']}")
+            request = function.projects().locations().functions().list(
+                parent=f"projects/{project_id}/locations/{region}",
+            )
             while request is not None:
                 response = request.execute()
                 for func in response.get('functions', []):
                     func['id'] = f"projects/{project_id}/locations/{region['locationId']}/functions/{func['name']}"
                     functions.append(func)
-                request = function.projects().locations().functions().list_next(previous_request=request, previous_response=response)
+                request = function.projects().locations().functions().list_next(
+                    previous_request=request,
+                    previous_response=response,
+                )
         return functions
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -75,10 +81,15 @@ def get_gcp_functions(function: Resource, project_id: str) -> List[Dict]:
 
 
 @timeit
-def load_functions(neo4j_session: neo4j.Session, functions: List[Dict], project_id: str, gcp_update_tag: int) -> None:
+def load_functions(session: neo4j.Session, data_list: List[Dict], project_id: str, update_tag: int) -> None:
+    session.write_transaction(_load_functions_tx, data_list, project_id, update_tag)
+
+
+@timeit
+def _load_functions_tx(tx: neo4j.Transaction, functions: List[Resource], project_id: str, gcp_update_tag: int) -> None:
     """
-        :type neo4j_session: Neo4j session object
-        :param neo4j session: The Neo4j session object
+        :type neo4j_transaction: Neo4j transaction object
+        :param neo4j transaction: The Neo4j transaction object
 
         :type function_resp: List
         :param function_resp: A list GCP Functions
@@ -114,14 +125,14 @@ def load_functions(neo4j_session: neo4j.Session, functions: List[Dict], project_
         function.buildId = func.buildId,
         function.sourceToken = func.sourceToken,
         function.sourceArchiveUrl = func.sourceArchiveUrl
-    WITH function, func
+    WITH function
     MATCH (owner:GCPProject{id:{ProjectId}})
     MERGE (owner)-[r:RESOURCE]->(function)
     ON CREATE SET
         r.firstseen = timestamp(),
         r.lastupdated = {gcp_update_tag}
     """
-    neo4j_session.run(
+    tx.run(
         ingest_functions,
         functions=functions,
         ProjectId=project_id,
@@ -149,7 +160,7 @@ def cleanup_gcp_functions(neo4j_session: neo4j.Session, common_job_parameters: D
 @timeit
 def sync(
     neo4j_session: neo4j.Session, function: Resource, project_id: str, gcp_update_tag: int,
-    common_job_parameters: Dict
+    common_job_parameters: Dict,
 ) -> None:
     """
     Get GCP Cloud Functions using the Cloud Function resource object, ingest to Neo4j, and clean up old data.
@@ -175,6 +186,5 @@ def sync(
     logger.info("Syncing GCP Cloud Functions for project %s.", project_id)
     # FUNCTIONS
     functions = get_gcp_functions(function, project_id)
-    load_functions(neo4j_session, functions, project_id, gcp_update_tag)
-    # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
+    load_functions(functions, project_id, gcp_update_tag)
     cleanup_gcp_functions(neo4j_session, common_job_parameters)

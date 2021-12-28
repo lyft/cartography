@@ -78,6 +78,8 @@ TAG_RESOURCE_TYPE_MAPPINGS: Dict = {
     'ec2:transit-gateway-attachment': {'label': 'AWSTransitGatewayAttachment', 'property': 'id'},
     'ec2:vpc': {'label': 'AWSVpc', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},
     'ecr:repository': {'label': 'ECRRepository', 'property': 'id'},
+    'ec2:volume': {'label': 'EBSVolume', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},
+    'ec2:elastic-ip-address': {'label': 'ElasticIPAddress', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},
     'eks:cluster': {'label': 'EKSCluster', 'property': 'id'},
     'elasticache:cluster': {'label': 'ElasticacheCluster', 'property': 'arn'},
     'elasticloadbalancing:loadbalancer': {
