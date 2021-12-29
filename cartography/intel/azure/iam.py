@@ -388,6 +388,8 @@ def sync(
 ) -> None:
     logger.info("Syncing IAM for Tenant '%s'.", tenant_id)
 
+    common_job_parameters['AZURE_TENANT_ID'] = tenant_id
+
     sync_tenant_users(neo4j_session, credentials.aad_graph_credentials, tenant_id, update_tag, common_job_parameters)
     sync_tenant_groups(neo4j_session, credentials.aad_graph_credentials, tenant_id, update_tag, common_job_parameters)
     sync_tenant_applications(
@@ -402,3 +404,5 @@ def sync(
     sync_roles(
         neo4j_session, credentials.arm_credentials, update_tag, common_job_parameters,
     )
+
+    common_job_parameters['AZURE_TENANT_ID'] = ''
