@@ -90,20 +90,17 @@ class GraphStatement:
 
         # Handle stats
         summary: neo4j.BoltStatementResultSummary = result.summary()
-        objects_changed: int = (
-            summary.counters.constraints_added +
-            summary.counters.constraints_removed +
-            summary.counters.indexes_added +
-            summary.counters.indexes_removed +
-            summary.counters.labels_added +
-            summary.counters.labels_removed +
-            summary.counters.nodes_created +
-            summary.counters.nodes_deleted +
-            summary.counters.properties_set +
-            summary.counters.relationships_created +
-            summary.counters.relationships_deleted
-        )
-        stat_handler.incr(f'{self.parent_job_name}-{self.parent_job_sequence_num}-objects_changed', objects_changed)
+        stat_handler.incr('constraints_added', summary.counters.constraints_added)
+        stat_handler.incr('constraints_removed', summary.counters.constraints_removed)
+        stat_handler.incr('indexes_added', summary.counters.indexes_added)
+        stat_handler.incr('indexes_removed', summary.counters.indexes_removed)
+        stat_handler.incr('labels_added', summary.counters.labels_added)
+        stat_handler.incr('labels_removed', summary.counters.labels_removed)
+        stat_handler.incr('nodes_created', summary.counters.nodes_created)
+        stat_handler.incr('nodes_deleted', summary.counters.nodes_deleted)
+        stat_handler.incr('properties_set', summary.counters.properties_set)
+        stat_handler.incr('relationships_created', summary.counters.relationships_created)
+        stat_handler.incr('relationships_deleted', summary.counters.relationships_deleted)
 
         return result
 

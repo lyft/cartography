@@ -84,28 +84,24 @@ def fetch_all(
     while has_next_page:
         try:
             resp = fetch_page(token, api_url, organization, query, cursor)
+            retry = 0
         except requests.exceptions.Timeout:
             retry += 1
-            if retry >= retries:
-                logger.error(
-                    f"GitHub: Could not retrieve page of resource {resource_type} due to API timeout.",
-                    exc_info=True,
-                )
-                raise
-            else:
-                time.sleep(1 * retry)
-                continue
         except requests.exceptions.HTTPError:
             retry += 1
-            if retry >= retries:
-                logger.error(
-                    f"GitHub: Could not retrieve page of resource `{resource_type}` due to HTTP error.",
-                    exc_info=True,
-                )
-                raise
-            else:
-                time.sleep(1 * retry)
-                continue
+        except requests.exceptions.ChunkedEncodingError:
+            retry += 1
+
+        if retry >= retries:
+            logger.error(
+                f"GitHub: Could not retrieve page of resource `{resource_type}` due to HTTP error.",
+                exc_info=True,
+            )
+            raise
+        elif retry > 0:
+            time.sleep(1 * retry)
+            continue
+
         resource = resp['data']['organization'][resource_type]
         data.extend(resource[field_name])
         cursor = resource['pageInfo']['endCursor']
