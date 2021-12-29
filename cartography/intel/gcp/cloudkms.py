@@ -168,13 +168,14 @@ def _load_kms_locations_tx(
     """
     ingest_kms_locations = """
     UNWIND{locations} as loc
-    MERGE(location:GCPKMSLocation{id:loc.id})
+    MERGE(location:GCPLocation{id:loc.id})
     ON CREATE SET
         location.firstseen = timestamp()
     SET
         location.name = loc.name,
         location.locationId = loc.locationId,
-        location.displayName = loc.displayName
+        location.displayName = loc.displayName,
+        location.lastupdated = {gcp_update_tag}
     WITH location, loc
     MATCH (owner:GCPProject{id:{ProjectId}})
     MERGE (owner)-[r:RESOURCE]->(location)
@@ -220,7 +221,7 @@ def _load_kms_key_rings_tx(
         keyring.name = keyr.name,
         keyring.createTime = keyr.createTime
     WITH keyring, keyr
-    MATCH (location:GCPKMSLocation{id:keyr.loc_id})
+    MATCH (location:GCPLocation{id:keyr.loc_id})
     MERGE(location)-[r:RESOURCE]->(keyring)
     ON CREATE SET
         r.firstseen = timestamp(),
