@@ -213,7 +213,7 @@ def _load_kms_key_rings_tx(
     """
     ingest_kms_key_rings = """
     UNWIND{key_rings} as keyr
-    MERGE(keyring:GCPKMSKeyring{id:keyr.id})
+    MERGE(keyring:GCPKMSKeyRing{id:keyr.id})
     ON CREATE SET
         keyring.firstseen = timestamp()
     SET
@@ -259,7 +259,7 @@ def _load_kms_crypto_keys_tx(
     """
     ingest_crypto_keys = """
     UNWIND{crypto_keys} as ck
-    MERGE (crypto_key:GCPKMSCryptokey{id:ck.id})
+    MERGE (crypto_key:GCPKMSCryptoKey{id:ck.id})
     ON CREATE SET
         crypto_key.firstseen = timestamp()
     SET
@@ -269,7 +269,7 @@ def _load_kms_crypto_keys_tx(
         crypto_key.nextRotationTime = ck.nextRotationTime,
         crypto_key.rotationPeriod = ck.rotationPeriod
     WITH crypto_key, ck
-    MATCH (key_ring:GCPKMSKeyring{id:ck.keyring_id})
+    MATCH (key_ring:GCPKMSKeyRing{id:ck.keyring_id})
     MERGE (key_ring)-[r:RESOURCE]->(crypto_key)
     ON CREATE SET
         r.firstseen = timestamp(),
