@@ -113,7 +113,7 @@ def get_kms_crypto_keys(kms: Resource, key_rings: List[Dict], project_id: str) -
         :param project_id: Current Google Project Id
 
         :rtype: list
-        :return: List of KMS Crytokeys for Keyrings and Locations
+        :return: List of KMS Cryptokeys for Keyrings and Locations
     """
     try:
         crypto_keys = []
@@ -249,7 +249,7 @@ def _load_kms_crypto_keys_tx(
         :param neo4j transaction: The Neo4j transaction object
 
         :type crypto_keys_resp: List
-        :param crypt_keys_resp: A list GCP KMS CrytoKeys for keyrings in locations
+        :param crypt_keys_resp: A list GCP KMS CryptoKeys for keyrings in locations
 
         :type project_id: str
         :param project_id: Current Google Project Id
