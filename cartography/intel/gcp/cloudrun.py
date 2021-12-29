@@ -272,11 +272,12 @@ def _load_cloudrun_authorized_domains_tx(
     """
     ingest_cloudrun_authorized_domains = """
     UNWIND{authorized_domains} as ad
-    MERGE(authorized_domain:GCPCloudRunAuthorizedDomain{id:ad.id})
+    MERGE (authorized_domain:GCPCloudRunAuthorizedDomain{id:ad.id})
     ON CREATE SET
         authorized_domain.firstseen = timestamp()
     SET
-        authorized_domain.id = ad.id
+        authorized_domain.id = ad.id,
+        authorized_domain.lastupdated = {gcp_update_tag}
     WITH authorized_domain
     MATCH (owner:GCPProject{id:{ProjectId}})
     MERGE (owner)-[r:RESOURCE]->(authorized_domain)
@@ -320,7 +321,7 @@ def _load_cloudrun_configurations_tx(
     """
     ingest_cloudrun_configurations = """
     UNWIND{configurations} as config
-    MERGE(configuration:GCPCloudRunConfiguration{id:config.id})
+    MERGE (configuration:GCPCloudRunConfiguration{id:config.id})
     ON CREATE SET
         configuration.firstseen = timestamp()
     SET
@@ -334,7 +335,8 @@ def _load_cloudrun_configurations_tx(
         configuration.clusterName = config.metadata.clusterName,
         configuration.observedGeneration = config.spec.observedGeneration,
         configuration.latestCreatedRevisionName = config.spec.latestCreatedRevisionName,
-        configuration.latestReadyRevisionName = config.spec.latestReadyRevisionName
+        configuration.latestReadyRevisionName = config.spec.latestReadyRevisionName,
+        configuration.lastupdated = {gcp_update_tag}
     WITH configuration
     MATCH (owner:GCPProject{id:{ProjectId}})
     MERGE (owner)-[r:RESOURCE]->(configuration)
@@ -378,7 +380,7 @@ def _load_cloudrun_domainmappings_tx(
     """
     ingest_cloudrun_domainmappings = """
     UNWIND{domainmappings} as domainmap
-    MERGE(domainmapping:GCPCloudRunDomainMap{id:domainmap.id})
+    MERGE (domainmapping:GCPCloudRunDomainMap{id:domainmap.id})
     ON CREATE SET
         domainmapping.firstseen = timestamp()
     SET
@@ -391,7 +393,8 @@ def _load_cloudrun_domainmappings_tx(
         domainmapping.deletionTimestamp = domainmap.metadata.deletionTimestamp,
         domainmapping.routeName = domainmap.spec.routeName,
         domainmapping.certificateMode = domainmap.spec.certificateMode,
-        domainmapping.forceOverride = domainmap.spec.forceOveride
+        domainmapping.forceOverride = domainmap.spec.forceOveride,
+        domainmapping.lastupdated = {gcp_update_tag}
     WITH domainmapping
     MATCH (owner:GCPProject{id:{ProjectId}})
     MERGE (owner)-[r:RESOURCE]->(domainmapping)
@@ -444,7 +447,8 @@ def _load_cloudrun_revisions_tx(
         revision.creationTimestamp = rev.metadata.creationTimestamp,
         revision.deletionTimestamp = rev.metadata.deletionTimestamp,
         revision.containerConcurrency = rev.specs.containerConcurrency,
-        revision.timeoutSeconds = rev.specs.timeoutSeconds
+        revision.timeoutSeconds = rev.specs.timeoutSeconds,
+        revision.lastupdated = {gcp_update_tag}
     WITH revision
     MATCH (owner:GCPProject{id:{ProjectId}})
     MERGE (owner)-[r:RESOURCE]->(revision)
@@ -497,7 +501,8 @@ def _load_cloudrun_routes_tx(
         route.creationTimestamp = rt.metadata.creationTimestamp,
         route.deletionTimestamp = rt.metadata.deletionTimestamp,
         route.observedGeneration = rt.status.observedGeneration,
-        route.url = rt.status.url
+        route.url = rt.status.url,
+        route.lastupdated = {gcp_update_tag}
     WITH route
     MATCH (owner:GCPProject{id:{ProjectId}})
     MERGE (owner)-[r:RESOURCE]->(route)
@@ -551,7 +556,8 @@ def _load_cloudrun_services_tx(
         service.deletionTimestamp = svc.metadata.deletionTimestamp,
         service.observedGeneration = svc.status.observedGeneration,
         service.latestReadyRevisionName = svc.status.latestReadyRevisionName,
-        service.latestCreatedRevisionName = svc.status.latestCreatedRevisionName
+        service.latestCreatedRevisionName = svc.status.latestCreatedRevisionName,
+        service.lastupdated = {gcp_update_tag}
     WITH service
     MATCH (owner:GCPProject{id:{ProjectId}})
     MERGE (owner)-[r:RESOURCE]->(service)
