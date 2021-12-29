@@ -230,7 +230,8 @@ def _load_bigtable_instances_tx(
         i.displayName = instance.displayName,
         i.state = instance.state,
         i.type = instance.type,
-        i.createTime = instance.createTime
+        i.createTime = instance.createTime,
+        i.lastupdated = {gcp_update_tag}
     WITH instance, i
     MATCH (owner:GCPProject{id:{ProjectId}})
     MERGE (owner)-[r:RESOURCE]->(i)
@@ -279,7 +280,8 @@ def _load_bigtable_clusters_tx(
         c.location = cluster.name,
         c.state = cluster.state,
         c.serveNodes = cluster.serveNodes,
-        c.defaultStorageType = cluster.defaultStorageType
+        c.defaultStorageType = cluster.defaultStorageType,
+        c.lastupdated = {gcp_update_tag}
     WITH c,cluster
     MATCH (i:GCPBigtableInstance{id:cluster.instance_id})
     MERGE (i)-[r:HAS_CLUSTER]->(c)
@@ -333,7 +335,8 @@ def _load_bigtable_cluster_backups_tx(
         b.startTime = backup.startTime,
         b.endTime = backup.endTime,
         b.sizeBytes = backup.sizeBytes,
-        b.state = backup.state
+        b.state = backup.state,
+        b.lastupdated = {gcp_update_tag}
     WITH b,backup
     MATCH (c:GCPBigtableCluster{id:backup.cluster_id})
     MERGE (c)-[r:HAS_BACKUP]->(b)
@@ -381,7 +384,8 @@ def _load_bigtable_tables_tx(
         t.name = table.name,
         t.replicationState = table.clusterState.replicationState,
         t.granularity = table.granularity,
-        t.sourceType = table.restoreInfo.sourceType
+        t.sourceType = table.restoreInfo.sourceType,
+        t.lastupdated = {gcp_update_tag}
     WITH table, t
     MATCH (i:GCPBigtableInstance{id:table.instance_id})
     MERGE (i)-[r:HAS_TABLE]->(t)

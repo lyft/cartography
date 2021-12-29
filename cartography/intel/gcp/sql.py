@@ -121,7 +121,7 @@ def _load_sql_instances_tx(tx: neo4j.Transaction, instances: List[Dict], project
     """
     ingest_sql_instances = """
     UNWIND {instances} as instance
-    MERGE(i:GCPSQLInstance{id:instance.id})
+    MERGE (i:GCPSQLInstance{id:instance.id})
     ON CREATE SET
         i.firstseen = timestamp()
     SET
@@ -137,7 +137,8 @@ def _load_sql_instances_tx(tx: neo4j.Transaction, instances: List[Dict], project
         i.gceZone = instance.gceZone,
         i.secondaryGceZone = instance.secondaryGceZone,
         i.satisfiesPzs = instance.satisfiesPzs,
-        i.createTime = instance.createTime
+        i.createTime = instance.createTime,
+        i.lastupdated = {gcp_update_tag}
     WITH i
     MATCH (owner:GCPProject{id:{ProjectId}})
     MERGE (owner)-[r:RESOURCE]->(i)
@@ -175,7 +176,7 @@ def _load_sql_users_tx(tx: neo4j.Transaction, sql_users: List[Dict], project_id:
     """
     ingest_sql_users = """
     UNWIND {sql_users} as user
-    MERGE(u:GCPSQLUser{id:user.id})
+    MERGE (u:GCPSQLUser{id:user.id})
     ON CREATE SET
         u.firstseen = timestamp()
     SET
@@ -183,7 +184,8 @@ def _load_sql_users_tx(tx: neo4j.Transaction, sql_users: List[Dict], project_id:
         u.host = user.host,
         u.instance = user.instance,
         u.project = user.project,
-        u.type = user.type
+        u.type = user.type,
+        u.lastupdated = {gcp_update_tag}
     WITH u,user
     MATCH (i:GCPSQLInstance{id:user.instance_id})
     MERGE (i)-[r:USED_BY]->(u)

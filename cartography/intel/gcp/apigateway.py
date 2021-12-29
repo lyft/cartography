@@ -282,7 +282,8 @@ def load_apis_tx(tx: neo4j.Transaction, apis: List[Dict], project_id: str, gcp_u
         api.createTime = ap.createTime,
         api.updateTime = ap.updateTime,
         api.displayName = ap.displayName,
-        api.managedService = ap.managedService
+        api.managedService = ap.managedService,
+        api.lastupdated = {gcp_update_tag}
     WITH api
     MATCH (owner:GCPProject{id:{ProjectId}})
     MERGE (owner)-[r:HAS_API_ENABLED]->(api)
@@ -352,7 +353,8 @@ def load_api_configs_tx(tx: neo4j.Transaction, configs: List[Dict], project_id: 
         config.displayName = conf.displayName,
         config.gatewayServiceAccount = conf.gatewayServiceAccount,
         config.serviceConfigId = conf.serviceConfigId,
-        config.state = conf.state
+        config.state = conf.state,
+        config.lastupdated = {gcp_update_tag}
     WITH config,conf
     MATCH (api:GCPAPI{id:conf.api_id})
     MERGE (api)-[r:HAS_CONFIG]->(config)
@@ -422,7 +424,8 @@ def load_gateways_tx(tx: neo4j.Transaction, gateways: List[Dict], project_id: st
         gateway.displayName = g.displayName,
         gateway.apiConfig = g.apiConfig,
         gateway.state = g.state,
-        gateway.defaultHostname = g.defaultHostname
+        gateway.defaultHostname = g.defaultHostname,
+        gateway.lastupdated = {gcp_update_tag}
     WITH gateway,g
     MATCH (apiconfig:GCPAPIConfig{id:g.apiConfig})
     MERGE (apiconfig)-[r:HAS_GATEWAY]->(gateway)
