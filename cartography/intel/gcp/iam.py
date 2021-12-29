@@ -529,7 +529,7 @@ def _load_domains_tx(
 ) -> None:
     ingest_domains = """
     UNWIND {domains} as dmn
-    MERGE (domain:GCPDomain{domainName:dmn.domainName})
+    MERGE (domain:GCPDomain{name:dmn.domainName})
     ON CREATE SET
         domain.firstseen = timestamp()
     SET
