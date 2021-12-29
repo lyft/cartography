@@ -79,6 +79,8 @@ def _sync_multiple_subscriptions(
         common_job_parameters,
     )
 
+    common_job_parameters['AZURE_TENANT_ID'] = tenant_id
+
     for sub in subscriptions:
         logger.info(
             "Syncing Azure Subscription with ID '%s'",
@@ -93,6 +95,7 @@ def _sync_multiple_subscriptions(
         )
 
     del common_job_parameters["AZURE_SUBSCRIPTION_ID"]
+    del common_job_parameters["AZURE_TENANT_ID"]
 
 
 @timeit

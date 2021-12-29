@@ -405,4 +405,4 @@ def sync(
         neo4j_session, credentials.arm_credentials, update_tag, common_job_parameters,
     )
 
-    common_job_parameters['AZURE_TENANT_ID'] = ''
+    del common_job_parameters['AZURE_TENANT_ID']
