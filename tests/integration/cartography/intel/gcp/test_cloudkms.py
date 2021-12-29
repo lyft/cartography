@@ -22,7 +22,7 @@ def test_load_kms_locations(neo4j_session):
 
     nodes = neo4j_session.run(
         """
-        MATCH (r:GCPKMSLocation) RETURN r.id;
+        MATCH (r:GCPLocation) RETURN r.id;
         """,
     )
 
@@ -110,7 +110,7 @@ def test_kms_location_relationship(neo4j_session):
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:GCPProject)-[:RESOURCE]->(n2:GCPKMSLocation) RETURN n1.id, n2.id;
+        MATCH (n1:GCPProject)-[:RESOURCE]->(n2:GCPLocation) RETURN n1.id, n2.id;
         """,
     )
 
@@ -148,7 +148,7 @@ def test_kms_keyring_relationship(neo4j_session):
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:GCPKMSLocation)-[:RESOURCE]->(n2:GCPKMSKeyRing) RETURN n1.id, n2.id;
+        MATCH (n1:GCPLocation)-[:RESOURCE]->(n2:GCPKMSKeyRing) RETURN n1.id, n2.id;
         """,
     )
 
