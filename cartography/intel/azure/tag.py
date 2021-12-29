@@ -76,16 +76,16 @@ def get_tags_list(
 ) -> List[Dict]:
     try:
         tags_list: List[Dict] = []
-        for resorce_group in resource_groups_list:
-            if "tags" in resorce_group.keys() and len(resorce_group['tags']) != 0:
-                for tagname in resorce_group['tags']:
+        for resource_group in resource_groups_list:
+            if "tags" in resource_group.keys() and len(resource_group['tags']) != 0:
+                for tagname in resource_group['tags']:
                     tags_list = tags_list + [{
-                        'id': resorce_group['id'] + "/providers/Microsoft.Resources/tags/" + tagname,
-                        'name': tagname, 'value': resorce_group['tags']
-                        [tagname], 'type': 'Microsoft.Resources/tags', 'resource_id': resorce_group['id'],
-                        'resource_group': resorce_group['name'],
+                        'id': resource_group['id'] + "/providers/Microsoft.Resources/tags/" + tagname,
+                        'name': tagname, 'value': resource_group['tags']
+                        [tagname], 'type': 'Microsoft.Resources/tags', 'resource_id': resource_group['id'],
+                        'resource_group': resource_group['name'],
                     }]
-            for resource in client.resources.list_by_resource_group(resource_group_name=resorce_group['name']):
+            for resource in client.resources.list_by_resource_group(resource_group_name=resource_group['name']):
                 if neo4j_session.run("MATCH (n) WHERE n.id={id} return count(*)", id=resource.id).single().value() == 1:
                     if resource.tags:
                         for tagname in resource.tags:
@@ -94,7 +94,7 @@ def get_tags_list(
                                     'id': resource.id + "/providers/Microsoft.Resources/tags/" + tagname,
                                     'name': tagname, 'value': resource.tags[tagname],
                                     'type': 'Microsoft.Resources/tags',
-                                    'resource_id': resource.id, 'resource_group': resorce_group['name'],
+                                    'resource_id': resource.id, 'resource_group': resource_group['name'],
                                 }]
 
         return tags_list
