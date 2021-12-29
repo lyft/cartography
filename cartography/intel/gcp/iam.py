@@ -518,14 +518,14 @@ def cleanup_groups(neo4j_session: neo4j.Session, common_job_parameters: Dict) ->
 
 @timeit
 def load_domains(
-    session: neo4j.Session, data_list: List[Dict], customer_id: str, project_id: str, update_tag: int
+    session: neo4j.Session, data_list: List[Dict], customer_id: str, project_id: str, update_tag: int,
 ) -> None:
     session.write_transaction(_load_domains_tx, data_list, customer_id, project_id, update_tag)
 
 
 @timeit
 def _load_domains_tx(
-    tx: neo4j.Transaction, domains: List[Dict], customer_id: str, project_id: str, gcp_update_tag: int
+    tx: neo4j.Transaction, domains: List[Dict], customer_id: str, project_id: str, gcp_update_tag: int,
 ) -> None:
     ingest_domains = """
     UNWIND {domains} as dmn

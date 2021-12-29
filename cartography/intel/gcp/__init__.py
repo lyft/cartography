@@ -308,7 +308,7 @@ def _sync_single_project(
     if service_names.iam in enabled_services:
         iam.sync(
             neo4j_session, resources.iam, resources.crm_v1, resources.admin,
-            project_id, gcp_update_tag, common_job_parameters
+            project_id, gcp_update_tag, common_job_parameters,
         )
     if service_names.apigateway in enabled_services:
         apigateway.sync_apigateways(
