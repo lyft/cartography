@@ -190,7 +190,7 @@ def sync_function_apps(
         neo4j_session, function_apps_list, client,
         update_tag, common_job_parameters,
     )
-    sync_function_apps_deployements(
+    sync_function_apps_deployments(
         neo4j_session, function_apps_list, client,
         update_tag, common_job_parameters,
     )
@@ -441,15 +441,15 @@ def _load_function_apps_deployments_tx(
     update_tag: int,
 ) -> None:
     ingest_function_apps_deploy = """
-    UNWIND {function_apps_deployments_list} as function_deply
-    MERGE (f:AzureFunctionAppDeployment{id: function_deply.id})
+    UNWIND {function_apps_deployments_list} as function_deploy
+    MERGE (f:AzureFunctionAppDeployment{id: function_deploy.id})
     ON CREATE SET f.firstseen = timestamp(),
-    f.type = function_deply.type
-    SET f.name = function_deply.name,
+    f.type = function_deploy.type
+    SET f.name = function_deploy.name,
     f.lastupdated = {azure_update_tag},
-    f.resource_group_name=function_deply.resource_group
-    WITH f, function_deply
-    MATCH (s:AzureFunctionApp{id: function_deply.function_app_id})
+    f.resource_group_name=function_deploy.resource_group
+    WITH f, function_deploy
+    MATCH (s:AzureFunctionApp{id: function_deploy.function_app_id})
     MERGE (s)-[r:CONTAIN]->(f)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {azure_update_tag}
@@ -462,17 +462,17 @@ def _load_function_apps_deployments_tx(
     )
 
 
-def cleanup_function_apps_deployements(
+def cleanup_function_apps_deployments(
     neo4j_session: neo4j.Session,
     common_job_parameters: Dict,
 ) -> None:
     run_cleanup_job(
-        'azure_import_function_apps_deployements_cleanup.json',
+        'azure_import_function_apps_deployments_cleanup.json',
         neo4j_session, common_job_parameters,
     )
 
 
-def sync_function_apps_deployements(
+def sync_function_apps_deployments(
     neo4j_session: neo4j.Session,
     function_apps_list: List[Dict],
     client: WebSiteManagementClient,
@@ -486,7 +486,7 @@ def sync_function_apps_deployements(
         neo4j_session,
         function_apps_deployments_list, update_tag,
     )
-    cleanup_function_apps_deployements(neo4j_session, common_job_parameters)
+    cleanup_function_apps_deployments(neo4j_session, common_job_parameters)
 
 
 def get_function_apps_backups_list(

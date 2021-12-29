@@ -127,9 +127,9 @@ def get_container_registries_list(client: ContainerRegistryManagementClient) -> 
     try:
         container_registries_list = list(map(lambda x: x.as_dict(), client.registries.list()))
 
-        for registrie in container_registries_list:
-            x = registrie['id'].split('/')
-            registrie['resource_group'] = x[x.index('resourcegroups') + 1]
+        for registry in container_registries_list:
+            x = registry['id'].split('/')
+            registry['resource_group'] = x[x.index('resourcegroups') + 1]
 
         return container_registries_list
 
