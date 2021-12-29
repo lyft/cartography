@@ -113,7 +113,7 @@ def get_kms_crypto_keys(kms: Resource, key_rings: List[Dict], project_id: str) -
         :param project_id: Current Google Project Id
 
         :rtype: list
-        :return: List of KMS Crytokeys for Keyrings and Locations
+        :return: List of KMS Cryptokeys for Keyrings and Locations
     """
     try:
         crypto_keys = []
@@ -168,13 +168,14 @@ def _load_kms_locations_tx(
     """
     ingest_kms_locations = """
     UNWIND{locations} as loc
-    MERGE(location:GCPKMSLocation{id:loc.id})
+    MERGE (location:GCPLocation{id:loc.id})
     ON CREATE SET
         location.firstseen = timestamp()
     SET
         location.name = loc.name,
         location.locationId = loc.locationId,
-        location.displayName = loc.displayName
+        location.displayName = loc.displayName,
+        location.lastupdated = {gcp_update_tag}
     WITH location, loc
     MATCH (owner:GCPProject{id:{ProjectId}})
     MERGE (owner)-[r:RESOURCE]->(location)
@@ -213,15 +214,16 @@ def _load_kms_key_rings_tx(
     """
     ingest_kms_key_rings = """
     UNWIND{key_rings} as keyr
-    MERGE(keyring:GCPKMSKeyring{id:keyr.id})
+    MERGE (keyring:GCPKMSKeyRing{id:keyr.id})
     ON CREATE SET
         keyring.firstseen = timestamp()
     SET
         keyring.name = keyr.name,
-        keyring.createTime = keyr.createTime
+        keyring.createTime = keyr.createTime,
+        keyring.lastupdated = {gcp_update_tag}
     WITH keyring, keyr
-    MATCH (location:GCPKMSLocation{id:keyr.loc_id})
-    MERGE(location)-[r:RESOURCE]->(keyring)
+    MATCH (location:GCPLocation{id:keyr.loc_id})
+    MERGE (location)-[r:RESOURCE]->(keyring)
     ON CREATE SET
         r.firstseen = timestamp(),
         r.lastupdated = {gcp_update_tag}
@@ -249,7 +251,7 @@ def _load_kms_crypto_keys_tx(
         :param neo4j transaction: The Neo4j transaction object
 
         :type crypto_keys_resp: List
-        :param crypt_keys_resp: A list GCP KMS CrytoKeys for keyrings in locations
+        :param crypt_keys_resp: A list GCP KMS CryptoKeys for keyrings in locations
 
         :type project_id: str
         :param project_id: Current Google Project Id
@@ -259,7 +261,7 @@ def _load_kms_crypto_keys_tx(
     """
     ingest_crypto_keys = """
     UNWIND{crypto_keys} as ck
-    MERGE (crypto_key:GCPKMSCryptokey{id:ck.id})
+    MERGE (crypto_key:GCPKMSCryptoKey{id:ck.id})
     ON CREATE SET
         crypto_key.firstseen = timestamp()
     SET
@@ -267,9 +269,10 @@ def _load_kms_crypto_keys_tx(
         crypto_key.purpose = ck.purpose,
         crypto_key.createTime = ck.createTime,
         crypto_key.nextRotationTime = ck.nextRotationTime,
-        crypto_key.rotationPeriod = ck.rotationPeriod
+        crypto_key.rotationPeriod = ck.rotationPeriod,
+        crypto_key.lastupdated = {gcp_update_tag}
     WITH crypto_key, ck
-    MATCH (key_ring:GCPKMSKeyring{id:ck.keyring_id})
+    MATCH (key_ring:GCPKMSKeyRing{id:ck.keyring_id})
     MERGE (key_ring)-[r:RESOURCE]->(crypto_key)
     ON CREATE SET
         r.firstseen = timestamp(),

@@ -157,7 +157,7 @@ def test_load_routetables(neo4j_session):
 
     nodes = neo4j_session.run(
         """
-        MATCH (r:AzureRoutetable) RETURN r.id;
+        MATCH (r:AzureRouteTable) RETURN r.id;
         """, )
     actual_nodes = {n['r.id'] for n in nodes}
 
@@ -197,7 +197,7 @@ def test_load_routetable_relationships(neo4j_session):
 
     result = neo4j_session.run(
         """
-        MATCH (n1:AzureSubscription)-[:RESOURCE]->(n2:AzureRoutetable) RETURN n1.id, n2.id;
+        MATCH (n1:AzureSubscription)-[:RESOURCE]->(n2:AzureRouteTable) RETURN n1.id, n2.id;
         """, )
 
     actual = {(r['n1.id'], r['n2.id']) for r in result}
@@ -259,7 +259,7 @@ def test_load_network_route_relationships(neo4j_session):
 
     result = neo4j_session.run(
         """
-        MATCH (n1:AzureRoutetable)-[:CONTAIN]->(n2:AzureNetworkRoute) RETURN n1.id, n2.id;
+        MATCH (n1:AzureRouteTable)-[:CONTAIN]->(n2:AzureNetworkRoute) RETURN n1.id, n2.id;
         """, )
 
     actual = {(r['n1.id'], r['n2.id']) for r in result}

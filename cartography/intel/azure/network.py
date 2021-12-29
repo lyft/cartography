@@ -217,7 +217,7 @@ def _load_network_routetables_tx(
 ) -> None:
     ingest_routetables = """
     UNWIND {network_routetables_list} AS routetable
-    MERGE (n:AzureRoutetable{id: routetable.id})
+    MERGE (n:AzureRouteTable{id: routetable.id})
     ON CREATE SET n.firstseen = timestamp(),
     n.type = routetable.type,
     n.location = routetable.location,
@@ -293,7 +293,7 @@ def _load_network_routes_tx(
     n.lastupdated = {azure_update_tag},
     n.etag=route.etag
     WITH n, route
-    MATCH (s:AzureRoutetable{id: route.routetable_id})
+    MATCH (s:AzureRouteTable{id: route.routetable_id})
     MERGE (s)-[r:CONTAIN]->(n)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {azure_update_tag}

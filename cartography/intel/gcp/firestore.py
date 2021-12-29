@@ -134,7 +134,8 @@ def _load_firestore_databases_tx(
         d.name = database.name,
         d.locationId = database.locationId,
         d.type = database.type,
-        d.concurrencyMode = database.concurrencyMode
+        d.concurrencyMode = database.concurrencyMode,
+        d.lastupdated = {gcp_update_tag}
     WITH d
     MATCH (owner:GCPProject{id:{ProjectId}})
     MERGE (owner)-[r:RESOURCE]->(d)
@@ -181,7 +182,8 @@ def _load_firestore_indexes_tx(
     SET
         ix.name = index.name,
         ix.queryScope = index.queryScope,
-        ix.state = index.state
+        ix.state = index.state,
+        ix.lastupdated = {gcp_update_tag}
     WITH ix,index
     MATCH (d:GCPFirestoreDatabase{id:index.database_id})
     MERGE (d)-[r:HAS_INDEX]->(ix)

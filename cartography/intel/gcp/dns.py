@@ -114,7 +114,7 @@ def load_dns_zones(neo4j_session: neo4j.Session, dns_zones: List[Dict], project_
 
     ingest_records = """
     UNWIND {records} as record
-    MERGE(zone:GCPDNSZone{id:record.id})
+    MERGE (zone:GCPDNSZone{id:record.id})
     ON CREATE SET
         zone.firstseen = timestamp(),
         zone.created_at = record.creationTime
@@ -164,7 +164,7 @@ def load_rrs(neo4j_session: neo4j.Session, dns_rrs: List[Resource], project_id: 
 
     ingest_records = """
     UNWIND {records} as record
-    MERGE(rrs:GCPRecordSet{id:record.name})
+    MERGE (rrs:GCPRecordSet{id:record.name})
     ON CREATE SET
         rrs.firstseen = timestamp()
     SET
