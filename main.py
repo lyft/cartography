@@ -2,6 +2,7 @@ import base64
 import json
 import logging
 import os
+
 import cartography.cli
 from libraries.pubsublibrary import PubSubLibrary
 from utils.errors import PubSubPublishError
@@ -17,7 +18,7 @@ def cartography_worker(event, ctx):
         logging.info('invalid message format in PubSub')
         return {
             "status": 'failure',
-            "message": 'unable to parse PubSub message'
+            "message": 'unable to parse PubSub message',
         }
 
     logging.info(f'message from PubSub: {message}')
@@ -29,7 +30,7 @@ def cartography_worker(event, ctx):
         logging.error(f'error while parsing request json: {e}')
         return {
             "status": 'failure',
-            "message": 'unable to parse request'
+            "message": 'unable to parse request',
         }
 
     process_request(params)
@@ -37,8 +38,8 @@ def cartography_worker(event, ctx):
     return {
         'statusCode': 200,
         'body': json.dumps({
-            "status": 'success'
-        })
+            "status": 'success',
+        }),
     }
 
 
@@ -55,7 +56,7 @@ def process_request(params):
             "uri": os.environ.get('neo4juri'),
             "user": os.environ.get('neo4juser'),
             "pwd": os.environ.get('neo4jpwd'),
-            "connection_lifetime": 3600
+            "connection_lifetime": 3600,
         },
         "logging": {
             "mode": "verbose",
@@ -66,8 +67,8 @@ def process_request(params):
             "templateType": params['templateType'],
             "workspace": params['workspace'],
             "actions": params['actions'],
-            "resultTopic": params['resultTopic']
-        }
+            "resultTopic": params['resultTopic'],
+        },
     }
 
     resp = cartography.cli.run_gcp(body)
@@ -92,7 +93,7 @@ def publish_response(req, resp):
         "templateType": req['params']['templateType'],
         "workspace": req['params']['workspace'],
         "actions": req['params']['actions'],
-        "response": resp
+        "response": resp,
     }
 
     pubsub_helper = PubSubLibrary()

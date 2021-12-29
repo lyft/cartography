@@ -3,16 +3,17 @@ import hashlib
 import json
 import logging
 import time
-import pytz
-import maya
-from datetime import datetime, timedelta
+from datetime import datetime
+from datetime import timedelta
 from typing import Any
 from typing import Dict
 from typing import List
 from typing import Tuple
 
 import boto3
+import maya
 import neo4j
+import pytz
 
 from cartography.intel.aws.permission_relationships import parse_statement_node
 from cartography.intel.aws.permission_relationships import principal_allowed_on_resource

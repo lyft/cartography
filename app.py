@@ -2,10 +2,11 @@ import base64
 import json
 import logging
 import os
+
 import cartography.cli
 from libraries.pubsublibrary import PubSubLibrary
-from utils.logger import get_logger
 from utils.context import AppContext
+from utils.logger import get_logger
 
 
 def load_cartography(event, ctx):
@@ -24,7 +25,7 @@ def load_cartography(event, ctx):
         logging.info('invalid message format in PubSub')
         return {
             "status": 'failure',
-            "message": 'unable to parse PubSub message'
+            "message": 'unable to parse PubSub message',
         }
 
     logging.info(f'message from PubSub: {message}')
@@ -35,7 +36,7 @@ def load_cartography(event, ctx):
         logging.error(f'error while parsing request json: {e}')
         return {
             "status": 'failure',
-            "message": 'unable to parse request'
+            "message": 'unable to parse request',
         }
 
     process_request(context, params)
@@ -43,8 +44,8 @@ def load_cartography(event, ctx):
     return {
         'statusCode': 200,
         'body': json.dumps({
-            "status": 'success'
-        })
+            "status": 'success',
+        }),
     }
 
 
@@ -58,7 +59,7 @@ def process_request(context, args):
             "uri": context.neo4j_uri,
             "user": context.neo4j_user,
             "pwd": context.neo4j_pwd,
-            "connection_lifetime": 3600
+            "connection_lifetime": 3600,
         },
         "logging": {
             "mode": "verbose",
@@ -69,8 +70,8 @@ def process_request(context, args):
             "templateType": args['templateType'],
             "workspace": args['workspace'],
             "actions": args['actions'],
-            "resultTopic": args['resultTopic']
-        }
+            "resultTopic": args['resultTopic'],
+        },
     }
 
     resp = cartography.cli.run_gcp(body)
@@ -104,7 +105,7 @@ def publish_response(context, req, resp):
             "templateType": req['params']['templateType'],
             "workspace": req['params']['workspace'],
             "actions": req['params']['actions'],
-            "response": resp
+            "response": resp,
         }
 
         pubsub_helper = PubSubLibrary(context)

@@ -1,14 +1,17 @@
 import base64
-from datetime import datetime, timedelta
 import json
 import logging
-import requests
 import time
+from datetime import datetime
+from datetime import timedelta
 
 import adal
-from azure.core.credentials import AccessToken
-from azure.common.credentials import ServicePrincipalCredentials, get_azure_cli_credentials, get_cli_profile
 import jwt
+import requests
+from azure.common.credentials import get_azure_cli_credentials
+from azure.common.credentials import get_cli_profile
+from azure.common.credentials import ServicePrincipalCredentials
+from azure.core.credentials import AccessToken
 from msrestazure.azure_active_directory import AADTokenCredentials
 
 
@@ -42,7 +45,8 @@ class Authenticator:
                     'Current support version is wstrust2005 or wstrust13.' in e.args:
                 raise Exception(
                     'You are likely authenticating with a Microsoft Account. '
-                    'This authentication mode only support Azure Active Directory principal authentication.')
+                    'This authentication mode only support Azure Active Directory principal authentication.',
+                )
 
             raise Exception(e)
 
@@ -61,14 +65,14 @@ class Authenticator:
             arm_credentials = ServicePrincipalCredentials(
                 client_id=client_id,
                 secret=client_secret,
-                tenant=tenant_id
+                tenant=tenant_id,
             )
 
             aad_graph_credentials = ServicePrincipalCredentials(
                 client_id=client_id,
                 secret=client_secret,
                 tenant=tenant_id,
-                resource='https://graph.windows.net'
+                resource='https://graph.windows.net',
             )
 
             profile = get_cli_profile()
@@ -80,7 +84,8 @@ class Authenticator:
                     'Current support version is wstrust2005 or wstrust13.' in e.args:
                 raise Exception(
                     'You are likely authenticating with a Microsoft Account. '
-                    'This authentication mode only support Azure Active Directory principal authentication.')
+                    'This authentication mode only support Azure Active Directory principal authentication.',
+                )
 
             raise Exception(e)
 
@@ -133,11 +138,11 @@ class Authenticator:
         return decoded['tid'], {
             'id': decoded['oid'],
             'name': decoded['name'],
-            'email': decoded['preferred_username']
+            'email': decoded['preferred_username'],
         }
 
 
-class ImpersonateCredentials(object):
+class ImpersonateCredentials:
     def __init__(self, cred, resource):
         self.scheme = "Bearer"
         self.cred = cred
@@ -178,7 +183,7 @@ class Credentials:
                 r2 = r.json()
                 return r2.get('value')[0].get('tenantId')
             except Exception as e:
-                logger.error('Unable to infer tenant ID: {}'.format(e))
+                logger.error(f'Unable to infer tenant ID: {e}')
                 return None
 
     def get_credentials(self, resource):

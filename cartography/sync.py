@@ -7,19 +7,18 @@ from neo4j import GraphDatabase
 from statsd import StatsClient
 
 import cartography.intel.analysis
+import cartography.intel.create_indexes
+import cartography.intel.gcp
+import cloudanix
+from cartography.stats import set_stats_client
 # import cartography.intel.aws
 # import cartography.intel.azure
-import cartography.intel.create_indexes
 # import cartography.intel.crxcavator.crxcavator
 # import cartography.intel.digitalocean
-import cartography.intel.gcp
 # import cartography.intel.github
 # import cartography.intel.gsuite
 # import cartography.intel.kubernetes
 # import cartography.intel.okta
-from cartography.stats import set_stats_client
-
-import cloudanix
 
 # from cartography.scoped_stats_client import ScopedStatsClient
 

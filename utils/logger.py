@@ -1,6 +1,6 @@
 import logging
-import sys
 import os
+import sys
 
 
 class Logger():
@@ -22,7 +22,8 @@ class Logger():
         else:
             formatter = logging.Formatter(
                 '[%(asctime)s.%(msecs)03d] %(levelname)-s - %(filename)s - {%(funcName)s:%(lineno)d} - %(message)s - %(context)s',
-                '%Y-%m-%d %H:%M:%S')
+                '%Y-%m-%d %H:%M:%S',
+            )
 
         handler.setFormatter(formatter)
         self.logger.addHandler(handler)

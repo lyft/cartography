@@ -8,14 +8,12 @@ from typing import Set
 
 import googleapiclient.discovery
 import neo4j
-from googleapiclient.discovery import Resource
 from googleapiclient.discovery import HttpError
+from googleapiclient.discovery import Resource
 from oauth2client.client import ApplicationDefaultCredentialsError
 from oauth2client.client import GoogleCredentials
 
 from cartography.config import Config
-from cartography.intel.gcp.auth import AuthHelper
-from cartography.intel.gcp import iam
 from cartography.intel.gcp import apigateway
 from cartography.intel.gcp import bigtable
 from cartography.intel.gcp import cloudkms
@@ -28,6 +26,7 @@ from cartography.intel.gcp import gke
 from cartography.intel.gcp import iam
 from cartography.intel.gcp import sql
 from cartography.intel.gcp import storage
+from cartography.intel.gcp.auth import AuthHelper
 from cartography.util import run_analysis_job
 from cartography.util import timeit
 

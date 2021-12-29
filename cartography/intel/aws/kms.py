@@ -351,7 +351,7 @@ def sync_kms_keys(
 
     policy_alias_grants_data = get_kms_key_details(boto3_session, kms_keys, region)
     load_kms_key_details(
-        neo4j_session, policy_alias_grants_data, region, current_aws_account_id, aws_update_tag, common_job_parameters
+        neo4j_session, policy_alias_grants_data, region, current_aws_account_id, aws_update_tag, common_job_parameters,
     )
 
 
