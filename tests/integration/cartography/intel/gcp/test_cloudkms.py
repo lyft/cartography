@@ -47,7 +47,7 @@ def test_load_kms_keyrings(neo4j_session):
 
     nodes = neo4j_session.run(
         """
-        MATCH (r:GCPKMSKeyring) RETURN r.id;
+        MATCH (r:GCPKMSKeyRing) RETURN r.id;
         """,
     )
 
@@ -72,7 +72,7 @@ def load_kms_crypto_keys(neo4j_session):
 
     nodes = neo4j_session.run(
         """
-        MATCH (r:GCPKMSCryptokey) RETURN r.id;
+        MATCH (r:GCPKMSCryptoKey) RETURN r.id;
         """,
     )
 
@@ -148,7 +148,7 @@ def test_kms_keyring_relationship(neo4j_session):
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:GCPKMSLocation)-[:RESOURCE]->(n2:GCPKMSKeyring) RETURN n1.id, n2.id;
+        MATCH (n1:GCPKMSLocation)-[:RESOURCE]->(n2:GCPKMSKeyRing) RETURN n1.id, n2.id;
         """,
     )
 
@@ -186,7 +186,7 @@ def test_kms_crypto_key_relationship(neo4j_session):
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:GCPKMSKeyring)-[:RESOURCE]->(n2:GCPKMSCryptokey) RETURN n1.id, n2.id;
+        MATCH (n1:GCPKMSKeyRing)-[:RESOURCE]->(n2:GCPKMSCryptoKey) RETURN n1.id, n2.id;
         """,
     )
 
