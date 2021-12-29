@@ -82,10 +82,12 @@ def _sync_multiple_subscriptions(
             sub['subscriptionId'],
         )
         common_job_parameters['AZURE_SUBSCRIPTION_ID'] = sub['subscriptionId']
+        common_job_parameters['AZURE_TENANT_ID'] = tenant_id
 
         _sync_one_subscription(neo4j_session, credentials, sub['subscriptionId'], update_tag, common_job_parameters, regions)
 
     del common_job_parameters["AZURE_SUBSCRIPTION_ID"]
+    del common_job_parameters["AZURE_TENANT_ID"]
 
 
 @timeit
