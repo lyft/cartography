@@ -2,7 +2,8 @@ import datetime
 import uuid
 
 from azure.core.credentials import AzureKeyCredential
-from azure.eventgrid import EventGridPublisherClient, EventGridEvent
+from azure.eventgrid import EventGridEvent
+from azure.eventgrid import EventGridPublisherClient
 
 
 class EventGridLibrary():
@@ -21,7 +22,7 @@ class EventGridLibrary():
                 data=message,
                 event_type="inventoryviews",
                 event_time=datetime.datetime.now(datetime.timezone.utc),
-                data_version="1.0"
+                data_version="1.0",
             )
 
             event_list.append(event)
@@ -29,7 +30,7 @@ class EventGridLibrary():
 
             return {
                 "status": "success",
-                "message": "successfully published message to queue"
+                "message": "successfully published message to queue",
             }
 
         except Exception as e:
@@ -37,5 +38,5 @@ class EventGridLibrary():
 
             return {
                 "status": "failure",
-                "message": "failed to publish message to queue"
+                "message": "failed to publish message to queue",
             }

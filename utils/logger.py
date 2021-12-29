@@ -1,6 +1,6 @@
 import logging
-import sys
 import os
+import sys
 
 
 class Logger():
@@ -17,12 +17,15 @@ class Logger():
 
         # Simplify log output for Production
         if os.getenv('CLOUDANIX_APP_ENV') == 'production':
-            formatter = logging.Formatter('%(levelname)-s - %(filename)s - Line:%(lineno)d - %(message)s - %(context)s', '%Y-%m-%d %H:%M:%S')
+            formatter = logging.Formatter(
+                '%(levelname)-s - %(filename)s - Line:%(lineno)d - %(message)s - %(context)s', '%Y-%m-%d %H:%M:%S',
+            )
 
         else:
             formatter = logging.Formatter(
-                '[%(asctime)s.%(msecs)03d] %(levelname)-s - %(filename)s - {%(funcName)s:%(lineno)d} - %(message)s - %(context)s',
-                '%Y-%m-%d %H:%M:%S')
+                '[%(asctime)s.%(msecs)03d] %(levelname)-s - %(filename)s - {%(funcName)s:%(lineno)d} - %(message)s \
+                    - %(context)s', '%Y-%m-%d %H:%M:%S',
+            )
 
         handler.setFormatter(formatter)
         self.logger.addHandler(handler)

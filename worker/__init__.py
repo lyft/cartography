@@ -4,10 +4,10 @@ import logging
 import os
 import uuid
 
-from libraries.eventgridlibrary import EventGridLibrary
-
 import azure.functions as func
+
 import cartography.cli
+from libraries.eventgridlibrary import EventGridLibrary
 
 
 def process_request(msg):
@@ -35,8 +35,8 @@ def process_request(msg):
             "sessionString": msg['sessionString'],
             "eventId": msg['eventId'],
             "templateType": msg['templateType'],
-            "workspace": msg['workspace']
-        }
+            "workspace": msg['workspace'],
+        },
     }
 
     resp = cartography.cli.run_azure(body)
@@ -68,9 +68,9 @@ def main(event: func.EventGridEvent, outputEvent: func.Out[func.EventGridOutputE
                 "templateType": msg['templateType'],
                 "subscriptions": msg['subscriptions'],
                 "workspace": msg['workspace'],
-                "actions": msg['actions']
+                "actions": msg['actions'],
             },
-            "response": resp
+            "response": resp,
         }
 
         if msg.get('inventoryRefresh'):
@@ -94,7 +94,9 @@ def main(event: func.EventGridEvent, outputEvent: func.Out[func.EventGridOutputE
                     subject="cartography-response",
                     event_type="inventory",
                     event_time=datetime.datetime.now(datetime.timezone.utc),
-                    data_version="1.0"))
+                    data_version="1.0",
+                ),
+            )
 
         logging.info(f'worker processed successfully: {msg["eventId"]}')
 

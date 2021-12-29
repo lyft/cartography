@@ -1,19 +1,17 @@
 import base64
+import json
+import logging
+import time
 from datetime import datetime
 from datetime import timedelta
 from typing import Any
 from typing import Dict
-from typing import Optional
-
-import json
-import logging
-import requests
-import time
 
 import adal
-from azure.core.credentials import AccessToken
+import requests
 from azure.common.credentials import get_azure_cli_credentials
 from azure.common.credentials import get_cli_profile
+from azure.core.credentials import AccessToken
 from azure.core.exceptions import HttpResponseError
 from azure.identity import ClientSecretCredential
 from msrestazure.azure_active_directory import AADTokenCredentials
@@ -34,7 +32,7 @@ class Credentials:
         self.context = context
         self.current_user = current_user
 
-    def get_current_user(self) -> Optional[str]:
+    def get_current_user(self) -> Dict:
         return self.current_user
 
     def get_tenant_id(self) -> Any:
@@ -117,16 +115,16 @@ class Credentials:
         return new_credentials
 
 
-class ImpersonateCredentials(object):
+class ImpersonateCredentials:
     def __init__(self, cred: Credentials, resource: str) -> None:
         self.scheme = "Bearer"
         self.cred = cred
         self.resource = resource
 
-    def get_token(self, *scopes, **kwargs):  # pylint:disable=unused-argument
+    def get_token(self, *scopes, **kwargs) -> Any:  # pylint:disable=unused-argument
         return AccessToken(self.cred['access_token'], int(self.cred['expires_in'] + time.time()))
 
-    def signed_session(self, session=None):
+    def signed_session(self, session: Any = None) -> Any:
         header = "{} {}".format(self.scheme, self.cred['access_token'])
         session.headers['Authorization'] = header
         return session
@@ -160,7 +158,7 @@ class Authenticator:
 
             return Credentials(
                 arm_credentials, aad_graph_credentials, tenant_id=tenant_id,
-                current_user={'email': profile.get_current_account_user()}, subscription_id=subscription_id
+                current_user={'email': profile.get_current_account_user()}, subscription_id=subscription_id,
                 # arm_credentials,
                 # aad_graph_credentials,
                 # tenant_id=tenant_id,
@@ -213,7 +211,8 @@ class Authenticator:
 
             return Credentials(arm_credentials, aad_graph_credentials, tenant_id=tenant_id, current_user=client_id)
             # return Credentials(
-            #     arm_credentials, aad_graph_credentials, tenant_id=tenant_id, current_user={'email': profile.get_current_account_user()}
+            #     arm_credentials, aad_graph_credentials, tenant_id=tenant_id,
+            #     current_user={'email': profile.get_current_account_user()}
             # )
 
         except HttpResponseError as e:
@@ -226,7 +225,10 @@ class Authenticator:
 
             raise e
 
-    def impersonate_user(self, client_id: str, client_secret: str, redirect_uri: str, refresh_token: str, graph_scope: str, azure_scope: str, subscription_id: str):
+    def impersonate_user(
+        self, client_id: str, client_secret: str, redirect_uri: str, refresh_token: str,
+        graph_scope: str, azure_scope: str, subscription_id: str,
+    ) -> Credentials:
         """
         Implements Impersonation authentication for the Azure provider
         """
@@ -236,26 +238,39 @@ class Authenticator:
             azure_creds = self.refresh_azure_token(client_id, client_secret, redirect_uri, refresh_token, azure_scope)
             tenant_id, user = self.decode_jwt(azure_creds.cred['id_token'])
 
-            return Credentials(azure_creds, graph_creds, subscription_id=subscription_id, tenant_id=tenant_id, current_user=user)
+            return Credentials(
+                azure_creds, graph_creds, subscription_id=subscription_id, tenant_id=tenant_id, current_user=user,
+            )
 
         except Exception as e:
             logging.info(f'failed to impersonate user: {str(e)}')
 
             raise Exception(e)
 
-    def refresh_graph_token(self, client_id: str, client_secret: str, redirect_uri: str, refresh_token: str, scope: str) -> ImpersonateCredentials:
-        return ImpersonateCredentials(self.get_access_token(client_id, client_secret, redirect_uri, refresh_token, scope), "graph")
+    def refresh_graph_token(
+        self, client_id: str, client_secret: str, redirect_uri: str, refresh_token: str, scope: str,
+    ) -> ImpersonateCredentials:
+        return ImpersonateCredentials(
+            self.get_access_token(client_id, client_secret, redirect_uri, refresh_token, scope), "graph",
+        )
 
-    def refresh_azure_token(self, client_id: str, client_secret: str, redirect_uri: str, refresh_token: str, scope: str) -> ImpersonateCredentials:
-        return ImpersonateCredentials(self.get_access_token(client_id, client_secret, redirect_uri, refresh_token, scope), "management")
+    def refresh_azure_token(
+        self, client_id: str, client_secret: str, redirect_uri: str, refresh_token: str, scope: str,
+    ) -> ImpersonateCredentials:
+        return ImpersonateCredentials(
+            self.get_access_token(client_id, client_secret, redirect_uri, refresh_token, scope), "management",
+        )
 
-    def get_access_token(self, client_id: str, client_secret: str, redirect_uri: str, refresh_token: str, scope: str) -> Dict:
+    def get_access_token(
+        self, client_id: str, client_secret: str, redirect_uri: str, refresh_token: str, scope: str,
+    ) -> Dict:
         token_url = "https://login.microsoftonline.com/common/oauth2/v2.0/token"
         grant_type = "refresh_token"
         content_type = "application/x-www-form-urlencoded"
         headers = {"Content-Type": content_type}
 
-        pload = f'grant_type={grant_type}&scope={scope}&client_id={client_id}&client_secret={client_secret}&redirect_uri={redirect_uri}&refresh_token={refresh_token}'
+        pload = f'grant_type={grant_type}&scope={scope}&client_id={client_id}&client_secret={client_secret}\
+            &redirect_uri={redirect_uri}&refresh_token={refresh_token}'
         r = requests.post(token_url, data=pload, headers=headers)
         return r.json()
 
@@ -277,5 +292,5 @@ class Authenticator:
         return decoded['tid'], {
             'id': decoded['oid'],
             'name': decoded['name'],
-            'email': decoded['preferred_username']
+            'email': decoded['preferred_username'],
         }

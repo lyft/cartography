@@ -17,7 +17,7 @@ class GraphLibrary:
         if self.context.neo4j_user or self.context.neo4j_pwd:
             neo4j_auth = (
                 self.context.neo4j_user,
-                self.context.neo4j_pwd
+                self.context.neo4j_pwd,
             )
 
         try:
@@ -28,11 +28,12 @@ class GraphLibrary:
 
         except neobolt.exceptions.ServiceUnavailable as e:
             self.context.logger.debug(
-                "Error occurred during Neo4j connect.", exc_info=True)
+                "Error occurred during Neo4j connect.", exc_info=True,
+            )
             self.context.logger.error(
                 (
-                    "Unable to connect to Neo4j using the provided URI '%s', an error occurred: '%s'. Make sure the Neo4j "
-                    "server is running and accessible from your network."
+                    "Unable to connect to Neo4j using the provided URI '%s', an error occurred: '%s'. \
+                        Make sure the Neo4j server is running and accessible from your network."
                 ),
                 self.context.neo4j_uri,
                 e,
@@ -41,7 +42,8 @@ class GraphLibrary:
 
         except neobolt.exceptions.AuthError as e:
             self.context.logger.debug(
-                "Error occurred during Neo4j auth.", exc_info=True)
+                "Error occurred during Neo4j auth.", exc_info=True,
+            )
             if not neo4j_auth:
                 self.context.logger.error(
                     (
@@ -72,7 +74,7 @@ class GraphLibrary:
         with self.driver.session() as neo4j_session:
             result = neo4j_session.run(
                 statement,
-                kwargs
+                kwargs,
             )
 
         if result:

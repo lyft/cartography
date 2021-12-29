@@ -1,9 +1,8 @@
 # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/core/session.html
 # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/sts.html
 # https://docs.aws.amazon.com/STS/latest/APIReference/CommonErrors.html
-
-from botocore.exceptions import ClientError
 from boto3.session import Session
+from botocore.exceptions import ClientError
 
 from libraries.kmslibrary import KMSLibrary
 from utils.errors import classify_error
@@ -25,13 +24,13 @@ class AuthLibrary:
         # Create a Session with the credentials passed
         session = Session(
             aws_access_key_id=args['aws_access_key_id'],
-            aws_secret_access_key=args['aws_secret_access_key']
+            aws_secret_access_key=args['aws_secret_access_key'],
         )
 
         try:
             sts_client = session.client(
                 'sts',
-                region_name=self.context.region
+                region_name=self.context.region,
             )
         except ClientError as e:
             raise classify_error(self.context.logger, e, 'Failed to create STS client')
@@ -58,12 +57,12 @@ class AuthLibrary:
         if creds['type'] == 'credentials':
             return Session(
                 aws_access_key_id=creds['aws_access_key_id'],
-                aws_secret_access_key=creds['aws_secret_access_key']
+                aws_secret_access_key=creds['aws_secret_access_key'],
             )
 
         elif creds['type'] == 'assumerole':
             return Session(
                 aws_access_key_id=creds['aws_access_key_id'],
                 aws_secret_access_key=creds['aws_secret_access_key'],
-                aws_session_token=creds['session_token']
+                aws_session_token=creds['session_token'],
             )

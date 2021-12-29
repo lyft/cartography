@@ -1,7 +1,6 @@
 import logging
 from typing import Dict
 from typing import List
-from typing import Optional
 
 import neo4j
 
@@ -17,7 +16,6 @@ from . import storage
 from . import subscription
 from . import tag
 from . import tenant
-
 from .util.credentials import Authenticator
 from .util.credentials import Credentials
 from cartography.config import Config
@@ -32,6 +30,7 @@ def _sync_one_subscription(
     subscription_id: str,
     update_tag: int,
     common_job_parameters: Dict,
+    regions: List[str],
 ) -> None:
     compute.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
     cosmosdb.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
@@ -54,7 +53,7 @@ def _sync_one_subscription(
 def _sync_tenant(
     neo4j_session: neo4j.Session,
     tenant_id: str,
-    current_user: Optional[str],
+    current_user: Dict,
     update_tag: int,
     common_job_parameters: Dict,
 ) -> None:
@@ -85,7 +84,9 @@ def _sync_multiple_subscriptions(
         )
         common_job_parameters['AZURE_SUBSCRIPTION_ID'] = sub['subscriptionId']
 
-        _sync_one_subscription(neo4j_session, credentials, sub['subscriptionId'], update_tag, common_job_parameters, regions)
+        _sync_one_subscription(
+            neo4j_session, credentials, sub['subscriptionId'], update_tag, common_job_parameters, regions,
+        )
 
     del common_job_parameters["AZURE_SUBSCRIPTION_ID"]
     del common_job_parameters["AZURE_TENANT_ID"]
@@ -99,7 +100,7 @@ def start_azure_ingestion(
     common_job_parameters = {
         "UPDATE_TAG": config.update_tag,
         "permission_relationships_file": config.permission_relationships_file,
-        "WORKSPACE_ID": config.params['workspace']['id_string']
+        "WORKSPACE_ID": config.params['workspace']['id_string'],
     }
 
     try:
@@ -113,7 +114,8 @@ def start_azure_ingestion(
         # Impersonate customer by getting access token using refresh token
         credentials = Authenticator().impersonate_user(
             config.azure_client_id, config.azure_client_secret, config.azure_redirect_uri,
-            config.azure_refresh_token, config.azure_graph_scope, config.azure_azure_scope, config.azure_subscription_id
+            config.azure_refresh_token, config.azure_graph_scope, config.azure_azure_scope,
+            config.azure_subscription_id,
         )
 
     except Exception as e:

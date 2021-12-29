@@ -1,7 +1,6 @@
 # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/sns.html
 # https://github.com/awsdocs/aws-doc-sdk-examples/tree/master/python/example_code/sns
 # https://docs.aws.amazon.com/sns/latest/api/CommonErrors.html
-
 import os
 
 from boto3.session import Session
@@ -20,7 +19,9 @@ class SNSLibrary:
         # if it's an offline test, use offline SNS
         if os.getenv('IS_OFFLINE'):
             try:
-                self.sns_client = session.client('sns', region_name=self.context.region, endpoint_url=self.context.sns_offline_url)
+                self.sns_client = session.client(
+                    'sns', region_name=self.context.region, endpoint_url=self.context.sns_offline_url,
+                )
 
             except ClientError as e:
                 raise classify_error(self.context.logger, e, 'Failed to create SNS client')
@@ -33,7 +34,8 @@ class SNSLibrary:
             if self.context.app_env == 'production':
                 self.sns_client.publish(
                     Message=message,
-                    TopicArn=topic)
+                    TopicArn=topic,
+                )
 
                 return True
 

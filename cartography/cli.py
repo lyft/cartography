@@ -471,19 +471,19 @@ class CLI:
 
             return {
                 "status": "success",
-                "message": f"output - {output}"
+                "message": f"output - {output}",
             }
 
         except KeyboardInterrupt:
             # return 130
             return {
                 "status": "failure",
-                "message": "keyboard interuption"
+                "message": "keyboard interuption",
             }
         except Exception as e:
             return {
                 "status": "failure",
-                "message": f"error with: {str(e)}"
+                "message": f"error with: {str(e)}",
             }
 
 
@@ -513,12 +513,13 @@ def run_aws(request):
     default_sync = cartography.sync.build_aws_sync()
 
     # TODO: Define config and pass it forward
-    config = Config(request['neo4j']['uri'],
-                    neo4j_user=request['neo4j']['user'],
-                    neo4j_password=request['neo4j']['pwd'],
-                    credentials=request['credentials'],
-                    params=request['params']
-                    )
+    config = Config(
+        request['neo4j']['uri'],
+        neo4j_user=request['neo4j']['user'],
+        neo4j_password=request['neo4j']['pwd'],
+        credentials=request['credentials'],
+        params=request['params'],
+    )
 
     if request['logging']['mode'] == "verbose":
         config.verbose = True
@@ -536,19 +537,20 @@ def run_azure(request):
     default_sync = cartography.sync.build_azure_sync(request.get('config', {}).get('initIndexes', False))
 
     # TODO: Define config and pass it forward
-    config = Config(request['neo4j']['uri'],
-                    neo4j_user=request['neo4j']['user'],
-                    neo4j_password=request['neo4j']['pwd'],
-                    azure_client_id=request['azure']['client_id'],
-                    azure_client_secret=request['azure']['client_secret'],
-                    azure_redirect_uri=request['azure']['redirect_uri'],
-                    azure_subscription_id=request['azure']['subscription_id'],
-                    azure_refresh_token=request['azure']['refresh_token'],
-                    azure_graph_scope=request['azure']['graph_scope'],
-                    azure_azure_scope=request['azure']['azure_scope'],
-                    params=request['params'],
-                    neo4j_max_connection_lifetime=3600,
-                    )
+    config = Config(
+        request['neo4j']['uri'],
+        neo4j_user=request['neo4j']['user'],
+        neo4j_password=request['neo4j']['pwd'],
+        azure_client_id=request['azure']['client_id'],
+        azure_client_secret=request['azure']['client_secret'],
+        azure_redirect_uri=request['azure']['redirect_uri'],
+        azure_subscription_id=request['azure']['subscription_id'],
+        azure_refresh_token=request['azure']['refresh_token'],
+        azure_graph_scope=request['azure']['graph_scope'],
+        azure_azure_scope=request['azure']['azure_scope'],
+        params=request['params'],
+        neo4j_max_connection_lifetime=3600,
+    )
 
     if request['logging']['mode'] == "verbose":
         config.verbose = True

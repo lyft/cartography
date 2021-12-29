@@ -15,7 +15,7 @@ def get_tenant_id(credentials: Credentials) -> str:
 
 
 def load_azure_tenant(
-    neo4j_session: neo4j.Session, tenant_id: str, current_user: str, update_tag: int, common_job_parameters: Dict
+    neo4j_session: neo4j.Session, tenant_id: str, current_user: Dict, update_tag: int, common_job_parameters: Dict,
 ) -> None:
     query = """
     MERGE (w:CloudanixWorkspace{id: {workspaceID}})
@@ -50,18 +50,18 @@ def load_azure_tenant(
     )
 
 
-def cleanup(neo4j_session: neo4j.Session, tenant_id: str, common_job_parameters: Dict) -> None:
+def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('azure_tenant_cleanup.json', neo4j_session, common_job_parameters)
 
 
 @timeit
 def sync(
-    neo4j_session: neo4j.Session, tenant_id: str, current_user: str, update_tag: int,
+    neo4j_session: neo4j.Session, tenant_id: str, current_user: Dict, update_tag: int,
     common_job_parameters: Dict,
 ) -> None:
     common_job_parameters['AZURE_TENANT_ID'] = tenant_id
 
-    load_azure_tenant(neo4j_session, tenant_id, current_user, update_tag)
+    load_azure_tenant(neo4j_session, tenant_id, current_user, update_tag, common_job_parameters)
     cleanup(neo4j_session, common_job_parameters)
 
     del common_job_parameters['AZURE_TENANT_ID']

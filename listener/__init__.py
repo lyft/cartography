@@ -18,12 +18,12 @@ def main(req: func.HttpRequest, outputEvent: func.Out[func.EventGridOutputEvent]
 
         response = {
             "status": "failure",
-            "message": "failed to read request body"
+            "message": "failed to read request body",
         }
 
         return func.HttpResponse(
             json.dumps(response),
-            mimetype="application/json"
+            mimetype="application/json",
         )
 
     logging.info(f'request: {message}')
@@ -37,11 +37,13 @@ def main(req: func.HttpRequest, outputEvent: func.Out[func.EventGridOutputEvent]
                 subject="cartography-request",
                 event_type="inventory",
                 event_time=datetime.datetime.now(datetime.timezone.utc),
-                data_version="1.0"))
+                data_version="1.0",
+            ),
+        )
 
         response = {
             "status": "success",
-            "message": "successfully published message to event grid"
+            "message": "successfully published message to event grid",
         }
 
     except Exception as e:
@@ -49,10 +51,10 @@ def main(req: func.HttpRequest, outputEvent: func.Out[func.EventGridOutputEvent]
 
         response = {
             "status": "failure",
-            "message": "failed to publish message to event grid"
+            "message": "failed to publish message to event grid",
         }
 
     return func.HttpResponse(
         json.dumps(response),
-        mimetype="application/json"
+        mimetype="application/json",
     )
