@@ -134,7 +134,7 @@ def get_cloudrun_domainmappings(cloudrun: Resource, project_id: str) -> List[Dic
 @timeit
 def get_cloudrun_revisions(cloudrun: Resource, project_id: str) -> List[Dict]:
     """
-        Returns a list of Cloud Run Revisons for a given project.
+        Returns a list of Cloud Run Revisions for a given project.
 
         :type cloudrun: Resource
         :param cloudrun: The cloudrun resource created by googleapiclient.discovery.build()
