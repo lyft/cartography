@@ -1688,7 +1688,7 @@ Representation of an [AzureNetworkUsage](https://docs.microsoft.com/en-us/rest/a
 |-------|-------------|
 |firstseen| Timestamp of when a sync job discovered this node|
 |lastupdated| Timestamp of the last time the node was updated|
-|**id**| The Azure Network Useges ID number|
+|**id**| The Azure Network Usages ID number|
 |currentValue | The current value of the usage|
 |limit | The limit of usage|
 
