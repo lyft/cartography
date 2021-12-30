@@ -313,12 +313,12 @@ def _sync_single_project(
 
     if service_names.storage in enabled_services:
         storage.sync_gcp_buckets(
-            neo4j_session, resources.storage, project_id, gcp_update_tag, common_job_parameters, regions
+            neo4j_session, resources.storage, project_id, gcp_update_tag, common_job_parameters, regions,
         )
 
     if service_names.gke in enabled_services:
         gke.sync_gke_clusters(
-            neo4j_session, resources.container, project_id, gcp_update_tag, common_job_parameters, regions
+            neo4j_session, resources.container, project_id, gcp_update_tag, common_job_parameters, regions,
         )
 
     if service_names.dns in enabled_services:
@@ -372,7 +372,7 @@ def _sync_multiple_projects(
         common_job_parameters["GCP_PROJECT_ID"] = project_id
         logger.info("Syncing GCP project %s.", project_id)
         _sync_single_project(
-            neo4j_session, resources, project_id, gcp_update_tag, common_job_parameters, regions=regions
+            neo4j_session, resources, project_id, gcp_update_tag, common_job_parameters, regions=regions,
         )
 
     del common_job_parameters["GCP_PROJECT_ID"]
@@ -427,7 +427,7 @@ def start_gcp_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
     regions = config.params.get('regions', [])
 
     _sync_multiple_projects(
-        neo4j_session, resources, projects, config.update_tag, common_job_parameters, regions=regions
+        neo4j_session, resources, projects, config.update_tag, common_job_parameters, regions=regions,
     )
 
     # run_analysis_job(
