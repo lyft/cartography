@@ -80,6 +80,7 @@ def _load_tenant_users_tx(
     i.mobile = user.mobile
     SET i.lastupdated = {update_tag},
     i.account_enabled = user.account_enabled,
+    i.refreshTokensValidFromDateTime = user.refreshTokensValidFromDateTime,
     i.user_principal_name = user.user_principal_name
     WITH i
     MATCH (owner:AzureTenant{id: {tenant_id}})
