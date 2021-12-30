@@ -101,10 +101,14 @@ def publish_response(req, resp):
     try:
         if 'resultTopic' in req['params']:
             # Result should be pushed to "resultTopic" passed in the request
-            status = pubsub_helper.publish(os.environ['CLOUDANIX_PROJECT_ID'], json.dumps(body), req['params']['resultTopic'])
+            status = pubsub_helper.publish(
+                os.environ['CLOUDANIX_PROJECT_ID'], json.dumps(body), req['params']['resultTopic'],
+            )
 
         else:
-            status = pubsub_helper.publish(os.environ['CLOUDANIX_PROJECT_ID'], json.dumps(body), os.environ['CARTOGRAPHY_RESULT_TOPIC'])
+            status = pubsub_helper.publish(
+                os.environ['CLOUDANIX_PROJECT_ID'], json.dumps(body), os.environ['CARTOGRAPHY_RESULT_TOPIC'],
+            )
 
         logging.info(f'result published to PubSub with status: {status}')
 

@@ -32,8 +32,8 @@ class GraphLibrary:
             )
             self.context.logger.error(
                 (
-                    "Unable to connect to Neo4j using the provided URI '%s', an error occurred: '%s'. Make sure the Neo4j "
-                    "server is running and accessible from your network."
+                    "Unable to connect to Neo4j using the provided URI '%s', an error occurred: '%s'.\
+                        Make sure the Neo4j server is running and accessible from your network."
                 ),
                 self.context.neo4j_uri,
                 e,
