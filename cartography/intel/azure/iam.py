@@ -79,6 +79,7 @@ def _load_tenant_users_tx(
     i.user_type = user.user_type,
     i.mobile = user.mobile
     SET i.lastupdated = {update_tag},
+    i.account_enabled = user.account_enabled,
     i.user_principal_name = user.user_principal_name
     WITH i
     MATCH (owner:AzureTenant{id: {tenant_id}})
@@ -218,7 +219,8 @@ def sync_tenant_applications(
 @timeit
 def get_tenant_service_accounts_list(client: GraphRbacManagementClient) -> List[Dict]:
     try:
-        tenant_service_accounts_list = list(map(lambda x: x.as_dict(), client.service_principals.list()))
+        tenant_service_accounts_list = list(
+            map(lambda x: x.as_dict(), client.service_principals.list()))
 
         return tenant_service_accounts_list
 
