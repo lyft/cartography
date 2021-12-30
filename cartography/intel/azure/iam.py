@@ -220,7 +220,8 @@ def sync_tenant_applications(
 def get_tenant_service_accounts_list(client: GraphRbacManagementClient) -> List[Dict]:
     try:
         tenant_service_accounts_list = list(
-            map(lambda x: x.as_dict(), client.service_principals.list()))
+            map(lambda x: x.as_dict(), client.service_principals.list()),
+        )
 
         return tenant_service_accounts_list
 
