@@ -336,8 +336,12 @@ def get_roles_list(client: AuthorizationManagementClient) -> List[Dict]:
             result = client.role_definitions.get_by_id(role["role_definition_id"], raw=True)
             result = result.response.json()
             role['roleName'] = result['properties']['roleName']
-            role['permissions'] = result['properties']['permissions']
-
+            role['permissions'] = []
+            for action in result['properties']['permissions'][0]['actions']:
+                role['permissions'].append(action)
+            for data_action in result['properties']['permissions'][0]['actions']:
+                role['permissions'].append(data_action)
+            role['permissions'] = list(set(role['permissions']))
         return roles_list
 
     except HttpResponseError as e:
@@ -406,7 +410,7 @@ def sync(
     )
     sync_tenant_domains(neo4j_session, credentials.aad_graph_credentials, tenant_id, update_tag, common_job_parameters)
     sync_roles(
-        neo4j_session, credentials.arm_credentials, update_tag, common_job_parameters,
+        neo4j_session, credentials, update_tag, common_job_parameters,
     )
 
     del common_job_parameters['AZURE_TENANT_ID']
