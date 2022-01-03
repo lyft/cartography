@@ -335,12 +335,13 @@ def get_roles_list(client: AuthorizationManagementClient) -> List[Dict]:
         for role in roles_list:
             result = client.role_definitions.get_by_id(role["role_definition_id"], raw=True)
             result = result.response.json()
-            role['roleName'] = result['properties']['roleName']
+            role['roleName'] = result.get('properties', {}).get('roleName', '')
             role['permissions'] = []
-            for action in result['properties']['permissions'][0]['actions']:
-                role['permissions'].append(action)
-            for data_action in result['properties']['permissions'][0]['actions']:
-                role['permissions'].append(data_action)
+            for permission in result.get('properties', {}).get('permissions', []):
+                for action in permission.get('actions', []):
+                    role['permissions'].append(action)
+                for data_action in permission.get('dataActions', []):
+                    role['permissions'].append(data_action)
             role['permissions'] = list(set(role['permissions']))
         return roles_list
 
