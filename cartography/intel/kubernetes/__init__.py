@@ -22,9 +22,14 @@ def start_k8s_ingestion(session: Session, config: Config) -> None:
         return
 
     for client in get_k8s_clients(config.k8s_kubeconfig):
-        cluster = sync_namespaces(session, client, config.update_tag)
-        pods = sync_pods(session, client, config.update_tag, cluster)
-        sync_services(session, client, config.update_tag, cluster, pods)
+        logger.info(f"Syncing data for k8s cluster {client.name}...")
+        try:
+            cluster = sync_namespaces(session, client, config.update_tag)
+            pods = sync_pods(session, client, config.update_tag, cluster)
+            sync_services(session, client, config.update_tag, cluster, pods)
+        except Exception:
+            logger.exception(f"Failed to sync data for k8s cluster {client.name}...")
+            raise
 
     run_cleanup_job(
         "kubernetes_import_cleanup.json",
