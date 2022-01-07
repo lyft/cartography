@@ -59,6 +59,10 @@ def load_lambda_functions(
         lambda.packagetype = lf.PackageType,
         lambda.signingprofileversionarn = lf.SigningProfileVersionArn,
         lambda.signingjobarn = lf.SigningJobArn,
+        lambda.codesha256 = lf.CodeSha256,
+        lambda.architectures = lf.Architectures,
+        lambda.masterarn = lf.MasterArn,
+        lambda.kmskeyarn = lf.KMSKeyArn,
         lambda.lastupdated = {aws_update_tag}
         WITH lambda, lf
         MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
