@@ -76,6 +76,11 @@ TAG_RESOURCE_TYPE_MAPPINGS: Dict = {
     'ec2:vpc': {'label': 'AWSVpc', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},
     'ec2:volume': {'label': 'EBSVolume', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},
     'ec2:elastic-ip-address': {'label': 'ElasticIPAddress', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},
+    'ecs:cluster': {'label': 'ECSCluster', 'property': 'id'},
+    'ecs:container': {'label': 'ECSContainer', 'property': 'id'},
+    'ecs:container-instance': {'label': 'ECSContainerInstance', 'property': 'id'},
+    'ecs:task': {'label': 'ECSTask', 'property': 'id'},
+    'ecs:task-definition': {'label': 'ECSTaskDefinition', 'property': 'id'},
     'eks:cluster': {'label': 'EKSCluster', 'property': 'id'},
     'elasticache:cluster': {'label': 'ElasticacheCluster', 'property': 'arn'},
     'elasticloadbalancing:loadbalancer': {

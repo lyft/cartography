@@ -35,7 +35,7 @@ You can learn more about the story behind Cartography in our [presentation at BS
 Start [here](docs/setup/install.md).
 
 ## Supported platforms
-- [Amazon Web Services](docs/setup/config/aws.md) -  API Gateway, Config, EC2, Elasticsearch, Elastic Kubernetes Service, DynamoDB, IAM, KMS, Launch Configurations, Launch Templates, Lambda, RDS, Redshift, Route53, S3, Secrets Manager, Security Hub, SQS, STS, Tags
+- [Amazon Web Services](docs/setup/config/aws.md) - API Gateway, Config, EC2, ECS, ECR, Elasticsearch, Elastic Kubernetes Service (EKS), DynamoDB, IAM, KMS, Lambda, RDS, Redshift, Route53, S3, Secrets Manager, Security Hub, SQS, STS, Tags
 - [Google Cloud Platform](docs/setup/config/gcp.md) - Cloud Resource Manager, Compute, DNS, Storage, Google Kubernetes Engine
 - [Google GSuite](docs/setup/config/gsuite.md) - users, groups
 - [Duo CRXcavator](docs/setup/config/crxcavator.md) - Chrome extensions, GSuite users

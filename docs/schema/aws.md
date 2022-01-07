@@ -157,6 +157,20 @@
   - [Relationships](#relationships-73)
 - [ElasticIPAddress](#elasticipaddress)
   - [Relationships](#relationships-74)
+- [ECSCluster](#ecscluster)
+  - [Relationships](#relationships-75)
+- [ECSContainerInstance](#ecscontainerinstance)
+  - [Relationships](#relationships-76)
+- [ECSService](#ecsservice)
+  - [Relationships](#relationships-77)
+- [ECSTaskDefinition](#ecstaskdefinition)
+  - [Relationships](#relationships-78)
+- [ECSContainerDefinition](#ecscontainerdefinition)
+  - [Relationships](#relationships-79)
+- [ECSTask](#ecstask)
+  - [Relationships](#relationships-80)
+- [ECSContainer](#ecscontainer)
+  - [Relationships](#relationships-81)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -2824,4 +2838,282 @@ Representation of an AWS EC2 [Elastic IP address](https://docs.aws.amazon.com/AW
 
         ```
         (NetworkInterface)-[ELASTIC_IP_ADDRESS]->(ElasticIPAddress)
+        ```
+
+## ECSCluster
+
+Representation of an AWS ECS [Cluster](https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_Cluster.html)
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The ARN of the cluster |
+| region | The region of the cluster. |
+| name | A user-generated string that you use to identify your cluster. |
+| arn | The ARN of the cluster |
+| ecc\_kms\_key\_id | An AWS Key Management Service key ID to encrypt the data between the local client and the container. |
+| ecc\_logging | The log setting to use for redirecting logs for your execute command results. |
+| ecc\_log\_configuration\_cloud\_watch\_log\_group\_name | The name of the CloudWatch log group to send logs to. |
+| ecc\_log\_configuration\_cloud\_watch\_encryption\_enabled | Determines whether to enable encryption on the CloudWatch logs. |
+| ecc\_log\_configuration\_s3\_bucket\_name | The name of the S3 bucket to send logs to. |
+| ecc\_log\_configuration\_s3\_encryption\_enabled | Determines whether to use encryption on the S3 logs. |
+| ecc\_log\_configuration\_s3\_key\_prefix | An optional folder in the S3 bucket to place logs in. |
+| status | The status of the cluster |
+| settings\_container\_insights | If enabled is specified, CloudWatch Container Insights will be enabled for the cluster, otherwise it will be disabled unless the containerInsights account setting is enabled. |
+| capacity\_providers | The capacity providers associated with the cluster. |
+| attachments\_status | The status of the capacity providers associated with the cluster. |
+
+### Relationships
+
+- ECSClusters are a resource under the AWS Account.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(ECSCluster)
+        ```
+
+## ECSContainerInstance
+
+Representation of an AWS ECS [Container Instance](https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_ContainerInstance.html)
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The ARN of the container instance |
+| region | The region of the container instance. |
+| ec2\_instance\_id | The ID of the container instance. For Amazon EC2 instances, this value is the Amazon EC2 instance ID. For external instances, this value is the AWS Systems Manager managed instance ID. |
+| arn | The ARN of the container instance |
+| capacity\_provider\_name | The capacity provider that's associated with the container instance. |
+| version | The version counter for the container instance. |
+| version\_info\_agent\_version | The version number of the Amazon ECS container agent. |
+| version\_info\_agent\_hash | The Git commit hash for the Amazon ECS container agent build on the amazon-ecs-agent  GitHub repository. |
+| version\_info\_agent\_docker\_version | The Docker version that's running on the container instance. |
+| status | The status of the container instance. |
+| status\_reason | The reason that the container instance reached its current status. |
+| agent\_connected | This parameter returns true if the agent is connected to Amazon ECS. Registered instances with an agent that may be unhealthy or stopped return false. |
+| agent\_update\_status | The status of the most recent agent update. If an update wasn't ever requested, this value is NULL. |
+| registered\_at | The Unix timestamp for the time when the container instance was registered. |
+
+### Relationships
+
+- An ECSCluster has ECSContainerInstances
+
+        ```
+        (ECSCluster)-[HAS_CONTAINER_INSTANCE]->(ECSContainerInstance)
+        ```
+
+## ECSService
+
+Representation of an AWS ECS [Service](https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_Service.html)
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The ARN of the service |
+| region | The region of the service. |
+| name | The name of your service. |
+| arn | The ARN of the service |
+| cluster_arn | The Amazon Resource Name (ARN) of the cluster that hosts the service. |
+| status | The status of the service. |
+| desired\_count | The desired number of instantiations of the task definition to keep running on the service. |
+| running\_count | The number of tasks in the cluster that are in the RUNNING state. |
+| pending\_count | The number of tasks in the cluster that are in the PENDING state. |
+| launch\_type | The launch type the service is using. |
+| platform\_version | The platform version to run your service on. A platform version is only specified for tasks that are hosted on AWS Fargate. |
+| platform\_family | The operating system that your tasks in the service run on. A platform family is specified only for tasks using the Fargate launch type. |
+| task\_definition | The task definition to use for tasks in the service. |
+| deployment\_config\_circuit\_breaker\_enable | Determines whether to enable the deployment circuit breaker logic for the service. |
+| deployment\_config\_circuit\_breaker\_rollback | Determines whether to enable Amazon ECS to roll back the service if a service deployment fails. |
+| deployment\_config\_maximum\_percent | If a service is using the rolling update (ECS) deployment type, the maximum percent parameter represents an upper limit on the number of tasks in a service that are allowed in the RUNNING or PENDING state during a deployment, as a percentage of the desired number of tasks (rounded down to the nearest integer), and while any container instances are in the DRAINING state if the service contains tasks using the EC2 launch type. |
+| deployment\_config\_minimum\_healthy\_percent | If a service is using the rolling update (ECS) deployment type, the minimum healthy percent represents a lower limit on the number of tasks in a service that must remain in the RUNNING state during a deployment, as a percentage of the desired number of tasks (rounded up to the nearest integer), and while any container instances are in the DRAINING state if the service contains tasks using the EC2 launch type. |
+| role\_arn | The ARN of the IAM role that's associated with the service. |
+| created\_at | The Unix timestamp for the time when the service was created. |
+| health\_check\_grace\_period\_seconds | The period of time, in seconds, that the Amazon ECS service scheduler ignores unhealthy Elastic Load Balancing target health checks after a task has first started. |
+| created\_by | The principal that created the service. |
+| enable\_ecs\_managed\_tags | Determines whether to enable Amazon ECS managed tags for the tasks in the service. |
+| propagate\_tags | Determines whether to propagate the tags from the task definition or the service to the task. |
+| enable\_execute\_command | Determines whether the execute command functionality is enabled for the service. |
+
+### Relationships
+
+- An ECSCluster has ECSService
+
+        ```
+        (ECSCluster)-[HAS_SERVICE]->(ECSService)
+        ```
+
+## ECSTaskDefinition
+
+Representation of an AWS ECS [Task Definition](https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_TaskDefinition.html)
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The ARN of the task definition |
+| region | The region of the task definition. |
+| family | The name of a family that this task definition is registered to. |
+| task\_role\_arn | The short name or full Amazon Resource Name (ARN) of the AWS Identity and Access Management role that grants containers in the task permission to call AWS APIs on your behalf. |
+| execution\_role\_arn | The Amazon Resource Name (ARN) of the task execution role that grants the Amazon ECS container agent permission to make AWS API calls on your behalf. |
+| network\_mode | The Docker networking mode to use for the containers in the task. The valid values are none, bridge, awsvpc, and host. If no network mode is specified, the default is bridge. |
+| revision | The revision of the task in a particular family. |
+| status | The status of the task definition. |
+| compatibilities | The task launch types the task definition validated against during task definition registration. |
+| runtime\_platform\_cpu\_architecture | The CPU architecture. |
+| runtime\_platform\_operating\_system\_family | The operating system. |
+| requires\_compatibilities | The task launch types the task definition was validated against. |
+| cpu | The number of cpu units used by the task. |
+| memory | The amount (in MiB) of memory used by the task. |
+| pid\_mode | The process namespace to use for the containers in the task. |
+| ipc\_mode | The IPC resource namespace to use for the containers in the task. |
+| proxy\_configuration\_type | The proxy type. |
+| proxy\_configuration\_container\_name | The name of the container that will serve as the App Mesh proxy. |
+| registered\_at | The Unix timestamp for the time when the task definition was registered. |
+| deregistered\_at | The Unix timestamp for the time when the task definition was deregistered. |
+| registered\_by | The principal that registered the task definition. |
+| ephemeral\_storage\_size\_in\_gib | The total amount, in GiB, of ephemeral storage to set for the task. |
+
+### Relationships
+
+- ECSTaskDefinition are a resource under the AWS Account.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(ECSTaskDefinition)
+        ```
+
+## ECSContainerDefinition
+
+Representation of an AWS ECS [Container Definition](https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_ContainerDefinition.html)
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The ARN of the task definition, plus the container definition name |
+| region | The region of the container definition. |
+| name | The name of a container. |
+| image | The image used to start a container. This string is passed directly to the Docker daemon. |
+| cpu | The number of cpu units reserved for the container. |
+| memory | The amount (in MiB) of memory to present to the container. |
+| memory\_reservation | The soft limit (in MiB) of memory to reserve for the container. |
+| links | The links parameter allows containers to communicate with each other without the need for port mappings. |
+| essential | If the essential parameter of a container is marked as true, and that container fails or stops for any reason, all other containers that are part of the task are stopped. |
+| entry\_point | The entry point that's passed to the container. |
+| command | The command that's passed to the container. |
+| start\_timeout | Time duration (in seconds) to wait before giving up on resolving dependencies for a container. |
+| stop\_timeout | Time duration (in seconds) to wait before the container is forcefully killed if it doesn't exit normally on its own. |
+| hostname | The hostname to use for your container. |
+| user | The user to use inside the container. |
+| working\_directory | The working directory to run commands inside the container in. |
+| disable\_networking | When this parameter is true, networking is disabled within the container. |
+| privileged | When this parameter is true, the container is given elevated privileges on the host container instance (similar to the root user). |
+| readonly\_root\_filesystem | When this parameter is true, the container is given read-only access to its root file system. |
+| dns\_servers | A list of DNS servers that are presented to the container. |
+| dns\_search\_domains | A list of DNS search domains that are presented to the container. |
+| docker\_security\_options | A list of strings to provide custom labels for SELinux and AppArmor multi-level security systems. This field isn't valid for containers in tasks using the Fargate launch type. |
+| interactive | When this parameter is true, you can deploy containerized applications that require stdin or a tty to be allocated. |
+| pseudo\_terminal | When this parameter is true, a TTY is allocated. |
+
+### Relationships
+
+- ECSTaskDefinitions have ECSContainerDefinitions
+
+        ```
+        (ECSTaskDefinition)-[HAS_CONTAINER_DEFINITION]->(ECSContainerDefinition)
+        ```
+
+## ECSTask
+
+Representation of an AWS ECS [Task](https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_Task.html)
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The ARN of the task |
+| region | The region of the task. |
+| arn | The arn of the task. |
+| availability\_zone | The Availability Zone for the task. |
+| capacity\_provider\_name | The capacity provider that's associated with the task. |
+| cluster\_arn | The ARN of the cluster that hosts the task. |
+| connectivity | The connectivity status of a task. |
+| connectivity\_at | The Unix timestamp for the time when the task last went into CONNECTED status. |
+| container\_instance\_arn | The ARN of the container instances that host the task. |
+| cpu | The number of CPU units used by the task as expressed in a task definition. |
+| created\_at | The Unix timestamp for the time when the task was created. More specifically, it's for the time when the task entered the PENDING state. |
+| desired\_status | The desired status of the task. |
+| enable\_execute\_command | Determines whether execute command functionality is enabled for this task. |
+| execution\_stopped\_at | The Unix timestamp for the time when the task execution stopped. |
+| group | The name of the task group that's associated with the task. |
+| health\_status | The health status for the task. |
+| last\_status | The last known status for the task. |
+| launch\_type | The infrastructure where your task runs on. |
+| memory | The amount of memory (in MiB) that the task uses as expressed in a task definition. |
+| platform\_version | The platform version where your task runs on. |
+| platform\_family | The operating system that your tasks are running on. |
+| pull\_started\_at | The Unix timestamp for the time when the container image pull began. |
+| pull\_stopped\_at | The Unix timestamp for the time when the container image pull completed. |
+| started\_at | The Unix timestamp for the time when the task started. More specifically, it's for the time when the task transitioned from the PENDING state to the RUNNING state. |
+| started\_by | The tag specified when a task is started. If an Amazon ECS service started the task, the startedBy parameter contains the deployment ID of that service. |
+| stop\_code | The stop code indicating why a task was stopped. |
+| stopped\_at | The Unix timestamp for the time when the task was stopped. More specifically, it's for the time when the task transitioned from the RUNNING state to the STOPPED state. |
+| stopped\_reason | The reason that the task was stopped. |
+| stopping\_at | The Unix timestamp for the time when the task stops. More specifically, it's for the time when the task transitions from the RUNNING state to STOPPED. |
+| task\_definition\_arn | The ARN of the task definition that creates the task. |
+| version | The version counter for the task. |
+| ephemeral\_storage\_size\_in\_gib | The total amount, in GiB, of ephemeral storage to set for the task. |
+
+### Relationships
+
+- ECSClusters have ECSTasks
+
+        ```
+        (ECSCluster)-[HAS_TASK]->(ECSTask)
+        ```
+
+- ECSContainerInstances have ECSTasks
+
+        ```
+        (ECSContainerInstance)-[HAS_TASK]->(ECSTask)
+        ```
+
+- ECSTasks have ECSTaskDefinitions
+
+        ```
+        (ECSContainerInstance)-[HAS_TASK_DEFINITION]->(ECSTask)
+        ```
+
+## ECSContainer
+
+Representation of an AWS ECS [Container](https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_Container.html)
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The ARN of the container |
+| region | The region of the container. |
+| arn | The arn of the container. |
+| task\_arn | The ARN of the task. |
+| name | The name of the container. |
+| image | The image used for the container. |
+| image\_digest | The container image manifest digest. |
+| runtime\_id | The ID of the Docker container. |
+| last\_status | The last known status of the container. |
+| exit\_code | The exit code returned from the container. |
+| reason | A short (255 max characters) human-readable string to provide additional details about a running or stopped container. |
+| health\_status | The health status of the container. |
+| cpu | The number of CPU units set for the container. |
+| memory | The hard limit (in MiB) of memory set for the container. |
+| memory\_reservation | The soft limit (in MiB) of memory set for the container. |
+| gpu\_ids | The IDs of each GPU assigned to the container. |
+
+### Relationships
+
+- ECSTasks have ECSContainers
+
+        ```
+        (ECSTask)-[HAS_CONTAINER]->(ECSContainer)
         ```
