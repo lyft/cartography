@@ -91,6 +91,11 @@ Representation of a [Kubernetes Container.](https://kubernetes.io/docs/concepts/
 | id | Identifier for the container which is derived from the UID of pod and the name of container |
 | name | Name of the container in kubernetes pod |
 | image | Docker image used in the container |
+| status\_image\_id | ImageID of the container's image. |
+| status\_image\_sha | The SHA portion of the status\_image\_id |
+| status\_ready | Specifies whether the container has passed its readiness probe. |
+| status\_started | Specifies whether the container has passed its startup probe. |
+| statys\_state | State of the container (running, terminated, waiting) |
 
 ### Relationships
 - KubernetesPod has KubernetesContainers.
