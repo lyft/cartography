@@ -53,7 +53,7 @@ def test_load_ecs_container_instances(neo4j_session, *args):
             "arn:aws:ecs:us-east-1:000000000000:container-instance/test_instance/a0000000000000000000000000000000",
             "i-00000000000000000",
             "ACTIVE",
-            1631096157,
+            100000,
         ),
     }
 
@@ -128,7 +128,7 @@ def test_load_ecs_task_definitions(neo4j_session, *args):
     expected_nodes = {
         (
             "arn:aws:ecs:us-east-1:000000000000:task-definition/test:0",
-            "test_service",
+            "test_family",
             "ACTIVE",
             4,
             1626747090,
@@ -138,7 +138,7 @@ def test_load_ecs_task_definitions(neo4j_session, *args):
     nodes = neo4j_session.run(
         """
         MATCH (n:ECSTaskDefinition)
-        RETURN n.id, n.family, n.status, n.version, n.registered_at
+        RETURN n.id, n.family, n.status, n.revision, n.registered_at
         """,
     )
     actual_nodes = {

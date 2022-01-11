@@ -185,7 +185,7 @@ GET_ECS_TASK_DEFINITIONS = [
                 },
             },
         ],
-        'family': 'test',
+        'family': 'test_family',
         'taskRoleArn': 'arn:aws:iam::000000000000:role/test-ecs_task_execution',
         'executionRoleArn': 'arn:aws:iam::000000000000:role/test-ecs_task_execution',
         'networkMode': 'awsvpc',
