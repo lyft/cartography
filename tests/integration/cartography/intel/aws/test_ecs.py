@@ -146,7 +146,7 @@ def test_load_ecs_task_definitions(neo4j_session, *args):
             n['n.id'],
             n['n.family'],
             n['n.status'],
-            n['n.version'],
+            n['n.revision'],
             n['n.registered_at'],
         )
         for n in nodes
