@@ -73,7 +73,7 @@ def get_bigtable_clusters(bigtable: Resource, bigtable_instances: List[Dict], pr
         try:
             bigtable_clusters = []
             request = bigtable.projects().instances().clusters().list(
-                parent=f"projects/{project_id}/instances/{instance['name']}",
+                parent=instance['name'],
             )
             while request is not None:
                 response = request.execute()
@@ -118,11 +118,11 @@ def get_bigtable_cluster_backups(bigtable: Resource, bigtable_clusters: List[Dic
         :rtype: list
         :return: List of Bigtable Cluster Backups
     """
+    cluster_backups = []
     for cluster in bigtable_clusters:
         try:
-            cluster_backups = []
             request = bigtable.projects().instances().clusters().backup().list(
-                parent=f"projects/{project_id}/instances/{cluster['instance_name']}/clusters/{cluster['name']}",
+                parent=cluster.get('name', None),
             )
             while request is not None:
                 response = request.execute()
@@ -166,11 +166,11 @@ def get_get_bigtable_tables(bigtable: Resource, bigtable_instances: List[Dict], 
         :rtype: list
         :return: List of Bigtable Tables
     """
+    bigtable_tables = []
     for instance in bigtable_instances:
         try:
-            bigtable_tables = []
             request = bigtable.projects().instances().tables().list(
-                parent=f"projects/{project_id}/instances/{instance['name']}",
+                parent=instance.get('name', None),
             )
             while request is not None:
                 response = request.execute()

@@ -34,7 +34,7 @@ def get_cloudrun_authorized_domains(cloudrun: Resource, project_id: str) -> List
             response = request.execute()
             if response.get('domains', []):
                 for domain in response['domains']:
-                    domain['id'] = f"projects/{project_id}/domains/{domain['id']}"
+                    domain['id'] = f"projects/{project_id}/authorizedDomains/{domain['id']}"
                     authorized_domains.append(domain)
             request = cloudrun.namespaces().authorizeddomains().list_next(
                 previous_request=request,

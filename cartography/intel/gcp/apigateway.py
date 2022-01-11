@@ -108,8 +108,7 @@ def get_api_configs(apigateway: Resource, project_id: str) -> List[Dict]:
     api_configs = []
     try:
         req = apigateway.projects().locations().apis().configs().list(
-            parent=f'projects/{project_id}/locations/\
-                                                                    global/apis/*',
+            pparent=f'projects/{project_id}/locations/global/apis/*',
         )
         while req is not None:
             res = req.execute()

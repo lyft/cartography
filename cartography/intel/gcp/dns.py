@@ -74,6 +74,8 @@ def get_dns_rrs(dns: Resource, dns_zones: List[Dict], project_id: str) -> List[R
                 response = request.execute()
                 for resource_record_set in response['rrsets']:
                     resource_record_set['zone'] = zone['id']
+                    resource_record_set[
+                        "id"] = f"projects/{project_id}/resourceRecordSet/{resource_record_set.get('name',None)}"
                     rrs.append(resource_record_set)
                 request = dns.resourceRecordSets().list_next(previous_request=request, previous_response=response)
         return rrs
@@ -164,7 +166,7 @@ def load_rrs(neo4j_session: neo4j.Session, dns_rrs: List[Resource], project_id: 
 
     ingest_records = """
     UNWIND {records} as record
-    MERGE (rrs:GCPRecordSet{id:record.name})
+    MERGE (rrs:GCPRecordSet{id:record.id})
     ON CREATE SET
         rrs.firstseen = timestamp()
     SET

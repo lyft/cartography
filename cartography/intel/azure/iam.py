@@ -273,9 +273,12 @@ def sync_tenant_service_accounts(
 
 
 @timeit
-def get_tenant_domains_list(client: GraphRbacManagementClient) -> List[Dict]:
+def get_tenant_domains_list(client: GraphRbacManagementClient, tenant_id: str) -> List[Dict]:
     try:
         tenant_domains_list = list(map(lambda x: x.as_dict(), client.domains.list()))
+
+        for domain in tenant_domains_list:
+            domain["id"] = f"tenants/{tenant_id}/domains/{domain.get('name',None)}"
 
         return tenant_domains_list
 
@@ -289,9 +292,10 @@ def _load_tenant_domains_tx(
 ) -> None:
     ingest_domain = """
     UNWIND {tenant_domains_list} AS domain
-    MERGE (i:AzureDomain{name: domain.name})
+    MERGE (i:AzureDomain{id: domain.id})
     ON CREATE SET i.firstseen = timestamp(),
     i.isRoot = domain.isRoot,
+    i.name = domain.name,
     i.isInitial = domain.isInitial
     SET i.lastupdated = {update_tag},
     i.authenticationType = domain.authentication_type,
@@ -320,7 +324,7 @@ def sync_tenant_domains(
     common_job_parameters: Dict,
 ) -> None:
     client = get_graph_client(credentials, tenant_id)
-    tenant_domains_list = get_tenant_domains_list(client)
+    tenant_domains_list = get_tenant_domains_list(client, tenant_id)
     load_tenant_domains(neo4j_session, tenant_id, tenant_domains_list, update_tag)
     cleanup_tenant_domains(neo4j_session, common_job_parameters)
 
