@@ -15,7 +15,7 @@ def test_load_ecs_clusters(neo4j_session, *args):
     expected_nodes = {
         (
             CLUSTER_ARN,
-            "test_cluster"
+            "test_cluster",
             "ACTIVE",
         ),
     }
@@ -53,7 +53,7 @@ def test_load_ecs_container_instances(neo4j_session, *args):
             "arn:aws:ecs:us-east-1:000000000000:container-instance/test_instance/a0000000000000000000000000000000",
             "i-00000000000000000",
             "ACTIVE",
-            100000,
+            1631096157,
         ),
     }
 
@@ -92,7 +92,7 @@ def test_load_ecs_services(neo4j_session, *args):
             "test_service",
             "arn:aws:ecs:us-east-1:000000000000:cluster/test_cluster",
             "ACTIVE",
-            100000,
+            1631096157,
         ),
     }
 
@@ -131,7 +131,7 @@ def test_load_ecs_task_definitions(neo4j_session, *args):
             "test_service",
             "ACTIVE",
             4,
-            40000,
+            1626747090,
         ),
     }
 
@@ -195,7 +195,7 @@ def test_load_ecs_tasks(neo4j_session, *args):
             "arn:aws:ecs:us-east-1:000000000000:task-definition/test_definition:0",
             "arn:aws:ecs:us-east-1:000000000000:cluster/test_cluster",
             "service:test_service",
-            10000,
+            1640673743,
         ),
     }
 
