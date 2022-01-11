@@ -320,6 +320,10 @@ Representation of an AWS [Lambda Function](https://docs.aws.amazon.com/lambda/la
 | packagetype |  The type of deployment package. |
 | signingprofileversionarn | The ARN of the signing profile version. |
 | signingjobarn | The ARN of the signing job. |
+| codesha256 | The SHA256 hash of the function's deployment package. |
+| architectures | The instruction set architecture that the function supports. Architecture is a string array with one of the valid values. |
+| masterarn | For Lambda@Edge functions, the ARN of the main function. |
+| kmskeyarn | The KMS key that's used to encrypt the function's environment variables. This key is only returned if you've configured a customer managed key. |
 
 ### Relationships
 
@@ -351,6 +355,12 @@ Representation of an AWS [Lambda Function](https://docs.aws.amazon.com/lambda/la
 
         ```
         (AWSLambda)-[HAS]->(AWSLambdaLayer)
+        ```
+
+- AWSLambda functions has AWS ECR Images.
+
+        ```
+        (AWSLambda)-[HAS]->(ECRImage)
         ```
 
 ## AWSLambdaFunctionAlias
