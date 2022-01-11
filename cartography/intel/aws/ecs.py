@@ -247,6 +247,11 @@ def load_ecs_services(
         MERGE (c)-[r:HAS_SERVICE]->(s)
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = {aws_update_tag}
+        WITH s
+        MATCH (d:ECSTaskDefinition{id: s.task_definition})
+        MERGE (s)-[r2:HAS_TASK_DEFINITION]->(d)
+        ON CREATE SET r2.firstseen = timestamp()
+        SET r2.lastupdated = {aws_update_tag}
     """  # noqa:E501
     services: List[Dict] = []
     for service in data:
@@ -545,6 +550,17 @@ def sync(
                 current_aws_account_id,
                 update_tag,
             )
+            task_definitions = get_ecs_task_definitions(
+                boto3_session,
+                region,
+            )
+            load_ecs_task_definitions(
+                neo4j_session,
+                task_definitions,
+                region,
+                current_aws_account_id,
+                update_tag,
+            )
             services = get_ecs_services(
                 cluster_arn,
                 boto3_session,
@@ -554,17 +570,6 @@ def sync(
                 neo4j_session,
                 cluster_arn,
                 services,
-                region,
-                current_aws_account_id,
-                update_tag,
-            )
-            task_definitions = get_ecs_task_definitions(
-                boto3_session,
-                region,
-            )
-            load_ecs_task_definitions(
-                neo4j_session,
-                task_definitions,
                 region,
                 current_aws_account_id,
                 update_tag,
