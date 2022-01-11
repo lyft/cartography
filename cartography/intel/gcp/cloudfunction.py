@@ -36,6 +36,7 @@ def get_gcp_functions(function: Resource, project_id: str) -> List[Dict]:
         while request is not None:
             response = request.execute()
             for location in response['locations']:
+                location["id"] = location.get("name", None)
                 regions.append(location)
             request = function.projects().locations().list_next(previous_request=request, previous_response=response)
     except HttpError as e:
@@ -55,12 +56,12 @@ def get_gcp_functions(function: Resource, project_id: str) -> List[Dict]:
         functions = []
         for region in regions:
             request = function.projects().locations().functions().list(
-                parent=f"projects/{project_id}/locations/{region}",
+                parent=region.get('name', None),
             )
             while request is not None:
                 response = request.execute()
                 for func in response['functions']:
-                    func['id'] = f"projects/{project_id}/locations/{region}/functions/{func['name']}"
+                    func['id'] = func['name']
                     functions.append(func)
                 request = function.projects().locations().functions().list_next(
                     previous_request=request,

@@ -20,7 +20,7 @@ def get_users(admin: Resource) -> List[Dict]:
         while req is not None:
             res = req.execute()
             page = res.get('users', [])
-            users.append(page)
+            users.extend(page)
             req = admin.users().list_next(previous_request=req, previous_response=res)
         return users
     except HttpError as e:
@@ -55,14 +55,16 @@ def get_customer(admin: Resource, customer_id: str) -> Dict:
 
 
 @timeit
-def get_domains(admin: Resource, customer_id: str) -> List[Dict]:
+def get_domains(admin: Resource, customer_id: str, project_id: str) -> List[Dict]:
     domains = []
     try:
         req = admin.domains().list(customer=customer_id)
         while req is not None:
             res = req.execute()
             page = res.get('domains', [])
-            domains.append(page)
+            domains.extend(page)
+        for domain in domains:
+            domain["id"] = f"projects/{project_id}/domains/{domain.get('domainName',None)}"
         return domains
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -85,7 +87,7 @@ def get_groups(admin: Resource) -> List[Dict]:
         while req is not None:
             res = req.execute()
             page = res.get('groups', [])
-            groups.append(page)
+            groups.extend(page)
             req = admin.groups().list_next(previous_request=req, previous_response=res)
         return groups
     except HttpError as e:
@@ -529,7 +531,7 @@ def _load_domains_tx(
 ) -> None:
     ingest_domains = """
     UNWIND {domains} as dmn
-    MERGE (domain:GCPDomain{name:dmn.domainName})
+    MERGE (domain:GCPDomain{id:dmn.id})
     ON CREATE SET
         domain.firstseen = timestamp()
     SET
@@ -538,6 +540,7 @@ def _load_domains_tx(
         domain.isPrimary = dmn.isPrimary,
         domain.domainName = dmn.domainName,
         domain.kind = dmn.kind,
+        domain.name = dmn.domainName,
         domain.lastupdated = {gcp_update_tag}
     WITH domain
     MATCH (p:GCPProject{id: {project_id}})
@@ -733,7 +736,7 @@ def sync(
     cleanup_users(neo4j_session, common_job_parameters)
 
     for customer in customers:
-        domains = get_domains(admin, customer)
+        domains = get_domains(admin, customer, project_id)
         load_domains(neo4j_session, domains, customer.get('id'), project_id, gcp_update_tag)
 
     cleanup_domains(neo4j_session, common_job_parameters)

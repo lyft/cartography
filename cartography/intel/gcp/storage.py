@@ -114,7 +114,7 @@ def load_gcp_buckets(neo4j_session: neo4j.Session, buckets: List[Dict], gcp_upda
     '''
 
     query = """
-    MERGE (p:GCPProject{projectnumber:{ProjectNumber}})
+    MERGE (p:GCPProject{id:{ProjectNumber}})
     ON CREATE SET p.firstseen = timestamp()
     SET p.lastupdated = {gcp_update_tag}
 

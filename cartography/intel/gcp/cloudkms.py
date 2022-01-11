@@ -34,7 +34,7 @@ def get_kms_locations(kms: Resource, project_id: str) -> List[Dict]:
             response = request.execute()
             if response.get('locations', []):
                 for location in response['locations']:
-                    location['id'] = location['locationId']
+                    location['id'] = location['name']
                     locations.append(location)
             request = kms.projects().locations().list_next(previous_request=request, previous_response=response)
         return locations
@@ -71,7 +71,7 @@ def get_kms_keyrings(kms: Resource, kms_locations: List[Dict], project_id: str) 
     try:
         key_rings = []
         for loc in kms_locations:
-            request = kms.projects().locations().keyrings().list(parent=f"{loc['name']}")
+            request = kms.projects().locations().keyrings().list(parent=loc['name'])
             while request is not None:
                 response = request.execute()
                 if response.get('keyRings', []):
@@ -118,7 +118,7 @@ def get_kms_crypto_keys(kms: Resource, key_rings: List[Dict], project_id: str) -
     try:
         crypto_keys = []
         for key_ring in key_rings:
-            request = kms.projects().locations().keyrings().cryptokeys().list(parent=f"{key_ring['name']}")
+            request = kms.projects().locations().keyrings().cryptokeys().list(parent=key_ring['name'])
             while request is not None:
                 response = request.execute()
                 if response.get('cryptoKeys', []):
