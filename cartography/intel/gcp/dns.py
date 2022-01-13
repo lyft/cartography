@@ -75,7 +75,8 @@ def get_dns_rrs(dns: Resource, dns_zones: List[Dict], project_id: str) -> List[R
                 for resource_record_set in response['rrsets']:
                     resource_record_set['zone'] = zone['id']
                     resource_record_set[
-                        "id"] = f"projects/{project_id}/resourceRecordSet/{resource_record_set.get('name',None)}"
+                        "id"
+                    ] = f"projects/{project_id}/resourceRecordSet/{resource_record_set.get('name',None)}"
                     rrs.append(resource_record_set)
                 request = dns.resourceRecordSets().list_next(previous_request=request, previous_response=response)
         return rrs
