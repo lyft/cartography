@@ -85,6 +85,7 @@ class Config:
         azure_client_secret=None,
         aws_requested_syncs=None,
         azure_requested_syncs=None,
+        gcp_requested_syncs=None,
         analysis_job_directory=None,
         crxcavator_api_base_uri=None,
         crxcavator_api_key=None,
@@ -117,6 +118,7 @@ class Config:
         self.azure_client_secret = azure_client_secret
         self.aws_requested_syncs = aws_requested_syncs
         self.azure_requested_syncs = azure_requested_syncs
+        self.gcp_requested_syncs = gcp_requested_syncs
         self.analysis_job_directory = analysis_job_directory
         self.crxcavator_api_base_uri = crxcavator_api_base_uri
         self.crxcavator_api_key = crxcavator_api_key
