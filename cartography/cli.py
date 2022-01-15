@@ -183,7 +183,7 @@ class CLI:
                 'Comma-separated list of Azure resources to sync. Example 1: "compute,sql,iam".\
                      See the full list available in source code at cartography.intel.azure.resources.'
                 ' If not specified, cartography by default will run all azure sync modules available.'
-               ),
+            ),
         )
         parser.add_argument(
             '--gcp-requested-syncs',
