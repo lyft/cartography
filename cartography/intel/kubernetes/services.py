@@ -44,6 +44,7 @@ def get_services(client: K8sClient, cluster: Dict, pods: List[Dict]) -> List[Dic
             is_service_pod = True if service.spec.selector else False
             for selector in service.spec.selector or dict():
                 if (
+                    not pod.get("labels") or
                     selector not in pod["labels"] or
                     service.spec.selector[selector] != pod["labels"][selector]
                 ):
