@@ -464,8 +464,8 @@ def test_load_containers(neo4j_session):
     )
 
     expected_nodes = {
-        "container1",
         "container2",
+        "container1",
     }
 
     nodes = neo4j_session.run(
@@ -494,12 +494,12 @@ def test_load_container_relationships(neo4j_session):
     expected = {
         (
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/\
-            Microsoft.ContainerInstance/containerGroups/demo1",
+            Microsoft.ContainerInstance/containerGroups/demo2",
             "container2",
         ),
         (
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/\
-            Microsoft.ContainerInstance/containerGroups/demo2",
+            Microsoft.ContainerInstance/containerGroups/demo1",
             "container1",
         ),
     }
