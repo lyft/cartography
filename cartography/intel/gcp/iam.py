@@ -427,8 +427,8 @@ def cleanup_customers(neo4j_session: neo4j.Session, common_job_parameters: Dict)
 
 
 @timeit
-def load_users(session: neo4j.Session, data_list: List[Dict], update_tag: int) -> None:
-    session.write_transaction(_load_users_tx, data_list, update_tag)
+def load_users(session: neo4j.Session, data_list: List[Dict], project_id: str, update_tag: int) -> None:
+    session.write_transaction(_load_users_tx, data_list, project_id, update_tag)
 
 
 @timeit

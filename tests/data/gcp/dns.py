@@ -44,6 +44,7 @@ DNS_ZONES = [
 
 DNS_RRS = [
     {
+        'id': 'a.zone-1.example.com.',
         'name': 'a.zone-1.example.com.',
         'type': 'TXT',
         'ttl': 300,
@@ -54,6 +55,7 @@ DNS_RRS = [
         'zone': '111111111111111111111',
     },
     {
+        'id': 'b.zone-1.example.com.',
         'name': 'b.zone-1.example.com.',
         'type': 'TXT',
         'ttl': 300,
@@ -64,6 +66,7 @@ DNS_RRS = [
         'zone': '111111111111111111111',
     },
     {
+        'id': 'a.zone-2.example.com.',
         'name': 'a.zone-2.example.com.',
         'type': 'TXT',
         'ttl': 300,
