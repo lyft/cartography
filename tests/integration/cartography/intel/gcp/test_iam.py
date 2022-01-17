@@ -365,7 +365,7 @@ def test_domains_relationships(neo4j_session):
         ON CREATE SET gcp.firstseen = timestamp()
         SET gcp.lastupdated = {UPDATE_TAG}
         """,
-        CUSTOMER_ID=TEST_CUSTOMER_ID,
+        CUSTOMER_ID=TEST_PROJECT_NUMBER,
         UPDATE_TAG=TEST_UPDATE_TAG,
     )
 
@@ -380,8 +380,8 @@ def test_domains_relationships(neo4j_session):
     )
 
     expected = {
-        (TEST_CUSTOMER_ID, 'xyz.com'),
-        (TEST_CUSTOMER_ID, 'pqr.com'),
+        (TEST_PROJECT_NUMBER, 'xyz.com'),
+        (TEST_PROJECT_NUMBER, 'pqr.com'),
     }
 
     # Fetch relationships
