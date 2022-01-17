@@ -16,7 +16,7 @@ def test_load_gke_clusters(neo4j_session):
 
     expected_nodes = {
         # flake8: noqa
-        "https://container.googleapis.com/v1/projects/test-cluster/locations/europe-west2/clusters/test-cluster",
+        'project/000000000000/clusters/test-cluster',
     }
 
     nodes = neo4j_session.run(
@@ -52,7 +52,7 @@ def test_load_eks_clusters_relationships(neo4j_session):
     )
 
     expected = {
-        (TEST_PROJECT_NUMBER, 'https://container.googleapis.com/v1/projects/test-cluster/locations/europe-west2/clusters/test-cluster'),
+        (TEST_PROJECT_NUMBER, 'project/000000000000/clusters/test-cluster'),
     }
 
     # Fetch relationships

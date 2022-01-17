@@ -126,6 +126,7 @@ DESCRIBE_SERVICE_ACCOUNTS = [
 
 DESCRIBE_DOMAINS = [
     {
+        "id": "contoso1.com",
         "authentication_type": "authenticationType-value",
         "availabilityStatus": "availabilityStatus-value",
         "isAdminManaged": True,
@@ -139,6 +140,7 @@ DESCRIBE_DOMAINS = [
         ],
     },
     {
+        "id": "contoso2.com",
         "authentication_type": "authenticationType-value",
         "availabilityStatus": "availabilityStatus-value",
         "isAdminManaged": True,
