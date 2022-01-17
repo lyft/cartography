@@ -495,12 +495,12 @@ def test_load_container_relationships(neo4j_session):
         (
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/\
             Microsoft.ContainerInstance/containerGroups/demo1",
-            "container1",
+            "container2",
         ),
         (
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/\
             Microsoft.ContainerInstance/containerGroups/demo2",
-            "container2",
+            "container1",
         ),
     }
 
