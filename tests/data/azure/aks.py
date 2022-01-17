@@ -173,7 +173,7 @@ DESCRIBE_CONTAINERS = [
             Microsoft.ContainerInstance/containerGroups/demo1",
     },
     {
-        "id": "container1",
+        "id": "container2",
         "type": "Microsoft.ContainerInstance/containers",
         "resource_group": "TestRG",
         "name": "container2",
