@@ -134,7 +134,7 @@ def load_zone(neo4j_session: neo4j.Session, zone: Dict, current_aws_id: str, upd
         ZoneId=zone['zoneid'],
         Comment=zone['comment'],
         PrivateZone=zone['privatezone'],
-        Arn=zone['arn'],
+        Arn=zone.get('arn'),
         AWS_ACCOUNT_ID=current_aws_id,
         update_tag=update_tag,
     )
