@@ -259,6 +259,7 @@ CREATE INDEX ON :AzureGroup(id);
 CREATE INDEX ON :AzureApplication(id);
 CREATE INDEX ON :AzureServiceAccount(id);
 CREATE INDEX ON :AzureDomain(id);
+CREATE INDEX ON :AzureRole(id);
 CREATE INDEX ON :AzureResourceGroup(id);
 CREATE INDEX ON :AzureTag(id);
 CREATE INDEX ON :AzureNetwork(id);
