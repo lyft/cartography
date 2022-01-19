@@ -159,7 +159,7 @@ DESCRIBE_ROLES = [
         "name": "852d",
         "type": "Microsoft.Authorization/roleAssignments",
         "roleName": "Owner",
-        "permissions": [{"*"}],
+        "permissions": ["*"],
         "principal_id": "86823hkhjhd",
     },
     {
@@ -167,7 +167,7 @@ DESCRIBE_ROLES = [
         "name": "852dqqe",
         "type": "Microsoft.Authorization/roleAssignments",
         "roleName": "Owner",
-        "permissions": [{"*"}],
+        "permissions": ["*"],
         "principal_id": "hvhg575757g",
-    }
+    },
 ]

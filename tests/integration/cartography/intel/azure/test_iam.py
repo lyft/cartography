@@ -2,9 +2,9 @@ from cartography.intel.azure import iam
 from tests.data.azure.iam import DESCRIBE_APPLICATIONS
 from tests.data.azure.iam import DESCRIBE_DOMAINS
 from tests.data.azure.iam import DESCRIBE_GROUPS
+from tests.data.azure.iam import DESCRIBE_ROLES
 from tests.data.azure.iam import DESCRIBE_SERVICE_ACCOUNTS
 from tests.data.azure.iam import DESCRIBE_USERS
-from tests.data.azure.iam import DESCRIBE_ROLES
 
 TEST_TENANT_ID = '00-00-00-00'
 TEST_UPDATE_TAG = 123456789

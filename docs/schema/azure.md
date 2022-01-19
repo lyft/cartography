@@ -1859,6 +1859,7 @@ Representation of an [AzureDomain](https://docs.microsoft.com/en-us/graph/api/do
 ## AzureRole
 
 Representation of an [AzureRole](https://docs.microsoft.com/en-us/azure/role-based-access-control/role-assignments-list-cli)
+
 | Field | Description |
 |-------|-------------|
 |firstseen| Timestamp of when a sync job discovered this node|
@@ -1876,10 +1877,11 @@ Representation of an [AzureRole](https://docs.microsoft.com/en-us/azure/role-bas
         ```
         (AzureTenantResource)-[ASSUME_ROLE]->(AzureRole)
         ```
-        
+
 ## AzureKeyVault
 
 Representation of an [AzureKeyVault](https://docs.microsoft.com/en-us/rest/api/keyvault/vaults/list-by-subscription#vault).
+
 | Field | Description |
 |-------|-------------|
 |firstseen| Timestamp of when a sync job discovered this node|
