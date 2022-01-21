@@ -320,6 +320,10 @@ Representation of an AWS [Lambda Function](https://docs.aws.amazon.com/lambda/la
 | packagetype |  The type of deployment package. |
 | signingprofileversionarn | The ARN of the signing profile version. |
 | signingjobarn | The ARN of the signing job. |
+| codesha256 | The SHA256 hash of the function's deployment package. |
+| architectures | The instruction set architecture that the function supports. Architecture is a string array with one of the valid values. |
+| masterarn | For Lambda@Edge functions, the ARN of the main function. |
+| kmskeyarn | The KMS key that's used to encrypt the function's environment variables. This key is only returned if you've configured a customer managed key. |
 
 ### Relationships
 
@@ -351,6 +355,12 @@ Representation of an AWS [Lambda Function](https://docs.aws.amazon.com/lambda/la
 
         ```
         (AWSLambda)-[HAS]->(AWSLambdaLayer)
+        ```
+
+- AWSLambda functions has AWS ECR Images.
+
+        ```
+        (AWSLambda)-[HAS]->(ECRImage)
         ```
 
 ## AWSLambdaFunctionAlias
@@ -2086,6 +2096,12 @@ Representation of an AWS S3 [Bucket](https://docs.aws.amazon.com/AmazonS3/latest
 | encryption\_algorithm | The encryption algorithm used for default encryption. Only defined if the S3 bucket has default encryption enabled. |
 | encryption\_key\_id | The KMS key ID used for default encryption. Only defined if the S3 bucket has SSE-KMS enabled as the default encryption method. |
 | bucket\_key\_enabled | True if a bucket key is enabled, when using SSE-KMS as the default encryption method. |
+| versioning\_status | The versioning state of the bucket. |
+| mfa\_delete | Specifies whether MFA delete is enabled in the bucket versioning configuration. |
+| block\_public\_acls | Specifies whether Amazon S3 should block public access control lists (ACLs) for this bucket and objects in this bucket. |
+| ignore\_public\_acls | Specifies whether Amazon S3 should ignore public ACLs for this bucket and objects in this bucket. |
+| block\_public\_acls | Specifies whether Amazon S3 should block public bucket policies for this bucket. |
+| restrict\_public\_buckets | Specifies whether Amazon S3 should restrict public bucket policies for this bucket. |
 
 ### Relationships
 

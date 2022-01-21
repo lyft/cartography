@@ -32,6 +32,8 @@ def test_cleanup_jobs_cypher_syntax(neo4j_session):
         'OKTA_ORG_ID': None,
         'DO_ACCOUNT_ID': None,
         'AZURE_SUBSCRIPTION_ID': None,
+        'AZURE_TENANT_ID': None,
+        'GCP_PROJECT_ID': None,
     }
 
     for job_name in contents('cartography.data.jobs.cleanup'):
