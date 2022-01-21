@@ -532,6 +532,7 @@ def get_containers_list(container_groups_list: List[Dict]) -> List[Dict]:
         for container_group in container_groups_list:
             container_list = container_group['properties']['containers']
             for container in container_list:
+                container["id"] = f"{container_group.get('id',None)}/containers/{container.get('name',None)}"
                 container["container_group_id"] = container_group['id']
                 container["resource_group"] = container_group["resource_group"]
                 container["type"] = "Microsoft.ContainerInstance/containers"
@@ -547,9 +548,10 @@ def get_containers_list(container_groups_list: List[Dict]) -> List[Dict]:
 def _load_containers_tx(tx: neo4j.Transaction, containers_list: List[Dict], update_tag: int) -> None:
     ingest_container = """
     UNWIND {containers_list} AS container
-    MERGE (a:AzureContainer{name: container.name})
+    MERGE (a:AzureContainer{id: container.id})
     ON CREATE SET a.firstseen = timestamp(),
     a.type = container.type,
+    a.name = container.name,
     a.resourcegroup = container.resource_group
     SET a.lastupdated = {update_tag}
     WITH a,container

@@ -62,7 +62,6 @@ def get_domains(admin: Resource, customer_id: str, project_id: str) -> List[Dict
         while req is not None:
             res = req.execute()
             page = res.get('domains', [])
-            # domains.append(page)
             domains.extend(page)
         for domain in domains:
             domain["id"] = f"projects/{project_id}/domains/{domain.get('domainName',None)}"
@@ -88,7 +87,6 @@ def get_groups(admin: Resource) -> List[Dict]:
         while req is not None:
             res = req.execute()
             page = res.get('groups', [])
-            # groups.append(page)
             groups.extend(page)
             req = admin.groups().list_next(previous_request=req, previous_response=res)
         return groups
@@ -429,8 +427,8 @@ def cleanup_customers(neo4j_session: neo4j.Session, common_job_parameters: Dict)
 
 
 @timeit
-def load_users(session: neo4j.Session, data_list: List[Dict], update_tag: int) -> None:
-    session.write_transaction(_load_users_tx, data_list, update_tag)
+def load_users(session: neo4j.Session, data_list: List[Dict], project_id: str, update_tag: int) -> None:
+    session.write_transaction(_load_users_tx, data_list, project_id, update_tag)
 
 
 @timeit

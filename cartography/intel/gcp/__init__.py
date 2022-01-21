@@ -11,33 +11,24 @@ from googleapiclient.discovery import Resource
 from oauth2client.client import ApplicationDefaultCredentialsError
 from oauth2client.client import GoogleCredentials
 
+from .resources import RESOURCE_FUNCTIONS
 from cartography.config import Config
-from cartography.intel.gcp import apigateway
-from cartography.intel.gcp import bigtable
-from cartography.intel.gcp import cloudkms
-from cartography.intel.gcp import cloudrun
-from cartography.intel.gcp import compute
 from cartography.intel.gcp import crm
-from cartography.intel.gcp import dns
-from cartography.intel.gcp import firestore
-from cartography.intel.gcp import gke
-from cartography.intel.gcp import iam
-from cartography.intel.gcp import sql
-from cartography.intel.gcp import storage
-from cartography.intel.gcp.auth import AuthHelper
+from cartography.intel.gcp.util.common import parse_and_validate_gcp_requested_syncs
+from cartography.util import run_analysis_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 Resources = namedtuple(
-    'Resources', 'compute container crm_v1 crm_v2 dns storage serviceusage \
-        cloudfunction iam admin apigateway cloudkms cloudrun cloudsql cloudbigtable firestore',
+    'Resources', 'compute gke crm_v1 crm_v2 dns storage serviceusage \
+        iam admin apigateway cloudkms cloudrun sql bigtable firestore',
 )
 
 # Mapping of service short names to their full names as in docs. See https://developers.google.com/apis-explorer,
 # and https://cloud.google.com/service-usage/docs/reference/rest/v1/services#ServiceConfig
 Services = namedtuple(
-    'Services', 'compute storage gke dns crm_v1 crm_v2 cloudfunction \
-    cloudkms cloudrun iam admin apigateway cloudsql cloudbigtable firestore',
+    'Services', 'compute storage gke dns crm_v1 crm_v2 \
+    cloudkms cloudrun iam admin apigateway sql bigtable firestore',
 )
 service_names = Services(
     compute='compute.googleapis.com',
@@ -52,8 +43,8 @@ service_names = Services(
     iam='iam.googleapis.com',
     admin='admin.googleapis.com',
     apigateway='apigateway.googleapis.com',
-    cloudsql='sqladmin.googleapis.com',
-    cloudbigtable='bigtableadmin.googleapis.com',
+    sql='sqladmin.googleapis.com',
+    bigtable='bigtableadmin.googleapis.com',
     firestore='firestore.googleapis.com',
 )
 
@@ -241,12 +232,11 @@ def _initialize_resources(credentials: GoogleCredentials) -> Resource:
         crm_v2=_get_crm_resource_v2(credentials),
         compute=_get_compute_resource(credentials),
         storage=_get_storage_resource(credentials),
-        container=_get_container_resource(credentials),
+        gke=_get_container_resource(credentials),
         serviceusage=_get_serviceusage_resource(credentials),
         dns=_get_dns_resource(credentials),
-        cloudfunction=_get_cloudfunction_resource(credentials),
-        cloudsql=_get_cloudsql_resource(credentials),
-        cloudbigtable=_get_cloudbigtable_resource(credentials),
+        sql=_get_cloudsql_resource(credentials),
+        bigtable=_get_cloudbigtable_resource(credentials),
         firestore=_get_firestore_resource(credentials),
         cloudkms=_get_cloudkms_resource(credentials),
         cloudrun=_get_cloudrun_resource(credentials),
@@ -285,8 +275,8 @@ def _services_enabled_on_project(serviceusage: Resource, project_id: str) -> Set
 
 
 def _sync_single_project(
-    neo4j_session: neo4j.Session, resources: Resource, project_id: str, gcp_update_tag: int,
-    common_job_parameters: Dict, regions: List[str] = [],
+    neo4j_session: neo4j.Session, resources: Resource, requested_syncs: List[str], project_id: str, gcp_update_tag: int,
+    common_job_parameters: Dict,
 ) -> None:
     """
     Handles graph sync for a single GCP project.
@@ -304,53 +294,26 @@ def _sync_single_project(
 
     # Determine the resources available on the project.
     enabled_services = _services_enabled_on_project(resources.serviceusage, project_id)
-
-    if service_names.iam in enabled_services:
-        iam.sync(neo4j_session, resources.iam, resources.crm_v1, project_id, gcp_update_tag, common_job_parameters)
-
-    if service_names.compute in enabled_services:
-        compute.sync(neo4j_session, resources.compute, project_id, gcp_update_tag, common_job_parameters)
-
-    if service_names.storage in enabled_services:
-        storage.sync_gcp_buckets(
-            neo4j_session, resources.storage, project_id, gcp_update_tag, common_job_parameters, regions,
-        )
-
-    if service_names.gke in enabled_services:
-        gke.sync_gke_clusters(
-            neo4j_session, resources.container, project_id, gcp_update_tag, common_job_parameters, regions,
-        )
-
-    if service_names.dns in enabled_services:
-        dns.sync(neo4j_session, resources.dns, project_id, gcp_update_tag, common_job_parameters, regions)
-    if service_names.cloudsql in enabled_services:
-        sql.sync_sql(neo4j_session, resources.cloudsql, project_id, gcp_update_tag, common_job_parameters)
-    if service_names.cloudbigtable in enabled_services:
-        bigtable.sync_bigtable(
-            neo4j_session, resources.cloudbigtable, project_id, gcp_update_tag,
-            common_job_parameters,
-        )
-    if service_names.cloudkms in enabled_services:
-        cloudkms.sync_kms(neo4j_session, resources.cloudkms, project_id, gcp_update_tag, common_job_parameters)
-    if service_names.cloudrun in enabled_services:
-        cloudrun.sync_cloudrun(neo4j_session, resources.cloudrun, project_id, gcp_update_tag, common_job_parameters)
-    if service_names.iam in enabled_services:
-        iam.sync(
-            neo4j_session, resources.iam, resources.crm_v1, resources.admin,
-            project_id, gcp_update_tag, common_job_parameters,
-        )
-    if service_names.apigateway in enabled_services:
-        apigateway.sync_apigateways(
-            neo4j_session, resources.apigateway,
-            project_id, gcp_update_tag, common_job_parameters,
-        )
-    if service_names.firestore in enabled_services:
-        firestore.sync_firestore(neo4j_session, resources.firestore, project_id, gcp_update_tag, common_job_parameters)
+    for request in requested_syncs:
+        if request in RESOURCE_FUNCTIONS:
+            if getattr(service_names, request) in enabled_services:
+                if request == 'iam':
+                    RESOURCE_FUNCTIONS[request](
+                        neo4j_session, getattr(resources, request), resources.crm_v1, resources.admin,
+                        project_id, gcp_update_tag, common_job_parameters,
+                    )
+                else:
+                    RESOURCE_FUNCTIONS[request](
+                        neo4j_session, getattr(resources, request),
+                        project_id, gcp_update_tag, common_job_parameters,
+                    )
+        else:
+            raise ValueError(f'GCP sync function "{request}" was specified but does not exist. Did you misspell it?')
 
 
 def _sync_multiple_projects(
-    neo4j_session: neo4j.Session, resources: Resource, projects: List[Dict],
-    gcp_update_tag: int, common_job_parameters: Dict, regions: List[str] = [],
+    neo4j_session: neo4j.Session, resources: Resource, requested_syncs: List[str], projects: List[Dict],
+    gcp_update_tag: int, common_job_parameters: Dict,
 ) -> None:
     """
     Handles graph sync for multiple GCP projects.
@@ -372,7 +335,8 @@ def _sync_multiple_projects(
         common_job_parameters["GCP_PROJECT_ID"] = project_id
         logger.info("Syncing GCP project %s.", project_id)
         _sync_single_project(
-            neo4j_session, resources, project_id, gcp_update_tag, common_job_parameters, regions=regions,
+            neo4j_session, resources, requested_syncs,
+            project_id, gcp_update_tag, common_job_parameters,
         )
 
     del common_job_parameters["GCP_PROJECT_ID"]
@@ -414,6 +378,10 @@ def start_gcp_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
             e,
         )
         return
+
+    requested_syncs: List[str] = list(RESOURCE_FUNCTIONS.keys())
+    if config.gcp_requested_syncs:
+        requested_syncs = parse_and_validate_gcp_requested_syncs(config.gcp_requested_syncs)
 
     resources = _initialize_resources(credentials)
 

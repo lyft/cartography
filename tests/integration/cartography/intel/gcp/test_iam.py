@@ -87,6 +87,7 @@ def test_load_iam_users(neo4j_session):
     cartography.intel.gcp.iam.load_users(
         neo4j_session,
         data,
+        TEST_CUSTOMER_ID,
         TEST_UPDATE_TAG,
     )
 
@@ -111,6 +112,7 @@ def test_load_groups(neo4j_session):
     cartography.intel.gcp.iam.load_groups(
         neo4j_session,
         data,
+        TEST_CUSTOMER_ID,
         TEST_UPDATE_TAG,
     )
 
@@ -135,6 +137,8 @@ def test_load_domains(neo4j_session):
     cartography.intel.gcp.iam.load_domains(
         neo4j_session,
         data,
+        TEST_CUSTOMER_ID,
+        TEST_PROJECT_NUMBER,
         TEST_UPDATE_TAG,
     )
 
@@ -290,6 +294,7 @@ def test_users_relationships(neo4j_session):
     cartography.intel.gcp.iam.load_users(
         neo4j_session,
         data,
+        TEST_CUSTOMER_ID,
         TEST_UPDATE_TAG,
     )
 
@@ -329,6 +334,7 @@ def test_groups_relationships(neo4j_session):
     cartography.intel.gcp.iam.load_groups(
         neo4j_session,
         data,
+        TEST_CUSTOMER_ID,
         TEST_UPDATE_TAG,
     )
 
@@ -359,7 +365,7 @@ def test_domains_relationships(neo4j_session):
         ON CREATE SET gcp.firstseen = timestamp()
         SET gcp.lastupdated = {UPDATE_TAG}
         """,
-        CUSTOMER_ID=TEST_CUSTOMER_ID,
+        CUSTOMER_ID=TEST_PROJECT_NUMBER,
         UPDATE_TAG=TEST_UPDATE_TAG,
     )
 
@@ -368,12 +374,14 @@ def test_domains_relationships(neo4j_session):
     cartography.intel.gcp.iam.load_domains(
         neo4j_session,
         data,
+        TEST_CUSTOMER_ID,
+        TEST_PROJECT_NUMBER,
         TEST_UPDATE_TAG,
     )
 
     expected = {
-        (TEST_CUSTOMER_ID, 'xyz.com'),
-        (TEST_CUSTOMER_ID, 'pqr.com'),
+        (TEST_PROJECT_NUMBER, 'xyz.com'),
+        (TEST_PROJECT_NUMBER, 'pqr.com'),
     }
 
     # Fetch relationships

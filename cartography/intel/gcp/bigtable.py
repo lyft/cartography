@@ -121,7 +121,6 @@ def get_bigtable_cluster_backups(bigtable: Resource, bigtable_clusters: List[Dic
     cluster_backups = []
     for cluster in bigtable_clusters:
         try:
-
             request = bigtable.projects().instances().clusters().backup().list(
                 parent=cluster.get('name', None),
             )
@@ -170,7 +169,6 @@ def get_get_bigtable_tables(bigtable: Resource, bigtable_instances: List[Dict], 
     bigtable_tables = []
     for instance in bigtable_instances:
         try:
-
             request = bigtable.projects().instances().tables().list(
                 parent=instance.get('name', None),
             )

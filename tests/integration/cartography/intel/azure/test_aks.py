@@ -464,15 +464,15 @@ def test_load_containers(neo4j_session):
     )
 
     expected_nodes = {
-        "container1",
         "container2",
+        "container1",
     }
 
     nodes = neo4j_session.run(
         """
-        MATCH (r:AzureContainer) RETURN r.name;
+        MATCH (r:AzureContainer) RETURN r.id;
         """, )
-    actual_nodes = {n['r.name'] for n in nodes}
+    actual_nodes = {n['r.id'] for n in nodes}
 
     assert actual_nodes == expected_nodes
 
@@ -494,21 +494,21 @@ def test_load_container_relationships(neo4j_session):
     expected = {
         (
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/\
-            Microsoft.ContainerInstance/containerGroups/demo1",
-            "container1",
+            Microsoft.ContainerInstance/containerGroups/demo2",
+            "container2",
         ),
         (
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/\
-            Microsoft.ContainerInstance/containerGroups/demo2",
-            "container2",
+            Microsoft.ContainerInstance/containerGroups/demo1",
+            "container1",
         ),
     }
 
     result = neo4j_session.run(
         """
-        MATCH (n1:AzureContainerGroup)-[:CONTAIN]->(n2:AzureContainer) RETURN n1.id, n2.name;
+        MATCH (n1:AzureContainerGroup)-[:CONTAIN]->(n2:AzureContainer) RETURN n1.id, n2.id;
         """, )
 
-    actual = {(r['n1.id'], r['n2.name']) for r in result}
+    actual = {(r['n1.id'], r['n2.id']) for r in result}
 
     assert actual == expected

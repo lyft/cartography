@@ -77,6 +77,12 @@ def _sync_one_account(
         common_job_parameters,
     )
 
+    run_analysis_job(
+        'aws_lambda_ecr.json',
+        neo4j_session,
+        common_job_parameters,
+    )
+
 
 def _autodiscover_account_regions(boto3_session: boto3.session.Session, account_id: str) -> List[str]:
     regions: List[str] = []
