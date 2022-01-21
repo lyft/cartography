@@ -24,24 +24,44 @@ def sync_pods(
 def get_pods(client: K8sClient, cluster: Dict) -> List[Dict]:
     pods = list()
     for pod in client.core.list_pod_for_all_namespaces().items:
+        containers = {}
+        for container in pod.spec.containers:
+            containers[container.name] = {
+                "name": container.name,
+                "image": container.image,
+                "uid": f"{pod.metadata.uid}-{container.name}",
+            }
+        if pod.status and pod.status.container_statuses:
+            for status in pod.status.container_statuses:
+                if status.name in containers:
+                    _state = 'waiting'
+                    if status.state.running:
+                        _state = 'running'
+                    elif status.state.terminated:
+                        _state = 'terminated'
+                    try:
+                        image_sha = status.image_id.split("@")[1]
+                    except IndexError:
+                        image_sha = None
+                    containers[status.name]["status"] = {
+                        "image_id": status.image_id,
+                        "image_sha": image_sha,
+                        "ready": status.ready,
+                        "started": status.started,
+                        "state": _state,
+                    }
         pods.append(
             {
                 "uid": pod.metadata.uid,
                 "name": pod.metadata.name,
+                "status_phase": pod.status.phase,
                 "creation_timestamp": get_epoch(pod.metadata.creation_timestamp),
                 "deletion_timestamp": get_epoch(pod.metadata.deletion_timestamp),
                 "namespace": pod.metadata.namespace,
                 "node": pod.spec.node_name,
                 "cluster_uid": cluster["uid"],
                 "labels": pod.metadata.labels,
-                "containers": [
-                    {
-                        "name": container.name,
-                        "image": container.image,
-                        "uid": f"{pod.metadata.uid}-{container.name}",
-                    }
-                    for container in pod.spec.containers
-                ],
+                "containers": list(containers.values()),
             },
         )
     return pods
@@ -54,6 +74,7 @@ def load_pods(session: Session, data: List[Dict], update_tag: int) -> None:
         ON CREATE SET pod.firstseen = timestamp()
         SET pod.lastupdated = {update_tag},
             pod.name = k8pod.name,
+            pod.status_phase = k8pod.status_phase,
             pod.created_at = k8pod.creation_timestamp,
             pod.deleted_at = k8pod.deletion_timestamp
         WITH pod, k8pod.namespace as ns, k8pod.cluster_uid as cuid, k8pod.containers as k8containers
@@ -66,6 +87,11 @@ def load_pods(session: Session, data: List[Dict], update_tag: int) -> None:
             MERGE (container: KubernetesContainer {id: k8container.uid})
             ON CREATE SET container.firstseen = timestamp()
             SET container.image = k8container.image,
+                container.status_image_id = k8container.status.image_id,
+                container.status_image_sha = k8container.status.image_sha,
+                container.status_ready = k8container.status.ready,
+                container.status_started = k8container.status.started,
+                container.status_state = k8container.status.state,
                 container.name = k8container.name,
                 container.lastupdated = {update_tag}
             WITH pod, space, cluster, container

@@ -48,8 +48,8 @@ Representation of a [Kubernetes Namespace.](https://kubernetes.io/docs/concepts/
 | lastupdated | Timestamp of the last time the node was updated |
 | id | UID of the kubernetes namespace |
 | name | Name of the kubernetes namespace |
-| created_at | Timestamp of the creation time of the kubernetes namespace |
-| deleted_at | Timestamp of the deletion time of the kubernetes namespace |
+| created\_at | Timestamp of the creation time of the kubernetes namespace |
+| deleted\_at | Timestamp of the deletion time of the kubernetes namespace |
 
 ### Relationships
 - KubernetesNamespace can have KubernetesPods.
@@ -71,8 +71,9 @@ Representation of a [Kubernetes Pod.](https://kubernetes.io/docs/concepts/worklo
 | lastupdated | Timestamp of the last time the node was updated |
 | id | UID of the kubernetes pod |
 | name | Name of the kubernetes pod |
-| created_at | Timestamp of the creation time of the kubernetes pod |
-| deleted_at | Timestamp of the deletion time of the kubernetes pod |
+| status\_phase | The phase of a Pod is a simple, high-level summary of where the Pod is in its lifecycle.  |
+| created\_at | Timestamp of the creation time of the kubernetes pod |
+| deleted\_at | Timestamp of the deletion time of the kubernetes pod |
 
 ### Relationships
 - KubernetesPod has KubernetesContainers.
@@ -90,6 +91,11 @@ Representation of a [Kubernetes Container.](https://kubernetes.io/docs/concepts/
 | id | Identifier for the container which is derived from the UID of pod and the name of container |
 | name | Name of the container in kubernetes pod |
 | image | Docker image used in the container |
+| status\_image\_id | ImageID of the container's image. |
+| status\_image\_sha | The SHA portion of the status\_image\_id |
+| status\_ready | Specifies whether the container has passed its readiness probe. |
+| status\_started | Specifies whether the container has passed its startup probe. |
+| statys\_state | State of the container (running, terminated, waiting) |
 
 ### Relationships
 - KubernetesPod has KubernetesContainers.
@@ -106,12 +112,12 @@ Representation of a [Kubernetes Service.](https://kubernetes.io/docs/concepts/se
 | lastupdated | Timestamp of the last time the node was updated |
 | id | UID of the kubernetes service |
 | name | Name of the kubernetes service |
-| created_at | Timestamp of the creation time of the kubernetes service |
-| deleted_at | Timestamp of the deletion time of the kubernetes service |
+| created\_at | Timestamp of the creation time of the kubernetes service |
+| deleted\_at | Timestamp of the deletion time of the kubernetes service |
 | type | Type of kubernetes service e.g. `ClusterIP` |
-| load_balancer_ip | IP of the load balancer when service type is `LoadBalancer` |
-| ingress_host | Hostname of the ingress endpoint, if any |
-| ingress_ip | IP of the ingress endpoint, if any |
+| load\_balancer\_ip | IP of the load balancer when service type is `LoadBalancer` |
+| ingress\_host | Hostname of the ingress endpoint, if any |
+| ingress\_ip | IP of the ingress endpoint, if any |
 
 ### Relationships
 - KubernetesService can serve KubernetesPods.

@@ -29,7 +29,7 @@ def start_digitalocean_ingestion(neo4j_session: neo4j.Session, config: Config) -
     common_job_parameters = {
         "UPDATE_TAG": config.update_tag,
     }
-    manager = Manager(config.digitalocean_token)
+    manager = Manager(token=config.digitalocean_token)
 
     """
     Get Account ID related to this credentials and pass it along in `common_job_parameters` to avoid cleaning up other

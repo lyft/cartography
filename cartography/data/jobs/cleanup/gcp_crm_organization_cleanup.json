@@ -1,5 +1,4 @@
 {
-  "statements": [
-  ],
-  "name": "cleanup GCP Organizations"
+	"statements": [],
+	"name": "cleanup GCP Organizations"
 }

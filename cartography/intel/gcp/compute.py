@@ -557,11 +557,11 @@ def load_gcp_vpcs(neo4j_session: neo4j.Session, vpcs: List[Dict], gcp_update_tag
     :return: Nothing
     """
     query = """
-    MERGE(p:GCPProject{id:{ProjectId}})
+    MERGE (p:GCPProject{id:{ProjectId}})
     ON CREATE SET p.firstseen = timestamp()
     SET p.lastupdated = {gcp_update_tag}
 
-    MERGE(vpc:GCPVpc{id:{PartialUri}})
+    MERGE (vpc:GCPVpc{id:{PartialUri}})
     ON CREATE SET vpc.firstseen = timestamp(),
     vpc.partial_uri = {PartialUri}
     SET vpc.self_link = {SelfLink},
@@ -600,11 +600,11 @@ def load_gcp_subnets(neo4j_session: neo4j.Session, subnets: List[Dict], gcp_upda
     :return: Nothing
     """
     query = """
-    MERGE(vpc:GCPVpc{id:{VpcPartialUri}})
+    MERGE (vpc:GCPVpc{id:{VpcPartialUri}})
     ON CREATE SET vpc.firstseen = timestamp(),
     vpc.partial_uri = {VpcPartialUri}
 
-    MERGE(subnet:GCPSubnet{id:{PartialUri}})
+    MERGE (subnet:GCPSubnet{id:{PartialUri}})
     ON CREATE SET subnet.firstseen = timestamp(),
     subnet.partial_uri = {PartialUri}
     SET subnet.self_link = {SubnetSelfLink},
@@ -649,7 +649,7 @@ def load_gcp_forwarding_rules(neo4j_session: neo4j.Session, fwd_rules: List[Dict
     """
 
     query = """
-        MERGE(fwd:GCPForwardingRule{id:{PartialUri}})
+        MERGE (fwd:GCPForwardingRule{id:{PartialUri}})
         ON CREATE SET fwd.firstseen = timestamp(),
         fwd.partial_uri = {PartialUri}
         SET fwd.ip_address = {IPAddress},
@@ -700,7 +700,7 @@ def load_gcp_forwarding_rules(neo4j_session: neo4j.Session, fwd_rules: List[Dict
 @timeit
 def _attach_fwd_rule_to_subnet(neo4j_session: neo4j.Session, fwd: Dict, gcp_update_tag: int) -> None:
     query = """
-        MERGE(subnet:GCPSubnet{id:{SubNetworkPartialUri}})
+        MERGE (subnet:GCPSubnet{id:{SubNetworkPartialUri}})
         ON CREATE SET subnet.firstseen = timestamp(),
         subnet.partial_uri = {SubNetworkPartialUri}
         SET subnet.lastupdated = {gcp_update_tag}
@@ -708,7 +708,7 @@ def _attach_fwd_rule_to_subnet(neo4j_session: neo4j.Session, fwd: Dict, gcp_upda
         WITH subnet
         MATCH(fwd:GCPForwardingRule{id:{PartialUri}})
 
-        MERGE(subnet)-[p:RESOURCE]->(fwd)
+        MERGE (subnet)-[p:RESOURCE]->(fwd)
         ON CREATE SET p.firstseen = timestamp()
         SET p.lastupdated = {gcp_update_tag}
     """

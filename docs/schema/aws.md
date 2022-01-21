@@ -149,6 +149,14 @@
   - [Relationships](#relationships-69)
 - [AWSConfigRule](#awsconfigrule)
   - [Relationships](#relationships-70)
+- [LaunchConfiguration](#launchconfiguration)
+  - [Relationships](#relationships-71)
+- [LaunchTemplate](#launchtemplate)
+  - [Relationships](#relationships-72)
+- [LaunchTemplateVersion](#launchtemplateversion)
+  - [Relationships](#relationships-73)
+- [ElasticIPAddress](#elasticipaddress)
+  - [Relationships](#relationships-74)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -184,7 +192,11 @@ Representation of an AWS Account.
                               EC2Reservation,
                               EC2ReservedInstance,
                               EC2SecurityGroup,
+                              ElasticIPAddress,
                               ESDomain,
+                              LaunchConfiguration,
+                              LaunchTemplate,
+                              LaunchTemplateVersion,
                               LoadBalancer,
                               RDSCluster,
                               RDSInstance,
@@ -308,6 +320,10 @@ Representation of an AWS [Lambda Function](https://docs.aws.amazon.com/lambda/la
 | packagetype |  The type of deployment package. |
 | signingprofileversionarn | The ARN of the signing profile version. |
 | signingjobarn | The ARN of the signing job. |
+| codesha256 | The SHA256 hash of the function's deployment package. |
+| architectures | The instruction set architecture that the function supports. Architecture is a string array with one of the valid values. |
+| masterarn | For Lambda@Edge functions, the ARN of the main function. |
+| kmskeyarn | The KMS key that's used to encrypt the function's environment variables. This key is only returned if you've configured a customer managed key. |
 
 ### Relationships
 
@@ -339,6 +355,12 @@ Representation of an AWS [Lambda Function](https://docs.aws.amazon.com/lambda/la
 
         ```
         (AWSLambda)-[HAS]->(AWSLambdaLayer)
+        ```
+
+- AWSLambda functions has AWS ECR Images.
+
+        ```
+        (AWSLambda)-[HAS]->(ECRImage)
         ```
 
 ## AWSLambdaFunctionAlias
@@ -2074,6 +2096,12 @@ Representation of an AWS S3 [Bucket](https://docs.aws.amazon.com/AmazonS3/latest
 | encryption\_algorithm | The encryption algorithm used for default encryption. Only defined if the S3 bucket has default encryption enabled. |
 | encryption\_key\_id | The KMS key ID used for default encryption. Only defined if the S3 bucket has SSE-KMS enabled as the default encryption method. |
 | bucket\_key\_enabled | True if a bucket key is enabled, when using SSE-KMS as the default encryption method. |
+| versioning\_status | The versioning state of the bucket. |
+| mfa\_delete | Specifies whether MFA delete is enabled in the bucket versioning configuration. |
+| block\_public\_acls | Specifies whether Amazon S3 should block public access control lists (ACLs) for this bucket and objects in this bucket. |
+| ignore\_public\_acls | Specifies whether Amazon S3 should ignore public ACLs for this bucket and objects in this bucket. |
+| block\_public\_acls | Specifies whether Amazon S3 should block public bucket policies for this bucket. |
+| restrict\_public\_buckets | Specifies whether Amazon S3 should restrict public bucket policies for this bucket. |
 
 ### Relationships
 
@@ -2293,6 +2321,9 @@ Representation of an AWS [Auto Scaling Group Resource](https://docs.aws.amazon.c
 | name |  The name of the Auto Scaling group. |
 | createdtime | The date and time the group was created. |
 | launchconfigurationname | The name of the associated launch configuration. |
+| launchtemplatename | The name of the launch template. |
+| launchtemplateid | The ID of the launch template. |
+| launchtemplateversion | The version number of the launch template. |
 | maxsize | The maximum size of the group.|
 | minsize | The minimum size of the group.|
 | defaultcooldown | The duration of the default cooldown period, in seconds. |
@@ -2324,6 +2355,16 @@ Representation of an AWS [Auto Scaling Group Resource](https://docs.aws.amazon.c
 
         ```
         (EC2Instance)-[MEMBER_AUTO_SCALE_GROUP]->(AutoScalingGroup)
+        ```
+- AWS Auto Scaling Groups have Launch Configurations
+
+        ```
+        (AutoScalingGroup)-[HAS_LAUNCH_CONFIG]->(LaunchConfiguration)
+        ```
+- AWS Auto Scaling Groups have Launch Templates
+
+        ```
+        (AutoScalingGroup)-[HAS_LAUNCH_TEMPLATE]->(LaunchTemplate)
         ```
 
 ## EC2Image
@@ -2426,6 +2467,7 @@ Representation of an AWS [Secrets Manager Secret](https://docs.aws.amazon.com/se
 
         ```
         (AWSAccount)-[RESOURCE]->(SecretsManagerSecret)
+        ```
 
 ## EBSVolume
 
@@ -2470,6 +2512,11 @@ Representation of an AWS [EBS Volume](https://docs.aws.amazon.com/AWSEC2/latest/
 
         ```
         (EBSVolume)-[ATTACHED_TO]->(EC2Instance)
+        ```
+
+- `AWSTag`
+        ```
+        (EBSVolume)-[TAGGED]->(AWSTag)
         ```
 
 ## EBSSnapshot
@@ -2567,6 +2614,7 @@ Representation of the configuration of AWS [Security Hub](https://docs.aws.amazo
 
         ```
         (AWSAccount)-[RESOURCE]->(SecurityHub)
+        ```
 
 ## AWSConfigurationRecorder
 
@@ -2648,4 +2696,148 @@ Representation of an AWS [Config Rule](https://docs.aws.amazon.com/config/latest
 
         ```
         (AWSAccount)-[RESOURCE]->(AWSConfigRule)
+        ```
+
+## LaunchConfiguration
+
+Representation of an AWS [Launch Configuration](https://docs.aws.amazon.com/autoscaling/ec2/APIReference/API_LaunchConfiguration.html)
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The ARN of the launch configuration. |
+| name | The name of the launch configuration. |
+| arn | The ARN of the launch configuration. |
+| created\_time| The creation date and time for the launch configuration. |
+| image\_id | The ID of the Amazon Machine Image (AMI) to use to launch your EC2 instances. |
+| key\_name | The name of the key pair. |
+| security\_groups | A list that contains the security groups to assign to the instances in the Auto Scaling group. |
+| instance\_type | The instance type for the instances. |
+| kernel\_id | The ID of the kernel associated with the AMI. |
+| ramdisk\_id | The ID of the RAM disk associated with the AMI. |
+| instance\_monitoring\_enabled | If true, detailed monitoring is enabled. Otherwise, basic monitoring is enabled. |
+| spot\_price | The maximum hourly price to be paid for any Spot Instance launched to fulfill the request. |
+| iam\_instance\_profile | The name or the Amazon Resource Name (ARN) of the instance profile associated with the IAM role for the instance. |
+| ebs\_optimized | Specifies whether the launch configuration is optimized for EBS I/O (true) or not (false). |
+| associate\_public\_ip\_address | For Auto Scaling groups that are running in a VPC, specifies whether to assign a public IP address to the group's instances. |
+| placement\_tenancy | The tenancy of the instance, either default or dedicated. An instance with dedicated tenancy runs on isolated, single-tenant hardware and can only be launched into a VPC. |
+| region | The region of the launch configuration. |
+
+### Relationships
+
+- Launch Configurations are a resource under the AWS Account.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(LaunchConfiguration)
+        ```
+
+## LaunchTemplate
+
+Representation of an AWS [Launch Template]()
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The ID of the launch template. |
+| name | The name of the launch template. |
+| create\_time | The time launch template was created. |
+| created\_by | The principal that created the launch template. |
+| default\_version\_number | The version number of the default version of the launch template. |
+| latest\_version\_number | The version number of the latest version of the launch template. |
+| region | The region of the launch template. |
+
+### Relationships
+
+- Launch Templates are a resource under the AWS Account.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(LaunchTemplate)
+        ```
+- Launch templates have Launch Template Versions
+
+        ```
+        (LaunchTemplate)-[VERSION]->(LaunchTemplateVersion)
+        ```
+
+## LaunchTemplateVersion
+
+Representation of an AWS [Launch Template Version]()
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The ID of the launch template version (ID-version). |
+| name | The name of the launch template. |
+| create\_time | The time the version was created. |
+| created\_by | The principal that created the version. |
+| default\_version | Indicates whether the version is the default version. |
+| version\_number | The version number. |
+| version\_description | The description of the version. |
+| kernel\_id | The ID of the kernel, if applicable. |
+| ebs\_optimized | Indicates whether the instance is optimized for Amazon EBS I/O. |
+| iam\_instance\_profile\_arn | The Amazon Resource Name (ARN) of the instance profile. |
+| iam\_instance\_profile\_name | The name of the instance profile. |
+| image\_id | The ID of the AMI that was used to launch the instance. |
+| instance\_type | The instance type. |
+| key\_name | The name of the key pair. |
+| monitoring\_enabled | Indicates whether detailed monitoring is enabled. Otherwise, basic monitoring is enabled. |
+| ramdisk\_id | The ID of the RAM disk, if applicable. |
+| disable\_api\_termination | If set to true, indicates that the instance cannot be terminated using the Amazon EC2 console, command line tool, or API. |
+| instance\_initiated\_shutdown\_behavior | Indicates whether an instance stops or terminates when you initiate shutdown from the instance (using the operating system command for system shutdown). |
+| security\_group\_ids | The security group IDs. |
+| security\_groups | The security group names. |
+| region | The region of the launch template. |
+
+### Relationships
+
+- Launch Template Versions are a resource under the AWS Account.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(LaunchTemplateVersion)
+        ```
+
+## ElasticIPAddress
+
+Representation of an AWS EC2 [Elastic IP address](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_Address.html)
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The Allocation ID of the elastic IP address |
+| instance\_id | The ID of the instance that the address is associated with (if any). |
+| public\_ip | The Elastic IP address. |
+| allocation\_id | The ID representing the allocation of the address for use with EC2-VPC. |
+| association\_id | The ID representing the association of the address with an instance in a VPC. |
+| domain | Indicates whether this Elastic IP address is for use with instances in EC2-Classic (standard) or instances in a VPC (vpc). |
+| network\_interface\_id | The ID of the network interface. |
+| private\_ip\_address | The private IP address associated with the Elastic IP address. |
+| public\_ipv4\_pool | The ID of an address pool. |
+| network\_border\_group | The name of the unique set of Availability Zones, Local Zones, or Wavelength Zones from which AWS advertises IP addresses. |
+| customer\_owned\_ip | The customer-owned IP address. |
+| customer\_owned\_ipv4\_pool | The ID of the customer-owned address pool. |
+| carrier\_ip | The carrier IP address associated. This option is only available for network interfaces which reside in a subnet in a Wavelength Zone (for example an EC2 instance). |
+| region | The region of the IP. |
+
+### Relationships
+
+- Elastic IPs are a resource under the AWS Account.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(ElasticIPAddress)
+        ```
+
+- Elastic IPs can be attached to EC2 instances
+
+        ```
+        (EC2Instance)-[ELASTIC_IP_ADDRESS]->(ElasticIPAddress)
+        ```
+
+- Elastic IPs can be attached to NetworkInterfaces
+
+        ```
+        (NetworkInterface)-[ELASTIC_IP_ADDRESS]->(ElasticIPAddress)
         ```

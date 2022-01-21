@@ -1,5 +1,4 @@
 {
-  "statements": [
-  ],
-  "name": "cleanup GCP Folders"
+	"statements": [],
+	"name": "cleanup GCP Folders"
 }

@@ -61,7 +61,7 @@ def load_gke_clusters(neo4j_session: neo4j.Session, cluster_resp: Dict, project_
     """
 
     query = """
-    MERGE(cluster:GKECluster{id:{ClusterSelfLink}})
+    MERGE (cluster:GKECluster{id:{ClusterId}})
     ON CREATE SET
         cluster.firstseen = timestamp(),
         cluster.created_at = {ClusterCreateTime}
@@ -92,7 +92,8 @@ def load_gke_clusters(neo4j_session: neo4j.Session, cluster_resp: Dict, project_
         cluster.private_endpoint = {ClusterPrivateEndpoint},
         cluster.public_endpoint = {ClusterPublicEndpoint},
         cluster.masterauth_username = {ClusterMasterUsername},
-        cluster.masterauth_password = {ClusterMasterPassword}
+        cluster.masterauth_password = {ClusterMasterPassword},
+        cluster.lastupdated = {gcp_update_tag}
     WITH cluster
     MATCH (owner:GCPProject{id:{ProjectId}})
     MERGE (owner)-[r:RESOURCE]->(cluster)
@@ -105,6 +106,7 @@ def load_gke_clusters(neo4j_session: neo4j.Session, cluster_resp: Dict, project_
         neo4j_session.run(
             query,
             ProjectId=project_id,
+            ClusterId=f"project/{project_id}/clusters/{cluster['name']}",
             ClusterSelfLink=cluster['selfLink'],
             ClusterCreateTime=cluster['createTime'],
             ClusterName=cluster['name'],
