@@ -32,7 +32,7 @@ def get_gcp_functions(function: Resource, project_id: str) -> List[Dict]:
     """
     try:
         regions = []
-        request = function.projects().locations().list(name=project_id)
+        request = function.projects().locations().list(name=f"projects/{project_id}")
         while request is not None:
             response = request.execute()
             for location in response['locations']:
@@ -188,5 +188,5 @@ def sync(
     logger.info("Syncing GCP Cloud Functions for project %s.", project_id)
     # FUNCTIONS
     functions = get_gcp_functions(function, project_id)
-    load_functions(functions, project_id, gcp_update_tag)
+    load_functions(neo4j_session, functions, project_id, gcp_update_tag)
     cleanup_gcp_functions(neo4j_session, common_job_parameters)

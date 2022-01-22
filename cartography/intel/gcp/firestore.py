@@ -217,7 +217,7 @@ def cleanup_firestore(neo4j_session: neo4j.Session, common_job_parameters: Dict)
 
 
 @timeit
-def sync_firestore(
+def sync(
     neo4j_session: neo4j.Session, firestore: Resource, project_id: str, gcp_update_tag: int,
     common_job_parameters: Dict,
 ) -> None:

@@ -458,7 +458,7 @@ def cleanup_api_gateways(neo4j_session: neo4j.Session, common_job_parameters: Di
 
 
 @timeit
-def sync_apigateways(
+def sync(
     neo4j_session: neo4j.Session, apigateway: Resource, project_id: str, gcp_update_tag: int,
     common_job_parameters: Dict,
 ) -> None:

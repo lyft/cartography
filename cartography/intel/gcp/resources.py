@@ -16,15 +16,15 @@ from . import storage
 
 RESOURCE_FUNCTIONS: Dict = {
     'iam': iam.sync,
-    'bigtable': bigtable.sync_bigtable,
+    'bigtable': bigtable.sync,
     'cloudfunction': cloudfunction.sync,
-    'cloudkms': cloudkms.sync_kms,
-    'cloudrun': cloudrun.sync_cloudrun,
+    'cloudkms': cloudkms.sync,
+    'cloudrun': cloudrun.sync,
     'compute': compute.sync,
     'dns': dns.sync,
-    'firestore': firestore.sync_firestore,
-    'gke': gke.sync_gke_clusters,
-    'sql': sql.sync_sql,
-    'storage': storage.sync_gcp_buckets,
-    'apigateway': apigateway.sync_apigateways,
+    'firestore': firestore.sync,
+    'gke': gke.sync,
+    'sql': sql.sync,
+    'storage': storage.sync,
+    'apigateway': apigateway.sync,
 }

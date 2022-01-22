@@ -17,17 +17,18 @@ from cartography.intel.gcp import crm
 from cartography.intel.gcp.util.common import parse_and_validate_gcp_requested_syncs
 from cartography.util import run_analysis_job
 from cartography.util import timeit
+from cartography.intel.gcp.auth import AuthHelper
 
 logger = logging.getLogger(__name__)
 Resources = namedtuple(
     'Resources', 'compute gke crm_v1 crm_v2 dns storage serviceusage \
-        iam admin apigateway cloudkms cloudrun sql bigtable firestore',
+        iam admin cloudfunction apigateway cloudkms cloudrun sql bigtable firestore',
 )
 
 # Mapping of service short names to their full names as in docs. See https://developers.google.com/apis-explorer,
 # and https://cloud.google.com/service-usage/docs/reference/rest/v1/services#ServiceConfig
 Services = namedtuple(
-    'Services', 'compute storage gke dns crm_v1 crm_v2 \
+    'Services', 'compute storage gke dns cloudfunction crm_v1 crm_v2 \
     cloudkms cloudrun iam admin apigateway sql bigtable firestore',
 )
 service_names = Services(
@@ -242,6 +243,7 @@ def _initialize_resources(credentials: GoogleCredentials) -> Resource:
         cloudrun=_get_cloudrun_resource(credentials),
         admin=_get_admin_resource(credentials),
         apigateway=_get_apigateway_resource(credentials),
+        cloudfunction=_get_cloudfunction_resource(credentials),
     )
 
 
@@ -395,7 +397,7 @@ def start_gcp_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
     regions = config.params.get('regions', [])
 
     _sync_multiple_projects(
-        neo4j_session, resources, projects, config.update_tag, common_job_parameters, regions=regions,
+        neo4j_session, resources, requested_syncs, projects, config.update_tag, common_job_parameters,
     )
 
     # run_analysis_job(
