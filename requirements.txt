@@ -16,5 +16,6 @@ flask<2.0,>=1.0
 maya
 pytz
 google-cloud-pubsub>=2.3.0
+google-cloud-storage>=1.36.0
 click<8.0,>=7.0
 pyparsing==2.4.7

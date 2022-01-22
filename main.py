@@ -1,15 +1,15 @@
 import base64
 import json
-import logging
 import os
 
 import cartography.cli
 from libraries.pubsublibrary import PubSubLibrary
 from utils.errors import PubSubPublishError
+import utils.logger as logger
 
-logger = logging.getLogger(__name__)
 
 def cartography_worker(event, ctx):
+    logger.get_logger("DEBUG")
     logger.info('inventory sync gcp worker request received via PubSub')
 
     if 'data' in event:
