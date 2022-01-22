@@ -30,12 +30,11 @@ def get_firestore_databases(firestore: Resource, project_id: str) -> List[Dict]:
     try:
         firestore_databases = []
         request = firestore.projects().databases().list(parent=f"projects/{project_id}")
-        while request is not None:
-            response = request.execute()
-            if response.get('databases', []):
-                for database in response['databases']:
-                    database['id'] = database['name']
-                    firestore_databases.append(database)
+        response = request.execute()
+        if response.get('databases', []):
+            for database in response['databases']:
+                database['id'] = database['name']
+                firestore_databases.append(database)
         return firestore_databases
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -95,7 +94,8 @@ def get_firestore_indexes(firestore: Resource, firestore_databases: List[Dict], 
                 )
                 return []
             else:
-                raise
+                logger.error(e)
+                # raise
     return firestore_indexes
 
 
@@ -243,9 +243,13 @@ def sync(
         :return: Nothing
     """
     logger.info("Syncing GCP Cloud Firestore for project %s.", project_id)
+
+    logger.info("Syncing GCP Cloud Firestore Databases for project %s.", project_id)
     # FIRESTORE DATABASES
     firestore_databases = get_firestore_databases(firestore, project_id)
     load_firestore_databases(neo4j_session, firestore_databases, project_id, gcp_update_tag)
+
+    logger.info("Syncing GCP Cloud Firestore Indexes for project %s.", project_id)
     # FIRESTORE INDEXES
     firestore_indexes = get_firestore_indexes(firestore, firestore_databases, project_id)
     load_firestore_indexes(neo4j_session, firestore_indexes, project_id, gcp_update_tag)

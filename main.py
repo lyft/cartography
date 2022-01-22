@@ -7,27 +7,28 @@ import cartography.cli
 from libraries.pubsublibrary import PubSubLibrary
 from utils.errors import PubSubPublishError
 
+logger = logging.getLogger(__name__)
 
 def cartography_worker(event, ctx):
-    logging.info('inventory sync gcp worker request received via PubSub')
+    logger.info('inventory sync gcp worker request received via PubSub')
 
     if 'data' in event:
         message = base64.b64decode(event['data']).decode('utf-8')
 
     else:
-        logging.info('invalid message format in PubSub')
+        logger.info('invalid message format in PubSub')
         return {
             "status": 'failure',
             "message": 'unable to parse PubSub message',
         }
 
-    logging.info(f'message from PubSub: {message}')
+    logger.info(f'message from PubSub: {message}')
 
     try:
         params = json.loads(message)
 
     except Exception as e:
-        logging.error(f'error while parsing request json: {e}')
+        logger.error(f'error while parsing request json: {e}')
         return {
             "status": 'failure',
             "message": 'unable to parse request',
@@ -44,8 +45,8 @@ def cartography_worker(event, ctx):
 
 
 def process_request(params):
-    logging.info(f'{params["templateType"]} request received - {params["eventId"]}')
-    logging.info(f'workspace - {params["workspace"]}')
+    logger.info(f'{params["templateType"]} request received - {params["eventId"]}')
+    logger.info(f'workspace - {params["workspace"]}')
 
     body = {
         "credentials": {
@@ -74,14 +75,14 @@ def process_request(params):
     resp = cartography.cli.run_gcp(body)
 
     if 'status' in resp and resp['status'] == 'success':
-        logging.info(f'successfully processed cartography: {resp}')
+        logger.info(f'successfully processed cartography: {resp}')
 
     else:
-        logging.info(f'failed to process cartography: {resp["message"]}')
+        logger.info(f'failed to process cartography: {resp["message"]}')
 
     publish_response(body, resp)
 
-    logging.info(f'inventory sync gcp response - {params["eventId"]}: {json.dumps(resp)}')
+    logger.info(f'inventory sync gcp response - {params["eventId"]}: {json.dumps(resp)}')
 
 
 def publish_response(req, resp):
@@ -110,7 +111,7 @@ def publish_response(req, resp):
                 os.environ['CLOUDANIX_PROJECT_ID'], json.dumps(body), os.environ['CARTOGRAPHY_RESULT_TOPIC'],
             )
 
-        logging.info(f'result published to PubSub with status: {status}')
+        logger.info(f'result published to PubSub with status: {status}')
 
     except PubSubPublishError as e:
-        logging.error(f'Failed while publishing response to PubSub: {str(e)}')
+        logger.error(f'Failed while publishing response to PubSub: {str(e)}')
