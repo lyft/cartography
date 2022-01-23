@@ -11,6 +11,7 @@ from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+logging.getLogger('azure.core.pipeline.policies.http_logging_policy').setLevel(logging.ERROR)
 
 
 def load_function_apps(
@@ -194,10 +195,10 @@ def sync_function_apps(
         neo4j_session, function_apps_list, client,
         update_tag, common_job_parameters,
     )
-    sync_function_apps_processes(
-        neo4j_session, function_apps_list, client,
-        update_tag, common_job_parameters,
-    )
+    # sync_function_apps_processes(
+    #     neo4j_session, function_apps_list, client,
+    #     update_tag, common_job_parameters,
+    # )
     sync_function_apps_backups(
         neo4j_session, function_apps_list, client,
         update_tag, common_job_parameters,
@@ -206,10 +207,10 @@ def sync_function_apps(
         neo4j_session, function_apps_list, client,
         update_tag, common_job_parameters,
     )
-    sync_function_apps_webjobs(
-        neo4j_session, function_apps_list, client,
-        update_tag, common_job_parameters,
-    )
+    # sync_function_apps_webjobs(
+    #     neo4j_session, function_apps_list, client,
+    #     update_tag, common_job_parameters,
+    # )
 
 
 def get_function_apps_configuration_list(
@@ -413,7 +414,7 @@ def get_function_apps_deployments_list(
             function_apps_deployments_list = function_apps_deployments_list + list(
                 map(
                     lambda x: x.as_dict(),
-                    client.web_apps.list_backups(
+                    client.web_apps.list_deployments(
                         function['resource_group'],
                         function['name'],
                     ),
