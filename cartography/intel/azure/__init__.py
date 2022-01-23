@@ -24,7 +24,6 @@ def _sync_one_subscription(
     requested_syncs: List[str],
     update_tag: int,
     common_job_parameters: Dict,
-    regions: List[str],
 ) -> None:
     for request in requested_syncs:
         if request in RESOURCE_FUNCTIONS:
@@ -84,8 +83,10 @@ def _sync_multiple_subscriptions(
         common_job_parameters['AZURE_SUBSCRIPTION_ID'] = sub['subscriptionId']
 
         _sync_one_subscription(
-            neo4j_session, credentials,
-            sub['subscriptionId'], requested_syncs,
+            neo4j_session,
+            credentials,
+            sub['subscriptionId'],
+            requested_syncs,
             update_tag,
             common_job_parameters,
         )
