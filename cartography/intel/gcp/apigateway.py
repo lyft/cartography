@@ -33,7 +33,7 @@ def get_apigateway_locations(apigateway: Resource, project_id: str) -> List[Dict
         while req is not None:
             res = req.execute()
             if res.get('locations', []):
-                for location in req['locations']:
+                for location in res['locations']:
                     location['project_id'] = project_id
                     location['id'] = location['name']
                     locations.append(location)
