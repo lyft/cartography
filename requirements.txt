@@ -24,7 +24,7 @@ pytz
 # azure-identity>=1.5.0
 cryptography<3.4,>=3.2
 adal>=1.2.4
-azure-core~=1.15.0
+azure-core~=1.13.0
 azure-cli-core>=2.26.0
 azure-mgmt-compute>=5.0.0
 azure-mgmt-resource>=10.2.0
@@ -41,6 +41,6 @@ azure-graphrbac>=0.61.1
 azure-mgmt-authorization==0.50.0
 azure-mgmt-resource>=10.2.0
 azure-mgmt-network>=2.7.0
-azure-mgmt-web>=0.35.0
+azure-mgmt-web>=0.47.0
 kubernetes>=18.20.0
 pdpyras>=4.3.0
