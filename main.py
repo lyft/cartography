@@ -5,11 +5,11 @@ import os
 import cartography.cli
 from libraries.pubsublibrary import PubSubLibrary
 from utils.errors import PubSubPublishError
-import utils.logger as logger
+import utils.logger as lgr
 
 
 def cartography_worker(event, ctx):
-    logger.get_logger("DEBUG")
+    logger = lgr.get_logger("DEBUG")
     logger.info('inventory sync gcp worker request received via PubSub')
 
     if 'data' in event:
@@ -34,7 +34,7 @@ def cartography_worker(event, ctx):
             "message": 'unable to parse request',
         }
 
-    process_request(params)
+    process_request(logger, params)
 
     return {
         'statusCode': 200,
@@ -44,7 +44,7 @@ def cartography_worker(event, ctx):
     }
 
 
-def process_request(params):
+def process_request(logger, params):
     logger.info(f'{params["templateType"]} request received - {params["eventId"]}')
     logger.info(f'workspace - {params["workspace"]}')
 
@@ -80,12 +80,12 @@ def process_request(params):
     else:
         logger.info(f'failed to process cartography: {resp["message"]}')
 
-    publish_response(body, resp)
+    publish_response(logger, body, resp)
 
     logger.info(f'inventory sync gcp response - {params["eventId"]}: {json.dumps(resp)}')
 
 
-def publish_response(req, resp):
+def publish_response(logger, req, resp):
     body = {
         "status": resp['status'],
         "params": req['params'],
