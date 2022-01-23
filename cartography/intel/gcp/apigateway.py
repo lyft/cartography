@@ -312,7 +312,7 @@ def cleanup_apis(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> N
        :rtype: NoneType
        :return: Nothing
    """
-    run_cleanup_job('gcp_apis_cleanup.json', neo4j_session, common_job_parameters)
+    run_cleanup_job('gcp_apigateway_apis_cleanup.json', neo4j_session, common_job_parameters)
 
 
 @timeit
@@ -383,7 +383,7 @@ def cleanup_api_configs(neo4j_session: neo4j.Session, common_job_parameters: Dic
        :rtype: NoneType
        :return: Nothing
    """
-    run_cleanup_job('gcp_api_configs_cleanup.json', neo4j_session, common_job_parameters)
+    run_cleanup_job('gcp_apigateway_configs_cleanup.json', neo4j_session, common_job_parameters)
 
 
 @timeit
@@ -454,7 +454,7 @@ def cleanup_api_gateways(neo4j_session: neo4j.Session, common_job_parameters: Di
        :rtype: NoneType
        :return: Nothing
    """
-    run_cleanup_job('gcp_api_gateways_cleanup.json', neo4j_session, common_job_parameters)
+    run_cleanup_job('gcp_apigateway_gateways_cleanup.json', neo4j_session, common_job_parameters)
 
 
 @timeit

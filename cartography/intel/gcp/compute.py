@@ -1137,6 +1137,7 @@ def sync_gcp_subnets(
     common_job_parameters: Dict,
 ) -> None:
     for r in regions:
+        logger.info("Subnet Region %s.", r)
         subnet_res = get_gcp_subnets(project_id, r, compute)
         subnets = transform_gcp_subnets(subnet_res)
         load_gcp_subnets(neo4j_session, subnets, gcp_update_tag)
@@ -1167,6 +1168,7 @@ def sync_gcp_forwarding_rules(
     cleanup_gcp_forwarding_rules(neo4j_session, common_job_parameters)
 
     for r in regions:
+        logger.info("Forwarding Rule Region %s.", r)
         fwd_response = get_gcp_regional_forwarding_rules(project_id, r, compute)
         forwarding_rules = transform_gcp_forwarding_rules(fwd_response)
         load_gcp_forwarding_rules(neo4j_session, forwarding_rules, gcp_update_tag)
