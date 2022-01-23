@@ -68,7 +68,7 @@ def get_apis(apigateway: Resource, project_id: str) -> List[Dict]:
     """
     apis = []
     try:
-        req = apigateway.project().locations().apis().list(parent=f'projects/{project_id}/locations/global')
+        req = apigateway.projects().locations().apis().list(parent=f'projects/{project_id}/locations/global')
         while req is not None:
             res = req.execute()
             if res.get('apis', []):
@@ -76,7 +76,7 @@ def get_apis(apigateway: Resource, project_id: str) -> List[Dict]:
                     api['project_id'] = project_id
                     api['id'] = api['name']
                     apis.append(api)
-            req = apigateway.project().locations().apis().list_next(previous_request=req, previous_response=res)
+            req = apigateway.projects().locations().apis().list_next(previous_request=req, previous_response=res)
         return apis
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -489,16 +489,19 @@ def sync(
     load_apigateway_locations(neo4j_session, locations, project_id, gcp_update_tag)
     # Cleanup Locations
     cleanup_apigateway_locations(neo4j_session, common_job_parameters)
+
     # API Gateway APIs
     apis = get_apis(apigateway, project_id)
     load_apis(neo4j_session, apis, project_id, gcp_update_tag)
     # Cleanup APIs
     cleanup_apis(neo4j_session, common_job_parameters)
+
     # API Gateway API Configs
     configs = get_api_configs(apigateway, project_id)
     load_api_configs(neo4j_session, configs, project_id, gcp_update_tag)
     # Cleanup API Gateway Configs
     cleanup_api_configs(neo4j_session, common_job_parameters)
+
     # API Gateway Gateways
     gateways = get_gateways(apigateway, project_id)
     load_gateways(neo4j_session, gateways, project_id, gcp_update_tag)
