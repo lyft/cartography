@@ -1,6 +1,6 @@
 import logging
 import time
-from typing import Dict
+from typing import Dict, Any
 from typing import List
 
 import boto3
@@ -25,9 +25,12 @@ def get_ec2_instances(boto3_session: boto3.session.Session, region: str) -> List
     return reservations
 
 
-@timeit
-def load_ec2_instance_network_interfaces(neo4j_session: neo4j.Session, instance_data: Dict, update_tag: int) -> None:
-    ingest_interfaces = """
+def _load_ec2_instance_net_if_tx(
+        tx: neo4j.Transaction,
+        instance_data: Dict[str, Any],
+        update_tag: int,
+) -> None:
+    query = """
     MATCH (instance:EC2Instance{instanceid: {InstanceId}})
     UNWIND {Interfaces} as interface
         MERGE (nic:NetworkInterface{id: interface.NetworkInterfaceId})
@@ -60,13 +63,17 @@ def load_ec2_instance_network_interfaces(neo4j_session: neo4j.Session, instance_
             ON CREATE SET r.firstseen = timestamp()
             SET r.lastupdated = {update_tag}
     """
-    instance_id = instance_data["InstanceId"]
-    neo4j_session.run(
-        ingest_interfaces,
+    tx.run(
+        query,
         Interfaces=instance_data['NetworkInterfaces'],
-        InstanceId=instance_id,
+        InstanceId=instance_data['InstanceId'],
         update_tag=update_tag,
-    ).consume()  # TODO see issue 170
+    )
+
+
+@timeit
+def load_ec2_instance_network_interfaces(neo4j_session: neo4j.Session, instance_data: Dict, update_tag: int) -> None:
+    neo4j_session.write_transaction(_load_ec2_instance_net_if_tx(instance_data, update_tag))
 
 
 @timeit
