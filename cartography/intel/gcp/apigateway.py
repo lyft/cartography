@@ -496,14 +496,14 @@ def sync(
     # Cleanup APIs
     cleanup_apis(neo4j_session, common_job_parameters)
 
-    # API Gateway API Configs
-    configs = get_api_configs(apigateway, project_id)
-    load_api_configs(neo4j_session, configs, project_id, gcp_update_tag)
-    # Cleanup API Gateway Configs
-    cleanup_api_configs(neo4j_session, common_job_parameters)
+    # # API Gateway API Configs
+    # configs = get_api_configs(apigateway, project_id)
+    # load_api_configs(neo4j_session, configs, project_id, gcp_update_tag)
+    # # Cleanup API Gateway Configs
+    # cleanup_api_configs(neo4j_session, common_job_parameters)
 
-    # API Gateway Gateways
-    gateways = get_gateways(apigateway, project_id)
-    load_gateways(neo4j_session, gateways, project_id, gcp_update_tag)
-    # Cleanup API Gateway Gateways
-    cleanup_api_gateways(neo4j_session, common_job_parameters)
+    # # API Gateway Gateways
+    # gateways = get_gateways(apigateway, project_id)
+    # load_gateways(neo4j_session, gateways, project_id, gcp_update_tag)
+    # # Cleanup API Gateway Gateways
+    # cleanup_api_gateways(neo4j_session, common_job_parameters)
