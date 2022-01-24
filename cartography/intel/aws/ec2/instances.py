@@ -1,6 +1,7 @@
 import logging
 import time
-from typing import Dict, Any
+from typing import Any
+from typing import Dict
 from typing import List
 
 import boto3
@@ -88,7 +89,7 @@ def _load_ec2_reservation_tx(
         MERGE (reservation:EC2Reservation{reservationid: {ReservationId}})
         ON CREATE SET reservation.firstseen = timestamp()
         SET reservation.ownerid = {OwnerId},
-            reservation.requesterid = {RequesterId}, 
+            reservation.requesterid = {RequesterId},
             reservation.region = {Region},
             reservation.lastupdated = {update_tag}
         WITH reservation
@@ -126,15 +127,15 @@ def _load_ec2_instance_tx(
         ON CREATE SET instance.firstseen = timestamp()
         SET instance.instanceid = {InstanceId},
             instance.publicdnsname = {PublicDnsName},
-            instance.privateipaddress = {PrivateIpAddress}, 
+            instance.privateipaddress = {PrivateIpAddress},
             instance.publicipaddress = {PublicIpAddress},
-            instance.imageid = {ImageId}, 
+            instance.imageid = {ImageId},
             instance.instancetype = {InstanceType},
             instance.monitoringstate = {MonitoringState},
             instance.state = {State},
             instance.launchtime = {LaunchTime},
             instance.launchtimeunix = {LaunchTimeUnix},
-            instance.region = {Region}, 
+            instance.region = {Region},
             instance.lastupdated = {update_tag},
             instance.iaminstanceprofile = {IamInstanceProfile},
             instance.availabilityzone = {AvailabilityZone},
@@ -276,7 +277,6 @@ def _load_ec2_security_groups_tx(
     )
 
 
-
 @timeit
 def load_ec2_instances(
         neo4j_session: neo4j.Session, data: List[Dict], region: str, current_aws_account_id: str,
@@ -336,7 +336,7 @@ def load_ec2_instances(
                     region,
                     instanceid,
                     current_aws_account_id,
-                    update_tag
+                    update_tag,
                 )
 
             if instance.get("SecurityGroups"):
