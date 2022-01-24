@@ -35,6 +35,26 @@
 - [IpRule::IpPermissionInbound::GCPIpRule](#ipruleippermissioninboundgcpiprule)
   - [Relationships](#relationships-14)
 - [IpRange](#iprange)
+  - [Relationships](#relationships-15)
+- [GCPSQL](#gcpsql)
+- [GCP SQL Instances](#gcp-sql-instances)
+  - [Relationships](#relationships-16)
+- [GCPSQL Users](#gcpsql-users)
+  - [Relationships](#relationships-17)
+- [GCP Firestore](#gcp-firestore)
+- [GCP Firestore Databases](#gcp-firestore-databases)
+  - [Relationships](#relationships-18)
+- [GCP Firestore Indexes](#gcp-firestore-indexes)
+  - [Relationships](#relationships-19)
+- [GCPBigtable](#gcpbigtable)
+- [GCPBigtable Instance](#gcpbigtable-instance)
+  - [Relationships](#relationships-20)
+- [GCPBigtable Cluster](#gcpbigtable-cluster)
+  - [Relationships](#relationships-21)
+- [GCPBigtable Cluster Backup](#gcpbigtable-cluster-backup)
+  - [Relationships](#relationships-22)
+- [GCPBigtable Tables](#gcpbigtable-tables)
+  - [Relationships](#relationships-23)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -670,8 +690,181 @@ Representation of an IP range or subnet.
 | lastupdated | Timestamp of the last time the node was updated                          |
 | id          | CIDR notation for the IP range. E.g. "0.0.0.0/0" for the whole internet. |
 
+
+### Relationships
+
 - GCP Firewall rules are defined on IpRange objects.
 
 	```
 	(GCPIpRule, IpRule, IpPermissionInbound)<-[MEMBER_OF_IP_RULE)-(:IpRange)
 	```
+
+
+## GCPSQL
+
+## GCP SQL Instances
+
+Representation of [GCP Cloud SQL Instances](https://cloud.google.com/sql/docs/mysql/admin-api/rest/v1/instances)
+
+| Field                           | Description                                                                                             |
+|---------------------------------|---------------------------------------------------------------------------------------------------------|
+| state                           | The current serving state of the Cloud SQL instance.                                                    |
+| databaseVersion                 | The database engine type and version.                                                                   |
+| masterInstanceName              | The name of the instance which will act as primary in the replication setup.                            |
+| maxDiskSize                     | The maximum disk size of the instance in bytes.                                                         |
+| currentDiskSize                 | The current disk usage of the instance in bytes.                                                        |
+| instanceType                    | The instance type.                                                                                      |
+| connectionName                  | Connection name of the Cloud SQL instance used in connection strings.                                   |
+| name                            | Name of the Cloud SQL instance. This does not include the project ID.                                   |
+| region                          | The geographical region.                                                                                |
+| gceZone                         | The Compute Engine zone that the instance is currently serving from.                                    |
+| secondaryGceZone                | The Compute Engine zone that the failover instance is currently serving from for a regional instance.   |
+| satisfiesPzs                    | The status indicating if instance satisfiesPzs. Reserved for future use.                                |
+| createTime                      | The time when the instance was created in RFC 3339 format.                                              |
+
+### Relationships
+
+- GCP SQL Instances are part of GCP Projects
+
+    ```
+    (GCPProjects)-[RESOURCE]->(GCPSQLInstances)
+    ```
+
+## GCPSQL Users
+
+Representation of GCP SQL [Users](https://cloud.google.com/sql/docs/mysql/admin-api/rest/v1/users)
+
+| Field                   | Description                                                          |
+|-------------------------|----------------------------------------------------------------------|
+| name                    | The name of the user in the Cloud SQL instance.                      |
+| host                    | The host name from which the user can connect.                       |
+| instance                | The name of the Cloud SQL instance.                                  |
+| project                 | The project ID of the project containing the Cloud SQL database.     |
+| type                    | The user type.                                                       |
+
+### Relationships
+
+- GCP SQL Users use SQL Instances
+
+    ```
+    (GCPSQLInstance)-[USED_BY]<-(GCPSQLUser)
+    ```
+
+## GCP Firestore
+
+## GCP Firestore Databases
+
+Representation of [GCP Firestore Databases](https://cloud.google.com/firestore/docs/reference/rest/v1/projects.databases)
+
+| Field                | Description                                                                            |
+|----------------------|----------------------------------------------------------------------------------------|
+| name                 | The resource name of the Database. Format: projects/{project}/databases/{database}     |
+| locationId           | The location of the database.                                                          |
+| type                 | The type of the database.                                                              |
+| concurrencyMode      | The concurrency control mode to use for this database.                                 |
+
+### Relationships
+
+- GCP Firestore Databases are part of GCP Projects
+    ```
+    (GCPProjects)-[RESOURCE]->(GCPFirestoreDatabase)
+    ```
+
+## GCP Firestore Indexes
+
+Representation of [GCP Firestore Indexes](https://cloud.google.com/firestore/docs/reference/rest/v1/projects.databases.collectionGroups.indexes)
+
+| Field              | Description                                                                                                                                                                                      |
+|--------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| name               | Output only. A server defined name for this index.                                                                                                                                               |
+| queryScope         | Indexes with a collection query scope specified allow queries against a collection that is the child of a specific document, specified at query time, and that has the same collection id.       |
+| state              | Output only. The serving state of the index.                                                                                                                                                     |
+
+### Relationships
+
+- GCP Firestore Indexes are part of Firestore Databases
+    ```
+    (GCPFirestoreDatabase)-[RESOURCE]->(GCPFirestoreIndex)
+    ```
+
+
+## GCPBigtable
+
+## GCPBigtable Instance
+
+Representation of [GCP Bigtable Instances](https://cloud.google.com/bigtable/docs/reference/admin/rest/v2/projects.instances)
+
+| Field                   | Description                                                                        |
+|-------------------------|------------------------------------------------------------------------------------|
+| name                    | The unique name of the instance.                                                   |
+| displayName             | The descriptive name for this instance as it appears in UIs.                       |
+| state                   | The current state of the instance.                                                 |
+| type                    | The type of the instance. Defaults to PRODUCTION.                                  |
+| createTime 	          | A server-assigned timestamp representing when this Instance was created.           |
+
+### Relationships
+
+- GCP Bigtable Instances are part of GCP Projects
+    ```
+    (GCPProject)-[RESOURCE]->(GCPBigtableInstance)
+    ```
+
+## GCPBigtable Cluster
+
+Representation of [GCP Bigtable Cluster](https://cloud.google.com/bigtable/docs/reference/admin/rest/v2/projects.instances.clusters)
+
+| Field                       | Description                                                                       |
+|-----------------------------|-----------------------------------------------------------------------------------|
+| name                        | The unique name of the cluster.                                                   |
+| location                    | Immutable. The location where this cluster's nodes and storage reside.            |
+| state                       | The current state of the cluster.                                                 |
+| serveNodes                  | The number of nodes allocated to this cluster.                                    |
+| defaultStorageType          | The type of storage used by this cluster to serve its parent instance's tables.   |
+
+### Relationships
+
+- GCP Bigtable Clusters are part of GCP Bigtable Instances
+    ```
+    (GCPBigtableInstance)-[RESOURCE]->(GCPBigtableCluster)
+    ```
+
+## GCPBigtable Cluster Backup
+
+Representation of [GCP Bigtable Cluster Backup](https://cloud.google.com/bigtable/docs/reference/admin/rest/v2/projects.instances.clusters.backups)
+
+| Field                     | Description                                                                         |
+|---------------------------|-------------------------------------------------------------------------------------|
+| name                      | A globally unique identifier for the backup which cannot be changed.                |
+| sourceTable               | Name of the table from which this backup was created.                               |
+| expireTime                | The expiration time of the backup, with microseconds granularity.                   |
+| startTime                 | startTime is the time that the backup was started.                                  |
+| endTime                   | endTime is the time that the backup was finished.                                   |
+| sizeBytes                 | Size of the backup in bytes.                                                        |
+| state                     | The current state of the backup.                                                    |
+
+### Relationships
+
+-GCP Bigtable Cluster Backups are part of Bigtable Cluster
+
+    ```
+    (GCPBigtableCluster)-[RESOURCE]->(GCPBigtableClusterBackup)
+    ```
+
+## GCPBigtable Tables
+
+Representation of [GCP Bigtable Tables](https://cloud.google.com/bigtable/docs/reference/admin/rest/v2/projects.instances.tables)
+
+| Field                      | Description                                                                         |
+|----------------------------|-------------------------------------------------------------------------------------|
+| name                       | The unique name of the table.                                                       |
+| replicationState           | The state of replication for the table in this cluster.                             |
+| granularity                | The granularity (i.e. MILLIS) at which timestamps are stored in this table.         |
+| sourceType                 | The type of the restore source.                                                     |
+
+### Relationships
+
+- GCP Bigtable Tables are part of GCP Bigtable Instances
+
+    ```
+    (GCPBigtableInstance)-[RESOURCE]->(GCPBigtableTable)
+    ```

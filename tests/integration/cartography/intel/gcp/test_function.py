@@ -1,13 +1,14 @@
-import cartography.intel.gcp.gke
-import tests.data.gcp.gke
+import cartography.intel.gcp.cloudfunction
+import tests.data.gcp.function
 
-TEST_PROJECT_NUMBER = '000000000000'
+TEST_PROJECT_NUMBER = 'abcd12345'
 TEST_UPDATE_TAG = 123456789
+TEST_REGION = 'us-east-1a'
 
 
-def test_load_gke_clusters(neo4j_session):
-    data = tests.data.gcp.gke.GKE_RESPONSE
-    cartography.intel.gcp.gke.load_gke_clusters(
+def test_load_cloud_functions(neo4j_session):
+    data = tests.data.gcp.function.CLOUD_FUNCTION
+    cartography.intel.gcp.cloudfunction.load_functions(
         neo4j_session,
         data,
         TEST_PROJECT_NUMBER,
@@ -15,23 +16,23 @@ def test_load_gke_clusters(neo4j_session):
     )
 
     expected_nodes = {
-        # flake8: noqa
-        'project/000000000000/clusters/test-cluster',
+        "function123",
+        "function456",
     }
 
     nodes = neo4j_session.run(
         """
-        MATCH (r:GKECluster) RETURN r.id;
+            MATCH (f:GCPFunction) RETURN f.id;
         """,
     )
 
-    actual_nodes = {n['r.id'] for n in nodes}
+    actual_nodes = {n['f.id'] for n in nodes}
 
     assert actual_nodes == expected_nodes
 
 
-def test_load_eks_clusters_relationships(neo4j_session):
-    # Create Test GCPProject
+def test_function_relationships(neo4j_session):
+    # CREATE TEST GCP PROJECT
     neo4j_session.run(
         """
         MERGE (gcp:GCPProject{id: {PROJECT_NUMBER}})
@@ -42,9 +43,9 @@ def test_load_eks_clusters_relationships(neo4j_session):
         UPDATE_TAG=TEST_UPDATE_TAG,
     )
 
-    # Load Test GKE Clusters
-    data = tests.data.gcp.gke.GKE_RESPONSE
-    cartography.intel.gcp.gke.load_gke_clusters(
+    # LOAD GCP FUNCTIONS
+    data = tests.data.gcp.function.CLOUD_FUNCTION
+    cartography.intel.gcp.cloudfunction.load_functions(
         neo4j_session,
         data,
         TEST_PROJECT_NUMBER,
@@ -52,13 +53,14 @@ def test_load_eks_clusters_relationships(neo4j_session):
     )
 
     expected = {
-        (TEST_PROJECT_NUMBER, 'project/000000000000/clusters/test-cluster'),
+        (TEST_PROJECT_NUMBER, "function123"),
+        (TEST_PROJECT_NUMBER, "function456"),
     }
 
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:GCPProject)-[:RESOURCE]->(n2:GKECluster) RETURN n1.id, n2.id;
+        MATCH (n1:GCPProject)-[:RESOURCE]->(n2:GCPFunction) RETURN n1.id, n2.id;
         """,
     )
 
