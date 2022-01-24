@@ -1,5 +1,6 @@
 import logging
-from typing import Dict, Any
+from typing import Any
+from typing import Dict
 from typing import List
 
 import boto3
@@ -38,7 +39,7 @@ def load_volumes(
     UNWIND {volumes_list} as volume
         MERGE (vol:EBSVolume{id: volume.VolumeId})
         ON CREATE SET vol.firstseen = timestamp()
-        SET vol.arn = volume.VolumeArn, 
+        SET vol.arn = volume.VolumeArn,
             vol.lastupdated = {update_tag},
             vol.availabilityzone = volume.AvailabilityZone,
             vol.createtime = volume.CreateTime,
