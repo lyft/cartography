@@ -298,17 +298,17 @@ def _sync_single_project(
     enabled_services = _services_enabled_on_project(resources.serviceusage, project_id)
     for request in requested_syncs:
         if request in RESOURCE_FUNCTIONS:
-            if getattr(service_names, request) in enabled_services:
-                if request == 'iam':
-                    RESOURCE_FUNCTIONS[request](
-                        neo4j_session, getattr(resources, request), resources.crm_v1, resources.admin,
-                        project_id, gcp_update_tag, common_job_parameters,
-                    )
-                else:
-                    RESOURCE_FUNCTIONS[request](
-                        neo4j_session, getattr(resources, request),
-                        project_id, gcp_update_tag, common_job_parameters,
-                    )
+            # if getattr(service_names, request) in enabled_services:
+            if request == 'iam':
+                RESOURCE_FUNCTIONS[request](
+                    neo4j_session, getattr(resources, request), resources.crm_v1, resources.admin,
+                    project_id, gcp_update_tag, common_job_parameters,
+                )
+            else:
+                RESOURCE_FUNCTIONS[request](
+                    neo4j_session, getattr(resources, request),
+                    project_id, gcp_update_tag, common_job_parameters,
+                )
         else:
             raise ValueError(f'GCP sync function "{request}" was specified but does not exist. Did you misspell it?')
 
