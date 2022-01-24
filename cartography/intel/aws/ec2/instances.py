@@ -1,5 +1,6 @@
 import logging
 import time
+from datetime import datetime
 from typing import Any
 from typing import Dict
 from typing import List
@@ -74,7 +75,7 @@ def _load_ec2_instance_net_if_tx(
 
 @timeit
 def load_ec2_instance_network_interfaces(neo4j_session: neo4j.Session, instance_data: Dict, update_tag: int) -> None:
-    neo4j_session.write_transaction(_load_ec2_instance_net_if_tx(instance_data, update_tag))
+    neo4j_session.write_transaction(_load_ec2_instance_net_if_tx, instance_data, update_tag)
 
 
 def _load_ec2_reservation_tx(
@@ -111,14 +112,14 @@ def _load_ec2_reservation_tx(
 
 def _load_ec2_instance_tx(
         tx: neo4j.Transaction,
-        instanceid,
+        instanceid: str,
         instance: Dict[str, Any],
         reservation_id: str,
         monitoring_state: str,
-        launch_time: time,
+        launch_time: datetime,
         launch_time_unix: str,
         instance_state: str,
-        current_aws_account_id, str,
+        current_aws_account_id: str,
         region: str,
         update_tag: str,
 ) -> None:
