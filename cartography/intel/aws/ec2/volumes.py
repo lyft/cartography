@@ -102,7 +102,6 @@ def cleanup_volumes(neo4j_session: neo4j.Session, common_job_parameters: Dict) -
         neo4j_session,
         common_job_parameters,
     )
-    # TODO - update cleanup job with attached_to rel
 
 
 @timeit
