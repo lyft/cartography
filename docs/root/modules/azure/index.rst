@@ -1,0 +1,7 @@
+Microsoft Azure
+###############
+
+.. toctree::
+   :glob:
+
+   *

@@ -1,0 +1,7 @@
+DigitalOcean
+############
+
+.. toctree::
+   :glob:
+
+   *

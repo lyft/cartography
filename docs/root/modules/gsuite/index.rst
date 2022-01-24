@@ -1,0 +1,7 @@
+Google GSuite
+#############
+
+.. toctree::
+   :glob:
+
+   *
