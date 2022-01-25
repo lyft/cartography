@@ -63,5 +63,3 @@ def sync(
 
     load_azure_tenant(neo4j_session, tenant_id, current_user, update_tag, common_job_parameters)
     cleanup(neo4j_session, common_job_parameters)
-
-    del common_job_parameters['AZURE_TENANT_ID']
