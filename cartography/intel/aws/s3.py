@@ -44,10 +44,10 @@ def get_s3_bucket_list(boto3_session: boto3.session.Session) -> List[Dict]:
 def get_s3_bucket_details(
         boto3_session: boto3.session.Session,
         bucket_data: Dict,
-) -> Generator[Tuple[str, Dict, Dict, Dict], None, None]:
+) -> Generator[Tuple[str, Dict, Dict, Dict, Dict, Dict], None, None]:
     """
-    Iterates over all S3 buckets. Yields bucket name (string), S3 bucket policies (JSON), ACLs (JSON), and
-    default encryption policy (JSON)
+    Iterates over all S3 buckets. Yields bucket name (string), S3 bucket policies (JSON), ACLs (JSON),
+    default encryption policy (JSON), Versioning (JSON), and Public Access Block (JSON)
     """
     # a local store for s3 clients so that we may re-use clients for an AWS region
     s3_regional_clients: Dict[Any, Any] = {}
@@ -63,7 +63,9 @@ def get_s3_bucket_details(
         acl = get_acl(bucket, client)
         policy = get_policy(bucket, client)
         encryption = get_encryption(bucket, client)
-        yield bucket['Name'], acl, policy, encryption
+        versioning = get_versioning(bucket, client)
+        public_access_block = get_public_access_block(bucket, client)
+        yield bucket['Name'], acl, policy, encryption, versioning, public_access_block
 
 
 @timeit
@@ -127,6 +129,47 @@ def get_encryption(bucket: Dict, client: botocore.client.BaseClient) -> Optional
 
 
 @timeit
+def get_versioning(bucket: Dict, client: botocore.client.BaseClient) -> Optional[Dict]:
+    """
+    Gets the S3 bucket versioning configuration.
+    """
+    versioning = None
+    try:
+        versioning = client.get_bucket_versioning(Bucket=bucket['Name'])
+    except ClientError as e:
+        if _is_common_exception(e, bucket):
+            pass
+        else:
+            raise
+    except EndpointConnectionError:
+        logger.warning(
+            f"Failed to retrieve S3 bucket versioning for {bucket['Name']} - Could not connect to the endpoint URL",
+        )
+    return versioning
+
+
+@timeit
+def get_public_access_block(bucket: Dict, client: botocore.client.BaseClient) -> Optional[Dict]:
+    """
+    Gets the S3 bucket public access block configuration.
+    """
+    public_access_block = None
+    try:
+        public_access_block = client.get_public_access_block(Bucket=bucket['Name'])
+    except ClientError as e:
+        if _is_common_exception(e, bucket):
+            pass
+        else:
+            raise
+    except EndpointConnectionError:
+        logger.warning(
+            f"Failed to retrieve S3 bucket public access block for {bucket['Name']}"
+            " - Could not connect to the endpoint URL",
+        )
+    return public_access_block
+
+
+@timeit
 def _is_common_exception(e: Exception, bucket: Dict) -> bool:
     error_msg = "Failed to retrieve S3 bucket detail"
     if "AccessDenied" in e.args[0]:
@@ -149,6 +192,9 @@ def _is_common_exception(e: Exception, bucket: Dict) -> bool:
         return True
     elif "InvalidToken" in e.args[0]:
         logger.warning(f"{error_msg} for {bucket['Name']} - InvalidToken")
+        return True
+    elif "NoSuchPublicAccessBlockConfiguration" in e.args[0]:
+        logger.warning(f"{error_msg} for {bucket['Name']} - NoSuchPublicAccessBlockConfiguration")
         return True
     return False
 
@@ -228,6 +274,52 @@ def _load_s3_encryption(neo4j_session: neo4j.Session, encryption_configs: List[D
     )
 
 
+@timeit
+def _load_s3_versioning(neo4j_session: neo4j.Session, versioning_configs: List[Dict], update_tag: int) -> None:
+    """
+    Ingest S3 versioning results into neo4j.
+    """
+    ingest_versioning = """
+    UNWIND {versioning_configs} AS versioning
+    MATCH (s:S3Bucket) where s.name = versioning.bucket
+    SET s.versioning_status = versioning.status,
+        s.mfa_delete = versioning.mfa_delete,
+        s.lastupdated = {UpdateTag}
+    """
+
+    neo4j_session.run(
+        ingest_versioning,
+        versioning_configs=versioning_configs,
+        UpdateTag=update_tag,
+    )
+
+
+@timeit
+def _load_s3_public_access_block(
+    neo4j_session: neo4j.Session,
+    public_access_block_configs: List[Dict],
+    update_tag: int,
+) -> None:
+    """
+    Ingest S3 public access block results into neo4j.
+    """
+    ingest_public_access_block = """
+    UNWIND {public_access_block_configs} AS public_access_block
+    MATCH (s:S3Bucket) where s.name = public_access_block.bucket
+    SET s.block_public_acls = public_access_block.block_public_acls,
+        s.ignore_public_acls = public_access_block.ignore_public_acls,
+        s.block_public_acls = public_access_block.block_public_acls,
+        s.restrict_public_buckets = public_access_block.restrict_public_buckets,
+        s.lastupdated = {UpdateTag}
+    """
+
+    neo4j_session.run(
+        ingest_public_access_block,
+        public_access_block_configs=public_access_block_configs,
+        UpdateTag=update_tag,
+    )
+
+
 def _set_default_values(neo4j_session: neo4j.Session, aws_account_id: str) -> None:
     set_defaults = """
     MATCH (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(s:S3Bucket) where NOT EXISTS(s.anonymous_actions)
@@ -259,7 +351,9 @@ def load_s3_details(
     acls: List[Dict] = []
     policies: List[Dict] = []
     encryption_configs: List[Dict] = []
-    for bucket, acl, policy, encryption in s3_details_iter:
+    versioning_configs: List[Dict] = []
+    public_access_block_configs: List[Dict] = []
+    for bucket, acl, policy, encryption, versioning, public_access_block in s3_details_iter:
         parsed_acls = parse_acl(acl, bucket, aws_account_id)
         if parsed_acls is not None:
             acls.extend(parsed_acls)
@@ -269,6 +363,12 @@ def load_s3_details(
         parsed_encryption = parse_encryption(bucket, encryption)
         if parsed_encryption is not None:
             encryption_configs.append(parsed_encryption)
+        parsed_versioning = parse_versioning(bucket, versioning)
+        if parsed_versioning is not None:
+            versioning_configs.append(parsed_versioning)
+        parsed_public_access_block = parse_public_access_block(bucket, public_access_block)
+        if parsed_public_access_block is not None:
+            public_access_block_configs.append(parsed_public_access_block)
 
     # cleanup existing policy properties set on S3 Buckets
     run_cleanup_job(
@@ -280,6 +380,8 @@ def load_s3_details(
     _load_s3_acls(neo4j_session, acls, aws_account_id, update_tag)
     _load_s3_policies(neo4j_session, policies, update_tag)
     _load_s3_encryption(neo4j_session, encryption_configs, update_tag)
+    _load_s3_versioning(neo4j_session, versioning_configs, update_tag)
+    _load_s3_public_access_block(neo4j_session, public_access_block_configs, update_tag)
     _set_default_values(neo4j_session, aws_account_id)
 
 
@@ -444,6 +546,47 @@ def parse_encryption(bucket: str, encryption: Optional[Dict]) -> Optional[Dict]:
         "encryption_algorithm": algorithm,
         "encryption_key_id": rule.get("ApplyServerSideEncryptionByDefault", {}).get('KMSMasterKeyID'),
         "bucket_key_enabled": rule.get('BucketKeyEnabled'),
+    }
+
+
+@timeit
+def parse_versioning(bucket: str, versioning: Optional[Dict]) -> Optional[Dict]:
+    """ Parses the S3 versioning object and returns a dict of the relevant data """
+    # Versioning object JSON looks like:
+    # {
+    #     'Status': 'Enabled'|'Suspended',
+    #     'MFADelete': 'Enabled'|'Disabled'
+    # }
+    if versioning is None:
+        return None
+    return {
+        "bucket": bucket,
+        "status": versioning.get("Status"),
+        "mfa_delete": versioning.get("MFADelete"),
+    }
+
+
+@timeit
+def parse_public_access_block(bucket: str, public_access_block: Optional[Dict]) -> Optional[Dict]:
+    """ Parses the S3 public access block object and returns a dict of the relevant data """
+    # Versioning object JSON looks like:
+    # {
+    #     'PublicAccessBlockConfiguration': {
+    #         'BlockPublicAcls': True|False,
+    #         'IgnorePublicAcls': True|False,
+    #         'BlockPublicPolicy': True|False,
+    #         'RestrictPublicBuckets': True|False
+    #     }
+    # }
+    if public_access_block is None:
+        return None
+    pab = public_access_block["PublicAccessBlockConfiguration"]
+    return {
+        "bucket": bucket,
+        "block_public_acls": pab.get("BlockPublicAcls"),
+        "ignore_public_acls": pab.get("IgnorePublicAcls"),
+        "block_public_policy": pab.get("BlockPublicPolicy"),
+        "restrict_public_buckets": pab.get("RestrictPublicBuckets"),
     }
 
 
