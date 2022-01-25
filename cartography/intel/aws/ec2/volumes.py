@@ -24,7 +24,7 @@ def get_volumes(boto3_session: boto3.session.Session, region: str) -> List[Dict]
     return volumes
 
 
-def transform_volumes(volumes: List[Dict[str, Any]], region: str, current_aws_account_id: str):
+def transform_volumes(volumes: List[Dict[str, Any]], region: str, current_aws_account_id: str) -> List[Dict[str, Any]]:
     for volume in volumes:
         volume['VolumeArn'] = f"arn:aws:ec2:{region}:{current_aws_account_id}:volume/{volume['VolumeId']}"
         volume['CreateTime'] = str(volume['CreateTime'])
@@ -114,5 +114,5 @@ def sync_ebs_volumes(
         data = get_volumes(boto3_session, region)
         transformed_data = transform_volumes(data, region, current_aws_account_id)
         load_volumes(neo4j_session, transformed_data, region, current_aws_account_id, update_tag)
-        load_volume_relationships(neo4j_session, transformed_data)
+        load_volume_relationships(neo4j_session, transformed_data, update_tag)
     cleanup_volumes(neo4j_session, common_job_parameters)
