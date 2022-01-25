@@ -33,6 +33,7 @@ def get_dns_zones(dns: Resource, project_id: str) -> List[Resource]:
         while request is not None:
             response = request.execute()
             for managed_zone in response['managedZones']:
+                managed_zone['id'] = f"projects/{project_id}/managedZones/{managed_zone['name']}"
                 zones.append(managed_zone)
             request = dns.managedZones().list_next(previous_request=request, previous_response=response)
         return zones
