@@ -130,7 +130,7 @@ html_context = sphinx_material.get_html_context()
 # further.  For a list of options available for each theme, see the
 # documentation.
 html_theme_options = {
-    'globaltoc_depth': 2,
+    'globaltoc_depth': 3,
     'globaltoc_collapse': False,
 }
 html_sidebars = {
