@@ -49,7 +49,7 @@ Representation of an [Azure Subscription](https://docs.microsoft.com/en-us/rest/
 |**id**| The Azure Subscription ID number|
 |name | The friendly name that identifies the subscription|
 |path | The full ID for the Subscription|
-|state| Can be one of `Enabled | Disabled | Deleted | PastDue | Warned`|
+|state| Can be one of ``Enabled \| Disabled \| Deleted \| PastDue \| Warned``|
 
 ### Relationships
 
@@ -74,13 +74,13 @@ Representation of an [Azure Virtual Machine](https://docs.microsoft.com/en-us/re
 |name | The friendly name that identifies the Virtual Machine|
 |plan | The plan associated with the Virtual Machine|
 |size | The size of the Virtual Machine|
-|license_type | The type of license|
-|computer_name | The computer name|
-|identity_type | The type of identity used for the virtual machine|
+|license\_type | The type of license|
+|computer\_name | The computer name|
+|identity\_type | The type of identity used for the virtual machine|
 |zones | The Virtual Machine zones|
-|ultra_ssd_enabled | Enables or disables a capability on the virtual machine or virtual machine scale set.|
+|ultra\_ssd\_enabled | Enables or disables a capability on the virtual machine or virtual machine scale set.|
 |priority | Specifies the priority for the virtual machine|
-|eviction_policy | Specifies the eviction policy for the Virtual Machine|
+|eviction\_policy | Specifies the eviction policy for the Virtual Machine|
 
 ### Relationships
 
@@ -106,8 +106,8 @@ Representation of an [Azure Data Disk](https://docs.microsoft.com/en-us/rest/api
 |size | The size of the disk in GB|
 |caching | Specifies the caching requirement|
 |createoption | Specifies how the disk should be created|
-|write_accelerator_enabled | Specifies whether writeAccelerator should be enabled or disabled on the data disk|
-|managed_disk_storage_type | The data disk storage type|
+|write\_accelerator\_enabled | Specifies whether writeAccelerator should be enabled or disabled on the data disk|
+|managed\_disk\_storage\_type | The data disk storage type|
 
 ### Relationships
 
@@ -164,7 +164,7 @@ Representation of an [Azure Snapshot](https://docs.microsoft.com/en-us/rest/api/
 |disksizegb | The size of the snapshot in GB|
 |encryption | Specifies whether the snapshot has encryption enabled |
 |incremental | Indicates whether a snapshot is incremental or not |
-|network_access_policy | Policy for accessing the snapshot via network|
+|network\_access\_policy | Policy for accessing the snapshot via network|
 |ostype | The operating system type of the snapshot|
 |tier | Performance Tier associated with the snapshot|
 |sku | The snapshot sku name|

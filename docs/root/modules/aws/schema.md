@@ -467,7 +467,7 @@ Representation of an [AWS Transit Gateway](https://docs.aws.amazon.com/AWSEC2/la
 |lastupdated| Timestamp of the last time the node was updated|
 |owner\_id| The ID of the AWS account that owns the transit gateway|
 |description| Transit Gateway description|
-|state| Can be one of `pending | available | modifying | deleting | deleted`|
+|state| Can be one of ``pending \| available \| modifying \| deleting \| deleted``|
 |tgw_id| Unique identifier of the Transit Gateway|
 |**id**| Unique identifier of the Transit Gateway|
 | **arn** | AWS-unique identifier for this object (same as `id`) |
@@ -495,9 +495,9 @@ Representation of an [AWS Transit Gateway Attachment](https://docs.aws.amazon.co
 |-------|-------------|
 |firstseen| Timestamp of when a sync job discovered this node|
 |lastupdated| Timestamp of the last time the node was updated|
-|resource\_type| Can be one of `vpc | vpn | direct-connect-gateway | tgw-peering`
-|state| Can be one of `initiating | pendingAcceptance | rollingBack | pending | available | modifying | deleting | deleted | failed | rejected | rejecting | failing`
-|**id**| Unique identifier of the Transit Gateway Attachment
+|resource\_type| Can be one of ``vpc \| vpn \| direct-connect-gateway \| tgw-peering`` |
+|state| Can be one of ``initiating \| pendingAcceptance \| rollingBack \| pending \| available \| modifying \| deleting \| deleted \| failed \| rejected \| rejecting \| failing``
+|**id**| Unique identifier of the Transit Gateway Attachment |
 
 ### Relationships
 - `AWSAccount`
@@ -892,9 +892,9 @@ Representation of an AWS [EC2 Key Pair](https://docs.aws.amazon.com/AWSEC2/lates
 | keyfingerprint | The fingerprint of the public key |
 | region| The AWS region |
 | **arn** | AWS-unique identifier for this object |
- id | same as `arn` |
-| user_uploaded | `user_uploaded` is set to `True` if the the KeyPair was uploaded to AWS. Uploaded KeyPairs will have 128-bit MD5 hashed `keyfingerprint`, and KeyPiars from AWS will have 160-bit SHA-1 hashed `keyfingerprint`s.
-| duplicate_keyfingerprint | `duplicate_keyfingerprint` is set to `True` if the KeyPair has the same `keyfingerprint` as another KeyPair.
+| id | same as `arn` |
+| user_uploaded | `user_uploaded` is set to `True` if the the KeyPair was uploaded to AWS. Uploaded KeyPairs will have 128-bit MD5 hashed `keyfingerprint`, and KeyPairs from AWS will have 160-bit SHA-1 hashed `keyfingerprint`s. |
+| duplicate_keyfingerprint | `duplicate_keyfingerprint` is set to `True` if the KeyPair has the same `keyfingerprint` as another KeyPair. |
 
 ### Relationships
 
@@ -1206,7 +1206,7 @@ Representation of a software package, as found by an AWS ECR vulnerability scan.
 
 | Field | Description |
 |-------|-------------|
-| **id** | Concatenation of `{version}|{name}` |
+| **id** | Concatenation of ``{version}\|{name}`` |
 | version | The version of the package, includes the Linux distro that it was built for |
 | name | The name of the package |
 
@@ -1626,9 +1626,9 @@ Representation of a generic Network Interface.  Currently however, we only creat
 | private\_ip\_address| The primary IPv4 address of the network interface within the subnet |
 | **id** | The ID of the network interface.  (known as `networkInterfaceId` in EC2) |
 | private\_dns\_name| The private DNS name |
-| status | Status of the network interface.  Valid Values: `available | associated | attaching | in-use | detaching ` |
+| status | Status of the network interface.  Valid Values: ``available \| associated \| attaching \| in-use \| detaching `` |
 | subnetid | The ID of the subnet |
-| interface_type  |  Describes the type of network interface. Valid values: ` interface | efa ` |
+| interface_type  |  Describes the type of network interface. Valid values: `` interface \| efa `` |
 | requester_id  | Id of the requester, e.g. `amazon-elb` for ELBs |
 | requester_managed  |  Indicates whether the interface is managed by the requester |
 | source_dest_check   | Indicates whether to validate network traffic to or from this network interface.  |
@@ -1904,9 +1904,9 @@ Representation of an AWS S3 [Access Control List](https://docs.aws.amazon.com/Am
 | lastupdated |  Timestamp of the last time the node was updated |
 | granteeid | The ID of the grantee as defined [here](https://docs.aws.amazon.com/AmazonS3/latest/API/API_control_S3Grantee.html) |
 | displayname | Optional display name for the ACL |
-| permission | Valid values: `FULL_CONTROL | READ | WRITE | READ_ACP | WRITE_ACP` (ACP = Access Control Policy)|
+| permission | Valid values: ``FULL_CONTROL \| READ \| WRITE \| READ_ACP \| WRITE_ACP`` (ACP = Access Control Policy)|
 | **id** | The ID of this ACL|
-| type |  The type of the [grantee](https://docs.aws.amazon.com/AmazonS3/latest/API/API_Grantee.html).  Either `CanonicalUser | AmazonCustomerByEmail | Group`. |
+| type |  The type of the [grantee](https://docs.aws.amazon.com/AmazonS3/latest/API/API_Grantee.html).  Either ``CanonicalUser \| AmazonCustomerByEmail \| Group``. |
 | ownerid| The ACL's owner ID as defined [here](https://docs.aws.amazon.com/AmazonS3/latest/API/API_control_S3ObjectOwner.html)|
 
 
@@ -2569,7 +2569,7 @@ Representation of an AWS [Launch Configuration](https://docs.aws.amazon.com/auto
 
 ## LaunchTemplate
 
-Representation of an AWS [Launch Template]()
+Representation of an AWS [Launch Template](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_LaunchTemplate.html)
 
 | Field | Description |
 |-------|-------------|
@@ -2598,7 +2598,7 @@ Representation of an AWS [Launch Template]()
 
 ## LaunchTemplateVersion
 
-Representation of an AWS [Launch Template Version]()
+Representation of an AWS [Launch Template Version](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_LaunchTemplateVersion.html)
 
 | Field | Description |
 |-------|-------------|

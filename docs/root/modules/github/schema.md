@@ -163,7 +163,7 @@ Within a setup.cfg file, cartography will load everything from `install_requires
 
 | Field | Description |
 |-------|-------------|
-|**id**|The [canonicalized](https://packaging.pypa.io/en/latest/utils/#packaging.utils.canonicalize_name) name of the library. If the library was pinned in a requirements file using the `==` operator, then `id` has the form `{canonical name}|{pinned_version}`.|
+|**id**|The [canonicalized](https://packaging.pypa.io/en/latest/utils/#packaging.utils.canonicalize_name) name of the library. If the library was pinned in a requirements file using the `==` operator, then `id` has the form ``{canonical name}\|{pinned_version}``.|
 |name|The [canonicalized](https://packaging.pypa.io/en/latest/utils/#packaging.utils.canonicalize_name) name of the library.|
 |version|The exact version of the library. This field is only present if the library was pinned in a requirements file using the `==` operator.|
 
@@ -174,4 +174,5 @@ Within a setup.cfg file, cartography will load everything from `install_requires
     ```
     (GitHubRepository)-[:REQUIRES{specifier}]->(PythonLibrary)
     ```
+
     - specifier: A string describing this library's version e.g. "<4.0,>=3.0" or "==1.0.2". This field is only present on the `:REQUIRES` edge if the repo's requirements file provided a version pin.
