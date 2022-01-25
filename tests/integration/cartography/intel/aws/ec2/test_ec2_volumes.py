@@ -100,7 +100,7 @@ def test_load_volume_to_instance_rels(neo4j_session):
     # Assert
     result = neo4j_session.run(
         """
-        MATCH (n1:EC2Instance)-[:RESOURCE]->(n2:EBSVolume) RETURN n1.id, n2.id;
+        MATCH (n1:EC2Instance)<-[:ATTACHED_TO_EC2_INSTANCE]-(n2:EBSVolume) RETURN n1.id, n2.id;
         """,
     )
     expected = {
