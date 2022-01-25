@@ -2,10 +2,13 @@ import datetime
 
 DESCRIBE_VOLUMES = [
     {
+        'Attachments': {
+            'InstanceId': 'i-01',
+            'State': 'attached',
+        },
         'AvailabilityZone': 'US West 1',
         'CreateTime': datetime.datetime(2018, 10, 14, 16, 30, 26),
         'Encrypted': True,
-        'InstanceId': 'i-01',
         'KmsKeyId': 'k-1',
         'OutpostArn': 'arn1',
         'Size': 123,
@@ -19,10 +22,13 @@ DESCRIBE_VOLUMES = [
         'Throughput': 123,
     },
     {
+        'Attachments': {
+            'InstanceId': 'i-02',
+            'State': 'attached',
+        },
         'AvailabilityZone': 'US West 1',
         'CreateTime': datetime.datetime(2018, 10, 14, 16, 30, 26),
         'Encrypted': True,
-        'InstanceId': 'i-02',
         'KmsKeyId': 'k-1',
         'OutpostArn': 'arn1',
         'Size': 123,
