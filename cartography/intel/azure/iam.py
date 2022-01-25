@@ -18,8 +18,8 @@ def load_tenant_users(session: neo4j.Session, tenant_id: str, data_list: List[Di
     session.write_transaction(_load_tenant_users_tx, tenant_id, data_list, update_tag)
 
 
-def load_roles(session: neo4j.Session, data_list: List[Dict], update_tag: int) -> None:
-    session.write_transaction(_load_roles_tx, data_list, update_tag)
+def load_roles(session: neo4j.Session, tenant_id: str, data_list: List[Dict], update_tag: int) -> None:
+    session.write_transaction(_load_roles_tx, tenant_id, data_list, update_tag)
 
 
 def load_tenant_groups(session: neo4j.Session, tenant_id: str, data_list: List[Dict], update_tag: int) -> None:
@@ -371,7 +371,7 @@ def get_roles_list(client: AuthorizationManagementClient) -> List[Dict]:
 
 
 def _load_roles_tx(
-    tx: neo4j.Transaction, roles_list: List[Dict], update_tag: int,
+    tx: neo4j.Transaction, tenant_id: str, roles_list: List[Dict], update_tag: int,
 ) -> None:
     ingest_role = """
     UNWIND {roles_list} AS role
@@ -387,12 +387,18 @@ def _load_roles_tx(
     MERGE (principal)-[r:ASSUME_ROLE]->(i)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {update_tag}
+    WITH i
+    MATCH (t:AzureTenant{id: {tenant_id}})
+    MERGE (t)-[tr:RESOURCE]->(i)
+    ON CREATE SET tr.firstseen = timestamp()
+    SET tr.lastupdated = {update_tag}
     """
 
     tx.run(
         ingest_role,
         roles_list=roles_list,
         update_tag=update_tag,
+        tenant_id=tenant_id,
     )
 
 
@@ -401,12 +407,12 @@ def cleanup_roles(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> 
 
 
 def sync_roles(
-    neo4j_session: neo4j.Session, credentials: Credentials, update_tag: int,
+    neo4j_session: neo4j.Session, credentials: Credentials, tenant_id: str, update_tag: int,
     common_job_parameters: Dict,
 ) -> None:
     client = get_authorization_client(credentials.arm_credentials, credentials.subscription_id)
     roles_list = get_roles_list(client)
-    load_roles(neo4j_session, roles_list, update_tag)
+    load_roles(neo4j_session, tenant_id, roles_list, update_tag)
     cleanup_roles(neo4j_session, common_job_parameters)
 
 
@@ -431,5 +437,5 @@ def sync(
     )
     sync_tenant_domains(neo4j_session, credentials.aad_graph_credentials, tenant_id, update_tag, common_job_parameters)
     sync_roles(
-        neo4j_session, credentials, update_tag, common_job_parameters,
+        neo4j_session, credentials, tenant_id, update_tag, common_job_parameters,
     )
