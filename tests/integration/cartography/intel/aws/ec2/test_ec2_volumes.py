@@ -105,7 +105,7 @@ def test_load_volume_to_instance_rels(neo4j_session):
     )
     expected = {
         ('i-01', 'v-01'),
-        ('i-01', 'v-02'),
+        ('i-02', 'v-02'),
     }
     actual = {
         (r['n1.id'], r['n2.id']) for r in result
