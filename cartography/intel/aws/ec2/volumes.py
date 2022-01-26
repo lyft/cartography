@@ -1,4 +1,5 @@
 import logging
+from typing import Any
 from typing import Dict
 from typing import List
 
@@ -23,6 +24,13 @@ def get_volumes(boto3_session: boto3.session.Session, region: str) -> List[Dict]
     return volumes
 
 
+def transform_volumes(volumes: List[Dict[str, Any]], region: str, current_aws_account_id: str) -> List[Dict[str, Any]]:
+    for volume in volumes:
+        volume['VolumeArn'] = f"arn:aws:ec2:{region}:{current_aws_account_id}:volume/{volume['VolumeId']}"
+        volume['CreateTime'] = str(volume['CreateTime'])
+    return volumes
+
+
 @timeit
 def load_volumes(
         neo4j_session: neo4j.Session, data: List[Dict], region: str, current_aws_account_id: str, update_tag: int,
@@ -31,21 +39,27 @@ def load_volumes(
     UNWIND {volumes_list} as volume
         MERGE (vol:EBSVolume{id: volume.VolumeId})
         ON CREATE SET vol.firstseen = timestamp()
-        SET vol.lastupdated = {update_tag}, vol.availabilityzone = volume.AvailabilityZone,
-        vol.createtime = volume.CreateTime, vol.encrypted = volume.Encrypted, vol.size = volume.Size,
-        vol.state = volume.State,
-        vol.outpostarn = volume.OutpostArn, vol.snapshotid = volume.SnapshotId, vol.iops = volume.Iops,
-        vol.fastrestored = volume.FastRestored, vol.multiattachenabled = volume.MultiAttachEnabled,
-        vol.type = volume.VolumeType, vol.kmskeyid = volume.KmsKeyId, vol.region={Region}
+        SET vol.arn = volume.VolumeArn,
+            vol.lastupdated = {update_tag},
+            vol.availabilityzone = volume.AvailabilityZone,
+            vol.createtime = volume.CreateTime,
+            vol.encrypted = volume.Encrypted,
+            vol.size = volume.Size,
+            vol.state = volume.State,
+            vol.outpostarn = volume.OutpostArn,
+            vol.snapshotid = volume.SnapshotId,
+            vol.iops = volume.Iops,
+            vol.fastrestored = volume.FastRestored,
+            vol.multiattachenabled = volume.MultiAttachEnabled,
+            vol.type = volume.VolumeType,
+            vol.kmskeyid = volume.KmsKeyId,
+            vol.region={Region}
         WITH vol
         MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
         MERGE (aa)-[r:RESOURCE]->(vol)
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = {update_tag}
     """
-
-    for volume in data:
-        volume['CreateTime'] = str(volume['CreateTime'])
 
     neo4j_session.run(
         ingest_volumes,
@@ -54,6 +68,31 @@ def load_volumes(
         Region=region,
         update_tag=update_tag,
     )
+
+
+def load_volume_relationships(
+        neo4j_session: neo4j.Session,
+        volumes: List[Dict[str, Any]],
+        aws_update_tag: int,
+) -> None:
+    add_relationship_query = """
+        MATCH (volume:EBSVolume{arn: {VolumeArn}})
+        WITH volume
+        MATCH (instance:EC2Instance{instanceid: {InstanceId}})
+        MERGE (volume)-[r:ATTACHED_TO_EC2_INSTANCE]->(instance)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {aws_update_tag}
+    """
+    for volume in volumes:
+        for attachment in volume.get('Attachments', []):
+            if attachment['State'] != 'attached':
+                continue
+            neo4j_session.run(
+                add_relationship_query,
+                VolumeArn=volume['VolumeArn'],
+                InstanceId=attachment['InstanceId'],
+                aws_update_tag=aws_update_tag,
+            )
 
 
 @timeit
@@ -73,5 +112,7 @@ def sync_ebs_volumes(
     for region in regions:
         logger.debug("Syncing volumes for region '%s' in account '%s'.", region, current_aws_account_id)
         data = get_volumes(boto3_session, region)
-        load_volumes(neo4j_session, data, region, current_aws_account_id, update_tag)
+        transformed_data = transform_volumes(data, region, current_aws_account_id)
+        load_volumes(neo4j_session, transformed_data, region, current_aws_account_id, update_tag)
+        load_volume_relationships(neo4j_session, transformed_data, update_tag)
     cleanup_volumes(neo4j_session, common_job_parameters)
