@@ -18,11 +18,11 @@ logger = logging.getLogger(__name__)
 
 @timeit
 @aws_handle_regions
-def get_ecs_clusters(boto3_session: boto3.session.Session, region: str) -> Tuple[List, List]:
+def get_ecs_clusters(boto3_session: boto3.session.Session, region: str) -> Tuple[List[str], List[Dict[str, Any]]]:
     client = boto3_session.client('ecs', region_name=region)
     paginator = client.get_paginator('list_clusters')
-    clusters: List[Any] = []
-    cluster_arns: List[Any] = []
+    clusters: List[Dict[str, Any]] = []
+    cluster_arns: List[str] = []
     for page in paginator.paginate():
         cluster_arns.extend(page.get('clusterArns', []))
     # TODO: also include attachment info, and make relationships between the attachements
@@ -37,11 +37,15 @@ def get_ecs_clusters(boto3_session: boto3.session.Session, region: str) -> Tuple
 
 @timeit
 @aws_handle_regions
-def get_ecs_container_instances(cluster_arn: str, boto3_session: boto3.session.Session, region: str) -> List:
+def get_ecs_container_instances(
+    cluster_arn: str,
+    boto3_session: boto3.session.Session,
+    region: str,
+) -> List[Dict[str, Any]]:
     client = boto3_session.client('ecs', region_name=region)
     paginator = client.get_paginator('list_container_instances')
-    container_instances: List[Any] = []
-    container_instance_arns: List[Any] = []
+    container_instances: List[Dict[str, Any]] = []
+    container_instance_arns: List[str] = []
     for page in paginator.paginate(cluster=cluster_arn):
         container_instance_arns.extend(page.get('containerInstanceArns', []))
     includes = ['CONTAINER_INSTANCE_HEALTH']
@@ -58,11 +62,11 @@ def get_ecs_container_instances(cluster_arn: str, boto3_session: boto3.session.S
 
 @timeit
 @aws_handle_regions
-def get_ecs_services(cluster_arn: str, boto3_session: boto3.session.Session, region: str) -> List:
+def get_ecs_services(cluster_arn: str, boto3_session: boto3.session.Session, region: str) -> List[Dict[str, Any]]:
     client = boto3_session.client('ecs', region_name=region)
     paginator = client.get_paginator('list_services')
-    services: List[Any] = []
-    service_arns: List[Any] = []
+    services: List[Dict[str, Any]] = []
+    service_arns: List[str] = []
     for page in paginator.paginate(cluster=cluster_arn):
         service_arns.extend(page.get('serviceArns', []))
     for i in range(0, len(service_arns), 100):
@@ -77,11 +81,11 @@ def get_ecs_services(cluster_arn: str, boto3_session: boto3.session.Session, reg
 
 @timeit
 @aws_handle_regions
-def get_ecs_task_definitions(boto3_session: boto3.session.Session, region: str) -> List:
+def get_ecs_task_definitions(boto3_session: boto3.session.Session, region: str) -> List[Dict[str, Any]]:
     client = boto3_session.client('ecs', region_name=region)
     paginator = client.get_paginator('list_task_definitions')
-    task_definitions: List[Any] = []
-    task_definition_arns: List[Any] = []
+    task_definitions: List[Dict[str, Any]] = []
+    task_definition_arns: List[str] = []
     for page in paginator.paginate():
         task_definition_arns.extend(page.get('taskDefinitionArns', []))
     for arn in task_definition_arns:
@@ -94,11 +98,11 @@ def get_ecs_task_definitions(boto3_session: boto3.session.Session, region: str) 
 
 @timeit
 @aws_handle_regions
-def get_ecs_tasks(cluster_arn: str, boto3_session: boto3.session.Session, region: str) -> List:
+def get_ecs_tasks(cluster_arn: str, boto3_session: boto3.session.Session, region: str) -> List[Dict[str, Any]]:
     client = boto3_session.client('ecs', region_name=region)
     paginator = client.get_paginator('list_tasks')
-    tasks: List[Any] = []
-    task_arns: List[Any] = []
+    tasks: List[Dict[str, Any]] = []
+    task_arns: List[str] = []
     for page in paginator.paginate(cluster=cluster_arn):
         task_arns.extend(page.get('taskArns', []))
     for i in range(0, len(task_arns), 100):
@@ -143,7 +147,7 @@ def load_ecs_clusters(
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = {aws_update_tag}
     """  # noqa:E501
-    clusters: List[Dict] = []
+    clusters: List[Dict[str, Any]] = []
     for cluster in data:
         for setting in cluster.get("settings", []):
             setting_name = camel_to_snake(setting["name"])
@@ -191,7 +195,7 @@ def load_ecs_container_instances(
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = {aws_update_tag}
     """
-    instances: List[Dict] = []
+    instances: List[Dict[str, Any]] = []
     for instance in data:
         instance['registeredAt'] = dict_date_to_epoch(instance, 'registeredAt')
         instances.append(instance)
@@ -253,7 +257,7 @@ def load_ecs_services(
         ON CREATE SET r2.firstseen = timestamp()
         SET r2.lastupdated = {aws_update_tag}
     """  # noqa:E501
-    services: List[Dict] = []
+    services: List[Dict[str, Any]] = []
     for service in data:
         service['createdAt'] = dict_date_to_epoch(service, 'createdAt')
         services.append(service)
@@ -308,8 +312,8 @@ def load_ecs_task_definitions(
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = {aws_update_tag}
     """
-    container_definitions = []
-    task_definitions: List[Dict] = []
+    container_definitions: List[Dict[str, Any]] = []
+    task_definitions: List[Dict[str, Any]] = []
     for task_definition in data:
         task_definition['registeredAt'] = dict_date_to_epoch(task_definition, 'registeredAt')
         task_definition['deregisteredAt'] = dict_date_to_epoch(task_definition, 'deregisteredAt')
@@ -395,8 +399,8 @@ def load_ecs_tasks(
         ON CREATE SET r3.firstseen = timestamp()
         SET r3.lastupdated = {aws_update_tag}
     """
-    containers = []
-    tasks: List[Dict] = []
+    containers: List[Dict[str, Any]] = []
+    tasks: List[Dict[str, Any]] = []
     for task in data:
         task['connectivityAt'] = dict_date_to_epoch(task, 'connectivityAt')
         task['createdAt'] = dict_date_to_epoch(task, 'createdAt')

@@ -38,6 +38,13 @@ def test_load_ecs_clusters(neo4j_session, *args):
 
 
 def test_load_ecs_container_instances(neo4j_session, *args):
+    cartography.intel.aws.ecs.load_ecs_clusters(
+        neo4j_session,
+        tests.data.aws.ecs.GET_ECS_CLUSTERS,
+        TEST_REGION,
+        TEST_ACCOUNT_ID,
+        TEST_UPDATE_TAG,
+    )
     data = tests.data.aws.ecs.GET_ECS_CONTAINER_INSTANCES
     cartography.intel.aws.ecs.load_ecs_container_instances(
         neo4j_session,
@@ -74,8 +81,24 @@ def test_load_ecs_container_instances(neo4j_session, *args):
     }
     assert actual_nodes == expected_nodes
 
+    nodes = neo4j_session.run(
+        """
+        MATCH (:ECSCluster)-[:HAS_CONTAINER_INSTANCE]->(n:ECSContainerInstance)
+        RETURN count(n.id) AS c
+        """,
+    )
+    for n in nodes:
+        assert n["c"] == 1
+
 
 def test_load_ecs_services(neo4j_session, *args):
+    cartography.intel.aws.ecs.load_ecs_clusters(
+        neo4j_session,
+        tests.data.aws.ecs.GET_ECS_CLUSTERS,
+        TEST_REGION,
+        TEST_ACCOUNT_ID,
+        TEST_UPDATE_TAG,
+    )
     data = tests.data.aws.ecs.GET_ECS_SERVICES
     cartography.intel.aws.ecs.load_ecs_services(
         neo4j_session,
@@ -113,6 +136,15 @@ def test_load_ecs_services(neo4j_session, *args):
         for n in nodes
     }
     assert actual_nodes == expected_nodes
+
+    nodes = neo4j_session.run(
+        """
+        MATCH (:ECSCluster)-[:HAS_SERVICE]->(n:ECSService)
+        RETURN count(n.id) AS c
+        """,
+    )
+    for n in nodes:
+        assert n["c"] == 1
 
 
 def test_load_ecs_task_definitions(neo4j_session, *args):
@@ -176,6 +208,15 @@ def test_load_ecs_task_definitions(neo4j_session, *args):
         for n in nodes
     }
     assert actual_nodes == expected_nodes
+
+    nodes = neo4j_session.run(
+        """
+        MATCH (:ECSTaskDefinition)-[:HAS_CONTAINER_DEFINITION]->(n:ECSContainerDefinition)
+        RETURN count(n.id) AS c
+        """,
+    )
+    for n in nodes:
+        assert n["c"] == 1
 
 
 def test_load_ecs_tasks(neo4j_session, *args):
@@ -242,3 +283,12 @@ def test_load_ecs_tasks(neo4j_session, *args):
         for n in nodes
     }
     assert actual_nodes == expected_nodes
+
+    nodes = neo4j_session.run(
+        """
+        MATCH (:ECSTask)-[:HAS_CONTAINER]->(n:ECSContainer)
+        RETURN count(n.id) AS c
+        """,
+    )
+    for n in nodes:
+        assert n["c"] == 1
