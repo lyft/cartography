@@ -206,6 +206,8 @@ Representation of an AWS Account.
                               EC2Reservation,
                               EC2ReservedInstance,
                               EC2SecurityGroup,
+                              ECSCluster,
+                              ECSTaskDefinition,
                               ElasticIPAddress,
                               ESDomain,
                               LaunchConfiguration,
@@ -2919,6 +2921,12 @@ Representation of an AWS ECS [Container Instance](https://docs.aws.amazon.com/Am
         (ECSCluster)-[HAS_CONTAINER_INSTANCE]->(ECSContainerInstance)
         ```
 
+- ECSContainerInstances have ECSTasks
+
+        ```
+        (ECSContainerInstance)-[HAS_TASK]->(ECSTask)
+        ```
+
 ## ECSService
 
 Representation of an AWS ECS [Service](https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_Service.html)
@@ -2958,6 +2966,12 @@ Representation of an AWS ECS [Service](https://docs.aws.amazon.com/AmazonECS/lat
 
         ```
         (ECSCluster)-[HAS_SERVICE]->(ECSService)
+        ```
+
+- An ECSCluster has ECSContainerInstances
+
+        ```
+        (ECSCluster)-[HAS_CONTAINER_INSTANCE]->(ECSContainerInstance)
         ```
 
 ## ECSTaskDefinition
