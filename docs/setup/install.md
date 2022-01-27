@@ -1,1 +1,1 @@
-This document has been moved [here](https://lyft.github.com/cartography/install.html)
+This document has been moved [here](https://lyft.github.io/cartography/install.html)

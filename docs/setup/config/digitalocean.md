@@ -1,1 +1,1 @@
-This document has been moved [here](https://lyft.github.com/cartography/modules/digitalocean/config.html)
+This document has been moved [here](https://lyft.github.io/cartography/modules/digitalocean/config.html)
