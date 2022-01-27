@@ -14,3 +14,4 @@ build/
 .mypy_cache
 *.vscode
 .compose
+generated

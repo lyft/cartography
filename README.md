@@ -1,41 +1,23 @@
-![Cartography](docs/images/logo-horizontal.png)
+![Cartography](docs/root/images/logo-horizontal.png)
 
 Cartography is a Python tool that consolidates infrastructure assets and the relationships between them in an intuitive graph view powered by a [Neo4j](https://www.neo4j.com) database.
 
-![Visualization of RDS nodes and AWS nodes](docs/images/accountsandrds.png)
-
-<!-- START doctoc generated TOC please keep comment here to allow auto update -->
-<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
-
-- [Why Cartography?](#why-cartography)
-- [Install and configure](#install-and-configure)
-- [Supported platforms](#supported-platforms)
-- [Usage](#usage)
-- [Contact](#contact)
-- [Community Meeting](#community-meeting)
-- [Contributing](#contributing)
-  - [Code of conduct](#code-of-conduct)
-  - [Developing Cartography](#developing-cartography)
-    - [Sign the Contributor License Agreement (CLA)](#sign-the-contributor-license-agreement-cla)
-- [Who uses Cartography?](#who-uses-cartography)
-
-<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+![Visualization of RDS nodes and AWS nodes](docs/root/images/accountsandrds.png)
 
 ## Why Cartography?
 Cartography aims to enable a broad set of exploration and automation scenarios.  It is particularly good at exposing otherwise hidden dependency relationships between your service's assets so that you may validate assumptions about security risks.
 
 Service owners can generate asset reports, Red Teamers can discover attack paths, and Blue Teamers can identify areas for security improvement.   All can benefit from using the graph for manual exploration through a web frontend interface, or in an automated fashion by calling the APIs.
 
-Cartography is not the only [security](https://github.com/dowjones/hammer) [graph](https://github.com/BloodHoundAD/BloodHound) [tool](https://github.com/Netflix/security_monkey) [out](https://github.com/vysecurity/ANGRYPUPPY) [there](https://github.com/duo-labs/cloudmapper), but it differentiates itself by being fully-featured yet generic and [extensible](docs/dev/writing-analysis-jobs.md) enough to help make anyone better understand their risk exposure, regardless of what platforms they use.  Rather than being focused on one core scenario or attack vector like the other linked tools, Cartography focuses on flexibility and exploration.
+Cartography is not the only [security](https://github.com/dowjones/hammer) [graph](https://github.com/BloodHoundAD/BloodHound) [tool](https://github.com/Netflix/security_monkey) [out](https://github.com/vysecurity/ANGRYPUPPY) [there](https://github.com/duo-labs/cloudmapper), but it differentiates itself by being fully-featured yet generic and [extensible](https://lyft.github.com/cartography/dev/writing-analysis-jobs.html) enough to help make anyone better understand their risk exposure, regardless of what platforms they use.  Rather than being focused on one core scenario or attack vector like the other linked tools, Cartography focuses on flexibility and exploration.
 
 You can learn more about the story behind Cartography in our [presentation at BSidesSF 2019](https://www.youtube.com/watch?v=ZukUmZSKSek).
 
 ## Install and configure
-Start [here](docs/setup/install.md).
+Start [here](https://lyft.github.com/cartography/install.html).
 
 ## Supported platforms
-- [Amazon Web Services](docs/setup/config/aws.md) - API Gateway, Config, EC2, ECS, ECR, Elasticsearch, Elastic Kubernetes Service (EKS), DynamoDB, IAM, KMS, Lambda, RDS, Redshift, Route53, S3, Secrets Manager, Security Hub, SQS, STS, Tags
+- [Amazon Web Services](https://lyft.github.com/cartography/modules/aws/index.html) - API Gateway, Config, EC2, ECS, ECR, Elasticsearch, Elastic Kubernetes Service (EKS), DynamoDB, IAM, KMS, Lambda, RDS, Redshift, Route53, S3, Secrets Manager, Security Hub, SQS, STS, Tags
 - [Google Cloud Platform](docs/setup/config/gcp.md) - Cloud Resource Manager, Compute, DNS, Storage, Google Kubernetes Engine
 - [Google GSuite](docs/setup/config/gsuite.md) - users, groups
 - [Duo CRXcavator](docs/setup/config/crxcavator.md) - Chrome extensions, GSuite users
@@ -47,7 +29,7 @@ Start [here](docs/setup/install.md).
 - [PagerDuty](docs/setup/config/pagerduty.md) - Users, teams, services, schedules, escalation policies, integrations, vendors
 
 ## Usage
-Start with our [tutorial](docs/usage/tutorial.md). Our [data schema](docs/schema) is a helpful reference when you get stuck.
+Start with our [tutorial](https://lyft.github.com/cartography/usage/tutorial.html). Our [data schema](https://lyft.github.com/cartography/usage/schema.html) is a helpful reference when you get stuck.
 
 ## Contact
 
@@ -69,8 +51,7 @@ All contributors and participants agree to abide by its terms.
 
 ### Developing Cartography
 
-Get started with our [developer documentation](docs/dev/developer-guide.md).
-
+Get started with our [developer documentation](https://lyft.github.com/cartography/dev/developer-guide.html).
 
 #### Sign the Contributor License Agreement (CLA)
 

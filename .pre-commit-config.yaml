@@ -46,7 +46,3 @@ repos:
         -   types-requests
         -   types-PyYAML
         -   types-python-dateutil
--   repo: https://github.com/thlorenz/doctoc
-    rev: v2.0.1
-    hooks:
-    -   id: doctoc
