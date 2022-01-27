@@ -1,12 +1,3 @@
-# Coverage
-
-.. _azure_coverage:
-
-* CosmosDB
-* SQL
-* Storage
-* Virtual Machine
-
 # Configuration
 
 .. _azure_config:

@@ -1,11 +1,3 @@
-# Coverage
-
-.. _digitalocean_coverage:
-
-* Accounts
-* Projects
-* Compute - Droplets
-
 # Configuration
 
 .. _digitalocean_config:

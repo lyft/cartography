@@ -1,10 +1,3 @@
-# Coverage
-
-.. _gsuite_coverage:
-
-* Users
-* Groups
-
 # Configuration
 
 .. _gsuite_config:

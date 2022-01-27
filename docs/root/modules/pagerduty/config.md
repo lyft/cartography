@@ -1,15 +1,3 @@
-# Coverage
-
-.. _pagerduty_coverage:
-
-* Users
-* Teams
-* Services
-* Schedules
-* Escalation Policies
-* Integrations
-* Vendors
-
 # Configuration
 
 .. _pagerduty_config:

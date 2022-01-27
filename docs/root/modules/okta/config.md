@@ -1,16 +1,3 @@
-# Coverage
-
-.. _okta_coverage:
-
-* Users
-* Groups
-* Organizations
-* Roles
-* Applications
-* Factors
-* Trusted Origins
-* Reply URIs
-
 # Configuration
 
 .. _okta_config:

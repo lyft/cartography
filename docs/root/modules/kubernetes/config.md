@@ -1,13 +1,3 @@
-# Coverage
-
-.. _kubernetes_coverage:
-
-* Cluster
-* Namespace
-* Service
-* Pod
-* Container
-
 # Kubernetes Configuration
 
 .. _kubernetes_config:

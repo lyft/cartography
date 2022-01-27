@@ -1,13 +1,3 @@
-# Coverage
-
-.. _gcp_coverage:
-
-* Cloud Resource Manager
-* Compute
-* DNS
-* Storage
-* Google Kubernetes Engine
-
 # Configuration
 
 .. _gcp_config:

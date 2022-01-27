@@ -1,7 +1,3 @@
-#####
-Usage
-#####
-
 .. toctree::
 
     tutorial

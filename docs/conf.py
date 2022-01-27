@@ -130,8 +130,8 @@ html_context = sphinx_material.get_html_context()
 # further.  For a list of options available for each theme, see the
 # documentation.
 html_theme_options = {
-    'globaltoc_depth': 3,
-    'globaltoc_collapse': False,
+    'globaltoc_depth': 2,
+    'globaltoc_collapse': True,
 }
 html_sidebars = {
     "**": ["globaltoc.html", "localtoc.html", "searchbox.html"],
@@ -185,7 +185,7 @@ html_sidebars = {
 # html_domain_indices = True
 
 # If false, no index is generated.
-# html_use_index = True
+html_use_index = False
 
 # If true, the index is split into individual pages for each letter.
 # html_split_index = False

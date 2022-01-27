@@ -1,11 +1,3 @@
-# Coverage
-
-.. _github_coverage:
-
-* Repos
-* Branches
-* Users
-
 # Configuration
 
 .. _github_config:

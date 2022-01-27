@@ -1,7 +1,3 @@
-############
-Contributing
-############
-
 .. toctree::
 
     developer-guide

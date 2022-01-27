@@ -1,40 +1,17 @@
-## Coverage
-
-.. _aws_coverage:
-
-* API Gateway - Rest APIs, Stages, Certificates, Resources
-* Config - Configuration Recorders, Delivery Channels, Config Rules
-* EC2 - Autoscaling groups, Elastic IPs, AMIs, Instances, Internet Gateways, SSH Key Pairs, Launch Templates, Launch Config, Load Balancers (V1 and V2), Network Interfaces, Reserved Instances, Security Groups, EBS Volumes, EBS Snapshots, Subnets, Trusted Gateway, VPC, VPC Peerings
-* Elasticsearch - Domains
-* Elastic Kubernetes Service - Clusters
-* DynamoDB - Tables, Global Secondary Indexes
-* IAM - Users, User Access Keys, Roles, Groups, Group Membership, Principals, Policies (managed and inline), Assume Role Relationships
-* KMS - Keys, Key Policy, Grants, Aliases
-* Lambda - Functions, Aliases, Source Mappings, Layers
-* RDS - Clusters, Instances, Subnet Groups, Security Groups, Read Replicas
-* Redshift - Clusters
-* Route53 - Records, Zones
-* S3 - Buckets, Bucket Policy, ACLs
-* Secrets Manager - Secrets
-* Security Hub - Basic Hub Details
-* SQS - Queues, Dead Letter Queues
-* STS
-* Tags - Tag support for the supported resources, if supported by the resource groups tagging API
-
-## Configuration
+# Configuration
 
 .. _aws_config:
 
 Follow these steps to analyze AWS assets with Cartography.
 
-### Single AWS Account Setup
+## Single AWS Account Setup
 
 1. Set up an AWS identity (user, group, or role) for Cartography to use.  Ensure that this identity has the built-in AWS [SecurityAudit policy](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_job-functions.html#jf_security-auditor) (arn:aws:iam::aws:policy/SecurityAudit) attached.  This policy grants access to read security config metadata.
 1. Set up AWS credentials to this identity on your server, using a `config` and `credential` file.  For details, see AWS' [official guide](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html).
 1. [Optional] Configure AWS Retry settings using `AWS_MAX_ATTEMPTS` and `AWS_RETRY_MODE` environment variables. This helps in API Rate Limit throttling and TooManyRequestException related errors. For details, see AWS' [official guide](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html#using-environment-variables).
 
 
-### Multiple AWS Account Setup
+## Multiple AWS Account Setup
 
 There are many ways to allow Cartography to pull from more than one AWS account.  We can't cover all of them, but we _can_ show you the way we have things set up at Lyft.  In this scenario we will assume that you are going to run Cartography on an EC2 instance.
 

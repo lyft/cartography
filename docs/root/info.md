@@ -1,4 +1,12 @@
-## Why Cartography?
+![logo](images/logo-horizontal.png)
+
+# What is Cartography?
+
+Cartography is a Python tool that consolidates infrastructure assets and the relationships between them in an intuitive graph view powered by a [Neo4j](https://www.neo4j.com) database.
+
+![example](images/accountsandrds.png)
+
+# Why Cartography?
 
 Cartography aims to enable a broad set of exploration and automation scenarios.  It is particularly good at exposing otherwise hidden dependency relationships between your service's assets so that you may validate assumptions about security risks.
 

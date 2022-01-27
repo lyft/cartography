@@ -1,10 +1,3 @@
-# Coverage
-
-.. _crxcavator_coverage:
-
-* Chrome extensions
-* GSuite users
-
 # Configuration
 
 .. _crxcavator_config:
