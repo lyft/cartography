@@ -17,16 +17,16 @@ You can learn more about the story behind Cartography in our [presentation at BS
 Start [here](https://lyft.github.com/cartography/install.html).
 
 ## Supported platforms
-- [Amazon Web Services](https://lyft.github.com/cartography/modules/aws/config.html) -  API Gateway, Config, EC2, Elasticsearch, Elastic Kubernetes Service, DynamoDB, IAM, KMS, Launch Configurations, Launch Templates, Lambda, RDS, Redshift, Route53, S3, Secrets Manager, Security Hub, SQS, STS, Tags
-- [Google Cloud Platform](https://lyft.github.com/cartography/modules/gcp/config.html) - Cloud Resource Manager, Compute, DNS, Storage, Google Kubernetes Engine
-- [Google GSuite](https://lyft.github.com/cartography/modules/gsuite/config.html) - users, groups
-- [Duo CRXcavator](https://lyft.github.com/cartography/modules/crxcavator/config.html) - Chrome extensions, GSuite users
-- [Okta](https://lyft.github.com/cartography/modules/okta/config.html) - users, groups, organizations, roles, applications, factors, trusted origins, reply URIs
-- [Github](https://lyft.github.com/cartography/modules/github/config.html) - repos, branches, users
-- [DigitalOcean](https://lyft.github.com/cartography/modules/digitalocean/config.html)
-- [Microsoft Azure](https://lyft.github.com/cartography/modules/azure/config.html) -  CosmosDB, SQL, Storage, Virtual Machine
-- [Kubernetes](https://lyft.github.com/cartography/modules/kubernetes/config.html) - Cluster, Namespace, Service, Pod, Container
-- [PagerDuty](https://lyft.github.com/cartography/modules/pagerduty/config.html) - Users, teams, services, schedules, escalation policies, integrations, vendors
+- [Amazon Web Services](https://lyft.github.com/cartography/modules/aws/index.html) -  API Gateway, Config, EC2, Elasticsearch, Elastic Kubernetes Service, DynamoDB, IAM, KMS, Launch Configurations, Launch Templates, Lambda, RDS, Redshift, Route53, S3, Secrets Manager, Security Hub, SQS, STS, Tags
+- [Google Cloud Platform](https://lyft.github.com/cartography/modules/gcp/index.html) - Cloud Resource Manager, Compute, DNS, Storage, Google Kubernetes Engine
+- [Google GSuite](https://lyft.github.com/cartography/modules/gsuite/index.html) - users, groups
+- [Duo CRXcavator](https://lyft.github.com/cartography/modules/crxcavator/index.html) - Chrome extensions, GSuite users
+- [Okta](https://lyft.github.com/cartography/modules/okta/index.html) - users, groups, organizations, roles, applications, factors, trusted origins, reply URIs
+- [Github](https://lyft.github.com/cartography/modules/github/index.html) - repos, branches, users
+- [DigitalOcean](https://lyft.github.com/cartography/modules/digitalocean/index.html)
+- [Microsoft Azure](https://lyft.github.com/cartography/modules/azure/index.html) -  CosmosDB, SQL, Storage, Virtual Machine
+- [Kubernetes](https://lyft.github.com/cartography/modules/kubernetes/index.html) - Cluster, Namespace, Service, Pod, Container
+- [PagerDuty](https://lyft.github.com/cartography/modules/pagerduty/index.html) - Users, teams, services, schedules, escalation policies, integrations, vendors
 
 ## Usage
 Start with our [tutorial](https://lyft.github.com/cartography/usage/tutorial.html). Our [data schema](https://lyft.github.com/cartography/usage/schema.html) is a helpful reference when you get stuck.
