@@ -1,1 +1,1 @@
-This document has been moved [here](https://lyft.github.com/cartography/modules/okta/schema.html)
+This document has been moved [here](https://lyft.github.io/cartography/modules/okta/schema.html)

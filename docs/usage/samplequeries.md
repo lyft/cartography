@@ -1,1 +1,1 @@
-This document has been moved [here](https://lyft.github.com/cartography/usage/samplequeries.html)
+This document has been moved [here](https://lyft.github.io/cartography/usage/samplequeries.html)
