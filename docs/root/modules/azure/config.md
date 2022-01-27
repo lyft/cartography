@@ -1,4 +1,4 @@
-# Configuration
+## Azure Configuration
 
 .. _azure_config:
 

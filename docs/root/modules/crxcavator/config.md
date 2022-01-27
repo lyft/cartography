@@ -1,4 +1,4 @@
-# Configuration
+## Crxcavator Configuration
 
 .. _crxcavator_config:
 

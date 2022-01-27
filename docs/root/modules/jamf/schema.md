@@ -1,8 +1,8 @@
-# Schema
+## Jamf Schema
 
 .. _jamf_schema:
 
-## JamfComputerGroup
+### JamfComputerGroup
 
 Representation of a Jamf computer group.
 
@@ -12,6 +12,6 @@ Representation of a Jamf computer group.
 |name|The friendly name of the group|
 |is_smart| Whether the group is [smart](https://docs.jamf.com/10.4.0/jamf-pro/administrator-guide/Smart_Computer_Groups.html)|
 
-### Relationships
+#### Relationships
 
 - Coming soon!

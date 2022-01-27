@@ -21,3 +21,15 @@
 	In words, this means that `NodeTypeA` has `RELATIONSHIP_R` pointing to `NodeTypeB`, and `NodeTypeA` has `RELATIONSHIP_R` pointing to `NodeTypeC`.
 
 - In these docs, more specific nodes will be decorated with `GenericNode::SpecificNode` notation. For example, if we have a `Car` node and a `RaceCar` node, we will refer to the `RaceCar` as `Car::RaceCar`.
+
+.. mdinclude:: ../modules/aws/schema.md
+.. mdinclude:: ../modules/azure/schema.md
+.. mdinclude:: ../modules/crxcavator/schema.md
+.. mdinclude:: ../modules/digitalocean/schema.md
+.. mdinclude:: ../modules/gcp/schema.md
+.. mdinclude:: ../modules/github/schema.md
+.. mdinclude:: ../modules/gsuite/schema.md
+.. mdinclude:: ../modules/jamf/schema.md
+.. mdinclude:: ../modules/kubernetes/schema.md
+.. mdinclude:: ../modules/okta/schema.md
+.. mdinclude:: ../modules/pagerduty/schema.md

@@ -1,6 +1,6 @@
-# Schema
+## Crxcavtor Schema
 
-## GSuiteUser
+### GSuiteUser
 
 Placeholder representation of a single G Suite [user object](https://developers.google.com/admin-sdk/directory/v1/reference/users). This node is the minimal data necessary to map who has extensions installed until full G Suite data is imported.
 
@@ -12,7 +12,7 @@ Placeholder representation of a single G Suite [user object](https://developers.
 | id | The user's email address, will change to actual G Suite id in future |
 | email | The user's email address
 
-### Relationships
+#### Relationships
 
 - GSuiteUsers install ChromeExtensions.
 
@@ -20,7 +20,7 @@ Placeholder representation of a single G Suite [user object](https://developers.
     (GSuiteUser)-[INSTALLS]->(ChromeExtension)
     ```
 
-## ChromeExtension
+### ChromeExtension
 
  Representation of a CRXcavator Chrome Extension [Report](https://crxcavator.io/apidocs#tag/report).
 

@@ -1,4 +1,4 @@
-# Configuration
+## GSuite Configuration
 
 .. _gsuite_config:
 

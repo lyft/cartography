@@ -1,4 +1,4 @@
-# Configuration
+## GCP Configuration
 
 .. _gcp_config:
 
@@ -15,7 +15,7 @@ Follow these steps to analyze GCP projects with Cartography.
         - **Method 1**: You can do this by setting your `GOOGLE_APPLICATION_CREDENTIALS` environment variable to point to a json file containing your credentials.  As per SecurityCommonSense™️, please ensure that only the user account that runs Cartography has read-access to this sensitive file.
         - **Method 2**: If you are running Cartography on a GCE instance or other GCP service, you can make use of the credential management provided by the default service accounts on these services.  See the [official docs](https://cloud.google.com/docs/authentication/production) on Application Default Credentials for more details.
 
-## Multiple GCP Project Setup
+### Multiple GCP Project Setup
 
 In order for Cartography to be able to pull all assets from all GCP Projects within an Organization, the User/Service Account assigned to Cartography needs to be created at the **Organization** level.
 This is because [IAM access control policies applied on the Organization resource apply throughout the hierarchy on all resources in the organization](https://cloud.google.com/resource-manager/docs/cloud-platform-resource-hierarchy#organizations).

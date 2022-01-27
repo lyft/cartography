@@ -1,8 +1,8 @@
-# Schema
+## Kubernetes Schema
 
 .. _kubernetes_schema:
 
-## KubernetesCluster
+### KubernetesCluster
 Representation of a [Kubernetes Cluster.](https://kubernetes.io/docs/concepts/overview/what-is-kubernetes/)
 
 | Field | Description |
@@ -12,7 +12,7 @@ Representation of a [Kubernetes Cluster.](https://kubernetes.io/docs/concepts/ov
 | id | Identifier for the cluster i.e. UID of `kube-system` namespace |
 | name | Name assigned to the cluster which is derived from kubeconfig context |
 
-### Relationships
+#### Relationships
 - KubernetesCluster has KubernetesNamespaces.
     ```
     (KubernetesCluster)-[HAS_NAMESPACE]->(KubernetesNamespace)
@@ -23,7 +23,7 @@ Representation of a [Kubernetes Cluster.](https://kubernetes.io/docs/concepts/ov
     (KubernetesCluster)-[HAS_POD]->(KubernetesPod)
     ```
 
-## KubernetesNamespace
+### KubernetesNamespace
 Representation of a [Kubernetes Namespace.](https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/)
 
 | Field | Description |
@@ -35,7 +35,7 @@ Representation of a [Kubernetes Namespace.](https://kubernetes.io/docs/concepts/
 | created\_at | Timestamp of the creation time of the kubernetes namespace |
 | deleted\_at | Timestamp of the deletion time of the kubernetes namespace |
 
-### Relationships
+#### Relationships
 - KubernetesNamespace can have KubernetesPods.
     ```
     (KubernetesNamespace)-[HAS_POD]->(KubernetesPod)
@@ -46,7 +46,7 @@ Representation of a [Kubernetes Namespace.](https://kubernetes.io/docs/concepts/
     (KubernetesNamespace)-[HAS_SERVICE]->(KubernetesService)
     ```
 
-## KubernetesPod
+### KubernetesPod
 Representation of a [Kubernetes Pod.](https://kubernetes.io/docs/concepts/workloads/pods/)
 
 | Field | Description |
@@ -59,13 +59,13 @@ Representation of a [Kubernetes Pod.](https://kubernetes.io/docs/concepts/worklo
 | created\_at | Timestamp of the creation time of the kubernetes pod |
 | deleted\_at | Timestamp of the deletion time of the kubernetes pod |
 
-### Relationships
+#### Relationships
 - KubernetesPod has KubernetesContainers.
     ```
     (KubernetesPod)-[HAS_CONTAINER]->(KubernetesContainer)
     ```
 
-## KubernetesContainer
+### KubernetesContainer
 Representation of a [Kubernetes Container.](https://kubernetes.io/docs/concepts/workloads/pods/#how-pods-manage-multiple-containers)
 
 | Field | Description |
@@ -81,13 +81,13 @@ Representation of a [Kubernetes Container.](https://kubernetes.io/docs/concepts/
 | status\_started | Specifies whether the container has passed its startup probe. |
 | statys\_state | State of the container (running, terminated, waiting) |
 
-### Relationships
+#### Relationships
 - KubernetesPod has KubernetesContainers.
     ```
     (KubernetesPod)-[HAS_CONTAINER]->(KubernetesContainer)
     ```
 
-## KubernetesService
+### KubernetesService
 Representation of a [Kubernetes Service.](https://kubernetes.io/docs/concepts/services-networking/service/)
 
 | Field | Description |
@@ -103,7 +103,7 @@ Representation of a [Kubernetes Service.](https://kubernetes.io/docs/concepts/se
 | ingress\_host | Hostname of the ingress endpoint, if any |
 | ingress\_ip | IP of the ingress endpoint, if any |
 
-### Relationships
+#### Relationships
 - KubernetesService can serve KubernetesPods.
     ```
     (KubernetesService)-[SERVES_POD]->(KubernetesPod)

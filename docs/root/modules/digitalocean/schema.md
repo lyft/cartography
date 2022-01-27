@@ -1,8 +1,8 @@
-# Schema
+## DigitalOcean Schema
 
 .. _digitalocean_schema:
 
-## DOAccount
+### DOAccount
 Representation of a DigitalOcean [Account](https://developers.digitalocean.com/documentation/v2/#account) object.
 
 | Field | Description |
@@ -15,7 +15,7 @@ Representation of a DigitalOcean [Account](https://developers.digitalocean.com/d
 | floating_ip_limit | Total number of floating IPs the account may have |
 | status | Status of the account |
 
-### Relationships
+#### Relationships
 
 - DOAccount contains DOProjects.
 
@@ -23,7 +23,7 @@ Representation of a DigitalOcean [Account](https://developers.digitalocean.com/d
     (DOAccount)-[RESOURCE]->(DOProjects)
     ```
 
-## DOProject
+### DOProject
 Representation of a DigitalOcean [Project](https://developers.digitalocean.com/documentation/v2/#projects) object.
 
 | Field | Description |
@@ -40,7 +40,7 @@ Representation of a DigitalOcean [Project](https://developers.digitalocean.com/d
 | created_at | A time value given in ISO8601 combined date and time format that represents when the project was created |
 | updated_at | A time value given in ISO8601 combined date and time format that represents when the project was updated |
 
-### Relationships
+#### Relationships
 
 - DOProject has DODroplets as resource.
 
@@ -48,7 +48,7 @@ Representation of a DigitalOcean [Project](https://developers.digitalocean.com/d
     (DOProject)-[RESOURCE]->(DODroplet)
     ```
 
-## DODroplet
+### DODroplet
 Representation of a DigitalOcean [Droplet](https://developers.digitalocean.com/documentation/v2/#droplets) object.
 
 | Field | Description |
@@ -73,7 +73,7 @@ Representation of a DigitalOcean [Droplet](https://developers.digitalocean.com/d
 | volumes | A flat array including the unique identifier for each Block Storage volume attached to the Droplet |
 | created_at | A time value given in ISO8601 combined date and time format that represents when the Droplet was created |
 
-### Relationships
+#### Relationships
 
 - DODroplet is a resource of a DOProject.
 

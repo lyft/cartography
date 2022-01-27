@@ -1,4 +1,4 @@
-# Kubernetes Configuration
+## Kubernetes Configuration
 
 .. _kubernetes_config:
 

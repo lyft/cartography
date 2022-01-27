@@ -1,4 +1,4 @@
-# Configuration
+## Pagerduty Configuration
 
 .. _pagerduty_config:
 

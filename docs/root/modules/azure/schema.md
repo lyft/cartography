@@ -1,8 +1,8 @@
-# Schema
+## Azure Schema
 
 .. _azure_schema:
 
-## AzureTenant
+### AzureTenant
 
 Representation of an [Azure Tenant](https://docs.microsoft.com/en-us/rest/api/resources/Tenants/List).
 
@@ -12,7 +12,7 @@ Representation of an [Azure Tenant](https://docs.microsoft.com/en-us/rest/api/re
 |lastupdated| Timestamp of the last time the node was updated|
 |**id**| The Azure Tenant ID number|
 
-### Relationships
+#### Relationships
 
 - Azure Principal is part of the Azure Account.
 
@@ -20,7 +20,7 @@ Representation of an [Azure Tenant](https://docs.microsoft.com/en-us/rest/api/re
         (AzureTenant)-[RESOURCE]->(AzurePrincipal)
         ```
 
-## AzurePrincipal
+### AzurePrincipal
 
 Representation of an [Azure Principal](https://docs.microsoft.com/en-us/graph/api/resources/user?view=graph-rest-1.0)..
 
@@ -30,7 +30,7 @@ Representation of an [Azure Principal](https://docs.microsoft.com/en-us/graph/ap
 |lastupdated| Timestamp of the last time the node was updated|
 |**email**| Email of the Azure Principal|
 
-### Relationships
+#### Relationships
 
 - Azure Principal is part of the Azure Account.
 
@@ -38,7 +38,7 @@ Representation of an [Azure Principal](https://docs.microsoft.com/en-us/graph/ap
         (AzurePrincipal)-[RESOURCE]->(AzureTenant)
         ```
 
-## AzureSubscription
+### AzureSubscription
 
 Representation of an [Azure Subscription](https://docs.microsoft.com/en-us/rest/api/resources/subscriptions)..
 
@@ -51,7 +51,7 @@ Representation of an [Azure Subscription](https://docs.microsoft.com/en-us/rest/
 |path | The full ID for the Subscription|
 |state| Can be one of ``Enabled \| Disabled \| Deleted \| PastDue \| Warned``|
 
-### Relationships
+#### Relationships
 
 - Azure Tenant contains one or more Subscriptions.
 
@@ -59,7 +59,7 @@ Representation of an [Azure Subscription](https://docs.microsoft.com/en-us/rest/
         (AzureTenant)-[RESOURCE]->(AzureSubscription)
         ```
 
-## VirtualMachine
+### VirtualMachine
 
 Representation of an [Azure Virtual Machine](https://docs.microsoft.com/en-us/rest/api/compute/virtualmachines).
 
@@ -82,7 +82,7 @@ Representation of an [Azure Virtual Machine](https://docs.microsoft.com/en-us/re
 |priority | Specifies the priority for the virtual machine|
 |eviction\_policy | Specifies the eviction policy for the Virtual Machine|
 
-### Relationships
+#### Relationships
 
 - Azure Subscription contains one or more Virtual Machines.
 
@@ -90,7 +90,7 @@ Representation of an [Azure Virtual Machine](https://docs.microsoft.com/en-us/re
         (AzureSubscription)-[RESOURCE]->(VirtualMachine)
         ```
 
-## AzureDataDisk
+### AzureDataDisk
 
 Representation of an [Azure Data Disk](https://docs.microsoft.com/en-us/rest/api/compute/virtualmachines/get#datadisk).
 
@@ -109,7 +109,7 @@ Representation of an [Azure Data Disk](https://docs.microsoft.com/en-us/rest/api
 |write\_accelerator\_enabled | Specifies whether writeAccelerator should be enabled or disabled on the data disk|
 |managed\_disk\_storage\_type | The data disk storage type|
 
-### Relationships
+#### Relationships
 
 - Azure Virtual Machines are attached to Data Disks.
 
@@ -117,7 +117,7 @@ Representation of an [Azure Data Disk](https://docs.microsoft.com/en-us/rest/api
         (VirtualMachine)-[ATTACHED_TO]->(AzureDataDisk)
         ```
 
-## AzureDisk
+### AzureDisk
 
 Representation of an [Azure Disk](https://docs.microsoft.com/en-us/rest/api/compute/disks).
 
@@ -139,7 +139,7 @@ Representation of an [Azure Disk](https://docs.microsoft.com/en-us/rest/api/comp
 |sku | The disk sku name|
 |zones | The logical zone list for disk|
 
-### Relationships
+#### Relationships
 
 - Azure Subscription contains one or more Disks.
 
@@ -147,7 +147,7 @@ Representation of an [Azure Disk](https://docs.microsoft.com/en-us/rest/api/comp
         (AzureSubscription)-[RESOURCE]->(AzureDisk)
         ```
 
-## AzureSnapshot
+### AzureSnapshot
 
 Representation of an [Azure Snapshot](https://docs.microsoft.com/en-us/rest/api/compute/snapshots).
 
@@ -170,7 +170,7 @@ Representation of an [Azure Snapshot](https://docs.microsoft.com/en-us/rest/api/
 |sku | The snapshot sku name|
 |zones | The logical zone list for snapshot|
 
-### Relationships
+#### Relationships
 
 - Azure Subscription contains one or more Snapshots.
 
@@ -178,7 +178,7 @@ Representation of an [Azure Snapshot](https://docs.microsoft.com/en-us/rest/api/
         (AzureSubscription)-[RESOURCE]->(AzureSnapshot)
         ```
 
-## AzureSQLServer
+### AzureSQLServer
 
 Representation of an [AzureSQLServer](https://docs.microsoft.com/en-us/rest/api/sql/servers).
 
@@ -194,7 +194,7 @@ Representation of an [AzureSQLServer](https://docs.microsoft.com/en-us/rest/api/
 |state | The state of the server|
 |version | The version of the server |
 
-### Relationships
+#### Relationships
 
 - Azure Subscription contains one or more SQL Servers.
 
@@ -237,7 +237,7 @@ Representation of an [AzureSQLServer](https://docs.microsoft.com/en-us/rest/api/
         (AzureSQLServer)-[RESOURCE]->(AzureSQLDatabase)
         ```
 
-## AzureServerDNSAlias
+### AzureServerDNSAlias
 
 Representation of an [AzureServerDNSAlias](https://docs.microsoft.com/en-us/rest/api/sql/serverdnsaliases).
 
@@ -249,7 +249,7 @@ Representation of an [AzureServerDNSAlias](https://docs.microsoft.com/en-us/rest
 |name | The name of the server DNS alias|
 |dnsrecord | The fully qualified DNS record for alias.|
 
-### Relationships
+#### Relationships
 
 - Azure SQL Server can be used by one or more Azure Server DNS Aliases.
 
@@ -257,7 +257,7 @@ Representation of an [AzureServerDNSAlias](https://docs.microsoft.com/en-us/rest
         (AzureSQLServer)-[USED_BY]->(AzureServerDNSAlias)
         ```
 
-## AzureServerADAdministrator
+### AzureServerADAdministrator
 
 Representation of an [AzureServerADAdministrator](https://docs.microsoft.com/en-us/rest/api/sql/serverazureadadministrators).
 
@@ -270,7 +270,7 @@ Representation of an [AzureServerADAdministrator](https://docs.microsoft.com/en-
 |administratortype | The type of the server administrator.|
 |login | The login name of the server administrator.|
 
-### Relationships
+#### Relationships
 
 - Azure SQL Server can be administered by one or more Azure Server AD Administrators.
 
@@ -278,7 +278,7 @@ Representation of an [AzureServerADAdministrator](https://docs.microsoft.com/en-
         (AzureSQLServer)-[ADMINISTERED_BY]->(AzureServerADAdministrator)
         ```
 
-## AzureRecoverableDatabase
+### AzureRecoverableDatabase
 
 Representation of an [AzureRecoverableDatabase](https://docs.microsoft.com/en-us/rest/api/sql/recoverabledatabases).
 
@@ -292,7 +292,7 @@ Representation of an [AzureRecoverableDatabase](https://docs.microsoft.com/en-us
 |servicelevelobjective | The service level objective name of the database.|
 |lastbackupdate | The last available backup date of the database (ISO8601 format).|
 
-### Relationships
+#### Relationships
 
 - Azure SQL Server has one or more Azure Recoverable Database.
 
@@ -300,7 +300,7 @@ Representation of an [AzureRecoverableDatabase](https://docs.microsoft.com/en-us
         (AzureSQLServer)-[RESOURCE]->(AzureRecoverableDatabase)
         ```
 
-## AzureRestorableDroppedDatabase
+### AzureRestorableDroppedDatabase
 
 Representation of an [AzureRestorableDroppedDatabase](https://docs.microsoft.com/en-us/rest/api/sql/restorabledroppeddatabases).
 
@@ -319,7 +319,7 @@ Representation of an [AzureRestorableDroppedDatabase](https://docs.microsoft.com
 |servicelevelobjective | The service level objective name of the database.|
 |maxsizebytes | The max size in bytes of the database.|
 
-### Relationships
+#### Relationships
 
 - Azure SQL Server has one or more Azure Restorable Dropped Database.
 
@@ -327,7 +327,7 @@ Representation of an [AzureRestorableDroppedDatabase](https://docs.microsoft.com
         (AzureSQLServer)-[RESOURCE]->(AzureRestorableDroppedDatabase)
         ```
 
-## AzureFailoverGroup
+### AzureFailoverGroup
 
 Representation of an [AzureFailoverGroup](https://docs.microsoft.com/en-us/rest/api/sql/failovergroups).
 
@@ -341,7 +341,7 @@ Representation of an [AzureFailoverGroup](https://docs.microsoft.com/en-us/rest/
 |replicationrole | Local replication role of the failover group instance.|
 |replicationstate | Replication state of the failover group instance.|
 
-### Relationships
+#### Relationships
 
 - Azure SQL Server has one or more Azure Failover Group.
 
@@ -349,7 +349,7 @@ Representation of an [AzureFailoverGroup](https://docs.microsoft.com/en-us/rest/
         (AzureSQLServer)-[RESOURCE]->(AzureFailoverGroup)
         ```
 
-## AzureElasticPool
+### AzureElasticPool
 
 Representation of an [AzureElasticPool](https://docs.microsoft.com/en-us/rest/api/sql/elasticpools).
 
@@ -367,7 +367,7 @@ Representation of an [AzureElasticPool](https://docs.microsoft.com/en-us/rest/ap
 |licensetype | The license type to apply for this elastic pool. |
 |zoneredundant | Specifies whether or not this elastic pool is zone redundant, which means the replicas of this elastic pool will be spread across multiple availability zones.|
 
-### Relationships
+#### Relationships
 
 - Azure SQL Server has one or more Azure Elastic Pool.
 
@@ -375,7 +375,7 @@ Representation of an [AzureElasticPool](https://docs.microsoft.com/en-us/rest/ap
         (AzureSQLServer)-[RESOURCE]->(AzureElasticPool)
         ```
 
-## AzureSQLDatabase
+### AzureSQLDatabase
 
 Representation of an [AzureSQLDatabase](https://docs.microsoft.com/en-us/rest/api/sql/databases).
 
@@ -399,7 +399,7 @@ Representation of an [AzureSQLDatabase](https://docs.microsoft.com/en-us/rest/ap
 |restorabledroppeddbid | The resource identifier of the restorable dropped database associated with create operation of this database.|
 |recoverabledbid | The resource identifier of the recoverable database associated with create operation of this database.|
 
-### Relationships
+#### Relationships
 
 - Azure SQL Server has one or more Azure SQL Database.
 
@@ -427,7 +427,7 @@ Representation of an [AzureSQLDatabase](https://docs.microsoft.com/en-us/rest/ap
         (AzureSQLDatabase)-[CONTAINS]->(AzureTransparentDataEncryption)
         ```
 
-## AzureReplicationLink
+### AzureReplicationLink
 
 Representation of an [AzureReplicationLink](https://docs.microsoft.com/en-us/rest/api/sql/replicationlinks).
 
@@ -449,7 +449,7 @@ Representation of an [AzureReplicationLink](https://docs.microsoft.com/en-us/res
 |starttime | The start time for the replication link.|
 |terminationallowed | Legacy value indicating whether termination is allowed.|
 
-### Relationships
+#### Relationships
 
 - Azure SQL Database contains one or more Azure Replication Links.
 
@@ -457,7 +457,7 @@ Representation of an [AzureReplicationLink](https://docs.microsoft.com/en-us/res
         (AzureSQLDatabase)-[CONTAINS]->(AzureReplicationLink)
         ```
 
-## AzureDatabaseThreatDetectionPolicy
+### AzureDatabaseThreatDetectionPolicy
 
 Representation of an [AzureDatabaseThreatDetectionPolicy](https://docs.microsoft.com/en-us/rest/api/sql/databasethreatdetectionpolicies).
 
@@ -477,7 +477,7 @@ Representation of an [AzureDatabaseThreatDetectionPolicy](https://docs.microsoft
 |useserverdefault | Specifies whether to use the default server policy.|
 |disabledalerts | Specifies the semicolon-separated list of alerts that are disabled, or empty string to disable no alerts.|
 
-### Relationships
+#### Relationships
 
 - Azure SQL Database contains a Database Threat Detection Policy.
 
@@ -485,7 +485,7 @@ Representation of an [AzureDatabaseThreatDetectionPolicy](https://docs.microsoft
         (AzureSQLDatabase)-[CONTAINS]->(AzureDatabaseThreatDetectionPolicy)
         ```
 
-## AzureRestorePoint
+### AzureRestorePoint
 
 Representation of an [AzureRestorePoint](https://docs.microsoft.com/en-us/rest/api/sql/restorepoints).
 
@@ -500,7 +500,7 @@ Representation of an [AzureRestorePoint](https://docs.microsoft.com/en-us/rest/a
 |restorepointtype | The type of restore point.|
 |creationdate | The time the backup was taken.|
 
-### Relationships
+#### Relationships
 
 - Azure SQL Database contains one or more Restore Points.
 
@@ -508,7 +508,7 @@ Representation of an [AzureRestorePoint](https://docs.microsoft.com/en-us/rest/a
         (AzureSQLDatabase)-[CONTAINS]->(AzureRestorePoint)
         ```
 
-## AzureTransparentDataEncryption
+### AzureTransparentDataEncryption
 
 Representation of an [AzureTransparentDataEncryption](https://docs.microsoft.com/en-us/rest/api/sql/transparentdataencryptions).
 
@@ -521,7 +521,7 @@ Representation of an [AzureTransparentDataEncryption](https://docs.microsoft.com
 |location | The resource location.|
 |status | The status of the database transparent data encryption.|
 
-### Relationships
+#### Relationships
 
 - Azure SQL Database contains Transparent Data Encryption.
 
@@ -529,7 +529,7 @@ Representation of an [AzureTransparentDataEncryption](https://docs.microsoft.com
         (AzureSQLDatabase)-[CONTAINS]->(AzureTransparentDataEncryption)
         ```
 
-## AzureStorageAccount
+### AzureStorageAccount
 
 Representation of an [AzureStorageAccount](https://docs.microsoft.com/en-us/rest/api/storagerp/storageaccounts).
 
@@ -552,7 +552,7 @@ Representation of an [AzureStorageAccount](https://docs.microsoft.com/en-us/rest
 |statusofsecondary | Gets the status availability status of the secondary location of the storage account.|
 |supportshttpstrafficonly | Allows https traffic only to storage service if sets to true.|
 
-### Relationships
+#### Relationships
 
 - Azure Subscription contains one or more Storage Accounts.
 
@@ -580,7 +580,7 @@ Representation of an [AzureStorageAccount](https://docs.microsoft.com/en-us/rest
         (AzureStorageAccount)-[USES]->(AzureStorageBlobService)
         ```
 
-## AzureStorageQueueService
+### AzureStorageQueueService
 
 Representation of an [AzureStorageQueueService](https://docs.microsoft.com/en-us/rest/api/storagerp/queueservices).
 
@@ -592,7 +592,7 @@ Representation of an [AzureStorageQueueService](https://docs.microsoft.com/en-us
 |type | The type of the resource.|
 |name | The name of the queue service.|
 
-### Relationships
+#### Relationships
 
 - Azure Storage Accounts uses one or more Queue Services.
 
@@ -605,7 +605,7 @@ Representation of an [AzureStorageQueueService](https://docs.microsoft.com/en-us
         (AzureStorageQueueService)-[CONTAINS]->(AzureStorageQueue)
         ```
 
-## AzureStorageTableService
+### AzureStorageTableService
 
 Representation of an [AzureStorageTableService](https://docs.microsoft.com/en-us/rest/api/storagerp/tableservices).
 
@@ -617,7 +617,7 @@ Representation of an [AzureStorageTableService](https://docs.microsoft.com/en-us
 |type | The type of the resource.|
 |name | The name of the table service.|
 
-### Relationships
+#### Relationships
 
 - Azure Storage Accounts uses one or more Table Services.
 
@@ -630,7 +630,7 @@ Representation of an [AzureStorageTableService](https://docs.microsoft.com/en-us
         (AzureStorageTableService)-[CONTAINS]->(AzureStorageTable)
         ```
 
-## AzureStorageFileService
+### AzureStorageFileService
 
 Representation of an [AzureStorageFileService](https://docs.microsoft.com/en-us/rest/api/storagerp/fileservices).
 
@@ -642,7 +642,7 @@ Representation of an [AzureStorageFileService](https://docs.microsoft.com/en-us/
 |type | The type of the resource.|
 |name | The name of the file service.|
 
-### Relationships
+#### Relationships
 
 - Azure Storage Accounts uses one or more File Services.
 
@@ -655,7 +655,7 @@ Representation of an [AzureStorageFileService](https://docs.microsoft.com/en-us/
         (AzureStorageFileService)-[CONTAINS]->(AzureStorageFileShare)
         ```
 
-## AzureStorageBlobService
+### AzureStorageBlobService
 
 Representation of an [AzureStorageBlobService](https://docs.microsoft.com/en-us/rest/api/storagerp/blobservices).
 
@@ -667,7 +667,7 @@ Representation of an [AzureStorageBlobService](https://docs.microsoft.com/en-us/
 |type | The type of the resource.|
 |name | The name of the blob service.|
 
-### Relationships
+#### Relationships
 
 - Azure Storage Accounts uses one or more Blob Services.
 
@@ -680,7 +680,7 @@ Representation of an [AzureStorageBlobService](https://docs.microsoft.com/en-us/
         (AzureStorageBlobService)-[CONTAINS]->(AzureStorageBlobContainer)
         ```
 
-## AzureStorageQueue
+### AzureStorageQueue
 
 Representation of an [AzureStorageQueue](https://docs.microsoft.com/en-us/rest/api/storagerp/queue).
 
@@ -692,7 +692,7 @@ Representation of an [AzureStorageQueue](https://docs.microsoft.com/en-us/rest/a
 |type | The type of the resource.|
 |name | The name of the queue.|
 
-### Relationships
+#### Relationships
 
 - Queue Service contains one or more queues.
 
@@ -700,7 +700,7 @@ Representation of an [AzureStorageQueue](https://docs.microsoft.com/en-us/rest/a
         (AzureStorageQueueService)-[CONTAINS]->(AzureStorageQueue)
         ```
 
-## AzureStorageTable
+### AzureStorageTable
 
 Representation of an [AzureStorageTable](https://docs.microsoft.com/en-us/rest/api/storagerp/table).
 
@@ -713,7 +713,7 @@ Representation of an [AzureStorageTable](https://docs.microsoft.com/en-us/rest/a
 |name | The name of the table resource.|
 |tablename | Table name under the specified account.|
 
-### Relationships
+#### Relationships
 
 - Table Service contains one or more tables.
 
@@ -721,7 +721,7 @@ Representation of an [AzureStorageTable](https://docs.microsoft.com/en-us/rest/a
         (AzureStorageTableService)-[CONTAINS]->(AzureStorageTable)
         ```
 
-## AzureStorageFileShare
+### AzureStorageFileShare
 
 Representation of an [AzureStorageFileShare](https://docs.microsoft.com/en-us/rest/api/storagerp/fileshares).
 
@@ -744,7 +744,7 @@ Representation of an [AzureStorageFileShare](https://docs.microsoft.com/en-us/re
 |shareusagebytes | The approximate size of the data stored on the share.|
 |version | The version of the share.|
 
-### Relationships
+#### Relationships
 
 - File Service contains one or more file shares.
 
@@ -752,7 +752,7 @@ Representation of an [AzureStorageFileShare](https://docs.microsoft.com/en-us/re
         (AzureStorageTableService)-[CONTAINS]->(AzureStorageFileShare)
         ```
 
-## AzureStorageBlobContainer
+### AzureStorageBlobContainer
 
 Representation of an [AzureStorageBlobContainer](https://docs.microsoft.com/en-us/rest/api/storagerp/blobcontainers).
 
@@ -776,7 +776,7 @@ Representation of an [AzureStorageBlobContainer](https://docs.microsoft.com/en-u
 |haslegalhold | Specifies if the container has any legal hold tags.|
 |leaseduration | Specifies whether the lease on a container is of infinite or fixed duration, only when the container is leased.|
 
-### Relationships
+#### Relationships
 
 - Blob Service contains one or more blob containers.
 
@@ -784,7 +784,7 @@ Representation of an [AzureStorageBlobContainer](https://docs.microsoft.com/en-u
         (AzureStorageBlobService)-[CONTAINS]->(AzureStorageBlobContainer)
         ```
 
-## AzureCosmosDBAccount
+### AzureCosmosDBAccount
 
 Representation of an [AzureCosmosDBAccount](https://docs.microsoft.com/en-us/rest/api/cosmos-db-resource-provider/).
 
@@ -817,7 +817,7 @@ Representation of an [AzureCosmosDBAccount](https://docs.microsoft.com/en-us/res
 |maxstalenessprefix | When used with the Bounded Staleness consistency level, this value represents the number of stale requests tolerated.|
 |maxintervalinseconds | When used with the Bounded Staleness consistency level, this value represents the time amount of staleness (in seconds) tolerated.|
 
-### Relationships
+#### Relationships
 
 - Azure Subscription contains one or more database accounts.
 
@@ -874,7 +874,7 @@ Representation of an [AzureCosmosDBAccount](https://docs.microsoft.com/en-us/res
         (AzureCosmosDBAccount)-[CONTAINS]->(AzureCosmosDBTableResource)
         ```
 
-## AzureCosmosDBLocation
+### AzureCosmosDBLocation
 
 Representation of an [Azure CosmosDB Location](https://docs.microsoft.com/en-us/rest/api/cosmos-db-resource-provider/).
 
@@ -889,7 +889,7 @@ Representation of an [Azure CosmosDB Location](https://docs.microsoft.com/en-us/
 |failoverpriority | The failover priority of the region.|
 |iszoneredundant | Flag to indicate whether or not this region is an AvailabilityZone region.|
 
-### Relationships
+#### Relationships
 
 - Azure Database Account has write permissions from, read permissions from and is associated with Azure CosmosDB Locations.
 
@@ -901,7 +901,7 @@ Representation of an [Azure CosmosDB Location](https://docs.microsoft.com/en-us/
         (AzureCosmosDBAccount)-[ASSOCIATED_WITH]->(AzureCosmosDBLocation)
         ```
 
-## AzureCosmosDBCorsPolicy
+### AzureCosmosDBCorsPolicy
 
 Representation of an [Azure Cosmos DB Cors Policy](https://docs.microsoft.com/en-us/rest/api/cosmos-db-resource-provider/).
 
@@ -916,7 +916,7 @@ Representation of an [Azure Cosmos DB Cors Policy](https://docs.microsoft.com/en
 |exposedheaders | The response headers that may be sent in the response to the CORS request and exposed by the browser to the request issuer.|
 |maxageinseconds | The maximum amount time that a browser should cache the preflight OPTIONS request.|
 
-### Relationships
+#### Relationships
 
 - Azure Database Account contains one or more Cors Policy.
 
@@ -924,7 +924,7 @@ Representation of an [Azure Cosmos DB Cors Policy](https://docs.microsoft.com/en
         (AzureCosmosDBAccount)-[CONTAINS]->(AzureCosmosDBCorsPolicy)
         ```
 
-## AzureCosmosDBAccountFailoverPolicy
+### AzureCosmosDBAccountFailoverPolicy
 
 Representation of an Azure Database Account [Failover Policy](https://docs.microsoft.com/en-us/rest/api/cosmos-db-resource-provider/).
 
@@ -936,7 +936,7 @@ Representation of an Azure Database Account [Failover Policy](https://docs.micro
 |locationname | The name of the region in which the database account exists.|
 |failoverpriority | The failover priority of the region. A failover priority of 0 indicates a write region.|
 
-### Relationships
+#### Relationships
 
 - Azure Database Account contains one or more failover policies.
 
@@ -944,7 +944,7 @@ Representation of an Azure Database Account [Failover Policy](https://docs.micro
         (AzureCosmosDBAccount)-[CONTAINS]->(AzureCosmosDBAccountFailoverPolicy)
         ```
 
-## AzureCDBPrivateEndpointConnection
+### AzureCDBPrivateEndpointConnection
 
 Representation of an Azure Cosmos DB [Private Endpoint Connection](https://docs.microsoft.com/en-us/rest/api/cosmos-db-resource-provider/).
 
@@ -958,7 +958,7 @@ Representation of an Azure Cosmos DB [Private Endpoint Connection](https://docs.
 |status | The private link service connection status.|
 |actionrequired | Any action that is required beyond basic workflow (approve/ reject/ disconnect).|
 
-### Relationships
+#### Relationships
 
 - Azure Database Account is configured with one or more private endpoint connections.
 
@@ -966,7 +966,7 @@ Representation of an Azure Cosmos DB [Private Endpoint Connection](https://docs.
         (AzureCosmosDBAccount)-[CONFIGURED_WITH]->(AzureCDBPrivateEndpointConnection)
         ```
 
-## AzureCosmosDBVirtualNetworkRule
+### AzureCosmosDBVirtualNetworkRule
 
 Representation of an Azure Cosmos DB [Virtual Network Rule](https://docs.microsoft.com/en-us/rest/api/cosmos-db-resource-provider/).
 
@@ -977,7 +977,7 @@ Representation of an Azure Cosmos DB [Virtual Network Rule](https://docs.microso
 |**id**| Resource ID of a subnet.|
 |ignoremissingvnetserviceendpoint | Create firewall rule before the virtual network has vnet service endpoint enabled.|
 
-### Relationships
+#### Relationships
 
 - Azure Database Account is configured with one or more virtual network rules.
 
@@ -985,7 +985,7 @@ Representation of an Azure Cosmos DB [Virtual Network Rule](https://docs.microso
         (AzureCosmosDBAccount)-[CONFIGURED_WITH]->(AzureCosmosDBVirtualNetworkRule)
         ```
 
-## AzureCosmosDBSqlDatabase
+### AzureCosmosDBSqlDatabase
 
 Representation of an [AzureCosmosDBSqlDatabase](https://docs.microsoft.com/en-us/rest/api/cosmos-db-resource-provider/).
 
@@ -1000,7 +1000,7 @@ Representation of an [AzureCosmosDBSqlDatabase](https://docs.microsoft.com/en-us
 |throughput| Value of the Cosmos DB resource throughput or autoscaleSettings.|
 |maxthroughput| Represents maximum throughput, the resource can scale up to.|
 
-### Relationships
+#### Relationships
 
 - Azure Database Account contains one or more SQL databases.
 
@@ -1013,7 +1013,7 @@ Representation of an [AzureCosmosDBSqlDatabase](https://docs.microsoft.com/en-us
         (AzureCosmosDBSqlDatabase)-[CONTAINS]->(AzureCosmosDBSqlContainer)
         ```
 
-## AzureCosmosDBCassandraKeyspace
+### AzureCosmosDBCassandraKeyspace
 
 Representation of an [AzureCosmosDBCassandraKeyspace](https://docs.microsoft.com/en-us/rest/api/cosmos-db-resource-provider/).
 
@@ -1028,7 +1028,7 @@ Representation of an [AzureCosmosDBCassandraKeyspace](https://docs.microsoft.com
 |throughput| Value of the Cosmos DB resource throughput or autoscaleSettings.|
 |maxthroughput| Represents maximum throughput, the resource can scale up to.|
 
-### Relationships
+#### Relationships
 
 - Azure Database Account contains one or more Cassandra keyspace.
 
@@ -1041,7 +1041,7 @@ Representation of an [AzureCosmosDBCassandraKeyspace](https://docs.microsoft.com
         (AzureCosmosDBCassandraKeyspace)-[CONTAINS]->(AzureCosmosDBCassandraTable)
         ```
 
-## AzureCosmosDBMongoDBDatabase
+### AzureCosmosDBMongoDBDatabase
 
 Representation of an [AzureCosmosDBMongoDBDatabase](https://docs.microsoft.com/en-us/rest/api/cosmos-db-resource-provider/).
 
@@ -1056,7 +1056,7 @@ Representation of an [AzureCosmosDBMongoDBDatabase](https://docs.microsoft.com/e
 |throughput| Value of the Cosmos DB resource throughput or autoscaleSettings.|
 |maxthroughput| Represents maximum throughput, the resource can scale up to.|
 
-### Relationships
+#### Relationships
 
 - Azure Database Account contains one or more MongoDB Database.
 
@@ -1069,7 +1069,7 @@ Representation of an [AzureCosmosDBMongoDBDatabase](https://docs.microsoft.com/e
         (AzureCosmosDBMongoDBDatabase)-[CONTAINS]->(AzureCosmosDBMongoDBCollection)
         ```
 
-## AzureCosmosDBTableResource
+### AzureCosmosDBTableResource
 
 Representation of an [AzureCosmosDBTableResource](https://docs.microsoft.com/en-us/rest/api/cosmos-db-resource-provider/).
 
@@ -1084,7 +1084,7 @@ Representation of an [AzureCosmosDBTableResource](https://docs.microsoft.com/en-
 |throughput| Value of the Cosmos DB resource throughput or autoscaleSettings.|
 |maxthroughput| Represents maximum throughput, the resource can scale up to.|
 
-### Relationships
+#### Relationships
 
 - Azure Database Account contains one or more table resource.
 
@@ -1092,7 +1092,7 @@ Representation of an [AzureCosmosDBTableResource](https://docs.microsoft.com/en-
         (AzureCosmosDBAccount)-[CONTAINS]->(AzureCosmosDBTableResource)
         ```
 
-## AzureCosmosDBSqlContainer
+### AzureCosmosDBSqlContainer
 
 Representation of an [AzureCosmosDBSqlContainer](https://docs.microsoft.com/en-us/rest/api/cosmos-db-resource-provider/).
 
@@ -1113,7 +1113,7 @@ Representation of an [AzureCosmosDBSqlContainer](https://docs.microsoft.com/en-u
 |indexingmode|  Indicates the indexing mode.|
 |conflictresolutionpolicymode| Indicates the conflict resolution mode.|
 
-### Relationships
+#### Relationships
 
 - SQL Databases contain one or more SQL containers.
 
@@ -1121,7 +1121,7 @@ Representation of an [AzureCosmosDBSqlContainer](https://docs.microsoft.com/en-u
         (AzureCosmosDBSqlDatabase)-[CONTAINS]->(AzureCosmosDBSqlContainer)
         ```
 
-## AzureCosmosDBCassandraTable
+### AzureCosmosDBCassandraTable
 
 Representation of an [AzureCosmosDBCassandraTable](https://docs.microsoft.com/en-us/rest/api/cosmos-db-resource-provider/).
 
@@ -1139,7 +1139,7 @@ Representation of an [AzureCosmosDBCassandraTable](https://docs.microsoft.com/en
 |defaultttl| Time to live of the Cosmos DB Cassandra table.|
 |analyticalttl| Specifies the Analytical TTL.|
 
-### Relationships
+#### Relationships
 
 - Cassandra Keyspace contains one or more Cassandra tables.
 
@@ -1147,7 +1147,7 @@ Representation of an [AzureCosmosDBCassandraTable](https://docs.microsoft.com/en
         (AzureCosmosDBCassandraKeyspace)-[CONTAINS]->(AzureCosmosDBCassandraTable)
         ```
 
-## AzureCosmosDBMongoDBCollection
+### AzureCosmosDBMongoDBCollection
 
 Representation of an [AzureCosmosDBMongoDBCollection](https://docs.microsoft.com/en-us/rest/api/cosmos-db-resource-provider/).
 
@@ -1164,7 +1164,7 @@ Representation of an [AzureCosmosDBMongoDBCollection](https://docs.microsoft.com
 |collectionname| Name of the Cosmos DB MongoDB collection.|
 |analyticalttl| Specifies the Analytical TTL.|
 
-### Relationships
+#### Relationships
 
 - MongoDB database contains one or more MongoDB collections.
 

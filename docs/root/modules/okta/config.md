@@ -1,4 +1,4 @@
-# Configuration
+## Okta Configuration
 
 .. _okta_config:
 

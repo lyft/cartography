@@ -1,6 +1,6 @@
-# Schema
+## GCP Schema
 
-## GCPOrganization
+### GCPOrganization
 
 Representation of a GCP [Organization](https://cloud.google.com/resource-manager/reference/rest/v1/organizations) object.
 
@@ -13,7 +13,7 @@ Representation of a GCP [Organization](https://cloud.google.com/resource-manager
 | displayname    | The "friendly name", e.g. "My Company"                                                                                                                                                  |
 | lifecyclestate | The organization's current lifecycle state. Assigned by the server.  See the [official docs](https://cloud.google.com/resource-manager/reference/rest/v1/organizations#LifecycleState). |
 
-### Relationships
+#### Relationships
 
 - GCPOrganizations contain GCPFolders.
 
@@ -94,33 +94,32 @@ Representation of a GCP [Organization](https://cloud.google.com/resource-manager
     ```
 
 
- ## GCPBucket
- Representation of a GCP [Storage Bucket](https://cloud.google.com/storage/docs/json_api/v1/buckets).
+### GCPBucket
+Representation of a GCP [Storage Bucket](https://cloud.google.com/storage/docs/json_api/v1/buckets).
 
- | Field                         | Description                                                                                                                                                                                                                                         |
- | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
- | firstseen                     | Timestamp of when a sync job first discovered this node                                                                                                                                                                                             |
- | lastupdated                   | Timestamp of the last time the node was updated                                                                                                                                                                                                     |
- | id                            | The ID of the storage bucket, e.g. "bucket-12345"                                                                                                                                                                                                   |
- | projectnumber                 | The number uniquely identifying the project associated with the storage bucket, e.g. '987654'                                                                                                                                                       |
- | self_link                     | The URI of the storage bucket                                                                                                                                                                                                                       |
- | kind                          | The kind of item this is. For storage buckets, this is always storage#bucket                                                                                                                                                                        |
- | location                      | The location of the bucket. Object data for objects in the bucket resides in physical storage within this region. Defaults to US. See [Cloud Storage bucket locations](https://cloud.google.com/storage/docs/locations) for the authoritative list. |
- | location_type                 | The type of location that the bucket resides in, as determined by the `location` property                                                                                                                                                           |
- | meta_generation               | The metadata generation of this bucket                                                                                                                                                                                                              |
- | storage_class                 | The bucket's default storage class, used whenever no `storageClass` is specified for a newly-created object. For more information, see [storage classes](https://cloud.google.com/storage/docs/storage-classes)                                     |
- | time_created                  | The creation time of the bucket in RFC 3339 format                                                                                                                                                                                                  |
- | retention_period              | The period of time, in seconds, that objects in the bucket must be retained and cannot be deleted, overwritten, or archived                                                                                                                         |
- | iam_config_bucket_policy_only | The bucket's [Bucket Policy Only](https://cloud.google.com/storage/docs/bucket-policy-only) configuration                                                                                                                                           |
- | owner_entity                  | The entity, in the form `project-owner-projectId`                                                                                                                                                                                                   |
- | owner_entity_id               | The ID for the entity                                                                                                                                                                                                                               |
- | versioning_enabled            | The bucket's versioning configuration (if set to `True`, versioning is fully enabled for this bucket)                                                                                                                                               |
- | log_bucket                    | The destination bucket where the current bucket's logs should be placed                                                                                                                                                                             |
- | requester_pays                | The bucket's billing configuration (if set to true, Requester Pays is enabled for this bucket)                                                                                                                                                      |
- | default_kms_key_name          | A Cloud KMS key that will be used to encrypt objects inserted into this bucket, if no encryption method is specified                                                                                                                                |
+| Field                         | Description                                                                                                                                                                                                                                         |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| firstseen                     | Timestamp of when a sync job first discovered this node                                                                                                                                                                                             |
+| lastupdated                   | Timestamp of the last time the node was updated                                                                                                                                                                                                     |
+| id                            | The ID of the storage bucket, e.g. "bucket-12345"                                                                                                                                                                                                   |
+| projectnumber                 | The number uniquely identifying the project associated with the storage bucket, e.g. '987654'                                                                                                                                                       |
+| self_link                     | The URI of the storage bucket                                                                                                                                                                                                                       |
+| kind                          | The kind of item this is. For storage buckets, this is always storage#bucket                                                                                                                                                                        |
+| location                      | The location of the bucket. Object data for objects in the bucket resides in physical storage within this region. Defaults to US. See [Cloud Storage bucket locations](https://cloud.google.com/storage/docs/locations) for the authoritative list. |
+| location_type                 | The type of location that the bucket resides in, as determined by the `location` property                                                                                                                                                           |
+| meta_generation               | The metadata generation of this bucket                                                                                                                                                                                                              |
+| storage_class                 | The bucket's default storage class, used whenever no `storageClass` is specified for a newly-created object. For more information, see [storage classes](https://cloud.google.com/storage/docs/storage-classes)                                     |
+| time_created                  | The creation time of the bucket in RFC 3339 format                                                                                                                                                                                                  |
+| retention_period              | The period of time, in seconds, that objects in the bucket must be retained and cannot be deleted, overwritten, or archived                                                                                                                         |
+| iam_config_bucket_policy_only | The bucket's [Bucket Policy Only](https://cloud.google.com/storage/docs/bucket-policy-only) configuration                                                                                                                                           |
+| owner_entity                  | The entity, in the form `project-owner-projectId`                                                                                                                                                                                                   |
+| owner_entity_id               | The ID for the entity                                                                                                                                                                                                                               |
+| versioning_enabled            | The bucket's versioning configuration (if set to `True`, versioning is fully enabled for this bucket)                                                                                                                                               |
+| log_bucket                    | The destination bucket where the current bucket's logs should be placed                                                                                                                                                                             |
+| requester_pays                | The bucket's billing configuration (if set to true, Requester Pays is enabled for this bucket)                                                                                                                                                      |
+| default_kms_key_name          | A Cloud KMS key that will be used to encrypt objects inserted into this bucket, if no encryption method is specified                                                                                                                                |
 
- ### Relationships
-
+#### Relationships
 
 - GCPBuckets are part of GCPProjects.
 
@@ -135,7 +134,7 @@ Representation of a GCP [Organization](https://cloud.google.com/resource-manager
     ```
 
 
-## GCPDNSZone
+### GCPDNSZone
 
 Representation of a GCP [DNS Zone](https://cloud.google.com/dns/docs/reference/v1/).
 
@@ -151,7 +150,7 @@ Representation of a GCP [DNS Zone](https://cloud.google.com/dns/docs/reference/v
 | visibility | The zone's visibility: `public` zones are exposed to the Internet, while `private` zones are visible only to Virtual Private Cloud resources.|
 
 
-### Relationships
+#### Relationships
 
 - GKEClusters are resources of GCPProjects.
 
@@ -160,14 +159,14 @@ Representation of a GCP [DNS Zone](https://cloud.google.com/dns/docs/reference/v
     ```
 
 
-## Label: GCPBucketLabel
+### Label: GCPBucketLabel
 Representation of a GCP [Storage Bucket Label](https://cloud.google.com/storage/docs/key-terms#bucket-labels).  This node contains a key-value pair.
 
  | Field       | Description                                                         |
  | ----------- | ------------------------------------------------------------------- |
  | firstseen   | Timestamp of when a sync job first discovered this node             |
  | lastupdated | Timestamp of the last time the node was updated                     |
- | id          | The ID of the bucket label.  Takes the form "GCPBucketLabel_{key}." |
+ | id          | The ID of the bucket label.  Takes the form "GCPBucketLabel\_{key}." |
  | key         | The key of the bucket label.                                        |
  | value       | The value of the bucket label.                                      |
 
@@ -178,24 +177,23 @@ Representation of a GCP [Storage Bucket Label](https://cloud.google.com/storage/
     ```
 
 
- ## GCPInstance
+### GCPInstance
 
- Representation of a GCP [Instance](https://cloud.google.com/compute/docs/reference/rest/v1/instances).  Additional references can be found in the [official documentation]( https://cloud.google.com/compute/docs/concepts).
+Representation of a GCP [Instance](https://cloud.google.com/compute/docs/reference/rest/v1/instances).  Additional references can be found in the [official documentation]( https://cloud.google.com/compute/docs/concepts).
 
- | Field            | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
- | firstseen        | Timestamp of when a sync job first discovered this node                                                                                                                                                                                                                                                                                                                                                                                                                  |
- | lastupdated      | Timestamp of the last time the node was updated                                                                                                                                                                                                                                                                                                                                                                                                                          |
- | id               | The partial resource URI representing this instance. Has the form `projects/{project_name}/zones/{zone_name}/instances/{instance_name}`.                                                                                                                                                                                                                                                                                                                                 |
- | partial_uri      | Same as `id` above.                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
- | self_link        | The full resource URI representing this instance. Has the form `https://www.googleapis.com/compute/v1/{partial_uri}`                                                                                                                                                                                                                                                                                                                                                     |
- | instancename     | The name of the instance, e.g. "my-instance"                                                                                                                                                                                                                                                                                                                                                                                                                             |
- | zone_name        | The zone that the instance is installed on                                                                                                                                                                                                                                                                                                                                                                                                                               |
- | hostname         | If present, the hostname of the instance                                                                                                                                                                                                                                                                                                                                                                                                                                 |
- | exposed_internet | Set to True  with `exposed_internet_type = 'direct'` if there is an 'allow' IPRule attached to one of the instance's ingress firewalls with the following conditions:  The 'allow' IpRule allows traffic from one or more TCP ports, and the 'allow' IpRule is not superceded by a 'deny' IPRule (in GCP, a firewall rule of priority 1 gets applied ahead of a firewall rule of priority 100, and 'deny' rules of the same priority are applied ahead of 'allow' rules) |
- | status           | The [GCP Instance Lifecycle](https://cloud.google.com/compute/docs/instances/instance-life-cycle) state of the instance                                                                                                                                                                                                                                                                                                                                                  |
-
-### Relationships
+| Field            | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| firstseen        | Timestamp of when a sync job first discovered this node                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| lastupdated      | Timestamp of the last time the node was updated                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| id               | The partial resource URI representing this instance. Has the form `projects/{project_name}/zones/{zone_name}/instances/{instance_name}`.                                                                                                                                                                                                                                                                                                                                 |
+| partial_uri      | Same as `id` above.                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| self_link        | The full resource URI representing this instance. Has the form `https://www.googleapis.com/compute/v1/{partial_uri}`                                                                                                                                                                                                                                                                                                                                                     |
+| instancename     | The name of the instance, e.g. "my-instance"                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| zone_name        | The zone that the instance is installed on                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| hostname         | If present, the hostname of the instance                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| exposed_internet | Set to True  with `exposed_internet_type = 'direct'` if there is an 'allow' IPRule attached to one of the instance's ingress firewalls with the following conditions:  The 'allow' IpRule allows traffic from one or more TCP ports, and the 'allow' IpRule is not superceded by a 'deny' IPRule (in GCP, a firewall rule of priority 1 gets applied ahead of a firewall rule of priority 100, and 'deny' rules of the same priority are applied ahead of 'allow' rules) |
+| status           | The [GCP Instance Lifecycle](https://cloud.google.com/compute/docs/instances/instance-life-cycle) state of the instance                                                                                                                                                                                                                                                                                                                                                  |
+#### Relationships
 
 - GCPInstances are resources of GCPProjects.
 
@@ -244,7 +242,7 @@ Representation of a GCP [Storage Bucket Label](https://cloud.google.com/storage/
     MATCH (GCPInstance)-[MEMBER_OF_GCP_VPC]->(GCPVpc)-[RESOURCE]->(fw)
     ```
 
-## GCPNetworkTag
+### GCPNetworkTag
 
 Representation of a Tag defined on a GCP Instance or GCP Firewall.  Tags are defined on GCP instances for use in [network firewall routing](https://cloud.google.com/blog/products/gcp/labelling-and-grouping-your-google-cloud-platform-resources).
 
@@ -256,7 +254,7 @@ Representation of a Tag defined on a GCP Instance or GCP Firewall.  Tags are def
 | tag_id      | same as `id`                                                                                               |
 | value       | The actual value of the tag                                                                                |
 
-### Relationships
+#### Relationships
 
 - GCP Instances can be labeled with tags.
     ```
@@ -274,7 +272,7 @@ Representation of a Tag defined on a GCP Instance or GCP Firewall.  Tags are def
     (GCPVpc)-[DEFINED_IN]->(GCPNetworkTag)
     ```
 
-## GCPVpc
+### GCPVpc
 
 Representation of a GCP [VPC](https://cloud.google.com/compute/docs/reference/rest/v1/networks/).  In GCP documentation this is also known simply as a "Network" object.
 
@@ -291,7 +289,7 @@ Representation of a GCP [VPC](https://cloud.google.com/compute/docs/reference/re
 | routing_confg_routing_mode | The network-wide routing mode to use. If set to REGIONAL, this network's Cloud Routers will only advertise routes with subnets of this network in the same region as the router. If set to GLOBAL, this network's Cloud Routers will advertise routes with all subnets of this network, across regions.                             |
 | description                | A description for the VPC                                                                                                                                                                                                                                                                                                           |
 
-### Relationships
+#### Relationships
 
 - GCPVpcs are part of projects
 
@@ -329,7 +327,7 @@ Representation of a GCP [VPC](https://cloud.google.com/compute/docs/reference/re
     (GCPInstance)-[:NETWORK_INTERFACE]->(:GCPNetworkInterface)-[:PART_OF_SUBNET]->(GCPSubnet)<-[:RESOURCE]-(GCPVpc)
     ```
 
-## GCPNetworkInterface
+### GCPNetworkInterface
 
 Representation of a GCP Instance's [network interface](https://cloud.google.com/compute/docs/reference/rest/v1/instances/list) (scroll down to the fields on "networkInterface").
 
@@ -342,7 +340,7 @@ Representation of a GCP Instance's [network interface](https://cloud.google.com/
 | name        | The name of the network interface                                                                                                                                                                                                                                                                                                          |
 | private_ip  | The private IP address of this network interface.  This IP is valid on the network interface's VPC.                                                                                                                                                                                                                                        |
 
-### Relationships
+#### Relationships
 
 - GCPNetworkInterfaces are attached to GCPInstances
 
@@ -363,7 +361,7 @@ Representation of a GCP Instance's [network interface](https://cloud.google.com/
     ```
 
 
-## GCPNicAccessConfig
+### GCPNicAccessConfig
 
 Representation of the AccessConfig object on a GCP Instance's [network interface](https://cloud.google.com/compute/docs/reference/rest/v1/instances/list) (scroll down to the fields on "networkInterface").
 
@@ -380,7 +378,7 @@ Representation of the AccessConfig object on a GCP Instance's [network interface
 | public_ptr_domain_name | The DNS domain name for the public PTR record. You can set this field only if the setPublicPtr field is enabled.                                                                                                                                                                                                                                                                  |
 | network_tier           | This signifies the networking tier used for configuring this access configuration and can only take the following values: PREMIUM, STANDARD.                                                                                                                                                                                                                                      |
 
-### Relationships
+#### Relationships
 
 - GCPNetworkInterfaces have GCPNicAccessConfig objects defined on them
 
@@ -389,7 +387,7 @@ Representation of the AccessConfig object on a GCP Instance's [network interface
     ```
 
 
-## GCPRecordSet
+### GCPRecordSet
 
 Representation of a GCP [Resource Record Set](https://cloud.google.com/dns/docs/reference/v1/).
 
@@ -403,7 +401,7 @@ Representation of a GCP [Resource Record Set](https://cloud.google.com/dns/docs/
 | ttl | Number of seconds that this ResourceRecordSet can be cached by resolvers.
 
 
-### Relationships
+#### Relationships
 
 - GCPRecordSets are records of GCPDNSZones.
 
@@ -412,7 +410,7 @@ Representation of a GCP [Resource Record Set](https://cloud.google.com/dns/docs/
     ```
 
 
-## GCPSubnet
+### GCPSubnet
 
 Representation of a GCP [Subnetwork](https://cloud.google.com/compute/docs/reference/rest/v1/subnetworks).
 
@@ -431,7 +429,7 @@ Representation of a GCP [Subnetwork](https://cloud.google.com/compute/docs/refer
 | vpc_partial_uri          | The partial URI of the VPC that this Subnet is a part of                                                                                                                                           |
 | private_ip_google_access | Whether the VMs in this subnet can access Google services without assigned external IP addresses. This field can be both set at resource creation time and updated using setPrivateIpGoogleAccess. |
 
-### Relationships
+#### Relationships
 
 - GCPSubnets are part of GCP VPCs
 
@@ -446,7 +444,7 @@ Representation of a GCP [Subnetwork](https://cloud.google.com/compute/docs/refer
     ```
 
 
-## GCPFirewall
+### GCPFirewall
 
 Representation of a GCP [Firewall](https://cloud.google.com/compute/docs/reference/rest/v1/firewalls/list).
 
@@ -462,7 +460,7 @@ Representation of a GCP [Firewall](https://cloud.google.com/compute/docs/referen
 | self_link                   | The full resource URI to this firewall                                                                                                                                                                                                                                              |
 | has_target_service_accounts | Set to True if this Firewall has target service accounts defined. This field is currently a placeholder for future functionality to add GCP IAM objects to Cartography. If True, this firewall rule will only apply to GCP instances that use the specified target service account. |
 
-### Relationships
+#### Relationships
 
 - Firewalls belong to VPCs
 
@@ -505,7 +503,7 @@ Representation of a GCP [Firewall](https://cloud.google.com/compute/docs/referen
     ```
 
 
-## GCPForwardingRule
+### GCPForwardingRule
 
 Representation of GCP [Forwarding Rules](https://cloud.google.com/compute/docs/reference/rest/v1/forwardingRules/list) and [Global Forwarding Rules](https://cloud.google.com/compute/docs/reference/rest/v1/globalForwardingRules/list).
 
@@ -528,7 +526,7 @@ Representation of GCP [Forwarding Rules](https://cloud.google.com/compute/docs/r
 | subnetwork            | A partial resource URI of the subnetwork this Forwarding Rule belongs to                                                                             |
 | target                | A partial resource URI of the target resource to receive the traffic                                                                                 |
 
-### Relationships
+#### Relationships
 
 - GCPForwardingRules can be a resource of a GCPVpc.
 
@@ -542,7 +540,7 @@ Representation of GCP [Forwarding Rules](https://cloud.google.com/compute/docs/r
     (GCPSubnet)-[RESOURCE]->(GCPForwardingRule)
     ```
 
-## GKECluster
+### GKECluster
 
 Representation of a GCP [GKE Cluster](https://cloud.google.com/kubernetes-engine/docs/reference/rest/v1/).
 
@@ -580,7 +578,7 @@ Representation of a GCP [GKE Cluster](https://cloud.google.com/kubernetes-engine
 | zone                       | The name of the Google Compute Engine zone in which the cluster resides                                                                                                                                           |
 
 
-### Relationships
+#### Relationships
 
 - GKEClusters are resources of GCPProjects.
 
@@ -589,7 +587,7 @@ Representation of a GCP [GKE Cluster](https://cloud.google.com/kubernetes-engine
     ```
 
 
-## IpRule::IpPermissionInbound::GCPIpRule
+### IpRule::IpPermissionInbound::GCPIpRule
 
 An IpPermissionInbound node is a specific type of IpRule.  It represents a generic inbound IP-based rules.  The creation of this node is currently derived from ingesting AWS [EC2 Security Group](#ec2securitygroup) rules.
 
@@ -602,7 +600,7 @@ An IpPermissionInbound node is a specific type of IpRule.  It represents a gener
 | fromport    | Lowest port in the range defined by this rule               |
 | toport      | Highest port in the range defined by this rule              |
 
-### Relationships
+#### Relationships
 
 - GCP Firewall rules are defined on IpRange objects.
 
@@ -622,7 +620,7 @@ An IpPermissionInbound node is a specific type of IpRule.  It represents a gener
     (GcpIpRule)-[DENIED_BY]->(GCPFirewall)
     ```
 
-## IpRange
+### IpRange
 
 Representation of an IP range or subnet.
 

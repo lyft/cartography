@@ -1,8 +1,8 @@
-# Schema
+## Github Schema
 
 .. _github_schema:
 
-## GitHubRepository
+### GitHubRepository
 
 Representation of a single GitHubRepository (repo) [repository object](https://developer.github.com/v4/object/repository/). This node contains all data unique to the repo.
 
@@ -30,7 +30,7 @@ Representation of a single GitHubRepository (repo) [repository object](https://d
 | updatedat | GitHub timestamp for last time repo was modified |
 
 
-### Relationships
+#### Relationships
 
 - GitHubUsers or GitHubOrganizations own GitHubRepositories.
 
@@ -55,7 +55,7 @@ WRITE, MAINTAIN, TRIAGE, and READ ([Reference](https://docs.github.com/en/graphq
    (GitHubRepository)-[:BRANCH]->(GitHubBranch)
     ```
 
-## GitHubOrganization
+### GitHubOrganization
 
 Representation of a single GitHubOrganization [organization object](https://developer.github.com/v4/object/organization/). This node contains minimal data for the GitHub Organization.
 
@@ -68,7 +68,7 @@ Representation of a single GitHubOrganization [organization object](https://deve
 | username | Name of the organization |
 
 
-### Relationships
+#### Relationships
 
 - GitHubOrganizations own GitHubRepositories.
 
@@ -76,7 +76,7 @@ Representation of a single GitHubOrganization [organization object](https://deve
     (GitHubOrganization)-[OWNER]->(GitHubRepository)
     ```
 
-## GitHubUser
+### GitHubUser
 
 Representation of a single GitHubUser [user object](https://developer.github.com/v4/object/user/). This node contains minimal data for the GitHub User.
 
@@ -97,7 +97,7 @@ Representation of a single GitHubUser [user object](https://developer.github.com
 | company | The user's public profile company.
 
 
-### Relationships
+#### Relationships
 
 - GitHubUsers own GitHubRepositories.
 
@@ -112,7 +112,7 @@ WRITE, MAINTAIN, TRIAGE, and READ ([Reference](https://docs.github.com/en/graphq
     (GitHubUser)-[:OUTSIDE_COLLAB_{ACTION}]->(GitHubRepository)
     ```
 
-## GitHubBranch
+### GitHubBranch
 
 Representation of a single GitHubBranch [ref object](https://developer.github.com/v4/object/ref). This node contains minimal data for a repository branch.
 
@@ -125,7 +125,7 @@ Representation of a single GitHubBranch [ref object](https://developer.github.co
 | name | Name of the branch |
 
 
-### Relationships
+#### Relationships
 
 - GitHubRepositories have GitHubBranches.
 
@@ -133,7 +133,7 @@ Representation of a single GitHubBranch [ref object](https://developer.github.co
     (GitHubBranch)<-[BRANCH]-(GitHubRepository)
     ```
 
-## ProgrammingLanguage
+### ProgrammingLanguage
 
 Representation of a single Programming Language [language object](https://developer.github.com/v4/object/language). This node contains programming language information.
 
@@ -146,7 +146,7 @@ Representation of a single Programming Language [language object](https://develo
 | name | Name of the language |
 
 
-### Relationships
+#### Relationships
 
 - GitHubRepositories use ProgrammingLanguages.
 
@@ -155,7 +155,7 @@ Representation of a single Programming Language [language object](https://develo
     ```
 
 
-## Dependency::PythonLibrary
+### Dependency::PythonLibrary
 
 Representation of a Python library as listed in a [requirements.txt](https://pip.pypa.io/en/stable/user_guide/#requirements-files)
 or [setup.cfg](https://setuptools.pypa.io/en/latest/userguide/declarative_config.html) file.
@@ -167,7 +167,7 @@ Within a setup.cfg file, cartography will load everything from `install_requires
 |name|The [canonicalized](https://packaging.pypa.io/en/latest/utils/#packaging.utils.canonicalize_name) name of the library.|
 |version|The exact version of the library. This field is only present if the library was pinned in a requirements file using the `==` operator.|
 
-### Relationships
+#### Relationships
 
 - Software on Github repos can import Python libraries by optionally specifying a version number.
 

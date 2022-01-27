@@ -1,8 +1,8 @@
-# Schema
+## Okta Schema
 
 .. _okta_schema:
 
-## OktaOrganization
+### OktaOrganization
 
 Representation of an [Okta Organization](https://developer.okta.com/docs/concepts/okta-organizations/).
 
@@ -14,7 +14,7 @@ Representation of an [Okta Organization](https://developer.okta.com/docs/concept
 | id | The name of the Okta Organization, e.g. "lyft" |
 | name | The name of the Okta Organization, e.g. "lyft"
 
-### Relationships
+#### Relationships
 
 - An OktaOrganization contains OktaUsers
 
@@ -43,7 +43,7 @@ Representation of an [Okta Organization](https://developer.okta.com/docs/concept
     (OktaOrganization)-[RESOURCE]->(OktaAdministrationRole)
     ```
 
-## OktaUser
+### OktaUser
 
 Representation of an [Okta User](https://developer.okta.com/docs/reference/api/users/#user-object).
 
@@ -66,7 +66,7 @@ Representation of an [Okta User](https://developer.okta.com/docs/reference/api/u
 | firstseen| Timestamp of when a sync job first discovered this node  |
 | lastupdated |  Timestamp of the last time the node was updated |
 
-### Relationships
+#### Relationships
 
  - An OktaOrganization contains OktaUsers
     ```
@@ -95,7 +95,7 @@ Representation of an [Okta User](https://developer.okta.com/docs/reference/api/u
     (OktaUser)-[FACTOR]->(OktaUserFactor)
     ```
 
-## OktaGroup
+### OktaGroup
 
 Representation of an [Okta Group](https://developer.okta.com/docs/reference/api/groups/#group-object).
 
@@ -111,7 +111,7 @@ Representation of an [Okta Group](https://developer.okta.com/docs/reference/api/
 | firstseen| Timestamp of when a sync job first discovered this node  |
 | lastupdated |  Timestamp of the last time the node was updated |
 
-### Relationships
+#### Relationships
 
  - OktaOrganizations contain OktaGroups
     ```
@@ -131,7 +131,7 @@ Representation of an [Okta Group](https://developer.okta.com/docs/reference/api/
     (OktaGroup)-[MEMBER_OF_OKTA_ROLE]->(OktaAdministrationRole)
     ```
 
-## OktaApplication
+### OktaApplication
 
 Representation of an [Okta Application](https://developer.okta.com/docs/reference/api/apps/#application-object).
 
@@ -149,7 +149,7 @@ Representation of an [Okta Application](https://developer.okta.com/docs/referenc
 | firstseen| Timestamp of when a sync job first discovered this node  |
 | lastupdated |  Timestamp of the last time the node was updated |
 
-### Relationships
+#### Relationships
 
   - OktaApplication is a resource of an OktaOrganization
     ```
@@ -170,7 +170,7 @@ Representation of an [Okta Application](https://developer.okta.com/docs/referenc
     ```
     (ReplyUri)-[REPLYURI]->(OktaApplication)
     ```
-## OktaUserFactor
+### OktaUserFactor
 
 Representation of Okta User authentication [Factors](https://developer.okta.com/docs/reference/api/factors/#factor-object).
 
@@ -185,14 +185,14 @@ Representation of Okta User authentication [Factors](https://developer.okta.com/
 | firstseen| Timestamp of when a sync job first discovered this node  |
 | lastupdated |  Timestamp of the last time the node was updated |
 
-### Relationships
+#### Relationships
 
  - OktaUsers can have authentication Factors
      ```
     (OktaUser)-[FACTOR]->(OktaUserFactor)
     ```
 
-## OktaTrustedOrigin
+### OktaTrustedOrigin
 
 Representation of an [Okta Trusted Origin](https://developer.okta.com/docs/reference/api/trusted-origins/#trusted-origin-object) for login/logout or recovery operations.
 
@@ -209,7 +209,7 @@ Representation of an [Okta Trusted Origin](https://developer.okta.com/docs/refer
 | firstseen| Timestamp of when a sync job first discovered this node  |
 | lastupdated |  Timestamp of the last time the node was updated |
 
-### Relationships
+#### Relationships
 
 - An OktaOrganization has OktaTrustedOrigins.
 
@@ -217,7 +217,7 @@ Representation of an [Okta Trusted Origin](https://developer.okta.com/docs/refer
     (OktaOrganization)-[RESOURCE]->(OktaTrustedOrigin)
     ```
 
-## OktaAdministrationRole
+### OktaAdministrationRole
 
 Representation of an [Okta Administration Role](https://developer.okta.com/docs/reference/api/roles/#role-object).
 
@@ -229,7 +229,7 @@ Representation of an [Okta Administration Role](https://developer.okta.com/docs/
 | firstseen| Timestamp of when a sync job first discovered this node |
 | lastupdated |  Timestamp of the last time the node was updated |
 
-### Relationships
+#### Relationships
 
  - OktaUsers can be members of OktaAdministrationRoles
      ```
@@ -245,7 +245,7 @@ Representation of an [Okta Administration Role](https://developer.okta.com/docs/
     (OktaOrganization)-[RESOURCE]->(OktaAdministrationRole)
     ```
 
-## Reply Uri
+### Reply Uri
 
 Representation of [Okta Application ReplyUri](https://developer.okta.com/docs/reference/api/apps/).
 
@@ -257,7 +257,7 @@ Representation of [Okta Application ReplyUri](https://developer.okta.com/docs/re
 | firstseen| Timestamp of when a sync job first discovered this node |
 | lastupdated |  Timestamp of the last time the node was updated |
 
-### Relationships
+#### Relationships
 
  - OktaApplications have ReplyUris
 

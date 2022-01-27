@@ -1,8 +1,8 @@
-# Schema
+## GSuite Schema
 
 .. _gsuite_schema:
 
-## GSuiteUser
+### GSuiteUser
 
 Reference:
 https://developers.google.com/admin-sdk/directory/v1/reference/users#resource
@@ -36,13 +36,13 @@ https://developers.google.com/admin-sdk/directory/v1/reference/users#resource
 | lastupdated | Timestamp of when a sync job last updated this node
 | firstseen | Timestamp of when a sync job first discovered this node
 
-### Relationships
+#### Relationships
 - GSuiteUser is an identity for a Human
     ```
     (Human)-[IDENTITY_GSUITE]->(GSuiteUser)
     ```
 
-## GSuiteGroup
+### GSuiteGroup
 
 Reference:
 https://developers.google.com/admin-sdk/directory/v1/reference/groups

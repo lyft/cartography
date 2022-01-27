@@ -1,8 +1,8 @@
-# Schema
+## Pagerduty Schema
 
 .. _pagerduty_schema:
 
-## PagerDutyEscalationPolicy
+### PagerDutyEscalationPolicy
 
 Representation of a [PagerDuty Escalation Policy](https://developer.pagerduty.com/api-reference/c2NoOjI3NDgwMjE-escalation-policy)
 
@@ -18,7 +18,7 @@ Representation of a [PagerDuty Escalation Policy](https://developer.pagerduty.co
 | name | The name of the escalation policy. |
 | num\_loops | The number of times the escalation policy will repeat after reaching the end of its escalation. |
 
-### Relationships
+#### Relationships
 
 - A PagerDutyEscalationPolicy has PagerDutyEscalationPolicyRules
 
@@ -50,7 +50,7 @@ Representation of a [PagerDuty Escalation Policy](https://developer.pagerduty.co
     (PagerDutyEscalationPolicy)-[ASSOCIATED\_WITH]->(PagerDutyTeam)
     ```
 
-## PagerDutySchedule
+### PagerDutySchedule
 
 Representation of a [PagerDuty Schedule](https://developer.pagerduty.com/api-reference/c2NoOjI3NDgwMzU-schedule)
 
@@ -66,7 +66,7 @@ Representation of a [PagerDuty Schedule](https://developer.pagerduty.com/api-ref
 | time\_zone | The time zone of the schedule |
 | description | The description of the schedule |
 
-### Relationships
+#### Relationships
 
 - A PagerDutySchedule has PagerDutyScheduleLayers
 
@@ -74,7 +74,7 @@ Representation of a [PagerDuty Schedule](https://developer.pagerduty.com/api-ref
     (PagerDutySchedule)-[HAS\_LAYER]->(PagerDutyScheduleLayer)
     ```
 
-## PagerDutyScheduleLayer
+### PagerDutyScheduleLayer
 
 Representation of a layer in a [PagerDuty Schedule](https://developer.pagerduty.com/api-reference/c2NoOjI3NDgwMzU-schedule)
 
@@ -89,11 +89,11 @@ Representation of a layer in a [PagerDuty Schedule](https://developer.pagerduty.
 | rotation\_virtual\_start | The effective start time of the layer. This can be before the start time of the schedule. |
 | rotation\_turn\_length\_seconds | The duration of each on-call shift in seconds. |
 
-### Relationships
+#### Relationships
 
 No relationships originating from PagerDutyScheduleLayer
 
-## PagerDutyService
+### PagerDutyService
 
 Representation of a [PagerDuty Service](https://developer.pagerduty.com/api-reference/c2NoOjI3NDgwMjc-service)
 
@@ -124,7 +124,7 @@ Representation of a [PagerDuty Service](https://developer.pagerduty.com/api-refe
 | support\_hours\_end\_time | support\_hours\_end\_time |
 | support\_hours\_days\_of\_week | (no description) |
 
-### Relationships
+#### Relationships
 
 - A PagerDutyService has PagerDutyIntegrations
 
@@ -132,7 +132,7 @@ Representation of a [PagerDuty Service](https://developer.pagerduty.com/api-refe
     (PagerDutyService)-[HAS\_INTEGRATION]->(PagerDutyIntegration)
     ```
 
-## PagerDutyIntegration
+### PagerDutyIntegration
 
 Representation of a [PagerDuty Integration](https://developer.pagerduty.com/api-reference/c2NoOjI3NDgwMzA-integration)
 
@@ -147,7 +147,7 @@ Representation of a [PagerDuty Integration](https://developer.pagerduty.com/api-
 | name | The name of this integration |
 | created\_at | The date/time when this integration was created. |
 
-### Relationships
+#### Relationships
 
 - A PagerDutyIntegration has PagerDutyVendors
 
@@ -155,7 +155,7 @@ Representation of a [PagerDuty Integration](https://developer.pagerduty.com/api-
     (PagerDutyIntegration)-[HAS\_VENDOR]->(PagerDutyVendor)
     ```
 
-## PagerDutyTeam
+### PagerDutyTeam
 
 Representation of a [PagerDuty Team](https://developer.pagerduty.com/api-reference/c2NoOjI3NDgwMTc-team)
 
@@ -171,7 +171,7 @@ Representation of a [PagerDuty Team](https://developer.pagerduty.com/api-referen
 | description | The description of the team |
 | default\_role | (no description, but returned by API) |
 
-### Relationships
+#### Relationships
 
 - A PagerDutyTeam is associated with PagerDutyServices
 
@@ -179,7 +179,7 @@ Representation of a [PagerDuty Team](https://developer.pagerduty.com/api-referen
     (PagerDutyTeam)-[ASSOCIATED\_WITH]->(PagerDutyServices)
     ```
 
-## PagerDutyUser
+### PagerDutyUser
 
 Representation of a [PagerDuty User](https://developer.pagerduty.com/api-reference/c2NoOjI3NDgwMTU-user)
 
@@ -201,7 +201,7 @@ Representation of a [PagerDuty User](https://developer.pagerduty.com/api-referen
 | invitation\_sent | If true, the user has an outstanding invitation. |
 | job\_title | The user's title |
 
-### Relationships
+#### Relationships
 
 - A PagerDutyUser is a member of PagerDutySchedules
 

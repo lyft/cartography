@@ -1,4 +1,4 @@
-# Configuration
+## Github Configuration
 
 .. _github_config:
 
