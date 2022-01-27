@@ -1,1 +1,1 @@
-This document has been moved [here](https://lyft.github.com/cartography/modules/crxcavator/config.html)
+This document has been moved [here](https://lyft.github.io/cartography/modules/crxcavator/config.html)

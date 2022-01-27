@@ -1,1 +1,1 @@
-This document has been moved [here](https://lyft.github.com/cartography/modules/azure/schema.html)
+This document has been moved [here](https://lyft.github.io/cartography/modules/azure/schema.html)
