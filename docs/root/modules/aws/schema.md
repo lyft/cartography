@@ -2683,7 +2683,7 @@ Representation of an AWS EC2 [Elastic IP address](https://docs.aws.amazon.com/AW
         (NetworkInterface)-[ELASTIC_IP_ADDRESS]->(ElasticIPAddress)
         ```
 
-## ECSCluster
+### ECSCluster
 
 Representation of an AWS ECS [Cluster](https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_Cluster.html)
 
@@ -2707,7 +2707,7 @@ Representation of an AWS ECS [Cluster](https://docs.aws.amazon.com/AmazonECS/lat
 | capacity\_providers | The capacity providers associated with the cluster. |
 | attachments\_status | The status of the capacity providers associated with the cluster. |
 
-### Relationships
+#### Relationships
 
 - ECSClusters are a resource under the AWS Account.
 
@@ -2715,7 +2715,7 @@ Representation of an AWS ECS [Cluster](https://docs.aws.amazon.com/AmazonECS/lat
         (AWSAccount)-[RESOURCE]->(ECSCluster)
         ```
 
-## ECSContainerInstance
+### ECSContainerInstance
 
 Representation of an AWS ECS [Container Instance](https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_ContainerInstance.html)
 
@@ -2738,7 +2738,7 @@ Representation of an AWS ECS [Container Instance](https://docs.aws.amazon.com/Am
 | agent\_update\_status | The status of the most recent agent update. If an update wasn't ever requested, this value is NULL. |
 | registered\_at | The Unix timestamp for the time when the container instance was registered. |
 
-### Relationships
+#### Relationships
 
 - An ECSCluster has ECSContainerInstances
 
@@ -2752,7 +2752,7 @@ Representation of an AWS ECS [Container Instance](https://docs.aws.amazon.com/Am
         (ECSContainerInstance)-[HAS_TASK]->(ECSTask)
         ```
 
-## ECSService
+### ECSService
 
 Representation of an AWS ECS [Service](https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_Service.html)
 
@@ -2785,7 +2785,7 @@ Representation of an AWS ECS [Service](https://docs.aws.amazon.com/AmazonECS/lat
 | propagate\_tags | Determines whether to propagate the tags from the task definition or the service to the task. |
 | enable\_execute\_command | Determines whether the execute command functionality is enabled for the service. |
 
-### Relationships
+#### Relationships
 
 - An ECSCluster has ECSService
 
@@ -2799,7 +2799,7 @@ Representation of an AWS ECS [Service](https://docs.aws.amazon.com/AmazonECS/lat
         (ECSCluster)-[HAS_CONTAINER_INSTANCE]->(ECSContainerInstance)
         ```
 
-## ECSTaskDefinition
+### ECSTaskDefinition
 
 Representation of an AWS ECS [Task Definition](https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_TaskDefinition.html)
 
@@ -2830,7 +2830,7 @@ Representation of an AWS ECS [Task Definition](https://docs.aws.amazon.com/Amazo
 | registered\_by | The principal that registered the task definition. |
 | ephemeral\_storage\_size\_in\_gib | The total amount, in GiB, of ephemeral storage to set for the task. |
 
-### Relationships
+#### Relationships
 
 - ECSTaskDefinition are a resource under the AWS Account.
 
@@ -2838,7 +2838,7 @@ Representation of an AWS ECS [Task Definition](https://docs.aws.amazon.com/Amazo
         (AWSAccount)-[RESOURCE]->(ECSTaskDefinition)
         ```
 
-## ECSContainerDefinition
+### ECSContainerDefinition
 
 Representation of an AWS ECS [Container Definition](https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_ContainerDefinition.html)
 
@@ -2871,7 +2871,7 @@ Representation of an AWS ECS [Container Definition](https://docs.aws.amazon.com/
 | interactive | When this parameter is true, you can deploy containerized applications that require stdin or a tty to be allocated. |
 | pseudo\_terminal | When this parameter is true, a TTY is allocated. |
 
-### Relationships
+#### Relationships
 
 - ECSTaskDefinitions have ECSContainerDefinitions
 
@@ -2879,7 +2879,7 @@ Representation of an AWS ECS [Container Definition](https://docs.aws.amazon.com/
         (ECSTaskDefinition)-[HAS_CONTAINER_DEFINITION]->(ECSContainerDefinition)
         ```
 
-## ECSTask
+### ECSTask
 
 Representation of an AWS ECS [Task](https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_Task.html)
 
@@ -2920,7 +2920,7 @@ Representation of an AWS ECS [Task](https://docs.aws.amazon.com/AmazonECS/latest
 | version | The version counter for the task. |
 | ephemeral\_storage\_size\_in\_gib | The total amount, in GiB, of ephemeral storage to set for the task. |
 
-### Relationships
+#### Relationships
 
 - ECSClusters have ECSTasks
 
@@ -2940,7 +2940,7 @@ Representation of an AWS ECS [Task](https://docs.aws.amazon.com/AmazonECS/latest
         (ECSContainerInstance)-[HAS_TASK_DEFINITION]->(ECSTask)
         ```
 
-## ECSContainer
+### ECSContainer
 
 Representation of an AWS ECS [Container](https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_Container.html)
 
@@ -2965,7 +2965,7 @@ Representation of an AWS ECS [Container](https://docs.aws.amazon.com/AmazonECS/l
 | memory\_reservation | The soft limit (in MiB) of memory set for the container. |
 | gpu\_ids | The IDs of each GPU assigned to the container. |
 
-### Relationships
+#### Relationships
 
 - ECSTasks have ECSContainers
 
