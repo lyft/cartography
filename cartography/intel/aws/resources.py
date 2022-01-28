@@ -4,6 +4,7 @@ from . import apigateway
 from . import config
 from . import dynamodb
 from . import ecr
+from . import ecs
 from . import eks
 from . import elasticache
 from . import elasticsearch
@@ -61,6 +62,7 @@ RESOURCE_FUNCTIONS: Dict = {
     'ec2:volumes': sync_ebs_volumes,
     'ec2:snapshots': sync_ebs_snapshots,
     'ecr': ecr.sync,
+    'ecs': ecs.sync,
     'eks': eks.sync,
     'elasticache': elasticache.sync,
     'elastic_ip_addresses': sync_elastic_ip_addresses,

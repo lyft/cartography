@@ -1,4 +1,5 @@
 import logging
+import re
 import sys
 from functools import wraps
 from typing import Dict
@@ -121,3 +122,7 @@ def dict_date_to_epoch(obj: Dict, key: str) -> Optional[int]:
         return int(value.timestamp())
     else:
         return None
+
+
+def camel_to_snake(name: str) -> str:
+    return re.sub(r'(?<!^)(?=[A-Z])', '_', name).lower()
