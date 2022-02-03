@@ -67,9 +67,10 @@ def get_firestore_indexes(firestore: Resource, firestore_databases: List[Dict], 
         :rtype: list
         :return: List of Firestore Indexes
     """
+    firestore_indexes = []
+
     for database in firestore_databases:
         try:
-            firestore_indexes = []
             request = firestore.projects().databases().collectionGroups().indexes().list(
                 parent=f"{database['name']}/collectionGroups/*",
             )
