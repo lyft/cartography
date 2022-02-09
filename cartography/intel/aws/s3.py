@@ -620,6 +620,12 @@ def load_s3_buckets(neo4j_session: neo4j.Session, data: Dict, current_aws_accoun
             aws_update_tag=aws_update_tag,
         )
 
+    run_analysis_job(
+        'aws_s3_sync_metadata.json',
+        neo4j_session,
+        {'UPDATE_TAG': aws_update_tag, 'AWS_ID': current_aws_account_id},
+    )
+
 
 @timeit
 def cleanup_s3_buckets(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
