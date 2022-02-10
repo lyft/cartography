@@ -2,8 +2,10 @@ import logging
 import re
 import sys
 from functools import wraps
+from string import Template
 from typing import Dict
 from typing import Optional
+from typing import Union
 
 import botocore
 import neo4j
@@ -45,6 +47,42 @@ def run_cleanup_job(
         common_job_parameters,
         get_job_shortname(filename),
     )
+
+
+def update_module_sync_metadata_node(
+    neo4j_session: neo4j.Session,
+    group_type: str,
+    group_id: Union[str, int],
+    synced_type: str,
+    update_tag: int,
+):
+    '''
+    This function creates `ModuleSyncMetadata` nodes when called from each of the individual modules or sub-modules.
+    The 'types' used here should be actual node labels. For example, if we did sync a particular AWSAccount's S3Buckets,
+    the `grouptype` is 'AWSAccount', the `groupid` is the particular account's `id`, and the `syncedtype` is 'S3Bucket'.
+
+    :param neo4j_session: Neo4j session object
+    :param group_type: The parent module's type
+    :param group_id: The parent module's id
+    :param syncd_type: The sub-module's type
+    :param update_tag: Timestamp used to determine data freshness
+    '''
+    remove_template = Template("""
+    MATCH (n:ModuleSyncMetadata{id:'${group_type}_${group_id}_${synced_type}'})
+    WHERE n.lastupdated <> {UPDATE_TAG}
+    DETACH DELETE (n)
+    """)
+    create_template = Template("""
+    MERGE (n:ModuleSyncMetadata{id:'${group_type}_${group_id}_${synced_type}'})
+    ON CREATE SET n:SyncMetadata, n.firstseen=timestamp()
+    SET n.syncedtype='${synced_type}', n.grouptype='${group_type}', n.groupid={group_id}, n.lastupdated={UPDATE_TAG}
+    """)
+    for template in [remove_template, create_template]:
+        neo4j_session.run(
+            template.safe_substitute(group_type=group_type, group_id=group_id, synced_type=synced_type),
+            group_id=group_id,
+            UPDATE_TAG=update_tag,
+        )
 
 
 def load_resource_binary(package, resource_name):

@@ -18,6 +18,7 @@ from policyuniverse.policy import Policy
 from cartography.util import run_analysis_job
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
+from cartography.util import update_module_sync_metadata_node
 
 logger = logging.getLogger(__name__)
 
@@ -619,11 +620,12 @@ def load_s3_buckets(neo4j_session: neo4j.Session, data: Dict, current_aws_accoun
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag,
         )
-
-    run_analysis_job(
-        'aws_s3_sync_metadata.json',
+    update_module_sync_metadata_node(
         neo4j_session,
-        {'UPDATE_TAG': aws_update_tag, 'AWS_ID': current_aws_account_id},
+        group_type='AWSAccount',
+        group_id=current_aws_account_id,
+        synced_type='S3Bucket',
+        update_tag=aws_update_tag,
     )
 
 
