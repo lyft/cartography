@@ -56,5 +56,8 @@
 ## Kubernetes
 - Click [here](kubernetes.md)
 
+## SyncMetadata
+- Click [here](syncmetadata.md)
+
 ## More to come!
 👍
