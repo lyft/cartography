@@ -49,7 +49,7 @@ def run_cleanup_job(
     )
 
 
-def update_module_sync_metadata_node(
+def merge_module_sync_metadata(
     neo4j_session: neo4j.Session,
     group_type: str,
     group_id: Union[str, int],
@@ -67,22 +67,16 @@ def update_module_sync_metadata_node(
     :param syncd_type: The sub-module's type
     :param update_tag: Timestamp used to determine data freshness
     '''
-    remove_template = Template("""
-    MATCH (n:ModuleSyncMetadata{id:'${group_type}_${group_id}_${synced_type}'})
-    WHERE n.lastupdated <> {UPDATE_TAG}
-    DETACH DELETE (n)
-    """)
-    create_template = Template("""
+    template = Template("""
     MERGE (n:ModuleSyncMetadata{id:'${group_type}_${group_id}_${synced_type}'})
     ON CREATE SET n:SyncMetadata, n.firstseen=timestamp()
     SET n.syncedtype='${synced_type}', n.grouptype='${group_type}', n.groupid={group_id}, n.lastupdated={UPDATE_TAG}
     """)
-    for template in [remove_template, create_template]:
-        neo4j_session.run(
-            template.safe_substitute(group_type=group_type, group_id=group_id, synced_type=synced_type),
-            group_id=group_id,
-            UPDATE_TAG=update_tag,
-        )
+    neo4j_session.run(
+        template.safe_substitute(group_type=group_type, group_id=group_id, synced_type=synced_type),
+        group_id=group_id,
+        UPDATE_TAG=update_tag,
+    )
 
 
 def load_resource_binary(package, resource_name):
