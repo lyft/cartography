@@ -64,13 +64,17 @@ def merge_module_sync_metadata(
     :param neo4j_session: Neo4j session object
     :param group_type: The parent module's type
     :param group_id: The parent module's id
-    :param syncd_type: The sub-module's type
+    :param synced_type: The sub-module's type
     :param update_tag: Timestamp used to determine data freshness
     '''
     template = Template("""
-    MERGE (n:ModuleSyncMetadata{id:'${group_type}_${group_id}_${synced_type}'})
-    ON CREATE SET n:SyncMetadata, n.firstseen=timestamp()
-    SET n.syncedtype='${synced_type}', n.grouptype='${group_type}', n.groupid={group_id}, n.lastupdated={UPDATE_TAG}
+        MERGE (n:ModuleSyncMetadata{id:'${group_type}_${group_id}_${synced_type}'})
+        ON CREATE SET
+            n:SyncMetadata, n.firstseen=timestamp()
+        SET n.syncedtype='${synced_type}',
+            n.grouptype='${group_type}',
+            n.groupid={group_id},
+            n.lastupdated={UPDATE_TAG}
     """)
     neo4j_session.run(
         template.safe_substitute(group_type=group_type, group_id=group_id, synced_type=synced_type),

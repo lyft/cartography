@@ -11,7 +11,7 @@ else:
 
 def test_analysis_jobs_cypher_syntax(neo4j_session):
     parameters = {
-        'AWS_ID': 'my_aw_saccount_id',
+        'AWS_ID': 'my_aws_account_id',
         'UPDATE_TAG': 'my_update_tag',
         'OKTA_ORG_ID': 'my_okta_org_id',
     }

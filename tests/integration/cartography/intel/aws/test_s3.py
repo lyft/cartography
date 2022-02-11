@@ -64,7 +64,12 @@ def test_load_s3_buckets_sync_metadata(neo4j_session, *args):
     cartography.intel.aws.s3.load_s3_buckets(neo4j_session, data, TEST_ACCOUNT_ID, TEST_UPDATE_TAG)
     nodes = neo4j_session.run(f"""
         MATCH (m:ModuleSyncMetadata{{id:'AWSAccount_{TEST_ACCOUNT_ID}_S3Bucket'}})
-        RETURN m.id, m.syncedtype, m.grouptype, m.groupid, m.lastupdated
+        RETURN
+            m.id,
+            m.syncedtype,
+            m.grouptype,
+            m.groupid,
+            m.lastupdated
     """)
     # Assert
     actual_nodes = {
