@@ -69,9 +69,9 @@ def get_bigtable_clusters(bigtable: Resource, bigtable_instances: List[Dict], pr
         :rtype: list
         :return: List of Bigtable Clusters
     """
+    bigtable_clusters = []
     for instance in bigtable_instances:
         try:
-            bigtable_clusters = []
             request = bigtable.projects().instances().clusters().list(
                 parent=instance['name'],
             )
@@ -419,7 +419,7 @@ def cleanup_bigtable(neo4j_session: neo4j.Session, common_job_parameters: Dict) 
 
 
 @timeit
-def sync_bigtable(
+def sync(
     neo4j_session: neo4j.Session, bigtable: Resource, project_id: str, gcp_update_tag: int,
     common_job_parameters: Dict,
 ) -> None:

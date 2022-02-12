@@ -111,7 +111,6 @@ def get_service_accounts(iam: Resource, project_id: str) -> List[Dict]:
         while req is not None:
             res = req.execute()
             page = res.get('accounts', [])
-            page['id'] = res['name']
             service_accounts.extend(page)
             req = iam.projects().serviceAccounts().list_next(previous_request=req, previous_response=res)
         return service_accounts
@@ -699,13 +698,12 @@ def sync(
     service_accounts_list = get_service_accounts(iam, project_id)
     service_accounts_list = transform_service_accounts(service_accounts_list)
     load_service_accounts(neo4j_session, service_accounts_list, project_id, gcp_update_tag)
-    cleanup_service_accounts(neo4j_session, common_job_parameters)
 
     for service_account in service_accounts_list:
         service_account_keys = get_service_account_keys(iam, project_id, service_account['name'])
         load_service_account_keys(neo4j_session, service_account_keys, service_account['name'], gcp_update_tag)
 
-    cleanup_service_account_keys(neo4j_session, common_job_parameters)
+    cleanup_service_accounts(neo4j_session, common_job_parameters)
 
     roles_list = get_roles(iam, project_id)
     custom_roles_list = get_project_roles(iam, project_id)

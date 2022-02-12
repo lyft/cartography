@@ -71,7 +71,7 @@ def get_kms_keyrings(kms: Resource, kms_locations: List[Dict], project_id: str) 
     try:
         key_rings = []
         for loc in kms_locations:
-            request = kms.projects().locations().keyrings().list(parent=loc['name'])
+            request = kms.projects().locations().keyRings().list(parent=loc['name'])
             while request is not None:
                 response = request.execute()
                 if response.get('keyRings', []):
@@ -79,7 +79,7 @@ def get_kms_keyrings(kms: Resource, kms_locations: List[Dict], project_id: str) 
                         key_ring['loc_id'] = loc['id']
                         key_ring['id'] = key_ring['name']
                         key_rings.append(key_ring)
-                request = kms.projects().locations().keyrings().list_next(
+                request = kms.projects().locations().keyRings().list_next(
                     previous_request=request,
                     previous_response=response,
                 )
@@ -118,7 +118,7 @@ def get_kms_crypto_keys(kms: Resource, key_rings: List[Dict], project_id: str) -
     try:
         crypto_keys = []
         for key_ring in key_rings:
-            request = kms.projects().locations().keyrings().cryptokeys().list(parent=key_ring['name'])
+            request = kms.projects().locations().keyRings().cryptoKeys().list(parent=key_ring['name'])
             while request is not None:
                 response = request.execute()
                 if response.get('cryptoKeys', []):
@@ -126,7 +126,7 @@ def get_kms_crypto_keys(kms: Resource, key_rings: List[Dict], project_id: str) -
                         crypto_key['keyring_id'] = key_ring['id']
                         crypto_key['id'] = crypto_key['name']
                         crypto_keys.append(crypto_key)
-                request = kms.projects().locations().keyrings().cryptokeys().list_next(
+                request = kms.projects().locations().keyRings().cryptoKeys().list_next(
                     previous_request=request,
                     previous_response=response,
                 )
@@ -304,7 +304,7 @@ def cleanup_gcp_kms(neo4j_session: neo4j.Session, common_job_parameters: Dict) -
 
 
 @timeit
-def sync_kms(
+def sync(
     neo4j_session: neo4j.Session, kms: Resource, project_id: str, gcp_update_tag: int,
     common_job_parameters: Dict,
 ) -> None:

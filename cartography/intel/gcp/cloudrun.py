@@ -29,7 +29,7 @@ def get_cloudrun_authorized_domains(cloudrun: Resource, project_id: str) -> List
     """
     try:
         authorized_domains = []
-        request = cloudrun.namespaces().authorizeddomains().list(parent=f'projects/{project_id}')
+        request = cloudrun.namespaces().authorizeddomains().list(parent=f'namespaces/{project_id}')
         while request is not None:
             response = request.execute()
             if response.get('domains', []):
@@ -72,12 +72,11 @@ def get_cloudrun_configurations(cloudrun: Resource, project_id: str) -> List[Dic
     try:
         configurations = []
         request = cloudrun.namespaces().configurations().list(parent=f'namespaces/{project_id}')
-        while request is not None:
-            response = request.execute()
-            if response.get('items', []):
-                for item in response['items']:
-                    item['id'] = f"projects/{project_id}/configurations/{item.get('metadata').get('name')}"
-                    configurations.append(item)
+        response = request.execute()
+        if response.get('items', []):
+            for item in response['items']:
+                item['id'] = f"projects/{project_id}/configurations/{item.get('metadata').get('name')}"
+                configurations.append(item)
         return configurations
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -110,12 +109,11 @@ def get_cloudrun_domainmappings(cloudrun: Resource, project_id: str) -> List[Dic
     try:
         mappings = []
         request = cloudrun.namespaces().domainmappings().list(parent=f'namespaces/{project_id}')
-        while request is not None:
-            response = request.execute()
-            if response.get('items', []):
-                for item in response['items']:
-                    item['id'] = f"projects/{project_id}/domainmappings/{item.get('metadata').get('name')}"
-                    mappings.append(item)
+        response = request.execute()
+        if response.get('items', []):
+            for item in response['items']:
+                item['id'] = f"projects/{project_id}/domainmappings/{item.get('metadata').get('name')}"
+                mappings.append(item)
         return mappings
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -148,12 +146,11 @@ def get_cloudrun_revisions(cloudrun: Resource, project_id: str) -> List[Dict]:
     try:
         revisions = []
         request = cloudrun.namespaces().revisions().list(parent=f'namespaces/{project_id}')
-        while request is not None:
-            response = request.execute()
-            if response.get('items', []):
-                for item in response['items']:
-                    item['id'] = f"projects/{project_id}/revisions/{item.get('metadata').get('name')}"
-                    revisions.append(item)
+        response = request.execute()
+        if response.get('items', []):
+            for item in response['items']:
+                item['id'] = f"projects/{project_id}/revisions/{item.get('metadata').get('name')}"
+                revisions.append(item)
         return revisions
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -186,12 +183,11 @@ def get_cloudrun_routes(cloudrun: Resource, project_id: str) -> List[Dict]:
     try:
         routes = []
         request = cloudrun.namespaces().routes().list(parent=f'namespaces/{project_id}')
-        while request is not None:
-            response = request.execute()
-            if response.get('items', []):
-                for item in response:
-                    item['id'] = f"projects/{project_id}/routes/{item.get('metadata').get('name')}"
-                    routes.append(item)
+        response = request.execute()
+        if response.get('items', []):
+            for item in response:
+                item['id'] = f"projects/{project_id}/routes/{item.get('metadata').get('name')}"
+                routes.append(item)
         return routes
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -223,12 +219,11 @@ def get_cloudrun_services(cloudrun: Resource, project_id: str) -> List[Dict]:
     try:
         services = []
         request = cloudrun.namespaces().services().list(parent=f'namespaces/{project_id}')
-        while request is not None:
-            response = request.execute()
-            if response.get('items', []):
-                for item in response['items']:
-                    item['id'] = f"projects/{project_id}/services/{item.get('metadata').get('name')}"
-                    services.append(item)
+        response = request.execute()
+        if response.get('items', []):
+            for item in response['items']:
+                item['id'] = f"projects/{project_id}/services/{item.get('metadata').get('name')}"
+                services.append(item)
         return services
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -591,7 +586,7 @@ def cleanup_gcp_cloudrun(neo4j_session: neo4j.Session, common_job_parameters: Di
 
 
 @timeit
-def sync_cloudrun(
+def sync(
     neo4j_session: neo4j.Session, cloudrun: Resource, project_id: str, gcp_update_tag: int,
     common_job_parameters: Dict,
 ) -> None:
