@@ -294,7 +294,7 @@ def get_tenant_domains_list(client: GraphRbacManagementClient, tenant_id: str) -
         tenant_domains_list = list(map(lambda x: x.as_dict(), client.domains.list()))
 
         for domain in tenant_domains_list:
-            domain["id"] = f"tenants/{tenant_id}/Domains/{domain.get('name',None)}"
+            domain["id"] = f"tenants/{tenant_id}/domains/{domain.get('name',None)}"
 
         return tenant_domains_list
 

@@ -1,6 +1,7 @@
 import logging
 from typing import Dict
 from typing import List
+from typing import Optional
 
 import neo4j
 
@@ -46,7 +47,7 @@ def _sync_one_subscription(
 def _sync_tenant(
     neo4j_session: neo4j.Session,
     tenant_id: str,
-    current_user: Dict,
+    current_user: Optional[str],
     update_tag: int,
     common_job_parameters: Dict,
 ) -> None:
@@ -74,7 +75,7 @@ def _sync_multiple_subscriptions(
         neo4j_session, tenant_id, subscriptions, update_tag,
         common_job_parameters,
     )
-
+    common_job_parameters['AZURE_SUBSCRIPTION_ID'] = None
     for sub in subscriptions:
         logger.info(
             "Syncing Azure Subscription with ID '%s'",
@@ -83,10 +84,8 @@ def _sync_multiple_subscriptions(
         common_job_parameters['AZURE_SUBSCRIPTION_ID'] = sub['subscriptionId']
 
         _sync_one_subscription(
-            neo4j_session,
-            credentials,
-            sub['subscriptionId'],
-            requested_syncs,
+            neo4j_session, credentials,
+            sub['subscriptionId'], requested_syncs,
             update_tag,
             common_job_parameters,
         )
@@ -103,23 +102,17 @@ def start_azure_ingestion(
     common_job_parameters = {
         "UPDATE_TAG": config.update_tag,
         "permission_relationships_file": config.permission_relationships_file,
-        "WORKSPACE_ID": config.params['workspace']['id_string'],
     }
 
     try:
-        # if config.azure_sp_auth:
-        #     credentials = Authenticator().authenticate_sp(
-        #         config.azure_tenant_id, config.azure_client_id, config.azure_client_secret,
-        #     )
-        # else:
-        #     credentials = Authenticator().authenticate_cli()
-
-        # Impersonate customer by getting access token using refresh token
-        credentials = Authenticator().impersonate_user(
-            config.azure_client_id, config.azure_client_secret, config.azure_redirect_uri,
-            config.azure_refresh_token, config.azure_graph_scope, config.azure_azure_scope,
-            config.azure_subscription_id,
-        )
+        if config.azure_sp_auth:
+            credentials = Authenticator().authenticate_sp(
+                config.azure_tenant_id,
+                config.azure_client_id,
+                config.azure_client_secret,
+            )
+        else:
+            credentials = Authenticator().authenticate_cli()
 
     except Exception as e:
         logger.error(
@@ -154,8 +147,6 @@ def start_azure_ingestion(
             "No valid Azure credentials are found. No Azure subscriptions can be synced. Exiting Azure sync stage.",
         )
         return
-
-    regions = config.params.get('regions', [])
 
     _sync_multiple_subscriptions(
         neo4j_session,
