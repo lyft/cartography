@@ -29,7 +29,7 @@ def get_sql_instances(sql: Resource, project_id: str) -> List[Dict]:
     """
     try:
         sql_instances = []
-        request = sql.instances().list(project=f"projects/{project_id}")
+        request = sql.instances().list(project=project_id)
         while request is not None:
             response = request.execute()
             if response.get('items', []):
@@ -68,10 +68,10 @@ def get_sql_users(sql: Resource, sql_instances: List[Dict], project_id: str) -> 
         :rtype: list
         :return: List of Sql Instance Users
     """
+    sql_users = []
     for inst in sql_instances:
         try:
-            sql_users = []
-            request = sql.users().list(project=f"projects/{project_id}", instance=f"{inst['name']}")
+            request = sql.users().list(project=project_id, instance=f"{inst['name']}")
             while request is not None:
                 response = request.execute()
                 if response.get('items', []):
@@ -219,7 +219,7 @@ def cleanup_sql(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> No
 
 
 @timeit
-def sync_sql(
+def sync(
     neo4j_session: neo4j.Session, sql: Resource, project_id: str, gcp_update_tag: int,
     common_job_parameters: Dict,
 ) -> None:
@@ -250,6 +250,6 @@ def sync_sql(
     sqlinstances = get_sql_instances(sql, project_id)
     load_sql_instances(neo4j_session, sqlinstances, project_id, gcp_update_tag)
     # SQL USERS
-    users = get_sql_users(sql, project_id, sqlinstances)
+    users = get_sql_users(sql, sqlinstances, project_id)
     load_sql_users(neo4j_session, users, project_id, gcp_update_tag)
     cleanup_sql(neo4j_session, common_job_parameters)

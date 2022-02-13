@@ -17,11 +17,12 @@ from cartography.intel.gcp import crm
 from cartography.intel.gcp.util.common import parse_and_validate_gcp_requested_syncs
 from cartography.util import run_analysis_job
 from cartography.util import timeit
+from cartography.intel.gcp.auth import AuthHelper
 
 logger = logging.getLogger(__name__)
 Resources = namedtuple(
-    'Resources', 'compute gke crm_v1 crm_v2 dns storage serviceusage \
-        iam admin apigateway cloudkms cloudrun sql bigtable firestore',
+    'Resources', 'compute gke cloudfunction crm_v1 crm_v2 dns storage serviceusage \
+        iam admin cloudfunction apigateway cloudkms cloudrun sql bigtable firestore',
 )
 
 # Mapping of service short names to their full names as in docs. See https://developers.google.com/apis-explorer,
@@ -241,6 +242,7 @@ def _initialize_resources(credentials: GoogleCredentials) -> Resource:
         iam=_get_iam_resource(credentials),
         admin=_get_admin_resource(credentials),
         apigateway=_get_apigateway_resource(credentials),
+        cloudfunction=_get_cloudfunction_resource(credentials),
     )
 
 

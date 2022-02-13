@@ -30,12 +30,11 @@ def get_firestore_databases(firestore: Resource, project_id: str) -> List[Dict]:
     try:
         firestore_databases = []
         request = firestore.projects().databases().list(parent=f"projects/{project_id}")
-        while request is not None:
-            response = request.execute()
-            if response.get('databases', []):
-                for database in response['databases']:
-                    database['id'] = database['name']
-                    firestore_databases.append(database)
+        response = request.execute()
+        if response.get('databases', []):
+            for database in response['databases']:
+                database['id'] = database['name']
+                firestore_databases.append(database)
         return firestore_databases
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -68,9 +67,9 @@ def get_firestore_indexes(firestore: Resource, firestore_databases: List[Dict], 
         :rtype: list
         :return: List of Firestore Indexes
     """
+    firestore_indexes = []
     for database in firestore_databases:
         try:
-            firestore_indexes = []
             request = firestore.projects().databases().collectionGroups().indexes().list(
                 parent=f"{database['name']}/collectionGroups/*",
             )
@@ -95,7 +94,9 @@ def get_firestore_indexes(firestore: Resource, firestore_databases: List[Dict], 
                 )
                 return []
             else:
-                raise
+                logger.error(e)
+                # raise
+                return []
     return firestore_indexes
 
 
@@ -217,7 +218,7 @@ def cleanup_firestore(neo4j_session: neo4j.Session, common_job_parameters: Dict)
 
 
 @timeit
-def sync_firestore(
+def sync(
     neo4j_session: neo4j.Session, firestore: Resource, project_id: str, gcp_update_tag: int,
     common_job_parameters: Dict,
 ) -> None:
