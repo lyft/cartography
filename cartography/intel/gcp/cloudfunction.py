@@ -60,7 +60,7 @@ def get_gcp_functions(function: Resource, project_id: str) -> List[Dict]:
             )
             while request is not None:
                 response = request.execute()
-                for func in response.get('functions', []):
+                for func in response['functions']:
                     func['id'] = func['name']
                     functions.append(func)
                 request = function.projects().locations().functions().list_next(

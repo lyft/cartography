@@ -68,7 +68,6 @@ def get_firestore_indexes(firestore: Resource, firestore_databases: List[Dict], 
         :return: List of Firestore Indexes
     """
     firestore_indexes = []
-
     for database in firestore_databases:
         try:
             request = firestore.projects().databases().collectionGroups().indexes().list(
@@ -97,6 +96,7 @@ def get_firestore_indexes(firestore: Resource, firestore_databases: List[Dict], 
             else:
                 logger.error(e)
                 # raise
+                return []
     return firestore_indexes
 
 
@@ -244,13 +244,9 @@ def sync(
         :return: Nothing
     """
     logger.info("Syncing GCP Cloud Firestore for project %s.", project_id)
-
-    logger.info("Syncing GCP Cloud Firestore Databases for project %s.", project_id)
     # FIRESTORE DATABASES
     firestore_databases = get_firestore_databases(firestore, project_id)
     load_firestore_databases(neo4j_session, firestore_databases, project_id, gcp_update_tag)
-
-    logger.info("Syncing GCP Cloud Firestore Indexes for project %s.", project_id)
     # FIRESTORE INDEXES
     firestore_indexes = get_firestore_indexes(firestore, firestore_databases, project_id)
     load_firestore_indexes(neo4j_session, firestore_indexes, project_id, gcp_update_tag)

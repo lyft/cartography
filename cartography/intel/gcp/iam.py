@@ -691,7 +691,7 @@ def attach_role_to_domain(
 @timeit
 def sync(
     neo4j_session: neo4j.Session, iam: Resource, crm: Resource, admin: Resource,
-    project_id: str, gcp_update_tag: int, common_job_parameters: Dict,
+    project_id: str, gcp_update_tag: int, common_job_parameters: Dict, regions: List[str],
 ) -> None:
     logger.info("Syncing IAM objects for project %s.", project_id)
 

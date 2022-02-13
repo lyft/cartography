@@ -249,7 +249,6 @@ def sync(
     # SQL INSTANCES
     sqlinstances = get_sql_instances(sql, project_id)
     load_sql_instances(neo4j_session, sqlinstances, project_id, gcp_update_tag)
-
     # SQL USERS
     users = get_sql_users(sql, sqlinstances, project_id)
     load_sql_users(neo4j_session, users, project_id, gcp_update_tag)

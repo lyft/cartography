@@ -17,18 +17,17 @@ from cartography.intel.gcp import crm
 from cartography.intel.gcp.util.common import parse_and_validate_gcp_requested_syncs
 from cartography.util import run_analysis_job
 from cartography.util import timeit
-from cartography.intel.gcp.auth import AuthHelper
 
 logger = logging.getLogger(__name__)
 Resources = namedtuple(
-    'Resources', 'compute gke crm_v1 crm_v2 dns storage serviceusage \
+    'Resources', 'compute gke cloudfunction crm_v1 crm_v2 dns storage serviceusage \
         iam admin cloudfunction apigateway cloudkms cloudrun sql bigtable firestore',
 )
 
 # Mapping of service short names to their full names as in docs. See https://developers.google.com/apis-explorer,
 # and https://cloud.google.com/service-usage/docs/reference/rest/v1/services#ServiceConfig
 Services = namedtuple(
-    'Services', 'compute storage gke dns cloudfunction crm_v1 crm_v2 \
+    'Services', 'compute storage gke dns crm_v1 crm_v2 \
     cloudkms cloudrun iam admin apigateway sql bigtable firestore',
 )
 service_names = Services(
@@ -36,7 +35,6 @@ service_names = Services(
     storage='storage.googleapis.com',
     gke='container.googleapis.com',
     dns='dns.googleapis.com',
-    cloudfunction='cloudfunctions.googleapis.com',
     crm_v1='cloudresourcemanager.googleapis.com',
     crm_v2='cloudresourcemanager.googleapis.com',
     cloudkms='cloudkms.googleapis.com',
@@ -48,17 +46,6 @@ service_names = Services(
     bigtable='bigtableadmin.googleapis.com',
     firestore='firestore.googleapis.com',
 )
-
-
-def _get_iam_resource_v1(credentials: GoogleCredentials) -> Resource:
-    """
-    Instantiates a Google IAM v1 resource object to call the IAM API.
-    See https://cloud.google.com/iam/docs/reference/rest.
-    :param credentials: The GoogleCredentials object
-    :return: A IAM v1 resource object
-    """
-    # cache_discovery=False to suppress extra warnings.
-    return googleapiclient.discovery.build('iam', 'v1', credentials=credentials, cache_discovery=False)
 
 
 def _get_crm_resource_v1(credentials: GoogleCredentials) -> Resource:
@@ -138,17 +125,6 @@ def _get_serviceusage_resource(credentials: GoogleCredentials) -> Resource:
     return googleapiclient.discovery.build('serviceusage', 'v1', credentials=credentials, cache_discovery=False)
 
 
-def _get_cloudfunction_resource(credentials: GoogleCredentials) -> Resource:
-    """
-    Instantiates a cloud function resource object.
-    See: https://cloud.google.com/functions/docs/reference/rest
-
-    :param credentials: The GoogleCredentials object
-    :return: A serviceusage resource object
-    """
-    return googleapiclient.discovery.build('cloudfunctions', 'v1', credentials=credentials, cache_discovery=False)
-
-
 def _get_cloudkms_resource(credentials: GoogleCredentials) -> Resource:
     """
     Instantiates a cloud kms resource object.
@@ -178,6 +154,16 @@ def _get_cloudrun_resource(credentials: GoogleCredentials) -> Resource:
     :return: A serviceusage resource object
     """
     return googleapiclient.discovery.build('run', 'v1', credentials=credentials, cache_discovery=None)
+
+
+def _get_iam_resource(credentials: GoogleCredentials) -> Resource:
+    """
+    Instantiates a IAM resource object
+    See: https://cloud.google.com/iam/docs/reference/rest
+    :param credentails: The GoogleCredentails object
+    :return: A IAM resource object
+    """
+    return googleapiclient.discovery.build('iam', 'v1', credentials=credentials, cache_discovery=False)
 
 
 def _get_admin_resource(credentials: GoogleCredentials) -> Resource:
@@ -228,7 +214,6 @@ def _initialize_resources(credentials: GoogleCredentials) -> Resource:
     :return: namedtuple of all resource objects
     """
     return Resources(
-        iam=_get_iam_resource_v1(credentials),
         crm_v1=_get_crm_resource_v1(credentials),
         crm_v2=_get_crm_resource_v2(credentials),
         compute=_get_compute_resource(credentials),
@@ -241,6 +226,7 @@ def _initialize_resources(credentials: GoogleCredentials) -> Resource:
         firestore=_get_firestore_resource(credentials),
         cloudkms=_get_cloudkms_resource(credentials),
         cloudrun=_get_cloudrun_resource(credentials),
+        iam=_get_iam_resource(credentials),
         admin=_get_admin_resource(credentials),
         apigateway=_get_apigateway_resource(credentials),
         cloudfunction=_get_cloudfunction_resource(credentials),
@@ -290,25 +276,21 @@ def _sync_single_project(
     :param common_job_parameters: Other parameters sent to Neo4j
     :return: Nothing
     """
-    # print(f"regions: {regions}")
-    # if not regions:
-    #     regions = _auto_discover_regions(resources.compute, project_id)
-
     # Determine the resources available on the project.
     enabled_services = _services_enabled_on_project(resources.serviceusage, project_id)
     for request in requested_syncs:
         if request in RESOURCE_FUNCTIONS:
-            # if getattr(service_names, request) in enabled_services:
-            if request == 'iam':
-                RESOURCE_FUNCTIONS[request](
-                    neo4j_session, getattr(resources, request), resources.crm_v1, resources.admin,
-                    project_id, gcp_update_tag, common_job_parameters,
-                )
-            else:
-                RESOURCE_FUNCTIONS[request](
-                    neo4j_session, getattr(resources, request),
-                    project_id, gcp_update_tag, common_job_parameters,
-                )
+            if getattr(service_names, request) in enabled_services:
+                if request == 'iam':
+                    RESOURCE_FUNCTIONS[request](
+                        neo4j_session, getattr(resources, request), resources.crm_v1, resources.admin,
+                        project_id, gcp_update_tag, common_job_parameters,
+                    )
+                else:
+                    RESOURCE_FUNCTIONS[request](
+                        neo4j_session, getattr(resources, request),
+                        project_id, gcp_update_tag, common_job_parameters,
+                    )
         else:
             raise ValueError(f'GCP sync function "{request}" was specified but does not exist. Did you misspell it?')
 
@@ -322,7 +304,7 @@ def _sync_multiple_projects(
     :param neo4j_session: The Neo4j session
     :param resources: namedtuple of the GCP resource objects
     :param: projects: A list of projects. At minimum, this list should contain a list of dicts with the key "projectId"
-    defined; so it would look like this: [{"projectId": "my-project-id-12345"}].
+     defined; so it would look like this: [{"projectId": "my-project-id-12345"}].
     This is the returned data from `crm.get_gcp_projects()`.
     See https://cloud.google.com/resource-manager/reference/rest/v1/projects.
     :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
@@ -356,18 +338,12 @@ def start_gcp_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
     """
     common_job_parameters = {
         "UPDATE_TAG": config.update_tag,
-        "WORKSPACE_ID": config.params['workspace']['id_string'],
-        "GCP_PROJECT_ID": config.params['workspace']['account_id'],
     }
     try:
-        # # Explicitly use Application Default Credentials.
-        # # See https://oauth2client.readthedocs.io/en/latest/source/
-        # #             oauth2client.client.html#oauth2client.client.OAuth2Credentials
-        # credentials = GoogleCredentials.get_application_default()
-
-        auth_helper = AuthHelper()
-        credentials = auth_helper.get_credentials(config.credentials['token_uri'], config.credentials['account_email'])
-
+        # Explicitly use Application Default Credentials.
+        # See https://oauth2client.readthedocs.io/en/latest/source/
+        #             oauth2client.client.html#oauth2client.client.OAuth2Credentials
+        credentials = GoogleCredentials.get_application_default()
     except ApplicationDefaultCredentialsError as e:
         logger.debug("Error occurred calling GoogleCredentials.get_application_default().", exc_info=True)
         logger.error(
@@ -393,27 +369,25 @@ def start_gcp_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
 
     projects = crm.get_gcp_projects(resources.crm_v1)
 
-    # Read regions from parameters
-    regions = config.params.get('regions', [])
-
     _sync_multiple_projects(
-        neo4j_session, resources, requested_syncs, projects, config.update_tag, common_job_parameters,
+        neo4j_session, resources, requested_syncs,
+        projects, config.update_tag, common_job_parameters,
     )
 
-    # run_analysis_job(
-    #     'gcp_compute_asset_inet_exposure.json',
-    #     neo4j_session,
-    #     common_job_parameters,
-    # )
+    run_analysis_job(
+        'gcp_compute_asset_inet_exposure.json',
+        neo4j_session,
+        common_job_parameters,
+    )
 
-    # run_analysis_job(
-    #     'gcp_gke_asset_exposure.json',
-    #     neo4j_session,
-    #     common_job_parameters,
-    # )
+    run_analysis_job(
+        'gcp_gke_asset_exposure.json',
+        neo4j_session,
+        common_job_parameters,
+    )
 
-    # run_analysis_job(
-    #     'gcp_gke_basic_auth.json',
-    #     neo4j_session,
-    #     common_job_parameters,
-    # )
+    run_analysis_job(
+        'gcp_gke_basic_auth.json',
+        neo4j_session,
+        common_job_parameters,
+    )

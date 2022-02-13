@@ -185,7 +185,7 @@ def get_cloudrun_routes(cloudrun: Resource, project_id: str) -> List[Dict]:
         request = cloudrun.namespaces().routes().list(parent=f'namespaces/{project_id}')
         response = request.execute()
         if response.get('items', []):
-            for item in response['items']:
+            for item in response:
                 item['id'] = f"projects/{project_id}/routes/{item.get('metadata').get('name')}"
                 routes.append(item)
         return routes
@@ -612,33 +612,21 @@ def sync(
         :return: Nothing
     """
     logger.info("Syncing GCP Cloudrun for project %s.", project_id)
-    
-    logger.info("Syncing GCP Cloudrun Authorized Domains for project %s.", project_id)
     # CLOUDRUN AUTHORIZED DOMAINS
     domains = get_cloudrun_authorized_domains(cloudrun, project_id)
     load_cloudrun_authorized_domains(neo4j_session, domains, project_id, gcp_update_tag)
-
-    logger.info("Syncing GCP Cloudrun Configurations for project %s.", project_id)
     # CLOUDRUN CONFIGURATIONS
     configurations = get_cloudrun_configurations(cloudrun, project_id)
     load_cloudrun_configurations(neo4j_session, configurations, project_id, gcp_update_tag)
-
-    logger.info("Syncing GCP Cloudrun Domain Mappings for project %s.", project_id)
     # CLOUDRUN DOMAIN MAPPINGS
     domainmappings = get_cloudrun_domainmappings(cloudrun, project_id)
     load_cloudrun_domainmappings(neo4j_session, domainmappings, project_id, gcp_update_tag)
-
-    logger.info("Syncing GCP Cloudrun Revisions for project %s.", project_id)
     # CLOUDRUN REVISIONS
     revisions = get_cloudrun_revisions(cloudrun, project_id)
     load_cloudrun_revisions(neo4j_session, revisions, project_id, gcp_update_tag)
-
-    logger.info("Syncing GCP Cloudrun Routes for project %s.", project_id)
     # CLOUDRUN ROUTES
     routes = get_cloudrun_routes(cloudrun, project_id)
     load_cloudrun_routes(neo4j_session, routes, project_id, gcp_update_tag)
-
-    logger.info("Syncing GCP Cloudrun Services for project %s.", project_id)
     # CLOUDRUN SERVICES
     services = get_cloudrun_services(cloudrun, project_id)
     load_cloudrun_services(neo4j_session, services, project_id, gcp_update_tag)

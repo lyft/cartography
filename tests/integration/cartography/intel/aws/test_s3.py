@@ -48,6 +48,43 @@ def test_load_s3_buckets(neo4j_session, *args):
     assert actual_nodes == expected_nodes
 
 
+def test_load_s3_buckets_sync_metadata(neo4j_session, *args):
+    # Arrange
+    data = tests.data.aws.s3.LIST_BUCKETS
+    expected_nodes = {
+        (
+            f'AWSAccount_{TEST_ACCOUNT_ID}_S3Bucket',
+            'AWSAccount',
+            TEST_ACCOUNT_ID,
+            'S3Bucket',
+            TEST_UPDATE_TAG,
+        ),
+    }
+    # Act
+    cartography.intel.aws.s3.load_s3_buckets(neo4j_session, data, TEST_ACCOUNT_ID, TEST_UPDATE_TAG)
+    nodes = neo4j_session.run(f"""
+        MATCH (m:ModuleSyncMetadata{{id:'AWSAccount_{TEST_ACCOUNT_ID}_S3Bucket'}})
+        RETURN
+            m.id,
+            m.syncedtype,
+            m.grouptype,
+            m.groupid,
+            m.lastupdated
+    """)
+    # Assert
+    actual_nodes = {
+        (
+            n['m.id'],
+            n['m.grouptype'],
+            n['m.groupid'],
+            n['m.syncedtype'],
+            n['m.lastupdated'],
+        )
+        for n in nodes
+    }
+    assert actual_nodes == expected_nodes
+
+
 def test_load_s3_encryption(neo4j_session, *args):
     """
     Ensure that expected bucket gets loaded with their encryption fields.
