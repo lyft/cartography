@@ -1,7 +1,7 @@
 from setuptools import find_packages
 from setuptools import setup
 
-__version__ = '0.52.0'
+__version__ = '0.53.0'
 
 
 setup(
@@ -62,6 +62,7 @@ setup(
         "azure-mgmt-network>=2.7.0",
         "azure-mgmt-web>=0.35.0",
         "kubernetes>=18.20.0",
+        "kubernetes>=18.20.0,<=21.7.0",
         "pdpyras>=4.3.0",
     ],
     extras_require={
