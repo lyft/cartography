@@ -156,6 +156,7 @@ def get_vm_available_sizes_list(vm_list: List[Dict], client: ComputeManagementCl
             for size in vm_available_size_list:
                 size['resource_group'] = vm['resource_group']
                 size['vm_id'] = vm['id']
+                size['id'] = f"{vm['id']}/Size/{size['name']}"
             vm_available_sizes_list = vm_available_sizes_list + vm_available_size_list
 
         return vm_available_sizes_list
@@ -168,9 +169,10 @@ def get_vm_available_sizes_list(vm_list: List[Dict], client: ComputeManagementCl
 def _load_vm_available_sizes_tx(tx: neo4j.Transaction, vm_available_sizes_list: List[Dict], update_tag: int) -> None:
     ingest_vm_size = """
     UNWIND {vm_available_sizes_list} AS size
-    MERGE (v:AzureVirtualMachineAvailableSize{name: size.name})
+    MERGE (v:AzureVirtualMachineAvailableSize{id: size.id})
     ON CREATE SET v.firstseen = timestamp(), v.numberOfCores = size.numberOfCores
     SET v.lastupdated = {update_tag}, v.osDiskSizeInMB = size.osDiskSizeInMB,
+    v.name = size.name,
     v.resourceDiskSizeInMB = size.resourceDiskSizeInMB,
     v.memoryInMB=size.memoryInMB,
     v.maxDataDiskCount=size.maxDataDiskCount
