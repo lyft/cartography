@@ -13,6 +13,7 @@ import neo4j
 from cartography.graph.job import GraphJob
 from cartography.graph.statement import get_job_shortname
 from cartography.stats import get_stats_client
+from cartography.stats import ScopedStatsClient
 
 if sys.version_info >= (3, 7):
     from importlib.resources import open_binary, read_text
@@ -55,6 +56,7 @@ def merge_module_sync_metadata(
     group_id: Union[str, int],
     synced_type: str,
     update_tag: int,
+    stat_handler: ScopedStatsClient,
 ):
     '''
     This function creates `ModuleSyncMetadata` nodes when called from each of the individual modules or sub-modules.
@@ -81,6 +83,7 @@ def merge_module_sync_metadata(
         group_id=group_id,
         UPDATE_TAG=update_tag,
     )
+    stat_handler.incr(f'{group_type}_{group_id}_{synced_type}_lastupdated', update_tag)
 
 
 def load_resource_binary(package, resource_name):
