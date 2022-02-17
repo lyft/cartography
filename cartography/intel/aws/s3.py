@@ -622,14 +622,6 @@ def load_s3_buckets(neo4j_session: neo4j.Session, data: Dict, current_aws_accoun
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag,
         )
-    merge_module_sync_metadata(
-        neo4j_session,
-        group_type='AWSAccount',
-        group_id=current_aws_account_id,
-        synced_type='S3Bucket',
-        update_tag=aws_update_tag,
-        stat_handler=stat_handler,
-    )
 
 
 @timeit
@@ -656,3 +648,12 @@ def sync(
     acl_and_policy_data_iter = get_s3_bucket_details(boto3_session, bucket_data)
     load_s3_details(neo4j_session, acl_and_policy_data_iter, current_aws_account_id, update_tag)
     cleanup_s3_bucket_acl_and_policy(neo4j_session, common_job_parameters)
+
+    merge_module_sync_metadata(
+        neo4j_session,
+        group_type='AWSAccount',
+        group_id=current_aws_account_id,
+        synced_type='S3Bucket',
+        update_tag=update_tag,
+        stat_handler=stat_handler,
+    )
