@@ -59,7 +59,7 @@ def merge_module_sync_metadata(
     stat_handler: ScopedStatsClient,
 ):
     '''
-    This function creates `ModuleSyncMetadata` nodes when called from each of the individual modules or sub-modules.
+    This creates `ModuleSyncMetadata` nodes when called from each of the individual modules or sub-modules.
     The 'types' used here should be actual node labels. For example, if we did sync a particular AWSAccount's S3Buckets,
     the `grouptype` is 'AWSAccount', the `groupid` is the particular account's `id`, and the `syncedtype` is 'S3Bucket'.
 
