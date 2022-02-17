@@ -219,6 +219,7 @@ def _load_kms_key_rings_tx(
         keyring.firstseen = timestamp()
     SET
         keyring.name = keyr.name,
+        keyring.location = {location},
         keyring.createTime = keyr.createTime,
         keyring.lastupdated = {gcp_update_tag}
     WITH keyring, keyr
@@ -232,6 +233,7 @@ def _load_kms_key_rings_tx(
         ingest_kms_key_rings,
         key_rings=key_rings,
         ProjectId=project_id,
+        location="global",
         gcp_update_tag=gcp_update_tag,
     )
 
@@ -267,6 +269,7 @@ def _load_kms_crypto_keys_tx(
     SET
         crypto_key.name = ck.name,
         crypto_key.purpose = ck.purpose,
+        crypto_key.location = {location},
         crypto_key.createTime = ck.createTime,
         crypto_key.nextRotationTime = ck.nextRotationTime,
         crypto_key.rotationPeriod = ck.rotationPeriod,
@@ -282,6 +285,7 @@ def _load_kms_crypto_keys_tx(
         ingest_crypto_keys,
         crypto_keys=crypto_keys,
         ProjectId=project_id,
+        location="global",
         gcp_update_tag=gcp_update_tag,
     )
 

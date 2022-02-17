@@ -110,6 +110,7 @@ def _load_functions_tx(tx: neo4j.Transaction, functions: List[Resource], project
         function.name = func.name,
         function.description = func.description,
         function.status = func.status,
+        function.location = {location}
         function.entryPoint = func.entryPoint,
         function.runtime = func.runtime,
         function.timeout = func.timeout,
@@ -138,6 +139,7 @@ def _load_functions_tx(tx: neo4j.Transaction, functions: List[Resource], project
         ingest_functions,
         functions=functions,
         ProjectId=project_id,
+        location="global",
         gcp_update_tag=gcp_update_tag,
     )
 

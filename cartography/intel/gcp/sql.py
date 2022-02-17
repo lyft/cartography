@@ -183,6 +183,7 @@ def _load_sql_users_tx(tx: neo4j.Transaction, sql_users: List[Dict], project_id:
         u.name = user.name,
         u.host = user.host,
         u.instance = user.instance,
+        u.location = {location},
         u.project = user.project,
         u.type = user.type,
         u.lastupdated = {gcp_update_tag}
@@ -197,6 +198,7 @@ def _load_sql_users_tx(tx: neo4j.Transaction, sql_users: List[Dict], project_id:
         ingest_sql_users,
         sql_users=sql_users,
         ProjectId=project_id,
+        location="global",
         gcp_update_tag=gcp_update_tag,
     )
 

@@ -517,6 +517,7 @@ def load_gcp_instances(neo4j_session: neo4j.Session, data: List[Dict], gcp_updat
     SET i.self_link = {SelfLink},
     i.instancename = {InstanceName},
     i.hostname = {Hostname},
+    i.location = {location},
     i.zone_name = {ZoneName},
     i.project_id = {ProjectId},
     i.status = {Status},
@@ -537,6 +538,7 @@ def load_gcp_instances(neo4j_session: neo4j.Session, data: List[Dict], gcp_updat
             ZoneName=instance['zone_name'],
             Hostname=instance.get('hostname', None),
             Status=instance['status'],
+            location="global",
             gcp_update_tag=gcp_update_tag,
         )
         _attach_instance_tags(neo4j_session, instance, gcp_update_tag)
@@ -562,6 +564,7 @@ def load_gcp_vpcs(neo4j_session: neo4j.Session, vpcs: List[Dict], gcp_update_tag
     ON CREATE SET vpc.firstseen = timestamp(),
     vpc.partial_uri = {PartialUri}
     SET vpc.self_link = {SelfLink},
+    vpc.location = {location},
     vpc.name = {VpcName},
     vpc.project_id = {ProjectId},
     vpc.auto_create_subnetworks = {AutoCreateSubnetworks},
@@ -583,6 +586,7 @@ def load_gcp_vpcs(neo4j_session: neo4j.Session, vpcs: List[Dict], gcp_update_tag
             AutoCreateSubnetworks=vpc['auto_create_subnetworks'],
             RoutingMode=vpc['routing_config_routing_mode'],
             Description=vpc['description'],
+            location="global",
             gcp_update_tag=gcp_update_tag,
         )
 
@@ -606,6 +610,7 @@ def load_gcp_subnets(neo4j_session: neo4j.Session, subnets: List[Dict], gcp_upda
     subnet.partial_uri = {PartialUri}
     SET subnet.self_link = {SubnetSelfLink},
     subnet.project_id = {ProjectId},
+    subnet.location = {location},
     subnet.name = {SubnetName},
     subnet.region = {Region},
     subnet.gateway_address = {GatewayAddress},
@@ -630,6 +635,7 @@ def load_gcp_subnets(neo4j_session: neo4j.Session, subnets: List[Dict], gcp_upda
             Region=s['region'],
             GatewayAddress=s['gateway_address'],
             IpCidrRange=s['ip_cidr_range'],
+            location="global",
             PrivateIpGoogleAccess=s['private_ip_google_access'],
             gcp_update_tag=gcp_update_tag,
         )
@@ -650,6 +656,7 @@ def load_gcp_forwarding_rules(neo4j_session: neo4j.Session, fwd_rules: List[Dict
         ON CREATE SET fwd.firstseen = timestamp(),
         fwd.partial_uri = {PartialUri}
         SET fwd.ip_address = {IPAddress},
+        ip_address.location = {location},
         fwd.ip_protocol = {IPProtocol},
         fwd.load_balancing_scheme = {LoadBalancingScheme},
         fwd.name = {Name},
@@ -683,6 +690,7 @@ def load_gcp_forwarding_rules(neo4j_session: neo4j.Session, fwd_rules: List[Dict
             Region=fwd.get('region', None),
             SelfLink=fwd['self_link'],
             SubNetwork=subnetwork,
+            location="global",
             SubNetworkPartialUri=fwd.get('subnetwork_partial_uri', None),
             TargetPartialUri=fwd['target'],
             gcp_update_tag=gcp_update_tag,
@@ -912,6 +920,7 @@ def load_gcp_ingress_firewalls(neo4j_session: neo4j.Session, fw_list: List[Resou
     SET fw.direction = {Direction},
     fw.disabled = {Disabled},
     fw.name = {Name},
+    fw.location = {location},
     fw.priority = {Priority},
     fw.self_link = {SelfLink},
     fw.has_target_service_accounts = {HasTargetServiceAccounts},
@@ -935,6 +944,7 @@ def load_gcp_ingress_firewalls(neo4j_session: neo4j.Session, fw_list: List[Resou
             Name=fw['name'],
             Priority=fw['priority'],
             SelfLink=fw['selfLink'],
+            location="global",
             VpcPartialUri=fw['vpc_partial_uri'],
             HasTargetServiceAccounts=fw['has_target_service_accounts'],
             gcp_update_tag=gcp_update_tag,

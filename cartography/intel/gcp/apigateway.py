@@ -279,6 +279,7 @@ def load_apis_tx(tx: neo4j.Transaction, apis: List[Dict], project_id: str, gcp_u
     SET
         api.name = ap.name,
         api.createTime = ap.createTime,
+        api.location = {location},
         api.updateTime = ap.updateTime,
         api.displayName = ap.displayName,
         api.managedService = ap.managedService,
@@ -293,6 +294,7 @@ def load_apis_tx(tx: neo4j.Transaction, apis: List[Dict], project_id: str, gcp_u
     tx.run(
         ingest_apis,
         apis=apis,
+        location="global",
         ProjectId=project_id,
         gcp_update_tag=gcp_update_tag,
     )
@@ -348,6 +350,7 @@ def load_api_configs_tx(tx: neo4j.Transaction, configs: List[Dict], project_id: 
     SET
         config.name = conf.name,
         config.createTime = conf.createTime,
+        api.location = {location},
         config.updateTime = conf.updateTime,
         config.displayName = conf.displayName,
         config.gatewayServiceAccount = conf.gatewayServiceAccount,
@@ -364,6 +367,7 @@ def load_api_configs_tx(tx: neo4j.Transaction, configs: List[Dict], project_id: 
     tx.run(
         ingest_api_configs,
         configs=configs,
+        location="global",
         ProjectId=project_id,
         gcp_update_tag=gcp_update_tag,
     )
@@ -421,6 +425,7 @@ def load_gateways_tx(tx: neo4j.Transaction, gateways: List[Dict], project_id: st
         gateway.createTime = g.createTime,
         gateway.updateTime = g.updateTime,
         gateway.displayName = g.displayName,
+        api.location = {location},
         gateway.apiConfig = g.apiConfig,
         gateway.state = g.state,
         gateway.defaultHostname = g.defaultHostname,
@@ -435,6 +440,7 @@ def load_gateways_tx(tx: neo4j.Transaction, gateways: List[Dict], project_id: st
     tx.run(
         ingest_gateways,
         gateways=gateways,
+        location="global",
         ProjectId=project_id,
         gcp_update_tag=gcp_update_tag,
     )
