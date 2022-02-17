@@ -221,6 +221,7 @@ def load_users(
     ON CREATE SET unode:AWSPrincipal, unode.userid = {USERID}, unode.firstseen = timestamp(),
     unode.createdate = {CREATE_DATE}
     SET unode.name = {USERNAME}, unode.path = {PATH}, unode.passwordlastused = {PASSWORD_LASTUSED},
+    unode.region = {region},
     unode.lastupdated = {aws_update_tag}
     WITH unode
     MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
@@ -239,6 +240,7 @@ def load_users(
             PATH=user["Path"],
             PASSWORD_LASTUSED=str(user.get("PasswordLastUsed", "")),
             AWS_ACCOUNT_ID=current_aws_account_id,
+            region="global",
             aws_update_tag=aws_update_tag,
         )
 
@@ -250,7 +252,9 @@ def load_groups(
     ingest_group = """
     MERGE (gnode:AWSGroup{arn: {ARN}})
     ON CREATE SET gnode.groupid = {GROUP_ID}, gnode.firstseen = timestamp(), gnode.createdate = {CREATE_DATE}
-    SET gnode:AWSPrincipal, gnode.name = {GROUP_NAME}, gnode.path = {PATH},gnode.lastupdated = {aws_update_tag}
+    SET gnode:AWSPrincipal, gnode.name = {GROUP_NAME}, gnode.path = {PATH},
+    gnode.region = {region},
+    gnode.lastupdated = {aws_update_tag}
     WITH gnode
     MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
     MERGE (aa)-[r:RESOURCE]->(gnode)
@@ -266,6 +270,7 @@ def load_groups(
             CREATE_DATE=str(group["CreateDate"]),
             GROUP_NAME=group["GroupName"],
             PATH=group["Path"],
+            region="global",
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag,
         )
@@ -293,6 +298,7 @@ def load_roles(
     ingest_role = """
     MERGE (rnode:AWSRole{arn: {Arn}})
     ON CREATE SET rnode:AWSPrincipal, rnode.roleid = {RoleId}, rnode.firstseen = timestamp(),
+    rnode.region = {region},
     rnode.createdate = {CreateDate}
     ON MATCH SET rnode.name = {RoleName}, rnode.path = {Path},
     rnode.lastuseddate = {LastUsedDate}, rnode.lastusedregion = {LastUsedRegion}
@@ -325,6 +331,7 @@ def load_roles(
             CreateDate=str(role["CreateDate"]),
             RoleName=role["RoleName"],
             Path=role["Path"],
+            region="global",
             LastUsedDate=role["RoleLastUsed"].get('LastUsedDate') if 'RoleLastUsed' in role else None,
             LastUsedRegion=role["RoleLastUsed"].get('Region') if 'RoleLastUsed' in role else None,
             AWS_ACCOUNT_ID=current_aws_account_id,
@@ -443,7 +450,9 @@ def load_user_access_keys(neo4j_session: neo4j.Session, user_access_keys: Dict, 
     MATCH (user:AWSUser{name: {UserName}})
     WITH user
     MERGE (key:AccountAccessKey{accesskeyid: {AccessKeyId}})
-    ON CREATE SET key.firstseen = timestamp(), key.createdate = {CreateDate}
+    ON CREATE SET key.firstseen = timestamp(),
+    key.region = {region},
+    key.createdate = {CreateDate}
     SET key.status = {Status}, key.lastupdated = {aws_update_tag}
     WITH user,key
     MERGE (user)-[r:AWS_ACCESS_KEY]->(key)
@@ -460,6 +469,7 @@ def load_user_access_keys(neo4j_session: neo4j.Session, user_access_keys: Dict, 
                     AccessKeyId=key['AccessKeyId'],
                     CreateDate=str(key['CreateDate']),
                     Status=key['Status'],
+                    region="global",
                     aws_update_tag=aws_update_tag,
                 )
 
@@ -517,6 +527,7 @@ def _load_policy_tx(
     ON CREATE SET
     policy.firstseen = timestamp(),
     policy.type = {PolicyType},
+    policy.region = {region},
     policy.name = {PolicyName},
     policy.arn = {PolicyArn}
     SET policy.lastupdated = {aws_update_tag}
@@ -535,6 +546,7 @@ def _load_policy_tx(
         PolicyType=policy_type,
         PrincipalArn=principal_arn,
         PolicyArn=policy_arn,
+        region="global",
         aws_update_tag=aws_update_tag,
     )
 
@@ -562,6 +574,7 @@ def load_policy_statements(
         SET
         statement.effect = statement_data.Effect,
         statement.action = statement_data.Action,
+        statement.region = {region},
         statement.notaction = statement_data.NotAction,
         statement.resource = statement_data.Resource,
         statement.notresource = statement_data.NotResource,
@@ -577,6 +590,7 @@ def load_policy_statements(
         PolicyId=policy_id,
         PolicyName=policy_name,
         Statements=statements,
+        region="global",
         aws_update_tag=aws_update_tag,
     ).consume()
 
@@ -619,7 +633,8 @@ def sync_user_service_access_details(boto3_session, users, neo4j_session, aws_up
         logger.debug(f"Syncing IAM service access details for user {user['Arn']}")
         service_access_data = get_service_access_details(boto3_session, user['Arn'])
         filtered_access_data = transform_service_access_data(service_access_data, user['Arn'])
-        sync_service_access_data(neo4j_session, filtered_access_data, user['Arn'], PrincipalType.user.value, aws_update_tag)
+        sync_service_access_data(neo4j_session, filtered_access_data,
+                                 user['Arn'], PrincipalType.user.value, aws_update_tag)
 
 
 @timeit
@@ -628,7 +643,8 @@ def sync_group_service_access_details(boto3_session, groups, neo4j_session, aws_
         logger.debug(f"Syncing IAM service access details for group {group['Arn']}")
         service_access_data = get_service_access_details(boto3_session, group['Arn'])
         filtered_access_data = transform_service_access_data(service_access_data, group['Arn'])
-        sync_service_access_data(neo4j_session, filtered_access_data, group['Arn'], PrincipalType.user.value, aws_update_tag)
+        sync_service_access_data(neo4j_session, filtered_access_data,
+                                 group['Arn'], PrincipalType.user.value, aws_update_tag)
 
 
 @timeit
@@ -637,7 +653,8 @@ def sync_role_service_access_details(boto3_session, roles, neo4j_session, aws_up
         logger.debug(f"Syncing IAM service access details for role {role['Arn']}")
         service_access_data = get_service_access_details(boto3_session, role['Arn'])
         filtered_access_data = transform_service_access_data(service_access_data, role['Arn'])
-        sync_service_access_data(neo4j_session, filtered_access_data, role['Arn'], PrincipalType.role.value, aws_update_tag)
+        sync_service_access_data(neo4j_session, filtered_access_data,
+                                 role['Arn'], PrincipalType.role.value, aws_update_tag)
 
 
 @timeit
@@ -779,7 +796,8 @@ def sync_user_managed_policies(
 ) -> None:
     managed_policy_data = get_user_managed_policy_data(boto3_session, data['Users'])
     transform_policy_data(managed_policy_data, PolicyType.managed.value)
-    load_policy_data(neo4j_session, managed_policy_data, PolicyType.managed.value, current_aws_account_id, aws_update_tag)
+    load_policy_data(neo4j_session, managed_policy_data, PolicyType.managed.value,
+                     current_aws_account_id, aws_update_tag)
 
 
 @timeit
@@ -816,7 +834,8 @@ def sync_group_managed_policies(
 ) -> None:
     managed_policy_data = get_group_managed_policy_data(boto3_session, data["Groups"])
     transform_policy_data(managed_policy_data, PolicyType.managed.value)
-    load_policy_data(neo4j_session, managed_policy_data, PolicyType.managed.value, current_aws_account_id, aws_update_tag)
+    load_policy_data(neo4j_session, managed_policy_data, PolicyType.managed.value,
+                     current_aws_account_id, aws_update_tag)
 
 
 def sync_groups_inline_policies(
@@ -853,7 +872,8 @@ def sync_role_managed_policies(
     logger.info("Syncing IAM role managed policies for account '%s'.", current_aws_account_id)
     managed_policy_data = get_role_managed_policy_data(boto3_session, data["Roles"])
     transform_policy_data(managed_policy_data, PolicyType.managed.value)
-    load_policy_data(neo4j_session, managed_policy_data, PolicyType.managed.value, current_aws_account_id, aws_update_tag)
+    load_policy_data(neo4j_session, managed_policy_data, PolicyType.managed.value,
+                     current_aws_account_id, aws_update_tag)
 
 
 def sync_role_inline_policies(

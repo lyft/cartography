@@ -220,6 +220,7 @@ def _load_apigateway_stages(
     s.createddate = stage.createdDate
     SET s.deploymentid = stage.deploymentId,
     s.clientcertificateid = stage.clientCertificateId,
+    s.region={region},
     s.cacheclusterenabled = stage.cacheClusterEnabled,
     s.cacheclusterstatus = stage.cacheClusterStatus,
     s.tracingenabled = stage.tracingEnabled,
@@ -241,6 +242,7 @@ def _load_apigateway_stages(
 
     neo4j_session.run(
         ingest_stages,
+        region=region,
         stages_list=stages,
         UpdateTag=update_tag,
     )
@@ -258,6 +260,7 @@ def _load_apigateway_certificates(
     MERGE (c:APIGatewayClientCertificate{id: certificate.clientCertificateId})
     ON CREATE SET c.firstseen = timestamp(), c.createddate = certificate.createdDate
     SET c.lastupdated = {UpdateTag}, c.expirationdate = certificate.expirationDate,
+    c.region = {region},
     c.arn = certificate.arn
     WITH c, certificate
     MATCH (stage:APIGatewayStage{clientcertificateid: certificate.clientCertificateId})
@@ -275,6 +278,7 @@ def _load_apigateway_certificates(
 
     neo4j_session.run(
         ingest_certificates,
+        region=region,
         certificates_list=certificates,
         UpdateTag=update_tag,
     )
@@ -294,6 +298,7 @@ def _load_apigateway_resources(
     SET s.path = res.path,
     s.pathpart = res.pathPart,
     s.parentid = res.parentId,
+    s.region={region},
     s.lastupdated ={UpdateTag},
     s.arn = res.arn
     WITH s, res
@@ -308,6 +313,7 @@ def _load_apigateway_resources(
 
     neo4j_session.run(
         ingest_resources,
+        region=region,
         resources_list=resources,
         UpdateTag=update_tag,
     )

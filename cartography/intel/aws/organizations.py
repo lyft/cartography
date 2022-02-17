@@ -97,7 +97,9 @@ def load_aws_accounts(
     WITH w
     MERGE (aa:AWSAccount{id: {ACCOUNT_ID}})
     ON CREATE SET aa.firstseen = timestamp()
-    SET aa.lastupdated = {UPDATE_TAG}, aa.name = {ACCOUNT_NAME}
+    SET aa.lastupdated = {UPDATE_TAG},
+    aa.region = {region},
+    aa.name = {ACCOUNT_NAME}
     WITH w, aa
     MERGE (w)-[o:OWNER]->(aa)
     ON CREATE SET o.firstseen = timestamp()
@@ -118,6 +120,7 @@ def load_aws_accounts(
             ACCOUNT_ID=account_id,
             ACCOUNT_NAME=account_name,
             RootArn=root_arn,
+            region="global",
             UPDATE_TAG=aws_update_tag,
         )
 

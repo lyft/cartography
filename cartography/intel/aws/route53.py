@@ -59,7 +59,9 @@ def load_a_records(neo4j_session: neo4j.Session, records: List[Dict], update_tag
     ingest_records = """
     UNWIND {records} as record
     MERGE (a:DNSRecord:AWSDNSRecord{id: record.id})
-    ON CREATE SET a.firstseen = timestamp(), a.name = record.name, a.type = record.type
+    ON CREATE SET a.firstseen = timestamp(), a.name = record.name,
+    a.region = {region},
+    a.type = record.type
     SET a.lastupdated = {update_tag}, a.value = record.value
     WITH a,record
     MATCH (zone:AWSDNSZone{zoneid: record.zoneid})
@@ -70,6 +72,7 @@ def load_a_records(neo4j_session: neo4j.Session, records: List[Dict], update_tag
     neo4j_session.run(
         ingest_records,
         records=records,
+        region="global",
         update_tag=update_tag,
     )
 
@@ -80,7 +83,9 @@ def load_alias_records(neo4j_session: neo4j.Session, records: List[Dict], update
     ingest_records = """
     UNWIND {records} as record
     MERGE (a:DNSRecord:AWSDNSRecord{id: record.id})
-    ON CREATE SET a.firstseen = timestamp(), a.name = record.name, a.type = record.type
+    ON CREATE SET a.firstseen = timestamp(), a.name = record.name,
+    a.region = {region},
+    a.type = record.type
     SET a.lastupdated = {update_tag}, a.value = record.value
     WITH a,record
     MATCH (zone:AWSDNSZone{zoneid: record.zoneid})
@@ -91,6 +96,7 @@ def load_alias_records(neo4j_session: neo4j.Session, records: List[Dict], update
     neo4j_session.run(
         ingest_records,
         records=records,
+        region="global",
         update_tag=update_tag,
     )
 
@@ -100,7 +106,9 @@ def load_cname_records(neo4j_session: neo4j.Session, records: List[Dict], update
     ingest_records = """
     UNWIND {records} as record
     MERGE (a:DNSRecord:AWSDNSRecord{id: record.id})
-    ON CREATE SET a.firstseen = timestamp(), a.name = record.name, a.type = record.type
+    ON CREATE SET a.firstseen = timestamp(), a.name = record.name,
+    a.region = {region},
+    a.type = record.type
     SET a.lastupdated = {update_tag}, a.value = record.value
     WITH a,record
     MATCH (zone:AWSDNSZone{zoneid: record.zoneid})
@@ -111,6 +119,7 @@ def load_cname_records(neo4j_session: neo4j.Session, records: List[Dict], update
     neo4j_session.run(
         ingest_records,
         records=records,
+        region="global",
         update_tag=update_tag,
     )
 
@@ -119,7 +128,9 @@ def load_cname_records(neo4j_session: neo4j.Session, records: List[Dict], update
 def load_zone(neo4j_session: neo4j.Session, zone: Dict, current_aws_id: str, update_tag: int) -> None:
     ingest_z = """
     MERGE (zone:DNSZone:AWSDNSZone{zoneid:{ZoneId}})
-    ON CREATE SET zone.firstseen = timestamp(), zone.name = {ZoneName}
+    ON CREATE SET zone.firstseen = timestamp(),
+    zone.region = {region},
+    zone.name = {ZoneName}
     SET zone.lastupdated = {update_tag}, zone.comment = {Comment}, zone.privatezone = {PrivateZone},
     zone.arn = {Arn}
     WITH zone
@@ -133,6 +144,7 @@ def load_zone(neo4j_session: neo4j.Session, zone: Dict, current_aws_id: str, upd
         ZoneName=zone['name'][:-1],
         ZoneId=zone['zoneid'],
         Comment=zone['comment'],
+        region="global",
         PrivateZone=zone['privatezone'],
         Arn=zone.get('arn'),
         AWS_ACCOUNT_ID=current_aws_id,
@@ -145,7 +157,9 @@ def load_ns_records(neo4j_session: neo4j.Session, records: List[Dict], zone_name
     ingest_records = """
     UNWIND {records} as record
     MERGE (a:DNSRecord:AWSDNSRecord{id: record.id})
-    ON CREATE SET a.firstseen = timestamp(), a.name = record.name, a.type = record.type
+    ON CREATE SET a.firstseen = timestamp(), a.name = record.name,
+    a.region = {region},
+    a.type = record.type
     SET a.lastupdated = {update_tag}, a.value = record.name
     WITH a,record
     MATCH (zone:AWSDNSZone{zoneid: record.zoneid})
@@ -164,6 +178,7 @@ def load_ns_records(neo4j_session: neo4j.Session, records: List[Dict], zone_name
     neo4j_session.run(
         ingest_records,
         records=records,
+        region="global",
         update_tag=update_tag,
     )
 

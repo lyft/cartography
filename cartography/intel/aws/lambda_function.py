@@ -41,6 +41,7 @@ def load_lambda_functions(
     ON CREATE SET lambda.firstseen = timestamp()
     SET lambda.name = lf.FunctionName,
     lambda.arn = lf.FunctionArn,
+    lambda.region = {Region},
     lambda.modifieddate = lf.LastModified,
     lambda.runtime = lf.Runtime,
     lambda.description = lf.Description,
@@ -124,7 +125,7 @@ def get_lambda_function_details(
 @timeit
 def load_lambda_function_details(
         neo4j_session: neo4j.Session, lambda_function_details: List[Tuple[str, List[Dict], List[Dict], List[Dict]]],
-        update_tag: int,
+        update_tag: int, region: str,
 ) -> None:
     lambda_aliases: List[Dict] = []
     lambda_event_source_mappings: List[Dict] = []
@@ -141,18 +142,19 @@ def load_lambda_function_details(
                 layer['FunctionArn'] = function_arn
             lambda_layers.extend(layers)
 
-    _load_lambda_function_aliases(neo4j_session, lambda_aliases, update_tag)
-    _load_lambda_event_source_mappings(neo4j_session, lambda_event_source_mappings, update_tag)
-    _load_lambda_layers(neo4j_session, lambda_layers, update_tag)
+    _load_lambda_function_aliases(neo4j_session, lambda_aliases, update_tag, region)
+    _load_lambda_event_source_mappings(neo4j_session, lambda_event_source_mappings, update_tag, region)
+    _load_lambda_layers(neo4j_session, lambda_layers, update_tag, region)
 
 
 @timeit
-def _load_lambda_function_aliases(neo4j_session: neo4j.Session, lambda_aliases: List[Dict], update_tag: int) -> None:
+def _load_lambda_function_aliases(neo4j_session: neo4j.Session, lambda_aliases: List[Dict], update_tag: int, region: str) -> None:
     ingest_aliases = """
     UNWIND {aliases_list} AS alias
     MERGE (a:AWSLambdaFunctionAlias{id: alias.AliasArn})
     ON CREATE SET a.firstseen = timestamp()
     SET a.aliasname = alias.Name,
+    a.region = {Region},
     a.functionversion = alias.FunctionVersion,
     a.description = alias.Description,
     a.revisionid = alias.RevisionId,
@@ -167,6 +169,7 @@ def _load_lambda_function_aliases(neo4j_session: neo4j.Session, lambda_aliases: 
 
     neo4j_session.run(
         ingest_aliases,
+        Region=region,
         aliases_list=lambda_aliases,
         aws_update_tag=update_tag,
     )
@@ -174,7 +177,7 @@ def _load_lambda_function_aliases(neo4j_session: neo4j.Session, lambda_aliases: 
 
 @timeit
 def _load_lambda_event_source_mappings(
-        neo4j_session: neo4j.Session, lambda_event_source_mappings: List[Dict], update_tag: int,
+        neo4j_session: neo4j.Session, lambda_event_source_mappings: List[Dict], update_tag: int, region: str,
 ) -> None:
     ingest_esms = """
     UNWIND {esm_list} AS esm
@@ -182,6 +185,7 @@ def _load_lambda_event_source_mappings(
     ON CREATE SET e.firstseen = timestamp()
     SET e.batchsize = esm.BatchSize,
     e.startingposition = esm.StartingPosition,
+    e.region = {Region},
     e.startingpositiontimestamp = esm.StartingPositionTimestamp,
     e.parallelizationfactor = esm.ParallelizationFactor,
     e.maximumbatchingwindowinseconds = esm.MaximumBatchingWindowInSeconds,
@@ -205,18 +209,20 @@ def _load_lambda_event_source_mappings(
 
     neo4j_session.run(
         ingest_esms,
+        Region=region,
         esm_list=lambda_event_source_mappings,
         aws_update_tag=update_tag,
     )
 
 
 @timeit
-def _load_lambda_layers(neo4j_session: neo4j.Session, lambda_layers: List[Dict], update_tag: int) -> None:
+def _load_lambda_layers(neo4j_session: neo4j.Session, lambda_layers: List[Dict], update_tag: int, region: str,) -> None:
     ingest_layers = """
     UNWIND {layers_list} AS layer
     MERGE (l:AWSLambdaLayer{id: layer.Arn})
     ON CREATE SET l.firstseen = timestamp()
     SET l.codesize = layer.CodeSize,
+    l.region = {Region},
     l.signingprofileversionarn  = layer.SigningProfileVersionArn,
     l.signingjobarn = layer.SigningJobArn,
     l.lastupdated = {aws_update_tag},
@@ -230,6 +236,7 @@ def _load_lambda_layers(neo4j_session: neo4j.Session, lambda_layers: List[Dict],
 
     neo4j_session.run(
         ingest_layers,
+        Region=region,
         layers_list=lambda_layers,
         aws_update_tag=update_tag,
     )
@@ -250,7 +257,7 @@ def sync_lambda_functions(
         data = get_lambda_data(boto3_session, region)
         load_lambda_functions(neo4j_session, data, region, current_aws_account_id, aws_update_tag)
         lambda_function_details = get_lambda_function_details(boto3_session, data, region)
-        load_lambda_function_details(neo4j_session, lambda_function_details, aws_update_tag)
+        load_lambda_function_details(neo4j_session, lambda_function_details, aws_update_tag, region)
 
     cleanup_lambda(neo4j_session, common_job_parameters)
 

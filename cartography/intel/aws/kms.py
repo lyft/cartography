@@ -113,7 +113,7 @@ def get_grants(key: Dict, client: botocore.client.BaseClient) -> List[Any]:
 
 
 @timeit
-def _load_kms_key_aliases(neo4j_session: neo4j.Session, aliases: List[Dict], update_tag: int) -> None:
+def _load_kms_key_aliases(neo4j_session: neo4j.Session, aliases: List[Dict], update_tag: int, region: str) -> None:
     """
     Ingest KMS Aliases into neo4j.
     """
@@ -121,7 +121,9 @@ def _load_kms_key_aliases(neo4j_session: neo4j.Session, aliases: List[Dict], upd
     UNWIND {alias_list} AS alias
     MERGE (a:KMSAlias{id: alias.AliasArn})
     ON CREATE SET a.firstseen = timestamp(), a.targetkeyid = alias.TargetKeyId
-    SET a.aliasname = alias.AliasName, a.lastupdated = {UpdateTag}, a.arn = alias.AliasArn
+    SET a.aliasname = alias.AliasName, a.lastupdated = {UpdateTag},
+    a.region = {region},
+    a.arn = alias.AliasArn
     WITH a, alias
     MATCH (kmskey:KMSKey{id: alias.TargetKeyId})
     MERGE (a)-[r:KNOWN_AS]->(kmskey)
@@ -132,6 +134,7 @@ def _load_kms_key_aliases(neo4j_session: neo4j.Session, aliases: List[Dict], upd
     neo4j_session.run(
         ingest_aliases,
         alias_list=aliases,
+        region=region,
         UpdateTag=update_tag,
     )
 
@@ -148,7 +151,9 @@ def _load_kms_key_grants(
     MERGE (g:KMSGrant{id: grant.GrantId})
     ON CREATE SET g.firstseen = timestamp(), g.granteeprincipal = grant.GranteePrincipal,
     g.creationdate = grant.CreationDate
-    SET g.name = grant.GrantName, g.lastupdated = {UpdateTag}
+    SET g.name = grant.GrantName,
+    g.region={region},
+    g.lastupdated = {UpdateTag}
     WITH g, grant
     MATCH (kmskey:KMSKey{id: grant.KeyId})
     MERGE (g)-[r:APPLIED_ON]->(kmskey)
@@ -163,13 +168,14 @@ def _load_kms_key_grants(
 
     neo4j_session.run(
         ingest_grants,
+        region=region,
         grants=grants_list,
         UpdateTag=update_tag,
     )
 
 
 @timeit
-def _load_kms_key_policies(neo4j_session: neo4j.Session, policies: List[Dict], update_tag: int) -> None:
+def _load_kms_key_policies(neo4j_session: neo4j.Session, policies: List[Dict], update_tag: int, region: str) -> None:
     """
     Ingest KMS Key policy results into neo4j.
     """
@@ -178,12 +184,14 @@ def _load_kms_key_policies(neo4j_session: neo4j.Session, policies: List[Dict], u
     UNWIND {policies} AS policy
     MATCH (k:KMSKey) where k.name = policy.kms_key
     SET k.anonymous_access = (coalesce(k.anonymous_access, false) OR policy.internet_accessible),
+    k.region={region},
     k.anonymous_actions = coalesce(k.anonymous_actions, []) + policy.accessible_actions,
     k.lastupdated = {UpdateTag}
     """
 
     neo4j_session.run(
         ingest_policies,
+        region=region,
         policies=policies,
         UpdateTag=update_tag,
     )
@@ -228,8 +236,8 @@ def load_kms_key_details(
         common_job_parameters,
     )
 
-    _load_kms_key_policies(neo4j_session, policies, update_tag)
-    _load_kms_key_aliases(neo4j_session, aliases, update_tag)
+    _load_kms_key_policies(neo4j_session, policies, update_tag, region)
+    _load_kms_key_aliases(neo4j_session, aliases, update_tag, region)
     _load_kms_key_grants(neo4j_session, grants, region, aws_account_id, update_tag)
     _set_default_values(neo4j_session, aws_account_id)
 

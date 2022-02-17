@@ -42,7 +42,9 @@ def load_hub(
     WITH {Hub} AS hub
     MERGE (n:SecurityHub{id: hub.HubArn})
     ON CREATE SET n.firstseen = timestamp()
-    SET n.subscribed_at = hub.SubscribedAt, n.auto_enable_controls = hub.AutoEnableControls,
+    SET n.subscribed_at = hub.SubscribedAt,
+    n.region = {region},
+    n.auto_enable_controls = hub.AutoEnableControls,
         n.lastupdated = {aws_update_tag}, n.arn = hub.HubArn
     WITH n
     MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
@@ -53,6 +55,7 @@ def load_hub(
     neo4j_session.run(
         ingest_hub,
         Hub=data,
+        region="global",
         AWS_ACCOUNT_ID=current_aws_account_id,
         aws_update_tag=aws_update_tag,
     )
