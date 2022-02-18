@@ -260,6 +260,7 @@ def _load_function_apps_configurations_tx(
     fc.number_of_workers=function_conf.number_of_workers,
     fc.net_framework_version=function_conf.net_framework_version,
     fc.php_version=function_conf.php_version,
+    fc.location = {location},
     fc.python_version=function_conf.python_version,
     fc.node_version=function_conf.node_version,
     fc.linux_fx_version=function_conf.linux_fx_version,
@@ -283,6 +284,7 @@ def _load_function_apps_configurations_tx(
 
     tx.run(
         ingest_function_apps_conf,
+        location="global",
         function_apps_conf_list=function_apps_conf_list,
         azure_update_tag=update_tag,
     )
@@ -358,6 +360,7 @@ def _load_function_apps_functions_tx(
     f.type = function.type
     SET f.name = function.name,
     f.lastupdated = {azure_update_tag},
+    f.location = {location},
     f.resource_group_name=function.resource_group,
     f.href=function.href,
     f.language=function.language,
@@ -447,6 +450,7 @@ def _load_function_apps_deployments_tx(
     f.type = function_deploy.type
     SET f.name = function_deploy.name,
     f.lastupdated = {azure_update_tag},
+    f.location = {location},
     f.resource_group_name=function_deploy.resource_group
     WITH f, function_deploy
     MATCH (s:AzureFunctionApp{id: function_deploy.function_app_id})
@@ -457,6 +461,7 @@ def _load_function_apps_deployments_tx(
 
     tx.run(
         ingest_function_apps_deploy,
+        location="global",
         function_apps_deployments_list=function_apps_deployments_list,
         azure_update_tag=update_tag,
     )
@@ -529,6 +534,7 @@ def _load_function_apps_backups_tx(
     UNWIND {function_apps_backups_list} as function_backup
     MERGE (f:AzureFunctionAppBackup{id: function_backup.id})
     ON CREATE SET f.firstseen = timestamp(),
+    f.location = {location},
     f.type = function_backup.type
     SET f.name = function_backup.name,
     f.lastupdated = {azure_update_tag},
@@ -542,6 +548,7 @@ def _load_function_apps_backups_tx(
 
     tx.run(
         ingest_function_apps_backup,
+        location="global",
         function_apps_backups_list=function_apps_backups_list,
         azure_update_tag=update_tag,
     )
@@ -614,6 +621,7 @@ def _load_function_apps_processes_tx(
     UNWIND {function_apps_processes_list} as function_process
     MERGE (f:AzureFunctionAppProcess{id: function_process.id})
     ON CREATE SET f.firstseen = timestamp(),
+    f.location = {location},
     f.type = function_process.type
     SET f.name = function_process.name,
     f.lastupdated = {azure_update_tag},
@@ -627,6 +635,7 @@ def _load_function_apps_processes_tx(
 
     tx.run(
         ingest_function_apps_process,
+        location="global",
         function_apps_processes_list=function_apps_processes_list,
         azure_update_tag=update_tag,
     )
@@ -699,6 +708,7 @@ def _load_function_apps_snapshots_tx(
     UNWIND {function_apps_snapshots_list} as function_snapshot
     MERGE (f:AzureFunctionAppSnapshot{id: function_snapshot.id})
     ON CREATE SET f.firstseen = timestamp(),
+    f.location = {location},
     f.type = function_snapshot.type
     SET f.name = function_snapshot.name,
     f.lastupdated = {azure_update_tag},
@@ -712,6 +722,7 @@ def _load_function_apps_snapshots_tx(
 
     tx.run(
         ingest_function_apps_snapshot,
+        location="global",
         function_apps_snapshots_list=function_apps_snapshots_list,
         azure_update_tag=update_tag,
     )
@@ -784,6 +795,7 @@ def _load_function_apps_webjobs_tx(
     UNWIND {function_apps_webjobs_list} as function_webjob
     MERGE (f:AzureFunctionAppWebjob{id: function_webjob.id})
     ON CREATE SET f.firstseen = timestamp(),
+    f.location = {location},
     f.type = function_webjob.type
     SET f.name = function_webjob.name,
     f.lastupdated = {azure_update_tag},
@@ -797,6 +809,7 @@ def _load_function_apps_webjobs_tx(
 
     tx.run(
         ingest_function_apps_webjob,
+        location="global",
         function_apps_webjobs_list=function_apps_webjobs_list,
         azure_update_tag=update_tag,
     )

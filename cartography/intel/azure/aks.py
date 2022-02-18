@@ -298,6 +298,7 @@ def _load_container_registry_runs_tx(
     MERGE (a:AzureContainerRegistryRun{id: run.id})
     ON CREATE SET a.firstseen = timestamp(),
     a.type = run.type,
+    a.location={location},
     a.resourcegroup = run.resource_group
     SET a.lastupdated = {update_tag},
     a.name = run.name
@@ -311,6 +312,7 @@ def _load_container_registry_runs_tx(
     tx.run(
         ingest_container_run,
         container_registry_runs_list=container_registry_runs_list,
+        location="global",
         update_tag=update_tag,
     )
 
@@ -552,6 +554,7 @@ def _load_containers_tx(tx: neo4j.Transaction, containers_list: List[Dict], upda
     ON CREATE SET a.firstseen = timestamp(),
     a.type = container.type,
     a.name = container.name,
+    a.location= {location},
     a.resourcegroup = container.resource_group
     SET a.lastupdated = {update_tag}
     WITH a,container
@@ -564,6 +567,7 @@ def _load_containers_tx(tx: neo4j.Transaction, containers_list: List[Dict], upda
     tx.run(
         ingest_container,
         containers_list=containers_list,
+        location="global",
         update_tag=update_tag,
     )
 

@@ -156,7 +156,7 @@ def _load_database_account_write_locations(
         MERGE (loc:AzureCosmosDBLocation{id: wl.id})
         ON CREATE SET loc.firstseen = timestamp()
         SET loc.lastupdated = {azure_update_tag},
-        loc.locationname = wl.location_name,
+        loc.location = wl.location_name,
         loc.documentendpoint = wl.document_endpoint,
         loc.provisioningstate = wl.provisioning_state,
         loc.failoverpriority = wl.failover_priority,
@@ -192,7 +192,7 @@ def _load_database_account_read_locations(
         MERGE (loc:AzureCosmosDBLocation{id: rl.id})
         ON CREATE SET loc.firstseen = timestamp()
         SET loc.lastupdated = {azure_update_tag},
-        loc.locationname = rl.location_name,
+        loc.location = rl.location_name,
         loc.documentendpoint = rl.document_endpoint,
         loc.provisioningstate = rl.provisioning_state,
         loc.failoverpriority = rl.failover_priority,
@@ -228,7 +228,7 @@ def _load_database_account_associated_locations(
         MERGE (loc:AzureCosmosDBLocation{id: al.id})
         ON CREATE SET loc.firstseen = timestamp()
         SET loc.lastupdated = {azure_update_tag},
-        loc.locationname = al.location_name,
+        loc.location = al.location_name,
         loc.documentendpoint = al.document_endpoint,
         loc.provisioningstate = al.provisioning_state,
         loc.failoverpriority = al.failover_priority,
@@ -280,6 +280,7 @@ def _load_cosmosdb_cors_policy(
         SET corspolicy.lastupdated = {azure_update_tag},
         corspolicy.allowedmethods = cp.allowed_methods,
         corspolicy.allowedheaders = cp.allowed_headers,
+        corspolicy.location = {location},
         corspolicy.exposedheaders = cp.exposed_headers,
         corspolicy.maxageinseconds = cp.max_age_in_seconds
         WITH corspolicy
@@ -293,6 +294,7 @@ def _load_cosmosdb_cors_policy(
             ingest_cors_policy,
             cors_policies_list=cors_policies,
             DatabaseAccountId=database_account_id,
+            location="global",
             azure_update_tag=azure_update_tag,
         )
 
@@ -313,7 +315,7 @@ def _load_cosmosdb_failover_policies(
         MERGE (fpolicy:AzureCosmosDBAccountFailoverPolicy{id: fp.id})
         ON CREATE SET fpolicy.firstseen = timestamp()
         SET fpolicy.lastupdated = {azure_update_tag},
-        fpolicy.locationname = fp.location_name,
+        fpolicy.location = fp.location_name,
         fpolicy.failoverpriority = fp.failover_priority
         WITH fpolicy
         MATCH (d:AzureCosmosDBAccount{id: {DatabaseAccountId}})
@@ -349,6 +351,7 @@ def _load_cosmosdb_private_endpoint_connections(
         ON CREATE SET pec.firstseen = timestamp()
         SET pec.lastupdated = {azure_update_tag},
         pec.name = connection.name,
+        pec.location = {location},
         pec.privateendpointid = connection.private_endpoint.id,
         pec.status = connection.private_link_service_connection_state.status,
         pec.actionrequired = connection.private_link_service_connection_state.actions_required
@@ -363,6 +366,7 @@ def _load_cosmosdb_private_endpoint_connections(
             ingest_private_endpoint_connections,
             private_endpoint_connections_list=private_endpoint_connections,
             DatabaseAccountId=database_account_id,
+            location="global",
             azure_update_tag=azure_update_tag,
         )
 

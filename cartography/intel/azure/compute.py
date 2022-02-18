@@ -170,7 +170,8 @@ def _load_vm_available_sizes_tx(tx: neo4j.Transaction, vm_available_sizes_list: 
     ingest_vm_size = """
     UNWIND {vm_available_sizes_list} AS size
     MERGE (v:AzureVirtualMachineAvailableSize{id: size.id})
-    ON CREATE SET v.firstseen = timestamp(), v.numberOfCores = size.numberOfCores
+    ON CREATE SET v.firstseen = timestamp(), v.numberOfCores = size.numberOfCores,
+    v.location= {location},
     SET v.lastupdated = {update_tag}, v.osDiskSizeInMB = size.osDiskSizeInMB,
     v.name = size.name,
     v.resourceDiskSizeInMB = size.resourceDiskSizeInMB,
@@ -186,6 +187,7 @@ def _load_vm_available_sizes_tx(tx: neo4j.Transaction, vm_available_sizes_list: 
     tx.run(
         ingest_vm_size,
         vm_available_sizes_list=vm_available_sizes_list,
+        location="global",
         update_tag=update_tag,
     )
 
@@ -299,6 +301,7 @@ def _load_vm_scale_sets_extensions_tx(
     MERGE (v:AzureVirtualMachineScaleSetExtension{id: extension.id})
     ON CREATE SET v.firstseen = timestamp()
     SET v.lastupdated = {update_tag}, v.name = extension.name,
+    v.location = {location},
     v.type = extension.type
     WITH v,extension
     MATCH (owner:AzureVirtualMachineScaleSet{id: extension.set_id})
@@ -310,6 +313,7 @@ def _load_vm_scale_sets_extensions_tx(
     tx.run(
         ingest_vm_scale_sets_extension,
         vm_scale_sets_extensions_list=vm_scale_sets_extensions_list,
+        location="global",
         update_tag=update_tag,
     )
 
@@ -337,6 +341,7 @@ def load_vm_data_disks(neo4j_session: neo4j.Session, vm_id: str, data_disks: Lis
     ON CREATE SET d.firstseen = timestamp(), d.lun = disk.lun
     SET d.lastupdated = {update_tag}, d.name = disk.name,
     d.vhd = disk.vhd.uri, d.image = disk.image.uri,
+    d.location = disk.location,
     d.size = disk.disk_size_gb, d.caching = disk.caching,
     d.createoption = disk.create_option, d.write_accelerator_enabled=disk.write_accelerator_enabled,
     d.managed_disk_storage_type=disk.managed_disk.storage_account_type
