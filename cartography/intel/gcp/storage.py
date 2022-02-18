@@ -114,11 +114,11 @@ def load_gcp_buckets(neo4j_session: neo4j.Session, buckets: List[Dict], gcp_upda
     '''
 
     query = """
-    MERGE(p:GCPProject{projectnumber:{ProjectNumber}})
+    MERGE (p:GCPProject{id:{ProjectNumber}})
     ON CREATE SET p.firstseen = timestamp()
     SET p.lastupdated = {gcp_update_tag}
 
-    MERGE(bucket:GCPBucket{id:{BucketId}})
+    MERGE (bucket:GCPBucket{id:{BucketId}})
     ON CREATE SET bucket.firstseen = timestamp(),
     bucket.bucket_id = {BucketId}
     SET bucket.self_link = {SelfLink},
@@ -137,7 +137,8 @@ def load_gcp_buckets(neo4j_session: neo4j.Session, buckets: List[Dict], gcp_upda
     bucket.versioning_enabled = {VersioningEnabled},
     bucket.log_bucket = {LogBucket},
     bucket.requester_pays = {RequesterPays},
-    bucket.default_kms_key_name = {DefaultKmsKeyName}
+    bucket.default_kms_key_name = {DefaultKmsKeyName},
+    bucket.lastupdated = {gcp_update_tag}
 
     MERGE (p)-[r:RESOURCE]->(bucket)
     ON CREATE SET r.firstseen = timestamp()
@@ -218,7 +219,7 @@ def cleanup_gcp_buckets(neo4j_session: neo4j.Session, common_job_parameters: Dic
 
 
 @timeit
-def sync_gcp_buckets(
+def sync(
     neo4j_session: neo4j.Session, storage: Resource, project_id: str, gcp_update_tag: int,
     common_job_parameters: Dict,
 ) -> None:
