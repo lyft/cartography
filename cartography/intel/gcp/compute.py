@@ -114,6 +114,9 @@ def get_gcp_instance_responses(project_id: str, zones: Optional[List[Dict]], com
         req = compute.instances().list(project=project_id, zone=zone['name'])
         res = req.execute()
         response_objects.append(res)
+    for res in response_objects:
+        x = res['zone'].split('-')
+        res['location'] = x[:-1]
     return response_objects
 
 
@@ -538,7 +541,7 @@ def load_gcp_instances(neo4j_session: neo4j.Session, data: List[Dict], gcp_updat
             ZoneName=instance['zone_name'],
             Hostname=instance.get('hostname', None),
             Status=instance['status'],
-            location="global",
+            location=instance['location'],
             gcp_update_tag=gcp_update_tag,
         )
         _attach_instance_tags(neo4j_session, instance, gcp_update_tag)
@@ -586,7 +589,7 @@ def load_gcp_vpcs(neo4j_session: neo4j.Session, vpcs: List[Dict], gcp_update_tag
             AutoCreateSubnetworks=vpc['auto_create_subnetworks'],
             RoutingMode=vpc['routing_config_routing_mode'],
             Description=vpc['description'],
-            location="global",
+            location=vpc['region'],
             gcp_update_tag=gcp_update_tag,
         )
 
@@ -610,7 +613,6 @@ def load_gcp_subnets(neo4j_session: neo4j.Session, subnets: List[Dict], gcp_upda
     subnet.partial_uri = {PartialUri}
     SET subnet.self_link = {SubnetSelfLink},
     subnet.project_id = {ProjectId},
-    subnet.location = {location},
     subnet.name = {SubnetName},
     subnet.region = {Region},
     subnet.gateway_address = {GatewayAddress},
@@ -635,7 +637,6 @@ def load_gcp_subnets(neo4j_session: neo4j.Session, subnets: List[Dict], gcp_upda
             Region=s['region'],
             GatewayAddress=s['gateway_address'],
             IpCidrRange=s['ip_cidr_range'],
-            location="global",
             PrivateIpGoogleAccess=s['private_ip_google_access'],
             gcp_update_tag=gcp_update_tag,
         )
@@ -656,7 +657,6 @@ def load_gcp_forwarding_rules(neo4j_session: neo4j.Session, fwd_rules: List[Dict
         ON CREATE SET fwd.firstseen = timestamp(),
         fwd.partial_uri = {PartialUri}
         SET fwd.ip_address = {IPAddress},
-        ip_address.location = {location},
         fwd.ip_protocol = {IPProtocol},
         fwd.load_balancing_scheme = {LoadBalancingScheme},
         fwd.name = {Name},
@@ -690,7 +690,6 @@ def load_gcp_forwarding_rules(neo4j_session: neo4j.Session, fwd_rules: List[Dict
             Region=fwd.get('region', None),
             SelfLink=fwd['self_link'],
             SubNetwork=subnetwork,
-            location="global",
             SubNetworkPartialUri=fwd.get('subnetwork_partial_uri', None),
             TargetPartialUri=fwd['target'],
             gcp_update_tag=gcp_update_tag,

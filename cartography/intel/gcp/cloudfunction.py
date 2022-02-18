@@ -62,6 +62,8 @@ def get_gcp_functions(function: Resource, project_id: str) -> List[Dict]:
                 response = request.execute()
                 for func in response['functions']:
                     func['id'] = func['name']
+                    x = func['name'].split('/')
+                    func['location'] = x[x.index('locations') + 1]
                     functions.append(func)
                 request = function.projects().locations().functions().list_next(
                     previous_request=request,
@@ -110,7 +112,7 @@ def _load_functions_tx(tx: neo4j.Transaction, functions: List[Resource], project
         function.name = func.name,
         function.description = func.description,
         function.status = func.status,
-        function.location = {location}
+        function.location = func.location,
         function.entryPoint = func.entryPoint,
         function.runtime = func.runtime,
         function.timeout = func.timeout,
@@ -139,7 +141,6 @@ def _load_functions_tx(tx: neo4j.Transaction, functions: List[Resource], project
         ingest_functions,
         functions=functions,
         ProjectId=project_id,
-        location="global",
         gcp_update_tag=gcp_update_tag,
     )
 
