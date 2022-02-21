@@ -110,6 +110,7 @@ def _load_tags_tx(tx: neo4j.Transaction, tags_list: List[Dict], update_tag: int)
     MERGE (t:AzureTag{id: tag.id})
     ON CREATE SET t.firstseen = timestamp(),
     t.type = tag.type,
+    t.location = {location},
     t.resource_group = tag.resource_group
     SET t.lastupdated = {update_tag},
     t.value = tag.value,
@@ -123,6 +124,7 @@ def _load_tags_tx(tx: neo4j.Transaction, tags_list: List[Dict], update_tag: int)
 
     tx.run(
         ingest_tag,
+        location="global",
         tags_list=tags_list,
         update_tag=update_tag,
     )

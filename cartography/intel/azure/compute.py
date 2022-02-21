@@ -157,6 +157,7 @@ def get_vm_available_sizes_list(vm_list: List[Dict], client: ComputeManagementCl
                 size['resource_group'] = vm['resource_group']
                 size['vm_id'] = vm['id']
                 size['id'] = f"{vm['id']}/Size/{size['name']}"
+                size["location"] = vm.get("location", "global")
             vm_available_sizes_list = vm_available_sizes_list + vm_available_size_list
 
         return vm_available_sizes_list
@@ -170,7 +171,8 @@ def _load_vm_available_sizes_tx(tx: neo4j.Transaction, vm_available_sizes_list: 
     ingest_vm_size = """
     UNWIND {vm_available_sizes_list} AS size
     MERGE (v:AzureVirtualMachineAvailableSize{id: size.id})
-    ON CREATE SET v.firstseen = timestamp(), v.numberOfCores = size.numberOfCores
+    ON CREATE SET v.firstseen = timestamp(), v.numberOfCores = size.numberOfCores,
+    v.location= size.location,
     SET v.lastupdated = {update_tag}, v.osDiskSizeInMB = size.osDiskSizeInMB,
     v.name = size.name,
     v.resourceDiskSizeInMB = size.resourceDiskSizeInMB,
@@ -270,19 +272,20 @@ def get_vm_scale_sets_extensions_list(vm_scale_sets_list: List[Dict], client: Co
     try:
         vm_scale_sets_extensions_list: List[Dict] = []
         for set in vm_scale_sets_list:
-            vm_scale_sets_extensions_list = vm_scale_sets_extensions_list + \
-                list(
-                    map(
-                        lambda x: x.as_dict(), client.virtual_machine_scale_set_extensions.list(
-                            resource_group_name=set['resource_group'], vm_name=set['name'],
-                        ),
+            extensions_list = list(
+                map(
+                    lambda x: x.as_dict(), client.virtual_machine_scale_set_extensions.list(
+                        resource_group_name=set['resource_group'], vm_name=set['name'],
                     ),
-                )
+                ),
+            )
+            for extension in extensions_list:
+                extension["location"] = set.get("location", "global")
+                x = extension['id'].split('/')
+                extension['resource_group'] = x[x.index('resourceGroups') + 1]
+                extension['set_id'] = extension['id'][:extension['id'].index("/extensions")]
 
-        for extension in vm_scale_sets_extensions_list:
-            x = extension['id'].split('/')
-            extension['resource_group'] = x[x.index('resourceGroups') + 1]
-            extension['set_id'] = extension['id'][:extension['id'].index("/extensions")]
+            vm_scale_sets_extensions_list.extend(extensions_list)
 
         return vm_scale_sets_extensions_list
 
@@ -299,6 +302,7 @@ def _load_vm_scale_sets_extensions_tx(
     MERGE (v:AzureVirtualMachineScaleSetExtension{id: extension.id})
     ON CREATE SET v.firstseen = timestamp()
     SET v.lastupdated = {update_tag}, v.name = extension.name,
+    v.location = extension.location,
     v.type = extension.type
     WITH v,extension
     MATCH (owner:AzureVirtualMachineScaleSet{id: extension.set_id})
@@ -337,6 +341,7 @@ def load_vm_data_disks(neo4j_session: neo4j.Session, vm_id: str, data_disks: Lis
     ON CREATE SET d.firstseen = timestamp(), d.lun = disk.lun
     SET d.lastupdated = {update_tag}, d.name = disk.name,
     d.vhd = disk.vhd.uri, d.image = disk.image.uri,
+    d.location = disk.location,
     d.size = disk.disk_size_gb, d.caching = disk.caching,
     d.createoption = disk.create_option, d.write_accelerator_enabled=disk.write_accelerator_enabled,
     d.managed_disk_storage_type=disk.managed_disk.storage_account_type

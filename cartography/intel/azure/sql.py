@@ -132,7 +132,8 @@ def get_dns_aliases(credentials: Credentials, subscription_id: str, server: Dict
                 client.server_dns_aliases.list_by_server(server['resourceGroup'], server['name']),
             ),
         )
-
+        for aliase in dns_aliases:
+            aliase["location"] = server.get("location", "global")
     except ClientAuthenticationError as e:
         logger.warning(f"Client Authentication Error while retrieving DNS Aliases - {e}")
         return []
@@ -162,6 +163,8 @@ def get_ad_admins(credentials: Credentials, subscription_id: str, server: Dict) 
                 ),
             ),
         )
+        for admin in ad_admins:
+            admin["location"] = server.get("location", "global")
 
     except ClientAuthenticationError as e:
         logger.warning(f"Client Authentication Error while retrieving Azure AD Administrators - {e}")
@@ -393,6 +396,7 @@ def _load_server_dns_aliases(
     MERGE (alias:AzureServerDNSAlias{id: dns_alias.id})
     ON CREATE SET alias.firstseen = timestamp()
     SET alias.name = dns_alias.name,
+    alias.location = dns_alias.location,
     alias.dnsrecord = dns_alias.azure_dns_record,
     alias.lastupdated = {azure_update_tag}
     WITH alias, dns_alias
@@ -423,6 +427,7 @@ def _load_server_ad_admins(
     SET a.name = ad_admin.name,
     a.administratortype = ad_admin.administrator_type,
     a.login = ad_admin.login,
+    a.location = ad_admin.location,
     a.lastupdated = {azure_update_tag}
     WITH a, ad_admin
     MATCH (s:AzureSQLServer{id: ad_admin.server_id})
@@ -450,6 +455,7 @@ def _load_recoverable_databases(
     MERGE (rd:AzureRecoverableDatabase{id: rec_db.id})
     ON CREATE SET rd.firstseen = timestamp()
     SET rd.name = rec_db.name,
+    rd.location = {location},
     rd.edition = rec_db.edition,
     rd.servicelevelobjective = rec_db.service_level_objective,
     rd.lastbackupdate = rec_db.last_available_backup_date,

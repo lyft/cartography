@@ -167,6 +167,7 @@ def _load_networks_subnets_tx(
     n.type = subnet.type
     SET n.name = subnet.name,
     n.lastupdated = {azure_update_tag},
+    n.location= {location},
     n.resource_group_name=subnet.resource_group,
     n.private_endpoint_network_policies=subnet.private_endpoint_network_policies,
     n.private_link_service_network_policies=subnet.private_link_service_network_policies,
@@ -180,6 +181,7 @@ def _load_networks_subnets_tx(
 
     tx.run(
         ingest_network_subnet,
+        location="global",
         networks_subnets_list=networks_subnets_list,
         azure_update_tag=update_tag,
     )
@@ -290,6 +292,7 @@ def _load_network_routes_tx(
     ON CREATE SET n.firstseen = timestamp(),
     n.type = route.type
     SET n.name = route.name,
+    n.location= {location},
     n.lastupdated = {azure_update_tag},
     n.etag=route.etag
     WITH n, route
@@ -301,6 +304,7 @@ def _load_network_routes_tx(
 
     tx.run(
         ingest_network_route,
+        location="global",
         network_routes_list=network_routes_list,
         azure_update_tag=update_tag,
     )
@@ -414,6 +418,7 @@ def _load_network_security_rules_tx(
     ON CREATE SET n.firstseen = timestamp(),
     n.type = rule.type
     SET n.name = rule.name,
+    n.location= {location},
     n.lastupdated = {azure_update_tag},
     n.etag=rule.etag
     WITH n, rule
@@ -425,6 +430,7 @@ def _load_network_security_rules_tx(
 
     tx.run(
         ingest_network_rule,
+        location="global",
         network_security_rules_list=network_security_rules_list,
         azure_update_tag=update_tag,
     )
@@ -525,6 +531,7 @@ def _load_usages_tx(
     MERGE (n:AzureNetworkUsage{id: usage.id})
     ON CREATE SET n.firstseen = timestamp()
     SET n.currentValue = usage.currentValue,
+    n.location= {location},
     n.lastupdated = {azure_update_tag},
     n.limit=usage.limit,
     n.unit=usage.unit
@@ -537,6 +544,7 @@ def _load_usages_tx(
 
     tx.run(
         ingest_usages,
+        location="global",
         usages_list=usages_list,
         azure_update_tag=update_tag,
     )

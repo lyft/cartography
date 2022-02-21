@@ -286,6 +286,7 @@ def _load_queue_services(
     MERGE (qs:AzureStorageQueueService{id: qservice.id})
     ON CREATE SET qs.firstseen = timestamp(), qs.type = qservice.type
     SET qs.name = qservice.name,
+    qs.location = {location},
     qs.lastupdated = {azure_update_tag}
     WITH qs, qservice
     MATCH (s:AzureStorageAccount{id: qservice.storage_account_id})
@@ -296,6 +297,7 @@ def _load_queue_services(
 
     neo4j_session.run(
         ingest_queue_services,
+        location="global",
         queue_services_list=queue_services,
         azure_update_tag=update_tag,
     )
@@ -313,6 +315,7 @@ def _load_table_services(
     MERGE (ts:AzureStorageTableService{id: tservice.id})
     ON CREATE SET ts.firstseen = timestamp(), ts.type = tservice.type
     SET ts.name = tservice.name,
+    ts.location = {location},
     ts.lastupdated = {azure_update_tag}
     WITH ts, tservice
     MATCH (s:AzureStorageAccount{id: tservice.storage_account_id})
@@ -323,6 +326,7 @@ def _load_table_services(
 
     neo4j_session.run(
         ingest_table_services,
+        location="global",
         table_services_list=table_services,
         azure_update_tag=update_tag,
     )
@@ -340,6 +344,7 @@ def _load_file_services(
     MERGE (fs:AzureStorageFileService{id: fservice.id})
     ON CREATE SET fs.firstseen = timestamp(), fs.type = fservice.type
     SET fs.name = fservice.name,
+    fs.location = {location},
     fs.lastupdated = {azure_update_tag}
     WITH fs, fservice
     MATCH (s:AzureStorageAccount{id: fservice.storage_account_id})
@@ -350,6 +355,7 @@ def _load_file_services(
 
     neo4j_session.run(
         ingest_file_services,
+        location="global",
         file_services_list=file_services,
         azure_update_tag=update_tag,
     )
@@ -367,6 +373,7 @@ def _load_blob_services(
     MERGE (bs:AzureStorageBlobService{id: bservice.id})
     ON CREATE SET bs.firstseen = timestamp(), bs.type = bservice.type
     SET bs.name = bservice.name,
+    bs.location = {location},
     bs.lastupdated = {azure_update_tag}
     WITH bs, bservice
     MATCH (s:AzureStorageAccount{id: bservice.storage_account_id})
@@ -377,6 +384,7 @@ def _load_blob_services(
 
     neo4j_session.run(
         ingest_blob_services,
+        location="global",
         blob_services_list=blob_services,
         azure_update_tag=update_tag,
     )
@@ -460,6 +468,7 @@ def _load_queues(neo4j_session: neo4j.Session, queues: List[Dict], update_tag: i
     MERGE (q:AzureStorageQueue{id: queue.id})
     ON CREATE SET q.firstseen = timestamp(), q.type = queue.type
     SET q.name = queue.name,
+    q.location = {location},
     q.lastupdated = {azure_update_tag}
     WITH q, queue
     MATCH (qs:AzureStorageQueueService{id: queue.service_id})
@@ -470,6 +479,7 @@ def _load_queues(neo4j_session: neo4j.Session, queues: List[Dict], update_tag: i
 
     neo4j_session.run(
         ingest_queues,
+        location="global",
         queues_list=queues,
         azure_update_tag=update_tag,
     )
@@ -553,6 +563,7 @@ def _load_tables(neo4j_session: neo4j.Session, tables: List[Dict], update_tag: i
     MERGE (t:AzureStorageTable{id: table.id})
     ON CREATE SET t.firstseen = timestamp(), t.type = table.type
     SET t.name = table.name,
+    t.location = {location},
     t.tablename = table.table_name,
     t.lastupdated = {azure_update_tag}
     WITH t, table
@@ -564,6 +575,7 @@ def _load_tables(neo4j_session: neo4j.Session, tables: List[Dict], update_tag: i
 
     neo4j_session.run(
         ingest_tables,
+        location="global",
         tables_list=tables,
         azure_update_tag=update_tag,
     )
@@ -649,6 +661,7 @@ def _load_shares(neo4j_session: neo4j.Session, shares: List[Dict], update_tag: i
     SET share.name = s.name,
     share.lastupdated = {azure_update_tag},
     share.lastmodifiedtime = s.last_modified_time,
+    share.location = {location},
     share.sharequota = s.share_quota,
     share.accesstier = s.access_tier,
     share.deleted = s.deleted,
@@ -668,6 +681,7 @@ def _load_shares(neo4j_session: neo4j.Session, shares: List[Dict], update_tag: i
 
     neo4j_session.run(
         ingest_shares,
+        location="global",
         shares_list=shares,
         azure_update_tag=update_tag,
     )
@@ -757,6 +771,7 @@ def _load_blob_containers(
     bc.lastupdated = {azure_update_tag},
     bc.deleted = blob.deleted,
     bc.deletedtime = blob.deleted_time,
+    bc.location = {location},
     bc.defaultencryptionscope = blob.default_encryption_scope,
     bc.publicaccess = blob.public_access,
     bc.leasestatus = blob.lease_status,
@@ -776,6 +791,7 @@ def _load_blob_containers(
 
     neo4j_session.run(
         ingest_blob_containers,
+        location="global",
         blob_containers_list=blob_containers,
         azure_update_tag=update_tag,
     )
