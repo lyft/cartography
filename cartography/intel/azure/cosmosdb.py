@@ -366,7 +366,7 @@ def _load_cosmosdb_private_endpoint_connections(
             ingest_private_endpoint_connections,
             private_endpoint_connections_list=private_endpoint_connections,
             DatabaseAccountId=database_account_id,
-            location="global",
+            location=database_account.get("location", "global"),
             azure_update_tag=azure_update_tag,
         )
 

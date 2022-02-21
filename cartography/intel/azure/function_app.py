@@ -219,7 +219,7 @@ def get_function_apps_configuration_list(
     try:
         function_apps_conf_list: List[Dict] = []
         for function in function_apps_list:
-            function_apps_conf_list = function_apps_conf_list + list(
+            apps_conf_list = list(
                 map(
                     lambda x: x.as_dict(),
                     client.web_apps.list_configurations(
@@ -228,13 +228,15 @@ def get_function_apps_configuration_list(
                 ),
             )
 
-        for conf in function_apps_conf_list:
-            x = conf['id'].split('/')
-            conf['resource_group'] = x[x.index('resourceGroups') + 1]
-            conf['function_app_id'] = conf['id'][
-                :conf['id'].
-                index("/config/web")
-            ]
+            for conf in apps_conf_list:
+                x = conf['id'].split('/')
+                conf['resource_group'] = x[x.index('resourceGroups') + 1]
+                conf['function_app_id'] = conf['id'][
+                    :conf['id'].
+                    index("/config/web")
+                ]
+                conf["location"] = function.get("location")
+            function_apps_conf_list.extend(apps_conf_list)
         return function_apps_conf_list
 
     except HttpResponseError as e:
@@ -260,7 +262,7 @@ def _load_function_apps_configurations_tx(
     fc.number_of_workers=function_conf.number_of_workers,
     fc.net_framework_version=function_conf.net_framework_version,
     fc.php_version=function_conf.php_version,
-    fc.location = {location},
+    fc.location = function_conf.location,
     fc.python_version=function_conf.python_version,
     fc.node_version=function_conf.node_version,
     fc.linux_fx_version=function_conf.linux_fx_version,
@@ -284,7 +286,6 @@ def _load_function_apps_configurations_tx(
 
     tx.run(
         ingest_function_apps_conf,
-        location="global",
         function_apps_conf_list=function_apps_conf_list,
         azure_update_tag=update_tag,
     )
@@ -324,7 +325,7 @@ def get_function_apps_functions_list(
     try:
         function_apps_functions_list: List[Dict] = []
         for function in function_apps_list:
-            function_apps_functions_list = function_apps_functions_list + list(
+            functions_list = list(
                 map(
                     lambda x: x.as_dict(),
                     client.web_apps.list_functions(
@@ -334,13 +335,15 @@ def get_function_apps_functions_list(
                 ),
             )
 
-        for function in function_apps_functions_list:
-            x = function['id'].split('/')
-            function['resource_group'] = x[x.index('resourceGroups') + 1]
-            function['function_app_id'] = function['id'][
-                :function['id'].
-                index("/functions")
-            ]
+            for fun in functions_list:
+                x = fun['id'].split('/')
+                fun['resource_group'] = x[x.index('resourceGroups') + 1]
+                fun['function_app_id'] = fun['id'][
+                    :fun['id'].
+                    index("/functions")
+                ]
+                fun["location"] = function.get("location", "global")
+            function_apps_functions_list.extend(functions_list)
         return function_apps_functions_list
 
     except HttpResponseError as e:
@@ -360,7 +363,7 @@ def _load_function_apps_functions_tx(
     f.type = function.type
     SET f.name = function.name,
     f.lastupdated = {azure_update_tag},
-    f.location = {location},
+    f.location = function.location,
     f.resource_group_name=function.resource_group,
     f.href=function.href,
     f.language=function.language,
@@ -413,7 +416,7 @@ def get_function_apps_deployments_list(
     try:
         function_apps_deployments_list: List[Dict] = []
         for function in function_apps_list:
-            function_apps_deployments_list = function_apps_deployments_list + list(
+            deployments_list = list(
                 map(
                     lambda x: x.as_dict(),
                     client.web_apps.list_deployments(
@@ -423,12 +426,14 @@ def get_function_apps_deployments_list(
                 ),
             )
 
-        for deployment in function_apps_deployments_list:
-            x = deployment['id'].split('/')
-            deployment['resource_group'] = x[x.index('resourceGroups') + 1]
-            deployment['function_app_id'] = deployment[
-                'id'
-            ][:deployment['id'].index("/deployments")]
+            for deployment in deployments_list:
+                x = deployment['id'].split('/')
+                deployment['resource_group'] = x[x.index('resourceGroups') + 1]
+                deployment['function_app_id'] = deployment[
+                    'id'
+                ][:deployment['id'].index("/deployments")]
+                deployment["location"] = function.get("location", "global")
+            function_apps_deployments_list.extend(deployments_list)
         return function_apps_deployments_list
 
     except HttpResponseError as e:
@@ -450,7 +455,7 @@ def _load_function_apps_deployments_tx(
     f.type = function_deploy.type
     SET f.name = function_deploy.name,
     f.lastupdated = {azure_update_tag},
-    f.location = {location},
+    f.location = function_deploy.location,
     f.resource_group_name=function_deploy.resource_group
     WITH f, function_deploy
     MATCH (s:AzureFunctionApp{id: function_deploy.function_app_id})
@@ -461,7 +466,6 @@ def _load_function_apps_deployments_tx(
 
     tx.run(
         ingest_function_apps_deploy,
-        location="global",
         function_apps_deployments_list=function_apps_deployments_list,
         azure_update_tag=update_tag,
     )
@@ -501,7 +505,7 @@ def get_function_apps_backups_list(
     try:
         function_apps_backups_list: List[Dict] = []
         for function in function_apps_list:
-            function_apps_backups_list = function_apps_backups_list + list(
+            backups_list = list(
                 map(
                     lambda x: x.as_dict(),
                     client.web_apps.list_backups(
@@ -511,13 +515,15 @@ def get_function_apps_backups_list(
                 ),
             )
 
-        for backup in function_apps_backups_list:
-            x = backup['id'].split('/')
-            backup['resource_group'] = x[x.index('resourceGroups') + 1]
-            backup['function_app_id'] = backup['id'][
-                :backup['id'].
-                index("/backups")
-            ]
+            for backup in backups_list:
+                x = backup['id'].split('/')
+                backup['resource_group'] = x[x.index('resourceGroups') + 1]
+                backup['function_app_id'] = backup['id'][
+                    :backup['id'].
+                    index("/backups")
+                ]
+                backup["location"] = function.get("location", "global")
+            function_apps_backups_list.extend(backups_list)
         return function_apps_backups_list
 
     except HttpResponseError as e:
@@ -534,7 +540,7 @@ def _load_function_apps_backups_tx(
     UNWIND {function_apps_backups_list} as function_backup
     MERGE (f:AzureFunctionAppBackup{id: function_backup.id})
     ON CREATE SET f.firstseen = timestamp(),
-    f.location = {location},
+    f.location = function_backup.location,
     f.type = function_backup.type
     SET f.name = function_backup.name,
     f.lastupdated = {azure_update_tag},
@@ -548,7 +554,6 @@ def _load_function_apps_backups_tx(
 
     tx.run(
         ingest_function_apps_backup,
-        location="global",
         function_apps_backups_list=function_apps_backups_list,
         azure_update_tag=update_tag,
     )
@@ -588,7 +593,7 @@ def get_function_apps_processes_list(
     try:
         function_apps_processes_list: List[Dict] = []
         for function in function_apps_list:
-            function_apps_processes_list = function_apps_processes_list + list(
+            processes_list = list(
                 map(
                     lambda x: x.as_dict(),
                     client.web_apps.list_processes(
@@ -598,13 +603,15 @@ def get_function_apps_processes_list(
                 ),
             )
 
-        for process in function_apps_processes_list:
-            x = process['id'].split('/')
-            process['resource_group'] = x[x.index('resourceGroups') + 1]
-            process['function_app_id'] = process['id'][
-                :process['id'].
-                index("/processes")
-            ]
+            for process in processes_list:
+                x = process['id'].split('/')
+                process['resource_group'] = x[x.index('resourceGroups') + 1]
+                process['function_app_id'] = process['id'][
+                    :process['id'].
+                    index("/processes")
+                ]
+                process["location"] = function.get("location", "global")
+            function_apps_processes_list.extend(processes_list)
         return function_apps_processes_list
 
     except HttpResponseError as e:
@@ -621,7 +628,7 @@ def _load_function_apps_processes_tx(
     UNWIND {function_apps_processes_list} as function_process
     MERGE (f:AzureFunctionAppProcess{id: function_process.id})
     ON CREATE SET f.firstseen = timestamp(),
-    f.location = {location},
+    f.location = function_process.location,
     f.type = function_process.type
     SET f.name = function_process.name,
     f.lastupdated = {azure_update_tag},
@@ -635,7 +642,6 @@ def _load_function_apps_processes_tx(
 
     tx.run(
         ingest_function_apps_process,
-        location="global",
         function_apps_processes_list=function_apps_processes_list,
         azure_update_tag=update_tag,
     )
@@ -675,7 +681,7 @@ def get_function_apps_snapshots_list(
     try:
         function_apps_snapshots_list: List[Dict] = []
         for function in function_apps_list:
-            function_apps_snapshots_list = function_apps_snapshots_list + list(
+            snapshots_list = list(
                 map(
                     lambda x: x.as_dict(),
                     client.web_apps.list_snapshots(
@@ -685,13 +691,15 @@ def get_function_apps_snapshots_list(
                 ),
             )
 
-        for snapshot in function_apps_snapshots_list:
-            x = snapshot['id'].split('/')
-            snapshot['resource_group'] = x[x.index('resourceGroups') + 1]
-            snapshot['function_app_id'] = snapshot['id'][
-                :snapshot['id'].
-                index("/snapshots")
-            ]
+            for snapshot in snapshots_list:
+                x = snapshot['id'].split('/')
+                snapshot['resource_group'] = x[x.index('resourceGroups') + 1]
+                snapshot['function_app_id'] = snapshot['id'][
+                    :snapshot['id'].
+                    index("/snapshots")
+                ]
+                snapshot["location"] = function.get("location", "global")
+            function_apps_snapshots_list.extend(snapshots_list)
         return function_apps_snapshots_list
 
     except HttpResponseError as e:
@@ -708,7 +716,7 @@ def _load_function_apps_snapshots_tx(
     UNWIND {function_apps_snapshots_list} as function_snapshot
     MERGE (f:AzureFunctionAppSnapshot{id: function_snapshot.id})
     ON CREATE SET f.firstseen = timestamp(),
-    f.location = {location},
+    f.location = function_snapshot.location,
     f.type = function_snapshot.type
     SET f.name = function_snapshot.name,
     f.lastupdated = {azure_update_tag},
@@ -722,7 +730,6 @@ def _load_function_apps_snapshots_tx(
 
     tx.run(
         ingest_function_apps_snapshot,
-        location="global",
         function_apps_snapshots_list=function_apps_snapshots_list,
         azure_update_tag=update_tag,
     )
@@ -762,7 +769,7 @@ def get_function_apps_webjobs_list(
     try:
         function_apps_webjobs_list: List[Dict] = []
         for function in function_apps_list:
-            function_apps_webjobs_list = function_apps_webjobs_list + list(
+            webjobs_list = list(
                 map(
                     lambda x: x.as_dict(),
                     client.web_apps.list_web_jobs(
@@ -772,13 +779,15 @@ def get_function_apps_webjobs_list(
                 ),
             )
 
-        for webjob in function_apps_webjobs_list:
-            x = webjob['id'].split('/')
-            webjob['resource_group'] = x[x.index('resourceGroups') + 1]
-            webjob['function_app_id'] = webjob['id'][
-                :webjob['id'].
-                index("/webjobs")
-            ]
+            for webjob in webjobs_list:
+                x = webjob['id'].split('/')
+                webjob['resource_group'] = x[x.index('resourceGroups') + 1]
+                webjob['function_app_id'] = webjob['id'][
+                    :webjob['id'].
+                    index("/webjobs")
+                ]
+                webjob["location"] = function.get("location", "global")
+            function_apps_webjobs_list.extend(webjobs_list)
         return function_apps_webjobs_list
 
     except HttpResponseError as e:
@@ -795,7 +804,7 @@ def _load_function_apps_webjobs_tx(
     UNWIND {function_apps_webjobs_list} as function_webjob
     MERGE (f:AzureFunctionAppWebjob{id: function_webjob.id})
     ON CREATE SET f.firstseen = timestamp(),
-    f.location = {location},
+    f.location = function_webjob.location,
     f.type = function_webjob.type
     SET f.name = function_webjob.name,
     f.lastupdated = {azure_update_tag},
@@ -809,7 +818,6 @@ def _load_function_apps_webjobs_tx(
 
     tx.run(
         ingest_function_apps_webjob,
-        location="global",
         function_apps_webjobs_list=function_apps_webjobs_list,
         azure_update_tag=update_tag,
     )

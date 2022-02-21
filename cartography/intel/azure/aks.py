@@ -268,20 +268,20 @@ def get_container_registry_runs_list(
     try:
         container_registry_runs_list: List[Dict] = []
         for container_registry in container_registries_list:
-            container_registry_runs_list = container_registry_runs_list + \
-                list(
-                    map(
-                        lambda x: x.as_dict(), client.runs.list(
-                            registry_name=container_registry['name'],
-                            resource_group_name=container_registry['resource_group'],
-                        ),
+            registry_runs_list = list(
+                map(
+                    lambda x: x.as_dict(), client.runs.list(
+                        registry_name=container_registry['name'],
+                        resource_group_name=container_registry['resource_group'],
                     ),
-                )
-
-        for run in container_registry_runs_list:
-            x = run['id'].split('/')
-            run['resource_group'] = x[x.index('resourcegroups') + 1]
-            run['container_registry_id'] = run['id'][:run['id'].index("/runs")]
+                ),
+            )
+            for run in registry_runs_list:
+                run["location"] = container_registry.get("location", "global")
+                x = run['id'].split('/')
+                run['resource_group'] = x[x.index('resourcegroups') + 1]
+                run['container_registry_id'] = run['id'][:run['id'].index("/runs")]
+            container_registry_runs_list.extend(registry_runs_list)
 
         return container_registry_runs_list
 
@@ -298,7 +298,7 @@ def _load_container_registry_runs_tx(
     MERGE (a:AzureContainerRegistryRun{id: run.id})
     ON CREATE SET a.firstseen = timestamp(),
     a.type = run.type,
-    a.location={location},
+    a.location=run.location,
     a.resourcegroup = run.resource_group
     SET a.lastupdated = {update_tag},
     a.name = run.name
@@ -312,7 +312,6 @@ def _load_container_registry_runs_tx(
     tx.run(
         ingest_container_run,
         container_registry_runs_list=container_registry_runs_list,
-        location="global",
         update_tag=update_tag,
     )
 
@@ -538,6 +537,7 @@ def get_containers_list(container_groups_list: List[Dict]) -> List[Dict]:
                 container["container_group_id"] = container_group['id']
                 container["resource_group"] = container_group["resource_group"]
                 container["type"] = "Microsoft.ContainerInstance/containers"
+                container["location"] = container_group.get("location", "global")
             containers_list = containers_list + container_list
 
         return containers_list
@@ -554,7 +554,7 @@ def _load_containers_tx(tx: neo4j.Transaction, containers_list: List[Dict], upda
     ON CREATE SET a.firstseen = timestamp(),
     a.type = container.type,
     a.name = container.name,
-    a.location= {location},
+    a.location= container.location,
     a.resourcegroup = container.resource_group
     SET a.lastupdated = {update_tag}
     WITH a,container
@@ -567,7 +567,6 @@ def _load_containers_tx(tx: neo4j.Transaction, containers_list: List[Dict], upda
     tx.run(
         ingest_container,
         containers_list=containers_list,
-        location="global",
         update_tag=update_tag,
     )
 
