@@ -299,6 +299,7 @@ def load_ec2_instances(
 
         for instance in reservation["Instances"]:
             instanceid = instance["InstanceId"]
+            instance["region"] = region
             instancearn = f"arn:aws:ec2:{region}:{current_aws_account_id}:instance/{instanceid}"
 
             monitoring_state = instance.get("Monitoring", {}).get("State")
@@ -370,8 +371,6 @@ def sync_ec2_instance_ebs_volumes(
 ) -> None:
     instance_ebs_volumes_list = get_ec2_instance_ebs_volumes(instance)
     load_ec2_instance_ebs_volumes(neo4j_session, instance_ebs_volumes_list, current_aws_account_id, update_tag)
-    instance_ebs_volumes_list = get_ec2_instance_ebs_volumes(instance)
-    load_ec2_instance_ebs_volumes(neo4j_session, instance_ebs_volumes_list, current_aws_account_id, update_tag)
 
 
 @timeit
@@ -381,6 +380,7 @@ def get_ec2_instance_ebs_volumes(instance: Dict) -> List[Dict]:
         for mapping in instance['BlockDeviceMappings']:
             if 'VolumeId' in mapping['Ebs']:
                 mapping['InstanceId'] = instance["InstanceId"]
+                mapping["region"] = instance.get("region", "global")
                 instance_ebs_volumes_list.append(mapping)
     return instance_ebs_volumes_list
 
@@ -396,7 +396,7 @@ def _load_ec2_instance_ebs_tx(
             MERGE (vol:EBSVolume{id: em.Ebs.VolumeId})
             ON CREATE SET vol.firstseen = timestamp()
             SET vol.lastupdated = {update_tag},
-            vol.region = {region},
+            vol.region = em.region,
             vol.deleteontermination = em.Ebs.DeleteOnTermination
             WITH vol, em
             MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
@@ -413,7 +413,6 @@ def _load_ec2_instance_ebs_tx(
         query,
         ebs_mappings_list=ebs_data,
         update_tag=update_tag,
-        region="global",
         AWS_ACCOUNT_ID=current_aws_account_id,
     )
 

@@ -97,6 +97,7 @@ def get_acl(bucket: Dict, client: botocore.client.BaseClient) -> Optional[Dict]:
     acl = None
     try:
         acl = client.get_bucket_acl(Bucket=bucket['Name'])
+        acl["Region"] = bucket.get('Region', 'global')
     except ClientError as e:
         if _is_common_exception(e, bucket):
             pass
@@ -209,7 +210,7 @@ def _load_s3_acls(neo4j_session: neo4j.Session, acls: Dict, aws_account_id: str,
     UNWIND {acls} AS acl
     MERGE (a:S3Acl{id: acl.id})
     ON CREATE SET a.firstseen = timestamp(), a.owner = acl.owner,
-    a.region = {region},
+    a.region = acl.Region,
     a.ownerid = acl.ownerid, a.type = acl.type,
     a.displayname = acl.displayname, a.granteeid = acl.granteeid, a.uri = acl.uri, a.permission = acl.permission
     SET a.lastupdated = {UpdateTag}
@@ -222,7 +223,6 @@ def _load_s3_acls(neo4j_session: neo4j.Session, acls: Dict, aws_account_id: str,
     neo4j_session.run(
         ingest_acls,
         acls=acls,
-        region="global",
         UpdateTag=update_tag,
     )
 
@@ -511,6 +511,7 @@ def parse_acl(acl: Optional[Dict], bucket: str, aws_account_id: str) -> Optional
         )
 
         parsed_acl['id'] = hashlib.sha256(id_data.encode("utf8")).hexdigest()
+        parsed_acl['Region'] = acl.get('Region', 'global')
         acl_list.append(parsed_acl)
 
     return acl_list
