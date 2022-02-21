@@ -59,7 +59,9 @@ def load_a_records(neo4j_session: neo4j.Session, records: List[Dict], update_tag
     ingest_records = """
     UNWIND {records} as record
     MERGE (a:DNSRecord:AWSDNSRecord{id: record.id})
-    ON CREATE SET a.firstseen = timestamp(), a.name = record.name, a.type = record.type
+    ON CREATE SET a.firstseen = timestamp(), a.name = record.name,
+    a.region = record.Region,
+    a.type = record.type
     SET a.lastupdated = {update_tag}, a.value = record.value
     WITH a,record
     MATCH (zone:AWSDNSZone{zoneid: record.zoneid})
@@ -80,7 +82,9 @@ def load_alias_records(neo4j_session: neo4j.Session, records: List[Dict], update
     ingest_records = """
     UNWIND {records} as record
     MERGE (a:DNSRecord:AWSDNSRecord{id: record.id})
-    ON CREATE SET a.firstseen = timestamp(), a.name = record.name, a.type = record.type
+    ON CREATE SET a.firstseen = timestamp(), a.name = record.name,
+    a.region = record.Region,
+    a.type = record.type
     SET a.lastupdated = {update_tag}, a.value = record.value
     WITH a,record
     MATCH (zone:AWSDNSZone{zoneid: record.zoneid})
@@ -100,7 +104,9 @@ def load_cname_records(neo4j_session: neo4j.Session, records: List[Dict], update
     ingest_records = """
     UNWIND {records} as record
     MERGE (a:DNSRecord:AWSDNSRecord{id: record.id})
-    ON CREATE SET a.firstseen = timestamp(), a.name = record.name, a.type = record.type
+    ON CREATE SET a.firstseen = timestamp(), a.name = record.name,
+    a.region = record.Region,
+    a.type = record.type
     SET a.lastupdated = {update_tag}, a.value = record.value
     WITH a,record
     MATCH (zone:AWSDNSZone{zoneid: record.zoneid})
@@ -119,7 +125,9 @@ def load_cname_records(neo4j_session: neo4j.Session, records: List[Dict], update
 def load_zone(neo4j_session: neo4j.Session, zone: Dict, current_aws_id: str, update_tag: int) -> None:
     ingest_z = """
     MERGE (zone:DNSZone:AWSDNSZone{zoneid:{ZoneId}})
-    ON CREATE SET zone.firstseen = timestamp(), zone.name = {ZoneName}
+    ON CREATE SET zone.firstseen = timestamp(),
+    zone.region = {region},
+    zone.name = {ZoneName}
     SET zone.lastupdated = {update_tag}, zone.comment = {Comment}, zone.privatezone = {PrivateZone},
     zone.arn = {Arn}
     WITH zone
@@ -133,6 +141,7 @@ def load_zone(neo4j_session: neo4j.Session, zone: Dict, current_aws_id: str, upd
         ZoneName=zone['name'][:-1],
         ZoneId=zone['zoneid'],
         Comment=zone['comment'],
+        region="global",
         PrivateZone=zone['privatezone'],
         Arn=zone.get('arn'),
         AWS_ACCOUNT_ID=current_aws_id,
@@ -145,7 +154,9 @@ def load_ns_records(neo4j_session: neo4j.Session, records: List[Dict], zone_name
     ingest_records = """
     UNWIND {records} as record
     MERGE (a:DNSRecord:AWSDNSRecord{id: record.id})
-    ON CREATE SET a.firstseen = timestamp(), a.name = record.name, a.type = record.type
+    ON CREATE SET a.firstseen = timestamp(), a.name = record.name,
+    a.region = record.Region,
+    a.type = record.type
     SET a.lastupdated = {update_tag}, a.value = record.name
     WITH a,record
     MATCH (zone:AWSDNSZone{zoneid: record.zoneid})
@@ -320,6 +331,9 @@ def load_dns_details(
             if record_set['Type'] == 'A' or record_set['Type'] == 'CNAME':
                 record = transform_record_set(record_set, zone['Id'], record_set['Name'][:-1])
 
+                if record is not None:
+                    record["Region"] = record_set.get("Region", "global")
+
                 if record['type'] == 'A':
                     zone_a_records.append(record)
                 elif record['type'] == 'ALIAS':
@@ -329,6 +343,8 @@ def load_dns_details(
 
             if record_set['Type'] == 'NS':
                 record = transform_ns_record_set(record_set, zone['Id'])
+                if record is not None:
+                    record["Region"] = record_set.get("Region", "global")
                 zone_ns_records.append(record)
         if zone_a_records:
             load_a_records(neo4j_session, zone_a_records, update_tag)

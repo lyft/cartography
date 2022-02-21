@@ -30,6 +30,7 @@ def _load_ec2_instance_net_if_tx(
         tx: neo4j.Transaction,
         instance_data: Dict[str, Any],
         update_tag: int,
+        region: str,
 ) -> None:
     query = """
     MATCH (instance:EC2Instance{instanceid: {InstanceId}})
@@ -37,6 +38,7 @@ def _load_ec2_instance_net_if_tx(
         MERGE (nic:NetworkInterface{id: interface.NetworkInterfaceId})
         ON CREATE SET nic.firstseen = timestamp()
         SET nic.status = interface.Status,
+        nic.region = {region},
         nic.mac_address = interface.MacAddress,
         nic.description = interface.Description,
         nic.private_dns_name = interface.PrivateDnsName,
@@ -69,13 +71,14 @@ def _load_ec2_instance_net_if_tx(
         query,
         Interfaces=instance_data['NetworkInterfaces'],
         InstanceId=instance_data['InstanceId'],
+        region=region,
         update_tag=update_tag,
     )
 
 
 @timeit
-def load_ec2_instance_network_interfaces(neo4j_session: neo4j.Session, instance_data: Dict, update_tag: int) -> None:
-    neo4j_session.write_transaction(_load_ec2_instance_net_if_tx, instance_data, update_tag)
+def load_ec2_instance_network_interfaces(neo4j_session: neo4j.Session, instance_data: Dict, region: str, current_aws_account_id: str, update_tag: int) -> None:
+    neo4j_session.write_transaction(_load_ec2_instance_net_if_tx, instance_data, update_tag, region)
 
 
 def _load_ec2_reservation_tx(
@@ -296,6 +299,7 @@ def load_ec2_instances(
 
         for instance in reservation["Instances"]:
             instanceid = instance["InstanceId"]
+            instance["region"] = region
             instancearn = f"arn:aws:ec2:{region}:{current_aws_account_id}:instance/{instanceid}"
 
             monitoring_state = instance.get("Monitoring", {}).get("State")
@@ -376,6 +380,7 @@ def get_ec2_instance_ebs_volumes(instance: Dict) -> List[Dict]:
         for mapping in instance['BlockDeviceMappings']:
             if 'VolumeId' in mapping['Ebs']:
                 mapping['InstanceId'] = instance["InstanceId"]
+                mapping["region"] = instance.get("region", "global")
                 instance_ebs_volumes_list.append(mapping)
     return instance_ebs_volumes_list
 
@@ -390,7 +395,9 @@ def _load_ec2_instance_ebs_tx(
         UNWIND {ebs_mappings_list} as em
             MERGE (vol:EBSVolume{id: em.Ebs.VolumeId})
             ON CREATE SET vol.firstseen = timestamp()
-            SET vol.lastupdated = {update_tag}, vol.deleteontermination = em.Ebs.DeleteOnTermination
+            SET vol.lastupdated = {update_tag},
+            vol.region = em.region,
+            vol.deleteontermination = em.Ebs.DeleteOnTermination
             WITH vol, em
             MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
             MERGE (aa)-[r:RESOURCE]->(vol)

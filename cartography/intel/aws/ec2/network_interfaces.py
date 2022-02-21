@@ -45,6 +45,7 @@ def load_network_interfaces(
         ON CREATE SET netinf.firstseen = timestamp()
         SET netinf.lastupdated = {update_tag},
             netinf.mac_address = network_interface.MacAddress,
+            netinf.region = {region},
             netinf.description = network_interface.Description,
             netinf.private_ip_address = network_interface.PrivateIpAddress,
             netinf.id = network_interface.NetworkInterfaceId,
