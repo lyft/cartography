@@ -135,7 +135,7 @@ def _load_firestore_databases_tx(
         d.name = database.name,
         d.locationId = database.locationId,
         d.type = database.type,
-        d.location = {location},
+        d.location = database.locationId,
         d.concurrencyMode = database.concurrencyMode,
         d.lastupdated = {gcp_update_tag}
     WITH d
@@ -149,7 +149,6 @@ def _load_firestore_databases_tx(
         ingest_firestore_databases,
         firestore_databases=firestore_databases,
         ProjectId=project_id,
-        location="global",
         gcp_update_tag=gcp_update_tag,
     )
 

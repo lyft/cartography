@@ -289,7 +289,6 @@ def _load_kms_crypto_keys_tx(
         ingest_crypto_keys,
         crypto_keys=crypto_keys,
         ProjectId=project_id,
-        location="global",
         gcp_update_tag=gcp_update_tag,
     )
 

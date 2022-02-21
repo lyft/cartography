@@ -82,6 +82,9 @@ def get_bigtable_clusters(bigtable: Resource, bigtable_instances: List[Dict], pr
                         cluster['instance_id'] = instance['id']
                         cluster['instance_name'] = instance.get('name')
                         cluster['id'] = cluster['name']
+                        x = cluster.get("location", "global").split("/")
+                        x = x[x.index("locations") + 1].split("-")
+                        cluster['location'] = f"{x[0]}-{x[1]}"
                         bigtable_clusters.append(cluster)
                 request = bigtable.projects().instances().clusters().list_next(
                     previous_request=request, previous_response=response,

@@ -116,7 +116,7 @@ def get_gcp_instance_responses(project_id: str, zones: Optional[List[Dict]], com
         response_objects.append(res)
     for res in response_objects:
         x = res['zone'].split('-')
-        res['location'] = x[:-1]
+        res['location'] = f"{x[0]}-{x[1]}"
     return response_objects
 
 
