@@ -75,6 +75,8 @@ def get_apis(apigateway: Resource, project_id: str) -> List[Dict]:
                 for api in res['apis']:
                     api['project_id'] = project_id
                     api['id'] = api['name']
+                    x = api['name'].split('/')
+                    api['location'] = x[x.index('locations') + 1]
                     apis.append(api)
             req = apigateway.projects().locations().apis().list_next(previous_request=req, previous_response=res)
         return apis
@@ -118,6 +120,8 @@ def get_api_configs(apigateway: Resource, project_id: str) -> List[Dict]:
                         {apiConfig.get('name').split('/')[-3]}"
                     apiConfig['id'] = apiConfig['name']
                     apiConfig['project_id'] = project_id
+                    x = apiConfig['name'].split('/')
+                    apiConfig['location'] = x[x.index('locations') + 1]
                     api_configs.append(apiConfig)
             req = apigateway.projects().locations().apis().configs().list_next(
                 previous_request=req,
@@ -160,6 +164,8 @@ def get_gateways(apigateway: Resource, project_id: str) -> List[Dict]:
                 for gateway in res['gateways']:
                     gateway['id'] = gateway['name']
                     gateway['project_id'] = project_id
+                    x = gateway['name'].split('/')
+                    gateway['location'] = x[x.index('locations') + 1]
                     gateways.append(gateway)
             req = apigateway.projects().locations().gateways().list_next(previous_request=req, previous_response=res)
         return gateways
@@ -213,6 +219,7 @@ def load_apigateway_locations_tx(
         location.name = loc.name,
         location.locationId = loc.locationId,
         location.displayName = loc.displayName,
+        location.location = loc.displayName,
         location.lastupdated = {gcp_update_tag}
     WITH location
     MATCH (owner:GCPProject{id:{ProjectId}})
@@ -279,6 +286,7 @@ def load_apis_tx(tx: neo4j.Transaction, apis: List[Dict], project_id: str, gcp_u
     SET
         api.name = ap.name,
         api.createTime = ap.createTime,
+        api.location = ap.location,
         api.updateTime = ap.updateTime,
         api.displayName = ap.displayName,
         api.managedService = ap.managedService,
@@ -348,6 +356,7 @@ def load_api_configs_tx(tx: neo4j.Transaction, configs: List[Dict], project_id: 
     SET
         config.name = conf.name,
         config.createTime = conf.createTime,
+        api.location = conf.location,
         config.updateTime = conf.updateTime,
         config.displayName = conf.displayName,
         config.gatewayServiceAccount = conf.gatewayServiceAccount,
@@ -421,6 +430,7 @@ def load_gateways_tx(tx: neo4j.Transaction, gateways: List[Dict], project_id: st
         gateway.createTime = g.createTime,
         gateway.updateTime = g.updateTime,
         gateway.displayName = g.displayName,
+        api.location = g.location,
         gateway.apiConfig = g.apiConfig,
         gateway.state = g.state,
         gateway.defaultHostname = g.defaultHostname,

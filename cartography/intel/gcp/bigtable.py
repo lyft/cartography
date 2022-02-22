@@ -82,6 +82,11 @@ def get_bigtable_clusters(bigtable: Resource, bigtable_instances: List[Dict], pr
                         cluster['instance_id'] = instance['id']
                         cluster['instance_name'] = instance.get('name')
                         cluster['id'] = cluster['name']
+                        x = cluster.get("location", "global").split("/")
+                        cluster['location'] = "global"
+                        if x != ["global"]:
+                            x = x[x.index("locations") + 1].split("-")
+                            cluster['location'] = f"{x[0]}-{x[1]}"
                         bigtable_clusters.append(cluster)
                 request = bigtable.projects().instances().clusters().list_next(
                     previous_request=request, previous_response=response,
@@ -229,6 +234,7 @@ def _load_bigtable_instances_tx(
         i.name = instance.name,
         i.displayName = instance.displayName,
         i.state = instance.state,
+        i.location = {location},
         i.type = instance.type,
         i.createTime = instance.createTime,
         i.lastupdated = {gcp_update_tag}
@@ -243,6 +249,7 @@ def _load_bigtable_instances_tx(
         ingest_bigtable_instances,
         bigtable_instances=bigtable_instances,
         ProjectId=project_id,
+        location="global",
         gcp_update_tag=gcp_update_tag,
     )
 
@@ -277,7 +284,7 @@ def _load_bigtable_clusters_tx(
         c.firstseen = timestamp()
     SET
         c.name = cluster.name,
-        c.location = cluster.name,
+        c.location = cluster.location,
         c.state = cluster.state,
         c.serveNodes = cluster.serveNodes,
         c.defaultStorageType = cluster.defaultStorageType,
@@ -330,6 +337,7 @@ def _load_bigtable_cluster_backups_tx(
         b.firstseen = timestamp()
     SET
         b.name = backup.name,
+        b.location = {location},
         b.sourceTable = backup.sourceTable,
         b.expireTime = backup.expireTime,
         b.startTime = backup.startTime,
@@ -348,6 +356,7 @@ def _load_bigtable_cluster_backups_tx(
         ingest_bigtable_cluster_backups,
         bigtable_cluster_backups=bigtable_cluster_backups,
         ProjectId=project_id,
+        location="global",
         gcp_update_tag=gcp_update_tag,
     )
 
@@ -384,6 +393,7 @@ def _load_bigtable_tables_tx(
         t.name = table.name,
         t.replicationState = table.clusterState.replicationState,
         t.granularity = table.granularity,
+        t.location ={location},
         t.sourceType = table.restoreInfo.sourceType,
         t.lastupdated = {gcp_update_tag}
     WITH table, t
@@ -397,6 +407,7 @@ def _load_bigtable_tables_tx(
         ingest_bigtable_tables,
         bigtable_tables=bigtable_tables,
         ProjectId=project_id,
+        location="global",
         gcp_update_tag=gcp_update_tag,
     )
 

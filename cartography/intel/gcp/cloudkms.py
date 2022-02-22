@@ -78,6 +78,8 @@ def get_kms_keyrings(kms: Resource, kms_locations: List[Dict], project_id: str) 
                     for key_ring in response['keyRings']:
                         key_ring['loc_id'] = loc['id']
                         key_ring['id'] = key_ring['name']
+                        x = key_ring['name'].split('/')
+                        key_ring['location'] = x[x.index('locations') + 1]
                         key_rings.append(key_ring)
                 request = kms.projects().locations().keyRings().list_next(
                     previous_request=request,
@@ -125,6 +127,8 @@ def get_kms_crypto_keys(kms: Resource, key_rings: List[Dict], project_id: str) -
                     for crypto_key in response['cryptoKeys']:
                         crypto_key['keyring_id'] = key_ring['id']
                         crypto_key['id'] = crypto_key['name']
+                        x = crypto_key['name'].split('/')
+                        crypto_key['location'] = x[x.index('locations') + 1]
                         crypto_keys.append(crypto_key)
                 request = kms.projects().locations().keyRings().cryptoKeys().list_next(
                     previous_request=request,
@@ -175,6 +179,7 @@ def _load_kms_locations_tx(
         location.name = loc.name,
         location.locationId = loc.locationId,
         location.displayName = loc.displayName,
+        location.location = loc.displayName,
         location.lastupdated = {gcp_update_tag}
     WITH location, loc
     MATCH (owner:GCPProject{id:{ProjectId}})
@@ -219,6 +224,7 @@ def _load_kms_key_rings_tx(
         keyring.firstseen = timestamp()
     SET
         keyring.name = keyr.name,
+        keyring.location = keyr.location,
         keyring.createTime = keyr.createTime,
         keyring.lastupdated = {gcp_update_tag}
     WITH keyring, keyr
@@ -267,6 +273,7 @@ def _load_kms_crypto_keys_tx(
     SET
         crypto_key.name = ck.name,
         crypto_key.purpose = ck.purpose,
+        crypto_key.location = ck.location,
         crypto_key.createTime = ck.createTime,
         crypto_key.nextRotationTime = ck.nextRotationTime,
         crypto_key.rotationPeriod = ck.rotationPeriod,

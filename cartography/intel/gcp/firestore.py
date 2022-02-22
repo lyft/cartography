@@ -79,6 +79,7 @@ def get_firestore_indexes(firestore: Resource, firestore_databases: List[Dict], 
                     for index in response['indexes']:
                         index['database_id'] = database['id']
                         index['id'] = index['name']
+                        index['location'] = database.get('locationId', 'global')
                         firestore_indexes.append(index)
                 request = firestore.projects().databases().collectionGroups().indexes().list_next(
                     previous_request=request, previous_response=response,
@@ -135,6 +136,7 @@ def _load_firestore_databases_tx(
         d.name = database.name,
         d.locationId = database.locationId,
         d.type = database.type,
+        d.location = database.locationId,
         d.concurrencyMode = database.concurrencyMode,
         d.lastupdated = {gcp_update_tag}
     WITH d
@@ -183,6 +185,7 @@ def _load_firestore_indexes_tx(
     SET
         ix.name = index.name,
         ix.queryScope = index.queryScope,
+        ix.location = index.location,
         ix.state = index.state,
         ix.lastupdated = {gcp_update_tag}
     WITH ix,index
