@@ -125,7 +125,7 @@ def load_dns_zones(neo4j_session: neo4j.Session, dns_zones: List[Dict], project_
     SET
         zone.name = record.name,
         zone.dns_name = record.dnsName,
-        zone.location = {location},
+        zone.region = {region},
         zone.description = record.description,
         zone.visibility = record.visibility,
         zone.kind = record.kind,
@@ -141,7 +141,7 @@ def load_dns_zones(neo4j_session: neo4j.Session, dns_zones: List[Dict], project_
     neo4j_session.run(
         ingest_records,
         records=dns_zones,
-        location="global",
+        region="global",
         ProjectId=project_id,
         gcp_update_tag=gcp_update_tag,
     )
@@ -176,7 +176,7 @@ def load_rrs(neo4j_session: neo4j.Session, dns_rrs: List[Resource], project_id: 
     SET
         rrs.name = record.name,
         rrs.type = record.type,
-        rrs.location = {location},
+        rrs.region = {region},
         rrs.ttl = record.ttl,
         rrs.data = record.rrdatas,
         rrs.lastupdated = {gcp_update_tag}
@@ -190,7 +190,7 @@ def load_rrs(neo4j_session: neo4j.Session, dns_rrs: List[Resource], project_id: 
     neo4j_session.run(
         ingest_records,
         records=dns_rrs,
-        location="global",
+        region="global",
         gcp_update_tag=gcp_update_tag,
     )
 

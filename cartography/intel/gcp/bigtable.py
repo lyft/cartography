@@ -83,10 +83,12 @@ def get_bigtable_clusters(bigtable: Resource, bigtable_instances: List[Dict], pr
                         cluster['instance_name'] = instance.get('name')
                         cluster['id'] = cluster['name']
                         x = cluster.get("location", "global").split("/")
-                        cluster['location'] = "global"
+                        cluster['region'] = "global"
                         if x != ["global"]:
                             x = x[x.index("locations") + 1].split("-")
-                            cluster['location'] = f"{x[0]}-{x[1]}"
+                            cluster['region'] = x[0]
+                            if len(x) > 1:
+                                cluster['region'] = f"{x[0]}-{x[1]}"
                         bigtable_clusters.append(cluster)
                 request = bigtable.projects().instances().clusters().list_next(
                     previous_request=request, previous_response=response,
@@ -135,6 +137,7 @@ def get_bigtable_cluster_backups(bigtable: Resource, bigtable_clusters: List[Dic
                     for backup in response['backups']:
                         backup['cluster_id'] = cluster['id']
                         backup['id'] = backup['name']
+                        backup['region'] = cluster.get('region', "global")
                         cluster_backups.append(backup)
                 request = bigtable.projects().instances().clusters().backup().list_next(
                     previous_request=request, previous_response=response,
@@ -183,6 +186,7 @@ def get_get_bigtable_tables(bigtable: Resource, bigtable_instances: List[Dict], 
                     for table in response['tables']:
                         table['instance_id'] = instance['id']
                         table['id'] = table['name']
+                        table['region'] = instance.get('region', 'global')
                         bigtable_tables.append(table)
                 request = bigtable.projects().instances().tables().list_next(
                     previous_request=request, previous_response=response,
@@ -234,7 +238,7 @@ def _load_bigtable_instances_tx(
         i.name = instance.name,
         i.displayName = instance.displayName,
         i.state = instance.state,
-        i.location = {location},
+        i.region = {region},
         i.type = instance.type,
         i.createTime = instance.createTime,
         i.lastupdated = {gcp_update_tag}
@@ -249,7 +253,7 @@ def _load_bigtable_instances_tx(
         ingest_bigtable_instances,
         bigtable_instances=bigtable_instances,
         ProjectId=project_id,
-        location="global",
+        region="global",
         gcp_update_tag=gcp_update_tag,
     )
 
@@ -285,6 +289,7 @@ def _load_bigtable_clusters_tx(
     SET
         c.name = cluster.name,
         c.location = cluster.location,
+        c.region = cluster.region,
         c.state = cluster.state,
         c.serveNodes = cluster.serveNodes,
         c.defaultStorageType = cluster.defaultStorageType,
@@ -337,7 +342,7 @@ def _load_bigtable_cluster_backups_tx(
         b.firstseen = timestamp()
     SET
         b.name = backup.name,
-        b.location = {location},
+        b.region = backup.region,
         b.sourceTable = backup.sourceTable,
         b.expireTime = backup.expireTime,
         b.startTime = backup.startTime,
@@ -356,7 +361,6 @@ def _load_bigtable_cluster_backups_tx(
         ingest_bigtable_cluster_backups,
         bigtable_cluster_backups=bigtable_cluster_backups,
         ProjectId=project_id,
-        location="global",
         gcp_update_tag=gcp_update_tag,
     )
 
@@ -393,7 +397,7 @@ def _load_bigtable_tables_tx(
         t.name = table.name,
         t.replicationState = table.clusterState.replicationState,
         t.granularity = table.granularity,
-        t.location ={location},
+        t.region =table.region,
         t.sourceType = table.restoreInfo.sourceType,
         t.lastupdated = {gcp_update_tag}
     WITH table, t
@@ -407,7 +411,6 @@ def _load_bigtable_tables_tx(
         ingest_bigtable_tables,
         bigtable_tables=bigtable_tables,
         ProjectId=project_id,
-        location="global",
         gcp_update_tag=gcp_update_tag,
     )
 

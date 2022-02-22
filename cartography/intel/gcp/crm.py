@@ -90,7 +90,7 @@ def load_gcp_organizations(neo4j_session: neo4j.Session, data: List[Dict], gcp_u
     MERGE (org:GCPOrganization{id:{OrgName}})
     ON CREATE SET org.firstseen = timestamp()
     SET org.orgname = {OrgName},
-    org.location = {location},
+    org.region = {region},
     org.displayname = {DisplayName},
     org.lifecyclestate = {LifecycleState},
     org.lastupdated = {gcp_update_tag}
@@ -104,7 +104,7 @@ def load_gcp_organizations(neo4j_session: neo4j.Session, data: List[Dict], gcp_u
             query,
             OrgName=org_object['name'],
             DisplayName=org_object.get('displayName', None),
-            location="global",
+            region="global",
             LifecycleState=org_object.get('lifecycleState', None),
             gcp_update_tag=gcp_update_tag,
         )
@@ -134,7 +134,7 @@ def load_gcp_folders(neo4j_session: neo4j.Session, data: List[Dict], gcp_update_
         MERGE (folder:GCPFolder{id:{FolderName}})
         ON CREATE SET folder.firstseen = timestamp()
         SET folder.foldername = {FolderName},
-        folder.location = {location},
+        folder.region = {region},
         folder.displayname = {DisplayName},
         folder.lifecyclestate = {LifecycleState},
         folder.lastupdated = {gcp_update_tag}
@@ -148,7 +148,7 @@ def load_gcp_folders(neo4j_session: neo4j.Session, data: List[Dict], gcp_update_
             ParentId=folder['parent'],
             FolderName=folder['name'],
             DisplayName=folder.get('displayName', None),
-            location="global",
+            region="global",
             LifecycleState=folder.get('lifecycleState', None),
             gcp_update_tag=gcp_update_tag,
         )
@@ -172,7 +172,7 @@ def load_gcp_projects(
     MERGE (project:GCPProject{id:{ProjectId}})
     ON CREATE SET project.firstseen = timestamp()
     SET project.projectid = {ProjectId},
-    project.location = {location},
+    project.region = {region},
     project.projectnumber = {ProjectNumber},
     project.displayname = {DisplayName},
     project.lifecyclestate = {LifecycleState},
@@ -192,7 +192,7 @@ def load_gcp_projects(
             ProjectNumber=project['projectNumber'],
             DisplayName=project.get('name', None),
             LifecycleState=project.get('lifecycleState', None),
-            location="global",
+            region="global",
             WorkspaceAccountId=common_job_parameters['GCP_PROJECT_ID'],
             gcp_update_tag=gcp_update_tag,
         )
