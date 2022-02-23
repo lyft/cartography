@@ -16,3 +16,6 @@ build/
 .env*
 .compose
 generated
+config/
+env.dev.json
+env.prod.json

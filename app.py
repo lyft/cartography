@@ -12,25 +12,43 @@ from utils.logger import get_logger
 lambda_init = None
 context = None
 
+def current_config(env):
+    return env == "config/production.json" if env=="PRODUCTION" else "config/default.json"
+
+def set_assume_role_keys(context):
+    context.assume_role_access_key_key_id = context.assume_role_access_secret_key_id = os.environ['CDX_APP_ASSUME_ROLE_KMS_KEY_ID']
+    context.assume_role_access_key_cipher = os.environ['CDX_APP_ASSUME_ROLE_ACCESS_KEY']
+    context.assume_role_access_secret_cipher = os.environ['CDX_APP_ASSUME_ROLE_ACCESS_SECRET']
 
 def init_lambda(ctx):
     global lambda_init, context
 
     context = AppContext(
-        region=os.environ['CLOUDANIX_DEFAULT_REGION'],
-        log_level=os.environ['CLOUDANIX_DEFAULT_LOG_LEVEL'],
-        app_env=os.environ['CLOUDANIX_APP_ENV'],
+        region=os.environ['CDX_DEFAULT_REGION'],
+        log_level=os.environ['CDX_DEFAULT_LOG_LEVEL'],
+        app_env=os.environ['CDX_APP_ENV'],
     )
     context.logger = get_logger(context.log_level)
 
-    config = os.environ['CLOUDANIX_CONFIG']
+    decrypted_value = ''
+    
+    # Read from config files in the project
+    with open(current_config(context.app_env), 'r') as f:
+        decrypted_value = f
+        # decrypted_value = json.load(f)
+        # decrypted_value = json.dumps(decrypted_value)
 
-    kms_library = KMSLibrary(context)
-    decrypted_value = kms_library.decrypt(config)
+    # Read from Parameter store
+    # config = os.environ['CDX_CONFIG']
+
+    # kms_library = KMSLibrary(context)
+    # decrypted_value = kms_library.decrypt(config)
 
     # Cloudanix AWS AccountID
     context.aws_account_id = ctx.invoked_function_arn.split(":")[4]
     context.parse(decrypted_value)
+    
+    set_assume_role_keys(context)
 
     lambda_init = True
 
@@ -107,7 +125,7 @@ def process_request(context, args):
 
 
 def publish_response(context, req, resp):
-    if context.app_env != 'production':
+    if context.app_env != 'PRODUCTION':
         try:
             with open('response.json', 'w') as outfile:
                 json.dump(resp, outfile, indent=2)
@@ -142,7 +160,7 @@ def publish_response(context, req, resp):
 def get_auth_creds(context, args):
     auth_helper = AuthLibrary(context)
 
-    if context.app_env == 'production' or context.app_env == 'debug':
+    if context.app_env == 'PRODUCTION' or context.app_env == 'DEBUG':
         auth_params = {
             'aws_access_key_id': auth_helper.get_assume_role_access_key(),
             'aws_secret_access_key': auth_helper.get_assume_role_access_secret(),

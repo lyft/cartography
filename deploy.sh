@@ -7,23 +7,32 @@ echo "Begin Set Environment Variables"
 # Parse Arguments
 # Parse Arguments
 ENV=${1-}
-file_name=".env.aws.${ENV}.json"
+file_name="env.${ENV}.json"
 
 if [[ $ENV == "" ]]
 then
-	echo "Environment name is required, supported values: development, production"
+	echo "Environment name is required, supported values: dev, prod"
 
 	exit
 fi
 
 region=$(cat $file_name | jq -r '.region')
-export CLOUDANIX_DEFAULT_REGION=$region
+export CDX_DEFAULT_REGION=$region
 
 log_level=$(cat $file_name | jq -r '.logLevel')
-export CLOUDANIX_DEFAULT_LOG_LEVEL=$log_level
+export CDX_DEFAULT_LOG_LEVEL=$log_level
 
 app_env=$(cat $file_name | jq -r '.appEnv')
-export CLOUDANIX_APP_ENV=$app_env
+export CDX_APP_ENV=$app_env
+
+assume_role_kms_key_id=$(cat $file_name | jq -r '.assumeRoleKMSKeyID')
+export CDX_APP_ASSUME_ROLE_KMS_KEY_ID=$assume_role_kms_key_id
+
+assume_role_access_key=$(cat $file_name | jq -r '.assumeRoleAccessKey')
+export CDX_APP_ASSUME_ROLE_ACCESS_KEY=$assume_role_access_key
+
+assume_role_access_secret=$(cat $file_name | jq -r '.assumeRoleAccessSecret')
+export CDX_APP_ASSUME_ROLE_ACCESS_SECRET=$assume_role_access_secret
 
 echo "End Set Environment Variables"
 

@@ -29,7 +29,7 @@ class SNSLibrary:
 
     def publish(self, message, topic):
         try:
-            if self.context.app_env == 'production':
+            if self.context.app_env == 'PRODUCTION':
                 self.sns_client.publish(
                     Message=message,
                     TopicArn=topic,

@@ -49,7 +49,7 @@ def process_request(params):
     body = {
         "credentials": {
             'account_email': params['accountEmail'],
-            'token_uri': os.environ['CLOUDANIX_TOKEN_URI'],
+            'token_uri': os.environ['CDX_TOKEN_URI'],
         },
         "neo4j": {
             "uri": os.environ.get('neo4juri'),
@@ -99,9 +99,9 @@ def publish_response(req, resp):
 
     if 'resultTopic' in req['params']:
         # Result should be pushed to "resultTopic" passed in the request
-        status = pubsub_helper.publish(os.environ['CLOUDANIX_PROJECT_ID'], json.dumps(body), req['params']['resultTopic'])
+        status = pubsub_helper.publish(os.environ['CDX_PROJECT_ID'], json.dumps(body), req['params']['resultTopic'])
 
     else:
-        status = pubsub_helper.publish(os.environ['CLOUDANIX_PROJECT_ID'], json.dumps(body), os.environ['CARTOGRAPHY_RESULT_TOPIC'])
+        status = pubsub_helper.publish(os.environ['CDX_PROJECT_ID'], json.dumps(body), os.environ['CARTOGRAPHY_RESULT_TOPIC'])
 
     logging.info(f'result published to PubSub with status: {status}')

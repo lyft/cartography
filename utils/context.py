@@ -218,12 +218,6 @@ class AppContext:
 
     def parse(self, config):
         config = json.loads(config)
-        self.authorization_key = config['common']['authorization']['key']
-        self.authorization_value = config['common']['authorization']['value']
-        self.assume_role_access_key_key_id = config['common']['kms']['assumeRoleAccessKeyKMSKeyID']
-        self.assume_role_access_key_cipher = config['common']['kms']['assumeRoleAccessKeyCipher']
-        self.assume_role_access_secret_key_id = config['common']['kms']['assumeRoleAccessSecretKMSKeyID']
-        self.assume_role_access_secret_cipher = config['common']['kms']['assumeRoleAccessSecretCipher']
         self.sns_offline_url = self.get_value(config, ['common', 'sns', 'offlineURL'])
 
         if config.get('audit'):
