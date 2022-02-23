@@ -88,6 +88,7 @@ def _load_networks_tx(tx: neo4j.Transaction, subscription_id: str, networks_list
     ON CREATE SET n.firstseen = timestamp(),
     n.type = network.type,
     n.location = network.location,
+    n.region = network.location,
     n.resourcegroup = network.resource_group
     SET n.lastupdated = {update_tag},
     n.name = network.name,
@@ -134,20 +135,21 @@ def get_networks_subnets_list(networks_list: List[Dict], client: NetworkManageme
     try:
         networks_subnets_list: List[Dict] = []
         for network in networks_list:
-            networks_subnets_list = networks_subnets_list + \
-                list(
-                    map(
-                        lambda x: x.as_dict(), client.subnets.list(
-                            resource_group_name=network['resource_group'], virtual_network_name=network["name"],
-                        ),
+            subnets_list = list(
+                map(
+                    lambda x: x.as_dict(), client.subnets.list(
+                        resource_group_name=network['resource_group'], virtual_network_name=network["name"],
                     ),
-                )
+                ),
+            )
 
-        for subnet in networks_subnets_list:
-            x = subnet['id'].split('/')
-            subnet['resource_group'] = x[x.index('resourceGroups') + 1]
-            subnet['network_id'] = subnet['id'][:subnet['id'].index("/subnets")]
-            subnet['type'] = "Microsoft.Network/Subnets"
+            for subnet in subnets_list:
+                x = subnet['id'].split('/')
+                subnet['resource_group'] = x[x.index('resourceGroups') + 1]
+                subnet['network_id'] = subnet['id'][:subnet['id'].index("/subnets")]
+                subnet['type'] = "Microsoft.Network/Subnets"
+                subnet['location'] = network.get('location', 'global')
+            networks_subnets_list.extend(subnets_list)
         return networks_subnets_list
 
     except HttpResponseError as e:
@@ -167,7 +169,7 @@ def _load_networks_subnets_tx(
     n.type = subnet.type
     SET n.name = subnet.name,
     n.lastupdated = {azure_update_tag},
-    n.location= {location},
+    n.region= subnet.location,
     n.resource_group_name=subnet.resource_group,
     n.private_endpoint_network_policies=subnet.private_endpoint_network_policies,
     n.private_link_service_network_policies=subnet.private_link_service_network_policies,
@@ -181,7 +183,6 @@ def _load_networks_subnets_tx(
 
     tx.run(
         ingest_network_subnet,
-        location="global",
         networks_subnets_list=networks_subnets_list,
         azure_update_tag=update_tag,
     )
@@ -223,6 +224,7 @@ def _load_network_routetables_tx(
     ON CREATE SET n.firstseen = timestamp(),
     n.type = routetable.type,
     n.location = routetable.location,
+    n.region = routetable.location,
     n.resourcegroup = routetable.resource_group
     SET n.lastupdated = {update_tag},
     n.name = routetable.name,
@@ -261,19 +263,20 @@ def get_network_routes_list(network_routetables_list: List[Dict], client: Networ
     try:
         network_routes_list: List[Dict] = []
         for routetable in network_routetables_list:
-            network_routes_list = network_routes_list + \
-                list(
-                    map(
-                        lambda x: x.as_dict(), client.routes.list(
-                            resource_group_name=routetable['resource_group'], route_table_name=routetable['name'],
-                        ),
+            routes_list = list(
+                map(
+                    lambda x: x.as_dict(), client.routes.list(
+                        resource_group_name=routetable['resource_group'], route_table_name=routetable['name'],
                     ),
-                )
+                ),
+            )
 
-        for route in network_routes_list:
-            x = route['id'].split('/')
-            route['resource_group'] = x[x.index('resourceGroups') + 1]
-            route['routetable_id'] = route['id'][:route['id'].index("/routes")]
+            for route in routes_list:
+                x = route['id'].split('/')
+                route['resource_group'] = x[x.index('resourceGroups') + 1]
+                route['routetable_id'] = route['id'][:route['id'].index("/routes")]
+                route['location'] = routetable.get('location', 'global')
+            network_routes_list.extend(routes_list)
         return network_routes_list
 
     except HttpResponseError as e:
@@ -292,7 +295,7 @@ def _load_network_routes_tx(
     ON CREATE SET n.firstseen = timestamp(),
     n.type = route.type
     SET n.name = route.name,
-    n.location= {location},
+    n.region= route.location,
     n.lastupdated = {azure_update_tag},
     n.etag=route.etag
     WITH n, route
@@ -304,7 +307,6 @@ def _load_network_routes_tx(
 
     tx.run(
         ingest_network_route,
-        location="global",
         network_routes_list=network_routes_list,
         azure_update_tag=update_tag,
     )
@@ -347,6 +349,7 @@ def _load_network_security_groups_tx(
     ON CREATE SET n.firstseen = timestamp(),
     n.type = network.type,
     n.location = network.location,
+    n.region = network.location,
     n.resourcegroup = network.resource_group
     SET n.lastupdated = {update_tag},
     n.name = network.name,
@@ -387,7 +390,7 @@ def get_network_security_rules_list(
     try:
         network_security_rules_list: List[Dict] = []
         for security_group in network_security_groups_list:
-            network_security_rules_list = network_security_rules_list + list(
+            security_rules_list = list(
                 map(
                     lambda x: x.as_dict(), client.security_rules.list(
                         resource_group_name=security_group['resource_group'],
@@ -396,10 +399,12 @@ def get_network_security_rules_list(
                 ),
             )
 
-        for rule in network_security_rules_list:
-            x = rule['id'].split('/')
-            rule['resource_group'] = x[x.index('resourceGroups') + 1]
-            rule['security_group_id'] = rule['id'][:rule['id'].index("/securityRules")]
+            for rule in security_rules_list:
+                x = rule['id'].split('/')
+                rule['resource_group'] = x[x.index('resourceGroups') + 1]
+                rule['security_group_id'] = rule['id'][:rule['id'].index("/securityRules")]
+                rule['location'] = security_group.get('location', 'global')
+            network_security_groups_list.extend(security_rules_list)
         return network_security_rules_list
 
     except HttpResponseError as e:
@@ -418,7 +423,7 @@ def _load_network_security_rules_tx(
     ON CREATE SET n.firstseen = timestamp(),
     n.type = rule.type
     SET n.name = rule.name,
-    n.location= {location},
+    n.region= rule.location,
     n.lastupdated = {azure_update_tag},
     n.etag=rule.etag
     WITH n, rule
@@ -430,7 +435,6 @@ def _load_network_security_rules_tx(
 
     tx.run(
         ingest_network_rule,
-        location="global",
         network_security_rules_list=network_security_rules_list,
         azure_update_tag=update_tag,
     )
@@ -468,7 +472,8 @@ def _load_public_ip_addresses_tx(
     MERGE (n:AzurePublicIPAddress{id: address.id})
     ON CREATE SET n.firstseen = timestamp(),
     n.type = address.type,
-    n.location = address.location
+    n.location = address.location,
+    n.region = address.location
     SET n.lastupdated = {update_tag},
     n.name = address.name,
     n.etag=address.etag
@@ -505,7 +510,7 @@ def get_usages_list(networks_list: List[Dict], client: NetworkManagementClient) 
     try:
         usages_list: List[Dict] = []
         for network in networks_list:
-            usages_list = usages_list + list(
+            usages = list(
                 map(
                     lambda x: x.as_dict(), client.virtual_networks.list_usage(
                         resource_group_name=network['resource_group'], virtual_network_name=network['name'],
@@ -513,8 +518,10 @@ def get_usages_list(networks_list: List[Dict], client: NetworkManagementClient) 
                 ),
             )
 
-        for usage in usages_list:
-            usage['network_id'] = usage['id'][:usage['id'].index("/subnets")]
+            for usage in usages:
+                usage['network_id'] = usage['id'][:usage['id'].index("/subnets")]
+                usage['location'] = network.get('location', 'global')
+            usages_list.extend(usages)
         return usages_list
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving usages - {e}")
@@ -531,7 +538,7 @@ def _load_usages_tx(
     MERGE (n:AzureNetworkUsage{id: usage.id})
     ON CREATE SET n.firstseen = timestamp()
     SET n.currentValue = usage.currentValue,
-    n.location= {location},
+    n.region= usage.location,
     n.lastupdated = {azure_update_tag},
     n.limit=usage.limit,
     n.unit=usage.unit

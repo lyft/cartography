@@ -56,6 +56,7 @@ def load_vms(neo4j_session: neo4j.Session, subscription_id: str, vm_list: List[D
     MERGE (v:AzureVirtualMachine{id: vm.id})
     ON CREATE SET v.firstseen = timestamp(),
     v.type = vm.type, v.location = vm.location,
+    v.region = vm.location,
     v.resourcegroup = vm.resource_group
     SET v.lastupdated = {update_tag}, v.name = vm.name,
     v.plan = vm.plan.product, v.size = vm.hardware_profile.vm_size,
@@ -111,7 +112,8 @@ def _load_vm_extensions_tx(tx: neo4j.Transaction, vm_extensions_list: List[Dict]
     ingest_vm_extension = """
     UNWIND {vm_extensions_list} AS extension
     MERGE (v:AzureVirtualMachineExtension{id: extension.id})
-    ON CREATE SET v.firstseen = timestamp(), v.location = extension.location
+    ON CREATE SET v.firstseen = timestamp(), v.location = extension.location,
+    v.region = extension.location
     SET v.lastupdated = {update_tag}, v.name = extension.name,
     v.type = extension.type
     WITH v,extension
@@ -172,7 +174,7 @@ def _load_vm_available_sizes_tx(tx: neo4j.Transaction, vm_available_sizes_list: 
     UNWIND {vm_available_sizes_list} AS size
     MERGE (v:AzureVirtualMachineAvailableSize{id: size.id})
     ON CREATE SET v.firstseen = timestamp(), v.numberOfCores = size.numberOfCores,
-    v.location= size.location,
+    v.location= size.location,v.region= size.location
     SET v.lastupdated = {update_tag}, v.osDiskSizeInMB = size.osDiskSizeInMB,
     v.name = size.name,
     v.resourceDiskSizeInMB = size.resourceDiskSizeInMB,
@@ -233,6 +235,7 @@ def _load_vm_scale_sets_tx(
     ON CREATE SET a.firstseen = timestamp(),
     a.type = set.type,
     a.location = set.location,
+    a.region = set.location,
     a.resourcegroup = set.resource_group
     SET a.lastupdated = {update_tag},
     a.name = set.name
@@ -303,6 +306,7 @@ def _load_vm_scale_sets_extensions_tx(
     ON CREATE SET v.firstseen = timestamp()
     SET v.lastupdated = {update_tag}, v.name = extension.name,
     v.location = extension.location,
+    v.region = extension.location,
     v.type = extension.type
     WITH v,extension
     MATCH (owner:AzureVirtualMachineScaleSet{id: extension.set_id})
@@ -342,6 +346,7 @@ def load_vm_data_disks(neo4j_session: neo4j.Session, vm_id: str, data_disks: Lis
     SET d.lastupdated = {update_tag}, d.name = disk.name,
     d.vhd = disk.vhd.uri, d.image = disk.image.uri,
     d.location = disk.location,
+    d.region = disk.location,
     d.size = disk.disk_size_gb, d.caching = disk.caching,
     d.createoption = disk.create_option, d.write_accelerator_enabled=disk.write_accelerator_enabled,
     d.managed_disk_storage_type=disk.managed_disk.storage_account_type
@@ -387,6 +392,7 @@ def load_disks(neo4j_session: neo4j.Session, subscription_id: str, disk_list: Li
     MERGE (d:AzureDisk{id: disk.id})
     ON CREATE SET d.firstseen = timestamp(),
     d.type = disk.type, d.location = disk.location,
+    d.region = disk.location,
     d.resourcegroup = disk.resource_group
     SET d.lastupdated = {update_tag}, d.name = disk.name,
     d.createoption = disk.creation_data.create_option, d.disksizegb = disk.disk_size_gb,
@@ -434,7 +440,8 @@ def load_snapshots(neo4j_session: neo4j.Session, subscription_id: str, snapshots
     MERGE (s:AzureSnapshot{id: snapshot.id})
     ON CREATE SET s.firstseen = timestamp(),
     s.resourcegroup = snapshot.resource_group,
-    s.type = snapshot.type, s.location = snapshot.location
+    s.type = snapshot.type, s.location = snapshot.location,
+    s.region = snapshot.location
     SET s.lastupdated = {update_tag}, s.name = snapshot.name,
     s.createoption = snapshot.creation_data.create_option, s.disksizegb = snapshot.disk_size_gb,
     s.encryption = snapshot.encryption_settings_collection.enabled, s.incremental = snapshot.incremental,

@@ -69,7 +69,8 @@ def load_server_data(
     UNWIND {server_list} as server
     MERGE (s:AzureSQLServer{id: server.id})
     ON CREATE SET s.firstseen = timestamp(),
-    s.resourcegroup = server.resourceGroup, s.location = server.location
+    s.resourcegroup = server.resourceGroup, s.location = server.location,
+    s.region = server.location
     SET s.lastupdated = {azure_update_tag},
     s.name = server.name,
     s.kind = server.kind,
@@ -397,6 +398,7 @@ def _load_server_dns_aliases(
     ON CREATE SET alias.firstseen = timestamp()
     SET alias.name = dns_alias.name,
     alias.location = dns_alias.location,
+    alias.region = dns_alias.location,
     alias.dnsrecord = dns_alias.azure_dns_record,
     alias.lastupdated = {azure_update_tag}
     WITH alias, dns_alias
@@ -428,6 +430,7 @@ def _load_server_ad_admins(
     a.administratortype = ad_admin.administrator_type,
     a.login = ad_admin.login,
     a.location = ad_admin.location,
+    a.region = ad_admin.location,
     a.lastupdated = {azure_update_tag}
     WITH a, ad_admin
     MATCH (s:AzureSQLServer{id: ad_admin.server_id})
@@ -455,7 +458,7 @@ def _load_recoverable_databases(
     MERGE (rd:AzureRecoverableDatabase{id: rec_db.id})
     ON CREATE SET rd.firstseen = timestamp()
     SET rd.name = rec_db.name,
-    rd.location = {location},
+    rd.region = {region},
     rd.edition = rec_db.edition,
     rd.servicelevelobjective = rec_db.service_level_objective,
     rd.lastbackupdate = rec_db.last_available_backup_date,
@@ -470,6 +473,7 @@ def _load_recoverable_databases(
     neo4j_session.run(
         ingest_recoverable_databases,
         recoverable_databases_list=recoverable_databases,
+        region='global',
         azure_update_tag=update_tag,
     )
 
@@ -484,7 +488,8 @@ def _load_restorable_dropped_databases(
     ingest_restorable_dropped_databases = """
     UNWIND {restorable_dropped_databases_list} as res_dropped_db
     MERGE (rdd:AzureRestorableDroppedDatabase{id: res_dropped_db.id})
-    ON CREATE SET rdd.firstseen = timestamp(), rdd.location = res_dropped_db.location
+    ON CREATE SET rdd.firstseen = timestamp(), rdd.location = res_dropped_db.location,
+    rdd.region = res_dropped_db.location
     SET rdd.name = res_dropped_db.name,
     rdd.databasename = res_dropped_db.database_name,
     rdd.creationdate = res_dropped_db.creation_date,
@@ -547,7 +552,8 @@ def _load_elastic_pools(
     ingest_elastic_pools = """
     UNWIND {elastic_pools_list} as ep
     MERGE (e:AzureElasticPool{id: ep.id})
-    ON CREATE SET e.firstseen = timestamp(), e.location = ep.location
+    ON CREATE SET e.firstseen = timestamp(), e.location = ep.location,
+    e.region = ep.location
     SET e.name = ep.name,
     e.kind = ep.kind,
     e.creationdate = ep.creation_date,
@@ -580,7 +586,8 @@ def _load_databases(
     ingest_databases = """
     UNWIND {databases_list} as az_database
     MERGE (d:AzureSQLDatabase{id: az_database.id})
-    ON CREATE SET d.firstseen = timestamp(), d.location = az_database.location
+    ON CREATE SET d.firstseen = timestamp(), d.location = az_database.location,
+    d.region = az_database.location
     SET d.name = az_database.name,
     d.kind = az_database.kind,
     d.creationdate = az_database.creation_date,
@@ -797,7 +804,8 @@ def _load_replication_links(
     UNWIND {replication_links_list} as replication_link
     MERGE (rl:AzureReplicationLink{id: replication_link.id})
     ON CREATE SET rl.firstseen = timestamp(),
-    rl.location = replication_link.location
+    rl.location = replication_link.location,
+    rl.region = replication_link.location
     SET rl.name = replication_link.name,
     rl.partnerdatabase = replication_link.partner_database,
     rl.partnerlocation = replication_link.partner_location,
@@ -838,6 +846,7 @@ def _load_db_threat_detection_policies(
     policy.location = tdp.location
     SET policy.name = tdp.name,
     policy.location = tdp.location,
+    policy.region = tdp.location,
     policy.kind = tdp.kind,
     policy.emailadmins = tdp.email_account_admins,
     policy.emailaddresses = tdp.email_addresses,
@@ -872,7 +881,8 @@ def _load_restore_points(
     UNWIND {restore_points_list} as rp
     MERGE (point:AzureRestorePoint{id: rp.id})
     ON CREATE SET point.firstseen = timestamp(),
-    point.location = rp.location
+    point.location = rp.location,
+    point.region = rp.location
     SET point.name = rp.name,
     point.restoredate = rp.earliest_restore_date,
     point.restorepointtype = rp.restore_point_type,
@@ -903,7 +913,8 @@ def _load_transparent_data_encryptions(
     UNWIND {transparent_data_encryptions_list} as e
     MERGE (tae:AzureTransparentDataEncryption{id: e.id})
     ON CREATE SET tae.firstseen = timestamp(),
-    tae.location = e.location
+    tae.location = e.location,
+    tae.region = e.location
     SET tae.name = e.name,
     tae.status = e.status,
     tae.lastupdated = {azure_update_tag}

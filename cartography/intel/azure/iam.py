@@ -78,7 +78,7 @@ def _load_tenant_users_tx(
     ON CREATE SET i.firstseen = timestamp(),
     i.object_id=user.object_id,
     i.name = user.display_name,
-    i.location = {location},
+    i.region = {region},
     i.given_name = user.given_name,
     i.surname = user.surname,
     i.user_type = user.user_type,
@@ -96,7 +96,7 @@ def _load_tenant_users_tx(
 
     tx.run(
         ingest_user,
-        location="global",
+        region="global",
         tenant_users_list=tenant_users_list,
         tenant_id=tenant_id,
         update_tag=update_tag,
@@ -140,7 +140,7 @@ def _load_tenant_groups_tx(
     MERGE (i:AzureGroup{id: group.id})
     ON CREATE SET i.firstseen = timestamp(),
     i.object_id=group.object_id,
-    i.location = {location},
+    i.region = {region},
     i.visibility = group.visibility,
     i.classification = group.classification,
     i.createdDateTime = group.createdDateTime,
@@ -156,7 +156,7 @@ def _load_tenant_groups_tx(
 
     tx.run(
         ingest_group,
-        location="global",
+        region="global",
         tenant_groups_list=tenant_groups_list,
         tenant_id=tenant_id,
         update_tag=update_tag,
@@ -200,7 +200,7 @@ def _load_tenant_applications_tx(
     MERGE (i:AzureApplication{id: app.id})
     ON CREATE SET i.firstseen = timestamp(),
     i.object_id=app.object_id,
-    i.location = {location},
+    i.region = {region},
     i.displayName = app.display_name,
     i.publisherDomain = app.publisher_domain
     SET i.lastupdated = {update_tag},
@@ -214,7 +214,7 @@ def _load_tenant_applications_tx(
 
     tx.run(
         ingest_app,
-        location="global",
+        region="global",
         tenant_applications_list=tenant_applications_list,
         tenant_id=tenant_id,
         update_tag=update_tag,
@@ -260,7 +260,7 @@ def _load_tenant_service_accounts_tx(
     MERGE (i:AzureServiceAccount{id: service.id})
     ON CREATE SET i.firstseen = timestamp(),
     i.name = service.display_name,
-    i.location = {location},
+    i.region = {region},
     i.object_id=service.object_id,
     i.accountEnabled = service.account_enabled,
     i.servicePrincipalType = service.service_principal_type
@@ -275,7 +275,7 @@ def _load_tenant_service_accounts_tx(
 
     tx.run(
         ingest_app,
-        location="global",
+        region="global",
         tenant_service_accounts_list=tenant_service_accounts_list,
         tenant_id=tenant_id,
         update_tag=update_tag,
@@ -319,7 +319,7 @@ def _load_tenant_domains_tx(
     MERGE (i:AzureDomain{id: domain.id})
     ON CREATE SET i.firstseen = timestamp(),
     i.isRoot = domain.isRoot,
-    i.location = {location},
+    i.region = {region},
     i.name = domain.name,
     i.isInitial = domain.isInitial
     SET i.lastupdated = {update_tag},
@@ -334,7 +334,7 @@ def _load_tenant_domains_tx(
 
     tx.run(
         ingest_domain,
-        location="global",
+        region="global",
         tenant_domains_list=tenant_domains_list,
         tenant_id=tenant_id,
         update_tag=update_tag,
@@ -388,7 +388,7 @@ def _load_roles_tx(
     MERGE (i:AzureRole{id: role.id})
     ON CREATE SET i.firstseen = timestamp(),
     i.name = role.name,
-    i.location = {location},
+    i.region = {region},
     i.type = role.type
     SET i.lastupdated = {update_tag},
     i.roleName = role.roleName,
@@ -407,7 +407,7 @@ def _load_roles_tx(
 
     tx.run(
         ingest_role,
-        location="global",
+        region="global",
         roles_list=roles_list,
         update_tag=update_tag,
         tenant_id=tenant_id,

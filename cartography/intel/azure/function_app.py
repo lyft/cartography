@@ -132,6 +132,7 @@ def _load_function_apps_tx(
     ON CREATE SET f.firstseen = timestamp(),
     f.type = function_app.type,
     f.location = function_app.location,
+    f.region = function_app.location,
     f.resourcegroup = function_app.resource_group
     SET f.lastupdated = {update_tag},
     f.name = function_app.name,
@@ -263,6 +264,7 @@ def _load_function_apps_configurations_tx(
     fc.net_framework_version=function_conf.net_framework_version,
     fc.php_version=function_conf.php_version,
     fc.location = function_conf.location,
+    fc.region = function_conf.location,
     fc.python_version=function_conf.python_version,
     fc.node_version=function_conf.node_version,
     fc.linux_fx_version=function_conf.linux_fx_version,
@@ -364,6 +366,7 @@ def _load_function_apps_functions_tx(
     SET f.name = function.name,
     f.lastupdated = {azure_update_tag},
     f.location = function.location,
+    f.region = function.location,
     f.resource_group_name=function.resource_group,
     f.href=function.href,
     f.language=function.language,
@@ -456,6 +459,7 @@ def _load_function_apps_deployments_tx(
     SET f.name = function_deploy.name,
     f.lastupdated = {azure_update_tag},
     f.location = function_deploy.location,
+    f.region = function_deploy.location,
     f.resource_group_name=function_deploy.resource_group
     WITH f, function_deploy
     MATCH (s:AzureFunctionApp{id: function_deploy.function_app_id})
@@ -541,6 +545,7 @@ def _load_function_apps_backups_tx(
     MERGE (f:AzureFunctionAppBackup{id: function_backup.id})
     ON CREATE SET f.firstseen = timestamp(),
     f.location = function_backup.location,
+    f.region = function_backup.location,
     f.type = function_backup.type
     SET f.name = function_backup.name,
     f.lastupdated = {azure_update_tag},
@@ -629,6 +634,7 @@ def _load_function_apps_processes_tx(
     MERGE (f:AzureFunctionAppProcess{id: function_process.id})
     ON CREATE SET f.firstseen = timestamp(),
     f.location = function_process.location,
+    f.region = function_process.location,
     f.type = function_process.type
     SET f.name = function_process.name,
     f.lastupdated = {azure_update_tag},
@@ -717,6 +723,7 @@ def _load_function_apps_snapshots_tx(
     MERGE (f:AzureFunctionAppSnapshot{id: function_snapshot.id})
     ON CREATE SET f.firstseen = timestamp(),
     f.location = function_snapshot.location,
+    f.region = function_snapshot.location,
     f.type = function_snapshot.type
     SET f.name = function_snapshot.name,
     f.lastupdated = {azure_update_tag},
@@ -805,6 +812,7 @@ def _load_function_apps_webjobs_tx(
     MERGE (f:AzureFunctionAppWebjob{id: function_webjob.id})
     ON CREATE SET f.firstseen = timestamp(),
     f.location = function_webjob.location,
+    f.region = function_webjob.location,
     f.type = function_webjob.type
     SET f.name = function_webjob.name,
     f.lastupdated = {azure_update_tag},
