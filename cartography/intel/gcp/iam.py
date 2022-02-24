@@ -301,7 +301,7 @@ def load_service_accounts(
     MERGE (u:GCPServiceAccount{id: sa.name})
     ON CREATE SET u.firstseen = timestamp()
     SET u.name = sa.name, u.displayname = sa.displayName,
-    u.location = {location},
+    u.region = {region},
     u.disabled = sa.disabled, u.serviceaccountid = sa.uniqueId,
     u.lastupdated = {gcp_update_tag}
     WITH u
@@ -315,7 +315,7 @@ def load_service_accounts(
         ingest_service_accounts,
         service_accounts_list=service_accounts,
         project_id=project_id,
-        location="global",
+        region="global",
         gcp_update_tag=gcp_update_tag,
     )
 
@@ -335,7 +335,7 @@ def load_service_account_keys(
     MERGE (u:GCPServiceAccountKey{id: sa.id})
     ON CREATE SET u.firstseen = timestamp()
     SET u.name=sa.name, u.serviceaccountid={serviceaccount},
-    u.location = {location},
+    u.region = {region},
     u.keytype = sa.keyType, u.origin = sa.keyOrigin,
     u.algorithm = sa.keyAlgorithm, u.validbeforetime = sa.validBeforeTime,
     u.validaftertime = sa.validAfterTime, u.lastupdated = {gcp_update_tag}
@@ -350,7 +350,7 @@ def load_service_account_keys(
         ingest_service_accounts,
         service_account_keys_list=service_account_keys,
         serviceaccount=service_account,
-        location="global",
+        region="global",
         gcp_update_tag=gcp_update_tag,
     )
 
@@ -367,7 +367,7 @@ def load_roles(neo4j_session: neo4j.Session, roles: List[Dict], project_id: str,
     MERGE (u:GCPRole{id: d.id})
     ON CREATE SET u.firstseen = timestamp()
     SET u.name = d.name, u.title = d.title,
-    u.location = {location},
+    u.region = {region},
     u.description = d.description, u.deleted = d.deleted,
     u.permissions = d.includedPermissions, u.roleid = d.id,
     u.lastupdated = {gcp_update_tag}
@@ -381,7 +381,7 @@ def load_roles(neo4j_session: neo4j.Session, roles: List[Dict], project_id: str,
     neo4j_session.run(
         ingest_roles,
         roles_list=roles,
-        location="global",
+        region="global",
         project_id=project_id,
         gcp_update_tag=gcp_update_tag,
     )
@@ -407,7 +407,7 @@ def _load_customers_tx(tx: neo4j.Transaction, customers: List[Dict], project_id:
         SET
             customer.customerDomain = cst.customerDomain,
             customer.kind = cst.kind,
-            customer.location = {location},
+            customer.region = {region},
             customer.alternateEmail = cst.alternateEmail,
             customer.customerCreationTime = cst.customerCreationTime,
             customer.phoneNumber = cst.phoneNumber,
@@ -423,7 +423,7 @@ def _load_customers_tx(tx: neo4j.Transaction, customers: List[Dict], project_id:
         ingest_customers,
         customers=customers,
         project_id=project_id,
-        location="global",
+        region="global",
         gcp_update_tag=gcp_update_tag,
     )
 
@@ -455,7 +455,7 @@ def _load_users_tx(tx: neo4j.Transaction, users: List[Dict], project_id: str, gc
         user.changePasswordAtNextLogin = usr.changePasswordAtNextLogin,
         user.ipWhitelisted = usr.ipWhitelisted,
         user.fullName = usr.name.fullName,
-        user.location = {location},
+        user.region = {region},
         user.familyName = usr.name.familyName,
         user.givenName = usr.name.givenName,
         user.isMailboxSetup = usr.isMailboxSetup,
@@ -479,7 +479,7 @@ def _load_users_tx(tx: neo4j.Transaction, users: List[Dict], project_id: str, gc
         ingest_users,
         users=users,
         project_id=project_id,
-        location="global",
+        region="global",
         gcp_update_tag=gcp_update_tag,
     )
 
@@ -504,7 +504,7 @@ def _load_groups_tx(tx: neo4j.Transaction, groups: List[Dict], project_id: str, 
     SET
         group.id = grp.id,
         group.email = grp.email,
-        group.location = {location},
+        group.region = {region},
         group.adminCreated = grp.adminCreated,
         group.directMembersCount = grp.directMembersCount,
         group.lastupdated = {gcp_update_tag}
@@ -518,6 +518,7 @@ def _load_groups_tx(tx: neo4j.Transaction, groups: List[Dict], project_id: str, 
     tx.run(
         ingest_groups,
         groups=groups,
+        region="global",
         project_id=project_id,
         gcp_update_tag=gcp_update_tag,
     )
@@ -547,7 +548,7 @@ def _load_domains_tx(
     SET
         domain.verified = dmn.verified,
         domain.creationTime = dmn.creationTime,
-        domain.location = {location},
+        domain.region = {region},
         domain.isPrimary = dmn.isPrimary,
         domain.domainName = dmn.domainName,
         domain.kind = dmn.kind,
@@ -569,7 +570,7 @@ def _load_domains_tx(
     tx.run(
         ingest_domains,
         domains=domains,
-        location="global",
+        region="global",
         project_id=project_id,
         customer_id=customer_id,
         gcp_update_tag=gcp_update_tag,

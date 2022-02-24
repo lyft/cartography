@@ -78,6 +78,10 @@ def transform_gcp_buckets(bucket_res: Dict) -> List[Dict]:
         bucket['owner_entity_id'] = b.get('owner', {}).get('entityId')
         bucket['kind'] = b.get('kind')
         bucket['location'] = b.get('location', "").lower()
+        x = bucket['location'].split("-")
+        bucket['region'] = x[0]
+        if len(x) > 1:
+            bucket['region'] = f"{x[0]}-{x[1]}"
         bucket['location_type'] = b.get('locationType')
         bucket['meta_generation'] = b.get('metageneration', None)
         bucket['project_number'] = b['projectNumber']
@@ -125,6 +129,7 @@ def load_gcp_buckets(neo4j_session: neo4j.Session, buckets: List[Dict], gcp_upda
     bucket.project_number = {ProjectNumber},
     bucket.kind = {Kind},
     bucket.location = {Location},
+    bucket.region = {region},
     bucket.location_type = {LocationType},
     bucket.meta_generation = {MetaGeneration},
     bucket.storage_class = {StorageClass},
@@ -152,6 +157,7 @@ def load_gcp_buckets(neo4j_session: neo4j.Session, buckets: List[Dict], gcp_upda
             SelfLink=bucket['self_link'],
             Kind=bucket['kind'],
             Location=bucket['location'],
+            region=bucket['region'],
             LocationType=bucket['location_type'],
             MetaGeneration=bucket['meta_generation'],
             StorageClass=bucket['storage_class'],
@@ -183,6 +189,7 @@ def _attach_gcp_bucket_labels(neo4j_session: neo4j.Session, bucket: Resource, gc
     ON CREATE SET l.firstseen = timestamp(),
     l.key = {Key}
     SET l.value = {Value}, l.location = {Location},
+    l.region = {region},
     l.lastupdated = {gcp_update_tag}
     WITH l
     MATCH (bucket:GCPBucket{id:{BucketId}})
@@ -198,6 +205,7 @@ def _attach_gcp_bucket_labels(neo4j_session: neo4j.Session, bucket: Resource, gc
             Value=val,
             BucketId=bucket['id'],
             Location=bucket['location'],
+            region=bucket.get('region', 'global'),
             gcp_update_tag=gcp_update_tag,
         )
 

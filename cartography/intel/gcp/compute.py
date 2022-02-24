@@ -116,7 +116,7 @@ def get_gcp_instance_responses(project_id: str, zones: Optional[List[Dict]], com
         response_objects.append(res)
     for res in response_objects:
         x = res['zone'].split('-')
-        res['location'] = f"{x[0]}-{x[1]}"
+        res['region'] = f"{x[0]}-{x[1]}"
     return response_objects
 
 
@@ -520,7 +520,7 @@ def load_gcp_instances(neo4j_session: neo4j.Session, data: List[Dict], gcp_updat
     SET i.self_link = {SelfLink},
     i.instancename = {InstanceName},
     i.hostname = {Hostname},
-    i.location = {location},
+    i.region = {region},
     i.zone_name = {ZoneName},
     i.project_id = {ProjectId},
     i.status = {Status},
@@ -541,7 +541,7 @@ def load_gcp_instances(neo4j_session: neo4j.Session, data: List[Dict], gcp_updat
             ZoneName=instance['zone_name'],
             Hostname=instance.get('hostname', None),
             Status=instance['status'],
-            location=instance['location'],
+            region=instance['region'],
             gcp_update_tag=gcp_update_tag,
         )
         _attach_instance_tags(neo4j_session, instance, gcp_update_tag)
@@ -567,7 +567,7 @@ def load_gcp_vpcs(neo4j_session: neo4j.Session, vpcs: List[Dict], gcp_update_tag
     ON CREATE SET vpc.firstseen = timestamp(),
     vpc.partial_uri = {PartialUri}
     SET vpc.self_link = {SelfLink},
-    vpc.location = {location},
+    vpc.region = {region},
     vpc.name = {VpcName},
     vpc.project_id = {ProjectId},
     vpc.auto_create_subnetworks = {AutoCreateSubnetworks},
@@ -589,7 +589,7 @@ def load_gcp_vpcs(neo4j_session: neo4j.Session, vpcs: List[Dict], gcp_update_tag
             AutoCreateSubnetworks=vpc['auto_create_subnetworks'],
             RoutingMode=vpc['routing_config_routing_mode'],
             Description=vpc['description'],
-            location=vpc['region'],
+            region=vpc['region'],
             gcp_update_tag=gcp_update_tag,
         )
 
@@ -687,7 +687,7 @@ def load_gcp_forwarding_rules(neo4j_session: neo4j.Session, fwd_rules: List[Dict
             PortRange=fwd.get('port_range', None),
             Ports=fwd.get('ports', None),
             ProjectId=fwd['project_id'],
-            Region=fwd.get('region', None),
+            Region=fwd.get('region', "global"),
             SelfLink=fwd['self_link'],
             SubNetwork=subnetwork,
             SubNetworkPartialUri=fwd.get('subnetwork_partial_uri', None),
@@ -919,7 +919,7 @@ def load_gcp_ingress_firewalls(neo4j_session: neo4j.Session, fw_list: List[Resou
     SET fw.direction = {Direction},
     fw.disabled = {Disabled},
     fw.name = {Name},
-    fw.location = {location},
+    fw.region = {region},
     fw.priority = {Priority},
     fw.self_link = {SelfLink},
     fw.has_target_service_accounts = {HasTargetServiceAccounts},
@@ -943,7 +943,7 @@ def load_gcp_ingress_firewalls(neo4j_session: neo4j.Session, fw_list: List[Resou
             Name=fw['name'],
             Priority=fw['priority'],
             SelfLink=fw['selfLink'],
-            location="global",
+            region="global",
             VpcPartialUri=fw['vpc_partial_uri'],
             HasTargetServiceAccounts=fw['has_target_service_accounts'],
             gcp_update_tag=gcp_update_tag,

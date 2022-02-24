@@ -272,7 +272,7 @@ def _load_cloudrun_authorized_domains_tx(
         authorized_domain.firstseen = timestamp()
     SET
         authorized_domain.id = ad.id,
-        authorized_domain.location = {location},
+        authorized_domain.region = {region},
         authorized_domain.lastupdated = {gcp_update_tag}
     WITH authorized_domain
     MATCH (owner:GCPProject{id:{ProjectId}})
@@ -285,7 +285,7 @@ def _load_cloudrun_authorized_domains_tx(
         ingest_cloudrun_authorized_domains,
         authorized_domains=authorized_domains,
         ProjectId=project_id,
-        location="global",
+        region="global",
         gcp_update_tag=gcp_update_tag,
     )
 
@@ -326,7 +326,7 @@ def _load_cloudrun_configurations_tx(
         configuration.namspace = config.metadata.namespace,
         configuration.selfLink = config.metadata.selfLink,
         configuration.uid = config.metadata.uid,
-        configuration.location = {location},
+        configuration.region = {region},
         configuration.resourceVersion = config.metadata.resourceVersion,
         configuration.creationTimestamp = config.metadata.creationTimestamp,
         configuration.deletionTimestamp = config.metadata.deletionTimestamp,
@@ -346,7 +346,7 @@ def _load_cloudrun_configurations_tx(
         ingest_cloudrun_configurations,
         configurations=configurations,
         ProjectId=project_id,
-        location="global",
+        region="global",
         gcp_update_tag=gcp_update_tag,
     )
 
@@ -387,7 +387,7 @@ def _load_cloudrun_domainmappings_tx(
         domainmapping.namspace = domainmap.metadata.namespace,
         domainmapping.selfLink = domainmap.metadata.selfLink,
         domainmapping.uid = domainmap.metadata.uid,
-        domainmapping.location = {location},
+        domainmapping.region = {region},
         domainmapping.resourceVersion = domainmap.metadata.resourceVersion,
         domainmapping.creationTimestamp = domainmap.metadata.creationTimestamp,
         domainmapping.deletionTimestamp = domainmap.metadata.deletionTimestamp,
@@ -406,7 +406,7 @@ def _load_cloudrun_domainmappings_tx(
         ingest_cloudrun_domainmappings,
         domainmappings=domainmappings,
         ProjectId=project_id,
-        location="global",
+        region="global",
         gcp_update_tag=gcp_update_tag,
     )
 
@@ -444,7 +444,7 @@ def _load_cloudrun_revisions_tx(
         revision.namspace = rev.metadata.namespace,
         revision.selfLink = rev.metadata.selfLink,
         revision.uid = rev.metadata.uid,
-        revision.location = {location},
+        revision.region = {region},
         revision.resourceVersion = rev.metadata.resourceVersion,
         revision.creationTimestamp = rev.metadata.creationTimestamp,
         revision.deletionTimestamp = rev.metadata.deletionTimestamp,
@@ -462,7 +462,7 @@ def _load_cloudrun_revisions_tx(
         ingest_cloudrun_revisions,
         revisions=revisions,
         ProjectId=project_id,
-        location="global",
+        region="global",
         gcp_update_tag=gcp_update_tag,
     )
 
@@ -500,7 +500,7 @@ def _load_cloudrun_routes_tx(
         route.namspace = rt.metadata.namespace,
         route.selfLink = rt.metadata.selfLink,
         route.uid = rt.metadata.uid,
-        route.location = {location},
+        route.region = {region},
         route.resourceVersion = rt.metadata.resourceVersion,
         route.creationTimestamp = rt.metadata.creationTimestamp,
         route.deletionTimestamp = rt.metadata.deletionTimestamp,
@@ -518,7 +518,7 @@ def _load_cloudrun_routes_tx(
         ingest_cloudrun_routes,
         routes=routes,
         ProjectId=project_id,
-        location="global",
+        region="global",
         gcp_update_tag=gcp_update_tag,
     )
 
@@ -556,7 +556,7 @@ def _load_cloudrun_services_tx(
         service.namspace = svc.metadata.namespace,
         service.selfLink = svc.metadata.selfLink,
         service.uid = svc.metadata.uid,
-        service.location = {location},
+        service.region = {region},
         service.resourceVersion = svc.metadata.resourceVersion,
         service.creationTimestamp = svc.metadata.creationTimestamp,
         service.deletionTimestamp = svc.metadata.deletionTimestamp,
@@ -575,7 +575,7 @@ def _load_cloudrun_services_tx(
         ingest_cloudrun_services,
         services=services,
         ProjectId=project_id,
-        location="global",
+        region="global",
         gcp_update_tag=gcp_update_tag,
     )
 
