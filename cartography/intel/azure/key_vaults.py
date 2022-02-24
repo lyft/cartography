@@ -47,6 +47,7 @@ def _load_key_vaults_tx(
     ON CREATE SET k.firstseen = timestamp(),
     k.type = vault.type,
     k.location = vault.location,
+    k.region = vault.location,
     k.resourcegroup = vault.resource_group
     SET k.lastupdated = {update_tag},
     k.name = vault.name

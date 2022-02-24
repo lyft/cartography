@@ -85,7 +85,8 @@ def load_database_account_data(
     MERGE (d:AzureCosmosDBAccount{id: da.id})
     ON CREATE SET d.firstseen = timestamp(),
     d.type = da.type, d.resourcegroup = da.resourceGroup,
-    d.location = da.location
+    d.location = da.location,
+    d.region = da.location
     SET d.lastupdated = {azure_update_tag},
     d.kind = da.kind,
     d.name = da.name,
@@ -157,6 +158,7 @@ def _load_database_account_write_locations(
         ON CREATE SET loc.firstseen = timestamp()
         SET loc.lastupdated = {azure_update_tag},
         loc.location = wl.location_name,
+        loc.region = wl.location_name,
         loc.documentendpoint = wl.document_endpoint,
         loc.provisioningstate = wl.provisioning_state,
         loc.failoverpriority = wl.failover_priority,
@@ -193,6 +195,7 @@ def _load_database_account_read_locations(
         ON CREATE SET loc.firstseen = timestamp()
         SET loc.lastupdated = {azure_update_tag},
         loc.location = rl.location_name,
+        loc.region = rl.location_name,
         loc.documentendpoint = rl.document_endpoint,
         loc.provisioningstate = rl.provisioning_state,
         loc.failoverpriority = rl.failover_priority,
@@ -229,6 +232,7 @@ def _load_database_account_associated_locations(
         ON CREATE SET loc.firstseen = timestamp()
         SET loc.lastupdated = {azure_update_tag},
         loc.location = al.location_name,
+        loc.region = al.location_name,
         loc.documentendpoint = al.document_endpoint,
         loc.provisioningstate = al.provisioning_state,
         loc.failoverpriority = al.failover_priority,
@@ -280,7 +284,7 @@ def _load_cosmosdb_cors_policy(
         SET corspolicy.lastupdated = {azure_update_tag},
         corspolicy.allowedmethods = cp.allowed_methods,
         corspolicy.allowedheaders = cp.allowed_headers,
-        corspolicy.location = {location},
+        corspolicy.region = {region},
         corspolicy.exposedheaders = cp.exposed_headers,
         corspolicy.maxageinseconds = cp.max_age_in_seconds
         WITH corspolicy
@@ -294,7 +298,7 @@ def _load_cosmosdb_cors_policy(
             ingest_cors_policy,
             cors_policies_list=cors_policies,
             DatabaseAccountId=database_account_id,
-            location="global",
+            region="global",
             azure_update_tag=azure_update_tag,
         )
 
@@ -316,6 +320,7 @@ def _load_cosmosdb_failover_policies(
         ON CREATE SET fpolicy.firstseen = timestamp()
         SET fpolicy.lastupdated = {azure_update_tag},
         fpolicy.location = fp.location_name,
+        fpolicy.region = fp.location_name,
         fpolicy.failoverpriority = fp.failover_priority
         WITH fpolicy
         MATCH (d:AzureCosmosDBAccount{id: {DatabaseAccountId}})
@@ -351,7 +356,7 @@ def _load_cosmosdb_private_endpoint_connections(
         ON CREATE SET pec.firstseen = timestamp()
         SET pec.lastupdated = {azure_update_tag},
         pec.name = connection.name,
-        pec.location = {location},
+        pec.region = {region},
         pec.privateendpointid = connection.private_endpoint.id,
         pec.status = connection.private_link_service_connection_state.status,
         pec.actionrequired = connection.private_link_service_connection_state.actions_required
@@ -366,7 +371,7 @@ def _load_cosmosdb_private_endpoint_connections(
             ingest_private_endpoint_connections,
             private_endpoint_connections_list=private_endpoint_connections,
             DatabaseAccountId=database_account_id,
-            location=database_account.get("location", "global"),
+            region=database_account.get("location", "global"),
             azure_update_tag=azure_update_tag,
         )
 
@@ -385,7 +390,8 @@ def _load_cosmosdb_virtual_network_rules(
         ingest_virtual_network_rules = """
         UNWIND {virtual_network_rules_list} AS vnr
         MERGE (rules:AzureCosmosDBVirtualNetworkRule{id: vnr.id})
-        ON CREATE SET rules.firstseen = timestamp()
+        ON CREATE SET rules.firstseen = timestamp(),
+        rules.region = {region},
         SET rules.lastupdated = {azure_update_tag},
         rules.ignoremissingvnetserviceendpoint = vnr.ignore_missing_v_net_service_endpoint
         WITH rules
@@ -399,6 +405,7 @@ def _load_cosmosdb_virtual_network_rules(
             ingest_virtual_network_rules,
             virtual_network_rules_list=virtual_network_rules,
             DatabaseAccountId=database_account_id,
+            region=database_account.get("location", "global"),
             azure_update_tag=azure_update_tag,
         )
 
@@ -627,7 +634,8 @@ def _load_sql_databases(neo4j_session: neo4j.Session, sql_databases: List[Dict],
     UNWIND {sql_databases_list} AS database
     MERGE (sdb:AzureCosmosDBSqlDatabase{id: database.id})
     ON CREATE SET sdb.firstseen = timestamp(), sdb.type = database.type,
-    sdb.location = database.location
+    sdb.location = database.location,
+    sdb.region = database.location
     SET sdb.name = database.name,
     sdb.throughput = database.options.throughput,
     sdb.maxthroughput = database.options.autoscale_setting.max_throughput,
@@ -655,7 +663,8 @@ def _load_cassandra_keyspaces(neo4j_session: neo4j.Session, cassandra_keyspaces:
     UNWIND {cassandra_keyspaces_list} AS keyspace
     MERGE (ck:AzureCosmosDBCassandraKeyspace{id: keyspace.id})
     ON CREATE SET ck.firstseen = timestamp(), ck.type = keyspace.type,
-    ck.location = keyspace.location
+    ck.location = keyspace.location,
+    ck.region = keyspace.location
     SET ck.name = keyspace.name,
     ck.lastupdated = {azure_update_tag},
     ck.throughput = keyspace.options.throughput,
@@ -683,7 +692,8 @@ def _load_mongodb_databases(neo4j_session: neo4j.Session, mongodb_databases: Lis
     UNWIND {mongodb_databases_list} AS database
     MERGE (mdb:AzureCosmosDBMongoDBDatabase{id: database.id})
     ON CREATE SET mdb.firstseen = timestamp(), mdb.type = database.type,
-    mdb.location = database.location
+    mdb.location = database.location,
+    mdb.region = database.location
     SET mdb.name = database.name,
     mdb.throughput = database.options.throughput,
     mdb.maxthroughput = database.options.autoscale_setting.max_throughput,
@@ -711,7 +721,8 @@ def _load_table_resources(neo4j_session: neo4j.Session, table_resources: List[Di
     UNWIND {table_resources_list} AS table
     MERGE (tr:AzureCosmosDBTableResource{id: table.id})
     ON CREATE SET tr.firstseen = timestamp(), tr.type = table.type,
-    tr.location = table.location
+    tr.location = table.location,
+    tr.region = table.location
     SET tr.name = table.name,
     tr.lastupdated = {azure_update_tag},
     tr.throughput = table.options.throughput,
@@ -808,7 +819,8 @@ def _load_sql_containers(neo4j_session: neo4j.Session, containers: List[Dict], u
     UNWIND {sql_containers_list} AS container
     MERGE (c:AzureCosmosDBSqlContainer{id: container.id})
     ON CREATE SET c.firstseen = timestamp(), c.type = container.type,
-    c.location = container.location
+    c.location = container.location,
+    c.region = container.location
     SET c.name = container.name,
     c.lastupdated = {azure_update_tag},
     c.throughput = container.options.throughput,
@@ -913,7 +925,8 @@ def _load_cassandra_tables(neo4j_session: neo4j.Session, cassandra_tables: List[
     UNWIND {cassandra_tables_list} AS table
     MERGE (ct:AzureCosmosDBCassandraTable{id: table.id})
     ON CREATE SET ct.firstseen = timestamp(), ct.type = table.type,
-    ct.location = table.location
+    ct.location = table.location,
+    ct.region = table.location
     SET ct.name = table.name,
     ct.lastupdated = {azure_update_tag},
     ct.throughput = table.options.throughput,
@@ -1015,7 +1028,8 @@ def _load_collections(neo4j_session: neo4j.Session, collections: List[Dict], upd
     UNWIND {mongodb_collections_list} AS collection
     MERGE (col:AzureCosmosDBMongoDBCollection{id: collection.id})
     ON CREATE SET col.firstseen = timestamp(), col.type = collection.type,
-    col.location = collection.location
+    col.location = collection.location,
+    col.region = collection.location
     SET col.name = collection.name,
     col.lastupdated = {azure_update_tag},
     col.throughput = collection.options.throughput,

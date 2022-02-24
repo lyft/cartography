@@ -91,6 +91,7 @@ def _load_aks_tx(tx: neo4j.Transaction, subscription_id: str, aks_list: List[Dic
     ON CREATE SET a.firstseen = timestamp(),
     a.type = aks.type,
     a.location = aks.location,
+    a.region = aks.location,
     a.resourcegroup = aks.resource_group
     SET a.lastupdated = {update_tag},
     a.name = aks.name
@@ -147,6 +148,7 @@ def _load_container_registries_tx(
     ON CREATE SET a.firstseen = timestamp(),
     a.type = registry.type,
     a.location = registry.location,
+    a.region = registry.location,
     a.resourcegroup = registry.resource_group
     SET a.lastupdated = {update_tag},
     a.name = registry.name
@@ -229,6 +231,7 @@ def _load_container_registry_replications_tx(
     ON CREATE SET a.firstseen = timestamp(),
     a.type = replication.type,
     a.location = replication.location,
+    a.region = replication.location,
     a.resourcegroup = replication.resource_group
     SET a.lastupdated = {update_tag},
     a.name = replication.name
@@ -299,6 +302,7 @@ def _load_container_registry_runs_tx(
     ON CREATE SET a.firstseen = timestamp(),
     a.type = run.type,
     a.location=run.location,
+    a.region=run.location,
     a.resourcegroup = run.resource_group
     SET a.lastupdated = {update_tag},
     a.name = run.name
@@ -368,6 +372,7 @@ def _load_container_registry_tasks_tx(
     ON CREATE SET a.firstseen = timestamp(),
     a.type = task.type,
     a.location=task.location,
+    a.region=task.location,
     a.resourcegroup = task.resource_group
     SET a.lastupdated = {update_tag},
     a.name = task.name
@@ -437,6 +442,7 @@ def _load_container_registry_webhooks_tx(
     ON CREATE SET a.firstseen = timestamp(),
     a.type = webhook.type,
     a.location=webhook.location,
+    a.region=webhook.location,
     a.resourcegroup = webhook.resource_group
     SET a.lastupdated = {update_tag},
     a.name = webhook.name
@@ -493,6 +499,7 @@ def _load_container_groups_tx(
     ON CREATE SET a.firstseen = timestamp(),
     a.type = group.type,
     a.location = group.location,
+    a.region = group.location,
     a.resourcegroup = group.resource_group
     SET a.lastupdated = {update_tag},
     a.name = group.name
@@ -555,6 +562,7 @@ def _load_containers_tx(tx: neo4j.Transaction, containers_list: List[Dict], upda
     a.type = container.type,
     a.name = container.name,
     a.location= container.location,
+    a.region= container.location,
     a.resourcegroup = container.resource_group
     SET a.lastupdated = {update_tag}
     WITH a,container
