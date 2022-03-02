@@ -35,7 +35,10 @@ def call_github_api(query: str, variables: str, token: str, api_url: str) -> Dic
         logger.warning("GitHub: requests.get('%s') timed out.", api_url)
         raise
     response.raise_for_status()
-    return response.json()
+    response_json = response.json()
+    if "errors" in response_json:
+        logger.error(response_json["errors"])
+    return response_json
 
 
 def fetch_page(token: str, api_url: str, organization: str, query: str, cursor: Optional[str] = None) -> Dict:

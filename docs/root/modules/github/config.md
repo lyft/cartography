@@ -5,7 +5,7 @@
 Follow these steps to analyze GitHub repos and other objects with Cartography.
 
 1. Prepare your GitHub credentials.
-    1. Prepare a GitHub token, ensuring that it has at minimum the `repo` scope and the `read:org` permission.
+    1. Prepare a GitHub token; the following scopes are required, at minimum: `repo`, `read:org`, `read:user`, `user:email`
     1. GitHub ingest supports multiple endpoints, such as a public instance and an enterprise instance by taking a base64-encoded config object structured as
        ```json
        {

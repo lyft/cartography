@@ -915,6 +915,7 @@ Representation of an AWS [EC2 Key Pair](https://docs.aws.amazon.com/AWSEC2/lates
         ```
         (EC2KeyPair)-[MATCHING_FINGERPRINT]->(EC2KeyPair)
         ```
+
 ### EC2PrivateIp
 Representation of an AWS EC2 [InstancePrivateIpAddress](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_InstancePrivateIpAddress.html)
 
@@ -1112,7 +1113,7 @@ Representation of an AWS EC2 [Subnet](https://docs.aws.amazon.com/AWSEC2/latest/
  | region | The region of the gateway |
 
 
- ### Relationships
+#### Relationships
 
  -  Internet Gateways are attached to a VPC.
 
@@ -1595,6 +1596,7 @@ Represents an Elastic Load Balancer V2 ([Application Load Balancer](https://docs
         ```
         (LoadBalancerV2)-[ELBV2_LISTENER]->(ELBV2Listener)
         ```
+
 ### Nameserver
 
 Represents a DNS nameserver.
@@ -1698,6 +1700,8 @@ Representation of an AWS [PeeringConnection](https://docs.aws.amazon.com/vpc/lat
 | status_code | The status of the VPC peering connection. |
 | status_message | A message that provides more information about the status, if applicable. |
 
+#### Relationships
+
 - `AWSVpc` is an accepter or requester vpc.
   ```
   (AWSVpc)<-[REQUESTER_VPC]-(AWSPeeringConnection)
@@ -1709,7 +1713,6 @@ Representation of an AWS [PeeringConnection](https://docs.aws.amazon.com/vpc/lat
   (AWSCidrBlock)<-[REQUESTER_CIDR]-(AWSPeeringConnection)
   (AWSCidrBlock)<-[ACCEPTER_CIDR]-(AWSPeeringConnection)
   ```
-
 
 ### RedshiftCluster
 
