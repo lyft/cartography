@@ -2,7 +2,7 @@ import logging
 import time
 from collections import OrderedDict
 
-import neobolt.exceptions
+import neo4j.exceptions
 from neo4j import GraphDatabase
 from statsd import StatsClient
 
@@ -113,7 +113,7 @@ def run_with_config(sync, config):
             auth=neo4j_auth,
             max_connection_lifetime=config.neo4j_max_connection_lifetime,
         )
-    except neobolt.exceptions.ServiceUnavailable as e:
+    except neo4j.exceptions.ServiceUnavailable as e:
         logger.debug("Error occurred during Neo4j connect.", exc_info=True)
         logger.error(
             (
@@ -124,7 +124,7 @@ def run_with_config(sync, config):
             e,
         )
         return 1
-    except neobolt.exceptions.AuthError as e:
+    except neo4j.exceptions.AuthError as e:
         logger.debug("Error occurred during Neo4j auth.", exc_info=True)
         if not neo4j_auth:
             logger.error(
