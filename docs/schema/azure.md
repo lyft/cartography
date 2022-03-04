@@ -1875,7 +1875,7 @@ Representation of an [AzureRole](https://docs.microsoft.com/en-us/azure/role-bas
 - Azure Tenant contains one or more Azure Roles.
 
         ```
-        (AzureTenantResource)-[ASSUME_ROLE]->(AzureRole)
+        (AzureTenant)-[RESOURCE]->(AzureRole)
         ```
 
 ## AzureKeyVault

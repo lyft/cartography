@@ -413,7 +413,7 @@ def get_function_apps_deployments_list(
             function_apps_deployments_list = function_apps_deployments_list + list(
                 map(
                     lambda x: x.as_dict(),
-                    client.web_apps.list_backups(
+                    client.web_apps.list_deployments(
                         function['resource_group'],
                         function['name'],
                     ),

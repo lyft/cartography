@@ -318,6 +318,7 @@ def test_load_domain_relationships(neo4j_session):
 def test_load_roles(neo4j_session):
     iam.load_roles(
         neo4j_session,
+        TEST_TENANT_ID,
         DESCRIBE_ROLES,
         TEST_UPDATE_TAG,
     )
@@ -356,6 +357,7 @@ def test_load_role_relationships(neo4j_session):
 
     iam.load_roles(
         neo4j_session,
+        TEST_TENANT_ID,
         DESCRIBE_ROLES,
         TEST_UPDATE_TAG,
     )

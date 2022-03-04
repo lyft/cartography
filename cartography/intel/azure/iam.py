@@ -18,8 +18,8 @@ def load_tenant_users(session: neo4j.Session, tenant_id: str, data_list: List[Di
     session.write_transaction(_load_tenant_users_tx, tenant_id, data_list, update_tag)
 
 
-def load_roles(session: neo4j.Session, data_list: List[Dict], update_tag: int) -> None:
-    session.write_transaction(_load_roles_tx, data_list, update_tag)
+def load_roles(session: neo4j.Session, tenant_id: str, data_list: List[Dict], update_tag: int) -> None:
+    session.write_transaction(_load_roles_tx, tenant_id, data_list, update_tag)
 
 
 def load_tenant_groups(session: neo4j.Session, tenant_id: str, data_list: List[Dict], update_tag: int) -> None:
@@ -53,11 +53,14 @@ def get_authorization_client(credentials: Credentials, subscription_id: str) -> 
 
 
 @timeit
-def get_tenant_users_list(client: GraphRbacManagementClient) -> List[Dict]:
+def get_tenant_users_list(client: GraphRbacManagementClient, tenant_id: str) -> List[Dict]:
     try:
         tenant_users_list = list(
             map(lambda x: x.as_dict(), client.users.list()),
         )
+
+        for user in tenant_users_list:
+            user['id'] = f"tenants/{tenant_id}/users/{user.get('object_id',None)}"
 
         return tenant_users_list
 
@@ -71,8 +74,9 @@ def _load_tenant_users_tx(
 ) -> None:
     ingest_user = """
     UNWIND {tenant_users_list} AS user
-    MERGE (i:AzureUser{id: user.object_id})
+    MERGE (i:AzureUser{id: user.id})
     ON CREATE SET i.firstseen = timestamp(),
+    i.object_id=user.object_id,
     i.name = user.display_name,
     i.given_name = user.given_name,
     i.surname = user.surname,
@@ -106,15 +110,18 @@ def sync_tenant_users(
     common_job_parameters: Dict,
 ) -> None:
     client = get_graph_client(credentials, tenant_id)
-    tenant_users_list = get_tenant_users_list(client)
+    tenant_users_list = get_tenant_users_list(client, tenant_id)
     load_tenant_users(neo4j_session, tenant_id, tenant_users_list, update_tag)
     cleanup_tenant_users(neo4j_session, common_job_parameters)
 
 
 @timeit
-def get_tenant_groups_list(client: GraphRbacManagementClient) -> List[Dict]:
+def get_tenant_groups_list(client: GraphRbacManagementClient, tenant_id: str) -> List[Dict]:
     try:
         tenant_groups_list = list(map(lambda x: x.as_dict(), client.groups.list()))
+
+        for group in tenant_groups_list:
+            group['id'] = f"tenants/{tenant_id}/Groups/{group.get('object_id',None)}"
 
         return tenant_groups_list
 
@@ -128,8 +135,9 @@ def _load_tenant_groups_tx(
 ) -> None:
     ingest_group = """
     UNWIND {tenant_groups_list} AS group
-    MERGE (i:AzureGroup{id: group.object_id})
+    MERGE (i:AzureGroup{id: group.id})
     ON CREATE SET i.firstseen = timestamp(),
+    i.object_id=group.object_id,
     i.visibility = group.visibility,
     i.classification = group.classification,
     i.createdDateTime = group.createdDateTime,
@@ -160,15 +168,18 @@ def sync_tenant_groups(
     common_job_parameters: Dict,
 ) -> None:
     client = get_graph_client(credentials, tenant_id)
-    tenant_groups_list = get_tenant_groups_list(client)
+    tenant_groups_list = get_tenant_groups_list(client, tenant_id)
     load_tenant_groups(neo4j_session, tenant_id, tenant_groups_list, update_tag)
     cleanup_tenant_groups(neo4j_session, common_job_parameters)
 
 
 @timeit
-def get_tenant_applications_list(client: GraphRbacManagementClient) -> List[Dict]:
+def get_tenant_applications_list(client: GraphRbacManagementClient, tenant_id: str) -> List[Dict]:
     try:
         tenant_applications_list = list(map(lambda x: x.as_dict(), client.applications.list()))
+
+        for app in tenant_applications_list:
+            app['id'] = f"tenants/{tenant_id}/Applications/{app.get('object_id',None)}"
 
         return tenant_applications_list
 
@@ -182,8 +193,9 @@ def _load_tenant_applications_tx(
 ) -> None:
     ingest_app = """
     UNWIND {tenant_applications_list} AS app
-    MERGE (i:AzureApplication{id: app.object_id})
+    MERGE (i:AzureApplication{id: app.id})
     ON CREATE SET i.firstseen = timestamp(),
+    i.object_id=app.object_id,
     i.displayName = app.display_name,
     i.publisherDomain = app.publisher_domain
     SET i.lastupdated = {update_tag},
@@ -212,17 +224,20 @@ def sync_tenant_applications(
     common_job_parameters: Dict,
 ) -> None:
     client = get_graph_client(credentials, tenant_id)
-    tenant_applications_list = get_tenant_applications_list(client)
+    tenant_applications_list = get_tenant_applications_list(client, tenant_id)
     load_tenant_applications(neo4j_session, tenant_id, tenant_applications_list, update_tag)
     cleanup_tenant_applications(neo4j_session, common_job_parameters)
 
 
 @timeit
-def get_tenant_service_accounts_list(client: GraphRbacManagementClient) -> List[Dict]:
+def get_tenant_service_accounts_list(client: GraphRbacManagementClient, tenant_id: str) -> List[Dict]:
     try:
         tenant_service_accounts_list = list(
             map(lambda x: x.as_dict(), client.service_principals.list()),
         )
+
+        for account in tenant_service_accounts_list:
+            account['id'] = f"tenants/{tenant_id}/ServiceAccounts/{account.get('object_id',None)}"
 
         return tenant_service_accounts_list
 
@@ -236,9 +251,10 @@ def _load_tenant_service_accounts_tx(
 ) -> None:
     ingest_app = """
     UNWIND {tenant_service_accounts_list} AS service
-    MERGE (i:AzureServiceAccount{id: service.object_id})
+    MERGE (i:AzureServiceAccount{id: service.id})
     ON CREATE SET i.firstseen = timestamp(),
     i.name = service.display_name,
+    i.object_id=service.object_id,
     i.accountEnabled = service.account_enabled,
     i.servicePrincipalType = service.service_principal_type
     SET i.lastupdated = {update_tag},
@@ -267,7 +283,7 @@ def sync_tenant_service_accounts(
     common_job_parameters: Dict,
 ) -> None:
     client = get_graph_client(credentials, tenant_id)
-    tenant_service_accounts_list = get_tenant_service_accounts_list(client)
+    tenant_service_accounts_list = get_tenant_service_accounts_list(client, tenant_id)
     load_tenant_service_accounts(neo4j_session, tenant_id, tenant_service_accounts_list, update_tag)
     cleanup_tenant_service_accounts(neo4j_session, common_job_parameters)
 
@@ -355,7 +371,7 @@ def get_roles_list(client: AuthorizationManagementClient) -> List[Dict]:
 
 
 def _load_roles_tx(
-    tx: neo4j.Transaction, roles_list: List[Dict], update_tag: int,
+    tx: neo4j.Transaction, tenant_id: str, roles_list: List[Dict], update_tag: int,
 ) -> None:
     ingest_role = """
     UNWIND {roles_list} AS role
@@ -367,30 +383,36 @@ def _load_roles_tx(
     i.roleName = role.roleName,
     i.permissions = role.permissions
     WITH i,role
-    MATCH (owner) where owner.id = role.principal_id
-    MERGE (owner)-[r:ASSUME_ROLE]->(i)
+    MATCH (principal) where principal.object_id = role.principal_id
+    MERGE (principal)-[r:ASSUME_ROLE]->(i)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {update_tag}
+    WITH i
+    MATCH (t:AzureTenant{id: {tenant_id}})
+    MERGE (t)-[tr:RESOURCE]->(i)
+    ON CREATE SET tr.firstseen = timestamp()
+    SET tr.lastupdated = {update_tag}
     """
 
     tx.run(
         ingest_role,
         roles_list=roles_list,
         update_tag=update_tag,
+        tenant_id=tenant_id,
     )
 
 
 def cleanup_roles(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
-    run_cleanup_job('azure_import_roles_cleanup.json', neo4j_session, common_job_parameters)
+    run_cleanup_job('azure_import_tenant_roles_cleanup.json', neo4j_session, common_job_parameters)
 
 
 def sync_roles(
-    neo4j_session: neo4j.Session, credentials: Credentials, update_tag: int,
+    neo4j_session: neo4j.Session, credentials: Credentials, tenant_id: str, update_tag: int,
     common_job_parameters: Dict,
 ) -> None:
     client = get_authorization_client(credentials.arm_credentials, credentials.subscription_id)
     roles_list = get_roles_list(client)
-    load_roles(neo4j_session, roles_list, update_tag)
+    load_roles(neo4j_session, tenant_id, roles_list, update_tag)
     cleanup_roles(neo4j_session, common_job_parameters)
 
 
@@ -415,7 +437,5 @@ def sync(
     )
     sync_tenant_domains(neo4j_session, credentials.aad_graph_credentials, tenant_id, update_tag, common_job_parameters)
     sync_roles(
-        neo4j_session, credentials, update_tag, common_job_parameters,
+        neo4j_session, credentials, tenant_id, update_tag, common_job_parameters,
     )
-
-    del common_job_parameters['AZURE_TENANT_ID']
