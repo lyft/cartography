@@ -19,6 +19,9 @@ def set_assume_role_keys(context):
     context.assume_role_access_key_key_id = context.assume_role_access_secret_key_id = os.environ['CDX_APP_ASSUME_ROLE_KMS_KEY_ID']
     context.assume_role_access_key_cipher = os.environ['CDX_APP_ASSUME_ROLE_ACCESS_KEY']
     context.assume_role_access_secret_cipher = os.environ['CDX_APP_ASSUME_ROLE_ACCESS_SECRET']
+    context.neo4j_uri = os.environ['CDX_APP_NEO4J_URI']
+    context.neo4j_user = os.environ['CDX_APP_NEO4J_USER']
+    context.neo4j_pwd = os.environ['CDX_APP_NEO4J_PWD']
 
 def init_lambda(ctx):
     global lambda_init, context

@@ -34,6 +34,15 @@ export CDX_APP_ASSUME_ROLE_ACCESS_KEY=$assume_role_access_key
 assume_role_access_secret=$(cat $file_name | jq -r '.assumeRoleAccessSecret')
 export CDX_APP_ASSUME_ROLE_ACCESS_SECRET=$assume_role_access_secret
 
+neo4j_uri=$(cat $file_name | jq -r '.neo4jURI')
+export CDX_APP_NEO4J_URI=$neo4j_uri
+
+neo4j_user=$(cat $file_name | jq -r '.neo4jUser')
+export CDX_APP_NEO4J_USER=$neo4j_user
+
+neo4j_pwd=$(cat $file_name | jq -r '.neo4jPWD')
+export CDX_APP_NEO4J_PWD=$neo4j_pwd
+
 echo "End Set Environment Variables"
 
 echo "Begin deployment for AWS Service Worker"
