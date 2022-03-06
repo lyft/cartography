@@ -20,7 +20,7 @@ provider:
     CDX_APP_ASSUME_ROLE_ACCESS_SECRET: ${env:CDX_APP_ASSUME_ROLE_ACCESS_SECRET}
     CDX_APP_NEO4J_URI: ${env:CDX_APP_NEO4J_URI}
     CDX_APP_NEO4J_USER: ${env:CDX_APP_NEO4J_USER}
-    CDX_APP_NEO4j_PWD: ${env:CDX_APP_NEO4j_PWD}
+    CDX_APP_NEO4J_PWD: ${env:CDX_APP_NEO4J_PWD}
   # deploymentBucket:
   #   name: serverless-deployments
   #   serverSideEncryption: AES256
