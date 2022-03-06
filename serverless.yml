@@ -21,6 +21,9 @@ provider:
     CDX_APP_NEO4J_URI: ${env:CDX_APP_NEO4J_URI}
     CDX_APP_NEO4J_USER: ${env:CDX_APP_NEO4J_USER}
     CDX_APP_NEO4j_PWD: ${env:CDX_APP_NEO4j_PWD}
+  # deploymentBucket:
+  #   name: serverless-deployments
+  #   serverSideEncryption: AES256
 
 functions:
   cartographyService:
@@ -38,6 +41,8 @@ plugins:
   - serverless-offline
   - serverless-offline-python
   - serverless-offline-sns
+  # - serverless-deployment-bucket
+
 custom:
   pythonRequirements:
     dockerizePip: non-linux
@@ -48,6 +53,13 @@ custom:
     debug: true
   mySnsTopic: "inventory-sync-aws-requests"
   mySnsTopicArn: "arn:aws:sns:us-east-2:774118602354:inventory-sync-aws-requests"
+  # deploymentBucket:
+  #   versioning: true
+  #   accelerate: true
+  #   blockPublicAccess: true
+  #   tags:
+  #     - Key: Environment
+  #       Value: production
 
 package:
   exclude:
@@ -60,6 +72,9 @@ package:
     - .serverless_plugins/**
     - node_modules/**
     - __pycache__/**
+    - .mypy_cache/**
+    - .pytest_cache/**
+    - .python_packages/**
     - .vscode/**
     - venv/**
     - build/**

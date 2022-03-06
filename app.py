@@ -13,7 +13,7 @@ lambda_init = None
 context = None
 
 def current_config(env):
-    return env == "config/production.json" if env=="PRODUCTION" else "config/default.json"
+    return "config/production.json" if env=="PRODUCTION" else "config/default.json"
 
 def set_assume_role_keys(context):
     context.assume_role_access_key_key_id = context.assume_role_access_secret_key_id = os.environ['CDX_APP_ASSUME_ROLE_KMS_KEY_ID']
@@ -37,15 +37,7 @@ def init_lambda(ctx):
     
     # Read from config files in the project
     with open(current_config(context.app_env), 'r') as f:
-        decrypted_value = f
-        # decrypted_value = json.load(f)
-        # decrypted_value = json.dumps(decrypted_value)
-
-    # Read from Parameter store
-    # config = os.environ['CDX_CONFIG']
-
-    # kms_library = KMSLibrary(context)
-    # decrypted_value = kms_library.decrypt(config)
+        decrypted_value = f.read()
 
     # Cloudanix AWS AccountID
     context.aws_account_id = ctx.invoked_function_arn.split(":")[4]

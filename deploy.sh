@@ -47,6 +47,6 @@ echo "End Set Environment Variables"
 
 echo "Begin deployment for AWS Service Worker"
 
-sls deploy --force
+sls deploy --force --verbose
 
 echo "End deployment for AWS Service Worker"
