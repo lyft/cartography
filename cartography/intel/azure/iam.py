@@ -141,6 +141,7 @@ def _load_tenant_groups_tx(
     ON CREATE SET i.firstseen = timestamp(),
     i.object_id=group.object_id,
     i.region = {region},
+    i.name = user.display_name,
     i.visibility = group.visibility,
     i.classification = group.classification,
     i.createdDateTime = group.createdDateTime,
@@ -201,7 +202,7 @@ def _load_tenant_applications_tx(
     ON CREATE SET i.firstseen = timestamp(),
     i.object_id=app.object_id,
     i.region = {region},
-    i.displayName = app.display_name,
+    i.name = app.display_name,
     i.publisherDomain = app.publisher_domain
     SET i.lastupdated = {update_tag},
     i.signInAudience = app.sign_in_audience
