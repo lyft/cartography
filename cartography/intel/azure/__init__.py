@@ -69,13 +69,13 @@ def _sync_multiple_subscriptions(
 ) -> None:
     logger.info("Syncing Azure subscriptions")
 
-    common_job_parameters['AZURE_TENANT_ID'] = tenant_id
-
     subscription.sync(
         neo4j_session, tenant_id, subscriptions, update_tag,
         common_job_parameters,
     )
-    common_job_parameters['AZURE_SUBSCRIPTION_ID'] = None
+
+    common_job_parameters['AZURE_TENANT_ID'] = tenant_id
+
     for sub in subscriptions:
         logger.info(
             "Syncing Azure Subscription with ID '%s'",
@@ -100,19 +100,30 @@ def start_azure_ingestion(
     config: Config,
 ) -> None:
     common_job_parameters = {
+        "WORKSPACE_ID": config.params['workspace']['id_string'],
         "UPDATE_TAG": config.update_tag,
         "permission_relationships_file": config.permission_relationships_file,
     }
 
     try:
-        if config.azure_sp_auth:
-            credentials = Authenticator().authenticate_sp(
-                config.azure_tenant_id,
+        # if config.azure_sp_auth:
+        #     credentials = Authenticator().authenticate_sp(
+        #         config.azure_tenant_id,
+        #         config.azure_client_id,
+        #         config.azure_client_secret,
+        #     )
+        # else:
+        #     credentials = Authenticator().authenticate_cli()
+        
+        credentials = Authenticator().impersonate_user(
                 config.azure_client_id,
                 config.azure_client_secret,
+                config.azure_redirect_uri,
+                config.azure_refresh_token,
+                config.azure_graph_scope,
+                config.azure_azure_scope,
+                config.azure_subscription_id,
             )
-        else:
-            credentials = Authenticator().authenticate_cli()
 
     except Exception as e:
         logger.error(

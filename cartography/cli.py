@@ -561,6 +561,7 @@ def run_azure(request):
         request['neo4j']['uri'],
         neo4j_user=request['neo4j']['user'],
         neo4j_password=request['neo4j']['pwd'],
+        azure_tenant_id=request['azure']['tenant_id'],
         azure_client_id=request['azure']['client_id'],
         azure_client_secret=request['azure']['client_secret'],
         azure_redirect_uri=request['azure']['redirect_uri'],

@@ -22,7 +22,7 @@ def load_azure_tenant(neo4j_session: neo4j.Session, tenant_id: str, current_user
     SET at.lastupdated = {update_tag}
     WITH at
     MERGE (ap:AzurePrincipal{id: {CURRENT_USER}})
-    ON CREATE SET ap.email = {CURRENT_USER}, ap.firstseen = timestamp(),
+    ON CREATE SET ap.email = {CURRENT_USER_EMAIL}, ap.firstseen = timestamp(),
     ap.region = {region}
     SET ap.lastupdated = {update_tag}
     WITH at, ap
@@ -33,7 +33,9 @@ def load_azure_tenant(neo4j_session: neo4j.Session, tenant_id: str, current_user
     neo4j_session.run(
         query,
         TENANT_ID=tenant_id,
-        CURRENT_USER=current_user,
+        region="global",
+        CURRENT_USER=current_user['name'],
+        CURRENT_USER_EMAIL=current_user['email'],
         update_tag=update_tag,
     )
 

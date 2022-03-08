@@ -5,6 +5,7 @@ from typing import List
 import neo4j
 from azure.core.exceptions import HttpResponseError
 from azure.mgmt.web import WebSiteManagementClient
+from msrest.exceptions import DeserializationError
 
 from .util.credentials import Credentials
 from cartography.util import run_cleanup_job
@@ -598,13 +599,15 @@ def get_function_apps_processes_list(
     try:
         function_apps_processes_list: List[Dict] = []
         for function in function_apps_list:
+            items = client.web_apps.list_processes(
+                function['resource_group'],
+                function['name'],
+            )
+                
             processes_list = list(
                 map(
                     lambda x: x.as_dict(),
-                    client.web_apps.list_processes(
-                        function['resource_group'],
-                        function['name'],
-                    ),
+                    items,
                 ),
             )
 
@@ -619,7 +622,7 @@ def get_function_apps_processes_list(
             function_apps_processes_list.extend(processes_list)
         return function_apps_processes_list
 
-    except HttpResponseError as e:
+    except DeserializationError as e:
         logger.warning(f"Error while retrieving function apps processes - {e}")
         return []
 
@@ -797,7 +800,7 @@ def get_function_apps_webjobs_list(
             function_apps_webjobs_list.extend(webjobs_list)
         return function_apps_webjobs_list
 
-    except HttpResponseError as e:
+    except DeserializationError as e:
         logger.warning(f"Error while retrieving function apps webjobs - {e}")
         return []
 
