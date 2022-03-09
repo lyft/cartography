@@ -128,9 +128,11 @@ def get_tags(boto3_session: boto3.session.Session, resource_types: List[str], re
     return resources
 
 
-@timeit
-def load_tags(
-    neo4j_session: neo4j.Session, tag_data: Dict, resource_type: str, region: str,
+def _load_tags_tx(
+    tx: neo4j.Transaction,
+    tag_data: Dict,
+    resource_type: str,
+    region: str,
     aws_update_tag: int,
 ) -> None:
     INGEST_TAG_TEMPLATE = Template("""
@@ -153,11 +155,25 @@ def load_tags(
         resource_label=TAG_RESOURCE_TYPE_MAPPINGS[resource_type]['label'],
         property=TAG_RESOURCE_TYPE_MAPPINGS[resource_type]['property'],
     )
-    neo4j_session.run(
+    tx.run(
         query,
         TagData=tag_data,
         UpdateTag=aws_update_tag,
         Region=region,
+    )
+
+
+@timeit
+def load_tags(
+    neo4j_session: neo4j.Session, tag_data: Dict, resource_type: str, region: str,
+    aws_update_tag: int,
+) -> None:
+    neo4j_session.write_transaction(
+        _load_tags_tx,
+        tag_data=tag_data,
+        resource_type=resource_type,
+        region=region,
+        aws_update_tag=aws_update_tag,
     )
 
 
