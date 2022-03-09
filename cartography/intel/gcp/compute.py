@@ -547,6 +547,7 @@ def load_gcp_instances(neo4j_session: neo4j.Session, data: List[Dict], gcp_updat
         _attach_instance_tags(neo4j_session, instance, gcp_update_tag)
         _attach_gcp_nics(neo4j_session, instance, gcp_update_tag)
         _attach_gcp_vpc(neo4j_session, instance['partial_uri'], gcp_update_tag)
+        _attach_instance_service_account(neo4j_session, instance, gcp_update_tag)
 
 
 @timeit
@@ -903,6 +904,31 @@ def _attach_gcp_vpc(neo4j_session: neo4j.Session, instance_id: str, gcp_update_t
         InstanceId=instance_id,
         gcp_update_tag=gcp_update_tag,
     )
+
+
+@timeit
+def _attach_instance_service_account(neo4j_session: neo4j.Session, instance: Resource, gcp_update_tag: int) -> None:
+    """
+    Attach service account to GCP instance
+    :param neo4j_session: The session
+    :param instance: The instance object
+    :param gcp_update_tag: The timestamp
+    :return: Nothing
+    """
+    query = """
+    MATCH (i:GCPInstance{id:{InstanceId}})
+    MERGE (sa:GCPServiceAccount{email:{AccountEmail}})
+    MERGE (sa)-[r:HAS]->(i)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}
+    """
+    for account in instance.get('serviceAccounts', []):
+        neo4j_session.run(
+            query,
+            InstanceId=instance['partial_uri'],
+            AccountEmail=account.get('email', ''),
+            gcp_update_tag=gcp_update_tag,
+        )
 
 
 @timeit
