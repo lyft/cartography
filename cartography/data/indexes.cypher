@@ -178,6 +178,8 @@ CREATE INDEX ON :S3Bucket(arn);
 CREATE INDEX ON :SecretsManagerSecret(id);
 CREATE INDEX ON :SecurityHub(id);
 CREATE INDEX ON :SQSQueue(id);
+CREATE INDEX ON :SSMInstanceInformation(id);
+CREATE INDEX ON :SSMInstancePatch(id);
 CREATE INDEX ON :User(arn);
 CREATE INDEX ON :AzureTenant(id);
 CREATE INDEX ON :AzurePrincipal(email);

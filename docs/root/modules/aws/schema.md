@@ -2975,3 +2975,69 @@ Representation of an AWS ECS [Container](https://docs.aws.amazon.com/AmazonECS/l
         ```
         (ECSTask)-[HAS_CONTAINER]->(ECSContainer)
         ```
+
+### SSMInstanceInformation
+
+Representation of an AWS SSM [InstanceInformation](https://docs.aws.amazon.com/systems-manager/latest/APIReference/API_InstanceInformation.html)
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The ARN of the instance information |
+| region | The region of the instance information. |
+| instance\_id | The managed node ID. |
+| ping\_status | Connection status of SSM Agent. |
+| last\_ping\_date\_time | The date and time when the agent last pinged the Systems Manager service. |
+| agent\_version | The version of SSM Agent running on your Linux managed node. |
+| is\_latest\_version | Indicates whether the latest version of SSM Agent is running on your Linux managed node. This field doesn't indicate whether or not the latest version is installed on Windows managed nodes, because some older versions of Windows Server use the EC2Config service to process Systems Manager requests. |
+| platform\_type | The operating system platform type. |
+| platform\_name | The name of the operating system platform running on your managed node. |
+| platform\_version | The version of the OS platform running on your managed node. |
+| activation\_id | The activation ID created by AWS Systems Manager when the server or virtual machine (VM) was registered. |
+| iam\_role | The AWS Identity and Access Management (IAM) role assigned to the on-premises Systems Manager managed node. This call doesn't return the IAM role for Amazon Elastic Compute Cloud (Amazon EC2) instances. |
+| registration\_date | The date the server or VM was registered with AWS as a managed node. |
+| resource\_type | The type of instance. Instances are either EC2 instances or managed instances. |
+| name | The name assigned to an on-premises server, edge device, or virtual machine (VM) when it is activated as a Systems Manager managed node. The name is specified as the DefaultInstanceName property using the CreateActivation command. |
+| ip\_address | The IP address of the managed node. |
+| computer\_name | The fully qualified host name of the managed node. |
+| association\_status | The status of the association. |
+| last\_association\_execution\_date | The date the association was last run. |
+| last\_successful\_association\_execution\_date | The last date the association was successfully run. |
+| source\_id | The ID of the source resource. For AWS IoT Greengrass devices, SourceId is the Thing name. |
+| source\_type | The type of the source resource. For AWS IoT Greengrass devices, SourceType is AWS::IoT::Thing. |
+
+#### Relationships
+
+- SSMInstanceInformation is a resource of an EC2Instance
+
+        ```
+        (EC2Instance)-[RESOURCE]->(SSMInstanceInformation)
+        ```
+
+### SSMInstancePatch
+
+Representation of an AWS SSM [PatchComplianceData](https://docs.aws.amazon.com/systems-manager/latest/APIReference/API_PatchComplianceData.html)
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The ARN of the instance patch |
+| region | The region of the instance patch. |
+| instance\_id | The managed node ID. |
+| title | The title of the patch. |
+| kb\_id | The operating system-specific ID of the patch. |
+| classification | The classification of the patch, such as SecurityUpdates, Updates, and CriticalUpdates. |
+| severity | The severity of the patch such as Critical, Important, and Moderate. |
+| state | The state of the patch on the managed node, such as INSTALLED or FAILED. |
+| installed\_time | The date/time the patch was installed on the managed node. Not all operating systems provide this level of information. |
+| cve\_ids | The IDs of one or more Common Vulnerabilities and Exposure (CVE) issues that are resolved by the patch. |
+
+#### Relationships
+
+- EC2Instances have SSMInstancePatches
+
+        ```
+        (EC2Instance)-[RESOURCE]->(SSMInstancePatch)
+        ```
