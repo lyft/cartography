@@ -114,9 +114,6 @@ def get_gcp_instance_responses(project_id: str, zones: Optional[List[Dict]], com
         req = compute.instances().list(project=project_id, zone=zone['name'])
         res = req.execute()
         response_objects.append(res)
-    for res in response_objects:
-        x = res['zone'].split('-')
-        res['region'] = f"{x[0]}-{x[1]}"
     return response_objects
 
 
@@ -199,6 +196,9 @@ def transform_gcp_instances(response_objects: List[Dict]) -> List[Dict]:
             instance['partial_uri'] = f"{prefix}/{instance['name']}"
             instance['project_id'] = prefix_fields.project_id
             instance['zone_name'] = prefix_fields.zone_name
+
+            x = instance['zone_name'].split('-')
+            instance['region'] = f"{x[0]}-{x[1]}"
 
             for nic in instance.get('networkInterfaces', []):
                 nic['subnet_partial_uri'] = _parse_compute_full_uri_to_partial_uri(nic['subnetwork'])
@@ -589,7 +589,7 @@ def load_gcp_vpcs(neo4j_session: neo4j.Session, vpcs: List[Dict], gcp_update_tag
             AutoCreateSubnetworks=vpc['auto_create_subnetworks'],
             RoutingMode=vpc['routing_config_routing_mode'],
             Description=vpc['description'],
-            region=vpc['region'],
+            region=vpc.get('region'),
             gcp_update_tag=gcp_update_tag,
         )
 

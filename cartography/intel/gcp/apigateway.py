@@ -113,7 +113,7 @@ def get_api_configs(apigateway: Resource, project_id: str) -> List[Dict]:
     api_configs = []
     try:
         req = apigateway.projects().locations().apis().configs().list(
-            pparent=f'projects/{project_id}/locations/global/apis/*',
+            parent=f'projects/{project_id}/locations/global/apis/*',
         )
         while req is not None:
             res = req.execute()
@@ -365,7 +365,7 @@ def load_api_configs_tx(tx: neo4j.Transaction, configs: List[Dict], project_id: 
     SET
         config.name = conf.name,
         config.createTime = conf.createTime,
-        api.region = conf.region,
+        config.region = conf.region,
         config.updateTime = conf.updateTime,
         config.displayName = conf.displayName,
         config.gatewayServiceAccount = conf.gatewayServiceAccount,
@@ -439,7 +439,7 @@ def load_gateways_tx(tx: neo4j.Transaction, gateways: List[Dict], project_id: st
         gateway.createTime = g.createTime,
         gateway.updateTime = g.updateTime,
         gateway.displayName = g.displayName,
-        api.region = g.region,
+        gateway.region = g.region,
         gateway.apiConfig = g.apiConfig,
         gateway.state = g.state,
         gateway.defaultHostname = g.defaultHostname,

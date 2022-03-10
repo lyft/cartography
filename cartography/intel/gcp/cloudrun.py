@@ -184,10 +184,9 @@ def get_cloudrun_routes(cloudrun: Resource, project_id: str) -> List[Dict]:
         routes = []
         request = cloudrun.namespaces().routes().list(parent=f'namespaces/{project_id}')
         response = request.execute()
-        if response.get('items', []):
-            for item in response:
-                item['id'] = f"projects/{project_id}/routes/{item.get('metadata').get('name')}"
-                routes.append(item)
+        for item in response.get('items', []):
+            item['id'] = f"projects/{project_id}/routes/{item.get('metadata').get('name')}"
+            routes.append(item)
         return routes
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']

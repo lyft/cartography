@@ -79,18 +79,20 @@ def get_sql_users(sql: Resource, sql_instances: List[Dict], project_id: str) -> 
                         item['instance_id'] = inst['id']
                         item['id'] = f"project/{project_id}/instances/{inst['name']}/users/{item['name']}"
                         sql_users.append(item)
-                    while 'nextPageToken' in response:
-                        response = sql.users().list(
-                            project=f"projects/{project_id}",
-                            instance=f"{inst['name']}", pageToken=response['nextPageToken'],
-                        )
+                if 'nextPageToken' in response:
+                    request = sql.users().list(
+                        project=f"projects/{project_id}",
+                        instance=f"{inst['name']}", pageToken=response['nextPageToken'],
+                    )
+                else:
+                    request = None                    
         except HttpError as e:
             err = json.loads(e.content.decode('utf-8'))['error']
             if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
                 logger.warning(
                     (
                         "Could not retrieve Sql Instance Users on project %s due to permissions issues.\
-                             Code: %s, Message: %s"
+                            Code: %s, Message: %s"
                     ), project_id, err['code'], err['message'],
                 )
                 return []
@@ -251,6 +253,8 @@ def sync(
     # SQL INSTANCES
     sqlinstances = get_sql_instances(sql, project_id)
     load_sql_instances(neo4j_session, sqlinstances, project_id, gcp_update_tag)
+    
+    logger.info("Syncing GCP Cloud SQL Users for project %s.", project_id)
     # SQL USERS
     users = get_sql_users(sql, sqlinstances, project_id)
     load_sql_users(neo4j_session, users, project_id, gcp_update_tag)

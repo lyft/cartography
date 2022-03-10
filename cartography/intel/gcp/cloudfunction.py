@@ -45,7 +45,7 @@ def get_gcp_functions(function: Resource, project_id: str) -> List[Dict]:
             logger.warning(
                 (
                     "Could not retrieve Functions locations on project %s due to permissions issues.\
-                         Code: %s, Message: %s"
+                        Code: %s, Message: %s"
                 ), project_id, err['code'], err['message'],
             )
             return []
@@ -60,7 +60,7 @@ def get_gcp_functions(function: Resource, project_id: str) -> List[Dict]:
             )
             while request is not None:
                 response = request.execute()
-                for func in response['functions']:
+                for func in response.get('functions',[]):
                     func['id'] = func['name']
                     func['region'] = region.get('locationId', 'global')
                     functions.append(func)

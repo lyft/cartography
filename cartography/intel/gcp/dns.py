@@ -91,8 +91,8 @@ def get_dns_rrs(dns: Resource, dns_zones: List[Dict], project_id: str) -> List[R
             )
             return []
         else:
-            raise
-        raise e
+            # raise
+            return []
 
 
 @timeit
