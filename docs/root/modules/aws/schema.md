@@ -43,7 +43,9 @@ Representation of an AWS Account.
                               RDSInstance,
                               SecretsManagerSecret,
                               SecurityHub,
-                              SQSQueue)
+                              SQSQueue
+                              SSMInstanceInformation,
+                              SSMInstancePatch)
         ```
 
 - An `AWSPolicy` node is defined for an `AWSAccount`.
@@ -879,6 +881,17 @@ Our representation of an AWS [EC2 Instance](https://docs.aws.amazon.com/AWSEC2/l
         (EC2Instance)-[STS_ASSUMEROLE_ALLOW]->(AWSRole)
         ```
 
+- EC2Instances can have SSMInstanceInformation
+
+        ```
+        (EC2Instance)-[RESOURCE]->(SSMInstanceInformation)
+        ```
+
+- EC2Instances can have SSMInstancePatches
+
+        ```
+        (EC2Instance)-[RESOURCE]->(SSMInstancePatch)
+        ```
 
 ### EC2KeyPair
 
@@ -3009,6 +3022,12 @@ Representation of an AWS SSM [InstanceInformation](https://docs.aws.amazon.com/s
 
 #### Relationships
 
+- SSMInstanceInformation is a resource under the AWS Account.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(SSMInstanceInformation)
+        ```
+
 - SSMInstanceInformation is a resource of an EC2Instance
 
         ```
@@ -3035,6 +3054,12 @@ Representation of an AWS SSM [PatchComplianceData](https://docs.aws.amazon.com/s
 | cve\_ids | The IDs of one or more Common Vulnerabilities and Exposure (CVE) issues that are resolved by the patch. |
 
 #### Relationships
+
+- SSMInstancePatch is a resource under the AWS Account.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(SSMInstancePatch)
+        ```
 
 - EC2Instances have SSMInstancePatches
 

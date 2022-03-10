@@ -99,10 +99,15 @@ def load_instance_information(
             i.region = {Region},
             i.lastupdated = {aws_update_tag}
         WITH i
-        MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})-[:RESOURCE]->(ec2_instance:EC2Instance{id: i.instance_id})
-        MERGE (ec2_instance)-[r:RESOURCE]->(i)
+        MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
+        MERGE (owner)-[r:RESOURCE]->(i)
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = {aws_update_tag}
+        WITH i
+        MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})-[:RESOURCE]->(ec2_instance:EC2Instance{id: i.instance_id})
+        MERGE (ec2_instance)-[r2:RESOURCE]->(i)
+        ON CREATE SET r2.firstseen = timestamp()
+        SET r2.lastupdated = {aws_update_tag}
     """
     for ii in data:
         ii["LastPingDateTime"] = dict_date_to_epoch(ii, "LastPingDateTime")
@@ -142,10 +147,15 @@ def load_instance_patches(
             p.region = {Region},
             p.lastupdated = {aws_update_tag}
         WITH p
-        MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})-[:RESOURCE]->(ec2_instance:EC2Instance{id: p.instance_id})
-        MERGE (ec2_instance)-[r:HAS_PATCH]->(p)
+        MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
+        MERGE (owner)-[r:RESOURCE]->(p)
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = {aws_update_tag}
+        WITH p
+        MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})-[:RESOURCE]->(ec2_instance:EC2Instance{id: p.instance_id})
+        MERGE (ec2_instance)-[r2:HAS_PATCH]->(p)
+        ON CREATE SET r2.firstseen = timestamp()
+        SET r2.lastupdated = {aws_update_tag}
     """
     for p in data:
         p["InstalledTime"] = dict_date_to_epoch(p, "InstalledTime")
