@@ -1,14 +1,21 @@
 import base64
 import json
 import os
+import logging
 
 import cartography.cli
 from libraries.pubsublibrary import PubSubLibrary
 from utils.errors import PubSubPublishError
 import utils.logger as lgr
 
-
+# Used by GCP Functions
 def cartography_worker(event, ctx):
+    logging.getLogger('cartography').setLevel(os.environ.get('LOG_LEVEL'))
+    # logging.getLogger('cartography.intel').setLevel(os.environ.get('LOG_LEVEL'))
+    logging.getLogger('cartography.sync').setLevel(os.environ.get('LOG_LEVEL'))
+    logging.getLogger('cartography.graph').setLevel(os.environ.get('LOG_LEVEL'))
+    logging.getLogger('cartography.cartography').setLevel(os.environ.get('LOG_LEVEL'))    
+    
     logger = lgr.get_logger("DEBUG")
     logger.info('inventory sync gcp worker request received via PubSub')
 

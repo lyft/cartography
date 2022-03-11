@@ -1,3 +1,3 @@
 #!/usr/bin/env zsh
 
-python3 .
+export LOG_LEVEL=WARNING && python3 .
