@@ -301,6 +301,7 @@ def load_service_accounts(
     MERGE (u:GCPServiceAccount{id: sa.name})
     ON CREATE SET u.firstseen = timestamp()
     SET u.name = sa.name, u.displayname = sa.displayName,
+    u.email = sa.email,
     u.region = {region},
     u.disabled = sa.disabled, u.serviceaccountid = sa.uniqueId,
     u.lastupdated = {gcp_update_tag}
