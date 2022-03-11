@@ -1,5 +1,6 @@
 import json
 import os
+import logging
 
 import cartography.cli
 from libraries.authlibrary import AuthLibrary
@@ -26,6 +27,12 @@ def set_assume_role_keys(context):
 def init_lambda(ctx):
     global lambda_init, context
 
+    logging.getLogger('cartography').setLevel(os.environ.get('CDX_DEFAULT_LOG_LEVEL'))
+    # logging.getLogger('cartography.intel').setLevel(os.environ.get('CDX_DEFAULT_LOG_LEVEL'))
+    logging.getLogger('cartography.sync').setLevel(os.environ.get('CDX_DEFAULT_LOG_LEVEL'))
+    logging.getLogger('cartography.graph').setLevel(os.environ.get('CDX_DEFAULT_LOG_LEVEL'))
+    logging.getLogger('cartography.cartography').setLevel(os.environ.get('CDX_DEFAULT_LOG_LEVEL'))
+
     context = AppContext(
         region=os.environ['CDX_DEFAULT_REGION'],
         log_level=os.environ['CDX_DEFAULT_LOG_LEVEL'],
@@ -48,6 +55,7 @@ def init_lambda(ctx):
     lambda_init = True
 
 
+# Used by AWS Lambda
 def load_cartography(event, ctx):
     global lambda_init, context
     if not lambda_init:
