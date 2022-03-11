@@ -15,10 +15,10 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
-def get_running_instance_ids(neo4j_session: neo4j.Session, region: str, current_aws_account_id: str) -> List[str]:
+def get_instance_ids(neo4j_session: neo4j.Session, region: str, current_aws_account_id: str) -> List[str]:
     get_instances_query = """
     MATCH (:AWSAccount{id: {AWS_ACCOUNT_ID}})-[:RESOURCE]->(i:EC2Instance)
-    WHERE i.region = {Region} AND i.state = "running"
+    WHERE i.region = {Region}
     RETURN i.id
     """
     results = neo4j_session.run(get_instances_query, AWS_ACCOUNT_ID=current_aws_account_id, Region=region)
@@ -31,14 +31,14 @@ def get_running_instance_ids(neo4j_session: neo4j.Session, region: str, current_
 @timeit
 @aws_handle_regions
 def get_instance_information(
-    boto3_session: boto3.session.Session, region: str, running_instance_ids: List[str],
+    boto3_session: boto3.session.Session, region: str, instance_ids: List[str],
 ) -> List[Dict[str, Any]]:
     client = boto3_session.client('ssm', region_name=region)
     instance_information: List[Dict[str, Any]] = []
-    for i in range(0, len(running_instance_ids), 50):
-        running_instance_ids_chunk = running_instance_ids[i:i + 50]
+    for i in range(0, len(instance_ids), 50):
+        instance_ids_chunk = instance_ids[i:i + 50]
         instance_information_chunk = client.describe_instance_information(
-            Filters=[{"Key": "InstanceIds", "Values": running_instance_ids_chunk}],
+            Filters=[{"Key": "InstanceIds", "Values": instance_ids_chunk}],
             MaxResults=50,
         )
         instance_information.extend(instance_information_chunk.get('InstanceInformationList', []))
@@ -48,12 +48,12 @@ def get_instance_information(
 @timeit
 @aws_handle_regions
 def get_instance_patches(
-    boto3_session: boto3.session.Session, region: str, running_instance_ids: List[str],
+    boto3_session: boto3.session.Session, region: str, instance_ids: List[str],
 ) -> List[Dict[str, Any]]:
     client = boto3_session.client('ssm', region_name=region)
     instance_patches: List[Dict[str, Any]] = []
     paginator = client.get_paginator('describe_instance_patches')
-    for instance_id in running_instance_ids:
+    for instance_id in instance_ids:
         patches = []
         for page in paginator.paginate(InstanceId=instance_id):
             patches.extend(page["Patches"])
@@ -105,7 +105,7 @@ def load_instance_information(
         SET r.lastupdated = {aws_update_tag}
         WITH i
         MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})-[:RESOURCE]->(ec2_instance:EC2Instance{id: i.instance_id})
-        MERGE (ec2_instance)-[r2:RESOURCE]->(i)
+        MERGE (ec2_instance)-[r2:HAS_INFORMATION]->(i)
         ON CREATE SET r2.firstseen = timestamp()
         SET r2.lastupdated = {aws_update_tag}
     """
@@ -184,9 +184,9 @@ def sync(
 ) -> None:
     for region in regions:
         logger.info("Syncing SSM for region '%s' in account '%s'.", region, current_aws_account_id)
-        running_instance_ids = get_running_instance_ids(neo4j_session, region, current_aws_account_id)
-        data = get_instance_information(boto3_session, region, running_instance_ids)
+        instance_ids = get_instance_ids(neo4j_session, region, current_aws_account_id)
+        data = get_instance_information(boto3_session, region, instance_ids)
         load_instance_information(neo4j_session, data, region, current_aws_account_id, update_tag)
-        data = get_instance_patches(boto3_session, region, running_instance_ids)
+        data = get_instance_patches(boto3_session, region, instance_ids)
         load_instance_patches(neo4j_session, data, region, current_aws_account_id, update_tag)
     cleanup_ssm(neo4j_session, common_job_parameters)

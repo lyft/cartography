@@ -884,13 +884,13 @@ Our representation of an AWS [EC2 Instance](https://docs.aws.amazon.com/AWSEC2/l
 - EC2Instances can have SSMInstanceInformation
 
         ```
-        (EC2Instance)-[RESOURCE]->(SSMInstanceInformation)
+        (EC2Instance)-[HAS_INFORMATION]->(SSMInstanceInformation)
         ```
 
 - EC2Instances can have SSMInstancePatches
 
         ```
-        (EC2Instance)-[RESOURCE]->(SSMInstancePatch)
+        (EC2Instance)-[HAS_PATCH]->(SSMInstancePatch)
         ```
 
 ### EC2KeyPair
@@ -3031,7 +3031,7 @@ Representation of an AWS SSM [InstanceInformation](https://docs.aws.amazon.com/s
 - SSMInstanceInformation is a resource of an EC2Instance
 
         ```
-        (EC2Instance)-[RESOURCE]->(SSMInstanceInformation)
+        (EC2Instance)-[HAS_INFORMATION]->(SSMInstanceInformation)
         ```
 
 ### SSMInstancePatch
@@ -3064,5 +3064,5 @@ Representation of an AWS SSM [PatchComplianceData](https://docs.aws.amazon.com/s
 - EC2Instances have SSMInstancePatches
 
         ```
-        (EC2Instance)-[RESOURCE]->(SSMInstancePatch)
+        (EC2Instance)-[HAS_INFORMATION]->(SSMInstancePatch)
         ```
