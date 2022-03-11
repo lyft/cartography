@@ -918,7 +918,7 @@ def _attach_instance_service_account(neo4j_session: neo4j.Session, instance: Res
     query = """
     MATCH (i:GCPInstance{id:{InstanceId}})
     MERGE (sa:GCPServiceAccount{email:{AccountEmail}})
-    MERGE (sa)-[r:HAS]->(i)
+    MERGE (sa)-[r:USED_BY]->(i)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {gcp_update_tag}
     """
