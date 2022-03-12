@@ -95,9 +95,13 @@ def get_sql_users(sql: Resource, sql_instances: List[Dict], project_id: str) -> 
                             Code: %s, Message: %s"
                     ), project_id, err['code'], err['message'],
                 )
-                return []
+                continue
+                # return []
             else:
-                raise
+                # raise
+                # return []
+                continue
+
     return sql_users
 
 

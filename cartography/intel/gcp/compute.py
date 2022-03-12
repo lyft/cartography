@@ -330,11 +330,11 @@ def transform_gcp_forwarding_rules(fwd_response: Resource) -> List[Dict]:
         # Region looks like "https://www.googleapis.com/compute/v1/projects/{project}/regions/{region name}"
         region = fwd.get('region', None)
         forwarding_rule['region'] = region.split('/')[-1] if region else None
-        forwarding_rule['ip_address'] = fwd['IPAddress']
-        forwarding_rule['ip_protocol'] = fwd['IPProtocol']
+        forwarding_rule['ip_address'] = fwd.get('IPAddress', None)
+        forwarding_rule['ip_protocol'] = fwd.get('IPProtocol',None)
         forwarding_rule['allow_global_access'] = fwd.get('allowGlobalAccess', None)
 
-        forwarding_rule['load_balancing_scheme'] = fwd['loadBalancingScheme']
+        forwarding_rule['load_balancing_scheme'] = fwd.get('loadBalancingScheme',None)
         forwarding_rule['name'] = fwd['name']
         forwarding_rule['port_range'] = fwd.get('portRange', None)
         forwarding_rule['ports'] = fwd.get('ports', None)
