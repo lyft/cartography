@@ -150,7 +150,8 @@ def _load_ec2_instance_tx(
             instance.ebsoptimized = {EbsOptimized},
             instance.bootmode = {BootMode},
             instance.instancelifecycle = {InstanceLifecycle},
-            instance.hibernationoptions = {HibernationOptions}
+            instance.hibernationoptions = {HibernationOptions},
+            instance.arn = {InstanceArn}
         WITH instance
         MATCH (rez:EC2Reservation{reservationid: {ReservationId}})
         MERGE (instance)-[r:MEMBER_OF_EC2_RESERVATION]->(rez)
@@ -185,6 +186,7 @@ def _load_ec2_instance_tx(
         BootMode=instance.get("BootMode"),
         InstanceLifecycle=instance.get("InstanceLifecycle"),
         HibernationOptions=instance.get("HibernationOptions", {}).get("Configured"),
+        InstanceArn=instance.get('instanceArn'),
         AWS_ACCOUNT_ID=current_aws_account_id,
         Region=region,
         update_tag=update_tag,
@@ -300,7 +302,7 @@ def load_ec2_instances(
         for instance in reservation["Instances"]:
             instanceid = instance["InstanceId"]
             instance["region"] = region
-            instancearn = f"arn:aws:ec2:{region}:{current_aws_account_id}:instance/{instanceid}"
+            instance['instanceArn'] = f"arn:aws:ec2:{region}:{current_aws_account_id}:instance/{instanceid}"
 
             monitoring_state = instance.get("Monitoring", {}).get("State")
 

@@ -12,6 +12,7 @@ from cartography.util import camel_to_snake
 from cartography.util import dict_date_to_epoch
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
+from botocore.exceptions import ClientError
 
 logger = logging.getLogger(__name__)
 
@@ -19,20 +20,27 @@ logger = logging.getLogger(__name__)
 @timeit
 @aws_handle_regions
 def get_ecs_clusters(boto3_session: boto3.session.Session, region: str) -> Tuple[List[str], List[Dict[str, Any]]]:
-    client = boto3_session.client('ecs', region_name=region)
-    paginator = client.get_paginator('list_clusters')
-    clusters: List[Dict[str, Any]] = []
-    cluster_arns: List[str] = []
-    for page in paginator.paginate():
-        cluster_arns.extend(page.get('clusterArns', []))
-    # TODO: also include attachment info, and make relationships between the attachements
-    # and the cluster.
-    includes = ['SETTINGS', 'CONFIGURATIONS']
-    for i in range(0, len(cluster_arns), 100):
-        cluster_arn_chunk = cluster_arns[i:i + 100]
-        cluster_chunk = client.describe_clusters(clusters=cluster_arn_chunk, include=includes)
-        clusters.extend(cluster_chunk.get('clusters', []))
-    return (cluster_arns, clusters)
+    try:
+
+        client = boto3_session.client('ecs', region_name=region)
+        paginator = client.get_paginator('list_clusters')
+        clusters: List[Dict[str, Any]] = []
+        cluster_arns: List[str] = []
+        for page in paginator.paginate():
+            cluster_arns.extend(page.get('clusterArns', []))
+        # TODO: also include attachment info, and make relationships between the attachments
+        # and the cluster.
+        includes = ['SETTINGS', 'CONFIGURATIONS']
+        for i in range(0, len(cluster_arns), 100):
+            cluster_arn_chunk = cluster_arns[i:i + 100]
+            cluster_chunk = client.describe_clusters(clusters=cluster_arn_chunk, include=includes)
+            clusters.extend(cluster_chunk.get('clusters', []))
+        return (cluster_arns, clusters)
+
+    except ClientError as e:
+        logger.warning("Failed to get ecs clusters for region - {}. Error - {}".format(region, e))
+
+        return ([], [])
 
 
 @timeit
