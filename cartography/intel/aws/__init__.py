@@ -13,10 +13,13 @@ from . import organizations
 from .resources import RESOURCE_FUNCTIONS
 from cartography.config import Config
 from cartography.intel.aws.util.common import parse_and_validate_aws_requested_syncs
+from cartography.util import get_stats_client
+from cartography.util import merge_module_sync_metadata
 from cartography.util import run_analysis_job
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
+stat_handler = get_stats_client(__name__)
 logger = logging.getLogger(__name__)
 
 
@@ -81,6 +84,15 @@ def _sync_one_account(
         'aws_lambda_ecr.json',
         neo4j_session,
         common_job_parameters,
+    )
+
+    merge_module_sync_metadata(
+        neo4j_session,
+        group_type='AWSAccount',
+        group_id=current_aws_account_id,
+        synced_type='AWSAccount',
+        update_tag=update_tag,
+        stat_handler=stat_handler,
     )
 
 

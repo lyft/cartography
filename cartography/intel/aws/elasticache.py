@@ -7,10 +7,13 @@ import boto3
 import neo4j
 
 from cartography.util import aws_handle_regions
+from cartography.util import get_stats_client
+from cartography.util import merge_module_sync_metadata
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+stat_handler = get_stats_client(__name__)
 
 
 def _get_topic(cluster: Dict) -> Dict:
@@ -111,3 +114,11 @@ def sync(
         clusters = get_elasticache_clusters(boto3_session, region)
         load_elasticache_clusters(neo4j_session, clusters, region, current_aws_account_id, update_tag)
     cleanup(neo4j_session, current_aws_account_id, update_tag)
+    merge_module_sync_metadata(
+        neo4j_session,
+        group_type='AWSAccount',
+        group_id=current_aws_account_id,
+        synced_type='ElasticacheCluster',
+        update_tag=update_tag,
+        stat_handler=stat_handler,
+    )
