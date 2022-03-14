@@ -115,7 +115,7 @@ def test_load_instance_patches(neo4j_session):
         (
             n["n.id"],
             n["n.installed_time"],
-            n["n.cve_ids"],
+            tuple(n["n.cve_ids"]),
         )
         for n in nodes
     }
