@@ -35,13 +35,14 @@ def get_instance_information(
 ) -> List[Dict[str, Any]]:
     client = boto3_session.client('ssm', region_name=region)
     instance_information: List[Dict[str, Any]] = []
+    paginator = client.get_paginator('describe_instance_information')
     for i in range(0, len(instance_ids), 50):
         instance_ids_chunk = instance_ids[i:i + 50]
-        instance_information_chunk = client.describe_instance_information(
+        for info_chunk in paginator.paginate(
             Filters=[{"Key": "InstanceIds", "Values": instance_ids_chunk}],
             MaxResults=50,
-        )
-        instance_information.extend(instance_information_chunk.get('InstanceInformationList', []))
+        ):
+            instance_information.extend(info_chunk.get('InstanceInformationList', []))
     return instance_information
 
 

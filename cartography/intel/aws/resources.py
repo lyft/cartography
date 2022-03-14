@@ -47,9 +47,9 @@ RESOURCE_FUNCTIONS: Dict = {
     'dynamodb': dynamodb.sync,
     'ec2:launch_templates': sync_ec2_launch_templates,
     'ec2:autoscalinggroup': sync_ec2_auto_scaling_groups,
+    # `ec2:instance` must be included before `ssm` and `ec2:images`,
+    # they rely on EC2Instance data provided by this module.
     'ec2:instance': sync_ec2_instances,
-    # This module must be included after ec2:instance, as uses instance
-    # data from the graph.
     'ec2:images': sync_ec2_images,
     'ec2:keypair': sync_ec2_key_pairs,
     'ec2:load_balancer': sync_load_balancers,
@@ -82,8 +82,6 @@ RESOURCE_FUNCTIONS: Dict = {
     'secretsmanager': secretsmanager.sync,
     'securityhub': securityhub.sync,
     'sqs': sqs.sync,
-    # This module must be included after ec2:instance, as uses instance
-    # data from the graph.
     'ssm': ssm.sync,
     'config': config.sync,
 }
