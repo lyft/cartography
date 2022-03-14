@@ -33,6 +33,14 @@ def test_load_instance_information(neo4j_session):
     _ensure_load_account(neo4j_session)
     _ensure_load_instances(neo4j_session)
 
+    cartography.intel.aws.ssm.load_instance_information(
+        neo4j_session,
+        tests.data.aws.ssm.INSTANCE_INFORMATION,
+        TEST_REGION,
+        TEST_ACCOUNT_ID,
+        TEST_UPDATE_TAG,
+    )
+
     expected_nodes = {
         ("i-01", 1647201382, 1647201508, 1647199708),
         ("i-02", 1647201382, 1647201508, 1647199708),
@@ -73,6 +81,14 @@ def test_load_instance_patches(neo4j_session):
     # load account and instances, to be able to test relationships
     _ensure_load_account(neo4j_session)
     _ensure_load_instances(neo4j_session)
+
+    cartography.intel.aws.ssm.load_instance_information(
+        neo4j_session,
+        tests.data.aws.ssm.INSTANCE_PATCHES,
+        TEST_REGION,
+        TEST_ACCOUNT_ID,
+        TEST_UPDATE_TAG,
+    )
 
     expected_nodes = {
         ("i-01-test.x86_64:0:4.2.46-34.amzn2", 1636372278, ["CVE-2022-0000", "CVE-2022-0001"]),
