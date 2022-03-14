@@ -64,7 +64,15 @@ def test_load_instance_information(neo4j_session):
         RETURN n.id
         """,
     )
-    actual_nodes = {n['n.id'] for n in nodes}
+    actual_nodes = {
+        (
+            n["n.id"],
+            n["n.last_ping_date_time"],
+            n["n.last_association_execution_date"],
+            n["n.last_successful_association_execution_date"],
+        )
+        for n in nodes
+    }
     assert actual_nodes == {"i-01"}
 
     nodes = neo4j_session.run(
@@ -73,7 +81,7 @@ def test_load_instance_information(neo4j_session):
         RETURN n.id
         """,
     )
-    actual_nodes = {n['n.id'] for n in nodes}
+    actual_nodes = {n["n.id"] for n in nodes}
     assert actual_nodes == {"i-02"}
 
 
@@ -103,7 +111,14 @@ def test_load_instance_patches(neo4j_session):
                n.cve_ids
         """,
     )
-    actual_nodes = {n for n in nodes}
+    actual_nodes = {
+        (
+            n["n.id"],
+            n["n.installed_time"],
+            n["n.cve_ids"],
+        )
+        for n in nodes
+    }
     assert actual_nodes == expected_nodes
 
     nodes = neo4j_session.run(
@@ -112,7 +127,7 @@ def test_load_instance_patches(neo4j_session):
         RETURN n.id
         """,
     )
-    actual_nodes = {n['n.id'] for n in nodes}
+    actual_nodes = {n["n.id"] for n in nodes}
     assert actual_nodes == {"i-01-test.x86_64:0:4.2.46-34.amzn2"}
 
     nodes = neo4j_session.run(
@@ -121,5 +136,5 @@ def test_load_instance_patches(neo4j_session):
         RETURN n.id
         """,
     )
-    actual_nodes = {n['n.id'] for n in nodes}
+    actual_nodes = {n["n.id"] for n in nodes}
     assert actual_nodes == {"i-02-test.x86_64:0:4.2.46-34.amzn2"}
