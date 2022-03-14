@@ -99,8 +99,8 @@ def test_load_instance_patches(neo4j_session):
     )
 
     expected_nodes = {
-        ("i-01-test.x86_64:0:4.2.46-34.amzn2", 1636372278, ["CVE-2022-0000", "CVE-2022-0001"]),
-        ("i-02-test.x86_64:0:4.2.46-34.amzn2", 1636372278, ["CVE-2022-0000", "CVE-2022-0001"]),
+        ("i-01-test.x86_64:0:4.2.46-34.amzn2", 1636372278, ("CVE-2022-0000", "CVE-2022-0001")),
+        ("i-02-test.x86_64:0:4.2.46-34.amzn2", 1636372278, ("CVE-2022-0000", "CVE-2022-0001")),
     }
 
     nodes = neo4j_session.run(
