@@ -90,7 +90,7 @@ def test_load_instance_patches(neo4j_session):
     _ensure_load_account(neo4j_session)
     _ensure_load_instances(neo4j_session)
 
-    cartography.intel.aws.ssm.load_instance_information(
+    cartography.intel.aws.ssm.load_instance_patches(
         neo4j_session,
         tests.data.aws.ssm.INSTANCE_PATCHES,
         TEST_REGION,
