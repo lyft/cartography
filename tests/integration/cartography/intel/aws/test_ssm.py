@@ -55,15 +55,6 @@ def test_load_instance_information(neo4j_session):
                n.last_successful_association_execution_date
         """,
     )
-    actual_nodes = {n for n in nodes}
-    assert actual_nodes == expected_nodes
-
-    nodes = neo4j_session.run(
-        """
-        MATCH (:EC2Instance{id: "i-01"})-[:HAS_INFORMATION]->(n:SSMInstanceInformation)
-        RETURN n.id
-        """,
-    )
     actual_nodes = {
         (
             n["n.id"],
@@ -73,6 +64,15 @@ def test_load_instance_information(neo4j_session):
         )
         for n in nodes
     }
+    assert actual_nodes == expected_nodes
+
+    nodes = neo4j_session.run(
+        """
+        MATCH (:EC2Instance{id: "i-01"})-[:HAS_INFORMATION]->(n:SSMInstanceInformation)
+        RETURN n.id
+        """,
+    )
+    actual_nodes = {n["n.id"] for n in nodes}
     assert actual_nodes == {"i-01"}
 
     nodes = neo4j_session.run(
