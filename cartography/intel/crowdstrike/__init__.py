@@ -29,16 +29,13 @@ def start_crowdstrike_ingestion(
         not config.crowdstrike_client_id or
         not config.crowdstrike_client_secret
     ):
-        logger.info("crowdstrike config not found")
+        logger.error("crowdstrike config not found")
         return
-    crowdstrike_api_url = config.crowdstrike_api_url
-    if crowdstrike_api_url is None:
-        crowdstrike_api_url = "https://api.crowdstrike.com"
 
     authorization = get_authorization(
         config.crowdstrike_client_id,
         config.crowdstrike_client_secret,
-        crowdstrike_api_url,
+        config.crowdstrike_api_url,
     )
     sync_hosts(
         neo4j_session,

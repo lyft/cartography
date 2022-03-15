@@ -82,7 +82,6 @@ def load_vulnerability_data(
         Vulnerabilities=vulns,
         update_tag=update_tag,
     )
-    # TODO: generate CVE relationships
     _load_cves(neo4j_session, cves, update_tag)
 
 
