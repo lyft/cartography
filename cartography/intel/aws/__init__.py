@@ -38,11 +38,11 @@ def _build_aws_sync_kwargs(
 
 
 def concurrent_execution(
-    func_name: str, creds: Dict[str,str], config: Config, neo4j_session: neo4j.Session, 
+    service: str, service_func: Any, creds: Dict[str,str], config: Config, neo4j_session: neo4j.Session, 
     boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
     update_tag: int, common_job_parameters: Dict,
     ):
-    logger.info(f"BEGIN processing for service: #{func_name}")
+    logger.info(f"BEGIN processing for service: {service}")
 
     if creds['type'] == 'self':
         boto3_session = boto3.Session(
@@ -68,9 +68,9 @@ def concurrent_execution(
             neo4j_driver.session(), boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters,
         )
 
-    func_name(**sync_args)
+    service_func(**sync_args)
 
-    logger.info(f"END processing for service: #{func_name}")
+    logger.info(f"END processing for service: {service}")
 
 def _sync_one_account(
     neo4j_session: neo4j.Session,
@@ -98,14 +98,14 @@ def _sync_one_account(
             if func_name in RESOURCE_FUNCTIONS:
                 # Skip permission relationships and tags for now because they rely on data already being in the graph
                 if func_name not in ['permission_relationships', 'resourcegroupstaggingapi']:
-                    futures.append(executor.submit(concurrent_execution, RESOURCE_FUNCTIONS[func_name], creds, config, **sync_args))
+                    futures.append(executor.submit(concurrent_execution, func_name, RESOURCE_FUNCTIONS[func_name], creds, config, **sync_args))
                 else:
                     continue
             else:
                 raise ValueError(f'AWS sync function "{func_name}" was specified but does not exist. Did you misspell it?')
         
         for future in as_completed(futures):
-            logger.info(f'Result from Future: #{future.result()}')
+            logger.info(f'Result from Future - Service Processing: {future.result()}')
 
     # NOTE clean up all DNS records, regardless of which job created them
     run_cleanup_job('aws_account_dns_cleanup.json', neo4j_session, common_job_parameters)

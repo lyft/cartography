@@ -228,7 +228,7 @@ def sync(
                 futures.append(executor.submit(concurrent_execution, config, region, resource_type, update_tag))
 
         for future in as_completed(futures):
-            logger.info(f'Result from Future: #{future.result()}')
+            logger.info(f'Result from Future - Tags Processing: {future.result()}')
 
     cleanup(neo4j_session, common_job_parameters)
 
@@ -239,7 +239,7 @@ def concurrent_execution(
     resource_type: str,
     update_tag: int,
     ):
-    logger.info(f"BEGIN processing tags for #{region} & #{resource_type}")
+    logger.info(f"BEGIN processing tags for {region} & {resource_type}")
     
     if config.credentials['type'] == 'self':
         boto3_session = boto3.Session(
@@ -266,4 +266,4 @@ def concurrent_execution(
     transform_tags(tag_data, resource_type)
     load_tags(neo4j_driver.session(), tag_data, resource_type, region, update_tag)
 
-    logger.info(f"END processing tags for #{region} & #{resource_type}")
+    logger.info(f"END processing tags for {region} & {resource_type}")
