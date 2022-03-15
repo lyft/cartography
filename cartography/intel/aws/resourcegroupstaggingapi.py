@@ -3,12 +3,17 @@ from string import Template
 from typing import Dict
 from typing import List
 
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+
 import boto3
 import neo4j
+from neo4j import GraphDatabase
 
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
+from cartography.config import Config
 
 logger = logging.getLogger(__name__)
 
@@ -204,6 +209,7 @@ def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
 
 @timeit
 def sync(
+    config: Config,
     neo4j_session: neo4j.Session,
     boto3_session: boto3.session.Session,
     regions: List[str],
@@ -212,11 +218,52 @@ def sync(
     common_job_parameters: Dict,
     tag_resource_type_mappings: Dict = TAG_RESOURCE_TYPE_MAPPINGS,
 ) -> None:
-    for region in regions:
-        logger.info("Syncing AWS tags for region '%s'.", region)
-        for resource_type in tag_resource_type_mappings.keys():
-            tag_data = get_tags(boto3_session, [resource_type], region)
+    # Process each region in parallel.
+    with ThreadPoolExecutor(max_workers=len(regions)) as executor:
+        futures = []
+    
+        for region in regions:
+            logger.info("Syncing AWS tags for region '%s'.", region)
+            for resource_type in tag_resource_type_mappings.keys():
+                futures.append(executor.submit(concurrent_execution, config, region, resource_type, update_tag))
 
-            transform_tags(tag_data, resource_type)
-            load_tags(neo4j_session, tag_data, resource_type, region, update_tag)
+        for future in as_completed(futures):
+            logger.info(f'Result from Future: #{future.result()}')
+
     cleanup(neo4j_session, common_job_parameters)
+
+
+def concurrent_execution(
+    config: Config,
+    region: str,
+    resource_type: str,
+    update_tag: int,
+    ):
+    logger.info(f"BEGIN processing tags for #{region} & #{resource_type}")
+    
+    if config.credentials['type'] == 'self':
+        boto3_session = boto3.Session(
+            aws_access_key_id=config.credentials['aws_access_key_id'],
+            aws_secret_access_key=config.credentials['aws_secret_access_key'],
+        )
+
+    elif config.credentials['type'] == 'assumerole':
+        boto3_session = boto3.Session(
+            aws_access_key_id=config.credentials['aws_access_key_id'],
+            aws_secret_access_key=config.credentials['aws_secret_access_key'],
+            aws_session_token=config.credentials['session_token'],
+        )
+        
+    neo4j_auth = (config.neo4j_user, config.neo4j_password)
+    neo4j_driver = GraphDatabase.driver(
+        config.neo4j_uri,
+        auth=neo4j_auth,
+        max_connection_lifetime=config.neo4j_max_connection_lifetime,
+    )
+    
+    tag_data = get_tags(boto3_session, [resource_type], region)
+
+    transform_tags(tag_data, resource_type)
+    load_tags(neo4j_driver.session(), tag_data, resource_type, region, update_tag)
+
+    logger.info(f"END processing tags for #{region} & #{resource_type}")
