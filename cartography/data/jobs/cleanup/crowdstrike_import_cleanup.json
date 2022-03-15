@@ -1,0 +1,32 @@
+{
+  "statements": [
+    {
+      "query": "MATCH (v:SpotlightVulnerability) WHERE v.lastupdated <> {UPDATE_TAG} WITH v LIMIT {LIMIT_SIZE} DETACH DELETE (v)",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (c:CVE) WHERE c.lastupdated <> {UPDATE_TAG} WITH c LIMIT {LIMIT_SIZE} DETACH DELETE (c)",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (h:CrowdstrikeHost) WHERE h.lastupdated <> {UPDATE_TAG} WITH h LIMIT {LIMIT_SIZE} DETACH DELETE (h)",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (:CVE)<-[hc:HAS_CVE]-(:SpotlightVulnerability) WHERE hc.lastupdated <> {UPDATE_TAG} WITH hc LIMIT {LIMIT_SIZE} DELETE (hc)",
+      "iterative": true,
+      "iterationsize": 100,
+      "__comment__": "If a CVE exists, but the vulnerability is gone, delete the relationship"
+    },
+    {
+      "query": "MATCH (:SpotlightVulnerability)<-[hv:HAS_VULNERABILITY]-(:CrowdstrikeHost) WHERE hv.lastupdated <> {UPDATE_TAG} WITH hv LIMIT {LIMIT_SIZE} DELETE (hv)",
+      "iterative": true,
+      "iterationsize": 100,
+      "__comment__": "Delete relationship between vulnerabilty and host if host exists and vulnerabilty does not"
+    }
+  ],
+  "name": "cleanup crowdstrike"
+}

@@ -102,6 +102,9 @@ class Config:
         statsd_host=None,
         statsd_port=None,
         pagerduty_api_key=None,
+        crowdstrike_client_id=None,
+        crowdstrike_client_secret=None,
+        crowdstrike_api_url=None,
     ):
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user
@@ -133,3 +136,6 @@ class Config:
         self.statsd_host = statsd_host
         self.statsd_port = statsd_port
         self.pagerduty_api_key = pagerduty_api_key
+        self.crowdstrike_client_id = crowdstrike_client_id
+        self.crowdstrike_client_secret = crowdstrike_client_secret
+        self.crowdstrike_api_url = crowdstrike_api_url
