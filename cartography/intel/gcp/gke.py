@@ -8,6 +8,7 @@ from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
 
 from cartography.util import run_cleanup_job
+from . import label
 from cartography.util import timeit
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,8 @@ def get_gke_clusters(container: Resource, project_id: str) -> Dict:
     try:
         req = container.projects().zones().clusters().list(projectId=project_id, zone='-')
         res = req.execute()
+        for item in req:
+            item['id'] = f"project/{project_id}/clusters/{item['name']}"
         return res
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -200,3 +203,4 @@ def sync(
     load_gke_clusters(neo4j_session, gke_res, project_id, gcp_update_tag)
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gke_clusters(neo4j_session, common_job_parameters)
+    label.sync_labels(neo4j_session, gke_res, gcp_update_tag, common_job_parameters)

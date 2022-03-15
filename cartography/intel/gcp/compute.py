@@ -15,6 +15,7 @@ from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
 
 from cartography.util import run_cleanup_job
+from . import label
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -331,10 +332,10 @@ def transform_gcp_forwarding_rules(fwd_response: Resource) -> List[Dict]:
         region = fwd.get('region', None)
         forwarding_rule['region'] = region.split('/')[-1] if region else None
         forwarding_rule['ip_address'] = fwd.get('IPAddress', None)
-        forwarding_rule['ip_protocol'] = fwd.get('IPProtocol',None)
+        forwarding_rule['ip_protocol'] = fwd.get('IPProtocol', None)
         forwarding_rule['allow_global_access'] = fwd.get('allowGlobalAccess', None)
 
-        forwarding_rule['load_balancing_scheme'] = fwd.get('loadBalancingScheme',None)
+        forwarding_rule['load_balancing_scheme'] = fwd.get('loadBalancingScheme', None)
         forwarding_rule['name'] = fwd['name']
         forwarding_rule['port_range'] = fwd.get('portRange', None)
         forwarding_rule['ports'] = fwd.get('ports', None)
@@ -1143,6 +1144,7 @@ def sync_gcp_instances(
     load_gcp_instances(neo4j_session, instance_list, gcp_update_tag)
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gcp_instances(neo4j_session, common_job_parameters)
+    label.sync_labels(neo4j_session, instance_list, gcp_update_tag, common_job_parameters)
 
 
 @timeit
@@ -1164,6 +1166,7 @@ def sync_gcp_vpcs(
     load_gcp_vpcs(neo4j_session, vpcs, gcp_update_tag)
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gcp_vpcs(neo4j_session, common_job_parameters)
+    label.sync_labels(neo4j_session, vpcs, gcp_update_tag, common_job_parameters)
 
 
 @timeit
@@ -1178,6 +1181,7 @@ def sync_gcp_subnets(
         load_gcp_subnets(neo4j_session, subnets, gcp_update_tag)
         # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
         cleanup_gcp_subnets(neo4j_session, common_job_parameters)
+        label.sync_labels(neo4j_session, subnets, gcp_update_tag, common_job_parameters)
 
 
 @timeit
@@ -1201,6 +1205,7 @@ def sync_gcp_forwarding_rules(
     load_gcp_forwarding_rules(neo4j_session, forwarding_rules, gcp_update_tag)
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gcp_forwarding_rules(neo4j_session, common_job_parameters)
+    label.sync_labels(neo4j_session, forwarding_rules, gcp_update_tag, common_job_parameters)
 
     for r in regions:
         logger.info("Forwarding Rule Region %s.", r)
@@ -1209,6 +1214,7 @@ def sync_gcp_forwarding_rules(
         load_gcp_forwarding_rules(neo4j_session, forwarding_rules, gcp_update_tag)
         # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
         cleanup_gcp_forwarding_rules(neo4j_session, common_job_parameters)
+        label.sync_labels(neo4j_session, forwarding_rules, gcp_update_tag, common_job_parameters)
 
 
 @timeit
@@ -1229,6 +1235,7 @@ def sync_gcp_firewall_rules(
     load_gcp_ingress_firewalls(neo4j_session, fw_list, gcp_update_tag)
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gcp_firewall_rules(neo4j_session, common_job_parameters)
+    label.sync_labels(neo4j_session, fw_list, gcp_update_tag, common_job_parameters)
 
 
 def _zones_to_regions(zones: List[str]) -> List[Set]:

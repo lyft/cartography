@@ -8,6 +8,7 @@ from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
 
 from cartography.util import run_cleanup_job
+from . import label
 from cartography.util import timeit
 logger = logging.getLogger(__name__)
 
@@ -131,6 +132,7 @@ def get_service_accounts(iam: Resource, project_id: str) -> List[Dict]:
 def transform_service_accounts(service_accounts: List[Dict]) -> List[Dict]:
     for account in service_accounts:
         account['firstName'] = account['name'].split('@')[0]
+        account['id'] = account['name']
 
     return service_accounts
 
@@ -717,8 +719,10 @@ def sync(
     for service_account in service_accounts_list:
         service_account_keys = get_service_account_keys(iam, project_id, service_account['name'])
         load_service_account_keys(neo4j_session, service_account_keys, service_account['name'], gcp_update_tag)
+        label.sync_labels(neo4j_session, service_account_keys, gcp_update_tag, common_job_parameters)
 
     cleanup_service_accounts(neo4j_session, common_job_parameters)
+    label.sync_labels(neo4j_session, service_accounts_list, gcp_update_tag, common_job_parameters)
 
     roles_list = get_roles(iam, project_id)
     custom_roles_list = get_project_roles(iam, project_id)
@@ -728,6 +732,7 @@ def sync(
 
     load_roles(neo4j_session, roles_list, project_id, gcp_update_tag)
     cleanup_roles(neo4j_session, common_job_parameters)
+    label.sync_labels(neo4j_session, roles_list, gcp_update_tag, common_job_parameters)
 
     users = get_users(admin)
 
@@ -744,19 +749,23 @@ def sync(
 
     load_customers(neo4j_session, customers, project_id, gcp_update_tag)
     cleanup_customers(neo4j_session, common_job_parameters)
+    label.sync_labels(neo4j_session, customers, gcp_update_tag, common_job_parameters)
 
     load_users(neo4j_session, users, project_id, gcp_update_tag)
     cleanup_users(neo4j_session, common_job_parameters)
+    label.sync_labels(neo4j_session, users, gcp_update_tag, common_job_parameters)
 
     for customer in customers:
         domains = get_domains(admin, customer, project_id)
         load_domains(neo4j_session, domains, customer.get('id'), project_id, gcp_update_tag)
+        label.sync_labels(neo4j_session, domains, gcp_update_tag, common_job_parameters)
 
     cleanup_domains(neo4j_session, common_job_parameters)
 
     groups = get_groups(admin)
     load_groups(neo4j_session, groups, project_id, gcp_update_tag)
     cleanup_groups(neo4j_session, common_job_parameters)
+    label.sync_labels(neo4j_session, groups, gcp_update_tag, common_job_parameters)
 
     bindings = get_policy_bindings(crm, project_id)
 
