@@ -35,7 +35,7 @@ def test_load_vulnerability_data(neo4j_session, *args):
     actual_nodes = {
         (
             n['h.id'],
-            n['v.cid'],
+            n['v.id'],
             n['c.id'],
         )
         for n in nodes
