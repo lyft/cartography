@@ -184,6 +184,8 @@ CREATE INDEX ON :SpotlightVulnerability(id);
 CREATE INDEX ON :SpotlightVulnerability(cve_id);
 CREATE INDEX ON :SpotlightVulnerability(host_info_local_ip);
 CREATE INDEX ON :SQSQueue(id);
+CREATE INDEX ON :SSMInstanceInformation(id);
+CREATE INDEX ON :SSMInstancePatch(id);
 CREATE INDEX ON :User(arn);
 CREATE INDEX ON :AzureTenant(id);
 CREATE INDEX ON :AzurePrincipal(email);
