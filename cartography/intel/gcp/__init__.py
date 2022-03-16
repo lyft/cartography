@@ -18,6 +18,7 @@ from cartography.intel.gcp.auth import AuthHelper
 from cartography.intel.gcp import crm
 from cartography.intel.gcp.util.common import parse_and_validate_gcp_requested_syncs
 from cartography.util import run_analysis_job
+from . import label
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -327,7 +328,7 @@ def _sync_single_project(
                 )
         else:
             raise ValueError(f'GCP sync function "{request}" was specified but does not exist. Did you misspell it?')
-
+    label.cleanup_labels(neo4j_session, common_job_parameters)
 
 def _sync_multiple_projects(
     neo4j_session: neo4j.Session, resources: Resource, requested_syncs: List[str], projects: List[Dict],

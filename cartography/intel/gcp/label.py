@@ -64,4 +64,3 @@ def sync_labels(
         labels_list = get_labels_list(data)
         if len(labels_list) > 0:
             load_labels(neo4j_session, labels_list, update_tag)
-    cleanup_labels(neo4j_session, common_job_parameters)
