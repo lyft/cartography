@@ -8,6 +8,7 @@ from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
 
 from cartography.util import run_cleanup_job
+from . import label
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -242,8 +243,10 @@ def sync(
     # DNS ZONES
     dns_zones = get_dns_zones(dns, project_id)
     load_dns_zones(neo4j_session, dns_zones, project_id, gcp_update_tag)
+    label.sync_labels(neo4j_session, dns_zones, gcp_update_tag, common_job_parameters)
     # RECORD SETS
     dns_rrs = get_dns_rrs(dns, dns_zones, project_id)
     load_rrs(neo4j_session, dns_rrs, project_id, gcp_update_tag)
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_dns_records(neo4j_session, common_job_parameters)
+    label.sync_labels(neo4j_session, dns_rrs, gcp_update_tag, common_job_parameters)

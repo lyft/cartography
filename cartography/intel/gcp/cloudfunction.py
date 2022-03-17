@@ -8,6 +8,7 @@ from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
 
 from cartography.util import run_cleanup_job
+from . import label
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -60,7 +61,7 @@ def get_gcp_functions(function: Resource, project_id: str) -> List[Dict]:
             )
             while request is not None:
                 response = request.execute()
-                for func in response.get('functions',[]):
+                for func in response.get('functions', []):
                     func['id'] = func['name']
                     func['region'] = region.get('locationId', 'global')
                     functions.append(func)
@@ -192,3 +193,4 @@ def sync(
     functions = get_gcp_functions(function, project_id)
     load_functions(neo4j_session, functions, project_id, gcp_update_tag)
     cleanup_gcp_functions(neo4j_session, common_job_parameters)
+    label.sync_labels(neo4j_session, functions, gcp_update_tag, common_job_parameters)

@@ -8,6 +8,7 @@ from googleapiclient.discovery import Resource
 
 from cartography.intel.gcp import compute
 from cartography.util import run_cleanup_job
+from . import label
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -172,42 +173,6 @@ def load_gcp_buckets(neo4j_session: neo4j.Session, buckets: List[Dict], gcp_upda
             DefaultKmsKeyName=bucket['default_kms_key_name'],
             gcp_update_tag=gcp_update_tag,
         )
-        _attach_gcp_bucket_labels(neo4j_session, bucket, gcp_update_tag)
-
-
-@timeit
-def _attach_gcp_bucket_labels(neo4j_session: neo4j.Session, bucket: Resource, gcp_update_tag: int) -> None:
-    """
-    Attach GCP bucket labels to the bucket.
-    :param neo4j_session: The neo4j session
-    :param bucket: The GCP bucket object
-    :param gcp_update_tag: The update tag for this sync
-    :return: Nothing
-    """
-    query = """
-    MERGE (l:Label:GCPBucketLabel{id: {BucketLabelId}})
-    ON CREATE SET l.firstseen = timestamp(),
-    l.key = {Key}
-    SET l.value = {Value}, l.location = {Location},
-    l.region = {region},
-    l.lastupdated = {gcp_update_tag}
-    WITH l
-    MATCH (bucket:GCPBucket{id:{BucketId}})
-    MERGE (l)<-[r:LABELED]-(bucket)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
-    """
-    for (key, val) in bucket.get('labels', []):
-        neo4j_session.run(
-            query,
-            BucketLabelId=f"GCPBucket_{key}",
-            Key=key,
-            Value=val,
-            BucketId=bucket['id'],
-            Location=bucket['location'],
-            region=bucket.get('region', 'global'),
-            gcp_update_tag=gcp_update_tag,
-        )
 
 
 @timeit
@@ -259,3 +224,4 @@ def sync(
     load_gcp_buckets(neo4j_session, bucket_list, gcp_update_tag)
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gcp_buckets(neo4j_session, common_job_parameters)
+    label.sync_labels(neo4j_session, bucket_list, gcp_update_tag, common_job_parameters)

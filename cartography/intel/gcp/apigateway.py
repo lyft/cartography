@@ -8,6 +8,7 @@ from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
 
 from cartography.util import run_cleanup_job
+from . import label
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -508,18 +509,22 @@ def sync(
     load_apigateway_locations(neo4j_session, locations, project_id, gcp_update_tag)
     # Cleanup Locations
     cleanup_apigateway_locations(neo4j_session, common_job_parameters)
+    label.sync_labels(neo4j_session, locations, gcp_update_tag, common_job_parameters)
     # API Gateway APIs
     apis = get_apis(apigateway, project_id)
     load_apis(neo4j_session, apis, project_id, gcp_update_tag)
     # Cleanup APIs
     cleanup_apis(neo4j_session, common_job_parameters)
+    label.sync_labels(neo4j_session, apis, gcp_update_tag, common_job_parameters)
     # API Gateway API Configs
     configs = get_api_configs(apigateway, project_id)
     load_api_configs(neo4j_session, configs, project_id, gcp_update_tag)
     # Cleanup API Gateway Configs
     cleanup_api_configs(neo4j_session, common_job_parameters)
+    label.sync_labels(neo4j_session, configs, gcp_update_tag, common_job_parameters)
     # API Gateway Gateways
     gateways = get_gateways(apigateway, project_id)
     load_gateways(neo4j_session, gateways, project_id, gcp_update_tag)
     # Cleanup API Gateway Gateways
     cleanup_api_gateways(neo4j_session, common_job_parameters)
+    label.sync_labels(neo4j_session, gateways, gcp_update_tag, common_job_parameters)

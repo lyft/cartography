@@ -8,6 +8,7 @@ from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
 
 from cartography.util import run_cleanup_job
+from . import label
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -626,19 +627,25 @@ def sync(
     # CLOUDRUN AUTHORIZED DOMAINS
     domains = get_cloudrun_authorized_domains(cloudrun, project_id)
     load_cloudrun_authorized_domains(neo4j_session, domains, project_id, gcp_update_tag)
+    label.sync_labels(neo4j_session, domains, gcp_update_tag, common_job_parameters)
     # CLOUDRUN CONFIGURATIONS
     configurations = get_cloudrun_configurations(cloudrun, project_id)
     load_cloudrun_configurations(neo4j_session, configurations, project_id, gcp_update_tag)
+    label.sync_labels(neo4j_session, configurations, gcp_update_tag, common_job_parameters)
     # CLOUDRUN DOMAIN MAPPINGS
     domainmappings = get_cloudrun_domainmappings(cloudrun, project_id)
     load_cloudrun_domainmappings(neo4j_session, domainmappings, project_id, gcp_update_tag)
+    label.sync_labels(neo4j_session, domainmappings, gcp_update_tag, common_job_parameters)
     # CLOUDRUN REVISIONS
     revisions = get_cloudrun_revisions(cloudrun, project_id)
     load_cloudrun_revisions(neo4j_session, revisions, project_id, gcp_update_tag)
+    label.sync_labels(neo4j_session, revisions, gcp_update_tag, common_job_parameters)
     # CLOUDRUN ROUTES
     routes = get_cloudrun_routes(cloudrun, project_id)
     load_cloudrun_routes(neo4j_session, routes, project_id, gcp_update_tag)
+    label.sync_labels(neo4j_session, routes, gcp_update_tag, common_job_parameters)
     # CLOUDRUN SERVICES
     services = get_cloudrun_services(cloudrun, project_id)
     load_cloudrun_services(neo4j_session, services, project_id, gcp_update_tag)
     cleanup_gcp_cloudrun(neo4j_session, common_job_parameters)
+    label.sync_labels(neo4j_session, services, gcp_update_tag, common_job_parameters)

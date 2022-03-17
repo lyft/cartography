@@ -8,6 +8,7 @@ from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
 
 from cartography.util import run_cleanup_job
+from . import label
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -85,7 +86,7 @@ def get_sql_users(sql: Resource, sql_instances: List[Dict], project_id: str) -> 
                         instance=f"{inst['name']}", pageToken=response['nextPageToken'],
                     )
                 else:
-                    request = None                    
+                    request = None
         except HttpError as e:
             err = json.loads(e.content.decode('utf-8'))['error']
             if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
@@ -257,9 +258,11 @@ def sync(
     # SQL INSTANCES
     sqlinstances = get_sql_instances(sql, project_id)
     load_sql_instances(neo4j_session, sqlinstances, project_id, gcp_update_tag)
-    
+    label.sync_labels(neo4j_session, sqlinstances, gcp_update_tag, common_job_parameters)
+
     logger.info("Syncing GCP Cloud SQL Users for project %s.", project_id)
     # SQL USERS
     users = get_sql_users(sql, sqlinstances, project_id)
     load_sql_users(neo4j_session, users, project_id, gcp_update_tag)
     cleanup_sql(neo4j_session, common_job_parameters)
+    label.sync_labels(neo4j_session, sqlinstances, gcp_update_tag, common_job_parameters)
