@@ -20,7 +20,7 @@ def get_labels_list(data: List[Dict]) -> List[Dict]:
         labels = item.get('labels', {})
         for key, value in labels.items():
             label = {}
-            label['id'] = f"{item.get('id','')}/lebel/{key}"
+            label['id'] = f"{item.get('id','')}/label/{key}"
             label['name'] = key
             label['value'] = value
             label['resource_id'] = item.get('id', None)
