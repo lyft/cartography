@@ -196,10 +196,10 @@ def sync_function_apps(
         neo4j_session, function_apps_list, client,
         update_tag, common_job_parameters,
     )
-    sync_function_apps_processes(
-        neo4j_session, function_apps_list, client,
-        update_tag, common_job_parameters,
-    )
+    # sync_function_apps_processes(
+    #     neo4j_session, function_apps_list, client,
+    #     update_tag, common_job_parameters,
+    # )
     sync_function_apps_backups(
         neo4j_session, function_apps_list, client,
         update_tag, common_job_parameters,
@@ -208,10 +208,10 @@ def sync_function_apps(
         neo4j_session, function_apps_list, client,
         update_tag, common_job_parameters,
     )
-    sync_function_apps_webjobs(
-        neo4j_session, function_apps_list, client,
-        update_tag, common_job_parameters,
-    )
+    # sync_function_apps_webjobs(
+    #     neo4j_session, function_apps_list, client,
+    #     update_tag, common_job_parameters,
+    # )
 
 
 def get_function_apps_configuration_list(

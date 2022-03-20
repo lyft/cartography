@@ -78,12 +78,14 @@ def main(event: func.EventGridEvent, outputEvent: func.Out[func.EventGridOutputE
             # Push message to Cartography Queue, if refresh is needed
             # Post processing, result should be pushed to Inventory Views Request Topic
             # without 'inventoryRefresh' field
-            topic = msg['resultTopic']
-            access_key = msg['resultTopicAccessKey']
+            # topic = msg['resultTopic']
+            # access_key = msg['resultTopicAccessKey']
 
-            lib = EventGridLibrary(topic, access_key)
-            resp = lib.publish_event(message)
-
+            # lib = EventGridLibrary(topic, access_key)
+            # resp = lib.publish_event(message)
+            
+            logging.info(f'Result not published anywhere. since we want to avoid query when inventory is refreshed')
+            
             logging.info(f'inventoryRefresh completed: {resp}')
 
         else:

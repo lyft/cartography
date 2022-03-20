@@ -2,6 +2,7 @@ import logging
 from typing import Dict
 from typing import List
 
+import json
 import neo4j
 from azure.core.exceptions import HttpResponseError
 from azure.mgmt.compute import ComputeManagementClient
@@ -87,21 +88,23 @@ def get_vm_extensions_list(vm_list: List[Dict], client: ComputeManagementClient)
     try:
         vm_extensions_list: List[Dict] = []
         for vm in vm_list:
-            vm_extensions_list = vm_extensions_list + \
-                list(
-                    map(
-                        lambda x: x.as_dict(), client.virtual_machine_extensions.list(
-                            resource_group_name=vm['resource_group'], vm_name=vm['name'],
-                        ),
-                    ),
-                )
+            exts = client.virtual_machine_extensions.list(resource_group_name=vm['resource_group'], vm_name=vm['name'])
+            
+            if len(exts.value) >0:
+                vm_extensions_list.extend(exts.value)
 
+        exts = []
         for extension in vm_extensions_list:
-            x = extension['id'].split('/')
-            extension['resource_group'] = x[x.index('resourceGroups') + 1]
-            extension['vm_id'] = extension['id'][:extension['id'].index("/extensions")]
+            x = extension.id.split('/')
+            exts.append({
+                'id': extension.id,
+                'resource_group': x[x.index('resourceGroups') + 1],
+                'vm_id': extension.id[:extension.id.index("/extensions")],
+                'type': extension.type,
+                'location': extension.location,
+            })
 
-        return vm_extensions_list
+        return exts
 
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving virtual machine extensions- {e}")
@@ -278,7 +281,7 @@ def get_vm_scale_sets_extensions_list(vm_scale_sets_list: List[Dict], client: Co
             extensions_list = list(
                 map(
                     lambda x: x.as_dict(), client.virtual_machine_scale_set_extensions.list(
-                        resource_group_name=set['resource_group'], vm_name=set['name'],
+                        resource_group_name=set['resource_group'], vm_scale_set_name=set['name'],
                     ),
                 ),
             )
