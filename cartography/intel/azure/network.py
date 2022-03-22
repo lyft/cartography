@@ -130,7 +130,7 @@ def sync_networks(
     sync_usages(neo4j_session, networks_list, client, update_tag, common_job_parameters)
 
 
-@ timeit
+@timeit
 def get_networks_subnets_list(networks_list: List[Dict], client: NetworkManagementClient) -> List[Dict]:
     try:
         networks_subnets_list: List[Dict] = []
@@ -258,7 +258,7 @@ def sync_network_routetables(
     sync_network_routes(neo4j_session, network_routetables_list, client, update_tag, common_job_parameters)
 
 
-@ timeit
+@timeit
 def get_network_routes_list(network_routetables_list: List[Dict], client: NetworkManagementClient) -> List[Dict]:
     try:
         network_routes_list: List[Dict] = []
@@ -383,7 +383,7 @@ def sync_network_security_groups(
     sync_network_security_rules(neo4j_session, network_security_groups_list, client, update_tag, common_job_parameters)
 
 
-@ timeit
+@timeit
 def get_network_security_rules_list(
     network_security_groups_list: List[Dict], client: NetworkManagementClient,
 ) -> List[Dict]:
@@ -505,7 +505,7 @@ def sync_public_ip_addresses(
     cleanup_public_ip_addresses(neo4j_session, common_job_parameters)
 
 
-@ timeit
+@timeit
 def get_usages_list(networks_list: List[Dict], client: NetworkManagementClient) -> List[Dict]:
     try:
         usages_list: List[Dict] = []
@@ -570,7 +570,7 @@ def sync_usages(
     cleanup_usages(neo4j_session, common_job_parameters)
 
 
-@ timeit
+@timeit
 def sync(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
     common_job_parameters: Dict,
