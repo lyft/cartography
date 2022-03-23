@@ -1,6 +1,7 @@
 from typing import Dict
 
 from . import apigateway
+from . import codeguru
 from . import config
 from . import dynamodb
 from . import ecr
@@ -84,4 +85,5 @@ RESOURCE_FUNCTIONS: Dict = {
     'sqs': sqs.sync,
     'ssm': ssm.sync,
     'config': config.sync,
+    'codeguru': codeguru.sync,
 }

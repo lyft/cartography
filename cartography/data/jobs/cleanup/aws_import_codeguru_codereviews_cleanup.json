@@ -1,0 +1,23 @@
+{
+    "statements": [
+      {
+        "query": "MATCH (cgr:CodeguruRecommendation)-[:HAS_RECOMMENDATION_FEEDBACK]->(crf:CodeguruRecommendationFeedback) WHERE crf.lastupdated <> {UPDATE_TAG} WITH crf DETACH DELETE (crf)",
+        "iterative": true,
+        "iterationsize": 100,
+        "__comment__": "Cleanup HAS_RECOMMENDATION_FEEDBACK"
+      },
+      {
+        "query": "MATCH (cgc:CodeguruCodereview)-[:HAS_RECOMMENDATION]->(cgr:CodeguruRecommendation) WHERE cgr.lastupdated <> {UPDATE_TAG} WITH cgr DETACH DELETE (cgr)",
+        "iterative": true,
+        "iterationsize": 100,
+        "__comment__": "Cleanup HAS_RECOMMENDATION"
+      },
+      {
+        "query": "MATCH (cga:CodeguruAssociation)-[:HAS_CODEREVIEW]->(cgc:CodeguruCodereview) WHERE cgc.lastupdated <> {UPDATE_TAG} WITH cgc DETACH DELETE (cgc)",
+        "iterative": true,
+        "iterationsize": 100,
+        "__comment__": "Cleanup HAS_CODEREVIEW"
+      }
+    ],
+    "name": "cleanup Codeguru"
+}
