@@ -141,7 +141,7 @@ def _load_tenant_groups_tx(
     ON CREATE SET i.firstseen = timestamp(),
     i.object_id=group.object_id,
     i.region = {region},
-    i.name = user.display_name,
+    i.name = group.display_name,
     i.visibility = group.visibility,
     i.classification = group.classification,
     i.createdDateTime = group.createdDateTime,
