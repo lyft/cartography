@@ -1,3 +1,5 @@
+import copy
+
 import cartography.intel.aws.ec2
 import cartography.intel.aws.resourcegroupstaggingapi as rgta
 import tests.data.aws.ec2.instances
@@ -22,10 +24,11 @@ def test_transform_and_load_ec2_tags(neo4j_session):
     """
     _ensure_local_neo4j_has_test_ec2_instance_data(neo4j_session)
     resource_type = 'ec2:instance'
-    rgta.transform_tags(tests.data.aws.resourcegroupstaggingapi.GET_RESOURCES_RESPONSE, resource_type)
+    get_resources_response = copy.deepcopy(tests.data.aws.resourcegroupstaggingapi.GET_RESOURCES_RESPONSE)
+    rgta.transform_tags(get_resources_response, resource_type)
     rgta.load_tags(
         neo4j_session,
-        tests.data.aws.resourcegroupstaggingapi.GET_RESOURCES_RESPONSE,
+        get_resources_response,
         resource_type,
         TEST_REGION,
         TEST_UPDATE_TAG,

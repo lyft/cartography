@@ -11,9 +11,12 @@ import neo4j
 
 from cartography.intel.aws.permission_relationships import parse_statement_node
 from cartography.intel.aws.permission_relationships import principal_allowed_on_resource
+from cartography.util import get_stats_client
+from cartography.util import merge_module_sync_metadata
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 logger = logging.getLogger(__name__)
+stat_handler = get_stats_client(__name__)
 
 # Overview of IAM in AWS
 # https://aws.amazon.com/iam/
@@ -729,3 +732,11 @@ def sync(
     sync_assumerole_relationships(neo4j_session, current_aws_account_id, update_tag, common_job_parameters)
     sync_user_access_keys(neo4j_session, boto3_session, current_aws_account_id, update_tag, common_job_parameters)
     run_cleanup_job('aws_import_principals_cleanup.json', neo4j_session, common_job_parameters)
+    merge_module_sync_metadata(
+        neo4j_session,
+        group_type='AWSAccount',
+        group_id=current_aws_account_id,
+        synced_type='AWSPrincipal',
+        update_tag=update_tag,
+        stat_handler=stat_handler,
+    )

@@ -15,11 +15,14 @@ from botocore.exceptions import ClientError
 from botocore.exceptions import EndpointConnectionError
 from policyuniverse.policy import Policy
 
+from cartography.util import get_stats_client
+from cartography.util import merge_module_sync_metadata
 from cartography.util import run_analysis_job
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+stat_handler = get_stats_client(__name__)
 
 
 @timeit
@@ -645,3 +648,12 @@ def sync(
     acl_and_policy_data_iter = get_s3_bucket_details(boto3_session, bucket_data)
     load_s3_details(neo4j_session, acl_and_policy_data_iter, current_aws_account_id, update_tag)
     cleanup_s3_bucket_acl_and_policy(neo4j_session, common_job_parameters)
+
+    merge_module_sync_metadata(
+        neo4j_session,
+        group_type='AWSAccount',
+        group_id=current_aws_account_id,
+        synced_type='S3Bucket',
+        update_tag=update_tag,
+        stat_handler=stat_handler,
+    )

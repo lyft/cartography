@@ -27,7 +27,7 @@ Representation of a GCP [Organization](https://cloud.google.com/resource-manager
     (GCPOrganization)-[RESOURCE]->(GCPProjects)
     ```
 
- ## GCPFolder
+### GCPFolder
 
  Representation of a GCP [Folder](https://cloud.google.com/resource-manager/reference/rest/v2/folders).  An additional helpful reference is the [Google Compute Platform resource hierarchy](https://cloud.google.com/resource-manager/docs/cloud-platform-resource-hierarchy).
 
@@ -40,7 +40,7 @@ Representation of a GCP [Organization](https://cloud.google.com/resource-manager
 | lifecyclestate | The folder's current lifecycle state. Assigned by the server.  See the [official docs](https://cloud.google.com/resource-manager/reference/rest/v2/folders#LifecycleState). |
 
 
- ### Relationships
+#### Relationships
 
  - GCPOrganizations are parents of GCPFolders.
 
@@ -60,7 +60,7 @@ Representation of a GCP [Organization](https://cloud.google.com/resource-manager
     (GCPFolder)-[RESOURCE]->(GCPFolder)
     ```
 
- ## GCPProject
+### GCPProject
 
  Representation of a GCP [Project](https://cloud.google.com/resource-manager/reference/rest/v1/projects).  An additional helpful reference is the [Google Compute Platform resource hierarchy](https://cloud.google.com/resource-manager/docs/cloud-platform-resource-hierarchy).
 
@@ -629,6 +629,8 @@ Representation of an IP range or subnet.
 | firstseen   | Timestamp of when a sync job first discovered this node                  |
 | lastupdated | Timestamp of the last time the node was updated                          |
 | id          | CIDR notation for the IP range. E.g. "0.0.0.0/0" for the whole internet. |
+
+#### Relationships
 
 - GCP Firewall rules are defined on IpRange objects.
 

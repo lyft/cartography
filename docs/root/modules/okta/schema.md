@@ -70,7 +70,7 @@ Representation of an [Okta User](https://developer.okta.com/docs/reference/api/u
 
  - An OktaOrganization contains OktaUsers
     ```
-    (OktaUser)<-[RESOURCE]->(OkOrganization)
+    (OktaUser)<-[RESOURCE]->(OktaOrganization)
     ```
  - OktaUsers are assigned OktaApplication
 
@@ -115,7 +115,7 @@ Representation of an [Okta Group](https://developer.okta.com/docs/reference/api/
 
  - OktaOrganizations contain OktaGroups
     ```
-    (OktaGroup)<-[RESOURCE]->(OkOrganization)
+    (OktaGroup)<-[RESOURCE]->(OktaOrganizations)
     ```
  - OktaApplications can be assigned to OktaGroups
 
@@ -153,7 +153,7 @@ Representation of an [Okta Application](https://developer.okta.com/docs/referenc
 
   - OktaApplication is a resource of an OktaOrganization
     ```
-    (OktaApplication)<-[RESOURCE]->(OkOrganization)
+    (OktaApplication)<-[RESOURCE]->(OktaOrganization)
     ```
  - OktaGroups can be assigned OktaApplications
 
@@ -170,6 +170,7 @@ Representation of an [Okta Application](https://developer.okta.com/docs/referenc
     ```
     (ReplyUri)-[REPLYURI]->(OktaApplication)
     ```
+
 ### OktaUserFactor
 
 Representation of Okta User authentication [Factors](https://developer.okta.com/docs/reference/api/factors/#factor-object).

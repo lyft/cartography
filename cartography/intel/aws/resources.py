@@ -21,6 +21,7 @@ from . import s3
 from . import secretsmanager
 from . import securityhub
 from . import sqs
+from . import ssm
 from .ec2.auto_scaling_groups import sync_ec2_auto_scaling_groups
 from .ec2.elastic_ip_addresses import sync_elastic_ip_addresses
 from .ec2.images import sync_ec2_images
@@ -46,6 +47,8 @@ RESOURCE_FUNCTIONS: Dict = {
     'dynamodb': dynamodb.sync,
     'ec2:launch_templates': sync_ec2_launch_templates,
     'ec2:autoscalinggroup': sync_ec2_auto_scaling_groups,
+    # `ec2:instance` must be included before `ssm` and `ec2:images`,
+    # they rely on EC2Instance data provided by this module.
     'ec2:instance': sync_ec2_instances,
     'ec2:images': sync_ec2_images,
     'ec2:keypair': sync_ec2_key_pairs,
@@ -79,5 +82,6 @@ RESOURCE_FUNCTIONS: Dict = {
     'secretsmanager': secretsmanager.sync,
     'securityhub': securityhub.sync,
     'sqs': sqs.sync,
+    'ssm': ssm.sync,
     'config': config.sync,
 }

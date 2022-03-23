@@ -2,8 +2,10 @@ import logging
 import re
 import sys
 from functools import wraps
+from string import Template
 from typing import Dict
 from typing import Optional
+from typing import Union
 
 import botocore
 import neo4j
@@ -11,6 +13,7 @@ import neo4j
 from cartography.graph.job import GraphJob
 from cartography.graph.statement import get_job_shortname
 from cartography.stats import get_stats_client
+from cartography.stats import ScopedStatsClient
 
 if sys.version_info >= (3, 7):
     from importlib.resources import open_binary, read_text
@@ -45,6 +48,42 @@ def run_cleanup_job(
         common_job_parameters,
         get_job_shortname(filename),
     )
+
+
+def merge_module_sync_metadata(
+    neo4j_session: neo4j.Session,
+    group_type: str,
+    group_id: Union[str, int],
+    synced_type: str,
+    update_tag: int,
+    stat_handler: ScopedStatsClient,
+):
+    '''
+    This creates `ModuleSyncMetadata` nodes when called from each of the individual modules or sub-modules.
+    The 'types' used here should be actual node labels. For example, if we did sync a particular AWSAccount's S3Buckets,
+    the `grouptype` is 'AWSAccount', the `groupid` is the particular account's `id`, and the `syncedtype` is 'S3Bucket'.
+
+    :param neo4j_session: Neo4j session object
+    :param group_type: The parent module's type
+    :param group_id: The parent module's id
+    :param synced_type: The sub-module's type
+    :param update_tag: Timestamp used to determine data freshness
+    '''
+    template = Template("""
+        MERGE (n:ModuleSyncMetadata{id:'${group_type}_${group_id}_${synced_type}'})
+        ON CREATE SET
+            n:SyncMetadata, n.firstseen=timestamp()
+        SET n.syncedtype='${synced_type}',
+            n.grouptype='${group_type}',
+            n.groupid={group_id},
+            n.lastupdated={UPDATE_TAG}
+    """)
+    neo4j_session.run(
+        template.safe_substitute(group_type=group_type, group_id=group_id, synced_type=synced_type),
+        group_id=group_id,
+        UPDATE_TAG=update_tag,
+    )
+    stat_handler.incr(f'{group_type}_{group_id}_{synced_type}_lastupdated', update_tag)
 
 
 def load_resource_binary(package, resource_name):
