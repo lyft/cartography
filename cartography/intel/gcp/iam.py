@@ -13,6 +13,10 @@ from cartography.util import timeit
 logger = logging.getLogger(__name__)
 
 
+def set_used_state(session: neo4j.Session, project_id: str, common_job_parameters: Dict, update_tag: int) -> None:
+    session.write_transaction(_set_used_state_tx, project_id, common_job_parameters, update_tag)
+
+
 @timeit
 def get_users(admin: Resource) -> List[Dict]:
     users = []
@@ -705,6 +709,57 @@ def attach_role_to_domain(
     )
 
 
+def _set_used_state_tx(
+    tx: neo4j.Transaction, project_id: str, common_job_parameters: Dict, update_tag: int,
+) -> None:
+    ingest_role_used = """
+    MATCH (n:GCPRole)<-[:RESOURCE]-(:GCPProject{id: {GCP_PROJECT_ID}})
+    <-[:OWNER]-(:CloudanixWorkspace{id: {WORKSPACE_ID}})
+    WHERE (n)<-[:ASSUME_ROLE]-() AND n.lastupdated = {update_tag}
+    SET n.isUsed = {isUsed}
+    """
+
+    tx.run(
+        ingest_role_used,
+        WORKSPACE_ID=common_job_parameters['WORKSPACE_ID'],
+        update_tag=update_tag,
+        GCP_PROJECT_ID=project_id,
+        isUsed=True,
+    )
+
+    ingest_entity_used = """
+    MATCH (n)<-[:RESOURCE]-(:GCPProject{id: {GCP_PROJECT_ID}})
+    <-[:OWNER]-(:CloudanixWorkspace{id: {WORKSPACE_ID}})
+    WHERE ()<-[:ASSUME_ROLE]-(n) AND n.lastupdated = {update_tag}
+    AND labels(n) IN [['GCPCustomer'], ['GCPDomain'], ['GCPGroup'], ['GCPServiceAccount'], ['GCPUser']]
+    SET n.isUsed = {isUsed}
+    """
+
+    tx.run(
+        ingest_entity_used,
+        WORKSPACE_ID=common_job_parameters['WORKSPACE_ID'],
+        update_tag=update_tag,
+        GCP_PROJECT_ID=project_id,
+        isUsed=True,
+    )
+
+    ingest_entity_unused = """
+    MATCH (n)<-[:RESOURCE]-(:GCPProject{id: {GCP_PROJECT_ID}})
+    <-[:OWNER]-(:CloudanixWorkspace{id: {WORKSPACE_ID}})
+    WHERE NOT EXISTS(n.isUsed) AND n.lastupdated = {update_tag}
+    AND labels(n) IN [['GCPCustomer'], ['GCPDomain'], ['GCPGroup'], ['GCPServiceAccount'], ['GCPUser'], ['GCPRole']]
+    SET n.isUsed = {isUsed}
+    """
+
+    tx.run(
+        ingest_entity_unused,
+        WORKSPACE_ID=common_job_parameters['WORKSPACE_ID'],
+        update_tag=update_tag,
+        GCP_PROJECT_ID=project_id,
+        isUsed=False,
+    )
+
+
 @timeit
 def sync(
     neo4j_session: neo4j.Session, iam: Resource, crm: Resource, admin: Resource,
@@ -772,3 +827,4 @@ def sync(
     # users_from_bindings, groups_from_bindings, domains_from_bindings = transform_bindings(bindings, project_id)
 
     load_bindings(neo4j_session, bindings, project_id, gcp_update_tag)
+    set_used_state(neo4j_session, project_id, common_job_parameters, gcp_update_tag)
