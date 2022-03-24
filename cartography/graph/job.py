@@ -5,6 +5,7 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Union
 
 import neo4j
 
@@ -86,7 +87,7 @@ class GraphJob:
         return cls(name, statements, short_name)
 
     @classmethod
-    def from_json_file(cls, file_path: Path) -> 'GraphJob':
+    def from_json_file(cls, file_path: Union[str, Path]) -> 'GraphJob':
         """
         Create a job from a JSON file.
         """
@@ -113,7 +114,7 @@ class GraphJob:
         job.run(neo4j_session)
 
     @classmethod
-    def run_from_json_file(cls, file_path: Path, neo4j_session: neo4j.Session, parameters: Dict) -> None:
+    def run_from_json_file(cls, file_path: Union[str, Path], neo4j_session: neo4j.Session, parameters: Dict) -> None:
         """
         Run a job from a JSON file. This will deserialize the job and execute all statements sequentially.
         """
