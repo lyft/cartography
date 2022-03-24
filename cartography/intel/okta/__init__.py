@@ -14,7 +14,7 @@ from cartography.intel.okta import origins
 from cartography.intel.okta import roles
 from cartography.intel.okta import users
 from cartography.intel.okta.sync_state import OktaSyncState
-from cartography.util import get_stats_client
+from cartography.stats import get_stats_client
 from cartography.util import merge_module_sync_metadata
 from cartography.util import run_cleanup_job
 from cartography.util import timeit

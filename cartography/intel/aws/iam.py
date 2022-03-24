@@ -11,7 +11,7 @@ import neo4j
 
 from cartography.intel.aws.permission_relationships import parse_statement_node
 from cartography.intel.aws.permission_relationships import principal_allowed_on_resource
-from cartography.util import get_stats_client
+from cartography.stats import get_stats_client
 from cartography.util import merge_module_sync_metadata
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
