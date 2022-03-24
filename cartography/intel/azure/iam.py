@@ -40,6 +40,10 @@ def load_tenant_domains(session: neo4j.Session, tenant_id: str, data_list: List[
     session.write_transaction(_load_tenant_domains_tx, tenant_id, data_list, update_tag)
 
 
+def set_used_state(session: neo4j.Session, tenant_id: str, common_job_parameters: Dict, update_tag: int) -> None:
+    session.write_transaction(_set_used_state_tx, tenant_id, common_job_parameters, update_tag)
+
+
 @timeit
 def get_graph_client(credentials: Credentials, tenant_id: str) -> GraphRbacManagementClient:
     client = GraphRbacManagementClient(credentials, tenant_id)
@@ -429,6 +433,57 @@ def sync_roles(
     cleanup_roles(neo4j_session, common_job_parameters)
 
 
+def _set_used_state_tx(
+    tx: neo4j.Transaction, tenant_id: str, common_job_parameters: Dict, update_tag: int,
+) -> None:
+    ingest_role_used = """
+    MATCH (n:AzureRole)<-[r:RESOURCE]-(:AzureTenant{id: {AZURE_TENANT_ID}})
+    <-[:OWNER]-(:CloudanixWorkspace{id: {WORKSPACE_ID}})
+    WHERE (n)<-[:ASSUME_ROLE]-() AND n.lastupdated = {update_tag}
+    SET n.isUsed = {isUsed}
+    """
+
+    tx.run(
+        ingest_role_used,
+        WORKSPACE_ID=common_job_parameters['WORKSPACE_ID'],
+        update_tag=update_tag,
+        AZURE_TENANT_ID=tenant_id,
+        isUsed=True,
+    )
+
+    ingest_entity_used = """
+    MATCH (n)<-[r:RESOURCE]-(:AzureTenant{id: {AZURE_TENANT_ID}})
+    <-[:OWNER]-(:CloudanixWorkspace{id: {WORKSPACE_ID}})
+    WHERE ()<-[:ASSUME_ROLE]-(n) AND n.lastupdated = {update_tag}
+    AND labels(n) IN [['AzureUser'], ['AzureGroup'], ['AzureServiceAccount']]
+    SET n.isUsed = {isUsed}
+    """
+
+    tx.run(
+        ingest_entity_used,
+        WORKSPACE_ID=common_job_parameters['WORKSPACE_ID'],
+        update_tag=update_tag,
+        AZURE_TENANT_ID=tenant_id,
+        isUsed=True,
+    )
+
+    ingest_entity_unused = """
+    MATCH (n)<-[r:RESOURCE]-(:AzureTenant{id: {AZURE_TENANT_ID}})
+    <-[:OWNER]-(:CloudanixWorkspace{id: {WORKSPACE_ID}})
+    WHERE NOT EXISTS(n.isUsed) AND n.lastupdated = {update_tag}
+    AND labels(n) IN [['AzureUser'], ['AzureGroup'], ['AzureServiceAccount'], ['AzureRole']]
+    SET n.isUsed = {isUsed}
+    """
+
+    tx.run(
+        ingest_entity_unused,
+        WORKSPACE_ID=common_job_parameters['WORKSPACE_ID'],
+        update_tag=update_tag,
+        AZURE_TENANT_ID=tenant_id,
+        isUsed=False,
+    )
+
+
 @timeit
 def sync(
     neo4j_session: neo4j.Session, credentials: Credentials, tenant_id: str, update_tag: int,
@@ -452,3 +507,4 @@ def sync(
     sync_roles(
         neo4j_session, credentials, tenant_id, update_tag, common_job_parameters,
     )
+    set_used_state(neo4j_session, tenant_id, common_job_parameters, update_tag)
