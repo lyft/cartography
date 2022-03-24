@@ -3,10 +3,15 @@ import re
 import sys
 from functools import wraps
 from string import Template
+from typing import Any
+from typing import BinaryIO
+from typing import Callable
+from typing import cast
 from typing import Dict
 from typing import Iterable
 from typing import List
 from typing import Optional
+from typing import TypeVar
 from typing import Union
 
 import botocore
@@ -25,7 +30,12 @@ else:
 logger = logging.getLogger(__name__)
 
 
-def run_analysis_job(filename, neo4j_session, common_job_parameters, package='cartography.data.jobs.analysis'):
+def run_analysis_job(
+    filename: str,
+    neo4j_session: neo4j.Session,
+    common_job_parameters: Dict,
+    package: str = 'cartography.data.jobs.analysis',
+) -> None:
     GraphJob.run_from_json(
         neo4j_session,
         read_text(
@@ -88,11 +98,14 @@ def merge_module_sync_metadata(
     stat_handler.incr(f'{group_type}_{group_id}_{synced_type}_lastupdated', update_tag)
 
 
-def load_resource_binary(package, resource_name):
+def load_resource_binary(package: str, resource_name: str) -> BinaryIO:
     return open_binary(package, resource_name)
 
 
-def timeit(method):
+F = TypeVar('F', bound=Callable[..., Any])
+
+
+def timeit(method: F) -> F:
     """
     This decorator uses statsd to time the execution of the wrapped method and sends it to the statsd server.
     This is only active if config.statsd_enabled is True.
@@ -114,11 +127,14 @@ def timeit(method):
             # statsd is disabled, so don't time anything
             return method(*args, **kwargs)
 
-    return timed
+    return cast(F, timed)
+
+
+AWSGetFunc = TypeVar('AWSGetFunc', bound=Callable[..., List])
 
 
 # TODO Move this to cartography.intel.aws.util.common
-def aws_handle_regions(func):
+def aws_handle_regions(func: AWSGetFunc) -> AWSGetFunc:
     """
     A decorator for returning a default value on functions that would return a client error
      like AccessDenied for opt-in AWS regions, and other regions that might be disabled.
@@ -147,7 +163,7 @@ def aws_handle_regions(func):
                 return []
             else:
                 raise
-    return inner_function
+    return cast(AWSGetFunc, inner_function)
 
 
 def dict_value_to_str(obj: Dict, key: str) -> Optional[str]:

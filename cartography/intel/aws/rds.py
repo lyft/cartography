@@ -410,7 +410,7 @@ def sync_rds_clusters(
     for region in regions:
         logger.info("Syncing RDS for region '%s' in account '%s'.", region, current_aws_account_id)
         data = get_rds_cluster_data(boto3_session, region)
-        load_rds_clusters(neo4j_session, data, region, current_aws_account_id, update_tag)
+        load_rds_clusters(neo4j_session, data, region, current_aws_account_id, update_tag)  # type: ignore
     cleanup_rds_clusters(neo4j_session, common_job_parameters)
 
 
@@ -425,7 +425,7 @@ def sync_rds_instances(
     for region in regions:
         logger.info("Syncing RDS for region '%s' in account '%s'.", region, current_aws_account_id)
         data = get_rds_instance_data(boto3_session, region)
-        load_rds_instances(neo4j_session, data, region, current_aws_account_id, update_tag)
+        load_rds_instances(neo4j_session, data, region, current_aws_account_id, update_tag)  # type: ignore
     cleanup_rds_instances_and_db_subnet_groups(neo4j_session, common_job_parameters)
 
 

@@ -43,9 +43,7 @@ class GraphStatement:
         parent_job_name: str = None, parent_job_sequence_num: int = None,
     ):
         self.query = query
-        self.parameters: Dict = parameters
-        if not parameters:
-            self.parameters = {}
+        self.parameters = parameters or {}
         self.iterative = iterative
         self.iterationsize = iterationsize
         self.parameters["LIMIT_SIZE"] = self.iterationsize

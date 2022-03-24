@@ -34,7 +34,7 @@ def _sync_tenant(
     common_job_parameters: Dict,
 ) -> None:
     logger.info("Syncing Azure Tenant: %s", tenant_id)
-    tenant.sync(neo4j_session, tenant_id, current_user, update_tag, common_job_parameters)
+    tenant.sync(neo4j_session, tenant_id, current_user, update_tag, common_job_parameters)  # type: ignore
 
 
 def _sync_multiple_subscriptions(
