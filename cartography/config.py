@@ -68,6 +68,8 @@ class Config:
     :param k8s_kubeconfig: Path to kubeconfig file for kubernetes cluster(s). Optional
     :type: pagerduty_api_key: str
     :param pagerduty_api_key: API authentication key for pagerduty. Optional.
+    :type: nist_cve_url: str
+    :param nist_cve_url: NIST CVE data provider base URI, e.g. https://nvd.nist.gov/feeds/json/cve/1.1. Optional.
     """
 
     def __init__(
@@ -102,6 +104,8 @@ class Config:
         statsd_host=None,
         statsd_port=None,
         pagerduty_api_key=None,
+        nist_cve_url=None,
+        cve_enabled=False,
     ):
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user
@@ -133,3 +137,5 @@ class Config:
         self.statsd_host = statsd_host
         self.statsd_port = statsd_port
         self.pagerduty_api_key = pagerduty_api_key
+        self.nist_cve_url = nist_cve_url
+        self.cve_enabled = cve_enabled

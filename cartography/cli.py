@@ -289,6 +289,21 @@ class CLI:
             ),
         )
         parser.add_argument(
+            '--nist-cve-url',
+            type=str,
+            default='https://nvd.nist.gov/feeds/json/cve/1.1',
+            help=(
+                'The base url for the NIST CVE data. Default = https://nvd.nist.gov/feeds/json/cve/1.1'
+            ),
+        )
+        parser.add_argument(
+            '--cve-enabled',
+            action='store_true',
+            help=(
+                'If set, CVE data will be synced from NIST.'
+            ),
+        )
+        parser.add_argument(
             '--statsd-enabled',
             action='store_true',
             help=(

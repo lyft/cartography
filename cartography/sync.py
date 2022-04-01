@@ -11,6 +11,7 @@ import cartography.intel.aws
 import cartography.intel.azure
 import cartography.intel.create_indexes
 import cartography.intel.crxcavator.crxcavator
+import cartography.intel.cve
 import cartography.intel.digitalocean
 import cartography.intel.gcp
 import cartography.intel.github
@@ -166,6 +167,7 @@ def build_default_sync():
         ('gcp', cartography.intel.gcp.start_gcp_ingestion),
         ('gsuite', cartography.intel.gsuite.start_gsuite_ingestion),
         ('crxcavator', cartography.intel.crxcavator.start_extension_ingestion),
+        ('cve', cartography.intel.cve.start_cve_ingestion),
         ('okta', cartography.intel.okta.start_okta_ingestion),
         ('github', cartography.intel.github.start_github_ingestion),
         ('digitalocean', cartography.intel.digitalocean.start_digitalocean_ingestion),
