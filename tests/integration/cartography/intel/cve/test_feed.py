@@ -24,5 +24,13 @@ def test_load_cves(neo4j_session):
         MATCH (n:CVE) RETURN n.id, n.problem_types, n.references, n.description_en
         """,
     )
-    actual_nodes = {n['n.id'] for n in nodes}
+    actual_nodes = {
+        (
+            n['n.id'],
+            tuple(n['n.problem_types']),
+            tuple(n['n.references']),
+            n['n.description_en'],
+        )
+        for n in nodes
+    }
     assert actual_nodes == expected_nodes
