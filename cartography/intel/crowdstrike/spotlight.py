@@ -95,8 +95,8 @@ def _load_cves(neo4j_session: neo4j.Session, data: List[Dict], update_tag: int) 
         ON CREATE SET c.id = cve.id,
             c.firstseen = timestamp()
         SET c.base_score = cve.base_score,
-            c.severity = cve.severity,
-            c.exploit_status = cve.exploit_status,
+            c.base_severity = cve.severity,
+            c.exploitability_score = cve.exploit_status,
             c.lastupdated = {update_tag}
         WITH c, cve
         MATCH (v:SpotlightVulnerability{id: cve.vuln_id})
