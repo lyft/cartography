@@ -42,7 +42,7 @@ GET_CVE_SYNC_METADATA = {
                     "value": (
                         "ip_input.c in BSD-derived TCP/IP implementations allows remote "
                         "attackers to cause a denial of service (crash or hang) via "
-                        " crafted packets."
+                        "crafted packets."
                     ),
                 }],
             },
