@@ -4,6 +4,9 @@ from collections import namedtuple
 from typing import Dict
 from typing import List
 from typing import Set
+from typing import Any
+
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import googleapiclient.discovery
 import neo4j
@@ -50,6 +53,7 @@ service_names = Services(
     bigtable='bigtableadmin.googleapis.com',
     firestore='firestore.googleapis.com',
 )
+
 
 def _get_iam_resource_v1(credentials: GoogleCredentials) -> Resource:
     """
@@ -297,6 +301,18 @@ def _services_enabled_on_project(serviceusage: Resource, project_id: str) -> Set
         return set()
 
 
+def concurrent_execution(
+    service: str, service_func: Any, neo4j_session: neo4j.Session, iam: Resource,
+    common_job_parameters: Dict, gcp_update_tag: int, project_id: str, crm: Resource, admin: Resource,
+):
+    logger.info(f"BEGIN processing for service: {service}")
+    if service == 'iam':
+        service_func(neo4j_session, iam, crm, admin, project_id, gcp_update_tag, common_job_parameters)
+    else:
+        service_func(neo4j_session, iam, project_id, gcp_update_tag, common_job_parameters)
+    logger.info(f"END processing for service: {service}")
+
+
 def _sync_single_project(
     neo4j_session: neo4j.Session, resources: Resource, requested_syncs: List[str], project_id: str, gcp_update_tag: int,
     common_job_parameters: Dict,
@@ -313,22 +329,19 @@ def _sync_single_project(
     """
     # Determine the resources available on the project.
     enabled_services = _services_enabled_on_project(resources.serviceusage, project_id)
+    with ThreadPoolExecutor(max_workers=len(RESOURCE_FUNCTIONS) - 2) as executor:
+        futures = []
     for request in requested_syncs:
         if request in RESOURCE_FUNCTIONS:
             # if getattr(service_names, request) in enabled_services:
-            if request == 'iam':
-                RESOURCE_FUNCTIONS[request](
-                    neo4j_session, getattr(resources, request), resources.crm_v1, resources.admin,
-                    project_id, gcp_update_tag, common_job_parameters,
-                )
-            else:
-                RESOURCE_FUNCTIONS[request](
-                    neo4j_session, getattr(resources, request),
-                    project_id, gcp_update_tag, common_job_parameters,
-                )
+
+            futures.append(executor.submit(concurrent_execution, request, RESOURCE_FUNCTIONS[request], neo4j_session, getattr(
+                resources, request), common_job_parameters, gcp_update_tag, project_id, resources.crm_v1, resources.admin))
+
         else:
             raise ValueError(f'GCP sync function "{request}" was specified but does not exist. Did you misspell it?')
     label.cleanup_labels(neo4j_session, common_job_parameters)
+
 
 def _sync_multiple_projects(
     neo4j_session: neo4j.Session, resources: Resource, requested_syncs: List[str], projects: List[Dict],
@@ -381,7 +394,7 @@ def start_gcp_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
         # See https://oauth2client.readthedocs.io/en/latest/source/
         #             oauth2client.client.html#oauth2client.client.OAuth2Credentials
         # credentials = GoogleCredentials.get_application_default()
-        
+
         auth_helper = AuthHelper()
         credentials = auth_helper.get_credentials(config.credentials['token_uri'], config.credentials['account_email'])
 
