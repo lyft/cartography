@@ -331,15 +331,16 @@ def _sync_single_project(
     enabled_services = _services_enabled_on_project(resources.serviceusage, project_id)
     with ThreadPoolExecutor(max_workers=len(RESOURCE_FUNCTIONS) - 2) as executor:
         futures = []
-    for request in requested_syncs:
-        if request in RESOURCE_FUNCTIONS:
-            # if getattr(service_names, request) in enabled_services:
+        for request in requested_syncs:
+            if request in RESOURCE_FUNCTIONS:
+                # if getattr(service_names, request) in enabled_services:
 
-            futures.append(executor.submit(concurrent_execution, request, RESOURCE_FUNCTIONS[request], neo4j_session, getattr(
-                resources, request), common_job_parameters, gcp_update_tag, project_id, resources.crm_v1, resources.admin))
+                futures.append(executor.submit(concurrent_execution, request, RESOURCE_FUNCTIONS[request], neo4j_session, getattr(
+                    resources, request), common_job_parameters, gcp_update_tag, project_id, resources.crm_v1, resources.admin))
 
-        else:
-            raise ValueError(f'GCP sync function "{request}" was specified but does not exist. Did you misspell it?')
+            else:
+                raise ValueError(
+                    f'GCP sync function "{request}" was specified but does not exist. Did you misspell it?')
     label.cleanup_labels(neo4j_session, common_job_parameters)
 
 
