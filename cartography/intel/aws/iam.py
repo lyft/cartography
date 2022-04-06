@@ -933,8 +933,8 @@ def _set_used_state_tx(
     tx: neo4j.Transaction, project_id: str, common_job_parameters: Dict, update_tag: int,
 ) -> None:
     ingest_role_used = """
-    MATCH (n:AWSRole)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}})
-    <-[:OWNER]-(:CloudanixWorkspace{id: {WORKSPACE_ID}})
+    MATCH (:CloudanixWorkspace{id: {WORKSPACE_ID}})-[:OWNER]->
+    (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(n:AWSRole)
     WHERE (n)-[:TRUSTS_AWS_PRINCIPAL]->() AND n.lastupdated = {update_tag}
     SET n.isUsed = {isUsed}
     """
@@ -948,8 +948,8 @@ def _set_used_state_tx(
     )
 
     ingest_entity_used = """
-    MATCH (n)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}})
-    <-[:OWNER]-(:CloudanixWorkspace{id: {WORKSPACE_ID}})
+    MATCH (:CloudanixWorkspace{id: {WORKSPACE_ID}})-[:OWNER]->
+    (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(n)
     WHERE ()-[:TRUSTS_AWS_PRINCIPAL]->(n) AND n.lastupdated = {update_tag}
     AND labels(n) IN [['AWSUser'], ['AWSGroup'],]
     SET n.isUsed = {isUsed}
@@ -964,8 +964,8 @@ def _set_used_state_tx(
     )
 
     ingest_entity_unused = """
-    MATCH (n)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}})
-    <-[:OWNER]-(:CloudanixWorkspace{id: {WORKSPACE_ID}})
+    MATCH (:CloudanixWorkspace{id: {WORKSPACE_ID}})-[:OWNER]->
+    (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(n)
     WHERE NOT EXISTS(n.isUsed) AND n.lastupdated = {update_tag}
     AND labels(n) IN [['AWSUser'], ['AWSGroup'], ['AWSRole']]
     SET n.isUsed = {isUsed}
