@@ -713,8 +713,8 @@ def _set_used_state_tx(
     tx: neo4j.Transaction, project_id: str, common_job_parameters: Dict, update_tag: int,
 ) -> None:
     ingest_role_used = """
-    MATCH (n:GCPRole)<-[:RESOURCE]-(:GCPProject{id: {GCP_PROJECT_ID}})
-    <-[:OWNER]-(:CloudanixWorkspace{id: {WORKSPACE_ID}})
+    MATCH (:CloudanixWorkspace{id: {WORKSPACE_ID}})-[:OWNER]->
+    (:GCPProject{id: {GCP_PROJECT_ID}})-[:RESOURCE]->(n:GCPRole)
     WHERE (n)<-[:ASSUME_ROLE]-() AND n.lastupdated = {update_tag}
     SET n.isUsed = {isUsed}
     """
@@ -728,8 +728,8 @@ def _set_used_state_tx(
     )
 
     ingest_entity_used = """
-    MATCH (n)<-[:RESOURCE]-(:GCPProject{id: {GCP_PROJECT_ID}})
-    <-[:OWNER]-(:CloudanixWorkspace{id: {WORKSPACE_ID}})
+    MATCH (:CloudanixWorkspace{id: {WORKSPACE_ID}})-[:OWNER]->
+    (:GCPProject{id: {GCP_PROJECT_ID}})-[:RESOURCE]->(n)
     WHERE ()<-[:ASSUME_ROLE]-(n) AND n.lastupdated = {update_tag}
     AND labels(n) IN [['GCPCustomer'], ['GCPDomain'], ['GCPGroup'], ['GCPServiceAccount'], ['GCPUser']]
     SET n.isUsed = {isUsed}
@@ -744,8 +744,8 @@ def _set_used_state_tx(
     )
 
     ingest_entity_unused = """
-    MATCH (n)<-[:RESOURCE]-(:GCPProject{id: {GCP_PROJECT_ID}})
-    <-[:OWNER]-(:CloudanixWorkspace{id: {WORKSPACE_ID}})
+    MATCH (:CloudanixWorkspace{id: {WORKSPACE_ID}})-[:OWNER]->
+    (:GCPProject{id: {GCP_PROJECT_ID}})-[:RESOURCE]->(n)
     WHERE NOT EXISTS(n.isUsed) AND n.lastupdated = {update_tag}
     AND labels(n) IN [['GCPCustomer'], ['GCPDomain'], ['GCPGroup'], ['GCPServiceAccount'], ['GCPUser'], ['GCPRole']]
     SET n.isUsed = {isUsed}
