@@ -18,7 +18,7 @@ def get_snapshots(boto3_session: boto3.session.Session, region: str) -> List[Dic
     client = boto3_session.client('ec2', region_name=region)
     paginator = client.get_paginator('describe_snapshots')
     snapshots: List[Dict] = []
-    for page in paginator.paginate():
+    for page in paginator.paginate(OwnerIds=['self']):
         snapshots.extend(page['Snapshots'])
     return snapshots
 
