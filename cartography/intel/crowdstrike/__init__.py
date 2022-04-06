@@ -6,10 +6,13 @@ from cartography.config import Config
 from cartography.intel.crowdstrike.endpoints import sync_hosts
 from cartography.intel.crowdstrike.spotlight import sync_vulnerabilities
 from cartography.intel.crowdstrike.util import get_authorization
+from cartography.util import get_stats_client
+from cartography.util import merge_module_sync_metadata
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+stat_handler = get_stats_client(__name__)
 
 
 @timeit
@@ -51,4 +54,16 @@ def start_crowdstrike_ingestion(
         "crowdstrike_import_cleanup.json",
         neo4j_session,
         common_job_parameters,
+    )
+
+    group_id = "public"
+    if config.crowdstrike_api_url:
+        group_id = config.crowdstrike_api_url
+    merge_module_sync_metadata(
+        neo4j_session,
+        group_type='crowdstrike',
+        group_id=group_id,
+        synced_type='crowdstrike',
+        update_tag=config.update_tag,
+        stat_handler=stat_handler,
     )
