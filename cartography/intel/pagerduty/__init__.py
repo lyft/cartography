@@ -53,7 +53,7 @@ def start_pagerduty_ingestion(
     merge_module_sync_metadata(
         neo4j_session,
         group_type='pagerduty',
-        group_id='default',
+        group_id='module',
         synced_type="pagerduty",
         update_tag=config.update_tag,
         stat_handler=stat_handler,
