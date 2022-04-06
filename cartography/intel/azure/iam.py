@@ -437,8 +437,8 @@ def _set_used_state_tx(
     tx: neo4j.Transaction, tenant_id: str, common_job_parameters: Dict, update_tag: int,
 ) -> None:
     ingest_role_used = """
-    MATCH (n:AzureRole)<-[r:RESOURCE]-(:AzureTenant{id: {AZURE_TENANT_ID}})
-    <-[:OWNER]-(:CloudanixWorkspace{id: {WORKSPACE_ID}})
+    MATCH (:CloudanixWorkspace{id: {WORKSPACE_ID}})-[:OWNER]->
+    (:AzureTenant{id: {AZURE_TENANT_ID}})-[r:RESOURCE]->(n:AzureRole)
     WHERE (n)<-[:ASSUME_ROLE]-() AND n.lastupdated = {update_tag}
     SET n.isUsed = {isUsed}
     """
@@ -452,8 +452,8 @@ def _set_used_state_tx(
     )
 
     ingest_entity_used = """
-    MATCH (n)<-[r:RESOURCE]-(:AzureTenant{id: {AZURE_TENANT_ID}})
-    <-[:OWNER]-(:CloudanixWorkspace{id: {WORKSPACE_ID}})
+    MATCH (:CloudanixWorkspace{id: {WORKSPACE_ID}})-[:OWNER]->
+    (:AzureTenant{id: {AZURE_TENANT_ID}})-[r:RESOURCE]->(n)
     WHERE ()<-[:ASSUME_ROLE]-(n) AND n.lastupdated = {update_tag}
     AND labels(n) IN [['AzureUser'], ['AzureGroup'], ['AzureServiceAccount']]
     SET n.isUsed = {isUsed}
@@ -468,8 +468,8 @@ def _set_used_state_tx(
     )
 
     ingest_entity_unused = """
-    MATCH (n)<-[r:RESOURCE]-(:AzureTenant{id: {AZURE_TENANT_ID}})
-    <-[:OWNER]-(:CloudanixWorkspace{id: {WORKSPACE_ID}})
+    MATCH (:CloudanixWorkspace{id: {WORKSPACE_ID}})-[:OWNER]->
+    (:AzureTenant{id: {AZURE_TENANT_ID}})-[r:RESOURCE]->(n)
     WHERE NOT EXISTS(n.isUsed) AND n.lastupdated = {update_tag}
     AND labels(n) IN [['AzureUser'], ['AzureGroup'], ['AzureServiceAccount'], ['AzureRole']]
     SET n.isUsed = {isUsed}
