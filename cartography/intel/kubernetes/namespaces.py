@@ -7,15 +7,26 @@ from neo4j import Session
 
 from cartography.intel.kubernetes.util import get_epoch
 from cartography.intel.kubernetes.util import K8sClient
+from cartography.util import get_stats_client
+from cartography.util import merge_module_sync_metadata
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+stat_handler = get_stats_client(__name__)
 
 
 @timeit
 def sync_namespaces(session: Session, client: K8sClient, update_tag: int) -> Dict:
     cluster, namespaces = get_namespaces(client)
     load_namespaces(session, cluster, namespaces, update_tag)
+    merge_module_sync_metadata(
+        session,
+        group_type='KubernetesCluster',
+        group_id=cluster['uid'],
+        synced_type='KubernetesCluster',
+        update_tag=update_tag,
+        stat_handler=stat_handler,
+    )
     return cluster
 
 
