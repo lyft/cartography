@@ -47,9 +47,17 @@ def get_firestore_databases(firestore: Resource, project_id: str) -> List[Dict]:
                 ), project_id, err['code'], err['message'],
             )
             return []
-        else:
-            logger.error(e)
+
+        elif err.get('status', '') == 'NOT_FOUND' or err.get('code', '') == 404:
+            logger.warning(
+                (
+                    "Could not retrieve Firestore Databases due to customer has not enabled Firestore for Project %s \
+                         Code: %s, Message: %s"
+                ), project_id, err['code'], err['message'],
+            )
             return []
+        else:
+            raise
 
 
 @timeit
