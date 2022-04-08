@@ -9,9 +9,11 @@ import neo4j
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
+from cartography.util import get_stats_client
+from cartography.util import merge_module_sync_metadata
 
 logger = logging.getLogger(__name__)
-
+stat_handler = get_stats_client(__name__)
 
 @timeit
 @aws_handle_regions
@@ -268,3 +270,12 @@ def sync(
 
         cleanup_codeguru_codereviews(neo4j_session, common_job_parameters)
         cleanup_codeguru_associations(neo4j_session, common_job_parameters)
+
+        merge_module_sync_metadata(
+            neo4j_session,
+            group_type='AWSAccount',
+            group_id=current_aws_account_id,
+            synced_type='AWSCodeGuru',
+            update_tag=update_tag,
+            stat_handler=stat_handler,
+        )
