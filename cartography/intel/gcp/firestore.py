@@ -48,7 +48,8 @@ def get_firestore_databases(firestore: Resource, project_id: str) -> List[Dict]:
             )
             return []
         else:
-            raise
+            logger.error(e)
+            return []
 
 
 @timeit
