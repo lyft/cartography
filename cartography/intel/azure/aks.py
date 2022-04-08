@@ -76,6 +76,7 @@ def get_aks_list(credentials: Credentials, subscription_id: str) -> List[Dict]:
         for aks in aks_list:
             x = aks['id'].split('/')
             aks['resource_group'] = x[x.index('resourcegroups') + 1]
+            aks['publicNetworkAccess'] = aks.get('properties', {}).get('public_network_access', 'Disabled')
 
         return aks_list
 
@@ -92,6 +93,7 @@ def _load_aks_tx(tx: neo4j.Transaction, subscription_id: str, aks_list: List[Dic
     a.type = aks.type,
     a.location = aks.location,
     a.region = aks.location,
+    a.publicNetworkAccess = aks.publicNetworkAccess,
     a.resourcegroup = aks.resource_group
     SET a.lastupdated = {update_tag},
     a.name = aks.name

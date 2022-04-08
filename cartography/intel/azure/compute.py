@@ -43,6 +43,7 @@ def get_vm_list(credentials: Credentials, subscription_id: str) -> List[Dict]:
         for vm in vm_list:
             x = vm['id'].split('/')
             vm['resource_group'] = x[x.index('resourceGroups') + 1]
+            vm['requireGuestProvisionSignal'] = vm.get('properties', {}).get('osProfile', {}).get('require_guest_provision_signal', True)
 
         return vm_list
 
@@ -64,6 +65,7 @@ def load_vms(neo4j_session: neo4j.Session, subscription_id: str, vm_list: List[D
     v.license_type=vm.license_type, v.computer_name=vm.os_profile.computer_ame,
     v.identity_type=vm.identity.type, v.zones=vm.zones,
     v.ultra_ssd_enabled=vm.additional_capabilities.ultra_ssd_enabled,
+    v.requireGuestProvisionSignal = vm.requireGuestProvisionSignal,
     v.priority=vm.priority, v.eviction_policy=vm.eviction_policy
     WITH v
     MATCH (owner:AzureSubscription{id: {SUBSCRIPTION_ID}})
