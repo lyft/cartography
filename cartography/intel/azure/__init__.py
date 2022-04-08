@@ -2,8 +2,12 @@ import logging
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Any
+
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import neo4j
+from neo4j import GraphDatabase
 
 from . import subscription
 from . import tag
@@ -18,6 +22,23 @@ from cartography.util import timeit
 logger = logging.getLogger(__name__)
 
 
+def concurrent_execution(
+    service: str, service_func: Any, config: Config, credentials: Credentials, common_job_parameters: Dict, update_tag: int, subscription_id: str
+):
+    logger.info(f"BEGIN processing for service: {service}")
+    neo4j_auth = (config.neo4j_user, config.neo4j_password)
+    neo4j_driver = GraphDatabase.driver(
+        config.neo4j_uri,
+        auth=neo4j_auth,
+        max_connection_lifetime=config.neo4j_max_connection_lifetime,
+    )
+    if service == 'iam':
+        service_func(neo4j_driver.session(), credentials, credentials.tenant_id, update_tag, common_job_parameters)
+    else:
+        service_func(neo4j_driver.session(), credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
+    logger.info(f"END processing for service: {service}")
+
+
 def _sync_one_subscription(
     neo4j_session: neo4j.Session,
     credentials: Credentials,
@@ -25,23 +46,23 @@ def _sync_one_subscription(
     requested_syncs: List[str],
     update_tag: int,
     common_job_parameters: Dict,
+    config: Config,
 ) -> None:
-    for request in requested_syncs:
-        if request in RESOURCE_FUNCTIONS:
-            if request == 'iam':
-                RESOURCE_FUNCTIONS[request](
-                    neo4j_session, credentials, credentials.tenant_id, update_tag, common_job_parameters,
-                )
+    with ThreadPoolExecutor(max_workers=len(RESOURCE_FUNCTIONS)) as executor:
+        futures = []
+        for request in requested_syncs:
+            if request in RESOURCE_FUNCTIONS:
+                futures.append(executor.submit(concurrent_execution, request,
+                               RESOURCE_FUNCTIONS[request], config, credentials, common_job_parameters, update_tag, subscription_id))
             else:
-                RESOURCE_FUNCTIONS[request](
-                    neo4j_session, credentials.arm_credentials,
-                    subscription_id, update_tag, common_job_parameters,
-                )
-        else:
-            raise ValueError(f'Azure sync function "{request}" was specified but does not exist. Did you misspell it?')
+                raise ValueError(
+                    f'Azure sync function "{request}" was specified but does not exist. Did you misspell it?')
+
+        for future in as_completed(futures):
+            logger.info(f'Result from Future - Service Processing: {future.result()}')
 
     # call tag.sync() at the last, don't change position of tag.sync()
-    tag.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
+    tag.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters, config)
 
 
 def _sync_tenant(
@@ -66,6 +87,7 @@ def _sync_multiple_subscriptions(
     requested_syncs: List[str],
     update_tag: int,
     common_job_parameters: Dict,
+    config: Config,
 ) -> None:
     logger.info("Syncing Azure subscriptions")
 
@@ -88,6 +110,7 @@ def _sync_multiple_subscriptions(
             sub['subscriptionId'], requested_syncs,
             update_tag,
             common_job_parameters,
+            config,
         )
 
     del common_job_parameters["AZURE_SUBSCRIPTION_ID"]
@@ -167,4 +190,5 @@ def start_azure_ingestion(
         requested_syncs,
         config.update_tag,
         common_job_parameters,
+        config,
     )

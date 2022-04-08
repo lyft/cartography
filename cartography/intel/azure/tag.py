@@ -2,13 +2,17 @@ import logging
 from typing import Dict
 from typing import List
 
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
 import neo4j
+from neo4j import GraphDatabase
 from azure.core.exceptions import HttpResponseError
 from azure.mgmt.resource import ResourceManagementClient
 
 from .util.credentials import Credentials
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
+from cartography.config import Config
 
 logger = logging.getLogger(__name__)
 
@@ -71,34 +75,54 @@ def cleanup_resource_groups(neo4j_session: neo4j.Session, common_job_parameters:
     run_cleanup_job('azure_import_resource_groups_cleanup.json', neo4j_session, common_job_parameters)
 
 
+def concurrent_execution(config: Config, client: ResourceManagementClient, resource_group: Dict, update_tag: int
+):
+    logger.info(f"BEGIN processing for resource group: {resource_group['name']}")
+  
+    neo4j_auth = (config.neo4j_user, config.neo4j_password)
+    neo4j_driver = GraphDatabase.driver(
+        config.neo4j_uri,
+        auth=neo4j_auth,
+        max_connection_lifetime=config.neo4j_max_connection_lifetime,
+    )
+    tags_list: List[Dict] = []
+    if "tags" in resource_group.keys() and len(resource_group['tags']) != 0:
+        for tagname in resource_group['tags']:
+            tags_list = tags_list + [{
+                'id': resource_group['id'] + "/providers/Microsoft.Resources/tags/" + tagname,
+                'name': tagname, 'value': resource_group['tags']
+                [tagname], 'type': 'Microsoft.Resources/tags', 'resource_id': resource_group['id'],
+                'resource_group': resource_group['name'],
+            }]
+    for resource in client.resources.list_by_resource_group(resource_group_name=resource_group['name']):
+        if neo4j_driver.session().run("MATCH (n) WHERE n.id={id} return count(*)", id=resource.id).single().value() == 1:
+            if resource.tags:
+                for tagname in resource.tags:
+                    tags_list = tags_list + \
+                        [{
+                            'id': resource.id + "/providers/Microsoft.Resources/tags/" + tagname,
+                            'name': tagname, 'value': resource.tags[tagname],
+                            'type': 'Microsoft.Resources/tags',
+                            'resource_id': resource.id, 'resource_group': resource_group['name'],
+                        }]
+    
+    load_tags(neo4j_driver.session(), tags_list, update_tag)
+
+    logger.info(f"END processing for resource group: {resource_group['name']}")
+
+
 @timeit
 def get_tags_list(
-    neo4j_session: neo4j.Session, client: ResourceManagementClient, resource_groups_list: List[Dict],
+    config: Config, client: ResourceManagementClient, resource_groups_list: List[Dict], update_tag: int,
 ) -> List[Dict]:
     try:
-        tags_list: List[Dict] = []
-        for resource_group in resource_groups_list:
-            if "tags" in resource_group.keys() and len(resource_group['tags']) != 0:
-                for tagname in resource_group['tags']:
-                    tags_list = tags_list + [{
-                        'id': resource_group['id'] + "/providers/Microsoft.Resources/tags/" + tagname,
-                        'name': tagname, 'value': resource_group['tags']
-                        [tagname], 'type': 'Microsoft.Resources/tags', 'resource_id': resource_group['id'],
-                        'resource_group': resource_group['name'],
-                    }]
-            for resource in client.resources.list_by_resource_group(resource_group_name=resource_group['name']):
-                if neo4j_session.run("MATCH (n) WHERE n.id={id} return count(*)", id=resource.id).single().value() == 1:
-                    if resource.tags:
-                        for tagname in resource.tags:
-                            tags_list = tags_list + \
-                                [{
-                                    'id': resource.id + "/providers/Microsoft.Resources/tags/" + tagname,
-                                    'name': tagname, 'value': resource.tags[tagname],
-                                    'type': 'Microsoft.Resources/tags',
-                                    'resource_id': resource.id, 'resource_group': resource_group['name'],
-                                }]
-
-        return tags_list
+        with ThreadPoolExecutor(max_workers=len(resource_groups_list)) as executor:
+            futures = []
+            for resource_group in resource_groups_list:
+                futures.append(executor.submit(concurrent_execution, config, client, resource_group, update_tag))
+        
+            for future in as_completed(futures):
+                logger.info(f'Result from Future: #{future.result()}')
 
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving tags - {e}")
@@ -137,29 +161,28 @@ def cleanup_tags(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> N
 
 def sync_tags(
     neo4j_session: neo4j.Session, client: ResourceManagementClient, resource_groups_list: List[Dict], update_tag: int,
-    common_job_parameters: Dict,
+    common_job_parameters: Dict, config: Config,
 ) -> None:
-    tags_list = get_tags_list(neo4j_session, client, resource_groups_list)
-    load_tags(neo4j_session, tags_list, update_tag)
+    get_tags_list(config, client, resource_groups_list, update_tag)
     cleanup_tags(neo4j_session, common_job_parameters)
 
 
 def sync_resource_groups(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict,
+    common_job_parameters: Dict, config: Config,
 ) -> None:
     client = get_resource_management_client(credentials, subscription_id)
     resource_groups_list = get_resource_groups_list(client)
     load_resource_groups(neo4j_session, subscription_id, resource_groups_list, update_tag)
     cleanup_resource_groups(neo4j_session, common_job_parameters)
-    sync_tags(neo4j_session, client, resource_groups_list, update_tag, common_job_parameters)
+    sync_tags(neo4j_session, client, resource_groups_list, update_tag, common_job_parameters, config)
 
 
 @timeit
 def sync(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict,
+    common_job_parameters: Dict, config: Config,
 ) -> None:
     logger.info("Syncing tags for subscription '%s'.", subscription_id)
 
-    sync_resource_groups(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
+    sync_resource_groups(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters, config)
