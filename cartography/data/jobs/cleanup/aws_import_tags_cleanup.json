@@ -101,7 +101,7 @@
             "iterationsize": 100
         },
         {
-            "query": "MATCH (n:AWSTag) WHERE NOT (n)<-[:TAGGED]-() AND n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) RETURN COUNT(*) as TotalCompleted",
+            "query": "MATCH (n:AWSTag) WHERE NOT (n)--() AND n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) RETURN COUNT(*) as TotalCompleted",
             "iterative": true,
             "iterationsize": 100
         }
