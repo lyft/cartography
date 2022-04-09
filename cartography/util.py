@@ -1,6 +1,7 @@
 import logging
 import re
 import sys
+from functools import partial
 from functools import wraps
 from string import Template
 from typing import Dict
@@ -116,7 +117,7 @@ def timeit(method):
 
 
 # TODO Move this to cartography.intel.aws.util.common
-def aws_handle_regions(func):
+def aws_handle_regions(func=None, on_exception_return_value=[]):
     ERROR_CODES = [
         'AccessDenied',
         'AccessDeniedException',
@@ -125,7 +126,8 @@ def aws_handle_regions(func):
         'UnrecognizedClientException',
     ]
 
-    def inner_function(*args, **kwargs):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)
         except botocore.exceptions.ClientError as e:
@@ -133,10 +135,12 @@ def aws_handle_regions(func):
             # so we can continue without raising an exception
             if e.response['Error']['Code'] in ERROR_CODES:
                 logger.warning("{} in this region. Skipping...".format(e.response['Error']['Message']))
-                return []
+                return on_exception_return_value
             else:
                 raise
-    return inner_function
+    if func is None:
+        return partial(aws_handle_regions, on_exception_return_value=on_exception_return_value)
+    return wrapper
 
 
 def dict_value_to_str(obj: Dict, key: str) -> Optional[str]:
