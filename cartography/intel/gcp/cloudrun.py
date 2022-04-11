@@ -235,6 +235,16 @@ def get_cloudrun_services(cloudrun: Resource, project_id: str) -> List[Dict]:
                 ), project_id, err['code'], err['message'],
             )
             return []
+
+        elif err.get('status', '') == 'UNAVAILABLE' or err.get('code', '') == 503:
+            logger.warning(
+                (
+                    "Could not retrieve CloudRun Services due to the service is currently unavailable for Project %s \
+                         Code: %s, Message: %s"
+                ), project_id, err['code'], err['message'],
+            )
+            return []
+
         else:
             raise
 
