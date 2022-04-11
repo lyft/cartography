@@ -7,13 +7,14 @@ import boto3
 import neo4j
 
 from cartography.util import aws_handle_regions
-from cartography.util import run_cleanup_job
-from cartography.util import timeit
 from cartography.util import get_stats_client
 from cartography.util import merge_module_sync_metadata
+from cartography.util import run_cleanup_job
+from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 stat_handler = get_stats_client(__name__)
+
 
 @timeit
 @aws_handle_regions
