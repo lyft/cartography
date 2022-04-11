@@ -6,11 +6,6 @@
       "iterationsize": 100
     },
     {
-      "query": "MATCH (c:CVE) WHERE c.lastupdated <> {UPDATE_TAG} WITH c LIMIT {LIMIT_SIZE} DETACH DELETE (c)",
-      "iterative": true,
-      "iterationsize": 100
-    },
-    {
       "query": "MATCH (h:CrowdstrikeHost) WHERE h.lastupdated <> {UPDATE_TAG} WITH h LIMIT {LIMIT_SIZE} DETACH DELETE (h)",
       "iterative": true,
       "iterationsize": 100
