@@ -48,3 +48,26 @@ def test_transform_and_load_ec2_tags(neo4j_session):
     }
 
     assert actual == expected
+
+    # Test the cleanup removes old tags that are not attached to any resource
+    new_update_tag = TEST_UPDATE_TAG + 1
+    new_response = copy.deepcopy(tests.data.aws.resourcegroupstaggingapi.GET_RESOURCES_RESPONSE_UPDATED)
+    rgta.transform_tags(new_response, resource_type)
+    rgta.load_tags(
+        neo4j_session,
+        new_response,
+        resource_type,
+        TEST_REGION,
+        new_update_tag,
+    )
+    neo4j_session.run('MATCH (i:EC2Instance) DETACH DELETE (i) RETURN COUNT(*) as TotalCompleted')
+    rgta.cleanup(neo4j_session, {'AWS_ID': TEST_ACCOUNT_ID, 'UPDATE_TAG': new_update_tag})
+    expected = {
+        ('TestKeyUpdated:TestValueUpdated'),
+    }
+    result = neo4j_session.run('MATCH (t:AWSTag) RETURN t.id')
+    print(result)
+    actual = {
+        (r['t.id']) for r in result
+    }
+    assert actual == expected
