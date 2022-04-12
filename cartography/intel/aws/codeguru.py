@@ -48,10 +48,7 @@ def get_recommendation_feedbacks(
     queues: List[Dict] = []
     for cr in code_reviews:
         response = client.list_recommendation_feedback(CodeReviewArn=cr['CodeReviewArn'])
-        for queue in response['RecommendationFeedbackSummaries']:
-            queue['Reactions'] = queue['Reactions'][0]
-            queue['RecommendationId'] = queue['RecommendationId']
-            queues.append(queue)
+        queues.extend(response['RecommendationFeedbackSummaries'])
 
     return queues
 
