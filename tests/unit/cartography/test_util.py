@@ -44,7 +44,7 @@ def test_aws_handle_regions(mocker):
     assert g(1, 2) == []
 
     # returns a custom value
-    @aws_handle_regions(on_exception_return_value=([], []))
+    @aws_handle_regions(default_return_value=([], []))
     def h(a, b):
         e = botocore.exceptions.ClientError(
             {
@@ -77,7 +77,7 @@ def test_aws_handle_regions(mocker):
         i(1, 2)
 
     # other type of error besides ClientError
-    @aws_handle_regions(on_exception_return_value=9000)
+    @aws_handle_regions(default_return_value=9000)
     def j(a, b):
         return a / 0
 
