@@ -120,8 +120,15 @@ def timeit(method):
 # TODO Move this to cartography.intel.aws.util.common
 def aws_handle_regions(func=None, default_return_value=[]) -> Callable:
     """
-    A decorator for returning a default. Use on functions that would return a client error
-     like AccessDenied for opt-in AWS regions, and other regions that might be desabled.
+    A decorator for returning a default value on functions that would return a client error
+     like AccessDenied for opt-in AWS regions, and other regions that might be disabled.
+
+    The convenience of this decorator is that it auto-catches some of the potential 
+     Exceptions related to opt-in regions, and returns the specified `default_return_value`.
+
+    This should be used on `get_` functions that normally return a list of items.
+     but it can be used elsehwere and you can supply a custom `default_return_value`,
+     other than a simple list `[]`.
     """
     ERROR_CODES = [
         'AccessDenied',

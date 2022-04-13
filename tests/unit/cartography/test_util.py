@@ -22,14 +22,14 @@ def test_run_analysis_job_custom_package(mocker):
 def test_aws_handle_regions(mocker):
     # no exception
     @aws_handle_regions
-    def f(a, b):
+    def happy_path(a, b):
         return a + b
 
-    assert f(1, 2) == 3
+    assert happy_path(1, 2) == 3
 
     # returns the default on_exception_return_value=[]
     @aws_handle_regions
-    def g(a, b):
+    def raises_supported_client_error(a, b):
         e = botocore.exceptions.ClientError(
             {
                 'Error': {
@@ -41,11 +41,11 @@ def test_aws_handle_regions(mocker):
         )
         raise e
 
-    assert g(1, 2) == []
+    assert raises_supported_client_error(1, 2) == []
 
     # returns a custom value
     @aws_handle_regions(default_return_value=([], []))
-    def h(a, b):
+    def raises_supported_error_with_custoim_return_value(a, b):
         e = botocore.exceptions.ClientError(
             {
                 'Error': {
@@ -57,11 +57,11 @@ def test_aws_handle_regions(mocker):
         )
         raise e
 
-    assert h(1, 2) == ([], [])
+    assert raises_supported_error_with_custoim_return_value(1, 2) == ([], [])
 
     # unhandled type of ClientError
     @aws_handle_regions
-    def i(a, b):
+    def raises_unsupported_client_error(a, b):
         e = botocore.exceptions.ClientError(
             {
                 'Error': {
@@ -74,12 +74,12 @@ def test_aws_handle_regions(mocker):
         raise e
 
     with pytest.raises(botocore.exceptions.ClientError):
-        i(1, 2)
+        raises_unsupported_client_error(1, 2)
 
     # other type of error besides ClientError
     @aws_handle_regions(default_return_value=9000)
-    def j(a, b):
+    def raises_unsupported_error(a, b):
         return a / 0
 
     with pytest.raises(ZeroDivisionError):
-        j(1, 2)
+        raises_unsupported_error(1, 2)
