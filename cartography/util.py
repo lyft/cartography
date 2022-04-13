@@ -4,6 +4,7 @@ import sys
 from functools import partial
 from functools import wraps
 from string import Template
+from typing import Callable
 from typing import Dict
 from typing import Optional
 from typing import Union
@@ -117,7 +118,11 @@ def timeit(method):
 
 
 # TODO Move this to cartography.intel.aws.util.common
-def aws_handle_regions(func=None, default_return_value=[]):
+def aws_handle_regions(func=None, default_return_value=[]) -> Callable:
+    """
+    A decorator for returning a default. Use on functions that would return a client error
+     like AccessDenied for opt-in AWS regions, and other regions that might be desabled.
+    """
     ERROR_CODES = [
         'AccessDenied',
         'AccessDeniedException',
@@ -139,7 +144,7 @@ def aws_handle_regions(func=None, default_return_value=[]):
             else:
                 raise
     if func is None:
-        return partial(aws_handle_regions, on_exception_return_value=default_return_value)
+        return partial(aws_handle_regions, default_return_value=default_return_value)
     return wrapper
 
 
