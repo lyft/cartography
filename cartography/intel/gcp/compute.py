@@ -328,7 +328,7 @@ def transform_gcp_forwarding_rules(fwd_response: Resource) -> List[Dict]:
         region = fwd.get('region', None)
         forwarding_rule['region'] = region.split('/')[-1] if region else None
         forwarding_rule['ip_address'] = fwd['IPAddress']
-        forwarding_rule['ip_protocol'] = fwd['IPProtocol']
+        forwarding_rule['ip_protocol'] = fwd.get('IPProtocol', None)
         forwarding_rule['allow_global_access'] = fwd.get('allowGlobalAccess', None)
 
         forwarding_rule['load_balancing_scheme'] = fwd['loadBalancingScheme']
