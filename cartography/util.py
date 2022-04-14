@@ -6,6 +6,8 @@ from functools import wraps
 from string import Template
 from typing import Callable
 from typing import Dict
+from typing import Iterable
+from typing import List
 from typing import Optional
 from typing import Union
 
@@ -181,3 +183,19 @@ def dict_date_to_epoch(obj: Dict, key: str) -> Optional[int]:
 
 def camel_to_snake(name: str) -> str:
     return re.sub(r'(?<!^)(?=[A-Z])', '_', name).lower()
+
+
+def batch(items: Iterable, size=1000) -> List[List]:
+    '''
+    Takes an Iterable of items and returns a list of lists of the same items,
+     batched into chunks of the provided `size`.
+
+    Use:
+    x = [1,2,3,4,5,6,7,8]
+    batch(x, size=3) -> [[1, 2, 3], [4, 5, 6], [7, 8]]
+    '''
+    items = list(items)
+    return [
+        items[i: i + size]
+        for i in range(0, len(items), size)
+    ]
