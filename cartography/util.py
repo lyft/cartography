@@ -1,8 +1,10 @@
 import logging
 import re
 import sys
+from functools import partial
 from functools import wraps
 from string import Template
+from typing import Callable
 from typing import Dict
 from typing import Optional
 from typing import Union
@@ -116,7 +118,18 @@ def timeit(method):
 
 
 # TODO Move this to cartography.intel.aws.util.common
-def aws_handle_regions(func):
+def aws_handle_regions(func=None, default_return_value=[]) -> Callable:
+    """
+    A decorator for returning a default value on functions that would return a client error
+     like AccessDenied for opt-in AWS regions, and other regions that might be disabled.
+
+    The convenience of this decorator is that it auto-catches some of the potential
+     Exceptions related to opt-in regions, and returns the specified `default_return_value`.
+
+    This should be used on `get_` functions that normally return a list of items.
+     but it can be used elsehwere and you can supply a custom `default_return_value`,
+     other than a simple list `[]`.
+    """
     ERROR_CODES = [
         'AccessDenied',
         'AccessDeniedException',
@@ -125,7 +138,8 @@ def aws_handle_regions(func):
         'UnrecognizedClientException',
     ]
 
-    def inner_function(*args, **kwargs):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)
         except botocore.exceptions.ClientError as e:
@@ -133,10 +147,12 @@ def aws_handle_regions(func):
             # so we can continue without raising an exception
             if e.response['Error']['Code'] in ERROR_CODES:
                 logger.warning("{} in this region. Skipping...".format(e.response['Error']['Message']))
-                return []
+                return default_return_value
             else:
                 raise
-    return inner_function
+    if func is None:
+        return partial(aws_handle_regions, default_return_value=default_return_value)
+    return wrapper
 
 
 def dict_value_to_str(obj: Dict, key: str) -> Optional[str]:
