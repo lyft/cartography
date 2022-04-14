@@ -6,7 +6,8 @@ from typing import List
 import boto3
 import neo4j
 
-from cartography.util import aws_handle_regions, batch
+from cartography.util import aws_handle_regions
+from cartography.util import batch
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 

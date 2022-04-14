@@ -1,7 +1,8 @@
 import pytest
 
 from cartography import util
-from cartography.util import aws_handle_regions, batch
+from cartography.util import aws_handle_regions
+from cartography.util import batch
 from cartography.util import botocore
 
 
@@ -91,7 +92,7 @@ def test_batch(mocker):
     expected = [
         [0, 1, 2, 3, 4],
         [5, 6, 7, 8, 9],
-        [10, 11]
+        [10, 11],
     ]
     # Act
     actual = batch(x, 5)
@@ -99,4 +100,3 @@ def test_batch(mocker):
     assert actual == expected
     # Also check for empty input
     assert batch([], 3) == []
-    

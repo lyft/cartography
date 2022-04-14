@@ -1,9 +1,12 @@
-from functools import wraps, partial
+from functools import partial
+from functools import wraps
+
 
 def handle(func=None, on_error_return=[]):
     ERROR_CODES = [
-        ZeroDivisionError
+        ZeroDivisionError,
     ]
+
     @wraps(func)
     def inner(*args, **kwargs):
         try:
@@ -19,13 +22,16 @@ def handle(func=None, on_error_return=[]):
         return lambda f: handle(f, on_error_return=on_error_return)
     return inner
 
+
 @handle
 def k():
-    return 1/0
+    return 1 / 0
+
 
 @handle(on_error_return=([], []))
 def g():
-    1/0
+    1 / 0
+
 
 @handle(on_error_return='another_default')
 def h():

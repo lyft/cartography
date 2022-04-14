@@ -4,8 +4,10 @@ import sys
 from functools import partial
 from functools import wraps
 from string import Template
-from typing import Callable, Iterable, List
+from typing import Callable
 from typing import Dict
+from typing import Iterable
+from typing import List
 from typing import Optional
 from typing import Union
 
@@ -194,6 +196,6 @@ def batch(items: Iterable, size=1000) -> List[List]:
     '''
     items = list(items)
     return [
-        items[i: i+size]
+        items[i: i + size]
         for i in range(0, len(items), size)
     ]
