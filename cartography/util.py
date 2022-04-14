@@ -188,7 +188,7 @@ def camel_to_snake(name: str) -> str:
 def batch(items: Iterable, size=1000) -> List[List]:
     '''
     Takes an Iterable of items and returns a list of lists of the same items,
-     batched into chunks of the proivided `size`.
+     batched into chunks of the provided `size`.
 
     Use:
     x = [1,2,3,4,5,6,7,8]
