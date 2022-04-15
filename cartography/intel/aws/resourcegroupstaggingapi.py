@@ -7,6 +7,7 @@ import boto3
 import neo4j
 
 from cartography.util import aws_handle_regions
+from cartography.util import batch
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
@@ -168,13 +169,14 @@ def load_tags(
     neo4j_session: neo4j.Session, tag_data: Dict, resource_type: str, region: str,
     aws_update_tag: int,
 ) -> None:
-    neo4j_session.write_transaction(
-        _load_tags_tx,
-        tag_data=tag_data,
-        resource_type=resource_type,
-        region=region,
-        aws_update_tag=aws_update_tag,
-    )
+    for tag_data_batch in batch(tag_data, size=100):
+        neo4j_session.write_transaction(
+            _load_tags_tx,
+            tag_data=tag_data_batch,
+            resource_type=resource_type,
+            region=region,
+            aws_update_tag=aws_update_tag,
+        )
 
 
 @timeit
