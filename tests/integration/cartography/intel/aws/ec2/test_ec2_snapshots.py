@@ -37,8 +37,8 @@ def test_get_snapshots_in_use(neo4j_session):
     ]
 
     actual_snapshots = cartography.intel.aws.ec2.snapshots.get_snapshots_in_use(
-        neo4j_session, 
-        TEST_REGION, TEST_ACCOUNT_ID
+        neo4j_session,
+        TEST_REGION, TEST_ACCOUNT_ID,
     )
 
     assert actual_snapshots == expected_snapshots
