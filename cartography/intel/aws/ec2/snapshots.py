@@ -25,17 +25,19 @@ def get_snapshots_in_use(neo4j_session: neo4j.Session, region: str, current_aws_
 
 @timeit
 @aws_handle_regions
-def get_snapshots(boto3_session: boto3.session.Session, region: str, snapshotIds: List[str]) -> List[Dict]:
+def get_snapshots(boto3_session: boto3.session.Session, region: str, in_use_snapshot_ids: List[str]) -> List[Dict]:
     client = boto3_session.client('ec2', region_name=region)
     paginator = client.get_paginator('describe_snapshots')
     snapshots: List[Dict] = []
     for page in paginator.paginate(OwnerIds=['self']):
         snapshots.extend(page['Snapshots'])
 
-    if not snapshotIds:
-        return snapshots
-    for page in paginator.paginate(SnapshotIds=snapshotIds):
-        snapshots.extend(page['Snapshots'])
+    # fetch in-use snapshots not in self-owned snapshots
+    self_owned_snapshot_ids = {s['SnapshotId'] for s in snapshots}
+    other_snapshot_ids = set(in_use_snapshot_ids) - self_owned_snapshot_ids
+    if other_snapshot_ids:
+        for page in paginator.paginate(SnapshotIds=list(other_snapshot_ids)):
+            snapshots.extend(page['Snapshots'])
     return snapshots
 
 
