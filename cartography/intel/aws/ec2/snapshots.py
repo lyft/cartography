@@ -32,7 +32,7 @@ def get_snapshots(boto3_session: boto3.session.Session, region: str, in_use_snap
     for page in paginator.paginate(OwnerIds=['self']):
         snapshots.extend(page['Snapshots'])
 
-    # fetch in-use snapshots not in self-owned snapshots
+    # fetch in-use snapshots not in self_owned snapshots
     self_owned_snapshot_ids = {s['SnapshotId'] for s in snapshots}
     other_snapshot_ids = set(in_use_snapshot_ids) - self_owned_snapshot_ids
     if other_snapshot_ids:
