@@ -32,16 +32,16 @@ def test_get_snapshots_in_use(neo4j_session):
     )
 
     # Assert
-    expected_snapshots = [
+    expected_snapshots = {
         "sn-01", "sn-02",
-    ]
+    }
 
     actual_snapshots = cartography.intel.aws.ec2.snapshots.get_snapshots_in_use(
         neo4j_session,
         TEST_REGION, TEST_ACCOUNT_ID,
     )
 
-    assert actual_snapshots == expected_snapshots
+    assert expected_snapshots == set(actual_snapshots)
 
 
 def test_load_volumes(neo4j_session):
