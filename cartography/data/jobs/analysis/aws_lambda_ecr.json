@@ -3,12 +3,14 @@
     "statements": [
         {
             "__comment": "Create HAS_IMAGE realtionship from lambda functions to the associated ECR image",
-            "query":"MATCH (l:AWSLambda), (e:ECRImage)\nWHERE e.digest = 'sha256:' + l.codesha256\nMERGE (l)-[:HAS]->(e)",
-            "iterative": false
+            "query":"MATCH (l:AWSLambda) \n WITH COLLECT(l) as lmbda_list \n UNWIND lmbda_list as lmbda \n MATCH (e:ECRImage) \n WHERE e.digest = 'sha256:' + lmbda.codesha256 \n MERGE (lmbda)-[r:HAS]->(e) \n SET r.lastupdated = {UPDATE_TAG}",
+            "iterative": true,
+            "iterationsize": 100
         },
         {
             "query": "MATCH (:AWSLambda)-[r:HAS]->(:ECRImage) WHERE r.lastupdated <> {UPDATE_TAG} DELETE (r)",
-            "iterative": false
+            "iterative": true,
+            "iterationsize": 100
         }
     ]
 }
