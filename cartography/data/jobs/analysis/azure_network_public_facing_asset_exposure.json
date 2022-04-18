@@ -6,7 +6,7 @@
             "iterationsize": 1000
         },
         {
-            "query": "MATCH ((rule:AzureNetworkSecurityRule)<-[:CONTAIN]-(group:AzureNetworkSecurityGroup)<-[:MEMBER_NETWORK_SECURITY_GROUP]-(subnet:AzureNetworkSubnet)<-[:CONTAIN]-(n:AzureNetwork)<-[:RESOURCE]-(:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}})<-[:RESOURCE]-(:AzureTenant{id: {AZURE_TENANT_ID}})<-[:OWNER]-(:CloudanixWorkspace{id: {WORKSPACE_ID}})\nWHERE (NOT EXISTS(n.exposed_internet_type)) And rule.access='Allow' And rule.source_port_range='*' OR rule.protocol='*' OR rule.source_address_prefix='0.0.0.0/0' \nSET n.exposed_internet = true;",
+            "query": "MATCH ((rule:AzureNetworkSecurityRule)<-[:CONTAIN]-(group:AzureNetworkSecurityGroup)<-[:MEMBER_NETWORK_SECURITY_GROUP]-(subnet:AzureNetworkSubnet)<-[:CONTAIN]-(n:AzureNetwork)<-[:RESOURCE]-(:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}})<-[:RESOURCE]-(:AzureTenant{id: {AZURE_TENANT_ID}})<-[:OWNER]-(:CloudanixWorkspace{id: {WORKSPACE_ID}})\nWHERE rule.access='Allow' And rule.source_port_range='*' OR rule.protocol='*' OR rule.source_address_prefix='0.0.0.0/0' \nSET n.exposed_internet = true;",
             "iterative": false
         }
     ],
