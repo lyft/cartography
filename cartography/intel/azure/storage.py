@@ -776,7 +776,7 @@ def _load_blob_containers(
     bc.deletedtime = blob.deleted_time,
     bc.region = {region},
     bc.defaultencryptionscope = blob.default_encryption_scope,
-    bc.publicAccess = blob.public_access,
+    bc.publicaccess = blob.public_access,
     bc.leasestatus = blob.lease_status,
     bc.leasestate = blob.lease_state,
     bc.lastmodifiedtime = blob.last_modified_time,
