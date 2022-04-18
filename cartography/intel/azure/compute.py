@@ -2,7 +2,6 @@ import logging
 from typing import Dict
 from typing import List
 
-import json
 import neo4j
 from azure.core.exceptions import HttpResponseError
 from azure.mgmt.compute import ComputeManagementClient
@@ -30,6 +29,10 @@ def load_vm_scale_sets_extensions(session: neo4j.Session, data_list: List[Dict],
     session.write_transaction(_load_vm_scale_sets_extensions_tx, data_list, update_tag)
 
 
+def load_vm_security_groups_relationship(session: neo4j.Session, vm_id: str, data_list: List[Dict], update_tag: int) -> None:
+    session.write_transaction(_load_vm_security_groups_relationship, vm_id, data_list, update_tag)
+
+
 def get_client(credentials: Credentials, subscription_id: str) -> ComputeManagementClient:
     client = ComputeManagementClient(credentials, subscription_id)
     return client
@@ -43,7 +46,10 @@ def get_vm_list(credentials: Credentials, subscription_id: str) -> List[Dict]:
         for vm in vm_list:
             x = vm['id'].split('/')
             vm['resource_group'] = x[x.index('resourceGroups') + 1]
-
+            network_security_group = []
+            for config in vm.get('properties', {}).get('network_profile', {}).get('network_interface_configurations', []):
+                network_security_group.append(config.get('network_security_group'), None)
+            vm['network_security_group'] = network_security_group
         return vm_list
 
     except HttpResponseError as e:
@@ -83,14 +89,36 @@ def load_vms(neo4j_session: neo4j.Session, subscription_id: str, vm_list: List[D
         if vm.get('storage_profile', {}).get('data_disks'):
             load_vm_data_disks(neo4j_session, vm['id'], vm['storage_profile']['data_disks'], update_tag)
 
+        if vm.get('network_security_group', []) != []:
+            load_vm_security_groups_relationship(neo4j_session, vm['id'], vm.get('network_security_group'), update_tag)
+
+
+def _load_vm_security_groups_relationship(tx: neo4j.Transaction, vm_id: str, data_list: List[Dict], update_tag: int) -> None:
+    ingest_vm_sg = """
+    UNWIND {sg_list} AS sg
+    MATCH (sg:AzureNetworkSecurityGroup{id: sg.id})
+    WITH sg
+    MATCH (v:AzureVirtualMachine{id: {vm_id}})
+    MERGE (v)-[r:MEMBER_NETWORK_SECURITY_GROUP]->(sg)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {update_tag}
+    """
+
+    tx.run(
+        ingest_vm_sg,
+        sg_list=data_list,
+        vm_id=vm_id,
+        update_tag=update_tag,
+    )
+
 
 def get_vm_extensions_list(vm_list: List[Dict], client: ComputeManagementClient) -> List[Dict]:
     try:
         vm_extensions_list: List[Dict] = []
         for vm in vm_list:
             exts = client.virtual_machine_extensions.list(resource_group_name=vm['resource_group'], vm_name=vm['name'])
-            
-            if len(exts.value) >0:
+
+            if len(exts.value) > 0:
                 vm_extensions_list.extend(exts.value)
 
         exts = []

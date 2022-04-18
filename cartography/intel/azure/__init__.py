@@ -18,6 +18,7 @@ from .util.credentials import Credentials
 from cartography.config import Config
 from cartography.intel.azure.util.common import parse_and_validate_azure_requested_syncs
 from cartography.util import timeit
+from cartography.util import run_analysis_job
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +36,8 @@ def concurrent_execution(
     if service == 'iam':
         service_func(neo4j_driver.session(), credentials, credentials.tenant_id, update_tag, common_job_parameters)
     else:
-        service_func(neo4j_driver.session(), credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
+        service_func(neo4j_driver.session(), credentials.arm_credentials,
+                     subscription_id, update_tag, common_job_parameters)
     logger.info(f"END processing for service: {service}")
 
 
@@ -137,16 +139,16 @@ def start_azure_ingestion(
         #     )
         # else:
         #     credentials = Authenticator().authenticate_cli()
-        
+
         credentials = Authenticator().impersonate_user(
-                config.azure_client_id,
-                config.azure_client_secret,
-                config.azure_redirect_uri,
-                config.azure_refresh_token,
-                config.azure_graph_scope,
-                config.azure_azure_scope,
-                config.azure_subscription_id,
-            )
+            config.azure_client_id,
+            config.azure_client_secret,
+            config.azure_redirect_uri,
+            config.azure_refresh_token,
+            config.azure_graph_scope,
+            config.azure_azure_scope,
+            config.azure_subscription_id,
+        )
 
     except Exception as e:
         logger.error(
@@ -191,4 +193,14 @@ def start_azure_ingestion(
         config.update_tag,
         common_job_parameters,
         config,
+    )
+    run_analysis_job(
+        'azure_vm_public_facing_asset_exposure.json',
+        neo4j_session,
+        common_job_parameters,
+    )
+    run_analysis_job(
+        'azure_network_public_facing_asset_exposure.json',
+        neo4j_session,
+        common_job_parameters,
     )

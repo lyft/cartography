@@ -125,7 +125,6 @@ def sync_networks(
     cleanup_networks(neo4j_session, common_job_parameters)
     sync_networks_subnets(neo4j_session, networks_list, client, update_tag, common_job_parameters)
     sync_network_routetables(neo4j_session, client, subscription_id, update_tag, common_job_parameters)
-    sync_network_security_groups(neo4j_session, client, subscription_id, update_tag, common_job_parameters)
     sync_public_ip_addresses(neo4j_session, client, subscription_id, update_tag, common_job_parameters)
     sync_usages(neo4j_session, networks_list, client, update_tag, common_job_parameters)
 
@@ -149,6 +148,7 @@ def get_networks_subnets_list(networks_list: List[Dict], client: NetworkManageme
                 subnet['network_id'] = subnet['id'][:subnet['id'].index("/subnets")]
                 subnet['type'] = "Microsoft.Network/Subnets"
                 subnet['location'] = network.get('location', 'global')
+                subnet['network_security_group_id'] = subnet.get('properties', {}).get('network_security_group', {}).get('id', None)
             networks_subnets_list.extend(subnets_list)
         return networks_subnets_list
 
@@ -179,6 +179,11 @@ def _load_networks_subnets_tx(
     MERGE (s)-[r:CONTAIN]->(n)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {azure_update_tag}
+    WITH n
+    MATCH (sg:AzureNetworkSecurityGroup{id: subnet.network_security_group_id})
+    MERGE (n)-[sgr:MEMBER_NETWORK_SECURITY_GROUP]->(sg)
+    ON CREATE SET sgr.firstseen = timestamp()
+    SET sgr.lastupdated = {azure_update_tag}
     """
 
     tx.run(
@@ -404,6 +409,15 @@ def get_network_security_rules_list(
                 rule['resource_group'] = x[x.index('resourceGroups') + 1]
                 rule['security_group_id'] = rule['id'][:rule['id'].index("/securityRules")]
                 rule['location'] = security_group.get('location', 'global')
+                rule['access'] = security_group.get('properties', {}).get('access', 'Deny')
+                rule['source_port_range'] = security_group.get('properties', {}).get('source_port_range', None)
+                rule['source_address_prefix'] = security_group.get('properties', {}).get('source_address_prefix', None)
+                rule['protocol'] = security_group.get('properties', {}).get('protocol', None)
+                rule['direction'] = security_group.get('properties', {}).get('direction', None)
+                rule['destination_port_ranges'] = security_group.get(
+                    'properties', {}).get('destination_port_ranges', None)
+                rule['destination_address_prefix'] = security_group.get(
+                    'properties', {}).get('destination_address_prefix', None)
             network_security_groups_list.extend(security_rules_list)
         return network_security_rules_list
 
@@ -421,6 +435,13 @@ def _load_network_security_rules_tx(
     UNWIND {network_security_rules_list} as rule
     MERGE (n:AzureNetworkSecurityRule{id: rule.id})
     ON CREATE SET n.firstseen = timestamp(),
+    n.access = rule.access,
+    n.source_port_range = rule.source_port_range,
+    n.protocol = rule.protocol,
+    n.direction = rule.direction,
+    n.destination_address_prefix = rule.destination_address_prefix,
+    n.source_address_prefix = rule.source_address_prefix,
+    n.destination_port_ranges = rule.destination_port_ranges,
     n.type = rule.type
     SET n.name = rule.name,
     n.region= rule.location,
@@ -577,4 +598,6 @@ def sync(
 ) -> None:
     logger.info("Syncing networks for subscription '%s'.", subscription_id)
 
+    client = get_network_client(credentials, subscription_id)
+    sync_network_security_groups(neo4j_session, client, subscription_id, update_tag, common_job_parameters)
     sync_networks(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
