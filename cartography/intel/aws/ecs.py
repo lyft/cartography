@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
-@aws_handle_regions
+@aws_handle_regions(default_return_value=([], []))
 def get_ecs_clusters(boto3_session: boto3.session.Session, region: str) -> Tuple[List[str], List[Dict[str, Any]]]:
     client = boto3_session.client('ecs', region_name=region)
     paginator = client.get_paginator('list_clusters')
