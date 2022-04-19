@@ -4,7 +4,6 @@ from typing import List
 
 import boto3
 import neo4j
-from botocore.exceptions import ClientError
 
 from .util import get_botocore_config
 from cartography.util import aws_handle_regions
