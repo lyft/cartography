@@ -36,6 +36,10 @@ class PrincipalType(enum.Enum):
     role = 'AWSRole'
 
 
+def set_used_state(session: neo4j.Session, project_id: str, common_job_parameters: Dict, update_tag: int) -> None:
+    session.write_transaction(_set_used_state_tx, project_id, common_job_parameters, update_tag)
+
+
 @timeit
 def get_group_policies(boto3_session: boto3.session.Session, group_name: str) -> Dict:
     client = boto3_session.client('iam')
@@ -925,6 +929,57 @@ def sync_user_access_keys(
     )
 
 
+def _set_used_state_tx(
+    tx: neo4j.Transaction, project_id: str, common_job_parameters: Dict, update_tag: int,
+) -> None:
+    ingest_role_used = """
+    MATCH (:CloudanixWorkspace{id: {WORKSPACE_ID}})-[:OWNER]->
+    (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(n:AWSRole)
+    WHERE (n)-[:TRUSTS_AWS_PRINCIPAL]->() AND n.lastupdated = {update_tag}
+    SET n.isUsed = {isUsed}
+    """
+
+    tx.run(
+        ingest_role_used,
+        WORKSPACE_ID=common_job_parameters['WORKSPACE_ID'],
+        update_tag=update_tag,
+        AWS_ID=project_id,
+        isUsed=True,
+    )
+
+    ingest_entity_used = """
+    MATCH (:CloudanixWorkspace{id: {WORKSPACE_ID}})-[:OWNER]->
+    (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(n)
+    WHERE ()-[:TRUSTS_AWS_PRINCIPAL]->(n) AND n.lastupdated = {update_tag}
+    AND labels(n) IN [['AWSUser'], ['AWSGroup'],]
+    SET n.isUsed = {isUsed}
+    """
+
+    tx.run(
+        ingest_entity_used,
+        WORKSPACE_ID=common_job_parameters['WORKSPACE_ID'],
+        update_tag=update_tag,
+        AWS_ID=project_id,
+        isUsed=True,
+    )
+
+    ingest_entity_unused = """
+    MATCH (:CloudanixWorkspace{id: {WORKSPACE_ID}})-[:OWNER]->
+    (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(n)
+    WHERE NOT EXISTS(n.isUsed) AND n.lastupdated = {update_tag}
+    AND labels(n) IN [['AWSUser'], ['AWSGroup'], ['AWSRole']]
+    SET n.isUsed = {isUsed}
+    """
+
+    tx.run(
+        ingest_entity_unused,
+        WORKSPACE_ID=common_job_parameters['WORKSPACE_ID'],
+        update_tag=update_tag,
+        AWS_ID=project_id,
+        isUsed=False,
+    )
+
+
 @timeit
 def sync(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
@@ -939,6 +994,7 @@ def sync(
     sync_group_memberships(neo4j_session, boto3_session, current_aws_account_id, update_tag, common_job_parameters)
     sync_assumerole_relationships(neo4j_session, current_aws_account_id, update_tag, common_job_parameters)
     sync_user_access_keys(neo4j_session, boto3_session, current_aws_account_id, update_tag, common_job_parameters)
+    set_used_state(neo4j_session, current_aws_account_id, common_job_parameters, update_tag)
     run_cleanup_job('aws_import_principals_cleanup.json', neo4j_session, common_job_parameters)
 
 
