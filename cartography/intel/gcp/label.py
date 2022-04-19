@@ -18,6 +18,8 @@ def get_labels_list(data: List[Dict]) -> List[Dict]:
     labels_data = []
     for item in data:
         labels = item.get('labels', {})
+        if type(labels) is not dict:
+            labels = {}
         for key, value in labels.items():
             label = {}
             label['id'] = f"{item.get('id','')}/label/{key}"
@@ -26,7 +28,7 @@ def get_labels_list(data: List[Dict]) -> List[Dict]:
             label['resource_id'] = item.get('id', None)
 
             if label['resource_id']:
-                labels_data.extend(label)
+                labels_data.append(label)
 
     return labels_data
 
