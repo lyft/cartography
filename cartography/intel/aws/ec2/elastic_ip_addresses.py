@@ -18,11 +18,8 @@ logger = logging.getLogger(__name__)
 @aws_handle_regions
 def get_elastic_ip_addresses(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
     client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
-    try:
-        addresses = client.describe_addresses()['Addresses']
-    except ClientError as e:
-        logger.warning(f"Failed retrieve address for region - {region}. Error - {e}")
-        raise
+    addresses: List[Dict] = []
+    addresses = client.describe_addresses()['Addresses']
     return addresses
 
 
