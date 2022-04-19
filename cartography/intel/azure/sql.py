@@ -53,6 +53,7 @@ def get_server_list(credentials: Credentials, subscription_id: str) -> List[Dict
     for server in server_list:
         x = server['id'].split('/')
         server['resourceGroup'] = x[x.index('resourceGroups') + 1]
+        server['publicNetworkAccess'] = server.get('properties', {}).get('public_network_access', 'Disabled')
 
     return server_list
 
@@ -73,6 +74,7 @@ def load_server_data(
     s.region = server.location
     SET s.lastupdated = {azure_update_tag},
     s.name = server.name,
+    s.publicNetworkAccess = server.publicNetworkAccess,
     s.kind = server.kind,
     s.state = server.state,
     s.version = server.version

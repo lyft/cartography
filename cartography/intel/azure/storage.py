@@ -50,6 +50,7 @@ def get_storage_account_list(credentials: Credentials, subscription_id: str) -> 
     for storage_account in storage_account_list:
         x = storage_account['id'].split('/')
         storage_account['resourceGroup'] = x[x.index('resourceGroups') + 1]
+        storage_account['allowBlobPublicAccess'] = storage_account.get('properties', {}).get('allow_blob_public_access', False)
 
     return storage_account_list
 
@@ -75,6 +76,7 @@ def load_storage_account_data(
     s.creationtime = account.creation_time,
     s.hnsenabled = account.is_hns_enabled,
     s.primarylocation = account.primary_location,
+    s.allowBlobPublicAccess = account.allowBlobPublicAccess,
     s.secondarylocation = account.secondary_location,
     s.provisioningstate = account.provisioning_state,
     s.statusofprimary = account.status_of_primary,

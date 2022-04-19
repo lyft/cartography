@@ -51,6 +51,7 @@ def get_database_account_list(credentials: Credentials, subscription_id: str) ->
     for database_account in database_account_list:
         x = database_account['id'].split('/')
         database_account['resourceGroup'] = x[x.index('resourceGroups') + 1]
+        database_account['publicNetworkAccess'] = database_account.get('properties', {}).get('public_network_access', 'Disabled')
 
     return database_account_list
 
@@ -92,6 +93,7 @@ def load_database_account_data(
     d.name = da.name,
     d.ipranges = da.ipruleslist,
     d.capabilities = da.list_of_capabilities,
+    d.publicNetworkAccess = da.publicNetworkAccess,
     d.documentendpoint = da.document_endpoint,
     d.virtualnetworkfilterenabled = da.is_virtual_network_filter_enabled,
     d.enableautomaticfailover = da.enable_automatic_failover,

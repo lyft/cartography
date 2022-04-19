@@ -114,6 +114,7 @@ def get_function_apps_list(client: WebSiteManagementClient) -> List[Dict]:
         for function in function_app_list:
             x = function['id'].split('/')
             function['resource_group'] = x[x.index('resourceGroups') + 1]
+            function['hostNamesDisabled'] = function.get('properties', {}).get('host_names_disabled', True)
 
         return function_app_list
 
@@ -134,6 +135,7 @@ def _load_function_apps_tx(
     f.type = function_app.type,
     f.location = function_app.location,
     f.region = function_app.location,
+    f.hostNamesDisabled = function_app.hostNamesDisabled,
     f.resourcegroup = function_app.resource_group
     SET f.lastupdated = {update_tag},
     f.name = function_app.name,
@@ -238,6 +240,7 @@ def get_function_apps_configuration_list(
                     index("/config/web")
                 ]
                 conf["location"] = function.get("location")
+                conf['publicNetworkAccess'] = conf.get('properties', {}).get('public_network_access', 'Disabled')
             function_apps_conf_list.extend(apps_conf_list)
         return function_apps_conf_list
 
@@ -266,6 +269,7 @@ def _load_function_apps_configurations_tx(
     fc.php_version=function_conf.php_version,
     fc.location = function_conf.location,
     fc.region = function_conf.location,
+    fc.publicNetworkAccess = function_conf.publicNetworkAccess,
     fc.python_version=function_conf.python_version,
     fc.node_version=function_conf.node_version,
     fc.linux_fx_version=function_conf.linux_fx_version,

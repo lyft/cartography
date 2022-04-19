@@ -89,8 +89,8 @@ def get_vm_extensions_list(vm_list: List[Dict], client: ComputeManagementClient)
         vm_extensions_list: List[Dict] = []
         for vm in vm_list:
             exts = client.virtual_machine_extensions.list(resource_group_name=vm['resource_group'], vm_name=vm['name'])
-            
-            if len(exts.value) >0:
+
+            if len(exts.value) > 0:
                 vm_extensions_list.extend(exts.value)
 
         exts = []
