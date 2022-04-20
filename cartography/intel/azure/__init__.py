@@ -115,9 +115,6 @@ def _sync_multiple_subscriptions(
             config,
         )
 
-    del common_job_parameters["AZURE_SUBSCRIPTION_ID"]
-    del common_job_parameters["AZURE_TENANT_ID"]
-
 
 @timeit
 def start_azure_ingestion(
@@ -204,3 +201,5 @@ def start_azure_ingestion(
         neo4j_session,
         common_job_parameters,
     )
+    del common_job_parameters["AZURE_SUBSCRIPTION_ID"]
+    del common_job_parameters["AZURE_TENANT_ID"]

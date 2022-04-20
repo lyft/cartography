@@ -56,6 +56,19 @@ def load_public_ip_addresses(
     session.write_transaction(_load_public_ip_addresses_tx, subscription_id, data_list, update_tag)
 
 
+def load_network_interfaces(
+    session: neo4j.Session,
+    subscription_id: str,
+    data_list: List[Dict],
+    update_tag: int,
+) -> None:
+    session.write_transaction(_load_network_interfaces_tx, subscription_id, data_list, update_tag)
+
+
+def load_public_ip_network_interfaces_relationship(session: neo4j.Session, interface_id: str, data_list: List[Dict], update_tag: int) -> None:
+    session.write_transaction(_load_public_ip_network_interfaces_relationship, interface_id, data_list, update_tag)
+
+
 def load_usages(session: neo4j.Session, data_list: List[Dict], update_tag: int) -> None:
     session.write_transaction(_load_usages_tx, data_list, update_tag)
 
@@ -126,6 +139,7 @@ def sync_networks(
     sync_networks_subnets(neo4j_session, networks_list, client, update_tag, common_job_parameters)
     sync_network_routetables(neo4j_session, client, subscription_id, update_tag, common_job_parameters)
     sync_public_ip_addresses(neo4j_session, client, subscription_id, update_tag, common_job_parameters)
+    sync_network_interfaces(neo4j_session, client, subscription_id, update_tag, common_job_parameters)
     sync_usages(neo4j_session, networks_list, client, update_tag, common_job_parameters)
 
 
@@ -148,7 +162,7 @@ def get_networks_subnets_list(networks_list: List[Dict], client: NetworkManageme
                 subnet['network_id'] = subnet['id'][:subnet['id'].index("/subnets")]
                 subnet['type'] = "Microsoft.Network/Subnets"
                 subnet['location'] = network.get('location', 'global')
-                subnet['network_security_group_id'] = subnet.get('properties', {}).get('network_security_group', {}).get('id', None)
+                subnet['network_security_group_id'] = subnet.get('network_security_group', {}).get('id', None)
             networks_subnets_list.extend(subnets_list)
         return networks_subnets_list
 
@@ -179,7 +193,7 @@ def _load_networks_subnets_tx(
     MERGE (s)-[r:CONTAIN]->(n)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {azure_update_tag}
-    WITH n
+    WITH n, subnet
     MATCH (sg:AzureNetworkSecurityGroup{id: subnet.network_security_group_id})
     MERGE (n)-[sgr:MEMBER_NETWORK_SECURITY_GROUP]->(sg)
     ON CREATE SET sgr.firstseen = timestamp()
@@ -395,30 +409,21 @@ def get_network_security_rules_list(
     try:
         network_security_rules_list: List[Dict] = []
         for security_group in network_security_groups_list:
-            security_rules_list = list(
-                map(
-                    lambda x: x.as_dict(), client.security_rules.list(
-                        resource_group_name=security_group['resource_group'],
-                        network_security_group_name=security_group['name'],
-                    ),
-                ),
-            )
-
+            security_rules_list = security_group.get('security_rules', [])
             for rule in security_rules_list:
                 x = rule['id'].split('/')
                 rule['resource_group'] = x[x.index('resourceGroups') + 1]
                 rule['security_group_id'] = rule['id'][:rule['id'].index("/securityRules")]
-                rule['location'] = security_group.get('location', 'global')
-                rule['access'] = security_group.get('properties', {}).get('access', 'Deny')
-                rule['source_port_range'] = security_group.get('properties', {}).get('source_port_range', None)
-                rule['source_address_prefix'] = security_group.get('properties', {}).get('source_address_prefix', None)
-                rule['protocol'] = security_group.get('properties', {}).get('protocol', None)
-                rule['direction'] = security_group.get('properties', {}).get('direction', None)
-                rule['destination_port_ranges'] = security_group.get(
+                rule['location'] = rule.get('location', 'global')
+                rule['access'] = rule.get('access', 'Deny')
+                rule['source_port_range'] = rule.get('source_port_range', None)
+                rule['source_address_prefix'] = rule.get('source_address_prefix', None)
+                rule['protocol'] = rule.get('protocol', None)
+                rule['direction'] = rule.get('direction', None)
+                rule['destination_port_ranges'] = rule.get(
                     'properties', {}).get('destination_port_ranges', None)
-                rule['destination_address_prefix'] = security_group.get(
-                    'properties', {}).get('destination_address_prefix', None)
-            network_security_groups_list.extend(security_rules_list)
+                rule['destination_address_prefix'] = rule.get('destination_address_prefix', None)
+            network_security_rules_list.extend(security_rules_list)
         return network_security_rules_list
 
     except HttpResponseError as e:
@@ -524,6 +529,89 @@ def sync_public_ip_addresses(
     public_ip_addresses_list = get_public_ip_addresses_list(client)
     load_public_ip_addresses(neo4j_session, subscription_id, public_ip_addresses_list, update_tag)
     cleanup_public_ip_addresses(neo4j_session, common_job_parameters)
+
+
+def get_network_interfaces_list(client: NetworkManagementClient) -> List[Dict]:
+    try:
+        network_interfaces_list = list(map(lambda x: x.as_dict(), client.network_interfaces.list_all()))
+        interfaces_list = []
+        for interface in network_interfaces_list:
+            interface['public_ip_address'] = []
+            for conf in interface.get('ip_configurations', []):
+                interface['public_ip_address'].append(
+                    {'public_ip_id': conf.get('public_ip_address', {}).get('id', None)})
+            interfaces_list.append(interface)
+        return interfaces_list
+
+    except HttpResponseError as e:
+        logger.warning(f"Error while retrieving network interface - {e}")
+        return []
+
+
+def _load_network_interfaces_tx(
+    tx: neo4j.Transaction, subscription_id: str, network_interfaces_list: List[Dict], update_tag: int,
+) -> None:
+    ingest_interface = """
+    UNWIND {network_interfaces_list} AS interface
+    MERGE (n:AzureNetworkInterface{id: interface.id})
+    ON CREATE SET n.firstseen = timestamp(),
+    n.type = interface.type,
+    n.location = interface.location,
+    n.region = interface.location
+    SET n.lastupdated = {update_tag},
+    n.name = interface.name
+    WITH n, interface
+    MATCH (owner:AzureSubscription{id: {SUBSCRIPTION_ID}})
+    MERGE (owner)-[r:RESOURCE]->(n)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {update_tag}
+    WITH n, interface
+    MATCH (sg:AzureNetworkSecurityGroup{id: interface.network_security_group.id})
+    MERGE (n)-[sgr:MEMBER_NETWORK_SECURITY_GROUP]->(sg)
+    ON CREATE SET sgr.firstseen = timestamp()
+    SET sgr.lastupdated = {update_tag}
+    """
+
+    tx.run(
+        ingest_interface,
+        network_interfaces_list=network_interfaces_list,
+        SUBSCRIPTION_ID=subscription_id,
+        update_tag=update_tag,
+    )
+
+
+def cleanup_network_interfaces(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('azure_import_network_interfaces_cleanup.json', neo4j_session, common_job_parameters)
+
+
+def sync_network_interfaces(
+    neo4j_session: neo4j.Session, client: NetworkManagementClient, subscription_id: str, update_tag: int,
+    common_job_parameters: Dict,
+) -> None:
+    network_interfaces_list = get_network_interfaces_list(client)
+    load_network_interfaces(neo4j_session, subscription_id, network_interfaces_list, update_tag)
+    cleanup_network_interfaces(neo4j_session, common_job_parameters)
+    for interface in network_interfaces_list:
+        load_public_ip_network_interfaces_relationship(neo4j_session, interface.get(
+            'id'), interface.get('public_ip_address', []), update_tag)
+
+
+def _load_public_ip_network_interfaces_relationship(tx: neo4j.Transaction, interface_id: str, data_list: List[Dict], update_tag: int) -> None:
+    ingest_ip_ni = """
+    UNWIND {ip_list} AS public_ip
+    MATCH (ip:AzurePublicIPAddress{id: public_ip.public_ip_id})
+    WITH ip
+    MATCH (i:AzureNetworkInterface{id: {interface_id}})
+    MERGE (i)-[r:MEMBER_PUBLIC_IP_ADDRESS]->(ip)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {update_tag}
+    """
+    tx.run(
+        ingest_ip_ni,
+        ip_list=data_list,
+        interface_id=interface_id,
+        update_tag=update_tag,
+    )
 
 
 @timeit

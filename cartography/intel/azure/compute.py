@@ -33,6 +33,10 @@ def load_vm_security_groups_relationship(session: neo4j.Session, vm_id: str, dat
     session.write_transaction(_load_vm_security_groups_relationship, vm_id, data_list, update_tag)
 
 
+def load_vm_network_interfaces_relationship(session: neo4j.Session, vm_id: str, data_list: List[Dict], update_tag: int) -> None:
+    session.write_transaction(_load_vm_network_interfaces_relationship, vm_id, data_list, update_tag)
+
+
 def get_client(credentials: Credentials, subscription_id: str) -> ComputeManagementClient:
     client = ComputeManagementClient(credentials, subscription_id)
     return client
@@ -46,8 +50,14 @@ def get_vm_list(credentials: Credentials, subscription_id: str) -> List[Dict]:
         for vm in vm_list:
             x = vm['id'].split('/')
             vm['resource_group'] = x[x.index('resourceGroups') + 1]
+
+            network_interfaces = []
+            for interface in vm.get('network_profile', {}).get('network_interfaces', []):
+                network_interfaces.append(interface)
+            vm['network_interfaces'] = network_interfaces
+
             network_security_group = []
-            for config in vm.get('properties', {}).get('network_profile', {}).get('network_interface_configurations', []):
+            for config in vm.get('network_profile', {}).get('network_interface_configurations', []):
                 network_security_group.append(config.get('network_security_group'), None)
             vm['network_security_group'] = network_security_group
         return vm_list
@@ -92,6 +102,9 @@ def load_vms(neo4j_session: neo4j.Session, subscription_id: str, vm_list: List[D
         if vm.get('network_security_group', []) != []:
             load_vm_security_groups_relationship(neo4j_session, vm['id'], vm.get('network_security_group'), update_tag)
 
+        if vm.get('network_interfaces', []) != []:
+            load_vm_network_interfaces_relationship(neo4j_session, vm['id'], vm.get('network_interfaces'), update_tag)
+
 
 def _load_vm_security_groups_relationship(tx: neo4j.Transaction, vm_id: str, data_list: List[Dict], update_tag: int) -> None:
     ingest_vm_sg = """
@@ -107,6 +120,25 @@ def _load_vm_security_groups_relationship(tx: neo4j.Transaction, vm_id: str, dat
     tx.run(
         ingest_vm_sg,
         sg_list=data_list,
+        vm_id=vm_id,
+        update_tag=update_tag,
+    )
+
+
+def _load_vm_network_interfaces_relationship(tx: neo4j.Transaction, vm_id: str, data_list: List[Dict], update_tag: int) -> None:
+    ingest_vm_ni = """
+    UNWIND {ni_list} AS ni
+    MATCH (n:AzureNetworkInterface{id: ni.id})
+    WITH n
+    MATCH (v:AzureVirtualMachine{id: {vm_id}})
+    MERGE (v)-[r:MEMBER_NETWORK_INTERFACE]->(n)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {update_tag}
+    """
+
+    tx.run(
+        ingest_vm_ni,
+        ni_list=data_list,
         vm_id=vm_id,
         update_tag=update_tag,
     )
@@ -505,7 +537,7 @@ def sync_virtual_machine(
     load_vms(neo4j_session, subscription_id, vm_list, update_tag)
     cleanup_virtual_machine(neo4j_session, common_job_parameters)
     sync_virtual_machine_extensions(neo4j_session, client, vm_list, update_tag, common_job_parameters)
-    sync_virtual_machine_available_sizes(neo4j_session, client, vm_list, update_tag, common_job_parameters)
+    # sync_virtual_machine_available_sizes(neo4j_session, client, vm_list, update_tag, common_job_parameters)
 
 
 def sync_disk(
