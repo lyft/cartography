@@ -22,7 +22,7 @@ def test_load_elastic_ip_addresses(neo4j_session, *args):
 
     expected_nodes = {
         (
-            "eipalloc-00000000000000000",
+            "192.168.1.1",
             "eipassoc-00000000000000000",
             "192.168.1.1",
             "192.168.1.2",
