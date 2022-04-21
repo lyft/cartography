@@ -40,7 +40,7 @@ def load_elastic_ip_addresses(
     logger.info(f"Loading {len(elastic_ip_addresses)} Elastic IP Addresses in {region}.")
     ingest_addresses = """
     UNWIND {elastic_ip_addresses} as eia
-        MERGE (address: ElasticIPAddress{id: eia.AllocationId})
+        MERGE (address: ElasticIPAddress{id: eia.PublicIp})
         ON CREATE SET address.firstseen = timestamp()
         SET address.instance_id = eia.InstanceId, address.public_ip = eia.PublicIp,
         address.allocation_id = eia.AllocationId, address.association_id = eia.AssociationId,
