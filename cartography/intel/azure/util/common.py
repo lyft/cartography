@@ -5,7 +5,7 @@ from cartography.intel.azure.resources import RESOURCE_FUNCTIONS
 
 def parse_and_validate_azure_requested_syncs(azure_requested_syncs: str) -> List[str]:
     validated_resources: List[str] = []
-    for resource in azure_requested_syncs.split(','):
+    for resource in azure_requested_syncs:
         resource = resource.strip()
 
         if resource in RESOURCE_FUNCTIONS:
