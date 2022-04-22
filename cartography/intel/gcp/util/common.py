@@ -5,7 +5,7 @@ from cartography.intel.gcp.resources import RESOURCE_FUNCTIONS
 
 def parse_and_validate_gcp_requested_syncs(gcp_requested_syncs: str) -> List[str]:
     validated_resources: List[str] = []
-    for resource in gcp_requested_syncs.split(','):
+    for resource in gcp_requested_syncs:
         resource = resource.strip()
 
         if resource in RESOURCE_FUNCTIONS:
