@@ -36,7 +36,7 @@ def get_apigateway_locations(apigateway: Resource, project_id: str) -> List[Dict
             if res.get('locations', []):
                 for location in res['locations']:
                     location['project_id'] = project_id
-                    location['id'] = location['name']
+                    location['id'] = location['locationId']
                     locations.append(location)
             req = apigateway.projects().locations().list_next(previous_request=req, previous_response=res)
         return locations
@@ -54,7 +54,7 @@ def get_apigateway_locations(apigateway: Resource, project_id: str) -> List[Dict
 
 
 @timeit
-def get_apis(apigateway: Resource, project_id: str) -> List[Dict]:
+def get_apis(apigateway: Resource, project_id: str, locations: List[Dict]) -> List[Dict]:
     """
         Returns a list of apis within the given project.
 
@@ -64,25 +64,29 @@ def get_apis(apigateway: Resource, project_id: str) -> List[Dict]:
         :type project_id: str
         :param project_id: Current Google Project Id
 
+        :type locations: List
+        :param locations: Locations List
+
         :rtype: list
         :return: List of apis
     """
     apis = []
     try:
-        req = apigateway.projects().locations().apis().list(parent=f'projects/{project_id}/locations/global')
-        while req is not None:
-            res = req.execute()
-            if res.get('apis', []):
-                for api in res['apis']:
-                    api['project_id'] = project_id
-                    api['id'] = api['name']
-                    x = api.get('name').split('/')
-                    x = x[x.index('locations') + 1].split("-")
-                    api['region'] = x[0]
-                    if len(x) > 1:
-                        api['region'] = f"{x[0]}-{x[1]}"
-                    apis.append(api)
-            req = apigateway.projects().locations().apis().list_next(previous_request=req, previous_response=res)
+        for location in locations:
+            req = apigateway.projects().locations().apis().list(parent=f"projects/{project_id}/locations/{location['id']}")
+            while req is not None:
+                res = req.execute()
+                if res.get('apis', []):
+                    for api in res['apis']:
+                        api['project_id'] = project_id
+                        api['id'] = api.get('name','').split('/')[-1]
+                        x = api.get('name').split('/')
+                        x = x[x.index('locations') + 1].split("-")
+                        api['region'] = x[0]
+                        if len(x) > 1:
+                            api['region'] = f"{x[0]}-{x[1]}"
+                        apis.append(api)
+                req = apigateway.projects().locations().apis().list_next(previous_request=req, previous_response=res)
         return apis
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -96,9 +100,67 @@ def get_apis(apigateway: Resource, project_id: str) -> List[Dict]:
         else:
             raise
 
+@timeit
+def get_api_policy_users(apigateway: Resource, apis: List[Resource],project_id: str) -> List[Dict]:
+    """
+        Returns a list of users attached to IAM policy of an API within the given project.
+
+        :type apigateway: The GCP APIGateway resource object
+        :param apigateway: The APIGateway resource object created by googleapiclient.discovery.build()
+
+        :type api: List
+        :param api: The list of APIs
+
+        :type project_id: str
+        :param project_id: Current Google Project Id
+
+        : type locations: List
+        : param Location: List of locations
+
+        :rtype: list
+        :return: List of api iam policy users
+    """
+    users = []
+    try:
+        for api in apis:
+            api['iam_policy'] = apigateway.projects().locations().apis().getIamPolicy(\
+                resource=api['id']).execute()
+            bindings = api.get('iam_policy',{}).get('bindings',[])
+            for binding in bindings:
+                for member in binding['members']:
+                    if member.startswith('user:'):
+                        usr = member[len('user:'):]
+                        users.append({
+                            'name': usr,
+                            'api_id': api['id'],
+                        })
+                    elif member.startswith('allUsers'):
+                        usr = 'allUsers'
+                        users.append({
+                            'name': usr,
+                            'api_id': api['id'],
+                        })
+                    elif member.startswith('allAuthenticatedUsers'):
+                        usr = 'allAuthenticatedUsers'
+                        users.append({
+                            'name': usr,
+                            'api_id': api['id'],
+                        })
+        return users
+    except HttpError as e:
+        err = json.loads(e.content.decode('utf-8'))['error']
+        if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
+            logger.warning(
+                (
+                    "Could not retrieve iam policy of apis on project %s due to permissions issues. Code: %s, Message: %s"
+                ), project_id, err['code'], err['message'],
+            )
+            return []
+        else:
+            raise
 
 @timeit
-def get_api_configs(apigateway: Resource, project_id: str) -> List[Dict]:
+def get_api_configs(apigateway: Resource, project_id: str, apis: List[Dict]) -> List[Dict]:
     """
         Returns a list of apis configs within the given project.
 
@@ -108,32 +170,35 @@ def get_api_configs(apigateway: Resource, project_id: str) -> List[Dict]:
         :type project_id: str
         :param project_id: Current Google Project Id
 
+        :type apis: List
+        :param: apis: List of apis
+
         :rtype: list
         :return: List of api configs.
     """
     api_configs = []
     try:
-        req = apigateway.projects().locations().apis().configs().list(
-            parent=f'projects/{project_id}/locations/global/apis/*',
-        )
-        while req is not None:
-            res = req.execute()
-            if res.get('apiConfigs', []):
-                for apiConfig in res['apiConfigs']:
-                    apiConfig['api_id'] = f"projects/{project_id}/locations/global/apis/\
-                        {apiConfig.get('name').split('/')[-3]}"
-                    apiConfig['id'] = apiConfig['name']
-                    apiConfig['project_id'] = project_id
-                    x = apiConfig.get('name').split('/')
-                    x = x[x.index('locations') + 1].split("-")
-                    apiConfig['region'] = x[0]
-                    if len(x) > 1:
-                        apiConfig['region'] = f"{x[0]}-{x[1]}"
-                    api_configs.append(apiConfig)
-            req = apigateway.projects().locations().apis().configs().list_next(
-                previous_request=req,
-                previous_response=res,
+        for api in apis:
+            req = apigateway.projects().locations().apis().configs().list(
+                parent=api['name'],
             )
+            while req is not None:
+                res = req.execute()
+                if res.get('apiConfigs', []):
+                    for apiConfig in res['apiConfigs']:
+                        apiConfig['api_id'] = api['id']
+                        apiConfig['id'] = apiConfig['name']
+                        apiConfig['project_id'] = project_id
+                        x = apiConfig.get('name').split('/')
+                        x = x[x.index('locations') + 1].split("-")
+                        apiConfig['region'] = x[0]
+                        if len(x) > 1:
+                            apiConfig['region'] = f"{x[0]}-{x[1]}"
+                        api_configs.append(apiConfig)
+                req = apigateway.projects().locations().apis().configs().list_next(
+                    previous_request=req,
+                    previous_response=res,
+                )
         return api_configs
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -147,9 +212,68 @@ def get_api_configs(apigateway: Resource, project_id: str) -> List[Dict]:
         else:
             raise
 
+@timeit
+def get_api_config_policy_users(apigateway: Resource, configs: List[Resource],project_id: str) -> List[Dict]:
+    """
+        Returns a list of users attached to IAM policy of an API Config within the given project.
+
+        :type apigateway: The GCP APIGateway resource object
+        :param apigateway: The APIGateway resource object created by googleapiclient.discovery.build()
+
+        :type api: List
+        :param api: The list of APIs
+
+        :type project_id: str
+        :param project_id: Current Google Project Id
+
+        : type locations: List
+        : param Location: List of locations
+
+        :rtype: list
+        :return: List of api config iam policy users
+    """
+    users = []
+    try:
+        for config in configs:
+            config['iam_policy'] = apigateway.projects().locations().apis().configs().getIamPolicy(\
+                resource=config.get('name')).execute()
+            bindings = config.get('iam_policy',{}).get('bindings',[])
+            for binding in bindings:
+                for member in binding['members']:
+                    if member.startswith('user:'):
+                        usr = member[len('user:'):]
+                        users.append({
+                            'name': usr,
+                            'config_id': config['id'],
+                        })
+                    elif member.startswith('allUsers'):
+                        usr = 'allUsers'
+                        users.append({
+                            'name': usr,
+                            'config_id': config['id'],
+                        })
+                    elif member.startswith('allAuthenticatedUsers'):
+                        usr = 'allAuthenticatedUsers'
+                        users.append({
+                            'name': usr,
+                            'config_id': config['id'],
+                        })
+        return users
+    except HttpError as e:
+        err = json.loads(e.content.decode('utf-8'))['error']
+        if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
+            logger.warning(
+                (
+                    "Could not retrieve iam policy of api config on project %s due to permissions issues. Code: %s, Message: %s"
+                ), project_id, err['code'], err['message'],
+            )
+            return []
+        else:
+            raise
+
 
 @timeit
-def get_gateways(apigateway: Resource, project_id: str) -> List[Dict]:
+def get_gateways(apigateway: Resource, project_id: str, locations: List[Dict]) -> List[Dict]:
     """
         Returns a list of gateways within the given project.
 
@@ -159,25 +283,29 @@ def get_gateways(apigateway: Resource, project_id: str) -> List[Dict]:
         :type project_id: str
         :param project_id: Current Google Project Id
 
+        :type locations: List
+        :param locations: List of locations
+
         :rtype: list
         :return: List of gateways.
     """
     gateways = []
     try:
-        req = apigateway.projects().locations().gateways().list(parent=f'projects/{project_id}/locations/*')
-        while req is not None:
-            res = req.execute()
-            if res.get('gateways', []):
-                for gateway in res['gateways']:
-                    gateway['id'] = gateway['name']
-                    gateway['project_id'] = project_id
-                    x = gateway.get('name').split('/')
-                    x = x[x.index('locations') + 1].split("-")
-                    gateway['region'] = x[0]
-                    if len(x) > 1:
-                        gateway['region'] = f"{x[0]}-{x[1]}"
-                    gateways.append(gateway)
-            req = apigateway.projects().locations().gateways().list_next(previous_request=req, previous_response=res)
+        for location in locations:
+            req = apigateway.projects().locations().gateways().list(parent=f'projects/{project_id}/locations/{location["id"]}')
+            while req is not None:
+                res = req.execute()
+                if res.get('gateways', []):
+                    for gateway in res['gateways']:
+                        gateway['id'] = gateway['name']
+                        gateway['project_id'] = project_id
+                        x = gateway.get('name').split('/')
+                        x = x[x.index('locations') + 1].split("-")
+                        gateway['region'] = x[0]
+                        if len(x) > 1:
+                            gateway['region'] = f"{x[0]}-{x[1]}"
+                        gateways.append(gateway)
+                req = apigateway.projects().locations().gateways().list_next(previous_request=req, previous_response=res)
         return gateways
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -190,6 +318,68 @@ def get_gateways(apigateway: Resource, project_id: str) -> List[Dict]:
             return []
         else:
             raise
+
+
+@timeit
+def get_api_gateway_policy_users(apigateway: Resource, gateways: List[Resource],project_id: str) -> List[Dict]:
+    """
+        Returns a list of users attached to IAM policy of an API Gateway within the given project.
+
+        :type apigateway: The GCP APIGateway resource object
+        :param apigateway: The APIGateway resource object created by googleapiclient.discovery.build()
+
+        :type api: List
+        :param api: The list of APIs
+
+        :type project_id: str
+        :param project_id: Current Google Project Id
+
+        : type locations: List
+        : param Location: List of locations
+
+        :rtype: list
+        :return: List of api gateway iam policy users
+    """
+    users = []
+    try:
+        for gateway in gateways:
+            gateway['iam_policy'] = apigateway.projects().locations().gateways().getIamPolicy(\
+                resource=gateway.get('name')).execute()
+            bindings = gateway.get('iam_policy',{}).get('bindings',[])
+            users.append({'gateway_id':gateway['name']})
+            for binding in bindings:
+                for member in binding['members']:
+                    if member.startswith('user:'):
+                        usr = member[len('user:'):]
+                        users.append({
+                            'name': usr,
+                            'gateway_id': gateway['name'],
+                        })
+                    elif member.startswith('allUsers'):
+                        usr = 'allUsers'
+                        users.append({
+                            'name': usr,
+                            'gateway_id': gateway['name'],
+                        })
+                    elif member.startswith('allAuthenticatedUsers'):
+                        usr = 'allAuthenticatedUsers'
+                        users.append({
+                            'name': usr,
+                            'gateway_id': gateway['name'],
+                        })
+        return users
+    except HttpError as e:
+        err = json.loads(e.content.decode('utf-8'))['error']
+        if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
+            logger.warning(
+                (
+                    "Could not retrieve iam policy of api gateway on project %s due to permissions issues. Code: %s, Message: %s"
+                ), project_id, err['code'], err['message'],
+            )
+            return []
+        else:
+            raise
+
 
 
 @timeit
@@ -315,7 +505,6 @@ def load_apis_tx(tx: neo4j.Transaction, apis: List[Dict], project_id: str, gcp_u
         gcp_update_tag=gcp_update_tag,
     )
 
-
 @timeit
 def cleanup_apis(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     """
@@ -332,6 +521,64 @@ def cleanup_apis(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> N
    """
     run_cleanup_job('gcp_apigateway_apis_cleanup.json', neo4j_session, common_job_parameters)
 
+@timeit
+def load_api_policy_users(session: neo4j.Session, data_list: List[Dict], project_id: str, update_tag: int) -> None:
+    session.write_transaction(load_api_policy_users_tx, data_list, project_id, update_tag)
+
+@timeit
+def load_api_policy_users_tx(tx: neo4j.Transaction, users: List[Dict], project_id: str, gcp_update_tag: int) -> None:
+    """
+        Ingest GCP API users into Neo4j
+
+        :type neo4j_session: Neo4j session object
+        :param neo4j session: The Neo4j session object
+
+        :type users: Dict
+        :param apis: A list of GCP API users
+
+        :type project_id: str
+        :param project_id: Current Google Project Id
+
+        :type gcp_update_tag: timestamp
+        :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
+
+        :rtype: NoneType
+        :return: Nothing
+    """
+    ingest_users = """
+    UNWIND {users} as u
+    MERGE (user:APIUser:{id:u.name})
+    ON CREATE SET
+        user.firstseen = timestamp()
+    WITH user
+    MATCH (api:GCPAPI{id:u.api_id})
+    MERGE (user)-[r:USES]->(api)
+    ON CREATE SET
+        r.firstseen = timestamp(),
+        r.lastupdated = {gcp_update_tag}
+    """
+    tx.run(
+        ingest_users,
+        users=users,
+        ProjectId=project_id,
+        gcp_update_tag=gcp_update_tag,
+    )
+
+@timeit
+def cleanup_api_policy_users(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    """
+       Delete out-of-date GCP API Policy users
+
+       :type neo4j_session: The Neo4j session object
+       :param neo4j_session: The Neo4j session
+
+       :type common_job_parameters: dict
+       :param common_job_parameters: Dictionary of other job parameters to pass to Neo4j
+
+       :rtype: NoneType
+       :return: Nothing
+   """
+    run_cleanup_job('gcp_apigateway_apis_policy_users_cleanup.json', neo4j_session, common_job_parameters)
 
 @timeit
 def load_api_configs(session: neo4j.Session, data_list: List[Dict], project_id: str, update_tag: int) -> None:
@@ -404,6 +651,64 @@ def cleanup_api_configs(neo4j_session: neo4j.Session, common_job_parameters: Dic
    """
     run_cleanup_job('gcp_apigateway_configs_cleanup.json', neo4j_session, common_job_parameters)
 
+@timeit
+def load_api_config_policy_users(session: neo4j.Session, data_list: List[Dict], project_id: str, update_tag: int) -> None:
+    session.write_transaction(load_api_config_policy_users_tx, data_list, project_id, update_tag)
+
+@timeit
+def load_api_config_policy_users_tx(tx: neo4j.Transaction, users: List[Dict], project_id: str, gcp_update_tag: int) -> None:
+    """
+        Ingest GCP API Config users into Neo4j
+
+        :type neo4j_session: Neo4j session object
+        :param neo4j session: The Neo4j session object
+
+        :type users: Dict
+        :param apis: A list of GCP API users
+
+        :type project_id: str
+        :param project_id: Current Google Project Id
+
+        :type gcp_update_tag: timestamp
+        :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
+
+        :rtype: NoneType
+        :return: Nothing
+    """
+    ingest_users = """
+    UNWIND {users} as u
+    MERGE (user:APIConfigUser:{id:u.name})
+    ON CREATE SET
+        user.firstseen = timestamp()
+    WITH user
+    MATCH (config:GCPAPIConfig{id:u.config_id})
+    MERGE (user)-[r:USES]->(config)
+    ON CREATE SET
+        r.firstseen = timestamp(),
+        r.lastupdated = {gcp_update_tag}
+    """
+    tx.run(
+        ingest_users,
+        users=users,
+        ProjectId=project_id,
+        gcp_update_tag=gcp_update_tag,
+    )
+
+@timeit
+def cleanup_api_config_policy_users(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    """
+       Delete out-of-date GCP API Config Policy Users
+
+       :type neo4j_session: The Neo4j session object
+       :param neo4j_session: The Neo4j session
+
+       :type common_job_parameters: dict
+       :param common_job_parameters: Dictionary of other job parameters to pass to Neo4j
+
+       :rtype: NoneType
+       :return: Nothing
+   """
+    run_cleanup_job('gcp_apigateway_api_config_policy_users_cleanup.json', neo4j_session, common_job_parameters)
 
 @timeit
 def load_gateways(session: neo4j.Session, data_list: List[Dict], project_id: str, update_tag: int) -> None:
@@ -478,6 +783,65 @@ def cleanup_api_gateways(neo4j_session: neo4j.Session, common_job_parameters: Di
 
 
 @timeit
+def load_api_gateway_policy_users(session: neo4j.Session, data_list: List[Dict], project_id: str, update_tag: int) -> None:
+    session.write_transaction(load_api_gateway_policy_users_tx, data_list, project_id, update_tag)
+
+@timeit
+def load_api_gateway_policy_users_tx(tx: neo4j.Transaction, users: List[Dict], project_id: str, gcp_update_tag: int) -> None:
+    """
+        Ingest GCP API Gateway users into Neo4j
+
+        :type neo4j_session: Neo4j session object
+        :param neo4j session: The Neo4j session object
+
+        :type users: Dict
+        :param apis: A list of GCP API users
+
+        :type project_id: str
+        :param project_id: Current Google Project Id
+
+        :type gcp_update_tag: timestamp
+        :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
+
+        :rtype: NoneType
+        :return: Nothing
+    """
+    ingest_users = """
+    UNWIND {users} as u
+    MERGER (user:APIGatewayUser{id:u.name})
+    ON CREATE SET
+        user.firstseen = timestamp()
+    WITH user
+    MATCH (gateway:GCPAPIGateway{id:u.gateway_id})
+    MERGE (user)-[r:USES]->(gateway)
+    ON CREATE SET
+        r.firstseen = timestamp(),
+        r.lastupdated = {gcp_update_tag}
+    """
+    tx.run(
+        ingest_users,
+        users=users,
+        ProjectId=project_id,
+        gcp_update_tag=gcp_update_tag,
+    )
+
+@timeit
+def cleanup_api_gateway_policy_users(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    """
+       Delete out-of-date GCP API Gateway Gateway Policy users
+
+       :type neo4j_session: The Neo4j session object
+       :param neo4j_session: The Neo4j session
+
+       :type common_job_parameters: dict
+       :param common_job_parameters: Dictionary of other job parameters to pass to Neo4j
+
+       :rtype: NoneType
+       :return: Nothing
+   """
+    run_cleanup_job('gcp_apigateway_gateway_policy_users_cleanup.json', neo4j_session, common_job_parameters)
+
+@timeit
 def sync(
     neo4j_session: neo4j.Session, apigateway: Resource, project_id: str, gcp_update_tag: int,
     common_job_parameters: Dict,
@@ -513,6 +877,11 @@ def sync(
     # API Gateway APIs
     apis = get_apis(apigateway, project_id)
     load_apis(neo4j_session, apis, project_id, gcp_update_tag)
+    # API Gateway API Policy Useers
+    api_users = get_api_policy_users(apigateway,apis,project_id,locations)
+    load_api_policy_users(neo4j_session,api_users,project_id,gcp_update_tag)
+    # Cleanup API Policy Users
+    cleanup_api_policy_users(neo4j_session,common_job_parameters)
     # Cleanup APIs
     cleanup_apis(neo4j_session, common_job_parameters)
     label.sync_labels(neo4j_session, apis, gcp_update_tag, common_job_parameters)
@@ -522,9 +891,19 @@ def sync(
     # Cleanup API Gateway Configs
     cleanup_api_configs(neo4j_session, common_job_parameters)
     label.sync_labels(neo4j_session, configs, gcp_update_tag, common_job_parameters)
+    # API Gateway Config Policy Useers
+    config_users = get_api_config_policy_users(apigateway,configs,project_id,locations)
+    load_api_config_policy_users(neo4j_session,config_users,project_id,gcp_update_tag)
+    # Cleanup API Config Policy Users
+    cleanup_api_config_policy_users(neo4j_session,common_job_parameters)
     # API Gateway Gateways
     gateways = get_gateways(apigateway, project_id)
     load_gateways(neo4j_session, gateways, project_id, gcp_update_tag)
     # Cleanup API Gateway Gateways
     cleanup_api_gateways(neo4j_session, common_job_parameters)
     label.sync_labels(neo4j_session, gateways, gcp_update_tag, common_job_parameters)
+    # API Gateway Policy Useers
+    gateway_users = get_api_gateway_policy_users(apigateway,gateways,project_id,locations)
+    load_api_config_policy_users(neo4j_session,gateway_users,project_id,gcp_update_tag)
+    # Cleanup API Gateway Policy Users
+    cleanup_api_config_policy_users(neo4j_session,common_job_parameters)

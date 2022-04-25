@@ -36,6 +36,7 @@ def get_sql_instances(sql: Resource, project_id: str) -> List[Dict]:
             if response.get('items', []):
                 for item in response['items']:
                     item['id'] = f"project/{project_id}/instances/{item['name']}"
+                    item['ipV4Enabled'] = item.get('settings',{}).get('ipConfiguration',{}).get('ipV4Enabled',False)
                     sql_instances.append(item)
             request = sql.instances().list_next(previous_request=request, previous_response=response)
         return sql_instances
@@ -140,6 +141,7 @@ def _load_sql_instances_tx(tx: neo4j.Transaction, instances: List[Dict], project
         i.instanceType = instance.instanceType,
         i.connectionName = instance.connectionName,
         i.name = instance.name,
+        i.ipV4Enabled = instance.ipV4Enabled,
         i.region = instance.region,
         i.gceZone = instance.gceZone,
         i.secondaryGceZone = instance.secondaryGceZone,

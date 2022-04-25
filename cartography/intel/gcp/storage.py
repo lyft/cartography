@@ -31,6 +31,13 @@ def get_gcp_buckets(storage: Resource, project_id: str) -> Dict:
     try:
         req = storage.buckets().list(project=project_id)
         res = req.execute()
+        for item in res['items']:
+            acl = item.get('acl',[])
+            for item2 in acl:
+                item['entity'] = item2.get('entity',None)
+            defaultObjectAcl = item.get('defaultObjectAcl',[])
+            for item3 in defaultObjectAcl:
+                item['defaultentity'] = item3.get('entity',None)
         return res
     except HttpError as e:
         reason = compute._get_error_reason(e)
@@ -90,6 +97,9 @@ def transform_gcp_buckets(bucket_res: Dict) -> List[Dict]:
         bucket['storage_class'] = b.get('storageClass')
         bucket['time_created'] = b.get('timeCreated')
         bucket['updated'] = b.get('updated')
+        bucket['entity'] = b.get('entity',None)
+        bucket['defaultentity'] = b.get('defaultentity',None)
+        bucket['uniform_bucket_level_access'] = b.get('iamConfiguration',{}).get('uniformBucketLevelAccess',{}).get('enabled',None)
         bucket['versioning_enabled'] = b.get('versioning', {}).get('enabled', None)
         bucket['default_event_based_hold'] = b.get('defaultEventBasedHold', None)
         bucket['retention_period'] = b.get('retentionPolicy', {}).get('retentionPeriod', None)
@@ -135,6 +145,9 @@ def load_gcp_buckets(neo4j_session: neo4j.Session, buckets: List[Dict], gcp_upda
     bucket.meta_generation = {MetaGeneration},
     bucket.storage_class = {StorageClass},
     bucket.time_created = {TimeCreated},
+    bucket.entity = {Entity},
+    bucket.defaultentity = {DefaultEntity},
+    bucket.uniform_bucket_level_access = {UniformBucketLevelAccess},
     bucket.retention_period = {RetentionPeriod},
     bucket.iam_config_bucket_policy_only = {IamConfigBucketPolicyOnly},
     bucket.owner_entity = {OwnerEntity},
@@ -163,6 +176,9 @@ def load_gcp_buckets(neo4j_session: neo4j.Session, buckets: List[Dict], gcp_upda
             MetaGeneration=bucket['meta_generation'],
             StorageClass=bucket['storage_class'],
             TimeCreated=bucket['time_created'],
+            Entity = bucket['entity'],
+            DefaultEntity = bucket['defaultentity'],
+            UniformBucketLevelAccess = bucket['uniform_bucket_level_access'],
             RetentionPeriod=bucket['retention_period'],
             IamConfigBucketPolicyOnly=bucket['iam_config_bucket_policy_only'],
             OwnerEntity=bucket['owner_entity'],

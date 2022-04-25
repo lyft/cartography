@@ -37,7 +37,7 @@ def get_gcp_functions(function: Resource, project_id: str) -> List[Dict]:
         while request is not None:
             response = request.execute()
             for location in response['locations']:
-                location["id"] = location.get("name", None)
+                location["id"] = location.get("locationId", None)
                 regions.append(location)
             request = function.projects().locations().list_next(previous_request=request, previous_response=response)
     except HttpError as e:
@@ -82,6 +82,59 @@ def get_gcp_functions(function: Resource, project_id: str) -> List[Dict]:
         else:
             raise
 
+def get_function_policy_users(function: Resource, fns: List[Dict], project_id: str) -> List[Dict]:
+    """
+        Returns a list of users attached to IAM policy of a Function within the given project.
+
+        :type function: The GCP function resource object
+        :param function: The functions resource object created by googleapiclient.discovery.build()
+
+        :type fns: List
+        :param fns: The list of functions
+
+        :type project_id: str
+        :param project_id: Current Google Project Id
+
+        :rtype: list
+        :return: List of gcp function iam policy users
+    """
+    users = []
+    try:
+        for fn in fns:
+            fn['iam_policy'] = function.projects().locations().functions().getIamPolicy(resource=fn['name'])
+            bindings = fn.get('iam_policy',{}).get('bindings',[])
+            for binding in bindings:
+                for member in binding['members']:
+                    if member.startswith('user:'):
+                        usr = member[len('user:'):]
+                        users.append({
+                            'name': usr,
+                            'function_id': fn['name'],
+                        })
+                    elif member.startswith('allUsers'):
+                        usr = 'allUsers'
+                        users.append({
+                            'name': usr,
+                            'function_id': fn['name'],
+                        })
+                    elif member.startswith('allAuthenticatedUsers'):
+                        usr = 'allAuthenticatedUsers'
+                        users.append({
+                            'name': usr,
+                            'function_id': fn['name'],
+                        })
+        return users
+    except HttpError as e:
+        err = json.loads(e.content.decode('utf-8'))['error']
+        if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
+            logger.warning(
+                (
+                    "Could not retrieve iam policy of function on project %s due to permissions issues. Code: %s, Message: %s"
+                ), project_id, err['code'], err['message'],
+            )
+            return []
+        else:
+            raise
 
 @timeit
 def load_functions(session: neo4j.Session, data_list: List[Dict], project_id: str, update_tag: int) -> None:
@@ -120,6 +173,7 @@ def _load_functions_tx(tx: neo4j.Transaction, functions: List[Resource], project
         function.serviceAccountEmail = func.serviceAccountEmail,
         function.updateTime = func.updateTime,
         function.versionId = func.versionId,
+        function.ingressSettings = func.ingressSettings,
         function.network = func.network,
         function.maxInstances = func.maxInstances,
         function.vpcConnector = func.vpcConnector,
@@ -161,6 +215,66 @@ def cleanup_gcp_functions(neo4j_session: neo4j.Session, common_job_parameters: D
     """
     run_cleanup_job('gcp_function_cleanup.json', neo4j_session, common_job_parameters)
 
+@timeit
+def load_function_policy_users(session: neo4j.Session, data_list: List[Dict], project_id: str, update_tag: int) -> None:
+    session.write_transaction(load_function_policy_users_tx, data_list, project_id, update_tag)
+
+@timeit
+def load_function_policy_users_tx(tx: neo4j.Transaction, users: List[Dict], project_id: str, gcp_update_tag: int) -> None:
+    """
+        Ingest GCP Function Policy users into Neo4j
+
+        :type neo4j_session: Neo4j session object
+        :param neo4j session: The Neo4j session object
+
+        :type users: Dict
+        :param apis: A list of GCP API users
+
+        :type project_id: str
+        :param project_id: Current Google Project Id
+
+        :type gcp_update_tag: timestamp
+        :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
+
+        :rtype: NoneType
+        :return: Nothing
+    """
+    ingest_users = """
+    UNWIND {users} as u
+    MERGE (user:GCPFunctionUser:{id:u.name})
+    ON CREATE SET
+        user.firstseen = timestamp()
+    WITH user
+    MATCH (function:GCPFunction{id:u.function_id})
+    MERGE (user)-[r:USES]->(function)
+    ON CREATE SET
+        r.firstseen = timestamp(),
+        r.lastupdated = {gcp_update_tag}
+    """
+    tx.run(
+        ingest_users,
+        users=users,
+        ProjectId=project_id,
+        gcp_update_tag=gcp_update_tag,
+    )
+
+@timeit
+def cleanup_function_policy_users(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    """
+       Delete out-of-date GCP Function Policy Users
+
+       :type neo4j_session: The Neo4j session object
+       :param neo4j_session: The Neo4j session
+
+       :type common_job_parameters: dict
+       :param common_job_parameters: Dictionary of other job parameters to pass to Neo4j
+
+       :rtype: NoneType
+       :return: Nothing
+   """
+    run_cleanup_job('gcp_function_policy_users_cleanup.json', neo4j_session, common_job_parameters)
+
+
 
 @timeit
 def sync(
@@ -194,3 +308,7 @@ def sync(
     load_functions(neo4j_session, functions, project_id, gcp_update_tag)
     cleanup_gcp_functions(neo4j_session, common_job_parameters)
     label.sync_labels(neo4j_session, functions, gcp_update_tag, common_job_parameters)
+    # Function Policy Users
+    users = get_function_policy_users(function,functions,project_id)
+    load_function_policy_users(neo4j_session,users,project_id,gcp_update_tag)
+    cleanup_function_policy_users(neo4j_session,common_job_parameters)
