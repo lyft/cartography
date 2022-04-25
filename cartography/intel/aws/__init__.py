@@ -74,12 +74,6 @@ def _sync_one_account(
     if 'resourcegroupstaggingapi' in aws_requested_syncs:
         RESOURCE_FUNCTIONS['resourcegroupstaggingapi'](**sync_args)
 
-    run_analysis_job(
-        'aws_ec2_iaminstanceprofile.json',
-        neo4j_session,
-        common_job_parameters,
-    )
-
     merge_module_sync_metadata(
         neo4j_session,
         group_type='AWSAccount',
