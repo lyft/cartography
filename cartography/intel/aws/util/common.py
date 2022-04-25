@@ -5,7 +5,7 @@ from cartography.intel.aws.resources import RESOURCE_FUNCTIONS
 
 def parse_and_validate_aws_requested_syncs(aws_requested_syncs: str) -> List[str]:
     validated_resources: List[str] = []
-    for resource in aws_requested_syncs:
+    for resource in aws_requested_syncs.split(','):
         resource = resource.strip()
 
         if resource in RESOURCE_FUNCTIONS:
