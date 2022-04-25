@@ -77,7 +77,6 @@ def test_sync_multiple_accounts(
 @mock.patch('cartography.intel.aws.boto3.Session')
 @mock.patch('cartography.intel.aws.organizations')
 @mock.patch.object(cartography.intel.aws, '_sync_multiple_accounts', return_value=None)
-@mock.patch.object(cartography.intel.aws, 'run_analysis_job', return_value=None)
 def test_start_aws_ingestion(mock_run_analysis, mock_sync_multiple, mock_orgs, mock_boto3, neo4j_session):
     test_config = cartography.config.Config(
         neo4j_uri='bolt://localhost:7687',
@@ -86,9 +85,6 @@ def test_start_aws_ingestion(mock_run_analysis, mock_sync_multiple, mock_orgs, m
     )
     cartography.intel.aws.start_aws_ingestion(neo4j_session, test_config)
     assert mock_sync_multiple.call_count == 1
-
-    # Brittle, but here to ensure that our mock_run_analysis path is correct.
-    assert mock_run_analysis.call_count == 3
 
 
 @mock.patch('cartography.intel.aws.boto3.Session')
