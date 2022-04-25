@@ -77,7 +77,7 @@ def test_sync_multiple_accounts(
 @mock.patch('cartography.intel.aws.boto3.Session')
 @mock.patch('cartography.intel.aws.organizations')
 @mock.patch.object(cartography.intel.aws, '_sync_multiple_accounts', return_value=None)
-def test_start_aws_ingestion(mock_run_analysis, mock_sync_multiple, mock_orgs, mock_boto3, neo4j_session):
+def test_start_aws_ingestion(mock_sync_multiple, mock_orgs, mock_boto3, neo4j_session):
     test_config = cartography.config.Config(
         neo4j_uri='bolt://localhost:7687',
         update_tag=TEST_UPDATE_TAG,
