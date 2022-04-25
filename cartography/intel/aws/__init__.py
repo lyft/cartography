@@ -15,7 +15,6 @@ from cartography.config import Config
 from cartography.intel.aws.util.common import parse_and_validate_aws_requested_syncs
 from cartography.util import get_stats_client
 from cartography.util import merge_module_sync_metadata
-from cartography.util import run_analysis_job
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
@@ -211,22 +210,4 @@ def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
         config.update_tag,
         common_job_parameters,
         requested_syncs,
-    )
-
-    run_analysis_job(
-        'aws_ec2_asset_exposure.json',
-        neo4j_session,
-        common_job_parameters,
-    )
-
-    run_analysis_job(
-        'aws_ec2_keypair_analysis.json',
-        neo4j_session,
-        common_job_parameters,
-    )
-
-    run_analysis_job(
-        'aws_eks_asset_exposure.json',
-        neo4j_session,
-        common_job_parameters,
     )

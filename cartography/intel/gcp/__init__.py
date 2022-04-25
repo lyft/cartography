@@ -17,7 +17,6 @@ from cartography.intel.gcp import crm
 from cartography.intel.gcp import dns
 from cartography.intel.gcp import gke
 from cartography.intel.gcp import storage
-from cartography.util import run_analysis_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -248,21 +247,3 @@ def start_gcp_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
     projects = crm.get_gcp_projects(resources.crm_v1)
 
     _sync_multiple_projects(neo4j_session, resources, projects, config.update_tag, common_job_parameters)
-
-    run_analysis_job(
-        'gcp_compute_asset_inet_exposure.json',
-        neo4j_session,
-        common_job_parameters,
-    )
-
-    run_analysis_job(
-        'gcp_gke_asset_exposure.json',
-        neo4j_session,
-        common_job_parameters,
-    )
-
-    run_analysis_job(
-        'gcp_gke_basic_auth.json',
-        neo4j_session,
-        common_job_parameters,
-    )
