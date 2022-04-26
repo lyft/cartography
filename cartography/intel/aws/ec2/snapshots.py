@@ -4,6 +4,7 @@ from typing import List
 
 import boto3
 import neo4j
+from botocore.exceptions import ClientError
 
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
@@ -36,8 +37,16 @@ def get_snapshots(boto3_session: boto3.session.Session, region: str, in_use_snap
     self_owned_snapshot_ids = {s['SnapshotId'] for s in snapshots}
     other_snapshot_ids = set(in_use_snapshot_ids) - self_owned_snapshot_ids
     if other_snapshot_ids:
-        for page in paginator.paginate(SnapshotIds=list(other_snapshot_ids)):
-            snapshots.extend(page['Snapshots'])
+        try:
+            for page in paginator.paginate(SnapshotIds=list(other_snapshot_ids)):
+                snapshots.extend(page['Snapshots'])
+        except ClientError as e:
+            if e.response['Error']['Code'] == 'InvalidSnapshot.NotFound':
+                logger.warning(f"Failed to retrieve page of in-use, \
+                    not owned snapshots. Continuing anyway. Error - {e}")
+            else:
+                raise
+
     return snapshots
 
 
