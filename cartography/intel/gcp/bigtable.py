@@ -54,7 +54,7 @@ def get_bigtable_instances(bigtable: Resource, project_id: str) -> List[Dict]:
 
 
 @timeit
-def get_bigtable_clusters(bigtable: Resource, bigtable_instances: List[Dict], project_id: str) -> List[Dict]:
+def get_bigtable_clusters(bigtable: Resource, bigtable_instances: List[Dict], project_id: str, regions: list) -> List[Dict]:
     """
         Returns a list of bigtable clusters for a given project.
 
@@ -90,7 +90,11 @@ def get_bigtable_clusters(bigtable: Resource, bigtable_instances: List[Dict], pr
                             cluster['region'] = x[0]
                             if len(x) > 1:
                                 cluster['region'] = f"{x[0]}-{x[1]}"
-                        bigtable_clusters.append(cluster)
+                        if regions is None:
+                            bigtable_clusters.append(cluster)
+                        else:
+                            if cluster['region'] in regions or cluster['region'] == 'global':
+                                bigtable_clusters.append(cluster)
                 request = bigtable.projects().instances().clusters().list_next(
                     previous_request=request, previous_response=response,
                 )
@@ -159,7 +163,7 @@ def get_bigtable_cluster_backups(bigtable: Resource, bigtable_clusters: List[Dic
 
 
 @timeit
-def get_get_bigtable_tables(bigtable: Resource, bigtable_instances: List[Dict], project_id: str) -> List[Dict]:
+def get_get_bigtable_tables(bigtable: Resource, bigtable_instances: List[Dict], project_id: str, regions: list) -> List[Dict]:
     """
         Returns a list of bigtable tables for a given project.
 
@@ -188,7 +192,11 @@ def get_get_bigtable_tables(bigtable: Resource, bigtable_instances: List[Dict], 
                         table['instance_id'] = instance['id']
                         table['id'] = table['name']
                         table['region'] = instance.get('region', 'global')
-                        bigtable_tables.append(table)
+                        if regions is None:
+                            bigtable_tables.append(table)
+                        else:
+                            if table['region'] in regions or table['region'] == 'global':
+                                bigtable_tables.append(table)
                 request = bigtable.projects().instances().tables().list_next(
                     previous_request=request, previous_response=response,
                 )
@@ -436,7 +444,7 @@ def cleanup_bigtable(neo4j_session: neo4j.Session, common_job_parameters: Dict) 
 @timeit
 def sync(
     neo4j_session: neo4j.Session, bigtable: Resource, project_id: str, gcp_update_tag: int,
-    common_job_parameters: Dict,
+    common_job_parameters: Dict, regions: list,
 ) -> None:
     """
         Get GCP Cloud Bigtable Entities using the Cloud Bigtable resource object,
@@ -466,7 +474,7 @@ def sync(
     load_bigtable_instances(neo4j_session, bigtable_instances, project_id, gcp_update_tag)
     label.sync_labels(neo4j_session, bigtable_instances, gcp_update_tag, common_job_parameters)
     # BIGTABLE CLUSTERS
-    bigtable_clusters = get_bigtable_clusters(bigtable, bigtable_instances, project_id)
+    bigtable_clusters = get_bigtable_clusters(bigtable, bigtable_instances, project_id, regions)
     load_bigtable_clusters(neo4j_session, bigtable_clusters, project_id, gcp_update_tag)
     label.sync_labels(neo4j_session, bigtable_clusters, gcp_update_tag, common_job_parameters)
     # BIGTABLE CLUSTER BACKUPS
@@ -474,7 +482,7 @@ def sync(
     load_bigtable_cluster_backups(neo4j_session, cluster_backups, project_id, gcp_update_tag)
     label.sync_labels(neo4j_session, cluster_backups, gcp_update_tag, common_job_parameters)
     # BIGTABLE TABLES
-    bigtable_tables = get_get_bigtable_tables(bigtable, bigtable_instances, project_id)
+    bigtable_tables = get_get_bigtable_tables(bigtable, bigtable_instances, project_id, regions)
     load_bigtable_tables(neo4j_session, bigtable_tables, project_id, gcp_update_tag)
     cleanup_bigtable(neo4j_session, common_job_parameters)
     label.sync_labels(neo4j_session, bigtable_tables, gcp_update_tag, common_job_parameters)

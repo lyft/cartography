@@ -298,7 +298,7 @@ def _services_enabled_on_project(serviceusage: Resource, project_id: str) -> Set
 
 
 def _sync_single_project(
-    neo4j_session: neo4j.Session, resources: Resource, requested_syncs: List[str], project_id: str, gcp_update_tag: int,
+    neo4j_session: neo4j.Session, resources: Resource, requested_syncs: List[str], project_id: str, config: Config,
     common_job_parameters: Dict,
 ) -> None:
     """
@@ -311,6 +311,9 @@ def _sync_single_project(
     :param common_job_parameters: Other parameters sent to Neo4j
     :return: Nothing
     """
+    gcp_update_tag = config.update_tag
+    regions = config.params.get('regions', None)
+
     # Determine the resources available on the project.
     enabled_services = _services_enabled_on_project(resources.serviceusage, project_id)
     for request in requested_syncs:
@@ -324,7 +327,7 @@ def _sync_single_project(
             else:
                 RESOURCE_FUNCTIONS[request](
                     neo4j_session, getattr(resources, request),
-                    project_id, gcp_update_tag, common_job_parameters,
+                    project_id, gcp_update_tag, common_job_parameters, regions,
                 )
         else:
             raise ValueError(f'GCP sync function "{request}" was specified but does not exist. Did you misspell it?')
@@ -332,7 +335,7 @@ def _sync_single_project(
 
 def _sync_multiple_projects(
     neo4j_session: neo4j.Session, resources: Resource, requested_syncs: List[str], projects: List[Dict],
-    gcp_update_tag: int, common_job_parameters: Dict,
+    config: Config, common_job_parameters: Dict,
 ) -> None:
     """
     Handles graph sync for multiple GCP projects.
@@ -347,7 +350,7 @@ def _sync_multiple_projects(
     :return: Nothing
     """
     logger.info("Syncing %d GCP projects.", len(projects))
-    crm.sync_gcp_projects(neo4j_session, projects, gcp_update_tag, common_job_parameters)
+    crm.sync_gcp_projects(neo4j_session, projects, config.update_tag, common_job_parameters)
 
     for project in projects:
         project_id = project['projectId']
@@ -355,7 +358,7 @@ def _sync_multiple_projects(
         logger.info("Syncing GCP project %s.", project_id)
         _sync_single_project(
             neo4j_session, resources, requested_syncs,
-            project_id, gcp_update_tag, common_job_parameters,
+            project_id, config, common_job_parameters,
         )
 
     del common_job_parameters["GCP_PROJECT_ID"]
@@ -412,7 +415,7 @@ def start_gcp_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
 
     _sync_multiple_projects(
         neo4j_session, resources, requested_syncs,
-        projects, config.update_tag, common_job_parameters,
+        projects, config, common_job_parameters,
     )
 
     # run_analysis_job(

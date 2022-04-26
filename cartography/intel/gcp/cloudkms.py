@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
-def get_kms_locations(kms: Resource, project_id: str) -> List[Dict]:
+def get_kms_locations(kms: Resource, project_id: str, regions: list) -> List[Dict]:
     """
         Returns a list of kms locations for a given project.
 
@@ -36,7 +36,11 @@ def get_kms_locations(kms: Resource, project_id: str) -> List[Dict]:
             if response.get('locations', []):
                 for location in response['locations']:
                     location['id'] = location['name']
-                    locations.append(location)
+                    if regions is None:
+                        locations.append(location)
+                    else:
+                        if location['locationId'] in regions or location['locationId'] == 'global':
+                            locations.append(location)
             request = kms.projects().locations().list_next(previous_request=request, previous_response=response)
         return locations
     except HttpError as e:
@@ -312,7 +316,7 @@ def cleanup_gcp_kms(neo4j_session: neo4j.Session, common_job_parameters: Dict) -
 @timeit
 def sync(
     neo4j_session: neo4j.Session, kms: Resource, project_id: str, gcp_update_tag: int,
-    common_job_parameters: Dict,
+    common_job_parameters: Dict, regions: list
 ) -> None:
     """
     Get GCP Cloud KMS using the Cloud KMS resource object, ingest to Neo4j, and clean up old data.
@@ -337,7 +341,8 @@ def sync(
     """
     logger.info("Syncing GCP Cloud KMS for project %s.", project_id)
     # KMS LOCATIONS
-    locations = get_kms_locations(kms, project_id)
+    locations = get_kms_locations(kms, project_id, regions)
+    print(locations)
     load_kms_locations(neo4j_session, locations, project_id, gcp_update_tag)
     label.sync_labels(neo4j_session, locations, gcp_update_tag, common_job_parameters)
     # KMS KEYRINGS

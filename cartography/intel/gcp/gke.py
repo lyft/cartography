@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
-def get_gke_clusters(container: Resource, project_id: str) -> Dict:
+def get_gke_clusters(container: Resource, project_id: str, regions: list) -> Dict:
     """
     Returns a GCP response object containing a list of GKE clusters within the given project.
 
@@ -30,9 +30,15 @@ def get_gke_clusters(container: Resource, project_id: str) -> Dict:
     try:
         req = container.projects().zones().clusters().list(projectId=project_id, zone='-')
         res = req.execute()
-        for item in req:
+        data = []
+        for item in res.get('clusters', []):
             item['id'] = f"project/{project_id}/clusters/{item['name']}"
-        return res
+            if regions is None:
+                data.append(item)
+            else:
+                if item['zone'][:-2] in regions:
+                    data.append(item)
+        return data
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
         if err['status'] == 'PERMISSION_DENIED':
@@ -104,7 +110,7 @@ def load_gke_clusters(neo4j_session: neo4j.Session, cluster_resp: Dict, project_
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {gcp_update_tag}
     """
-    for cluster in cluster_resp.get('clusters', []):
+    for cluster in cluster_resp:
         cluster['region'] = cluster.get('zone')[:-2]
 
         neo4j_session.run(
@@ -175,7 +181,7 @@ def cleanup_gke_clusters(neo4j_session: neo4j.Session, common_job_parameters: Di
 @timeit
 def sync(
     neo4j_session: neo4j.Session, container: Resource, project_id: str, gcp_update_tag: int,
-    common_job_parameters: Dict,
+    common_job_parameters: Dict, regions: list
 ) -> None:
     """
     Get GCP GKE Clusters using the Container resource object, ingest to Neo4j, and clean up old data.
@@ -199,7 +205,7 @@ def sync(
     :return: Nothing
     """
     logger.info("Syncing Compute objects for project %s.", project_id)
-    gke_res = get_gke_clusters(container, project_id)
+    gke_res = get_gke_clusters(container, project_id, regions)
     load_gke_clusters(neo4j_session, gke_res, project_id, gcp_update_tag)
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gke_clusters(neo4j_session, common_job_parameters)

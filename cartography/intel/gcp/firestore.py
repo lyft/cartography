@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
-def get_firestore_databases(firestore: Resource, project_id: str) -> List[Dict]:
+def get_firestore_databases(firestore: Resource, project_id: str, regions: list) -> List[Dict]:
     """
         Returns a list of firestore databases for a given project.
 
@@ -35,7 +35,11 @@ def get_firestore_databases(firestore: Resource, project_id: str) -> List[Dict]:
         if response.get('databases', []):
             for database in response['databases']:
                 database['id'] = database['name']
-                firestore_databases.append(database)
+                if regions is None:
+                    database.append(database)
+                else:
+                    if database['locationId'] in regions or database['locationId'] == 'global':
+                        database.append(database)
         return firestore_databases
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -224,7 +228,7 @@ def cleanup_firestore(neo4j_session: neo4j.Session, common_job_parameters: Dict)
 @timeit
 def sync(
     neo4j_session: neo4j.Session, firestore: Resource, project_id: str, gcp_update_tag: int,
-    common_job_parameters: Dict,
+    common_job_parameters: Dict, regions: list
 ) -> None:
     """
         Get GCP Cloud Firestore using the Cloud Firestore resource object, ingest to Neo4j, and clean up old data.
@@ -249,7 +253,7 @@ def sync(
     """
     logger.info("Syncing GCP Cloud Firestore for project %s.", project_id)
     # FIRESTORE DATABASES
-    firestore_databases = get_firestore_databases(firestore, project_id)
+    firestore_databases = get_firestore_databases(firestore, project_id, regions)
     load_firestore_databases(neo4j_session, firestore_databases, project_id, gcp_update_tag)
     label.sync_labels(neo4j_session, firestore_databases, gcp_update_tag, common_job_parameters)
     # FIRESTORE INDEXES
