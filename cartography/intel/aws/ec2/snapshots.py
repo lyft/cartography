@@ -37,14 +37,12 @@ def get_snapshots(boto3_session: boto3.session.Session, region: str, in_use_snap
     self_owned_snapshot_ids = {s['SnapshotId'] for s in snapshots}
     other_snapshot_ids = set(in_use_snapshot_ids) - self_owned_snapshot_ids
     if other_snapshot_ids:
+        paginator = client.get_paginator('describe_snapshots')
         try:
             for page in paginator.paginate(SnapshotIds=list(other_snapshot_ids)):
                 snapshots.extend(page['Snapshots'])
         except ClientError as e:
-            if (
-                e.response['Error']['Code'] == 'InvalidSnapshot.NotFound' or
-                e.response['Error']['Code'] == 'InvalidParameterValue'
-            ):
+            if e.response['Error']['Code'] == 'InvalidSnapshot.NotFound':
                 logger.warning(f"Failed to retrieve page of in-use, \
                     not owned snapshots. Continuing anyway. Error - {e}")
             else:
