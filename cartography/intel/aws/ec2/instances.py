@@ -379,7 +379,9 @@ def _load_ec2_instance_ebs_tx(
         UNWIND {ebs_mappings_list} as em
             MERGE (vol:EBSVolume{id: em.Ebs.VolumeId})
             ON CREATE SET vol.firstseen = timestamp()
-            SET vol.lastupdated = {update_tag}, vol.deleteontermination = em.Ebs.DeleteOnTermination
+            SET vol.lastupdated = {update_tag},
+                vol.deleteontermination = em.Ebs.DeleteOnTermination,
+                vol.snapshotid = vol.SnapshotId
             WITH vol, em
             MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
             MERGE (aa)-[r:RESOURCE]->(vol)
