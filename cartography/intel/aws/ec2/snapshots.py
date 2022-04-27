@@ -36,11 +36,7 @@ def get_snapshots(boto3_session: boto3.session.Session, region: str, in_use_snap
     # fetch in-use snapshots not in self_owned snapshots
     self_owned_snapshot_ids = {s['SnapshotId'] for s in snapshots}
     other_snapshot_ids = set(in_use_snapshot_ids) - self_owned_snapshot_ids
-    logger.info(f'in use snapshots {in_use_snapshot_ids}')
-    logger.info(f'owned snapshots {self_owned_snapshot_ids}')
-    logger.info(f'other snapshots {other_snapshot_ids}')
     if other_snapshot_ids:
-        paginator = client.get_paginator('describe_snapshots')
         try:
             for page in paginator.paginate(SnapshotIds=list(other_snapshot_ids)):
                 snapshots.extend(page['Snapshots'])
