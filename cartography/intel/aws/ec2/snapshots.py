@@ -21,7 +21,7 @@ def get_snapshots_in_use(neo4j_session: neo4j.Session, region: str, current_aws_
     RETURN v.snapshotid as snapshot
     """
     results = neo4j_session.run(query, AWS_ACCOUNT_ID=current_aws_account_id, Region=region)
-    return [r['snapshot'] for r in results]
+    return [r['snapshot'] for r in results if r['snapshot']]
 
 
 @timeit
