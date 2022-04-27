@@ -500,6 +500,7 @@ def _load_public_ip_addresses_tx(
     n.type = address.type,
     n.location = address.location,
     n.region = address.location
+    n.isPublicFacing = true,
     SET n.lastupdated = {update_tag},
     n.name = address.name,
     n.etag=address.etag
