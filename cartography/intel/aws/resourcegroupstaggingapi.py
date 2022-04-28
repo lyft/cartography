@@ -1,4 +1,5 @@
 import logging
+from os import access
 from string import Template
 from typing import Dict
 from typing import List
@@ -134,12 +135,13 @@ def _load_tags_tx(
     tag_data: Dict,
     resource_type: str,
     region: str,
+    current_aws_account_id: str,
     aws_update_tag: int,
 ) -> None:
     INGEST_TAG_TEMPLATE = Template("""
     UNWIND {TagData} as tag_mapping
         UNWIND tag_mapping.Tags as input_tag
-            MATCH (resource:$resource_label{$property:tag_mapping.resource_id})
+            MATCH (a:AWSAccount{id:{Account}})-[res:RESOURCE]->(resource:$resource_label{$property:tag_mapping.resource_id})
             MERGE(aws_tag:AWSTag:Tag{id:input_tag.Key + ":" + input_tag.Value})
             ON CREATE SET aws_tag.firstseen = timestamp()
 
@@ -161,12 +163,17 @@ def _load_tags_tx(
         TagData=tag_data,
         UpdateTag=aws_update_tag,
         Region=region,
+        Account=current_aws_account_id
     )
 
 
 @timeit
 def load_tags(
-    neo4j_session: neo4j.Session, tag_data: Dict, resource_type: str, region: str,
+    neo4j_session: neo4j.Session,
+    tag_data: Dict,
+    resource_type: str,
+    region: str,
+    current_aws_account_id: str,
     aws_update_tag: int,
 ) -> None:
     for tag_data_batch in batch(tag_data, size=100):
@@ -175,6 +182,7 @@ def load_tags(
             tag_data=tag_data_batch,
             resource_type=resource_type,
             region=region,
+            current_aws_account_id=current_aws_account_id,
             aws_update_tag=aws_update_tag,
         )
 
@@ -214,5 +222,12 @@ def sync(
             tag_data = get_tags(boto3_session, [resource_type], region)
             transform_tags(tag_data, resource_type)
             logger.info(f"Loading {len(tag_data)} tags for resource type {resource_type}")
-            load_tags(neo4j_session, tag_data, resource_type, region, update_tag)
+            load_tags(
+                neo4j_session=neo4j_session,
+                tag_data=tag_data,
+                resource_type=resource_type,
+                region=region,
+                current_aws_account_id=current_aws_account_id,
+                update_tag=update_tag
+            )
     cleanup(neo4j_session, common_job_parameters)
