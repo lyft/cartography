@@ -4,6 +4,7 @@ import cartography.intel.aws.ec2
 import cartography.intel.aws.resourcegroupstaggingapi as rgta
 import tests.data.aws.ec2.instances
 import tests.data.aws.resourcegroupstaggingapi
+from tests.integration.cartography.intel.aws.common import create_test_account
 
 
 TEST_ACCOUNT_ID = '1234'
@@ -12,6 +13,7 @@ TEST_UPDATE_TAG = 123456789
 
 
 def _ensure_local_neo4j_has_test_ec2_instance_data(neo4j_session):
+    create_test_account(neo4j_session, TEST_ACCOUNT_ID, TEST_UPDATE_TAG)
     data = tests.data.aws.ec2.instances.DESCRIBE_INSTANCES['Reservations']
     cartography.intel.aws.ec2.instances.load_ec2_instances(
         neo4j_session, data, TEST_REGION, TEST_ACCOUNT_ID, TEST_UPDATE_TAG,
@@ -31,6 +33,7 @@ def test_transform_and_load_ec2_tags(neo4j_session):
         get_resources_response,
         resource_type,
         TEST_REGION,
+        TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG,
     )
     expected = {
@@ -58,6 +61,7 @@ def test_transform_and_load_ec2_tags(neo4j_session):
         new_response,
         resource_type,
         TEST_REGION,
+        TEST_ACCOUNT_ID,
         new_update_tag,
     )
     neo4j_session.run('MATCH (i:EC2Instance) DETACH DELETE (i) RETURN COUNT(*) as TotalCompleted')
