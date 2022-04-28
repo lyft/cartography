@@ -128,7 +128,7 @@ def get_api_configs(apigateway: Resource, project_id: str, regions: list) -> Lis
                 res = req.execute()
                 if res.get('apiConfigs', []):
                     for apiConfig in res['apiConfigs']:
-                        apiConfig['api_id'] = f"projects/{project_id}/locations/global/apis/\
+                        apiConfig['api_id'] = f"projects/{project_id}/locations/{region}/apis/\
                             {apiConfig.get('name').split('/')[-3]}"
                         apiConfig['id'] = apiConfig['name']
                         apiConfig['project_id'] = project_id
