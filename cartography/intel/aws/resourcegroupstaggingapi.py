@@ -1,5 +1,4 @@
 import logging
-from os import access
 from string import Template
 from typing import Dict
 from typing import List
@@ -141,8 +140,10 @@ def _load_tags_tx(
     INGEST_TAG_TEMPLATE = Template("""
     UNWIND {TagData} as tag_mapping
         UNWIND tag_mapping.Tags as input_tag
-            MATCH (a:AWSAccount{id:{Account}})-[res:RESOURCE]->(resource:$resource_label{$property:tag_mapping.resource_id})
-            MERGE(aws_tag:AWSTag:Tag{id:input_tag.Key + ":" + input_tag.Value})
+            MATCH
+            (a:AWSAccount{id:{Account}})-[res:RESOURCE]->(resource:$resource_label{$property:tag_mapping.resource_id})
+            MERGE
+            (aws_tag:AWSTag:Tag{id:input_tag.Key + ":" + input_tag.Value})
             ON CREATE SET aws_tag.firstseen = timestamp()
 
             SET aws_tag.lastupdated = {UpdateTag},
@@ -163,7 +164,7 @@ def _load_tags_tx(
         TagData=tag_data,
         UpdateTag=aws_update_tag,
         Region=region,
-        Account=current_aws_account_id
+        Account=current_aws_account_id,
     )
 
 
@@ -228,6 +229,6 @@ def sync(
                 resource_type=resource_type,
                 region=region,
                 current_aws_account_id=current_aws_account_id,
-                update_tag=update_tag
+                update_tag=update_tag,
             )
     cleanup(neo4j_session, common_job_parameters)
