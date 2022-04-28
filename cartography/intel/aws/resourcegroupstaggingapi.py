@@ -229,6 +229,6 @@ def sync(
                 resource_type=resource_type,
                 region=region,
                 current_aws_account_id=current_aws_account_id,
-                update_tag=update_tag,
+                aws_update_tag=update_tag,
             )
     cleanup(neo4j_session, common_job_parameters)
