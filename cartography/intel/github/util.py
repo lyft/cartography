@@ -37,7 +37,10 @@ def call_github_api(query: str, variables: str, token: str, api_url: str) -> Dic
     response.raise_for_status()
     response_json = response.json()
     if "errors" in response_json:
-        logger.error(response_json["errors"])
+        logger.warning(
+            f'call_github_api() response has errors, please investigate. Raw response: {response_json["errors"]}; '
+            f'continuing sync.',
+        )
     return response_json
 
 
