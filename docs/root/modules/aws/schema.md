@@ -2677,7 +2677,7 @@ Representation of an AWS EC2 [Elastic IP address](https://docs.aws.amazon.com/AW
 |-------|-------------|
 | firstseen| Timestamp of when a sync job first discovered this node  |
 | lastupdated |  Timestamp of the last time the node was updated |
-| **id** | The Allocation ID of the elastic IP address |
+| **id** | The Elastic IP address |
 | instance\_id | The ID of the instance that the address is associated with (if any). |
 | public\_ip | The Elastic IP address. |
 | allocation\_id | The ID representing the allocation of the address for use with EC2-VPC. |
