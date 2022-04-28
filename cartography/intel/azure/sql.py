@@ -31,7 +31,7 @@ def get_client(credentials: Credentials, subscription_id: str) -> SqlManagementC
 
 
 @timeit
-def get_server_list(credentials: Credentials, subscription_id: str) -> List[Dict]:
+def get_server_list(credentials: Credentials, subscription_id: str, regions: list) -> List[Dict]:
     """
     Returning the list of Azure SQL servers.
     """
@@ -49,13 +49,18 @@ def get_server_list(credentials: Credentials, subscription_id: str) -> List[Dict
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving servers - {e}")
         return []
-
+    server_data = []
     for server in server_list:
         x = server['id'].split('/')
         server['resourceGroup'] = x[x.index('resourceGroups') + 1]
         server['publicNetworkAccess'] = server.get('properties', {}).get('public_network_access', 'Disabled')
+        if regions is None:
+            server_data.append(server)
+        else:
+            if server.get('location') in regions or server.get('location') == 'global':
+                server_data.append(server)
 
-    return server_list
+    return server_data
 
 
 @timeit
@@ -944,10 +949,10 @@ def cleanup_azure_sql_servers(
 @timeit
 def sync(
         neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str,
-        sync_tag: int, common_job_parameters: Dict,
+        sync_tag: int, common_job_parameters: Dict, regions: list
 ) -> None:
     logger.info("Syncing Azure SQL for subscription '%s'.", subscription_id)
-    server_list = get_server_list(credentials, subscription_id)
+    server_list = get_server_list(credentials, subscription_id, regions)
     load_server_data(neo4j_session, subscription_id, server_list, sync_tag)
     sync_server_details(neo4j_session, credentials, subscription_id, server_list, sync_tag)
     cleanup_azure_sql_servers(neo4j_session, common_job_parameters)

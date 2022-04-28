@@ -106,17 +106,23 @@ def get_client(
 
 
 @timeit
-def get_function_apps_list(client: WebSiteManagementClient) -> List[Dict]:
+def get_function_apps_list(client: WebSiteManagementClient, regions: list) -> List[Dict]:
     try:
         function_app_list = list(
             map(lambda x: x.as_dict(), client.web_apps.list()),
         )
+        function_list = []
         for function in function_app_list:
             x = function['id'].split('/')
             function['resource_group'] = x[x.index('resourceGroups') + 1]
             function['hostNamesDisabled'] = function.get('properties', {}).get('host_names_disabled', True)
-
-        return function_app_list
+            function['location'] = function.get('location', '').replace(" ", "").lower()
+            if regions is None:
+                function_list.append(function)
+            else:
+                if function.get('location') in regions or function.get('location') == 'global':
+                    function_list.append(function)
+        return function_list
 
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving function apps - {e}")
@@ -178,9 +184,10 @@ def sync_function_apps(
     subscription_id: str,
     update_tag: int,
     common_job_parameters: Dict,
+    regions: list
 ) -> None:
     client = get_client(credentials, subscription_id)
-    function_apps_list = get_function_apps_list(client)
+    function_apps_list = get_function_apps_list(client, regions)
     load_function_apps(
         neo4j_session, subscription_id, function_apps_list,
         update_tag,
@@ -872,6 +879,7 @@ def sync(
     subscription_id: str,
     update_tag: int,
     common_job_parameters: Dict,
+    regions: list
 ) -> None:
     logger.info(
         "Syncing function apps for subscription '%s'.",
@@ -880,5 +888,5 @@ def sync(
 
     sync_function_apps(
         neo4j_session, credentials, subscription_id, update_tag,
-        common_job_parameters,
+        common_job_parameters, regions
     )

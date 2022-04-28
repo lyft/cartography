@@ -68,17 +68,21 @@ def get_container_instance_Client(credentials: Credentials, subscription_id: str
 
 
 @timeit
-def get_aks_list(credentials: Credentials, subscription_id: str) -> List[Dict]:
+def get_aks_list(credentials: Credentials, subscription_id: str, regions: list) -> List[Dict]:
     try:
         client = get_client(credentials, subscription_id)
         aks_list = list(map(lambda x: x.as_dict(), client.managed_clusters.list()))
-
+        aks_data = []
         for aks in aks_list:
             x = aks['id'].split('/')
             aks['resource_group'] = x[x.index('resourcegroups') + 1]
             aks['publicNetworkAccess'] = aks.get('properties', {}).get('public_network_access', 'Disabled')
-
-        return aks_list
+            if regions is None:
+                aks_data.append(aks)
+            else:
+                if aks.get('location') in regions or aks.get('location') == 'global':
+                    aks_data.append(aks)
+        return aks_data
 
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving AKS - {e}")
@@ -118,23 +122,28 @@ def cleanup_aks(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> No
 
 def sync_aks(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict,
+    common_job_parameters: Dict, regions: list
 ) -> None:
-    aks_list = get_aks_list(credentials, subscription_id)
+    aks_list = get_aks_list(credentials, subscription_id, regions)
     load_aks(neo4j_session, subscription_id, aks_list, update_tag)
     cleanup_aks(neo4j_session, common_job_parameters)
 
 
 @timeit
-def get_container_registries_list(client: ContainerRegistryManagementClient) -> List[Dict]:
+def get_container_registries_list(client: ContainerRegistryManagementClient, regions: list) -> List[Dict]:
     try:
         container_registries_list = list(map(lambda x: x.as_dict(), client.registries.list()))
-
+        registry_data = []
         for registry in container_registries_list:
             x = registry['id'].split('/')
             registry['resource_group'] = x[x.index('resourceGroups') + 1]
+            if regions is None:
+                registry_data.append(registry)
+            else:
+                if registry.get('location') in regions or registry.get('location') == 'global':
+                    registry_data.append(registry)
 
-        return container_registries_list
+        return registry_data
 
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving registries - {e}")
@@ -175,10 +184,10 @@ def cleanup_container_registries(neo4j_session: neo4j.Session, common_job_parame
 
 def sync_container_registries(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict,
+    common_job_parameters: Dict, regions: list
 ) -> None:
     client = get_container_registry_Client(credentials, subscription_id)
-    container_registries_list = get_container_registries_list(client)
+    container_registries_list = get_container_registries_list(client, regions)
     load_container_registries(neo4j_session, subscription_id, container_registries_list, update_tag)
     cleanup_container_registries(neo4j_session, common_job_parameters)
     sync_container_registry_replications(
@@ -477,15 +486,20 @@ def sync_container_registry_webhooks(
 
 
 @timeit
-def get_container_groups_list(client: ContainerInstanceManagementClient) -> List[Dict]:
+def get_container_groups_list(client: ContainerInstanceManagementClient, regions: list) -> List[Dict]:
     try:
         container_groups_list = list(map(lambda x: x.as_dict(), client.container_groups.list()))
-
+        group_data = []
         for group in container_groups_list:
             x = group['id'].split('/')
             group['resource_group'] = x[x.index('resourceGroups') + 1]
+            if regions is None:
+                group_data.append(group)
+            else:
+                if group.get('location') in regions or group.get('location') == 'global':
+                    group_data.append(group)
 
-        return container_groups_list
+        return group_data
 
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving Container Group - {e}")
@@ -526,10 +540,10 @@ def cleanup_container_groups(neo4j_session: neo4j.Session, common_job_parameters
 
 def sync_container_groups(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict,
+    common_job_parameters: Dict, regions: list
 ) -> None:
     client = get_container_instance_Client(credentials, subscription_id)
-    container_groups_list = get_container_groups_list(client)
+    container_groups_list = get_container_groups_list(client, regions)
     load_container_groups(neo4j_session, subscription_id, container_groups_list, update_tag)
     cleanup_container_groups(neo4j_session, common_job_parameters)
     sync_containers(neo4j_session, container_groups_list, update_tag, common_job_parameters)
@@ -597,12 +611,12 @@ def sync_containers(
 @timeit
 def sync(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict,
+    common_job_parameters: Dict, regions: list
 
 
 ) -> None:
     logger.info("Syncing AKS for subscription '%s'.", subscription_id)
 
-    sync_aks(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
-    sync_container_registries(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
-    sync_container_groups(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
+    sync_aks(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters, regions)
+    sync_container_registries(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters, regions)
+    sync_container_groups(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters, regions)

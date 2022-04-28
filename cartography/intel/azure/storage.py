@@ -28,7 +28,7 @@ def get_client(credentials: Credentials, subscription_id: str) -> StorageManagem
 
 
 @timeit
-def get_storage_account_list(credentials: Credentials, subscription_id: str) -> List[Dict]:
+def get_storage_account_list(credentials: Credentials, subscription_id: str, regions: list) -> List[Dict]:
     """
     Getting the list of storage accounts
     """
@@ -46,13 +46,17 @@ def get_storage_account_list(credentials: Credentials, subscription_id: str) -> 
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving storage accounts - {e}")
         return []
-
+    account_list = []
     for storage_account in storage_account_list:
         x = storage_account['id'].split('/')
         storage_account['resourceGroup'] = x[x.index('resourceGroups') + 1]
         storage_account['allowBlobPublicAccess'] = storage_account.get('properties', {}).get('allow_blob_public_access', False)
-
-    return storage_account_list
+        if regions is None:
+            account_list.append(storage_account)
+        else:
+            if storage_account.get('location') in regions or storage_account.get('location') == 'global':
+                account_list.append(storage_account)
+    return account_list
 
 
 @timeit
@@ -810,10 +814,10 @@ def cleanup_azure_storage_accounts(
 @timeit
 def sync(
         neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str,
-        sync_tag: int, common_job_parameters: Dict,
+        sync_tag: int, common_job_parameters: Dict, regions: list
 ) -> None:
     logger.info("Syncing Azure Storage for subscription '%s'.", subscription_id)
-    storage_account_list = get_storage_account_list(credentials, subscription_id)
+    storage_account_list = get_storage_account_list(credentials, subscription_id, regions)
     load_storage_account_data(neo4j_session, subscription_id, storage_account_list, sync_tag)
     sync_storage_account_details(neo4j_session, credentials, subscription_id, storage_account_list, sync_tag)
     cleanup_azure_storage_accounts(neo4j_session, common_job_parameters)

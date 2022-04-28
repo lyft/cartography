@@ -42,11 +42,11 @@ def get_client(credentials: Credentials, subscription_id: str) -> ComputeManagem
     return client
 
 
-def get_vm_list(credentials: Credentials, subscription_id: str) -> List[Dict]:
+def get_vm_list(credentials: Credentials, subscription_id: str, regions: list) -> List[Dict]:
     try:
         client = get_client(credentials, subscription_id)
         vm_list = list(map(lambda x: x.as_dict(), client.virtual_machines.list_all()))
-
+        vm_data = []
         for vm in vm_list:
             x = vm['id'].split('/')
             vm['resource_group'] = x[x.index('resourceGroups') + 1]
@@ -60,7 +60,12 @@ def get_vm_list(credentials: Credentials, subscription_id: str) -> List[Dict]:
             for config in vm.get('network_profile', {}).get('network_interface_configurations', []):
                 network_security_group.append(config.get('network_security_group'), None)
             vm['network_security_group'] = network_security_group
-        return vm_list
+            if regions is None:
+                vm_data.append(vm)
+            else:
+                if vm.get('location') in regions or vm.get('location') == 'global':
+                    vm_data.append(vm)
+        return vm_data
 
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving virtual machines - {e}")
@@ -273,16 +278,20 @@ def sync_virtual_machine_available_sizes(
     cleanup_virtual_machine_available_sizes(neo4j_session, common_job_parameters)
 
 
-def get_vm_scale_sets_list(credentials: Credentials, subscription_id: str) -> List[Dict]:
+def get_vm_scale_sets_list(credentials: Credentials, subscription_id: str, regions: list) -> List[Dict]:
     try:
         client = get_client(credentials, subscription_id)
         vm_scale_sets_list = list(map(lambda x: x.as_dict(), client.virtual_machine_scale_sets.list_all()))
-
+        sets_list = []
         for set in vm_scale_sets_list:
             x = set['id'].split('/')
             set['resource_group'] = x[x.index('resourceGroups') + 1]
-
-        return vm_scale_sets_list
+            if regions is None:
+                sets_list.append(set)
+            else:
+                if set.get('location') in regions or set.get('location') == 'global':
+                    sets_list.append(set)
+        return sets_list
 
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving virtual machines scale_sets_list - {e}")
@@ -323,10 +332,10 @@ def cleanup_vm_scale_sets(neo4j_session: neo4j.Session, common_job_parameters: D
 
 def sync_vm_scale_sets(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict,
+    common_job_parameters: Dict, regions: list
 ) -> None:
     client = get_client(credentials, subscription_id)
-    vm_scale_sets_list = get_vm_scale_sets_list(credentials, subscription_id)
+    vm_scale_sets_list = get_vm_scale_sets_list(credentials, subscription_id, regions)
     load_vm_scale_sets(neo4j_session, subscription_id, vm_scale_sets_list, update_tag)
     cleanup_vm_scale_sets(neo4j_session, common_job_parameters)
     sync_virtual_machine_scale_sets_extensions(
@@ -433,16 +442,20 @@ def cleanup_virtual_machine(neo4j_session: neo4j.Session, common_job_parameters:
     run_cleanup_job('azure_import_virtual_machines_cleanup.json', neo4j_session, common_job_parameters)
 
 
-def get_disks(credentials: Credentials, subscription_id: str) -> List[Dict]:
+def get_disks(credentials: Credentials, subscription_id: str, regions: list) -> List[Dict]:
     try:
         client = get_client(credentials, subscription_id)
         disk_list = list(map(lambda x: x.as_dict(), client.disks.list()))
-
+        disk_data = []
         for disk in disk_list:
             x = disk['id'].split('/')
             disk['resource_group'] = x[x.index('resourceGroups') + 1]
-
-        return disk_list
+            if regions is None:
+                disk_data.append(disk)
+            else:
+                if disk.get('location') in regions or disk.get('location') == 'global':
+                    disk_data.append(disk)
+        return disk_data
 
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving disks - {e}")
@@ -481,16 +494,20 @@ def cleanup_disks(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> 
     run_cleanup_job('azure_import_disks_cleanup.json', neo4j_session, common_job_parameters)
 
 
-def get_snapshots_list(credentials: Credentials, subscription_id: str) -> List[Dict]:
+def get_snapshots_list(credentials: Credentials, subscription_id: str, regions: list) -> List[Dict]:
     try:
         client = get_client(credentials, subscription_id)
         snapshots = list(map(lambda x: x.as_dict(), client.snapshots.list()))
-
+        snapshot_list = []
         for snapshot in snapshots:
             x = snapshot['id'].split('/')
             snapshot['resource_group'] = x[x.index('resourceGroups') + 1]
-
-        return snapshots
+            if regions is None:
+                snapshot_list.append(snapshot)
+            else:
+                if snapshot.get('location') in regions or snapshot.get('location') == 'global':
+                    snapshot_list.append(snapshot)
+        return snapshot_list
 
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving snapshots - {e}")
@@ -530,10 +547,10 @@ def cleanup_snapshot(neo4j_session: neo4j.Session, common_job_parameters: Dict) 
 
 def sync_virtual_machine(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict,
+    common_job_parameters: Dict, regions: list
 ) -> None:
     client = get_client(credentials, subscription_id)
-    vm_list = get_vm_list(credentials, subscription_id)
+    vm_list = get_vm_list(credentials, subscription_id, regions)
     load_vms(neo4j_session, subscription_id, vm_list, update_tag)
     cleanup_virtual_machine(neo4j_session, common_job_parameters)
     sync_virtual_machine_extensions(neo4j_session, client, vm_list, update_tag, common_job_parameters)
@@ -542,18 +559,18 @@ def sync_virtual_machine(
 
 def sync_disk(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict,
+    common_job_parameters: Dict, regions: list
 ) -> None:
-    disk_list = get_disks(credentials, subscription_id)
+    disk_list = get_disks(credentials, subscription_id, regions)
     load_disks(neo4j_session, subscription_id, disk_list, update_tag)
     cleanup_disks(neo4j_session, common_job_parameters)
 
 
 def sync_snapshot(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict,
+    common_job_parameters: Dict, regions: list
 ) -> None:
-    snapshots = get_snapshots_list(credentials, subscription_id)
+    snapshots = get_snapshots_list(credentials, subscription_id, regions)
     load_snapshots(neo4j_session, subscription_id, snapshots, update_tag)
     cleanup_snapshot(neo4j_session, common_job_parameters)
 
@@ -561,11 +578,11 @@ def sync_snapshot(
 @timeit
 def sync(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict,
+    common_job_parameters: Dict, regions: list
 ) -> None:
     logger.info("Syncing VM for subscription '%s'.", subscription_id)
 
-    sync_virtual_machine(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
-    sync_vm_scale_sets(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
-    sync_disk(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
-    sync_snapshot(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
+    sync_virtual_machine(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters, regions)
+    sync_vm_scale_sets(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters, regions)
+    sync_disk(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters, regions)
+    sync_snapshot(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters, regions)

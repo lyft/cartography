@@ -27,6 +27,9 @@ def concurrent_execution(
     service: str, service_func: Any, config: Config, credentials: Credentials, common_job_parameters: Dict, update_tag: int, subscription_id: str
 ):
     logger.info(f"BEGIN processing for service: {service}")
+
+    regions = config.params.get('regions', None)
+
     neo4j_auth = (config.neo4j_user, config.neo4j_password)
     neo4j_driver = GraphDatabase.driver(
         config.neo4j_uri,
@@ -37,7 +40,7 @@ def concurrent_execution(
         service_func(neo4j_driver.session(), credentials, credentials.tenant_id, update_tag, common_job_parameters)
     else:
         service_func(neo4j_driver.session(), credentials.arm_credentials,
-                     subscription_id, update_tag, common_job_parameters)
+                     subscription_id, update_tag, common_job_parameters, regions)
     logger.info(f"END processing for service: {service}")
 
 
