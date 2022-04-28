@@ -21,7 +21,7 @@ def get_snapshots_in_use(neo4j_session: neo4j.Session, region: str, current_aws_
     RETURN v.snapshotid as snapshot
     """
     results = neo4j_session.run(query, AWS_ACCOUNT_ID=current_aws_account_id, Region=region)
-    return [r['snapshot'] for r in results]
+    return [r['snapshot'] for r in results if r['snapshot']]
 
 
 @timeit
@@ -100,7 +100,7 @@ def load_snapshot_volume_relations(
     UNWIND {snapshot_volumes_list} as volume
         MERGE (v:EBSVolume{id: volume.VolumeId})
         ON CREATE SET v.firstseen = timestamp()
-        SET v.lastupdated = {update_tag}
+        SET v.lastupdated = {update_tag}, v.snapshotid = volume.SnapshotId
         WITH v, volume
         MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
         MERGE (aa)-[r:RESOURCE]->(v)
