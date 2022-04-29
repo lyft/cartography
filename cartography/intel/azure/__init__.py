@@ -23,6 +23,7 @@ def _sync_one_subscription(
     requested_syncs: List[str],
     common_job_parameters: Dict,
 ) -> None:
+    tag.cleanup_tags(neo4j_session, common_job_parameters)
     for request in requested_syncs:
         if request in RESOURCE_FUNCTIONS:
             if request == 'iam':

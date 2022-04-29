@@ -181,7 +181,6 @@ def sync_function_apps(
         neo4j_session, subscription_id, function_apps_list,
         update_tag,
     )
-    cleanup_function_apps(neo4j_session, common_job_parameters)
     sync_function_apps_conf(
         neo4j_session, function_apps_list, client,
         update_tag, common_job_parameters,
@@ -210,6 +209,7 @@ def sync_function_apps(
         neo4j_session, function_apps_list, client,
         update_tag, common_job_parameters,
     )
+    cleanup_function_apps(neo4j_session, common_job_parameters)
 
 
 def get_function_apps_configuration_list(

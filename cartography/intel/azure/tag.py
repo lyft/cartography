@@ -138,7 +138,6 @@ def sync_tags(
 ) -> None:
     tags_list = get_tags_list(neo4j_session, client, resource_groups_list)
     load_tags(neo4j_session, tags_list, update_tag)
-    cleanup_tags(neo4j_session, common_job_parameters)
 
 
 def sync_resource_groups(

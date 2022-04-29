@@ -176,7 +176,6 @@ def sync_container_registries(
     client = get_container_registry_Client(credentials, subscription_id)
     container_registries_list = get_container_registries_list(client)
     load_container_registries(neo4j_session, subscription_id, container_registries_list, update_tag)
-    cleanup_container_registries(neo4j_session, common_job_parameters)
     sync_container_registry_replications(
         neo4j_session, client, container_registries_list, update_tag, common_job_parameters,
     )
@@ -189,6 +188,7 @@ def sync_container_registries(
     sync_container_registry_webhooks(
         neo4j_session, client, container_registries_list, update_tag, common_job_parameters,
     )
+    cleanup_container_registries(neo4j_session, common_job_parameters)
 
 
 @ timeit
@@ -521,8 +521,8 @@ def sync_container_groups(
     client = get_container_instance_Client(credentials, subscription_id)
     container_groups_list = get_container_groups_list(client)
     load_container_groups(neo4j_session, subscription_id, container_groups_list, update_tag)
-    cleanup_container_groups(neo4j_session, common_job_parameters)
     sync_containers(neo4j_session, container_groups_list, update_tag, common_job_parameters)
+    cleanup_container_groups(neo4j_session, common_job_parameters)
 
 
 @ timeit

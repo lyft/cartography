@@ -121,12 +121,12 @@ def sync_networks(
     client = get_network_client(credentials, subscription_id)
     networks_list = get_networks_list(client)
     load_networks(neo4j_session, subscription_id, networks_list, update_tag)
-    cleanup_networks(neo4j_session, common_job_parameters)
     sync_networks_subnets(neo4j_session, networks_list, client, update_tag, common_job_parameters)
     sync_network_routetables(neo4j_session, client, subscription_id, update_tag, common_job_parameters)
     sync_network_security_groups(neo4j_session, client, subscription_id, update_tag, common_job_parameters)
     sync_public_ip_addresses(neo4j_session, client, subscription_id, update_tag, common_job_parameters)
     sync_usages(neo4j_session, networks_list, client, update_tag, common_job_parameters)
+    cleanup_networks(neo4j_session, common_job_parameters)
 
 
 @ timeit
@@ -372,8 +372,8 @@ def sync_network_security_groups(
 ) -> None:
     network_security_groups_list = get_network_security_groups_list(client)
     load_network_security_groups(neo4j_session, subscription_id, network_security_groups_list, update_tag)
-    cleanup_network_security_groups(neo4j_session, common_job_parameters)
     sync_network_security_rules(neo4j_session, network_security_groups_list, client, update_tag, common_job_parameters)
+    cleanup_network_security_groups(neo4j_session, common_job_parameters)
 
 
 @ timeit
