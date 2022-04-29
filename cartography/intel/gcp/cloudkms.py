@@ -80,6 +80,7 @@ def get_kms_keyrings(kms: Resource, kms_locations: List[Dict], project_id: str) 
                         key_ring['loc_id'] = loc['id']
                         key_ring['id'] = key_ring['name']
                         key_ring['region'] = loc.get("locationId", "global")
+                        key_ring['iam_policy'] = get_keyring_policy_users(kms,key_ring,project_id)
                         key_rings.append(key_ring)
                 request = kms.projects().locations().keyRings().list_next(
                     previous_request=request,
@@ -101,51 +102,33 @@ def get_kms_keyrings(kms: Resource, kms_locations: List[Dict], project_id: str) 
 
 
 @timeit
-def get_keyring_policy_users(kms: Resource, keyrings: List[Dict], project_id:str) -> List[Dict]:
+def get_keyring_policy_users(kms: Resource, keyring: Dict, project_id:str) -> List[Dict]:
     """
         Returns a list of users attached to IAM policy of a keyring within the given project.
 
         :type kms: The GCP KMS resource object
         :param kms: The KMS resource object created by googleapiclient.discovery.build()
 
-        :type keyrings: List
-        :param keyrings: The list of Keyrings
+        :type keyrings: Dict
+        :param keyrings: The Dict of Keyring object
 
         :type project_id: str
         :param project_id: Current Google Project Id
 
-        : type locations: List
-        : param Location: List of locations
-
         :rtype: list
         :return: List of keyring iam policy users
     """
-    users = []
     try:
-        for keyring in keyrings:
-            keyring['iam_policy'] = kms.projects().locations().keyrings().getIamPolicy(resource = keyring['id'])
-            bindings = keyring.get('iam_policy',{}).get('bindings',[])
-            for binding in bindings:
-                for member in binding['members']:
-                    if member.startswith('user:'):
-                        usr = member[len('user:'):]
-                        users.append({
-                            'name': usr,
-                            'keyring_id': keyring['id'],
-                        })
-                    elif member.startswith('allUsers'):
-                        usr = 'allUsers'
-                        users.append({
-                            'name': usr,
-                            'keyring_id': keyring['id'],
-                        })
-                    elif member.startswith('allAuthenticatedUsers'):
-                        usr = 'allAuthenticatedUsers'
-                        users.append({
-                            'name': usr,
-                            'keyring_id': keyring['id'],
-                        })
-        return users
+        iam_policy = kms.projects().locations().keyrings().getIamPolicy(resource = keyring['id'])
+        bindings = iam_policy.get('bindings',[])
+        keyring['iam_policy'] = []
+        for binding in bindings:
+            for member in binding['members']:
+                if member.startswith('allUsers'):
+                    keyring['iam_policy'].append('allUsers')
+                elif member.startswith('allAuthenticatedUsers'):
+                    keyring['iam_policy'].append('allAuthenticatedUsers')
+        return keyring['iam_policy']
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
         if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
@@ -205,64 +188,6 @@ def get_kms_crypto_keys(kms: Resource, key_rings: List[Dict], project_id: str) -
         else:
             raise
 
-
-@timeit
-def get_cryptokey_policy_users(kms: Resource, cryptokeys: List[Dict], project_id:str) -> List[Dict]:
-    """
-        Returns a list of users attached to IAM policy of a cryptokey within the given project.
-
-        :type kms: The GCP KMS resource object
-        :param kms: The KMS resource object created by googleapiclient.discovery.build()
-
-        :type cryptokeys: List
-        :param cryptokeys: The list of Cryptokeys
-
-        :type project_id: str
-        :param project_id: Current Google Project Id
-
-        : type locations: List
-        : param Location: List of locations
-
-        :rtype: list
-        :return: List of keyring iam policy users
-    """
-    users = []
-    try:
-        for cryptokey in cryptokeys:
-            cryptokey['iam_policy'] = kms.projects().locations().keyrings().cryptokeys().getIamPolicy(resource = cryptokey['id'])
-            bindings = cryptokey.get('iam_policy',{}).get('bindings',[])
-            for binding in bindings:
-                for member in binding['members']:
-                    if member.startswith('user:'):
-                        usr = member[len('user:'):]
-                        users.append({
-                            'name': usr,
-                            'cryptokey_id': cryptokey['id'],
-                        })
-                    elif member.startswith('allUsers'):
-                        usr = 'allUsers'
-                        users.append({
-                            'name': usr,
-                            'cryptokey_id': cryptokey['id'],
-                        })
-                    elif member.startswith('allAuthenticatedUsers'):
-                        usr = 'allAuthenticatedUsers'
-                        users.append({
-                            'name': usr,
-                            'cryptokey_id': cryptokey['id'],
-                        })
-        return users
-    except HttpError as e:
-        err = json.loads(e.content.decode('utf-8'))['error']
-        if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
-            logger.warning(
-                (
-                    "Could not retrieve iam policy of cryptokey on project %s due to permissions issues. Code: %s, Message: %s"
-                ), project_id, err['code'], err['message'],
-            )
-            return []
-        else:
-            raise
 
 def load_kms_locations(session: neo4j.Session, data_list: List[Dict], project_id: str, update_tag: int) -> None:
     session.write_transaction(_load_kms_locations_tx, data_list, project_id, update_tag)
@@ -340,6 +265,7 @@ def _load_kms_key_rings_tx(
     SET
         keyring.name = keyr.name,
         keyring.region = keyr.region,
+        keyring.iam_policy = keyr.iam_policy,
         keyring.createTime = keyr.createTime,
         keyring.lastupdated = {gcp_update_tag}
     WITH keyring, keyr
@@ -355,66 +281,6 @@ def _load_kms_key_rings_tx(
         ProjectId=project_id,
         gcp_update_tag=gcp_update_tag,
     )
-
-@timeit
-def load_kms_keyring_policy_users(session: neo4j.Session, data_list: List[Dict], project_id: str, update_tag: int) -> None:
-    session.write_transaction(load_kms_keyring_policy_users_tx, data_list, project_id, update_tag)
-
-@timeit
-def load_kms_keyring_policy_users_tx(tx: neo4j.Transaction, users: List[Dict], project_id: str, gcp_update_tag: int) -> None:
-    """
-        Ingest GCP KMS Keyring IAM Policy users into Neo4j
-
-        :type neo4j_session: Neo4j session object
-        :param neo4j session: The Neo4j session object
-
-        :type users: Dict
-        :param apis: A list of GCP API users
-
-        :type project_id: str
-        :param project_id: Current Google Project Id
-
-        :type gcp_update_tag: timestamp
-        :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
-
-        :rtype: NoneType
-        :return: Nothing
-    """
-    ingest_users = """
-    UNWIND {users} as u
-    MERGE (user:KMSKeyRingUser:{id:u.name})
-    ON CREATE SET
-        user.firstseen = timestamp()
-    WITH user
-    MATCH (keyring:GCPKMSKeyRing{id:u.keyring_id})
-    MERGE (user)-[r:USES]->(keyring)
-    ON CREATE SET
-        r.firstseen = timestamp(),
-        r.lastupdated = {gcp_update_tag}
-    """
-    tx.run(
-        ingest_users,
-        users=users,
-        ProjectId=project_id,
-        gcp_update_tag=gcp_update_tag,
-    )
-
-@timeit
-def cleanup_kms_keyring_policy_users(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
-    """
-       Delete out-of-date GCP KMS Keyring Policy users
-
-       :type neo4j_session: The Neo4j session object
-       :param neo4j_session: The Neo4j session
-
-       :type common_job_parameters: dict
-       :param common_job_parameters: Dictionary of other job parameters to pass to Neo4j
-
-       :rtype: NoneType
-       :return: Nothing
-   """
-    run_cleanup_job('gcp_kms_keyring_policy_users_cleanup.json', neo4j_session, common_job_parameters)
-
 
 @timeit
 def load_kms_crypto_keys(session: neo4j.Session, data_list: List[Dict], project_id: str, update_tag: int) -> None:
@@ -484,66 +350,6 @@ def cleanup_gcp_kms(neo4j_session: neo4j.Session, common_job_parameters: Dict) -
     run_cleanup_job('gcp_kms_cleanup.json', neo4j_session, common_job_parameters)
 
 @timeit
-def load_kms_cryptokey_policy_users(session: neo4j.Session, data_list: List[Dict], project_id: str, update_tag: int) -> None:
-    session.write_transaction(load_kms_cryptokey_policy_users_tx, data_list, project_id, update_tag)
-
-@timeit
-def load_kms_cryptokey_policy_users_tx(tx: neo4j.Transaction, users: List[Dict], project_id: str, gcp_update_tag: int) -> None:
-    """
-        Ingest GCP KMS Cryptokey IAM Policy users into Neo4j
-
-        :type neo4j_session: Neo4j session object
-        :param neo4j session: The Neo4j session object
-
-        :type users: Dict
-        :param apis: A list of GCP API users
-
-        :type project_id: str
-        :param project_id: Current Google Project Id
-
-        :type gcp_update_tag: timestamp
-        :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
-
-        :rtype: NoneType
-        :return: Nothing
-    """
-    ingest_users = """
-    UNWIND {users} as u
-    MERGE (user:KMSCryptoKeyUser:{id:u.name})
-    ON CREATE SET
-        user.firstseen = timestamp()
-    WITH user
-    MATCH (cryptokey:GCPKMSCryptoKey{id:u.cryptokey_id})
-    MERGE (user)-[r:USES]->(cryptokey)
-    ON CREATE SET
-        r.firstseen = timestamp(),
-        r.lastupdated = {gcp_update_tag}
-    """
-    tx.run(
-        ingest_users,
-        users=users,
-        ProjectId=project_id,
-        gcp_update_tag=gcp_update_tag,
-    )
-
-@timeit
-def cleanup_kms_cryptokey_policy_users(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
-    """
-       Delete out-of-date GCP KMS Cryptokey Policy users
-
-       :type neo4j_session: The Neo4j session object
-       :param neo4j_session: The Neo4j session
-
-       :type common_job_parameters: dict
-       :param common_job_parameters: Dictionary of other job parameters to pass to Neo4j
-
-       :rtype: NoneType
-       :return: Nothing
-   """
-    run_cleanup_job('gcp_kms_cryptokey_policy_users_cleanup.json', neo4j_session, common_job_parameters)
-
-
-@timeit
 def sync(
     neo4j_session: neo4j.Session, kms: Resource, project_id: str, gcp_update_tag: int,
     common_job_parameters: Dict,
@@ -578,16 +384,7 @@ def sync(
     key_rings = get_kms_keyrings(kms, locations, project_id)
     load_kms_key_rings(neo4j_session, key_rings, project_id, gcp_update_tag)
     label.sync_labels(neo4j_session, key_rings, gcp_update_tag, common_job_parameters)
-    #KMS KEYRING POLICY USERS
-    keyring_users = get_keyring_policy_users(kms,key_rings,project_id)
-    load_kms_keyring_policy_users(neo4j_session,keyring_users,project_id,gcp_update_tag)
-    cleanup_kms_keyring_policy_users(neo4j_session,common_job_parameters)
-    # KMS CRYPTOKEYS
     crypto_keys = get_kms_crypto_keys(kms, key_rings, project_id)
     load_kms_crypto_keys(neo4j_session, crypto_keys, project_id, gcp_update_tag)
     cleanup_gcp_kms(neo4j_session, common_job_parameters)
     label.sync_labels(neo4j_session, crypto_keys, gcp_update_tag, common_job_parameters)
-    #KMS CRYPTOKEY POLICY USERS
-    cryptokey_users = get_cryptokey_policy_users(kms,crypto_keys,project_id)
-    load_kms_cryptokey_policy_users(neo4j_session,cryptokey_users,project_id,gcp_update_tag)
-    cleanup_kms_cryptokey_policy_users(neo4j_session,common_job_parameters)

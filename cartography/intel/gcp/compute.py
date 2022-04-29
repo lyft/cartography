@@ -118,50 +118,33 @@ def get_gcp_instance_responses(project_id: str, zones: Optional[List[Dict]], com
             for networkinterface in item.get('networkInterfaces',[]):
                 for accessconfig in networkinterface.get('accessConfig',[]):
                     item['accessConfig']=accessconfig.get('name',None)
+            item['iam_policy'] = get_gcp_instance_policy_users(project_id,zone,compute)
         response_objects.append(res)
     return response_objects
 
 @timeit
-def get_gcp_instance_policy_users(project_id: str, zones: Optional[List[Dict]], compute: Resource) -> List[Resource]:
+def get_gcp_instance_policy_users(project_id: str, zone: Dict, compute: Resource) -> List[Resource]:
     """
-    Return list of GCP instance policy users response objects for a given project and list of zones
+    Return list of GCP instance policy users response objects for a given project and zones
     :param project_id: The project ID
     :param zones: The list of zones to query for instances
     :param compute: The compute resource object
-    :return: A list of response objects of the form {id: str, items: []} where each item in `items` is a GCP instance
+    :return: A list of iam_policy users
     """
-    if not zones:
-        # If the Compute Engine API is not enabled for a project, there are no zones and therefore no instances.
-        return []
-    users: List[Resource] = []
-    for zone in zones:
-        req = compute.instances().list(project=project_id, zone=zone['name'])
-        res = req.execute()
-        for item in res.get('items',[]):
-            item['iam_policy'] = compute.instances().getIamPolicy(\
-                project=project_id,zone=zone['name'],resource=item.get("id")).execute()
-            bindings = item.get('iam_policy',{}).get('bindings',[])
-            for binding in bindings:
-                for member in binding['members']:
-                    if member.startswith('user:'):
-                        usr = member[len('user:'):]
-                        users.append({
-                            'name': usr,
-                            'instance_id':item['name'],
-                        })
-                    elif member.startswith('allUsers'):
-                        usr = 'allUsers'
-                        users.append({
-                            'name': usr,
-                            'instance_id': item['name'],
-                        })
-                    elif member.startswith('allAuthenticatedUsers'):
-                        usr = 'allAuthenticatedUsers'
-                        users.append({
-                            'name': usr,
-                            'instance_id': item['name'],
-                        })
-    return users
+    req = compute.instances().list(project=project_id, zone=zone['name'])
+    res = req.execute()
+    for item in res.get('items',[]):
+        iam_policy = compute.instances().getIamPolicy(\
+            project=project_id,zone=zone['name'],resource=item.get("id")).execute()
+        bindings = iam_policy.get('bindings',[])
+        item['iam_policy'] = []
+        for binding in bindings:
+            for member in binding['members']:
+                if member.startswith('allUsers'):
+                    item['iam_policy'].append('allUsers')
+                elif member.startswith('allAuthenticatedUsers'):
+                    item['iam_policy'].append('allAuthenticatedUsers')
+    return item['iam_policy']
 
 @timeit
 def get_gcp_subnets(projectid: str, region: str, compute: Resource) -> Resource:
@@ -243,6 +226,7 @@ def transform_gcp_instances(response_objects: List[Dict]) -> List[Dict]:
             instance['project_id'] = prefix_fields.project_id
             instance['zone_name'] = prefix_fields.zone_name
             instance['accessConfig'] = res.get('accessConfig',None)
+            instance['iam_policy'] = res.get['iam_policy',[]]
 
             x = instance['zone_name'].split('-')
             instance['region'] = f"{x[0]}-{x[1]}"
@@ -570,6 +554,7 @@ def load_gcp_instances(neo4j_session: neo4j.Session, data: List[Dict], gcp_updat
     i.region = {region},
     i.zone_name = {ZoneName},
     i.project_id = {ProjectId},
+    i.iam_policy = {IamPolicy},
     i.accessConfig = {AccessConfig},
     i.status = {Status},
     i.lastupdated = {gcp_update_tag}
@@ -589,6 +574,7 @@ def load_gcp_instances(neo4j_session: neo4j.Session, data: List[Dict], gcp_updat
             AccessConfig = instance['accessConfig'],
             ZoneName=instance['zone_name'],
             Hostname=instance.get('hostname', None),
+            IamPolicy = instance.get('iam_policy'),
             Status=instance['status'],
             region=instance['region'],
             gcp_update_tag=gcp_update_tag,
@@ -598,49 +584,6 @@ def load_gcp_instances(neo4j_session: neo4j.Session, data: List[Dict], gcp_updat
         _attach_gcp_vpc(neo4j_session, instance['partial_uri'], gcp_update_tag)
         _attach_instance_service_account(neo4j_session, instance, gcp_update_tag)
 
-
-@timeit
-def load_compute_instance_policy_users(session: neo4j.Session, data_list: List[Dict], project_id: str, update_tag: int) -> None:
-    session.write_transaction(load_compute_instance_policy_users_tx, data_list, project_id, update_tag)
-
-@timeit
-def load_compute_instance_policy_users_tx(tx: neo4j.Transaction, users: List[Dict], project_id: str, gcp_update_tag: int) -> None:
-    """
-        Ingest GCP Compute Instacne IAM Policy users into Neo4j
-
-        :type neo4j_session: Neo4j session object
-        :param neo4j session: The Neo4j session object
-
-        :type users: Dict
-        :param apis: A list of GCP API users
-
-        :type project_id: str
-        :param project_id: Current Google Project Id
-
-        :type gcp_update_tag: timestamp
-        :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
-
-        :rtype: NoneType
-        :return: Nothing
-    """
-    ingest_users = """
-    UNWIND {users} as u
-    MERGE (user:GCPInstanceUser:{id:u.name})
-    ON CREATE SET
-        user.firstseen = timestamp()
-    WITH user
-    MATCH (instance:GCPInstance{id:u.instance_id})
-    MERGE (user)-[r:USES]->(instance)
-    ON CREATE SET
-        r.firstseen = timestamp(),
-        r.lastupdated = {gcp_update_tag}
-    """
-    tx.run(
-        ingest_users,
-        users=users,
-        ProjectId=project_id,
-        gcp_update_tag=gcp_update_tag,
-    )
 
 @timeit
 def load_gcp_vpcs(neo4j_session: neo4j.Session, vpcs: List[Dict], gcp_update_tag: int) -> None:
@@ -1169,22 +1112,6 @@ def cleanup_gcp_instances(neo4j_session: neo4j.Session, common_job_parameters: D
     run_cleanup_job('gcp_compute_instance_cleanup.json', neo4j_session, common_job_parameters)
 
 @timeit
-def cleanup_compute_instance_policy_users(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
-    """
-       Delete out-of-date GCP Compute Instance Policy users
-
-       :type neo4j_session: The Neo4j session object
-       :param neo4j_session: The Neo4j session
-
-       :type common_job_parameters: dict
-       :param common_job_parameters: Dictionary of other job parameters to pass to Neo4j
-
-       :rtype: NoneType
-       :return: Nothing
-   """
-    run_cleanup_job('gcp_compute_instance_policy_users_cleanup.json', neo4j_session, common_job_parameters)
-
-@timeit
 def cleanup_gcp_vpcs(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     """
     Delete out-of-date GCP VPC nodes and relationships
@@ -1251,28 +1178,6 @@ def sync_gcp_instances(
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gcp_instances(neo4j_session, common_job_parameters)
     label.sync_labels(neo4j_session, instance_list, gcp_update_tag, common_job_parameters)
-
-@timeit
-def sync_gcp_instance_users(
-    neo4j_session: neo4j.Session, compute: Resource, project_id: str, zones: Optional[List[Dict]],
-    gcp_update_tag: int, common_job_parameters: Dict,
-) -> None:
-    """
-    Get GCP instance users using the Compute resource object, ingest to Neo4j, and clean up old data.
-    :param neo4j_session: The Neo4j session object
-    :param compute: The GCP Compute resource object
-    :param project_id: The project ID number to sync.  See  the `projectId` field in
-    https://cloud.google.com/resource-manager/reference/rest/v1/projects
-    :param zones: The list of all zone names that are enabled for this project; this is the output of
-    `get_zones_in_project()`
-    :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
-    :param common_job_parameters: dict of other job parameters to pass to Neo4j
-    :return: Nothing
-    """
-    instance_users = get_gcp_instance_policy_users(project_id,zones,compute)
-    load_compute_instance_policy_users(neo4j_session,instance_users,project_id,gcp_update_tag)
-    cleanup_compute_instance_policy_users(neo4j_session,common_job_parameters)
-
 
 @timeit
 def sync_gcp_vpcs(
