@@ -80,14 +80,19 @@ def get_network_client(credentials: Credentials, subscription_id: str) -> Networ
 
 
 @timeit
-def get_networks_list(client: NetworkManagementClient) -> List[Dict]:
+def get_networks_list(client: NetworkManagementClient, regions: list) -> List[Dict]:
     try:
         networks_list = list(map(lambda x: x.as_dict(), client.virtual_networks.list_all()))
-
+        network_data = []
         for network in networks_list:
             x = network['id'].split('/')
             network['resource_group'] = x[x.index('resourceGroups') + 1]
-        return networks_list
+            if regions is None:
+                network_data.append(network)
+            else:
+                if network.get('location') in regions or network.get('location') == 'global':
+                    network_data.append(network)
+        return network_data
 
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving networks - {e}")
@@ -130,16 +135,16 @@ def cleanup_networks(neo4j_session: neo4j.Session, common_job_parameters: Dict) 
 
 def sync_networks(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict,
+    common_job_parameters: Dict, regions: list
 ) -> None:
     client = get_network_client(credentials, subscription_id)
-    networks_list = get_networks_list(client)
+    networks_list = get_networks_list(client, regions)
     load_networks(neo4j_session, subscription_id, networks_list, update_tag)
     cleanup_networks(neo4j_session, common_job_parameters)
     sync_networks_subnets(neo4j_session, networks_list, client, update_tag, common_job_parameters)
-    sync_network_routetables(neo4j_session, client, subscription_id, update_tag, common_job_parameters)
-    sync_public_ip_addresses(neo4j_session, client, subscription_id, update_tag, common_job_parameters)
-    sync_network_interfaces(neo4j_session, client, subscription_id, update_tag, common_job_parameters)
+    sync_network_routetables(neo4j_session, client, subscription_id, update_tag, common_job_parameters, regions)
+    sync_public_ip_addresses(neo4j_session, client, subscription_id, update_tag, common_job_parameters, regions)
+    sync_network_interfaces(neo4j_session, client, subscription_id, update_tag, common_job_parameters, regions)
     sync_usages(neo4j_session, networks_list, client, update_tag, common_job_parameters)
 
 
@@ -220,14 +225,19 @@ def sync_networks_subnets(
     cleanup_networks_subnets(neo4j_session, common_job_parameters)
 
 
-def get_network_routetables_list(client: NetworkManagementClient) -> List[Dict]:
+def get_network_routetables_list(client: NetworkManagementClient, regions: list) -> List[Dict]:
     try:
         network_routetables_list = list(map(lambda x: x.as_dict(), client.route_tables.list_all()))
-
+        tables_data = []
         for routetable in network_routetables_list:
             x = routetable['id'].split('/')
             routetable['resource_group'] = x[x.index('resourceGroups') + 1]
-        return network_routetables_list
+            if regions is None:
+                tables_data.append(routetable)
+            else:
+                if routetable.get('location') in regions or routetable.get('location') == 'global':
+                    tables_data.append(routetable)
+        return tables_data
 
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving routetables - {e}")
@@ -269,9 +279,9 @@ def cleanup_network_routetables(neo4j_session: neo4j.Session, common_job_paramet
 
 def sync_network_routetables(
     neo4j_session: neo4j.Session, client: NetworkManagementClient, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict,
+    common_job_parameters: Dict, regions: list
 ) -> None:
-    network_routetables_list = get_network_routetables_list(client)
+    network_routetables_list = get_network_routetables_list(client, regions)
     load_network_routetables(neo4j_session, subscription_id, network_routetables_list, update_tag)
     cleanup_network_routetables(neo4j_session, common_job_parameters)
     sync_network_routes(neo4j_session, network_routetables_list, client, update_tag, common_job_parameters)
@@ -345,14 +355,19 @@ def sync_network_routes(
     cleanup_network_routes(neo4j_session, common_job_parameters)
 
 
-def get_network_security_groups_list(client: NetworkManagementClient) -> List[Dict]:
+def get_network_security_groups_list(client: NetworkManagementClient, regions: list) -> List[Dict]:
     try:
         network_security_groups_list = list(map(lambda x: x.as_dict(), client.network_security_groups.list_all()))
-
+        group_list = []
         for network in network_security_groups_list:
             x = network['id'].split('/')
             network['resource_group'] = x[x.index('resourceGroups') + 1]
-        return network_security_groups_list
+            if regions is None:
+                group_list.append(network)
+            else:
+                if network.get('location') in regions or network.get('location') == 'global':
+                    group_list.append(network)
+        return group_list
 
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving network_security_groups - {e}")
@@ -394,9 +409,9 @@ def cleanup_network_security_groups(neo4j_session: neo4j.Session, common_job_par
 
 def sync_network_security_groups(
     neo4j_session: neo4j.Session, client: NetworkManagementClient, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict,
+    common_job_parameters: Dict, regions: list
 ) -> None:
-    network_security_groups_list = get_network_security_groups_list(client)
+    network_security_groups_list = get_network_security_groups_list(client, regions)
     load_network_security_groups(neo4j_session, subscription_id, network_security_groups_list, update_tag)
     cleanup_network_security_groups(neo4j_session, common_job_parameters)
     sync_network_security_rules(neo4j_session, network_security_groups_list, client, update_tag, common_job_parameters)
@@ -480,10 +495,17 @@ def sync_network_security_rules(
     cleanup_network_security_rules(neo4j_session, common_job_parameters)
 
 
-def get_public_ip_addresses_list(client: NetworkManagementClient) -> List[Dict]:
+def get_public_ip_addresses_list(client: NetworkManagementClient, regions: list) -> List[Dict]:
     try:
         public_ip_addresses_list = list(map(lambda x: x.as_dict(), client.public_ip_addresses.list_all()))
-        return public_ip_addresses_list
+        publicip_list = []
+        for ip in public_ip_addresses_list:
+            if regions is None:
+                publicip_list.append(ip)
+            else:
+                if ip.get('location') in regions or ip.get('location') == 'global':
+                    publicip_list.append(ip)
+        return publicip_list
 
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving public_ip_addresses - {e}")
@@ -525,14 +547,14 @@ def cleanup_public_ip_addresses(neo4j_session: neo4j.Session, common_job_paramet
 
 def sync_public_ip_addresses(
     neo4j_session: neo4j.Session, client: NetworkManagementClient, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict,
+    common_job_parameters: Dict, regions: list
 ) -> None:
-    public_ip_addresses_list = get_public_ip_addresses_list(client)
+    public_ip_addresses_list = get_public_ip_addresses_list(client, regions)
     load_public_ip_addresses(neo4j_session, subscription_id, public_ip_addresses_list, update_tag)
     cleanup_public_ip_addresses(neo4j_session, common_job_parameters)
 
 
-def get_network_interfaces_list(client: NetworkManagementClient) -> List[Dict]:
+def get_network_interfaces_list(client: NetworkManagementClient, regions: list) -> List[Dict]:
     try:
         network_interfaces_list = list(map(lambda x: x.as_dict(), client.network_interfaces.list_all()))
         interfaces_list = []
@@ -541,7 +563,11 @@ def get_network_interfaces_list(client: NetworkManagementClient) -> List[Dict]:
             for conf in interface.get('ip_configurations', []):
                 interface['public_ip_address'].append(
                     {'public_ip_id': conf.get('public_ip_address', {}).get('id', None)})
-            interfaces_list.append(interface)
+            if regions is None:
+                interfaces_list.append(interface)
+            else:
+                if interface.get('location') in regions or interface.get('location') == 'global':
+                    interfaces_list.append(interface)
         return interfaces_list
 
     except HttpResponseError as e:
@@ -587,9 +613,9 @@ def cleanup_network_interfaces(neo4j_session: neo4j.Session, common_job_paramete
 
 def sync_network_interfaces(
     neo4j_session: neo4j.Session, client: NetworkManagementClient, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict,
+    common_job_parameters: Dict, regions: list
 ) -> None:
-    network_interfaces_list = get_network_interfaces_list(client)
+    network_interfaces_list = get_network_interfaces_list(client, regions)
     load_network_interfaces(neo4j_session, subscription_id, network_interfaces_list, update_tag)
     cleanup_network_interfaces(neo4j_session, common_job_parameters)
     for interface in network_interfaces_list:
@@ -683,10 +709,10 @@ def sync_usages(
 @timeit
 def sync(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict,
+    common_job_parameters: Dict, regions: list
 ) -> None:
     logger.info("Syncing networks for subscription '%s'.", subscription_id)
 
     client = get_network_client(credentials, subscription_id)
-    sync_network_security_groups(neo4j_session, client, subscription_id, update_tag, common_job_parameters)
-    sync_networks(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
+    sync_network_security_groups(neo4j_session, client, subscription_id, update_tag, common_job_parameters, regions)
+    sync_networks(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters, regions)

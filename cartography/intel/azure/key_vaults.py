@@ -24,14 +24,19 @@ def get_key_vaults_client(credentials: Credentials, subscription_id: str) -> Key
 
 
 @timeit
-def get_key_vaults_list(client: KeyVaultManagementClient) -> List[Dict]:
+def get_key_vaults_list(client: KeyVaultManagementClient, regions: list) -> List[Dict]:
     try:
         key_vaults_list = list(map(lambda x: x.as_dict(), client.vaults.list()))
-
+        key_vaults_data = []
         for vault in key_vaults_list:
             x = vault['id'].split('/')
             vault['resource_group'] = x[x.index('resourceGroups') + 1]
-        return key_vaults_list
+            if regions is None:
+                key_vaults_data.append(vault)
+            else:
+                if vault.get('location') in regions or vault.get('location') == 'global':
+                    key_vaults_data.append(vault)
+        return key_vaults_data
 
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving key vaults - {e}")
@@ -72,10 +77,10 @@ def cleanup_key_vaults(neo4j_session: neo4j.Session, common_job_parameters: Dict
 
 def sync_key_vaults(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict,
+    common_job_parameters: Dict, regions: list
 ) -> None:
     client = get_key_vaults_client(credentials, subscription_id)
-    key_vaults_list = get_key_vaults_list(client)
+    key_vaults_list = get_key_vaults_list(client, regions)
     load_key_vaults(neo4j_session, subscription_id, key_vaults_list, update_tag)
     cleanup_key_vaults(neo4j_session, common_job_parameters)
 
@@ -83,8 +88,8 @@ def sync_key_vaults(
 @timeit
 def sync(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict,
+    common_job_parameters: Dict, region: list
 ) -> None:
     logger.info("Syncing key vaults for subscription '%s'.", subscription_id)
 
-    sync_key_vaults(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
+    sync_key_vaults(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters, region)

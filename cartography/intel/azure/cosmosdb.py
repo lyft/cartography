@@ -29,7 +29,7 @@ def get_client(credentials: Credentials, subscription_id: str) -> CosmosDBManage
 
 
 @timeit
-def get_database_account_list(credentials: Credentials, subscription_id: str) -> List[Dict]:
+def get_database_account_list(credentials: Credentials, subscription_id: str, regions: list) -> List[Dict]:
     """
     Get a list of all database accounts.
     """
@@ -47,13 +47,17 @@ def get_database_account_list(credentials: Credentials, subscription_id: str) ->
     except HttpResponseError:
         logger.warning('Error while retrieving database accounts', exc_info=True)
         return []
-
+    account_list = []
     for database_account in database_account_list:
         x = database_account['id'].split('/')
         database_account['resourceGroup'] = x[x.index('resourceGroups') + 1]
         database_account['publicNetworkAccess'] = database_account.get('properties', {}).get('public_network_access', 'Disabled')
-
-    return database_account_list
+        if regions is None:
+            account_list.append(database_account)
+        else:
+            if database_account.get('location') in regions or database_account.get('location') == 'global':
+                account_list.append(database_account)
+    return account_list
 
 
 @timeit
@@ -1080,10 +1084,10 @@ def cleanup_table_resources(neo4j_session: neo4j.Session, common_job_parameters:
 @timeit
 def sync(
         neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str,
-        sync_tag: int, common_job_parameters: Dict,
+        sync_tag: int, common_job_parameters: Dict, regions: list
 ) -> None:
     logger.info("Syncing Azure CosmosDB for subscription '%s'.", subscription_id)
-    database_account_list = get_database_account_list(credentials, subscription_id)
+    database_account_list = get_database_account_list(credentials, subscription_id, regions)
     database_account_list = transform_database_account_data(database_account_list)
     load_database_account_data(neo4j_session, subscription_id, database_account_list, sync_tag)
     sync_database_account_data_resources(neo4j_session, subscription_id, database_account_list, sync_tag)
