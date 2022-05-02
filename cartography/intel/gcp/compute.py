@@ -9,6 +9,7 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Set
+from . import iam
 
 import neo4j
 from googleapiclient.discovery import HttpError
@@ -118,12 +119,14 @@ def get_gcp_instance_responses(project_id: str, zones: Optional[List[Dict]], com
             for networkinterface in item.get('networkInterfaces',[]):
                 for accessconfig in networkinterface.get('accessConfig',[]):
                     item['accessConfig']=accessconfig.get('name',None)
-            item['iam_policy'] = get_gcp_instance_policy_users(project_id,zone,compute)
-        response_objects.append(res)
+            compute_entities, public_access = get_gcp_instance_policy_entities(project_id,zone,compute)
+            item['enities'] = compute_entities
+            item['public_access'] = public_access
+            response_objects.append(item)
     return response_objects
 
 @timeit
-def get_gcp_instance_policy_users(project_id: str, zone: Dict, compute: Resource) -> List[Resource]:
+def get_gcp_instance_policy_entities(project_id: str, zone: Dict, compute: Resource) -> List[Resource]:
     """
     Return list of GCP instance policy users response objects for a given project and zones
     :param project_id: The project ID
@@ -137,14 +140,8 @@ def get_gcp_instance_policy_users(project_id: str, zone: Dict, compute: Resource
         iam_policy = compute.instances().getIamPolicy(\
             project=project_id,zone=zone['name'],resource=item.get("id")).execute()
         bindings = iam_policy.get('bindings',[])
-        item['iam_policy'] = []
-        for binding in bindings:
-            for member in binding['members']:
-                if member.startswith('allUsers'):
-                    item['iam_policy'].append('allUsers')
-                elif member.startswith('allAuthenticatedUsers'):
-                    item['iam_policy'].append('allAuthenticatedUsers')
-    return item['iam_policy']
+        entity_list, public_access = iam.transform_bindings(bindings, project_id)
+    return entity_list,public_access
 
 @timeit
 def get_gcp_subnets(projectid: str, region: str, compute: Resource) -> Resource:
@@ -226,7 +223,7 @@ def transform_gcp_instances(response_objects: List[Dict]) -> List[Dict]:
             instance['project_id'] = prefix_fields.project_id
             instance['zone_name'] = prefix_fields.zone_name
             instance['accessConfig'] = res.get('accessConfig',None)
-            instance['iam_policy'] = res.get['iam_policy',[]]
+            instance['public_access'] = res.get['public_access',[]]
 
             x = instance['zone_name'].split('-')
             instance['region'] = f"{x[0]}-{x[1]}"
@@ -554,7 +551,7 @@ def load_gcp_instances(neo4j_session: neo4j.Session, data: List[Dict], gcp_updat
     i.region = {region},
     i.zone_name = {ZoneName},
     i.project_id = {ProjectId},
-    i.iam_policy = {IamPolicy},
+    i.public_access = {PublicAccess},
     i.accessConfig = {AccessConfig},
     i.status = {Status},
     i.lastupdated = {gcp_update_tag}
@@ -574,7 +571,7 @@ def load_gcp_instances(neo4j_session: neo4j.Session, data: List[Dict], gcp_updat
             AccessConfig = instance['accessConfig'],
             ZoneName=instance['zone_name'],
             Hostname=instance.get('hostname', None),
-            IamPolicy = instance.get('iam_policy'),
+            PublicAccess = instance.get('public_access',None),
             Status=instance['status'],
             region=instance['region'],
             gcp_update_tag=gcp_update_tag,
@@ -584,6 +581,44 @@ def load_gcp_instances(neo4j_session: neo4j.Session, data: List[Dict], gcp_updat
         _attach_gcp_vpc(neo4j_session, instance['partial_uri'], gcp_update_tag)
         _attach_instance_service_account(neo4j_session, instance, gcp_update_tag)
 
+
+@timeit
+def load_compute_entity_relation(session: neo4j.Session, instance: Dict, update_tag: int) -> None:
+    session.write_transaction(load_compute_entity_relation_tx, instance, update_tag)
+
+
+@timeit
+def load_compute_entity_relation_tx(tx: neo4j.Transaction, instance: Dict, gcp_update_tag: int) -> None:
+    """
+        :type neo4j_session: Neo4j session object
+        :param neo4j session: The Neo4j session object
+
+        :type instance: Dict
+        :param instance: instance Dict object
+
+        :type project_id: str
+        :param project_id: Current Google Project Id
+
+        :type gcp_update_tag: timestamp
+        :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
+
+        :rtype: NoneType
+        :return: Nothing
+    """
+    ingest_entities = """
+    UNWIND {entities} AS entity
+    MATCH (principal) where principal.email = entity.email
+    WITH principal
+    MATCH (i:GCPInstance{id: {instance_id}})
+    MERGE (principal)-[r:USES]->(instance_id)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}    """
+    tx.run(
+        ingest_entities,
+        instance_id=instance.get('id',None),
+        entities = instance.get('entities',[]),
+        gcp_update_tag=gcp_update_tag,
+    )
 
 @timeit
 def load_gcp_vpcs(neo4j_session: neo4j.Session, vpcs: List[Dict], gcp_update_tag: int) -> None:
@@ -1174,6 +1209,8 @@ def sync_gcp_instances(
     """
     instance_responses = get_gcp_instance_responses(project_id, zones, compute)
     instance_list = transform_gcp_instances(instance_responses)
+    for instance in instance_list:
+        load_compute_entity_relation(neo4j_session,instance,gcp_update_tag)
     load_gcp_instances(neo4j_session, instance_list, gcp_update_tag)
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gcp_instances(neo4j_session, common_job_parameters)

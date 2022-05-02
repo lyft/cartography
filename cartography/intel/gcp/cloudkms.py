@@ -2,6 +2,7 @@ import json
 import logging
 from typing import Dict
 from typing import List
+from . import iam
 
 import neo4j
 from googleapiclient.discovery import HttpError
@@ -80,7 +81,9 @@ def get_kms_keyrings(kms: Resource, kms_locations: List[Dict], project_id: str) 
                         key_ring['loc_id'] = loc['id']
                         key_ring['id'] = key_ring['name']
                         key_ring['region'] = loc.get("locationId", "global")
-                        key_ring['iam_policy'] = get_keyring_policy_users(kms,key_ring,project_id)
+                        key_ring_entities, public_access = get_keyring_policy_entities(kms,key_ring,project_id)
+                        key_ring['enities'] = key_ring_entities
+                        key_ring['public_access'] = public_access
                         key_rings.append(key_ring)
                 request = kms.projects().locations().keyRings().list_next(
                     previous_request=request,
@@ -102,7 +105,7 @@ def get_kms_keyrings(kms: Resource, kms_locations: List[Dict], project_id: str) 
 
 
 @timeit
-def get_keyring_policy_users(kms: Resource, keyring: Dict, project_id:str) -> List[Dict]:
+def get_keyring_policy_entities(kms: Resource, keyring: Dict, project_id:str) -> List[Dict]:
     """
         Returns a list of users attached to IAM policy of a keyring within the given project.
 
@@ -121,14 +124,8 @@ def get_keyring_policy_users(kms: Resource, keyring: Dict, project_id:str) -> Li
     try:
         iam_policy = kms.projects().locations().keyrings().getIamPolicy(resource = keyring['id'])
         bindings = iam_policy.get('bindings',[])
-        keyring['iam_policy'] = []
-        for binding in bindings:
-            for member in binding['members']:
-                if member.startswith('allUsers'):
-                    keyring['iam_policy'].append('allUsers')
-                elif member.startswith('allAuthenticatedUsers'):
-                    keyring['iam_policy'].append('allAuthenticatedUsers')
-        return keyring['iam_policy']
+        entity_list, public_access = iam.transform_bindings(bindings, project_id)
+        return entity_list, public_access
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
         if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
@@ -265,7 +262,7 @@ def _load_kms_key_rings_tx(
     SET
         keyring.name = keyr.name,
         keyring.region = keyr.region,
-        keyring.iam_policy = keyr.iam_policy,
+        keyring.public_access = keyr.public_access,
         keyring.createTime = keyr.createTime,
         keyring.lastupdated = {gcp_update_tag}
     WITH keyring, keyr
@@ -281,6 +278,45 @@ def _load_kms_key_rings_tx(
         ProjectId=project_id,
         gcp_update_tag=gcp_update_tag,
     )
+
+@timeit
+def load_keyring_entity_relation(session: neo4j.Session, keyring: Dict, update_tag: int) -> None:
+    session.write_transaction(load_keyring_entity_relation_tx, keyring, update_tag)
+
+
+@timeit
+def load_keyring_entity_relation_tx(tx: neo4j.Transaction, keyring: Dict, gcp_update_tag: int) -> None:
+    """
+        :type neo4j_session: Neo4j session object
+        :param neo4j session: The Neo4j session object
+
+        :type keyring: Dict
+        :param keyring: Keyring Dict object
+
+        :type project_id: str
+        :param project_id: Current Google Project Id
+
+        :type gcp_update_tag: timestamp
+        :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
+
+        :rtype: NoneType
+        :return: Nothing
+    """
+    ingest_entities = """
+    UNWIND {entities} AS entity
+    MATCH (principal) where principal.email = entity.email
+    WITH principal
+    MATCH (keyring:GCPKMSKeyRing{id: {keyring_id}})
+    MERGE (principal)-[r:USES]->(keyring_id)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}    """
+    tx.run(
+        ingest_entities,
+        keyring_id=keyring.get('id',None),
+        entities = keyring.get('entities',[]),
+        gcp_update_tag=gcp_update_tag,
+    )
+
 
 @timeit
 def load_kms_crypto_keys(session: neo4j.Session, data_list: List[Dict], project_id: str, update_tag: int) -> None:
@@ -383,6 +419,8 @@ def sync(
     # KMS KEYRINGS
     key_rings = get_kms_keyrings(kms, locations, project_id)
     load_kms_key_rings(neo4j_session, key_rings, project_id, gcp_update_tag)
+    for key_ring in key_rings:
+        load_keyring_entity_relation(neo4j_session,key_ring,gcp_update_tag)
     label.sync_labels(neo4j_session, key_rings, gcp_update_tag, common_job_parameters)
     crypto_keys = get_kms_crypto_keys(kms, key_rings, project_id)
     load_kms_crypto_keys(neo4j_session, crypto_keys, project_id, gcp_update_tag)
