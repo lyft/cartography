@@ -56,47 +56,52 @@
             "iterationsize": 100
         },
         {
-            "query": "MATCH (:AWSTag)<-[r:TAGGED]-(:ESDomain)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r)",
+            "query": "MATCH (:AWSTag)<-[r:TAGGED]-(:ESDomain)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) RETURN COUNT(*) as TotalCompleted",
             "iterative": true,
             "iterationsize": 100
         },
         {
-            "query": "MATCH (n:AWSTag)<-[:TAGGED]-(:RedshiftCluster) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n)",
+            "query": "MATCH (n:AWSTag)<-[:TAGGED]-(:RedshiftCluster) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) RETURN COUNT(*) as TotalCompleted",
             "iterative": true,
             "iterationsize": 100
         },
         {
-            "query": "MATCH (:AWSTag)<-[r:TAGGED]-(:RedshiftCluster)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r)",
+            "query": "MATCH (:AWSTag)<-[r:TAGGED]-(:RedshiftCluster)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) RETURN COUNT(*) as TotalCompleted",
             "iterative": true,
             "iterationsize": 100
         },
         {
-            "query": "MATCH (n:AWSTag)<-[:TAGGED]-(:RDSInstance)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n)",
+            "query": "MATCH (n:AWSTag)<-[:TAGGED]-(:RDSInstance)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) RETURN COUNT(*) as TotalCompleted",
             "iterative": true,
             "iterationsize": 100
         },
         {
-            "query": "MATCH (:AWSTag)<-[r:TAGGED]-(:RDSInstance)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r)",
+            "query": "MATCH (:AWSTag)<-[r:TAGGED]-(:RDSInstance)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) RETURN COUNT(*) as TotalCompleted",
             "iterative": true,
             "iterationsize": 100
         },
         {
-            "query": "MATCH (n:AWSTag)<-[:TAGGED]-(:DBSubnetGroup)<-[:MEMBER_OF_DB_SUBNET_GROUP]-(:RDSInstance)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n)",
+            "query": "MATCH (n:AWSTag)<-[:TAGGED]-(:DBSubnetGroup)<-[:MEMBER_OF_DB_SUBNET_GROUP]-(:RDSInstance)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) RETURN COUNT(*) as TotalCompleted",
             "iterative": true,
             "iterationsize": 100
         },
         {
-            "query": "MATCH (:AWSTag)<-[r:TAGGED]-(:DBSubnetGroup)<-[:MEMBER_OF_DB_SUBNET_GROUP]-(:RDSInstance)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r)",
+            "query": "MATCH (:AWSTag)<-[r:TAGGED]-(:DBSubnetGroup)<-[:MEMBER_OF_DB_SUBNET_GROUP]-(:RDSInstance)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) RETURN COUNT(*) as TotalCompleted",
             "iterative": true,
             "iterationsize": 100
         },
         {
-            "query": "MATCH (n:AWSTag)<-[:TAGGED]-(:S3Bucket)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n)",
+            "query": "MATCH (n:AWSTag)<-[:TAGGED]-(:S3Bucket)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) RETURN COUNT(*) as TotalCompleted",
             "iterative": true,
             "iterationsize": 100
         },
         {
-            "query": "MATCH (:AWSTag)<-[r:TAGGED]-(:S3Bucket)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r)",
+            "query": "MATCH (:AWSTag)<-[r:TAGGED]-(:S3Bucket)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) RETURN COUNT(*) as TotalCompleted",
+            "iterative": true,
+            "iterationsize": 100
+        },
+        {
+            "query": "MATCH (n:AWSTag) WHERE NOT (n)--() AND n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) RETURN COUNT(*) as TotalCompleted",
             "iterative": true,
             "iterationsize": 100
         }
