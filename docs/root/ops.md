@@ -9,9 +9,9 @@ how that process works.
 
 ### Update tags
 
-Each sync run has an `update_tag` associated with it, which by default is the [Unix timestamp of when the sync
-started](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/sync.py#L131-L134),
-but in theory could be anything provided that it is unique per sync (more details [here](../dev/writing-intel-modules.md#handling-cartographys-update_tag)).
+Each sync run has an `update_tag` associated with it,
+which is the [Unix timestamp of when the sync started](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/sync.py#L131-L134).
+See our [docs for more details](../dev/writing-intel-modules.md#handling-cartographys-update_tag).
 
 ### Cleanup jobs
 
