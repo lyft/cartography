@@ -65,7 +65,7 @@ def _sync_multiple_subscriptions(
         common_job_parameters['AZURE_SUBSCRIPTION_ID'] = sub['subscriptionId']
 
         _sync_one_subscription(
-            neo4j_session, credentials, sub['subscriptionId'], update_tag, common_job_parameters, requested_syncs
+            neo4j_session, credentials, sub['subscriptionId'], update_tag, requested_syncs, common_job_parameters,
         )
 
     del common_job_parameters["AZURE_SUBSCRIPTION_ID"]
@@ -119,6 +119,6 @@ def start_azure_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
         return
 
     _sync_multiple_subscriptions(
-        neo4j_session, credentials, credentials.get_tenant_id(), subscriptions, config.update_tag, requested_syncs,
-        common_job_parameters,
+        neo4j_session, credentials, credentials.get_tenant_id(), subscriptions, config.update_tag,
+        common_job_parameters, requested_syncs,
     )
