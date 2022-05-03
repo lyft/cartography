@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
-def get_gcp_functions(function: Resource, project_id: str) -> List[Dict]:
+def get_gcp_functions(function: Resource, project_id: str, regions: list) -> List[Dict]:
     """
         Returns a list of functions for a given project.
 
@@ -32,13 +32,18 @@ def get_gcp_functions(function: Resource, project_id: str) -> List[Dict]:
         :return: List of Functions
     """
     try:
-        regions = []
+        locations = []
         request = function.projects().locations().list(name=f"projects/{project_id}")
         while request is not None:
             response = request.execute()
             for location in response['locations']:
                 location["id"] = location.get("name", None)
-                regions.append(location)
+                if regions is None:
+                    locations.append(location)
+                else:
+                    if location['locationId'] in regions or location['locationId'] == 'global':
+                        locations.append(location)
+
             request = function.projects().locations().list_next(previous_request=request, previous_response=response)
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -55,7 +60,7 @@ def get_gcp_functions(function: Resource, project_id: str) -> List[Dict]:
 
     try:
         functions = []
-        for region in regions:
+        for region in locations:
             request = function.projects().locations().functions().list(
                 parent=region.get('name', None),
             )
@@ -165,7 +170,7 @@ def cleanup_gcp_functions(neo4j_session: neo4j.Session, common_job_parameters: D
 @timeit
 def sync(
     neo4j_session: neo4j.Session, function: Resource, project_id: str, gcp_update_tag: int,
-    common_job_parameters: Dict,
+    common_job_parameters: Dict, regions: list
 ) -> None:
     """
     Get GCP Cloud Functions using the Cloud Function resource object, ingest to Neo4j, and clean up old data.
@@ -190,7 +195,7 @@ def sync(
     """
     logger.info("Syncing GCP Cloud Functions for project %s.", project_id)
     # FUNCTIONS
-    functions = get_gcp_functions(function, project_id)
+    functions = get_gcp_functions(function, project_id, regions)
     load_functions(neo4j_session, functions, project_id, gcp_update_tag)
     cleanup_gcp_functions(neo4j_session, common_job_parameters)
     label.sync_labels(neo4j_session, functions, gcp_update_tag, common_job_parameters)

@@ -216,7 +216,7 @@ def cleanup_dns_records(neo4j_session: neo4j.Session, common_job_parameters: Dic
 @timeit
 def sync(
     neo4j_session: neo4j.Session, dns: Resource, project_id: str, gcp_update_tag: int,
-    common_job_parameters: Dict,
+    common_job_parameters: Dict, regions: list
 ) -> None:
     """
     Get GCP DNS Zones and Resource Record Sets using the DNS resource object, ingest to Neo4j, and clean up old data.
@@ -242,6 +242,12 @@ def sync(
     logger.info("Syncing DNS records for project %s.", project_id)
     # DNS ZONES
     dns_zones = get_dns_zones(dns, project_id)
+    if regions:
+        zones_list = []
+        for zone in dns_zones:
+            if zone['name'][:-2] in regions:
+                zones_list.append(zone)
+        dns_zones = zones_list
     load_dns_zones(neo4j_session, dns_zones, project_id, gcp_update_tag)
     label.sync_labels(neo4j_session, dns_zones, gcp_update_tag, common_job_parameters)
     # RECORD SETS

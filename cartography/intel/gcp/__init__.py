@@ -125,7 +125,6 @@ def _get_container_resource(credentials: GoogleCredentials) -> Resource:
     """
     Instantiates a Google Cloud Container resource object to call the
     Container API. See: https://cloud.google.com/kubernetes-engine/docs/reference/rest/v1/.
-
     :param credentials: The GoogleCredentials object
     :return: A Container resource object
     """
@@ -136,7 +135,6 @@ def _get_dns_resource(credentials: GoogleCredentials) -> Resource:
     """
     Instantiates a Google Cloud DNS resource object to call the
     Container API. See: https://cloud.google.com/dns/docs/reference/v1/.
-
     :param credentials: The GoogleCredentials object
     :return: A DNS resource object
     """
@@ -147,7 +145,6 @@ def _get_serviceusage_resource(credentials: GoogleCredentials) -> Resource:
     """
     Instantiates a serviceusage resource object.
     See: https://cloud.google.com/service-usage/docs/reference/rest/v1/operations/list.
-
     :param credentials: The GoogleCredentials object
     :return: A serviceusage resource object
     """
@@ -158,7 +155,6 @@ def _get_cloudfunction_resource(credentials: GoogleCredentials) -> Resource:
     """
     Instantiates a cloud function resource object.
     See: https://cloud.google.com/functions/docs/reference/rest
-
     :param credentials: The GoogleCredentials object
     :return: A serviceusage resource object
     """
@@ -179,7 +175,6 @@ def _get_cloudsql_resource(credentials: GoogleCredentials) -> Resource:
     """
     Instantiates a cloud sql resource object.
     See: https://cloud.google.com/sql/docs/mysql/admin-api/rest
-
     :param credentials: The GoogleCredentials object
     :return: A serviceusage resource object
     """
@@ -230,7 +225,6 @@ def _get_cloudbigtable_resource(credentials: GoogleCredentials) -> Resource:
     """
     Instantiates a cloud bigtable resource object.
     See: https://cloud.google.com/bigtable/docs/reference/admin/rest
-
     :param credentials: The GoogleCredentials object
     :return: A serviceusage resource object
     """
@@ -308,6 +302,8 @@ def concurrent_execution(
 ):
     logger.info(f"BEGIN processing for service: {service}")
 
+    regions = config.params.get('regions', None)
+
     neo4j_auth = (config.neo4j_user, config.neo4j_password)
     neo4j_driver = GraphDatabase.driver(
         config.neo4j_uri,
@@ -318,7 +314,7 @@ def concurrent_execution(
     if service == 'iam':
         service_func(neo4j_driver.session(), iam, crm, admin, project_id, gcp_update_tag, common_job_parameters)
     else:
-        service_func(neo4j_driver.session(), iam, project_id, gcp_update_tag, common_job_parameters)
+        service_func(neo4j_driver.session(), iam, project_id, gcp_update_tag, common_job_parameters, regions)
     logger.info(f"END processing for service: {service}")
 
 

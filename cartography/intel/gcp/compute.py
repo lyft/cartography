@@ -1254,7 +1254,7 @@ def _zones_to_regions(zones: List[str]) -> List[Set]:
 
 def sync(
     neo4j_session: neo4j.Session, compute: Resource, project_id: str, gcp_update_tag: int,
-    common_job_parameters: dict,
+    common_job_parameters: dict, regions: list
 ) -> None:
     """
     Sync all objects that we need the GCP Compute resource object for.
@@ -1273,6 +1273,13 @@ def sync(
     if zones is None:
         return
     else:
+        if regions:
+            zones_list = []
+            for zone in zones:
+                if zone['name'][:-2] in regions:
+                    zones_list.append(zone)
+            zones = zones_list
+
         regions = _zones_to_regions(zones)
         sync_gcp_vpcs(neo4j_session, compute, project_id, gcp_update_tag, common_job_parameters)
         sync_gcp_firewall_rules(neo4j_session, compute, project_id, gcp_update_tag, common_job_parameters)
