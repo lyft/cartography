@@ -75,7 +75,8 @@ def _load_tenant_users_tx(
     ingest_user = """
     UNWIND {tenant_users_list} AS user
     MERGE (i:AzureUser{id: user.id})
-    ON CREATE SET i.firstseen = timestamp(),
+    ON CREATE SET i:AzurePrincipal,
+    i.firstseen = timestamp(),
     i.object_id=user.object_id,
     i.name = user.display_name,
     i.given_name = user.given_name,
@@ -136,7 +137,8 @@ def _load_tenant_groups_tx(
     ingest_group = """
     UNWIND {tenant_groups_list} AS group
     MERGE (i:AzureGroup{id: group.id})
-    ON CREATE SET i.firstseen = timestamp(),
+    ON CREATE SET i:AzurePrincipal,
+    i.firstseen = timestamp(),
     i.object_id=group.object_id,
     i.visibility = group.visibility,
     i.classification = group.classification,
@@ -194,7 +196,8 @@ def _load_tenant_applications_tx(
     ingest_app = """
     UNWIND {tenant_applications_list} AS app
     MERGE (i:AzureApplication{id: app.id})
-    ON CREATE SET i.firstseen = timestamp(),
+    ON CREATE SET i:AzurePrincipal,
+    i.firstseen = timestamp(),
     i.object_id=app.object_id,
     i.displayName = app.display_name,
     i.publisherDomain = app.publisher_domain
@@ -252,7 +255,8 @@ def _load_tenant_service_accounts_tx(
     ingest_app = """
     UNWIND {tenant_service_accounts_list} AS service
     MERGE (i:AzureServiceAccount{id: service.id})
-    ON CREATE SET i.firstseen = timestamp(),
+    ON CREATE SET i:AzurePrincipal,
+    i.firstseen = timestamp(),
     i.name = service.display_name,
     i.object_id=service.object_id,
     i.accountEnabled = service.account_enabled,
@@ -309,7 +313,8 @@ def _load_tenant_domains_tx(
     ingest_domain = """
     UNWIND {tenant_domains_list} AS domain
     MERGE (i:AzureDomain{id: domain.id})
-    ON CREATE SET i.firstseen = timestamp(),
+    ON CREATE SET i:AzurePrincipal,
+    i.firstseen = timestamp(),
     i.isRoot = domain.isRoot,
     i.name = domain.name,
     i.isInitial = domain.isInitial
@@ -376,14 +381,15 @@ def _load_roles_tx(
     ingest_role = """
     UNWIND {roles_list} AS role
     MERGE (i:AzureRole{id: role.id})
-    ON CREATE SET i.firstseen = timestamp(),
+    ON CREATE SET i:AzurePrincipal,
+    i.firstseen = timestamp(),
     i.name = role.name,
     i.type = role.type
     SET i.lastupdated = {update_tag},
     i.roleName = role.roleName,
     i.permissions = role.permissions
     WITH i,role
-    MATCH (principal) where principal.object_id = role.principal_id
+    MATCH (principal:AzurePrincipal) where principal.object_id = role.principal_id
     MERGE (principal)-[r:ASSUME_ROLE]->(i)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {update_tag}
