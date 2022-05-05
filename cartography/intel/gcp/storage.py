@@ -63,7 +63,7 @@ def get_gcp_buckets(storage: Resource, project_id: str) -> Dict:
 
 
 @timeit
-def transform_gcp_buckets(bucket_res: Dict) -> List[Dict]:
+def transform_gcp_buckets(bucket_res: Dict, regions: list) -> List[Dict]:
     '''
     Transform the GCP Storage Bucket response object for Neo4j ingestion
 
@@ -106,7 +106,11 @@ def transform_gcp_buckets(bucket_res: Dict) -> List[Dict]:
         bucket['default_kms_key_name'] = b.get('encryption', {}).get('defaultKmsKeyName')
         bucket['log_bucket'] = b.get('logging', {}).get('logBucket')
         bucket['requester_pays'] = b.get('billing', {}).get('requesterPays', None)
-        bucket_list.append(bucket)
+        if regions is None:
+            bucket_list.append(bucket)
+        else:
+            if bucket['region'] in regions:
+                bucket_list.append(bucket)
     return bucket_list
 
 
@@ -211,7 +215,7 @@ def cleanup_gcp_buckets(neo4j_session: neo4j.Session, common_job_parameters: Dic
 @timeit
 def sync(
     neo4j_session: neo4j.Session, storage: Resource, project_id: str, gcp_update_tag: int,
-    common_job_parameters: Dict,
+    common_job_parameters: Dict, regions: list
 ) -> None:
     """
     Get GCP instances using the Storage resource object, ingest to Neo4j, and clean up old data.
@@ -236,7 +240,7 @@ def sync(
     """
     logger.info("Syncing Storage objects for project %s.", project_id)
     storage_res = get_gcp_buckets(storage, project_id)
-    bucket_list = transform_gcp_buckets(storage_res)
+    bucket_list = transform_gcp_buckets(storage_res, regions)
     load_gcp_buckets(neo4j_session, bucket_list, gcp_update_tag)
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gcp_buckets(neo4j_session, common_job_parameters)

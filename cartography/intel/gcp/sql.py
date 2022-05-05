@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
-def get_sql_instances(sql: Resource, project_id: str) -> List[Dict]:
+def get_sql_instances(sql: Resource, project_id: str, regions: list) -> List[Dict]:
     """
         Returns a list of sql instances for a given project.
 
@@ -38,6 +38,11 @@ def get_sql_instances(sql: Resource, project_id: str) -> List[Dict]:
                     item['id'] = f"project/{project_id}/instances/{item['name']}"
                     item['ipV4Enabled'] = item.get('settings',{}).get('ipConfiguration',{}).get('ipV4Enabled',False)
                     sql_instances.append(item)
+                    if regions is None:
+                        sql_instances.append(item)
+                    else:
+                        if item.get('region') in regions:
+                            sql_instances.append(item)
             request = sql.instances().list_next(previous_request=request, previous_response=response)
         return sql_instances
     except HttpError as e:
@@ -232,7 +237,7 @@ def cleanup_sql(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> No
 @timeit
 def sync(
     neo4j_session: neo4j.Session, sql: Resource, project_id: str, gcp_update_tag: int,
-    common_job_parameters: Dict,
+    common_job_parameters: Dict, regions: list
 ) -> None:
     """
         Get GCP Cloud SQL Instances and Users using the Cloud SQL resource object,
@@ -258,7 +263,7 @@ def sync(
     """
     logger.info("Syncing GCP Cloud SQL for project %s.", project_id)
     # SQL INSTANCES
-    sqlinstances = get_sql_instances(sql, project_id)
+    sqlinstances = get_sql_instances(sql, project_id, regions)
     load_sql_instances(neo4j_session, sqlinstances, project_id, gcp_update_tag)
     label.sync_labels(neo4j_session, sqlinstances, gcp_update_tag, common_job_parameters)
 

@@ -55,7 +55,7 @@ def get_apigateway_locations(apigateway: Resource, project_id: str) -> List[Dict
 
 
 @timeit
-def get_apis(apigateway: Resource, project_id: str, locations: List[Dict]) -> List[Dict]:
+def get_apis(apigateway: Resource, project_id: str, regions: list) -> List[Dict]:
     """
         Returns a list of apis within the given project.
 
@@ -73,22 +73,27 @@ def get_apis(apigateway: Resource, project_id: str, locations: List[Dict]) -> Li
     """
     apis = []
     try:
-        for location in locations:
-            req = apigateway.projects().locations().apis().list(parent=f"projects/{project_id}/locations/{location['id']}")
+        if regions is None:
+            regions = ['global']
+
+        for region in regions:
+            req = apigateway.projects().locations().apis().list(parent=f'projects/{project_id}/locations/{region}')
             while req is not None:
                 res = req.execute()
                 if res.get('apis', []):
                     for api in res['apis']:
                         api['project_id'] = project_id
-                        api['id'] = api.get('name','').split('/')[-1]
+                        api['id'] = api['name']
                         x = api.get('name').split('/')
                         x = x[x.index('locations') + 1].split("-")
                         api['region'] = x[0]
                         if len(x) > 1:
                             api['region'] = f"{x[0]}-{x[1]}"
+
                         api_entities, public_access = get_api_policy_entities(apigateway,api,project_id)
                         api['enities'] = api_entities
                         api['public_access'] = public_access
+
                         apis.append(api)
                 req = apigateway.projects().locations().apis().list_next(previous_request=req, previous_response=res)
         return apis
@@ -144,7 +149,7 @@ def get_api_policy_entities(apigateway: Resource, api: Dict,project_id: str) -> 
             raise
 
 @timeit
-def get_api_configs(apigateway: Resource, project_id: str, apis: List[Dict]) -> List[Dict]:
+def get_api_configs(apigateway: Resource, project_id: str, regions: list) -> List[Dict]:
     """
         Returns a list of apis configs within the given project.
 
@@ -162,15 +167,19 @@ def get_api_configs(apigateway: Resource, project_id: str, apis: List[Dict]) -> 
     """
     api_configs = []
     try:
-        for api in apis:
+        if regions is None:
+            regions = ['global']
+
+        for region in regions:
             req = apigateway.projects().locations().apis().configs().list(
-                parent=api['name'],
+                parent=f'projects/{project_id}/locations/{region}/apis/*',
             )
             while req is not None:
                 res = req.execute()
                 if res.get('apiConfigs', []):
                     for apiConfig in res['apiConfigs']:
-                        apiConfig['api_id'] = api['id']
+                        apiConfig['api_id'] = f"projects/{project_id}/locations/{region}/apis/\
+                            {apiConfig.get('name').split('/')[-3]}"
                         apiConfig['id'] = apiConfig['name']
                         apiConfig['project_id'] = project_id
                         x = apiConfig.get('name').split('/')
@@ -197,7 +206,7 @@ def get_api_configs(apigateway: Resource, project_id: str, apis: List[Dict]) -> 
             raise
 
 @timeit
-def get_gateways(apigateway: Resource, project_id: str, locations: List[Dict]) -> List[Dict]:
+def get_gateways(apigateway: Resource, project_id: str, regions: list) -> List[Dict]:
     """
         Returns a list of gateways within the given project.
 
@@ -215,8 +224,11 @@ def get_gateways(apigateway: Resource, project_id: str, locations: List[Dict]) -
     """
     gateways = []
     try:
-        for location in locations:
-            req = apigateway.projects().locations().gateways().list(parent=f'projects/{project_id}/locations/{location["id"]}')
+        if regions is None:
+            regions = ['global']
+
+        for region in regions:
+            req = apigateway.projects().locations().gateways().list(parent=f'projects/{project_id}/locations/{region}')
             while req is not None:
                 res = req.execute()
                 if res.get('gateways', []):
@@ -650,7 +662,7 @@ def cleanup_api_gateways(neo4j_session: neo4j.Session, common_job_parameters: Di
 @timeit
 def sync(
     neo4j_session: neo4j.Session, apigateway: Resource, project_id: str, gcp_update_tag: int,
-    common_job_parameters: Dict,
+    common_job_parameters: Dict, regions: list,
 ) -> None:
     """
         Get GCP API Gateway Resources using the API Gateway resource object, ingest to Neo4j, and clean up old data.
@@ -681,7 +693,7 @@ def sync(
     cleanup_apigateway_locations(neo4j_session, common_job_parameters)
     label.sync_labels(neo4j_session, locations, gcp_update_tag, common_job_parameters)
     # API Gateway APIs
-    apis = get_apis(apigateway, project_id)
+    apis = get_apis(apigateway, project_id, regions)
     load_apis(neo4j_session, apis, project_id, gcp_update_tag)
     for api in api:
         load_apis_entity_relation(neo4j_session,api,gcp_update_tag)
@@ -689,13 +701,13 @@ def sync(
     cleanup_apis(neo4j_session, common_job_parameters)
     label.sync_labels(neo4j_session, apis, gcp_update_tag, common_job_parameters)
     # API Gateway API Configs
-    configs = get_api_configs(apigateway, project_id)
+    configs = get_api_configs(apigateway, project_id, regions)
     load_api_configs(neo4j_session, configs, project_id, gcp_update_tag)
     # Cleanup API Gateway Configs
     cleanup_api_configs(neo4j_session, common_job_parameters)
     label.sync_labels(neo4j_session, configs, gcp_update_tag, common_job_parameters)
     # API Gateway Gateways
-    gateways = get_gateways(apigateway, project_id)
+    gateways = get_gateways(apigateway, project_id, regions)
     load_gateways(neo4j_session, gateways, project_id, gcp_update_tag)
     for gateway in gateways:
         load_gateway_entity_relation(neo4j_session,gateway,gcp_update_tag)
