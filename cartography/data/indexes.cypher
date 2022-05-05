@@ -209,7 +209,7 @@ CREATE INDEX ON :S3Bucket(name);
 CREATE INDEX ON :S3Bucket(arn);
 CREATE INDEX ON :User(arn);
 CREATE INDEX ON :AzureTenant(id);
-CREATE INDEX ON :AzurePrincipal(email);
+CREATE INDEX ON :AzurePrincipal(id);
 CREATE INDEX ON :AzureSubscription(id);
 CREATE INDEX ON :AzureCosmosDBAccount(id);
 CREATE INDEX ON :AzureCosmosDBLocation(id);
