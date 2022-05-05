@@ -229,7 +229,7 @@ def get_gateways(apigateway: Resource, project_id: str, locations: List[Dict]) -
                         if len(x) > 1:
                             gateway['region'] = f"{x[0]}-{x[1]}"
                         gateway_entities, public_access = get_api_policy_entities(apigateway,gateway,project_id)
-                        gateway['enities'] = gateway_entities
+                        gateway['entities'] = gateway_entities
                         gateway['public_access'] = public_access
                         gateways.append(gateway)
                 req = apigateway.projects().locations().gateways().list_next(previous_request=req, previous_response=res)
@@ -452,10 +452,10 @@ def load_apis_entity_relation_tx(tx: neo4j.Transaction, api: Dict, gcp_update_ta
     """
     ingest_entities = """
     UNWIND {entities} AS entity
-    MATCH (principal) where principal.email = entity.email
+    MATCH (principal:GCPPrincipal{email:entity.email})
     WITH principal
     MATCH (api:GCPAPI{id: {api_id}})
-    MERGE (principal)-[r:USES]->(api_id)
+    MERGE (principal)-[r:USES]->(api)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {gcp_update_tag}    """
     tx.run(
@@ -490,10 +490,10 @@ def load_gateway_entity_relation_tx(tx: neo4j.Transaction, gateway: Dict, gcp_up
     """
     ingest_entities = """
     UNWIND {entities} AS entity
-    MATCH (principal) where principal.email = entity.email
+    MATCH (principal:GCPPrincipal{email:entity.email})
     WITH principal
     MATCH (gateway:GCPAPIGateway{id: {gateway_id}})
-    MERGE (principal)-[r:USES]->(gateway_id)
+    MERGE (principal)-[r:USES]->(gateway)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {gcp_update_tag}    """
     tx.run(

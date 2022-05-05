@@ -66,7 +66,7 @@ def get_gcp_functions(function: Resource, project_id: str) -> List[Dict]:
                     func['id'] = func['name']
                     func['region'] = region.get('locationId', 'global')
                     function_entities, public_access = get_function_policy_entities(function,func,project_id)
-                    func['enities'] = function_entities
+                    func['entities'] = function_entities
                     func['public_access'] = public_access
                     functions.append(func)
                 request = function.projects().locations().functions().list_next(
@@ -103,7 +103,7 @@ def get_function_policy_entities(function: Resource, fns: Dict, project_id: str)
         :return: List of gcp function iam policy users
     """
     try:
-        iam_policy = function.projects().locations().functions().getIamPolicy(resource=fns['name'])
+        iam_policy = function.projects().locations().functions().getIamPolicy(resource=fns['name']).execute()
         bindings = iam_policy.get('bindings',[])
         entity_list, public_access = iam.transform_bindings(bindings, project_id)
         return entity_list, public_access
@@ -207,10 +207,10 @@ def load_function_entity_relation_tx(tx: neo4j.Transaction, function: Dict, gcp_
     """
     ingest_entities = """
     UNWIND {entities} AS entity
-    MATCH (principal) where principal.email = entity.email
+    MATCH (principal:GCPPrincipal{email:entity.email})
     WITH principal
-    MATCH (function:GCPFunction{id: {gateway_id}})
-    MERGE (principal)-[r:USES]->(function_id)
+    MATCH (function:GCPFunction{id: {function_id}})
+    MERGE (principal)-[r:USES]->(function)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {gcp_update_tag}    """
     tx.run(

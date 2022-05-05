@@ -307,6 +307,11 @@ def transform_bindings(bindings: Dict, project_id: str) -> tuple:
     entity_list.extend(groups)
     entity_list.extend(domains)
     entity_list.extend(service_account)
+    # return (
+    #     [dict(s) for s in {frozenset(d.items()) for d in users}],
+    #     [dict(s) for s in {frozenset(d.items()) for d in groups}],
+    #     [dict(s) for s in {frozenset(d.items()) for d in domains}],
+    # )
     return entity_list, public_access
     
 
@@ -317,8 +322,8 @@ def load_service_accounts(
 ) -> None:
     ingest_service_accounts = """
     UNWIND {service_accounts_list} AS sa
-    MERGE (u:GCPServiceAccount{id: sa.name})
-    ON CREATE SET u.firstseen = timestamp()
+    MERGE (u:GCPServiceAccount{id: sa.id})
+    ON CREATE SET u:GCPPrincipal, u.firstseen = timestamp()
     SET u.name = sa.name, u.displayname = sa.displayName,
     u.email = sa.email,
     u.region = {region},
@@ -464,10 +469,12 @@ def _load_users_tx(tx: neo4j.Transaction, users: List[Dict], project_id: str, gc
     UNWIND {users} as usr
     MERGE (user:GCPUser{id:usr.id})
     ON CREATE SET
+        user:GCPPrincipal,
         user.firstseen = timestamp()
     SET
         user.id = usr.id,
         user.primaryEmail = usr.primaryEmail,
+        user.email = usr.primaryEmail,
         user.isAdmin = usr.isAdmin,
         user.isDelegatedAdmin = usr.isDelegatedAdmin,
         user.agreedToTerms = usr.agreedToTerms,
@@ -520,6 +527,7 @@ def _load_groups_tx(tx: neo4j.Transaction, groups: List[Dict], project_id: str, 
     UNWIND {groups} as grp
     MERGE (group:GCPGroup{id:grp.id})
     ON CREATE SET
+        group:GCPPrincipal,
         group.firstseen = timestamp()
     SET
         group.id = grp.id,
@@ -564,6 +572,7 @@ def _load_domains_tx(
     UNWIND {domains} as dmn
     MERGE (domain:GCPDomain{id:dmn.id})
     ON CREATE SET
+        domain:GCPPrincipal,
         domain.firstseen = timestamp()
     SET
         domain.verified = dmn.verified,
@@ -573,6 +582,7 @@ def _load_domains_tx(
         domain.domainName = dmn.domainName,
         domain.kind = dmn.kind,
         domain.name = dmn.domainName,
+        domain.email = dmn.domainName
         domain.lastupdated = {gcp_update_tag}
     WITH domain
     MATCH (p:GCPProject{id: {project_id}})
@@ -645,7 +655,7 @@ def attach_role_to_user(
 ) -> None:
     ingest_script = """
     MATCH (role:GCPRole{id:{RoleId}})
-    MERGE (user:GCPUser{id:{UserId}})
+    MATCH (user:GCPPrincipal{id:{UserId}})
     MERGE (user)-[r:ASSUME_ROLE]->(role)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {gcp_update_tag}
@@ -666,7 +676,7 @@ def attach_role_to_service_account(
 ) -> None:
     ingest_script = """
     MATCH (role:GCPRole{id:{RoleId}})
-    MERGE (sa:GCPServiceAccount{id:{saId}})
+    MATCH (sa:GCPPrincipal{id:{saId}})
     MERGE (sa)-[r:ASSUME_ROLE]->(role)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {gcp_update_tag}
@@ -687,7 +697,7 @@ def attach_role_to_group(
 ) -> None:
     ingest_script = """
     MATCH (role:GCPRole{id:{RoleId}})
-    MERGE (group:GCPGroup{id:{GroupId}})
+    MATCH (group:GCPPrincipal{id:{GroupId}})
     MERGE (group)-[r:ASSUME_ROLE]->(role)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {gcp_update_tag}
@@ -708,7 +718,7 @@ def attach_role_to_domain(
 ) -> None:
     ingest_script = """
     MATCH (role:GCPRole{id:{RoleId}})
-    MERGE (domain:GCPDomain{id:{DomainId}})
+    MATCH (domain:GCPPrincipal{id:{DomainId}})
     MERGE (domain)-[r:ASSUME_ROLE]->(role)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {gcp_update_tag}

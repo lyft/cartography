@@ -82,7 +82,7 @@ def get_kms_keyrings(kms: Resource, kms_locations: List[Dict], project_id: str) 
                         key_ring['id'] = key_ring['name']
                         key_ring['region'] = loc.get("locationId", "global")
                         key_ring_entities, public_access = get_keyring_policy_entities(kms,key_ring,project_id)
-                        key_ring['enities'] = key_ring_entities
+                        key_ring['entities'] = key_ring_entities
                         key_ring['public_access'] = public_access
                         key_rings.append(key_ring)
                 request = kms.projects().locations().keyRings().list_next(
@@ -122,7 +122,7 @@ def get_keyring_policy_entities(kms: Resource, keyring: Dict, project_id:str) ->
         :return: List of keyring iam policy users
     """
     try:
-        iam_policy = kms.projects().locations().keyrings().getIamPolicy(resource = keyring['id'])
+        iam_policy = kms.projects().locations().keyRings().getIamPolicy(resource = keyring['id']).execute()
         bindings = iam_policy.get('bindings',[])
         entity_list, public_access = iam.transform_bindings(bindings, project_id)
         return entity_list, public_access
@@ -304,10 +304,10 @@ def load_keyring_entity_relation_tx(tx: neo4j.Transaction, keyring: Dict, gcp_up
     """
     ingest_entities = """
     UNWIND {entities} AS entity
-    MATCH (principal) where principal.email = entity.email
+    MATCH (principal:GCPPrincipal{email:entity.email})
     WITH principal
     MATCH (keyring:GCPKMSKeyRing{id: {keyring_id}})
-    MERGE (principal)-[r:USES]->(keyring_id)
+    MERGE (principal)-[r:USES]->(keyring)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {gcp_update_tag}    """
     tx.run(

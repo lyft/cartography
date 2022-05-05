@@ -120,7 +120,7 @@ def get_gcp_instance_responses(project_id: str, zones: Optional[List[Dict]], com
                 for accessconfig in networkinterface.get('accessConfig',[]):
                     item['accessConfig']=accessconfig.get('name',None)
             compute_entities, public_access = get_gcp_instance_policy_entities(project_id,zone,compute)
-            item['enities'] = compute_entities
+            item['entities'] = compute_entities
             item['public_access'] = public_access
             response_objects.append(item)
     return response_objects
@@ -215,24 +215,23 @@ def transform_gcp_instances(response_objects: List[Dict]) -> List[Dict]:
     """
     instance_list = []
     for res in response_objects:
-        prefix = res['id']
+        prefix = res['zone']
         prefix_fields = _parse_instance_uri_prefix(prefix)
+        
+        res['partial_uri'] = f"{prefix}/{res['name']}"
+        res['project_id'] = prefix_fields.project_id
+        res['zone_name'] = prefix_fields.zone_name
+        res['accessConfig'] = res.get('accessConfig',None)
+        res['public_access'] = res.get('public_access',[])
 
-        for instance in res.get('items', []):
-            instance['partial_uri'] = f"{prefix}/{instance['name']}"
-            instance['project_id'] = prefix_fields.project_id
-            instance['zone_name'] = prefix_fields.zone_name
-            instance['accessConfig'] = res.get('accessConfig',None)
-            instance['public_access'] = res.get['public_access',[]]
+        x = res['zone_name'].split('-')
+        res['region'] = f"{x[0]}-{x[1]}"
 
-            x = instance['zone_name'].split('-')
-            instance['region'] = f"{x[0]}-{x[1]}"
+        for nic in res.get('networkInterfaces', []):
+            nic['subnet_partial_uri'] = _parse_compute_full_uri_to_partial_uri(nic['subnetwork'])
+            nic['vpc_partial_uri'] = _parse_compute_full_uri_to_partial_uri(nic['network'])
 
-            for nic in instance.get('networkInterfaces', []):
-                nic['subnet_partial_uri'] = _parse_compute_full_uri_to_partial_uri(nic['subnetwork'])
-                nic['vpc_partial_uri'] = _parse_compute_full_uri_to_partial_uri(nic['network'])
-
-            instance_list.append(instance)
+        instance_list.append(res)
     return instance_list
 
 
@@ -243,10 +242,9 @@ def _parse_instance_uri_prefix(prefix: str) -> InstanceUriPrefix:
     :return: namedtuple with fields project_id and zone_name
     """
     split_list = prefix.split('/')
-
     return InstanceUriPrefix(
-        project_id=split_list[1],
-        zone_name=split_list[3],
+        project_id=split_list[6],
+        zone_name=split_list[8],
     )
 
 
@@ -607,15 +605,15 @@ def load_compute_entity_relation_tx(tx: neo4j.Transaction, instance: Dict, gcp_u
     """
     ingest_entities = """
     UNWIND {entities} AS entity
-    MATCH (principal) where principal.email = entity.email
+    MATCH (principal:GCPPrincipal{email:entity.email})
     WITH principal
     MATCH (i:GCPInstance{id: {instance_id}})
-    MERGE (principal)-[r:USES]->(instance_id)
+    MERGE (principal)-[r:USES]->(i)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {gcp_update_tag}    """
     tx.run(
         ingest_entities,
-        instance_id=instance.get('id',None),
+        instance_id=instance.get('name',None),
         entities = instance.get('entities',[]),
         gcp_update_tag=gcp_update_tag,
     )
