@@ -96,6 +96,7 @@ CREATE INDEX ON :GCPNetworkTag(id);
 CREATE INDEX ON :GCPNicAccessConfig(id);
 CREATE INDEX ON :GCPOrganization(id);
 CREATE INDEX ON :GCPProject(id);
+CREATE INDEX ON :GCPPRincipal(email);
 CREATE INDEX ON :GCPProject(projectnumber);
 CREATE INDEX ON :GCPBucket(id);
 CREATE INDEX ON :GCPBucketLabel(key);
