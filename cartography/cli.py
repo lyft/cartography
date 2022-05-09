@@ -531,6 +531,7 @@ def run_aws(request):
         neo4j_max_connection_lifetime=request['neo4j']['connection_lifetime'],
         credentials=request['credentials'],
         params=request['params'],
+        aws_requested_syncs=request.get('services', None),
     )
 
     if request['logging']['mode'] == "verbose":
