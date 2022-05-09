@@ -1,3 +1,4 @@
+import time
 import logging
 from typing import Any
 from typing import Dict
@@ -122,6 +123,10 @@ def sync_ebs_volumes(
         neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str],
         current_aws_account_id: str, update_tag: int, common_job_parameters: Dict,
 ) -> None:
+    tic = time.perf_counter()
+
+    logger.info("Syncing volumes for account '%s', at %s.", current_aws_account_id, tic)
+
     for region in regions:
         logger.debug("Syncing volumes for region '%s' in account '%s'.", region, current_aws_account_id)
         data = get_volumes(boto3_session, region)
@@ -129,3 +134,6 @@ def sync_ebs_volumes(
         load_volumes(neo4j_session, transformed_data, region, current_aws_account_id, update_tag)
         load_volume_relationships(neo4j_session, transformed_data, update_tag)
     cleanup_volumes(neo4j_session, common_job_parameters)
+
+    toc = time.perf_counter()
+    print(f"Total Time to process volumes: {toc - tic:0.4f} seconds")

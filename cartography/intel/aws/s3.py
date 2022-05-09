@@ -8,6 +8,8 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 
+import time
+
 import boto3
 import botocore
 import neo4j
@@ -667,7 +669,9 @@ def sync(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
     update_tag: int, common_job_parameters: Dict,
 ) -> None:
-    logger.info("Syncing S3 for account '%s'.", current_aws_account_id)
+    tic = time.perf_counter()
+
+    logger.info("Syncing S3 for account '%s', at %s.", current_aws_account_id, tic)
     bucket_data = get_s3_bucket_list(boto3_session)
 
     load_s3_buckets(neo4j_session, bucket_data, current_aws_account_id, update_tag)
@@ -676,3 +680,6 @@ def sync(
     acl_and_policy_data_iter = get_s3_bucket_details(boto3_session, bucket_data)
     load_s3_details(neo4j_session, acl_and_policy_data_iter, current_aws_account_id, update_tag, common_job_parameters)
     cleanup_s3_bucket_acl_and_policy(neo4j_session, common_job_parameters)
+    
+    toc = time.perf_counter()
+    print(f"Total Time to process S3: {toc - tic:0.4f} seconds")

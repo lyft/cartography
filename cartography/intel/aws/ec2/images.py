@@ -1,3 +1,4 @@
+import time
 import logging
 from typing import Dict
 from typing import List
@@ -113,9 +114,16 @@ def sync_ec2_images(
         neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str],
         current_aws_account_id: str, update_tag: int, common_job_parameters: Dict,
 ) -> None:
+    tic = time.perf_counter()
+
+    logger.info("Syncing images for account '%s', at %s.", current_aws_account_id, tic)
+
     for region in regions:
         logger.info("Syncing images for region '%s' in account '%s'.", region, current_aws_account_id)
         images_in_use = get_images_in_use(neo4j_session, region, current_aws_account_id)
         data = get_images(boto3_session, region, images_in_use)
         load_images(neo4j_session, data, region, current_aws_account_id, update_tag)
     cleanup_images(neo4j_session, common_job_parameters)
+
+    toc = time.perf_counter()
+    print(f"Total Time to process images: {toc - tic:0.4f} seconds")

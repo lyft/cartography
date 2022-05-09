@@ -1,3 +1,4 @@
+import time
 import logging
 from typing import Dict
 from typing import List
@@ -93,8 +94,15 @@ def sync_elastic_ip_addresses(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str],
     current_aws_account_id: str, update_tag: int, common_job_parameters: Dict,
 ) -> None:
+    tic = time.perf_counter()
+
+    logger.info("Syncing Elastic IP Addresses for account '%s', at %s.", current_aws_account_id, tic)
+
     for region in regions:
         logger.info(f"Syncing Elastic IP Addresses for region {region} in account {current_aws_account_id}.")
         addresses = get_elastic_ip_addresses(boto3_session, region)
         load_elastic_ip_addresses(neo4j_session, addresses, region, current_aws_account_id, update_tag)
     cleanup_elastic_ip_addresses(neo4j_session, common_job_parameters)
+
+    toc = time.perf_counter()
+    print(f"Total Time to process Elastic IP Addresses: {toc - tic:0.4f} seconds")

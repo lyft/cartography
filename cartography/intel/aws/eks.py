@@ -1,3 +1,4 @@
+import time
 import logging
 from typing import Any
 from typing import Dict
@@ -100,6 +101,10 @@ def sync(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
     update_tag: int, common_job_parameters: Dict,
 ) -> None:
+    tic = time.perf_counter()
+
+    logger.info("Syncing EKS for account '%s', at %s.", current_aws_account_id, tic)
+
     for region in regions:
         logger.info("Syncing EKS for region '%s' in account '%s'.", region, current_aws_account_id)
 
@@ -112,3 +117,6 @@ def sync(
         load_eks_clusters(neo4j_session, cluster_data, region, current_aws_account_id, update_tag)
 
     cleanup(neo4j_session, common_job_parameters)
+
+    toc = time.perf_counter()
+    print(f"Total Time to process EKS: {toc - tic:0.4f} seconds")

@@ -454,8 +454,15 @@ def sync_ec2_instances(
         neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str],
         current_aws_account_id: str, update_tag: int, common_job_parameters: Dict,
 ) -> None:
+    tic = time.perf_counter()
+
+    logger.info("Syncing EC2 instances for account '%s', at %s.", current_aws_account_id, tic)
+
     for region in regions:
         logger.info("Syncing EC2 instances for region '%s' in account '%s'.", region, current_aws_account_id)
         data = get_ec2_instances(boto3_session, region)
         load_ec2_instances(neo4j_session, data, region, current_aws_account_id, update_tag)
     cleanup_ec2_instances(neo4j_session, common_job_parameters)
+
+    toc = time.perf_counter()
+    print(f"Total Time to process EC2 instances: {toc - tic:0.4f} seconds")
