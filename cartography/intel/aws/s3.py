@@ -26,18 +26,37 @@ logger = logging.getLogger(__name__)
 @timeit
 def get_s3_bucket_list(boto3_session: boto3.session.Session) -> List[Dict]:
     client = boto3_session.client('s3')
-    # NOTE no paginator available for this operation
-    buckets = client.list_buckets()
-    for bucket in buckets['Buckets']:
-        try:
-            bucket['Region'] = client.get_bucket_location(Bucket=bucket['Name'])['LocationConstraint']
-        except ClientError as e:
-            if _is_common_exception(e, bucket):
-                bucket['Region'] = None
-                logger.warning("skipping bucket='{}' due to exception.".format(bucket['Name']))
-                continue
-            else:
-                raise
+    buckets = {}
+    
+    try:
+        # NOTE no paginator available for this operation
+        buckets = client.list_buckets()
+        for bucket in buckets['Buckets']:
+            try:
+                bucket['Region'] = client.get_bucket_location(Bucket=bucket['Name'])['LocationConstraint']
+
+            except ClientError as e:
+                if _is_common_exception(e, bucket):
+                    bucket['Region'] = None
+                    logger.warning("skipping bucket='{}' due to exception.".format(bucket['Name']))
+                    continue
+                else:
+                    raise
+        
+    except ClientError as e:
+        if "AccessDenied" in e.args[0]:
+            logger.warning(
+                f's3:list_buckets failed with AccessDeniedException; continuing sync.',
+                exc_info=True,
+            )
+        elif e.response['Error']['Code'] == 'AccessDeniedException':
+            logger.warning(
+                f's3:list_buckets failed with AccessDeniedException; continuing sync.',
+                exc_info=True,
+            )
+        else:
+            raise
+
     return buckets
 
 
@@ -53,7 +72,7 @@ def get_s3_bucket_details(
     # a local store for s3 clients so that we may re-use clients for an AWS region
     s3_regional_clients: Dict[Any, Any] = {}
 
-    for bucket in bucket_data['Buckets']:
+    for bucket in bucket_data.get('Buckets',[]):
         # Note: bucket['Region'] is sometimes None because
         # client.get_bucket_location() does not return a location constraint for buckets
         # in us-east-1 region
@@ -613,7 +632,7 @@ def load_s3_buckets(neo4j_session: neo4j.Session, data: Dict, current_aws_accoun
     # there doesn't seem to be a way to retreive the mapping but we can get the current context account
     # so we map to that directly
 
-    for bucket in data["Buckets"]:
+    for bucket in data.get("Buckets",[]):
         arn = "arn:aws:s3:::" + bucket["Name"]
         neo4j_session.run(
             ingest_bucket,

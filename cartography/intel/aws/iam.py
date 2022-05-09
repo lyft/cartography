@@ -951,7 +951,7 @@ def _set_used_state_tx(
     MATCH (:CloudanixWorkspace{id: {WORKSPACE_ID}})-[:OWNER]->
     (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(n)
     WHERE ()-[:TRUSTS_AWS_PRINCIPAL]->(n) AND n.lastupdated = {update_tag}
-    AND labels(n) IN [['AWSUser'], ['AWSGroup'],]
+    AND labels(n) IN [['AWSUser'], ['AWSGroup']]
     SET n.isUsed = {isUsed}
     """
 

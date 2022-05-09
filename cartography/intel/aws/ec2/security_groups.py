@@ -7,6 +7,7 @@ import boto3
 import neo4j
 
 from .util import get_botocore_config
+from botocore.exceptions import ClientError
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -18,10 +19,22 @@ logger = logging.getLogger(__name__)
 @aws_handle_regions
 def get_ec2_security_group_data(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
     client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
-    paginator = client.get_paginator('describe_security_groups')
-    security_groups: List[Dict] = []
-    for page in paginator.paginate():
-        security_groups.extend(page['SecurityGroups'])
+    security_groups = []
+    try:
+        paginator = client.get_paginator('describe_security_groups')
+        security_groups: List[Dict] = []
+        for page in paginator.paginate():
+            security_groups.extend(page['SecurityGroups'])
+    
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'AccessDeniedException' or e.response['Error']['Code'] == 'UnauthorizedOperation':
+            logger.warning(
+                f'ec2:describe_security_groups failed with AccessDeniedException; continuing sync.',
+                exc_info=True,
+            )
+        else:
+            raise
+
     return security_groups
 
 

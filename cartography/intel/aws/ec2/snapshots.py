@@ -5,6 +5,7 @@ from typing import List
 import boto3
 import neo4j
 
+from botocore.exceptions import ClientError
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -16,12 +17,24 @@ logger = logging.getLogger(__name__)
 @aws_handle_regions
 def get_snapshots(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
     client = boto3_session.client('ec2', region_name=region)
-    paginator = client.get_paginator('describe_snapshots')
-    query_params = {'OwnerIds': ['self']}
+    snapshots = []
+    try:
 
-    snapshots: List[Dict] = []
-    for page in paginator.paginate(**query_params):
-        snapshots.extend(page['Snapshots'])
+        paginator = client.get_paginator('describe_snapshots')
+        query_params = {'OwnerIds': ['self']}
+
+        snapshots: List[Dict] = []
+        for page in paginator.paginate(**query_params):
+            snapshots.extend(page['Snapshots'])
+
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'AccessDeniedException' or e.response['Error']['Code'] == 'UnauthorizedOperation':
+            logger.warning(
+                f'ec2:describe_snapshots failed with AccessDeniedException; continuing sync.',
+                exc_info=True,
+            )
+        else:
+            raise
 
     return snapshots
 
