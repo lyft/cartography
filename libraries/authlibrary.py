@@ -40,16 +40,27 @@ class AuthLibrary:
                 ExternalId=args['external_id'],
                 RoleArn=args['role_arn'],
                 RoleSessionName=args['role_session_name'],
+                DurationSeconds=3600*4,
             )
 
         except ClientError as e:
-            raise classify_error(self.context.logger, e, 'Failed to assume role')
+            try:
+                response = sts_client.assume_role(
+                    ExternalId=args['external_id'],
+                    RoleArn=args['role_arn'],
+                    RoleSessionName=args['role_session_name'],
+                    DurationSeconds=3600,
+                )
+
+            except ClientError as e:
+                # TODO: Check if the error is related to Duration, if yes, retry with 1 hour
+                raise classify_error(self.context.logger, e, 'Failed to assume role')
 
         return {
             'aws_access_key_id': response['Credentials']['AccessKeyId'],
             'aws_secret_access_key': response['Credentials']['SecretAccessKey'],
             'session_token': response['Credentials']['SessionToken'],
-            # 'expiration': response['Credentials']['Expiration'],
+            'expiration': response['Credentials']['Expiration'],
         }
 
     def get_session(self, creds):
