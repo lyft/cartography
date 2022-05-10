@@ -2,6 +2,7 @@ import json
 import logging
 from typing import Dict
 from typing import List
+from . import iam
 
 import neo4j
 from googleapiclient.discovery import HttpError
@@ -69,6 +70,9 @@ def get_gcp_functions(function: Resource, project_id: str, regions: list) -> Lis
                 for func in response.get('functions', []):
                     func['id'] = func['name']
                     func['region'] = region.get('locationId', 'global')
+                    function_entities, public_access = get_function_policy_entities(function,func,project_id)
+                    func['entities'] = function_entities
+                    func['public_access'] = public_access
                     functions.append(func)
                 request = function.projects().locations().functions().list_next(
                     previous_request=request,
@@ -87,6 +91,38 @@ def get_gcp_functions(function: Resource, project_id: str, regions: list) -> Lis
         else:
             raise
 
+def get_function_policy_entities(function: Resource, fns: Dict, project_id: str) -> List[Dict]:
+    """
+        Returns a list of users attached to IAM policy of a Function within the given project.
+
+        :type function: The GCP function resource object
+        :param function: The functions resource object created by googleapiclient.discovery.build()
+
+        :type Func: Dict
+        :param fns: The Dict object of function
+
+        :type project_id: str
+        :param project_id: Current Google Project Id
+
+        :rtype: list
+        :return: List of gcp function iam policy users
+    """
+    try:
+        iam_policy = function.projects().locations().functions().getIamPolicy(resource=fns['name']).execute()
+        bindings = iam_policy.get('bindings',[])
+        entity_list, public_access = iam.transform_bindings(bindings, project_id)
+        return entity_list, public_access
+    except HttpError as e:
+        err = json.loads(e.content.decode('utf-8'))['error']
+        if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
+            logger.warning(
+                (
+                    "Could not retrieve iam policy of function on project %s due to permissions issues. Code: %s, Message: %s"
+                ), project_id, err['code'], err['message'],
+            )
+            return []
+        else:
+            raise
 
 @timeit
 def load_functions(session: neo4j.Session, data_list: List[Dict], project_id: str, update_tag: int) -> None:
@@ -121,10 +157,12 @@ def _load_functions_tx(tx: neo4j.Transaction, functions: List[Resource], project
         function.entryPoint = func.entryPoint,
         function.runtime = func.runtime,
         function.timeout = func.timeout,
+        function.public_access = func.public_access,
         function.availableMemoryMb = func.availableMemoryMb,
         function.serviceAccountEmail = func.serviceAccountEmail,
         function.updateTime = func.updateTime,
         function.versionId = func.versionId,
+        function.ingressSettings = func.ingressSettings,
         function.network = func.network,
         function.maxInstances = func.maxInstances,
         function.vpcConnector = func.vpcConnector,
@@ -149,6 +187,43 @@ def _load_functions_tx(tx: neo4j.Transaction, functions: List[Resource], project
         gcp_update_tag=gcp_update_tag,
     )
 
+@timeit
+def load_function_entity_relation(session: neo4j.Session, function: Dict, update_tag: int) -> None:
+    session.write_transaction(load_function_entity_relation_tx, function, update_tag)
+
+
+@timeit
+def load_function_entity_relation_tx(tx: neo4j.Transaction, function: Dict, gcp_update_tag: int) -> None:
+    """
+        :type neo4j_session: Neo4j session object
+        :param neo4j session: The Neo4j session object
+
+        :type function: Dict
+        :param fucntion: Function Dict object
+
+        :type project_id: str
+        :param project_id: Current Google Project Id
+
+        :type gcp_update_tag: timestamp
+        :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
+
+        :rtype: NoneType
+        :return: Nothing
+    """
+    ingest_entities = """
+    UNWIND {entities} AS entity
+    MATCH (principal:GCPPrincipal{email:entity.email})
+    WITH principal
+    MATCH (function:GCPFunction{id: {function_id}})
+    MERGE (principal)-[r:USES]->(function)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}    """
+    tx.run(
+        ingest_entities,
+        function_id=function.get('id',None),
+        entities = function.get('entities',[]),
+        gcp_update_tag=gcp_update_tag,
+    )
 
 @timeit
 def cleanup_gcp_functions(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
@@ -165,7 +240,6 @@ def cleanup_gcp_functions(neo4j_session: neo4j.Session, common_job_parameters: D
     :return: Nothing
     """
     run_cleanup_job('gcp_function_cleanup.json', neo4j_session, common_job_parameters)
-
 
 @timeit
 def sync(
@@ -197,5 +271,7 @@ def sync(
     # FUNCTIONS
     functions = get_gcp_functions(function, project_id, regions)
     load_functions(neo4j_session, functions, project_id, gcp_update_tag)
+    for function in functions:
+        load_function_entity_relation(neo4j_session,function,gcp_update_tag)
     cleanup_gcp_functions(neo4j_session, common_job_parameters)
     label.sync_labels(neo4j_session, functions, gcp_update_tag, common_job_parameters)

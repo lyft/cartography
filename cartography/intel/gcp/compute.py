@@ -9,6 +9,7 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Set
+from . import iam
 
 import neo4j
 from googleapiclient.discovery import HttpError
@@ -114,9 +115,33 @@ def get_gcp_instance_responses(project_id: str, zones: Optional[List[Dict]], com
     for zone in zones:
         req = compute.instances().list(project=project_id, zone=zone['name'])
         res = req.execute()
-        response_objects.append(res)
+        for item in res.get('items',[]):
+            for networkinterface in item.get('networkInterfaces',[]):
+                for accessconfig in networkinterface.get('accessConfig',[]):
+                    item['accessConfig']=accessconfig.get('name',None)
+            compute_entities, public_access = get_gcp_instance_policy_entities(project_id,zone,compute)
+            item['entities'] = compute_entities
+            item['public_access'] = public_access
+            response_objects.append(item)
     return response_objects
 
+@timeit
+def get_gcp_instance_policy_entities(project_id: str, zone: Dict, compute: Resource) -> List[Resource]:
+    """
+    Return list of GCP instance policy users response objects for a given project and zones
+    :param project_id: The project ID
+    :param zones: The list of zones to query for instances
+    :param compute: The compute resource object
+    :return: A list of iam_policy users
+    """
+    req = compute.instances().list(project=project_id, zone=zone['name'])
+    res = req.execute()
+    for item in res.get('items',[]):
+        iam_policy = compute.instances().getIamPolicy(\
+            project=project_id,zone=zone['name'],resource=item.get("id")).execute()
+        bindings = iam_policy.get('bindings',[])
+        entity_list, public_access = iam.transform_bindings(bindings, project_id)
+    return entity_list,public_access
 
 @timeit
 def get_gcp_subnets(projectid: str, region: str, compute: Resource) -> Resource:
@@ -190,22 +215,23 @@ def transform_gcp_instances(response_objects: List[Dict]) -> List[Dict]:
     """
     instance_list = []
     for res in response_objects:
-        prefix = res['id']
+        prefix = res['zone']
         prefix_fields = _parse_instance_uri_prefix(prefix)
+        
+        res['partial_uri'] = f"{prefix}/{res['name']}"
+        res['project_id'] = prefix_fields.project_id
+        res['zone_name'] = prefix_fields.zone_name
+        res['accessConfig'] = res.get('accessConfig',None)
+        res['public_access'] = res.get('public_access',[])
 
-        for instance in res.get('items', []):
-            instance['partial_uri'] = f"{prefix}/{instance['name']}"
-            instance['project_id'] = prefix_fields.project_id
-            instance['zone_name'] = prefix_fields.zone_name
+        x = res['zone_name'].split('-')
+        res['region'] = f"{x[0]}-{x[1]}"
 
-            x = instance['zone_name'].split('-')
-            instance['region'] = f"{x[0]}-{x[1]}"
+        for nic in res.get('networkInterfaces', []):
+            nic['subnet_partial_uri'] = _parse_compute_full_uri_to_partial_uri(nic['subnetwork'])
+            nic['vpc_partial_uri'] = _parse_compute_full_uri_to_partial_uri(nic['network'])
 
-            for nic in instance.get('networkInterfaces', []):
-                nic['subnet_partial_uri'] = _parse_compute_full_uri_to_partial_uri(nic['subnetwork'])
-                nic['vpc_partial_uri'] = _parse_compute_full_uri_to_partial_uri(nic['network'])
-
-            instance_list.append(instance)
+        instance_list.append(res)
     return instance_list
 
 
@@ -216,10 +242,9 @@ def _parse_instance_uri_prefix(prefix: str) -> InstanceUriPrefix:
     :return: namedtuple with fields project_id and zone_name
     """
     split_list = prefix.split('/')
-
     return InstanceUriPrefix(
-        project_id=split_list[1],
-        zone_name=split_list[3],
+        project_id=split_list[6],
+        zone_name=split_list[8],
     )
 
 
@@ -524,6 +549,8 @@ def load_gcp_instances(neo4j_session: neo4j.Session, data: List[Dict], gcp_updat
     i.region = {region},
     i.zone_name = {ZoneName},
     i.project_id = {ProjectId},
+    i.public_access = {PublicAccess},
+    i.accessConfig = {AccessConfig},
     i.status = {Status},
     i.lastupdated = {gcp_update_tag}
     WITH i, p
@@ -539,8 +566,10 @@ def load_gcp_instances(neo4j_session: neo4j.Session, data: List[Dict], gcp_updat
             PartialUri=instance['partial_uri'],
             SelfLink=instance['selfLink'],
             InstanceName=instance['name'],
+            AccessConfig = instance['accessConfig'],
             ZoneName=instance['zone_name'],
             Hostname=instance.get('hostname', None),
+            PublicAccess = instance.get('public_access',None),
             Status=instance['status'],
             region=instance['region'],
             gcp_update_tag=gcp_update_tag,
@@ -550,6 +579,44 @@ def load_gcp_instances(neo4j_session: neo4j.Session, data: List[Dict], gcp_updat
         _attach_gcp_vpc(neo4j_session, instance['partial_uri'], gcp_update_tag)
         _attach_instance_service_account(neo4j_session, instance, gcp_update_tag)
 
+
+@timeit
+def load_compute_entity_relation(session: neo4j.Session, instance: Dict, update_tag: int) -> None:
+    session.write_transaction(load_compute_entity_relation_tx, instance, update_tag)
+
+
+@timeit
+def load_compute_entity_relation_tx(tx: neo4j.Transaction, instance: Dict, gcp_update_tag: int) -> None:
+    """
+        :type neo4j_session: Neo4j session object
+        :param neo4j session: The Neo4j session object
+
+        :type instance: Dict
+        :param instance: instance Dict object
+
+        :type project_id: str
+        :param project_id: Current Google Project Id
+
+        :type gcp_update_tag: timestamp
+        :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
+
+        :rtype: NoneType
+        :return: Nothing
+    """
+    ingest_entities = """
+    UNWIND {entities} AS entity
+    MATCH (principal:GCPPrincipal{email:entity.email})
+    WITH principal
+    MATCH (i:GCPInstance{id: {instance_id}})
+    MERGE (principal)-[r:USES]->(i)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}    """
+    tx.run(
+        ingest_entities,
+        instance_id=instance.get('name',None),
+        entities = instance.get('entities',[]),
+        gcp_update_tag=gcp_update_tag,
+    )
 
 @timeit
 def load_gcp_vpcs(neo4j_session: neo4j.Session, vpcs: List[Dict], gcp_update_tag: int) -> None:
@@ -1077,7 +1144,6 @@ def cleanup_gcp_instances(neo4j_session: neo4j.Session, common_job_parameters: D
     """
     run_cleanup_job('gcp_compute_instance_cleanup.json', neo4j_session, common_job_parameters)
 
-
 @timeit
 def cleanup_gcp_vpcs(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     """
@@ -1141,11 +1207,12 @@ def sync_gcp_instances(
     """
     instance_responses = get_gcp_instance_responses(project_id, zones, compute)
     instance_list = transform_gcp_instances(instance_responses)
+    for instance in instance_list:
+        load_compute_entity_relation(neo4j_session,instance,gcp_update_tag)
     load_gcp_instances(neo4j_session, instance_list, gcp_update_tag)
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gcp_instances(neo4j_session, common_job_parameters)
     label.sync_labels(neo4j_session, instance_list, gcp_update_tag, common_job_parameters)
-
 
 @timeit
 def sync_gcp_vpcs(
