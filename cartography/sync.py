@@ -112,6 +112,7 @@ def run_with_config(sync, config):
             config.neo4j_uri,
             auth=neo4j_auth,
             max_connection_lifetime=config.neo4j_max_connection_lifetime,
+            keep_alive=config.neo4j_keep_alive,
         )
     except neobolt.exceptions.ServiceUnavailable as e:
         logger.debug("Error occurred during Neo4j connect.", exc_info=True)

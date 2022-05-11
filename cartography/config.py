@@ -76,6 +76,7 @@ class Config:
         neo4j_user=None,
         neo4j_password=None,
         neo4j_max_connection_lifetime=None,
+        neo4j_keep_alive=False,
         update_tag=None,
         aws_sync_all_profiles=False,
         azure_sync_all_subscriptions=False,
@@ -107,6 +108,7 @@ class Config:
         self.neo4j_user = neo4j_user
         self.neo4j_password = neo4j_password
         self.neo4j_max_connection_lifetime = neo4j_max_connection_lifetime
+        self.neo4j_keep_alive = neo4j_keep_alive,
         self.update_tag = update_tag
         self.aws_sync_all_profiles = aws_sync_all_profiles
         self.azure_sync_all_subscriptions = azure_sync_all_subscriptions
