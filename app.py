@@ -111,7 +111,10 @@ def process_request(context, args):
             "workspace": args['workspace'],
             "actions": args['actions'],
             "resultTopic": args['resultTopic'],
+            "requestTopic": args.get("requestTopic", None),
         },
+        "updatetag": args.get("updateTag", None),
+        "services": args.get("services", None)
     }
 
     resp = cartography.cli.run_aws(body)

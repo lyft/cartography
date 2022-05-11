@@ -14,13 +14,25 @@ logger = logging.getLogger(__name__)
 
 @timeit
 @aws_handle_regions
-def get_dynamodb_tables(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
+def get_dynamodb_tables(boto3_session: boto3.session.Session, region: str, common_job_parameters) -> List[Dict]:
     client = boto3_session.client('dynamodb', region_name=region)
     paginator = client.get_paginator('list_tables')
     dynamodb_tables = []
     for page in paginator.paginate():
         for table_name in page['TableNames']:
             dynamodb_tables.append(client.describe_table(TableName=table_name))
+
+    if common_job_parameters.get('pagination', {}).get('dynamodb', None):
+        has_next_page = False
+        page_start = (common_job_parameters['pageNo'] - 1) * common_job_parameters['pageSize']
+        page_end = page_start + common_job_parameters['pageSize']
+        if page_end > len(dynamodb_tables) or page_end == len(dynamodb_tables):
+            dynamodb_tables = dynamodb_tables[page_start:]
+        else:
+            has_next_page = True
+            dynamodb_tables = dynamodb_tables[page_start:page_end]
+        common_job_parameters['pagination']['dynamodb']['has_next_page'] = has_next_page
+
     return dynamodb_tables
 
 
@@ -104,7 +116,7 @@ def sync_dynamodb_tables(
 ) -> None:
     for region in regions:
         logger.info("Syncing DynamoDB for region in '%s' in account '%s'.", region, current_aws_account_id)
-        data = get_dynamodb_tables(boto3_session, region)
+        data = get_dynamodb_tables(boto3_session, region, common_job_parameters)
         load_dynamodb_tables(neo4j_session, data, region, current_aws_account_id, aws_update_tag)
     cleanup_dynamodb_tables(neo4j_session, common_job_parameters)
 

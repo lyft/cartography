@@ -42,6 +42,8 @@ def get_images(boto3_session: boto3.session.Session, region: str, image_ids: Lis
     images = []
     try:
         self_images = client.describe_images(Owners=['self'])['Images']
+        for image in self_images:
+            image['region'] = region
         images.extend(self_images)
     except ClientError as e:
         logger.warning(f"Failed retrieve images for region - {region}. Error - {e}")
@@ -52,6 +54,7 @@ def get_images(boto3_session: boto3.session.Session, region: str, image_ids: Lis
             _ids = [image["ImageId"] for image in images]
             for image in images_in_use:
                 if image["ImageId"] not in _ids:
+                    image['region'] = region
                     images.append(image)
     except ClientError as e:
         logger.warning(f"Failed retrieve images for region - {region}. Error - {e}")
@@ -60,7 +63,7 @@ def get_images(boto3_session: boto3.session.Session, region: str, image_ids: Lis
 
 @timeit
 def load_images(
-        neo4j_session: neo4j.Session, data: List[Dict], region: str, current_aws_account_id: str, update_tag: int,
+        neo4j_session: neo4j.Session, data: List[Dict], current_aws_account_id: str, update_tag: int,
 ) -> None:
     ingest_images = """
     UNWIND {images_list} as image
@@ -87,14 +90,14 @@ def load_images(
 
     # AMI IDs are unique to each AWS Region. Hence we make an 'ID' string that is a combo of ImageId and region
     for image in data:
-        image['ID'] = image['ImageId'] + '|' + region
-        image['arn'] = f"arn:aws:ec2:{region}:{current_aws_account_id}:image/{image['ImageId']}"
+        image['ID'] = image['ImageId'] + '|' + image.get('region', '')
+        image['arn'] = f"arn:aws:ec2:{image.get('region', '')}:{current_aws_account_id}:image/{image['ImageId']}"
 
     neo4j_session.run(
         ingest_images,
         images_list=data,
         AWS_ACCOUNT_ID=current_aws_account_id,
-        Region=region,
+        Region=image.get('region', ''),
         update_tag=update_tag,
     )
 
@@ -113,9 +116,22 @@ def sync_ec2_images(
         neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str],
         current_aws_account_id: str, update_tag: int, common_job_parameters: Dict,
 ) -> None:
+    data = []
     for region in regions:
         logger.info("Syncing images for region '%s' in account '%s'.", region, current_aws_account_id)
         images_in_use = get_images_in_use(neo4j_session, region, current_aws_account_id)
-        data = get_images(boto3_session, region, images_in_use)
-        load_images(neo4j_session, data, region, current_aws_account_id, update_tag)
+        data.append(get_images(boto3_session, region, images_in_use))
+
+    if common_job_parameters.get('pagination', {}).get('ec2:images', None):
+        has_next_page = False
+        page_start = (common_job_parameters['pageNo'] - 1) * common_job_parameters['pageSize']
+        page_end = page_start + common_job_parameters['pageSize']
+        if page_end > len(data) or page_end == len(data):
+            data = data[page_start:]
+        else:
+            has_next_page = True
+            data = data[page_start:page_end]
+        common_job_parameters['pagination']['ec2:images']['hasNextPage'] = has_next_page
+
+    load_images(neo4j_session, data, current_aws_account_id, update_tag)
     cleanup_images(neo4j_session, common_job_parameters)

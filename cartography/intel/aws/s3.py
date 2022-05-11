@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
-def get_s3_bucket_list(boto3_session: boto3.session.Session) -> List[Dict]:
+def get_s3_bucket_list(boto3_session: boto3.session.Session, common_job_parameters) -> List[Dict]:
     client = boto3_session.client('s3')
     # NOTE no paginator available for this operation
     buckets = client.list_buckets()
@@ -38,6 +38,17 @@ def get_s3_bucket_list(boto3_session: boto3.session.Session) -> List[Dict]:
                 continue
             else:
                 raise
+    if common_job_parameters.get('pagination', {}).get('s3', None):
+        has_next_page = False
+        page_start = (common_job_parameters['pageNo'] - 1) * common_job_parameters['pageSize']
+        page_end = page_start + common_job_parameters['pageSize']
+        if page_end > len(buckets) or page_end == len(buckets):
+            buckets = buckets[page_start:]
+        else:
+            has_next_page = True
+            buckets = buckets[page_start:page_end]
+        common_job_parameters['pagination']['s3']['hasNextPage'] = has_next_page
+
     return buckets
 
 
@@ -649,7 +660,7 @@ def sync(
     update_tag: int, common_job_parameters: Dict,
 ) -> None:
     logger.info("Syncing S3 for account '%s'.", current_aws_account_id)
-    bucket_data = get_s3_bucket_list(boto3_session)
+    bucket_data = get_s3_bucket_list(boto3_session, common_job_parameters)
 
     load_s3_buckets(neo4j_session, bucket_data, current_aws_account_id, update_tag)
     cleanup_s3_buckets(neo4j_session, common_job_parameters)

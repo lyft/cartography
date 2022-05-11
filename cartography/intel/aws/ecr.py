@@ -21,6 +21,8 @@ def get_ecr_repositories(boto3_session: boto3.session.Session, region: str) -> L
     ecr_repositories: List[Dict] = []
     for page in paginator.paginate():
         ecr_repositories.extend(page['repositories'])
+    for repo in ecr_repositories:
+        repo['region'] = region
     return ecr_repositories
 
 
@@ -33,12 +35,14 @@ def get_ecr_repository_images(boto3_session: boto3.session.Session, region: str,
     ecr_repository_images: List[Dict] = []
     for page in paginator.paginate(repositoryName=repository_name):
         ecr_repository_images.extend(page['imageIds'])
+    for image in ecr_repository_images:
+        image['region'] = region
     return ecr_repository_images
 
 
 @timeit
 def load_ecr_repositories(
-    neo4j_session: neo4j.Session, repos: List[Dict], region: str, current_aws_account_id: str,
+    neo4j_session: neo4j.Session, repos: List[Dict], current_aws_account_id: str,
     aws_update_tag: int,
 ) -> None:
     query = """
@@ -47,7 +51,7 @@ def load_ecr_repositories(
         ON CREATE SET repo.firstseen = timestamp(),
             repo.arn = ecr_repo.repositoryArn,
             repo.name = ecr_repo.repositoryName,
-            repo.region = {Region},
+            repo.region = ecr_repo.region,
             repo.created_at = ecr_repo.createdAt
         SET repo.lastupdated = {aws_update_tag},
             repo.uri = ecr_repo.repositoryUri
@@ -58,11 +62,9 @@ def load_ecr_repositories(
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = {aws_update_tag}
     """
-    logger.info(f"Loading {len(repos)} ECR repositories for region {region} into graph.")
     neo4j_session.run(
         query,
         Repositories=repos,
-        Region=region,
         aws_update_tag=aws_update_tag,
         AWS_ACCOUNT_ID=current_aws_account_id,
     ).consume()  # See issue #440
@@ -91,7 +93,6 @@ def transform_ecr_repository_images(repo_data: Dict) -> List[Dict]:
 
 def _load_ecr_repo_img_tx(
     tx: neo4j.Transaction, repo_images_list: List[Dict], aws_update_tag: int,
-    region: str,
 ) -> None:
     query = """
     UNWIND {RepoList} as repo_img
@@ -106,7 +107,7 @@ def _load_ecr_repo_img_tx(
         ON CREATE SET img.firstseen = timestamp(),
             img.digest = repo_img.imageDigest
         SET img.lastupdated = {aws_update_tag},
-            img.region = {Region}
+            img.region = repo_img.region
         WITH ri, img, repo_img
 
         MERGE (ri)-[r1:IMAGE]->(img)
@@ -119,16 +120,15 @@ def _load_ecr_repo_img_tx(
         ON CREATE SET r2.firstseen = timestamp()
         SET r2.lastupdated = {aws_update_tag}
     """
-    tx.run(query, RepoList=repo_images_list, Region=region, aws_update_tag=aws_update_tag)
+    tx.run(query, RepoList=repo_images_list, aws_update_tag=aws_update_tag)
 
 
 @timeit
 def load_ecr_repository_images(
-    neo4j_session: neo4j.Session, repo_images_list: List[Dict], region: str,
+    neo4j_session: neo4j.Session, repo_images_list: List[Dict],
     aws_update_tag: int,
 ) -> None:
-    logger.info(f"Loading {len(repo_images_list)} ECR repository images in {region} into graph.")
-    neo4j_session.write_transaction(_load_ecr_repo_img_tx, repo_images_list, aws_update_tag, region)
+    neo4j_session.write_transaction(_load_ecr_repo_img_tx, repo_images_list, aws_update_tag)
 
 
 @timeit
@@ -142,14 +142,26 @@ def sync(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
     update_tag: int, common_job_parameters: Dict,
 ) -> None:
+    repositories = []
     for region in regions:
         logger.info("Syncing ECR for region '%s' in account '%s'.", region, current_aws_account_id)
-        image_data = {}
-        repositories = get_ecr_repositories(boto3_session, region)
-        for repo in repositories:
-            repo_image_obj = get_ecr_repository_images(boto3_session, region, repo['repositoryName'])
-            image_data[repo['repositoryUri']] = repo_image_obj
-        load_ecr_repositories(neo4j_session, repositories, region, current_aws_account_id, update_tag)
-        repo_images_list = transform_ecr_repository_images(image_data)
-        load_ecr_repository_images(neo4j_session, repo_images_list, region, update_tag)
+        repositories.get(get_ecr_repositories(boto3_session, region))
+
+    if common_job_parameters.get('pagination', {}).get('ec2:snapshots', None):
+        has_next_page = False
+        page_start = (common_job_parameters['pageNo'] - 1) * common_job_parameters['pageSize']
+        page_end = page_start + common_job_parameters['pageSize']
+        if page_end > len(repositories) or page_end == len(repositories):
+            repositories = repositories[page_start:]
+        else:
+            has_next_page = True
+            repositories = repositories[page_start:page_end]
+        common_job_parameters['pagination']['ec2:snapshots']['hasNextPage'] = has_next_page
+    image_data = {}
+    for repo in repositories:
+        repo_image_obj = get_ecr_repository_images(boto3_session, repo['region'], repo['repositoryName'])
+        image_data[repo['repositoryUri']] = repo_image_obj
+    load_ecr_repositories(neo4j_session, repositories, current_aws_account_id, update_tag)
+    repo_images_list = transform_ecr_repository_images(image_data)
+    load_ecr_repository_images(neo4j_session, repo_images_list, update_tag)
     cleanup(neo4j_session, common_job_parameters)

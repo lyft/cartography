@@ -18,7 +18,10 @@ logger = logging.getLogger(__name__)
 @aws_handle_regions
 def get_ec2_vpcs(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
     client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
-    return client.describe_vpcs()['Vpcs']
+    vpcs = client.describe_vpcs()['Vpcs']
+    for vpc in vpcs:
+        vpc['region'] = region
+    return vpcs
 
 
 def _get_cidr_association_statement(block_type: str) -> str:
@@ -78,7 +81,7 @@ def load_cidr_association_set(
 
 @timeit
 def load_ec2_vpcs(
-    neo4j_session: neo4j.Session, data: List[Dict], region: str, current_aws_account_id: str,
+    neo4j_session: neo4j.Session, data: List[Dict], current_aws_account_id: str,
     update_tag: int,
 ) -> None:
     # https://docs.aws.amazon.com/cli/latest/reference/ec2/describe-vpcs.html
@@ -128,6 +131,7 @@ def load_ec2_vpcs(
     SET r.lastupdated = {update_tag}"""
 
     for vpc in data:
+        region = vpc.get('region', '')
         vpc_id = vpc["VpcId"]  # fail if not present
         vpc_arn = f"arn:aws:ec2:{region}:{current_aws_account_id}:vpc/{vpc_id}"
 
@@ -172,8 +176,21 @@ def sync_vpc(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
     update_tag: int, common_job_parameters: Dict,
 ) -> None:
+    data = []
     for region in regions:
         logger.info("Syncing EC2 VPC for region '%s' in account '%s'.", region, current_aws_account_id)
-        data = get_ec2_vpcs(boto3_session, region)
-        load_ec2_vpcs(neo4j_session, data, region, current_aws_account_id, update_tag)
+        data.append(get_ec2_vpcs(boto3_session, region))
+
+    if common_job_parameters.get('pagination', {}).get('ec2:vpc', None):
+        has_next_page = False
+        page_start = (common_job_parameters['pageNo'] - 1) * common_job_parameters['pageSize']
+        page_end = page_start + common_job_parameters['pageSize']
+        if page_end > len(data) or page_end == len(data):
+            data = data[page_start:]
+        else:
+            has_next_page = True
+            data = data[page_start:page_end]
+        common_job_parameters['pagination']['ec2:vpc']['hasNextPage'] = has_next_page
+
+    load_ec2_vpcs(neo4j_session, data, current_aws_account_id, update_tag)
     cleanup_ec2_vpcs(neo4j_session, common_job_parameters)

@@ -2,6 +2,7 @@ import logging
 import time
 import traceback
 from collections import OrderedDict
+from urllib import response
 
 import neobolt.exceptions
 from neo4j import GraphDatabase
@@ -75,7 +76,7 @@ class Sync:
             for stage_name, stage_func in self._stages.items():
                 logger.info("Starting sync stage '%s'", stage_name)
                 try:
-                    stage_func(neo4j_session, config)
+                    response = stage_func(neo4j_session, config)
                 except (KeyboardInterrupt, SystemExit) as ex:
                     logger.warning("Sync interrupted during stage '%s'.", stage_name)
 
@@ -90,6 +91,7 @@ class Sync:
 
                 logger.info("Finishing sync stage '%s'", stage_name)
         logger.info("Finishing sync with update tag '%d'", config.update_tag)
+        return response
 
 
 def run_with_config(sync, config):

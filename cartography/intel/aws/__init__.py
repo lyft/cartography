@@ -236,6 +236,7 @@ def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
         "UPDATE_TAG": config.update_tag,
         "permission_relationships_file": config.permission_relationships_file,
         "WORKSPACE_ID": config.params['workspace']['id_string'],
+        "pagination": {},
     }
 
     try:
@@ -287,7 +288,12 @@ def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
 
     requested_syncs: List[str] = list(RESOURCE_FUNCTIONS.keys())
     if config.aws_requested_syncs:
-        requested_syncs = parse_and_validate_aws_requested_syncs(config.aws_requested_syncs)
+        aws_requested_syncs_string = ""
+        for service in config.aws_requested_syncs:
+            aws_requested_syncs_string += f"{service.get('name', '')},"
+            if service.get('pagination', None):
+                common_job_parameters['pagination'][service.get('name', None)] = service.getservice.get('pagination', {})
+        requested_syncs = parse_and_validate_aws_requested_syncs(aws_requested_syncs_string)
 
     _sync_multiple_accounts(
         neo4j_session,
@@ -314,3 +320,4 @@ def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
         neo4j_session,
         common_job_parameters,
     )
+    return common_job_parameters

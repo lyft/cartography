@@ -23,6 +23,8 @@ def get_ec2_instances(boto3_session: boto3.session.Session, region: str) -> List
     reservations: List[Dict] = []
     for page in paginator.paginate():
         reservations.extend(page['Reservations'])
+    for reservation in reservations:
+        reservation['region'] = region
     return reservations
 
 
@@ -285,10 +287,11 @@ def _load_ec2_security_groups_tx(
 
 @timeit
 def load_ec2_instances(
-        neo4j_session: neo4j.Session, data: List[Dict], region: str, current_aws_account_id: str,
+        neo4j_session: neo4j.Session, data: List[Dict], current_aws_account_id: str,
         update_tag: int,
 ) -> None:
     for reservation in data:
+        region = reservation.get('region', '')
         reservation_id = reservation["ReservationId"]
         neo4j_session.write_transaction(
             _load_ec2_reservation_tx,
@@ -441,8 +444,21 @@ def sync_ec2_instances(
         neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str],
         current_aws_account_id: str, update_tag: int, common_job_parameters: Dict,
 ) -> None:
+    data = []
     for region in regions:
         logger.info("Syncing EC2 instances for region '%s' in account '%s'.", region, current_aws_account_id)
-        data = get_ec2_instances(boto3_session, region)
-        load_ec2_instances(neo4j_session, data, region, current_aws_account_id, update_tag)
+        data.append(get_ec2_instances(boto3_session, region))
+
+    if common_job_parameters.get('pagination', {}).get('ec2:instance', None):
+        has_next_page = False
+        page_start = (common_job_parameters['pageNo'] - 1) * common_job_parameters['pageSize']
+        page_end = page_start + common_job_parameters['pageSize']
+        if page_end > len(data) or page_end == len(data):
+            data = data[page_start:]
+        else:
+            has_next_page = True
+            data = data[page_start:page_end]
+        common_job_parameters['pagination']['ec2:instance']['hasNextPage'] = has_next_page
+
+    load_ec2_instances(neo4j_session, data, current_aws_account_id, update_tag)
     cleanup_ec2_instances(neo4j_session, common_job_parameters)
