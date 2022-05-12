@@ -104,6 +104,10 @@ def get_acl(bucket: Dict, client: botocore.client.BaseClient) -> Optional[Dict]:
             pass
         else:
             raise
+    except IllegalLocationConstraintException:
+        logger.warning(
+            f"Failed to retrieve S3 bucket ACL for {bucket['Name']} - IllegalLocationConstraintException",
+        )
     except EndpointConnectionError:
         logger.warning(
             f"Failed to retrieve S3 bucket ACL for {bucket['Name']} - Could not connect to the endpoint URL",
