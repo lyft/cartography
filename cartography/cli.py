@@ -100,6 +100,16 @@ class CLI:
                 '.'
             ),
         )
+        parser.add_argument(
+            '--neo4j-keep-alive',
+            type=int,
+            default=3600,
+            help=(
+                'Enable TCP keep-alive.  Experimental flag.'
+                'https://neo4j.com/docs/api/python-driver/current/api.html#keep-alive-ref'
+                '.'
+            ),
+        )
         # TODO add the below parameters to a 'sync' subparser
         parser.add_argument(
             '--update-tag',
