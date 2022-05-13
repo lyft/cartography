@@ -83,7 +83,14 @@ def get_policy(bucket: Dict, client: botocore.client.BaseClient) -> Optional[Dic
         if _is_common_exception(e, bucket):
             pass
         else:
-            raise
+            if e.__class__.__name__ == 'ClientError':
+                logger.warning(
+                    f"Failed to retrieve S3 bucket policy for {bucket['Name']} - {e.__class__.__name__} {e.__dict__['response']['Error']['Message']}",
+                )
+            else:
+                logger.warning(
+                    f"Failed to retrieve S3 bucket policy for {bucket['Name']} - {e.__class__.__name__}",
+                )      
     except EndpointConnectionError:
         logger.warning(
             f"Failed to retrieve S3 bucket policy for {bucket['Name']} - Could not connect to the endpoint URL",
@@ -103,11 +110,14 @@ def get_acl(bucket: Dict, client: botocore.client.BaseClient) -> Optional[Dict]:
         if _is_common_exception(e, bucket):
             pass
         else:
-            raise
-    except IllegalLocationConstraintException:
-        logger.warning(
-            f"Failed to retrieve S3 bucket ACL for {bucket['Name']} - IllegalLocationConstraintException",
-        )
+            if e.__class__.__name__ == 'ClientError':
+                logger.warning(
+                    f"Failed to retrieve S3 bucket ACL for {bucket['Name']} - {e.__class__.__name__} {e.__dict__['response']['Error']['Message']}",
+                )
+            else:
+                logger.warning(
+                    f"Failed to retrieve S3 bucket ACL for {bucket['Name']} - {e.__class__.__name__}",
+                )                
     except EndpointConnectionError:
         logger.warning(
             f"Failed to retrieve S3 bucket ACL for {bucket['Name']} - Could not connect to the endpoint URL",
@@ -127,7 +137,14 @@ def get_encryption(bucket: Dict, client: botocore.client.BaseClient) -> Optional
         if _is_common_exception(e, bucket):
             pass
         else:
-            raise
+            if e.__class__.__name__ == 'ClientError':
+                logger.warning(
+                    f"Failed to retrieve S3 bucket encryption for {bucket['Name']} - {e.__class__.__name__} {e.__dict__['response']['Error']['Message']}",
+                )
+            else:
+                logger.warning(
+                    f"Failed to retrieve S3 bucket encryption for {bucket['Name']} - {e.__class__.__name__}",
+                )      
     except EndpointConnectionError:
         logger.warning(
             f"Failed to retrieve S3 bucket encryption for {bucket['Name']} - Could not connect to the endpoint URL",
@@ -147,7 +164,14 @@ def get_versioning(bucket: Dict, client: botocore.client.BaseClient) -> Optional
         if _is_common_exception(e, bucket):
             pass
         else:
-            raise
+            if e.__class__.__name__ == 'ClientError':
+                logger.warning(
+                    f"Failed to retrieve S3 bucket versioning for {bucket['Name']} - {e.__class__.__name__} {e.__dict__['response']['Error']['Message']}",
+                )
+            else:
+                logger.warning(
+                    f"Failed to retrieve S3 bucket versioning for {bucket['Name']} - {e.__class__.__name__}",
+                )      
     except EndpointConnectionError:
         logger.warning(
             f"Failed to retrieve S3 bucket versioning for {bucket['Name']} - Could not connect to the endpoint URL",
@@ -167,7 +191,14 @@ def get_public_access_block(bucket: Dict, client: botocore.client.BaseClient) ->
         if _is_common_exception(e, bucket):
             pass
         else:
-            raise
+            if e.__class__.__name__ == 'ClientError':
+                logger.warning(
+                    f"Failed to retrieve S3 bucket public access block for {bucket['Name']} - {e.__class__.__name__} {e.__dict__['response']['Error']['Message']}",
+                )
+            else:
+                logger.warning(
+                    f"Failed to retrieve S3 bucket public access block for {bucket['Name']} - {e.__class__.__name__}",
+                )      
     except EndpointConnectionError:
         logger.warning(
             f"Failed to retrieve S3 bucket public access block for {bucket['Name']}"
