@@ -492,6 +492,8 @@ class CLI:
             return {
                 "status": "success",
                 "message": f"output - {output}",
+                "updateTag": output.get('UPDATE_TAG', None),
+                "pagination": output.get('pagination', None),
             }
 
         except KeyboardInterrupt:

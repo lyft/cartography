@@ -818,6 +818,18 @@ def sync(
 ) -> None:
     logger.info("Syncing Azure Storage for subscription '%s'.", subscription_id)
     storage_account_list = get_storage_account_list(credentials, subscription_id, regions)
+
+    if common_job_parameters.get('pagination', {}).get('sql', None):
+        has_next_page = False
+        page_start = (common_job_parameters.get('pagination', {}).get('storage', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('storage', {})['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('storage', {})['pageSize']
+        if page_end > len(storage_account_list) or page_end == len(storage_account_list):
+            storage_account_list = storage_account_list[page_start:]
+        else:
+            has_next_page = True
+            storage_account_list = storage_account_list[page_start:page_end]
+        common_job_parameters['pagination']['storage']['hasNextPage'] = has_next_page
+
     load_storage_account_data(neo4j_session, subscription_id, storage_account_list, sync_tag)
     sync_storage_account_details(neo4j_session, credentials, subscription_id, storage_account_list, sync_tag)
     cleanup_azure_storage_accounts(neo4j_session, common_job_parameters)
