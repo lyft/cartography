@@ -20,6 +20,9 @@ def get_elastic_ip_addresses(boto3_session: boto3.session.Session, region: str) 
     client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
     try:
         addresses = client.describe_addresses()['Addresses']
+        for address in addresses:
+            address['region'] = region
+
     except ClientError as e:
         logger.warning(f"Failed retrieve address for region - {region}. Error - {e}")
         raise
@@ -28,7 +31,7 @@ def get_elastic_ip_addresses(boto3_session: boto3.session.Session, region: str) 
 
 @timeit
 def load_elastic_ip_addresses(
-    neo4j_session: neo4j.Session, elastic_ip_addresses: List[Dict], region: str,
+    neo4j_session: neo4j.Session, elastic_ip_addresses: List[Dict],
     current_aws_account_id: str, update_tag: int,
 ) -> None:
     """
@@ -37,7 +40,7 @@ def load_elastic_ip_addresses(
     (:EC2Instance)-[:ELASTIC_IP_ADDRESS]->(:ElasticIpAddress),
     (:NetworkInterface)-[:ELASTIC_IP_ADDRESS]->(:ElasticIpAddress),
     """
-    logger.info(f"Loading {len(elastic_ip_addresses)} Elastic IP Addresses in {region}.")
+    logger.info(f"Loading {len(elastic_ip_addresses)} Elastic IP Addresses")
     ingest_addresses = """
     UNWIND {elastic_ip_addresses} as eia
         MERGE (address: ElasticIPAddress{id: eia.AllocationId})
@@ -49,7 +52,7 @@ def load_elastic_ip_addresses(
         address.private_ip_address = eia.PrivateIpAddress, address.public_ipv4_pool = eia.PublicIpv4Pool,
         address.network_border_group = eia.NetworkBorderGroup, address.customer_owned_ip = eia.CustomerOwnedIp,
         address.customer_owned_ipv4_pool = eia.CustomerOwnedIpv4Pool, address.carrier_ip = eia.CarrierIp,
-        address.region = {Region}, address.lastupdated = {update_tag}
+        address.region = address.region, address.lastupdated = {update_tag}
         WITH address
 
         MATCH (account:AWSAccount{id: {aws_account_id}})
@@ -73,7 +76,6 @@ def load_elastic_ip_addresses(
     neo4j_session.run(
         ingest_addresses,
         elastic_ip_addresses=elastic_ip_addresses,
-        Region=region,
         aws_account_id=current_aws_account_id,
         update_tag=update_tag,
     )
@@ -93,8 +95,21 @@ def sync_elastic_ip_addresses(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str],
     current_aws_account_id: str, update_tag: int, common_job_parameters: Dict,
 ) -> None:
+    addresses = []
     for region in regions:
         logger.info(f"Syncing Elastic IP Addresses for region {region} in account {current_aws_account_id}.")
-        addresses = get_elastic_ip_addresses(boto3_session, region)
-        load_elastic_ip_addresses(neo4j_session, addresses, region, current_aws_account_id, update_tag)
+        addresses.extend(get_elastic_ip_addresses(boto3_session, region))
+
+    if common_job_parameters.get('pagination', {}).get('elastic_ip_addresses', None):
+        has_next_page = False
+        page_start = (common_job_parameters.get('pagination', {}).get('elastic_ip_addresses', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('elastic_ip_addresses', {})['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('elastic_ip_addresses', {})['pageSize']
+        if page_end > len(addresses) or page_end == len(addresses):
+            addresses = addresses[page_start:]
+        else:
+            has_next_page = True
+            addresses = addresses[page_start:page_end]
+        common_job_parameters['pagination']['elastic_ip_addresses']['hasNextPage'] = has_next_page
+
+    load_elastic_ip_addresses(neo4j_session, addresses, current_aws_account_id, update_tag)
     cleanup_elastic_ip_addresses(neo4j_session, common_job_parameters)

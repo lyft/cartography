@@ -24,18 +24,12 @@ def get_ecs_clusters(boto3_session: boto3.session.Session, region: str) -> Tuple
 
         client = boto3_session.client('ecs', region_name=region)
         paginator = client.get_paginator('list_clusters')
-        clusters: List[Dict[str, Any]] = []
         cluster_arns: List[str] = []
         for page in paginator.paginate():
             cluster_arns.extend(page.get('clusterArns', []))
-        # TODO: also include attachment info, and make relationships between the attachments
-        # and the cluster.
-        includes = ['SETTINGS', 'CONFIGURATIONS']
-        for i in range(0, len(cluster_arns), 100):
-            cluster_arn_chunk = cluster_arns[i:i + 100]
-            cluster_chunk = client.describe_clusters(clusters=cluster_arn_chunk, include=includes)
-            clusters.extend(cluster_chunk.get('clusters', []))
-        return (cluster_arns, clusters)
+        for cluster_arn in cluster_arns:
+            cluster_arn['region'] = region
+        return cluster_arns
 
     except ClientError as e:
         logger.warning("Failed to get ecs clusters for region - {}. Error - {}".format(region, e))
@@ -127,7 +121,6 @@ def get_ecs_tasks(cluster_arn: str, boto3_session: boto3.session.Session, region
 def load_ecs_clusters(
     neo4j_session: neo4j.Session,
     data: List[Dict[str, Any]],
-    region: str,
     current_aws_account_id: str,
     aws_update_tag: int,
 ) -> None:
@@ -135,7 +128,7 @@ def load_ecs_clusters(
     UNWIND {Clusters} AS cluster
         MERGE (c:ECSCluster{id: cluster.clusterArn})
         ON CREATE SET c.firstseen = timestamp()
-        SET c.name = cluster.clusterName, c.region = {Region},
+        SET c.name = cluster.clusterName, c.region = cluster.region,
             c.arn = cluster.clusterArn,
             c.ecc_kms_key_id = cluster.configuration.executeCommandConfiguration.kmsKeyId,
             c.ecc_logging = cluster.configuration.executeCommandConfiguration.logging,
@@ -165,7 +158,6 @@ def load_ecs_clusters(
     neo4j_session.run(
         ingest_clusters,
         Clusters=clusters,
-        Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
         aws_update_tag=aws_update_tag,
     )
@@ -542,61 +534,86 @@ def sync(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
     update_tag: int, common_job_parameters: Dict,
 ) -> None:
+    cluster_arns = []
     for region in regions:
         logger.info("Syncing ECS for region '%s' in account '%s'.", region, current_aws_account_id)
-        cluster_arns, clusters = get_ecs_clusters(boto3_session, region)
-        if len(clusters) == 0:
-            continue
-        load_ecs_clusters(neo4j_session, clusters, region, current_aws_account_id, update_tag)
-        for cluster_arn in cluster_arns:
-            cluster_instances = get_ecs_container_instances(
-                cluster_arn,
-                boto3_session,
-                region,
-            )
-            load_ecs_container_instances(
-                neo4j_session,
-                cluster_arn,
-                cluster_instances,
-                region,
-                current_aws_account_id,
-                update_tag,
-            )
-            task_definitions = get_ecs_task_definitions(
-                boto3_session,
-                region,
-            )
-            load_ecs_task_definitions(
-                neo4j_session,
-                task_definitions,
-                region,
-                current_aws_account_id,
-                update_tag,
-            )
-            services = get_ecs_services(
-                cluster_arn,
-                boto3_session,
-                region,
-            )
-            load_ecs_services(
-                neo4j_session,
-                cluster_arn,
-                services,
-                region,
-                current_aws_account_id,
-                update_tag,
-            )
-            tasks = get_ecs_tasks(
-                cluster_arn,
-                boto3_session,
-                region,
-            )
-            load_ecs_tasks(
-                neo4j_session,
-                cluster_arn,
-                tasks,
-                region,
-                current_aws_account_id,
-                update_tag,
-            )
+        cluster_arns.extend(get_ecs_clusters(boto3_session, region))
+
+    if common_job_parameters.get('pagination', {}).get('ecs', None):
+        has_next_page = False
+        page_start = (common_job_parameters.get('pagination', {}).get('ecs', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('ecs', {})['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('ecs', {})['pageSize']
+        if page_end > len(cluster_arns) or page_end == len(cluster_arns):
+            cluster_arns = cluster_arns[page_start:]
+        else:
+            has_next_page = True
+            cluster_arns = cluster_arns[page_start:page_end]
+        common_job_parameters['pagination']['ecs']['hasNextPage'] = has_next_page
+
+    # TODO: also include attachment info, and make relationships between the attachments
+    # and the cluster.
+    clusters: List[Dict[str, Any]] = []
+    includes = ['SETTINGS', 'CONFIGURATIONS']
+    for i in range(0, len(cluster_arns)):
+        region = cluster_arns[i]['region']
+        client = boto3_session.client('ecs', region_name=region)
+        cluster_arn_chunk = cluster_arns[i:i + 1]
+        cluster_chunk = client.describe_clusters(clusters=cluster_arn_chunk, include=includes)
+        clusters_data = cluster_chunk.get('clusters', [])
+        for cluster in clusters_data:
+            cluster['region'] = region
+        clusters.extend(clusters_data)
+
+    load_ecs_clusters(neo4j_session, clusters, current_aws_account_id, update_tag)
+    for cluster_arn in cluster_arns:
+        cluster_instances = get_ecs_container_instances(
+            cluster_arn,
+            boto3_session,
+            cluster_arn['region'],
+        )
+        load_ecs_container_instances(
+            neo4j_session,
+            cluster_arn,
+            cluster_instances,
+            cluster_arn['region'],
+            current_aws_account_id,
+            update_tag,
+        )
+        task_definitions = get_ecs_task_definitions(
+            boto3_session,
+            cluster_arn['region'],
+        )
+        load_ecs_task_definitions(
+            neo4j_session,
+            task_definitions,
+            cluster_arn['region'],
+            current_aws_account_id,
+            update_tag,
+        )
+        services = get_ecs_services(
+            cluster_arn,
+            boto3_session,
+            cluster_arn['region'],
+        )
+        load_ecs_services(
+            neo4j_session,
+            cluster_arn,
+            services,
+            cluster_arn['region'],
+            current_aws_account_id,
+            update_tag,
+        )
+        tasks = get_ecs_tasks(
+            cluster_arn,
+            boto3_session,
+            cluster_arn['region'],
+        )
+        load_ecs_tasks(
+            neo4j_session,
+            cluster_arn,
+            tasks,
+            cluster_arn['region'],
+            current_aws_account_id,
+            update_tag,
+        )
     cleanup_ecs(neo4j_session, common_job_parameters)

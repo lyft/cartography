@@ -40,13 +40,13 @@ def get_s3_bucket_list(boto3_session: boto3.session.Session, common_job_paramete
                 raise
     if common_job_parameters.get('pagination', {}).get('s3', None):
         has_next_page = False
-        page_start = (common_job_parameters['pageNo'] - 1) * common_job_parameters['pageSize']
-        page_end = page_start + common_job_parameters['pageSize']
-        if page_end > len(buckets) or page_end == len(buckets):
-            buckets = buckets[page_start:]
+        page_start = (common_job_parameters.get('pagination', {}).get('s3', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('s3', {})['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('s3', {})['pageSize']
+        if page_end > len(buckets['Buckets']) or page_end == len(buckets['Buckets']):
+            buckets['Buckets'] = buckets['Buckets'][page_start:]
         else:
             has_next_page = True
-            buckets = buckets[page_start:page_end]
+            buckets['Buckets'] = buckets['Buckets'][page_start:page_end]
         common_job_parameters['pagination']['s3']['hasNextPage'] = has_next_page
 
     return buckets

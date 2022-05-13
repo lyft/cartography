@@ -70,12 +70,12 @@ def sync_ec2_key_pairs(
     data = []
     for region in regions:
         logger.info("Syncing EC2 key pairs for region '%s' in account '%s'.", region, current_aws_account_id)
-        data.append(get_ec2_key_pairs(boto3_session, region))
+        data.extend(get_ec2_key_pairs(boto3_session, region))
 
     if common_job_parameters.get('pagination', {}).get('ec2:keypair', None):
         has_next_page = False
-        page_start = (common_job_parameters['pageNo'] - 1) * common_job_parameters['pageSize']
-        page_end = page_start + common_job_parameters['pageSize']
+        page_start = (common_job_parameters.get('pagination', {}).get('ec2:keypair', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('ec2:keypair', {})['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('ec2:keypair', {})['pageSize']
         if page_end > len(data) or page_end == len(data):
             data = data[page_start:]
         else:

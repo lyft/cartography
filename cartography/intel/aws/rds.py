@@ -25,13 +25,14 @@ def get_rds_cluster_data(boto3_session: boto3.session.Session, region: str) -> L
     instances: List[Any] = []
     for page in paginator.paginate():
         instances.extend(page['DBClusters'])
-
+    for instance in instances:
+        instance['region'] = region
     return instances
 
 
 @timeit
 def load_rds_clusters(
-    neo4j_session: neo4j.Session, data: Dict, region: str, current_aws_account_id: str,
+    neo4j_session: neo4j.Session, data: Dict, current_aws_account_id: str,
     aws_update_tag: int,
 ) -> None:
     """
@@ -76,7 +77,7 @@ def load_rds_clusters(
             cluster.scaling_configuration_info_max_capacity = rds_cluster.ScalingConfigurationInfoMaxCapacity,
             cluster.scaling_configuration_info_auto_pause = rds_cluster.ScalingConfigurationInfoAutoPause,
             cluster.deletion_protection = rds_cluster.DeletionProtection,
-            cluster.region = {Region},
+            cluster.region = rds_cluster.region,
             cluster.lastupdated = {aws_update_tag}
         WITH cluster
         MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
@@ -101,7 +102,6 @@ def load_rds_clusters(
     neo4j_session.run(
         ingest_rds_cluster,
         Clusters=data,
-        Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
         aws_update_tag=aws_update_tag,
     )
@@ -118,13 +118,14 @@ def get_rds_instance_data(boto3_session: boto3.session.Session, region: str) -> 
     instances: List[Any] = []
     for page in paginator.paginate():
         instances.extend(page['DBInstances'])
-
+    for instance in instances:
+        instance['region'] = region
     return instances
 
 
 @timeit
 def load_rds_instances(
-    neo4j_session: neo4j.Session, data: Dict, region: str, current_aws_account_id: str,
+    neo4j_session: neo4j.Session, data: Dict, current_aws_account_id: str,
     aws_update_tag: int,
 ) -> None:
     """
@@ -154,7 +155,7 @@ def load_rds_instances(
             rds.monitoring_role_arn = rds_instance.MonitoringRoleArn,
             rds.performance_insights_enabled = rds_instance.PerformanceInsightsEnabled,
             rds.performance_insights_kms_key_id = rds_instance.PerformanceInsightsKMSKeyId,
-            rds.region = {Region},
+            rds.region = rds_instance.region,
             rds.deletion_protection = rds_instance.DeletionProtection,
             rds.preferred_backup_window = rds_instance.PreferredBackupWindow,
             rds.latest_restorable_time = rds_instance.LatestRestorableTime,
@@ -203,19 +204,18 @@ def load_rds_instances(
     neo4j_session.run(
         ingest_rds_instance,
         Instances=data,
-        Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
         aws_update_tag=aws_update_tag,
     )
     _attach_ec2_security_groups(neo4j_session, secgroups, aws_update_tag)
-    _attach_ec2_subnet_groups(neo4j_session, subnets, region, current_aws_account_id, aws_update_tag)
+    _attach_ec2_subnet_groups(neo4j_session, subnets, current_aws_account_id, aws_update_tag)
     _attach_read_replicas(neo4j_session, read_replicas, aws_update_tag)
     _attach_clusters(neo4j_session, clusters, aws_update_tag)
 
 
 @timeit
 def _attach_ec2_subnet_groups(
-    neo4j_session: neo4j.Session, instances: List[Dict], region: str, current_aws_account_id: str,
+    neo4j_session: neo4j.Session, instances: List[Dict], current_aws_account_id: str,
     aws_update_tag: int,
 ) -> None:
     """
@@ -239,21 +239,23 @@ def _attach_ec2_subnet_groups(
     """
     db_sngs = []
     for instance in instances:
+        region = instance['region']
         db_sng = instance['DBSubnetGroup']
         db_sng['arn'] = _get_db_subnet_group_arn(region, current_aws_account_id, db_sng['DBSubnetGroupName'])
         db_sng['instance_arn'] = instance['DBInstanceArn']
+        db_sng['region'] = region
         db_sngs.append(db_sng)
     neo4j_session.run(
         attach_rds_to_subnet_group,
         SubnetGroups=db_sngs,
         aws_update_tag=aws_update_tag,
     )
-    _attach_ec2_subnets_to_subnetgroup(neo4j_session, db_sngs, region, current_aws_account_id, aws_update_tag)
+    _attach_ec2_subnets_to_subnetgroup(neo4j_session, db_sngs, current_aws_account_id, aws_update_tag)
 
 
 @timeit
 def _attach_ec2_subnets_to_subnetgroup(
-    neo4j_session: neo4j.Session, db_subnet_groups: List[Dict], region: str,
+    neo4j_session: neo4j.Session, db_subnet_groups: List[Dict],
     current_aws_account_id: str, aws_update_tag: int,
 ) -> None:
     """
@@ -277,6 +279,7 @@ def _attach_ec2_subnets_to_subnetgroup(
     """
     subnets = []
     for subnet_group in db_subnet_groups:
+        region = subnet_group['region']
         for subnet in subnet_group.get('Subnets', []):
             sn_id = subnet.get('SubnetIdentifier')
             sng_arn = _get_db_subnet_group_arn(region, current_aws_account_id, subnet_group['DBSubnetGroupName'])
@@ -405,10 +408,23 @@ def sync_rds_clusters(
     """
     Grab RDS instance data from AWS, ingest to neo4j, and run the cleanup job.
     """
+    data = []
     for region in regions:
         logger.info("Syncing RDS for region '%s' in account '%s'.", region, current_aws_account_id)
-        data = get_rds_cluster_data(boto3_session, region)
-        load_rds_clusters(neo4j_session, data, region, current_aws_account_id, update_tag)
+        data.extend(get_rds_cluster_data(boto3_session, region))
+
+    if common_job_parameters.get('pagination', {}).get('rds', None):
+        has_next_page = False
+        page_start = (common_job_parameters.get('pagination', {}).get('rds', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('rds', {})['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('rds', {})['pageSize']
+        if page_end > len(data) or page_end == len(data):
+            data = data[page_start:]
+        else:
+            has_next_page = True
+            data = data[page_start:page_end]
+        common_job_parameters['pagination']['rds']['hasNextPage'] = has_next_page
+
+    load_rds_clusters(neo4j_session, data, current_aws_account_id, update_tag)
     cleanup_rds_clusters(neo4j_session, common_job_parameters)
 
 
@@ -420,10 +436,23 @@ def sync_rds_instances(
     """
     Grab RDS instance data from AWS, ingest to neo4j, and run the cleanup job.
     """
+    data = []
     for region in regions:
         logger.info("Syncing RDS for region '%s' in account '%s'.", region, current_aws_account_id)
-        data = get_rds_instance_data(boto3_session, region)
-        load_rds_instances(neo4j_session, data, region, current_aws_account_id, update_tag)
+        data.extend(get_rds_instance_data(boto3_session, region))
+
+    if common_job_parameters.get('pagination', {}).get('rds', None):
+        has_next_page = False
+        page_start = (common_job_parameters.get('pagination', {}).get('rds', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('rds', {})['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('rds', {})['pageSize']
+        if page_end > len(data) or page_end == len(data):
+            data = data[page_start:]
+        else:
+            has_next_page = True
+            data = data[page_start:page_end]
+        common_job_parameters['pagination']['rds']['hasNextPage'] = has_next_page
+
+    load_rds_instances(neo4j_session, data, current_aws_account_id, update_tag)
     cleanup_rds_instances_and_db_subnet_groups(neo4j_session, common_job_parameters)
 
 

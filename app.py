@@ -120,6 +120,22 @@ def process_request(context, args):
     resp = cartography.cli.run_aws(body)
 
     if 'status' in resp and resp['status'] == 'success':
+        if resp.get('pagination', None):
+            services = []
+            for service, pagination in resp.get('pagination', {}).items():
+                if pagination.get('hasNextPage', False):
+                    services.append({
+                        "name": service,
+                        "pagination": {
+                            "pageSize": pagination.get('pageSize', 1),
+                            "pageNo": pagination.get('pageNo', 0) + 1
+                        }
+                    })
+            if len(services) > 0:
+                resp['services'] = services
+            else:
+                del resp['updateTag']
+            del resp['pagination']
         context.logger.info(f'successfully processed cartography: {resp}')
 
     else:
@@ -149,16 +165,16 @@ def publish_response(context, req, resp):
             "workspace": req['params']['workspace'],
             "actions": req['params']['actions'],
             "response": resp,
+            "services": resp.get("services", None),
+            "updatetag": resp.get("updatetag", None),
         }
 
         sns_helper = SNSLibrary(context)
-
-        if 'resultTopic' in req['params']:
+        if body.get('services', None):
+            status = sns_helper.publish(json.dumps(body), context.aws_inventory_sync_response_topic)
+        else:
             # Result should be pushed to "resultTopic" passed in the request
             status = sns_helper.publish(json.dumps(body), req['params']['resultTopic'])
-
-        else:
-            status = sns_helper.publish(json.dumps(body), context.aws_inventory_sync_response_topic)
 
         context.logger.info(f'result published to SNS with status: {status}')
 

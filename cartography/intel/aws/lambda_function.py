@@ -27,13 +27,14 @@ def get_lambda_data(boto3_session: boto3.session.Session, region: str) -> List[D
     lambda_functions = []
     for page in paginator.paginate():
         for each_function in page['Functions']:
+            each_function['region'] = region
             lambda_functions.append(each_function)
     return lambda_functions
 
 
 @timeit
 def load_lambda_functions(
-        neo4j_session: neo4j.Session, data: List[Dict], region: str, current_aws_account_id: str, aws_update_tag: int,
+        neo4j_session: neo4j.Session, data: List[Dict], current_aws_account_id: str, aws_update_tag: int,
 ) -> None:
     ingest_lambda_functions = """
     UNWIND {lambda_functions_list} AS lf
@@ -41,7 +42,7 @@ def load_lambda_functions(
     ON CREATE SET lambda.firstseen = timestamp()
     SET lambda.name = lf.FunctionName,
     lambda.arn = lf.FunctionArn,
-    lambda.region = {Region},
+    lambda.region = lf.region,
     lambda.modifieddate = lf.LastModified,
     lambda.runtime = lf.Runtime,
     lambda.description = lf.Description,
@@ -81,7 +82,6 @@ def load_lambda_functions(
     neo4j_session.run(
         ingest_lambda_functions,
         lambda_functions_list=data,
-        Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
         aws_update_tag=aws_update_tag,
     )
@@ -112,49 +112,54 @@ def get_event_source_mappings(lambda_function: Dict, client: botocore.client.Bas
 @timeit
 @aws_handle_regions
 def get_lambda_function_details(
-        boto3_session: boto3.session.Session, data: List[Dict], region: str,
+        boto3_session: boto3.session.Session, data: List[Dict],
 ) -> Generator[Any, Any, None]:
-    client = boto3_session.client('lambda', region_name=region)
     for lambda_function in data:
+        region = lambda_function['region']
+        client = boto3_session.client('lambda', region_name=region)
         function_aliases = get_function_aliases(lambda_function, client)
         event_source_mappings = get_event_source_mappings(lambda_function, client)
         layers = lambda_function.get('Layers', [])
-        yield lambda_function['FunctionArn'], function_aliases, event_source_mappings, layers
+        yield lambda_function['FunctionArn'], function_aliases, event_source_mappings, layers, region
 
 
 @timeit
 def load_lambda_function_details(
         neo4j_session: neo4j.Session, lambda_function_details: List[Tuple[str, List[Dict], List[Dict], List[Dict]]],
-        update_tag: int, region: str,
+        update_tag: int,
 ) -> None:
     lambda_aliases: List[Dict] = []
     lambda_event_source_mappings: List[Dict] = []
     lambda_layers: List[Dict] = []
-    for function_arn, aliases, event_source_mappings, layers in lambda_function_details:
+    for function_arn, aliases, event_source_mappings, layers, region in lambda_function_details:
         if len(aliases) > 0:
             for alias in aliases:
                 alias['FunctionArn'] = function_arn
+                alias['region'] = region
             lambda_aliases.extend(aliases)
         if len(event_source_mappings) > 0:
+            for event in event_source_mappings:
+                event['region'] = region
             lambda_event_source_mappings.extend(event_source_mappings)
         if len(layers) > 0:
             for layer in layers:
                 layer['FunctionArn'] = function_arn
+                layer['region'] = region
             lambda_layers.extend(layers)
 
-    _load_lambda_function_aliases(neo4j_session, lambda_aliases, update_tag, region)
-    _load_lambda_event_source_mappings(neo4j_session, lambda_event_source_mappings, update_tag, region)
-    _load_lambda_layers(neo4j_session, lambda_layers, update_tag, region)
+    _load_lambda_function_aliases(neo4j_session, lambda_aliases, update_tag)
+    _load_lambda_event_source_mappings(neo4j_session, lambda_event_source_mappings, update_tag)
+    _load_lambda_layers(neo4j_session, lambda_layers, update_tag)
 
 
 @timeit
-def _load_lambda_function_aliases(neo4j_session: neo4j.Session, lambda_aliases: List[Dict], update_tag: int, region: str) -> None:
+def _load_lambda_function_aliases(neo4j_session: neo4j.Session, lambda_aliases: List[Dict], update_tag: int) -> None:
     ingest_aliases = """
     UNWIND {aliases_list} AS alias
     MERGE (a:AWSLambdaFunctionAlias{id: alias.AliasArn})
     ON CREATE SET a.firstseen = timestamp()
     SET a.aliasname = alias.Name,
-    a.region = {Region},
+    a.region = alias.region,
     a.functionversion = alias.FunctionVersion,
     a.description = alias.Description,
     a.revisionid = alias.RevisionId,
@@ -169,7 +174,6 @@ def _load_lambda_function_aliases(neo4j_session: neo4j.Session, lambda_aliases: 
 
     neo4j_session.run(
         ingest_aliases,
-        Region=region,
         aliases_list=lambda_aliases,
         aws_update_tag=update_tag,
     )
@@ -177,7 +181,7 @@ def _load_lambda_function_aliases(neo4j_session: neo4j.Session, lambda_aliases: 
 
 @timeit
 def _load_lambda_event_source_mappings(
-        neo4j_session: neo4j.Session, lambda_event_source_mappings: List[Dict], update_tag: int, region: str,
+        neo4j_session: neo4j.Session, lambda_event_source_mappings: List[Dict], update_tag: int,
 ) -> None:
     ingest_esms = """
     UNWIND {esm_list} AS esm
@@ -185,7 +189,7 @@ def _load_lambda_event_source_mappings(
     ON CREATE SET e.firstseen = timestamp()
     SET e.batchsize = esm.BatchSize,
     e.startingposition = esm.StartingPosition,
-    e.region = {Region},
+    e.region = esm.region,
     e.startingpositiontimestamp = esm.StartingPositionTimestamp,
     e.parallelizationfactor = esm.ParallelizationFactor,
     e.maximumbatchingwindowinseconds = esm.MaximumBatchingWindowInSeconds,
@@ -209,20 +213,19 @@ def _load_lambda_event_source_mappings(
 
     neo4j_session.run(
         ingest_esms,
-        Region=region,
         esm_list=lambda_event_source_mappings,
         aws_update_tag=update_tag,
     )
 
 
 @timeit
-def _load_lambda_layers(neo4j_session: neo4j.Session, lambda_layers: List[Dict], update_tag: int, region: str,) -> None:
+def _load_lambda_layers(neo4j_session: neo4j.Session, lambda_layers: List[Dict], update_tag: int,) -> None:
     ingest_layers = """
     UNWIND {layers_list} AS layer
     MERGE (l:AWSLambdaLayer{id: layer.Arn})
     ON CREATE SET l.firstseen = timestamp()
     SET l.codesize = layer.CodeSize,
-    l.region = {Region},
+    l.region = layer.region,
     l.signingprofileversionarn  = layer.SigningProfileVersionArn,
     l.signingjobarn = layer.SigningJobArn,
     l.lastupdated = {aws_update_tag},
@@ -236,7 +239,6 @@ def _load_lambda_layers(neo4j_session: neo4j.Session, lambda_layers: List[Dict],
 
     neo4j_session.run(
         ingest_layers,
-        Region=region,
         layers_list=lambda_layers,
         aws_update_tag=update_tag,
     )
@@ -252,12 +254,25 @@ def sync_lambda_functions(
         neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str],
         current_aws_account_id: str, aws_update_tag: int, common_job_parameters: Dict,
 ) -> None:
+    data = []
     for region in regions:
         logger.info("Syncing Lambda for region in '%s' in account '%s'.", region, current_aws_account_id)
-        data = get_lambda_data(boto3_session, region)
-        load_lambda_functions(neo4j_session, data, region, current_aws_account_id, aws_update_tag)
-        lambda_function_details = get_lambda_function_details(boto3_session, data, region)
-        load_lambda_function_details(neo4j_session, lambda_function_details, aws_update_tag, region)
+        data.extend(get_lambda_data(boto3_session, region))
+
+    if common_job_parameters.get('pagination', {}).get('lambda_function', None):
+        has_next_page = False
+        page_start = (common_job_parameters.get('pagination', {}).get('lambda_function', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('lambda_function', {})['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('lambda_function', {})['pageSize']
+        if page_end > len(data) or page_end == len(data):
+            data = data[page_start:]
+        else:
+            has_next_page = True
+            data = data[page_start:page_end]
+        common_job_parameters['pagination']['lambda_function']['hasNextPage'] = has_next_page
+
+    load_lambda_functions(neo4j_session, data, current_aws_account_id, aws_update_tag)
+    lambda_function_details = get_lambda_function_details(boto3_session, data)
+    load_lambda_function_details(neo4j_session, lambda_function_details, aws_update_tag)
 
     cleanup_lambda(neo4j_session, common_job_parameters)
 

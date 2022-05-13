@@ -23,6 +23,12 @@ def get_sqs_queue_list(boto3_session: boto3.session.Session, region: str) -> Lis
     queues: List[Any] = []
     for page in paginator.paginate():
         queues.extend(page.get('QueueUrls', []))
+    queues_data = []
+    for queue in queues:
+        queue_data = {}
+        queue_data["region"] = region
+        queue_data['name'] = queue
+        queues_data.append(queue_data)
     return queues
 
 
@@ -40,15 +46,15 @@ def get_sqs_queue_attributes(
     queue_attributes: Dict[str, Any] = {}
     for queue_url in queue_urls:
         try:
-            response = client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=['All'])
+            response = client.get_queue_attributes(QueueUrl=queue_url['name'], AttributeNames=['All'])
         except ClientError as e:
             if e.response['Error']['Code'] == 'AWS.SimpleQueueService.NonExistentQueue':
-                logger.warning(f"Failed to retrieve SQS queue {queue_url} - Queue does not exist error")
+                logger.warning(f"Failed to retrieve SQS queue {queue_url['name']} - Queue does not exist error")
                 continue
             else:
                 raise
-        queue_attributes[queue_url] = response['Attributes']
-
+        queue_attributes[queue_url['name']] = response['Attributes']
+        queue_attributes[queue_url['name']]['region'] = queue_url['region']
     return queue_attributes
 
 
@@ -56,7 +62,6 @@ def get_sqs_queue_attributes(
 def load_sqs_queues(
     neo4j_session: neo4j.Session,
     data: Dict[str, Any],
-    region: str,
     current_aws_account_id: str,
     aws_update_tag: int,
 ) -> None:
@@ -64,7 +69,7 @@ def load_sqs_queues(
     UNWIND {Queues} as sqs_queue
         MERGE (queue:SQSQueue{id: sqs_queue.QueueArn})
         ON CREATE SET queue.firstseen = timestamp(), queue.url = sqs_queue.url
-        SET queue.name = sqs_queue.name, queue.region = {Region}, queue.arn = sqs_queue.QueueArn,
+        SET queue.name = sqs_queue.name, queue.region = sqs_queue.region, queue.arn = sqs_queue.QueueArn,
             queue.created_timestamp = sqs_queue.CreatedTimestamp, queue.delay_seconds = sqs_queue.DelaySeconds,
             queue.last_modified_timestamp = sqs_queue.LastModifiedTimestamp,
             queue.maximum_message_size = sqs_queue.MaximumMessageSize,
@@ -112,7 +117,6 @@ def load_sqs_queues(
     neo4j_session.run(
         ingest_queues,
         Queues=queues,
-        Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
         aws_update_tag=aws_update_tag,
     )
@@ -149,11 +153,25 @@ def sync(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
     update_tag: int, common_job_parameters: Dict,
 ) -> None:
+    data = []
     for region in regions:
         logger.info("Syncing SQS for region '%s' in account '%s'.", region, current_aws_account_id)
         queue_urls = get_sqs_queue_list(boto3_session, region)
         if len(queue_urls) == 0:
             continue
-        queue_attributes = get_sqs_queue_attributes(boto3_session, queue_urls)
-        load_sqs_queues(neo4j_session, queue_attributes, region, current_aws_account_id, update_tag)
+        data.extend(queue_urls)
+
+    if common_job_parameters.get('pagination', {}).get('sqs', None):
+        has_next_page = False
+        page_start = (common_job_parameters.get('pagination', {}).get('sqs', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('sqs', {})['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('sqs', {})['pageSize']
+        if page_end > len(data) or page_end == len(data):
+            data = data[page_start:]
+        else:
+            has_next_page = True
+            data = data[page_start:page_end]
+        common_job_parameters['pagination']['sqs']['hasNextPage'] = has_next_page
+
+    queue_attributes = get_sqs_queue_attributes(boto3_session, queue_urls)
+    load_sqs_queues(neo4j_session, queue_attributes, current_aws_account_id, update_tag)
     cleanup_sqs_queues(neo4j_session, common_job_parameters)

@@ -113,12 +113,12 @@ def sync_ebs_volumes(
     for region in regions:
         logger.debug("Syncing volumes for region '%s' in account '%s'.", region, current_aws_account_id)
         data = get_volumes(boto3_session, region)
-        transformed_data.append(transform_volumes(data, region, current_aws_account_id))
+        transformed_data.extend(transform_volumes(data, region, current_aws_account_id))
 
     if common_job_parameters.get('pagination', {}).get('ec2:volumes', None):
         has_next_page = False
-        page_start = (common_job_parameters['pageNo'] - 1) * common_job_parameters['pageSize']
-        page_end = page_start + common_job_parameters['pageSize']
+        page_start = (common_job_parameters.get('pagination', {}).get('ec2:volumes', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('ec2:volumes', {})['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('ec2:volumes', {})['pageSize']
         if page_end > len(transformed_data) or page_end == len(transformed_data):
             transformed_data = transformed_data[page_start:]
         else:

@@ -409,6 +409,18 @@ def sync(
     logger.info("Syncing Route53 for account '%s'.", current_aws_account_id)
     client = boto3_session.client('route53')
     zones = get_zones(client)
+
+    if common_job_parameters.get('pagination', {}).get('route53', None):
+        has_next_page = False
+        page_start = (common_job_parameters.get('pagination', {}).get('route53', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('route53', {})['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('route53', {})['pageSize']
+        if page_end > len(zones) or page_end == len(zones):
+            zones = zones[page_start:]
+        else:
+            has_next_page = True
+            zones = zones[page_start:page_end]
+        common_job_parameters['pagination']['route53']['hasNextPage'] = has_next_page
+
     load_dns_details(neo4j_session, zones, current_aws_account_id, update_tag)
     link_sub_zones(neo4j_session, update_tag)
     cleanup_route53(neo4j_session, common_job_parameters)

@@ -119,12 +119,12 @@ def sync_ebs_snapshots(
     data = []
     for region in regions:
         logger.debug("Syncing snapshots for region '%s' in account '%s'.", region, current_aws_account_id)
-        data.get(get_snapshots(boto3_session, region))
+        data.extend(get_snapshots(boto3_session, region))
 
     if common_job_parameters.get('pagination', {}).get('ec2:snapshots', None):
         has_next_page = False
-        page_start = (common_job_parameters['pageNo'] - 1) * common_job_parameters['pageSize']
-        page_end = page_start + common_job_parameters['pageSize']
+        page_start = (common_job_parameters.get('pagination', {}).get('ec2:snapshots', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('ec2:snapshots', {})['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('ec2:snapshots', {})['pageSize']
         if page_end > len(data) or page_end == len(data):
             data = data[page_start:]
         else:

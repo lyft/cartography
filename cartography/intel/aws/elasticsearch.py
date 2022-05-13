@@ -48,7 +48,7 @@ def _get_botocore_config() -> botocore.config.Config:
 
 @timeit
 @aws_handle_regions
-def _get_es_domains(client: botocore.client.BaseClient) -> List[Dict]:
+def _get_es_domains(client: botocore.client.BaseClient, region: str) -> List[Dict]:
     """
     Get ES domains.
 
@@ -63,12 +63,14 @@ def _get_es_domains(client: botocore.client.BaseClient) -> List[Dict]:
     for domain_name_chunk in domain_name_chunks:
         chunk_data = client.describe_elasticsearch_domains(DomainNames=domain_name_chunk)
         domains.extend(chunk_data['DomainStatusList'])
+    for domain in domains:
+        domain['region'] = region
     return domains
 
 
 @timeit
 def _load_es_domains(
-    neo4j_session: neo4j.Session, domain_list: List[Dict], aws_account_id: str, aws_update_tag: int, region: str,
+    neo4j_session: neo4j.Session, domain_list: List[Dict], aws_account_id: str, aws_update_tag: int,
 ) -> None:
     """
     Ingest Elastic Search domains
@@ -92,7 +94,7 @@ def _load_es_domains(
     es.ebs_options_ebsenabled = record.EBSOptions.EBSEnabled,
     es.ebs_options_volumetype = record.EBSOptions.VolumeType,
     es.ebs_options_volumesize = record.EBSOptions.VolumeSize,
-    es.region = {region},
+    es.region = record.region,
     es.ebs_options_iops = record.EBSOptions.Iops,
     es.encryption_at_rest_options_enabled = record.EncryptionAtRestOptions.Enabled,
     es.encryption_at_rest_options_kms_key_id = record.EncryptionAtRestOptions.KmsKeyId,
@@ -113,7 +115,6 @@ def _load_es_domains(
     neo4j_session.run(
         ingest_records,
         Records=domain_list,
-        region=region,
         AWS_ACCOUNT_ID=aws_account_id,
         aws_update_tag=aws_update_tag,
     )
@@ -235,10 +236,23 @@ def sync(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
     update_tag: int, common_job_parameters: Dict,
 ) -> None:
+    logger.info("Syncing Elasticsearch Service for account '%s'.", current_aws_account_id)
+    data = []
     for region in es_regions:
-        logger.info("Syncing Elasticsearch Service for region '%s' in account '%s'.", region, current_aws_account_id)
         client = boto3_session.client('es', region_name=region, config=_get_botocore_config())
-        data = _get_es_domains(client)
-        _load_es_domains(neo4j_session, data, current_aws_account_id, update_tag, region)
+        data.extend(_get_es_domains(client, region))
+
+    if common_job_parameters.get('pagination', {}).get('elasticsearch', None):
+        has_next_page = False
+        page_start = (common_job_parameters.get('pagination', {}).get('elasticsearch', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('elasticsearch', {})['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('elasticsearch', {})['pageSize']
+        if page_end > len(data) or page_end == len(data):
+            data = data[page_start:]
+        else:
+            has_next_page = True
+            data = data[page_start:page_end]
+        common_job_parameters['pagination']['elasticsearch']['hasNextPage'] = has_next_page
+
+    _load_es_domains(neo4j_session, data, current_aws_account_id, update_tag)
 
     cleanup(neo4j_session, common_job_parameters)

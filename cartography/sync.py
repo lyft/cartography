@@ -2,7 +2,6 @@ import logging
 import time
 import traceback
 from collections import OrderedDict
-from urllib import response
 
 import neobolt.exceptions
 from neo4j import GraphDatabase
@@ -76,7 +75,10 @@ class Sync:
             for stage_name, stage_func in self._stages.items():
                 logger.info("Starting sync stage '%s'", stage_name)
                 try:
-                    response = stage_func(neo4j_session, config)
+                    if stage_name in ['aws', 'azure', 'gcp']:
+                        response = stage_func(neo4j_session, config)
+                    else:
+                        stage_func(neo4j_session, config)
                 except (KeyboardInterrupt, SystemExit) as ex:
                     logger.warning("Sync interrupted during stage '%s'.", stage_name)
 

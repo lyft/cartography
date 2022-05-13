@@ -20,6 +20,8 @@ def get_redshift_cluster_data(boto3_session: boto3.session.Session, region: str)
     clusters: List[Dict] = []
     for page in paginator.paginate():
         clusters.extend(page['Clusters'])
+    for cluster in clusters:
+        cluster['region'] = region
     return clusters
 
 
@@ -28,15 +30,15 @@ def _make_redshift_cluster_arn(region: str, aws_account_id: str, cluster_identif
     return f'arn:aws:redshift:{region}:{aws_account_id}:cluster:{cluster_identifier}'
 
 
-def transform_redshift_cluster_data(clusters: List[Dict], region: str, current_aws_account_id: str) -> None:
+def transform_redshift_cluster_data(clusters: List[Dict], current_aws_account_id: str) -> None:
     for cluster in clusters:
-        cluster['arn'] = _make_redshift_cluster_arn(region, current_aws_account_id, cluster["ClusterIdentifier"])
+        cluster['arn'] = _make_redshift_cluster_arn(cluster['region'], current_aws_account_id, cluster["ClusterIdentifier"])
         cluster['ClusterCreateTime'] = str(cluster['ClusterCreateTime']) if 'ClusterCreateTime' in cluster else None
 
 
 @timeit
 def load_redshift_cluster_data(
-    neo4j_session: neo4j.Session, clusters: List[Dict], region: str,
+    neo4j_session: neo4j.Session, clusters: List[Dict],
     current_aws_account_id: str, aws_update_tag: int,
 ) -> None:
     ingest_cluster = """
@@ -83,7 +85,7 @@ def load_redshift_cluster_data(
             NumberOfNodes=cluster['NumberOfNodes'],
             PubliclyAccessible=cluster['PubliclyAccessible'],
             VpcId=cluster.get('VpcId'),
-            Region=region,
+            Region=cluster['region'],
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag,
         )
@@ -153,12 +155,26 @@ def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
 
 @timeit
 def sync_redshift_clusters(
-    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, region: str,
-    current_aws_account_id: str, aws_update_tag: int,
+    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: str,
+    current_aws_account_id: str, aws_update_tag: int, common_job_parameters: Dict,
 ) -> None:
-    data = get_redshift_cluster_data(boto3_session, region)
-    transform_redshift_cluster_data(data, region, current_aws_account_id)
-    load_redshift_cluster_data(neo4j_session, data, region, current_aws_account_id, aws_update_tag)
+    data = []
+    for region in regions:
+        data.extend(get_redshift_cluster_data(boto3_session, region))
+
+    if common_job_parameters.get('pagination', {}).get('redshift', None):
+        has_next_page = False
+        page_start = (common_job_parameters.get('pagination', {}).get('redshift', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('redshift', {})['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('redshift', {})['pageSize']
+        if page_end > len(data) or page_end == len(data):
+            data = data[page_start:]
+        else:
+            has_next_page = True
+            data = data[page_start:page_end]
+        common_job_parameters['pagination']['redshift']['hasNextPage'] = has_next_page
+
+    transform_redshift_cluster_data(data, current_aws_account_id)
+    load_redshift_cluster_data(neo4j_session, data, current_aws_account_id, aws_update_tag)
 
 
 @timeit
@@ -166,7 +182,6 @@ def sync(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
     update_tag: int, common_job_parameters: Dict,
 ) -> None:
-    for region in regions:
-        logger.info("Syncing Redshift clusters for region '%s' in account '%s'.", region, current_aws_account_id)
-        sync_redshift_clusters(neo4j_session, boto3_session, region, current_aws_account_id, update_tag)
+    logger.info("Syncing Redshift clusters for account '%s'.", current_aws_account_id)
+    sync_redshift_clusters(neo4j_session, boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters)
     cleanup(neo4j_session, common_job_parameters)

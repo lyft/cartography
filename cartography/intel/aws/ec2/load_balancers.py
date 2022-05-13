@@ -191,12 +191,12 @@ def sync_load_balancers(
     data = []
     for region in regions:
         logger.info("Syncing EC2 load balancers for region '%s' in account '%s'.", region, current_aws_account_id)
-        data.append(get_loadbalancer_data(boto3_session, region))
+        data.extend(get_loadbalancer_data(boto3_session, region))
 
     if common_job_parameters.get('pagination', {}).get('ec2:load_balancer', None):
         has_next_page = False
-        page_start = (common_job_parameters['pageNo'] - 1) * common_job_parameters['pageSize']
-        page_end = page_start + common_job_parameters['pageSize']
+        page_start = (common_job_parameters.get('pagination', {}).get('ec2:load_balancer', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('ec2:load_balancer', {})['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('ec2:load_balancer', {})['pageSize']
         if page_end > len(data) or page_end == len(data):
             data = data[page_start:]
         else:

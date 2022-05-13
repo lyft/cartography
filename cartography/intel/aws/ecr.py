@@ -145,18 +145,18 @@ def sync(
     repositories = []
     for region in regions:
         logger.info("Syncing ECR for region '%s' in account '%s'.", region, current_aws_account_id)
-        repositories.get(get_ecr_repositories(boto3_session, region))
+        repositories.extend(get_ecr_repositories(boto3_session, region))
 
-    if common_job_parameters.get('pagination', {}).get('ec2:snapshots', None):
+    if common_job_parameters.get('pagination', {}).get('ecr', None):
         has_next_page = False
-        page_start = (common_job_parameters['pageNo'] - 1) * common_job_parameters['pageSize']
-        page_end = page_start + common_job_parameters['pageSize']
+        page_start = (common_job_parameters.get('pagination', {}).get('ecr', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('ecr', {})['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('ecr', {})['pageSize']
         if page_end > len(repositories) or page_end == len(repositories):
             repositories = repositories[page_start:]
         else:
             has_next_page = True
             repositories = repositories[page_start:page_end]
-        common_job_parameters['pagination']['ec2:snapshots']['hasNextPage'] = has_next_page
+        common_job_parameters['pagination']['ecr']['hasNextPage'] = has_next_page
     image_data = {}
     for repo in repositories:
         repo_image_obj = get_ecr_repository_images(boto3_session, repo['region'], repo['repositoryName'])

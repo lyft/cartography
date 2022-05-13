@@ -292,8 +292,8 @@ def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
         for service in config.aws_requested_syncs:
             aws_requested_syncs_string += f"{service.get('name', '')},"
             if service.get('pagination', None):
-                common_job_parameters['pagination'][service.get('name', None)] = service.getservice.get('pagination', {})
-        requested_syncs = parse_and_validate_aws_requested_syncs(aws_requested_syncs_string)
+                common_job_parameters['pagination'][service.get('name', None)] = service.get('pagination', {})
+        requested_syncs = parse_and_validate_aws_requested_syncs(aws_requested_syncs_string[:-1])
 
     _sync_multiple_accounts(
         neo4j_session,
