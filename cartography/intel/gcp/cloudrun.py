@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
-def get_cloudrun_authorized_domains(cloudrun: Resource, project_id: str) -> List[Dict]:
+def get_cloudrun_authorized_domains(cloudrun: Resource, project_id: str,common_job_parameters) -> List[Dict]:
     """
         Returns a list of Cloud Run Authorized Domains for a given project.
 
@@ -41,6 +41,16 @@ def get_cloudrun_authorized_domains(cloudrun: Resource, project_id: str) -> List
                 previous_request=request,
                 previous_response=response,
             )
+        if common_job_parameters.get('pagination',{}).get('cloudrun',None):
+            has_next_page=False
+            page_start=(common_job_parameters.get('pagination',{}).get('cloudrun',None)['pageNo']-1) * common_job_parameters.get('pagination',{}).get('cloudrun',None)['pageSize']
+            page_end=page_start + common_job_parameters.get('pagination',{}).get('cloudrun',None)['pageSize']
+            if page_end > len(authorized_domains) or page_end == len(authorized_domains):
+                authorized_domains=authorized_domains[page_start:]
+            else:
+                has_next_page=True
+                authorized_domains=authorized_domains[page_start:page_end]
+            common_job_parameters['pagination']['cloudrun']['hasNextPage']=has_next_page
         return authorized_domains
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -57,7 +67,7 @@ def get_cloudrun_authorized_domains(cloudrun: Resource, project_id: str) -> List
 
 
 @timeit
-def get_cloudrun_configurations(cloudrun: Resource, project_id: str) -> List[Dict]:
+def get_cloudrun_configurations(cloudrun: Resource, project_id: str,common_job_parameters) -> List[Dict]:
     """
         Returns a list of Cloud Run Configurations for a given project.
 
@@ -78,6 +88,17 @@ def get_cloudrun_configurations(cloudrun: Resource, project_id: str) -> List[Dic
             for item in response['items']:
                 item['id'] = f"projects/{project_id}/configurations/{item.get('metadata').get('name')}"
                 configurations.append(item)
+        if common_job_parameters.get('pagination',{}).get('cloudrun',None):
+            has_next_page=False
+            page_start=(common_job_parameters.get('pagination',{}).get('cloudrun',None)['pageNo']-1) * common_job_parameters.get('pagination',{}).get('cloudrun',None)['pageSize']
+            page_end=page_start + common_job_parameters.get('pagination',{}).get('cloudrun',None)['pageSize']
+            if page_end >len(configurations) or page_end == len(configurations):
+                configurations=configurations[page_start:]
+            else:
+                has_next_page=True
+                configurations=configurations[page_start:page_end]
+            common_job_parameters['pagination']['cloudrun']['hasNextPage']=has_next_page
+                 
         return configurations
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -94,7 +115,7 @@ def get_cloudrun_configurations(cloudrun: Resource, project_id: str) -> List[Dic
 
 
 @timeit
-def get_cloudrun_domainmappings(cloudrun: Resource, project_id: str) -> List[Dict]:
+def get_cloudrun_domainmappings(cloudrun: Resource, project_id: str,common_job_parameters) -> List[Dict]:
     """
         Returns a list of Cloud Run Domain Mappings for a given project.
 
@@ -115,6 +136,16 @@ def get_cloudrun_domainmappings(cloudrun: Resource, project_id: str) -> List[Dic
             for item in response['items']:
                 item['id'] = f"projects/{project_id}/domainmappings/{item.get('metadata').get('name')}"
                 mappings.append(item)
+        if common_job_parameters.get('pagination',{}).get('cloudrun',None):
+            has_next_page=False
+            page_start=(common_job_parameters.get('pagination',{}).get('cloudrun',None)['pageNo']-1) * common_job_parameters.get('pagination',{}).get('cloudrun',None)['pageSize']
+            page_end=page_start + common_job_parameters.get('pagination',{}).get('cloudrun',None)['pageSize']
+            if page_end > len(mappings) or page_end == len(mappings):
+                mappings=mappings[page_start:]
+            else:
+                has_next_page=True
+                mappings=mappings[page_start:page_end]
+            common_job_parameters['pagination']['cloudrun']['hasNextPage']=has_next_page 
         return mappings
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -131,7 +162,7 @@ def get_cloudrun_domainmappings(cloudrun: Resource, project_id: str) -> List[Dic
 
 
 @timeit
-def get_cloudrun_revisions(cloudrun: Resource, project_id: str) -> List[Dict]:
+def get_cloudrun_revisions(cloudrun: Resource, project_id: str,common_job_parameters) -> List[Dict]:
     """
         Returns a list of Cloud Run Revisions for a given project.
 
@@ -152,6 +183,17 @@ def get_cloudrun_revisions(cloudrun: Resource, project_id: str) -> List[Dict]:
             for item in response['items']:
                 item['id'] = f"projects/{project_id}/revisions/{item.get('metadata').get('name')}"
                 revisions.append(item)
+        if common_job_parameters.get('pagination',{}).get('cloudrun',None):
+            has_next_page=False
+            page_start=(common_job_parameters.get('pagination',{}).get('cloudrun',None)['pageNo']-1) * common_job_parameters.get('pagination',{}).get('cloudrun',None)['pageSize']
+            page_end=page_start + common_job_parameters.get('pagination',{}).get('cloudrun',None)['pageSize']
+            if page_end > len(revisions) or page_end == len(revisions):
+                revisions=revisions[page_start:]
+            else:
+                has_next_page=True
+                revisions=revisions[page_start:page_end]
+            common_job_parameters['pagination']['cloudrun']['hasNextPage']=has_next_page 
+        
         return revisions
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -168,7 +210,7 @@ def get_cloudrun_revisions(cloudrun: Resource, project_id: str) -> List[Dict]:
 
 
 @timeit
-def get_cloudrun_routes(cloudrun: Resource, project_id: str) -> List[Dict]:
+def get_cloudrun_routes(cloudrun: Resource, project_id: str,common_job_parameters) -> List[Dict]:
     """
         Returns a list of Cloud Run Routes for a given project.
 
@@ -188,6 +230,17 @@ def get_cloudrun_routes(cloudrun: Resource, project_id: str) -> List[Dict]:
         for item in response.get('items', []):
             item['id'] = f"projects/{project_id}/routes/{item.get('metadata').get('name')}"
             routes.append(item)
+        if common_job_parameters.get('pagination',{}).get('cloudrun',None):
+            has_next_page=False
+            page_start=(common_job_parameters.get('pagination',{}).get('cloudrun',None)['pageNo']-1) * common_job_parameters.get('pagination',{}).get('cloudrun',None)['pageSize']
+            page_end=page_start + common_job_parameters.get('pagination',{}).get('cloudrun',None)['pageSize']
+            if page_end > len(routes) or page_end == len(routes):
+                routes=routes[page_start:]
+            else:
+                has_next_page=True
+                routes=routes[page_start:page_end]
+            common_job_parameters['pagination']['cloudrun']['hasNextPage']=has_next_page 
+ 
         return routes
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -203,7 +256,7 @@ def get_cloudrun_routes(cloudrun: Resource, project_id: str) -> List[Dict]:
 
 
 @timeit
-def get_cloudrun_services(cloudrun: Resource, project_id: str) -> List[Dict]:
+def get_cloudrun_services(cloudrun: Resource, project_id: str,common_job_parameters) -> List[Dict]:
     """
         Returns a list of Cloud Run Services for a given project.
 
@@ -224,6 +277,17 @@ def get_cloudrun_services(cloudrun: Resource, project_id: str) -> List[Dict]:
             for item in response['items']:
                 item['id'] = f"projects/{project_id}/services/{item.get('metadata').get('name')}"
                 services.append(item)
+        if common_job_parameters.get('pagination',{}).get('cloudrun',None):
+            has_next_page=False
+            page_start=(common_job_parameters.get('pagination',{}).get('cloudrun',None)['pageNo']-1) * common_job_parameters.get('pagination',{}).get('cloudrun',None)['pageSize']
+            page_end=page_start + common_job_parameters.get('pagination',{}).get('cloudrun',None)['pageSize']
+            if page_end > len(services) or page_end == len(services):
+                services=services[page_start:]
+            else:
+                has_next_page=True
+                services=services[page_start:page_end]
+            common_job_parameters['pagination']['cloudrun']['hasNextPage']=has_next_page 
+
         return services
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -635,27 +699,27 @@ def sync(
     """
     logger.info("Syncing GCP Cloudrun for project %s.", project_id)
     # CLOUDRUN AUTHORIZED DOMAINS
-    domains = get_cloudrun_authorized_domains(cloudrun, project_id)
+    domains = get_cloudrun_authorized_domains(cloudrun, project_id,common_job_parameters)
     load_cloudrun_authorized_domains(neo4j_session, domains, project_id, gcp_update_tag)
     label.sync_labels(neo4j_session, domains, gcp_update_tag, common_job_parameters)
     # CLOUDRUN CONFIGURATIONS
-    configurations = get_cloudrun_configurations(cloudrun, project_id)
+    configurations = get_cloudrun_configurations(cloudrun, project_id,common_job_parameters)
     load_cloudrun_configurations(neo4j_session, configurations, project_id, gcp_update_tag)
     label.sync_labels(neo4j_session, configurations, gcp_update_tag, common_job_parameters)
     # CLOUDRUN DOMAIN MAPPINGS
-    domainmappings = get_cloudrun_domainmappings(cloudrun, project_id)
+    domainmappings = get_cloudrun_domainmappings(cloudrun, project_id,common_job_parameters)
     load_cloudrun_domainmappings(neo4j_session, domainmappings, project_id, gcp_update_tag)
     label.sync_labels(neo4j_session, domainmappings, gcp_update_tag, common_job_parameters)
     # CLOUDRUN REVISIONS
-    revisions = get_cloudrun_revisions(cloudrun, project_id)
+    revisions = get_cloudrun_revisions(cloudrun, project_id,common_job_parameters)
     load_cloudrun_revisions(neo4j_session, revisions, project_id, gcp_update_tag)
     label.sync_labels(neo4j_session, revisions, gcp_update_tag, common_job_parameters)
     # CLOUDRUN ROUTES
-    routes = get_cloudrun_routes(cloudrun, project_id)
+    routes = get_cloudrun_routes(cloudrun, project_id,common_job_parameters)
     load_cloudrun_routes(neo4j_session, routes, project_id, gcp_update_tag)
     label.sync_labels(neo4j_session, routes, gcp_update_tag, common_job_parameters)
     # CLOUDRUN SERVICES
-    services = get_cloudrun_services(cloudrun, project_id)
+    services = get_cloudrun_services(cloudrun, project_id,common_job_parameters)
     load_cloudrun_services(neo4j_session, services, project_id, gcp_update_tag)
     cleanup_gcp_cloudrun(neo4j_session, common_job_parameters)
     label.sync_labels(neo4j_session, services, gcp_update_tag, common_job_parameters)

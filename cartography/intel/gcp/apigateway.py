@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
-def get_apigateway_locations(apigateway: Resource, project_id: str) -> List[Dict]:
+def get_apigateway_locations(apigateway: Resource, project_id: str,common_job_parameters) -> List[Dict]:
     """
         Returns a list of locations within the given project.
 
@@ -40,6 +40,17 @@ def get_apigateway_locations(apigateway: Resource, project_id: str) -> List[Dict
                     location['id'] = location['locationId']
                     locations.append(location)
             req = apigateway.projects().locations().list_next(previous_request=req, previous_response=res)
+        if common_job_parameters.get('pagination',{}).get('apigateway',None):
+            has_next_page=False
+            page_start=(common_job_parameters.get('pagination',{}).get('apigateway',None)['pageNo']-1)* common_job_parameters.get('pagination',{}).get('apigateway',None)['pageSize']
+            page_end=page_start + common_job_parameters.get('pagination',{}).get('apigateway',None)['pageSize']
+            if page_end > len(locations) or page_end == len(locations):
+                locations=locations[page_start:]
+            else:
+                has_next_page=True
+                locations=locations[page_start:page_end]
+            common_job_parameters['pagination']['apigateway']['hasNextPage']=has_next_page
+                
         return locations
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -55,7 +66,7 @@ def get_apigateway_locations(apigateway: Resource, project_id: str) -> List[Dict
 
 
 @timeit
-def get_apis(apigateway: Resource, project_id: str, regions: list) -> List[Dict]:
+def get_apis(apigateway: Resource, project_id: str, regions: list,common_job_parameters) -> List[Dict]:
     """
         Returns a list of apis within the given project.
 
@@ -96,6 +107,20 @@ def get_apis(apigateway: Resource, project_id: str, regions: list) -> List[Dict]
 
                         apis.append(api)
                 req = apigateway.projects().locations().apis().list_next(previous_request=req, previous_response=res)
+                
+        if common_job_parameters.get('pagination',{}).get('apigateway',None):
+            has_next_page=False
+            page_start = (common_job_parameters.get('pagination',{}).get('apigateway',None)['pageNo'] - 1) * common_job_parameters.get('pagination',{}).get('apigateway',None)['pageSize']
+            page_end = page_start + common_job_parameters.get('pagination',{}).get('apigateway',None)['pageSize']
+            if page_end >len(apis) or page_end == len(apis):
+                apis=apis[page_start:]
+            else:
+                has_next_page=True
+                apis=apis[page_start:page_end]
+                
+            common_job_parameters['pagination']['apigateway']['hasNextPage']=has_next_page
+            
+            
         return apis
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -149,7 +174,7 @@ def get_api_policy_entities(apigateway: Resource, api: Dict,project_id: str) -> 
             raise
 
 @timeit
-def get_api_configs(apigateway: Resource, project_id: str, regions: list) -> List[Dict]:
+def get_api_configs(apigateway: Resource, project_id: str, regions: list,common_job_parameters) -> List[Dict]:
     """
         Returns a list of apis configs within the given project.
 
@@ -192,6 +217,16 @@ def get_api_configs(apigateway: Resource, project_id: str, regions: list) -> Lis
                     previous_request=req,
                     previous_response=res,
                 )
+        if common_job_parameters.get('pagination',{}).get('apigateway',None):
+            has_next_page=False
+            page_start=(common_job_parameters.get('pagination',{}).get('apigateway',None)['pageNo']-1)* common_job_parameters.get('pagination',{}).get('apigateway',None)['pageSize']
+            page_end=page_start + common_job_parameters.get('pagination',{}).get('apigateway',None)['pageSize']
+            if page_end > len(api_configs)or page_end== len(api_configs):
+                api_configs=api_configs[page_start:]
+            else:
+                api_configs=api_configs[page_start:page_end]
+                has_next_page=True
+            common_job_parameters['pagination']['apigateway']['hasNextPage']=has_next_page 
         return api_configs
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -206,7 +241,7 @@ def get_api_configs(apigateway: Resource, project_id: str, regions: list) -> Lis
             raise
 
 @timeit
-def get_gateways(apigateway: Resource, project_id: str, regions: list) -> List[Dict]:
+def get_gateways(apigateway: Resource, project_id: str, regions: list,common_job_parameters) -> List[Dict]:
     """
         Returns a list of gateways within the given project.
 
@@ -245,6 +280,18 @@ def get_gateways(apigateway: Resource, project_id: str, regions: list) -> List[D
                         gateway['public_access'] = public_access
                         gateways.append(gateway)
                 req = apigateway.projects().locations().gateways().list_next(previous_request=req, previous_response=res)
+        if common_job_parameters.get('pagination',{}).get('apigateway',None):
+            has_next_page=False
+            page_start=(common_job_parameters.get('pagination',{}).get('apigateway',None)['pageNo']-1)* common_job_parameters.get('pagination',{}).get('apigateway',None)['pageSize']
+            page_end= page_start + common_job_parameters.get('pagination',{}).get('apigateway',None)['pageSize']
+            if page_end >len(gateways) or page_end == len(gateways):
+                gateways=gateways[page_start:]
+            else:
+                has_next_page=True
+                gateways=gateways[page_start:page_end]
+                
+            common_job_parameters['pagination']['apigateway']['hasNextPage']=has_next_page
+            
         return gateways
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -687,27 +734,27 @@ def sync(
     """
     logger.info("Syncing DNS records for project %s.", project_id)
     # API Gateway Locations
-    locations = get_apigateway_locations(apigateway, project_id)
+    locations = get_apigateway_locations(apigateway, project_id,common_job_parameters)
     load_apigateway_locations(neo4j_session, locations, project_id, gcp_update_tag)
     # Cleanup Locations
     cleanup_apigateway_locations(neo4j_session, common_job_parameters)
     label.sync_labels(neo4j_session, locations, gcp_update_tag, common_job_parameters)
     # API Gateway APIs
-    apis = get_apis(apigateway, project_id, regions)
+    apis = get_apis(apigateway, project_id, regions,common_job_parameters)
     load_apis(neo4j_session, apis, project_id, gcp_update_tag)
-    for api in api:
+    for api in apis:
         load_apis_entity_relation(neo4j_session,api,gcp_update_tag)
     # Cleanup APIs
     cleanup_apis(neo4j_session, common_job_parameters)
     label.sync_labels(neo4j_session, apis, gcp_update_tag, common_job_parameters)
     # API Gateway API Configs
-    configs = get_api_configs(apigateway, project_id, regions)
+    configs = get_api_configs(apigateway, project_id, regions,common_job_parameters)
     load_api_configs(neo4j_session, configs, project_id, gcp_update_tag)
     # Cleanup API Gateway Configs
     cleanup_api_configs(neo4j_session, common_job_parameters)
     label.sync_labels(neo4j_session, configs, gcp_update_tag, common_job_parameters)
     # API Gateway Gateways
-    gateways = get_gateways(apigateway, project_id, regions)
+    gateways = get_gateways(apigateway, project_id, regions,common_job_parameters)
     load_gateways(neo4j_session, gateways, project_id, gcp_update_tag)
     for gateway in gateways:
         load_gateway_entity_relation(neo4j_session,gateway,gcp_update_tag)

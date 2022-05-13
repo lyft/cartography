@@ -82,6 +82,22 @@ def process_request(logger, params):
     resp = cartography.cli.run_gcp(body)
 
     if 'status' in resp and resp['status'] == 'success':
+        if resp.get('pagination', None):
+            services = []
+            for service, pagination in resp.get('pagination', {}).items():
+                if pagination.get('hasNextPage', False):
+                    services.append({
+                        "name": service,
+                        "pagination": {
+                            "pageSize": pagination.get('pageSize', 1),
+                            "pageNo": pagination.get('pageNo', 0) + 1
+                        }
+                    })
+            if len(services) > 0:
+                resp['services'] = services
+            else:
+                del resp['updateTag']
+            del resp['pagination']
         logger.info(f'successfully processed cartography: {resp}')
 
     else:
@@ -102,12 +118,14 @@ def publish_response(logger, req, resp):
         "workspace": req['params']['workspace'],
         "actions": req['params']['actions'],
         "response": resp,
+        "services": resp.get("services", None),
+        "updatetag": resp.get("updatetag", None),
     }
 
     pubsub_helper = PubSubLibrary()
 
     try:
-        if 'resultTopic' in req['params']:
+        if body.get('services', None):
             # Result should be pushed to "resultTopic" passed in the request
             status = pubsub_helper.publish(
                 os.environ['CLOUDANIX_PROJECT_ID'], json.dumps(body), req['params']['resultTopic'],

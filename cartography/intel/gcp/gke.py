@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
-def get_gke_clusters(container: Resource, project_id: str, regions: list) -> Dict:
+def get_gke_clusters(container: Resource, project_id: str, regions: list,common_job_parameters) -> Dict:
     """
     Returns a GCP response object containing a list of GKE clusters within the given project.
 
@@ -38,6 +38,16 @@ def get_gke_clusters(container: Resource, project_id: str, regions: list) -> Dic
             else:
                 if item['zone'][:-2] in regions:
                     data.append(item)
+        if common_job_parameters.get('pagination',{}).get('gke',None):
+            has_next_page=False
+            page_start=(common_job_parameters.get('pagination',{}).get('gke',None)['pageNo']-1)* common_job_parameters.get('pagination',{}).get('gke',None)['pageSize']
+            page_end = page_start + common_job_parameters.get('pagination',{}).get('gke',None)['pageSize']
+            if page_end > len(data) or page_end== len(data):
+                data=data[page_start:]
+            else:
+                has_next_page=True
+                data=data[page_start:page_end]
+            common_job_parameters['pagination']['gke']['hasNextPage']=has_next_page
         return data
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -207,7 +217,7 @@ def sync(
     :return: Nothing
     """
     logger.info("Syncing Compute objects for project %s.", project_id)
-    gke_res = get_gke_clusters(container, project_id, regions)
+    gke_res = get_gke_clusters(container, project_id, regions,common_job_parameters)
     load_gke_clusters(neo4j_session, gke_res, project_id, gcp_update_tag)
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gke_clusters(neo4j_session, common_job_parameters)

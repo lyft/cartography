@@ -1,3 +1,4 @@
+from inspect import Parameter
 import json
 import logging
 from typing import Dict
@@ -15,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
-def get_dns_zones(dns: Resource, project_id: str) -> List[Resource]:
+def get_dns_zones(dns: Resource, project_id: str,common_job_parameters) -> List[Resource]:
     """
     Returns a list of DNS zones within the given project.
 
@@ -37,6 +38,18 @@ def get_dns_zones(dns: Resource, project_id: str) -> List[Resource]:
                 managed_zone['id'] = f"projects/{project_id}/managedZones/{managed_zone['name']}"
                 zones.append(managed_zone)
             request = dns.managedZones().list_next(previous_request=request, previous_response=response)
+        if common_job_parameters.get('pagination',{}).get('dns',None):
+            has_next_page=False
+            page_start=(common_job_parameters.get('pagination',{}).get('dns',None)['pageNo']-1) * common_job_parameters.get('pagination',{}).get('dns',None)['pageSize']
+            page_end=page_start + common_job_parameters.get('pagination',{}).get('dns',None)['pageSize']
+            if page_end > len(zones) or page_end==len(zones):
+                zones=zones[page_start:]
+            else:
+                has_next_page=True
+                zones=zones[page_start:page_end]
+            common_job_parameters['pagination']['dns']['hasNextPage']=has_next_page
+            
+            
         return zones
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -241,7 +254,7 @@ def sync(
     """
     logger.info("Syncing DNS records for project %s.", project_id)
     # DNS ZONES
-    dns_zones = get_dns_zones(dns, project_id)
+    dns_zones = get_dns_zones(dns, project_id,common_job_parameters)
     if regions:
         zones_list = []
         for zone in dns_zones:

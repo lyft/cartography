@@ -62,7 +62,8 @@ def cleanup_labels(neo4j_session: neo4j.Session, common_job_parameters: Dict) ->
 def sync_labels(
     neo4j_session: neo4j.Session, data: List[Dict], update_tag: int, common_job_parameters: Dict,
 ) -> None:
-    if len(data) > 0:
-        labels_list = get_labels_list(data)
-        if len(labels_list) > 0:
-            load_labels(neo4j_session, labels_list, update_tag)
+    if data:
+        if len(data) > 0:
+            labels_list = get_labels_list(data)
+            if len(labels_list) > 0:
+                load_labels(neo4j_session, labels_list, update_tag)

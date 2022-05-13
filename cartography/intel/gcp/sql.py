@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
-def get_sql_instances(sql: Resource, project_id: str, regions: list) -> List[Dict]:
+def get_sql_instances(sql: Resource, project_id: str, regions: list,common_job_parameters) -> List[Dict]:
     """
         Returns a list of sql instances for a given project.
 
@@ -44,6 +44,16 @@ def get_sql_instances(sql: Resource, project_id: str, regions: list) -> List[Dic
                         if item.get('region') in regions:
                             sql_instances.append(item)
             request = sql.instances().list_next(previous_request=request, previous_response=response)
+        if common_job_parameters.get('pagination',{}).get('sql',None):
+            has_next_page=False
+            page_start= (common_job_parameters.get('pagination',{}).get('sql',None)['pageNo']-1)* common_job_parameters.get('pagination',{}).get('sql',None)['pageSize']
+            page_end= page_start + common_job_parameters.get('pagination',{}).get('sql',None)['pageSize']
+            if  page_end > len(sql_instances) or page_end== len(sql_instances):
+                sql_instances=sql_instances[page_start:]
+            else:
+                has_next_page=True
+                sql_instances=sql_instances[page_start:page_end]
+            common_job_parameters['pagination']['sql']['hasNextPage']=has_next_page
         return sql_instances
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -263,7 +273,7 @@ def sync(
     """
     logger.info("Syncing GCP Cloud SQL for project %s.", project_id)
     # SQL INSTANCES
-    sqlinstances = get_sql_instances(sql, project_id, regions)
+    sqlinstances = get_sql_instances(sql, project_id, regions,common_job_parameters)
     load_sql_instances(neo4j_session, sqlinstances, project_id, gcp_update_tag)
     label.sync_labels(neo4j_session, sqlinstances, gcp_update_tag, common_job_parameters)
 

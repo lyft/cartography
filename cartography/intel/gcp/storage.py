@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
-def get_gcp_buckets(storage: Resource, project_id: str) -> Dict:
+def get_gcp_buckets(storage: Resource, project_id: str,common_job_parameters) -> Dict:
     """
     Returns a list of storage objects within some given project
 
@@ -38,6 +38,16 @@ def get_gcp_buckets(storage: Resource, project_id: str) -> Dict:
             defaultObjectAcl = item.get('defaultObjectAcl',[])
             for item3 in defaultObjectAcl:
                 item['defaultentity'] = item3.get('entity',None)
+        if common_job_parameters.get('pagination',{}).get('storage',None):
+            has_next_page=False
+            page_start=(common_job_parameters.get('pagination',{}).get('storage',None)['pageNo']-1)* common_job_parameters.get('pagination',{}).get('storage',None)['pageSize']
+            page_end= page_start + common_job_parameters.get('pagination',{}).get('storage',None)['pageSize']
+            if page_end > len(res['items']) or len(res['items'])== page_end:
+                res['items']=res['items'][page_start:]
+            else:
+                has_next_page=True
+                res['items']=res['items'][page_start:page_end]
+            common_job_parameters['pagination']['storage']['hasNextPage']=has_next_page
         return res
     except HttpError as e:
         reason = compute._get_error_reason(e)
@@ -239,7 +249,7 @@ def sync(
     :return: Nothing
     """
     logger.info("Syncing Storage objects for project %s.", project_id)
-    storage_res = get_gcp_buckets(storage, project_id)
+    storage_res = get_gcp_buckets(storage, project_id,common_job_parameters)
     bucket_list = transform_gcp_buckets(storage_res, regions)
     load_gcp_buckets(neo4j_session, bucket_list, gcp_update_tag)
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
