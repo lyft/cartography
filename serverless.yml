@@ -4,7 +4,7 @@ service: cartography-service
 
 provider:
   name: aws
-  runtime: python3.9
+  runtime: python3.8
   stage: prod
   region: us-east-2
   memorySize: 1024
