@@ -5,7 +5,7 @@ import logging
 import neo4j
 from requests import exceptions
 
-import cartography.intel.github.repos
+#import cartography.intel.github.repos
 import cartography.intel.github.users
 from cartography.config import Config
 from cartography.util import timeit

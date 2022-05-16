@@ -22,7 +22,12 @@ def call_github_api(query: str, variables: str, token: str, api_url: str) -> Dic
     :param api_url: the URL to call for the API
     :return: query results json
     """
-    headers = {'Authorization': f"token {token}"}
+    headers = {
+        'Authorization': f"token {token}",
+        # Needed to preview dep graphs
+        # https://docs.github.com/en/graphql/overview/schema-previews#access-to-a-repositories-dependency-graph-preview
+        'Accept': "application/vnd.github.hawkgirl-preview+json"
+    }
     try:
         response = requests.post(
             api_url,
@@ -38,7 +43,7 @@ def call_github_api(query: str, variables: str, token: str, api_url: str) -> Dic
     return response.json()
 
 
-def fetch_page(token: str, api_url: str, organization: str, query: str, cursor: Optional[str] = None) -> Dict:
+def fetch_page(token: str, api_url: str, organization: str, query: str, cursor: Optional[str] = None, provided_vars: Optional[Dict[str, str]] = {}) -> Dict:
     """
     Return a single page of max size 100 elements from the Github api_url using the given `query` and `cursor` params.
     :param token: The API token as string. Must have permission for the object being paginated.
@@ -49,17 +54,19 @@ def fetch_page(token: str, api_url: str, organization: str, query: str, cursor: 
     organization. If None, the Github API will return the first page of repos.
     :return: The raw response object from the requests.get().json() call.
     """
+
     gql_vars = {
         'login': organization,
         'cursor': cursor,
     }
+    gql_vars = {**gql_vars, **provided_vars}
     gql_vars_json = json.dumps(gql_vars)
     response = call_github_api(query, gql_vars_json, token, api_url)
     return response
 
 
-def fetch_all(
-    token: str, api_url: str, organization: str, query: str, resource_type: str, field_name: str, retries: int = 5,
+def fetch_all_nodes(
+    token: str, api_url: str, organization: str, query: str, resource_type: str, field_name: str, retries: int = 5
 ) -> Tuple[List[Dict], Dict]:
     """
     Fetch and return all data items of the given `resource_type` and `field_name` from Github's paginated GraphQL API as
@@ -87,7 +94,7 @@ def fetch_all(
             retry = 0
         except requests.exceptions.Timeout:
             retry += 1
-        except requests.exceptions.HTTPError:
+        except requests.exceptions.HTTPError as err:
             retry += 1
         except requests.exceptions.ChunkedEncodingError:
             retry += 1
@@ -101,10 +108,46 @@ def fetch_all(
         elif retry > 0:
             time.sleep(1 * retry)
             continue
-
         resource = resp['data']['organization'][resource_type]
         data.extend(resource[field_name])
         cursor = resource['pageInfo']['endCursor']
         has_next_page = resource['pageInfo']['hasNextPage']
+        break
+
     org_data = {'url': resp['data']['organization']['url'], 'login': resp['data']['organization']['login']}
     return data, org_data
+
+def fetch_all_deps_and_vulns(
+    token: str, api_url: str, organization: str, query: str, resource_type: str, field_name: str,
+    provided_vars: Optional[Dict[str,str]] = {}, retries: int = 5
+) -> Tuple[List[Dict], Dict]:
+    cursor = None
+    has_next_page = True
+    data: List[Dict] = []
+    retry = 0
+    while has_next_page:
+        try:
+            resp = fetch_page(token, api_url, organization, query, cursor, provided_vars)
+            retry = 0
+        except requests.exceptions.Timeout:
+            retry += 1
+        except requests.exceptions.HTTPError as err:
+            retry += 1
+        except requests.exceptions.ChunkedEncodingError:
+            retry += 1
+
+        if retry >= retries:
+            logger.error(
+                f"GitHub: Could not retrieve page of resource `{resource_type}` due to HTTP error.",
+                exc_info=True,
+            )
+            raise
+        elif retry > 0:
+            time.sleep(1 * retry)
+            continue
+        resource = resp['data']['organization'][resource_type][field_name]
+        data = resource
+        cursor = resource['pageInfo']['endCursor']
+        has_next_page = resource['pageInfo']['hasNextPage']
+        break
+    return (data)

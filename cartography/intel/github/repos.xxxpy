@@ -86,6 +86,53 @@ GITHUB_ORG_REPOS_PAGINATED_GRAPHQL = """
         }
     }
     """
+
+GITHUB_ORG_REPOS_DEPS_PAGINATED_GRAPHQL = """
+    query($login: String!, $cursor: String) {
+    organization(login: $login)
+        {
+            url
+            login
+            repositories(first: 100, after: $cursor){
+                pageInfo{
+                    endCursor
+                    hasNextPage
+                }
+                nodes{
+                    name
+                    nameWithOwner
+                    primaryLanguage{
+                        name
+                    }
+                    url
+                    dependencyGraphManifests{
+                      nodes {
+                        dependencies {
+                            nodes {
+                                packageName
+                                requirements
+                                packageManager
+                                packageLabel
+                                hasDependencies
+                            }
+                        }
+                      }
+                    }
+                    requirements:object(expression: "HEAD:requirements.txt") {
+                        ... on Blob {
+                            text
+                        }
+                    }
+                    setupCfg:object(expression: "HEAD:setup.cfg") {
+                        ... on Blob {
+                            text
+                        }
+                    }
+                }
+            }
+        }
+    }
+    """
 # Note: In the above query, `HEAD` references the default branch.
 # See https://stackoverflow.com/questions/48935381/github-graphql-api-default-branch-in-repository
 
@@ -102,6 +149,7 @@ def get(token: str, api_url: str, organization: str) -> List[Dict]:
     """
     # TODO: link the Github organization to the repositories
     repos, _ = fetch_all(token, api_url, organization, GITHUB_ORG_REPOS_PAGINATED_GRAPHQL, 'repositories', 'nodes')
+    repos, _ = fetch_all(token, api_url, organization, GITHUB_ORG_REPOS_DEPS_PAGINATED_GRAPHQL, 'repositories', 'nodes')
     return repos
 
 
@@ -556,3 +604,9 @@ def sync(
     repo_data = transform(repos_json)
     load(neo4j_session, common_job_parameters, repo_data)
     run_cleanup_job('github_repos_cleanup.json', neo4j_session, common_job_parameters)
+
+if __name__ == "__main__":
+    import json
+    gh_creds = json.load(open("github.creds"))
+    token = gh_creds['personal_access']
+    repos_json = get(github_api_key, github_url, organization)
