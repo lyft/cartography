@@ -13,8 +13,10 @@ from utils.logger import get_logger
 lambda_init = None
 context = None
 
+
 def current_config(env):
-    return "config/production.json" if env=="PRODUCTION" else "config/default.json"
+    return "config/production.json" if env == "PRODUCTION" else "config/default.json"
+
 
 def set_assume_role_keys(context):
     context.assume_role_access_key_key_id = context.assume_role_access_secret_key_id = os.environ['CDX_APP_ASSUME_ROLE_KMS_KEY_ID']
@@ -23,6 +25,7 @@ def set_assume_role_keys(context):
     context.neo4j_uri = os.environ['CDX_APP_NEO4J_URI']
     context.neo4j_user = os.environ['CDX_APP_NEO4J_USER']
     context.neo4j_pwd = os.environ['CDX_APP_NEO4J_PWD']
+
 
 def init_lambda(ctx):
     global lambda_init, context
@@ -41,7 +44,7 @@ def init_lambda(ctx):
     context.logger = get_logger(context.log_level)
 
     decrypted_value = ''
-    
+
     # Read from config files in the project
     with open(current_config(context.app_env), 'r') as f:
         decrypted_value = f.read()
@@ -49,7 +52,7 @@ def init_lambda(ctx):
     # Cloudanix AWS AccountID
     context.aws_account_id = ctx.invoked_function_arn.split(":")[4]
     context.parse(decrypted_value)
-    
+
     set_assume_role_keys(context)
 
     lambda_init = True
@@ -171,10 +174,13 @@ def publish_response(context, req, resp):
 
         sns_helper = SNSLibrary(context)
         if body.get('services', None):
-            status = sns_helper.publish(json.dumps(body), context.aws_inventory_sync_response_topic)
-        else:
+            if 'requestTopic' in req['params']:
+                status = sns_helper.publish(json.dumps(body), req['params']['requestTopic'])
+        elif 'resultTopic' in req['params']:
             # Result should be pushed to "resultTopic" passed in the request
             status = sns_helper.publish(json.dumps(body), req['params']['resultTopic'])
+        else:
+            status = sns_helper.publish(json.dumps(body), context.aws_inventory_sync_response_topic)
 
         context.logger.info(f'result published to SNS with status: {status}')
 
