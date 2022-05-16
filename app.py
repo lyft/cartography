@@ -116,7 +116,7 @@ def process_request(context, args):
             "resultTopic": args['resultTopic'],
             "requestTopic": args.get("requestTopic", None),
         },
-        "updatetag": args.get("updateTag", None),
+        "updateTag": args.get("updateTag", None),
         "services": args.get("services", None)
     }
 
@@ -169,7 +169,7 @@ def publish_response(context, req, resp):
             "actions": req['params']['actions'],
             "response": resp,
             "services": resp.get("services", None),
-            "updatetag": resp.get("updatetag", None),
+            "updateTag": resp.get("updateTag", None),
         }
 
         sns_helper = SNSLibrary(context)

@@ -534,7 +534,7 @@ def run_aws(request):
         credentials=request['credentials'],
         params=request['params'],
         aws_requested_syncs=request.get('services', None),
-        update_tag=request.get('updatetag', None)
+        update_tag=request.get('updateTag', None)
     )
 
     if request['logging']['mode'] == "verbose":
