@@ -407,8 +407,8 @@ def start_gcp_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
         # credentials = GoogleCredentials.get_application_default()
 
         auth_helper = AuthHelper()
-        # credentials = auth_helper.get_credentials(config.credentials['token_uri'], config.credentials['account_email'])
-        credentials = GoogleCredentials.get_application_default()
+        credentials = auth_helper.get_credentials(config.credentials['token_uri'], config.credentials['account_email'])
+        # credentials = GoogleCredentials.get_application_default()
 
     except ApplicationDefaultCredentialsError as e:
         logger.debug("Error occurred calling GoogleCredentials.get_application_default().", exc_info=True)
@@ -427,7 +427,7 @@ def start_gcp_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
     if config.gcp_requested_syncs:
         gcp_requested_syncs_string=""
         for service in config.gcp_requested_syncs:
-            gcp_requested_syncs_string +=f"{service.get('name',' ')}"
+            gcp_requested_syncs_string +=f"{service.get('name',' ')},"
             if service.get('pagination',None):
                 common_job_parameters['pagination'][service.get('name',None)]=service.get('pagination',{})
         requested_syncs = parse_and_validate_gcp_requested_syncs(gcp_requested_syncs_string[:-1])

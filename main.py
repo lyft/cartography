@@ -124,13 +124,18 @@ def publish_response(logger, req, resp):
 
     pubsub_helper = PubSubLibrary()
 
-    try:
+    try:    
         if body.get('services', None):
-            # Result should be pushed to "resultTopic" passed in the request
+            if 'requestTopic' in req['params']:
+            # Result should be pushed to "requestTopic" passed in the request
+                status = pubsub_helper.publish(
+                    os.environ['CLOUDANIX_PROJECT_ID'], json.dumps(body), req['params']['requestTopic'],
+                )
+        elif 'resultTopic' in req['params']:
             status = pubsub_helper.publish(
-                os.environ['CLOUDANIX_PROJECT_ID'], json.dumps(body), req['params']['resultTopic'],
-            )
-
+                    os.environ['CLOUDANIX_PROJECT_ID'], json.dumps(body), req['params']['resultTopic'],
+                )
+            
         else:
             status = pubsub_helper.publish(
                 os.environ['CLOUDANIX_PROJECT_ID'], json.dumps(body), os.environ['CARTOGRAPHY_RESULT_TOPIC'],
