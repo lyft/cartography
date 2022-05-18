@@ -90,7 +90,7 @@ def get_apis(apigateway: Resource, project_id: str, regions: list) -> List[Dict]
                         if len(x) > 1:
                             api['region'] = f"{x[0]}-{x[1]}"
 
-                        api_entities, public_access = get_api_policy_entities(apigateway,api,project_id)
+                        api_entities, public_access = get_api_policy_entities(apigateway, api, project_id)
                         api['enities'] = api_entities
                         api['public_access'] = public_access
 
@@ -109,8 +109,9 @@ def get_apis(apigateway: Resource, project_id: str, regions: list) -> List[Dict]
         else:
             raise
 
+
 @timeit
-def get_api_policy_entities(apigateway: Resource, api: Dict,project_id: str) -> List[Dict]:
+def get_api_policy_entities(apigateway: Resource, api: Dict, project_id: str) -> List[Dict]:
     """
         Returns a list of users attached to IAM policy of an API within the given project.
 
@@ -131,9 +132,9 @@ def get_api_policy_entities(apigateway: Resource, api: Dict,project_id: str) -> 
     """
     entity_list = []
     try:
-        iam_policy = apigateway.projects().locations().apis().getIamPolicy(\
+        iam_policy = apigateway.projects().locations().apis().getIamPolicy(
             resource=api['id']).execute()
-        bindings = iam_policy.get('bindings',[])
+        bindings = iam_policy.get('bindings', [])
         entity_list, public_access = iam.transform_bindings(bindings, project_id)
         return entity_list, public_access
     except HttpError as e:
@@ -147,6 +148,7 @@ def get_api_policy_entities(apigateway: Resource, api: Dict,project_id: str) -> 
             return []
         else:
             raise
+
 
 @timeit
 def get_api_configs(apigateway: Resource, project_id: str, regions: list) -> List[Dict]:
@@ -205,6 +207,7 @@ def get_api_configs(apigateway: Resource, project_id: str, regions: list) -> Lis
         else:
             raise
 
+
 @timeit
 def get_gateways(apigateway: Resource, project_id: str, regions: list) -> List[Dict]:
     """
@@ -240,7 +243,7 @@ def get_gateways(apigateway: Resource, project_id: str, regions: list) -> List[D
                         gateway['region'] = x[0]
                         if len(x) > 1:
                             gateway['region'] = f"{x[0]}-{x[1]}"
-                        gateway_entities, public_access = get_api_policy_entities(apigateway,gateway,project_id)
+                        gateway_entities, public_access = get_api_policy_entities(apigateway, gateway, project_id)
                         gateway['entities'] = gateway_entities
                         gateway['public_access'] = public_access
                         gateways.append(gateway)
@@ -260,7 +263,7 @@ def get_gateways(apigateway: Resource, project_id: str, regions: list) -> List[D
 
 
 @timeit
-def get_api_gateway_policy_entities(apigateway: Resource, gateway: Dict,project_id: str) -> List[Dict]:
+def get_api_gateway_policy_entities(apigateway: Resource, gateway: Dict, project_id: str) -> List[Dict]:
     """
         Returns a list of users attached to IAM policy of an API Gateway within the given project.
 
@@ -280,9 +283,9 @@ def get_api_gateway_policy_entities(apigateway: Resource, gateway: Dict,project_
         :return: List of api gateway iam policy users
     """
     try:
-        iam_policy = apigateway.projects().locations().gateways().getIamPolicy(\
+        iam_policy = apigateway.projects().locations().gateways().getIamPolicy(
             resource=gateway.get('name')).execute()
-        bindings = iam_policy.get('bindings',[])
+        bindings = iam_policy.get('bindings', [])
         entity_list, public_access = iam.transform_bindings(bindings, project_id)
         return entity_list, public_access
     except HttpError as e:
@@ -296,7 +299,6 @@ def get_api_gateway_policy_entities(apigateway: Resource, gateway: Dict,project_
             return []
         else:
             raise
-
 
 
 @timeit
@@ -423,6 +425,7 @@ def load_apis_tx(tx: neo4j.Transaction, apis: List[Dict], project_id: str, gcp_u
         gcp_update_tag=gcp_update_tag,
     )
 
+
 @timeit
 def cleanup_apis(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     """
@@ -438,6 +441,7 @@ def cleanup_apis(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> N
        :return: Nothing
    """
     run_cleanup_job('gcp_apigateway_apis_cleanup.json', neo4j_session, common_job_parameters)
+
 
 @timeit
 def load_apis_entity_relation(session: neo4j.Session, api: Dict, update_tag: int) -> None:
@@ -472,10 +476,11 @@ def load_apis_entity_relation_tx(tx: neo4j.Transaction, api: Dict, gcp_update_ta
     SET r.lastupdated = {gcp_update_tag}    """
     tx.run(
         ingest_entities,
-        api_id=api.get('id',None),
-        entities = api.get('entities',[]),
+        api_id=api.get('id', None),
+        entities=api.get('entities', []),
         gcp_update_tag=gcp_update_tag,
     )
+
 
 @timeit
 def load_gateway_entity_relation(session: neo4j.Session, gateway: Dict, update_tag: int) -> None:
@@ -510,10 +515,11 @@ def load_gateway_entity_relation_tx(tx: neo4j.Transaction, gateway: Dict, gcp_up
     SET r.lastupdated = {gcp_update_tag}    """
     tx.run(
         ingest_entities,
-        gateway_id=gateway.get('id',None),
-        entities = gateway.get('entities',[]),
+        gateway_id=gateway.get('id', None),
+        entities=gateway.get('entities', []),
         gcp_update_tag=gcp_update_tag,
     )
+
 
 @timeit
 def load_api_configs(session: neo4j.Session, data_list: List[Dict], project_id: str, update_tag: int) -> None:
@@ -585,6 +591,7 @@ def cleanup_api_configs(neo4j_session: neo4j.Session, common_job_parameters: Dic
        :return: Nothing
    """
     run_cleanup_job('gcp_apigateway_configs_cleanup.json', neo4j_session, common_job_parameters)
+
 
 @timeit
 def load_gateways(session: neo4j.Session, data_list: List[Dict], project_id: str, update_tag: int) -> None:
@@ -695,8 +702,8 @@ def sync(
     # API Gateway APIs
     apis = get_apis(apigateway, project_id, regions)
     load_apis(neo4j_session, apis, project_id, gcp_update_tag)
-    for api in api:
-        load_apis_entity_relation(neo4j_session,api,gcp_update_tag)
+    for api in apis:
+        load_apis_entity_relation(neo4j_session, api, gcp_update_tag)
     # Cleanup APIs
     cleanup_apis(neo4j_session, common_job_parameters)
     label.sync_labels(neo4j_session, apis, gcp_update_tag, common_job_parameters)
@@ -710,7 +717,7 @@ def sync(
     gateways = get_gateways(apigateway, project_id, regions)
     load_gateways(neo4j_session, gateways, project_id, gcp_update_tag)
     for gateway in gateways:
-        load_gateway_entity_relation(neo4j_session,gateway,gcp_update_tag)
+        load_gateway_entity_relation(neo4j_session, gateway, gcp_update_tag)
     # Cleanup API Gateway Gateways
     cleanup_api_gateways(neo4j_session, common_job_parameters)
     label.sync_labels(neo4j_session, gateways, gcp_update_tag, common_job_parameters)

@@ -36,8 +36,7 @@ def get_sql_instances(sql: Resource, project_id: str, regions: list) -> List[Dic
             if response.get('items', []):
                 for item in response['items']:
                     item['id'] = f"project/{project_id}/instances/{item['name']}"
-                    item['ipV4Enabled'] = item.get('settings',{}).get('ipConfiguration',{}).get('ipV4Enabled',False)
-                    sql_instances.append(item)
+                    item['ipV4Enabled'] = item.get('settings', {}).get('ipConfiguration', {}).get('ipV4Enabled', False)
                     if regions is None:
                         sql_instances.append(item)
                     else:
@@ -265,6 +264,7 @@ def sync(
     # SQL INSTANCES
     sqlinstances = get_sql_instances(sql, project_id, regions)
     load_sql_instances(neo4j_session, sqlinstances, project_id, gcp_update_tag)
+    logger.info("Load GCP Cloud SQL Instances completed for project %s.", project_id)
     label.sync_labels(neo4j_session, sqlinstances, gcp_update_tag, common_job_parameters)
 
     logger.info("Syncing GCP Cloud SQL Users for project %s.", project_id)
