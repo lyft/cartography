@@ -164,7 +164,7 @@ def get_gcp_instance_policy_entities(item: Dict, compute: Resource) -> List[Reso
             raise
 
 
-@ timeit
+@timeit
 def get_gcp_subnets(projectid: str, region: str, compute: Resource) -> Resource:
     """
     Return list of all subnets in the given projectid and region
@@ -177,7 +177,7 @@ def get_gcp_subnets(projectid: str, region: str, compute: Resource) -> Resource:
     return req.execute()
 
 
-@ timeit
+@timeit
 def get_gcp_vpcs(projectid: str, compute: Resource) -> Resource:
     """
     Get VPC data for given project
@@ -189,7 +189,7 @@ def get_gcp_vpcs(projectid: str, compute: Resource) -> Resource:
     return req.execute()
 
 
-@ timeit
+@timeit
 def get_gcp_regional_forwarding_rules(project_id: str, region: str, compute: Resource) -> Resource:
     """
     Return list of all regional forwarding rules in the given project_id and region
@@ -202,7 +202,7 @@ def get_gcp_regional_forwarding_rules(project_id: str, region: str, compute: Res
     return req.execute()
 
 
-@ timeit
+@timeit
 def get_gcp_global_forwarding_rules(project_id: str, compute: Resource) -> Resource:
     """
     Return list of all global forwarding rules in the given project_id and region
@@ -214,7 +214,7 @@ def get_gcp_global_forwarding_rules(project_id: str, compute: Resource) -> Resou
     return req.execute()
 
 
-@ timeit
+@timeit
 def get_gcp_firewall_ingress_rules(project_id: str, compute: Resource) -> Resource:
     """
     Get ingress Firewall data for a given project
@@ -226,7 +226,7 @@ def get_gcp_firewall_ingress_rules(project_id: str, compute: Resource) -> Resour
     return req.execute()
 
 
-@ timeit
+@timeit
 def transform_gcp_instances(response_objects: List[Dict], compute: Resource) -> List[Dict]:
     """
     Process the GCP instance response objects and return a flattened list of GCP instances with all the necessary fields
@@ -293,7 +293,7 @@ def _create_gcp_network_tag_id(vpc_partial_uri: str, tag: str) -> str:
     return f"{vpc_partial_uri}/tags/{tag}"
 
 
-@ timeit
+@timeit
 def transform_gcp_vpcs(vpc_res: Dict) -> List[Dict]:
     """
     Transform the VPC response object for Neo4j ingestion
@@ -321,7 +321,7 @@ def transform_gcp_vpcs(vpc_res: Dict) -> List[Dict]:
     return vpc_list
 
 
-@ timeit
+@timeit
 def transform_gcp_subnets(subnet_res: Dict) -> List[Dict]:
     """
     Add additional fields to the subnet object to make it easier to process in `load_gcp_subnets()`.
@@ -358,7 +358,7 @@ def transform_gcp_subnets(subnet_res: Dict) -> List[Dict]:
     return subnet_list
 
 
-@ timeit
+@timeit
 def transform_gcp_forwarding_rules(fwd_response: Resource) -> List[Dict]:
     """
     Add additional fields to the forwarding rule object to make it easier to process in `load_gcp_forwarding_rules()`.
@@ -408,7 +408,7 @@ def transform_gcp_forwarding_rules(fwd_response: Resource) -> List[Dict]:
     return fwd_list
 
 
-@ timeit
+@timeit
 def transform_gcp_firewall(fw_response: Resource) -> List[Dict]:
     """
     Adjust the firewall response objects into a format that is easy to write to Neo4j.
@@ -548,7 +548,7 @@ def _parse_port_string_to_rule(port: Optional[str], protocol: str, fw_partial_ur
     }
 
 
-@ timeit
+@timeit
 def load_gcp_instances(neo4j_session: neo4j.Session, data: List[Dict], gcp_update_tag: int) -> None:
     """
     Ingest GCP instance objects to Neo4j
