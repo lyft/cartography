@@ -1,3 +1,4 @@
+import time
 import logging
 from typing import Dict
 from typing import List
@@ -182,6 +183,11 @@ def sync(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
     update_tag: int, common_job_parameters: Dict,
 ) -> None:
-    logger.info("Syncing Redshift clusters for account '%s'.", current_aws_account_id)
+    tic = time.perf_counter()
+
+    logger.info("Syncing Redshift clusters for account '%s', at %s.", current_aws_account_id, tic)
     sync_redshift_clusters(neo4j_session, boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters)
     cleanup(neo4j_session, common_job_parameters)
+
+    toc = time.perf_counter()
+    print(f"Total Time to process Redshift clusters: {toc - tic:0.4f} seconds")

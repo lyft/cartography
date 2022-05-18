@@ -8,6 +8,7 @@ from typing import List
 import boto3
 import neo4j
 
+from botocore.exceptions import ClientError
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -19,12 +20,23 @@ logger = logging.getLogger(__name__)
 @aws_handle_regions
 def get_ec2_instances(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
     client = boto3_session.client('ec2', region_name=region)
-    paginator = client.get_paginator('describe_instances')
-    reservations: List[Dict] = []
-    for page in paginator.paginate():
-        reservations.extend(page['Reservations'])
-    for reservation in reservations:
-        reservation['region'] = region
+    reservations = []
+    try:
+        paginator = client.get_paginator('describe_instances')
+        for page in paginator.paginate():
+            reservations.extend(page['Reservations'])
+        for reservation in reservations:
+          reservation['region'] = region
+    
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'AccessDeniedException' or e.response['Error']['Code'] == 'UnauthorizedOperation':
+            logger.warning(
+                f'ec2:describe_security_groups failed with AccessDeniedException; continuing sync.',
+                exc_info=True,
+            )
+        else:
+            raise
+
     return reservations
 
 
@@ -444,6 +456,10 @@ def sync_ec2_instances(
         neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str],
         current_aws_account_id: str, update_tag: int, common_job_parameters: Dict,
 ) -> None:
+    tic = time.perf_counter()
+
+    logger.info("Syncing EC2 instances for account '%s', at %s.", current_aws_account_id, tic)
+
     data = []
     for region in regions:
         logger.info("Syncing EC2 instances for region '%s' in account '%s'.", region, current_aws_account_id)
@@ -462,3 +478,6 @@ def sync_ec2_instances(
 
     load_ec2_instances(neo4j_session, data, current_aws_account_id, update_tag)
     cleanup_ec2_instances(neo4j_session, common_job_parameters)
+
+    toc = time.perf_counter()
+    print(f"Total Time to process EC2 instances: {toc - tic:0.4f} seconds")

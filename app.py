@@ -1,3 +1,5 @@
+# Used by AWS Lambda
+
 import json
 import os
 import logging
@@ -56,38 +58,6 @@ def init_lambda(ctx):
     set_assume_role_keys(context)
 
     lambda_init = True
-
-
-# Used by AWS Lambda
-def load_cartography(event, ctx):
-    global lambda_init, context
-    if not lambda_init:
-        init_lambda(ctx)
-
-    context.logger.info('inventory sync aws worker request received via SNS')
-
-    record = event['Records'][0]
-    message = record['Sns']['Message']
-
-    try:
-        params = json.loads(message)
-
-    except Exception as e:
-        context.logger.error(f'error while parsing inventory sync aws request json: {e}')
-
-        return {
-            "status": 'failure',
-            "message": 'unable to parse request',
-        }
-
-    process_request(context, params)
-
-    return {
-        'statusCode': 200,
-        'body': json.dumps({
-            "status": 'success',
-        }),
-    }
 
 
 def process_request(context, args):
@@ -208,3 +178,33 @@ def get_auth_creds(context, args):
         }
 
     return auth_creds
+
+def load_cartography(event, ctx):
+    global lambda_init, context
+    if not lambda_init:
+        init_lambda(ctx)
+
+    context.logger.info('inventory sync aws worker request received via SNS')
+
+    record = event['Records'][0]
+    message = record['Sns']['Message']
+
+    try:
+        params = json.loads(message)
+
+    except Exception as e:
+        context.logger.error(f'error while parsing inventory sync aws request json: {e}')
+
+        return {
+            "status": 'failure',
+            "message": 'unable to parse request',
+        }
+
+    process_request(context, params)
+
+    return {
+        'statusCode': 200,
+        'body': json.dumps({
+            "status": 'success',
+        }),
+    }

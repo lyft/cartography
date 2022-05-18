@@ -1,3 +1,4 @@
+import time
 import logging
 from typing import Dict
 from typing import List
@@ -107,6 +108,10 @@ def sync(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
     update_tag: int, common_job_parameters: Dict,
 ) -> None:
+    tic = time.perf_counter()
+
+    logger.info("Syncing ElastiCache for account '%s', at %s.", current_aws_account_id, tic)
+
     clusters = []
     for region in regions:
         logger.info(f"Syncing ElastiCache clusters for region '{region}' in account {current_aws_account_id}")
@@ -125,3 +130,6 @@ def sync(
 
     load_elasticache_clusters(neo4j_session, clusters, current_aws_account_id, update_tag)
     cleanup(neo4j_session, common_job_parameters)
+
+    toc = time.perf_counter()
+    print(f"Total Time to process ElastiCache: {toc - tic:0.4f} seconds")

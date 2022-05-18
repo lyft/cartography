@@ -1,3 +1,4 @@
+import time
 import logging
 from typing import Any
 from typing import Dict
@@ -461,6 +462,10 @@ def sync(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
     update_tag: int, common_job_parameters: Dict,
 ) -> None:
+    tic = time.perf_counter()
+
+    logger.info("Syncing RDS for account '%s', at %s.", current_aws_account_id, tic)
+
     sync_rds_clusters(
         neo4j_session, boto3_session, regions, current_aws_account_id, update_tag,
         common_job_parameters,
@@ -469,3 +474,6 @@ def sync(
         neo4j_session, boto3_session, regions, current_aws_account_id, update_tag,
         common_job_parameters,
     )
+
+    toc = time.perf_counter()
+    print(f"Total Time to process RDS: {toc - tic:0.4f} seconds")

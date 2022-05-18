@@ -1,3 +1,4 @@
+import time
 import logging
 from typing import Dict
 from typing import List
@@ -406,7 +407,9 @@ def sync(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
     update_tag: int, common_job_parameters: Dict,
 ) -> None:
-    logger.info("Syncing Route53 for account '%s'.", current_aws_account_id)
+    tic = time.perf_counter()
+
+    logger.info("Syncing Route53 for account '%s', at %s.", current_aws_account_id, tic)
     client = boto3_session.client('route53')
     zones = get_zones(client)
 
@@ -424,3 +427,6 @@ def sync(
     load_dns_details(neo4j_session, zones, current_aws_account_id, update_tag)
     link_sub_zones(neo4j_session, update_tag)
     cleanup_route53(neo4j_session, common_job_parameters)
+
+    toc = time.perf_counter()
+    print(f"Total Time to process Route53: {toc - tic:0.4f} seconds")

@@ -5,7 +5,7 @@ from typing import List
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-
+import time
 import boto3
 import neo4j
 from neo4j import GraphDatabase
@@ -218,6 +218,10 @@ def sync(
     common_job_parameters: Dict,
     tag_resource_type_mappings: Dict = TAG_RESOURCE_TYPE_MAPPINGS,
 ) -> None:
+    tic = time.perf_counter()
+
+    logger.info("Begin processing tags for account '%s', at %s.", current_aws_account_id, tic)
+
     # Process each region in parallel.
     with ThreadPoolExecutor(max_workers=len(regions)) as executor:
         futures = []
@@ -231,6 +235,10 @@ def sync(
             logger.info(f'Result from Future - Tags Processing: {future.result()}')
 
     cleanup(neo4j_session, common_job_parameters)
+    
+    toc = time.perf_counter()
+    print(f"Total Time to process tags: {toc - tic:0.4f} seconds")
+
 
 
 def concurrent_execution(

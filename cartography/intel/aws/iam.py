@@ -1021,7 +1021,9 @@ def sync(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
     update_tag: int, common_job_parameters: Dict,
 ) -> None:
-    logger.info("Syncing IAM for account '%s'.", current_aws_account_id)
+    tic = time.perf_counter()
+
+    logger.info("Syncing IAM for account '%s', at %s.", current_aws_account_id, tic)
     # This module only syncs IAM information that is in use.
     # As such only policies that are attached to a user, role or group are synced
     sync_users(neo4j_session, boto3_session, current_aws_account_id, update_tag, common_job_parameters)
@@ -1042,6 +1044,8 @@ def sync(
 
     run_cleanup_job('aws_import_principals_cleanup.json', neo4j_session, common_job_parameters)
 
+    toc = time.perf_counter()
+    print(f"Total Time to process IAM: {toc - tic:0.4f} seconds")
 
 # https://docs.aws.amazon.com/cli/latest/reference/iam/generate-service-last-accessed-details.html
 #

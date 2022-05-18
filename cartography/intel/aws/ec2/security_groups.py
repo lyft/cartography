@@ -1,3 +1,4 @@
+import time
 import logging
 from string import Template
 from typing import Dict
@@ -7,6 +8,7 @@ import boto3
 import neo4j
 
 from .util import get_botocore_config
+from botocore.exceptions import ClientError
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -18,12 +20,24 @@ logger = logging.getLogger(__name__)
 @aws_handle_regions
 def get_ec2_security_group_data(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
     client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
-    paginator = client.get_paginator('describe_security_groups')
-    security_groups: List[Dict] = []
-    for page in paginator.paginate():
-        security_groups.extend(page['SecurityGroups'])
-    for group in security_groups:
-        group['region'] = region
+    security_groups = []
+    try:
+        paginator = client.get_paginator('describe_security_groups')
+        security_groups: List[Dict] = []
+        for page in paginator.paginate():
+            security_groups.extend(page['SecurityGroups'])
+        for group in security_groups:
+            group['region'] = region
+    
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'AccessDeniedException' or e.response['Error']['Code'] == 'UnauthorizedOperation':
+            logger.warning(
+                f'ec2:describe_security_groups failed with AccessDeniedException; continuing sync.',
+                exc_info=True,
+            )
+        else:
+            raise
+
     return security_groups
 
 
@@ -158,6 +172,10 @@ def sync_ec2_security_groupinfo(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
     update_tag: int, common_job_parameters: Dict,
 ) -> None:
+    tic = time.perf_counter()
+
+    logger.info("Syncing EC2 security groups for account '%s', at %s.", current_aws_account_id, tic)
+
     data = []
     for region in regions:
         logger.info("Syncing EC2 security groups for region '%s' in account '%s'.", region, current_aws_account_id)
@@ -176,3 +194,6 @@ def sync_ec2_security_groupinfo(
 
     load_ec2_security_groupinfo(neo4j_session, data, current_aws_account_id, update_tag)
     cleanup_ec2_security_groupinfo(neo4j_session, common_job_parameters)
+
+    toc = time.perf_counter()
+    print(f"Total Time to process EC2 security groups: {toc - tic:0.4f} seconds")
