@@ -100,7 +100,7 @@ def get_zones_in_project(project_id: str, compute: Resource, max_results: Option
 
 
 @timeit
-def get_gcp_instance_responses(project_id: str, zones: Optional[List[Dict]], compute: Resource) -> List[Resource]:
+def get_gcp_instances(project_id: str, zones: Optional[List[Dict]], compute: Resource) -> List[Resource]:
     """
     Return list of GCP instance response objects for a given project and list of zones
     :param project_id: The project ID
@@ -113,20 +113,20 @@ def get_gcp_instance_responses(project_id: str, zones: Optional[List[Dict]], com
         return []
     response_objects: List[Resource] = []
     for zone in zones:
+        logger.info("Instance zone %s.", zone['name'])
         req = compute.instances().list(project=project_id, zone=zone['name'])
         res = req.execute()
-        for item in res.get('items',[]):
-            for networkinterface in item.get('networkInterfaces',[]):
-                for accessconfig in networkinterface.get('accessConfig',[]):
-                    item['accessConfig']=accessconfig.get('name',None)
-            compute_entities, public_access = get_gcp_instance_policy_entities(project_id,zone,compute)
-            item['entities'] = compute_entities
-            item['public_access'] = public_access
+        for item in res.get('items', []):
+            for networkinterface in item.get('networkInterfaces', []):
+                for accessconfig in networkinterface.get('accessConfig', []):
+                    item['accessConfig'] = accessconfig.get('name', None)
+            item['zone_name'] = zone['name']
             response_objects.append(item)
     return response_objects
 
+
 @timeit
-def get_gcp_instance_policy_entities(project_id: str, zone: Dict, compute: Resource) -> List[Resource]:
+def get_gcp_instance_policy_entities(item: Dict, compute: Resource) -> List[Resource]:
     """
     Return list of GCP instance policy users response objects for a given project and zones
     :param project_id: The project ID
@@ -134,16 +134,37 @@ def get_gcp_instance_policy_entities(project_id: str, zone: Dict, compute: Resou
     :param compute: The compute resource object
     :return: A list of iam_policy users
     """
-    req = compute.instances().list(project=project_id, zone=zone['name'])
-    res = req.execute()
-    for item in res.get('items',[]):
-        iam_policy = compute.instances().getIamPolicy(\
-            project=project_id,zone=zone['name'],resource=item.get("id")).execute()
-        bindings = iam_policy.get('bindings',[])
+    try:
+        project_id = item['project_id']
+        iam_policy = compute.instances().getIamPolicy(
+            project=project_id, zone=item['zone_name'], resource=item.get("id")).execute()
+        bindings = iam_policy.get('bindings', [])
         entity_list, public_access = iam.transform_bindings(bindings, project_id)
-    return entity_list,public_access
+        return entity_list, public_access
+    except HttpError as e:
+        err = json.loads(e.content.decode('utf-8'))['error']
+        if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
+            logger.warning(
+                (
+                    "Could not GCP instance policy on project %s due to permissions issues.\
+                         Code: %s, Message: %s"
+                ), project_id, err['code'], err['message'],
+            )
+            return [], False
 
-@timeit
+        elif err.get('status', '') == 'NOT_FOUND' or err.get('code', '') == 404:
+            logger.warning(
+                (
+                    "Could not retrieve GCP instance policy for Project %s \
+                         Code: %s, Message: %s"
+                ), project_id, err['code'], err['message'],
+            )
+            return [], False
+        else:
+            raise
+
+
+@ timeit
 def get_gcp_subnets(projectid: str, region: str, compute: Resource) -> Resource:
     """
     Return list of all subnets in the given projectid and region
@@ -156,7 +177,7 @@ def get_gcp_subnets(projectid: str, region: str, compute: Resource) -> Resource:
     return req.execute()
 
 
-@timeit
+@ timeit
 def get_gcp_vpcs(projectid: str, compute: Resource) -> Resource:
     """
     Get VPC data for given project
@@ -168,7 +189,7 @@ def get_gcp_vpcs(projectid: str, compute: Resource) -> Resource:
     return req.execute()
 
 
-@timeit
+@ timeit
 def get_gcp_regional_forwarding_rules(project_id: str, region: str, compute: Resource) -> Resource:
     """
     Return list of all regional forwarding rules in the given project_id and region
@@ -181,7 +202,7 @@ def get_gcp_regional_forwarding_rules(project_id: str, region: str, compute: Res
     return req.execute()
 
 
-@timeit
+@ timeit
 def get_gcp_global_forwarding_rules(project_id: str, compute: Resource) -> Resource:
     """
     Return list of all global forwarding rules in the given project_id and region
@@ -193,7 +214,7 @@ def get_gcp_global_forwarding_rules(project_id: str, compute: Resource) -> Resou
     return req.execute()
 
 
-@timeit
+@ timeit
 def get_gcp_firewall_ingress_rules(project_id: str, compute: Resource) -> Resource:
     """
     Get ingress Firewall data for a given project
@@ -205,8 +226,8 @@ def get_gcp_firewall_ingress_rules(project_id: str, compute: Resource) -> Resour
     return req.execute()
 
 
-@timeit
-def transform_gcp_instances(response_objects: List[Dict]) -> List[Dict]:
+@ timeit
+def transform_gcp_instances(response_objects: List[Dict], compute: Resource) -> List[Dict]:
     """
     Process the GCP instance response objects and return a flattened list of GCP instances with all the necessary fields
     we need to load it into Neo4j
@@ -217,12 +238,12 @@ def transform_gcp_instances(response_objects: List[Dict]) -> List[Dict]:
     for res in response_objects:
         prefix = res['zone']
         prefix_fields = _parse_instance_uri_prefix(prefix)
-        
+
         res['partial_uri'] = f"{prefix}/{res['name']}"
         res['project_id'] = prefix_fields.project_id
         res['zone_name'] = prefix_fields.zone_name
-        res['accessConfig'] = res.get('accessConfig',None)
-        res['public_access'] = res.get('public_access',[])
+        res['accessConfig'] = res.get('accessConfig', None)
+        res['public_access'] = res.get('public_access', [])
 
         x = res['zone_name'].split('-')
         res['region'] = f"{x[0]}-{x[1]}"
@@ -230,7 +251,9 @@ def transform_gcp_instances(response_objects: List[Dict]) -> List[Dict]:
         for nic in res.get('networkInterfaces', []):
             nic['subnet_partial_uri'] = _parse_compute_full_uri_to_partial_uri(nic['subnetwork'])
             nic['vpc_partial_uri'] = _parse_compute_full_uri_to_partial_uri(nic['network'])
-
+        compute_entities, public_access = get_gcp_instance_policy_entities(res, compute)
+        res['entities'] = compute_entities
+        res['public_access'] = public_access
         instance_list.append(res)
     return instance_list
 
@@ -270,7 +293,7 @@ def _create_gcp_network_tag_id(vpc_partial_uri: str, tag: str) -> str:
     return f"{vpc_partial_uri}/tags/{tag}"
 
 
-@timeit
+@ timeit
 def transform_gcp_vpcs(vpc_res: Dict) -> List[Dict]:
     """
     Transform the VPC response object for Neo4j ingestion
@@ -298,7 +321,7 @@ def transform_gcp_vpcs(vpc_res: Dict) -> List[Dict]:
     return vpc_list
 
 
-@timeit
+@ timeit
 def transform_gcp_subnets(subnet_res: Dict) -> List[Dict]:
     """
     Add additional fields to the subnet object to make it easier to process in `load_gcp_subnets()`.
@@ -335,7 +358,7 @@ def transform_gcp_subnets(subnet_res: Dict) -> List[Dict]:
     return subnet_list
 
 
-@timeit
+@ timeit
 def transform_gcp_forwarding_rules(fwd_response: Resource) -> List[Dict]:
     """
     Add additional fields to the forwarding rule object to make it easier to process in `load_gcp_forwarding_rules()`.
@@ -385,7 +408,7 @@ def transform_gcp_forwarding_rules(fwd_response: Resource) -> List[Dict]:
     return fwd_list
 
 
-@timeit
+@ timeit
 def transform_gcp_firewall(fw_response: Resource) -> List[Dict]:
     """
     Adjust the firewall response objects into a format that is easy to write to Neo4j.
@@ -525,7 +548,7 @@ def _parse_port_string_to_rule(port: Optional[str], protocol: str, fw_partial_ur
     }
 
 
-@timeit
+@ timeit
 def load_gcp_instances(neo4j_session: neo4j.Session, data: List[Dict], gcp_update_tag: int) -> None:
     """
     Ingest GCP instance objects to Neo4j
@@ -566,10 +589,10 @@ def load_gcp_instances(neo4j_session: neo4j.Session, data: List[Dict], gcp_updat
             PartialUri=instance['partial_uri'],
             SelfLink=instance['selfLink'],
             InstanceName=instance['name'],
-            AccessConfig = instance['accessConfig'],
+            AccessConfig=instance['accessConfig'],
             ZoneName=instance['zone_name'],
             Hostname=instance.get('hostname', None),
-            PublicAccess = instance.get('public_access',None),
+            PublicAccess=instance.get('public_access', None),
             Status=instance['status'],
             region=instance['region'],
             gcp_update_tag=gcp_update_tag,
@@ -613,10 +636,11 @@ def load_compute_entity_relation_tx(tx: neo4j.Transaction, instance: Dict, gcp_u
     SET r.lastupdated = {gcp_update_tag}    """
     tx.run(
         ingest_entities,
-        instance_id=instance.get('name',None),
-        entities = instance.get('entities',[]),
+        instance_id=instance.get('name', None),
+        entities=instance.get('entities', []),
         gcp_update_tag=gcp_update_tag,
     )
+
 
 @timeit
 def load_gcp_vpcs(neo4j_session: neo4j.Session, vpcs: List[Dict], gcp_update_tag: int) -> None:
@@ -1144,6 +1168,7 @@ def cleanup_gcp_instances(neo4j_session: neo4j.Session, common_job_parameters: D
     """
     run_cleanup_job('gcp_compute_instance_cleanup.json', neo4j_session, common_job_parameters)
 
+
 @timeit
 def cleanup_gcp_vpcs(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     """
@@ -1205,14 +1230,15 @@ def sync_gcp_instances(
     :param common_job_parameters: dict of other job parameters to pass to Neo4j
     :return: Nothing
     """
-    instance_responses = get_gcp_instance_responses(project_id, zones, compute)
-    instance_list = transform_gcp_instances(instance_responses)
+    instance_responses = get_gcp_instances(project_id, zones, compute)
+    instance_list = transform_gcp_instances(instance_responses, compute)
     for instance in instance_list:
-        load_compute_entity_relation(neo4j_session,instance,gcp_update_tag)
+        load_compute_entity_relation(neo4j_session, instance, gcp_update_tag)
     load_gcp_instances(neo4j_session, instance_list, gcp_update_tag)
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gcp_instances(neo4j_session, common_job_parameters)
     label.sync_labels(neo4j_session, instance_list, gcp_update_tag, common_job_parameters)
+
 
 @timeit
 def sync_gcp_vpcs(
