@@ -30,7 +30,7 @@ def get_dynamodb_tables(boto3_session: boto3.session.Session, region: str) -> Li
 @timeit
 def load_dynamodb_tables(
     neo4j_session: neo4j.Session, data: List[Dict], region: str, current_aws_account_id: str,
-    aws_update_tag: str,
+    aws_update_tag: int,
 ) -> None:
     ingest_table = """
     MERGE (table:DynamoDBTable{id: {Arn}})
@@ -65,7 +65,7 @@ def load_dynamodb_tables(
 @timeit
 def load_gsi(
     neo4j_session: neo4j.Session, table: Dict, region: str, current_aws_account_id: str,
-    aws_update_tag: str,
+    aws_update_tag: int,
 ) -> None:
     ingest_gsi = """
     MERGE (gsi:DynamoDBGlobalSecondaryIndex{id: {Arn}})

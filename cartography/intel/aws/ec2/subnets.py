@@ -81,7 +81,7 @@ def cleanup_subnets(neo4j_session: neo4j.Session, common_job_parameters: Dict) -
 @timeit
 def sync_subnets(
         neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str],
-        current_aws_account_id: str, update_tag: str, common_job_parameters: Dict,
+        current_aws_account_id: str, update_tag: int, common_job_parameters: Dict,
 ) -> None:
     for region in regions:
         logger.info("Syncing EC2 subnets for region '%s' in account '%s'.", region, current_aws_account_id)
