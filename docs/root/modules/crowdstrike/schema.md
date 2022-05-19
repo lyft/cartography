@@ -82,7 +82,7 @@ Representation of a Crowdstrike Vulnerability
     (SpotlightVulnerability)-[HAS_CVE]->(CVE)
     ```
 
-### CVE
+### CVE::CrowdstrikeFinding
 
 Representation of a CVE
 
@@ -90,10 +90,10 @@ Representation of a CVE
 |-------|-------------|
 | firstseen | Timestamp of when a sync job first discovered this node |
 | lastupdated | Timestamp of the last time the node was updated |
-| id | The ID for this cve |
+| id | The ID for this CVE |
 | base\_score | Base score of the CVE (float value between 1 and 10). |
 | severity | Severity of the CVE. One of CRITICAL, HIGH, MEDIUM, LOW, UNKNOWN, or NONE. |
-| exploit\_status | Numeric value of the most severe known exploit. 0=UNPROVEN; 30=AVAILABLE; 60=EASILY\_ACCESSIBLE; 90=ACTIVELY\_USED |
+| exploitability\_score | Numeric value of the most severe known exploit. 0=UNPROVEN; 30=AVAILABLE; 60=EASILY\_ACCESSIBLE; 90=ACTIVELY\_USED |
 
 #### Relationships
 

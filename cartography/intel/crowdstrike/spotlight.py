@@ -91,7 +91,7 @@ def _load_cves(neo4j_session: neo4j.Session, data: List[Dict], update_tag: int) 
     """
     ingestion_cypher_query = """
     UNWIND {cves} AS cve
-        MERGE (c:CVE{id: cve.id})
+        MERGE (c:CVE:CrowdstrikeFinding{id: cve.id})
         ON CREATE SET c.id = cve.id,
             c.firstseen = timestamp()
         SET c.base_score = cve.base_score,
