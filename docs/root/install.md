@@ -17,7 +17,7 @@ Time to set up the server that will run Cartography.  Cartography _should_ work 
 
             ⚠️ For local testing, you might want to turn off authentication via property `dbms.security.auth_enabled` in file /NEO4J_PATH/conf/neo4j.conf
 
-1. [Configure your data sources](modules/index.html).
+1. Configure your data sources. See the configuration section of each relevant intel module for more details.
 
 1. **Get and run Cartography**
 
