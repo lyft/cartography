@@ -17,7 +17,7 @@
       "__comment__": "If a CrowdstrikeFinding exists, but the vulnerability is gone, delete the relationship"
     },
     {
-      "query": "MATCH (c:CrowdstrikeFinding) WHERE c.lastupdated <> {UPDATE_TAG} WITH c LIMIT {LIMIT_SIZE} REMOVE (c:CrowdstrikeFinding)",
+      "query": "MATCH (c:CrowdstrikeFinding) WHERE c.lastupdated <> {UPDATE_TAG} WITH c LIMIT {LIMIT_SIZE} REMOVE c:CrowdstrikeFinding",
       "iterative": true,
       "iterationsize": 100,
       "__comment__": "If the CrowdstrikeFinding no longer exists, remove the label from the CVE node."
