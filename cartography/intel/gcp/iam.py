@@ -270,7 +270,7 @@ def transform_bindings(bindings: Dict, project_id: str) -> tuple:
         for member in binding['members']:
             if member.startswith('allUsers') or member.startswith('allAuthenticatedUsers'):
                 public_access = True
-            else:  
+            else:
                 if member.startswith('user:'):
                     usr = member[len('user:'):]
                     users.append({
@@ -313,7 +313,7 @@ def transform_bindings(bindings: Dict, project_id: str) -> tuple:
     #     [dict(s) for s in {frozenset(d.items()) for d in domains}],
     # )
     return entity_list, public_access
-    
+
 
 @timeit
 def load_service_accounts(
@@ -797,10 +797,9 @@ def sync(
     for service_account in service_accounts_list:
         service_account_keys = get_service_account_keys(iam, project_id, service_account['name'])
         load_service_account_keys(neo4j_session, service_account_keys, service_account['name'], gcp_update_tag)
-        label.sync_labels(neo4j_session, service_account_keys, gcp_update_tag, common_job_parameters)
 
     cleanup_service_accounts(neo4j_session, common_job_parameters)
-    label.sync_labels(neo4j_session, service_accounts_list, gcp_update_tag, common_job_parameters)
+    label.sync_labels(neo4j_session, service_accounts_list, gcp_update_tag, common_job_parameters, 'service accounts')
 
     roles_list = get_roles(iam, project_id)
     custom_roles_list = get_project_roles(iam, project_id)
@@ -810,7 +809,7 @@ def sync(
 
     load_roles(neo4j_session, roles_list, project_id, gcp_update_tag)
     cleanup_roles(neo4j_session, common_job_parameters)
-    label.sync_labels(neo4j_session, roles_list, gcp_update_tag, common_job_parameters)
+    label.sync_labels(neo4j_session, roles_list, gcp_update_tag, common_job_parameters, 'roles')
 
     users = get_users(admin)
 
@@ -827,23 +826,21 @@ def sync(
 
     load_customers(neo4j_session, customers, project_id, gcp_update_tag)
     cleanup_customers(neo4j_session, common_job_parameters)
-    label.sync_labels(neo4j_session, customers, gcp_update_tag, common_job_parameters)
 
     load_users(neo4j_session, users, project_id, gcp_update_tag)
     cleanup_users(neo4j_session, common_job_parameters)
-    label.sync_labels(neo4j_session, users, gcp_update_tag, common_job_parameters)
+    label.sync_labels(neo4j_session, users, gcp_update_tag, common_job_parameters, 'users')
 
     for customer in customers:
         domains = get_domains(admin, customer, project_id)
         load_domains(neo4j_session, domains, customer.get('id'), project_id, gcp_update_tag)
-        label.sync_labels(neo4j_session, domains, gcp_update_tag, common_job_parameters)
 
     cleanup_domains(neo4j_session, common_job_parameters)
 
     groups = get_groups(admin)
     load_groups(neo4j_session, groups, project_id, gcp_update_tag)
     cleanup_groups(neo4j_session, common_job_parameters)
-    label.sync_labels(neo4j_session, groups, gcp_update_tag, common_job_parameters)
+    label.sync_labels(neo4j_session, groups, gcp_update_tag, common_job_parameters, 'groups')
 
     bindings = get_policy_bindings(crm, project_id)
 

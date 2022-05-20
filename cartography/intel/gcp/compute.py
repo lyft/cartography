@@ -116,12 +116,7 @@ def get_gcp_instances(project_id: str, zones: Optional[List[Dict]], compute: Res
         logger.info("Instance zone %s.", zone['name'])
         req = compute.instances().list(project=project_id, zone=zone['name'])
         res = req.execute()
-        for item in res.get('items', []):
-            for networkinterface in item.get('networkInterfaces', []):
-                for accessconfig in networkinterface.get('accessConfig', []):
-                    item['accessConfig'] = accessconfig.get('name', None)
-            item['zone_name'] = zone['name']
-            response_objects.append(item)
+        response_objects.extend(res.get('items', []))
     return response_objects
 
 
@@ -251,9 +246,12 @@ def transform_gcp_instances(response_objects: List[Dict], compute: Resource) -> 
         for nic in res.get('networkInterfaces', []):
             nic['subnet_partial_uri'] = _parse_compute_full_uri_to_partial_uri(nic['subnetwork'])
             nic['vpc_partial_uri'] = _parse_compute_full_uri_to_partial_uri(nic['network'])
-        compute_entities, public_access = get_gcp_instance_policy_entities(res, compute)
-        res['entities'] = compute_entities
-        res['public_access'] = public_access
+            for accessconfig in nic.get('accessConfigs', []):
+                if not accessconfig.get('natIP', None):
+                    res['natIP'] = accessconfig.get('natIP', None)
+        # compute_entities, public_access = get_gcp_instance_policy_entities(res, compute)
+        # res['entities'] = compute_entities
+        # res['public_access'] = public_access
         instance_list.append(res)
     return instance_list
 
@@ -572,7 +570,7 @@ def load_gcp_instances(neo4j_session: neo4j.Session, data: List[Dict], gcp_updat
     i.region = {region},
     i.zone_name = {ZoneName},
     i.project_id = {ProjectId},
-    i.public_access = {PublicAccess},
+    i.nat_ip = {natIP},
     i.accessConfig = {AccessConfig},
     i.status = {Status},
     i.lastupdated = {gcp_update_tag}
@@ -592,7 +590,7 @@ def load_gcp_instances(neo4j_session: neo4j.Session, data: List[Dict], gcp_updat
             AccessConfig=instance['accessConfig'],
             ZoneName=instance['zone_name'],
             Hostname=instance.get('hostname', None),
-            PublicAccess=instance.get('public_access', None),
+            natIP=instance.get('natIP', None),
             Status=instance['status'],
             region=instance['region'],
             gcp_update_tag=gcp_update_tag,
@@ -1232,12 +1230,12 @@ def sync_gcp_instances(
     """
     instance_responses = get_gcp_instances(project_id, zones, compute)
     instance_list = transform_gcp_instances(instance_responses, compute)
-    for instance in instance_list:
-        load_compute_entity_relation(neo4j_session, instance, gcp_update_tag)
+    # for instance in instance_list:
+    #     load_compute_entity_relation(neo4j_session, instance, gcp_update_tag)
     load_gcp_instances(neo4j_session, instance_list, gcp_update_tag)
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gcp_instances(neo4j_session, common_job_parameters)
-    label.sync_labels(neo4j_session, instance_list, gcp_update_tag, common_job_parameters)
+    label.sync_labels(neo4j_session, instance_list, gcp_update_tag, common_job_parameters, 'instances')
 
 
 @timeit
@@ -1259,7 +1257,7 @@ def sync_gcp_vpcs(
     load_gcp_vpcs(neo4j_session, vpcs, gcp_update_tag)
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gcp_vpcs(neo4j_session, common_job_parameters)
-    label.sync_labels(neo4j_session, vpcs, gcp_update_tag, common_job_parameters)
+    label.sync_labels(neo4j_session, vpcs, gcp_update_tag, common_job_parameters, 'vpcs')
 
 
 @timeit
@@ -1274,7 +1272,6 @@ def sync_gcp_subnets(
         load_gcp_subnets(neo4j_session, subnets, gcp_update_tag)
         # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
         cleanup_gcp_subnets(neo4j_session, common_job_parameters)
-        label.sync_labels(neo4j_session, subnets, gcp_update_tag, common_job_parameters)
 
 
 @timeit
@@ -1293,12 +1290,12 @@ def sync_gcp_forwarding_rules(
     :param common_job_parameters: dict of other job parameters to pass to Neo4j
     :return: Nothing
     """
+    logger.info("Syncing Compute forwarding rule for project %s.", project_id)
     global_fwd_response = get_gcp_global_forwarding_rules(project_id, compute)
     forwarding_rules = transform_gcp_forwarding_rules(global_fwd_response)
     load_gcp_forwarding_rules(neo4j_session, forwarding_rules, gcp_update_tag)
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gcp_forwarding_rules(neo4j_session, common_job_parameters)
-    label.sync_labels(neo4j_session, forwarding_rules, gcp_update_tag, common_job_parameters)
 
     for r in regions:
         logger.info("Forwarding Rule Region %s.", r)
@@ -1307,7 +1304,6 @@ def sync_gcp_forwarding_rules(
         load_gcp_forwarding_rules(neo4j_session, forwarding_rules, gcp_update_tag)
         # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
         cleanup_gcp_forwarding_rules(neo4j_session, common_job_parameters)
-        label.sync_labels(neo4j_session, forwarding_rules, gcp_update_tag, common_job_parameters)
 
 
 @timeit
@@ -1328,7 +1324,6 @@ def sync_gcp_firewall_rules(
     load_gcp_ingress_firewalls(neo4j_session, fw_list, gcp_update_tag)
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gcp_firewall_rules(neo4j_session, common_job_parameters)
-    label.sync_labels(neo4j_session, fw_list, gcp_update_tag, common_job_parameters)
 
 
 def _zones_to_regions(zones: List[str]) -> List[Set]:

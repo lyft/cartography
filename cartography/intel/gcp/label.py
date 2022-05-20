@@ -26,8 +26,9 @@ def get_labels_list(data: List[Dict]) -> List[Dict]:
             label['name'] = key
             label['value'] = value
             label['resource_id'] = item.get('id', None)
+            label['resource_partial_uri'] = item.get('partial_uri', None)
 
-            if label['resource_id']:
+            if label['resource_id'] or label['resource_partial_uri']:
                 labels_data.append(label)
 
     return labels_data
@@ -43,6 +44,7 @@ def _load_labels_tx(tx: neo4j.Transaction, data: List[Dict], update_tag: int) ->
     l.name = label.name
     WITH l,label
     MATCH (r) where r.id = label.resource_id
+    or r.id = label.resource_partial_uri
     MERGE (r)-[lb:LABELED]->(l)
     ON CREATE SET lb.firstseen = timestamp()
     SET lb.lastupdated = {update_tag}
@@ -56,13 +58,16 @@ def _load_labels_tx(tx: neo4j.Transaction, data: List[Dict], update_tag: int) ->
 
 
 def cleanup_labels(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    logger.info("Cleaning Labels....")
     run_cleanup_job('gcp_labels_cleanup.json', neo4j_session, common_job_parameters)
 
 
 def sync_labels(
     neo4j_session: neo4j.Session, data: List[Dict], update_tag: int, common_job_parameters: Dict,
+    service: str,
 ) -> None:
     if len(data) > 0:
         labels_list = get_labels_list(data)
         if len(labels_list) > 0:
+            logger.info(f"Loading Labels for {service}")
             load_labels(neo4j_session, labels_list, update_tag)

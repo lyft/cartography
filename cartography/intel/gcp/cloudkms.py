@@ -85,7 +85,7 @@ def get_kms_keyrings(kms: Resource, kms_locations: List[Dict], project_id: str) 
                         key_ring['loc_id'] = loc['id']
                         key_ring['id'] = key_ring['name']
                         key_ring['region'] = loc.get("locationId", "global")
-                        key_ring_entities, public_access = get_keyring_policy_entities(kms,key_ring,project_id)
+                        key_ring_entities, public_access = get_keyring_policy_entities(kms, key_ring, project_id)
                         key_ring['entities'] = key_ring_entities
                         key_ring['public_access'] = public_access
                         key_rings.append(key_ring)
@@ -109,7 +109,7 @@ def get_kms_keyrings(kms: Resource, kms_locations: List[Dict], project_id: str) 
 
 
 @timeit
-def get_keyring_policy_entities(kms: Resource, keyring: Dict, project_id:str) -> List[Dict]:
+def get_keyring_policy_entities(kms: Resource, keyring: Dict, project_id: str) -> List[Dict]:
     """
         Returns a list of users attached to IAM policy of a keyring within the given project.
 
@@ -126,8 +126,8 @@ def get_keyring_policy_entities(kms: Resource, keyring: Dict, project_id:str) ->
         :return: List of keyring iam policy users
     """
     try:
-        iam_policy = kms.projects().locations().keyRings().getIamPolicy(resource = keyring['id']).execute()
-        bindings = iam_policy.get('bindings',[])
+        iam_policy = kms.projects().locations().keyRings().getIamPolicy(resource=keyring['id']).execute()
+        bindings = iam_policy.get('bindings', [])
         entity_list, public_access = iam.transform_bindings(bindings, project_id)
         return entity_list, public_access
     except HttpError as e:
@@ -141,6 +141,7 @@ def get_keyring_policy_entities(kms: Resource, keyring: Dict, project_id:str) ->
             return []
         else:
             raise
+
 
 @timeit
 def get_kms_crypto_keys(kms: Resource, key_rings: List[Dict], project_id: str) -> List[Dict]:
@@ -283,6 +284,7 @@ def _load_kms_key_rings_tx(
         gcp_update_tag=gcp_update_tag,
     )
 
+
 @timeit
 def load_keyring_entity_relation(session: neo4j.Session, keyring: Dict, update_tag: int) -> None:
     session.write_transaction(load_keyring_entity_relation_tx, keyring, update_tag)
@@ -316,8 +318,8 @@ def load_keyring_entity_relation_tx(tx: neo4j.Transaction, keyring: Dict, gcp_up
     SET r.lastupdated = {gcp_update_tag}    """
     tx.run(
         ingest_entities,
-        keyring_id=keyring.get('id',None),
-        entities = keyring.get('entities',[]),
+        keyring_id=keyring.get('id', None),
+        entities=keyring.get('entities', []),
         gcp_update_tag=gcp_update_tag,
     )
 
@@ -389,6 +391,7 @@ def cleanup_gcp_kms(neo4j_session: neo4j.Session, common_job_parameters: Dict) -
     """
     run_cleanup_job('gcp_kms_cleanup.json', neo4j_session, common_job_parameters)
 
+
 @timeit
 def sync(
     neo4j_session: neo4j.Session, kms: Resource, project_id: str, gcp_update_tag: int,
@@ -420,14 +423,13 @@ def sync(
     locations = get_kms_locations(kms, project_id, regions)
     print(locations)
     load_kms_locations(neo4j_session, locations, project_id, gcp_update_tag)
-    label.sync_labels(neo4j_session, locations, gcp_update_tag, common_job_parameters)
+    label.sync_labels(neo4j_session, locations, gcp_update_tag, common_job_parameters, 'kms locations')
     # KMS KEYRINGS
     key_rings = get_kms_keyrings(kms, locations, project_id)
     load_kms_key_rings(neo4j_session, key_rings, project_id, gcp_update_tag)
     for key_ring in key_rings:
-        load_keyring_entity_relation(neo4j_session,key_ring,gcp_update_tag)
-    label.sync_labels(neo4j_session, key_rings, gcp_update_tag, common_job_parameters)
+        load_keyring_entity_relation(neo4j_session, key_ring, gcp_update_tag)
+    label.sync_labels(neo4j_session, key_rings, gcp_update_tag, common_job_parameters, 'keyrings')
     crypto_keys = get_kms_crypto_keys(kms, key_rings, project_id)
     load_kms_crypto_keys(neo4j_session, crypto_keys, project_id, gcp_update_tag)
     cleanup_gcp_kms(neo4j_session, common_job_parameters)
-    label.sync_labels(neo4j_session, crypto_keys, gcp_update_tag, common_job_parameters)
