@@ -247,11 +247,15 @@ def transform_gcp_instances(response_objects: List[Dict], compute: Resource) -> 
             nic['subnet_partial_uri'] = _parse_compute_full_uri_to_partial_uri(nic['subnetwork'])
             nic['vpc_partial_uri'] = _parse_compute_full_uri_to_partial_uri(nic['network'])
             for accessconfig in nic.get('accessConfigs', []):
-                if not accessconfig.get('natIP', None):
+                if not res.get('natIP', None):
                     res['natIP'] = accessconfig.get('natIP', None)
-        # compute_entities, public_access = get_gcp_instance_policy_entities(res, compute)
-        # res['entities'] = compute_entities
-        # res['public_access'] = public_access
+                else:
+                    break
+            for ipv6AccessConfig in nic.get('ipv6AccessConfigs', []):
+                if not res.get('ipv6natIP', None):
+                    res['ipv6natIP'] = ipv6AccessConfig.get('natIP', None)
+                else:
+                    break
         instance_list.append(res)
     return instance_list
 
@@ -571,6 +575,7 @@ def load_gcp_instances(neo4j_session: neo4j.Session, data: List[Dict], gcp_updat
     i.zone_name = {ZoneName},
     i.project_id = {ProjectId},
     i.nat_ip = {natIP},
+    i.ipv6_nat_ip = {ipv6natIP},
     i.accessConfig = {AccessConfig},
     i.status = {Status},
     i.lastupdated = {gcp_update_tag}
@@ -591,6 +596,7 @@ def load_gcp_instances(neo4j_session: neo4j.Session, data: List[Dict], gcp_updat
             ZoneName=instance['zone_name'],
             Hostname=instance.get('hostname', None),
             natIP=instance.get('natIP', None),
+            ipv6natIP=instance.get('ipv6natIP', None),
             Status=instance['status'],
             region=instance['region'],
             gcp_update_tag=gcp_update_tag,
@@ -1230,8 +1236,6 @@ def sync_gcp_instances(
     """
     instance_responses = get_gcp_instances(project_id, zones, compute)
     instance_list = transform_gcp_instances(instance_responses, compute)
-    # for instance in instance_list:
-    #     load_compute_entity_relation(neo4j_session, instance, gcp_update_tag)
     load_gcp_instances(neo4j_session, instance_list, gcp_update_tag)
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gcp_instances(neo4j_session, common_job_parameters)
