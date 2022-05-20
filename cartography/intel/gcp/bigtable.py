@@ -472,17 +472,14 @@ def sync(
     # BIGTABLE INSTANCES
     bigtable_instances = get_bigtable_instances(bigtable, project_id)
     load_bigtable_instances(neo4j_session, bigtable_instances, project_id, gcp_update_tag)
-    label.sync_labels(neo4j_session, bigtable_instances, gcp_update_tag, common_job_parameters)
+    label.sync_labels(neo4j_session, bigtable_instances, gcp_update_tag, common_job_parameters, 'bigtable_instances')
     # BIGTABLE CLUSTERS
     bigtable_clusters = get_bigtable_clusters(bigtable, bigtable_instances, project_id, regions)
     load_bigtable_clusters(neo4j_session, bigtable_clusters, project_id, gcp_update_tag)
-    label.sync_labels(neo4j_session, bigtable_clusters, gcp_update_tag, common_job_parameters)
     # BIGTABLE CLUSTER BACKUPS
     cluster_backups = get_bigtable_cluster_backups(bigtable, bigtable_clusters, project_id)
     load_bigtable_cluster_backups(neo4j_session, cluster_backups, project_id, gcp_update_tag)
-    label.sync_labels(neo4j_session, cluster_backups, gcp_update_tag, common_job_parameters)
     # BIGTABLE TABLES
     bigtable_tables = get_get_bigtable_tables(bigtable, bigtable_instances, project_id, regions)
     load_bigtable_tables(neo4j_session, bigtable_tables, project_id, gcp_update_tag)
     cleanup_bigtable(neo4j_session, common_job_parameters)
-    label.sync_labels(neo4j_session, bigtable_tables, gcp_update_tag, common_job_parameters)

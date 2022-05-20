@@ -70,7 +70,7 @@ def get_gcp_functions(function: Resource, project_id: str, regions: list) -> Lis
                 for func in response.get('functions', []):
                     func['id'] = func['name']
                     func['region'] = region.get('locationId', 'global')
-                    function_entities, public_access = get_function_policy_entities(function,func,project_id)
+                    function_entities, public_access = get_function_policy_entities(function, func, project_id)
                     func['entities'] = function_entities
                     func['public_access'] = public_access
                     functions.append(func)
@@ -91,6 +91,7 @@ def get_gcp_functions(function: Resource, project_id: str, regions: list) -> Lis
         else:
             raise
 
+
 def get_function_policy_entities(function: Resource, fns: Dict, project_id: str) -> List[Dict]:
     """
         Returns a list of users attached to IAM policy of a Function within the given project.
@@ -109,7 +110,7 @@ def get_function_policy_entities(function: Resource, fns: Dict, project_id: str)
     """
     try:
         iam_policy = function.projects().locations().functions().getIamPolicy(resource=fns['name']).execute()
-        bindings = iam_policy.get('bindings',[])
+        bindings = iam_policy.get('bindings', [])
         entity_list, public_access = iam.transform_bindings(bindings, project_id)
         return entity_list, public_access
     except HttpError as e:
@@ -123,6 +124,7 @@ def get_function_policy_entities(function: Resource, fns: Dict, project_id: str)
             return []
         else:
             raise
+
 
 @timeit
 def load_functions(session: neo4j.Session, data_list: List[Dict], project_id: str, update_tag: int) -> None:
@@ -187,6 +189,7 @@ def _load_functions_tx(tx: neo4j.Transaction, functions: List[Resource], project
         gcp_update_tag=gcp_update_tag,
     )
 
+
 @timeit
 def load_function_entity_relation(session: neo4j.Session, function: Dict, update_tag: int) -> None:
     session.write_transaction(load_function_entity_relation_tx, function, update_tag)
@@ -220,10 +223,11 @@ def load_function_entity_relation_tx(tx: neo4j.Transaction, function: Dict, gcp_
     SET r.lastupdated = {gcp_update_tag}    """
     tx.run(
         ingest_entities,
-        function_id=function.get('id',None),
-        entities = function.get('entities',[]),
+        function_id=function.get('id', None),
+        entities=function.get('entities', []),
         gcp_update_tag=gcp_update_tag,
     )
+
 
 @timeit
 def cleanup_gcp_functions(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
@@ -240,6 +244,7 @@ def cleanup_gcp_functions(neo4j_session: neo4j.Session, common_job_parameters: D
     :return: Nothing
     """
     run_cleanup_job('gcp_function_cleanup.json', neo4j_session, common_job_parameters)
+
 
 @timeit
 def sync(
@@ -272,6 +277,6 @@ def sync(
     functions = get_gcp_functions(function, project_id, regions)
     load_functions(neo4j_session, functions, project_id, gcp_update_tag)
     for function in functions:
-        load_function_entity_relation(neo4j_session,function,gcp_update_tag)
+        load_function_entity_relation(neo4j_session, function, gcp_update_tag)
     cleanup_gcp_functions(neo4j_session, common_job_parameters)
-    label.sync_labels(neo4j_session, functions, gcp_update_tag, common_job_parameters)
+    label.sync_labels(neo4j_session, functions, gcp_update_tag, common_job_parameters, 'functions')

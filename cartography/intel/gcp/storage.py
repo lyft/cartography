@@ -32,12 +32,12 @@ def get_gcp_buckets(storage: Resource, project_id: str) -> Dict:
         req = storage.buckets().list(project=project_id)
         res = req.execute()
         for item in res['items']:
-            acl = item.get('acl',[])
+            acl = item.get('acl', [])
             for item2 in acl:
-                item['entity'] = item2.get('entity',None)
-            defaultObjectAcl = item.get('defaultObjectAcl',[])
+                item['entity'] = item2.get('entity', None)
+            defaultObjectAcl = item.get('defaultObjectAcl', [])
             for item3 in defaultObjectAcl:
-                item['defaultentity'] = item3.get('entity',None)
+                item['defaultentity'] = item3.get('entity', None)
         return res
     except HttpError as e:
         reason = compute._get_error_reason(e)
@@ -97,9 +97,10 @@ def transform_gcp_buckets(bucket_res: Dict, regions: list) -> List[Dict]:
         bucket['storage_class'] = b.get('storageClass')
         bucket['time_created'] = b.get('timeCreated')
         bucket['updated'] = b.get('updated')
-        bucket['entity'] = b.get('entity',None)
-        bucket['defaultentity'] = b.get('defaultentity',None)
-        bucket['uniform_bucket_level_access'] = b.get('iamConfiguration',{}).get('uniformBucketLevelAccess',{}).get('enabled',None)
+        bucket['entity'] = b.get('entity', None)
+        bucket['defaultentity'] = b.get('defaultentity', None)
+        bucket['uniform_bucket_level_access'] = b.get('iamConfiguration', {}).get(
+            'uniformBucketLevelAccess', {}).get('enabled', None)
         bucket['versioning_enabled'] = b.get('versioning', {}).get('enabled', None)
         bucket['default_event_based_hold'] = b.get('defaultEventBasedHold', None)
         bucket['retention_period'] = b.get('retentionPolicy', {}).get('retentionPeriod', None)
@@ -180,9 +181,9 @@ def load_gcp_buckets(neo4j_session: neo4j.Session, buckets: List[Dict], gcp_upda
             MetaGeneration=bucket['meta_generation'],
             StorageClass=bucket['storage_class'],
             TimeCreated=bucket['time_created'],
-            Entity = bucket['entity'],
-            DefaultEntity = bucket['defaultentity'],
-            UniformBucketLevelAccess = bucket['uniform_bucket_level_access'],
+            Entity=bucket['entity'],
+            DefaultEntity=bucket['defaultentity'],
+            UniformBucketLevelAccess=bucket['uniform_bucket_level_access'],
             RetentionPeriod=bucket['retention_period'],
             IamConfigBucketPolicyOnly=bucket['iam_config_bucket_policy_only'],
             OwnerEntity=bucket['owner_entity'],
@@ -244,4 +245,4 @@ def sync(
     load_gcp_buckets(neo4j_session, bucket_list, gcp_update_tag)
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gcp_buckets(neo4j_session, common_job_parameters)
-    label.sync_labels(neo4j_session, bucket_list, gcp_update_tag, common_job_parameters)
+    label.sync_labels(neo4j_session, bucket_list, gcp_update_tag, common_job_parameters, 'buckets')

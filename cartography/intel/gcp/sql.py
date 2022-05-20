@@ -265,11 +265,10 @@ def sync(
     sqlinstances = get_sql_instances(sql, project_id, regions)
     load_sql_instances(neo4j_session, sqlinstances, project_id, gcp_update_tag)
     logger.info("Load GCP Cloud SQL Instances completed for project %s.", project_id)
-    label.sync_labels(neo4j_session, sqlinstances, gcp_update_tag, common_job_parameters)
+    label.sync_labels(neo4j_session, sqlinstances, gcp_update_tag, common_job_parameters, 'sql instances')
 
     logger.info("Syncing GCP Cloud SQL Users for project %s.", project_id)
     # SQL USERS
     users = get_sql_users(sql, sqlinstances, project_id)
     load_sql_users(neo4j_session, users, project_id, gcp_update_tag)
     cleanup_sql(neo4j_session, common_job_parameters)
-    label.sync_labels(neo4j_session, sqlinstances, gcp_update_tag, common_job_parameters)
