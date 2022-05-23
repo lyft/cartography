@@ -7,9 +7,9 @@ import boto3
 import botocore.exceptions
 import neo4j
 
-from cartography.util import timeit
 from cartography.util import get_stats_client
 from cartography.util import merge_module_sync_metadata
+from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 stat_handler = get_stats_client(__name__)
@@ -234,7 +234,7 @@ def sync_autodiscovery(
         )
 
     except botocore.exceptions.ClientError:
-            logger.warning(f"The current account ({account_id}) doesn't have enough permissions to perform autodiscovery.")
+        logger.warning(f"The current account ({account_id}) doesn't have enough permissions to perform autodiscovery.")
 
 
 @timeit
