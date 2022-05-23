@@ -637,25 +637,31 @@ def sync(
     # CLOUDRUN AUTHORIZED DOMAINS
     domains = get_cloudrun_authorized_domains(cloudrun, project_id)
     load_cloudrun_authorized_domains(neo4j_session, domains, project_id, gcp_update_tag)
-    label.sync_labels(neo4j_session, domains, gcp_update_tag, common_job_parameters, 'cloudrun authorized domains')
+    label.sync_labels(neo4j_session, domains, gcp_update_tag, common_job_parameters,
+                      'cloudrun authorized domains', 'GCPCloudRunAuthorizedDomain')
     # CLOUDRUN CONFIGURATIONS
     configurations = get_cloudrun_configurations(cloudrun, project_id)
     load_cloudrun_configurations(neo4j_session, configurations, project_id, gcp_update_tag)
-    label.sync_labels(neo4j_session, configurations, gcp_update_tag, common_job_parameters, 'cloudrun configurations')
+    label.sync_labels(neo4j_session, configurations, gcp_update_tag, common_job_parameters,
+                      'cloudrun configurations', 'GCPCloudRunConfiguration')
     # CLOUDRUN DOMAIN MAPPINGS
     domainmappings = get_cloudrun_domainmappings(cloudrun, project_id)
     load_cloudrun_domainmappings(neo4j_session, domainmappings, project_id, gcp_update_tag)
-    label.sync_labels(neo4j_session, domainmappings, gcp_update_tag, common_job_parameters, 'cloudrun domainmappings')
+    label.sync_labels(neo4j_session, domainmappings, gcp_update_tag, common_job_parameters,
+                      'cloudrun domainmappings', 'GCPCloudRunDomainMap')
     # CLOUDRUN REVISIONS
     revisions = get_cloudrun_revisions(cloudrun, project_id)
     load_cloudrun_revisions(neo4j_session, revisions, project_id, gcp_update_tag)
-    label.sync_labels(neo4j_session, revisions, gcp_update_tag, common_job_parameters, 'cloudrun revisions')
+    label.sync_labels(neo4j_session, revisions, gcp_update_tag, common_job_parameters,
+                      'cloudrun revisions', 'GCPCloudRunRevision')
     # CLOUDRUN ROUTES
     routes = get_cloudrun_routes(cloudrun, project_id)
     load_cloudrun_routes(neo4j_session, routes, project_id, gcp_update_tag)
-    label.sync_labels(neo4j_session, routes, gcp_update_tag, common_job_parameters, 'cloudrun routes')
+    label.sync_labels(neo4j_session, routes, gcp_update_tag,
+                      common_job_parameters, 'cloudrun routes', 'GCPCloudRunRoute')
     # CLOUDRUN SERVICES
     services = get_cloudrun_services(cloudrun, project_id)
     load_cloudrun_services(neo4j_session, services, project_id, gcp_update_tag)
     cleanup_gcp_cloudrun(neo4j_session, common_job_parameters)
-    label.sync_labels(neo4j_session, services, gcp_update_tag, common_job_parameters, 'cloudrun services')
+    label.sync_labels(neo4j_session, services, gcp_update_tag, common_job_parameters,
+                      'cloudrun services', 'GCPCloudRunService')

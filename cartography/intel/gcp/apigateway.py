@@ -698,7 +698,8 @@ def sync(
     load_apigateway_locations(neo4j_session, locations, project_id, gcp_update_tag)
     # Cleanup Locations
     cleanup_apigateway_locations(neo4j_session, common_job_parameters)
-    label.sync_labels(neo4j_session, locations, gcp_update_tag, common_job_parameters, 'apigateway_locations')
+    label.sync_labels(neo4j_session, locations, gcp_update_tag,
+                      common_job_parameters, 'apigateway_locations', 'GCPLocation')
     # API Gateway APIs
     apis = get_apis(apigateway, project_id, regions)
     load_apis(neo4j_session, apis, project_id, gcp_update_tag)
@@ -706,13 +707,11 @@ def sync(
         load_apis_entity_relation(neo4j_session, api, gcp_update_tag)
     # Cleanup APIs
     cleanup_apis(neo4j_session, common_job_parameters)
-    label.sync_labels(neo4j_session, apis, gcp_update_tag, common_job_parameters, 'apis')
     # API Gateway API Configs
     configs = get_api_configs(apigateway, project_id, regions)
     load_api_configs(neo4j_session, configs, project_id, gcp_update_tag)
     # Cleanup API Gateway Configs
     cleanup_api_configs(neo4j_session, common_job_parameters)
-    label.sync_labels(neo4j_session, configs, gcp_update_tag, common_job_parameters, 'api configs')
     # API Gateway Gateways
     gateways = get_gateways(apigateway, project_id, regions)
     load_gateways(neo4j_session, gateways, project_id, gcp_update_tag)
@@ -720,4 +719,3 @@ def sync(
         load_gateway_entity_relation(neo4j_session, gateway, gcp_update_tag)
     # Cleanup API Gateway Gateways
     cleanup_api_gateways(neo4j_session, common_job_parameters)
-    label.sync_labels(neo4j_session, gateways, gcp_update_tag, common_job_parameters, 'apigateways')
