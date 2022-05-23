@@ -235,6 +235,7 @@ def transform_gcp_instances(response_objects: List[Dict], compute: Resource) -> 
         prefix_fields = _parse_instance_uri_prefix(prefix)
 
         res['partial_uri'] = f"{prefix}/{res['name']}"
+        res['id'] = f"{prefix}/{res['name']}"
         res['project_id'] = prefix_fields.project_id
         res['zone_name'] = prefix_fields.zone_name
         res['accessConfig'] = res.get('accessConfig', None)
@@ -1239,7 +1240,7 @@ def sync_gcp_instances(
     load_gcp_instances(neo4j_session, instance_list, gcp_update_tag)
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gcp_instances(neo4j_session, common_job_parameters)
-    label.sync_labels(neo4j_session, instance_list, gcp_update_tag, common_job_parameters, 'instances')
+    label.sync_labels(neo4j_session, instance_list, gcp_update_tag, common_job_parameters, 'instances', 'GCPInstance')
 
 
 @timeit
@@ -1261,7 +1262,7 @@ def sync_gcp_vpcs(
     load_gcp_vpcs(neo4j_session, vpcs, gcp_update_tag)
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gcp_vpcs(neo4j_session, common_job_parameters)
-    label.sync_labels(neo4j_session, vpcs, gcp_update_tag, common_job_parameters, 'vpcs')
+    label.sync_labels(neo4j_session, vpcs, gcp_update_tag, common_job_parameters, 'vpcs', 'GCPVpc')
 
 
 @timeit

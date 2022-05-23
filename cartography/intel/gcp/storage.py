@@ -245,4 +245,4 @@ def sync(
     load_gcp_buckets(neo4j_session, bucket_list, gcp_update_tag)
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gcp_buckets(neo4j_session, common_job_parameters)
-    label.sync_labels(neo4j_session, bucket_list, gcp_update_tag, common_job_parameters, 'buckets')
+    label.sync_labels(neo4j_session, bucket_list, gcp_update_tag, common_job_parameters, 'buckets', 'GCPBucket')

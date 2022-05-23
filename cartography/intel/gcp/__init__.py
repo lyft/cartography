@@ -350,8 +350,6 @@ def _sync_single_project(
         for future in as_completed(futures):
             logger.info(f'Result from Future - Service Processing: {future.result()}')
 
-    label.cleanup_labels(neo4j_session, common_job_parameters)
-
 
 def _sync_multiple_projects(
     neo4j_session: neo4j.Session, resources: Resource, requested_syncs: List[str], projects: List[Dict],

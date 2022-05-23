@@ -423,13 +423,13 @@ def sync(
     locations = get_kms_locations(kms, project_id, regions)
     print(locations)
     load_kms_locations(neo4j_session, locations, project_id, gcp_update_tag)
-    label.sync_labels(neo4j_session, locations, gcp_update_tag, common_job_parameters, 'kms_locations')
+    label.sync_labels(neo4j_session, locations, gcp_update_tag, common_job_parameters, 'kms_locations', 'GCPLocation')
     # KMS KEYRINGS
     key_rings = get_kms_keyrings(kms, locations, project_id)
     load_kms_key_rings(neo4j_session, key_rings, project_id, gcp_update_tag)
     for key_ring in key_rings:
         load_keyring_entity_relation(neo4j_session, key_ring, gcp_update_tag)
-    label.sync_labels(neo4j_session, key_rings, gcp_update_tag, common_job_parameters, 'keyrings')
+    label.sync_labels(neo4j_session, key_rings, gcp_update_tag, common_job_parameters, 'keyrings', 'GCPKMSKeyRing')
     crypto_keys = get_kms_crypto_keys(kms, key_rings, project_id)
     load_kms_crypto_keys(neo4j_session, crypto_keys, project_id, gcp_update_tag)
     cleanup_gcp_kms(neo4j_session, common_job_parameters)
