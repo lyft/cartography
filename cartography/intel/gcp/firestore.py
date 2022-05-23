@@ -268,7 +268,8 @@ def sync(
     # FIRESTORE DATABASES
     firestore_databases = get_firestore_databases(firestore, project_id, regions)
     load_firestore_databases(neo4j_session, firestore_databases, project_id, gcp_update_tag)
-    label.sync_labels(neo4j_session, firestore_databases, gcp_update_tag, common_job_parameters, 'firestore databases')
+    label.sync_labels(neo4j_session, firestore_databases, gcp_update_tag,
+                      common_job_parameters, 'firestore databases', 'GCPFirestoreDatabase')
     # FIRESTORE INDEXES
     firestore_indexes = get_firestore_indexes(firestore, firestore_databases, project_id)
     load_firestore_indexes(neo4j_session, firestore_indexes, project_id, gcp_update_tag)

@@ -216,7 +216,7 @@ def sync(
     load_gke_clusters(neo4j_session, gke_res, project_id, gcp_update_tag)
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gke_clusters(neo4j_session, common_job_parameters)
-    label.sync_labels(neo4j_session, gke_res, gcp_update_tag, common_job_parameters, 'gke clusters')
+    label.sync_labels(neo4j_session, gke_res, gcp_update_tag, common_job_parameters, 'gke clusters', 'GKECluster')
 
     toc = time.perf_counter()
     logger.info(f"Time to process GKE: {toc - tic:0.4f} seconds")

@@ -283,7 +283,7 @@ def sync(
     for function in functions:
         load_function_entity_relation(neo4j_session, function, gcp_update_tag)
     cleanup_gcp_functions(neo4j_session, common_job_parameters)
-    label.sync_labels(neo4j_session, functions, gcp_update_tag, common_job_parameters, 'functions')
+    label.sync_labels(neo4j_session, functions, gcp_update_tag, common_job_parameters, 'functions', 'GCPFunction')
 
     toc = time.perf_counter()
     logger.info(f"Time to process Cloud Functions: {toc - tic:0.4f} seconds")

@@ -253,13 +253,12 @@ def sync(
                 zones_list.append(zone)
         dns_zones = zones_list
     load_dns_zones(neo4j_session, dns_zones, project_id, gcp_update_tag)
-    label.sync_labels(neo4j_session, dns_zones, gcp_update_tag, common_job_parameters, 'dns_zones')
+    label.sync_labels(neo4j_session, dns_zones, gcp_update_tag, common_job_parameters, 'dns_zones', 'GCPDNSZone')
     # RECORD SETS
     dns_rrs = get_dns_rrs(dns, dns_zones, project_id)
     load_rrs(neo4j_session, dns_rrs, project_id, gcp_update_tag)
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_dns_records(neo4j_session, common_job_parameters)
-    label.sync_labels(neo4j_session, dns_rrs, gcp_update_tag, common_job_parameters, 'dns record')
 
     toc = time.perf_counter()
     logger.info(f"Time to process DNS: {toc - tic:0.4f} seconds")
