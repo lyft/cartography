@@ -3,6 +3,7 @@ import logging
 from typing import Dict
 from typing import List
 
+import time
 import neo4j
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
@@ -260,7 +261,10 @@ def sync(
         :rtype: NoneType
         :return: Nothing
     """
-    logger.info("Syncing GCP Cloud SQL for project %s.", project_id)
+    tic = time.perf_counter()
+
+    logger.info("Syncing CloudSQL for project '%s', at %s.", project_id, tic)
+
     # SQL INSTANCES
     sqlinstances = get_sql_instances(sql, project_id, regions)
     load_sql_instances(neo4j_session, sqlinstances, project_id, gcp_update_tag)
@@ -272,3 +276,6 @@ def sync(
     users = get_sql_users(sql, sqlinstances, project_id)
     load_sql_users(neo4j_session, users, project_id, gcp_update_tag)
     cleanup_sql(neo4j_session, common_job_parameters)
+
+    toc = time.perf_counter()
+    logger.info(f"Time to process CloudSQL: {toc - tic:0.4f} seconds")

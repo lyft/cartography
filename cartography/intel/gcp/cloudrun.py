@@ -3,6 +3,7 @@ import logging
 from typing import Dict
 from typing import List
 
+import time
 import neo4j
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
@@ -633,7 +634,10 @@ def sync(
         :rtype: NoneType
         :return: Nothing
     """
-    logger.info("Syncing GCP Cloudrun for project %s.", project_id)
+    tic = time.perf_counter()
+
+    logger.info("Syncing Cloudrun for project '%s', at %s.", project_id, tic)
+
     # CLOUDRUN AUTHORIZED DOMAINS
     domains = get_cloudrun_authorized_domains(cloudrun, project_id)
     load_cloudrun_authorized_domains(neo4j_session, domains, project_id, gcp_update_tag)
@@ -659,3 +663,6 @@ def sync(
     load_cloudrun_services(neo4j_session, services, project_id, gcp_update_tag)
     cleanup_gcp_cloudrun(neo4j_session, common_job_parameters)
     label.sync_labels(neo4j_session, services, gcp_update_tag, common_job_parameters, 'cloudrun services')
+
+    toc = time.perf_counter()
+    logger.info(f"Time to process Cloudrun: {toc - tic:0.4f} seconds")

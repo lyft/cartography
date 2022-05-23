@@ -11,6 +11,7 @@ from typing import Optional
 from typing import Set
 from . import iam
 
+import time
 import neo4j
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
@@ -1359,7 +1360,10 @@ def sync(
     :param common_job_parameters: dict of other job parameters to pass to Neo4j
     :return: Nothing
     """
-    logger.info("Syncing Compute objects for project %s.", project_id)
+    tic = time.perf_counter()
+
+    logger.info("Syncing Compute for project '%s', at %s.", project_id, tic)
+
     zones = get_zones_in_project(project_id, compute)
     # Only pull additional assets for this project if the Compute API is enabled
     if zones is None:
@@ -1378,3 +1382,6 @@ def sync(
         sync_gcp_subnets(neo4j_session, compute, project_id, regions, gcp_update_tag, common_job_parameters)
         sync_gcp_instances(neo4j_session, compute, project_id, zones, gcp_update_tag, common_job_parameters)
         sync_gcp_forwarding_rules(neo4j_session, compute, project_id, regions, gcp_update_tag, common_job_parameters)
+
+    toc = time.perf_counter()
+    logger.info(f"Time to process Compute: {toc - tic:0.4f} seconds")

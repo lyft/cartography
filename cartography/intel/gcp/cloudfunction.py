@@ -4,6 +4,7 @@ from typing import Dict
 from typing import List
 from . import iam
 
+import time
 import neo4j
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
@@ -272,7 +273,10 @@ def sync(
     :rtype: NoneType
     :return: Nothing
     """
-    logger.info("Syncing GCP Cloud Functions for project %s.", project_id)
+    tic = time.perf_counter()
+
+    logger.info("Syncing Cloud Functions for project '%s', at %s.", project_id, tic)
+
     # FUNCTIONS
     functions = get_gcp_functions(function, project_id, regions)
     load_functions(neo4j_session, functions, project_id, gcp_update_tag)
@@ -280,3 +284,6 @@ def sync(
         load_function_entity_relation(neo4j_session, function, gcp_update_tag)
     cleanup_gcp_functions(neo4j_session, common_job_parameters)
     label.sync_labels(neo4j_session, functions, gcp_update_tag, common_job_parameters, 'functions')
+
+    toc = time.perf_counter()
+    logger.info(f"Time to process Cloud Functions: {toc - tic:0.4f} seconds")

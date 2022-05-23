@@ -3,6 +3,7 @@ import logging
 from typing import Dict
 from typing import List
 
+import time
 import neo4j
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
@@ -788,7 +789,9 @@ def sync(
     neo4j_session: neo4j.Session, iam: Resource, crm: Resource, admin: Resource,
     project_id: str, gcp_update_tag: int, common_job_parameters: Dict,
 ) -> None:
-    logger.info("Syncing IAM objects for project %s.", project_id)
+    tic = time.perf_counter()
+
+    logger.info("Syncing IAM for project '%s', at %s.", project_id, tic)
 
     service_accounts_list = get_service_accounts(iam, project_id)
     service_accounts_list = transform_service_accounts(service_accounts_list)
@@ -848,3 +851,6 @@ def sync(
 
     load_bindings(neo4j_session, bindings, project_id, gcp_update_tag)
     set_used_state(neo4j_session, project_id, common_job_parameters, gcp_update_tag)
+
+    toc = time.perf_counter()
+    logger.info(f"Time to process IAM: {toc - tic:0.4f} seconds")

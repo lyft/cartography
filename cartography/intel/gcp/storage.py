@@ -2,6 +2,7 @@ import logging
 from typing import Dict
 from typing import List
 
+import time
 import neo4j
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
@@ -239,6 +240,10 @@ def sync(
     :rtype: NoneType
     :return: Nothing
     """
+    tic = time.perf_counter()
+
+    logger.info("Syncing Storage for project '%s', at %s.", project_id, tic)
+
     logger.info("Syncing Storage objects for project %s.", project_id)
     storage_res = get_gcp_buckets(storage, project_id)
     bucket_list = transform_gcp_buckets(storage_res, regions)
@@ -246,3 +251,6 @@ def sync(
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gcp_buckets(neo4j_session, common_job_parameters)
     label.sync_labels(neo4j_session, bucket_list, gcp_update_tag, common_job_parameters, 'buckets')
+
+    toc = time.perf_counter()
+    logger.info(f"Time to process Storage: {toc - tic:0.4f} seconds")

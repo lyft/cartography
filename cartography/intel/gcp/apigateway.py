@@ -4,6 +4,7 @@ from typing import Dict
 from typing import List
 from . import iam
 
+import time
 import neo4j
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
@@ -692,7 +693,10 @@ def sync(
         :rtype: NoneType
         :return: Nothing
     """
-    logger.info("Syncing DNS records for project %s.", project_id)
+    tic = time.perf_counter()
+
+    logger.info("Syncing Apigateway for project '%s', at %s.", project_id, tic)
+
     # API Gateway Locations
     locations = get_apigateway_locations(apigateway, project_id)
     load_apigateway_locations(neo4j_session, locations, project_id, gcp_update_tag)
@@ -721,3 +725,6 @@ def sync(
     # Cleanup API Gateway Gateways
     cleanup_api_gateways(neo4j_session, common_job_parameters)
     label.sync_labels(neo4j_session, gateways, gcp_update_tag, common_job_parameters, 'apigateways')
+
+    toc = time.perf_counter()
+    logger.info(f"Time to process ApiGateway: {toc - tic:0.4f} seconds")

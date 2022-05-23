@@ -3,6 +3,7 @@ import logging
 from typing import Dict
 from typing import List
 
+import time
 import neo4j
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
@@ -468,7 +469,10 @@ def sync(
         :rtype: NoneType
         :return: Nothing
     """
-    logger.info("Syncing GCP Cloud Bigtable for project %s.", project_id)
+    tic = time.perf_counter()
+
+    logger.info("Syncing Bigtable for project '%s', at %s.", project_id, tic)
+
     # BIGTABLE INSTANCES
     bigtable_instances = get_bigtable_instances(bigtable, project_id)
     load_bigtable_instances(neo4j_session, bigtable_instances, project_id, gcp_update_tag)
@@ -483,3 +487,6 @@ def sync(
     bigtable_tables = get_get_bigtable_tables(bigtable, bigtable_instances, project_id, regions)
     load_bigtable_tables(neo4j_session, bigtable_tables, project_id, gcp_update_tag)
     cleanup_bigtable(neo4j_session, common_job_parameters)
+
+    toc = time.perf_counter()
+    logger.info(f"Time to process Bigtable: {toc - tic:0.4f} seconds")

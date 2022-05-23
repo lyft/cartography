@@ -4,6 +4,7 @@ from typing import Dict
 from typing import List
 from . import iam
 
+import time
 import neo4j
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
@@ -418,7 +419,10 @@ def sync(
     :rtype: NoneType
     :return: Nothing
     """
-    logger.info("Syncing GCP Cloud KMS for project %s.", project_id)
+    tic = time.perf_counter()
+
+    logger.info("Syncing Cloud KMS for project '%s', at %s.", project_id, tic)
+
     # KMS LOCATIONS
     locations = get_kms_locations(kms, project_id, regions)
     print(locations)
@@ -433,3 +437,6 @@ def sync(
     crypto_keys = get_kms_crypto_keys(kms, key_rings, project_id)
     load_kms_crypto_keys(neo4j_session, crypto_keys, project_id, gcp_update_tag)
     cleanup_gcp_kms(neo4j_session, common_job_parameters)
+
+    toc = time.perf_counter()
+    logger.info(f"Time to process Cloud KMS: {toc - tic:0.4f} seconds")

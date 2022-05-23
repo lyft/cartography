@@ -3,6 +3,7 @@ import logging
 from typing import Dict
 from typing import List
 
+import time
 import neo4j
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
@@ -239,7 +240,10 @@ def sync(
     :rtype: NoneType
     :return: Nothing
     """
-    logger.info("Syncing DNS records for project %s.", project_id)
+    tic = time.perf_counter()
+
+    logger.info("Syncing DNS for project '%s', at %s.", project_id, tic)
+
     # DNS ZONES
     dns_zones = get_dns_zones(dns, project_id)
     if regions:
@@ -256,3 +260,6 @@ def sync(
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_dns_records(neo4j_session, common_job_parameters)
     label.sync_labels(neo4j_session, dns_rrs, gcp_update_tag, common_job_parameters, 'dns record')
+
+    toc = time.perf_counter()
+    logger.info(f"Time to process DNS: {toc - tic:0.4f} seconds")

@@ -3,6 +3,7 @@ import logging
 from typing import Dict
 from typing import List
 
+import time
 import neo4j
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
@@ -260,7 +261,10 @@ def sync(
         :rtype: NoneType
         :return: Nothing
     """
-    logger.info("Syncing GCP Cloud Firestore for project %s.", project_id)
+    tic = time.perf_counter()
+
+    logger.info("Syncing Firestore for project '%s', at %s.", project_id, tic)
+
     # FIRESTORE DATABASES
     firestore_databases = get_firestore_databases(firestore, project_id, regions)
     load_firestore_databases(neo4j_session, firestore_databases, project_id, gcp_update_tag)
@@ -269,3 +273,6 @@ def sync(
     firestore_indexes = get_firestore_indexes(firestore, firestore_databases, project_id)
     load_firestore_indexes(neo4j_session, firestore_indexes, project_id, gcp_update_tag)
     cleanup_firestore(neo4j_session, common_job_parameters)
+
+    toc = time.perf_counter()
+    logger.info(f"Time to process Firestore: {toc - tic:0.4f} seconds")

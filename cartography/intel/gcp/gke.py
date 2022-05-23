@@ -3,6 +3,7 @@ import logging
 from typing import Dict
 from typing import List
 
+import time
 import neo4j
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
@@ -207,9 +208,15 @@ def sync(
     :rtype: NoneType
     :return: Nothing
     """
-    logger.info("Syncing Compute objects for project %s.", project_id)
+    tic = time.perf_counter()
+
+    logger.info("Syncing GKE for project '%s', at %s.", project_id, tic)
+
     gke_res = get_gke_clusters(container, project_id, regions)
     load_gke_clusters(neo4j_session, gke_res, project_id, gcp_update_tag)
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gke_clusters(neo4j_session, common_job_parameters)
     label.sync_labels(neo4j_session, gke_res, gcp_update_tag, common_job_parameters, 'gke clusters')
+
+    toc = time.perf_counter()
+    logger.info(f"Time to process GKE: {toc - tic:0.4f} seconds")
