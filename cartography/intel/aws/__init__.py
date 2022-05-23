@@ -118,23 +118,8 @@ def _autodiscover_accounts(
     sync_tag: int, common_job_parameters: Dict,
 ) -> None:
     logger.info("Trying to autodiscover accounts.")
-    try:
-        # Fetch all accounts
-        client = boto3_session.client('organizations')
-        paginator = client.get_paginator('list_accounts')
-        accounts: List[Dict] = []
-        for page in paginator.paginate():
-            accounts.extend(page['Accounts'])
-
-        # Filter out every account which is not in the ACTIVE status
-        # and select only the Id and Name fields
-        filtered_accounts: Dict[str, str] = {x['Name']: x['Id'] for x in accounts if x['Status'] == 'ACTIVE'}
-
-        # Add them to the graph
-        logger.info("Loading autodiscovered accounts.")
-        organizations.load_aws_accounts(neo4j_session, filtered_accounts, sync_tag, common_job_parameters)
-    except botocore.exceptions.ClientError:
-        logger.warning(f"The current account ({account_id}) doesn't have enough permissions to perform autodiscovery.")
+    organizations.sync_autodiscovery(neo4j_session, boto3_session, account_id, sync_tag)
+    run_cleanup_job('aws_import_organization_cleanup.json', neo4j_session, common_job_parameters)
 
 
 def _sync_multiple_accounts(

@@ -1,0 +1,13 @@
+{
+  "statements": [
+    {
+      "query": "MATCH (ao:AWSOrganization), (aa:AWSAccount) WHERE ao.master_account_id = aa.id MERGE (aa)-[r:MASTER]->(ao) ON CREATE SET r.firstseen = {UPDATE_TAG} SET r.lastupdated = {UPDATE_TAG}",
+      "iterative": false
+    },
+    {
+      "query": "MATCH (:AWSAccount)-[r:MASTER]->(:AWSOrganization) WHERE r.lastupdated <> {UPDATE_TAG} DELETE (r)",
+      "iterative": false
+    }
+  ],
+  "name": "Connect AWSOrganization and AWSAccount"
+}
