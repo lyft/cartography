@@ -15,7 +15,6 @@ logger = logging.getLogger(__name__)
 stat_handler = get_stats_client(__name__)
 
 
-
 def get_account_from_arn(arn: str) -> str:
     # TODO use policyuniverse to parse ARN?
     return arn.split(":")[4]
