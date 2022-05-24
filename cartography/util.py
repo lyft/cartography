@@ -19,7 +19,7 @@ import neo4j
 
 from cartography.graph.job import GraphJob
 from cartography.graph.statement import get_job_shortname
-from cartography.stats import _scoped_stats_client
+from cartography.stats import get_stats_client
 from cartography.stats import ScopedStatsClient
 
 if sys.version_info >= (3, 7):
@@ -114,11 +114,9 @@ def timeit(method: F) -> F:
     # Allow access via `inspect` to the wrapped function. This is used in integration tests to standardize param names.
     @wraps(method)
     def timed(*args, **kwargs):  # type: ignore
-        stats_client = _scoped_stats_client  # global client
+        stats_client = get_stats_client(method.__module__)
         if stats_client.is_enabled():
-            # Example metric name "cartography.intel.aws.iam.get_group_membership_data"
-            metric_name = f"{method.__module__}.{method.__name__}"
-            timer = stats_client.timer(metric_name)
+            timer = stats_client.timer(method.__name__)
             timer.start()
             result = method(*args, **kwargs)
             timer.stop()
