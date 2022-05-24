@@ -6,7 +6,7 @@ from typing import Tuple
 import neo4j
 
 from cartography.intel.github.util import fetch_all
-from cartography.util import get_stats_client
+from cartography.stats import get_stats_client
 from cartography.util import merge_module_sync_metadata
 from cartography.util import run_cleanup_job
 from cartography.util import timeit

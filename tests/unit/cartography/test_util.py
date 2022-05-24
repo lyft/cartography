@@ -1,9 +1,9 @@
+import botocore
 import pytest
 
 from cartography import util
 from cartography.util import aws_handle_regions
 from cartography.util import batch
-from cartography.util import botocore
 
 
 def test_run_analysis_job_default_package(mocker):
