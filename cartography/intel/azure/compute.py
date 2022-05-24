@@ -216,7 +216,7 @@ def sync_snapshot(
     cleanup_snapshot(neo4j_session, common_job_parameters)
 
 
-@ timeit
+@timeit
 def sync(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
     common_job_parameters: Dict,

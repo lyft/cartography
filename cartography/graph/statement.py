@@ -2,6 +2,7 @@ import json
 import logging
 import os
 from pathlib import Path
+from typing import Any
 from typing import Dict
 from typing import Union
 
@@ -43,9 +44,7 @@ class GraphStatement:
         parent_job_name: str = None, parent_job_sequence_num: int = None,
     ):
         self.query = query
-        self.parameters: Dict = parameters
-        if not parameters:
-            self.parameters = {}
+        self.parameters = parameters or {}
         self.iterative = iterative
         self.iterationsize = iterationsize
         self.parameters["LIMIT_SIZE"] = self.iterationsize
@@ -53,7 +52,7 @@ class GraphStatement:
         self.parent_job_name = parent_job_name if parent_job_name else None
         self.parent_job_sequence_num = parent_job_sequence_num if parent_job_sequence_num else None
 
-    def merge_parameters(self, parameters):
+    def merge_parameters(self, parameters: Dict) -> None:
         """
         Merge given parameters with existing parameters.
         """
@@ -71,7 +70,7 @@ class GraphStatement:
             session.write_transaction(self._run_noniterative).consume()
         logger.info(f"Completed {self.parent_job_name} statement #{self.parent_job_sequence_num}")
 
-    def as_dict(self):
+    def as_dict(self) -> Dict[str, Any]:
         """
         Convert statement to a dictionary.
         """

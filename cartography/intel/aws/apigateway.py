@@ -2,7 +2,6 @@ import json
 import logging
 from typing import Any
 from typing import Dict
-from typing import Generator
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -35,17 +34,20 @@ def get_apigateway_rest_apis(boto3_session: boto3.session.Session, region: str) 
 @aws_handle_regions
 def get_rest_api_details(
         boto3_session: boto3.session.Session, rest_apis: List[Dict], region: str,
-) -> Generator[Any, Any, Any]:
+) -> List[Tuple[Any, Any, Any, Any, Any]]:
     """
     Iterates over all API Gateway REST APIs.
     """
     client = boto3_session.client('apigateway', region_name=region)
+    apis = []
     for api in rest_apis:
         stages = get_rest_api_stages(api, client)
-        certificate = get_rest_api_client_certificate(stages, client)  # clientcertificate id is given by the api stage
+        # clientcertificate id is given by the api stage
+        certificate = get_rest_api_client_certificate(stages, client)  # type: ignore
         resources = get_rest_api_resources(api, client)
         policy = get_rest_api_policy(api, client)
-        yield api['id'], stages, certificate, resources, policy
+        apis.append((api['id'], stages, certificate, resources, policy))
+    return apis
 
 
 @timeit

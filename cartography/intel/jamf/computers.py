@@ -42,7 +42,7 @@ def sync_computer_groups(
     jamf_password: str,
 ) -> None:
     groups = get_computer_groups(jamf_base_uri, jamf_user, jamf_password)
-    load_computer_groups(groups, neo4j_session, update_tag)
+    load_computer_groups(groups, neo4j_session, update_tag)  # type: ignore
 
 
 @timeit

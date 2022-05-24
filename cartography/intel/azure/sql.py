@@ -96,7 +96,7 @@ def sync_server_details(
         server_list: List[Dict], sync_tag: int,
 ) -> None:
     details = get_server_details(credentials, subscription_id, server_list)
-    load_server_details(neo4j_session, credentials, subscription_id, details, sync_tag)
+    load_server_details(neo4j_session, credentials, subscription_id, details, sync_tag)  # type: ignore
 
 
 @timeit
@@ -609,7 +609,7 @@ def sync_database_details(
         subscription_id: str, databases: List[Dict], update_tag: int,
 ) -> None:
     db_details = get_database_details(credentials, subscription_id, databases)
-    load_database_details(neo4j_session, db_details, update_tag)
+    load_database_details(neo4j_session, db_details, update_tag)  # type: ignore
 
 
 @timeit
