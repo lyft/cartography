@@ -54,6 +54,7 @@ setup(
         "azure-identity>=1.5.0",
         "kubernetes>=18.20.0,<=21.7.0",
         "pdpyras>=4.3.0",
+        "crowdstrike-falconpy>=0.5.1",
     ],
     extras_require={
         ':python_version<"3.7"': [

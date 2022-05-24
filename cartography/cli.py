@@ -342,6 +342,30 @@ class CLI:
                 'The name of environment variable containing the pagerduty API key for authentication.'
             ),
         )
+        parser.add_argument(
+            '--crowdstrike-client-id-env-var',
+            type=str,
+            default=None,
+            help=(
+                'The name of environment variable containing the crowdstrike client id for authentication.'
+            ),
+        )
+        parser.add_argument(
+            '--crowdstrike-client-secret-env-var',
+            type=str,
+            default=None,
+            help=(
+                'The name of environment variable containing the crowdstrike secret key for authentication.'
+            ),
+        )
+        parser.add_argument(
+            '--crowdstrike-api-url',
+            type=str,
+            default=None,
+            help=(
+                'The crowdstrike URL, if using self-hosted. Defaults to the public crowdstrike API URL otherwise.'
+            ),
+        )
         return parser
 
     def main(self, argv):
@@ -453,6 +477,23 @@ class CLI:
             config.pagerduty_api_key = os.environ.get(config.pagerduty_api_key_env_var)
         else:
             config.pagerduty_api_key = None
+
+        # Crowdstrike config
+        if config.crowdstrike_client_id_env_var:
+            logger.debug(
+                f"Reading API key for Crowdstrike from environment variable {config.crowdstrike_client_id_env_var}",
+            )
+            config.crowdstrike_client_id = os.environ.get(config.crowdstrike_client_id_env_var)
+        else:
+            config.crowdstrike_client_id = None
+
+        if config.crowdstrike_client_secret_env_var:
+            logger.debug(
+                f"Reading API key for Crowdstrike from environment variable {config.crowdstrike_client_secret_env_var}",
+            )
+            config.crowdstrike_client_secret = os.environ.get(config.crowdstrike_client_secret_env_var)
+        else:
+            config.crowdstrike_client_secret = None
 
         # Run cartography
         try:

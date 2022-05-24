@@ -106,6 +106,9 @@ class Config:
         pagerduty_api_key=None,
         nist_cve_url=None,
         cve_enabled=False,
+        crowdstrike_client_id=None,
+        crowdstrike_client_secret=None,
+        crowdstrike_api_url=None,
     ):
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user
@@ -139,3 +142,6 @@ class Config:
         self.pagerduty_api_key = pagerduty_api_key
         self.nist_cve_url = nist_cve_url
         self.cve_enabled = cve_enabled
+        self.crowdstrike_client_id = crowdstrike_client_id
+        self.crowdstrike_client_secret = crowdstrike_client_secret
+        self.crowdstrike_api_url = crowdstrike_api_url
