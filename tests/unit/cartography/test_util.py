@@ -44,22 +44,6 @@ def test_aws_handle_regions(mocker):
 
     assert raises_supported_client_error(1, 2) == []
 
-    # returns a custom value
-    @aws_handle_regions(default_return_value=([], []))
-    def raises_supported_error_with_custoim_return_value(a, b):
-        e = botocore.exceptions.ClientError(
-            {
-                'Error': {
-                    'Code': 'AccessDenied',
-                    'Message': 'aws_handle_regions is not working',
-                },
-            },
-            'FakeOperation',
-        )
-        raise e
-
-    assert raises_supported_error_with_custoim_return_value(1, 2) == ([], [])
-
     # unhandled type of ClientError
     @aws_handle_regions
     def raises_unsupported_client_error(a, b):
@@ -78,7 +62,7 @@ def test_aws_handle_regions(mocker):
         raises_unsupported_client_error(1, 2)
 
     # other type of error besides ClientError
-    @aws_handle_regions(default_return_value=9000)
+    @aws_handle_regions
     def raises_unsupported_error(a, b):
         return a / 0
 
