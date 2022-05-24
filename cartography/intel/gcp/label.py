@@ -9,8 +9,8 @@ from cartography.util import timeit
 logger = logging.getLogger(__name__)
 
 
-def load_labels(session: neo4j.Session, data_list: List[Dict], update_tag: int, common_job_parameters: Dict,) -> None:
-    session.write_transaction(_load_labels_tx, data_list, update_tag, common_job_parameters)
+def load_labels(session: neo4j.Session, data_list: List[Dict], update_tag: int, common_job_parameters: Dict, service_label: str,) -> None:
+    session.write_transaction(_load_labels_tx, data_list, update_tag, common_job_parameters, service_label)
 
 
 @timeit
@@ -33,7 +33,7 @@ def get_labels_list(data: List[Dict]) -> List[Dict]:
     return labels_data
 
 
-def _load_labels_tx(tx: neo4j.Transaction, data: List[Dict], update_tag: int, common_job_parameters: Dict,) -> None:
+def _load_labels_tx(tx: neo4j.Transaction, data: List[Dict], update_tag: int, common_job_parameters: Dict, service_label: str) -> None:
     ingest_label = """
     UNWIND {data} AS label
     MERGE (l:GCPLabel{id: label.id})
@@ -42,7 +42,7 @@ def _load_labels_tx(tx: neo4j.Transaction, data: List[Dict], update_tag: int, co
     l.value = label.value,
     l.name = label.name
     WITH l,label
-    MATCH (r:""" + common_job_parameters.get('service_label', '') + """{id:label.resource_id})
+    MATCH (r:""" + service_label + """{id:label.resource_id})
     <-[:RESOURCE]-(:GCPProject{id: {GCP_PROJECT_ID}})<-[:OWNER]-(:CloudanixWorkspace{id: {WORKSPACE_ID}})
     MERGE (r)-[lb:LABELED]->(l)
     ON CREATE SET lb.firstseen = timestamp()
@@ -67,14 +67,9 @@ def sync_labels(
     neo4j_session: neo4j.Session, data: List[Dict], update_tag: int, common_job_parameters: Dict,
     service_name: str, service_label: str,
 ) -> None:
+    common_job_parameters['service_labels'].append(service_label)
     if len(data) > 0:
         labels_list = get_labels_list(data)
         if len(labels_list) > 0:
             logger.info(f"Loading Labels for {service_name}")
-            common_job_parameters['service_label'] = service_label
-            load_labels(neo4j_session, labels_list, update_tag, common_job_parameters)
-            cleanup_labels(neo4j_session, common_job_parameters, service_name)
-            try:
-                del common_job_parameters["service_label"]
-            except KeyError as e:
-                logger.warning(e)
+            load_labels(neo4j_session, labels_list, update_tag, common_job_parameters, service_label)
