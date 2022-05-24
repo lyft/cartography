@@ -421,7 +421,6 @@ def sync(
     logger.info("Syncing GCP Cloud KMS for project %s.", project_id)
     # KMS LOCATIONS
     locations = get_kms_locations(kms, project_id, regions)
-    print(locations)
     load_kms_locations(neo4j_session, locations, project_id, gcp_update_tag)
     label.sync_labels(neo4j_session, locations, gcp_update_tag, common_job_parameters, 'kms_locations', 'GCPLocation')
     # KMS KEYRINGS
