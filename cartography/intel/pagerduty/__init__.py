@@ -12,7 +12,7 @@ from cartography.intel.pagerduty.services import sync_services
 from cartography.intel.pagerduty.teams import sync_teams
 from cartography.intel.pagerduty.users import sync_users
 from cartography.intel.pagerduty.vendors import sync_vendors
-from cartography.util import get_stats_client
+from cartography.stats import get_stats_client
 from cartography.util import merge_module_sync_metadata
 from cartography.util import run_cleanup_job
 from cartography.util import timeit

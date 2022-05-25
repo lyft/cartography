@@ -1,14 +1,17 @@
 import logging
 import re
 import sys
-from functools import partial
 from functools import wraps
 from string import Template
+from typing import Any
+from typing import BinaryIO
 from typing import Callable
+from typing import cast
 from typing import Dict
 from typing import Iterable
 from typing import List
 from typing import Optional
+from typing import TypeVar
 from typing import Union
 
 import botocore
@@ -27,7 +30,12 @@ else:
 logger = logging.getLogger(__name__)
 
 
-def run_analysis_job(filename, neo4j_session, common_job_parameters, package='cartography.data.jobs.analysis'):
+def run_analysis_job(
+    filename: str,
+    neo4j_session: neo4j.Session,
+    common_job_parameters: Dict,
+    package: str = 'cartography.data.jobs.analysis',
+) -> None:
     GraphJob.run_from_json(
         neo4j_session,
         read_text(
@@ -61,7 +69,7 @@ def merge_module_sync_metadata(
     synced_type: str,
     update_tag: int,
     stat_handler: ScopedStatsClient,
-):
+) -> None:
     '''
     This creates `ModuleSyncMetadata` nodes when called from each of the individual modules or sub-modules.
     The 'types' used here should be actual node labels. For example, if we did sync a particular AWSAccount's S3Buckets,
@@ -90,11 +98,14 @@ def merge_module_sync_metadata(
     stat_handler.incr(f'{group_type}_{group_id}_{synced_type}_lastupdated', update_tag)
 
 
-def load_resource_binary(package, resource_name):
+def load_resource_binary(package: str, resource_name: str) -> BinaryIO:
     return open_binary(package, resource_name)
 
 
-def timeit(method):
+F = TypeVar('F', bound=Callable[..., Any])
+
+
+def timeit(method: F) -> F:
     """
     This decorator uses statsd to time the execution of the wrapped method and sends it to the statsd server.
     This is only active if config.statsd_enabled is True.
@@ -102,12 +113,10 @@ def timeit(method):
     """
     # Allow access via `inspect` to the wrapped function. This is used in integration tests to standardize param names.
     @wraps(method)
-    def timed(*args, **kwargs):
-        stats_client = get_stats_client(None)
+    def timed(*args, **kwargs):  # type: ignore
+        stats_client = get_stats_client(method.__module__)
         if stats_client.is_enabled():
-            # Example metric name "cartography.intel.aws.iam.get_group_membership_data"
-            metric_name = f"{method.__module__}.{method.__name__}"
-            timer = stats_client.timer(metric_name)
+            timer = stats_client.timer(method.__name__)
             timer.start()
             result = method(*args, **kwargs)
             timer.stop()
@@ -116,11 +125,14 @@ def timeit(method):
             # statsd is disabled, so don't time anything
             return method(*args, **kwargs)
 
-    return timed
+    return cast(F, timed)
+
+
+AWSGetFunc = TypeVar('AWSGetFunc', bound=Callable[..., List])
 
 
 # TODO Move this to cartography.intel.aws.util.common
-def aws_handle_regions(func=None, default_return_value=[]) -> Callable:
+def aws_handle_regions(func: AWSGetFunc) -> AWSGetFunc:
     """
     A decorator for returning a default value on functions that would return a client error
      like AccessDenied for opt-in AWS regions, and other regions that might be disabled.
@@ -129,8 +141,6 @@ def aws_handle_regions(func=None, default_return_value=[]) -> Callable:
      Exceptions related to opt-in regions, and returns the specified `default_return_value`.
 
     This should be used on `get_` functions that normally return a list of items.
-     but it can be used elsehwere and you can supply a custom `default_return_value`,
-     other than a simple list `[]`.
     """
     ERROR_CODES = [
         'AccessDenied',
@@ -141,7 +151,7 @@ def aws_handle_regions(func=None, default_return_value=[]) -> Callable:
     ]
 
     @wraps(func)
-    def wrapper(*args, **kwargs):
+    def inner_function(*args, **kwargs):  # type: ignore
         try:
             return func(*args, **kwargs)
         except botocore.exceptions.ClientError as e:
@@ -149,12 +159,10 @@ def aws_handle_regions(func=None, default_return_value=[]) -> Callable:
             # so we can continue without raising an exception
             if e.response['Error']['Code'] in ERROR_CODES:
                 logger.warning("{} in this region. Skipping...".format(e.response['Error']['Message']))
-                return default_return_value
+                return []
             else:
                 raise
-    if func is None:
-        return partial(aws_handle_regions, default_return_value=default_return_value)
-    return wrapper
+    return cast(AWSGetFunc, inner_function)
 
 
 def dict_value_to_str(obj: Dict, key: str) -> Optional[str]:
@@ -185,7 +193,7 @@ def camel_to_snake(name: str) -> str:
     return re.sub(r'(?<!^)(?=[A-Z])', '_', name).lower()
 
 
-def batch(items: Iterable, size=1000) -> List[List]:
+def batch(items: Iterable, size: int = 1000) -> List[List]:
     '''
     Takes an Iterable of items and returns a list of lists of the same items,
      batched into chunks of the provided `size`.

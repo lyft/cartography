@@ -14,6 +14,7 @@ setup(
     license='apache2',
     packages=find_packages(exclude=['tests*']),
     package_data={
+        'cartography': ['py.typed'],
         'cartography.data': [
             '*.cypher',
             '*.yaml',

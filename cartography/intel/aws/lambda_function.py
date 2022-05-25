@@ -1,7 +1,6 @@
 import logging
 from typing import Any
 from typing import Dict
-from typing import Generator
 from typing import List
 from typing import Tuple
 
@@ -111,13 +110,15 @@ def get_event_source_mappings(lambda_function: Dict, client: botocore.client.Bas
 @aws_handle_regions
 def get_lambda_function_details(
         boto3_session: boto3.session.Session, data: List[Dict], region: str,
-) -> Generator[Any, Any, None]:
+) -> List[Tuple[str, List[Any], List[Any], List[Any]]]:
     client = boto3_session.client('lambda', region_name=region)
+    details = []
     for lambda_function in data:
         function_aliases = get_function_aliases(lambda_function, client)
         event_source_mappings = get_event_source_mappings(lambda_function, client)
         layers = lambda_function.get('Layers', [])
-        yield lambda_function['FunctionArn'], function_aliases, event_source_mappings, layers
+        details.append((lambda_function['FunctionArn'], function_aliases, event_source_mappings, layers))
+    return details
 
 
 @timeit
