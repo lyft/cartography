@@ -1,7 +1,7 @@
 from unittest.mock import patch
 
+from cartography.stats import get_stats_client
 from cartography.stats import ScopedStatsClient
-from cartography.util import get_stats_client
 from cartography.util import merge_module_sync_metadata
 
 

@@ -6,7 +6,7 @@ from cartography.config import Config
 from cartography.intel.crowdstrike.endpoints import sync_hosts
 from cartography.intel.crowdstrike.spotlight import sync_vulnerabilities
 from cartography.intel.crowdstrike.util import get_authorization
-from cartography.util import get_stats_client
+from cartography.stats import get_stats_client
 from cartography.util import merge_module_sync_metadata
 from cartography.util import run_cleanup_job
 from cartography.util import timeit

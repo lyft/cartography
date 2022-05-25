@@ -221,11 +221,11 @@ def sync(
         logger.info(f"Syncing AWS tags for account {current_aws_account_id} and region {region}")
         for resource_type in tag_resource_type_mappings.keys():
             tag_data = get_tags(boto3_session, [resource_type], region)
-            transform_tags(tag_data, resource_type)
+            transform_tags(tag_data, resource_type)  # type: ignore
             logger.info(f"Loading {len(tag_data)} tags for resource type {resource_type}")
             load_tags(
                 neo4j_session=neo4j_session,
-                tag_data=tag_data,
+                tag_data=tag_data,  # type: ignore
                 resource_type=resource_type,
                 region=region,
                 current_aws_account_id=current_aws_account_id,
