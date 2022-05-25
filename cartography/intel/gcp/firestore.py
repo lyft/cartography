@@ -37,10 +37,10 @@ def get_firestore_databases(firestore: Resource, project_id: str, regions: list)
             for database in response['databases']:
                 database['id'] = database['name']
                 if regions is None:
-                    database.append(database)
+                    firestore_databases.append(database)
                 else:
                     if database['locationId'] in regions or database['locationId'] == 'global':
-                        database.append(database)
+                        firestore_databases.append(database)
         return firestore_databases
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
