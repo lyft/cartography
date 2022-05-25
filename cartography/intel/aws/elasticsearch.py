@@ -239,4 +239,4 @@ def sync(
         data = _get_es_domains(client)
         _load_es_domains(neo4j_session, data, current_aws_account_id, update_tag)
 
-    cleanup(neo4j_session, update_tag, current_aws_account_id)
+    cleanup(neo4j_session, update_tag, current_aws_account_id)  # type: ignore

@@ -128,6 +128,5 @@ def test_run_cleanup_job_iterative_multiple_batches(mock_read_text: mock.MagicMo
         """,
     )
     actual_nodes = {n['n.id'] for n in nodes}
-    expected_nodes = set()
-    assert actual_nodes == expected_nodes
+    assert actual_nodes == set()
     mock_read_text.assert_called_once()

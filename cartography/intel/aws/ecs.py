@@ -2,7 +2,6 @@ import logging
 from typing import Any
 from typing import Dict
 from typing import List
-from typing import Tuple
 
 import boto3
 import neo4j
@@ -17,22 +16,33 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
-@aws_handle_regions(default_return_value=([], []))
-def get_ecs_clusters(boto3_session: boto3.session.Session, region: str) -> Tuple[List[str], List[Dict[str, Any]]]:
+@aws_handle_regions
+def get_ecs_cluster_arns(boto3_session: boto3.session.Session, region: str) -> List[str]:
     client = boto3_session.client('ecs', region_name=region)
     paginator = client.get_paginator('list_clusters')
-    clusters: List[Dict[str, Any]] = []
     cluster_arns: List[str] = []
     for page in paginator.paginate():
         cluster_arns.extend(page.get('clusterArns', []))
+    return cluster_arns
+
+
+@timeit
+@aws_handle_regions
+def get_ecs_clusters(
+    boto3_session: boto3.session.Session,
+    region: str,
+    cluster_arns: List[str],
+) -> List[Dict[str, Any]]:
+    client = boto3_session.client('ecs', region_name=region)
     # TODO: also include attachment info, and make relationships between the attachements
     # and the cluster.
     includes = ['SETTINGS', 'CONFIGURATIONS']
+    clusters: List[Dict[str, Any]] = []
     for i in range(0, len(cluster_arns), 100):
         cluster_arn_chunk = cluster_arns[i:i + 100]
         cluster_chunk = client.describe_clusters(clusters=cluster_arn_chunk, include=includes)
         clusters.extend(cluster_chunk.get('clusters', []))
-    return (cluster_arns, clusters)
+    return clusters
 
 
 @timeit
@@ -536,7 +546,8 @@ def sync(
 ) -> None:
     for region in regions:
         logger.info("Syncing ECS for region '%s' in account '%s'.", region, current_aws_account_id)
-        cluster_arns, clusters = get_ecs_clusters(boto3_session, region)
+        cluster_arns = get_ecs_cluster_arns(boto3_session, region)
+        clusters = get_ecs_clusters(boto3_session, region, cluster_arns)
         if len(clusters) == 0:
             continue
         load_ecs_clusters(neo4j_session, clusters, region, current_aws_account_id, update_tag)

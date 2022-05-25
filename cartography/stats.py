@@ -1,3 +1,5 @@
+from typing import Optional
+
 from statsd import StatsClient
 
 
@@ -14,9 +16,8 @@ class ScopedStatsClient:
     """
 
     _client: StatsClient = None
-    _root: 'ScopedStatsClient' = None
 
-    def __init__(self, prefix: str = None, root: 'ScopedStatsClient' = None):
+    def __init__(self, prefix: Optional[str], root: 'ScopedStatsClient'):
         self._scope_prefix = prefix
         self._root = root
 
@@ -35,7 +36,7 @@ class ScopedStatsClient:
 
     @staticmethod
     def get_root_client() -> 'ScopedStatsClient':
-        client = ScopedStatsClient()
+        client = ScopedStatsClient(prefix=None, root=None)  # type: ignore
         client._root = client
         return client
 
