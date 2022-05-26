@@ -738,7 +738,7 @@ def _set_used_state_tx(
 ) -> None:
     ingest_role_used = """
     MATCH (:CloudanixWorkspace{id: {WORKSPACE_ID}})-[:OWNER]->
-    (:GCPProject{id: {GCP_PROJECT_ID}})-[:RESOURCE]->(n:GCPRole)
+    (:GCPProject{accountid: {GCP_PROJECT_ID}})-[:RESOURCE]->(n:GCPRole)
     WHERE (n)<-[:ASSUME_ROLE]-() AND n.lastupdated = {update_tag}
     SET n.isUsed = {isUsed}
     """
@@ -753,7 +753,7 @@ def _set_used_state_tx(
 
     ingest_entity_used = """
     MATCH (:CloudanixWorkspace{id: {WORKSPACE_ID}})-[:OWNER]->
-    (:GCPProject{id: {GCP_PROJECT_ID}})-[:RESOURCE]->(n)
+    (:GCPProject{accountid: {GCP_PROJECT_ID}})-[:RESOURCE]->(n)
     WHERE ()<-[:ASSUME_ROLE]-(n) AND n.lastupdated = {update_tag}
     AND labels(n) IN [['GCPCustomer'], ['GCPDomain'], ['GCPGroup'], ['GCPServiceAccount'], ['GCPUser']]
     SET n.isUsed = {isUsed}
@@ -769,7 +769,7 @@ def _set_used_state_tx(
 
     ingest_entity_unused = """
     MATCH (:CloudanixWorkspace{id: {WORKSPACE_ID}})-[:OWNER]->
-    (:GCPProject{id: {GCP_PROJECT_ID}})-[:RESOURCE]->(n)
+    (:GCPProject{accountid: {GCP_PROJECT_ID}})-[:RESOURCE]->(n)
     WHERE NOT EXISTS(n.isUsed) AND n.lastupdated = {update_tag}
     AND labels(n) IN [['GCPCustomer'], ['GCPDomain'], ['GCPGroup'], ['GCPServiceAccount'], ['GCPUser'], ['GCPRole']]
     SET n.isUsed = {isUsed}

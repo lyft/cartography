@@ -1363,7 +1363,7 @@ def sync(
     """
     tic = time.perf_counter()
 
-    logger.info("Syncing Compute for project '%s', at %s.", project_id, tic)
+    logger.info(f"Syncing Compute for project {project_id}, at {tic}")
 
     zones = get_zones_in_project(project_id, compute)
     # Only pull additional assets for this project if the Compute API is enabled

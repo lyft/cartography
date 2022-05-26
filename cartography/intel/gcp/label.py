@@ -2,6 +2,7 @@ import logging
 from typing import Dict
 from typing import List
 
+import math
 import neo4j
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -34,28 +35,44 @@ def get_labels_list(data: List[Dict]) -> List[Dict]:
 
 
 def _load_labels_tx(tx: neo4j.Transaction, data: List[Dict], update_tag: int, common_job_parameters: Dict, service_label: str) -> None:
-    ingest_label = """
-    UNWIND {data} AS label
-    MERGE (l:GCPLabel{id: label.id})
-    ON CREATE SET l.firstseen = timestamp()
-    SET l.lastupdated = {update_tag},
-    l.value = label.value,
-    l.name = label.name
-    WITH l,label
-    MATCH (r:""" + service_label + """{id:label.resource_id})
-    <-[:RESOURCE]-(:GCPProject{id: {GCP_PROJECT_ID}})<-[:OWNER]-(:CloudanixWorkspace{id: {WORKSPACE_ID}})
-    MERGE (r)-[lb:LABELED]->(l)
-    ON CREATE SET lb.firstseen = timestamp()
-    SET lb.lastupdated = {update_tag}
-    """
+    iteration_size = 500
+    total_items = len(data)
+    total_iterations = math.ceil(len(data)/iteration_size)
+    logger.info(f"total labels: {total_items}")
+    logger.info(f"total iterations: {total_iterations}")
+    
+    for counter in range(0, total_iterations):
+        start = iteration_size * (counter)
+        end = total_items if (start + iteration_size) >= total_items else start+iteration_size
 
-    tx.run(
-        ingest_label,
-        data=data,
-        update_tag=update_tag,
-        GCP_PROJECT_ID=common_job_parameters['GCP_PROJECT_ID'],
-        WORKSPACE_ID=common_job_parameters['WORKSPACE_ID'],
-    )
+        labels = data[start:end]
+
+        logger.info(f"Start - Iteration {counter} of {total_iterations}. {start} - {end} - {len(labels)}")
+        
+        ingest_label = """
+        UNWIND {data} AS label
+        MERGE (l:GCPLabel{id: label.id})
+        ON CREATE SET l.firstseen = timestamp()
+        SET l.lastupdated = {update_tag},
+        l.value = label.value,
+        l.name = label.name
+        WITH l,label
+        MATCH (r:""" + service_label + """{id:label.resource_id})
+        <-[:RESOURCE]-(:GCPProject{accountid: {GCP_PROJECT_ID}})<-[:OWNER]-(:CloudanixWorkspace{id: {WORKSPACE_ID}})
+        MERGE (r)-[lb:LABELED]->(l)
+        ON CREATE SET lb.firstseen = timestamp()
+        SET lb.lastupdated = {update_tag}
+        """
+
+        tx.run(
+            ingest_label,
+            data=labels,
+            update_tag=update_tag,
+            GCP_PROJECT_ID=common_job_parameters['GCP_PROJECT_ID'],
+            WORKSPACE_ID=common_job_parameters['WORKSPACE_ID'],
+        )
+        
+        logger.info(f"End - Iteration {counter} of {total_iterations}. {start} - {end} - {len(labels)}")
 
 
 def cleanup_labels(neo4j_session: neo4j.Session, common_job_parameters: Dict, service_name: str) -> None:
@@ -71,5 +88,6 @@ def sync_labels(
     if len(data) > 0:
         labels_list = get_labels_list(data)
         if len(labels_list) > 0:
-            logger.info(f"Loading Labels for {service_name}")
+            logger.info(f"BEGIN Loading {len(labels_list)} Labels for {service_name}")
             load_labels(neo4j_session, labels_list, update_tag, common_job_parameters, service_label)
+            logger.info(f"END Loading Labels for {service_name}")
