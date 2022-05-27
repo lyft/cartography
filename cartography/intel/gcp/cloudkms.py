@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
-def get_kms_locations(kms: Resource, project_id: str, regions: list) -> List[Dict]:
+def get_kms_locations(kms: Resource, project_id: str, regions: list,common_job_parameters) -> List[Dict]:
     """
         Returns a list of kms locations for a given project.
 
@@ -44,6 +44,16 @@ def get_kms_locations(kms: Resource, project_id: str, regions: list) -> List[Dic
                         if location['locationId'] in regions or location['locationId'] == 'global':
                             locations.append(location)
             request = kms.projects().locations().list_next(previous_request=request, previous_response=response)
+        if common_job_parameters.get('pagination',{}).get('cloudkms',None):
+            has_next_page=False
+            page_start=(common_job_parameters.get('pagination',{}).get('cloudkms',None)['pageNo']-1) *  common_job_parameters.get('pagination',{}).get('cloudkms',None)['pageSize']
+            page_end=page_start + common_job_parameters.get('pagination',{}).get('cloudkms',None)['pageSize']
+            if page_end > len(locations)or page_end == len(locations):
+                locations=locations[page_start:]
+            else:
+                has_next_page=True
+                locations=locations[page_start:page_end]
+            common_job_parameters['pagination']['cloudkms']['hasNextPage']=has_next_page
         return locations
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -424,7 +434,7 @@ def sync(
     logger.info("Syncing Cloud KMS for project '%s', at %s.", project_id, tic)
 
     # KMS LOCATIONS
-    locations = get_kms_locations(kms, project_id, regions)
+    locations = get_kms_locations(kms, project_id, regions,common_job_parameters)
     load_kms_locations(neo4j_session, locations, project_id, gcp_update_tag)
     label.sync_labels(neo4j_session, locations, gcp_update_tag, common_job_parameters, 'kms_locations', 'GCPLocation')
     # KMS KEYRINGS

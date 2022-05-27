@@ -74,7 +74,10 @@ class Sync:
             for stage_name, stage_func in self._stages.items():
                 logger.info("Starting sync stage '%s'", stage_name)
                 try:
-                    stage_func(neo4j_session, config)
+                    if stage_name in ['aws', 'azure', 'gcp']:
+                        response = stage_func(neo4j_session, config)
+                    else:
+                        stage_func(neo4j_session, config)
                 except (KeyboardInterrupt, SystemExit):
                     logger.warning("Sync interrupted during stage '%s'.", stage_name)
                     raise
@@ -83,6 +86,7 @@ class Sync:
                     raise  # TODO this should be configurable
                 logger.info("Finishing sync stage '%s'", stage_name)
         logger.info("Finishing sync with update tag '%d'", config.update_tag)
+        return response
 
 
 def run_with_config(sync, config):

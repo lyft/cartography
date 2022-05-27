@@ -401,6 +401,7 @@ def start_gcp_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
         "WORKSPACE_ID": config.params['workspace']['id_string'],
         "GCP_PROJECT_ID": config.params['workspace']['account_id'],
         "service_labels": [],
+        "pagination":{},
     }
     try:
         # Explicitly use Application Default Credentials.
@@ -410,6 +411,7 @@ def start_gcp_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
 
         auth_helper = AuthHelper()
         credentials = auth_helper.get_credentials(config.credentials['token_uri'], config.credentials['account_email'])
+        # credentials = GoogleCredentials.get_application_default()
 
     except ApplicationDefaultCredentialsError as e:
         logger.debug("Error occurred calling GoogleCredentials.get_application_default().", exc_info=True)
@@ -426,7 +428,12 @@ def start_gcp_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
 
     requested_syncs: List[str] = list(RESOURCE_FUNCTIONS.keys())
     if config.gcp_requested_syncs:
-        requested_syncs = parse_and_validate_gcp_requested_syncs(config.gcp_requested_syncs)
+        gcp_requested_syncs_string=""
+        for service in config.gcp_requested_syncs:
+            gcp_requested_syncs_string +=f"{service.get('name',' ')},"
+            if service.get('pagination',None):
+                common_job_parameters['pagination'][service.get('name',None)]=service.get('pagination',{})
+        requested_syncs = parse_and_validate_gcp_requested_syncs(gcp_requested_syncs_string[:-1])
 
     resources = _initialize_resources(credentials)
 
@@ -458,3 +465,4 @@ def start_gcp_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
     #     neo4j_session,
     #     common_job_parameters,
     # )
+    return common_job_parameters

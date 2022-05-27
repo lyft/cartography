@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
-def get_firestore_databases(firestore: Resource, project_id: str, regions: list) -> List[Dict]:
+def get_firestore_databases(firestore: Resource, project_id: str, regions: list,common_job_parameters) -> List[Dict]:
     """
         Returns a list of firestore databases for a given project.
 
@@ -41,6 +41,16 @@ def get_firestore_databases(firestore: Resource, project_id: str, regions: list)
                 else:
                     if database['locationId'] in regions or database['locationId'] == 'global':
                         firestore_databases.append(database)
+        if common_job_parameters.get('pagination',{}).get('firestore',None):
+            has_next_page=False
+            page_start= (common_job_parameters.get('pagination',{}).get('firestore',None)['pageNo']-1)* common_job_parameters.get('pagination',{}).get('firestore',None)['pageSize']
+            page_end = page_start + common_job_parameters.get('pagination',{}).get('firestore',None)['pageSize']
+            if page_end > len(firestore_databases) or page_end == len(firestore_databases):
+                firestore_databases=firestore_databases[page_start:]
+            else:
+                has_next_page=True
+                firestore_databases=firestore_databases[page_start:page_end]
+            common_job_parameters['pagination']['firestore']['hasNextPage']=has_next_page
         return firestore_databases
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -266,7 +276,7 @@ def sync(
     logger.info("Syncing Firestore for project '%s', at %s.", project_id, tic)
 
     # FIRESTORE DATABASES
-    firestore_databases = get_firestore_databases(firestore, project_id, regions)
+    firestore_databases = get_firestore_databases(firestore, project_id, regions,common_job_parameters)
     load_firestore_databases(neo4j_session, firestore_databases, project_id, gcp_update_tag)
     label.sync_labels(neo4j_session, firestore_databases, gcp_update_tag,
                       common_job_parameters, 'firestore databases', 'GCPFirestoreDatabase')
