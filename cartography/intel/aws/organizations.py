@@ -7,7 +7,7 @@ import boto3
 import botocore.exceptions
 import neo4j
 
-from cartography.util import get_stats_client
+from cartography.stats import get_stats_client
 from cartography.util import merge_module_sync_metadata
 from cartography.util import timeit
 
