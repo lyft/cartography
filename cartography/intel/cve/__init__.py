@@ -5,7 +5,7 @@ import neo4j
 
 from cartography.config import Config
 from cartography.intel.cve import feed
-from cartography.util import get_stats_client
+from cartography.stats import get_stats_client
 from cartography.util import merge_module_sync_metadata
 from cartography.util import timeit
 
