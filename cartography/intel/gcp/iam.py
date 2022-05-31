@@ -794,6 +794,18 @@ def sync(
     logger.info("Syncing IAM for project '%s', at %s.", project_id, tic)
 
     service_accounts_list = get_service_accounts(iam, project_id)
+
+    if common_job_parameters.get('pagination', {}).get('iam', None):
+        page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
+        if page_end > len(service_accounts_list) or page_end == len(service_accounts_list):
+            service_accounts_list = service_accounts_list[page_start:]
+        else:
+            has_next_page = True
+            service_accounts_list = service_accounts_list[page_start:page_end]
+            common_job_parameters['pagination']['iam']['hasNextPage'] = has_next_page
+    print("service accounts:", len(service_accounts_list))
     service_accounts_list = transform_service_accounts(service_accounts_list)
     load_service_accounts(neo4j_session, service_accounts_list, project_id, gcp_update_tag)
 
@@ -809,6 +821,17 @@ def sync(
     custom_roles_list = get_project_roles(iam, project_id)
     roles_list.extend(custom_roles_list)
 
+    if common_job_parameters.get('pagination', {}).get('iam', None):
+        page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
+        if page_end > len(roles_list) or page_end == len(roles_list):
+            roles_list = roles_list[page_start:]
+        else:
+            has_next_page = True
+            roles_list = roles_list[page_start:page_end]
+            common_job_parameters['pagination']['iam']['hasNextPage'] = has_next_page
+    print("roles:", len(roles_list))
     roles_list = transform_roles(roles_list, project_id)
 
     load_roles(neo4j_session, roles_list, project_id, gcp_update_tag)
@@ -817,6 +840,17 @@ def sync(
 
     users = get_users(admin)
 
+    if common_job_parameters.get('pagination', {}).get('iam', None):
+        page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
+        if page_end > len(users) or page_end == len(users):
+            users = users[page_start:]
+        else:
+            has_next_page = True
+            users = users[page_start:page_end]
+            common_job_parameters['pagination']['iam']['hasNextPage'] = has_next_page
+    print("users:", len(users))
     customer_ids = []
     for user in users:
         customer_ids.append(get_customer(user.get('customerId')))
@@ -842,16 +876,37 @@ def sync(
     cleanup_domains(neo4j_session, common_job_parameters)
 
     groups = get_groups(admin)
+
+    if common_job_parameters.get('pagination', {}).get('iam', None):
+        page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
+        if page_end > len(groups) or page_end == len(groups):
+            groups = groups[page_start:]
+        else:
+            has_next_page = True
+            groups = groups[page_start:page_end]
+            common_job_parameters['pagination']['iam']['hasNextPage'] = has_next_page
+    print("groups:", len(groups))
     load_groups(neo4j_session, groups, project_id, gcp_update_tag)
     cleanup_groups(neo4j_session, common_job_parameters)
     label.sync_labels(neo4j_session, groups, gcp_update_tag, common_job_parameters, 'groups', 'GCPGroup')
 
-    bindings = get_policy_bindings(crm, project_id)
+    if common_job_parameters.get('pagination', {}).get('iam', None):
+        if not common_job_parameters.get('pagination', {}).get('iam', {}).get('hasNextPage', False):
+            bindings = get_policy_bindings(crm, project_id)
+            print("done pagination")
+            # users_from_bindings, groups_from_bindings, domains_from_bindings = transform_bindings(bindings, project_id)
 
-    # users_from_bindings, groups_from_bindings, domains_from_bindings = transform_bindings(bindings, project_id)
+            load_bindings(neo4j_session, bindings, project_id, gcp_update_tag)
+            set_used_state(neo4j_session, project_id, common_job_parameters, gcp_update_tag)
+    else:
+        bindings = get_policy_bindings(crm, project_id)
+        print("done")
+        # users_from_bindings, groups_from_bindings, domains_from_bindings = transform_bindings(bindings, project_id)
 
-    load_bindings(neo4j_session, bindings, project_id, gcp_update_tag)
-    set_used_state(neo4j_session, project_id, common_job_parameters, gcp_update_tag)
+        load_bindings(neo4j_session, bindings, project_id, gcp_update_tag)
+        set_used_state(neo4j_session, project_id, common_job_parameters, gcp_update_tag)
 
     toc = time.perf_counter()
     logger.info(f"Time to process IAM: {toc - tic:0.4f} seconds")

@@ -37,18 +37,18 @@ def get_labels_list(data: List[Dict]) -> List[Dict]:
 def _load_labels_tx(tx: neo4j.Transaction, data: List[Dict], update_tag: int, common_job_parameters: Dict, service_label: str) -> None:
     iteration_size = 500
     total_items = len(data)
-    total_iterations = math.ceil(len(data)/iteration_size)
+    total_iterations = math.ceil(len(data) / iteration_size)
     logger.info(f"total labels: {total_items}")
     logger.info(f"total iterations: {total_iterations}")
-    
+
     for counter in range(0, total_iterations):
         start = iteration_size * (counter)
-        end = total_items if (start + iteration_size) >= total_items else start+iteration_size
+        end = total_items if (start + iteration_size) >= total_items else start + iteration_size
 
         labels = data[start:end]
 
         logger.info(f"Start - Iteration {counter} of {total_iterations}. {start} - {end} - {len(labels)}")
-        
+
         ingest_label = """
         UNWIND {data} AS label
         MERGE (l:GCPLabel{id: label.id})
@@ -71,7 +71,7 @@ def _load_labels_tx(tx: neo4j.Transaction, data: List[Dict], update_tag: int, co
             GCP_PROJECT_ID=common_job_parameters['GCP_PROJECT_ID'],
             WORKSPACE_ID=common_job_parameters['WORKSPACE_ID'],
         )
-        
+
         logger.info(f"End - Iteration {counter} of {total_iterations}. {start} - {end} - {len(labels)}")
 
 

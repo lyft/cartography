@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
-def get_gcp_functions(function: Resource, project_id: str, regions: list,common_job_parameters) -> List[Dict]:
+def get_gcp_functions(function: Resource, project_id: str, regions: list, common_job_parameters) -> List[Dict]:
     """
         Returns a list of functions for a given project.
 
@@ -79,17 +79,16 @@ def get_gcp_functions(function: Resource, project_id: str, regions: list,common_
                     previous_request=request,
                     previous_response=response,
                 )
-        if common_job_parameters.get('pagination').get('cloudfunction',None):
-            has_next_page=False
-            page_start=(common_job_parameters.get('pagination').get('cloudfunction',None)['pageNo']-1) * common_job_parameters.get('pagination').get('cloudfunction',None)['pageSize']
-            page_end=page_start + common_job_parameters.get('pagination').get('cloudfunction',None)['pageSize']
-            if page_end > len(functions) or page_end== len(functions):
-                functions=functions[page_start:]
+        if common_job_parameters.get('pagination').get('cloudfunction', None):
+            page_start = (common_job_parameters.get('pagination').get('cloudfunction', None)[
+                          'pageNo'] - 1) * common_job_parameters.get('pagination').get('cloudfunction', None)['pageSize']
+            page_end = page_start + common_job_parameters.get('pagination').get('cloudfunction', None)['pageSize']
+            if page_end > len(functions) or page_end == len(functions):
+                functions = functions[page_start:]
             else:
-                has_next_page=True
-                functions=functions[page_start:page_end]
-            
-            common_job_parameters['pagination']['cloudfunction']['hasNextPage']=has_next_page
+                has_next_page = True
+                functions = functions[page_start:page_end]
+                common_job_parameters['pagination']['cloudfunction']['hasNextPage'] = has_next_page
         return functions
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -289,7 +288,7 @@ def sync(
     logger.info("Syncing Cloud Functions for project '%s', at %s.", project_id, tic)
 
     # FUNCTIONS
-    functions = get_gcp_functions(function, project_id, regions,common_job_parameters)
+    functions = get_gcp_functions(function, project_id, regions, common_job_parameters)
     load_functions(neo4j_session, functions, project_id, gcp_update_tag)
     for function in functions:
         load_function_entity_relation(neo4j_session, function, gcp_update_tag)

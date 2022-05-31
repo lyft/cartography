@@ -401,7 +401,7 @@ def start_gcp_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
         "WORKSPACE_ID": config.params['workspace']['id_string'],
         "GCP_PROJECT_ID": config.params['workspace']['account_id'],
         "service_labels": [],
-        "pagination":{},
+        "pagination": {},
     }
     try:
         # Explicitly use Application Default Credentials.
@@ -428,11 +428,13 @@ def start_gcp_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
 
     requested_syncs: List[str] = list(RESOURCE_FUNCTIONS.keys())
     if config.gcp_requested_syncs:
-        gcp_requested_syncs_string=""
+        gcp_requested_syncs_string = ""
         for service in config.gcp_requested_syncs:
-            gcp_requested_syncs_string +=f"{service.get('name',' ')},"
-            if service.get('pagination',None):
-                common_job_parameters['pagination'][service.get('name',None)]=service.get('pagination',{})
+            gcp_requested_syncs_string += f"{service.get('name',' ')},"
+            if service.get('pagination', None):
+                pagination = service.get('pagination', {})
+                pagination['hasNextPage'] = False
+                common_job_parameters['pagination'][service.get('name', None)] = pagination
         requested_syncs = parse_and_validate_gcp_requested_syncs(gcp_requested_syncs_string[:-1])
 
     resources = _initialize_resources(credentials)
@@ -465,4 +467,5 @@ def start_gcp_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
     #     neo4j_session,
     #     common_job_parameters,
     # )
+    del common_job_parameters['service_labels']
     return common_job_parameters
