@@ -805,7 +805,7 @@ def sync(
             has_next_page = True
             service_accounts_list = service_accounts_list[page_start:page_end]
             common_job_parameters['pagination']['iam']['hasNextPage'] = has_next_page
-    print("service accounts:", len(service_accounts_list))
+
     service_accounts_list = transform_service_accounts(service_accounts_list)
     load_service_accounts(neo4j_session, service_accounts_list, project_id, gcp_update_tag)
 
@@ -831,7 +831,7 @@ def sync(
             has_next_page = True
             roles_list = roles_list[page_start:page_end]
             common_job_parameters['pagination']['iam']['hasNextPage'] = has_next_page
-    print("roles:", len(roles_list))
+
     roles_list = transform_roles(roles_list, project_id)
 
     load_roles(neo4j_session, roles_list, project_id, gcp_update_tag)
@@ -850,7 +850,7 @@ def sync(
             has_next_page = True
             users = users[page_start:page_end]
             common_job_parameters['pagination']['iam']['hasNextPage'] = has_next_page
-    print("users:", len(users))
+
     customer_ids = []
     for user in users:
         customer_ids.append(get_customer(user.get('customerId')))
@@ -887,7 +887,6 @@ def sync(
             has_next_page = True
             groups = groups[page_start:page_end]
             common_job_parameters['pagination']['iam']['hasNextPage'] = has_next_page
-    print("groups:", len(groups))
     load_groups(neo4j_session, groups, project_id, gcp_update_tag)
     cleanup_groups(neo4j_session, common_job_parameters)
     label.sync_labels(neo4j_session, groups, gcp_update_tag, common_job_parameters, 'groups', 'GCPGroup')
@@ -895,14 +894,12 @@ def sync(
     if common_job_parameters.get('pagination', {}).get('iam', None):
         if not common_job_parameters.get('pagination', {}).get('iam', {}).get('hasNextPage', False):
             bindings = get_policy_bindings(crm, project_id)
-            print("done pagination")
             # users_from_bindings, groups_from_bindings, domains_from_bindings = transform_bindings(bindings, project_id)
 
             load_bindings(neo4j_session, bindings, project_id, gcp_update_tag)
             set_used_state(neo4j_session, project_id, common_job_parameters, gcp_update_tag)
     else:
         bindings = get_policy_bindings(crm, project_id)
-        print("done")
         # users_from_bindings, groups_from_bindings, domains_from_bindings = transform_bindings(bindings, project_id)
 
         load_bindings(neo4j_session, bindings, project_id, gcp_update_tag)
