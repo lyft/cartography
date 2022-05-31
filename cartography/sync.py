@@ -10,6 +10,7 @@ import cartography.intel.analysis
 import cartography.intel.aws
 import cartography.intel.azure
 import cartography.intel.create_indexes
+import cartography.intel.crowdstrike
 import cartography.intel.crxcavator.crxcavator
 import cartography.intel.digitalocean
 import cartography.intel.gcp
