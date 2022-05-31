@@ -338,15 +338,15 @@ def sync_vm_scale_sets(
     vm_scale_sets_list = get_vm_scale_sets_list(credentials, subscription_id, regions)
 
     if common_job_parameters.get('pagination', {}).get('compute', None):
-        has_next_page = False
-        page_start = (common_job_parameters.get('pagination', {}).get('compute', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('compute', {})['pageSize']
+        page_start = (common_job_parameters.get('pagination', {}).get('compute', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('compute', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('compute', {})['pageSize']
         if page_end > len(vm_scale_sets_list) or page_end == len(vm_scale_sets_list):
             vm_scale_sets_list = vm_scale_sets_list[page_start:]
         else:
             has_next_page = True
             vm_scale_sets_list = vm_scale_sets_list[page_start:page_end]
-        common_job_parameters['pagination']['compute']['hasNextPage'] = has_next_page
+            common_job_parameters['pagination']['compute']['hasNextPage'] = has_next_page
 
     load_vm_scale_sets(neo4j_session, subscription_id, vm_scale_sets_list, update_tag)
     cleanup_vm_scale_sets(neo4j_session, common_job_parameters)
@@ -565,15 +565,15 @@ def sync_virtual_machine(
     vm_list = get_vm_list(credentials, subscription_id, regions)
 
     if common_job_parameters.get('pagination', {}).get('compute', None):
-        has_next_page = False
-        page_start = (common_job_parameters.get('pagination', {}).get('compute', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('compute', {})['pageSize']
+        page_start = (common_job_parameters.get('pagination', {}).get('compute', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('compute', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('compute', {})['pageSize']
         if page_end > len(vm_list) or page_end == len(vm_list):
             vm_list = vm_list[page_start:]
         else:
             has_next_page = True
             vm_list = vm_list[page_start:page_end]
-        common_job_parameters['pagination']['compute']['hasNextPage'] = has_next_page
+            common_job_parameters['pagination']['compute']['hasNextPage'] = has_next_page
 
     load_vms(neo4j_session, subscription_id, vm_list, update_tag)
     cleanup_virtual_machine(neo4j_session, common_job_parameters)
@@ -588,15 +588,15 @@ def sync_disk(
     disk_list = get_disks(credentials, subscription_id, regions)
 
     if common_job_parameters.get('pagination', {}).get('compute', None):
-        has_next_page = False
-        page_start = (common_job_parameters.get('pagination', {}).get('compute', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('compute', {})['pageSize']
+        page_start = (common_job_parameters.get('pagination', {}).get('compute', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('compute', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('compute', {})['pageSize']
         if page_end > len(disk_list) or page_end == len(disk_list):
             disk_list = disk_list[page_start:]
         else:
             has_next_page = True
             disk_list = disk_list[page_start:page_end]
-        common_job_parameters['pagination']['compute']['hasNextPage'] = has_next_page
+            common_job_parameters['pagination']['compute']['hasNextPage'] = has_next_page
 
     load_disks(neo4j_session, subscription_id, disk_list, update_tag)
     cleanup_disks(neo4j_session, common_job_parameters)
@@ -609,15 +609,15 @@ def sync_snapshot(
     snapshots = get_snapshots_list(credentials, subscription_id, regions)
 
     if common_job_parameters.get('pagination', {}).get('compute', None):
-        has_next_page = False
-        page_start = (common_job_parameters.get('pagination', {}).get('compute', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('compute', {})['pageSize']
+        page_start = (common_job_parameters.get('pagination', {}).get('compute', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('compute', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('compute', {})['pageSize']
         if page_end > len(snapshots) or page_end == len(snapshots):
             snapshots = snapshots[page_start:]
         else:
             has_next_page = True
             snapshots = snapshots[page_start:page_end]
-        common_job_parameters['pagination']['compute']['hasNextPage'] = has_next_page
+            common_job_parameters['pagination']['compute']['hasNextPage'] = has_next_page
 
     load_snapshots(neo4j_session, subscription_id, snapshots, update_tag)
     cleanup_snapshot(neo4j_session, common_job_parameters)

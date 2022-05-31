@@ -190,15 +190,15 @@ def sync_function_apps(
     function_apps_list = get_function_apps_list(client, regions)
 
     if common_job_parameters.get('pagination', {}).get('function_app', None):
-        has_next_page = False
-        page_start = (common_job_parameters.get('pagination', {}).get('function_app', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('function_app', {})['pageSize']
+        page_start = (common_job_parameters.get('pagination', {}).get('function_app', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('function_app', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('function_app', {})['pageSize']
         if page_end > len(function_apps_list) or page_end == len(function_apps_list):
             function_apps_list = function_apps_list[page_start:]
         else:
             has_next_page = True
             function_apps_list = function_apps_list[page_start:page_end]
-        common_job_parameters['pagination']['function_app']['hasNextPage'] = has_next_page
+            common_job_parameters['pagination']['function_app']['hasNextPage'] = has_next_page
 
     load_function_apps(
         neo4j_session, subscription_id, function_apps_list,
@@ -626,7 +626,7 @@ def get_function_apps_processes_list(
                 function['resource_group'],
                 function['name'],
             )
-                
+
             processes_list = list(
                 map(
                     lambda x: x.as_dict(),

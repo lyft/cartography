@@ -166,7 +166,9 @@ def start_azure_ingestion(
         for service in config.azure_requested_syncs:
             azure_requested_syncs_string += f"{service.get('name', '')},"
             if service.get('pagination', None):
-                common_job_parameters['pagination'][service.get('name', None)] = service.get('pagination', {})
+                pagination = service.get('pagination', {})
+                pagination['hasNextPage'] = False
+                common_job_parameters['pagination'][service.get('name', None)] = pagination
         requested_syncs = parse_and_validate_azure_requested_syncs(azure_requested_syncs_string[:-1])
     _sync_tenant(
         neo4j_session,

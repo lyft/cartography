@@ -141,15 +141,15 @@ def sync_networks(
     networks_list = get_networks_list(client, regions)
 
     if common_job_parameters.get('pagination', {}).get('network', None):
-        has_next_page = False
-        page_start = (common_job_parameters.get('pagination', {}).get('network', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('network', {})['pageSize']
+        page_start = (common_job_parameters.get('pagination', {}).get('network', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('network', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('network', {})['pageSize']
         if page_end > len(networks_list) or page_end == len(networks_list):
             networks_list = networks_list[page_start:]
         else:
             has_next_page = True
             networks_list = networks_list[page_start:page_end]
-        common_job_parameters['pagination']['network']['hasNextPage'] = has_next_page
+            common_job_parameters['pagination']['network']['hasNextPage'] = has_next_page
 
     load_networks(neo4j_session, subscription_id, networks_list, update_tag)
     cleanup_networks(neo4j_session, common_job_parameters)
@@ -426,15 +426,15 @@ def sync_network_security_groups(
     network_security_groups_list = get_network_security_groups_list(client, regions)
 
     if common_job_parameters.get('pagination', {}).get('network', None):
-        has_next_page = False
-        page_start = (common_job_parameters.get('pagination', {}).get('network', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('network', {})['pageSize']
+        page_start = (common_job_parameters.get('pagination', {}).get('network', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('network', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('network', {})['pageSize']
         if page_end > len(network_security_groups_list) or page_end == len(network_security_groups_list):
             network_security_groups_list = network_security_groups_list[page_start:]
         else:
             has_next_page = True
             network_security_groups_list = network_security_groups_list[page_start:page_end]
-        common_job_parameters['pagination']['network']['hasNextPage'] = has_next_page
+            common_job_parameters['pagination']['network']['hasNextPage'] = has_next_page
 
     load_network_security_groups(neo4j_session, subscription_id, network_security_groups_list, update_tag)
     cleanup_network_security_groups(neo4j_session, common_job_parameters)

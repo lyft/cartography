@@ -120,7 +120,6 @@ def sync_tenant_users(
     tenant_users_list = get_tenant_users_list(client, tenant_id)
 
     if common_job_parameters.get('pagination', {}).get('iam', None):
-        has_next_page = False
         page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
@@ -129,7 +128,7 @@ def sync_tenant_users(
         else:
             has_next_page = True
             tenant_users_list = tenant_users_list[page_start:page_end]
-        common_job_parameters['pagination']['iam']['hasNextPage'] = has_next_page
+            common_job_parameters['pagination']['iam']['hasNextPage'] = has_next_page
 
     load_tenant_users(neo4j_session, tenant_id, tenant_users_list, update_tag)
     cleanup_tenant_users(neo4j_session, common_job_parameters)
@@ -195,7 +194,6 @@ def sync_tenant_groups(
     tenant_groups_list = get_tenant_groups_list(client, tenant_id)
 
     if common_job_parameters.get('pagination', {}).get('iam', None):
-        has_next_page = False
         page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
@@ -204,7 +202,7 @@ def sync_tenant_groups(
         else:
             has_next_page = True
             tenant_groups_list = tenant_groups_list[page_start:page_end]
-        common_job_parameters['pagination']['iam']['hasNextPage'] = has_next_page
+            common_job_parameters['pagination']['iam']['hasNextPage'] = has_next_page
 
     load_tenant_groups(neo4j_session, tenant_id, tenant_groups_list, update_tag)
     cleanup_tenant_groups(neo4j_session, common_job_parameters)
@@ -267,7 +265,6 @@ def sync_tenant_applications(
     tenant_applications_list = get_tenant_applications_list(client, tenant_id)
 
     if common_job_parameters.get('pagination', {}).get('iam', None):
-        has_next_page = False
         page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
@@ -276,7 +273,7 @@ def sync_tenant_applications(
         else:
             has_next_page = True
             tenant_applications_list = tenant_applications_list[page_start:page_end]
-        common_job_parameters['pagination']['iam']['hasNextPage'] = has_next_page
+            common_job_parameters['pagination']['iam']['hasNextPage'] = has_next_page
 
     load_tenant_applications(neo4j_session, tenant_id, tenant_applications_list, update_tag)
     cleanup_tenant_applications(neo4j_session, common_job_parameters)
@@ -342,7 +339,6 @@ def sync_tenant_service_accounts(
     tenant_service_accounts_list = get_tenant_service_accounts_list(client, tenant_id)
 
     if common_job_parameters.get('pagination', {}).get('iam', None):
-        has_next_page = False
         page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
@@ -351,7 +347,7 @@ def sync_tenant_service_accounts(
         else:
             has_next_page = True
             tenant_service_accounts_list = tenant_service_accounts_list[page_start:page_end]
-        common_job_parameters['pagination']['iam']['hasNextPage'] = has_next_page
+            common_job_parameters['pagination']['iam']['hasNextPage'] = has_next_page
 
     load_tenant_service_accounts(neo4j_session, tenant_id, tenant_service_accounts_list, update_tag)
     cleanup_tenant_service_accounts(neo4j_session, common_job_parameters)
@@ -415,7 +411,6 @@ def sync_tenant_domains(
     tenant_domains_list = get_tenant_domains_list(client, tenant_id)
 
     if common_job_parameters.get('pagination', {}).get('iam', None):
-        has_next_page = False
         page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
@@ -424,7 +419,7 @@ def sync_tenant_domains(
         else:
             has_next_page = True
             tenant_domains_list = tenant_domains_list[page_start:page_end]
-        common_job_parameters['pagination']['iam']['hasNextPage'] = has_next_page
+            common_job_parameters['pagination']['iam']['hasNextPage'] = has_next_page
 
     load_tenant_domains(neo4j_session, tenant_id, tenant_domains_list, update_tag)
     cleanup_tenant_domains(neo4j_session, common_job_parameters)
