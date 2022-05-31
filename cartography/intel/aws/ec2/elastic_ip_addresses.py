@@ -105,15 +105,15 @@ def sync_elastic_ip_addresses(
         addresses.extend(get_elastic_ip_addresses(boto3_session, region))
 
     if common_job_parameters.get('pagination', {}).get('elastic_ip_addresses', None):
-        has_next_page = False
-        page_start = (common_job_parameters.get('pagination', {}).get('elastic_ip_addresses', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('elastic_ip_addresses', {})['pageSize']
+        page_start = (common_job_parameters.get('pagination', {}).get('elastic_ip_addresses', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('elastic_ip_addresses', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('elastic_ip_addresses', {})['pageSize']
         if page_end > len(addresses) or page_end == len(addresses):
             addresses = addresses[page_start:]
         else:
             has_next_page = True
             addresses = addresses[page_start:page_end]
-        common_job_parameters['pagination']['elastic_ip_addresses']['hasNextPage'] = has_next_page
+            common_job_parameters['pagination']['elastic_ip_addresses']['hasNextPage'] = has_next_page
 
     load_elastic_ip_addresses(neo4j_session, addresses, current_aws_account_id, update_tag)
     cleanup_elastic_ip_addresses(neo4j_session, common_job_parameters)

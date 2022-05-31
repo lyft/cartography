@@ -261,7 +261,6 @@ def sync_lambda_functions(
         data.extend(get_lambda_data(boto3_session, region))
 
     if common_job_parameters.get('pagination', {}).get('lambda_function', None):
-        has_next_page = False
         page_start = (common_job_parameters.get('pagination', {}).get('lambda_function', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('lambda_function', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('lambda_function', {})['pageSize']
         if page_end > len(data) or page_end == len(data):
@@ -269,7 +268,7 @@ def sync_lambda_functions(
         else:
             has_next_page = True
             data = data[page_start:page_end]
-        common_job_parameters['pagination']['lambda_function']['hasNextPage'] = has_next_page
+            common_job_parameters['pagination']['lambda_function']['hasNextPage'] = has_next_page
 
     load_lambda_functions(neo4j_session, data, current_aws_account_id, aws_update_tag)
     lambda_function_details = get_lambda_function_details(boto3_session, data)

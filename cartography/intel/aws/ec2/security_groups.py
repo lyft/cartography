@@ -182,7 +182,6 @@ def sync_ec2_security_groupinfo(
         data.extend(get_ec2_security_group_data(boto3_session, region))
 
     if common_job_parameters.get('pagination', {}).get('ec2:security_group', None):
-        has_next_page = False
         page_start = (common_job_parameters.get('pagination', {}).get('ec2:security_group', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('ec2:security_group', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('ec2:security_group', {})['pageSize']
         if page_end > len(data) or page_end == len(data):
@@ -190,7 +189,7 @@ def sync_ec2_security_groupinfo(
         else:
             has_next_page = True
             data = data[page_start:page_end]
-        common_job_parameters['pagination']['ec2:security_group']['hasNextPage'] = has_next_page
+            common_job_parameters['pagination']['ec2:security_group']['hasNextPage'] = has_next_page
 
     load_ec2_security_groupinfo(neo4j_session, data, current_aws_account_id, update_tag)
     cleanup_ec2_security_groupinfo(neo4j_session, common_job_parameters)

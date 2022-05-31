@@ -134,7 +134,6 @@ def sync_ebs_volumes(
         transformed_data.extend(transform_volumes(data, region, current_aws_account_id))
 
     if common_job_parameters.get('pagination', {}).get('ec2:volumes', None):
-        has_next_page = False
         page_start = (common_job_parameters.get('pagination', {}).get('ec2:volumes', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('ec2:volumes', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('ec2:volumes', {})['pageSize']
         if page_end > len(transformed_data) or page_end == len(transformed_data):
@@ -142,7 +141,7 @@ def sync_ebs_volumes(
         else:
             has_next_page = True
             transformed_data = transformed_data[page_start:page_end]
-        common_job_parameters['pagination']['ec2:volumes']['hasNextPage'] = has_next_page
+            common_job_parameters['pagination']['ec2:volumes']['hasNextPage'] = has_next_page
 
     load_volumes(neo4j_session, transformed_data, current_aws_account_id, update_tag)
     load_volume_relationships(neo4j_session, transformed_data, update_tag)

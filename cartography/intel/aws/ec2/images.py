@@ -120,7 +120,7 @@ def sync_ec2_images(
     tic = time.perf_counter()
 
     logger.info("Syncing images for account '%s', at %s.", current_aws_account_id, tic)
-    
+
     data = []
     for region in regions:
         logger.info("Syncing images for region '%s' in account '%s'.", region, current_aws_account_id)
@@ -128,15 +128,15 @@ def sync_ec2_images(
         data.extend(get_images(boto3_session, region, images_in_use))
 
     if common_job_parameters.get('pagination', {}).get('ec2:images', None):
-        has_next_page = False
-        page_start = (common_job_parameters.get('pagination', {}).get('ec2:images', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('ec2:images', {})['pageSize']
+        page_start = (common_job_parameters.get('pagination', {}).get('ec2:images', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('ec2:images', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('ec2:images', {})['pageSize']
         if page_end > len(data) or page_end == len(data):
             data = data[page_start:]
         else:
             has_next_page = True
             data = data[page_start:page_end]
-        common_job_parameters['pagination']['ec2:images']['hasNextPage'] = has_next_page
+            common_job_parameters['pagination']['ec2:images']['hasNextPage'] = has_next_page
 
     load_images(neo4j_session, data, current_aws_account_id, update_tag)
     cleanup_images(neo4j_session, common_job_parameters)

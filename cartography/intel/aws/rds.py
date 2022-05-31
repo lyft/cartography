@@ -415,15 +415,15 @@ def sync_rds_clusters(
         data.extend(get_rds_cluster_data(boto3_session, region))
 
     if common_job_parameters.get('pagination', {}).get('rds', None):
-        has_next_page = False
-        page_start = (common_job_parameters.get('pagination', {}).get('rds', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('rds', {})['pageSize']
+        page_start = (common_job_parameters.get('pagination', {}).get('rds', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('rds', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('rds', {})['pageSize']
         if page_end > len(data) or page_end == len(data):
             data = data[page_start:]
         else:
             has_next_page = True
             data = data[page_start:page_end]
-        common_job_parameters['pagination']['rds']['hasNextPage'] = has_next_page
+            common_job_parameters['pagination']['rds']['hasNextPage'] = has_next_page
 
     load_rds_clusters(neo4j_session, data, current_aws_account_id, update_tag)
     cleanup_rds_clusters(neo4j_session, common_job_parameters)
@@ -443,15 +443,15 @@ def sync_rds_instances(
         data.extend(get_rds_instance_data(boto3_session, region))
 
     if common_job_parameters.get('pagination', {}).get('rds', None):
-        has_next_page = False
-        page_start = (common_job_parameters.get('pagination', {}).get('rds', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('rds', {})['pageSize']
+        page_start = (common_job_parameters.get('pagination', {}).get('rds', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('rds', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('rds', {})['pageSize']
         if page_end > len(data) or page_end == len(data):
             data = data[page_start:]
         else:
             has_next_page = True
             data = data[page_start:page_end]
-        common_job_parameters['pagination']['rds']['hasNextPage'] = has_next_page
+            common_job_parameters['pagination']['rds']['hasNextPage'] = has_next_page
 
     load_rds_instances(neo4j_session, data, current_aws_account_id, update_tag)
     cleanup_rds_instances_and_db_subnet_groups(neo4j_session, common_job_parameters)

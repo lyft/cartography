@@ -199,7 +199,6 @@ def sync_load_balancers(
         data.extend(get_loadbalancer_data(boto3_session, region))
 
     if common_job_parameters.get('pagination', {}).get('ec2:load_balancer', None):
-        has_next_page = False
         page_start = (common_job_parameters.get('pagination', {}).get('ec2:load_balancer', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('ec2:load_balancer', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('ec2:load_balancer', {})['pageSize']
         if page_end > len(data) or page_end == len(data):
@@ -207,7 +206,7 @@ def sync_load_balancers(
         else:
             has_next_page = True
             data = data[page_start:page_end]
-        common_job_parameters['pagination']['ec2:load_balancer']['hasNextPage'] = has_next_page
+            common_job_parameters['pagination']['ec2:load_balancer']['hasNextPage'] = has_next_page
 
     load_load_balancers(neo4j_session, data, current_aws_account_id, update_tag)
     cleanup_load_balancers(neo4j_session, common_job_parameters)

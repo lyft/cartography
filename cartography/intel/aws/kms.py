@@ -364,7 +364,6 @@ def sync_kms_keys(
         kms_keys.extend(get_kms_key_list(boto3_session, region))
 
     if common_job_parameters.get('pagination', {}).get('kms', None):
-        has_next_page = False
         page_start = (common_job_parameters.get('pagination', {}).get('kms', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('kms', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('kms', {})['pageSize']
         if page_end > len(kms_keys) or page_end == len(kms_keys):
@@ -372,7 +371,7 @@ def sync_kms_keys(
         else:
             has_next_page = True
             kms_keys = kms_keys[page_start:page_end]
-        common_job_parameters['pagination']['kms']['hasNextPage'] = has_next_page
+            common_job_parameters['pagination']['kms']['hasNextPage'] = has_next_page
 
     load_kms_keys(neo4j_session, kms_keys, current_aws_account_id, aws_update_tag)
 

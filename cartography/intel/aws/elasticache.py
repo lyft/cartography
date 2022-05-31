@@ -118,15 +118,15 @@ def sync(
         clusters.extend(get_elasticache_clusters(boto3_session, region))
 
     if common_job_parameters.get('pagination', {}).get('elasticache', None):
-        has_next_page = False
-        page_start = (common_job_parameters.get('pagination', {}).get('elasticache', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('elasticache', {})['pageSize']
+        page_start = (common_job_parameters.get('pagination', {}).get('elasticache', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('elasticache', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('elasticache', {})['pageSize']
         if page_end > len(clusters) or page_end == len(clusters):
             clusters = clusters[page_start:]
         else:
             has_next_page = True
             clusters = clusters[page_start:page_end]
-        common_job_parameters['pagination']['elasticache']['hasNextPage'] = has_next_page
+            common_job_parameters['pagination']['elasticache']['hasNextPage'] = has_next_page
 
     load_elasticache_clusters(neo4j_session, clusters, current_aws_account_id, update_tag)
     cleanup(neo4j_session, common_job_parameters)

@@ -119,7 +119,6 @@ def sync(
         clusters.extend(get_eks_clusters(boto3_session, region))
 
     if common_job_parameters.get('pagination', {}).get('eks', None):
-        has_next_page = False
         page_start = (common_job_parameters.get('pagination', {}).get('eks', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('eks', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('eks', {})['pageSize']
         if page_end > len(clusters) or page_end == len(clusters):
@@ -127,7 +126,7 @@ def sync(
         else:
             has_next_page = True
             clusters = clusters[page_start:page_end]
-        common_job_parameters['pagination']['eks']['hasNextPage'] = has_next_page
+            common_job_parameters['pagination']['eks']['hasNextPage'] = has_next_page
 
     cluster_data: Dict = {}
     for cluster in clusters:

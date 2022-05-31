@@ -167,7 +167,6 @@ def sync(
         data.extend(queue_urls)
 
     if common_job_parameters.get('pagination', {}).get('sqs', None):
-        has_next_page = False
         page_start = (common_job_parameters.get('pagination', {}).get('sqs', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('sqs', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('sqs', {})['pageSize']
         if page_end > len(data) or page_end == len(data):
@@ -175,7 +174,7 @@ def sync(
         else:
             has_next_page = True
             data = data[page_start:page_end]
-        common_job_parameters['pagination']['sqs']['hasNextPage'] = has_next_page
+            common_job_parameters['pagination']['sqs']['hasNextPage'] = has_next_page
 
     queue_attributes = get_sqs_queue_attributes(boto3_session, queue_urls)
     load_sqs_queues(neo4j_session, queue_attributes, current_aws_account_id, update_tag)

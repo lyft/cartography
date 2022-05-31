@@ -21,9 +21,9 @@ def get_ec2_key_pairs(boto3_session: boto3.session.Session, region: str) -> List
     client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
     keys = []
     try:
-        keys = client.describe_key_pairs().get('KeyPairs',[])
+        keys = client.describe_key_pairs().get('KeyPairs', [])
         for keykey_pair in keys:
-          keykey_pair['region'] = region
+            keykey_pair['region'] = region
 
     except ClientError as e:
         if e.response['Error']['Code'] == 'AccessDeniedException' or e.response['Error']['Code'] == 'UnauthorizedOperation':
@@ -91,15 +91,15 @@ def sync_ec2_key_pairs(
         data.extend(get_ec2_key_pairs(boto3_session, region))
 
     if common_job_parameters.get('pagination', {}).get('ec2:keypair', None):
-        has_next_page = False
-        page_start = (common_job_parameters.get('pagination', {}).get('ec2:keypair', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('ec2:keypair', {})['pageSize']
+        page_start = (common_job_parameters.get('pagination', {}).get('ec2:keypair', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('ec2:keypair', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('ec2:keypair', {})['pageSize']
         if page_end > len(data) or page_end == len(data):
             data = data[page_start:]
         else:
             has_next_page = True
             data = data[page_start:page_end]
-        common_job_parameters['pagination']['ec2:keypair']['hasNextPage'] = has_next_page
+            common_job_parameters['pagination']['ec2:keypair']['hasNextPage'] = has_next_page
 
     load_ec2_key_pairs(neo4j_session, data, current_aws_account_id, update_tag)
     cleanup_ec2_key_pairs(neo4j_session, common_job_parameters)

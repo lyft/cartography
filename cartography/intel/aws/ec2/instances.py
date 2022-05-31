@@ -466,7 +466,6 @@ def sync_ec2_instances(
         data.extend(get_ec2_instances(boto3_session, region))
 
     if common_job_parameters.get('pagination', {}).get('ec2:instance', None):
-        has_next_page = False
         page_start = (common_job_parameters.get('pagination', {}).get('ec2:instance', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('ec2:instance', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('ec2:instance', {})['pageSize']
         if page_end > len(data) or page_end == len(data):
@@ -474,7 +473,7 @@ def sync_ec2_instances(
         else:
             has_next_page = True
             data = data[page_start:page_end]
-        common_job_parameters['pagination']['ec2:instance']['hasNextPage'] = has_next_page
+            common_job_parameters['pagination']['ec2:instance']['hasNextPage'] = has_next_page
 
     load_ec2_instances(neo4j_session, data, current_aws_account_id, update_tag)
     cleanup_ec2_instances(neo4j_session, common_job_parameters)

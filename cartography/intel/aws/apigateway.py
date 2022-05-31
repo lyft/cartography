@@ -405,7 +405,6 @@ def sync_apigateway_rest_apis(
         data.extend(get_apigateway_rest_apis(boto3_session, region))
 
     if common_job_parameters.get('pagination', {}).get('apigateway', None):
-        has_next_page = False
         page_start = (common_job_parameters.get('pagination', {}).get('apigateway', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('apigateway', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('apigateway', {})['pageSize']
         if page_end > len(data) or page_end == len(data):
@@ -413,7 +412,7 @@ def sync_apigateway_rest_apis(
         else:
             has_next_page = True
             data = data[page_start:page_end]
-        common_job_parameters['pagination']['apigateway']['hasNextPage'] = has_next_page
+            common_job_parameters['pagination']['apigateway']['hasNextPage'] = has_next_page
 
     load_apigateway_rest_apis(neo4j_session, data, current_aws_account_id, aws_update_tag)
 

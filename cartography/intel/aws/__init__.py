@@ -38,10 +38,10 @@ def _build_aws_sync_kwargs(
 
 
 def concurrent_execution(
-    service: str, service_func: Any, creds: Dict[str,str], config: Config, neo4j_session: neo4j.Session, 
+    service: str, service_func: Any, creds: Dict[str, str], config: Config, neo4j_session: neo4j.Session,
     boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
     update_tag: int, common_job_parameters: Dict,
-    ):
+):
     logger.info(f"BEGIN processing for service: {service}")
 
     if creds['type'] == 'self':
@@ -65,12 +65,13 @@ def concurrent_execution(
     )
 
     sync_args = _build_aws_sync_kwargs(
-            neo4j_driver.session(), boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters,
-        )
+        neo4j_driver.session(), boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters,
+    )
 
     service_func(**sync_args)
 
     logger.info(f"END processing for service: {service}")
+
 
 def _sync_one_account(
     neo4j_session: neo4j.Session,
@@ -80,8 +81,8 @@ def _sync_one_account(
     common_job_parameters: Dict[str, Any],
     regions: List[str] = [],
     aws_requested_syncs: Iterable[str] = RESOURCE_FUNCTIONS.keys(),
-    creds=Dict[str,str],
-    config= Config,
+    creds=Dict[str, str],
+    config=Config,
 ) -> None:
     if not regions:
         regions = _autodiscover_account_regions(boto3_session, current_aws_account_id)
@@ -93,17 +94,19 @@ def _sync_one_account(
     # Process each service in parallel.
     with ThreadPoolExecutor(max_workers=len(RESOURCE_FUNCTIONS)-2) as executor:
         futures = []
-        
+
         for func_name in aws_requested_syncs:
             if func_name in RESOURCE_FUNCTIONS:
                 # Skip permission relationships and tags for now because they rely on data already being in the graph
                 if func_name not in ['permission_relationships', 'resourcegroupstaggingapi']:
-                    futures.append(executor.submit(concurrent_execution, func_name, RESOURCE_FUNCTIONS[func_name], creds, config, **sync_args))
+                    futures.append(executor.submit(concurrent_execution, func_name,
+                                   RESOURCE_FUNCTIONS[func_name], creds, config, **sync_args))
                 else:
                     continue
             else:
-                raise ValueError(f'AWS sync function "{func_name}" was specified but does not exist. Did you misspell it?')
-        
+                raise ValueError(
+                    f'AWS sync function "{func_name}" was specified but does not exist. Did you misspell it?')
+
         for future in as_completed(futures):
             logger.info(f'Result from Future - Service Processing: {future.result()}')
 
@@ -214,7 +217,7 @@ def _sync_multiple_accounts(
             common_job_parameters,
             regions=regions,
             aws_requested_syncs=aws_requested_syncs,  # Could be replaced later with per-account requested syncs
-            creds = config.credentials,
+            creds=config.credentials,
             config=config,
         )
 
@@ -292,7 +295,9 @@ def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
         for service in config.aws_requested_syncs:
             aws_requested_syncs_string += f"{service.get('name', '')},"
             if service.get('pagination', None):
-                common_job_parameters['pagination'][service.get('name', None)] = service.get('pagination', {})
+                pagination = service.get('pagination', {})
+                pagination['hasNextPage'] = False
+                common_job_parameters['pagination'][service.get('name', None)] = pagination
         requested_syncs = parse_and_validate_aws_requested_syncs(aws_requested_syncs_string[:-1])
 
     _sync_multiple_accounts(

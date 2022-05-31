@@ -164,7 +164,6 @@ def sync_redshift_clusters(
         data.extend(get_redshift_cluster_data(boto3_session, region))
 
     if common_job_parameters.get('pagination', {}).get('redshift', None):
-        has_next_page = False
         page_start = (common_job_parameters.get('pagination', {}).get('redshift', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('redshift', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('redshift', {})['pageSize']
         if page_end > len(data) or page_end == len(data):
@@ -172,7 +171,7 @@ def sync_redshift_clusters(
         else:
             has_next_page = True
             data = data[page_start:page_end]
-        common_job_parameters['pagination']['redshift']['hasNextPage'] = has_next_page
+            common_job_parameters['pagination']['redshift']['hasNextPage'] = has_next_page
 
     transform_redshift_cluster_data(data, current_aws_account_id)
     load_redshift_cluster_data(neo4j_session, data, current_aws_account_id, aws_update_tag)
