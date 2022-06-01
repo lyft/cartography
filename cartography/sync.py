@@ -10,6 +10,7 @@ import cartography.intel.analysis
 import cartography.intel.aws
 import cartography.intel.azure
 import cartography.intel.create_indexes
+import cartography.intel.crowdstrike
 import cartography.intel.crxcavator.crxcavator
 import cartography.intel.digitalocean
 import cartography.intel.gcp
@@ -163,6 +164,7 @@ def build_default_sync():
         ('create-indexes', cartography.intel.create_indexes.run),
         ('aws', cartography.intel.aws.start_aws_ingestion),
         ('azure', cartography.intel.azure.start_azure_ingestion),
+        ('crowdstrike', cartography.intel.crowdstrike.start_crowdstrike_ingestion),
         ('gcp', cartography.intel.gcp.start_gcp_ingestion),
         ('gsuite', cartography.intel.gsuite.start_gsuite_ingestion),
         ('crxcavator', cartography.intel.crxcavator.start_extension_ingestion),

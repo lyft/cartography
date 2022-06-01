@@ -5,8 +5,8 @@ from typing import List
 import boto3
 import neo4j
 
+from cartography.stats import get_stats_client
 from cartography.util import aws_handle_regions
-from cartography.util import get_stats_client
 from cartography.util import merge_module_sync_metadata
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -30,7 +30,7 @@ def get_dynamodb_tables(boto3_session: boto3.session.Session, region: str) -> Li
 @timeit
 def load_dynamodb_tables(
     neo4j_session: neo4j.Session, data: List[Dict], region: str, current_aws_account_id: str,
-    aws_update_tag: str,
+    aws_update_tag: int,
 ) -> None:
     ingest_table = """
     MERGE (table:DynamoDBTable{id: {Arn}})
@@ -65,7 +65,7 @@ def load_dynamodb_tables(
 @timeit
 def load_gsi(
     neo4j_session: neo4j.Session, table: Dict, region: str, current_aws_account_id: str,
-    aws_update_tag: str,
+    aws_update_tag: int,
 ) -> None:
     ingest_gsi = """
     MERGE (gsi:DynamoDBGlobalSecondaryIndex{id: {Arn}})

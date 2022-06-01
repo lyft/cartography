@@ -11,7 +11,7 @@ import neo4j
 
 from cartography.intel.aws.permission_relationships import parse_statement_node
 from cartography.intel.aws.permission_relationships import principal_allowed_on_resource
-from cartography.util import get_stats_client
+from cartography.stats import get_stats_client
 from cartography.util import merge_module_sync_metadata
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -378,7 +378,7 @@ def get_policies_for_principal(neo4j_session: neo4j.Session, principal_arn: str)
 
 @timeit
 def sync_assumerole_relationships(
-    neo4j_session: neo4j.Session, current_aws_account_id: str, aws_update_tag: str,
+    neo4j_session: neo4j.Session, current_aws_account_id: str, aws_update_tag: int,
     common_job_parameters: Dict,
 ) -> None:
     # Must be called after load_role

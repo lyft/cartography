@@ -121,7 +121,7 @@ def _load_ec2_instance_tx(
         instance_state: str,
         current_aws_account_id: str,
         region: str,
-        update_tag: str,
+        update_tag: int,
 ) -> None:
     query = """
         MERGE (instance:Instance:EC2Instance{id: {InstanceId}})
@@ -188,7 +188,7 @@ def _load_ec2_instance_tx(
     )
 
 
-def _load_ec2_subnet_tx(tx: neo4j.Transaction, instanceid: str, subnet_id: str, region: str, update_tag: str) -> None:
+def _load_ec2_subnet_tx(tx: neo4j.Transaction, instanceid: str, subnet_id: str, region: str, update_tag: int) -> None:
     query = """
         MATCH (instance:EC2Instance{id: {InstanceId}})
         MERGE (subnet:EC2Subnet{subnetid: {SubnetId}})
@@ -215,7 +215,7 @@ def _load_ec2_keypairs_tx(
         region: str,
         instanceid: str,
         current_aws_account_id: str,
-        update_tag: str,
+        update_tag: int,
 ) -> None:
     query = """
         MERGE (keypair:KeyPair:EC2KeyPair{arn: {KeyPairARN}, id: {KeyPairARN}})
@@ -250,7 +250,7 @@ def _load_ec2_security_groups_tx(
         instanceid: str,
         region: str,
         current_aws_account_id: str,
-        update_tag: str,
+        update_tag: int,
 ) -> None:
     query = """
         MERGE (group:EC2SecurityGroup{id: {GroupId}})
@@ -372,7 +372,7 @@ def get_ec2_instance_ebs_volumes(instance: Dict) -> List[Dict]:
 def _load_ec2_instance_ebs_tx(
         tx: neo4j.Transaction,
         ebs_data: List[Dict[str, Any]],
-        update_tag: str,
+        update_tag: int,
         current_aws_account_id: str,
 ) -> None:
     query = """
