@@ -1238,20 +1238,18 @@ def sync_gcp_instances(
     """
     instance_responses = get_gcp_instances(project_id, zones, compute)
 
-    if common_job_parameters.get('pagination',{}).get('compute',None):
-        has_next_page= False
-        page_start=(common_job_parameters.get('pagination',{}).get('compute',None)['pageNo']-1)* common_job_parameters.get('pagination',{}).get('compute',None)['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination',{}).get('compute',None)['pageSize']
-        if page_end > len(instance_responses) or page_end== len(instance_responses):
-            instance_responses=instance_responses[page_start:]
+    if common_job_parameters.get('pagination', {}).get('compute', None):
+        page_start = (common_job_parameters.get('pagination', {}).get('compute', None)[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
+        if page_end > len(instance_responses) or page_end == len(instance_responses):
+            instance_responses = instance_responses[page_start:]
         else:
-            has_next_page=True
-            instance_responses=instance_responses[page_start:page_end]
-        common_job_parameters['pagination']['compute']['hasNextPage']=has_next_page
-    
+            has_next_page = True
+            instance_responses = instance_responses[page_start:page_end]
+            common_job_parameters['pagination']['compute']['hasNextPage'] = has_next_page
+
     instance_list = transform_gcp_instances(instance_responses, compute)
-    for instance in instance_list:
-        load_compute_entity_relation(neo4j_session,instance,gcp_update_tag)
 
     load_gcp_instances(neo4j_session, instance_list, gcp_update_tag)
 
@@ -1276,16 +1274,16 @@ def sync_gcp_vpcs(
     """
     vpc_res = get_gcp_vpcs(project_id, compute)
     vpcs = transform_gcp_vpcs(vpc_res)
-    if common_job_parameters.get('pagination',{}).get('compute',None):
-        has_next_page=False
-        page_start=(common_job_parameters.get('pagination',{}).get('compute',None)['pageNo']-1 )* common_job_parameters.get('pagination',{}).get('compute',None)['pageSize']
-        page_end=page_start+ common_job_parameters.get('pagination',{}).get('compute',None)['pageSize']
+    if common_job_parameters.get('pagination', {}).get('compute', None):
+        page_start = (common_job_parameters.get('pagination', {}).get('compute', None)[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
         if page_end > len(vpcs) or page_end == len(vpcs):
-            vpcs=vpcs[page_start:]
+            vpcs = vpcs[page_start:]
         else:
-            has_next_page=True 
-            vpcs=vpcs[page_start:page_end]
-        common_job_parameters['pagination']['compute']['hasNextPage']=has_next_page
+            has_next_page = True
+            vpcs = vpcs[page_start:page_end]
+            common_job_parameters['pagination']['compute']['hasNextPage'] = has_next_page
 
     load_gcp_vpcs(neo4j_session, vpcs, gcp_update_tag)
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
@@ -1300,18 +1298,18 @@ def sync_gcp_subnets(
 ) -> None:
     for r in regions:
         logger.info("Subnet Region %s.", r)
-        subnet_res = get_gcp_subnets(project_id, r, compute)    
+        subnet_res = get_gcp_subnets(project_id, r, compute)
         subnets = transform_gcp_subnets(subnet_res)
-        if common_job_parameters.get('pagination',{}).get('compute',None):
-            has_next_page=False
-            page_start=(common_job_parameters.get('pagination',{}).get('compute',None)['pageNo']-1)* common_job_parameters.get('pagination',{}).get('compute',None)['pageSize']
-            page_end = page_start + common_job_parameters.get('pagination',{}).get('compute',None)['pageSize']
+        if common_job_parameters.get('pagination', {}).get('compute', None):
+            page_start = (common_job_parameters.get('pagination', {}).get('compute', None)[
+                          'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
+            page_end = page_start + common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
             if page_end > len(subnets) or page_end == len(subnets):
-                subnets=subnets[page_start:]
+                subnets = subnets[page_start:]
             else:
-                 has_next_page=True
-                 subnets=subnets[page_start:page_end]
-            common_job_parameters['pagination']['compute']['hasNextPage']=has_next_page
+                has_next_page = True
+                subnets = subnets[page_start:page_end]
+                common_job_parameters['pagination']['compute']['hasNextPage'] = has_next_page
 
         load_gcp_subnets(neo4j_session, subnets, gcp_update_tag)
         # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
@@ -1337,16 +1335,16 @@ def sync_gcp_forwarding_rules(
     logger.info("Syncing Compute forwarding rule for project %s.", project_id)
     global_fwd_response = get_gcp_global_forwarding_rules(project_id, compute)
     forwarding_rules = transform_gcp_forwarding_rules(global_fwd_response)
-    if common_job_parameters.get('pagination',{}).get('compute',None):
-        has_next_page=False
-        page_start=(common_job_parameters.get('pagination',{}).get('compute',None)['pageNo']-1)* common_job_parameters.get('pagination',{}).get('compute',None)['pageSize']
-        page_end= page_start + common_job_parameters.get('pagination',{}).get('compute',None)['pageSize']
-        if page_end >  len(forwarding_rules) or page_end == len(forwarding_rules):
-            forwarding_rules=forwarding_rules[page_start:]
+    if common_job_parameters.get('pagination', {}).get('compute', None):
+        page_start = (common_job_parameters.get('pagination', {}).get('compute', None)[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
+        if page_end > len(forwarding_rules) or page_end == len(forwarding_rules):
+            forwarding_rules = forwarding_rules[page_start:]
         else:
-            has_next_page=True
-            forwarding_rules=forwarding_rules[page_start:page_end]
-        common_job_parameters['pagination']['compute']['hasNextPage']=has_next_page
+            has_next_page = True
+            forwarding_rules = forwarding_rules[page_start:page_end]
+            common_job_parameters['pagination']['compute']['hasNextPage'] = has_next_page
     load_gcp_forwarding_rules(neo4j_session, forwarding_rules, gcp_update_tag)
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gcp_forwarding_rules(neo4j_session, common_job_parameters)
@@ -1375,16 +1373,16 @@ def sync_gcp_firewall_rules(
     """
     fw_response = get_gcp_firewall_ingress_rules(project_id, compute)
     fw_list = transform_gcp_firewall(fw_response)
-    if common_job_parameters.get('pagination',{}).get('compute',None):
-        has_next_page=False
-        page_start=(common_job_parameters.get('pagination',{}).get('compute',None)['pageNo']-1)* common_job_parameters.get('pagination',{}).get('compute',None)['pageSize']
-        page_end=page_start + common_job_parameters.get('pagination',{}).get('compute',None)['pageSize']
+    if common_job_parameters.get('pagination', {}).get('compute', None):
+        page_start = (common_job_parameters.get('pagination', {}).get('compute', None)[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
         if page_end > len(fw_list) or page_end == len(fw_list):
-            fw_list=fw_list[page_start:]
+            fw_list = fw_list[page_start:]
         else:
-            has_next_page=True
-            fw_list=fw_list[page_start:page_end]
-        common_job_parameters['pagination']['compute']['hasNextPage']=has_next_page
+            has_next_page = True
+            fw_list = fw_list[page_start:page_end]
+            common_job_parameters['pagination']['compute']['hasNextPage'] = has_next_page
 
     load_gcp_ingress_firewalls(neo4j_session, fw_list, gcp_update_tag)
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381

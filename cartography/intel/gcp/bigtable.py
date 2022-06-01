@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
-def get_bigtable_instances(bigtable: Resource, project_id: str,common_job_parameters) -> List[Dict]:
+def get_bigtable_instances(bigtable: Resource, project_id: str, common_job_parameters) -> List[Dict]:
     """
         Returns a list of bigtable instances for a given project.
 
@@ -39,18 +39,17 @@ def get_bigtable_instances(bigtable: Resource, project_id: str,common_job_parame
                     instance['id'] = instance['name']
                     bigtable_instances.append(instance)
             request = bigtable.projects().instances().list_next(previous_request=request, previous_response=response)
-        if common_job_parameters.get('pagination',{}).get('bigtable',None):
-            has_next_page=False
-            page_start=(common_job_parameters.get('pagination',{}).get('bigtable',None)['pageNo']-1)* common_job_parameters.get('pagination',{}).get('bigtable',None)['pageSize']
-            page_end=page_start + common_job_parameters.get('pagination',{}).get('bigtable',None)['pageSize']
-            if page_end > len(bigtable_instances) or page_end== len(bigtable_instances):
-                bigtable_instances=bigtable_instances[page_start:]
+        if common_job_parameters.get('pagination', {}).get('bigtable', None):
+            page_start = (common_job_parameters.get('pagination', {}).get('bigtable', None)[
+                          'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('bigtable', None)['pageSize']
+            page_end = page_start + common_job_parameters.get('pagination', {}).get('bigtable', None)['pageSize']
+            if page_end > len(bigtable_instances) or page_end == len(bigtable_instances):
+                bigtable_instances = bigtable_instances[page_start:]
             else:
-                has_next_page=True
-                bigtable_instances=bigtable_instances[page_start:page_end]
-            common_job_parameters['pagination']['bigtable']['hasNextPage']=has_next_page
-            
-            
+                has_next_page = True
+                bigtable_instances = bigtable_instances[page_start:page_end]
+                common_job_parameters['pagination']['bigtable']['hasNextPage'] = has_next_page
+
         return bigtable_instances
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -127,7 +126,7 @@ def get_bigtable_clusters(bigtable: Resource, bigtable_instances: List[Dict], pr
 
 
 @timeit
-def get_bigtable_cluster_backups(bigtable: Resource, bigtable_clusters: List[Dict], project_id: str,common_job_parameters) -> List[Dict]:
+def get_bigtable_cluster_backups(bigtable: Resource, bigtable_clusters: List[Dict], project_id: str, common_job_parameters) -> List[Dict]:
     """
         Returns a list of bigtable cluster backups for a given project.
 
@@ -160,17 +159,7 @@ def get_bigtable_cluster_backups(bigtable: Resource, bigtable_clusters: List[Dic
                 request = bigtable.projects().instances().clusters().backup().list_next(
                     previous_request=request, previous_response=response,
                 )
-            if common_job_parameters.get('pagination',{}).get('bigtable',None):
-                has_next_page=False
-                page_start=(common_job_parameters.get('pagination',{}).get('bigtable',None)['pageNo']-1)* common_job_parameters.get('pagination',{}).get('bigtable',None)['pageSize']
-                page_end=page_start + common_job_parameters.get('pagination',{}).get('bigtable',None)['pageSize']
-                if page_end > len(cluster_backups) or page_end == len(cluster_backups):
-                    cluster_backups=cluster_backups[page_start:]
-                else:
-                    has_next_page=True
-                    cluster_backups=cluster_backups[page_start:page_end]
-                common_job_parameters['pagination']['bigtable']['hasNextPage']=has_next_page
-            return cluster_backups
+
         except HttpError as e:
             err = json.loads(e.content.decode('utf-8'))['error']
             if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
@@ -183,7 +172,7 @@ def get_bigtable_cluster_backups(bigtable: Resource, bigtable_clusters: List[Dic
                 return []
             else:
                 raise
-    
+    return cluster_backups
 
 
 @timeit
@@ -497,7 +486,7 @@ def sync(
     logger.info("Syncing Bigtable for project '%s', at %s.", project_id, tic)
 
     # BIGTABLE INSTANCES
-    bigtable_instances = get_bigtable_instances(bigtable, project_id,common_job_parameters)
+    bigtable_instances = get_bigtable_instances(bigtable, project_id, common_job_parameters)
     load_bigtable_instances(neo4j_session, bigtable_instances, project_id, gcp_update_tag)
     label.sync_labels(neo4j_session, bigtable_instances, gcp_update_tag,
                       common_job_parameters, 'bigtable_instances', 'GCPBigtableInstance')
@@ -505,7 +494,7 @@ def sync(
     bigtable_clusters = get_bigtable_clusters(bigtable, bigtable_instances, project_id, regions)
     load_bigtable_clusters(neo4j_session, bigtable_clusters, project_id, gcp_update_tag)
     # BIGTABLE CLUSTER BACKUPS
-    cluster_backups = get_bigtable_cluster_backups(bigtable, bigtable_clusters, project_id,common_job_parameters)
+    cluster_backups = get_bigtable_cluster_backups(bigtable, bigtable_clusters, project_id, common_job_parameters)
     load_bigtable_cluster_backups(neo4j_session, cluster_backups, project_id, gcp_update_tag)
     # BIGTABLE TABLES
     bigtable_tables = get_get_bigtable_tables(bigtable, bigtable_instances, project_id, regions)

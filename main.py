@@ -9,13 +9,15 @@ from utils.errors import PubSubPublishError
 import utils.logger as lgr
 
 # Used by GCP Functions
+
+
 def cartography_worker(event, ctx):
     logging.getLogger('cartography').setLevel(os.environ.get('LOG_LEVEL'))
     # logging.getLogger('cartography.intel').setLevel(os.environ.get('LOG_LEVEL'))
     logging.getLogger('cartography.sync').setLevel(os.environ.get('LOG_LEVEL'))
     logging.getLogger('cartography.graph').setLevel(os.environ.get('LOG_LEVEL'))
-    logging.getLogger('cartography.cartography').setLevel(os.environ.get('LOG_LEVEL'))    
-    
+    logging.getLogger('cartography.cartography').setLevel(os.environ.get('LOG_LEVEL'))
+
     logger = lgr.get_logger("DEBUG")
     logger.info('inventory sync gcp worker request received via PubSub')
 
@@ -124,18 +126,18 @@ def publish_response(logger, req, resp):
 
     pubsub_helper = PubSubLibrary()
 
-    try:    
+    try:
         if body.get('services', None):
             if 'requestTopic' in req['params']:
-            # Result should be pushed to "requestTopic" passed in the request
+                # Result should be pushed to "requestTopic" passed in the request
                 status = pubsub_helper.publish(
                     os.environ['CLOUDANIX_PROJECT_ID'], json.dumps(body), req['params']['requestTopic'],
                 )
         elif 'resultTopic' in req['params']:
             status = pubsub_helper.publish(
-                    os.environ['CLOUDANIX_PROJECT_ID'], json.dumps(body), req['params']['resultTopic'],
-                )
-            
+                os.environ['CLOUDANIX_PROJECT_ID'], json.dumps(body), req['params']['resultTopic'],
+            )
+
         else:
             status = pubsub_helper.publish(
                 os.environ['CLOUDANIX_PROJECT_ID'], json.dumps(body), os.environ['CARTOGRAPHY_RESULT_TOPIC'],
