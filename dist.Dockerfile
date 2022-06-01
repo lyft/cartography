@@ -1,5 +1,6 @@
 FROM python:3-alpine as builder
 
+# Add compile/build time dependencies
 RUN apk --no-cache add \
     binutils \
     python3-dev \
@@ -16,9 +17,11 @@ WORKDIR /var/cartography
 
 RUN pip install -e .
 
+# Create a self-contained binary using pyinstaller.
 RUN pyinstaller \
     --onefile \
     --name cartography \
+    # include static data files from policyuniverse (policyuniverse/data.json)
     --collect-data policyuniverse \
     cartography/__main__.py
 
@@ -37,6 +40,7 @@ RUN apk --no-cache add ca-certificates
 
 USER ${uid}:${gid}
 
+# Copy the built self-contained cartography binary
 COPY --from=builder /var/cartography/dist/cartography /bin/cartography
 
 # verify that the binary at least runs
