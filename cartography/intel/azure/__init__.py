@@ -128,6 +128,7 @@ def start_azure_ingestion(
         "WORKSPACE_ID": config.params['workspace']['id_string'],
         "UPDATE_TAG": config.update_tag,
         "permission_relationships_file": config.permission_relationships_file,
+        "pagination": {},
     }
 
     try:
@@ -161,7 +162,14 @@ def start_azure_ingestion(
         return
     requested_syncs: List[str] = list(RESOURCE_FUNCTIONS.keys())
     if config.azure_requested_syncs:
-        requested_syncs = parse_and_validate_azure_requested_syncs(config.azure_requested_syncs)
+        azure_requested_syncs_string = ""
+        for service in config.azure_requested_syncs:
+            azure_requested_syncs_string += f"{service.get('name', '')},"
+            if service.get('pagination', None):
+                pagination = service.get('pagination', {})
+                pagination['hasNextPage'] = False
+                common_job_parameters['pagination'][service.get('name', None)] = pagination
+        requested_syncs = parse_and_validate_azure_requested_syncs(azure_requested_syncs_string[:-1])
     _sync_tenant(
         neo4j_session,
         credentials.get_tenant_id(),
@@ -206,3 +214,4 @@ def start_azure_ingestion(
     )
     del common_job_parameters["AZURE_SUBSCRIPTION_ID"]
     del common_job_parameters["AZURE_TENANT_ID"]
+    return common_job_parameters

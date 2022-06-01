@@ -492,6 +492,8 @@ class CLI:
             return {
                 "status": "success",
                 "message": f"output - {output}",
+                "updateTag": output.get('UPDATE_TAG', None),
+                "pagination": output.get('pagination', None),
             }
 
         except KeyboardInterrupt:
@@ -570,7 +572,8 @@ def run_azure(request):
         azure_azure_scope=request['azure']['azure_scope'],
         params=request['params'],
         neo4j_max_connection_lifetime=3600,
-        azure_requested_syncs=request.get('services', None)
+        azure_requested_syncs=request.get('services', None),
+        update_tag=request.get('updateTag', None)
     )
 
     if request['logging']['mode'] == "verbose":

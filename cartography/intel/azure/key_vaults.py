@@ -81,6 +81,18 @@ def sync_key_vaults(
 ) -> None:
     client = get_key_vaults_client(credentials, subscription_id)
     key_vaults_list = get_key_vaults_list(client, regions)
+
+    if common_job_parameters.get('pagination', {}).get('key_vaults', None):
+        page_start = (common_job_parameters.get('pagination', {}).get('key_vaults', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('key_vaults', {})['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('key_vaults', {})['pageSize']
+        if page_end > len(key_vaults_list) or page_end == len(key_vaults_list):
+            key_vaults_list = key_vaults_list[page_start:]
+        else:
+            has_next_page = True
+            key_vaults_list = key_vaults_list[page_start:page_end]
+            common_job_parameters['pagination']['key_vaults']['hasNextPage'] = has_next_page
+
     load_key_vaults(neo4j_session, subscription_id, key_vaults_list, update_tag)
     cleanup_key_vaults(neo4j_session, common_job_parameters)
 

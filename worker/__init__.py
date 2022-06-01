@@ -41,6 +41,23 @@ def process_request(msg):
 
     resp = cartography.cli.run_azure(body)
 
+    if 'status' in resp and resp['status'] == 'success':
+        if resp.get('pagination', None):
+            services = []
+            for service, pagination in resp.get('pagination', {}).items():
+                if pagination.get('hasNextPage', False):
+                    services.append({
+                        "name": service,
+                        "pagination": {
+                            "pageSize": pagination.get('pageSize', 1),
+                            "pageNo": pagination.get('pageNo', 0) + 1
+                        }
+                    })
+            if len(services) > 0:
+                resp['services'] = services
+            else:
+                del resp['updateTag']
+            del resp['pagination']
     return resp
 
 
@@ -69,24 +86,36 @@ def main(event: func.EventGridEvent, outputEvent: func.Out[func.EventGridOutputE
                 "subscriptions": msg['subscriptions'],
                 "workspace": msg['workspace'],
                 "actions": msg['actions'],
+                "resultTopic": msg['resultTopic'],
+                "requestTopic": msg.get("requestTopic", None),
             },
             "response": resp,
+            "services": resp.get("services", None),
+            "updateTag": resp.get("updateTag", None),
         }
 
-        if msg.get('inventoryRefresh'):
-            logging.info(f'inventoryRefresh - {msg["inventoryRefresh"]}')
-            # Push message to Cartography Queue, if refresh is needed
-            # Post processing, result should be pushed to Inventory Views Request Topic
-            # without 'inventoryRefresh' field
-            # topic = msg['resultTopic']
-            # access_key = msg['resultTopicAccessKey']
+        if message.get('services', None):
+            if 'requestTopic' in message['params']:
+                logging.info(f'inventoryRefresh - {msg["inventoryRefresh"]}')
+                # Push message to Cartography Queue, if refresh is needed
+                # Post processing, result should be pushed to Inventory Views Request Topic
+                # without 'inventoryRefresh' field
+                topic = message['requestTopic']
+                access_key = msg['requestTopicAccessKey']
 
-            # lib = EventGridLibrary(topic, access_key)
-            # resp = lib.publish_event(message)
-            
-            logging.info(f'Result not published anywhere. since we want to avoid query when inventory is refreshed')
-            
+                lib = EventGridLibrary(topic, access_key)
+                resp = lib.publish_event(message)
+
+            logging.info('Result not published anywhere. since we want to avoid query when inventory is refreshed')
+
             logging.info(f'inventoryRefresh completed: {resp}')
+
+        elif 'resultTopic' in message['params']:
+            topic = message['resultTopic']
+            access_key = msg['resultTopicAccessKey']
+
+            lib = EventGridLibrary(topic, access_key)
+            resp = lib.publish_event(message)
 
         else:
             outputEvent.set(

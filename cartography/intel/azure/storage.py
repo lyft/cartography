@@ -50,7 +50,8 @@ def get_storage_account_list(credentials: Credentials, subscription_id: str, reg
     for storage_account in storage_account_list:
         x = storage_account['id'].split('/')
         storage_account['resourceGroup'] = x[x.index('resourceGroups') + 1]
-        storage_account['allowBlobPublicAccess'] = storage_account.get('properties', {}).get('allow_blob_public_access', False)
+        storage_account['allowBlobPublicAccess'] = storage_account.get(
+            'properties', {}).get('allow_blob_public_access', False)
         if regions is None:
             account_list.append(storage_account)
         else:
@@ -818,6 +819,18 @@ def sync(
 ) -> None:
     logger.info("Syncing Azure Storage for subscription '%s'.", subscription_id)
     storage_account_list = get_storage_account_list(credentials, subscription_id, regions)
+
+    if common_job_parameters.get('pagination', {}).get('sql', None):
+        page_start = (common_job_parameters.get('pagination', {}).get('storage', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('storage', {})['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('storage', {})['pageSize']
+        if page_end > len(storage_account_list) or page_end == len(storage_account_list):
+            storage_account_list = storage_account_list[page_start:]
+        else:
+            has_next_page = True
+            storage_account_list = storage_account_list[page_start:page_end]
+            common_job_parameters['pagination']['storage']['hasNextPage'] = has_next_page
+
     load_storage_account_data(neo4j_session, subscription_id, storage_account_list, sync_tag)
     sync_storage_account_details(neo4j_session, credentials, subscription_id, storage_account_list, sync_tag)
     cleanup_azure_storage_accounts(neo4j_session, common_job_parameters)

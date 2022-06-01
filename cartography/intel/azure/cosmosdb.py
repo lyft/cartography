@@ -51,7 +51,8 @@ def get_database_account_list(credentials: Credentials, subscription_id: str, re
     for database_account in database_account_list:
         x = database_account['id'].split('/')
         database_account['resourceGroup'] = x[x.index('resourceGroups') + 1]
-        database_account['publicNetworkAccess'] = database_account.get('properties', {}).get('public_network_access', 'Disabled')
+        database_account['publicNetworkAccess'] = database_account.get(
+            'properties', {}).get('public_network_access', 'Disabled')
         if regions is None:
             account_list.append(database_account)
         else:
@@ -1088,6 +1089,18 @@ def sync(
 ) -> None:
     logger.info("Syncing Azure CosmosDB for subscription '%s'.", subscription_id)
     database_account_list = get_database_account_list(credentials, subscription_id, regions)
+
+    if common_job_parameters.get('pagination', {}).get('cosmosdb', None):
+        page_start = (common_job_parameters.get('pagination', {}).get('cosmosdb', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('cosmosdb', {})['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('cosmosdb', {})['pageSize']
+        if page_end > len(database_account_list) or page_end == len(database_account_list):
+            database_account_list = database_account_list[page_start:]
+        else:
+            has_next_page = True
+            database_account_list = database_account_list[page_start:page_end]
+            common_job_parameters['pagination']['cosmosdb']['hasNextPage'] = has_next_page
+
     database_account_list = transform_database_account_data(database_account_list)
     load_database_account_data(neo4j_session, subscription_id, database_account_list, sync_tag)
     sync_database_account_data_resources(neo4j_session, subscription_id, database_account_list, sync_tag)
