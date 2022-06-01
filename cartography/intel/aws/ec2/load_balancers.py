@@ -22,6 +22,8 @@ def get_loadbalancer_data(boto3_session: boto3.session.Session, region: str) -> 
     elbs: List[Dict] = []
     for page in paginator.paginate():
         elbs.extend(page['LoadBalancerDescriptions'])
+    for elb in elbs:
+        elb['region'] = region
     return elbs
 
 
@@ -78,7 +80,7 @@ def load_load_balancer_subnets(
 
 @timeit
 def load_load_balancers(
-    neo4j_session: neo4j.Session, data: List[Dict], region: str, current_aws_account_id: str,
+    neo4j_session: neo4j.Session, data: List[Dict], current_aws_account_id: str,
     update_tag: int,
 ) -> None:
     ingest_load_balancer = """
@@ -123,6 +125,7 @@ def load_load_balancers(
     """
 
     for lb in data:
+        region = lb.get('region', '')
         load_balancer_id = lb["DNSName"]
         load_balancer_arn = f"arn:aws:elasticloadbalancing:{region}:{current_aws_account_id}:loadbalancer/{load_balancer_id}"
 
@@ -190,10 +193,22 @@ def sync_load_balancers(
 
     logger.info("Syncing EC2 load balancers for account '%s', at %s.", current_aws_account_id, tic)
 
+    data = []
     for region in regions:
         logger.info("Syncing EC2 load balancers for region '%s' in account '%s'.", region, current_aws_account_id)
-        data = get_loadbalancer_data(boto3_session, region)
-        load_load_balancers(neo4j_session, data, region, current_aws_account_id, update_tag)
+        data.extend(get_loadbalancer_data(boto3_session, region))
+
+    if common_job_parameters.get('pagination', {}).get('ec2:load_balancer', None):
+        page_start = (common_job_parameters.get('pagination', {}).get('ec2:load_balancer', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('ec2:load_balancer', {})['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('ec2:load_balancer', {})['pageSize']
+        if page_end > len(data) or page_end == len(data):
+            data = data[page_start:]
+        else:
+            has_next_page = True
+            data = data[page_start:page_end]
+            common_job_parameters['pagination']['ec2:load_balancer']['hasNextPage'] = has_next_page
+
+    load_load_balancers(neo4j_session, data, current_aws_account_id, update_tag)
     cleanup_load_balancers(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()

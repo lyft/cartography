@@ -26,6 +26,8 @@ def get_ec2_security_group_data(boto3_session: boto3.session.Session, region: st
         security_groups: List[Dict] = []
         for page in paginator.paginate():
             security_groups.extend(page['SecurityGroups'])
+        for group in security_groups:
+            group['region'] = region
     
     except ClientError as e:
         if e.response['Error']['Code'] == 'AccessDeniedException' or e.response['Error']['Code'] == 'UnauthorizedOperation':
@@ -116,7 +118,7 @@ def load_ec2_security_group_rule(neo4j_session: neo4j.Session, group: Dict, rule
 
 @timeit
 def load_ec2_security_groupinfo(
-    neo4j_session: neo4j.Session, data: List[Dict], region: str,
+    neo4j_session: neo4j.Session, data: List[Dict],
     current_aws_account_id: str, update_tag: int,
 ) -> None:
     ingest_security_group = """
@@ -136,6 +138,7 @@ def load_ec2_security_groupinfo(
     """
 
     for group in data:
+        region = group.get('region', '')
         group_id = group["GroupId"]
         group_arn = f"arn:aws:ec2:{region}:{current_aws_account_id}:security-group/{group_id}"
 
@@ -173,10 +176,22 @@ def sync_ec2_security_groupinfo(
 
     logger.info("Syncing EC2 security groups for account '%s', at %s.", current_aws_account_id, tic)
 
+    data = []
     for region in regions:
         logger.info("Syncing EC2 security groups for region '%s' in account '%s'.", region, current_aws_account_id)
-        data = get_ec2_security_group_data(boto3_session, region)
-        load_ec2_security_groupinfo(neo4j_session, data, region, current_aws_account_id, update_tag)
+        data.extend(get_ec2_security_group_data(boto3_session, region))
+
+    if common_job_parameters.get('pagination', {}).get('ec2:security_group', None):
+        page_start = (common_job_parameters.get('pagination', {}).get('ec2:security_group', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('ec2:security_group', {})['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('ec2:security_group', {})['pageSize']
+        if page_end > len(data) or page_end == len(data):
+            data = data[page_start:]
+        else:
+            has_next_page = True
+            data = data[page_start:page_end]
+            common_job_parameters['pagination']['ec2:security_group']['hasNextPage'] = has_next_page
+
+    load_ec2_security_groupinfo(neo4j_session, data, current_aws_account_id, update_tag)
     cleanup_ec2_security_groupinfo(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()

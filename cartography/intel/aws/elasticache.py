@@ -42,12 +42,14 @@ def get_elasticache_clusters(boto3_session: boto3.session.Session, region: str) 
     clusters: List[Dict] = []
     for page in paginator.paginate():
         clusters.extend(page['CacheClusters'])
+    for cluster in clusters:
+        cluster['region'] = region
     return clusters
 
 
 @timeit
 def load_elasticache_clusters(
-    neo4j_session: neo4j.Session, clusters: List[Dict], region: str,
+    neo4j_session: neo4j.Session, clusters: List[Dict],
     aws_account_id: str, update_tag: int,
 ) -> None:
     query = """
@@ -57,7 +59,7 @@ def load_elasticache_clusters(
             cluster.arn = elasticache_cluster.ARN,
             cluster.topic_arn = elasticache_cluster.NotificationConfiguration.TopicArn,
             cluster.id = elasticache_cluster.CacheClusterId,
-            cluster.region = {region}
+            cluster.region = elasticache_cluster.region
         SET cluster.lastupdated = {aws_update_tag}
 
         WITH cluster, elasticache_cluster
@@ -83,11 +85,10 @@ def load_elasticache_clusters(
         ON CREATE SET r2.firstseen = timestamp()
         SET r2.lastupdated = {aws_update_tag}
     """
-    logger.info(f"Loading f{len(clusters)} ElastiCache clusters for region '{region}' into graph.")
+    logger.info(f"Loading f{len(clusters)} ElastiCache clusters into graph.")
     neo4j_session.run(
         query,
         clusters=clusters,
-        region=region,
         aws_update_tag=update_tag,
         aws_account_id=aws_account_id,
     )
@@ -111,10 +112,23 @@ def sync(
 
     logger.info("Syncing ElastiCache for account '%s', at %s.", current_aws_account_id, tic)
 
+    clusters = []
     for region in regions:
         logger.info(f"Syncing ElastiCache clusters for region '{region}' in account {current_aws_account_id}")
-        clusters = get_elasticache_clusters(boto3_session, region)
-        load_elasticache_clusters(neo4j_session, clusters, region, current_aws_account_id, update_tag)
+        clusters.extend(get_elasticache_clusters(boto3_session, region))
+
+    if common_job_parameters.get('pagination', {}).get('elasticache', None):
+        page_start = (common_job_parameters.get('pagination', {}).get('elasticache', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('elasticache', {})['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('elasticache', {})['pageSize']
+        if page_end > len(clusters) or page_end == len(clusters):
+            clusters = clusters[page_start:]
+        else:
+            has_next_page = True
+            clusters = clusters[page_start:page_end]
+            common_job_parameters['pagination']['elasticache']['hasNextPage'] = has_next_page
+
+    load_elasticache_clusters(neo4j_session, clusters, current_aws_account_id, update_tag)
     cleanup(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()

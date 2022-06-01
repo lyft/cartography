@@ -21,7 +21,9 @@ def get_ec2_key_pairs(boto3_session: boto3.session.Session, region: str) -> List
     client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
     keys = []
     try:
-        keys = client.describe_key_pairs().get('KeyPairs',[])
+        keys = client.describe_key_pairs().get('KeyPairs', [])
+        for keykey_pair in keys:
+            keykey_pair['region'] = region
 
     except ClientError as e:
         if e.response['Error']['Code'] == 'AccessDeniedException' or e.response['Error']['Code'] == 'UnauthorizedOperation':
@@ -37,7 +39,7 @@ def get_ec2_key_pairs(boto3_session: boto3.session.Session, region: str) -> List
 
 @timeit
 def load_ec2_key_pairs(
-    neo4j_session: neo4j.Session, data: List[Dict], region: str, current_aws_account_id: str,
+    neo4j_session: neo4j.Session, data: List[Dict], current_aws_account_id: str,
     update_tag: int,
 ) -> None:
     ingest_key_pair = """
@@ -53,6 +55,7 @@ def load_ec2_key_pairs(
     """
 
     for key_pair in data:
+        region = key_pair.get('region', '')
         key_name = key_pair["KeyName"]
         key_fingerprint = key_pair.get("KeyFingerprint")
         key_pair_arn = f'arn:aws:ec2:{region}:{current_aws_account_id}:key-pair/{key_name}'
@@ -82,10 +85,23 @@ def sync_ec2_key_pairs(
 
     logger.info("Syncing EC2 key pairs for account '%s', at %s.", current_aws_account_id, tic)
 
+    data = []
     for region in regions:
         logger.info("Syncing EC2 key pairs for region '%s' in account '%s'.", region, current_aws_account_id)
-        data = get_ec2_key_pairs(boto3_session, region)
-        load_ec2_key_pairs(neo4j_session, data, region, current_aws_account_id, update_tag)
+        data.extend(get_ec2_key_pairs(boto3_session, region))
+
+    if common_job_parameters.get('pagination', {}).get('ec2:keypair', None):
+        page_start = (common_job_parameters.get('pagination', {}).get('ec2:keypair', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('ec2:keypair', {})['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('ec2:keypair', {})['pageSize']
+        if page_end > len(data) or page_end == len(data):
+            data = data[page_start:]
+        else:
+            has_next_page = True
+            data = data[page_start:page_end]
+            common_job_parameters['pagination']['ec2:keypair']['hasNextPage'] = has_next_page
+
+    load_ec2_key_pairs(neo4j_session, data, current_aws_account_id, update_tag)
     cleanup_ec2_key_pairs(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()

@@ -22,19 +22,26 @@ def get_eks_clusters(boto3_session: boto3.session.Session, region: str) -> List[
     paginator = client.get_paginator('list_clusters')
     for page in paginator.paginate():
         clusters.extend(page['clusters'])
-    return clusters
+    clusters_data = []
+    for cluster in clusters:
+        cluster_data = {}
+        cluster_data['name'] = cluster
+        cluster_data['region'] = region
+        clusters_data.append(cluster_data)
+    return clusters_data
 
 
 @timeit
 def get_eks_describe_cluster(boto3_session: boto3.session.Session, region: str, cluster_name: str) -> Dict:
     client = boto3_session.client('eks', region_name=region)
     response = client.describe_cluster(name=cluster_name)
+    response['cluster']['region'] = region
     return response['cluster']
 
 
 @timeit
 def load_eks_clusters(
-    neo4j_session: neo4j.Session, cluster_data: Dict, region: str, current_aws_account_id: str,
+    neo4j_session: neo4j.Session, cluster_data: Dict, current_aws_account_id: str,
     aws_update_tag: int,
 ) -> None:
     query: str = """
@@ -73,7 +80,7 @@ def load_eks_clusters(
             ClusterStatus=cluster.get('status'),
             CreatedAt=str(cluster.get('createdAt')),
             ClusterLogging=_process_logging(cluster),
-            Region=region,
+            Region=cluster['region'],
             aws_update_tag=aws_update_tag,
             AWS_ACCOUNT_ID=current_aws_account_id,
         )
@@ -105,16 +112,27 @@ def sync(
 
     logger.info("Syncing EKS for account '%s', at %s.", current_aws_account_id, tic)
 
+    clusters = []
     for region in regions:
         logger.info("Syncing EKS for region '%s' in account '%s'.", region, current_aws_account_id)
 
-        clusters: List[Dict] = get_eks_clusters(boto3_session, region)
+        clusters.extend(get_eks_clusters(boto3_session, region))
 
-        cluster_data: Dict = {}
-        for cluster_name in clusters:
-            cluster_data[cluster_name] = get_eks_describe_cluster(boto3_session, region, cluster_name)
+    if common_job_parameters.get('pagination', {}).get('eks', None):
+        page_start = (common_job_parameters.get('pagination', {}).get('eks', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('eks', {})['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('eks', {})['pageSize']
+        if page_end > len(clusters) or page_end == len(clusters):
+            clusters = clusters[page_start:]
+        else:
+            has_next_page = True
+            clusters = clusters[page_start:page_end]
+            common_job_parameters['pagination']['eks']['hasNextPage'] = has_next_page
 
-        load_eks_clusters(neo4j_session, cluster_data, region, current_aws_account_id, update_tag)
+    cluster_data: Dict = {}
+    for cluster in clusters:
+        cluster_data[cluster['name']] = get_eks_describe_cluster(boto3_session, cluster['region'], cluster['name'])
+
+    load_eks_clusters(neo4j_session, cluster_data, current_aws_account_id, update_tag)
 
     cleanup(neo4j_session, common_job_parameters)
 

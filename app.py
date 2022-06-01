@@ -15,8 +15,10 @@ from utils.logger import get_logger
 lambda_init = None
 context = None
 
+
 def current_config(env):
-    return "config/production.json" if env=="PRODUCTION" else "config/default.json"
+    return "config/production.json" if env == "PRODUCTION" else "config/default.json"
+
 
 def set_assume_role_keys(context):
     context.assume_role_access_key_key_id = context.assume_role_access_secret_key_id = os.environ['CDX_APP_ASSUME_ROLE_KMS_KEY_ID']
@@ -25,6 +27,7 @@ def set_assume_role_keys(context):
     context.neo4j_uri = os.environ['CDX_APP_NEO4J_URI']
     context.neo4j_user = os.environ['CDX_APP_NEO4J_USER']
     context.neo4j_pwd = os.environ['CDX_APP_NEO4J_PWD']
+
 
 def init_lambda(ctx):
     global lambda_init, context
@@ -43,7 +46,7 @@ def init_lambda(ctx):
     context.logger = get_logger(context.log_level)
 
     decrypted_value = ''
-    
+
     # Read from config files in the project
     with open(current_config(context.app_env), 'r') as f:
         decrypted_value = f.read()
@@ -51,7 +54,7 @@ def init_lambda(ctx):
     # Cloudanix AWS AccountID
     context.aws_account_id = ctx.invoked_function_arn.split(":")[4]
     context.parse(decrypted_value)
-    
+
     set_assume_role_keys(context)
 
     lambda_init = True
@@ -81,12 +84,31 @@ def process_request(context, args):
             "workspace": args['workspace'],
             "actions": args['actions'],
             "resultTopic": args['resultTopic'],
+            "requestTopic": args.get("requestTopic", None),
         },
+        "updateTag": args.get("updateTag", None),
+        "services": args.get("services", None)
     }
 
     resp = cartography.cli.run_aws(body)
 
     if 'status' in resp and resp['status'] == 'success':
+        if resp.get('pagination', None):
+            services = []
+            for service, pagination in resp.get('pagination', {}).items():
+                if pagination.get('hasNextPage', False):
+                    services.append({
+                        "name": service,
+                        "pagination": {
+                            "pageSize": pagination.get('pageSize', 1),
+                            "pageNo": pagination.get('pageNo', 0) + 1
+                        }
+                    })
+            if len(services) > 0:
+                resp['services'] = services
+            else:
+                del resp['updateTag']
+            del resp['pagination']
         context.logger.info(f'successfully processed cartography: {resp}')
 
     else:
@@ -116,16 +138,17 @@ def publish_response(context, req, resp):
             "workspace": req['params']['workspace'],
             "actions": req['params']['actions'],
             "response": resp,
+            "services": resp.get("services", None),
+            "updateTag": resp.get("updateTag", None),
         }
 
         sns_helper = SNSLibrary(context)
-
-        if 'resultTopic' in req['params']:
+        if body.get('services', None):
+            if 'requestTopic' in req['params']:
+                status = sns_helper.publish(json.dumps(body), req['params']['requestTopic'])
+        elif 'resultTopic' in req['params']:
             # Result should be pushed to "resultTopic" passed in the request
-            # status = sns_helper.publish(json.dumps(body), req['params']['resultTopic'])
-            context.logger.info(f'Result not published anywhere. since we want to avoid query when inventory is refreshed')
-            status = True
-
+            status = sns_helper.publish(json.dumps(body), req['params']['resultTopic'])
         else:
             status = sns_helper.publish(json.dumps(body), context.aws_inventory_sync_response_topic)
 

@@ -25,6 +25,8 @@ def get_subnet_data(boto3_session: boto3.session.Session, region: str) -> List[D
         subnets: List[Dict] = []
         for page in paginator.paginate():
             subnets.extend(page['Subnets'])
+        for subnet in subnets:
+            subnet['region'] = region
 
     except ClientError as e:
         if e.response['Error']['Code'] == 'AccessDeniedException' or e.response['Error']['Code'] == 'UnauthorizedOperation':
@@ -40,7 +42,7 @@ def get_subnet_data(boto3_session: boto3.session.Session, region: str) -> List[D
 
 @timeit
 def load_subnets(
-    neo4j_session: neo4j.Session, data: List[Dict], region: str, aws_account_id: str,
+    neo4j_session: neo4j.Session, data: List[Dict], aws_account_id: str,
     aws_update_tag: int,
 ) -> None:
 
@@ -50,7 +52,7 @@ def load_subnets(
     ON CREATE SET snet.firstseen = timestamp()
     SET snet.lastupdated = {aws_update_tag}, snet.name = subnet.CidrBlock, snet.cidr_block = subnet.CidrBlock,
     snet.available_ip_address_count = subnet.AvailableIpAddressCount, snet.default_for_az = subnet.DefaultForAz,
-    snet.map_customer_owned_ip_on_launch = subnet.MapCustomerOwnedIpOnLaunch,snet.region = {region},
+    snet.map_customer_owned_ip_on_launch = subnet.MapCustomerOwnedIpOnLaunch,snet.region = subnet.region,
     snet.state = subnet.State, snet.assignipv6addressoncreation = subnet.AssignIpv6AddressOnCreation,
     snet.map_public_ip_on_launch = subnet.MapPublicIpOnLaunch, snet.subnet_arn = subnet.SubnetArn,
     snet.availability_zone = subnet.AvailabilityZone, snet.availability_zone_id = subnet.AvailabilityZoneId,
@@ -75,15 +77,15 @@ def load_subnets(
 
     neo4j_session.run(
         ingest_subnets, subnets=data, aws_update_tag=aws_update_tag,
-        region=region, aws_account_id=aws_account_id,
+        aws_account_id=aws_account_id,
     )
     neo4j_session.run(
         ingest_subnet_vpc_relations, subnets=data, aws_update_tag=aws_update_tag,
-        region=region, aws_account_id=aws_account_id,
+        aws_account_id=aws_account_id,
     )
     neo4j_session.run(
         ingest_subnet_aws_account_relations, subnets=data, aws_update_tag=aws_update_tag,
-        region=region, aws_account_id=aws_account_id,
+        aws_account_id=aws_account_id,
     )
 
 
@@ -101,10 +103,23 @@ def sync_subnets(
 
     logger.info("Syncing EC2 subnets for account '%s', at %s.", current_aws_account_id, tic)
 
+    data = []
     for region in regions:
         logger.info("Syncing EC2 subnets for region '%s' in account '%s'.", region, current_aws_account_id)
-        data = get_subnet_data(boto3_session, region)
-        load_subnets(neo4j_session, data, region, current_aws_account_id, update_tag)
+        data.extend(get_subnet_data(boto3_session, region))
+
+    if common_job_parameters.get('pagination', {}).get('ec2:subnet', None):
+        page_start = (common_job_parameters.get('pagination', {}).get('ec2:subnet', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('ec2:subnet', {})['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('ec2:subnet', {})['pageSize']
+        if page_end > len(data) or page_end == len(data):
+            data = data[page_start:]
+        else:
+            has_next_page = True
+            data = data[page_start:page_end]
+            common_job_parameters['pagination']['ec2:subnet']['hasNextPage'] = has_next_page
+
+    load_subnets(neo4j_session, data, current_aws_account_id, update_tag)
     cleanup_subnets(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()

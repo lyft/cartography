@@ -26,10 +26,10 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
-def get_s3_bucket_list(boto3_session: boto3.session.Session) -> List[Dict]:
+def get_s3_bucket_list(boto3_session: boto3.session.Session, common_job_parameters) -> List[Dict]:
     client = boto3_session.client('s3')
     buckets = {}
-    
+
     try:
         # NOTE no paginator available for this operation
         buckets = client.list_buckets()
@@ -44,7 +44,17 @@ def get_s3_bucket_list(boto3_session: boto3.session.Session) -> List[Dict]:
                     continue
                 else:
                     raise
-        
+        if common_job_parameters.get('pagination', {}).get('s3', None):
+            page_start = (common_job_parameters.get('pagination', {}).get('s3', {})[
+                          'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('s3', {})['pageSize']
+            page_end = page_start + common_job_parameters.get('pagination', {}).get('s3', {})['pageSize']
+            if page_end > len(buckets['Buckets']) or page_end == len(buckets['Buckets']):
+                buckets['Buckets'] = buckets['Buckets'][page_start:]
+            else:
+                has_next_page = True
+                buckets['Buckets'] = buckets['Buckets'][page_start:page_end]
+                common_job_parameters['pagination']['s3']['hasNextPage'] = has_next_page
+
     except ClientError as e:
         if "AccessDenied" in e.args[0]:
             logger.warning(
@@ -74,7 +84,7 @@ def get_s3_bucket_details(
     # a local store for s3 clients so that we may re-use clients for an AWS region
     s3_regional_clients: Dict[Any, Any] = {}
 
-    for bucket in bucket_data.get('Buckets',[]):
+    for bucket in bucket_data.get('Buckets', []):
         # Note: bucket['Region'] is sometimes None because
         # client.get_bucket_location() does not return a location constraint for buckets
         # in us-east-1 region
@@ -634,7 +644,7 @@ def load_s3_buckets(neo4j_session: neo4j.Session, data: Dict, current_aws_accoun
     # there doesn't seem to be a way to retreive the mapping but we can get the current context account
     # so we map to that directly
 
-    for bucket in data.get("Buckets",[]):
+    for bucket in data.get("Buckets", []):
         arn = "arn:aws:s3:::" + bucket["Name"]
         neo4j_session.run(
             ingest_bucket,
@@ -672,6 +682,8 @@ def sync(
     tic = time.perf_counter()
 
     logger.info("Syncing S3 for account '%s', at %s.", current_aws_account_id, tic)
+    bucket_data = get_s3_bucket_list(boto3_session, common_job_parameters)
+
     bucket_data = get_s3_bucket_list(boto3_session)
 
     load_s3_buckets(neo4j_session, bucket_data, current_aws_account_id, update_tag)
@@ -680,6 +692,6 @@ def sync(
     acl_and_policy_data_iter = get_s3_bucket_details(boto3_session, bucket_data)
     load_s3_details(neo4j_session, acl_and_policy_data_iter, current_aws_account_id, update_tag, common_job_parameters)
     cleanup_s3_bucket_acl_and_policy(neo4j_session, common_job_parameters)
-    
+
     toc = time.perf_counter()
     print(f"Total Time to process S3: {toc - tic:0.4f} seconds")

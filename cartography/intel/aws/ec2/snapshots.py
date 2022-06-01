@@ -20,13 +20,14 @@ def get_snapshots(boto3_session: boto3.session.Session, region: str) -> List[Dic
     client = boto3_session.client('ec2', region_name=region)
     snapshots = []
     try:
-
         paginator = client.get_paginator('describe_snapshots')
         query_params = {'OwnerIds': ['self']}
 
         snapshots: List[Dict] = []
         for page in paginator.paginate(**query_params):
             snapshots.extend(page['Snapshots'])
+        for snapshot in snapshots:
+            snapshot['region'] = region
 
     except ClientError as e:
         if e.response['Error']['Code'] == 'AccessDeniedException' or e.response['Error']['Code'] == 'UnauthorizedOperation':
@@ -42,7 +43,7 @@ def get_snapshots(boto3_session: boto3.session.Session, region: str) -> List[Dic
 
 @timeit
 def load_snapshots(
-        neo4j_session: neo4j.Session, data: List[Dict], region: str, current_aws_account_id: str, update_tag: int,
+        neo4j_session: neo4j.Session, data: List[Dict], current_aws_account_id: str, update_tag: int,
 ) -> None:
     ingest_snapshots = """
     UNWIND {snapshots_list} as snapshot
@@ -63,6 +64,7 @@ def load_snapshots(
     # neo4j does not accept datetime objects and values. This loop is used to convert
     # these values to string.
     for snapshot in data:
+        region = snapshot.get('region', '')
         snapshot['StartTime'] = str(snapshot['StartTime'])
         snapshot['Arn'] = f"arn:aws:ec2:{region}:{current_aws_account_id}:snapshot/{snapshot['SnapshotId']}"
 
@@ -132,12 +134,24 @@ def sync_ebs_snapshots(
 
     logger.info("Syncing Snapshots for account '%s', at %s.", current_aws_account_id, tic)
 
+    data = []
     for region in regions:
         logger.debug("Syncing snapshots for region '%s' in account '%s'.", region, current_aws_account_id)
-        data = get_snapshots(boto3_session, region)
-        load_snapshots(neo4j_session, data, region, current_aws_account_id, update_tag)
-        snapshot_volumes = get_snapshot_volumes(data)
-        load_snapshot_volume_relations(neo4j_session, snapshot_volumes, current_aws_account_id, update_tag)
+        data.extend(get_snapshots(boto3_session, region))
+
+    if common_job_parameters.get('pagination', {}).get('ec2:snapshots', None):
+        page_start = (common_job_parameters.get('pagination', {}).get('ec2:snapshots', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('ec2:snapshots', {})['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('ec2:snapshots', {})['pageSize']
+        if page_end > len(data) or page_end == len(data):
+            data = data[page_start:]
+        else:
+            has_next_page = True
+            data = data[page_start:page_end]
+            common_job_parameters['pagination']['ec2:snapshots']['hasNextPage'] = has_next_page
+
+    load_snapshots(neo4j_session, data, current_aws_account_id, update_tag)
+    snapshot_volumes = get_snapshot_volumes(data)
+    load_snapshot_volume_relations(neo4j_session, snapshot_volumes, current_aws_account_id, update_tag)
     cleanup_snapshots(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()

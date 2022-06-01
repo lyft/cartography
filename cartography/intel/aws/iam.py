@@ -620,6 +620,18 @@ def sync_users(
 ) -> None:
     logger.info("Syncing IAM users for account '%s'.", current_aws_account_id)
     data = get_user_list_data(boto3_session)
+
+    if common_job_parameters.get('pagination', {}).get('iam', None):
+        page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
+        if page_end > len(data['Users']) or page_end == len(data['Users']):
+            data['Users'] = data['Users'][page_start:]
+        else:
+            has_next_page = True
+            data['Users'] = data['Users'][page_start:page_end]
+            common_job_parameters['pagination']['iam']['hasNextPage'] = has_next_page
+
     load_users(neo4j_session, data['Users'], current_aws_account_id, aws_update_tag)
 
     sync_user_inline_policies(boto3_session, data, neo4j_session, current_aws_account_id, aws_update_tag)
@@ -821,6 +833,18 @@ def sync_groups(
 ) -> None:
     logger.info("Syncing IAM groups for account '%s'.", current_aws_account_id)
     data = get_group_list_data(boto3_session)
+
+    if common_job_parameters.get('pagination', {}).get('iam', None):
+        page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
+        if page_end > len(data['Groups']) or page_end == len(data['Groups']):
+            data['Groups'] = data['Groups'][page_start:]
+        else:
+            has_next_page = True
+            data['Groups'] = data['Groups'][page_start:page_end]
+            common_job_parameters['pagination']['iam']['hasNextPage'] = has_next_page
+
     load_groups(neo4j_session, data['Groups'], current_aws_account_id, aws_update_tag)
 
     sync_groups_inline_policies(boto3_session, data, neo4j_session, current_aws_account_id, aws_update_tag)
@@ -858,6 +882,18 @@ def sync_roles(
 ) -> None:
     logger.info("Syncing IAM roles for account '%s'.", current_aws_account_id)
     data = get_role_list_data(boto3_session)
+
+    if common_job_parameters.get('pagination', {}).get('iam', None):
+        page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
+        if page_end > len(data['Roles']) or page_end == len(data['Roles']):
+            data['Roles'] = data['Roles'][page_start:]
+        else:
+            has_next_page = True
+            data['Roles'] = data['Roles'][page_start:page_end]
+            common_job_parameters['pagination']['iam']['hasNextPage'] = has_next_page
+
     load_roles(neo4j_session, data['Roles'], current_aws_account_id, aws_update_tag)
 
     sync_role_inline_policies(current_aws_account_id, boto3_session, data, neo4j_session, aws_update_tag)
@@ -993,10 +1029,21 @@ def sync(
     sync_users(neo4j_session, boto3_session, current_aws_account_id, update_tag, common_job_parameters)
     sync_groups(neo4j_session, boto3_session, current_aws_account_id, update_tag, common_job_parameters)
     sync_roles(neo4j_session, boto3_session, current_aws_account_id, update_tag, common_job_parameters)
-    sync_group_memberships(neo4j_session, boto3_session, current_aws_account_id, update_tag, common_job_parameters)
-    sync_assumerole_relationships(neo4j_session, current_aws_account_id, update_tag, common_job_parameters)
-    sync_user_access_keys(neo4j_session, boto3_session, current_aws_account_id, update_tag, common_job_parameters)
-    set_used_state(neo4j_session, current_aws_account_id, common_job_parameters, update_tag)
+
+    if common_job_parameters.get('pagination', {}).get('iam', None):
+        if not common_job_parameters.get('pagination', {}).get('iam', {}).get('hasNextPage', False):
+            sync_group_memberships(neo4j_session, boto3_session, current_aws_account_id,
+                                   update_tag, common_job_parameters)
+            sync_assumerole_relationships(neo4j_session, current_aws_account_id, update_tag, common_job_parameters)
+            sync_user_access_keys(neo4j_session, boto3_session, current_aws_account_id,
+                                  update_tag, common_job_parameters)
+            set_used_state(neo4j_session, current_aws_account_id, common_job_parameters, update_tag)
+    else:
+        sync_group_memberships(neo4j_session, boto3_session, current_aws_account_id, update_tag, common_job_parameters)
+        sync_assumerole_relationships(neo4j_session, current_aws_account_id, update_tag, common_job_parameters)
+        sync_user_access_keys(neo4j_session, boto3_session, current_aws_account_id, update_tag, common_job_parameters)
+        set_used_state(neo4j_session, current_aws_account_id, common_job_parameters, update_tag)
+
     run_cleanup_job('aws_import_principals_cleanup.json', neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()

@@ -483,6 +483,8 @@ class CLI:
             return {
                 "status": "success",
                 "message": f"output - {output}",
+                "updateTag": output.get('UPDATE_TAG', None),
+                "pagination": output.get('pagination', None),
             }
 
         except KeyboardInterrupt:
@@ -532,6 +534,7 @@ def run_aws(request):
         credentials=request['credentials'],
         params=request['params'],
         aws_requested_syncs=request.get('services', None),
+        update_tag=request.get('updateTag', None)
     )
 
     if request['logging']['mode'] == "verbose":
