@@ -103,7 +103,7 @@ def get_apis(apigateway: Resource, project_id: str, regions: list, common_job_pa
                             api['region'] = f"{x[0]}-{x[1]}"
 
                         api_entities, public_access = get_api_policy_entities(apigateway, api, project_id)
-                        api['enities'] = api_entities
+                        api['entities'] = api_entities
                         api['public_access'] = public_access
 
                         apis.append(api)
@@ -175,7 +175,7 @@ def get_api_policy_entities(apigateway: Resource, api: Dict, project_id: str) ->
 
 
 @timeit
-def get_api_configs(apigateway: Resource, project_id: str, regions: list, common_job_parameters) -> List[Dict]:
+def get_api_configs(apigateway: Resource, project_id: str, api:Dict, regions: list) -> List[Dict]:
     """
         Returns a list of apis configs within the given project.
 
@@ -193,32 +193,33 @@ def get_api_configs(apigateway: Resource, project_id: str, regions: list, common
     """
     api_configs = []
     try:
-        if regions is None:
-            regions = ['global']
+        # if regions is None:
+        #     regions = ['global']
 
-        for region in regions:
-            req = apigateway.projects().locations().apis().configs().list(
-                parent=f'projects/{project_id}/locations/{region}/apis/*',
+        # for region in regions:
+        req = apigateway.projects().locations().apis().configs().list(
+            # parent=f'projects/{project_id}/locations/{region}/apis/{api["name"].split('/')[-1]}',
+            parent=api['name']
+        )
+        while req is not None:
+            res = req.execute()
+            if res.get('apiConfigs', []):
+                for apiConfig in res['apiConfigs']:
+                    apiConfig['api_id'] = api['name']
+                    # apiConfig['api_id'] = f"projects/{project_id}/locations/{region}/apis/\
+                        # {apiConfig.get('name').split('/')[-3]}"
+                    apiConfig['id'] = apiConfig['name']
+                    apiConfig['project_id'] = project_id
+                    x = apiConfig.get('name').split('/')
+                    x = x[x.index('locations') + 1].split("-")
+                    apiConfig['region'] = x[0]
+                    if len(x) > 1:
+                        apiConfig['region'] = f"{x[0]}-{x[1]}"
+                    api_configs.append(apiConfig)
+            req = apigateway.projects().locations().apis().configs().list_next(
+                previous_request=req,
+                previous_response=res,
             )
-            while req is not None:
-                res = req.execute()
-                if res.get('apiConfigs', []):
-                    for apiConfig in res['apiConfigs']:
-                        apiConfig['api_id'] = f"projects/{project_id}/locations/{region}/apis/\
-                            {apiConfig.get('name').split('/')[-3]}"
-                        apiConfig['id'] = apiConfig['name']
-                        apiConfig['project_id'] = project_id
-                        x = apiConfig.get('name').split('/')
-                        x = x[x.index('locations') + 1].split("-")
-                        apiConfig['region'] = x[0]
-                        if len(x) > 1:
-                            apiConfig['region'] = f"{x[0]}-{x[1]}"
-                        api_configs.append(apiConfig)
-                req = apigateway.projects().locations().apis().configs().list_next(
-                    previous_request=req,
-                    previous_response=res,
-                )
-
         return api_configs
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -230,7 +231,13 @@ def get_api_configs(apigateway: Resource, project_id: str, regions: list, common
             )
             return []
         else:
-            raise
+            # raise
+            logger.warning(
+                (
+                    "Could not retrieve apis configs on project %s, api %s. Code: %s, Message: %s"
+                ), project_id, api['name'], err['code'], err['message'],
+            )
+            return []
 
 
 @timeit
@@ -735,10 +742,12 @@ def sync(
     # API Gateway Locations
     locations = get_apigateway_locations(apigateway, project_id, common_job_parameters)
     load_apigateway_locations(neo4j_session, locations, project_id, gcp_update_tag)
+
     # Cleanup Locations
     cleanup_apigateway_locations(neo4j_session, common_job_parameters)
     label.sync_labels(neo4j_session, locations, gcp_update_tag,
                       common_job_parameters, 'apigateway_locations', 'GCPLocation')
+
     # API Gateway APIs
     apis = get_apis(apigateway, project_id, regions, common_job_parameters)
     load_apis(neo4j_session, apis, project_id, gcp_update_tag)
@@ -747,16 +756,21 @@ def sync(
 
     # Cleanup APIs
     cleanup_apis(neo4j_session, common_job_parameters)
+
     # API Gateway API Configs
-    configs = get_api_configs(apigateway, project_id, regions, common_job_parameters)
-    load_api_configs(neo4j_session, configs, project_id, gcp_update_tag)
+    for api in apis:
+        configs = get_api_configs(apigateway, project_id, api, regions)
+        load_api_configs(neo4j_session, configs, project_id, gcp_update_tag)
+    
     # Cleanup API Gateway Configs
     cleanup_api_configs(neo4j_session, common_job_parameters)
+
     # API Gateway Gateways
     gateways = get_gateways(apigateway, project_id, regions, common_job_parameters)
     load_gateways(neo4j_session, gateways, project_id, gcp_update_tag)
     for gateway in gateways:
         load_gateway_entity_relation(neo4j_session, gateway, gcp_update_tag)
+
     # Cleanup API Gateway Gateways
     cleanup_api_gateways(neo4j_session, common_job_parameters)
 
