@@ -1,16 +1,17 @@
+import argparse
 import logging
 import time
 from collections import OrderedDict
 from typing import Callable
 from typing import List
 from typing import Tuple
+from typing import Union
 
 import neo4j
 import neobolt.exceptions
 from neo4j import GraphDatabase
 from statsd import StatsClient
 
-import cartography.config
 import cartography.intel.analysis
 import cartography.intel.aws
 import cartography.intel.azure
@@ -24,6 +25,7 @@ import cartography.intel.github
 import cartography.intel.gsuite
 import cartography.intel.kubernetes
 import cartography.intel.okta
+from cartography.config import Config
 from cartography.stats import set_stats_client
 
 logger = logging.getLogger(__name__)
@@ -64,7 +66,7 @@ class Sync:
         for name, func in stages:
             self.add_stage(name, func)
 
-    def run(self, neo4j_driver: neo4j.Driver, config: cartography.config.Config) -> int:
+    def run(self, neo4j_driver: neo4j.Driver, config: Union[Config, argparse.Namespace]) -> int:
         """
         Execute all stages in the sync task in sequence.
 
@@ -90,7 +92,7 @@ class Sync:
         return 0
 
 
-def run_with_config(sync: cartography.sync.Sync, config: cartography.config.Config) -> int:
+def run_with_config(sync: Sync, config: Union[Config, argparse.Namespace]) -> int:
     """
     Execute the cartography.sync.Sync.run method with parameters built from the given configuration object.
 
@@ -159,7 +161,7 @@ def run_with_config(sync: cartography.sync.Sync, config: cartography.config.Conf
     return sync.run(neo4j_driver, config)
 
 
-def build_default_sync() -> cartography.sync.Sync:
+def build_default_sync() -> Sync:
     """
     Build the default cartography sync, which runs all intelligence modules shipped with the cartography package.
 

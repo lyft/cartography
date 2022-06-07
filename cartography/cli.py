@@ -368,7 +368,7 @@ class CLI:
         )
         return parser
 
-    def main(self, argv) -> int:
+    def main(self, argv: str) -> int:
         """
         Entrypoint for the command line interface.
 
@@ -376,7 +376,7 @@ class CLI:
         :param argv: The parameters supplied to the command line program.
         """
         # TODO support parameter lookup in environment variables if not present on command line
-        config: cartography.config.Config = self.parser.parse_args(argv)
+        config: argparse.Namespace = self.parser.parse_args(argv)
         # Logging config
         if config.verbose:
             logging.getLogger('cartography').setLevel(logging.DEBUG)
