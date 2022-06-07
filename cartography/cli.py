@@ -499,7 +499,7 @@ class CLI:
         try:
             return cartography.sync.run_with_config(self.sync, config)
         except KeyboardInterrupt:
-            return 130
+            return cartography.util.STATUS_KEYBOARD_INTERRUPT
 
 
 def main(argv=None):
