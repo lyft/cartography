@@ -368,7 +368,7 @@ class CLI:
         )
         return parser
 
-    def main(self, argv):
+    def main(self, argv: str) -> int:
         """
         Entrypoint for the command line interface.
 
@@ -376,7 +376,7 @@ class CLI:
         :param argv: The parameters supplied to the command line program.
         """
         # TODO support parameter lookup in environment variables if not present on command line
-        config: cartography.config.Config = self.parser.parse_args(argv)
+        config: argparse.Namespace = self.parser.parse_args(argv)
         # Logging config
         if config.verbose:
             logging.getLogger('cartography').setLevel(logging.DEBUG)
@@ -499,7 +499,7 @@ class CLI:
         try:
             return cartography.sync.run_with_config(self.sync, config)
         except KeyboardInterrupt:
-            return 130
+            return cartography.util.STATUS_KEYBOARD_INTERRUPT
 
 
 def main(argv=None):
@@ -517,4 +517,4 @@ def main(argv=None):
     logging.getLogger('neo4j.bolt').setLevel(logging.WARNING)
     argv = argv if argv is not None else sys.argv[1:]
     default_sync = cartography.sync.build_default_sync()
-    return CLI(default_sync, prog='cartography').main(argv)
+    sys.exit(CLI(default_sync, prog='cartography').main(argv))
