@@ -368,7 +368,7 @@ class CLI:
         )
         return parser
 
-    def main(self, argv):
+    def main(self, argv) -> int:
         """
         Entrypoint for the command line interface.
 
@@ -517,4 +517,4 @@ def main(argv=None):
     logging.getLogger('neo4j.bolt').setLevel(logging.WARNING)
     argv = argv if argv is not None else sys.argv[1:]
     default_sync = cartography.sync.build_default_sync()
-    return CLI(default_sync, prog='cartography').main(argv)
+    sys.exit(CLI(default_sync, prog='cartography').main(argv))
