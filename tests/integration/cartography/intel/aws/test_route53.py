@@ -122,10 +122,6 @@ def test_load_and_cleanup_dnspointsto_relationships(neo4j_session):
     assert actual == expected
 
     new_update_tag = 1337
-    new_job_parameters = {
-        "UPDATE_TAG": new_update_tag,
-        "AWS_ID": TEST_AWS_ACCOUNTID,
-    }
     # Run all cleanup jobs where DNS_POINTS_TO is mentioned in the AWS sync.
     cartography.intel.aws.route53.cleanup_route53(neo4j_session, TEST_AWS_ACCOUNTID, new_update_tag)
     cartography.intel.aws.elasticsearch.cleanup(
