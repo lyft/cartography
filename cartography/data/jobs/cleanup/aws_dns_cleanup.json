@@ -1,6 +1,12 @@
 {
   "statements": [
     {
+      "query": "MATCH (n:AWSDNSRecord)-[:MEMBER_OF_DNS_ZONE]->(:AWSDNSZone)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n)",
+      "iterative": true,
+      "iterationsize": 100,
+      "__comment__": "cleanup AWS DNS Records linked to current account"
+    },
+    {
       "query": "MATCH (n:AWSDNSZone)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
       "iterative": true,
       "iterationsize": 100
@@ -53,12 +59,6 @@
       "query": "MATCH (:Ip)<-[r:DNS_POINTS_TO]-(:AWSDNSRecord)-[:MEMBER_OF_DNS_ZONE]->(:AWSDNSZone)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r)",
       "iterative": true,
       "iterationsize": 100
-    },
-    {
-      "query": "MATCH (n:AWSDNSRecord)-[:MEMBER_OF_DNS_ZONE]->(:AWSDNSZone)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n)",
-      "iterative": true,
-      "iterationsize": 100,
-      "__comment__": "cleanup AWS DNS Records linked to current account"
     }
   ],
   "name": "cleanup AWS DNS"
