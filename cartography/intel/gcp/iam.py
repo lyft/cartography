@@ -173,7 +173,7 @@ def get_service_account_keys(iam: Resource, project_id: str, service_account: Di
             raise
 
 
-@ timeit
+@timeit
 def get_roles(iam: Resource, project_id: str) -> List[Dict]:
     roles: List[Dict] = []
     try:
@@ -197,7 +197,7 @@ def get_roles(iam: Resource, project_id: str) -> List[Dict]:
             raise
 
 
-@ timeit
+@timeit
 def get_project_roles(iam: Resource, project_id: str) -> List[Dict]:
     roles: List[Dict] = []
     try:
@@ -221,7 +221,7 @@ def get_project_roles(iam: Resource, project_id: str) -> List[Dict]:
             raise
 
 
-@ timeit
+@timeit
 def transform_roles(roles_list: List[Dict], project_id: str, gcp_console_link: GCP) -> List[Dict]:
     for role in roles_list:
         role['id'] = get_role_id(role['name'], project_id)
@@ -230,7 +230,7 @@ def transform_roles(roles_list: List[Dict], project_id: str, gcp_console_link: G
     return roles_list
 
 
-@ timeit
+@timeit
 def get_role_id(role_name: str, project_id: str) -> str:
     if role_name.startswith('organizations/'):
         return role_name
@@ -243,7 +243,7 @@ def get_role_id(role_name: str, project_id: str) -> str:
     return ''
 
 
-@ timeit
+@timeit
 def get_policy_bindings(crm: Resource, project_id: str) -> List[Dict]:
     try:
         req = crm.projects().getIamPolicy(resource=project_id, body={'options': {'requestedPolicyVersion': 3}})
@@ -322,7 +322,7 @@ def transform_bindings(bindings: Dict, project_id: str) -> tuple:
     return entity_list, public_access
 
 
-@ timeit
+@timeit
 def load_service_accounts(
     neo4j_session: neo4j.Session,
     service_accounts: List[Dict], project_id: str, gcp_update_tag: int,

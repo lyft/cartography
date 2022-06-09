@@ -71,7 +71,7 @@ def get_sql_instances(sql: Resource, project_id: str, regions: list, common_job_
             raise
 
 
-@ timeit
+@timeit
 def get_sql_users(sql: Resource, sql_instances: List[Dict], project_id: str, gcp_console_link: GCP) -> List[Dict]:
     """
         Returns a list of sql instance users for a given project.
@@ -127,12 +127,12 @@ def get_sql_users(sql: Resource, sql_instances: List[Dict], project_id: str, gcp
     return sql_users
 
 
-@ timeit
+@timeit
 def load_sql_instances(session: neo4j.Session, data_list: List[Dict], project_id: str, update_tag: int) -> None:
     session.write_transaction(_load_sql_instances_tx, data_list, project_id, update_tag)
 
 
-@ timeit
+@timeit
 def _load_sql_instances_tx(tx: neo4j.Transaction, instances: List[Dict], project_id: str, gcp_update_tag: int) -> None:
     """
         :type neo4j_transaction: Neo4j transaction object
@@ -184,12 +184,12 @@ def _load_sql_instances_tx(tx: neo4j.Transaction, instances: List[Dict], project
     )
 
 
-@ timeit
+@timeit
 def load_sql_users(session: neo4j.Session, data_list: List[Dict], project_id: str, update_tag: int) -> None:
     session.write_transaction(_load_sql_users_tx, data_list, project_id, update_tag)
 
 
-@ timeit
+@timeit
 def _load_sql_users_tx(tx: neo4j.Transaction, sql_users: List[Dict], project_id: str, gcp_update_tag: int) -> None:
     """
         :type neo4j_transaction: Neo4j transaction object
@@ -234,7 +234,7 @@ def _load_sql_users_tx(tx: neo4j.Transaction, sql_users: List[Dict], project_id:
     )
 
 
-@ timeit
+@timeit
 def cleanup_sql(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     """
         Delete out-of-date GCP SQL Instances and relationships
@@ -251,7 +251,7 @@ def cleanup_sql(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> No
     run_cleanup_job('gcp_sql_cleanup.json', neo4j_session, common_job_parameters)
 
 
-@ timeit
+@timeit
 def sync(
     neo4j_session: neo4j.Session, sql: Resource, project_id: str, gcp_update_tag: int,
     common_job_parameters: Dict, regions: list, gcp_console_link: GCP

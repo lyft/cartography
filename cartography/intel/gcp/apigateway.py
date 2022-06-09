@@ -238,7 +238,7 @@ def get_api_configs(apigateway: Resource, api: Dict, project_id: str, regions: l
             raise
 
 
-@ timeit
+@timeit
 def get_gateways(apigateway: Resource, project_id: str, regions: list, common_job_parameters, gcp_console_link: GCP) -> List[Dict]:
     """
         Returns a list of gateways within the given project.
@@ -305,7 +305,7 @@ def get_gateways(apigateway: Resource, project_id: str, regions: list, common_jo
             raise
 
 
-@ timeit
+@timeit
 def get_api_gateway_policy_entities(apigateway: Resource, gateway: Dict, project_id: str) -> List[Dict]:
     """
         Returns a list of users attached to IAM policy of an API Gateway within the given project.
@@ -344,12 +344,12 @@ def get_api_gateway_policy_entities(apigateway: Resource, gateway: Dict, project
             raise
 
 
-@ timeit
+@timeit
 def load_apigateway_locations(session: neo4j.Session, data_list: List[Dict], project_id: str, update_tag: int) -> None:
     session.write_transaction(load_apigateway_locations_tx, data_list, project_id, update_tag)
 
 
-@ timeit
+@timeit
 def load_apigateway_locations_tx(
     tx: neo4j.Transaction, locations: List[Dict],
     project_id: str, gcp_update_tag: int,
