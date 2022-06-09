@@ -1,6 +1,6 @@
 import cartography.intel.aws.ec2
-from cartography.util import run_analysis_job, run_cleanup_job
 import tests.data.aws.ec2.key_pairs
+from cartography.util import run_analysis_job
 
 
 TEST_ACCOUNT_ID = '000000000000'
@@ -33,7 +33,7 @@ def test_load_ec2_key_pairs(neo4j_session, *args):
         (
             "arn:aws:ec2:us-east-1:000000000000:key-pair/sample_key_pair_4",
             "44:44:44:44:44:44:44:44:44:44:44:44:44:44:44:44",
-        )
+        ),
     }
 
     nodes = neo4j_session.run(
@@ -50,6 +50,7 @@ def test_load_ec2_key_pairs(neo4j_session, *args):
     }
     assert actual_nodes == expected_nodes
 
+
 def test_ec2_key_pairs_analysis_job(neo4j_session, *args):
     data = tests.data.aws.ec2.key_pairs.DESCRIBE_KEY_PAIRS['KeyPairs']
     cartography.intel.aws.ec2.key_pairs.load_ec2_key_pairs(
@@ -60,15 +61,16 @@ def test_ec2_key_pairs_analysis_job(neo4j_session, *args):
         TEST_UPDATE_TAG,
     )
     run_analysis_job(
-        'aws_ec2_keypair_analysis.json', 
-        neo4j_session, 
-        {'UPDATE_TAG': TEST_UPDATE_TAG})
+        'aws_ec2_keypair_analysis.json',
+        neo4j_session,
+        {'UPDATE_TAG': TEST_UPDATE_TAG},
+    )
     expected_nodes = {
         (
             "arn:aws:ec2:us-east-1:000000000000:key-pair/sample_key_pair_4",
             "44:44:44:44:44:44:44:44:44:44:44:44:44:44:44:44",
-            True
-        )
+            True,
+        ),
     }
     nodes = neo4j_session.run(
         """
@@ -79,7 +81,7 @@ def test_ec2_key_pairs_analysis_job(neo4j_session, *args):
         (
             n['k.arn'],
             n['k.keyfingerprint'],
-            n['k.user_uploaded']
+            n['k.user_uploaded'],
         )
         for n in nodes
     }
