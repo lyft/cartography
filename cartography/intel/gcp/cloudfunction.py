@@ -8,6 +8,7 @@ import time
 import neo4j
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
+from cloudconsolelink.clouds.gcp import GCP
 
 from cartography.util import run_cleanup_job
 from . import label
@@ -17,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
-def get_gcp_functions(function: Resource, project_id: str, regions: list, common_job_parameters) -> List[Dict]:
+def get_gcp_functions(function: Resource, project_id: str, regions: list, common_job_parameters, gcp_console_link: GCP) -> List[Dict]:
     """
         Returns a list of functions for a given project.
 
@@ -74,6 +75,8 @@ def get_gcp_functions(function: Resource, project_id: str, regions: list, common
                     function_entities, public_access = get_function_policy_entities(function, func, project_id)
                     func['entities'] = function_entities
                     func['public_access'] = public_access
+                    func['consolelink'] = gcp_console_link.get_console_link(
+                        resource_name='cloud_function', project_id=project_id, cloud_function_name=func['name'].split('/')[-1], region=func['region'])
                     functions.append(func)
                 request = function.projects().locations().functions().list_next(
                     previous_request=request,
@@ -185,6 +188,7 @@ def _load_functions_tx(tx: neo4j.Transaction, functions: List[Resource], project
         function.buildId = func.buildId,
         function.sourceToken = func.sourceToken,
         function.sourceArchiveUrl = func.sourceArchiveUrl,
+        function.consolelink = func.consolelink,
         function.lastupdated = {gcp_update_tag}
     WITH function
     MATCH (owner:GCPProject{id:{ProjectId}})
@@ -260,7 +264,7 @@ def cleanup_gcp_functions(neo4j_session: neo4j.Session, common_job_parameters: D
 @timeit
 def sync(
     neo4j_session: neo4j.Session, function: Resource, project_id: str, gcp_update_tag: int,
-    common_job_parameters: Dict, regions: list
+    common_job_parameters: Dict, regions: list, gcp_console_link: GCP
 ) -> None:
     """
     Get GCP Cloud Functions using the Cloud Function resource object, ingest to Neo4j, and clean up old data.
@@ -288,7 +292,7 @@ def sync(
     logger.info("Syncing Cloud Functions for project '%s', at %s.", project_id, tic)
 
     # FUNCTIONS
-    functions = get_gcp_functions(function, project_id, regions, common_job_parameters)
+    functions = get_gcp_functions(function, project_id, regions, common_job_parameters, gcp_console_link)
     load_functions(neo4j_session, functions, project_id, gcp_update_tag)
     for function in functions:
         load_function_entity_relation(neo4j_session, function, gcp_update_tag)

@@ -7,6 +7,7 @@ import time
 import neo4j
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
+from cloudconsolelink.clouds.gcp import GCP
 
 from cartography.util import run_cleanup_job
 from . import label
@@ -16,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
-def get_sql_instances(sql: Resource, project_id: str, regions: list, common_job_parameters) -> List[Dict]:
+def get_sql_instances(sql: Resource, project_id: str, regions: list, common_job_parameters, gcp_console_link: GCP) -> List[Dict]:
     """
         Returns a list of sql instances for a given project.
 
@@ -38,6 +39,8 @@ def get_sql_instances(sql: Resource, project_id: str, regions: list, common_job_
                 for item in response['items']:
                     item['id'] = f"project/{project_id}/instances/{item['name']}"
                     item['ipV4Enabled'] = item.get('settings', {}).get('ipConfiguration', {}).get('ipV4Enabled', False)
+                    item['consolelink'] = gcp_console_link.get_console_link(
+                        resource_name='sql_instance', project_id=project_id, sql_instance_name=item['name'])
                     if regions is None:
                         sql_instances.append(item)
                     else:
@@ -68,8 +71,8 @@ def get_sql_instances(sql: Resource, project_id: str, regions: list, common_job_
             raise
 
 
-@timeit
-def get_sql_users(sql: Resource, sql_instances: List[Dict], project_id: str) -> List[Dict]:
+@ timeit
+def get_sql_users(sql: Resource, sql_instances: List[Dict], project_id: str, gcp_console_link: GCP) -> List[Dict]:
     """
         Returns a list of sql instance users for a given project.
 
@@ -95,6 +98,8 @@ def get_sql_users(sql: Resource, sql_instances: List[Dict], project_id: str) -> 
                     for item in response['items']:
                         item['instance_id'] = inst['id']
                         item['id'] = f"project/{project_id}/instances/{inst['name']}/users/{item['name']}"
+                        item['consolelink'] = gcp_console_link.get_console_link(
+                            project_id=project_id, resource_name='sql_user', sql_instance_name=inst['name'])
                         sql_users.append(item)
                 if 'nextPageToken' in response:
                     request = sql.users().list(
@@ -122,12 +127,12 @@ def get_sql_users(sql: Resource, sql_instances: List[Dict], project_id: str) -> 
     return sql_users
 
 
-@timeit
+@ timeit
 def load_sql_instances(session: neo4j.Session, data_list: List[Dict], project_id: str, update_tag: int) -> None:
     session.write_transaction(_load_sql_instances_tx, data_list, project_id, update_tag)
 
 
-@timeit
+@ timeit
 def _load_sql_instances_tx(tx: neo4j.Transaction, instances: List[Dict], project_id: str, gcp_update_tag: int) -> None:
     """
         :type neo4j_transaction: Neo4j transaction object
@@ -162,6 +167,7 @@ def _load_sql_instances_tx(tx: neo4j.Transaction, instances: List[Dict], project
         i.secondaryGceZone = instance.secondaryGceZone,
         i.satisfiesPzs = instance.satisfiesPzs,
         i.createTime = instance.createTime,
+        i.consolelink = instance.consolelink,
         i.lastupdated = {gcp_update_tag}
     WITH i
     MATCH (owner:GCPProject{id:{ProjectId}})
@@ -178,12 +184,12 @@ def _load_sql_instances_tx(tx: neo4j.Transaction, instances: List[Dict], project
     )
 
 
-@timeit
+@ timeit
 def load_sql_users(session: neo4j.Session, data_list: List[Dict], project_id: str, update_tag: int) -> None:
     session.write_transaction(_load_sql_users_tx, data_list, project_id, update_tag)
 
 
-@timeit
+@ timeit
 def _load_sql_users_tx(tx: neo4j.Transaction, sql_users: List[Dict], project_id: str, gcp_update_tag: int) -> None:
     """
         :type neo4j_transaction: Neo4j transaction object
@@ -210,6 +216,7 @@ def _load_sql_users_tx(tx: neo4j.Transaction, sql_users: List[Dict], project_id:
         u.region = {region},
         u.project = user.project,
         u.type = user.type,
+        u.consolelink = user.consolelink,
         u.lastupdated = {gcp_update_tag}
     WITH u,user
     MATCH (i:GCPSQLInstance{id:user.instance_id})
@@ -227,7 +234,7 @@ def _load_sql_users_tx(tx: neo4j.Transaction, sql_users: List[Dict], project_id:
     )
 
 
-@timeit
+@ timeit
 def cleanup_sql(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     """
         Delete out-of-date GCP SQL Instances and relationships
@@ -244,10 +251,10 @@ def cleanup_sql(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> No
     run_cleanup_job('gcp_sql_cleanup.json', neo4j_session, common_job_parameters)
 
 
-@timeit
+@ timeit
 def sync(
     neo4j_session: neo4j.Session, sql: Resource, project_id: str, gcp_update_tag: int,
-    common_job_parameters: Dict, regions: list
+    common_job_parameters: Dict, regions: list, gcp_console_link: GCP
 ) -> None:
     """
         Get GCP Cloud SQL Instances and Users using the Cloud SQL resource object,
@@ -276,7 +283,7 @@ def sync(
     logger.info("Syncing CloudSQL for project '%s', at %s.", project_id, tic)
 
     # SQL INSTANCES
-    sqlinstances = get_sql_instances(sql, project_id, regions, common_job_parameters)
+    sqlinstances = get_sql_instances(sql, project_id, regions, common_job_parameters, gcp_console_link)
     load_sql_instances(neo4j_session, sqlinstances, project_id, gcp_update_tag)
     logger.info("Load GCP Cloud SQL Instances completed for project %s.", project_id)
     label.sync_labels(neo4j_session, sqlinstances, gcp_update_tag,
@@ -284,7 +291,7 @@ def sync(
 
     logger.info("Syncing GCP Cloud SQL Users for project %s.", project_id)
     # SQL USERS
-    users = get_sql_users(sql, sqlinstances, project_id)
+    users = get_sql_users(sql, sqlinstances, project_id, gcp_console_link)
     load_sql_users(neo4j_session, users, project_id, gcp_update_tag)
     cleanup_sql(neo4j_session, common_job_parameters)
 

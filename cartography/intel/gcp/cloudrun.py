@@ -7,6 +7,7 @@ import time
 import neo4j
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
+from cloudconsolelink.clouds.gcp import GCP
 
 from cartography.util import run_cleanup_job
 from . import label
@@ -675,7 +676,7 @@ def cleanup_gcp_cloudrun(neo4j_session: neo4j.Session, common_job_parameters: Di
 @timeit
 def sync(
     neo4j_session: neo4j.Session, cloudrun: Resource, project_id: str, gcp_update_tag: int,
-    common_job_parameters: Dict, regions: list
+    common_job_parameters: Dict, regions: list, gcp_console_link: GCP
 ) -> None:
     """
         Get GCP Cloud Cloudrun using the Cloud Cloudrun resource object, ingest to Neo4j, and clean up old data.

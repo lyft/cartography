@@ -7,6 +7,7 @@ import time
 import neo4j
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
+from cloudconsolelink.clouds.gcp import GCP
 
 from cartography.util import run_cleanup_job
 from . import label
@@ -16,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
-def get_bigtable_instances(bigtable: Resource, project_id: str, common_job_parameters) -> List[Dict]:
+def get_bigtable_instances(bigtable: Resource, project_id: str, common_job_parameters, gcp_console_link: GCP) -> List[Dict]:
     """
         Returns a list of bigtable instances for a given project.
 
@@ -37,6 +38,8 @@ def get_bigtable_instances(bigtable: Resource, project_id: str, common_job_param
             if response.get('instances', []):
                 for instance in response['instances']:
                     instance['id'] = instance['name']
+                    instance['consolelink'] = gcp_console_link.get_console_link(
+                        resource_name='big_table_instance', project_id=project_id, bigtable_instance_name=instance['name'].split("/")[-1])
                     bigtable_instances.append(instance)
             request = bigtable.projects().instances().list_next(previous_request=request, previous_response=response)
         if common_job_parameters.get('pagination', {}).get('bigtable', None):
@@ -66,7 +69,7 @@ def get_bigtable_instances(bigtable: Resource, project_id: str, common_job_param
 
 
 @timeit
-def get_bigtable_clusters(bigtable: Resource, bigtable_instances: List[Dict], project_id: str, regions: list) -> List[Dict]:
+def get_bigtable_clusters(bigtable: Resource, bigtable_instances: List[Dict], project_id: str, regions: list, gcp_console_link: GCP) -> List[Dict]:
     """
         Returns a list of bigtable clusters for a given project.
 
@@ -95,7 +98,10 @@ def get_bigtable_clusters(bigtable: Resource, bigtable_instances: List[Dict], pr
                         cluster['instance_id'] = instance['id']
                         cluster['instance_name'] = instance.get('name')
                         cluster['id'] = cluster['name']
+                        cluster['consolelink'] = gcp_console_link.get_console_link(
+                            resource_name='big_table_cluster', project_id=project_id, bigtable_instance_name=instance['name'].split("/")[-1], bigtable_cluster_id=cluster['name'].split("/")[-1])
                         x = cluster.get("location", "global").split("/")
+
                         cluster['region'] = "global"
                         if x != ["global"]:
                             x = x[x.index("locations") + 1].split("-")
@@ -126,7 +132,7 @@ def get_bigtable_clusters(bigtable: Resource, bigtable_instances: List[Dict], pr
 
 
 @timeit
-def get_bigtable_cluster_backups(bigtable: Resource, bigtable_clusters: List[Dict], project_id: str, common_job_parameters) -> List[Dict]:
+def get_bigtable_cluster_backups(bigtable: Resource, bigtable_clusters: List[Dict], project_id: str, common_job_parameters, gcp_console_link: GCP) -> List[Dict]:
     """
         Returns a list of bigtable cluster backups for a given project.
 
@@ -155,6 +161,8 @@ def get_bigtable_cluster_backups(bigtable: Resource, bigtable_clusters: List[Dic
                         backup['cluster_id'] = cluster['id']
                         backup['id'] = backup['name']
                         backup['region'] = cluster.get('region', "global")
+                        backup['consolelink'] = gcp_console_link.get_console_link(
+                            resource_name='big_table_backup', project_id=project_id, bigtable_instance_name=cluster['instance_id'].split("/")[-1], bigtable_table_id=backup['sourceTable'].split("/")[-1])
                         cluster_backups.append(backup)
                 request = bigtable.projects().instances().clusters().backup().list_next(
                     previous_request=request, previous_response=response,
@@ -176,7 +184,7 @@ def get_bigtable_cluster_backups(bigtable: Resource, bigtable_clusters: List[Dic
 
 
 @timeit
-def get_get_bigtable_tables(bigtable: Resource, bigtable_instances: List[Dict], project_id: str, regions: list) -> List[Dict]:
+def get_get_bigtable_tables(bigtable: Resource, bigtable_instances: List[Dict], project_id: str, regions: list, gcp_console_link: GCP) -> List[Dict]:
     """
         Returns a list of bigtable tables for a given project.
 
@@ -205,6 +213,8 @@ def get_get_bigtable_tables(bigtable: Resource, bigtable_instances: List[Dict], 
                         table['instance_id'] = instance['id']
                         table['id'] = table['name']
                         table['region'] = instance.get('region', 'global')
+                        table['consolelink'] = gcp_console_link.get_console_link(
+                            resource_name='big_table', project_id=project_id, bigtable_instance_name=instance['id'].split("/")[-1], bigtable_table_id=table['name'].split("/")[-1])
                         if regions is None:
                             bigtable_tables.append(table)
                         else:
@@ -263,6 +273,7 @@ def _load_bigtable_instances_tx(
         i.region = {region},
         i.type = instance.type,
         i.createTime = instance.createTime,
+        i.consolelink = instance.consolelink,
         i.lastupdated = {gcp_update_tag}
     WITH instance, i
     MATCH (owner:GCPProject{id:{ProjectId}})
@@ -314,6 +325,7 @@ def _load_bigtable_clusters_tx(
         c.region = cluster.region,
         c.state = cluster.state,
         c.serveNodes = cluster.serveNodes,
+        c.consolelink = cluster.consolelink,
         c.defaultStorageType = cluster.defaultStorageType,
         c.lastupdated = {gcp_update_tag}
     WITH c,cluster
@@ -371,6 +383,7 @@ def _load_bigtable_cluster_backups_tx(
         b.endTime = backup.endTime,
         b.sizeBytes = backup.sizeBytes,
         b.state = backup.state,
+        b.consolelink = backup.consolelink,
         b.lastupdated = {gcp_update_tag}
     WITH b,backup
     MATCH (c:GCPBigtableCluster{id:backup.cluster_id})
@@ -420,6 +433,7 @@ def _load_bigtable_tables_tx(
         t.replicationState = table.clusterState.replicationState,
         t.granularity = table.granularity,
         t.region =table.region,
+        t.consolelink = table.consolelink,
         t.sourceType = table.restoreInfo.sourceType,
         t.lastupdated = {gcp_update_tag}
     WITH table, t
@@ -457,7 +471,7 @@ def cleanup_bigtable(neo4j_session: neo4j.Session, common_job_parameters: Dict) 
 @timeit
 def sync(
     neo4j_session: neo4j.Session, bigtable: Resource, project_id: str, gcp_update_tag: int,
-    common_job_parameters: Dict, regions: list,
+    common_job_parameters: Dict, regions: list, gcp_console_link: GCP,
 ) -> None:
     """
         Get GCP Cloud Bigtable Entities using the Cloud Bigtable resource object,
@@ -486,18 +500,19 @@ def sync(
     logger.info("Syncing Bigtable for project '%s', at %s.", project_id, tic)
 
     # BIGTABLE INSTANCES
-    bigtable_instances = get_bigtable_instances(bigtable, project_id, common_job_parameters)
+    bigtable_instances = get_bigtable_instances(bigtable, project_id, common_job_parameters, gcp_console_link)
     load_bigtable_instances(neo4j_session, bigtable_instances, project_id, gcp_update_tag)
     label.sync_labels(neo4j_session, bigtable_instances, gcp_update_tag,
                       common_job_parameters, 'bigtable_instances', 'GCPBigtableInstance')
     # BIGTABLE CLUSTERS
-    bigtable_clusters = get_bigtable_clusters(bigtable, bigtable_instances, project_id, regions)
+    bigtable_clusters = get_bigtable_clusters(bigtable, bigtable_instances, project_id, regions, gcp_console_link)
     load_bigtable_clusters(neo4j_session, bigtable_clusters, project_id, gcp_update_tag)
     # BIGTABLE CLUSTER BACKUPS
-    cluster_backups = get_bigtable_cluster_backups(bigtable, bigtable_clusters, project_id, common_job_parameters)
+    cluster_backups = get_bigtable_cluster_backups(
+        bigtable, bigtable_clusters, project_id, common_job_parameters, gcp_console_link)
     load_bigtable_cluster_backups(neo4j_session, cluster_backups, project_id, gcp_update_tag)
     # BIGTABLE TABLES
-    bigtable_tables = get_get_bigtable_tables(bigtable, bigtable_instances, project_id, regions)
+    bigtable_tables = get_get_bigtable_tables(bigtable, bigtable_instances, project_id, regions, gcp_console_link)
     load_bigtable_tables(neo4j_session, bigtable_tables, project_id, gcp_update_tag)
     cleanup_bigtable(neo4j_session, common_job_parameters)
 

@@ -1,12 +1,12 @@
 import json
 import logging
 from typing import Dict
-from typing import List
 
 import time
 import neo4j
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
+from cloudconsolelink.clouds.gcp import GCP
 
 from cartography.util import run_cleanup_job
 from . import label
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
-def get_gke_clusters(container: Resource, project_id: str, regions: list, common_job_parameters) -> Dict:
+def get_gke_clusters(container: Resource, project_id: str, regions: list, common_job_parameters, gcp_console_link: GCP) -> Dict:
     """
     Returns a GCP response object containing a list of GKE clusters within the given project.
 
@@ -34,6 +34,8 @@ def get_gke_clusters(container: Resource, project_id: str, regions: list, common
         data = []
         for item in res.get('clusters', []):
             item['id'] = f"project/{project_id}/clusters/{item['name']}"
+            item['consolelink'] = gcp_console_link.get_console_link(
+                resource_name='gke_cluster', project_id=project_id, zone=item['zone'], gke_cluster_name=item['name'])
             if regions is None:
                 data.append(item)
             else:
@@ -114,6 +116,7 @@ def load_gke_clusters(neo4j_session: neo4j.Session, cluster_resp: Dict, project_
         cluster.private_endpoint = {ClusterPrivateEndpoint},
         cluster.public_endpoint = {ClusterPublicEndpoint},
         cluster.masterauth_username = {ClusterMasterUsername},
+        cluster.consolelink = {consolelink},
         cluster.masterauth_password = {ClusterMasterPassword},
         cluster.lastupdated = {gcp_update_tag}
     WITH cluster
@@ -159,6 +162,7 @@ def load_gke_clusters(neo4j_session: neo4j.Session, cluster_resp: Dict, project_
             ClusterPublicEndpoint=cluster.get('privateClusterConfig', {}).get('publicEndpoint'),
             ClusterMasterUsername=cluster.get('masterAuth', {}).get('username'),
             ClusterMasterPassword=cluster.get('masterAuth', {}).get('password'),
+            consolelink=cluster.get('consolelink'),
             gcp_update_tag=gcp_update_tag,
         )
 
@@ -195,7 +199,7 @@ def cleanup_gke_clusters(neo4j_session: neo4j.Session, common_job_parameters: Di
 @timeit
 def sync(
     neo4j_session: neo4j.Session, container: Resource, project_id: str, gcp_update_tag: int,
-    common_job_parameters: Dict, regions: list
+    common_job_parameters: Dict, regions: list, gcp_console_link: GCP
 ) -> None:
     """
     Get GCP GKE Clusters using the Container resource object, ingest to Neo4j, and clean up old data.
@@ -222,7 +226,7 @@ def sync(
 
     logger.info("Syncing GKE for project '%s', at %s.", project_id, tic)
 
-    gke_res = get_gke_clusters(container, project_id, regions, common_job_parameters)
+    gke_res = get_gke_clusters(container, project_id, regions, common_job_parameters, gcp_console_link)
 
     load_gke_clusters(neo4j_session, gke_res, project_id, gcp_update_tag)
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
