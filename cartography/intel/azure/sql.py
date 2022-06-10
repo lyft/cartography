@@ -13,12 +13,14 @@ from azure.mgmt.sql import SqlManagementClient
 from azure.mgmt.sql.models import SecurityAlertPolicyName
 from azure.mgmt.sql.models import TransparentDataEncryptionName
 from msrestazure.azure_exceptions import CloudError
+from cloudconsolelink.clouds.azure import Azure
 
 from .util.credentials import Credentials
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+azure_console_link = Azure()
 
 
 @timeit
@@ -31,7 +33,7 @@ def get_client(credentials: Credentials, subscription_id: str) -> SqlManagementC
 
 
 @timeit
-def get_server_list(credentials: Credentials, subscription_id: str, regions: list) -> List[Dict]:
+def get_server_list(credentials: Credentials, subscription_id: str, regions: list, common_job_parameters: Dict) -> List[Dict]:
     """
     Returning the list of Azure SQL servers.
     """
@@ -54,6 +56,8 @@ def get_server_list(credentials: Credentials, subscription_id: str, regions: lis
         x = server['id'].split('/')
         server['resourceGroup'] = x[x.index('resourceGroups') + 1]
         server['publicNetworkAccess'] = server.get('properties', {}).get('public_network_access', 'Disabled')
+        server['consolelink'] = azure_console_link.get_console_link(
+            id=server['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
         if regions is None:
             server_data.append(server)
         else:
@@ -80,6 +84,7 @@ def load_server_data(
     SET s.lastupdated = {azure_update_tag},
     s.name = server.name,
     s.publicNetworkAccess = server.publicNetworkAccess,
+    s.consolelink = server.consolelink,
     s.kind = server.kind,
     s.state = server.state,
     s.version = server.version
@@ -101,10 +106,10 @@ def load_server_data(
 @timeit
 def sync_server_details(
         neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str,
-        server_list: List[Dict], sync_tag: int,
+        server_list: List[Dict], sync_tag: int, common_job_parameters: Dict
 ) -> None:
     details = get_server_details(credentials, subscription_id, server_list)
-    load_server_details(neo4j_session, credentials, subscription_id, details, sync_tag)
+    load_server_details(neo4j_session, credentials, subscription_id, details, sync_tag, common_job_parameters)
 
 
 @timeit
@@ -324,7 +329,7 @@ def get_databases(credentials: Credentials, subscription_id: str, server: Dict) 
 @timeit
 def load_server_details(
         neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str,
-        details: List[Tuple[Any, Any, Any, Any, Any, Any, Any, Any, Any, Any]], update_tag: int,
+        details: List[Tuple[Any, Any, Any, Any, Any, Any, Any, Any, Any, Any]], update_tag: int, common_job_parameters: Dict
 ) -> None:
     """
     Create dictionaries for every resource in the server so we can import them in a single query
@@ -342,36 +347,48 @@ def load_server_details(
             for alias in dns_alias:
                 alias['server_name'] = name
                 alias['server_id'] = server_id
+                alias['consolelink'] = azure_console_link.get_console_link(
+                    id=alias['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
                 dns_aliases.append(alias)
 
         if len(ad_admin) > 0:
             for admin in ad_admin:
                 admin['server_name'] = name
                 admin['server_id'] = server_id
+                admin['consolelink'] = azure_console_link.get_console_link(
+                    id=admin['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
                 ad_admins.append(admin)
 
         if len(r_database) > 0:
             for rdb in r_database:
                 rdb['server_name'] = name
                 rdb['server_id'] = server_id
+                rdb['consolelink'] = azure_console_link.get_console_link(
+                    id=rdb['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
                 recoverable_databases.append(rdb)
 
         if len(rd_database) > 0:
             for rddb in rd_database:
                 rddb['server_name'] = name
                 rddb['server_id'] = server_id
+                rddb['consolelink'] = azure_console_link.get_console_link(
+                    id=rddb['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
                 restorable_dropped_databases.append(rddb)
 
         if len(fg) > 0:
             for group in fg:
                 group['server_name'] = name
                 group['server_id'] = server_id
+                group['consolelink'] = azure_console_link.get_console_link(
+                    id=group['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
                 failover_groups.append(group)
 
         if len(elastic_pool) > 0:
             for pool in elastic_pool:
                 pool['server_name'] = name
                 pool['server_id'] = server_id
+                pool['consolelink'] = azure_console_link.get_console_link(
+                    id=pool['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
                 elastic_pools.append(pool)
 
         if len(database) > 0:
@@ -379,6 +396,8 @@ def load_server_details(
                 db['server_name'] = name
                 db['server_id'] = server_id
                 db['resource_group_name'] = rg
+                db['consolelink'] = azure_console_link.get_console_link(
+                    id=db['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
                 databases.append(db)
 
     _load_server_dns_aliases(neo4j_session, dns_aliases, update_tag)
@@ -406,6 +425,7 @@ def _load_server_dns_aliases(
     SET alias.name = dns_alias.name,
     alias.location = dns_alias.location,
     alias.region = dns_alias.location,
+    alias.consolelink = dns_alias.consolelink,
     alias.dnsrecord = dns_alias.azure_dns_record,
     alias.lastupdated = {azure_update_tag}
     WITH alias, dns_alias
@@ -435,6 +455,7 @@ def _load_server_ad_admins(
     ON CREATE SET a.firstseen = timestamp()
     SET a.name = ad_admin.name,
     a.administratortype = ad_admin.administrator_type,
+    a.consolelink = ad_admin.consolelink,
     a.login = ad_admin.login,
     a.location = ad_admin.location,
     a.region = ad_admin.location,
@@ -467,6 +488,7 @@ def _load_recoverable_databases(
     SET rd.name = rec_db.name,
     rd.region = {region},
     rd.edition = rec_db.edition,
+    rd.consolelink = rec_db.consolelink,
     rd.servicelevelobjective = rec_db.service_level_objective,
     rd.lastbackupdate = rec_db.last_available_backup_date,
     rd.lastupdated = {azure_update_tag}
@@ -500,6 +522,7 @@ def _load_restorable_dropped_databases(
     SET rdd.name = res_dropped_db.name,
     rdd.databasename = res_dropped_db.database_name,
     rdd.creationdate = res_dropped_db.creation_date,
+    rdd.consolelink = res_dropped_db.consolelink,
     rdd.deletiondate = res_dropped_db.deletion_date,
     rdd.restoredate = res_dropped_db.earliest_restore_date,
     rdd.edition = res_dropped_db.edition,
@@ -532,6 +555,7 @@ def _load_failover_groups(
     MERGE (f:AzureFailoverGroup{id: fg.id})
     ON CREATE SET f.firstseen = timestamp(), f.location = fg.location
     SET f.name = fg.name,
+    f.consolelink = fg.consolelink,
     f.replicationrole = fg.replication_role,
     f.replicationstate = fg.replication_state,
     f.lastupdated = {azure_update_tag}
@@ -562,6 +586,7 @@ def _load_elastic_pools(
     ON CREATE SET e.firstseen = timestamp(), e.location = ep.location,
     e.region = ep.location
     SET e.name = ep.name,
+    e.consolelink = ep.consolelink,
     e.kind = ep.kind,
     e.creationdate = ep.creation_date,
     e.state = ep.state,
@@ -596,6 +621,7 @@ def _load_databases(
     ON CREATE SET d.firstseen = timestamp(), d.location = az_database.location,
     d.region = az_database.location
     SET d.name = az_database.name,
+    d.consolelink = az_database.consolelink,
     d.kind = az_database.kind,
     d.creationdate = az_database.creation_date,
     d.databaseid = az_database.database_id,
@@ -952,10 +978,11 @@ def sync(
         sync_tag: int, common_job_parameters: Dict, regions: list
 ) -> None:
     logger.info("Syncing Azure SQL for subscription '%s'.", subscription_id)
-    server_list = get_server_list(credentials, subscription_id, regions)
+    server_list = get_server_list(credentials, subscription_id, regions, common_job_parameters)
 
     if common_job_parameters.get('pagination', {}).get('sql', None):
-        page_start = (common_job_parameters.get('pagination', {}).get('sql', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('sql', {})['pageSize']
+        page_start = (common_job_parameters.get('pagination', {}).get('sql', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('sql', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('sql', {})['pageSize']
         if page_end > len(server_list) or page_end == len(server_list):
             server_list = server_list[page_start:]
@@ -965,5 +992,5 @@ def sync(
             common_job_parameters['pagination']['sql']['hasNextPage'] = has_next_page
 
     load_server_data(neo4j_session, subscription_id, server_list, sync_tag)
-    sync_server_details(neo4j_session, credentials, subscription_id, server_list, sync_tag)
+    sync_server_details(neo4j_session, credentials, subscription_id, server_list, sync_tag, common_job_parameters)
     cleanup_azure_sql_servers(neo4j_session, common_job_parameters)

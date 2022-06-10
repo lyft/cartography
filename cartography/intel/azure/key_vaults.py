@@ -5,12 +5,14 @@ from typing import List
 import neo4j
 from azure.core.exceptions import HttpResponseError
 from azure.mgmt.keyvault import KeyVaultManagementClient
+from cloudconsolelink.clouds.azure import Azure
 
 from .util.credentials import Credentials
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+azure_console_link = Azure()
 
 
 def load_key_vaults(session: neo4j.Session, subscription_id: str, data_list: List[Dict], update_tag: int) -> None:
@@ -24,13 +26,15 @@ def get_key_vaults_client(credentials: Credentials, subscription_id: str) -> Key
 
 
 @timeit
-def get_key_vaults_list(client: KeyVaultManagementClient, regions: list) -> List[Dict]:
+def get_key_vaults_list(client: KeyVaultManagementClient, regions: list, common_job_parameters: Dict) -> List[Dict]:
     try:
         key_vaults_list = list(map(lambda x: x.as_dict(), client.vaults.list()))
         key_vaults_data = []
         for vault in key_vaults_list:
             x = vault['id'].split('/')
             vault['resource_group'] = x[x.index('resourceGroups') + 1]
+            vault['consolelink'] = azure_console_link.get_console_link(
+                id=vault['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
             if regions is None:
                 key_vaults_data.append(vault)
             else:
@@ -53,6 +57,7 @@ def _load_key_vaults_tx(
     k.type = vault.type,
     k.location = vault.location,
     k.region = vault.location,
+    k.consolelink = vault.consolelink,
     k.resourcegroup = vault.resource_group
     SET k.lastupdated = {update_tag},
     k.name = vault.name
@@ -80,7 +85,7 @@ def sync_key_vaults(
     common_job_parameters: Dict, regions: list
 ) -> None:
     client = get_key_vaults_client(credentials, subscription_id)
-    key_vaults_list = get_key_vaults_list(client, regions)
+    key_vaults_list = get_key_vaults_list(client, regions, common_job_parameters)
 
     if common_job_parameters.get('pagination', {}).get('key_vaults', None):
         page_start = (common_job_parameters.get('pagination', {}).get('key_vaults', {})[

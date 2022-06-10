@@ -6,6 +6,7 @@ import neo4j
 from azure.core.exceptions import HttpResponseError
 from azure.graphrbac import GraphRbacManagementClient
 from azure.mgmt.authorization import AuthorizationManagementClient
+from cloudconsolelink.clouds.azure import Azure
 
 from .util.credentials import Credentials
 from cartography.util import run_cleanup_job
@@ -57,7 +58,7 @@ def get_authorization_client(credentials: Credentials, subscription_id: str) -> 
 
 
 @timeit
-def get_tenant_users_list(client: GraphRbacManagementClient, tenant_id: str) -> List[Dict]:
+def get_tenant_users_list(client: GraphRbacManagementClient, tenant_id: str, azure_console_link: Azure) -> List[Dict]:
     try:
         tenant_users_list = list(
             map(lambda x: x.as_dict(), client.users.list()),
@@ -65,6 +66,7 @@ def get_tenant_users_list(client: GraphRbacManagementClient, tenant_id: str) -> 
 
         for user in tenant_users_list:
             user['id'] = f"tenants/{tenant_id}/users/{user.get('object_id',None)}"
+            user['consolelink'] = azure_console_link.get_console_link(id=user['object_id'], iam_entity_type='user')
 
         return tenant_users_list
 
@@ -87,6 +89,7 @@ def _load_tenant_users_tx(
     i.given_name = user.given_name,
     i.surname = user.surname,
     i.user_type = user.user_type,
+    i.consolelink = user.consolelink,
     i.mobile = user.mobile
     SET i.lastupdated = {update_tag},
     i.account_enabled = user.account_enabled,
@@ -114,10 +117,10 @@ def cleanup_tenant_users(neo4j_session: neo4j.Session, common_job_parameters: Di
 
 def sync_tenant_users(
     neo4j_session: neo4j.Session, credentials: Credentials, tenant_id: str, update_tag: int,
-    common_job_parameters: Dict,
+    common_job_parameters: Dict, azure_console_link: Azure,
 ) -> None:
     client = get_graph_client(credentials, tenant_id)
-    tenant_users_list = get_tenant_users_list(client, tenant_id)
+    tenant_users_list = get_tenant_users_list(client, tenant_id, azure_console_link)
 
     if common_job_parameters.get('pagination', {}).get('iam', None):
         page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
@@ -135,12 +138,13 @@ def sync_tenant_users(
 
 
 @timeit
-def get_tenant_groups_list(client: GraphRbacManagementClient, tenant_id: str) -> List[Dict]:
+def get_tenant_groups_list(client: GraphRbacManagementClient, tenant_id: str, azure_console_link: Azure) -> List[Dict]:
     try:
         tenant_groups_list = list(map(lambda x: x.as_dict(), client.groups.list()))
 
         for group in tenant_groups_list:
             group['id'] = f"tenants/{tenant_id}/Groups/{group.get('object_id',None)}"
+            group['consolelink'] = azure_console_link.get_console_link(iam_entity_type='group', id=group['object_id'])
 
         return tenant_groups_list
 
@@ -163,6 +167,7 @@ def _load_tenant_groups_tx(
     i.visibility = group.visibility,
     i.classification = group.classification,
     i.createdDateTime = group.createdDateTime,
+    i.consolelink = group.consolelink,
     i.securityEnabled = group.security_enabled
     SET i.lastupdated = {update_tag},
     i.mail = group.mail
@@ -188,10 +193,10 @@ def cleanup_tenant_groups(neo4j_session: neo4j.Session, common_job_parameters: D
 
 def sync_tenant_groups(
     neo4j_session: neo4j.Session, credentials: Credentials, tenant_id: str, update_tag: int,
-    common_job_parameters: Dict,
+    common_job_parameters: Dict, azure_console_link: Azure
 ) -> None:
     client = get_graph_client(credentials, tenant_id)
-    tenant_groups_list = get_tenant_groups_list(client, tenant_id)
+    tenant_groups_list = get_tenant_groups_list(client, tenant_id, azure_console_link)
 
     if common_job_parameters.get('pagination', {}).get('iam', None):
         page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
@@ -209,12 +214,13 @@ def sync_tenant_groups(
 
 
 @timeit
-def get_tenant_applications_list(client: GraphRbacManagementClient, tenant_id: str) -> List[Dict]:
+def get_tenant_applications_list(client: GraphRbacManagementClient, tenant_id: str, azure_console_link: Azure) -> List[Dict]:
     try:
         tenant_applications_list = list(map(lambda x: x.as_dict(), client.applications.list()))
 
         for app in tenant_applications_list:
             app['id'] = f"tenants/{tenant_id}/Applications/{app.get('object_id',None)}"
+            app['consolelink'] = azure_console_link.get_console_link(iam_entity_type='application', id=app['app_id'])
 
         return tenant_applications_list
 
@@ -234,6 +240,7 @@ def _load_tenant_applications_tx(
     i.object_id=app.object_id,
     i.region = {region},
     i.name = app.display_name,
+    i.consolelink = app.consolelink,
     i.publisherDomain = app.publisher_domain
     SET i.lastupdated = {update_tag},
     i.signInAudience = app.sign_in_audience
@@ -259,10 +266,10 @@ def cleanup_tenant_applications(neo4j_session: neo4j.Session, common_job_paramet
 
 def sync_tenant_applications(
     neo4j_session: neo4j.Session, credentials: Credentials, tenant_id: str, update_tag: int,
-    common_job_parameters: Dict,
+    common_job_parameters: Dict, azure_console_link: Azure
 ) -> None:
     client = get_graph_client(credentials, tenant_id)
-    tenant_applications_list = get_tenant_applications_list(client, tenant_id)
+    tenant_applications_list = get_tenant_applications_list(client, tenant_id, azure_console_link)
 
     if common_job_parameters.get('pagination', {}).get('iam', None):
         page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
@@ -426,7 +433,7 @@ def sync_tenant_domains(
 
 
 @timeit
-def get_roles_list(client: AuthorizationManagementClient) -> List[Dict]:
+def get_roles_list(client: AuthorizationManagementClient, common_job_parameters: Dict, azure_console_link: Azure) -> List[Dict]:
     try:
         roles_list = list(
             map(lambda x: x.as_dict(), client.role_assignments.list()),
@@ -436,6 +443,8 @@ def get_roles_list(client: AuthorizationManagementClient) -> List[Dict]:
             result = client.role_definitions.get_by_id(role["role_definition_id"], raw=True)
             result = result.response.json()
             role['roleName'] = result.get('properties', {}).get('roleName', '')
+            role['consolelink'] = azure_console_link.get_console_link(
+                id=role['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
             role['permissions'] = []
             for permission in result.get('properties', {}).get('permissions', []):
                 for action in permission.get('actions', []):
@@ -459,6 +468,7 @@ def _load_roles_tx(
     ON CREATE SET i:AzurePrincipal,
     i.firstseen = timestamp(),
     i.name = role.name,
+    i.consolelink = role.consolelink,
     i.region = {region},
     i.type = role.type
     SET i.lastupdated = {update_tag},
@@ -491,10 +501,10 @@ def cleanup_roles(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> 
 
 def sync_roles(
     neo4j_session: neo4j.Session, credentials: Credentials, tenant_id: str, update_tag: int,
-    common_job_parameters: Dict,
+    common_job_parameters: Dict, azure_console_link: Azure
 ) -> None:
     client = get_authorization_client(credentials.arm_credentials, credentials.subscription_id)
-    roles_list = get_roles_list(client)
+    roles_list = get_roles_list(client, common_job_parameters, azure_console_link)
     load_roles(neo4j_session, tenant_id, roles_list, update_tag)
     cleanup_roles(neo4j_session, common_job_parameters)
 
@@ -558,13 +568,16 @@ def sync(
     logger.info("Syncing IAM for Tenant '%s'.", tenant_id)
 
     common_job_parameters['AZURE_TENANT_ID'] = tenant_id
+    azure_console_link = Azure()
 
-    sync_tenant_users(neo4j_session, credentials.aad_graph_credentials, tenant_id, update_tag, common_job_parameters)
-    sync_tenant_groups(neo4j_session, credentials.aad_graph_credentials, tenant_id, update_tag, common_job_parameters)
+    sync_tenant_users(neo4j_session, credentials.aad_graph_credentials, tenant_id,
+                      update_tag, common_job_parameters, azure_console_link)
+    sync_tenant_groups(neo4j_session, credentials.aad_graph_credentials, tenant_id,
+                       update_tag, common_job_parameters, azure_console_link)
     sync_tenant_applications(
         neo4j_session, credentials.aad_graph_credentials,
         tenant_id, update_tag, common_job_parameters,
-    )
+        azure_console_link)
     sync_tenant_service_accounts(
         neo4j_session, credentials.aad_graph_credentials,
         tenant_id, update_tag, common_job_parameters,
@@ -573,11 +586,11 @@ def sync(
     if common_job_parameters.get('pagination', {}).get('iam', None):
         if not common_job_parameters.get('pagination', {}).get('iam', {}).get('hasNextPage', False):
             sync_roles(
-                neo4j_session, credentials, tenant_id, update_tag, common_job_parameters,
+                neo4j_session, credentials, tenant_id, update_tag, common_job_parameters, azure_console_link
             )
             set_used_state(neo4j_session, tenant_id, common_job_parameters, update_tag)
     else:
         sync_roles(
-            neo4j_session, credentials, tenant_id, update_tag, common_job_parameters,
+            neo4j_session, credentials, tenant_id, update_tag, common_job_parameters, azure_console_link
         )
         set_used_state(neo4j_session, tenant_id, common_job_parameters, update_tag)
