@@ -309,7 +309,7 @@ def load_rest_api_details(
             resources.extend(resource)
         if certificate:
             certificate['apiId'] = api_id
-            certificates.extend(certificate)
+            certificates.append(certificate)
 
     # cleanup existing properties
     run_cleanup_job(
