@@ -32,3 +32,18 @@ Cartography can be configured to send metrics to a [statsd](https://github.com/s
 `--statsd-enabled` flag when running `cartography` for sync execution times to be recorded and sent to
 `127.0.0.1:8125` by default (these options are also configurable with the `--statsd-host` and `--statsd-port` options).
 You can also provide your own `--statsd-prefix` to make these metrics easier to find in your own environment.
+
+## Docker image
+
+A production-ready docker image is available in [GitHub Container Registry](https://github.com/lyft/cartography/pkgs/container/cartography). We recommend that you avoid using the `:latest` tag and instead
+use the tag or digest associated with your desired release version, e.g.
+
+```bash
+docker pull ghcr.io/lyft/cartography:0.61.0
+```
+
+This image can then be ran with any of your desired command line flags:
+
+```bash
+docker run --rm ghcr.io/lyft/cartography:0.61.0 --help
+```
