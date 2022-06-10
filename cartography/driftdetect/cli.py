@@ -4,9 +4,11 @@ import logging
 import os
 import sys
 
+import cartography
 from cartography.driftdetect.add_shortcut import run_add_shortcut
 from cartography.driftdetect.detect_deviations import run_drift_detection
 from cartography.driftdetect.get_states import run_get_states
+from cartography.experimental_neo4j_4x_support import patch_driver
 
 
 logger = logging.getLogger(__name__)
@@ -159,6 +161,7 @@ class CLI:
                 'The desired name of the file to be replaced.'
             ),
         )
+
         return parser
 
     def configure(self, argv):
@@ -189,6 +192,9 @@ class CLI:
         :param argv: The parameters supplied to the command line program.
         """
         config = self.configure(argv)
+        if config.experimental_neo4j_4x_support:
+            cartography.EXPERIMENTAL_NEO4J_4X_SUPPORT = True
+            patch_driver()
         try:
             if config.command == 'get-state':
                 run_get_states(config)
