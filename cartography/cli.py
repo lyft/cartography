@@ -7,6 +7,7 @@ import sys
 import cartography.config
 import cartography.sync
 import cartography.util
+from cartography.experimental_neo4j_4x_support import patch_driver
 from cartography.intel.aws.util.common import parse_and_validate_aws_requested_syncs
 
 
@@ -366,6 +367,15 @@ class CLI:
                 'The crowdstrike URL, if using self-hosted. Defaults to the public crowdstrike API URL otherwise.'
             ),
         )
+        parser.add_argument(
+            '--experimental-neo4j-4x-support',
+            default=False,
+            action='store_true',
+            help=(
+                'enable the experimental suppor for neo4j 4.x. Can also be enabled by environment variable. '
+                'See cartography.__init__.py'
+            ),
+        )
         return parser
 
     def main(self, argv: str) -> int:
@@ -494,6 +504,10 @@ class CLI:
             config.crowdstrike_client_secret = os.environ.get(config.crowdstrike_client_secret_env_var)
         else:
             config.crowdstrike_client_secret = None
+
+        if config.experimental_neo4j_4x_support:
+            cartography.EXPERIMENTAL_NEO4J_4X_SUPPORT = True
+            patch_driver()
 
         # Run cartography
         try:
