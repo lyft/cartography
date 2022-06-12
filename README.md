@@ -24,7 +24,7 @@ Start [here](https://lyft.github.io/cartography/install.html).
 - [Okta](https://lyft.github.io/cartography/modules/okta/index.html) - users, groups, organizations, roles, applications, factors, trusted origins, reply URIs
 - [Github](https://lyft.github.io/cartography/modules/github/index.html) - repos, branches, users
 - [DigitalOcean](https://lyft.github.io/cartography/modules/digitalocean/index.html)
-- [Microsoft Azure](https://lyft.github.io/cartography/modules/azure/index.html) -  CosmosDB, SQL, Storage, Virtual Machine
+- [Microsoft Azure](https://lyft.github.io/cartography/modules/azure/index.html) -  CosmosDB, SQL, Storage, Virtual Machine, Function App, Network, Resource Group, Tag, IAM, Key Vaults, AKS
 - [Kubernetes](https://lyft.github.io/cartography/modules/kubernetes/index.html) - Cluster, Namespace, Service, Pod, Container
 - [PagerDuty](https://lyft.github.io/cartography/modules/pagerduty/index.html) - Users, teams, services, schedules, escalation policies, integrations, vendors
 - [Crowdstrike Falcon](https://lyft.github.io/cartography/modules/crowdstrike/index.html) - Hosts, Spotlight vulnerabilites, CVEs
