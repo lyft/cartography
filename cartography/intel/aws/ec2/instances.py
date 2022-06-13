@@ -7,6 +7,7 @@ from typing import List
 
 import boto3
 import neo4j
+from cloudconsolelink.clouds.aws import AWS
 
 from botocore.exceptions import ClientError
 from cartography.util import aws_handle_regions
@@ -14,6 +15,7 @@ from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+aws_console_link = AWS()
 
 
 @timeit
@@ -26,8 +28,8 @@ def get_ec2_instances(boto3_session: boto3.session.Session, region: str) -> List
         for page in paginator.paginate():
             reservations.extend(page['Reservations'])
         for reservation in reservations:
-          reservation['region'] = region
-    
+            reservation['region'] = region
+
     except ClientError as e:
         if e.response['Error']['Code'] == 'AccessDeniedException' or e.response['Error']['Code'] == 'UnauthorizedOperation':
             logger.warning(
@@ -165,6 +167,7 @@ def _load_ec2_instance_tx(
             instance.bootmode = {BootMode},
             instance.instancelifecycle = {InstanceLifecycle},
             instance.hibernationoptions = {HibernationOptions},
+            instance.consolelink = {consolelink},
             instance.arn = {InstanceArn}
         WITH instance
         MATCH (rez:EC2Reservation{reservationid: {ReservationId}})
@@ -200,6 +203,7 @@ def _load_ec2_instance_tx(
         BootMode=instance.get("BootMode"),
         InstanceLifecycle=instance.get("InstanceLifecycle"),
         HibernationOptions=instance.get("HibernationOptions", {}).get("Configured"),
+        consolelink=instance.get('consolelink'),
         InstanceArn=instance.get('instanceArn'),
         AWS_ACCOUNT_ID=current_aws_account_id,
         Region=region,
@@ -318,7 +322,7 @@ def load_ec2_instances(
             instanceid = instance["InstanceId"]
             instance["region"] = region
             instance['instanceArn'] = f"arn:aws:ec2:{region}:{current_aws_account_id}:instance/{instanceid}"
-
+            instance['consolelink'] = aws_console_link.get_console_link(arn=instance['instanceArn'])
             monitoring_state = instance.get("Monitoring", {}).get("State")
 
             instance_state = instance.get("State", {}).get("Name")
@@ -466,7 +470,8 @@ def sync_ec2_instances(
         data.extend(get_ec2_instances(boto3_session, region))
 
     if common_job_parameters.get('pagination', {}).get('ec2:instance', None):
-        page_start = (common_job_parameters.get('pagination', {}).get('ec2:instance', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('ec2:instance', {})['pageSize']
+        page_start = (common_job_parameters.get('pagination', {}).get('ec2:instance', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('ec2:instance', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('ec2:instance', {})['pageSize']
         if page_end > len(data) or page_end == len(data):
             data = data[page_start:]

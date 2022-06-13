@@ -16,6 +16,7 @@ import neo4j
 from botocore.exceptions import ClientError
 from botocore.exceptions import EndpointConnectionError
 from policyuniverse.policy import Policy
+from cloudconsolelink.clouds.aws import AWS
 
 from cartography.util import merge_module_sync_metadata
 from cartography.util import run_analysis_job
@@ -23,6 +24,7 @@ from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+aws_console_link = AWS()
 
 
 @timeit
@@ -632,6 +634,7 @@ def load_s3_buckets(neo4j_session: neo4j.Session, data: Dict, current_aws_accoun
     MERGE (bucket:S3Bucket{id:{BucketName}})
     ON CREATE SET bucket.firstseen = timestamp(), bucket.creationdate = {CreationDate}
     SET bucket.name = {BucketName}, bucket.region = {BucketRegion}, bucket.arn = {Arn},
+    bucket.consolelink = {consolelink},
     bucket.lastupdated = {aws_update_tag}
     WITH bucket
     MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
@@ -646,11 +649,13 @@ def load_s3_buckets(neo4j_session: neo4j.Session, data: Dict, current_aws_accoun
 
     for bucket in data.get("Buckets", []):
         arn = "arn:aws:s3:::" + bucket["Name"]
+        consolelink = aws_console_link.get_console_link(arn=arn)
         neo4j_session.run(
             ingest_bucket,
             BucketName=bucket["Name"],
             BucketRegion=bucket["Region"],
             Arn=arn,
+            consolelink=consolelink,
             CreationDate=str(bucket["CreationDate"]),
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag,
@@ -683,8 +688,6 @@ def sync(
 
     logger.info("Syncing S3 for account '%s', at %s.", current_aws_account_id, tic)
     bucket_data = get_s3_bucket_list(boto3_session, common_job_parameters)
-
-    bucket_data = get_s3_bucket_list(boto3_session)
 
     load_s3_buckets(neo4j_session, bucket_data, current_aws_account_id, update_tag)
     cleanup_s3_buckets(neo4j_session, common_job_parameters)

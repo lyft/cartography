@@ -8,11 +8,13 @@ from typing import Tuple
 import boto3
 import botocore
 import neo4j
+from cloudconsolelink.clouds.aws import AWS
 
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+aws_console_link = AWS()
 
 
 @timeit
@@ -130,7 +132,8 @@ def load_zone(neo4j_session: neo4j.Session, zone: Dict, current_aws_id: str, upd
     zone.region = {region},
     zone.name = {ZoneName}
     SET zone.lastupdated = {update_tag}, zone.comment = {Comment}, zone.privatezone = {PrivateZone},
-    zone.arn = {Arn}
+    zone.arn = {Arn},
+    zone.consolelink = {consolelink}
     WITH zone
     MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
     MERGE (aa)-[r:RESOURCE]->(zone)
@@ -141,6 +144,7 @@ def load_zone(neo4j_session: neo4j.Session, zone: Dict, current_aws_id: str, upd
         ingest_z,
         ZoneName=zone['name'][:-1],
         ZoneId=zone['zoneid'],
+        consolelink=zone['consolelink'],
         Comment=zone['comment'],
         region="global",
         PrivateZone=zone['privatezone'],
@@ -311,6 +315,8 @@ def transform_zone(zone: Dict) -> Dict:
         "privatezone": zone['Config']['PrivateZone'],
         "comment": comment,
         "count": zone['ResourceRecordSetCount'],
+        "arn": zone['arn'],
+        "consolelink": zone['consolelink'],
     }
 
 
@@ -380,6 +386,7 @@ def get_zones(client: botocore.client.BaseClient) -> List[Tuple[Dict, List[Dict]
     results: List[Tuple[Dict, List[Dict]]] = []
     for hosted_zone in hosted_zones:
         hosted_zone['arn'] = f"arn:aws:route53:::hostedzone/{hosted_zone['Id']}"
+        hosted_zone['consolelink'] = aws_console_link.get_console_link(arn=hosted_zone['arn'])
         record_sets = get_zone_record_sets(client, hosted_zone['Id'])
         results.append((hosted_zone, record_sets))
     return results

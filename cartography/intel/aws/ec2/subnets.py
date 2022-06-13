@@ -5,6 +5,7 @@ from typing import List
 
 import boto3
 import neo4j
+from cloudconsolelink.clouds.aws import AWS
 
 from botocore.exceptions import ClientError
 from cartography.util import aws_handle_regions
@@ -12,6 +13,7 @@ from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+aws_console_link = AWS()
 
 
 @timeit
@@ -27,6 +29,7 @@ def get_subnet_data(boto3_session: boto3.session.Session, region: str) -> List[D
             subnets.extend(page['Subnets'])
         for subnet in subnets:
             subnet['region'] = region
+            subnet['consolelink'] = aws_console_link.get_console_link(arn=subnet['SubnetArn'])
 
     except ClientError as e:
         if e.response['Error']['Code'] == 'AccessDeniedException' or e.response['Error']['Code'] == 'UnauthorizedOperation':
@@ -56,7 +59,7 @@ def load_subnets(
     snet.state = subnet.State, snet.assignipv6addressoncreation = subnet.AssignIpv6AddressOnCreation,
     snet.map_public_ip_on_launch = subnet.MapPublicIpOnLaunch, snet.subnet_arn = subnet.SubnetArn,
     snet.availability_zone = subnet.AvailabilityZone, snet.availability_zone_id = subnet.AvailabilityZoneId,
-    snet.subnetid = subnet.SubnetId, snet.arn = subnet.SubnetArn
+    snet.subnetid = subnet.SubnetId, snet.arn = subnet.SubnetArn, snet.consolelink = subnet.consolelink
     """
 
     ingest_subnet_vpc_relations = """

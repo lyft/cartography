@@ -14,12 +14,14 @@ import boto3
 import maya
 import neo4j
 import pytz
+from cloudconsolelink.clouds.aws import AWS
 
 from cartography.intel.aws.permission_relationships import parse_statement_node
 from cartography.intel.aws.permission_relationships import principal_allowed_on_resource
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 logger = logging.getLogger(__name__)
+aws_console_link = AWS()
 
 # Overview of IAM in AWS
 # https://aws.amazon.com/iam/
@@ -223,6 +225,7 @@ def load_users(
     ingest_user = """
     MERGE (unode:AWSUser{arn: {ARN}})
     ON CREATE SET unode:AWSPrincipal, unode.userid = {USERID}, unode.firstseen = timestamp(),
+    unode.consolelink = {consolelink},
     unode.createdate = {CREATE_DATE}
     SET unode.name = {USERNAME}, unode.path = {PATH}, unode.passwordlastused = {PASSWORD_LASTUSED},
     unode.region = {region},
@@ -238,6 +241,7 @@ def load_users(
         neo4j_session.run(
             ingest_user,
             ARN=user["Arn"],
+            consolelink=aws_console_link.get_console_link(arn=user["Arn"]),
             USERID=user["UserId"],
             CREATE_DATE=str(user["CreateDate"]),
             USERNAME=user["UserName"],
@@ -258,6 +262,7 @@ def load_groups(
     ON CREATE SET gnode.groupid = {GROUP_ID}, gnode.firstseen = timestamp(), gnode.createdate = {CREATE_DATE}
     SET gnode:AWSPrincipal, gnode.name = {GROUP_NAME}, gnode.path = {PATH},
     gnode.region = {region},
+    gnode.consolelink = {consolelink},
     gnode.lastupdated = {aws_update_tag}
     WITH gnode
     MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
@@ -270,6 +275,7 @@ def load_groups(
         neo4j_session.run(
             ingest_group,
             ARN=group["Arn"],
+            consolelink=aws_console_link.get_console_link(arn=group["Arn"]),
             GROUP_ID=group["GroupId"],
             CREATE_DATE=str(group["CreateDate"]),
             GROUP_NAME=group["GroupName"],
@@ -303,6 +309,7 @@ def load_roles(
     MERGE (rnode:AWSRole{arn: {Arn}})
     ON CREATE SET rnode:AWSPrincipal, rnode.roleid = {RoleId}, rnode.firstseen = timestamp(),
     rnode.region = {region},
+    rnode.consolelink = {consolelink},
     rnode.createdate = {CreateDate}
     ON MATCH SET rnode.name = {RoleName}, rnode.path = {Path},
     rnode.lastuseddate = {LastUsedDate}, rnode.lastusedregion = {LastUsedRegion}
@@ -331,6 +338,7 @@ def load_roles(
         neo4j_session.run(
             ingest_role,
             Arn=role["Arn"],
+            consolelink=aws_console_link.get_console_link(arn=role["Arn"]),
             RoleId=role["RoleId"],
             CreateDate=str(role["CreateDate"]),
             RoleName=role["RoleName"],
@@ -533,7 +541,8 @@ def _load_policy_tx(
     policy.type = {PolicyType},
     policy.region = {region},
     policy.name = {PolicyName},
-    policy.arn = {PolicyArn}
+    policy.arn = {PolicyArn},
+    policy.consolelink = {consolelink}
     SET policy.lastupdated = {aws_update_tag}
     WITH policy
     MATCH (principal:AWSPrincipal{arn: {PrincipalArn}})
@@ -542,6 +551,7 @@ def _load_policy_tx(
     """
 
     policy_arn = f"arn:aws:iam::{current_aws_account_id}:policy/{policy_name}"
+    consolelink = aws_console_link.get_console_link(arn=policy_arn)
 
     tx.run(
         ingest_policy,
@@ -549,6 +559,7 @@ def _load_policy_tx(
         PolicyName=policy_name,
         PolicyType=policy_type,
         PrincipalArn=principal_arn,
+        consolelink=consolelink,
         PolicyArn=policy_arn,
         region="global",
         aws_update_tag=aws_update_tag,

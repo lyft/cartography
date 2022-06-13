@@ -9,8 +9,10 @@ import time
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
+from cloudconsolelink.clouds.aws import AWS
 
 logger = logging.getLogger(__name__)
+aws_console_link = AWS()
 
 
 @timeit
@@ -45,6 +47,7 @@ def load_dynamodb_tables(
     ingest_table = """
     MERGE (table:DynamoDBTable{id: {Arn}})
     ON CREATE SET table.firstseen = timestamp(), table.arn = {Arn}, table.name = {TableName},
+    table.consolelink = {consolelink},
     table.region = {Region}
     SET table.lastupdated = {aws_update_tag}, table.rows = {Rows}, table.size = {Size},
     table.provisioned_throughput_read_capacity_units = {ProvisionedThroughputReadCapacityUnits},
@@ -60,6 +63,7 @@ def load_dynamodb_tables(
         neo4j_session.run(
             ingest_table,
             Arn=table['Table']['TableArn'],
+            consolelink=aws_console_link.get_console_link(arn=table['Table']['TableArn']),
             Region=region,
             ProvisionedThroughputReadCapacityUnits=table['Table']['ProvisionedThroughput']['ReadCapacityUnits'],
             ProvisionedThroughputWriteCapacityUnits=table['Table']['ProvisionedThroughput']['WriteCapacityUnits'],

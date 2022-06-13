@@ -8,12 +8,14 @@ from typing import List
 import boto3
 import neo4j
 from botocore.exceptions import ClientError
+from cloudconsolelink.clouds.aws import AWS
 
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+aws_console_link = AWS()
 
 
 @timeit
@@ -83,6 +85,7 @@ def load_sqs_queues(
             queue.kms_master_key_id = sqs_queue.KmsMasterKeyId,
             queue.kms_data_key_reuse_period_seconds = sqs_queue.KmsDataKeyReusePeriodSeconds,
             queue.fifo_queue = sqs_queue.FifoQueue,
+            queue.consolelink = sqs_queue.consolelink,
             queue.content_based_deduplication = sqs_queue.ContentBasedDeduplication,
             queue.deduplication_scope = sqs_queue.DeduplicationScope,
             queue.fifo_throughput_limit = sqs_queue.FifoThroughputLimit,
@@ -100,6 +103,7 @@ def load_sqs_queues(
         queue['name'] = queue['QueueArn'].split(':')[-1]
         queue['CreatedTimestamp'] = int(queue['CreatedTimestamp'])
         queue['LastModifiedTimestamp'] = int(queue['LastModifiedTimestamp'])
+        queue['consolelink'] = aws_console_link.get_console_link(arn=queue['QueueArn'])
         redrive_policy = queue.get('RedrivePolicy')
         if redrive_policy:
             try:
@@ -167,7 +171,8 @@ def sync(
         data.extend(queue_urls)
 
     if common_job_parameters.get('pagination', {}).get('sqs', None):
-        page_start = (common_job_parameters.get('pagination', {}).get('sqs', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('sqs', {})['pageSize']
+        page_start = (common_job_parameters.get('pagination', {}).get('sqs', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('sqs', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('sqs', {})['pageSize']
         if page_end > len(data) or page_end == len(data):
             data = data[page_start:]
