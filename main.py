@@ -1,3 +1,5 @@
+# Used by GCP Functions
+
 import base64
 import json
 import os
@@ -77,7 +79,7 @@ def process_request(logger, params):
             "templateType": params['templateType'],
             "workspace": params['workspace'],
             "actions": params['actions'],
-            "resultTopic": params['resultTopic'],
+            "resultTopic": params.get('resultTopic'),
         },
     }
 
@@ -133,10 +135,15 @@ def publish_response(logger, req, resp):
                 status = pubsub_helper.publish(
                     os.environ['CLOUDANIX_PROJECT_ID'], json.dumps(body), req['params']['requestTopic'],
                 )
+
         elif 'resultTopic' in req['params']:
-            status = pubsub_helper.publish(
-                os.environ['CLOUDANIX_PROJECT_ID'], json.dumps(body), req['params']['resultTopic'],
-            )
+            # Result should be pushed to "resultTopic" passed in the request
+            # status = pubsub_helper.publish(
+            #     os.environ['CLOUDANIX_PROJECT_ID'], json.dumps(body), req['params']['resultTopic'],
+            # )
+
+            logger.info(f'Result not published anywhere. since we want to avoid query when inventory is refreshed')
+            status = True
 
         else:
             status = pubsub_helper.publish(
