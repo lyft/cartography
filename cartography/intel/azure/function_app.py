@@ -6,14 +6,14 @@ import neo4j
 from azure.core.exceptions import HttpResponseError
 from azure.mgmt.web import WebSiteManagementClient
 from msrest.exceptions import DeserializationError
-from cloudconsolelink.clouds.azure import Azure
+from cloudconsolelink.clouds.azure import AzureLinker
 
 from .util.credentials import Credentials
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
-azure_console_link = Azure()
+azure_console_link = AzureLinker()
 
 
 def load_function_apps(
