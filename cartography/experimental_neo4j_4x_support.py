@@ -17,12 +17,12 @@
 import logging
 import os
 import re
+from distutils.util import strtobool
 from functools import wraps
 from typing import Callable
 
 import neo4j
 import neobolt.exceptions
-from distutils.util import strtobool
 
 # Enable these patches
 # Initially is set by the environment variable
