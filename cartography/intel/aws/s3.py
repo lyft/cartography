@@ -16,7 +16,7 @@ import neo4j
 from botocore.exceptions import ClientError
 from botocore.exceptions import EndpointConnectionError
 from policyuniverse.policy import Policy
-from cloudconsolelink.clouds.aws import AWS
+from cloudconsolelink.clouds.aws import AWSLinker
 
 from cartography.util import merge_module_sync_metadata
 from cartography.util import run_analysis_job
@@ -24,7 +24,7 @@ from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
-aws_console_link = AWS()
+aws_console_link = AWSLinker()
 
 
 @timeit

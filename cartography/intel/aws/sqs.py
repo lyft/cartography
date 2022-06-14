@@ -8,14 +8,14 @@ from typing import List
 import boto3
 import neo4j
 from botocore.exceptions import ClientError
-from cloudconsolelink.clouds.aws import AWS
+from cloudconsolelink.clouds.aws import AWSLinker
 
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
-aws_console_link = AWS()
+aws_console_link = AWSLinker()
 
 
 @timeit

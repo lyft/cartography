@@ -14,14 +14,14 @@ import boto3
 import maya
 import neo4j
 import pytz
-from cloudconsolelink.clouds.aws import AWS
+from cloudconsolelink.clouds.aws import AWSLinker
 
 from cartography.intel.aws.permission_relationships import parse_statement_node
 from cartography.intel.aws.permission_relationships import principal_allowed_on_resource
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 logger = logging.getLogger(__name__)
-aws_console_link = AWS()
+aws_console_link = AWSLinker()
 
 # Overview of IAM in AWS
 # https://aws.amazon.com/iam/
