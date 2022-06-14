@@ -7,17 +7,18 @@ import time
 import neo4j
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
-from cloudconsolelink.clouds.gcp import GCP
+from cloudconsolelink.clouds.gcp import GCPLinker
 
 from cartography.util import run_cleanup_job
 from . import label
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+gcp_console_link = GCPLinker()
 
 
 @timeit
-def get_sql_instances(sql: Resource, project_id: str, regions: list, common_job_parameters, gcp_console_link: GCP) -> List[Dict]:
+def get_sql_instances(sql: Resource, project_id: str, regions: list, common_job_parameters) -> List[Dict]:
     """
         Returns a list of sql instances for a given project.
 
@@ -72,7 +73,7 @@ def get_sql_instances(sql: Resource, project_id: str, regions: list, common_job_
 
 
 @timeit
-def get_sql_users(sql: Resource, sql_instances: List[Dict], project_id: str, gcp_console_link: GCP) -> List[Dict]:
+def get_sql_users(sql: Resource, sql_instances: List[Dict], project_id: str) -> List[Dict]:
     """
         Returns a list of sql instance users for a given project.
 
@@ -254,7 +255,7 @@ def cleanup_sql(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> No
 @timeit
 def sync(
     neo4j_session: neo4j.Session, sql: Resource, project_id: str, gcp_update_tag: int,
-    common_job_parameters: Dict, regions: list, gcp_console_link: GCP
+    common_job_parameters: Dict, regions: list
 ) -> None:
     """
         Get GCP Cloud SQL Instances and Users using the Cloud SQL resource object,
@@ -283,7 +284,7 @@ def sync(
     logger.info("Syncing CloudSQL for project '%s', at %s.", project_id, tic)
 
     # SQL INSTANCES
-    sqlinstances = get_sql_instances(sql, project_id, regions, common_job_parameters, gcp_console_link)
+    sqlinstances = get_sql_instances(sql, project_id, regions, common_job_parameters)
     load_sql_instances(neo4j_session, sqlinstances, project_id, gcp_update_tag)
     logger.info("Load GCP Cloud SQL Instances completed for project %s.", project_id)
     label.sync_labels(neo4j_session, sqlinstances, gcp_update_tag,
@@ -291,7 +292,7 @@ def sync(
 
     logger.info("Syncing GCP Cloud SQL Users for project %s.", project_id)
     # SQL USERS
-    users = get_sql_users(sql, sqlinstances, project_id, gcp_console_link)
+    users = get_sql_users(sql, sqlinstances, project_id)
     load_sql_users(neo4j_session, users, project_id, gcp_update_tag)
     cleanup_sql(neo4j_session, common_job_parameters)
 

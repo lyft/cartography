@@ -6,16 +6,17 @@ import time
 import neo4j
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
-from cloudconsolelink.clouds.gcp import GCP
+from cloudconsolelink.clouds.gcp import GCPLinker
 
 from cartography.util import run_cleanup_job
 from . import label
 from cartography.util import timeit
 logger = logging.getLogger(__name__)
+gcp_console_link = GCPLinker()
 
 
 @timeit
-def get_gke_clusters(container: Resource, project_id: str, regions: list, common_job_parameters, gcp_console_link: GCP) -> Dict:
+def get_gke_clusters(container: Resource, project_id: str, regions: list, common_job_parameters) -> Dict:
     """
     Returns a GCP response object containing a list of GKE clusters within the given project.
 
@@ -199,7 +200,7 @@ def cleanup_gke_clusters(neo4j_session: neo4j.Session, common_job_parameters: Di
 @timeit
 def sync(
     neo4j_session: neo4j.Session, container: Resource, project_id: str, gcp_update_tag: int,
-    common_job_parameters: Dict, regions: list, gcp_console_link: GCP
+    common_job_parameters: Dict, regions: list
 ) -> None:
     """
     Get GCP GKE Clusters using the Container resource object, ingest to Neo4j, and clean up old data.
@@ -226,7 +227,7 @@ def sync(
 
     logger.info("Syncing GKE for project '%s', at %s.", project_id, tic)
 
-    gke_res = get_gke_clusters(container, project_id, regions, common_job_parameters, gcp_console_link)
+    gke_res = get_gke_clusters(container, project_id, regions, common_job_parameters)
 
     load_gke_clusters(neo4j_session, gke_res, project_id, gcp_update_tag)
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381

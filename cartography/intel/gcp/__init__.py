@@ -7,7 +7,6 @@ from typing import Set
 from typing import Any
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from cloudconsolelink.clouds.gcp import GCP
 
 import googleapiclient.discovery
 import neo4j
@@ -300,7 +299,6 @@ def _services_enabled_on_project(serviceusage: Resource, project_id: str) -> Set
 def concurrent_execution(
     service: str, service_func: Any, config: Config, iam: Resource,
     common_job_parameters: Dict, gcp_update_tag: int, project_id: str, crm: Resource, admin: Resource,
-    gcp_console_link: GCP,
 ):
     logger.info(f"BEGIN processing for service: {service}")
 
@@ -315,10 +313,10 @@ def concurrent_execution(
 
     if service == 'iam':
         service_func(neo4j_driver.session(), iam, crm, admin, project_id,
-                     gcp_update_tag, common_job_parameters, gcp_console_link)
+                     gcp_update_tag, common_job_parameters)
     else:
         service_func(neo4j_driver.session(), iam, project_id, gcp_update_tag,
-                     common_job_parameters, regions, gcp_console_link)
+                     common_job_parameters, regions)
     logger.info(f"END processing for service: {service}")
 
 
@@ -336,8 +334,7 @@ def _sync_single_project(
     :param common_job_parameters: Other parameters sent to Neo4j
     :return: Nothing
     """
-    # create consolelink object
-    gcp_console_link = GCP()
+
     # Determine the resources available on the project.
     enabled_services = _services_enabled_on_project(resources.serviceusage, project_id)
     with ThreadPoolExecutor(max_workers=len(RESOURCE_FUNCTIONS)) as executor:
@@ -347,7 +344,7 @@ def _sync_single_project(
                 # if getattr(service_names, request) in enabled_services:
 
                 futures.append(executor.submit(concurrent_execution, request, RESOURCE_FUNCTIONS[request], config, getattr(
-                    resources, request), common_job_parameters, gcp_update_tag, project_id, resources.crm_v1, resources.admin, gcp_console_link))
+                    resources, request), common_job_parameters, gcp_update_tag, project_id, resources.crm_v1, resources.admin))
 
             else:
                 raise ValueError(

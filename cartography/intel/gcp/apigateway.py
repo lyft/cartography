@@ -8,13 +8,14 @@ import time
 import neo4j
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
-from cloudconsolelink.clouds.gcp import GCP
+from cloudconsolelink.clouds.gcp import GCPLinker
 
 from cartography.util import run_cleanup_job
 from . import label
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+gcp_console_link = GCPLinker()
 
 
 @timeit
@@ -68,7 +69,7 @@ def get_apigateway_locations(apigateway: Resource, project_id: str, common_job_p
 
 
 @timeit
-def get_apis(apigateway: Resource, project_id: str, regions: list, common_job_parameters, gcp_console_link: GCP) -> List[Dict]:
+def get_apis(apigateway: Resource, project_id: str, regions: list, common_job_parameters) -> List[Dict]:
     """
         Returns a list of apis within the given project.
 
@@ -177,7 +178,7 @@ def get_api_policy_entities(apigateway: Resource, api: Dict, project_id: str) ->
 
 
 @timeit
-def get_api_configs(apigateway: Resource, project_id: str, api:Dict, regions: list, gcp_console_link: GCP) -> List[Dict]:
+def get_api_configs(apigateway: Resource, project_id: str, api: Dict, regions: list) -> List[Dict]:
     """
         Returns a list of apis configs within the given project.
 
@@ -209,7 +210,7 @@ def get_api_configs(apigateway: Resource, project_id: str, api:Dict, regions: li
                 for apiConfig in res['apiConfigs']:
                     apiConfig['api_id'] = api['name']
                     # apiConfig['api_id'] = f"projects/{project_id}/locations/{region}/apis/\
-                        # {apiConfig.get('name').split('/')[-3]}"
+                    # {apiConfig.get('name').split('/')[-3]}"
                     apiConfig['id'] = apiConfig['name']
                     apiConfig['project_id'] = project_id
                     x = apiConfig.get('name').split('/')
@@ -218,9 +219,9 @@ def get_api_configs(apigateway: Resource, project_id: str, api:Dict, regions: li
                     if len(x) > 1:
                         apiConfig['region'] = f"{x[0]}-{x[1]}"
                     apiConfig['consolelink'] = gcp_console_link.get_console_link(
-                            resource_name='api_config', project_id=project_id, managed_service_name=api['managedService'],
-                            api_name=api.get('name').split('/')[-1],
-                            api_config_name=apiConfig.get('name').split('/')[-1], api_configuration_id=apiConfig['serviceConfigId'])
+                        resource_name='api_config', project_id=project_id, managed_service_name=api['managedService'],
+                        api_name=api.get('name').split('/')[-1],
+                        api_config_name=apiConfig.get('name').split('/')[-1], api_configuration_id=apiConfig['serviceConfigId'])
                     api_configs.append(apiConfig)
             req = apigateway.projects().locations().apis().configs().list_next(
                 previous_request=req,
@@ -248,7 +249,7 @@ def get_api_configs(apigateway: Resource, project_id: str, api:Dict, regions: li
 
 
 @timeit
-def get_gateways(apigateway: Resource, project_id: str, regions: list, common_job_parameters, gcp_console_link: GCP) -> List[Dict]:
+def get_gateways(apigateway: Resource, project_id: str, regions: list, common_job_parameters) -> List[Dict]:
     """
         Returns a list of gateways within the given project.
 
@@ -726,7 +727,7 @@ def cleanup_api_gateways(neo4j_session: neo4j.Session, common_job_parameters: Di
 @timeit
 def sync(
     neo4j_session: neo4j.Session, apigateway: Resource, project_id: str, gcp_update_tag: int,
-    common_job_parameters: Dict, regions: list, gcp_console_link: GCP,
+    common_job_parameters: Dict, regions: list,
 ) -> None:
     """
         Get GCP API Gateway Resources using the API Gateway resource object, ingest to Neo4j, and clean up old data.
@@ -763,7 +764,7 @@ def sync(
                       common_job_parameters, 'apigateway_locations', 'GCPLocation')
 
     # API Gateway APIs
-    apis = get_apis(apigateway, project_id, regions, common_job_parameters, gcp_console_link)
+    apis = get_apis(apigateway, project_id, regions, common_job_parameters)
     load_apis(neo4j_session, apis, project_id, gcp_update_tag)
     for api in apis:
         load_apis_entity_relation(neo4j_session, api, gcp_update_tag)
@@ -773,14 +774,14 @@ def sync(
 
     # API Gateway API Configs
     for api in apis:
-        configs = get_api_configs(apigateway, project_id, api, regions, gcp_console_link)
+        configs = get_api_configs(apigateway, project_id, api, regions)
         load_api_configs(neo4j_session, configs, project_id, gcp_update_tag)
-    
+
     # Cleanup API Gateway Configs
     cleanup_api_configs(neo4j_session, common_job_parameters)
 
     # API Gateway Gateways
-    gateways = get_gateways(apigateway, project_id, regions, common_job_parameters, gcp_console_link)
+    gateways = get_gateways(apigateway, project_id, regions, common_job_parameters)
     load_gateways(neo4j_session, gateways, project_id, gcp_update_tag)
     for gateway in gateways:
         load_gateway_entity_relation(neo4j_session, gateway, gcp_update_tag)

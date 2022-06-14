@@ -8,13 +8,14 @@ import time
 import neo4j
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
-from cloudconsolelink.clouds.gcp import GCP
+from cloudconsolelink.clouds.gcp import GCPLinker
 
 from cartography.util import run_cleanup_job
 from . import label
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+gcp_console_link = GCPLinker()
 
 
 @timeit
@@ -70,7 +71,7 @@ def get_kms_locations(kms: Resource, project_id: str, regions: list, common_job_
 
 
 @timeit
-def get_kms_keyrings(kms: Resource, kms_locations: List[Dict], project_id: str, gcp_console_link: GCP) -> List[Dict]:
+def get_kms_keyrings(kms: Resource, kms_locations: List[Dict], project_id: str) -> List[Dict]:
     """
         Returns a list of kms keyrings for a given project and locations.
 
@@ -158,7 +159,7 @@ def get_keyring_policy_entities(kms: Resource, keyring: Dict, project_id: str) -
 
 
 @timeit
-def get_kms_crypto_keys(kms: Resource, key_rings: List[Dict], project_id: str, gcp_console_link: GCP) -> List[Dict]:
+def get_kms_crypto_keys(kms: Resource, key_rings: List[Dict], project_id: str) -> List[Dict]:
     """
         Returns a list of kms cryptokeys for a given keyrings and locations.
 
@@ -413,7 +414,7 @@ def cleanup_gcp_kms(neo4j_session: neo4j.Session, common_job_parameters: Dict) -
 @timeit
 def sync(
     neo4j_session: neo4j.Session, kms: Resource, project_id: str, gcp_update_tag: int,
-    common_job_parameters: Dict, regions: list, gcp_console_link: GCP
+    common_job_parameters: Dict, regions: list
 ) -> None:
     """
     Get GCP Cloud KMS using the Cloud KMS resource object, ingest to Neo4j, and clean up old data.
@@ -445,12 +446,12 @@ def sync(
     load_kms_locations(neo4j_session, locations, project_id, gcp_update_tag)
     label.sync_labels(neo4j_session, locations, gcp_update_tag, common_job_parameters, 'kms_locations', 'GCPLocation')
     # KMS KEYRINGS
-    key_rings = get_kms_keyrings(kms, locations, project_id, gcp_console_link)
+    key_rings = get_kms_keyrings(kms, locations, project_id)
     load_kms_key_rings(neo4j_session, key_rings, project_id, gcp_update_tag)
     for key_ring in key_rings:
         load_keyring_entity_relation(neo4j_session, key_ring, gcp_update_tag)
     label.sync_labels(neo4j_session, key_rings, gcp_update_tag, common_job_parameters, 'keyrings', 'GCPKMSKeyRing')
-    crypto_keys = get_kms_crypto_keys(kms, key_rings, project_id, gcp_console_link)
+    crypto_keys = get_kms_crypto_keys(kms, key_rings, project_id)
     load_kms_crypto_keys(neo4j_session, crypto_keys, project_id, gcp_update_tag)
     cleanup_gcp_kms(neo4j_session, common_job_parameters)
 

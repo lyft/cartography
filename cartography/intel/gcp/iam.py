@@ -7,12 +7,13 @@ import time
 import neo4j
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
-from cloudconsolelink.clouds.gcp import GCP
+from cloudconsolelink.clouds.gcp import GCPLinker
 
 from cartography.util import run_cleanup_job
 from . import label
 from cartography.util import timeit
 logger = logging.getLogger(__name__)
+gcp_console_link = GCPLinker()
 
 
 def set_used_state(session: neo4j.Session, project_id: str, common_job_parameters: Dict, update_tag: int) -> None:
@@ -136,7 +137,7 @@ def get_service_accounts(iam: Resource, project_id: str) -> List[Dict]:
 
 
 @timeit
-def transform_service_accounts(service_accounts: List[Dict], project_id: str, gcp_console_link: GCP) -> List[Dict]:
+def transform_service_accounts(service_accounts: List[Dict], project_id: str) -> List[Dict]:
     for account in service_accounts:
         account['firstName'] = account['name'].split('@')[0]
         account['id'] = account['name']
@@ -146,7 +147,7 @@ def transform_service_accounts(service_accounts: List[Dict], project_id: str, gc
 
 
 @timeit
-def get_service_account_keys(iam: Resource, project_id: str, service_account: Dict, gcp_console_link: GCP) -> List[Dict]:
+def get_service_account_keys(iam: Resource, project_id: str, service_account: Dict) -> List[Dict]:
     service_keys: List[Dict] = []
     try:
         res = iam.projects().serviceAccounts().keys().list(name=service_account['name']).execute()
@@ -222,7 +223,7 @@ def get_project_roles(iam: Resource, project_id: str) -> List[Dict]:
 
 
 @timeit
-def transform_roles(roles_list: List[Dict], project_id: str, gcp_console_link: GCP) -> List[Dict]:
+def transform_roles(roles_list: List[Dict], project_id: str) -> List[Dict]:
     for role in roles_list:
         role['id'] = get_role_id(role['name'], project_id)
         role['consolelink'] = gcp_console_link.get_console_link(
@@ -800,7 +801,7 @@ def _set_used_state_tx(
 @timeit
 def sync(
     neo4j_session: neo4j.Session, iam: Resource, crm: Resource, admin: Resource,
-    project_id: str, gcp_update_tag: int, common_job_parameters: Dict, gcp_console_link: GCP
+    project_id: str, gcp_update_tag: int, common_job_parameters: Dict
 ) -> None:
     tic = time.perf_counter()
 
@@ -819,11 +820,11 @@ def sync(
             service_accounts_list = service_accounts_list[page_start:page_end]
             common_job_parameters['pagination']['iam']['hasNextPage'] = has_next_page
 
-    service_accounts_list = transform_service_accounts(service_accounts_list, project_id, gcp_console_link)
+    service_accounts_list = transform_service_accounts(service_accounts_list, project_id)
     load_service_accounts(neo4j_session, service_accounts_list, project_id, gcp_update_tag)
 
     for service_account in service_accounts_list:
-        service_account_keys = get_service_account_keys(iam, project_id, service_account, gcp_console_link)
+        service_account_keys = get_service_account_keys(iam, project_id, service_account)
         load_service_account_keys(neo4j_session, service_account_keys, service_account['name'], gcp_update_tag)
 
     cleanup_service_accounts(neo4j_session, common_job_parameters)
@@ -845,7 +846,7 @@ def sync(
             roles_list = roles_list[page_start:page_end]
             common_job_parameters['pagination']['iam']['hasNextPage'] = has_next_page
 
-    roles_list = transform_roles(roles_list, project_id, gcp_console_link)
+    roles_list = transform_roles(roles_list, project_id)
 
     load_roles(neo4j_session, roles_list, project_id, gcp_update_tag)
     cleanup_roles(neo4j_session, common_job_parameters)

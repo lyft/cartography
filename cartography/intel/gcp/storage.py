@@ -6,7 +6,7 @@ import time
 import neo4j
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
-from cloudconsolelink.clouds.gcp import GCP
+from cloudconsolelink.clouds.gcp import GCPLinker
 
 from cartography.intel.gcp import compute
 from cartography.util import run_cleanup_job
@@ -14,6 +14,7 @@ from . import label
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+gcp_console_link = GCPLinker()
 
 
 @timeit
@@ -75,7 +76,7 @@ def get_gcp_buckets(storage: Resource, project_id: str, common_job_parameters) -
 
 
 @timeit
-def transform_gcp_buckets(bucket_res: Dict, regions: list, gcp_console_link: GCP) -> List[Dict]:
+def transform_gcp_buckets(bucket_res: Dict, regions: list) -> List[Dict]:
     '''
     Transform the GCP Storage Bucket response object for Neo4j ingestion
 
@@ -232,7 +233,7 @@ def cleanup_gcp_buckets(neo4j_session: neo4j.Session, common_job_parameters: Dic
 @timeit
 def sync(
     neo4j_session: neo4j.Session, storage: Resource, project_id: str, gcp_update_tag: int,
-    common_job_parameters: Dict, regions: list, gcp_console_link: GCP,
+    common_job_parameters: Dict, regions: list,
 ) -> None:
     """
     Get GCP instances using the Storage resource object, ingest to Neo4j, and clean up old data.
@@ -261,7 +262,7 @@ def sync(
 
     logger.info("Syncing Storage objects for project %s.", project_id)
     storage_res = get_gcp_buckets(storage, project_id, common_job_parameters)
-    bucket_list = transform_gcp_buckets(storage_res, regions, gcp_console_link)
+    bucket_list = transform_gcp_buckets(storage_res, regions)
     load_gcp_buckets(neo4j_session, bucket_list, gcp_update_tag)
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gcp_buckets(neo4j_session, common_job_parameters)

@@ -7,17 +7,18 @@ import time
 import neo4j
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
-from cloudconsolelink.clouds.gcp import GCP
+from cloudconsolelink.clouds.gcp import GCPLinker
 
 from cartography.util import run_cleanup_job
 from . import label
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+gcp_console_link = GCPLinker()
 
 
 @timeit
-def get_firestore_databases(firestore: Resource, project_id: str, regions: list, common_job_parameters, gcp_console_link: GCP) -> List[Dict]:
+def get_firestore_databases(firestore: Resource, project_id: str, regions: list, common_job_parameters) -> List[Dict]:
     """
         Returns a list of firestore databases for a given project.
 
@@ -252,7 +253,7 @@ def cleanup_firestore(neo4j_session: neo4j.Session, common_job_parameters: Dict)
 @timeit
 def sync(
     neo4j_session: neo4j.Session, firestore: Resource, project_id: str, gcp_update_tag: int,
-    common_job_parameters: Dict, regions: list, gcp_console_link: GCP
+    common_job_parameters: Dict, regions: list
 ) -> None:
     """
         Get GCP Cloud Firestore using the Cloud Firestore resource object, ingest to Neo4j, and clean up old data.
@@ -281,7 +282,7 @@ def sync(
 
     # FIRESTORE DATABASES
     firestore_databases = get_firestore_databases(
-        firestore, project_id, regions, common_job_parameters, gcp_console_link)
+        firestore, project_id, regions, common_job_parameters)
     load_firestore_databases(neo4j_session, firestore_databases, project_id, gcp_update_tag)
     label.sync_labels(neo4j_session, firestore_databases, gcp_update_tag,
                       common_job_parameters, 'firestore databases', 'GCPFirestoreDatabase')

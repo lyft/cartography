@@ -15,13 +15,14 @@ import time
 import neo4j
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
-from cloudconsolelink.clouds.gcp import GCP
+from cloudconsolelink.clouds.gcp import GCPLinker
 
 from cartography.util import run_cleanup_job
 from . import label
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+gcp_console_link = GCPLinker()
 InstanceUriPrefix = namedtuple('InstanceUriPrefix', 'zone_name project_id')
 
 
@@ -224,7 +225,7 @@ def get_gcp_firewall_ingress_rules(project_id: str, compute: Resource) -> Resour
 
 
 @timeit
-def transform_gcp_instances(response_objects: List[Dict], compute: Resource, gcp_console_link: GCP) -> List[Dict]:
+def transform_gcp_instances(response_objects: List[Dict], compute: Resource) -> List[Dict]:
     """
     Process the GCP instance response objects and return a flattened list of GCP instances with all the necessary fields
     we need to load it into Neo4j
@@ -301,7 +302,7 @@ def _create_gcp_network_tag_id(vpc_partial_uri: str, tag: str) -> str:
 
 
 @timeit
-def transform_gcp_vpcs(vpc_res: Dict, gcp_console_link: GCP) -> List[Dict]:
+def transform_gcp_vpcs(vpc_res: Dict) -> List[Dict]:
     """
     Transform the VPC response object for Neo4j ingestion
     :param vpc_res: The return data
@@ -330,7 +331,7 @@ def transform_gcp_vpcs(vpc_res: Dict, gcp_console_link: GCP) -> List[Dict]:
 
 
 @timeit
-def transform_gcp_subnets(subnet_res: Dict, gcp_console_link: GCP) -> List[Dict]:
+def transform_gcp_subnets(subnet_res: Dict) -> List[Dict]:
     """
     Add additional fields to the subnet object to make it easier to process in `load_gcp_subnets()`.
     :param subnet_res: The response object returned from compute.subnetworks.list()
@@ -369,7 +370,7 @@ def transform_gcp_subnets(subnet_res: Dict, gcp_console_link: GCP) -> List[Dict]
 
 
 @timeit
-def transform_gcp_forwarding_rules(fwd_response: Resource, gcp_console_link: GCP,) -> List[Dict]:
+def transform_gcp_forwarding_rules(fwd_response: Resource,) -> List[Dict]:
     """
     Add additional fields to the forwarding rule object to make it easier to process in `load_gcp_forwarding_rules()`.
     :param fwd_response: The response object returned from compute.forwardRules.list()
@@ -422,7 +423,7 @@ def transform_gcp_forwarding_rules(fwd_response: Resource, gcp_console_link: GCP
 
 
 @timeit
-def transform_gcp_firewall(fw_response: Resource, gcp_console_link: GCP) -> List[Dict]:
+def transform_gcp_firewall(fw_response: Resource) -> List[Dict]:
     """
     Adjust the firewall response objects into a format that is easy to write to Neo4j.
     Also see _transform_fw_entry and _parse_port_string_to_rule().
@@ -1243,7 +1244,7 @@ def cleanup_gcp_firewall_rules(neo4j_session: neo4j.Session, common_job_paramete
 @timeit
 def sync_gcp_instances(
     neo4j_session: neo4j.Session, compute: Resource, project_id: str, zones: Optional[List[Dict]],
-    gcp_update_tag: int, common_job_parameters: Dict, gcp_console_link: GCP,
+    gcp_update_tag: int, common_job_parameters: Dict,
 ) -> None:
     """
     Get GCP instances using the Compute resource object, ingest to Neo4j, and clean up old data.
@@ -1270,7 +1271,7 @@ def sync_gcp_instances(
             instance_responses = instance_responses[page_start:page_end]
             common_job_parameters['pagination']['compute']['hasNextPage'] = has_next_page
 
-    instance_list = transform_gcp_instances(instance_responses, compute, gcp_console_link)
+    instance_list = transform_gcp_instances(instance_responses, compute)
 
     load_gcp_instances(neo4j_session, instance_list, gcp_update_tag)
 
@@ -1282,7 +1283,7 @@ def sync_gcp_instances(
 @timeit
 def sync_gcp_vpcs(
     neo4j_session: neo4j.Session, compute: Resource, project_id: str, gcp_update_tag: int,
-    common_job_parameters: Dict, gcp_console_link: GCP,
+    common_job_parameters: Dict,
 ) -> None:
     """
     Get GCP VPCs, ingest to Neo4j, and clean up old data.
@@ -1294,7 +1295,7 @@ def sync_gcp_vpcs(
     :return: Nothing
     """
     vpc_res = get_gcp_vpcs(project_id, compute)
-    vpcs = transform_gcp_vpcs(vpc_res, gcp_console_link)
+    vpcs = transform_gcp_vpcs(vpc_res)
     if common_job_parameters.get('pagination', {}).get('compute', None):
         page_start = (common_job_parameters.get('pagination', {}).get('compute', None)[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
@@ -1315,12 +1316,12 @@ def sync_gcp_vpcs(
 @timeit
 def sync_gcp_subnets(
     neo4j_session: neo4j.Session, compute: Resource, project_id: str, regions: List[str], gcp_update_tag: int,
-    common_job_parameters: Dict, gcp_console_link: GCP,
+    common_job_parameters: Dict,
 ) -> None:
     for r in regions:
         logger.info("Subnet Region %s.", r)
         subnet_res = get_gcp_subnets(project_id, r, compute)
-        subnets = transform_gcp_subnets(subnet_res, gcp_console_link)
+        subnets = transform_gcp_subnets(subnet_res)
         if common_job_parameters.get('pagination', {}).get('compute', None):
             page_start = (common_job_parameters.get('pagination', {}).get('compute', None)[
                           'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
@@ -1340,7 +1341,7 @@ def sync_gcp_subnets(
 @timeit
 def sync_gcp_forwarding_rules(
     neo4j_session: neo4j.Session, compute: Resource, project_id: str, regions: List[str], gcp_update_tag: int,
-    common_job_parameters: Dict, gcp_console_link: GCP,
+    common_job_parameters: Dict,
 ) -> None:
     """
     Sync GCP Both Global and Regional Forwarding Rules, ingest to Neo4j, and clean up old data.
@@ -1354,7 +1355,7 @@ def sync_gcp_forwarding_rules(
     """
     logger.info("Syncing Compute forwarding rule for project %s.", project_id)
     global_fwd_response = get_gcp_global_forwarding_rules(project_id, compute)
-    forwarding_rules = transform_gcp_forwarding_rules(global_fwd_response, gcp_console_link)
+    forwarding_rules = transform_gcp_forwarding_rules(global_fwd_response)
     if common_job_parameters.get('pagination', {}).get('compute', None):
         page_start = (common_job_parameters.get('pagination', {}).get('compute', None)[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
@@ -1372,7 +1373,7 @@ def sync_gcp_forwarding_rules(
     for r in regions:
         logger.info("Forwarding Rule Region %s.", r)
         fwd_response = get_gcp_regional_forwarding_rules(project_id, r, compute)
-        forwarding_rules = transform_gcp_forwarding_rules(fwd_response, gcp_console_link)
+        forwarding_rules = transform_gcp_forwarding_rules(fwd_response)
         load_gcp_forwarding_rules(neo4j_session, forwarding_rules, gcp_update_tag)
         # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
         cleanup_gcp_forwarding_rules(neo4j_session, common_job_parameters)
@@ -1381,7 +1382,7 @@ def sync_gcp_forwarding_rules(
 @timeit
 def sync_gcp_firewall_rules(
     neo4j_session: neo4j.Session, compute: Resource, project_id: str, gcp_update_tag: int,
-    common_job_parameters: Dict, gcp_console_link: GCP,
+    common_job_parameters: Dict,
 ) -> None:
     """
     Sync GCP firewalls
@@ -1392,7 +1393,7 @@ def sync_gcp_firewall_rules(
     :return: Nothing
     """
     fw_response = get_gcp_firewall_ingress_rules(project_id, compute)
-    fw_list = transform_gcp_firewall(fw_response, gcp_console_link)
+    fw_list = transform_gcp_firewall(fw_response)
     if common_job_parameters.get('pagination', {}).get('compute', None):
         page_start = (common_job_parameters.get('pagination', {}).get('compute', None)[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
@@ -1425,7 +1426,7 @@ def _zones_to_regions(zones: List[str]) -> List[Set]:
 
 def sync(
     neo4j_session: neo4j.Session, compute: Resource, project_id: str, gcp_update_tag: int,
-    common_job_parameters: dict, regions: list, gcp_console_link: GCP,
+    common_job_parameters: dict, regions: list,
 ) -> None:
     """
     Sync all objects that we need the GCP Compute resource object for.
@@ -1455,15 +1456,15 @@ def sync(
             zones = zones_list
 
         regions = _zones_to_regions(zones)
-        sync_gcp_vpcs(neo4j_session, compute, project_id, gcp_update_tag, common_job_parameters, gcp_console_link)
+        sync_gcp_vpcs(neo4j_session, compute, project_id, gcp_update_tag, common_job_parameters)
         sync_gcp_firewall_rules(neo4j_session, compute, project_id, gcp_update_tag,
-                                common_job_parameters, gcp_console_link)
+                                common_job_parameters)
         sync_gcp_subnets(neo4j_session, compute, project_id, regions,
-                         gcp_update_tag, common_job_parameters, gcp_console_link)
+                         gcp_update_tag, common_job_parameters)
         sync_gcp_instances(neo4j_session, compute, project_id, zones,
-                           gcp_update_tag, common_job_parameters, gcp_console_link)
+                           gcp_update_tag, common_job_parameters)
         sync_gcp_forwarding_rules(neo4j_session, compute, project_id, regions,
-                                  gcp_update_tag, common_job_parameters, gcp_console_link)
+                                  gcp_update_tag, common_job_parameters)
 
     toc = time.perf_counter()
     logger.info(f"Time to process Compute: {toc - tic:0.4f} seconds")

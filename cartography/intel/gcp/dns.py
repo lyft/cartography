@@ -7,17 +7,18 @@ import time
 import neo4j
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
-from cloudconsolelink.clouds.gcp import GCP
+from cloudconsolelink.clouds.gcp import GCPLinker
 
 from cartography.util import run_cleanup_job
 from . import label
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+gcp_console_link = GCPLinker()
 
 
 @timeit
-def get_dns_zones(dns: Resource, project_id: str, common_job_parameters, gcp_console_link: GCP) -> List[Resource]:
+def get_dns_zones(dns: Resource, project_id: str, common_job_parameters) -> List[Resource]:
     """
     Returns a list of DNS zones within the given project.
 
@@ -67,7 +68,7 @@ def get_dns_zones(dns: Resource, project_id: str, common_job_parameters, gcp_con
 
 
 @timeit
-def get_dns_rrs(dns: Resource, dns_zones: List[Dict], project_id: str, gcp_console_link: GCP) -> List[Resource]:
+def get_dns_rrs(dns: Resource, dns_zones: List[Dict], project_id: str) -> List[Resource]:
     """
     Returns a list of DNS Resource Record Sets within the given project.
 
@@ -235,7 +236,7 @@ def cleanup_dns_records(neo4j_session: neo4j.Session, common_job_parameters: Dic
 @timeit
 def sync(
     neo4j_session: neo4j.Session, dns: Resource, project_id: str, gcp_update_tag: int,
-    common_job_parameters: Dict, regions: list, gcp_console_link: GCP
+    common_job_parameters: Dict, regions: list
 ) -> None:
     """
     Get GCP DNS Zones and Resource Record Sets using the DNS resource object, ingest to Neo4j, and clean up old data.
@@ -263,11 +264,11 @@ def sync(
     logger.info("Syncing DNS for project '%s', at %s.", project_id, tic)
 
     # DNS ZONES
-    dns_zones = get_dns_zones(dns, project_id, common_job_parameters, gcp_console_link)
+    dns_zones = get_dns_zones(dns, project_id, common_job_parameters)
     load_dns_zones(neo4j_session, dns_zones, project_id, gcp_update_tag)
     label.sync_labels(neo4j_session, dns_zones, gcp_update_tag, common_job_parameters, 'dns_zones', 'GCPDNSZone')
     # RECORD SETS
-    dns_rrs = get_dns_rrs(dns, dns_zones, project_id, gcp_console_link)
+    dns_rrs = get_dns_rrs(dns, dns_zones, project_id)
     load_rrs(neo4j_session, dns_rrs, project_id, gcp_update_tag)
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_dns_records(neo4j_session, common_job_parameters)
