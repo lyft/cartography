@@ -42,6 +42,14 @@ def get_gcp_buckets(storage: Resource, project_id: str, common_job_parameters) -
             for item3 in defaultObjectAcl:
                 item['defaultentity'] = item3.get('entity', None)
         if common_job_parameters.get('pagination', {}).get('storage', None):
+            pageNo = common_job_parameters.get("pagination", {}).get("storage", None)["pageNo"]
+            pageSize = common_job_parameters.get("pagination", {}).get("storage", None)["pageSize"]
+            totalPages = len(res['items']) / pageSize
+            if int(totalPages) != totalPages:
+                totalPages = totalPages + 1
+            totalPages = int(totalPages)
+            if pageNo < totalPages or pageNo == totalPages:
+                logger.info(f'pages process for storage buckets {pageNo}/{totalPages} pageSize is {pageSize}')
             page_start = (common_job_parameters.get('pagination', {}).get('storage', None)[
                           'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('storage', None)['pageSize']
             page_end = page_start + common_job_parameters.get('pagination', {}).get('storage', None)['pageSize']

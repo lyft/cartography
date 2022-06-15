@@ -1261,6 +1261,14 @@ def sync_gcp_instances(
     instance_responses = get_gcp_instances(project_id, zones, compute)
 
     if common_job_parameters.get('pagination', {}).get('compute', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("compute", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("compute", None)["pageSize"]
+        totalPages = len(instance_responses) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for compute instance {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('compute', None)[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
@@ -1297,6 +1305,14 @@ def sync_gcp_vpcs(
     vpc_res = get_gcp_vpcs(project_id, compute)
     vpcs = transform_gcp_vpcs(vpc_res)
     if common_job_parameters.get('pagination', {}).get('compute', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("compute", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("compute", None)["pageSize"]
+        totalPages = len(vpcs) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for compute vpcs {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('compute', None)[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
@@ -1323,6 +1339,14 @@ def sync_gcp_subnets(
         subnet_res = get_gcp_subnets(project_id, r, compute)
         subnets = transform_gcp_subnets(subnet_res)
         if common_job_parameters.get('pagination', {}).get('compute', None):
+            pageNo = common_job_parameters.get("pagination", {}).get("compute", None)["pageNo"]
+            pageSize = common_job_parameters.get("pagination", {}).get("compute", None)["pageSize"]
+            totalPages = len(subnets) / pageSize
+            if int(totalPages) != totalPages:
+                totalPages = totalPages + 1
+            totalPages = int(totalPages)
+            if pageNo < totalPages or pageNo == totalPages:
+                logger.info(f'pages process for compute subnets {pageNo}/{totalPages} pageSize is {pageSize}')
             page_start = (common_job_parameters.get('pagination', {}).get('compute', None)[
                           'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
             page_end = page_start + common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
@@ -1357,6 +1381,14 @@ def sync_gcp_forwarding_rules(
     global_fwd_response = get_gcp_global_forwarding_rules(project_id, compute)
     forwarding_rules = transform_gcp_forwarding_rules(global_fwd_response)
     if common_job_parameters.get('pagination', {}).get('compute', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("compute", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("compute", None)["pageSize"]
+        totalPages = len(forwarding_rules) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for compute forwarding_rules {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('compute', None)[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
@@ -1395,6 +1427,14 @@ def sync_gcp_firewall_rules(
     fw_response = get_gcp_firewall_ingress_rules(project_id, compute)
     fw_list = transform_gcp_firewall(fw_response)
     if common_job_parameters.get('pagination', {}).get('compute', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("compute", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("compute", None)["pageSize"]
+        totalPages = len(fw_list) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for compute firewalls {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('compute', None)[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
