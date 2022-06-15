@@ -348,6 +348,14 @@ def sync_vm_scale_sets(
     vm_scale_sets_list = get_vm_scale_sets_list(credentials, subscription_id, regions, common_job_parameters)
 
     if common_job_parameters.get('pagination', {}).get('compute', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("compute", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("compute", None)["pageSize"]
+        totalPages = len(vm_scale_sets_list) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for compute vm_scale_sets {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('compute', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('compute', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('compute', {})['pageSize']
@@ -584,6 +592,14 @@ def sync_virtual_machine(
     vm_list = get_vm_list(credentials, subscription_id, regions, common_job_parameters)
 
     if common_job_parameters.get('pagination', {}).get('compute', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("compute", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("compute", None)["pageSize"]
+        totalPages = len(vm_list) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for compute vm {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('compute', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('compute', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('compute', {})['pageSize']
@@ -607,6 +623,14 @@ def sync_disk(
     disk_list = get_disks(credentials, subscription_id, regions, common_job_parameters)
 
     if common_job_parameters.get('pagination', {}).get('compute', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("compute", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("compute", None)["pageSize"]
+        totalPages = len(disk_list) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for compute disk {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('compute', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('compute', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('compute', {})['pageSize']
@@ -628,6 +652,14 @@ def sync_snapshot(
     snapshots = get_snapshots_list(credentials, subscription_id, regions, common_job_parameters)
 
     if common_job_parameters.get('pagination', {}).get('compute', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("compute", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("compute", None)["pageSize"]
+        totalPages = len(snapshots) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for compute snapshots {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('compute', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('compute', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('compute', {})['pageSize']

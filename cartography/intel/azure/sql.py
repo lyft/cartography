@@ -981,6 +981,14 @@ def sync(
     server_list = get_server_list(credentials, subscription_id, regions, common_job_parameters)
 
     if common_job_parameters.get('pagination', {}).get('sql', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("sql", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("sql", None)["pageSize"]
+        totalPages = len(server_list) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for sql server {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('sql', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('sql', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('sql', {})['pageSize']

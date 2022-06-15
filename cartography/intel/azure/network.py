@@ -146,6 +146,14 @@ def sync_networks(
     networks_list = get_networks_list(client, regions, common_job_parameters)
 
     if common_job_parameters.get('pagination', {}).get('network', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("network", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("network", None)["pageSize"]
+        totalPages = len(networks_list) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for network {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('network', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('network', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('network', {})['pageSize']
@@ -443,6 +451,14 @@ def sync_network_security_groups(
     network_security_groups_list = get_network_security_groups_list(client, regions, common_job_parameters)
 
     if common_job_parameters.get('pagination', {}).get('network', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("network", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("network", None)["pageSize"]
+        totalPages = len(network_security_groups_list) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for network security_groups {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('network', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('network', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('network', {})['pageSize']

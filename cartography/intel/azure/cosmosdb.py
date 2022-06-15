@@ -1096,6 +1096,14 @@ def sync(
     database_account_list = get_database_account_list(credentials, subscription_id, regions, common_job_parameters)
 
     if common_job_parameters.get('pagination', {}).get('cosmosdb', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("cosmosdb", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("cosmosdb", None)["pageSize"]
+        totalPages = len(database_account_list) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for cosmosdb database_account {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('cosmosdb', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('cosmosdb', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('cosmosdb', {})['pageSize']

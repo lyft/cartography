@@ -195,6 +195,14 @@ def sync_function_apps(
     function_apps_list = get_function_apps_list(client, regions, common_job_parameters)
 
     if common_job_parameters.get('pagination', {}).get('function_app', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("function_app", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("function_app", None)["pageSize"]
+        totalPages = len(function_apps_list) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for function_app {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('function_app', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('function_app', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('function_app', {})['pageSize']

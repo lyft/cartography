@@ -132,6 +132,14 @@ def sync_aks(
     aks_list = get_aks_list(credentials, subscription_id, regions, common_job_parameters)
 
     if common_job_parameters.get('pagination', {}).get('aks', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("aks", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("aks", None)["pageSize"]
+        totalPages = len(aks_list) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for aks {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('aks', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('aks', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('aks', {})['pageSize']
@@ -210,6 +218,14 @@ def sync_container_registries(
     container_registries_list = get_container_registries_list(client, regions, common_job_parameters)
 
     if common_job_parameters.get('pagination', {}).get('aks', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("aks", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("aks", None)["pageSize"]
+        totalPages = len(container_registries_list) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for aks container_registries {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('aks', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('aks', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('aks', {})['pageSize']
@@ -597,6 +613,14 @@ def sync_container_groups(
     container_groups_list = get_container_groups_list(client, regions, common_job_parameters)
 
     if common_job_parameters.get('pagination', {}).get('aks', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("aks", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("aks", None)["pageSize"]
+        totalPages = len(container_groups_list) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for aks container_groups {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('aks', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('aks', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('aks', {})['pageSize']

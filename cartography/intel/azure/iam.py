@@ -124,6 +124,14 @@ def sync_tenant_users(
     tenant_users_list = get_tenant_users_list(client, tenant_id)
 
     if common_job_parameters.get('pagination', {}).get('iam', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("iam", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("iam", None)["pageSize"]
+        totalPages = len(tenant_users_list) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for iam users {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
@@ -200,6 +208,14 @@ def sync_tenant_groups(
     tenant_groups_list = get_tenant_groups_list(client, tenant_id)
 
     if common_job_parameters.get('pagination', {}).get('iam', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("iam", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("iam", None)["pageSize"]
+        totalPages = len(tenant_groups_list) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for iam groups {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
@@ -273,6 +289,14 @@ def sync_tenant_applications(
     tenant_applications_list = get_tenant_applications_list(client, tenant_id)
 
     if common_job_parameters.get('pagination', {}).get('iam', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("iam", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("iam", None)["pageSize"]
+        totalPages = len(tenant_applications_list) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for iam applications {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
@@ -347,6 +371,14 @@ def sync_tenant_service_accounts(
     tenant_service_accounts_list = get_tenant_service_accounts_list(client, tenant_id)
 
     if common_job_parameters.get('pagination', {}).get('iam', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("iam", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("iam", None)["pageSize"]
+        totalPages = len(tenant_service_accounts_list) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for iam service_accounts {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
@@ -419,6 +451,14 @@ def sync_tenant_domains(
     tenant_domains_list = get_tenant_domains_list(client, tenant_id)
 
     if common_job_parameters.get('pagination', {}).get('iam', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("iam", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("iam", None)["pageSize"]
+        totalPages = len(tenant_domains_list) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for iam domains {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']

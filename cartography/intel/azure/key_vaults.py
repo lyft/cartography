@@ -88,6 +88,14 @@ def sync_key_vaults(
     key_vaults_list = get_key_vaults_list(client, regions, common_job_parameters)
 
     if common_job_parameters.get('pagination', {}).get('key_vaults', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("key_vaults", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("key_vaults", None)["pageSize"]
+        totalPages = len(key_vaults_list) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for key_vaults {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('key_vaults', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('key_vaults', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('key_vaults', {})['pageSize']

@@ -837,7 +837,15 @@ def sync(
     logger.info("Syncing Azure Storage for subscription '%s'.", subscription_id)
     storage_account_list = get_storage_account_list(credentials, subscription_id, regions, common_job_parameters)
 
-    if common_job_parameters.get('pagination', {}).get('sql', None):
+    if common_job_parameters.get('pagination', {}).get('storage', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("storage", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("storage", None)["pageSize"]
+        totalPages = len(storage_account_list) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for storage account {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('storage', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('storage', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('storage', {})['pageSize']
