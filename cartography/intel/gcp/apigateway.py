@@ -44,14 +44,22 @@ def get_apigateway_locations(apigateway: Resource, project_id: str, common_job_p
                     locations.append(location)
             req = apigateway.projects().locations().list_next(previous_request=req, previous_response=res)
         if common_job_parameters.get('pagination', {}).get('apigateway', None):
+            pageNo = common_job_parameters.get("pagination", {}).get("apigateway", None)["pageNo"]
+            pageSize = common_job_parameters.get("pagination", {}).get("apigateway", None)["pageSize"]
+            totalPages = len(locations) / pageSize
+            if int(totalPages) != totalPages:
+                totalPages = totalPages + 1
+            totalPages = int(totalPages)
+            if pageNo < totalPages or pageNo == totalPages:
+                logger.info(f'pages process for apigateway location {pageNo}/{totalPages} pageSize is {pageSize}')
             page_start = (common_job_parameters.get('pagination', {}).get('apigateway', None)[
-                          'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('apigateway', None)['pageSize']
+                'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('apigateway', None)['pageSize']
             page_end = page_start + common_job_parameters.get('pagination', {}).get('apigateway', None)['pageSize']
             if page_end > len(locations) or page_end == len(locations):
                 locations = locations[page_start:]
             else:
                 has_next_page = True
-                locations = locations[page_start:page_end]
+                locations = locations[page_start: page_end]
                 common_job_parameters['pagination']['apigateway']['hasNextPage'] = has_next_page
 
         return locations
@@ -113,6 +121,14 @@ def get_apis(apigateway: Resource, project_id: str, regions: list, common_job_pa
                 req = apigateway.projects().locations().apis().list_next(previous_request=req, previous_response=res)
 
         if common_job_parameters.get('pagination', {}).get('apigateway', None):
+            pageNo = common_job_parameters.get("pagination", {}).get("apigateway", None)["pageNo"]
+            pageSize = common_job_parameters.get("pagination", {}).get("apigateway", None)["pageSize"]
+            totalPages = len(apis) / pageSize
+            if int(totalPages) != totalPages:
+                totalPages = totalPages + 1
+            totalPages = int(totalPages)
+            if pageNo < totalPages or pageNo == totalPages:
+                logger.info(f'pages process for apigateway apis {pageNo}/{totalPages} pageSize is {pageSize}')
             page_start = (common_job_parameters.get('pagination', {}).get('apigateway', None)[
                           'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('apigateway', None)['pageSize']
             page_end = page_start + common_job_parameters.get('pagination', {}).get('apigateway', None)['pageSize']
@@ -291,6 +307,14 @@ def get_gateways(apigateway: Resource, project_id: str, regions: list, common_jo
                         gateways.append(gateway)
                 req = apigateway.projects().locations().gateways().list_next(previous_request=req, previous_response=res)
         if common_job_parameters.get('pagination', {}).get('apigateway', None):
+            pageNo = common_job_parameters.get("pagination", {}).get("apigateway", None)["pageNo"]
+            pageSize = common_job_parameters.get("pagination", {}).get("apigateway", None)["pageSize"]
+            totalPages = len(gateways) / pageSize
+            if int(totalPages) != totalPages:
+                totalPages = totalPages + 1
+            totalPages = int(totalPages)
+            if pageNo < totalPages or pageNo == totalPages:
+                logger.info(f'pages process for apigateway gateways {pageNo}/{totalPages} pageSize is {pageSize}')
             page_start = (common_job_parameters.get('pagination', {}).get('apigateway', None)[
                 'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('apigateway', None)['pageSize']
             page_end = page_start + common_job_parameters.get('pagination', {}).get('apigateway', None)['pageSize']

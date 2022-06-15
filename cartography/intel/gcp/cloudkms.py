@@ -47,6 +47,14 @@ def get_kms_locations(kms: Resource, project_id: str, regions: list, common_job_
                             locations.append(location)
             request = kms.projects().locations().list_next(previous_request=request, previous_response=response)
         if common_job_parameters.get('pagination', {}).get('cloudkms', None):
+            pageNo = common_job_parameters.get("pagination", {}).get("cloudkms", None)["pageNo"]
+            pageSize = common_job_parameters.get("pagination", {}).get("cloudkms", None)["pageSize"]
+            totalPages = len(locations) / pageSize
+            if int(totalPages) != totalPages:
+                totalPages = totalPages + 1
+            totalPages = int(totalPages)
+            if pageNo < totalPages or pageNo == totalPages:
+                logger.info(f'pages process for cloudkms locations {pageNo}/{totalPages} pageSize is {pageSize}')
             page_start = (common_job_parameters.get('pagination', {}).get('cloudkms', None)[
                           'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('cloudkms', None)['pageSize']
             page_end = page_start + common_job_parameters.get('pagination', {}).get('cloudkms', None)['pageSize']

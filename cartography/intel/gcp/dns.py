@@ -43,6 +43,14 @@ def get_dns_zones(dns: Resource, project_id: str, common_job_parameters) -> List
                 zones.append(managed_zone)
             request = dns.managedZones().list_next(previous_request=request, previous_response=response)
         if common_job_parameters.get('pagination', {}).get('dns', None):
+            pageNo = common_job_parameters.get("pagination", {}).get("dns", None)["pageNo"]
+            pageSize = common_job_parameters.get("pagination", {}).get("dns", None)["pageSize"]
+            totalPages = len(zones) / pageSize
+            if int(totalPages) != totalPages:
+                totalPages = totalPages + 1
+            totalPages = int(totalPages)
+            if pageNo < totalPages or pageNo == totalPages:
+                logger.info(f'pages process for dns zones {pageNo}/{totalPages} pageSize is {pageSize}')
             page_start = (common_job_parameters.get('pagination', {}).get('dns', None)[
                           'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('dns', None)['pageSize']
             page_end = page_start + common_job_parameters.get('pagination', {}).get('dns', None)['pageSize']

@@ -45,6 +45,15 @@ def get_cloudrun_authorized_domains(cloudrun: Resource, project_id: str, common_
                 previous_response=response,
             )
         if common_job_parameters.get('pagination', {}).get('cloudrun', None):
+            pageNo = common_job_parameters.get("pagination", {}).get("cloudrun", None)["pageNo"]
+            pageSize = common_job_parameters.get("pagination", {}).get("cloudrun", None)["pageSize"]
+            totalPages = len(authorized_domains) / pageSize
+            if int(totalPages) != totalPages:
+                totalPages = totalPages + 1
+            totalPages = int(totalPages)
+            if pageNo < totalPages or pageNo == totalPages:
+                logger.info(
+                    f'pages process for cloudrun authorized_domains {pageNo}/{totalPages} pageSize is {pageSize}')
             page_start = (common_job_parameters.get('pagination', {}).get('cloudrun', None)[
                           'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('cloudrun', None)['pageSize']
             page_end = page_start + common_job_parameters.get('pagination', {}).get('cloudrun', None)['pageSize']
@@ -92,6 +101,14 @@ def get_cloudrun_configurations(cloudrun: Resource, project_id: str, common_job_
                 item['id'] = f"projects/{project_id}/configurations/{item.get('metadata').get('name')}"
                 configurations.append(item)
         if common_job_parameters.get('pagination', {}).get('cloudrun', None):
+            pageNo = common_job_parameters.get("pagination", {}).get("cloudrun", None)["pageNo"]
+            pageSize = common_job_parameters.get("pagination", {}).get("cloudrun", None)["pageSize"]
+            totalPages = len(configurations) / pageSize
+            if int(totalPages) != totalPages:
+                totalPages = totalPages + 1
+            totalPages = int(totalPages)
+            if pageNo < totalPages or pageNo == totalPages:
+                logger.info(f'pages process for cloudrun configurations {pageNo}/{totalPages} pageSize is {pageSize}')
             page_start = (common_job_parameters.get('pagination', {}).get('cloudrun', None)[
                           'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('cloudrun', None)['pageSize']
             page_end = page_start + common_job_parameters.get('pagination', {}).get('cloudrun', None)['pageSize']
@@ -140,6 +157,14 @@ def get_cloudrun_domainmappings(cloudrun: Resource, project_id: str, common_job_
                 item['id'] = f"projects/{project_id}/domainmappings/{item.get('metadata').get('name')}"
                 mappings.append(item)
         if common_job_parameters.get('pagination', {}).get('cloudrun', None):
+            pageNo = common_job_parameters.get("pagination", {}).get("cloudrun", None)["pageNo"]
+            pageSize = common_job_parameters.get("pagination", {}).get("cloudrun", None)["pageSize"]
+            totalPages = len(mappings) / pageSize
+            if int(totalPages) != totalPages:
+                totalPages = totalPages + 1
+            totalPages = int(totalPages)
+            if pageNo < totalPages or pageNo == totalPages:
+                logger.info(f'pages process for cloudrun mappings {pageNo}/{totalPages} pageSize is {pageSize}')
             page_start = (common_job_parameters.get('pagination', {}).get('cloudrun', None)[
                           'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('cloudrun', None)['pageSize']
             page_end = page_start + common_job_parameters.get('pagination', {}).get('cloudrun', None)['pageSize']
@@ -187,6 +212,14 @@ def get_cloudrun_revisions(cloudrun: Resource, project_id: str, common_job_param
                 item['id'] = f"projects/{project_id}/revisions/{item.get('metadata').get('name')}"
                 revisions.append(item)
         if common_job_parameters.get('pagination', {}).get('cloudrun', None):
+            pageNo = common_job_parameters.get("pagination", {}).get("cloudrun", None)["pageNo"]
+            pageSize = common_job_parameters.get("pagination", {}).get("cloudrun", None)["pageSize"]
+            totalPages = len(revisions) / pageSize
+            if int(totalPages) != totalPages:
+                totalPages = totalPages + 1
+            totalPages = int(totalPages)
+            if pageNo < totalPages or pageNo == totalPages:
+                logger.info(f'pages process for cloudrun revisions {pageNo}/{totalPages} pageSize is {pageSize}')
             page_start = (common_job_parameters.get('pagination', {}).get('cloudrun', None)[
                           'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('cloudrun', None)['pageSize']
             page_end = page_start + common_job_parameters.get('pagination', {}).get('cloudrun', None)['pageSize']
@@ -234,6 +267,14 @@ def get_cloudrun_routes(cloudrun: Resource, project_id: str, common_job_paramete
             item['id'] = f"projects/{project_id}/routes/{item.get('metadata').get('name')}"
             routes.append(item)
         if common_job_parameters.get('pagination', {}).get('cloudrun', None):
+            pageNo = common_job_parameters.get("pagination", {}).get("cloudrun", None)["pageNo"]
+            pageSize = common_job_parameters.get("pagination", {}).get("cloudrun", None)["pageSize"]
+            totalPages = len(routes) / pageSize
+            if int(totalPages) != totalPages:
+                totalPages = totalPages + 1
+            totalPages = int(totalPages)
+            if pageNo < totalPages or pageNo == totalPages:
+                logger.info(f'pages process for cloudrun routes {pageNo}/{totalPages} pageSize is {pageSize}')
             page_start = (common_job_parameters.get('pagination', {}).get('cloudrun', None)[
                           'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('cloudrun', None)['pageSize']
             page_end = page_start + common_job_parameters.get('pagination', {}).get('cloudrun', None)['pageSize']
@@ -281,6 +322,14 @@ def get_cloudrun_services(cloudrun: Resource, project_id: str, common_job_parame
                 item['id'] = f"projects/{project_id}/services/{item.get('metadata').get('name')}"
                 services.append(item)
         if common_job_parameters.get('pagination', {}).get('cloudrun', None):
+            pageNo = common_job_parameters.get("pagination", {}).get("cloudrun", None)["pageNo"]
+            pageSize = common_job_parameters.get("pagination", {}).get("cloudrun", None)["pageSize"]
+            totalPages = len(services) / pageSize
+            if int(totalPages) != totalPages:
+                totalPages = totalPages + 1
+            totalPages = int(totalPages)
+            if pageNo < totalPages or pageNo == totalPages:
+                logger.info(f'pages process for cloudrun services {pageNo}/{totalPages} pageSize is {pageSize}')
             page_start = (common_job_parameters.get('pagination', {}).get('cloudrun', None)[
                           'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('cloudrun', None)['pageSize']
             page_end = page_start + common_job_parameters.get('pagination', {}).get('cloudrun', None)['pageSize']

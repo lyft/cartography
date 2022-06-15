@@ -810,6 +810,14 @@ def sync(
     service_accounts_list = get_service_accounts(iam, project_id)
 
     if common_job_parameters.get('pagination', {}).get('iam', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("iam", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("iam", None)["pageSize"]
+        totalPages = len(service_accounts_list) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for iam service_accounts {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
@@ -836,6 +844,14 @@ def sync(
     roles_list.extend(custom_roles_list)
 
     if common_job_parameters.get('pagination', {}).get('iam', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("iam", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("iam", None)["pageSize"]
+        totalPages = len(roles_list) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for iam roles {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
@@ -855,6 +871,14 @@ def sync(
     users = get_users(admin)
 
     if common_job_parameters.get('pagination', {}).get('iam', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("iam", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("iam", None)["pageSize"]
+        totalPages = len(users) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for iam users {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
@@ -892,6 +916,14 @@ def sync(
     groups = get_groups(admin)
 
     if common_job_parameters.get('pagination', {}).get('iam', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("iam", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("iam", None)["pageSize"]
+        totalPages = len(groups) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for iam groups {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']

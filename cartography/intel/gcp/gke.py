@@ -43,6 +43,14 @@ def get_gke_clusters(container: Resource, project_id: str, regions: list, common
                 if item['zone'][:-2] in regions:
                     data.append(item)
         if common_job_parameters.get('pagination', {}).get('gke', None):
+            pageNo = common_job_parameters.get("pagination", {}).get("gke", None)["pageNo"]
+            pageSize = common_job_parameters.get("pagination", {}).get("gke", None)["pageSize"]
+            totalPages = len(data) / pageSize
+            if int(totalPages) != totalPages:
+                totalPages = totalPages + 1
+            totalPages = int(totalPages)
+            if pageNo < totalPages or pageNo == totalPages:
+                logger.info(f'pages process for gke Cluster {pageNo}/{totalPages} pageSize is {pageSize}')
             page_start = (common_job_parameters.get('pagination', {}).get('gke', None)[
                           'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('gke', None)['pageSize']
             page_end = page_start + common_job_parameters.get('pagination', {}).get('gke', None)['pageSize']
