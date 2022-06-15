@@ -7,11 +7,13 @@ import time
 import neo4j
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
+from cloudconsolelink.clouds.gcp import GCPLinker
 
 from cartography.util import run_cleanup_job
 from . import label
 from cartography.util import timeit
 logger = logging.getLogger(__name__)
+gcp_console_link = GCPLinker()
 
 
 def set_used_state(session: neo4j.Session, project_id: str, common_job_parameters: Dict, update_tag: int) -> None:
@@ -28,6 +30,7 @@ def get_users(admin: Resource) -> List[Dict]:
             page = res.get('users', [])
             users.extend(page)
             req = admin.users().list_next(previous_request=req, previous_response=res)
+
         return users
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -134,23 +137,26 @@ def get_service_accounts(iam: Resource, project_id: str) -> List[Dict]:
 
 
 @timeit
-def transform_service_accounts(service_accounts: List[Dict]) -> List[Dict]:
+def transform_service_accounts(service_accounts: List[Dict], project_id: str) -> List[Dict]:
     for account in service_accounts:
         account['firstName'] = account['name'].split('@')[0]
         account['id'] = account['name']
-
+        account['consolelink'] = gcp_console_link.get_console_link(
+            resource_name='service_account', project_id=project_id, service_account_unique_id=account['uniqueId'])
     return service_accounts
 
 
 @timeit
-def get_service_account_keys(iam: Resource, project_id: str, service_account: str) -> List[Dict]:
+def get_service_account_keys(iam: Resource, project_id: str, service_account: Dict) -> List[Dict]:
     service_keys: List[Dict] = []
     try:
-        res = iam.projects().serviceAccounts().keys().list(name=service_account).execute()
+        res = iam.projects().serviceAccounts().keys().list(name=service_account['name']).execute()
         keys = res.get('keys', [])
         for key in keys:
             key['id'] = key['name'].split('/')[-1]
-            key['serviceaccount'] = service_account
+            key['serviceaccount'] = service_account['name']
+            key['consolelink'] = gcp_console_link.get_console_link(
+                resource_name='service_account_key', project_id=project_id, service_account_unique_id=service_account['uniqueId'])
 
         service_keys.extend(keys)
 
@@ -161,7 +167,7 @@ def get_service_account_keys(iam: Resource, project_id: str, service_account: st
             logger.warning(
                 (
                     "Could not retrieve Keys on project %s & account %s due to permissions issue. Code: %s, Message: %s"
-                ), project_id, service_account, err['code'], err['message'],
+                ), project_id, service_account['name'], err['code'], err['message'],
             )
             return []
         else:
@@ -220,7 +226,8 @@ def get_project_roles(iam: Resource, project_id: str) -> List[Dict]:
 def transform_roles(roles_list: List[Dict], project_id: str) -> List[Dict]:
     for role in roles_list:
         role['id'] = get_role_id(role['name'], project_id)
-
+        role['consolelink'] = gcp_console_link.get_console_link(
+            resource_name='iam_role', project_id=project_id, role_id=role['name'])
     return roles_list
 
 
@@ -320,6 +327,8 @@ def transform_bindings(bindings: Dict, project_id: str) -> tuple:
 def load_service_accounts(
     neo4j_session: neo4j.Session,
     service_accounts: List[Dict], project_id: str, gcp_update_tag: int,
+
+
 ) -> None:
     ingest_service_accounts = """
     UNWIND {service_accounts_list} AS sa
@@ -327,6 +336,7 @@ def load_service_accounts(
     ON CREATE SET u:GCPPrincipal, u.firstseen = timestamp()
     SET u.name = sa.name, u.displayname = sa.displayName,
     u.email = sa.email,
+    u.consolelink = sa.consolelink,
     u.region = {region},
     u.disabled = sa.disabled, u.serviceaccountid = sa.uniqueId,
     u.lastupdated = {gcp_update_tag}
@@ -363,6 +373,7 @@ def load_service_account_keys(
     SET u.name=sa.name, u.serviceaccountid={serviceaccount},
     u.region = {region},
     u.keytype = sa.keyType, u.origin = sa.keyOrigin,
+    u.consolelink = sa.consolelink,
     u.algorithm = sa.keyAlgorithm, u.validbeforetime = sa.validBeforeTime,
     u.validaftertime = sa.validAfterTime, u.lastupdated = {gcp_update_tag}
     WITH u, sa
@@ -395,6 +406,7 @@ def load_roles(neo4j_session: neo4j.Session, roles: List[Dict], project_id: str,
     SET u.name = d.name, u.title = d.title,
     u.region = {region},
     u.description = d.description, u.deleted = d.deleted,
+    u.consolelink = d.consolelink,
     u.permissions = d.includedPermissions, u.roleid = d.id,
     u.lastupdated = {gcp_update_tag}
     WITH u
@@ -495,6 +507,7 @@ def _load_users_tx(tx: neo4j.Transaction, users: List[Dict], project_id: str, gc
         user.creationTime = usr.creationTime,
         user.deletionTime = usr.deletionTime,
         user.gender = usr.gender,
+        user.consolelink = {consolelink},
         user.lastupdated = {gcp_update_tag}
     WITH user, usr
     MATCH (p:GCPProject{id: {project_id}})
@@ -509,6 +522,7 @@ def _load_users_tx(tx: neo4j.Transaction, users: List[Dict], project_id: str, gc
         project_id=project_id,
         region="global",
         gcp_update_tag=gcp_update_tag,
+        consolelink=f"https://console.cloud.google.com/iam-admin/iam?orgonly=true&project={project_id}&supportedpurview=organizationId",
     )
 
 
@@ -787,7 +801,7 @@ def _set_used_state_tx(
 @timeit
 def sync(
     neo4j_session: neo4j.Session, iam: Resource, crm: Resource, admin: Resource,
-    project_id: str, gcp_update_tag: int, common_job_parameters: Dict,
+    project_id: str, gcp_update_tag: int, common_job_parameters: Dict
 ) -> None:
     tic = time.perf_counter()
 
@@ -806,11 +820,11 @@ def sync(
             service_accounts_list = service_accounts_list[page_start:page_end]
             common_job_parameters['pagination']['iam']['hasNextPage'] = has_next_page
 
-    service_accounts_list = transform_service_accounts(service_accounts_list)
+    service_accounts_list = transform_service_accounts(service_accounts_list, project_id)
     load_service_accounts(neo4j_session, service_accounts_list, project_id, gcp_update_tag)
 
     for service_account in service_accounts_list:
-        service_account_keys = get_service_account_keys(iam, project_id, service_account['name'])
+        service_account_keys = get_service_account_keys(iam, project_id, service_account)
         load_service_account_keys(neo4j_session, service_account_keys, service_account['name'], gcp_update_tag)
 
     cleanup_service_accounts(neo4j_session, common_job_parameters)

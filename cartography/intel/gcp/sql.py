@@ -7,12 +7,14 @@ import time
 import neo4j
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
+from cloudconsolelink.clouds.gcp import GCPLinker
 
 from cartography.util import run_cleanup_job
 from . import label
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+gcp_console_link = GCPLinker()
 
 
 @timeit
@@ -38,6 +40,8 @@ def get_sql_instances(sql: Resource, project_id: str, regions: list, common_job_
                 for item in response['items']:
                     item['id'] = f"project/{project_id}/instances/{item['name']}"
                     item['ipV4Enabled'] = item.get('settings', {}).get('ipConfiguration', {}).get('ipV4Enabled', False)
+                    item['consolelink'] = gcp_console_link.get_console_link(
+                        resource_name='sql_instance', project_id=project_id, sql_instance_name=item['name'])
                     if regions is None:
                         sql_instances.append(item)
                     else:
@@ -95,6 +99,8 @@ def get_sql_users(sql: Resource, sql_instances: List[Dict], project_id: str) -> 
                     for item in response['items']:
                         item['instance_id'] = inst['id']
                         item['id'] = f"project/{project_id}/instances/{inst['name']}/users/{item['name']}"
+                        item['consolelink'] = gcp_console_link.get_console_link(
+                            project_id=project_id, resource_name='sql_user', sql_instance_name=inst['name'])
                         sql_users.append(item)
                 if 'nextPageToken' in response:
                     request = sql.users().list(
@@ -162,6 +168,7 @@ def _load_sql_instances_tx(tx: neo4j.Transaction, instances: List[Dict], project
         i.secondaryGceZone = instance.secondaryGceZone,
         i.satisfiesPzs = instance.satisfiesPzs,
         i.createTime = instance.createTime,
+        i.consolelink = instance.consolelink,
         i.lastupdated = {gcp_update_tag}
     WITH i
     MATCH (owner:GCPProject{id:{ProjectId}})
@@ -210,6 +217,7 @@ def _load_sql_users_tx(tx: neo4j.Transaction, sql_users: List[Dict], project_id:
         u.region = {region},
         u.project = user.project,
         u.type = user.type,
+        u.consolelink = user.consolelink,
         u.lastupdated = {gcp_update_tag}
     WITH u,user
     MATCH (i:GCPSQLInstance{id:user.instance_id})

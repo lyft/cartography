@@ -8,12 +8,14 @@ import time
 import neo4j
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
+from cloudconsolelink.clouds.gcp import GCPLinker
 
 from cartography.util import run_cleanup_job
 from . import label
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+gcp_console_link = GCPLinker()
 
 
 @timeit
@@ -105,7 +107,8 @@ def get_apis(apigateway: Resource, project_id: str, regions: list, common_job_pa
                         api_entities, public_access = get_api_policy_entities(apigateway, api, project_id)
                         api['entities'] = api_entities
                         api['public_access'] = public_access
-
+                        api['consolelink'] = gcp_console_link.get_console_link(
+                            resource_name='api', project_id=project_id, managed_service_name=api['managedService'], api_name=api['displayName'])
                         apis.append(api)
                 req = apigateway.projects().locations().apis().list_next(previous_request=req, previous_response=res)
 
@@ -175,7 +178,7 @@ def get_api_policy_entities(apigateway: Resource, api: Dict, project_id: str) ->
 
 
 @timeit
-def get_api_configs(apigateway: Resource, project_id: str, api:Dict, regions: list) -> List[Dict]:
+def get_api_configs(apigateway: Resource, project_id: str, api: Dict, regions: list) -> List[Dict]:
     """
         Returns a list of apis configs within the given project.
 
@@ -207,7 +210,7 @@ def get_api_configs(apigateway: Resource, project_id: str, api:Dict, regions: li
                 for apiConfig in res['apiConfigs']:
                     apiConfig['api_id'] = api['name']
                     # apiConfig['api_id'] = f"projects/{project_id}/locations/{region}/apis/\
-                        # {apiConfig.get('name').split('/')[-3]}"
+                    # {apiConfig.get('name').split('/')[-3]}"
                     apiConfig['id'] = apiConfig['name']
                     apiConfig['project_id'] = project_id
                     x = apiConfig.get('name').split('/')
@@ -215,11 +218,16 @@ def get_api_configs(apigateway: Resource, project_id: str, api:Dict, regions: li
                     apiConfig['region'] = x[0]
                     if len(x) > 1:
                         apiConfig['region'] = f"{x[0]}-{x[1]}"
+                    apiConfig['consolelink'] = gcp_console_link.get_console_link(
+                        resource_name='api_config', project_id=project_id, managed_service_name=api['managedService'],
+                        api_name=api.get('name').split('/')[-1],
+                        api_config_name=apiConfig.get('name').split('/')[-1], api_configuration_id=apiConfig['serviceConfigId'])
                     api_configs.append(apiConfig)
             req = apigateway.projects().locations().apis().configs().list_next(
                 previous_request=req,
                 previous_response=res,
             )
+
         return api_configs
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -278,17 +286,19 @@ def get_gateways(apigateway: Resource, project_id: str, regions: list, common_jo
                         gateway_entities, public_access = get_api_policy_entities(apigateway, gateway, project_id)
                         gateway['entities'] = gateway_entities
                         gateway['public_access'] = public_access
+                        gateway['consolelink'] = gcp_console_link.get_console_link(
+                            resource_name='api_gateway', project_id=project_id, region=gateway['region'], api_gateway_name=gateway.get('name').split('/')[-1])
                         gateways.append(gateway)
                 req = apigateway.projects().locations().gateways().list_next(previous_request=req, previous_response=res)
         if common_job_parameters.get('pagination', {}).get('apigateway', None):
             page_start = (common_job_parameters.get('pagination', {}).get('apigateway', None)[
-                          'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('apigateway', None)['pageSize']
+                'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('apigateway', None)['pageSize']
             page_end = page_start + common_job_parameters.get('pagination', {}).get('apigateway', None)['pageSize']
             if page_end > len(gateways) or page_end == len(gateways):
                 gateways = gateways[page_start:]
             else:
                 has_next_page = True
-                gateways = gateways[page_start:page_end]
+                gateways = gateways[page_start: page_end]
                 common_job_parameters['pagination']['apigateway']['hasNextPage'] = has_next_page
 
         return gateways
@@ -353,6 +363,8 @@ def load_apigateway_locations(session: neo4j.Session, data_list: List[Dict], pro
 def load_apigateway_locations_tx(
     tx: neo4j.Transaction, locations: List[Dict],
     project_id: str, gcp_update_tag: int,
+
+
 ) -> None:
     """
         Ingest GCP Project Locations into Neo4j
@@ -453,6 +465,7 @@ def load_apis_tx(tx: neo4j.Transaction, apis: List[Dict], project_id: str, gcp_u
         api.public_access = ap.public_access,
         api.displayName = ap.displayName,
         api.managedService = ap.managedService,
+        api.consolelink = ap.consolelink,
         api.lastupdated = {gcp_update_tag}
     WITH api
     MATCH (owner:GCPProject{id:{ProjectId}})
@@ -603,6 +616,7 @@ def load_api_configs_tx(tx: neo4j.Transaction, configs: List[Dict], project_id: 
         config.gatewayServiceAccount = conf.gatewayServiceAccount,
         config.serviceConfigId = conf.serviceConfigId,
         config.state = conf.state,
+        config.consolelink = conf.consolelink,
         config.lastupdated = {gcp_update_tag}
     WITH config,conf
     MATCH (api:GCPAPI{id:conf.api_id})
@@ -676,6 +690,7 @@ def load_gateways_tx(tx: neo4j.Transaction, gateways: List[Dict], project_id: st
         gateway.apiConfig = g.apiConfig,
         gateway.state = g.state,
         gateway.defaultHostname = g.defaultHostname,
+        gateway.consolelink = g.consolelink,
         gateway.lastupdated = {gcp_update_tag}
     WITH gateway,g
     MATCH (apiconfig:GCPAPIConfig{id:g.apiConfig})
@@ -761,7 +776,7 @@ def sync(
     for api in apis:
         configs = get_api_configs(apigateway, project_id, api, regions)
         load_api_configs(neo4j_session, configs, project_id, gcp_update_tag)
-    
+
     # Cleanup API Gateway Configs
     cleanup_api_configs(neo4j_session, common_job_parameters)
 

@@ -15,12 +15,14 @@ import time
 import neo4j
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
+from cloudconsolelink.clouds.gcp import GCPLinker
 
 from cartography.util import run_cleanup_job
 from . import label
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+gcp_console_link = GCPLinker()
 InstanceUriPrefix = namedtuple('InstanceUriPrefix', 'zone_name project_id')
 
 
@@ -241,7 +243,9 @@ def transform_gcp_instances(response_objects: List[Dict], compute: Resource) -> 
         res['zone_name'] = prefix_fields.zone_name
         res['accessConfig'] = res.get('accessConfig', None)
         res['public_access'] = res.get('public_access', [])
-
+        res['consolelink'] = gcp_console_link.get_console_link(
+            resource_name="compute_instance", instance_name=res['name'],
+            project_id=res['project_id'], zone=res['zone_name'])
         x = res['zone_name'].split('-')
         res['region'] = f"{x[0]}-{x[1]}"
 
@@ -312,7 +316,8 @@ def transform_gcp_vpcs(vpc_res: Dict) -> List[Dict]:
     for v in vpc_res.get('items', []):
         vpc = {}
         partial_uri = f"{prefix}/{v['name']}"
-
+        vpc['consolelink'] = gcp_console_link.get_console_link(
+            resource_name='compute_instance_vpc_network', project_id=projectid, network_name=v['name'])
         vpc['partial_uri'] = partial_uri
         vpc['name'] = v['name']
         vpc['self_link'] = v['selfLink']
@@ -356,6 +361,8 @@ def transform_gcp_subnets(subnet_res: Dict) -> List[Dict]:
         subnet['gateway_address'] = s.get('gatewayAddress', None)
         subnet['ip_cidr_range'] = s.get('ipCidrRange', None)
         subnet['self_link'] = s['selfLink']
+        subnet['consolelink'] = gcp_console_link.get_console_link(
+            resource_name='compute_instance_vpc_network_subnet', project_id=projectid, region=subnet['region'], subnet_name=subnet['name'])
         subnet['private_ip_google_access'] = s.get('privateIpGoogleAccess', None)
 
         subnet_list.append(subnet)
@@ -363,7 +370,7 @@ def transform_gcp_subnets(subnet_res: Dict) -> List[Dict]:
 
 
 @timeit
-def transform_gcp_forwarding_rules(fwd_response: Resource) -> List[Dict]:
+def transform_gcp_forwarding_rules(fwd_response: Resource,) -> List[Dict]:
     """
     Add additional fields to the forwarding rule object to make it easier to process in `load_gcp_forwarding_rules()`.
     :param fwd_response: The response object returned from compute.forwardRules.list()
@@ -382,7 +389,7 @@ def transform_gcp_forwarding_rules(fwd_response: Resource) -> List[Dict]:
         forwarding_rule['project_id'] = project_id
         # Region looks like "https://www.googleapis.com/compute/v1/projects/{project}/regions/{region name}"
         region = fwd.get('region', None)
-        forwarding_rule['region'] = region.split('/')[-1] if region else None
+        forwarding_rule['region'] = region.split('/')[-1] if region else 'global'
         forwarding_rule['ip_address'] = fwd.get('IPAddress', None)
         forwarding_rule['ip_protocol'] = fwd.get('IPProtocol', None)
         forwarding_rule['allow_global_access'] = fwd.get('allowGlobalAccess', None)
@@ -392,6 +399,9 @@ def transform_gcp_forwarding_rules(fwd_response: Resource) -> List[Dict]:
         forwarding_rule['port_range'] = fwd.get('portRange', None)
         forwarding_rule['ports'] = fwd.get('ports', None)
         forwarding_rule['self_link'] = fwd['selfLink']
+        forwarding_rule['consolelink'] = gcp_console_link.get_console_link(
+            resource_name='compute_forwarding_rule', project_id=project_id,
+            rule_name=forwarding_rule['name'], region=forwarding_rule['region'])
         target = fwd.get('target', None)
         if target:
             forwarding_rule['target'] = _parse_compute_full_uri_to_partial_uri(target)
@@ -422,11 +432,13 @@ def transform_gcp_firewall(fw_response: Resource) -> List[Dict]:
     """
     fw_list: List[Dict] = []
     prefix = fw_response['id']
+    projectid = prefix.split('/')[1]
     for fw in fw_response.get('items', []):
         fw_partial_uri = f"{prefix}/{fw['name']}"
         fw['id'] = fw_partial_uri
         fw['vpc_partial_uri'] = _parse_compute_full_uri_to_partial_uri(fw['network'])
-
+        fw['consolelink'] = gcp_console_link.get_console_link(
+            resource_name='compute_firewall_rule', project_id=projectid, rule_name=fw['name'])
         fw['transformed_allow_list'] = []
         fw['transformed_deny_list'] = []
         # Mark whether this FW is defined on a target service account.
@@ -580,6 +592,7 @@ def load_gcp_instances(neo4j_session: neo4j.Session, data: List[Dict], gcp_updat
     i.ipv6_nat_ip = {ipv6natIP},
     i.accessConfig = {AccessConfig},
     i.status = {Status},
+    i.consolelink = {consolelink},
     i.lastupdated = {gcp_update_tag}
     WITH i, p
 
@@ -601,6 +614,7 @@ def load_gcp_instances(neo4j_session: neo4j.Session, data: List[Dict], gcp_updat
             ipv6natIP=instance.get('ipv6natIP', None),
             Status=instance['status'],
             region=instance['region'],
+            consolelink=instance['consolelink'],
             gcp_update_tag=gcp_update_tag,
         )
         _attach_instance_tags(neo4j_session, instance, gcp_update_tag)
@@ -672,6 +686,7 @@ def load_gcp_vpcs(neo4j_session: neo4j.Session, vpcs: List[Dict], gcp_update_tag
     vpc.auto_create_subnetworks = {AutoCreateSubnetworks},
     vpc.routing_config_routing_mode = {RoutingMode},
     vpc.description = {Description},
+    vpc.consolelink = {consolelink},
     vpc.lastupdated = {gcp_update_tag}
 
     MERGE (p)-[r:RESOURCE]->(vpc)
@@ -689,6 +704,7 @@ def load_gcp_vpcs(neo4j_session: neo4j.Session, vpcs: List[Dict], gcp_update_tag
             RoutingMode=vpc['routing_config_routing_mode'],
             Description=vpc['description'],
             region=vpc.get('region'),
+            consolelink=vpc.get('consolelink'),
             gcp_update_tag=gcp_update_tag,
         )
 
@@ -718,6 +734,7 @@ def load_gcp_subnets(neo4j_session: neo4j.Session, subnets: List[Dict], gcp_upda
     subnet.ip_cidr_range = {IpCidrRange},
     subnet.private_ip_google_access = {PrivateIpGoogleAccess},
     subnet.vpc_partial_uri = {VpcPartialUri},
+    subnet.consolelink = {consolelink},
     subnet.lastupdated = {gcp_update_tag}
 
     MERGE (vpc)-[r:RESOURCE]->(subnet)
@@ -737,6 +754,7 @@ def load_gcp_subnets(neo4j_session: neo4j.Session, subnets: List[Dict], gcp_upda
             GatewayAddress=s['gateway_address'],
             IpCidrRange=s['ip_cidr_range'],
             PrivateIpGoogleAccess=s['private_ip_google_access'],
+            consolelink=s['consolelink'],
             gcp_update_tag=gcp_update_tag,
         )
 
@@ -767,6 +785,7 @@ def load_gcp_forwarding_rules(neo4j_session: neo4j.Session, fwd_rules: List[Dict
         fwd.self_link = {SelfLink},
         fwd.subnetwork = {SubNetworkPartialUri},
         fwd.target = {TargetPartialUri},
+        fwd.consolelink = {consolelink},
         fwd.lastupdated = {gcp_update_tag}
     """
 
@@ -791,6 +810,7 @@ def load_gcp_forwarding_rules(neo4j_session: neo4j.Session, fwd_rules: List[Dict
             SubNetwork=subnetwork,
             SubNetworkPartialUri=fwd.get('subnetwork_partial_uri', None),
             TargetPartialUri=fwd['target'],
+            consolelink=fwd.get('consolelink', None),
             gcp_update_tag=gcp_update_tag,
         )
 
@@ -1047,6 +1067,7 @@ def load_gcp_ingress_firewalls(neo4j_session: neo4j.Session, fw_list: List[Resou
     fw.priority = {Priority},
     fw.self_link = {SelfLink},
     fw.has_target_service_accounts = {HasTargetServiceAccounts},
+    fw.consolelink = {consolelink},
     fw.lastupdated = {gcp_update_tag}
 
     MERGE (vpc:GCPVpc{id:{VpcPartialUri}})
@@ -1070,6 +1091,7 @@ def load_gcp_ingress_firewalls(neo4j_session: neo4j.Session, fw_list: List[Resou
             region="global",
             VpcPartialUri=fw['vpc_partial_uri'],
             HasTargetServiceAccounts=fw['has_target_service_accounts'],
+            consolelink=fw['consolelink'],
             gcp_update_tag=gcp_update_tag,
         )
         _attach_firewall_rules(neo4j_session, fw, gcp_update_tag)
@@ -1319,7 +1341,6 @@ def sync_gcp_subnets(
 @timeit
 def sync_gcp_forwarding_rules(
     neo4j_session: neo4j.Session, compute: Resource, project_id: str, regions: List[str], gcp_update_tag: int,
-
     common_job_parameters: Dict,
 ) -> None:
     """
@@ -1405,7 +1426,7 @@ def _zones_to_regions(zones: List[str]) -> List[Set]:
 
 def sync(
     neo4j_session: neo4j.Session, compute: Resource, project_id: str, gcp_update_tag: int,
-    common_job_parameters: dict, regions: list
+    common_job_parameters: dict, regions: list,
 ) -> None:
     """
     Sync all objects that we need the GCP Compute resource object for.
@@ -1436,10 +1457,14 @@ def sync(
 
         regions = _zones_to_regions(zones)
         sync_gcp_vpcs(neo4j_session, compute, project_id, gcp_update_tag, common_job_parameters)
-        sync_gcp_firewall_rules(neo4j_session, compute, project_id, gcp_update_tag, common_job_parameters)
-        sync_gcp_subnets(neo4j_session, compute, project_id, regions, gcp_update_tag, common_job_parameters)
-        sync_gcp_instances(neo4j_session, compute, project_id, zones, gcp_update_tag, common_job_parameters)
-        sync_gcp_forwarding_rules(neo4j_session, compute, project_id, regions, gcp_update_tag, common_job_parameters)
+        sync_gcp_firewall_rules(neo4j_session, compute, project_id, gcp_update_tag,
+                                common_job_parameters)
+        sync_gcp_subnets(neo4j_session, compute, project_id, regions,
+                         gcp_update_tag, common_job_parameters)
+        sync_gcp_instances(neo4j_session, compute, project_id, zones,
+                           gcp_update_tag, common_job_parameters)
+        sync_gcp_forwarding_rules(neo4j_session, compute, project_id, regions,
+                                  gcp_update_tag, common_job_parameters)
 
     toc = time.perf_counter()
     logger.info(f"Time to process Compute: {toc - tic:0.4f} seconds")

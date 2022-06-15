@@ -49,25 +49,25 @@ def load_containers(session: neo4j.Session, data_list: List[Dict], update_tag: i
     session.write_transaction(_load_containers_tx, data_list, update_tag)
 
 
-@ timeit
+@timeit
 def get_client(credentials: Credentials, subscription_id: str) -> ContainerServiceClient:
     client = ContainerServiceClient(credentials, subscription_id)
     return client
 
 
-@ timeit
+@timeit
 def get_container_registry_Client(credentials: Credentials, subscription_id: str) -> ContainerRegistryManagementClient:
     client = ContainerRegistryManagementClient(credentials, subscription_id)
     return client
 
 
-@ timeit
+@timeit
 def get_container_instance_Client(credentials: Credentials, subscription_id: str) -> ContainerInstanceManagementClient:
     client = ContainerInstanceManagementClient(credentials, subscription_id)
     return client
 
 
-@ timeit
+@timeit
 def get_aks_list(credentials: Credentials, subscription_id: str) -> List[Dict]:
     try:
         client = get_client(credentials, subscription_id)
@@ -122,7 +122,7 @@ def sync_aks(
     cleanup_aks(neo4j_session, common_job_parameters)
 
 
-@ timeit
+@timeit
 def get_container_registries_list(client: ContainerRegistryManagementClient) -> List[Dict]:
     try:
         container_registries_list = list(map(lambda x: x.as_dict(), client.registries.list()))
@@ -191,7 +191,7 @@ def sync_container_registries(
     )
 
 
-@ timeit
+@timeit
 def get_container_registry_replications_list(
     client: ContainerRegistryManagementClient, container_registries_list: List[Dict],
 ) -> List[Dict]:
@@ -260,7 +260,7 @@ def sync_container_registry_replications(
     cleanup_container_registry_replications(neo4j_session, common_job_parameters)
 
 
-@ timeit
+@timeit
 def get_container_registry_runs_list(
     client: ContainerRegistryManagementClient,
     container_registries_list: List[Dict],
@@ -329,7 +329,7 @@ def sync_container_registry_runs(
     cleanup_container_registry_runs(neo4j_session, common_job_parameters)
 
 
-@ timeit
+@timeit
 def get_container_registry_tasks_list(
     client: ContainerRegistryManagementClient, container_registries_list: List[Dict],
 ) -> List[Dict]:
@@ -398,7 +398,7 @@ def sync_container_registry_tasks(
     cleanup_container_registry_tasks(neo4j_session, common_job_parameters)
 
 
-@ timeit
+@timeit
 def get_container_registry_webhooks_list(
     client: ContainerRegistryManagementClient, container_registries_list: List[Dict],
 ) -> List[Dict]:
@@ -467,7 +467,7 @@ def sync_container_registry_webhooks(
     cleanup_container_registry_webhooks(neo4j_session, common_job_parameters)
 
 
-@ timeit
+@timeit
 def get_container_groups_list(client: ContainerInstanceManagementClient) -> List[Dict]:
     try:
         container_groups_list = list(map(lambda x: x.as_dict(), client.container_groups.list()))
@@ -525,7 +525,7 @@ def sync_container_groups(
     sync_containers(neo4j_session, container_groups_list, update_tag, common_job_parameters)
 
 
-@ timeit
+@timeit
 def get_containers_list(container_groups_list: List[Dict]) -> List[Dict]:
     try:
         containers_list: List[Dict] = []
@@ -581,7 +581,7 @@ def sync_containers(
     cleanup_containers(neo4j_session, common_job_parameters)
 
 
-@ timeit
+@timeit
 def sync(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
     common_job_parameters: Dict,

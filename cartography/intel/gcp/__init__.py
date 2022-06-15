@@ -312,9 +312,11 @@ def concurrent_execution(
     )
 
     if service == 'iam':
-        service_func(neo4j_driver.session(), iam, crm, admin, project_id, gcp_update_tag, common_job_parameters)
+        service_func(neo4j_driver.session(), iam, crm, admin, project_id,
+                     gcp_update_tag, common_job_parameters)
     else:
-        service_func(neo4j_driver.session(), iam, project_id, gcp_update_tag, common_job_parameters, regions)
+        service_func(neo4j_driver.session(), iam, project_id, gcp_update_tag,
+                     common_job_parameters, regions)
     logger.info(f"END processing for service: {service}")
 
 
@@ -332,6 +334,7 @@ def _sync_single_project(
     :param common_job_parameters: Other parameters sent to Neo4j
     :return: Nothing
     """
+
     # Determine the resources available on the project.
     enabled_services = _services_enabled_on_project(resources.serviceusage, project_id)
     with ThreadPoolExecutor(max_workers=len(RESOURCE_FUNCTIONS)) as executor:

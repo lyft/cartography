@@ -7,12 +7,14 @@ import time
 import neo4j
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
+from cloudconsolelink.clouds.gcp import GCPLinker
 
 from cartography.util import run_cleanup_job
 from . import label
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+gcp_console_link = GCPLinker()
 
 
 @timeit
@@ -36,6 +38,8 @@ def get_firestore_databases(firestore: Resource, project_id: str, regions: list,
         if response.get('databases', []):
             for database in response['databases']:
                 database['id'] = database['name']
+                database['consolelink'] = gcp_console_link.get_console_link(
+                    resource_name='firestore_collection', project_id=project_id, firestore_collection_name=database['name'].split("/")[-1])
                 if regions is None:
                     firestore_databases.append(database)
                 else:
@@ -163,6 +167,7 @@ def _load_firestore_databases_tx(
         d.type = database.type,
         d.region = database.locationId,
         d.concurrencyMode = database.concurrencyMode,
+        d.consolelink = database.consolelink,
         d.lastupdated = {gcp_update_tag}
     WITH d
     MATCH (owner:GCPProject{id:{ProjectId}})
@@ -276,7 +281,8 @@ def sync(
     logger.info("Syncing Firestore for project '%s', at %s.", project_id, tic)
 
     # FIRESTORE DATABASES
-    firestore_databases = get_firestore_databases(firestore, project_id, regions, common_job_parameters)
+    firestore_databases = get_firestore_databases(
+        firestore, project_id, regions, common_job_parameters)
     load_firestore_databases(neo4j_session, firestore_databases, project_id, gcp_update_tag)
     label.sync_labels(neo4j_session, firestore_databases, gcp_update_tag,
                       common_job_parameters, 'firestore databases', 'GCPFirestoreDatabase')

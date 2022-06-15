@@ -8,12 +8,14 @@ import time
 import neo4j
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
+from cloudconsolelink.clouds.gcp import GCPLinker
 
 from cartography.util import run_cleanup_job
 from . import label
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+gcp_console_link = GCPLinker()
 
 
 @timeit
@@ -74,6 +76,8 @@ def get_gcp_functions(function: Resource, project_id: str, regions: list, common
                     function_entities, public_access = get_function_policy_entities(function, func, project_id)
                     func['entities'] = function_entities
                     func['public_access'] = public_access
+                    func['consolelink'] = gcp_console_link.get_console_link(
+                        resource_name='cloud_function', project_id=project_id, cloud_function_name=func['name'].split('/')[-1], region=func['region'])
                     functions.append(func)
                 request = function.projects().locations().functions().list_next(
                     previous_request=request,
@@ -185,6 +189,7 @@ def _load_functions_tx(tx: neo4j.Transaction, functions: List[Resource], project
         function.buildId = func.buildId,
         function.sourceToken = func.sourceToken,
         function.sourceArchiveUrl = func.sourceArchiveUrl,
+        function.consolelink = func.consolelink,
         function.lastupdated = {gcp_update_tag}
     WITH function
     MATCH (owner:GCPProject{id:{ProjectId}})

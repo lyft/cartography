@@ -1,17 +1,18 @@
 import json
 import logging
 from typing import Dict
-from typing import List
 
 import time
 import neo4j
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
+from cloudconsolelink.clouds.gcp import GCPLinker
 
 from cartography.util import run_cleanup_job
 from . import label
 from cartography.util import timeit
 logger = logging.getLogger(__name__)
+gcp_console_link = GCPLinker()
 
 
 @timeit
@@ -34,6 +35,8 @@ def get_gke_clusters(container: Resource, project_id: str, regions: list, common
         data = []
         for item in res.get('clusters', []):
             item['id'] = f"project/{project_id}/clusters/{item['name']}"
+            item['consolelink'] = gcp_console_link.get_console_link(
+                resource_name='gke_cluster', project_id=project_id, zone=item['zone'], gke_cluster_name=item['name'])
             if regions is None:
                 data.append(item)
             else:
@@ -114,6 +117,7 @@ def load_gke_clusters(neo4j_session: neo4j.Session, cluster_resp: Dict, project_
         cluster.private_endpoint = {ClusterPrivateEndpoint},
         cluster.public_endpoint = {ClusterPublicEndpoint},
         cluster.masterauth_username = {ClusterMasterUsername},
+        cluster.consolelink = {consolelink},
         cluster.masterauth_password = {ClusterMasterPassword},
         cluster.lastupdated = {gcp_update_tag}
     WITH cluster
@@ -159,6 +163,7 @@ def load_gke_clusters(neo4j_session: neo4j.Session, cluster_resp: Dict, project_
             ClusterPublicEndpoint=cluster.get('privateClusterConfig', {}).get('publicEndpoint'),
             ClusterMasterUsername=cluster.get('masterAuth', {}).get('username'),
             ClusterMasterPassword=cluster.get('masterAuth', {}).get('password'),
+            consolelink=cluster.get('consolelink'),
             gcp_update_tag=gcp_update_tag,
         )
 

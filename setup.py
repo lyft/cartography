@@ -27,6 +27,7 @@ setup(
     },
     dependency_links=[],
     install_requires=[
+        "cloudconsolelink>=1.0.0",
         "boto3>=1.15.1",
         "botocore>=1.18.1",
         "dnspython>=1.15.0",
