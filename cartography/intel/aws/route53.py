@@ -421,6 +421,14 @@ def sync(
     zones = get_zones(client)
 
     if common_job_parameters.get('pagination', {}).get('route53', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("route53", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("route53", None)["pageSize"]
+        totalPages = len(zones) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for route53 zones {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('route53', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('route53', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('route53', {})['pageSize']

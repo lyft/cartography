@@ -247,6 +247,14 @@ def sync(
         data.extend(_get_es_domains(client, region))
 
     if common_job_parameters.get('pagination', {}).get('elasticsearch', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("elasticsearch", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("elasticsearch", None)["pageSize"]
+        totalPages = len(data) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for elasticsearch domains {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('elasticsearch', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('elasticsearch', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('elasticsearch', {})['pageSize']

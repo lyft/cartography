@@ -112,6 +112,14 @@ def sync_subnets(
         data.extend(get_subnet_data(boto3_session, region))
 
     if common_job_parameters.get('pagination', {}).get('ec2:subnet', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("ec2:subnet", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("ec2:subnet", None)["pageSize"]
+        totalPages = len(data) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for ec2:subnet {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('ec2:subnet', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('ec2:subnet', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('ec2:subnet', {})['pageSize']

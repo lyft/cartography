@@ -470,6 +470,14 @@ def sync_ec2_instances(
         data.extend(get_ec2_instances(boto3_session, region))
 
     if common_job_parameters.get('pagination', {}).get('ec2:instance', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("ec2:instance'", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("ec2:instance'", None)["pageSize"]
+        totalPages = len(data) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for ec2:instance' {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('ec2:instance', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('ec2:instance', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('ec2:instance', {})['pageSize']

@@ -47,6 +47,14 @@ def get_s3_bucket_list(boto3_session: boto3.session.Session, common_job_paramete
                 else:
                     raise
         if common_job_parameters.get('pagination', {}).get('s3', None):
+            pageNo = common_job_parameters.get("pagination", {}).get("s3", None)["pageNo"]
+            pageSize = common_job_parameters.get("pagination", {}).get("s3", None)["pageSize"]
+            totalPages = len(buckets['Buckets']) / pageSize
+            if int(totalPages) != totalPages:
+                totalPages = totalPages + 1
+            totalPages = int(totalPages)
+            if pageNo < totalPages or pageNo == totalPages:
+                logger.info(f'pages process for s3 {pageNo}/{totalPages} pageSize is {pageSize}')
             page_start = (common_job_parameters.get('pagination', {}).get('s3', {})[
                           'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('s3', {})['pageSize']
             page_end = page_start + common_job_parameters.get('pagination', {}).get('s3', {})['pageSize']

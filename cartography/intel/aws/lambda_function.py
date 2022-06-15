@@ -265,6 +265,14 @@ def sync_lambda_functions(
         data.extend(get_lambda_data(boto3_session, region))
 
     if common_job_parameters.get('pagination', {}).get('lambda_function', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("lambda_function", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("lambda_function", None)["pageSize"]
+        totalPages = len(data) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for lambda_function {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('lambda_function', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('lambda_function', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('lambda_function', {})['pageSize']

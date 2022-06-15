@@ -91,6 +91,14 @@ def sync_ec2_key_pairs(
         data.extend(get_ec2_key_pairs(boto3_session, region))
 
     if common_job_parameters.get('pagination', {}).get('ec2:keypair', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("ec2:keypair", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("ec2:keypair", None)["pageSize"]
+        totalPages = len(data) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for ec2:keypair {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('ec2:keypair', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('ec2:keypair', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('ec2:keypair', {})['pageSize']

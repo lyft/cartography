@@ -26,6 +26,14 @@ def get_dynamodb_tables(boto3_session: boto3.session.Session, region: str, commo
             dynamodb_tables.append(client.describe_table(TableName=table_name))
 
     if common_job_parameters.get('pagination', {}).get('dynamodb', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("dynamodb", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("dynamodb", None)["pageSize"]
+        totalPages = len(dynamodb_tables) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for dynamodb tables {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('dynamodb', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('dynamodb', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('dynamodb', {})['pageSize']

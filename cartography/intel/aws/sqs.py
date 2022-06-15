@@ -171,6 +171,14 @@ def sync(
         data.extend(queue_urls)
 
     if common_job_parameters.get('pagination', {}).get('sqs', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("sqs", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("sqs", None)["pageSize"]
+        totalPages = len(data) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for sqs queue_urls {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('sqs', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('sqs', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('sqs', {})['pageSize']

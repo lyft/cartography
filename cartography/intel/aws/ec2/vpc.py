@@ -205,6 +205,14 @@ def sync_vpc(
         data.extend(get_ec2_vpcs(boto3_session, region))
 
     if common_job_parameters.get('pagination', {}).get('ec2:vpc', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("ec2:vpc", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("ec2:vpc", None)["pageSize"]
+        totalPages = len(data) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for ec2:vpc {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('ec2:vpc', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('ec2:vpc', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('ec2:vpc', {})['pageSize']

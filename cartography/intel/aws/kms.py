@@ -364,7 +364,16 @@ def sync_kms_keys(
         kms_keys.extend(get_kms_key_list(boto3_session, region))
 
     if common_job_parameters.get('pagination', {}).get('kms', None):
-        page_start = (common_job_parameters.get('pagination', {}).get('kms', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('kms', {})['pageSize']
+        pageNo = common_job_parameters.get("pagination", {}).get("kms", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("kms", None)["pageSize"]
+        totalPages = len(kms_keys) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for kms keys {pageNo}/{totalPages} pageSize is {pageSize}')
+        page_start = (common_job_parameters.get('pagination', {}).get('kms', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('kms', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('kms', {})['pageSize']
         if page_end > len(kms_keys) or page_end == len(kms_keys):
             kms_keys = kms_keys[page_start:]

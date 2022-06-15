@@ -134,7 +134,16 @@ def sync_ebs_volumes(
         transformed_data.extend(transform_volumes(data, region, current_aws_account_id))
 
     if common_job_parameters.get('pagination', {}).get('ec2:volumes', None):
-        page_start = (common_job_parameters.get('pagination', {}).get('ec2:volumes', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('ec2:volumes', {})['pageSize']
+        pageNo = common_job_parameters.get("pagination", {}).get("ec2:volumes", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("ec2:volumes", None)["pageSize"]
+        totalPages = len(transformed_data) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for ec2:volumes {pageNo}/{totalPages} pageSize is {pageSize}')
+        page_start = (common_job_parameters.get('pagination', {}).get('ec2:volumes', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('ec2:volumes', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('ec2:volumes', {})['pageSize']
         if page_end > len(transformed_data) or page_end == len(transformed_data):
             transformed_data = transformed_data[page_start:]

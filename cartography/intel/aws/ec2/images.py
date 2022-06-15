@@ -128,6 +128,14 @@ def sync_ec2_images(
         data.extend(get_images(boto3_session, region, images_in_use))
 
     if common_job_parameters.get('pagination', {}).get('ec2:images', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("ec2:images", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("ec2:images", None)["pageSize"]
+        totalPages = len(data) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for ec2:images {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('ec2:images', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('ec2:images', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('ec2:images', {})['pageSize']

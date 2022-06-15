@@ -188,6 +188,14 @@ def sync_ec2_security_groupinfo(
         data.extend(get_ec2_security_group_data(boto3_session, region))
 
     if common_job_parameters.get('pagination', {}).get('ec2:security_group', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("ec2:security_group", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("ec2:security_group", None)["pageSize"]
+        totalPages = len(data) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for ec2:security_group {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('ec2:security_group', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('ec2:security_group', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('ec2:security_group', {})['pageSize']

@@ -140,7 +140,16 @@ def sync_ebs_snapshots(
         data.extend(get_snapshots(boto3_session, region))
 
     if common_job_parameters.get('pagination', {}).get('ec2:snapshots', None):
-        page_start = (common_job_parameters.get('pagination', {}).get('ec2:snapshots', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('ec2:snapshots', {})['pageSize']
+        pageNo = common_job_parameters.get("pagination", {}).get("ec2:snapshots", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("ec2:snapshots", None)["pageSize"]
+        totalPages = len(data) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for ec2:snapshots {pageNo}/{totalPages} pageSize is {pageSize}')
+        page_start = (common_job_parameters.get('pagination', {}).get('ec2:snapshots', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('ec2:snapshots', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('ec2:snapshots', {})['pageSize']
         if page_end > len(data) or page_end == len(data):
             data = data[page_start:]
