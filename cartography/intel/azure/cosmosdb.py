@@ -11,12 +11,14 @@ from azure.core.exceptions import ClientAuthenticationError
 from azure.core.exceptions import HttpResponseError
 from azure.core.exceptions import ResourceNotFoundError
 from azure.mgmt.cosmosdb import CosmosDBManagementClient
+from cloudconsolelink.clouds.azure import AzureLinker
 
 from .util.credentials import Credentials
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+azure_console_link = AzureLinker()
 
 
 @timeit
@@ -29,7 +31,7 @@ def get_client(credentials: Credentials, subscription_id: str) -> CosmosDBManage
 
 
 @timeit
-def get_database_account_list(credentials: Credentials, subscription_id: str, regions: list) -> List[Dict]:
+def get_database_account_list(credentials: Credentials, subscription_id: str, regions: list, common_job_parameters: Dict) -> List[Dict]:
     """
     Get a list of all database accounts.
     """
@@ -53,6 +55,8 @@ def get_database_account_list(credentials: Credentials, subscription_id: str, re
         database_account['resourceGroup'] = x[x.index('resourceGroups') + 1]
         database_account['publicNetworkAccess'] = database_account.get(
             'properties', {}).get('public_network_access', 'Disabled')
+        database_account['consolelink'] = azure_console_link.get_console_link(
+            id=database_account['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
         if regions is None:
             account_list.append(database_account)
         else:
@@ -108,6 +112,7 @@ def load_database_account_data(
     d.publicnetworkaccess = da.public_network_access,
     d.enablecassandraconnector = da.enable_cassandra_connector,
     d.connectoroffer = da.connector_offer,
+    d.consolelink = da.consolelink,
     d.disablekeybasedmetadatawriteaccess = da.disable_key_based_metadata_write_access,
     d.keyvaulturi = da.key_vault_key_uri,
     d.enablefreetier = da.enable_free_tier,
@@ -1088,9 +1093,17 @@ def sync(
         sync_tag: int, common_job_parameters: Dict, regions: list
 ) -> None:
     logger.info("Syncing Azure CosmosDB for subscription '%s'.", subscription_id)
-    database_account_list = get_database_account_list(credentials, subscription_id, regions)
+    database_account_list = get_database_account_list(credentials, subscription_id, regions, common_job_parameters)
 
     if common_job_parameters.get('pagination', {}).get('cosmosdb', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("cosmosdb", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("cosmosdb", None)["pageSize"]
+        totalPages = len(database_account_list) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for cosmosdb database_account {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('cosmosdb', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('cosmosdb', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('cosmosdb', {})['pageSize']

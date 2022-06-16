@@ -6,12 +6,14 @@ import neo4j
 from azure.core.exceptions import HttpResponseError
 from azure.mgmt.web import WebSiteManagementClient
 from msrest.exceptions import DeserializationError
+from cloudconsolelink.clouds.azure import AzureLinker
 
 from .util.credentials import Credentials
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+azure_console_link = AzureLinker()
 
 
 def load_function_apps(
@@ -106,7 +108,7 @@ def get_client(
 
 
 @timeit
-def get_function_apps_list(client: WebSiteManagementClient, regions: list) -> List[Dict]:
+def get_function_apps_list(client: WebSiteManagementClient, regions: list, common_job_parameters: Dict) -> List[Dict]:
     try:
         function_app_list = list(
             map(lambda x: x.as_dict(), client.web_apps.list()),
@@ -117,6 +119,8 @@ def get_function_apps_list(client: WebSiteManagementClient, regions: list) -> Li
             function['resource_group'] = x[x.index('resourceGroups') + 1]
             function['hostNamesDisabled'] = function.get('properties', {}).get('host_names_disabled', True)
             function['location'] = function.get('location', '').replace(" ", "").lower()
+            function['consolelink'] = azure_console_link.get_console_link(
+                id=function['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
             if regions is None:
                 function_list.append(function)
             else:
@@ -141,6 +145,7 @@ def _load_function_apps_tx(
     f.type = function_app.type,
     f.location = function_app.location,
     f.region = function_app.location,
+    f.consolelink = function_app.consolelink,
     f.hostNamesDisabled = function_app.hostNamesDisabled,
     f.resourcegroup = function_app.resource_group
     SET f.lastupdated = {update_tag},
@@ -187,9 +192,17 @@ def sync_function_apps(
     regions: list
 ) -> None:
     client = get_client(credentials, subscription_id)
-    function_apps_list = get_function_apps_list(client, regions)
+    function_apps_list = get_function_apps_list(client, regions, common_job_parameters)
 
     if common_job_parameters.get('pagination', {}).get('function_app', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("function_app", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("function_app", None)["pageSize"]
+        totalPages = len(function_apps_list) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for function_app {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('function_app', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('function_app', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('function_app', {})['pageSize']
@@ -237,7 +250,7 @@ def sync_function_apps(
 
 def get_function_apps_configuration_list(
         function_apps_list: List[Dict],
-        client: WebSiteManagementClient,
+        client: WebSiteManagementClient, common_job_parameters: Dict
 ) -> List[Dict]:
     try:
         function_apps_conf_list: List[Dict] = []
@@ -258,6 +271,8 @@ def get_function_apps_configuration_list(
                     :conf['id'].
                     index("/config/web")
                 ]
+                conf['consolelink'] = azure_console_link.get_console_link(
+                    id=conf['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
                 conf["location"] = function.get("location")
                 conf['publicNetworkAccess'] = conf.get('properties', {}).get('public_network_access', 'Disabled')
             function_apps_conf_list.extend(apps_conf_list)
@@ -288,6 +303,7 @@ def _load_function_apps_configurations_tx(
     fc.php_version=function_conf.php_version,
     fc.location = function_conf.location,
     fc.region = function_conf.location,
+    fc.consolelink = function_conf.consolelink,
     fc.publicNetworkAccess = function_conf.publicNetworkAccess,
     fc.python_version=function_conf.python_version,
     fc.node_version=function_conf.node_version,
@@ -335,7 +351,7 @@ def sync_function_apps_conf(
     common_job_parameters: Dict,
 ) -> None:
     function_app_conf_list = get_function_apps_configuration_list(
-        function_apps_list, client,
+        function_apps_list, client, common_job_parameters
     )
     load_function_apps_configurations(
         neo4j_session, function_app_conf_list,
@@ -346,7 +362,7 @@ def sync_function_apps_conf(
 
 def get_function_apps_functions_list(
         function_apps_list: List[Dict],
-        client: WebSiteManagementClient,
+        client: WebSiteManagementClient, common_job_parameters: Dict
 ) -> List[Dict]:
     try:
         function_apps_functions_list: List[Dict] = []
@@ -369,6 +385,8 @@ def get_function_apps_functions_list(
                     index("/functions")
                 ]
                 fun["location"] = function.get("location", "global")
+                fun['consolelink'] = azure_console_link.get_console_link(
+                    id=fun['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
             function_apps_functions_list.extend(functions_list)
         return function_apps_functions_list
 
@@ -393,6 +411,7 @@ def _load_function_apps_functions_tx(
     f.region = function.location,
     f.resource_group_name=function.resource_group,
     f.href=function.href,
+    f.consolelink = function.consolelink,
     f.language=function.language,
     f.is_disabled=function.is_disabled
     WITH f, function
@@ -427,7 +446,7 @@ def sync_function_apps_functions(
     common_job_parameters: Dict,
 ) -> None:
     function_apps_function_list = get_function_apps_functions_list(
-        function_apps_list, client,
+        function_apps_list, client, common_job_parameters
     )
     load_function_apps_functions(
         neo4j_session, function_apps_function_list,

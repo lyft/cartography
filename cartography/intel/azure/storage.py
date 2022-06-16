@@ -10,12 +10,14 @@ from azure.core.exceptions import ClientAuthenticationError
 from azure.core.exceptions import HttpResponseError
 from azure.core.exceptions import ResourceNotFoundError
 from azure.mgmt.storage import StorageManagementClient
+from cloudconsolelink.clouds.azure import AzureLinker
 
 from .util.credentials import Credentials
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+azure_console_link = AzureLinker()
 
 
 @timeit
@@ -28,7 +30,7 @@ def get_client(credentials: Credentials, subscription_id: str) -> StorageManagem
 
 
 @timeit
-def get_storage_account_list(credentials: Credentials, subscription_id: str, regions: list) -> List[Dict]:
+def get_storage_account_list(credentials: Credentials, subscription_id: str, regions: list, common_job_parameters: Dict) -> List[Dict]:
     """
     Getting the list of storage accounts
     """
@@ -52,6 +54,8 @@ def get_storage_account_list(credentials: Credentials, subscription_id: str, reg
         storage_account['resourceGroup'] = x[x.index('resourceGroups') + 1]
         storage_account['allowBlobPublicAccess'] = storage_account.get(
             'properties', {}).get('allow_blob_public_access', False)
+        storage_account['consolelink'] = azure_console_link.get_console_link(
+            id=storage_account['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
         if regions is None:
             account_list.append(storage_account)
         else:
@@ -78,6 +82,7 @@ def load_storage_account_data(
     SET s.lastupdated = {azure_update_tag},
     s.kind = account.kind,
     s.name = account.name,
+    s.consolelink = account.consolelink,
     s.creationtime = account.creation_time,
     s.hnsenabled = account.is_hns_enabled,
     s.primarylocation = account.primary_location,
@@ -105,15 +110,15 @@ def load_storage_account_data(
 @timeit
 def sync_storage_account_details(
         neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str,
-        storage_account_list: List[Dict], sync_tag: int,
+        storage_account_list: List[Dict], sync_tag: int, common_job_parameters: Dict
 ) -> None:
-    details = get_storage_account_details(credentials, subscription_id, storage_account_list)
-    load_storage_account_details(neo4j_session, credentials, subscription_id, details, sync_tag)
+    details = get_storage_account_details(credentials, subscription_id, storage_account_list, common_job_parameters)
+    load_storage_account_details(neo4j_session, credentials, subscription_id, details, sync_tag, common_job_parameters)
 
 
 @timeit
 def get_storage_account_details(
-        credentials: Credentials, subscription_id: str, storage_account_list: List[Dict],
+        credentials: Credentials, subscription_id: str, storage_account_list: List[Dict], common_job_parameters: Dict
 ) -> Generator[Any, Any, Any]:
     """
     Iterates over all Storage Accounts to get the different storage services.
@@ -232,7 +237,7 @@ def get_blob_services(credentials: Credentials, subscription_id: str, storage_ac
 @timeit
 def load_storage_account_details(
         neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str,
-        details: List[Tuple[Any, Any, Any, Any, Any, Any, Any]], update_tag: int,
+        details: List[Tuple[Any, Any, Any, Any, Any, Any, Any]], update_tag: int, common_job_parameters: Dict
 ) -> None:
     """
     Create dictionaries for every Azure storage service so we can import them in a single query
@@ -248,6 +253,8 @@ def load_storage_account_details(
                 service['storage_account_name'] = name
                 service['storage_account_id'] = account_id
                 service['resource_group_name'] = resourceGroup
+                service['consolelink'] = azure_console_link.get_console_link(
+                    id=service['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
             queue_services.extend(queue_service)
 
         if len(table_service) > 0:
@@ -255,6 +262,8 @@ def load_storage_account_details(
                 service['storage_account_name'] = name
                 service['storage_account_id'] = account_id
                 service['resource_group_name'] = resourceGroup
+                service['consolelink'] = azure_console_link.get_console_link(
+                    id=service['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
             table_services.extend(table_service)
 
         if len(file_service) > 0:
@@ -262,6 +271,8 @@ def load_storage_account_details(
                 service['storage_account_name'] = name
                 service['storage_account_id'] = account_id
                 service['resource_group_name'] = resourceGroup
+                service['consolelink'] = azure_console_link.get_console_link(
+                    id=service['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
             file_services.extend(file_service)
 
         if len(blob_service) > 0:
@@ -269,6 +280,8 @@ def load_storage_account_details(
                 service['storage_account_name'] = name
                 service['storage_account_id'] = account_id
                 service['resource_group_name'] = resourceGroup
+                service['consolelink'] = azure_console_link.get_console_link(
+                    id=service['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
             blob_services.extend(blob_service)
 
     _load_queue_services(neo4j_session, queue_services, update_tag)
@@ -294,6 +307,7 @@ def _load_queue_services(
     MERGE (qs:AzureStorageQueueService{id: qservice.id})
     ON CREATE SET qs.firstseen = timestamp(), qs.type = qservice.type
     SET qs.name = qservice.name,
+    qs.consolelink = qservice.consolelink,
     qs.region = {region},
     qs.lastupdated = {azure_update_tag}
     WITH qs, qservice
@@ -323,6 +337,7 @@ def _load_table_services(
     MERGE (ts:AzureStorageTableService{id: tservice.id})
     ON CREATE SET ts.firstseen = timestamp(), ts.type = tservice.type
     SET ts.name = tservice.name,
+    ts.consolelink = tservice.consolelink,
     ts.region = {region},
     ts.lastupdated = {azure_update_tag}
     WITH ts, tservice
@@ -352,6 +367,7 @@ def _load_file_services(
     MERGE (fs:AzureStorageFileService{id: fservice.id})
     ON CREATE SET fs.firstseen = timestamp(), fs.type = fservice.type
     SET fs.name = fservice.name,
+    fs.consolelink = fservice.consolelink,
     fs.region = {region},
     fs.lastupdated = {azure_update_tag}
     WITH fs, fservice
@@ -381,6 +397,7 @@ def _load_blob_services(
     MERGE (bs:AzureStorageBlobService{id: bservice.id})
     ON CREATE SET bs.firstseen = timestamp(), bs.type = bservice.type
     SET bs.name = bservice.name,
+    bs.consolelink = bservice.consolelink,
     bs.region = {region},
     bs.lastupdated = {azure_update_tag}
     WITH bs, bservice
@@ -818,9 +835,17 @@ def sync(
         sync_tag: int, common_job_parameters: Dict, regions: list
 ) -> None:
     logger.info("Syncing Azure Storage for subscription '%s'.", subscription_id)
-    storage_account_list = get_storage_account_list(credentials, subscription_id, regions)
+    storage_account_list = get_storage_account_list(credentials, subscription_id, regions, common_job_parameters)
 
-    if common_job_parameters.get('pagination', {}).get('sql', None):
+    if common_job_parameters.get('pagination', {}).get('storage', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("storage", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("storage", None)["pageSize"]
+        totalPages = len(storage_account_list) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for storage account {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('storage', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('storage', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('storage', {})['pageSize']
@@ -832,5 +857,6 @@ def sync(
             common_job_parameters['pagination']['storage']['hasNextPage'] = has_next_page
 
     load_storage_account_data(neo4j_session, subscription_id, storage_account_list, sync_tag)
-    sync_storage_account_details(neo4j_session, credentials, subscription_id, storage_account_list, sync_tag)
+    sync_storage_account_details(neo4j_session, credentials, subscription_id,
+                                 storage_account_list, sync_tag, common_job_parameters)
     cleanup_azure_storage_accounts(neo4j_session, common_job_parameters)

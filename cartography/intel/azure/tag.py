@@ -8,6 +8,7 @@ import neo4j
 from neo4j import GraphDatabase
 from azure.core.exceptions import HttpResponseError
 from azure.mgmt.resource import ResourceManagementClient
+from cloudconsolelink.clouds.azure import AzureLinker
 
 from .util.credentials import Credentials
 from cartography.util import run_cleanup_job
@@ -15,6 +16,7 @@ from cartography.util import timeit
 from cartography.config import Config
 
 logger = logging.getLogger(__name__)
+azure_console_link = AzureLinker()
 
 
 def load_resource_groups(session: neo4j.Session, subscription_id: str, data_list: List[Dict], update_tag: int) -> None:
@@ -32,9 +34,12 @@ def get_resource_management_client(credentials: Credentials, subscription_id: st
 
 
 @timeit
-def get_resource_groups_list(client: ResourceManagementClient) -> List[Dict]:
+def get_resource_groups_list(client: ResourceManagementClient, common_job_parameters: Dict) -> List[Dict]:
     try:
         resource_groups_list = list(map(lambda x: x.as_dict(), client.resource_groups.list()))
+        for group in resource_groups_list:
+            group['consolelink'] = azure_console_link.get_console_link(
+                id=group['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
 
         return resource_groups_list
 
@@ -52,6 +57,7 @@ def _load_resource_groups_tx(
     ON CREATE SET t.firstseen = timestamp(),
     t.type = group.type,
     t.location = group.location,
+    t.consolelink = group.consolelink,
     t.region = group.location,
     t.managedBy = group.managedBy
     SET t.lastupdated = {update_tag},
@@ -76,9 +82,9 @@ def cleanup_resource_groups(neo4j_session: neo4j.Session, common_job_parameters:
 
 
 def concurrent_execution(config: Config, client: ResourceManagementClient, resource_group: Dict, update_tag: int
-):
+                         ):
     logger.info(f"BEGIN processing for resource group: {resource_group['name']}")
-  
+
     neo4j_auth = (config.neo4j_user, config.neo4j_password)
     neo4j_driver = GraphDatabase.driver(
         config.neo4j_uri,
@@ -105,7 +111,7 @@ def concurrent_execution(config: Config, client: ResourceManagementClient, resou
                             'type': 'Microsoft.Resources/tags',
                             'resource_id': resource.id, 'resource_group': resource_group['name'],
                         }]
-    
+
     load_tags(neo4j_driver.session(), tags_list, update_tag)
 
     logger.info(f"END processing for resource group: {resource_group['name']}")
@@ -120,7 +126,7 @@ def get_tags_list(
             futures = []
             for resource_group in resource_groups_list:
                 futures.append(executor.submit(concurrent_execution, config, client, resource_group, update_tag))
-        
+
             for future in as_completed(futures):
                 logger.info(f'Result from Future: #{future.result()}')
 
@@ -172,7 +178,7 @@ def sync_resource_groups(
     common_job_parameters: Dict, config: Config,
 ) -> None:
     client = get_resource_management_client(credentials, subscription_id)
-    resource_groups_list = get_resource_groups_list(client)
+    resource_groups_list = get_resource_groups_list(client, common_job_parameters)
     load_resource_groups(neo4j_session, subscription_id, resource_groups_list, update_tag)
     cleanup_resource_groups(neo4j_session, common_job_parameters)
     sync_tags(neo4j_session, client, resource_groups_list, update_tag, common_job_parameters, config)

@@ -7,12 +7,14 @@ from azure.core.exceptions import HttpResponseError
 from azure.mgmt.containerinstance import ContainerInstanceManagementClient
 from azure.mgmt.containerregistry import ContainerRegistryManagementClient
 from azure.mgmt.containerservice import ContainerServiceClient
+from cloudconsolelink.clouds.azure import AzureLinker
 
 from .util.credentials import Credentials
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+azure_console_link = AzureLinker()
 
 
 def load_aks(session: neo4j.Session, subscription_id: str, data_list: List[Dict], update_tag: int) -> None:
@@ -68,7 +70,7 @@ def get_container_instance_Client(credentials: Credentials, subscription_id: str
 
 
 @timeit
-def get_aks_list(credentials: Credentials, subscription_id: str, regions: list) -> List[Dict]:
+def get_aks_list(credentials: Credentials, subscription_id: str, regions: list, common_job_parameters: Dict) -> List[Dict]:
     try:
         client = get_client(credentials, subscription_id)
         aks_list = list(map(lambda x: x.as_dict(), client.managed_clusters.list()))
@@ -77,6 +79,8 @@ def get_aks_list(credentials: Credentials, subscription_id: str, regions: list) 
             x = aks['id'].split('/')
             aks['resource_group'] = x[x.index('resourcegroups') + 1]
             aks['publicNetworkAccess'] = aks.get('properties', {}).get('public_network_access', 'Disabled')
+            aks['consolelink'] = azure_console_link.get_console_link(
+                id=aks['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
             if regions is None:
                 aks_data.append(aks)
             else:
@@ -98,6 +102,7 @@ def _load_aks_tx(tx: neo4j.Transaction, subscription_id: str, aks_list: List[Dic
     a.location = aks.location,
     a.region = aks.location,
     a.publicNetworkAccess = aks.publicNetworkAccess,
+    a.consolelink = aks.consolelink,
     a.resourcegroup = aks.resource_group
     SET a.lastupdated = {update_tag},
     a.name = aks.name
@@ -124,9 +129,17 @@ def sync_aks(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
     common_job_parameters: Dict, regions: list
 ) -> None:
-    aks_list = get_aks_list(credentials, subscription_id, regions)
+    aks_list = get_aks_list(credentials, subscription_id, regions, common_job_parameters)
 
     if common_job_parameters.get('pagination', {}).get('aks', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("aks", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("aks", None)["pageSize"]
+        totalPages = len(aks_list) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for aks {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('aks', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('aks', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('aks', {})['pageSize']
@@ -142,13 +155,15 @@ def sync_aks(
 
 
 @timeit
-def get_container_registries_list(client: ContainerRegistryManagementClient, regions: list) -> List[Dict]:
+def get_container_registries_list(client: ContainerRegistryManagementClient, regions: list, common_job_parameters: Dict) -> List[Dict]:
     try:
         container_registries_list = list(map(lambda x: x.as_dict(), client.registries.list()))
         registry_data = []
         for registry in container_registries_list:
             x = registry['id'].split('/')
             registry['resource_group'] = x[x.index('resourceGroups') + 1]
+            registry['consolelink'] = azure_console_link.get_console_link(
+                id=registry['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
             if regions is None:
                 registry_data.append(registry)
             else:
@@ -172,6 +187,7 @@ def _load_container_registries_tx(
     a.type = registry.type,
     a.location = registry.location,
     a.region = registry.location,
+    a.consolelink = registry.consolelink,
     a.resourcegroup = registry.resource_group
     SET a.lastupdated = {update_tag},
     a.name = registry.name
@@ -199,9 +215,17 @@ def sync_container_registries(
     common_job_parameters: Dict, regions: list
 ) -> None:
     client = get_container_registry_Client(credentials, subscription_id)
-    container_registries_list = get_container_registries_list(client, regions)
+    container_registries_list = get_container_registries_list(client, regions, common_job_parameters)
 
     if common_job_parameters.get('pagination', {}).get('aks', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("aks", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("aks", None)["pageSize"]
+        totalPages = len(container_registries_list) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for aks container_registries {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('aks', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('aks', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('aks', {})['pageSize']
@@ -230,7 +254,7 @@ def sync_container_registries(
 
 @timeit
 def get_container_registry_replications_list(
-    client: ContainerRegistryManagementClient, container_registries_list: List[Dict],
+    client: ContainerRegistryManagementClient, container_registries_list: List[Dict], common_job_parameters: Dict
 ) -> List[Dict]:
     try:
         container_registry_replications_list: List[Dict] = []
@@ -249,6 +273,8 @@ def get_container_registry_replications_list(
             x = replication['id'].split('/')
             replication['resource_group'] = x[x.index('resourceGroups') + 1]
             replication['container_registry_id'] = replication['id'][:replication['id'].index("/replications")]
+            replication['consolelink'] = azure_console_link.get_console_link(
+                id=replication['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
 
         return container_registry_replications_list
 
@@ -267,6 +293,7 @@ def _load_container_registry_replications_tx(
     a.type = replication.type,
     a.location = replication.location,
     a.region = replication.location,
+    a.consolelink = replication.consolelink,
     a.resourcegroup = replication.resource_group
     SET a.lastupdated = {update_tag},
     a.name = replication.name
@@ -293,7 +320,8 @@ def sync_container_registry_replications(
     container_registries_list: List[Dict], update_tag: int,
     common_job_parameters: Dict,
 ) -> None:
-    container_registry_replications_list = get_container_registry_replications_list(client, container_registries_list)
+    container_registry_replications_list = get_container_registry_replications_list(
+        client, container_registries_list, common_job_parameters)
     load_container_registry_replications(neo4j_session, container_registry_replications_list, update_tag)
     cleanup_container_registry_replications(neo4j_session, common_job_parameters)
 
@@ -301,7 +329,7 @@ def sync_container_registry_replications(
 @timeit
 def get_container_registry_runs_list(
     client: ContainerRegistryManagementClient,
-    container_registries_list: List[Dict],
+    container_registries_list: List[Dict], common_job_parameters: Dict
 ) -> List[Dict]:
     try:
         container_registry_runs_list: List[Dict] = []
@@ -319,6 +347,8 @@ def get_container_registry_runs_list(
                 x = run['id'].split('/')
                 run['resource_group'] = x[x.index('resourceGroups') + 1]
                 run['container_registry_id'] = run['id'][:run['id'].index("/runs")]
+                run['consolelink'] = azure_console_link.get_console_link(
+                    id=run['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
             container_registry_runs_list.extend(registry_runs_list)
 
         return container_registry_runs_list
@@ -338,6 +368,7 @@ def _load_container_registry_runs_tx(
     a.type = run.type,
     a.location=run.location,
     a.region=run.location,
+    a.consolelink = run.consolelink,
     a.resourcegroup = run.resource_group
     SET a.lastupdated = {update_tag},
     a.name = run.name
@@ -364,14 +395,15 @@ def sync_container_registry_runs(
     container_registries_list: List[Dict], update_tag: int,
     common_job_parameters: Dict,
 ) -> None:
-    container_registry_runs_list = get_container_registry_runs_list(client, container_registries_list)
+    container_registry_runs_list = get_container_registry_runs_list(
+        client, container_registries_list, common_job_parameters)
     load_container_registry_runs(neo4j_session, container_registry_runs_list, update_tag)
     cleanup_container_registry_runs(neo4j_session, common_job_parameters)
 
 
 @timeit
 def get_container_registry_tasks_list(
-    client: ContainerRegistryManagementClient, container_registries_list: List[Dict],
+    client: ContainerRegistryManagementClient, container_registries_list: List[Dict], common_job_parameters: Dict
 ) -> List[Dict]:
     try:
         container_registry_tasks_list: List[Dict] = []
@@ -390,6 +422,8 @@ def get_container_registry_tasks_list(
             x = task['id'].split('/')
             task['resource_group'] = x[x.index('resourceGroups') + 1]
             task['container_registry_id'] = task['id'][:task['id'].index("/tasks")]
+            task['consolelink'] = azure_console_link.get_console_link(
+                id=task['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
 
         return container_registry_tasks_list
 
@@ -408,6 +442,7 @@ def _load_container_registry_tasks_tx(
     a.type = task.type,
     a.location=task.location,
     a.region=task.location,
+    a.conolelink = task.consolelink,
     a.resourcegroup = task.resource_group
     SET a.lastupdated = {update_tag},
     a.name = task.name
@@ -434,14 +469,15 @@ def sync_container_registry_tasks(
     container_registries_list: List[Dict], update_tag: int,
     common_job_parameters: Dict,
 ) -> None:
-    container_registry_tasks_list = get_container_registry_tasks_list(client, container_registries_list)
+    container_registry_tasks_list = get_container_registry_tasks_list(
+        client, container_registries_list, common_job_parameters)
     load_container_registry_tasks(neo4j_session, container_registry_tasks_list, update_tag)
     cleanup_container_registry_tasks(neo4j_session, common_job_parameters)
 
 
 @timeit
 def get_container_registry_webhooks_list(
-    client: ContainerRegistryManagementClient, container_registries_list: List[Dict],
+    client: ContainerRegistryManagementClient, container_registries_list: List[Dict], common_job_parameters: Dict
 ) -> List[Dict]:
     try:
         container_registry_webhooks_list: List[Dict] = []
@@ -460,6 +496,8 @@ def get_container_registry_webhooks_list(
             x = webhook['id'].split('/')
             webhook['resource_group'] = x[x.index('resourceGroups') + 1]
             webhook['container_registry_id'] = webhook['id'][:webhook['id'].index("/webhooks")]
+            webhook['consolelink'] = azure_console_link.get_console_link(
+                id=webhook['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
 
         return container_registry_webhooks_list
 
@@ -478,6 +516,7 @@ def _load_container_registry_webhooks_tx(
     a.type = webhook.type,
     a.location=webhook.location,
     a.region=webhook.location,
+    a.consolelink = webhook.consolelink,
     a.resourcegroup = webhook.resource_group
     SET a.lastupdated = {update_tag},
     a.name = webhook.name
@@ -504,19 +543,22 @@ def sync_container_registry_webhooks(
     container_registries_list: List[Dict], update_tag: int,
     common_job_parameters: Dict,
 ) -> None:
-    container_registry_webhooks_list = get_container_registry_webhooks_list(client, container_registries_list)
+    container_registry_webhooks_list = get_container_registry_webhooks_list(
+        client, container_registries_list, common_job_parameters)
     load_container_registry_webhooks(neo4j_session, container_registry_webhooks_list, update_tag)
     cleanup_container_registry_webhooks(neo4j_session, common_job_parameters)
 
 
 @timeit
-def get_container_groups_list(client: ContainerInstanceManagementClient, regions: list) -> List[Dict]:
+def get_container_groups_list(client: ContainerInstanceManagementClient, regions: list, common_job_parameters: Dict) -> List[Dict]:
     try:
         container_groups_list = list(map(lambda x: x.as_dict(), client.container_groups.list()))
         group_data = []
         for group in container_groups_list:
             x = group['id'].split('/')
             group['resource_group'] = x[x.index('resourceGroups') + 1]
+            group['consolelink'] = azure_console_link.get_console_link(
+                id=group['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
             if regions is None:
                 group_data.append(group)
             else:
@@ -540,6 +582,7 @@ def _load_container_groups_tx(
     a.type = group.type,
     a.location = group.location,
     a.region = group.location,
+    a.consolelink = group.consolelink,
     a.resourcegroup = group.resource_group
     SET a.lastupdated = {update_tag},
     a.name = group.name
@@ -567,9 +610,17 @@ def sync_container_groups(
     common_job_parameters: Dict, regions: list
 ) -> None:
     client = get_container_instance_Client(credentials, subscription_id)
-    container_groups_list = get_container_groups_list(client, regions)
+    container_groups_list = get_container_groups_list(client, regions, common_job_parameters)
 
     if common_job_parameters.get('pagination', {}).get('aks', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("aks", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("aks", None)["pageSize"]
+        totalPages = len(container_groups_list) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for aks container_groups {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('aks', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('aks', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('aks', {})['pageSize']

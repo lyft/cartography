@@ -5,12 +5,14 @@ from typing import List
 import neo4j
 from azure.core.exceptions import HttpResponseError
 from azure.mgmt.compute import ComputeManagementClient
+from cloudconsolelink.clouds.azure import AzureLinker
 
 from .util.credentials import Credentials
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+azure_console_link = AzureLinker()
 
 
 def load_vm_extensions(session: neo4j.Session, data_list: List[Dict], update_tag: int) -> None:
@@ -42,7 +44,7 @@ def get_client(credentials: Credentials, subscription_id: str) -> ComputeManagem
     return client
 
 
-def get_vm_list(credentials: Credentials, subscription_id: str, regions: list) -> List[Dict]:
+def get_vm_list(credentials: Credentials, subscription_id: str, regions: list, common_job_parameters: Dict) -> List[Dict]:
     try:
         client = get_client(credentials, subscription_id)
         vm_list = list(map(lambda x: x.as_dict(), client.virtual_machines.list_all()))
@@ -50,6 +52,8 @@ def get_vm_list(credentials: Credentials, subscription_id: str, regions: list) -
         for vm in vm_list:
             x = vm['id'].split('/')
             vm['resource_group'] = x[x.index('resourceGroups') + 1]
+            vm['consolelink'] = azure_console_link.get_console_link(
+                id=vm['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
 
             network_interfaces = []
             for interface in vm.get('network_profile', {}).get('network_interfaces', []):
@@ -79,10 +83,11 @@ def load_vms(neo4j_session: neo4j.Session, subscription_id: str, vm_list: List[D
     ON CREATE SET v.firstseen = timestamp(),
     v.type = vm.type, v.location = vm.location,
     v.region = vm.location,
+    v.consolelink = vm.consolelink,
     v.resourcegroup = vm.resource_group
     SET v.lastupdated = {update_tag}, v.name = vm.name,
     v.plan = vm.plan.product, v.size = vm.hardware_profile.vm_size,
-    v.license_type=vm.license_type, v.computer_name=vm.os_profile.computer_ame,
+    v.license_type=vm.license_type, v.computer_name=vm.os_profile.computer_name,
     v.identity_type=vm.identity.type, v.zones=vm.zones,
     v.ultra_ssd_enabled=vm.additional_capabilities.ultra_ssd_enabled,
     v.priority=vm.priority, v.eviction_policy=vm.eviction_policy
@@ -149,7 +154,7 @@ def _load_vm_network_interfaces_relationship(tx: neo4j.Transaction, vm_id: str, 
     )
 
 
-def get_vm_extensions_list(vm_list: List[Dict], client: ComputeManagementClient) -> List[Dict]:
+def get_vm_extensions_list(vm_list: List[Dict], client: ComputeManagementClient, common_job_parameters: Dict) -> List[Dict]:
     try:
         vm_extensions_list: List[Dict] = []
         for vm in vm_list:
@@ -165,6 +170,7 @@ def get_vm_extensions_list(vm_list: List[Dict], client: ComputeManagementClient)
                 'id': extension.id,
                 'resource_group': x[x.index('resourceGroups') + 1],
                 'vm_id': extension.id[:extension.id.index("/extensions")],
+                'consolelink': azure_console_link.get_console_link(id=vm['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name']),
                 'type': extension.type,
                 'location': extension.location,
             })
@@ -181,6 +187,7 @@ def _load_vm_extensions_tx(tx: neo4j.Transaction, vm_extensions_list: List[Dict]
     UNWIND {vm_extensions_list} AS extension
     MERGE (v:AzureVirtualMachineExtension{id: extension.id})
     ON CREATE SET v.firstseen = timestamp(), v.location = extension.location,
+    v.consolelink = extension.consolelink,
     v.region = extension.location
     SET v.lastupdated = {update_tag}, v.name = extension.name,
     v.type = extension.type
@@ -206,7 +213,7 @@ def sync_virtual_machine_extensions(
     neo4j_session: neo4j.Session, client: ComputeManagementClient, vm_list: List[Dict], update_tag: int,
     common_job_parameters: Dict,
 ) -> None:
-    vm_extensions_list = get_vm_extensions_list(vm_list, client)
+    vm_extensions_list = get_vm_extensions_list(vm_list, client, common_job_parameters)
     load_vm_extensions(neo4j_session, vm_extensions_list, update_tag)
     cleanup_virtual_machine_extensions(neo4j_session, common_job_parameters)
 
@@ -278,7 +285,7 @@ def sync_virtual_machine_available_sizes(
     cleanup_virtual_machine_available_sizes(neo4j_session, common_job_parameters)
 
 
-def get_vm_scale_sets_list(credentials: Credentials, subscription_id: str, regions: list) -> List[Dict]:
+def get_vm_scale_sets_list(credentials: Credentials, subscription_id: str, regions: list, common_job_parameters: Dict) -> List[Dict]:
     try:
         client = get_client(credentials, subscription_id)
         vm_scale_sets_list = list(map(lambda x: x.as_dict(), client.virtual_machine_scale_sets.list_all()))
@@ -286,6 +293,8 @@ def get_vm_scale_sets_list(credentials: Credentials, subscription_id: str, regio
         for set in vm_scale_sets_list:
             x = set['id'].split('/')
             set['resource_group'] = x[x.index('resourceGroups') + 1]
+            set['consolelink'] = azure_console_link.get_console_link(
+                id=set['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
             if regions is None:
                 sets_list.append(set)
             else:
@@ -308,6 +317,7 @@ def _load_vm_scale_sets_tx(
     a.type = set.type,
     a.location = set.location,
     a.region = set.location,
+    a.consolelinke = set.consolelink,
     a.resourcegroup = set.resource_group
     SET a.lastupdated = {update_tag},
     a.name = set.name
@@ -335,9 +345,17 @@ def sync_vm_scale_sets(
     common_job_parameters: Dict, regions: list
 ) -> None:
     client = get_client(credentials, subscription_id)
-    vm_scale_sets_list = get_vm_scale_sets_list(credentials, subscription_id, regions)
+    vm_scale_sets_list = get_vm_scale_sets_list(credentials, subscription_id, regions, common_job_parameters)
 
     if common_job_parameters.get('pagination', {}).get('compute', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("compute", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("compute", None)["pageSize"]
+        totalPages = len(vm_scale_sets_list) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for compute vm_scale_sets {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('compute', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('compute', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('compute', {})['pageSize']
@@ -355,7 +373,7 @@ def sync_vm_scale_sets(
     )
 
 
-def get_vm_scale_sets_extensions_list(vm_scale_sets_list: List[Dict], client: ComputeManagementClient) -> List[Dict]:
+def get_vm_scale_sets_extensions_list(vm_scale_sets_list: List[Dict], client: ComputeManagementClient, common_job_parameters: Dict) -> List[Dict]:
     try:
         vm_scale_sets_extensions_list: List[Dict] = []
         for set in vm_scale_sets_list:
@@ -371,6 +389,8 @@ def get_vm_scale_sets_extensions_list(vm_scale_sets_list: List[Dict], client: Co
                 x = extension['id'].split('/')
                 extension['resource_group'] = x[x.index('resourceGroups') + 1]
                 extension['set_id'] = extension['id'][:extension['id'].index("/extensions")]
+                extension['consolelink'] = azure_console_link.get_console_link(
+                    id=extension['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
 
             vm_scale_sets_extensions_list.extend(extensions_list)
 
@@ -391,6 +411,7 @@ def _load_vm_scale_sets_extensions_tx(
     SET v.lastupdated = {update_tag}, v.name = extension.name,
     v.location = extension.location,
     v.region = extension.location,
+    v.consolelink = extension.consolelink,
     v.type = extension.type
     WITH v,extension
     MATCH (owner:AzureVirtualMachineScaleSet{id: extension.set_id})
@@ -417,7 +438,7 @@ def sync_virtual_machine_scale_sets_extensions(
     neo4j_session: neo4j.Session, client: ComputeManagementClient, vm_list: List[Dict], update_tag: int,
     common_job_parameters: Dict,
 ) -> None:
-    vm_scale_sets_extensions_list = get_vm_scale_sets_extensions_list(vm_list, client)
+    vm_scale_sets_extensions_list = get_vm_scale_sets_extensions_list(vm_list, client, common_job_parameters)
     load_vm_scale_sets_extensions(neo4j_session, vm_scale_sets_extensions_list, update_tag)
     cleanup_virtual_machine_scale_sets_extensions(neo4j_session, common_job_parameters)
 
@@ -454,7 +475,7 @@ def cleanup_virtual_machine(neo4j_session: neo4j.Session, common_job_parameters:
     run_cleanup_job('azure_import_virtual_machines_cleanup.json', neo4j_session, common_job_parameters)
 
 
-def get_disks(credentials: Credentials, subscription_id: str, regions: list) -> List[Dict]:
+def get_disks(credentials: Credentials, subscription_id: str, regions: list, common_job_parameters: Dict) -> List[Dict]:
     try:
         client = get_client(credentials, subscription_id)
         disk_list = list(map(lambda x: x.as_dict(), client.disks.list()))
@@ -462,6 +483,8 @@ def get_disks(credentials: Credentials, subscription_id: str, regions: list) -> 
         for disk in disk_list:
             x = disk['id'].split('/')
             disk['resource_group'] = x[x.index('resourceGroups') + 1]
+            disk['consolelink'] = azure_console_link.get_console_link(
+                id=disk['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
             if regions is None:
                 disk_data.append(disk)
             else:
@@ -481,6 +504,7 @@ def load_disks(neo4j_session: neo4j.Session, subscription_id: str, disk_list: Li
     ON CREATE SET d.firstseen = timestamp(),
     d.type = disk.type, d.location = disk.location,
     d.region = disk.location,
+    d.consolelink = disk.consolelink,
     d.resourcegroup = disk.resource_group
     SET d.lastupdated = {update_tag}, d.name = disk.name,
     d.createoption = disk.creation_data.create_option, d.disksizegb = disk.disk_size_gb,
@@ -506,7 +530,7 @@ def cleanup_disks(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> 
     run_cleanup_job('azure_import_disks_cleanup.json', neo4j_session, common_job_parameters)
 
 
-def get_snapshots_list(credentials: Credentials, subscription_id: str, regions: list) -> List[Dict]:
+def get_snapshots_list(credentials: Credentials, subscription_id: str, regions: list, common_job_parameters: Dict) -> List[Dict]:
     try:
         client = get_client(credentials, subscription_id)
         snapshots = list(map(lambda x: x.as_dict(), client.snapshots.list()))
@@ -514,6 +538,8 @@ def get_snapshots_list(credentials: Credentials, subscription_id: str, regions: 
         for snapshot in snapshots:
             x = snapshot['id'].split('/')
             snapshot['resource_group'] = x[x.index('resourceGroups') + 1]
+            snapshot['consolelink'] = azure_console_link.get_console_link(
+                id=snapshot['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
             if regions is None:
                 snapshot_list.append(snapshot)
             else:
@@ -533,6 +559,7 @@ def load_snapshots(neo4j_session: neo4j.Session, subscription_id: str, snapshots
     ON CREATE SET s.firstseen = timestamp(),
     s.resourcegroup = snapshot.resource_group,
     s.type = snapshot.type, s.location = snapshot.location,
+    s.consolelink = snapshot.consolelink,
     s.region = snapshot.location
     SET s.lastupdated = {update_tag}, s.name = snapshot.name,
     s.createoption = snapshot.creation_data.create_option, s.disksizegb = snapshot.disk_size_gb,
@@ -562,9 +589,17 @@ def sync_virtual_machine(
     common_job_parameters: Dict, regions: list
 ) -> None:
     client = get_client(credentials, subscription_id)
-    vm_list = get_vm_list(credentials, subscription_id, regions)
+    vm_list = get_vm_list(credentials, subscription_id, regions, common_job_parameters)
 
     if common_job_parameters.get('pagination', {}).get('compute', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("compute", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("compute", None)["pageSize"]
+        totalPages = len(vm_list) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for compute vm {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('compute', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('compute', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('compute', {})['pageSize']
@@ -585,9 +620,17 @@ def sync_disk(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
     common_job_parameters: Dict, regions: list
 ) -> None:
-    disk_list = get_disks(credentials, subscription_id, regions)
+    disk_list = get_disks(credentials, subscription_id, regions, common_job_parameters)
 
     if common_job_parameters.get('pagination', {}).get('compute', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("compute", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("compute", None)["pageSize"]
+        totalPages = len(disk_list) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for compute disk {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('compute', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('compute', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('compute', {})['pageSize']
@@ -606,9 +649,17 @@ def sync_snapshot(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
     common_job_parameters: Dict, regions: list
 ) -> None:
-    snapshots = get_snapshots_list(credentials, subscription_id, regions)
+    snapshots = get_snapshots_list(credentials, subscription_id, regions, common_job_parameters)
 
     if common_job_parameters.get('pagination', {}).get('compute', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("compute", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("compute", None)["pageSize"]
+        totalPages = len(snapshots) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for compute snapshots {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('compute', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('compute', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('compute', {})['pageSize']

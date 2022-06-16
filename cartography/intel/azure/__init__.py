@@ -8,6 +8,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import neo4j
 from neo4j import GraphDatabase
+from azure.core.exceptions import HttpResponseError
+from azure.graphrbac import GraphRbacManagementClient
 
 from . import subscription
 from . import tag
@@ -53,6 +55,20 @@ def _sync_one_subscription(
     common_job_parameters: Dict,
     config: Config,
 ) -> None:
+
+    try:
+        client = GraphRbacManagementClient(credentials.aad_graph_credentials, credentials.tenant_id)
+        tenant_domains_list = list(map(lambda x: x.as_dict(), client.domains.list()))
+        active_directory_name = ''
+        for domain in tenant_domains_list:
+            if domain.get('is_default', False):
+                active_directory_name = domain.get('name').split(".")[0]
+
+    except HttpResponseError as e:
+        logger.warning(f"Error while retrieving tenant domains - {e}")
+
+    common_job_parameters['Azure_Active_Directory_Name'] = active_directory_name
+
     with ThreadPoolExecutor(max_workers=len(RESOURCE_FUNCTIONS)) as executor:
         futures = []
         for request in requested_syncs:
@@ -214,4 +230,5 @@ def start_azure_ingestion(
     )
     del common_job_parameters["AZURE_SUBSCRIPTION_ID"]
     del common_job_parameters["AZURE_TENANT_ID"]
+    del common_job_parameters["Azure_Active_Directory_Name"]
     return common_job_parameters
