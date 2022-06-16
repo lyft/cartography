@@ -163,7 +163,7 @@ def patched_begin_transaction_func(begin_transaction_func: Callable) -> Callable
     return begin_transaction_wrapper
 
 
-def detect_neo4j_version(neo4j_session) -> None:
+def detect_neo4j_version(neo4j_session: neo4j.Session) -> None:
     result = neo4j_session.run(
         'call dbms.components() yield name, versions, edition unwind versions as version return version;',
     )
