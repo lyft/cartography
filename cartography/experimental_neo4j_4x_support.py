@@ -28,7 +28,7 @@ from distutils.util import strtobool
 # Initially is set by the environment variable
 # but then can also be set to true by the cli switch --experimental-neo4j-4x-support
 EXPERIMENTAL_NEO4J_4X_SUPPORT = bool(strtobool(os.getenv("EXPERIMENTAL_NEO4J_4X_SUPPORT", "False")))
-# EXPERIMENTAL_NEO4J_4X_SUPPORT = True
+EXPERIMENTAL_NEO4J_4X_SUPPORT = True
 
 # Detect the driver version
 USING_4_X_DRIVER = neo4j.__version__ >= '4.0.0'
