@@ -10,10 +10,14 @@
 # The driver patch can also auto-detect the database version, and determine if the query upgrades are needed.
 # Once EXPERIMENTAL_NEO4J_4X_SUPPORT is True, the driver patches apply automatically.
 # But for your own forks of cartography, you can directly driver patch like this:
-# experimental neo4j 4.x support
+#
+# # experimental neo4j 4.x support
 # from cartography import EXPERIMENTAL_NEO4J_4X_SUPPORT, patch_session_obj
 # if EXPERIMENTAL_NEO4J_4X_SUPPORT:
 #     patch_session_obj(neo4j_session)
+#
+# You can also use the decorator `disable_syntax_upgrade` to disable the upgrade temporarily,
+# for the duration of the function being docerated
 import logging
 import os
 import re
@@ -76,6 +80,25 @@ if USING_4_X_DRIVER:
 
 # Helper functions that patch the neo4j.GraphDatabase.driver().session().run()
 # codepath to include the query conversions:
+
+
+# decorator to disable the syntax upgrader for the duration of any specific function decorated
+def disable_syntax_upgrade(func: Callable) -> Callable:
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        global UPGRADE_SYNTAX
+        original = UPGRADE_SYNTAX
+        UPGRADE_SYNTAX = False
+        try:
+            return_value = func(*args, **kwargs)
+            UPGRADE_SYNTAX = original
+            return return_value
+        # except Exception as e:
+        except Exception:
+            UPGRADE_SYNTAX = original
+            # print(e)
+            raise
+    return wrapper
 
 
 def convert_index_statement(old_statement: str) -> str:
