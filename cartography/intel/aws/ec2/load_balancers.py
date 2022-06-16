@@ -199,7 +199,16 @@ def sync_load_balancers(
         data.extend(get_loadbalancer_data(boto3_session, region))
 
     if common_job_parameters.get('pagination', {}).get('ec2:load_balancer', None):
-        page_start = (common_job_parameters.get('pagination', {}).get('ec2:load_balancer', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('ec2:load_balancer', {})['pageSize']
+        pageNo = common_job_parameters.get("pagination", {}).get("ec2:load_balancer", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("ec2:load_balancer", None)["pageSize"]
+        totalPages = len(data) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for ec2:load_balancer {pageNo}/{totalPages} pageSize is {pageSize}')
+        page_start = (common_job_parameters.get('pagination', {}).get('ec2:load_balancer', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('ec2:load_balancer', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('ec2:load_balancer', {})['pageSize']
         if page_end > len(data) or page_end == len(data):
             data = data[page_start:]

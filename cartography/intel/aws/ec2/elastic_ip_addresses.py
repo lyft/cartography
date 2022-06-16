@@ -105,6 +105,14 @@ def sync_elastic_ip_addresses(
         addresses.extend(get_elastic_ip_addresses(boto3_session, region))
 
     if common_job_parameters.get('pagination', {}).get('elastic_ip_addresses', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("elastic_ip_addresses", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("elastic_ip_addresses", None)["pageSize"]
+        totalPages = len(addresses) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for elastic_ip_addresses {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('elastic_ip_addresses', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('elastic_ip_addresses', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('elastic_ip_addresses', {})['pageSize']

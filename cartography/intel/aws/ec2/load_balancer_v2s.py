@@ -236,14 +236,23 @@ def sync_load_balancer_v2s(
     tic = time.perf_counter()
 
     logger.info("Syncing EC2 load balancers v2 for account '%s', at %s.", current_aws_account_id, tic)
-    
+
     data = []
     for region in regions:
         logger.info("Syncing EC2 load balancers v2 for region '%s' in account '%s'.", region, current_aws_account_id)
         data.extend(get_loadbalancer_v2_data(boto3_session, region))
 
     if common_job_parameters.get('pagination', {}).get('ec2:load_balancer_v2', None):
-        page_start = (common_job_parameters.get('pagination', {}).get('ec2:load_balancer_v2', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('ec2:load_balancer_v2', {})['pageSize']
+        pageNo = common_job_parameters.get("pagination", {}).get("ec2:load_balancer_v2", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("ec2:load_balancer_v2", None)["pageSize"]
+        totalPages = len(data) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for ec2:load_balancer_v2 {pageNo}/{totalPages} pageSize is {pageSize}')
+        page_start = (common_job_parameters.get('pagination', {}).get('ec2:load_balancer_v2', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('ec2:load_balancer_v2', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('ec2:load_balancer_v2', {})['pageSize']
         if page_end > len(data) or page_end == len(data):
             data = data[page_start:]

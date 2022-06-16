@@ -6,6 +6,7 @@ from typing import List
 
 import boto3
 import neo4j
+from cloudconsolelink.clouds.aws import AWSLinker
 
 from .util import get_botocore_config
 from botocore.exceptions import ClientError
@@ -14,6 +15,7 @@ from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+aws_console_link = AWSLinker()
 
 
 @timeit
@@ -137,6 +139,7 @@ def load_ec2_vpcs(
     new_vpc.dhcp_options_id = {DhcpOptionsId},
     new_vpc.region = {Region},
     new_vpc.lastupdated = {update_tag},
+    new_vpc.consolelink = {consolelink},
     new_vpc.arn = {Arn}
     WITH new_vpc
     MATCH (awsAccount:AWSAccount{id: {AWS_ACCOUNT_ID}})
@@ -148,6 +151,7 @@ def load_ec2_vpcs(
         region = vpc.get('region', '')
         vpc_id = vpc["VpcId"]  # fail if not present
         vpc_arn = f"arn:aws:ec2:{region}:{current_aws_account_id}:vpc/{vpc_id}"
+        consolelink = aws_console_link.get_console_link(arn=vpc_arn)
 
         neo4j_session.run(
             ingest_vpc,
@@ -158,6 +162,7 @@ def load_ec2_vpcs(
             PrimaryCIDRBlock=vpc.get("CidrBlock", None),
             DhcpOptionsId=vpc.get("DhcpOptionsId", None),
             Region=region,
+            consolelink=consolelink,
             Arn=vpc_arn,
             AWS_ACCOUNT_ID=current_aws_account_id,
             update_tag=update_tag,
@@ -200,6 +205,14 @@ def sync_vpc(
         data.extend(get_ec2_vpcs(boto3_session, region))
 
     if common_job_parameters.get('pagination', {}).get('ec2:vpc', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("ec2:vpc", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("ec2:vpc", None)["pageSize"]
+        totalPages = len(data) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for ec2:vpc {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('ec2:vpc', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('ec2:vpc', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('ec2:vpc', {})['pageSize']

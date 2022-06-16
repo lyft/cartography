@@ -9,12 +9,14 @@ from typing import Tuple
 import boto3
 import botocore
 import neo4j
+from cloudconsolelink.clouds.aws import AWSLinker
 
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+aws_console_link = AWSLinker()
 
 
 @timeit
@@ -29,6 +31,7 @@ def get_lambda_data(boto3_session: boto3.session.Session, region: str) -> List[D
     for page in paginator.paginate():
         for each_function in page['Functions']:
             each_function['region'] = region
+            each_function['consolelink'] = aws_console_link.get_console_link(arn=each_function['FunctionArn'])
             lambda_functions.append(each_function)
     return lambda_functions
 
@@ -46,6 +49,7 @@ def load_lambda_functions(
     lambda.region = lf.region,
     lambda.modifieddate = lf.LastModified,
     lambda.runtime = lf.Runtime,
+    lambda.consolelink = lf.consolelink,
     lambda.description = lf.Description,
     lambda.timeout = lf.Timeout,
     lambda.memory = lf.MemorySize,
@@ -261,7 +265,16 @@ def sync_lambda_functions(
         data.extend(get_lambda_data(boto3_session, region))
 
     if common_job_parameters.get('pagination', {}).get('lambda_function', None):
-        page_start = (common_job_parameters.get('pagination', {}).get('lambda_function', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('lambda_function', {})['pageSize']
+        pageNo = common_job_parameters.get("pagination", {}).get("lambda_function", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("lambda_function", None)["pageSize"]
+        totalPages = len(data) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for lambda_function {pageNo}/{totalPages} pageSize is {pageSize}')
+        page_start = (common_job_parameters.get('pagination', {}).get('lambda_function', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('lambda_function', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('lambda_function', {})['pageSize']
         if page_end > len(data) or page_end == len(data):
             data = data[page_start:]
@@ -285,7 +298,7 @@ def sync(
     tic = time.perf_counter()
 
     logger.info("Syncing Lambda for account '%s', at %s.", current_aws_account_id, tic)
-    
+
     sync_lambda_functions(
         neo4j_session, boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters,
     )

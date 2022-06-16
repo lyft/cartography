@@ -16,6 +16,7 @@ import neo4j
 from botocore.exceptions import ClientError
 from botocore.exceptions import EndpointConnectionError
 from policyuniverse.policy import Policy
+from cloudconsolelink.clouds.aws import AWSLinker
 
 from cartography.util import merge_module_sync_metadata
 from cartography.util import run_analysis_job
@@ -23,6 +24,7 @@ from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+aws_console_link = AWSLinker()
 
 
 @timeit
@@ -45,6 +47,14 @@ def get_s3_bucket_list(boto3_session: boto3.session.Session, common_job_paramete
                 else:
                     raise
         if common_job_parameters.get('pagination', {}).get('s3', None):
+            pageNo = common_job_parameters.get("pagination", {}).get("s3", None)["pageNo"]
+            pageSize = common_job_parameters.get("pagination", {}).get("s3", None)["pageSize"]
+            totalPages = len(buckets['Buckets']) / pageSize
+            if int(totalPages) != totalPages:
+                totalPages = totalPages + 1
+            totalPages = int(totalPages)
+            if pageNo < totalPages or pageNo == totalPages:
+                logger.info(f'pages process for s3 {pageNo}/{totalPages} pageSize is {pageSize}')
             page_start = (common_job_parameters.get('pagination', {}).get('s3', {})[
                           'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('s3', {})['pageSize']
             page_end = page_start + common_job_parameters.get('pagination', {}).get('s3', {})['pageSize']
@@ -632,6 +642,7 @@ def load_s3_buckets(neo4j_session: neo4j.Session, data: Dict, current_aws_accoun
     MERGE (bucket:S3Bucket{id:{BucketName}})
     ON CREATE SET bucket.firstseen = timestamp(), bucket.creationdate = {CreationDate}
     SET bucket.name = {BucketName}, bucket.region = {BucketRegion}, bucket.arn = {Arn},
+    bucket.consolelink = {consolelink},
     bucket.lastupdated = {aws_update_tag}
     WITH bucket
     MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
@@ -646,11 +657,13 @@ def load_s3_buckets(neo4j_session: neo4j.Session, data: Dict, current_aws_accoun
 
     for bucket in data.get("Buckets", []):
         arn = "arn:aws:s3:::" + bucket["Name"]
+        consolelink = aws_console_link.get_console_link(arn=arn)
         neo4j_session.run(
             ingest_bucket,
             BucketName=bucket["Name"],
             BucketRegion=bucket["Region"],
             Arn=arn,
+            consolelink=consolelink,
             CreationDate=str(bucket["CreationDate"]),
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag,
@@ -683,8 +696,6 @@ def sync(
 
     logger.info("Syncing S3 for account '%s', at %s.", current_aws_account_id, tic)
     bucket_data = get_s3_bucket_list(boto3_session, common_job_parameters)
-
-    bucket_data = get_s3_bucket_list(boto3_session)
 
     load_s3_buckets(neo4j_session, bucket_data, current_aws_account_id, update_tag)
     cleanup_s3_buckets(neo4j_session, common_job_parameters)

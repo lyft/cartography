@@ -118,6 +118,14 @@ def sync(
         clusters.extend(get_elasticache_clusters(boto3_session, region))
 
     if common_job_parameters.get('pagination', {}).get('elasticache', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("elasticache", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("elasticache", None)["pageSize"]
+        totalPages = len(clusters) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for elasticache clusters {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('elasticache', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('elasticache', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('elasticache', {})['pageSize']

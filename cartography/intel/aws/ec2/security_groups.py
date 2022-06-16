@@ -6,6 +6,7 @@ from typing import List
 
 import boto3
 import neo4j
+from cloudconsolelink.clouds.aws import AWSLinker
 
 from .util import get_botocore_config
 from botocore.exceptions import ClientError
@@ -14,6 +15,7 @@ from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+aws_console_link = AWSLinker()
 
 
 @timeit
@@ -28,7 +30,7 @@ def get_ec2_security_group_data(boto3_session: boto3.session.Session, region: st
             security_groups.extend(page['SecurityGroups'])
         for group in security_groups:
             group['region'] = region
-    
+
     except ClientError as e:
         if e.response['Error']['Code'] == 'AccessDeniedException' or e.response['Error']['Code'] == 'UnauthorizedOperation':
             logger.warning(
@@ -124,7 +126,9 @@ def load_ec2_security_groupinfo(
     ingest_security_group = """
     MERGE (group:EC2SecurityGroup{id: {GroupId}})
     ON CREATE SET group.firstseen = timestamp(), group.groupid = {GroupId}
-    SET group.name = {GroupName}, group.description = {Description}, group.region = {Region},
+    SET group.name = {GroupName}, group.description = {Description},
+    group.consolelink = {consolelink},
+    group.region = {Region},
     group.lastupdated = {update_tag}, group.arn = {GroupArn}
     WITH group
     MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
@@ -141,11 +145,13 @@ def load_ec2_security_groupinfo(
         region = group.get('region', '')
         group_id = group["GroupId"]
         group_arn = f"arn:aws:ec2:{region}:{current_aws_account_id}:security-group/{group_id}"
+        consolelink = aws_console_link.get_console_link(arn=group_arn)
 
         neo4j_session.run(
             ingest_security_group,
             GroupId=group_id,
             GroupArn=group_arn,
+            consolelink=consolelink,
             GroupName=group.get("GroupName"),
             Description=group.get("Description"),
             VpcId=group.get("VpcId", None),
@@ -182,7 +188,16 @@ def sync_ec2_security_groupinfo(
         data.extend(get_ec2_security_group_data(boto3_session, region))
 
     if common_job_parameters.get('pagination', {}).get('ec2:security_group', None):
-        page_start = (common_job_parameters.get('pagination', {}).get('ec2:security_group', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('ec2:security_group', {})['pageSize']
+        pageNo = common_job_parameters.get("pagination", {}).get("ec2:security_group", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("ec2:security_group", None)["pageSize"]
+        totalPages = len(data) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for ec2:security_group {pageNo}/{totalPages} pageSize is {pageSize}')
+        page_start = (common_job_parameters.get('pagination', {}).get('ec2:security_group', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('ec2:security_group', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('ec2:security_group', {})['pageSize']
         if page_end > len(data) or page_end == len(data):
             data = data[page_start:]

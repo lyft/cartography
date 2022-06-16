@@ -415,6 +415,14 @@ def sync_rds_clusters(
         data.extend(get_rds_cluster_data(boto3_session, region))
 
     if common_job_parameters.get('pagination', {}).get('rds', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("rds", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("rds", None)["pageSize"]
+        totalPages = len(data) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for rds cluster {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('rds', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('rds', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('rds', {})['pageSize']
@@ -443,6 +451,14 @@ def sync_rds_instances(
         data.extend(get_rds_instance_data(boto3_session, region))
 
     if common_job_parameters.get('pagination', {}).get('rds', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("rds", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("rds", None)["pageSize"]
+        totalPages = len(data) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for rds instance {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('rds', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('rds', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('rds', {})['pageSize']

@@ -33,7 +33,8 @@ def _make_redshift_cluster_arn(region: str, aws_account_id: str, cluster_identif
 
 def transform_redshift_cluster_data(clusters: List[Dict], current_aws_account_id: str) -> None:
     for cluster in clusters:
-        cluster['arn'] = _make_redshift_cluster_arn(cluster['region'], current_aws_account_id, cluster["ClusterIdentifier"])
+        cluster['arn'] = _make_redshift_cluster_arn(
+            cluster['region'], current_aws_account_id, cluster["ClusterIdentifier"])
         cluster['ClusterCreateTime'] = str(cluster['ClusterCreateTime']) if 'ClusterCreateTime' in cluster else None
 
 
@@ -164,7 +165,16 @@ def sync_redshift_clusters(
         data.extend(get_redshift_cluster_data(boto3_session, region))
 
     if common_job_parameters.get('pagination', {}).get('redshift', None):
-        page_start = (common_job_parameters.get('pagination', {}).get('redshift', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('redshift', {})['pageSize']
+        pageNo = common_job_parameters.get("pagination", {}).get("redshift", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("redshift", None)["pageSize"]
+        totalPages = len(data) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for redshift cluster {pageNo}/{totalPages} pageSize is {pageSize}')
+        page_start = (common_job_parameters.get('pagination', {}).get('redshift', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('redshift', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('redshift', {})['pageSize']
         if page_end > len(data) or page_end == len(data):
             data = data[page_start:]
@@ -185,7 +195,8 @@ def sync(
     tic = time.perf_counter()
 
     logger.info("Syncing Redshift clusters for account '%s', at %s.", current_aws_account_id, tic)
-    sync_redshift_clusters(neo4j_session, boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters)
+    sync_redshift_clusters(neo4j_session, boto3_session, regions,
+                           current_aws_account_id, update_tag, common_job_parameters)
     cleanup(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()

@@ -9,8 +9,10 @@ import time
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
+from cloudconsolelink.clouds.aws import AWSLinker
 
 logger = logging.getLogger(__name__)
+aws_console_link = AWSLinker()
 
 
 @timeit
@@ -24,6 +26,14 @@ def get_dynamodb_tables(boto3_session: boto3.session.Session, region: str, commo
             dynamodb_tables.append(client.describe_table(TableName=table_name))
 
     if common_job_parameters.get('pagination', {}).get('dynamodb', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("dynamodb", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("dynamodb", None)["pageSize"]
+        totalPages = len(dynamodb_tables) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for dynamodb tables {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('dynamodb', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('dynamodb', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('dynamodb', {})['pageSize']
@@ -45,6 +55,7 @@ def load_dynamodb_tables(
     ingest_table = """
     MERGE (table:DynamoDBTable{id: {Arn}})
     ON CREATE SET table.firstseen = timestamp(), table.arn = {Arn}, table.name = {TableName},
+    table.consolelink = {consolelink},
     table.region = {Region}
     SET table.lastupdated = {aws_update_tag}, table.rows = {Rows}, table.size = {Size},
     table.provisioned_throughput_read_capacity_units = {ProvisionedThroughputReadCapacityUnits},
@@ -60,6 +71,7 @@ def load_dynamodb_tables(
         neo4j_session.run(
             ingest_table,
             Arn=table['Table']['TableArn'],
+            consolelink=aws_console_link.get_console_link(arn=table['Table']['TableArn']),
             Region=region,
             ProvisionedThroughputReadCapacityUnits=table['Table']['ProvisionedThroughput']['ReadCapacityUnits'],
             ProvisionedThroughputWriteCapacityUnits=table['Table']['ProvisionedThroughput']['WriteCapacityUnits'],

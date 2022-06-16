@@ -545,6 +545,14 @@ def sync(
         cluster_arns.extend(get_ecs_clusters(boto3_session, region))
 
     if common_job_parameters.get('pagination', {}).get('ecs', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("ecs", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("ecs", None)["pageSize"]
+        totalPages = len(cluster_arns) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for ecs cluster_arns {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('ecs', {})[
                       'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('ecs', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('ecs', {})['pageSize']

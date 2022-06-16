@@ -405,7 +405,16 @@ def sync_apigateway_rest_apis(
         data.extend(get_apigateway_rest_apis(boto3_session, region))
 
     if common_job_parameters.get('pagination', {}).get('apigateway', None):
-        page_start = (common_job_parameters.get('pagination', {}).get('apigateway', {})['pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('apigateway', {})['pageSize']
+        pageNo = common_job_parameters.get("pagination", {}).get("apigateway", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("apigateway", None)["pageSize"]
+        totalPages = len(data) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for apigateway apis {pageNo}/{totalPages} pageSize is {pageSize}')
+        page_start = (common_job_parameters.get('pagination', {}).get('apigateway', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('apigateway', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('apigateway', {})['pageSize']
         if page_end > len(data) or page_end == len(data):
             data = data[page_start:]
