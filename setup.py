@@ -1,7 +1,7 @@
 from setuptools import find_packages
 from setuptools import setup
 
-__version__ = '0.62.0neo4j4xrc1'
+__version__ = '0.62.0.dev1'
 
 
 setup(
