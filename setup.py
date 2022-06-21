@@ -1,7 +1,7 @@
 from setuptools import find_packages
 from setuptools import setup
 
-__version__ = '0.62.0-neo4j-4x-rc1'
+__version__ = '0.62.0-neo4j4x.rc1'
 
 
 setup(
