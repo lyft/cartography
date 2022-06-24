@@ -1,5 +1,6 @@
 # Google Compute Engine API-centric functions
 # https://cloud.google.com/compute/docs/concepts
+import math
 import json
 import logging
 from collections import namedtuple
@@ -563,9 +564,41 @@ def _parse_port_string_to_rule(port: Optional[str], protocol: str, fw_partial_ur
         'protocol': protocol,
     }
 
+@timeit
+def load_gcp_instances(session: neo4j.Session, instances_list: List[Dict], gcp_update_tag: int) -> None:
+    iteration_size = 100
+    total_items = len(instances_list)
+    total_iterations = math.ceil(len(instances_list) / iteration_size)
+    logger.info(f"total instances: {total_items}")
+    logger.info(f"total iterations: {total_iterations}")
+
+    for counter in range(0, total_iterations):
+        start = iteration_size * (counter)
+        
+        if (start + iteration_size) >= total_items:
+            end = total_items
+            paginated_instances = instances_list[start:]
+        
+        else:
+            end = start + iteration_size
+            paginated_instances = instances_list[start:end]
+
+        logger.info(f"Start - Iteration {counter + 1} of {total_iterations}. {start} - {end} - {len(paginated_instances)}")
+    
+        session.write_transaction(load_gcp_instances_tx, paginated_instances, gcp_update_tag)
+        
+        logger.info(f"End - Iteration {counter + 1} of {total_iterations}. {start} - {end} - {len(paginated_instances)}")
+
+    # for instance in instances_list:
+    #     _attach_instance_tags(session, instance, gcp_update_tag)
+    #     _attach_gcp_nics(session, instance, gcp_update_tag)
+    #     _attach_gcp_vpc(session, instance['partial_uri'], gcp_update_tag)
+    #     _attach_instance_service_account(session, instance, gcp_update_tag)
+
+
 
 @timeit
-def load_gcp_instances(neo4j_session: neo4j.Session, data: List[Dict], gcp_update_tag: int) -> None:
+def load_gcp_instances_tx(tx: neo4j.Transaction, instances: Dict, gcp_update_tag: int) -> None:
     """
     Ingest GCP instance objects to Neo4j
     :param neo4j_session: The Neo4j session object
@@ -574,25 +607,26 @@ def load_gcp_instances(neo4j_session: neo4j.Session, data: List[Dict], gcp_updat
     :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
     :return: Nothing
     """
-    query = """
-    MERGE (p:GCPProject{id:{ProjectId}})
+    ingest_instances = """
+    UNWIND {instances} as instance
+    MERGE (p:GCPProject{id:instance.project_id})
     ON CREATE SET p.firstseen = timestamp()
     SET p.lastupdated = {gcp_update_tag}
 
-    MERGE (i:Instance:GCPInstance{id:{PartialUri}})
+    MERGE (i:Instance:GCPInstance{id:instance.partial_uri})
     ON CREATE SET i.firstseen = timestamp(),
-    i.partial_uri = {PartialUri}
-    SET i.self_link = {SelfLink},
-    i.instancename = {InstanceName},
-    i.hostname = {Hostname},
-    i.region = {region},
-    i.zone_name = {ZoneName},
-    i.project_id = {ProjectId},
-    i.nat_ip = {natIP},
-    i.ipv6_nat_ip = {ipv6natIP},
-    i.accessConfig = {AccessConfig},
-    i.status = {Status},
-    i.consolelink = {consolelink},
+    i.partial_uri = instance.partial_uri
+    SET i.self_link = instance.selfLink,
+    i.instancename = instance.name,
+    i.hostname = instance.hostname,
+    i.region = instance.region,
+    i.zone_name = instance.zone_name,
+    i.project_id = instance.project_id,
+    i.nat_ip = instance.natIP,
+    i.ipv6_nat_ip = instance.ipv6natIP,
+    i.accessConfig = instance.accessConfig,
+    i.status = instance.status,
+    i.consolelink = instance.consolelink,
     i.lastupdated = {gcp_update_tag}
     WITH i, p
 
@@ -600,27 +634,12 @@ def load_gcp_instances(neo4j_session: neo4j.Session, data: List[Dict], gcp_updat
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {gcp_update_tag}
     """
-    for instance in data:
-        neo4j_session.run(
-            query,
-            ProjectId=instance['project_id'],
-            PartialUri=instance['partial_uri'],
-            SelfLink=instance['selfLink'],
-            InstanceName=instance['name'],
-            AccessConfig=instance['accessConfig'],
-            ZoneName=instance['zone_name'],
-            Hostname=instance.get('hostname', None),
-            natIP=instance.get('natIP', None),
-            ipv6natIP=instance.get('ipv6natIP', None),
-            Status=instance['status'],
-            region=instance['region'],
-            consolelink=instance['consolelink'],
-            gcp_update_tag=gcp_update_tag,
-        )
-        _attach_instance_tags(neo4j_session, instance, gcp_update_tag)
-        _attach_gcp_nics(neo4j_session, instance, gcp_update_tag)
-        _attach_gcp_vpc(neo4j_session, instance['partial_uri'], gcp_update_tag)
-        _attach_instance_service_account(neo4j_session, instance, gcp_update_tag)
+
+    tx.run(
+        ingest_instances,
+        instances=instances,
+        gcp_update_tag=gcp_update_tag,
+    )
 
 
 @timeit
@@ -1258,6 +1277,7 @@ def sync_gcp_instances(
     :param common_job_parameters: dict of other job parameters to pass to Neo4j
     :return: Nothing
     """
+
     instance_responses = get_gcp_instances(project_id, zones, compute)
 
     if common_job_parameters.get('pagination', {}).get('compute', None):

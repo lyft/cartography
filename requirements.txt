@@ -20,3 +20,4 @@ google-cloud-storage>=1.36.0
 click<8.0,>=7.0
 pyparsing==2.4.7
 markupsafe==2.0.1
+cloudconsolelink~=1.0.2

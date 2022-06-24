@@ -56,12 +56,19 @@ def cartography_worker(event, ctx):
 
 
 def process_request(logger, params):
-    logger.info(f'{params["templateType"]} request received - {params["eventId"]}')
-    logger.info(f'workspace - {params["workspace"]}')
+    logger.info(f'request - {params.get("templateType")} - {params.get("eventId")} - {params.get("workspace")}')
+    
+    svcs = []
+    for svc in params.get('services',[]):
+        page = svc.get('pagination',{}).get('pageSize')
+        if page:
+            svc['pagination']['pageSize'] = 10000
+        
+        svcs.append(svc)
 
     body = {
         "credentials": {
-            'account_email': params['accountEmail'],
+            'account_email': params.get('accountEmail'),
             'token_uri': os.environ['CLOUDANIX_TOKEN_URI'],
         },
         "neo4j": {
@@ -74,13 +81,16 @@ def process_request(logger, params):
             "mode": "verbose",
         },
         "params": {
-            "sessionString": params['sessionString'],
-            "eventId": params['eventId'],
-            "templateType": params['templateType'],
-            "workspace": params['workspace'],
-            "actions": params['actions'],
+            "sessionString": params.get('sessionString'),
+            "eventId": params.get('eventId'),
+            "templateType": params.get('templateType'),
+            "workspace": params.get('workspace'),
+            "actions": params.get('actions'),
             "resultTopic": params.get('resultTopic'),
+            "requestTopic": params.get('requestTopic'),
         },
+        "services": svcs,
+        "updateTag": params.get('updateTag'),
     }
 
     resp = cartography.cli.run_gcp(body)
@@ -109,25 +119,29 @@ def process_request(logger, params):
 
     publish_response(logger, body, resp)
 
-    logger.info(f'inventory sync gcp response - {params["eventId"]}: {json.dumps(resp)}')
+    logger.info(f'inventory sync gcp response - {params.get("eventId")}: {json.dumps(resp)}')
 
 
 def publish_response(logger, req, resp):
     body = {
         "status": resp['status'],
         "params": req['params'],
+        "accountEmail": req['credentials']['account_email'],
         "sessionString": req['params']['sessionString'],
         "eventId": req['params']['eventId'],
         "templateType": req['params']['templateType'],
         "workspace": req['params']['workspace'],
         "actions": req['params']['actions'],
+        "resultTopic": req['params'].get('resultTopic'),
+        "requestTopic": req['params'].get('requestTopic'),
         "response": resp,
         "services": resp.get("services", None),
-        "updatetag": resp.get("updatetag", None),
+        "updateTag": resp.get("updateTag", None),
     }
 
     pubsub_helper = PubSubLibrary()
 
+    status = None
     try:
         if body.get('services', None):
             if 'requestTopic' in req['params']:
@@ -146,6 +160,7 @@ def publish_response(logger, req, resp):
             status = True
 
         else:
+            logger.info('publishing results to CARTOGRAPHY_RESULT_TOPIC')
             status = pubsub_helper.publish(
                 os.environ['CLOUDANIX_PROJECT_ID'], json.dumps(body), os.environ['CARTOGRAPHY_RESULT_TOPIC'],
             )

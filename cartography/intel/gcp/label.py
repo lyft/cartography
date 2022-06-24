@@ -10,10 +10,6 @@ from cartography.util import timeit
 logger = logging.getLogger(__name__)
 
 
-def load_labels(session: neo4j.Session, data_list: List[Dict], update_tag: int, common_job_parameters: Dict, service_label: str,) -> None:
-    session.write_transaction(_load_labels_tx, data_list, update_tag, common_job_parameters, service_label)
-
-
 @timeit
 def get_labels_list(data: List[Dict]) -> List[Dict]:
     labels_data = []
@@ -33,46 +29,54 @@ def get_labels_list(data: List[Dict]) -> List[Dict]:
 
     return labels_data
 
-
-def _load_labels_tx(tx: neo4j.Transaction, data: List[Dict], update_tag: int, common_job_parameters: Dict, service_label: str) -> None:
-    iteration_size = 500
-    total_items = len(data)
-    total_iterations = math.ceil(len(data) / iteration_size)
+def load_labels(session: neo4j.Session, data_list: List[Dict], update_tag: int, common_job_parameters: Dict, service_label: str) -> None:
+    iteration_size = 100
+    total_items = len(data_list)
+    total_iterations = math.ceil(len(data_list) / iteration_size)
     logger.info(f"total labels: {total_items}")
     logger.info(f"total iterations: {total_iterations}")
 
     for counter in range(0, total_iterations):
         start = iteration_size * (counter)
-        end = total_items if (start + iteration_size) >= total_items else start + iteration_size
+        
+        if start + iteration_size >= total_items:
+            end = total_items
+            labels = data_list[start:]
 
-        labels = data[start:end]
+        else:
+            end = start + iteration_size
+            labels = data_list[start:end]
 
-        logger.info(f"Start - Iteration {counter} of {total_iterations}. {start} - {end} - {len(labels)}")
+        logger.info(f"Start - Iteration {counter + 1} of {total_iterations}. {start} - {end} - {len(labels)}")
 
-        ingest_label = """
-        UNWIND {data} AS label
-        MERGE (l:GCPLabel{id: label.id})
-        ON CREATE SET l.firstseen = timestamp()
-        SET l.lastupdated = {update_tag},
-        l.value = label.value,
-        l.name = label.name
-        WITH l,label
-        MATCH (r:""" + service_label + """{id:label.resource_id})
-        <-[:RESOURCE]-(:GCPProject{id: {GCP_PROJECT_ID}})<-[:OWNER]-(:CloudanixWorkspace{id: {WORKSPACE_ID}})
-        MERGE (r)-[lb:LABELED]->(l)
-        ON CREATE SET lb.firstseen = timestamp()
-        SET lb.lastupdated = {update_tag}
-        """
+        session.write_transaction(_load_labels_tx, labels, update_tag, common_job_parameters, service_label)
+        
+        logger.info(f"End - Iteration {counter + 1} of {total_iterations}. {start} - {end} - {len(labels)}")
 
-        tx.run(
-            ingest_label,
-            data=labels,
-            update_tag=update_tag,
-            GCP_PROJECT_ID=common_job_parameters['GCP_PROJECT_ID'],
-            WORKSPACE_ID=common_job_parameters['WORKSPACE_ID'],
-        )
 
-        logger.info(f"End - Iteration {counter} of {total_iterations}. {start} - {end} - {len(labels)}")
+def _load_labels_tx(tx: neo4j.Transaction, labels: List[Dict], update_tag: int, common_job_parameters: Dict, service_label: str) -> None:
+    ingest_label = """
+    UNWIND {data} AS label
+    MERGE (l:GCPLabel{id: label.id})
+    ON CREATE SET l.firstseen = timestamp()
+    SET l.lastupdated = {update_tag},
+    l.value = label.value,
+    l.name = label.name
+    WITH l,label
+    MATCH (r:""" + service_label + """{id:label.resource_id})
+    <-[:RESOURCE]-(:GCPProject{id: {GCP_PROJECT_ID}})<-[:OWNER]-(:CloudanixWorkspace{id: {WORKSPACE_ID}})
+    MERGE (r)-[lb:LABELED]->(l)
+    ON CREATE SET lb.firstseen = timestamp()
+    SET lb.lastupdated = {update_tag}
+    """
+
+    tx.run(
+        ingest_label,
+        data=labels,
+        update_tag=update_tag,
+        GCP_PROJECT_ID=common_job_parameters['GCP_PROJECT_ID'],
+        WORKSPACE_ID=common_job_parameters['WORKSPACE_ID'],
+    )
 
 
 def cleanup_labels(neo4j_session: neo4j.Session, common_job_parameters: Dict, service_name: str) -> None:

@@ -352,9 +352,12 @@ def _sync_single_project(
 
         for future in as_completed(futures):
             logger.info(f'Result from Future - Service Processing: {future.result()}')
+
     for service_name in common_job_parameters['service_labels']:
         common_job_parameters['service_label'] = service_name
+
         label.cleanup_labels(neo4j_session, common_job_parameters, service_name)
+
         del common_job_parameters['service_label']
 
 
@@ -399,13 +402,14 @@ def start_gcp_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
     :param config: A `cartography.config` object
     :return: Nothing
     """
-    common_job_parameters = {
+    common_job_parameters: Dict = {
         "UPDATE_TAG": config.update_tag,
         "WORKSPACE_ID": config.params['workspace']['id_string'],
         "GCP_PROJECT_ID": config.params['workspace']['account_id'],
         "service_labels": [],
         "pagination": {},
     }
+    
     try:
         # Explicitly use Application Default Credentials.
         # See https://oauth2client.readthedocs.io/en/latest/source/

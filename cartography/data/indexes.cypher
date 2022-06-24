@@ -91,6 +91,7 @@ CREATE INDEX ON :GCPRecordSet(id);
 CREATE INDEX ON :GCPFolder(id);
 CREATE INDEX ON :GCPForwardingRule(id);
 CREATE INDEX ON :GCPInstance(id);
+CREATE INDEX ON :GCPLabel(id);
 CREATE INDEX ON :GCPNetworkInterface(id);
 CREATE INDEX ON :GCPNetworkTag(id);
 CREATE INDEX ON :GCPNicAccessConfig(id);
