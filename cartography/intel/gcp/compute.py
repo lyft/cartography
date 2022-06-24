@@ -596,7 +596,6 @@ def load_gcp_instances(session: neo4j.Session, instances_list: List[Dict], gcp_u
     #     _attach_instance_service_account(session, instance, gcp_update_tag)
 
 
-
 @timeit
 def load_gcp_instances_tx(tx: neo4j.Transaction, instances: Dict, gcp_update_tag: int) -> None:
     """

@@ -1,3 +1,5 @@
+# Used by AWS Lambda
+
 import base64
 import json
 import logging
@@ -15,7 +17,7 @@ def load_cartography(event, ctx):
     context = AppContext(
         region=os.environ['CLOUDANIX_DEFAULT_REGION'],
         log_level=os.environ['CLOUDANIX_DEFAULT_LOG_LEVEL'],
-        app_env=os.environ['CLOUDANIX_APP_ENV'],
+        app_env=os.environ['CDX_APP_ENV'],
     )
     context.logger = get_logger(context.log_level)
 
