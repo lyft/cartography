@@ -128,6 +128,7 @@ def get_storage_account_details(
         table_services = get_table_services(credentials, subscription_id, storage_account)
         file_services = get_file_services(credentials, subscription_id, storage_account)
         blob_services = get_blob_services(credentials, subscription_id, storage_account)
+        
         yield storage_account['id'], storage_account['name'], storage_account[
             'resourceGroup'
         ], queue_services, table_services, file_services, blob_services
