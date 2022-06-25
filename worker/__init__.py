@@ -1,3 +1,4 @@
+from typing import Dict
 import datetime
 import json
 import logging
@@ -10,16 +11,24 @@ import cartography.cli
 from libraries.eventgridlibrary import EventGridLibrary
 
 
-def process_request(msg):
+def process_request(msg: Dict):
     logging.info(f'{msg["templateType"]} request received - {msg["eventId"]} - {msg["workspace"]}')
+    
+    svcs = []
+    for svc in msg.get('services',[]):
+        page = svc.get('pagination',{}).get('pageSize')
+        if page:
+            svc['pagination']['pageSize'] = 10000
+        
+        svcs.append(svc)
 
     body = {
         "azure": {
             "client_id": os.environ.get('client_id'),
             "client_secret": os.environ.get('client_secret'),
             "redirect_uri": os.environ.get('redirect_uri'),
-            "subscription_id": msg['workspace']['account_id'],
-            "refresh_token": msg['refreshToken'],
+            "subscription_id": msg.get('workspace',{}).get('account_id'),
+            "refresh_token": msg.get('refreshToken'),
             "graph_scope": os.environ.get('graph_scope'),
             "azure_scope": os.environ.get('azure_scope'),
         },
@@ -27,16 +36,23 @@ def process_request(msg):
             "uri": os.environ.get('neo4juri'),
             "user": os.environ.get('neo4juser'),
             "pwd": os.environ.get('neo4jpwd'),
+            "connection_lifetime": 3600,
         },
         "logging": {
             "mode": "verbose",
         },
         "params": {
-            "sessionString": msg['sessionString'],
-            "eventId": msg['eventId'],
-            "templateType": msg['templateType'],
-            "workspace": msg['workspace'],
+            "sessionString": msg.get('sessionString'),
+            "eventId": msg.get('eventId'),
+            "templateType": msg.get('templateType'),
+            "workspace": msg.get('workspace'),
+            "subscriptions": msg.get('subscriptions'),
+            "actions": msg.get('actions'),
+            "resultTopic": msg.get('resultTopic'),
+            "requestTopic": msg.get('requestTopic'),
         },
+        "services": svcs,
+        "updateTag": msg.get('updateTag'),
     }
 
     resp = cartography.cli.run_azure(body)
@@ -58,6 +74,9 @@ def process_request(msg):
             else:
                 del resp['updateTag']
             del resp['pagination']
+
+        logging.info(f'successfully processed cartography: {resp}')
+
     return resp
 
 
@@ -79,16 +98,15 @@ def main(event: func.EventGridEvent, outputEvent: func.Out[func.EventGridOutputE
 
         message = {
             "status": resp['status'],
-            "params": {
-                "sessionString": msg['sessionString'],
-                "eventId": msg['eventId'],
-                "templateType": msg['templateType'],
-                "subscriptions": msg['subscriptions'],
-                "workspace": msg['workspace'],
-                "actions": msg['actions'],
-                "resultTopic": msg['resultTopic'],
-                "requestTopic": msg.get("requestTopic", None),
-            },
+            "params": msg['params'],
+            "sessionString": msg.get('sessionString'),
+            "eventId": msg.get('eventId'),
+            "templateType": msg.get('templateType'),
+            "workspace": msg.get('workspace'),
+            "subscriptions": msg.get('subscriptions'),
+            "actions": msg.get('actions'),
+            "resultTopic": msg.get('resultTopic'),
+            "requestTopic": msg.get('requestTopic'),
             "response": resp,
             "services": resp.get("services", None),
             "updateTag": resp.get("updateTag", None),
@@ -96,28 +114,26 @@ def main(event: func.EventGridEvent, outputEvent: func.Out[func.EventGridOutputE
 
         if message.get('services', None):
             if 'requestTopic' in message['params']:
-                logging.info(f'inventoryRefresh - {msg["inventoryRefresh"]}')
+                # Result should be pushed to "requestTopic" passed in the request
+
                 # Push message to Cartography Queue, if refresh is needed
-                # Post processing, result should be pushed to Inventory Views Request Topic
-                # without 'inventoryRefresh' field
-                topic = message['requestTopic']
-                access_key = msg['requestTopicAccessKey']
+                topic = os.environ.get('requestTopic')
+                access_key = os.environ.get('requestTopicAccessKey')
 
                 lib = EventGridLibrary(topic, access_key)
                 resp = lib.publish_event(message)
 
-            logging.info('Result not published anywhere. since we want to avoid query when inventory is refreshed')
-
-            logging.info(f'inventoryRefresh completed: {resp}')
-
         elif 'resultTopic' in message['params']:
-            topic = message['resultTopic']
-            access_key = msg['resultTopicAccessKey']
+            # topic = message['resultTopic']
+            # access_key = msg['resultTopicAccessKey']
 
-            lib = EventGridLibrary(topic, access_key)
-            resp = lib.publish_event(message)
+            # lib = EventGridLibrary(topic, access_key)
+            # resp = lib.publish_event(message)
+
+            logging.info(f'Result not published anywhere. since we want to avoid query when inventory is refreshed')
 
         else:
+            logging.info('publishing results to CARTOGRAPHY_RESULT_TOPIC')
             outputEvent.set(
                 func.EventGridOutputEvent(
                     id=str(uuid.uuid4()),
