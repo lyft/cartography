@@ -1,3 +1,4 @@
+import math
 import logging
 from typing import Dict
 from typing import List
@@ -24,7 +25,28 @@ def load_resource_groups(session: neo4j.Session, subscription_id: str, data_list
 
 
 def load_tags(session: neo4j.Session, data_list: List[Dict], update_tag: int) -> None:
-    session.write_transaction(_load_tags_tx, data_list, update_tag)
+    iteration_size = 100
+    total_items = len(data_list)
+    total_iterations = math.ceil(len(data_list) / iteration_size)
+    logger.info(f"total instances: {total_items}")
+    logger.info(f"total iterations: {total_iterations}")
+
+    for counter in range(0, total_iterations):
+        start = iteration_size * (counter)
+        
+        if (start + iteration_size) >= total_items:
+            end = total_items
+            paginated_tags = data_list[start:]
+        
+        else:
+            end = start + iteration_size
+            paginated_tags = data_list[start:end]
+
+        logger.info(f"Start - Iteration {counter + 1} of {total_iterations}. {start} - {end} - {len(paginated_tags)}")
+    
+        session.write_transaction(_load_tags_tx, paginated_tags, update_tag)
+        
+        logger.info(f"End - Iteration {counter + 1} of {total_iterations}. {start} - {end} - {len(paginated_tags)}")
 
 
 @timeit
@@ -81,8 +103,7 @@ def cleanup_resource_groups(neo4j_session: neo4j.Session, common_job_parameters:
     run_cleanup_job('azure_import_resource_groups_cleanup.json', neo4j_session, common_job_parameters)
 
 
-def concurrent_execution(config: Config, client: ResourceManagementClient, resource_group: Dict, update_tag: int
-                         ):
+def concurrent_execution(config: Config, client: ResourceManagementClient, resource_group: Dict, update_tag: int):
     logger.info(f"BEGIN processing for resource group: {resource_group['name']}")
 
     neo4j_auth = (config.neo4j_user, config.neo4j_password)
