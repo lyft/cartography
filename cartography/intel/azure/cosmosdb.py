@@ -56,7 +56,7 @@ def get_database_account_list(credentials: Credentials, subscription_id: str, re
         database_account['publicNetworkAccess'] = database_account.get(
             'properties', {}).get('public_network_access', 'Disabled')
         database_account['consolelink'] = azure_console_link.get_console_link(
-            id=database_account['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
+            id=database_account['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
         if regions is None:
             account_list.append(database_account)
         else:

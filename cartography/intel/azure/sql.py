@@ -57,7 +57,7 @@ def get_server_list(credentials: Credentials, subscription_id: str, regions: lis
         server['resourceGroup'] = x[x.index('resourceGroups') + 1]
         server['publicNetworkAccess'] = server.get('properties', {}).get('public_network_access', 'Disabled')
         server['consolelink'] = azure_console_link.get_console_link(
-            id=server['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
+            id=server['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
         if regions is None:
             server_data.append(server)
         else:
@@ -348,7 +348,7 @@ def load_server_details(
                 alias['server_name'] = name
                 alias['server_id'] = server_id
                 alias['consolelink'] = azure_console_link.get_console_link(
-                    id=alias['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
+                    id=alias['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
                 dns_aliases.append(alias)
 
         if len(ad_admin) > 0:
@@ -356,7 +356,7 @@ def load_server_details(
                 admin['server_name'] = name
                 admin['server_id'] = server_id
                 admin['consolelink'] = azure_console_link.get_console_link(
-                    id=admin['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
+                    id=admin['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
                 ad_admins.append(admin)
 
         if len(r_database) > 0:
@@ -364,7 +364,7 @@ def load_server_details(
                 rdb['server_name'] = name
                 rdb['server_id'] = server_id
                 rdb['consolelink'] = azure_console_link.get_console_link(
-                    id=rdb['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
+                    id=rdb['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
                 recoverable_databases.append(rdb)
 
         if len(rd_database) > 0:
@@ -372,7 +372,7 @@ def load_server_details(
                 rddb['server_name'] = name
                 rddb['server_id'] = server_id
                 rddb['consolelink'] = azure_console_link.get_console_link(
-                    id=rddb['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
+                    id=rddb['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
                 restorable_dropped_databases.append(rddb)
 
         if len(fg) > 0:
@@ -380,7 +380,7 @@ def load_server_details(
                 group['server_name'] = name
                 group['server_id'] = server_id
                 group['consolelink'] = azure_console_link.get_console_link(
-                    id=group['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
+                    id=group['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
                 failover_groups.append(group)
 
         if len(elastic_pool) > 0:
@@ -388,7 +388,7 @@ def load_server_details(
                 pool['server_name'] = name
                 pool['server_id'] = server_id
                 pool['consolelink'] = azure_console_link.get_console_link(
-                    id=pool['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
+                    id=pool['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
                 elastic_pools.append(pool)
 
         if len(database) > 0:
@@ -397,7 +397,7 @@ def load_server_details(
                 db['server_id'] = server_id
                 db['resource_group_name'] = rg
                 db['consolelink'] = azure_console_link.get_console_link(
-                    id=db['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
+                    id=db['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
                 databases.append(db)
 
     _load_server_dns_aliases(neo4j_session, dns_aliases, update_tag)

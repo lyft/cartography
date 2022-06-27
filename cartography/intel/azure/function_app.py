@@ -120,7 +120,7 @@ def get_function_apps_list(client: WebSiteManagementClient, regions: list, commo
             function['hostNamesDisabled'] = function.get('properties', {}).get('host_names_disabled', True)
             function['location'] = function.get('location', '').replace(" ", "").lower()
             function['consolelink'] = azure_console_link.get_console_link(
-                id=function['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
+                id=function['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
             if regions is None:
                 function_list.append(function)
             else:
@@ -272,7 +272,7 @@ def get_function_apps_configuration_list(
                     index("/config/web")
                 ]
                 conf['consolelink'] = azure_console_link.get_console_link(
-                    id=conf['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
+                    id=conf['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
                 conf["location"] = function.get("location")
                 conf['publicNetworkAccess'] = conf.get('properties', {}).get('public_network_access', 'Disabled')
             function_apps_conf_list.extend(apps_conf_list)
@@ -386,7 +386,7 @@ def get_function_apps_functions_list(
                 ]
                 fun["location"] = function.get("location", "global")
                 fun['consolelink'] = azure_console_link.get_console_link(
-                    id=fun['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
+                    id=fun['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
             function_apps_functions_list.extend(functions_list)
         return function_apps_functions_list
 

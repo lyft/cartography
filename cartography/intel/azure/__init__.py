@@ -58,7 +58,7 @@ def _sync_one_subscription(
     config: Config,
 ) -> None:
 
-    common_job_parameters['Azure_Active_Directory_Name'] = tenant['defaultDomain']
+    common_job_parameters['Azure_Primary_AD_Domain_Name'] = tenant['defaultDomain']
 
     with ThreadPoolExecutor(max_workers=len(RESOURCE_FUNCTIONS)) as executor:
         futures = []

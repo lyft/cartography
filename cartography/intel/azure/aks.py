@@ -80,7 +80,7 @@ def get_aks_list(credentials: Credentials, subscription_id: str, regions: list, 
             aks['resource_group'] = x[x.index('resourcegroups') + 1]
             aks['publicNetworkAccess'] = aks.get('properties', {}).get('public_network_access', 'Disabled')
             aks['consolelink'] = azure_console_link.get_console_link(
-                id=aks['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
+                id=aks['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
             if regions is None:
                 aks_data.append(aks)
             else:
@@ -163,7 +163,7 @@ def get_container_registries_list(client: ContainerRegistryManagementClient, reg
             x = registry['id'].split('/')
             registry['resource_group'] = x[x.index('resourceGroups') + 1]
             registry['consolelink'] = azure_console_link.get_console_link(
-                id=registry['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
+                id=registry['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
             if regions is None:
                 registry_data.append(registry)
             else:
@@ -274,7 +274,7 @@ def get_container_registry_replications_list(
             replication['resource_group'] = x[x.index('resourceGroups') + 1]
             replication['container_registry_id'] = replication['id'][:replication['id'].index("/replications")]
             replication['consolelink'] = azure_console_link.get_console_link(
-                id=replication['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
+                id=replication['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
 
         return container_registry_replications_list
 
@@ -348,7 +348,7 @@ def get_container_registry_runs_list(
                 run['resource_group'] = x[x.index('resourceGroups') + 1]
                 run['container_registry_id'] = run['id'][:run['id'].index("/runs")]
                 run['consolelink'] = azure_console_link.get_console_link(
-                    id=run['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
+                    id=run['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
             container_registry_runs_list.extend(registry_runs_list)
 
         return container_registry_runs_list
@@ -423,7 +423,7 @@ def get_container_registry_tasks_list(
             task['resource_group'] = x[x.index('resourceGroups') + 1]
             task['container_registry_id'] = task['id'][:task['id'].index("/tasks")]
             task['consolelink'] = azure_console_link.get_console_link(
-                id=task['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
+                id=task['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
 
         return container_registry_tasks_list
 
@@ -497,7 +497,7 @@ def get_container_registry_webhooks_list(
             webhook['resource_group'] = x[x.index('resourceGroups') + 1]
             webhook['container_registry_id'] = webhook['id'][:webhook['id'].index("/webhooks")]
             webhook['consolelink'] = azure_console_link.get_console_link(
-                id=webhook['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
+                id=webhook['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
 
         return container_registry_webhooks_list
 
@@ -558,7 +558,7 @@ def get_container_groups_list(client: ContainerInstanceManagementClient, regions
             x = group['id'].split('/')
             group['resource_group'] = x[x.index('resourceGroups') + 1]
             group['consolelink'] = azure_console_link.get_console_link(
-                id=group['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
+                id=group['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
             if regions is None:
                 group_data.append(group)
             else:
