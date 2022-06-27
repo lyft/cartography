@@ -236,12 +236,7 @@ def transform_gcp_instances(response_objects: List[Dict], compute: Resource) -> 
     instance_list = []
     for res in response_objects:
         prefix = res['zone']
-        prefix = prefix.split("/")
-        prifix_list = list(map(lambda x: x.replace('project', 'projects'), prefix))
-        prefix = ""
-        for object in prifix_list:
-            prefix += f"{object}/"
-        prefix = prefix[:-1]
+        prefix = prefix.replace("project", "projects", 1)
         prefix_fields = _parse_instance_uri_prefix(prefix)
 
         res['partial_uri'] = f"{prefix}/{res['name']}"
@@ -319,12 +314,7 @@ def transform_gcp_vpcs(vpc_res: Dict) -> List[Dict]:
 
     # prefix has the form `projects/{project ID}/global/networks`
     prefix = vpc_res['id']
-    prefix = prefix.split("/")
-    prifix_list = list(map(lambda x: x.replace('project', 'projects'), prefix))
-    prefix = ""
-    for object in prifix_list:
-        prefix += f"{object}/"
-    prefix = prefix[:-1]
+    prefix = prefix.replace("project", "projects", 1)
     projectid = prefix.split('/')[1]
     for v in vpc_res.get('items', []):
         vpc = {}
@@ -353,12 +343,7 @@ def transform_gcp_subnets(subnet_res: Dict) -> List[Dict]:
     # The `id` in the response object has the form `projects/{project}/regions/{region}/subnetworks`.
     # We can include this in each subnet object in the list to form the partial_uri later on.
     prefix = subnet_res['id']
-    prefix = prefix.split("/")
-    prifix_list = list(map(lambda x: x.replace('project', 'projects'), prefix))
-    prefix = ""
-    for object in prifix_list:
-        prefix += f"{object}/"
-    prefix = prefix[:-1]
+    prefix = prefix.replace("project", "projects", 1)
     projectid = prefix.split('/')[1]
     subnet_list: List[Dict] = []
     for s in subnet_res.get('items', []):
@@ -397,12 +382,7 @@ def transform_gcp_forwarding_rules(fwd_response: Resource,) -> List[Dict]:
     """
     fwd_list: List[Dict] = []
     prefix = fwd_response['id']
-    prefix = prefix.split("/")
-    prifix_list = list(map(lambda x: x.replace('project', 'projects'), prefix))
-    prefix = ""
-    for object in prifix_list:
-        prefix += f"{object}/"
-    prefix = prefix[:-1]
+    prefix = prefix.replace("project", "projects", 1)
     project_id = prefix.split('/')[1]
     for fwd in fwd_response.get('items', []):
         forwarding_rule: Dict[str, Any] = {}
@@ -457,12 +437,7 @@ def transform_gcp_firewall(fw_response: Resource) -> List[Dict]:
     """
     fw_list: List[Dict] = []
     prefix = fw_response['id']
-    prefix = prefix.split("/")
-    prifix_list = list(map(lambda x: x.replace('project', 'projects'), prefix))
-    prefix = ""
-    for object in prifix_list:
-        prefix += f"{object}/"
-    prefix = prefix[:-1]
+    prefix = prefix.replace("project", "projects", 1)
     projectid = prefix.split('/')[1]
     for fw in fw_response.get('items', []):
         fw_partial_uri = f"{prefix}/{fw['name']}"
