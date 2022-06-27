@@ -34,7 +34,7 @@ def get_gke_clusters(container: Resource, project_id: str, regions: list, common
         res = req.execute()
         data = []
         for item in res.get('clusters', []):
-            item['id'] = f"project/{project_id}/clusters/{item['name']}"
+            item['id'] = f"projects/{project_id}/clusters/{item['name']}"
             item['consolelink'] = gcp_console_link.get_console_link(
                 resource_name='gke_cluster', project_id=project_id, zone=item['zone'], gke_cluster_name=item['name'])
             if regions is None:
@@ -140,7 +140,7 @@ def load_gke_clusters(neo4j_session: neo4j.Session, cluster_resp: Dict, project_
         neo4j_session.run(
             query,
             ProjectId=project_id,
-            ClusterId=f"project/{project_id}/clusters/{cluster['name']}",
+            ClusterId=f"projects/{project_id}/clusters/{cluster['name']}",
             ClusterSelfLink=cluster['selfLink'],
             ClusterCreateTime=cluster['createTime'],
             ClusterName=cluster['name'],
