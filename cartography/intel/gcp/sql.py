@@ -38,7 +38,7 @@ def get_sql_instances(sql: Resource, project_id: str, regions: list, common_job_
             response = request.execute()
             if response.get('items', []):
                 for item in response['items']:
-                    item['id'] = f"project/{project_id}/instances/{item['name']}"
+                    item['id'] = f"projects/{project_id}/instances/{item['name']}"
                     item['ipV4Enabled'] = item.get('settings', {}).get('ipConfiguration', {}).get('ipV4Enabled', False)
                     item['consolelink'] = gcp_console_link.get_console_link(
                         resource_name='sql_instance', project_id=project_id, sql_instance_name=item['name'])
@@ -106,7 +106,7 @@ def get_sql_users(sql: Resource, sql_instances: List[Dict], project_id: str) -> 
                 if response.get('items', []):
                     for item in response['items']:
                         item['instance_id'] = inst['id']
-                        item['id'] = f"project/{project_id}/instances/{inst['name']}/users/{item['name']}"
+                        item['id'] = f"projects/{project_id}/instances/{inst['name']}/users/{item['name']}"
                         item['consolelink'] = gcp_console_link.get_console_link(
                             project_id=project_id, resource_name='sql_user', sql_instance_name=inst['name'])
                         sql_users.append(item)
