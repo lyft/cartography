@@ -180,7 +180,6 @@ def load_gcp_buckets(neo4j_session: neo4j.Session, buckets: List[Dict], gcp_upda
     bucket.iam_config_bucket_policy_only = {IamConfigBucketPolicyOnly},
     bucket.owner_entity = {OwnerEntity},
     bucket.owner_entity_id = {OwnerEntityId},
-    bucket.lastupdated = {gcp_update_tag},
     bucket.versioning_enabled = {VersioningEnabled},
     bucket.log_bucket = {LogBucket},
     bucket.requester_pays = {RequesterPays},

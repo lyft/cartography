@@ -603,8 +603,8 @@ def _load_domains_tx(
     MATCH (p:GCPProject{id: {project_id}})
     MERGE (p)-[r:RESOURCE]->(domain)
     ON CREATE SET
-        r.firstseen = timestamp(),
-        r.lastupdated = {gcp_update_tag}
+        r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}
     WITH domain
     MATCH (p:GCPCustomer{id: {customer_id}})
     MERGE (p)-[r:RESOURCE]->(domain)

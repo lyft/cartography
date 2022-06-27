@@ -740,6 +740,7 @@ def load_gcp_subnets(neo4j_session: neo4j.Session, subnets: List[Dict], gcp_upda
     MERGE (vpc:GCPVpc{id:{VpcPartialUri}})
     ON CREATE SET vpc.firstseen = timestamp(),
     vpc.partial_uri = {VpcPartialUri}
+    SET vpc.lastupdated = {gcp_update_tag}
 
     MERGE (subnet:GCPSubnet{id:{PartialUri}})
     ON CREATE SET subnet.firstseen = timestamp(),
@@ -868,6 +869,7 @@ def _attach_fwd_rule_to_vpc(neo4j_session: neo4j.Session, fwd: Dict, gcp_update_
         MERGE (vpc:GCPVpc{id:{NetworkPartialUri}})
         ON CREATE SET vpc.firstseen = timestamp(),
         vpc.partial_uri = {NetworkPartialUri}
+        SET vpc.lastupdated = {gcp_update_tag}
 
         WITH vpc
         MATCH (fwd:GCPForwardingRule{id:{PartialUri}})

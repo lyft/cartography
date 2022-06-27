@@ -129,6 +129,7 @@ def load_gcp_folders(neo4j_session: neo4j.Session, data: List[Dict], gcp_update_
             query = """
             MERGE (parent:GCPFolder{id:{ParentId}})
             ON CREATE SET parent.firstseen = timestamp()
+            SET parent.lastupated = {gcp_update_tag}
             """
         query += """
         MERGE (folder:GCPFolder{id:{FolderName}})
@@ -223,6 +224,7 @@ def _attach_gcp_project_parent(neo4j_session: neo4j.Session, project: Dict, gcp_
 
     MERGE (parent:$parent_label{id:{ParentId}})
     ON CREATE SET parent.firstseen = timestamp()
+    SET parent.lastupdated = {gcp_update_tag}
 
     MERGE (parent)-[r:RESOURCE]->(project)
     ON CREATE SET r.firstseen = timestamp()
