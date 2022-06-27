@@ -55,7 +55,7 @@ def get_storage_account_list(credentials: Credentials, subscription_id: str, reg
         storage_account['allowBlobPublicAccess'] = storage_account.get(
             'properties', {}).get('allow_blob_public_access', False)
         storage_account['consolelink'] = azure_console_link.get_console_link(
-            id=storage_account['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
+            id=storage_account['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
         if regions is None:
             account_list.append(storage_account)
         else:
@@ -255,7 +255,7 @@ def load_storage_account_details(
                 service['storage_account_id'] = account_id
                 service['resource_group_name'] = resourceGroup
                 service['consolelink'] = azure_console_link.get_console_link(
-                    id=service['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
+                    id=service['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
             queue_services.extend(queue_service)
 
         if len(table_service) > 0:
@@ -264,7 +264,7 @@ def load_storage_account_details(
                 service['storage_account_id'] = account_id
                 service['resource_group_name'] = resourceGroup
                 service['consolelink'] = azure_console_link.get_console_link(
-                    id=service['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
+                    id=service['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
             table_services.extend(table_service)
 
         if len(file_service) > 0:
@@ -273,7 +273,7 @@ def load_storage_account_details(
                 service['storage_account_id'] = account_id
                 service['resource_group_name'] = resourceGroup
                 service['consolelink'] = azure_console_link.get_console_link(
-                    id=service['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
+                    id=service['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
             file_services.extend(file_service)
 
         if len(blob_service) > 0:
@@ -282,7 +282,7 @@ def load_storage_account_details(
                 service['storage_account_id'] = account_id
                 service['resource_group_name'] = resourceGroup
                 service['consolelink'] = azure_console_link.get_console_link(
-                    id=service['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
+                    id=service['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
             blob_services.extend(blob_service)
 
     _load_queue_services(neo4j_session, queue_services, update_tag)

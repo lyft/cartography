@@ -485,7 +485,7 @@ def get_roles_list(client: AuthorizationManagementClient, common_job_parameters:
             result = result.response.json()
             role['roleName'] = result.get('properties', {}).get('roleName', '')
             role['consolelink'] = azure_console_link.get_console_link(
-                id=role['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
+                id=role['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
             role['permissions'] = []
             for permission in result.get('properties', {}).get('permissions', []):
                 for action in permission.get('actions', []):

@@ -61,7 +61,7 @@ def get_resource_groups_list(client: ResourceManagementClient, common_job_parame
         resource_groups_list = list(map(lambda x: x.as_dict(), client.resource_groups.list()))
         for group in resource_groups_list:
             group['consolelink'] = azure_console_link.get_console_link(
-                id=group['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
+                id=group['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
 
         return resource_groups_list
 

@@ -34,7 +34,7 @@ def get_key_vaults_list(client: KeyVaultManagementClient, regions: list, common_
             x = vault['id'].split('/')
             vault['resource_group'] = x[x.index('resourceGroups') + 1]
             vault['consolelink'] = azure_console_link.get_console_link(
-                id=vault['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
+                id=vault['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
             if regions is None:
                 key_vaults_data.append(vault)
             else:

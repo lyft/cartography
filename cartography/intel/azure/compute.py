@@ -53,7 +53,7 @@ def get_vm_list(credentials: Credentials, subscription_id: str, regions: list, c
             x = vm['id'].split('/')
             vm['resource_group'] = x[x.index('resourceGroups') + 1]
             vm['consolelink'] = azure_console_link.get_console_link(
-                id=vm['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
+                id=vm['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
 
             network_interfaces = []
             for interface in vm.get('network_profile', {}).get('network_interfaces', []):
@@ -170,7 +170,7 @@ def get_vm_extensions_list(vm_list: List[Dict], client: ComputeManagementClient,
                 'id': extension.id,
                 'resource_group': x[x.index('resourceGroups') + 1],
                 'vm_id': extension.id[:extension.id.index("/extensions")],
-                'consolelink': azure_console_link.get_console_link(id=vm['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name']),
+                'consolelink': azure_console_link.get_console_link(id=vm['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name']),
                 'type': extension.type,
                 'location': extension.location,
             })
@@ -294,7 +294,7 @@ def get_vm_scale_sets_list(credentials: Credentials, subscription_id: str, regio
             x = set['id'].split('/')
             set['resource_group'] = x[x.index('resourceGroups') + 1]
             set['consolelink'] = azure_console_link.get_console_link(
-                id=set['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
+                id=set['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
             if regions is None:
                 sets_list.append(set)
             else:
@@ -390,7 +390,7 @@ def get_vm_scale_sets_extensions_list(vm_scale_sets_list: List[Dict], client: Co
                 extension['resource_group'] = x[x.index('resourceGroups') + 1]
                 extension['set_id'] = extension['id'][:extension['id'].index("/extensions")]
                 extension['consolelink'] = azure_console_link.get_console_link(
-                    id=extension['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
+                    id=extension['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
 
             vm_scale_sets_extensions_list.extend(extensions_list)
 
@@ -484,7 +484,7 @@ def get_disks(credentials: Credentials, subscription_id: str, regions: list, com
             x = disk['id'].split('/')
             disk['resource_group'] = x[x.index('resourceGroups') + 1]
             disk['consolelink'] = azure_console_link.get_console_link(
-                id=disk['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
+                id=disk['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
             if regions is None:
                 disk_data.append(disk)
             else:
@@ -539,7 +539,7 @@ def get_snapshots_list(credentials: Credentials, subscription_id: str, regions: 
             x = snapshot['id'].split('/')
             snapshot['resource_group'] = x[x.index('resourceGroups') + 1]
             snapshot['consolelink'] = azure_console_link.get_console_link(
-                id=snapshot['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
+                id=snapshot['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
             if regions is None:
                 snapshot_list.append(snapshot)
             else:

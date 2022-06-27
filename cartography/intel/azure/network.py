@@ -90,7 +90,7 @@ def get_networks_list(client: NetworkManagementClient, regions: list, common_job
             x = network['id'].split('/')
             network['resource_group'] = x[x.index('resourceGroups') + 1]
             network['consolelink'] = azure_console_link.get_console_link(
-                id=network['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
+                id=network['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
             if regions is None:
                 network_data.append(network)
             else:
@@ -194,7 +194,7 @@ def get_networks_subnets_list(networks_list: List[Dict], client: NetworkManageme
                 subnet['location'] = network.get('location', 'global')
                 subnet['network_security_group_id'] = subnet.get('network_security_group', {}).get('id', None)
                 subnet['consolelink'] = azure_console_link.get_console_link(
-                    id=subnet['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
+                    id=subnet['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
             networks_subnets_list.extend(subnets_list)
         return networks_subnets_list
 
@@ -261,7 +261,7 @@ def get_network_routetables_list(client: NetworkManagementClient, regions: list,
             x = routetable['id'].split('/')
             routetable['resource_group'] = x[x.index('resourceGroups') + 1]
             routetable['consolelink'] = azure_console_link.get_console_link(
-                id=routetable['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
+                id=routetable['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
             if regions is None:
                 tables_data.append(routetable)
             else:
@@ -337,7 +337,7 @@ def get_network_routes_list(network_routetables_list: List[Dict], client: Networ
                 route['routetable_id'] = route['id'][:route['id'].index("/routes")]
                 route['location'] = routetable.get('location', 'global')
                 route['consolelink'] = azure_console_link.get_console_link(
-                    id=route['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
+                    id=route['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
             network_routes_list.extend(routes_list)
         return network_routes_list
 
@@ -397,7 +397,7 @@ def get_network_security_groups_list(client: NetworkManagementClient, regions: l
             x = network['id'].split('/')
             network['resource_group'] = x[x.index('resourceGroups') + 1]
             network['consolelink'] = azure_console_link.get_console_link(
-                id=network['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
+                id=network['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
             if regions is None:
                 group_list.append(network)
             else:
@@ -496,7 +496,7 @@ def get_network_security_rules_list(
                     'properties', {}).get('destination_port_ranges', None)
                 rule['destination_address_prefix'] = rule.get('destination_address_prefix', None)
                 rule['consolelink'] = azure_console_link.get_console_link(
-                    id=rule['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
+                    id=rule['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
             network_security_rules_list.extend(security_rules_list)
         return network_security_rules_list
 
@@ -562,7 +562,7 @@ def get_public_ip_addresses_list(client: NetworkManagementClient, regions: list,
         publicip_list = []
         for ip in public_ip_addresses_list:
             ip['consolelink'] = azure_console_link.get_console_link(
-                id=ip['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
+                id=ip['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
             if regions is None:
                 publicip_list.append(ip)
             else:
@@ -628,7 +628,7 @@ def get_network_interfaces_list(client: NetworkManagementClient, regions: list, 
                 interface['public_ip_address'].append(
                     {'public_ip_id': conf.get('public_ip_address', {}).get('id', None)})
             interface['consolelink'] = azure_console_link.get_console_link(
-                id=interface['id'], active_directory_name=common_job_parameters['Azure_Active_Directory_Name'])
+                id=interface['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
             if regions is None:
                 interfaces_list.append(interface)
             else:
