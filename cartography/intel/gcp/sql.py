@@ -182,8 +182,8 @@ def _load_sql_instances_tx(tx: neo4j.Transaction, instances: List[Dict], project
     MATCH (owner:GCPProject{id:{ProjectId}})
     MERGE (owner)-[r:RESOURCE]->(i)
     ON CREATE SET
-        r.firstseen = timestamp(),
-        r.lastupdated = {gcp_update_tag}
+        r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}
     """
     tx.run(
         ingest_sql_instances,
@@ -231,8 +231,8 @@ def _load_sql_users_tx(tx: neo4j.Transaction, sql_users: List[Dict], project_id:
     MATCH (i:GCPSQLInstance{id:user.instance_id})
     MERGE (i)-[r:USED_BY]->(u)
     ON CREATE SET
-        r.firstseen = timestamp(),
-        r.lastupdated = {gcp_update_tag}
+        r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}
     """
     tx.run(
         ingest_sql_users,

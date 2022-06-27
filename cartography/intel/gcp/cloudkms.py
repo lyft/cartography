@@ -252,8 +252,8 @@ def _load_kms_locations_tx(
     MATCH (owner:GCPProject{id:{ProjectId}})
     MERGE (owner)-[r:RESOURCE]->(location)
     ON CREATE SET
-        r.firstseen = timestamp(),
-        r.lastupdated = {gcp_update_tag}
+        r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}
     """
     tx.run(
         ingest_kms_locations,
@@ -300,8 +300,8 @@ def _load_kms_key_rings_tx(
     MATCH (location:GCPLocation{id:keyr.loc_id})
     MERGE (location)-[r:RESOURCE]->(keyring)
     ON CREATE SET
-        r.firstseen = timestamp(),
-        r.lastupdated = {gcp_update_tag}
+        r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}
     """
     tx.run(
         ingest_kms_key_rings,
@@ -391,8 +391,8 @@ def _load_kms_crypto_keys_tx(
     MATCH (key_ring:GCPKMSKeyRing{id:ck.keyring_id})
     MERGE (key_ring)-[r:RESOURCE]->(crypto_key)
     ON CREATE SET
-        r.firstseen = timestamp(),
-        r.lastupdated = {gcp_update_tag}
+        r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}
     """
     tx.run(
         ingest_crypto_keys,

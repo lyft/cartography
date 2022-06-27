@@ -181,8 +181,8 @@ def _load_firestore_databases_tx(
     MATCH (owner:GCPProject{id:{ProjectId}})
     MERGE (owner)-[r:RESOURCE]->(d)
     ON CREATE SET
-        r.firstseen = timestamp(),
-        r.lastupdated = {gcp_update_tag}
+        r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}
     """
     tx.run(
         ingest_firestore_databases,
@@ -230,8 +230,8 @@ def _load_firestore_indexes_tx(
     MATCH (d:GCPFirestoreDatabase{id:index.database_id})
     MERGE (d)-[r:HAS_INDEX]->(ix)
     ON CREATE SET
-        r.firstseen = timestamp(),
-        r.lastupdated = {gcp_update_tag}
+        r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}
     """
     tx.run(
         ingest_firestore_indexes,
