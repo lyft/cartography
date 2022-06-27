@@ -163,8 +163,8 @@ def load_dns_zones(neo4j_session: neo4j.Session, dns_zones: List[Dict], project_
     MATCH (owner:GCPProject{id:{ProjectId}})
     MERGE (owner)-[r:RESOURCE]->(zone)
     ON CREATE SET
-        r.firstseen = timestamp(),
-        r.lastupdated = {gcp_update_tag}
+        r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}
     """
     neo4j_session.run(
         ingest_records,
@@ -213,8 +213,8 @@ def load_rrs(neo4j_session: neo4j.Session, dns_rrs: List[Resource], project_id: 
     MATCH (zone:GCPDNSZone{id:record.zone})
     MERGE (zone)-[r:HAS_RECORD]->(rrs)
     ON CREATE SET
-        r.firstseen = timestamp(),
-        r.lastupdated = {gcp_update_tag}
+        r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}
     """
     neo4j_session.run(
         ingest_records,

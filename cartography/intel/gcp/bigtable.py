@@ -288,8 +288,8 @@ def _load_bigtable_instances_tx(
     MATCH (owner:GCPProject{id:{ProjectId}})
     MERGE (owner)-[r:RESOURCE]->(i)
     ON CREATE SET
-        r.firstseen = timestamp(),
-        r.lastupdated = {gcp_update_tag}
+        r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}
     """
     tx.run(
         ingest_bigtable_instances,
@@ -341,8 +341,8 @@ def _load_bigtable_clusters_tx(
     MATCH (i:GCPBigtableInstance{id:cluster.instance_id})
     MERGE (i)-[r:HAS_CLUSTER]->(c)
     ON CREATE SET
-        r.firstseen = timestamp(),
-        r.lastupdated = {gcp_update_tag}
+        r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}
     """
     tx.run(
         ingest_bigtable_clusters,
@@ -398,8 +398,8 @@ def _load_bigtable_cluster_backups_tx(
     MATCH (c:GCPBigtableCluster{id:backup.cluster_id})
     MERGE (c)-[r:HAS_BACKUP]->(b)
     ON CREATE SET
-        r.firstseen = timestamp(),
-        r.lastupdated = {gcp_update_tag}
+        r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}
     """
     tx.run(
         ingest_bigtable_cluster_backups,
@@ -449,8 +449,8 @@ def _load_bigtable_tables_tx(
     MATCH (i:GCPBigtableInstance{id:table.instance_id})
     MERGE (i)-[r:HAS_TABLE]->(t)
     ON CREATE SET
-        r.firstseen = timestamp(),
-        r.lastupdated = {gcp_update_tag}
+        r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}
     """
     tx.run(
         ingest_bigtable_tables,

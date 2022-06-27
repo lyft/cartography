@@ -404,8 +404,8 @@ def _load_cloudrun_authorized_domains_tx(
     MATCH (owner:GCPProject{id:{ProjectId}})
     MERGE (owner)-[r:RESOURCE]->(authorized_domain)
     ON CREATE SET
-        r.firstseen = timestamp(),
-        r.lastupdated = {gcp_update_tag}
+        r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}
     """
     tx.run(
         ingest_cloudrun_authorized_domains,
@@ -465,8 +465,8 @@ def _load_cloudrun_configurations_tx(
     MATCH (owner:GCPProject{id:{ProjectId}})
     MERGE (owner)-[r:RESOURCE]->(configuration)
     ON CREATE SET
-        r.firstseen = timestamp(),
-        r.lastupdated = {gcp_update_tag}
+        r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}
     """
     tx.run(
         ingest_cloudrun_configurations,
@@ -525,8 +525,8 @@ def _load_cloudrun_domainmappings_tx(
     MATCH (owner:GCPProject{id:{ProjectId}})
     MERGE (owner)-[r:RESOURCE]->(domainmapping)
     ON CREATE SET
-        r.firstseen = timestamp(),
-        r.lastupdated = {gcp_update_tag}
+        r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}
     """
     tx.run(
         ingest_cloudrun_domainmappings,
@@ -581,8 +581,8 @@ def _load_cloudrun_revisions_tx(
     MATCH (owner:GCPProject{id:{ProjectId}})
     MERGE (owner)-[r:RESOURCE]->(revision)
     ON CREATE SET
-        r.firstseen = timestamp(),
-        r.lastupdated = {gcp_update_tag}
+        r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}
     """
     tx.run(
         ingest_cloudrun_revisions,
@@ -637,8 +637,8 @@ def _load_cloudrun_routes_tx(
     MATCH (owner:GCPProject{id:{ProjectId}})
     MERGE (owner)-[r:RESOURCE]->(route)
     ON CREATE SET
-        r.firstseen = timestamp(),
-        r.lastupdated = {gcp_update_tag}
+        r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}
     """
     tx.run(
         ingest_cloudrun_routes,
@@ -694,8 +694,8 @@ def _load_cloudrun_services_tx(
     MATCH (owner:GCPProject{id:{ProjectId}})
     MERGE (owner)-[r:RESOURCE]->(service)
     ON CREATE SET
-        r.firstseen = timestamp(),
-        r.lastupdated = {gcp_update_tag}
+        r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}
     """
     tx.run(
         ingest_cloudrun_services,
