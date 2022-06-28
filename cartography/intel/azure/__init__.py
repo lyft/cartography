@@ -241,5 +241,5 @@ def start_azure_ingestion(
         common_job_parameters,
         config,
     )
-
+    del common_job_parameters['Azure_Primary_AD_Domain_Name']
     return common_job_parameters
