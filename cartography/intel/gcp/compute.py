@@ -235,15 +235,14 @@ def transform_gcp_instances(response_objects: List[Dict], compute: Resource) -> 
     """
     instance_list = []
     for res in response_objects:
+        # prefix is of the form https://www.googleapis.com/compute/v1/projects/<project_id>/zones/<zone_name>/<resource_name>
         prefix = res['zone']
-        
-        if prefix.startswith('project/'):
-            prefix = prefix.replace("project/", "projects/", 1)
 
         prefix_fields = _parse_instance_uri_prefix(prefix)
-
-        res['partial_uri'] = f"{prefix}/{res['name']}"
-        res['id'] = f"{prefix}/{res['name']}"
+        
+        res['id'] = f"projects/{prefix_fields.project_id}/zones/{prefix_fields.zone_name}/instances/{res['name']}"
+        res['partial_uri'] = res['id']
+        
         res['project_id'] = prefix_fields.project_id
         res['zone_name'] = prefix_fields.zone_name
         res['accessConfig'] = res.get('accessConfig', None)
@@ -318,16 +317,14 @@ def transform_gcp_vpcs(vpc_res: Dict) -> List[Dict]:
     # prefix has the form `projects/{project ID}/global/networks`
     prefix = vpc_res['id']
 
-    if prefix.startswith('project/'):
-        prefix = prefix.replace("project/", "projects/", 1)
-
     projectid = prefix.split('/')[1]
     for v in vpc_res.get('items', []):
         vpc = {}
         partial_uri = f"{prefix}/{v['name']}"
         vpc['consolelink'] = gcp_console_link.get_console_link(
             resource_name='compute_instance_vpc_network', project_id=projectid, network_name=v['name'])
-        vpc['partial_uri'] = partial_uri
+        vpc['id'] = f"projects/{projectid}/global/networks/{v['name']}"
+        vpc['partial_uri'] = vpc['id']
         vpc['name'] = v['name']
         vpc['self_link'] = v['selfLink']
         vpc['project_id'] = projectid
@@ -350,9 +347,6 @@ def transform_gcp_subnets(subnet_res: Dict) -> List[Dict]:
     # We can include this in each subnet object in the list to form the partial_uri later on.
     prefix = subnet_res['id']
 
-    if prefix.startswith('project/'):
-        prefix = prefix.replace("project/", "projects/", 1)
-
     projectid = prefix.split('/')[1]
     subnet_list: List[Dict] = []
     for s in subnet_res.get('items', []):
@@ -360,8 +354,8 @@ def transform_gcp_subnets(subnet_res: Dict) -> List[Dict]:
 
         # Has the form `projects/{project}/regions/{region}/subnetworks/{subnet_name}`
         partial_uri = f"{prefix}/{s['name']}"
-        subnet['id'] = partial_uri
-        subnet['partial_uri'] = partial_uri
+        subnet['id'] = f"projects/{projectid}/regions/{s['region'].split('/')[-1]}/subnetworks/{s['name']}"
+        subnet['partial_uri'] = subnet['id']
 
         # Let's maintain an on-node reference to the VPC that this subnet belongs to.
         subnet['vpc_self_link'] = s['network']
@@ -392,21 +386,20 @@ def transform_gcp_forwarding_rules(fwd_response: Resource,) -> List[Dict]:
     fwd_list: List[Dict] = []
     prefix = fwd_response['id']
 
-    if prefix.startswith('project/'):
-        prefix = prefix.replace("project/", "projects/", 1)
-
     project_id = prefix.split('/')[1]
     for fwd in fwd_response.get('items', []):
         forwarding_rule: Dict[str, Any] = {}
 
         fwd_partial_uri = f"{prefix}/{fwd['name']}"
-        forwarding_rule['id'] = fwd_partial_uri
-        forwarding_rule['partial_uri'] = fwd_partial_uri
 
         forwarding_rule['project_id'] = project_id
         # Region looks like "https://www.googleapis.com/compute/v1/projects/{project}/regions/{region name}"
         region = fwd.get('region', None)
         forwarding_rule['region'] = region.split('/')[-1] if region else 'global'
+        
+        forwarding_rule['id'] = f"projects/{project_id}/regions/{forwarding_rule['region']}/forwardingRules/{fwd['name']}"
+        forwarding_rule['partial_uri'] = forwarding_rule['id']
+
         forwarding_rule['ip_address'] = fwd.get('IPAddress', None)
         forwarding_rule['ip_protocol'] = fwd.get('IPProtocol', None)
         forwarding_rule['allow_global_access'] = fwd.get('allowGlobalAccess', None)
@@ -450,13 +443,10 @@ def transform_gcp_firewall(fw_response: Resource) -> List[Dict]:
     fw_list: List[Dict] = []
     prefix = fw_response['id']
 
-    if prefix.startswith('project/'):
-        prefix = prefix.replace("project/", "projects/", 1)
-    
     projectid = prefix.split('/')[1]
     for fw in fw_response.get('items', []):
         fw_partial_uri = f"{prefix}/{fw['name']}"
-        fw['id'] = fw_partial_uri
+        fw['id'] = f"projects/{projectid}/global/firewalls/{fw['name']}"
         fw['vpc_partial_uri'] = _parse_compute_full_uri_to_partial_uri(fw['network'])
         fw['consolelink'] = gcp_console_link.get_console_link(
             resource_name='compute_firewall_rule', project_id=projectid, rule_name=fw['name'])
