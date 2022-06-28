@@ -19,12 +19,10 @@
 # You can also use the decorator `disable_syntax_upgrade` to disable the upgrade temporarily,
 # for the duration of the function being docerated. Use it if you have your own sync modules or synbc methods
 # that already have upgraded syntax. For example:
-# 
+#
 # @disable_syntax_upgrade
 # def my_sync_function(ne4j_session, commong_job_params, ...):
 #    ...
-
-
 import logging
 import os
 import re
