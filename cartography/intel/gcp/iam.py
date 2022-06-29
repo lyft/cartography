@@ -546,6 +546,7 @@ def _load_groups_tx(tx: neo4j.Transaction, groups: List[Dict], project_id: str, 
         group.firstseen = timestamp()
     SET
         group.id = grp.id,
+        group.id = grp.name,
         group.email = grp.email,
         group.region = {region},
         group.adminCreated = grp.adminCreated,

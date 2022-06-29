@@ -398,6 +398,7 @@ def _load_cloudrun_authorized_domains_tx(
         authorized_domain.firstseen = timestamp()
     SET
         authorized_domain.id = ad.id,
+        authorized_domain.id = ad.name,
         authorized_domain.region = {region},
         authorized_domain.lastupdated = {gcp_update_tag}
     WITH authorized_domain
