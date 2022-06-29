@@ -231,6 +231,7 @@ def _load_lambda_layers(neo4j_session: neo4j.Session, lambda_layers: List[Dict],
     ON CREATE SET l.firstseen = timestamp()
     SET l.codesize = layer.CodeSize,
     l.region = layer.region,
+    l.name = layer.LayerName,
     l.signingprofileversionarn  = layer.SigningProfileVersionArn,
     l.signingjobarn = layer.SigningJobArn,
     l.lastupdated = {aws_update_tag},

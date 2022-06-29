@@ -148,6 +148,7 @@ def load_apigateway_rest_apis(
     rest_api.createddate = r.createdDate
     SET rest_api.version = r.version,
     rest_api.minimumcompressionsize = r.minimumCompressionSize,
+    rest_api.name = r.name,
     rest_api.disableexecuteapiendpoint = r.disableExecuteApiEndpoint,
     rest_api.lastupdated = {aws_update_tag},
     rest_api.region = r.region,
