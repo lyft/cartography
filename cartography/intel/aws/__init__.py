@@ -1,4 +1,5 @@
 import logging
+import traceback
 from typing import Any
 from typing import Dict
 from typing import Iterable
@@ -144,6 +145,9 @@ def _sync_multiple_accounts(
     logger.info("Syncing AWS accounts: %s", ', '.join(accounts.values()))
     organizations.sync(neo4j_session, accounts, sync_tag, common_job_parameters)
 
+    failed_account_ids = []
+    exception_tracebacks = []
+
     for profile_name, account_id in accounts.items():
         logger.info("Syncing AWS account with ID '%s' using configured profile '%s'.", account_id, profile_name)
         common_job_parameters["AWS_ID"] = account_id
@@ -151,14 +155,25 @@ def _sync_multiple_accounts(
 
         _autodiscover_accounts(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters)
 
-        _sync_one_account(
-            neo4j_session,
-            boto3_session,
-            account_id,
-            sync_tag,
-            common_job_parameters,
-            aws_requested_syncs=aws_requested_syncs,  # Could be replaced later with per-account requested syncs
-        )
+        try:
+            _sync_one_account(
+                neo4j_session,
+                boto3_session,
+                account_id,
+                sync_tag,
+                common_job_parameters,
+                aws_requested_syncs=aws_requested_syncs,  # Could be replaced later with per-account requested syncs
+            )
+        except Exception as e:
+            failed_account_ids.append(account_id)
+            exception_traceback = traceback.TracebackException.from_exception(e)
+            traceback_string = ''.join(exception_traceback.format())
+            exception_tracebacks.append(traceback_string)
+            continue
+
+    if failed_account_ids:
+        logger.error(f'AWS sync failed for accounts {failed_account_ids}')
+        raise Exception('\n'.join(exception_tracebacks))
 
     del common_job_parameters["AWS_ID"]
 
