@@ -4,7 +4,7 @@ from typing import Callable
 from typing import Dict
 from typing import List
 from unittest import mock
-
+from pytest import raises
 import neo4j
 
 import cartography.config
@@ -89,6 +89,27 @@ def test_start_aws_ingestion(mock_run_analysis, mock_sync_multiple, mock_orgs, m
 
     # Brittle, but here to ensure that our mock_run_analysis path is correct.
     assert mock_run_analysis.call_count == 3
+
+
+@mock.patch('cartography.intel.aws.boto3.Session')
+@mock.patch('cartography.intel.aws.organizations.get_aws_accounts_from_botocore_config')
+@mock.patch.object(cartography.intel.aws, '_sync_one_account', return_value=None)
+@mock.patch.object(cartography.intel.aws, 'run_analysis_job')
+@mock.patch.object(cartography.intel.aws, 'run_cleanup_job')
+def test_start_aws_ingestion_raises_aggregated_exceptions(mock_run_cleanup_job, mock_run_analysis, mock_sync_one, mock_get_aws_account, mock_boto3, neo4j_session):
+    test_config = cartography.config.Config(
+        neo4j_uri='bolt://localhost:7687',
+        update_tag=TEST_UPDATE_TAG,
+        aws_sync_all_profiles=True,
+    )
+    mock_sync_one.side_effect = KeyError('foo')
+    mock_get_aws_account.return_value = {'test': 'test', 'test2': 'test2'}
+    with raises(Exception) as e:
+        cartography.intel.aws.start_aws_ingestion(neo4j_session, test_config)
+    assert str(e.value).count('KeyError') == 2
+    assert mock_sync_one.call_count == 2
+    assert mock_run_cleanup_job.call_count == 0
+    assert mock_run_analysis.call_count == 0
 
 
 @mock.patch('cartography.intel.aws.boto3.Session')
