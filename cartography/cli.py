@@ -128,6 +128,14 @@ class CLI:
             ),
         )
         parser.add_argument(
+            '--aws-best-effort-mode',
+            action='store_true',
+            help=(
+                'Enable AWS sync best effort mode when syncing AWS accounts. This will allow cartography to continue '
+                'syncing without raising an exception if one or more AWS accounts fail to sync, errors will be logged.'
+            ),
+        )
+        parser.add_argument(
             '--azure-sync-all-subscriptions',
             action='store_true',
             help=(

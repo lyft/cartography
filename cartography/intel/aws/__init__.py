@@ -1,3 +1,4 @@
+import datetime
 import logging
 import traceback
 from typing import Any
@@ -140,6 +141,7 @@ def _sync_multiple_accounts(
     accounts: Dict[str, str],
     sync_tag: int,
     common_job_parameters: Dict[str, Any],
+    config: Config,
     aws_requested_syncs: List[str] = [],
 ) -> None:
     logger.info("Syncing AWS accounts: %s", ', '.join(accounts.values()))
@@ -165,21 +167,27 @@ def _sync_multiple_accounts(
                 aws_requested_syncs=aws_requested_syncs,  # Could be replaced later with per-account requested syncs
             )
         except Exception as e:
+            timestamp = datetime.datetime.now()
             failed_account_ids.append(account_id)
             exception_traceback = traceback.TracebackException.from_exception(e)
             traceback_string = ''.join(exception_traceback.format())
-            exception_tracebacks.append(traceback_string)
+            exception_tracebacks.append(f'{timestamp} - Exception for account ID: {account_id}\n{traceback_string}')
             continue
 
     if failed_account_ids:
         logger.error(f'AWS sync failed for accounts {failed_account_ids}')
-        raise Exception('\n'.join(exception_tracebacks))
+        message = '\n'.join(exception_tracebacks)
+        if config.aws_best_effort_mode:
+            logger.error(message)
+        else:
+            raise Exception(message)
 
     del common_job_parameters["AWS_ID"]
 
     # There may be orphan Principals which point outside of known AWS accounts. This job cleans
     # up those nodes after all AWS accounts have been synced.
-    run_cleanup_job('aws_post_ingestion_principals_cleanup.json', neo4j_session, common_job_parameters)
+    if not failed_account_ids:
+        run_cleanup_job('aws_post_ingestion_principals_cleanup.json', neo4j_session, common_job_parameters)
 
 
 @timeit
@@ -230,6 +238,7 @@ def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
         aws_accounts,
         config.update_tag,
         common_job_parameters,
+        config,
         requested_syncs,
     )
 
