@@ -143,7 +143,7 @@ def _sync_multiple_accounts(
     common_job_parameters: Dict[str, Any],
     config: Config,
     aws_requested_syncs: List[str] = [],
-) -> None:
+) -> bool:
     logger.info("Syncing AWS accounts: %s", ', '.join(accounts.values()))
     organizations.sync(neo4j_session, accounts, sync_tag, common_job_parameters)
 
@@ -188,6 +188,8 @@ def _sync_multiple_accounts(
     # up those nodes after all AWS accounts have been synced.
     if not failed_account_ids:
         run_cleanup_job('aws_post_ingestion_principals_cleanup.json', neo4j_session, common_job_parameters)
+        return True
+    return False
 
 
 @timeit
@@ -233,7 +235,7 @@ def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
     if config.aws_requested_syncs:
         requested_syncs = parse_and_validate_aws_requested_syncs(config.aws_requested_syncs)
 
-    _sync_multiple_accounts(
+    sync_successful = _sync_multiple_accounts(
         neo4j_session,
         aws_accounts,
         config.update_tag,
@@ -242,20 +244,21 @@ def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
         requested_syncs,
     )
 
-    run_analysis_job(
-        'aws_ec2_asset_exposure.json',
-        neo4j_session,
-        common_job_parameters,
-    )
+    if sync_successful:
+        run_analysis_job(
+            'aws_ec2_asset_exposure.json',
+            neo4j_session,
+            common_job_parameters,
+        )
 
-    run_analysis_job(
-        'aws_ec2_keypair_analysis.json',
-        neo4j_session,
-        common_job_parameters,
-    )
+        run_analysis_job(
+            'aws_ec2_keypair_analysis.json',
+            neo4j_session,
+            common_job_parameters,
+        )
 
-    run_analysis_job(
-        'aws_eks_asset_exposure.json',
-        neo4j_session,
-        common_job_parameters,
-    )
+        run_analysis_job(
+            'aws_eks_asset_exposure.json',
+            neo4j_session,
+            common_job_parameters,
+        )
