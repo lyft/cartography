@@ -337,18 +337,25 @@ def load_rest_api_details(
         parsed_policy = parse_policy(api_id, policy)
         if parsed_policy is not None:
             policies.append(parsed_policy)
+
         if len(stage) > 0:
             for s in stage:
-                s['region'] = region
                 s['apiId'] = api_id
+                s['region'] = region
+
             stages.extend(stage)
+
         if len(resource) > 0:
             for r in resource:
                 r['apiId'] = api_id
+                r['region'] = region
+
             resources.extend(resource)
+
         if certificate:
             certificate['apiId'] = api_id
             certificate['region'] = region
+
             certificates.append(certificate)
 
     # cleanup existing properties
@@ -427,6 +434,7 @@ def sync_apigateway_rest_apis(
     load_apigateway_rest_apis(neo4j_session, data, current_aws_account_id, aws_update_tag)
 
     stages_certificate_resources = get_rest_api_details(boto3_session, data)
+    
     load_rest_api_details(
         neo4j_session, stages_certificate_resources, current_aws_account_id, aws_update_tag, common_job_parameters,
     )
@@ -445,4 +453,4 @@ def sync(
     cleanup(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()
-    print(f"Total Time to process AWS APIGateway: {toc - tic:0.4f} seconds")
+    logger.info(f"Total Time to process AWS APIGateway: {toc - tic:0.4f} seconds")

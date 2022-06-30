@@ -27,8 +27,18 @@ def get_elastic_ip_addresses(boto3_session: boto3.session.Session, region: str) 
     except ClientError as e:
         logger.warning(f"Failed retrieve address for region - {region}. Error - {e}")
         raise
+
     return addresses
 
+
+@timeit
+def transform_elastic_ip_addresses(elastic_ip_addresses: List[Dict]) -> List[Dict]:
+    addresses: List[Dict] = []
+    for address in elastic_ip_addresses:
+        if address.get('AllocationId'):
+            addresses.append(address)
+
+    return addresses
 
 @timeit
 def load_elastic_ip_addresses(
@@ -123,6 +133,7 @@ def sync_elastic_ip_addresses(
             addresses = addresses[page_start:page_end]
             common_job_parameters['pagination']['elastic_ip_addresses']['hasNextPage'] = has_next_page
 
+    addresses = transform_elastic_ip_addresses(addresses)
     load_elastic_ip_addresses(neo4j_session, addresses, current_aws_account_id, update_tag)
     cleanup_elastic_ip_addresses(neo4j_session, common_job_parameters)
 

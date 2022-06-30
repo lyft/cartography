@@ -20,3 +20,5 @@ maya
 pytz
 google-cloud-pubsub>=2.3.0
 click<8.0,>=7.0
+
+cloudconsolelink~=1.0.4

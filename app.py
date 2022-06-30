@@ -61,8 +61,15 @@ def init_lambda(ctx):
 
 
 def process_request(context, args):
-    context.logger.info(f'{args["templateType"]} request received - {args["eventId"]}')
-    context.logger.info(f'workspace - {args["workspace"]}')
+    context.logger.info(f'request - {args.get("templateType")} - {args.get("eventId")} - {args.get("workspace")}')
+
+    svcs = []
+    for svc in args.get('services',[]):
+        page = svc.get('pagination',{}).get('pageSize')
+        if page:
+            svc['pagination']['pageSize'] = 10000
+        
+        svcs.append(svc)
 
     creds = get_auth_creds(context, args)
 
@@ -78,16 +85,16 @@ def process_request(context, args):
             "mode": "verbose",
         },
         "params": {
-            "sessionString": args['sessionString'],
-            "eventId": args['eventId'],
-            "templateType": args['templateType'],
-            "workspace": args['workspace'],
-            "actions": args['actions'],
-            "resultTopic": args['resultTopic'],
-            "requestTopic": args.get("requestTopic", None),
+            "sessionString": args.get('sessionString'),
+            "eventId": args.get('eventId'),
+            "templateType": args.get('templateType'),
+            "workspace": args.get('workspace'),
+            "actions": args.get('actions'),
+            "resultTopic": args.get('resultTopic'),
+            "requestTopic": args.get("requestTopic"),
         },
-        "updateTag": args.get("updateTag", None),
-        "services": args.get("services", None)
+        "services": svcs,
+        "updateTag": args.get("updateTag"),
     }
 
     resp = cartography.cli.run_aws(body)
@@ -137,6 +144,10 @@ def publish_response(context, req, resp):
             "templateType": req['params']['templateType'],
             "workspace": req['params']['workspace'],
             "actions": req['params']['actions'],
+            "externalRoleArn": req.get('externalRoleArn'),
+            "externalId": req.get('externalId'),
+            "resultTopic": req['params'].get('resultTopic'),
+            "requestTopic": req['params'].get('requestTopic'),
             "response": resp,
             "services": resp.get("services", None),
             "updateTag": resp.get("updateTag", None),
@@ -146,10 +157,16 @@ def publish_response(context, req, resp):
         if body.get('services', None):
             if 'requestTopic' in req['params']:
                 status = sns_helper.publish(json.dumps(body), req['params']['requestTopic'])
+
         elif 'resultTopic' in req['params']:
             # Result should be pushed to "resultTopic" passed in the request
-            status = sns_helper.publish(json.dumps(body), req['params']['resultTopic'])
+            # status = sns_helper.publish(json.dumps(body), req['params']['resultTopic'])
+
+            context.logger.info(f'Result not published anywhere. since we want to avoid query when inventory is refreshed')
+            status = True
+
         else:
+            context.logger.info('publishing results to CARTOGRAPHY_RESULT_TOPIC')
             status = sns_helper.publish(json.dumps(body), context.aws_inventory_sync_response_topic)
 
         context.logger.info(f'result published to SNS with status: {status}')
@@ -162,9 +179,9 @@ def get_auth_creds(context, args):
         auth_params = {
             'aws_access_key_id': auth_helper.get_assume_role_access_key(),
             'aws_secret_access_key': auth_helper.get_assume_role_access_secret(),
-            'role_session_name': args['sessionString'],
-            'role_arn': args['externalRoleArn'],
-            'external_id': args['externalId'],
+            'role_session_name': args.get('sessionString'),
+            'role_arn': args.get('externalRoleArn'),
+            'external_id': args.get('externalId'),
         }
 
         auth_creds = auth_helper.assume_role(auth_params)
@@ -173,8 +190,8 @@ def get_auth_creds(context, args):
     else:
         auth_creds = {
             'type': 'self',
-            'aws_access_key_id': args['credentials']['awsAccessKeyID'] if 'credentials' in args else None,
-            'aws_secret_access_key': args['credentials']['awsSecretAccessKey'] if 'credentials' in args else None,
+            'aws_access_key_id': args.get('credentials', {}).get('awsAccessKeyID') if 'credentials' in args else None,
+            'aws_secret_access_key': args.get('credentials', {}).get('awsSecretAccessKey') if 'credentials' in args else None,
         }
 
     return auth_creds
