@@ -167,20 +167,19 @@ def _sync_multiple_accounts(
                 aws_requested_syncs=aws_requested_syncs,  # Could be replaced later with per-account requested syncs
             )
         except Exception as e:
-            timestamp = datetime.datetime.now()
-            failed_account_ids.append(account_id)
-            exception_traceback = traceback.TracebackException.from_exception(e)
-            traceback_string = ''.join(exception_traceback.format())
-            exception_tracebacks.append(f'{timestamp} - Exception for account ID: {account_id}\n{traceback_string}')
-            continue
+            if config.aws_best_effort_mode:
+                timestamp = datetime.datetime.now()
+                failed_account_ids.append(account_id)
+                exception_traceback = traceback.TracebackException.from_exception(e)
+                traceback_string = ''.join(exception_traceback.format())
+                exception_tracebacks.append(f'{timestamp} - Exception for account ID: {account_id}\n{traceback_string}')
+                continue
+            else:
+                raise
 
     if failed_account_ids:
         logger.error(f'AWS sync failed for accounts {failed_account_ids}')
-        message = '\n'.join(exception_tracebacks)
-        if config.aws_best_effort_mode:
-            logger.error(message)
-        else:
-            raise Exception(message)
+        raise Exception('\n'.join(exception_tracebacks))
 
     del common_job_parameters["AWS_ID"]
 

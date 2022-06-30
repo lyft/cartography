@@ -100,13 +100,14 @@ def test_start_aws_ingestion(mock_run_analysis, mock_sync_multiple, mock_orgs, m
 @mock.patch.object(cartography.intel.aws, '_sync_one_account', return_value=None)
 @mock.patch.object(cartography.intel.aws, 'run_analysis_job')
 @mock.patch.object(cartography.intel.aws, 'run_cleanup_job')
-def test_start_aws_ingestion_raises_aggregated_exceptions(
+def test_start_aws_ingestion_raises_aggregated_exceptions_with_aws_best_effort_mode(
     mock_run_cleanup_job, mock_run_analysis, mock_sync_one, mock_get_aws_account, mock_boto3, neo4j_session,
 ):
     test_config = cartography.config.Config(
         neo4j_uri='bolt://localhost:7687',
         update_tag=TEST_UPDATE_TAG,
         aws_sync_all_profiles=True,
+        aws_best_effort_mode=True,
     )
     mock_sync_one.side_effect = KeyError('foo')
     mock_get_aws_account.return_value = {'test_profile': 'test_account', 'test_profile2': 'test_account2'}
@@ -126,22 +127,21 @@ def test_start_aws_ingestion_raises_aggregated_exceptions(
 @mock.patch.object(cartography.intel.aws, '_sync_one_account', return_value=None)
 @mock.patch.object(cartography.intel.aws, 'run_analysis_job')
 @mock.patch.object(cartography.intel.aws, 'run_cleanup_job')
-def test_start_aws_ingestion_not_raises_exception_in_best_effort_mode(
-    mock_run_cleanup_job, mock_run_analysis, mock_sync_one, mock_get_aws_account, mock_boto3, neo4j_session, caplog,
+def test_start_aws_ingestion_raises_one_exception_without_aws_best_effort_mode(
+    mock_run_cleanup_job, mock_run_analysis, mock_sync_one, mock_get_aws_account, mock_boto3, neo4j_session,
 ):
     test_config = cartography.config.Config(
         neo4j_uri='bolt://localhost:7687',
         update_tag=TEST_UPDATE_TAG,
         aws_sync_all_profiles=True,
-        aws_best_effort_mode=True,
     )
     mock_sync_one.side_effect = KeyError('foo')
     mock_get_aws_account.return_value = {'test_profile': 'test_account', 'test_profile2': 'test_account2'}
-    cartography.intel.aws.start_aws_ingestion(neo4j_session, test_config)
-    assert caplog.text.count('KeyError') == 2
-    assert 'test_account' in caplog.text
-    assert 'test_account2' in caplog.text
-    assert mock_sync_one.call_count == 2
+    with raises(Exception) as e:
+        cartography.intel.aws.start_aws_ingestion(neo4j_session, test_config)
+    assert 'KeyError' in str(e)
+    assert str(e.value).count('foo') == 1
+    assert mock_sync_one.call_count == 1
     assert mock_run_cleanup_job.call_count == 0
     assert mock_run_analysis.call_count == 0
 
