@@ -141,7 +141,7 @@ def _sync_multiple_accounts(
     accounts: Dict[str, str],
     sync_tag: int,
     common_job_parameters: Dict[str, Any],
-    config: Config,
+    aws_best_effort_mode: bool,
     aws_requested_syncs: List[str] = [],
 ) -> bool:
     logger.info("Syncing AWS accounts: %s", ', '.join(accounts.values()))
@@ -167,7 +167,7 @@ def _sync_multiple_accounts(
                 aws_requested_syncs=aws_requested_syncs,  # Could be replaced later with per-account requested syncs
             )
         except Exception as e:
-            if config.aws_best_effort_mode:
+            if aws_best_effort_mode:
                 timestamp = datetime.datetime.now()
                 failed_account_ids.append(account_id)
                 exception_traceback = traceback.TracebackException.from_exception(e)
@@ -239,7 +239,7 @@ def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
         aws_accounts,
         config.update_tag,
         common_job_parameters,
-        config,
+        config.aws_best_effort_mode,
         requested_syncs,
     )
 
