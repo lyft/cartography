@@ -30,6 +30,11 @@ else:
 logger = logging.getLogger(__name__)
 
 
+STATUS_SUCCESS = 0
+STATUS_FAILURE = 1
+STATUS_KEYBOARD_INTERRUPT = 130
+
+
 def run_analysis_job(
     filename: str,
     neo4j_session: neo4j.Session,

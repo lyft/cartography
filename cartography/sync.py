@@ -1,7 +1,13 @@
+import argparse
 import logging
 import time
 from collections import OrderedDict
+from typing import Callable
+from typing import List
+from typing import Tuple
+from typing import Union
 
+import neo4j
 import neobolt.exceptions
 from neo4j import GraphDatabase
 from statsd import StatsClient
@@ -12,13 +18,17 @@ import cartography.intel.azure
 import cartography.intel.create_indexes
 import cartography.intel.crowdstrike
 import cartography.intel.crxcavator.crxcavator
+import cartography.intel.cve
 import cartography.intel.digitalocean
 import cartography.intel.gcp
 import cartography.intel.github
 import cartography.intel.gsuite
 import cartography.intel.kubernetes
 import cartography.intel.okta
+from cartography.config import Config
 from cartography.stats import set_stats_client
+from cartography.util import STATUS_FAILURE
+from cartography.util import STATUS_SUCCESS
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +47,7 @@ class Sync:
         # NOTE we may need meta-stages at some point to allow hooking into pre-sync, sync, and post-sync
         self._stages = OrderedDict()
 
-    def add_stage(self, name, func):
+    def add_stage(self, name: str, func: Callable) -> None:
         """
         Add one stage to the sync task.
 
@@ -48,7 +58,7 @@ class Sync:
         """
         self._stages[name] = func
 
-    def add_stages(self, stages):
+    def add_stages(self, stages: List[Tuple[str, Callable]]) -> None:
         """
         Add multiple stages to the sync task.
 
@@ -58,7 +68,7 @@ class Sync:
         for name, func in stages:
             self.add_stage(name, func)
 
-    def run(self, neo4j_driver, config):
+    def run(self, neo4j_driver: neo4j.Driver, config: Union[Config, argparse.Namespace]) -> int:
         """
         Execute all stages in the sync task in sequence.
 
@@ -81,9 +91,10 @@ class Sync:
                     raise  # TODO this should be configurable
                 logger.info("Finishing sync stage '%s'", stage_name)
         logger.info("Finishing sync with update tag '%d'", config.update_tag)
+        return STATUS_SUCCESS
 
 
-def run_with_config(sync, config):
+def run_with_config(sync: Sync, config: Union[Config, argparse.Namespace]) -> int:
     """
     Execute the cartography.sync.Sync.run method with parameters built from the given configuration object.
 
@@ -124,7 +135,7 @@ def run_with_config(sync, config):
             config.neo4j_uri,
             e,
         )
-        return 1
+        return STATUS_FAILURE
     except neobolt.exceptions.AuthError as e:
         logger.debug("Error occurred during Neo4j auth.", exc_info=True)
         if not neo4j_auth:
@@ -145,14 +156,14 @@ def run_with_config(sync, config):
                 ),
                 e,
             )
-        return 1
+        return STATUS_FAILURE
     default_update_tag = int(time.time())
     if not config.update_tag:
         config.update_tag = default_update_tag
     return sync.run(neo4j_driver, config)
 
 
-def build_default_sync():
+def build_default_sync() -> Sync:
     """
     Build the default cartography sync, which runs all intelligence modules shipped with the cartography package.
 
@@ -168,6 +179,7 @@ def build_default_sync():
         ('gcp', cartography.intel.gcp.start_gcp_ingestion),
         ('gsuite', cartography.intel.gsuite.start_gsuite_ingestion),
         ('crxcavator', cartography.intel.crxcavator.start_extension_ingestion),
+        ('cve', cartography.intel.cve.start_cve_ingestion),
         ('okta', cartography.intel.okta.start_okta_ingestion),
         ('github', cartography.intel.github.start_github_ingestion),
         ('digitalocean', cartography.intel.digitalocean.start_digitalocean_ingestion),

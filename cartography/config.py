@@ -20,6 +20,9 @@ class Config:
     :type aws_sync_all_profiles: bool
     :param aws_sync_all_profiles: If True, AWS sync will run for all non-default profiles in the AWS_CONFIG_FILE. If
         False (default), AWS sync will run using the default credentials only. Optional.
+    :type aws_best_effort_mode: bool
+    :param aws_best_effort_mode: If True, AWS sync will not raise any exceptions, just log. If False (default),
+        exceptions will be raised.
     :type azure_sync_all_subscriptions: bool
     :param azure_sync_all_subscriptions: If True, Azure sync will run for all profiles in azureProfile.json. If
         False (default), Azure sync will run using current user session via CLI credentials. Optional.
@@ -68,6 +71,8 @@ class Config:
     :param k8s_kubeconfig: Path to kubeconfig file for kubernetes cluster(s). Optional
     :type: pagerduty_api_key: str
     :param pagerduty_api_key: API authentication key for pagerduty. Optional.
+    :type: nist_cve_url: str
+    :param nist_cve_url: NIST CVE data provider base URI, e.g. https://nvd.nist.gov/feeds/json/cve/1.1. Optional.
     """
 
     def __init__(
@@ -78,6 +83,7 @@ class Config:
         neo4j_max_connection_lifetime=None,
         update_tag=None,
         aws_sync_all_profiles=False,
+        aws_best_effort_mode=False,
         azure_sync_all_subscriptions=False,
         azure_sp_auth=None,
         azure_tenant_id=None,
@@ -102,6 +108,8 @@ class Config:
         statsd_host=None,
         statsd_port=None,
         pagerduty_api_key=None,
+        nist_cve_url=None,
+        cve_enabled=False,
         crowdstrike_client_id=None,
         crowdstrike_client_secret=None,
         crowdstrike_api_url=None,
@@ -112,6 +120,7 @@ class Config:
         self.neo4j_max_connection_lifetime = neo4j_max_connection_lifetime
         self.update_tag = update_tag
         self.aws_sync_all_profiles = aws_sync_all_profiles
+        self.aws_best_effort_mode = aws_best_effort_mode
         self.azure_sync_all_subscriptions = azure_sync_all_subscriptions
         self.azure_sp_auth = azure_sp_auth
         self.azure_tenant_id = azure_tenant_id
@@ -136,6 +145,8 @@ class Config:
         self.statsd_host = statsd_host
         self.statsd_port = statsd_port
         self.pagerduty_api_key = pagerduty_api_key
+        self.nist_cve_url = nist_cve_url
+        self.cve_enabled = cve_enabled
         self.crowdstrike_client_id = crowdstrike_client_id
         self.crowdstrike_client_secret = crowdstrike_client_secret
         self.crowdstrike_api_url = crowdstrike_api_url

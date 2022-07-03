@@ -1,9 +1,0 @@
-{
-  "statements": [
-  {
-    "query": "MATCH (n:AWSDNSRecord)-[:MEMBER_OF_DNS_ZONE]->(:AWSDNSZone)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
-    "iterative": true,
-    "iterationsize": 100
-  }],
-  "name": "cleanup AWS resources linked to current account"
-}

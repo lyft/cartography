@@ -7,6 +7,7 @@ import sys
 import cartography.config
 import cartography.sync
 import cartography.util
+from cartography.experimental_neo4j_4x_support import patch_driver
 from cartography.intel.aws.util.common import parse_and_validate_aws_requested_syncs
 
 
@@ -124,6 +125,14 @@ class CLI:
                 'account you want to sync and use the AWS_CONFIG_FILE environment variable to point to that config '
                 'file (see https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html). cartography '
                 'respects the AWS CLI/SDK environment variables and does not override them.'
+            ),
+        )
+        parser.add_argument(
+            '--aws-best-effort-mode',
+            action='store_true',
+            help=(
+                'Enable AWS sync best effort mode when syncing AWS accounts. This will allow cartography to continue '
+                'syncing other accounts and delay raising an exception until the very end.'
             ),
         )
         parser.add_argument(
@@ -289,6 +298,21 @@ class CLI:
             ),
         )
         parser.add_argument(
+            '--nist-cve-url',
+            type=str,
+            default='https://nvd.nist.gov/feeds/json/cve/1.1',
+            help=(
+                'The base url for the NIST CVE data. Default = https://nvd.nist.gov/feeds/json/cve/1.1'
+            ),
+        )
+        parser.add_argument(
+            '--cve-enabled',
+            action='store_true',
+            help=(
+                'If set, CVE data will be synced from NIST.'
+            ),
+        )
+        parser.add_argument(
             '--statsd-enabled',
             action='store_true',
             help=(
@@ -351,9 +375,18 @@ class CLI:
                 'The crowdstrike URL, if using self-hosted. Defaults to the public crowdstrike API URL otherwise.'
             ),
         )
+        parser.add_argument(
+            '--experimental-neo4j-4x-support',
+            default=False,
+            action='store_true',
+            help=(
+                'enable the experimental suppor for neo4j 4.x. Can also be enabled by environment variable. '
+                'See cartography.__init__.py'
+            ),
+        )
         return parser
 
-    def main(self, argv):
+    def main(self, argv: str) -> int:
         """
         Entrypoint for the command line interface.
 
@@ -361,7 +394,7 @@ class CLI:
         :param argv: The parameters supplied to the command line program.
         """
         # TODO support parameter lookup in environment variables if not present on command line
-        config: cartography.config.Config = self.parser.parse_args(argv)
+        config: argparse.Namespace = self.parser.parse_args(argv)
         # Logging config
         if config.verbose:
             logging.getLogger('cartography').setLevel(logging.DEBUG)
@@ -480,11 +513,15 @@ class CLI:
         else:
             config.crowdstrike_client_secret = None
 
+        if config.experimental_neo4j_4x_support:
+            cartography.EXPERIMENTAL_NEO4J_4X_SUPPORT = True
+            patch_driver()
+
         # Run cartography
         try:
             return cartography.sync.run_with_config(self.sync, config)
         except KeyboardInterrupt:
-            return 130
+            return cartography.util.STATUS_KEYBOARD_INTERRUPT
 
 
 def main(argv=None):
@@ -502,4 +539,4 @@ def main(argv=None):
     logging.getLogger('neo4j.bolt').setLevel(logging.WARNING)
     argv = argv if argv is not None else sys.argv[1:]
     default_sync = cartography.sync.build_default_sync()
-    return CLI(default_sync, prog='cartography').main(argv)
+    sys.exit(CLI(default_sync, prog='cartography').main(argv))
