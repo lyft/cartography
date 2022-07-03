@@ -85,7 +85,8 @@ def get_policy(bucket: Dict, client: botocore.client.BaseClient) -> Optional[Dic
         else:
             if e.__class__.__name__ == 'ClientError':
                 logger.warning(
-                    f"Failed to retrieve S3 bucket policy for {bucket['Name']} - {e.__class__.__name__} {e.__dict__['response']['Error']['Message']}",
+                    f"Failed to retrieve S3 bucket policy for {bucket['Name']} - {e.__class__.__name__} "
+                    f"{e.__dict__['response']['Error']['Message']}",
                 )
             else:
                 logger.warning(
@@ -112,7 +113,8 @@ def get_acl(bucket: Dict, client: botocore.client.BaseClient) -> Optional[Dict]:
         else:
             if e.__class__.__name__ == 'ClientError':
                 logger.warning(
-                    f"Failed to retrieve S3 bucket ACL for {bucket['Name']} - {e.__class__.__name__} {e.__dict__['response']['Error']['Message']}",
+                    f"Failed to retrieve S3 bucket ACL for {bucket['Name']} - {e.__class__.__name__} "
+                    f"{e.__dict__['response']['Error']['Message']}",
                 )
             else:
                 logger.warning(
@@ -139,7 +141,8 @@ def get_encryption(bucket: Dict, client: botocore.client.BaseClient) -> Optional
         else:
             if e.__class__.__name__ == 'ClientError':
                 logger.warning(
-                    f"Failed to retrieve S3 bucket encryption for {bucket['Name']} - {e.__class__.__name__} {e.__dict__['response']['Error']['Message']}",
+                    f"Failed to retrieve S3 bucket encryption for {bucket['Name']} - {e.__class__.__name__} "
+                    f"{e.__dict__['response']['Error']['Message']}",
                 )
             else:
                 logger.warning(
@@ -166,7 +169,8 @@ def get_versioning(bucket: Dict, client: botocore.client.BaseClient) -> Optional
         else:
             if e.__class__.__name__ == 'ClientError':
                 logger.warning(
-                    f"Failed to retrieve S3 bucket versioning for {bucket['Name']} - {e.__class__.__name__} {e.__dict__['response']['Error']['Message']}",
+                    f"Failed to retrieve S3 bucket versioning for {bucket['Name']} - {e.__class__.__name__} "
+                    f"{e.__dict__['response']['Error']['Message']}",
                 )
             else:
                 logger.warning(
@@ -193,7 +197,8 @@ def get_public_access_block(bucket: Dict, client: botocore.client.BaseClient) ->
         else:
             if e.__class__.__name__ == 'ClientError':
                 logger.warning(
-                    f"Failed to retrieve S3 bucket public access block for {bucket['Name']} - {e.__class__.__name__} {e.__dict__['response']['Error']['Message']}",
+                    f"Failed to retrieve S3 bucket public access block for {bucket['Name']} - {e.__class__.__name__} "
+                    f"{e.__dict__['response']['Error']['Message']}",
                 )
             else:
                 logger.warning(
