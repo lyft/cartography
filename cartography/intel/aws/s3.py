@@ -199,6 +199,9 @@ def _is_common_exception(e: Exception, bucket: Dict) -> bool:
     elif "NoSuchPublicAccessBlockConfiguration" in e.args[0]:
         logger.warning(f"{error_msg} for {bucket['Name']} - NoSuchPublicAccessBlockConfiguration")
         return True
+    elif "IllegalLocationConstraintException" in e.args[0]:
+        logger.warning(f"{error_msg} for {bucket['Name']} - IllegalLocationConstraintException")
+        return True
     return False
 
 
