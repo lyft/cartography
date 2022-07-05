@@ -6,6 +6,7 @@ import boto3
 import neo4j
 
 from cartography.util import aws_handle_regions
+from cartography.util import batch
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
@@ -128,7 +129,8 @@ def load_ecr_repository_images(
     aws_update_tag: int,
 ) -> None:
     logger.info(f"Loading {len(repo_images_list)} ECR repository images in {region} into graph.")
-    neo4j_session.write_transaction(_load_ecr_repo_img_tx, repo_images_list, aws_update_tag, region)
+    for repo_image_batch in batch(repo_images_list, size=10000):
+        neo4j_session.write_transaction(_load_ecr_repo_img_tx, repo_image_batch, aws_update_tag, region)
 
 
 @timeit
