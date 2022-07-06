@@ -101,9 +101,6 @@ def load_network_interfaces(
         SET r.lastupdated = {update_tag}
     """
 
-    for item in data:
-        item['Arn'] = f"arn:aws:ec2:{region}:{aws_account_id}:network-interface/{item['NetworkInterfaceId']}"
-
     neo4j_session.run(
         ingest_network_interfaces, network_interfaces=data, update_tag=update_tag,
         region=region, aws_account_id=aws_account_id,
@@ -233,7 +230,7 @@ def load_network_interface_load_balancer_v2_relations(neo4j_session: neo4j.Sessi
 
 
 @timeit
-def load(neo4j_session: neo4j.Session, data: List[Dict], region: str, aws_account_id: str, update_tag: int) -> None:
+def load_network_interface_items(neo4j_session: neo4j.Session, data: List[Dict], region: str, aws_account_id: str, update_tag: int) -> None:
     elb_associations = []
     elb_associations_v2 = []
     instance_associations = []
@@ -273,6 +270,13 @@ def load(neo4j_session: neo4j.Session, data: List[Dict], region: str, aws_accoun
 def cleanup_network_interfaces(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('aws_ingest_network_interfaces_cleanup.json', neo4j_session, common_job_parameters)
 
+@timeit
+def transform_network_interfaces(network_interfaces: List[Dict], region: str, aws_account_id: str, update_tag: int) -> List[Dict]:
+    # arn:${Partition}:ec2:${Region}:${Account}:network-interface/${NetworkInterfaceId}
+    for ni in network_interfaces:
+        ni['Arn'] = f"arn:aws:ec2:{region}:{aws_account_id}:network-interface/{ni['NetworkInterfaceId']}"
+
+    return network_interfaces
 
 @timeit
 def sync_network_interfaces(
@@ -282,5 +286,6 @@ def sync_network_interfaces(
     for region in regions:
         logger.info("Syncing EC2 network interfaces for region '%s' in account '%s'.", region, current_aws_account_id)
         data = get_network_interface_data(boto3_session, region)
-        load(neo4j_session, data, region, current_aws_account_id, update_tag)
+        data = transform_network_interfaces(data, region, current_aws_account_id)
+        load_network_interface_items(neo4j_session, data, region, current_aws_account_id, update_tag)
     cleanup_network_interfaces(neo4j_session, common_job_parameters)
