@@ -107,7 +107,7 @@ def sync(
 
         cluster_data: Dict = {}
         for cluster_name in clusters:
-            cluster_data[cluster_name] = get_eks_describe_cluster(boto3_session, region, cluster_name)
+            cluster_data[cluster_name] = get_eks_describe_cluster(boto3_session, region, cluster_name)  # type: ignore
 
         load_eks_clusters(neo4j_session, cluster_data, region, current_aws_account_id, update_tag)
 

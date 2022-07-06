@@ -4,8 +4,10 @@ from typing import Dict
 from typing import List
 
 import boto3
+import botocore.exceptions
 import neo4j
 
+from cartography.intel.aws.ec2.util import get_botocore_config
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -20,7 +22,7 @@ DESCRIBE_SLEEP = 1
 @timeit
 @aws_handle_regions
 def get_emr_clusters(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
-    client = boto3_session.client('emr', region_name=region)
+    client = boto3_session.client('emr', region_name=region, config=get_botocore_config())
     clusters: List[Dict] = []
     paginator = client.get_paginator('list_clusters')
     for page in paginator.paginate():
@@ -32,9 +34,18 @@ def get_emr_clusters(boto3_session: boto3.session.Session, region: str) -> List[
 
 @timeit
 def get_emr_describe_cluster(boto3_session: boto3.session.Session, region: str, cluster_id: str) -> Dict:
-    client = boto3_session.client('emr', region_name=region)
-    response = client.describe_cluster(ClusterId=cluster_id)
-    return response['Cluster']
+    client = boto3_session.client('emr', region_name=region, config=get_botocore_config())
+    cluster_details: Dict = {}
+    try:
+        response = client.describe_cluster(ClusterId=cluster_id)
+        cluster_details = response['Cluster']
+    except botocore.exceptions.ClientError as e:
+        logger.warning(
+            "Could not run EMR describe_cluster due to boto3 error %s: %s. Skipping.",
+            e.response['Error']['Code'],
+            e.response['Error']['Message'],
+        )
+    return cluster_details
 
 
 @timeit
@@ -46,18 +57,34 @@ def load_emr_clusters(
     UNWIND {Clusters} as emr_cluster
         MERGE (cluster:EMRCluster{id: emr_cluster.Name})
         ON CREATE SET cluster.firstseen = timestamp(),
-            cluster.arn                 = emr_cluster.ClusterArn,
-            cluster.id                  = emr_cluster.Id,
-            cluster.name                = emr_cluster.Name,
-            cluster.servicerole         = emr_cluster.ServiceRole,
-            cluster.region              = {Region}
-        SET cluster.lastupdated         = {aws_update_tag}
+            cluster.arn = emr_cluster.ClusterArn,
+            cluster.id = emr_cluster.Id,
+            cluster.region = {Region}
+        SET cluster.name = emr_cluster.Name,
+            cluster.instance_collection_type = emr_cluster.InstanceCollectionType,
+            cluster.log_encryption_kms_key_id = emr_cluster.LogEncryptionKmsKeyId,
+            cluster.requested_ami_version = emr_cluster.RequestedAmiVersion,
+            cluster.running_ami_version = emr_cluster.RunningAmiVersion,
+            cluster.release_label = emr_cluster.ReleaseLabel,
+            cluster.auto_terminate = emr_cluster.AutoTerminate,
+            cluster.termination_protected = emr_cluster.TerminationProtected,
+            cluster.visible_to_all_users = emr_cluster.VisibleToAllUsers,
+            cluster.master_public_dns_name = emr_cluster.MasterPublicDnsName,
+            cluster.security_configuration = emr_cluster.SecurityConfiguration,
+            cluster.autoscaling_role = emr_cluster.AutoScalingRole,
+            cluster.scale_down_behavior = emr_cluster.ScaleDownBehavior,
+            cluster.custom_ami_id = emr_cluster.CustomAmiId,
+            cluster.repo_upgrade_on_boot = emr_cluster.RepoUpgradeOnBoot,
+            cluster.outpost_arn = emr_cluster.OutpostArn,
+            cluster.log_uri = emr_cluster.LogUri,
+            cluster.servicerole = emr_cluster.ServiceRole,
+            cluster.lastupdated = {aws_update_tag}
         WITH cluster
 
         MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
         MERGE (owner)-[r:RESOURCE]->(cluster)
-        ON CREATE SET r.firstseen       = timestamp()
-        SET r.lastupdated               = {aws_update_tag}
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {aws_update_tag}
     """
 
     logger.info("Loading EMR %d clusters for region '%s' into graph.", len(cluster_data), region)
@@ -89,7 +116,9 @@ def sync(
         cluster_data: List[Dict] = []
         for cluster in clusters:
             cluster_id = cluster['Id']
-            cluster_data += [get_emr_describe_cluster(boto3_session, region, cluster_id)]
+            cluster_details = get_emr_describe_cluster(boto3_session, region, cluster_id)
+            if cluster_details:
+                cluster_data.append(cluster_details)
             time.sleep(DESCRIBE_SLEEP)
 
         load_emr_clusters(neo4j_session, cluster_data, region, current_aws_account_id, update_tag)

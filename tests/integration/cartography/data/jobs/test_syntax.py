@@ -11,10 +11,10 @@ else:
 
 def test_analysis_jobs_cypher_syntax(neo4j_session):
     parameters = {
-        'AWS_ID': None,
-        'OCI_TENANCY_ID': None,
-        'UPDATE_TAG': None,
-        'OKTA_ORG_ID': None,
+        'AWS_ID': 'my_aws_account_id',
+        'OCI_TENANCY_ID': my_oci_tenant_id,
+        'UPDATE_TAG': 'my_update_tag',
+        'OKTA_ORG_ID': 'my_okta_org_id',
     }
 
     for job_name in contents('cartography.data.jobs.analysis'):

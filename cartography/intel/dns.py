@@ -52,11 +52,11 @@ def ingest_dns_record_by_fqdn(
         value = ",".join(ip_list)
         record_id = ingest_dns_record(
             neo4j_session, fqdn, value, record_type, update_tag, points_to_record,
-            record_label, dns_node_additional_label,
+            record_label, dns_node_additional_label,  # type: ignore
         )
         _link_ip_to_A_record(neo4j_session, update_tag, ip_list, record_id)
 
-        return record_id
+        return record_id  # type: ignore
     else:
         raise NotImplementedError(
             "Ingestion of DNS record type '{}' by FQDN has not been implemented. Failed to ingest '{}'.".format(

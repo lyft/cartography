@@ -5,11 +5,14 @@ from typing import List
 import boto3
 import neo4j
 
+from cartography.stats import get_stats_client
 from cartography.util import aws_handle_regions
+from cartography.util import merge_module_sync_metadata
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+stat_handler = get_stats_client(__name__)
 
 
 @timeit
@@ -27,7 +30,7 @@ def get_dynamodb_tables(boto3_session: boto3.session.Session, region: str) -> Li
 @timeit
 def load_dynamodb_tables(
     neo4j_session: neo4j.Session, data: List[Dict], region: str, current_aws_account_id: str,
-    aws_update_tag: str,
+    aws_update_tag: int,
 ) -> None:
     ingest_table = """
     MERGE (table:DynamoDBTable{id: {Arn}})
@@ -62,7 +65,7 @@ def load_dynamodb_tables(
 @timeit
 def load_gsi(
     neo4j_session: neo4j.Session, table: Dict, region: str, current_aws_account_id: str,
-    aws_update_tag: str,
+    aws_update_tag: int,
 ) -> None:
     ingest_gsi = """
     MERGE (gsi:DynamoDBGlobalSecondaryIndex{id: {Arn}})
@@ -116,4 +119,12 @@ def sync(
 ) -> None:
     sync_dynamodb_tables(
         neo4j_session, boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters,
+    )
+    merge_module_sync_metadata(
+        neo4j_session,
+        group_type='AWSAccount',
+        group_id=current_aws_account_id,
+        synced_type='DynamoDBTable',
+        update_tag=update_tag,
+        stat_handler=stat_handler,
     )

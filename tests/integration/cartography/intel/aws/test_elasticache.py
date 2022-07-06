@@ -7,6 +7,7 @@ TEST_UPDATE_TAG = 123456789
 
 
 def test_load_clusters(neo4j_session):
+    neo4j_session.run("MERGE(a:AWSAccount{id:{account}});", account=TEST_ACCOUNT_ID)
     elasticache_data = tests.data.aws.elasticache.DESCRIBE_CACHE_CLUSTERS
     clusters = elasticache_data['CacheClusters']
     cartography.intel.aws.elasticache.load_elasticache_clusters(
@@ -26,7 +27,19 @@ def test_load_clusters(neo4j_session):
     actual_cluster_arns = {n['r.arn'] for n in nodes}
     assert actual_cluster_arns == expected_cluster_arns
 
-    expected_topic_arns = {cluster['NotificationConfiguration']['TopicArn'] for cluster in clusters}
+    # Test the connection to the account
+    expected_cluster_arns = {(cluster['ARN'], TEST_ACCOUNT_ID) for cluster in clusters}
+    nodes = neo4j_session.run(
+        """
+        MATCH (r:ElasticacheCluster)<-[:RESOURCE]-(a:AWSAccount) RETURN r.arn, a.id
+        """,
+    )
+    actual_cluster_arns = {(n['r.arn'], n['a.id']) for n in nodes}
+    assert actual_cluster_arns == expected_cluster_arns
+
+    # Test undefined topic_arns
+    topic_arns_in_test_data = {cluster.get('NotificationConfiguration', {}).get('TopicArn') for cluster in clusters}
+    expected_topic_arns = {topic for topic in topic_arns_in_test_data if topic}  # Filter out Nones.
     nodes = neo4j_session.run(
         """
         MATCH (r:ElasticacheTopic) RETURN r.arn

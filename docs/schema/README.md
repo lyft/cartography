@@ -10,6 +10,7 @@
 - [GSuite](#gsuite)
 - [CRXcavator Platform](#crxcavator-platform)
 - [Microsoft Azure](#microsoft-azure)
+- [Kubernetes](#kubernetes)
 - [More to come!](#more-to-come)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -51,6 +52,12 @@
 
 ## Microsoft Azure
 - Click [here](azure.md)
+
+## Kubernetes
+- Click [here](kubernetes.md)
+
+## SyncMetadata
+- Click [here](syncmetadata.md)
 
 ## More to come!
 👍

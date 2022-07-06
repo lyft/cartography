@@ -29,3 +29,14 @@ GET_RESOURCES_RESPONSE = [
         ],
     },
 ]
+
+# a second response for a second instance we may use for testing
+GET_RESOURCES_RESPONSE_UPDATED = [
+    {
+        'ResourceARN': 'arn:aws:ec2:us-east-1:1234:instance/i-02',
+        'Tags': [{
+            'Key': 'TestKeyUpdated',
+            'Value': 'TestValueUpdated',
+        }],
+    },
+]

@@ -2,7 +2,6 @@ import json
 import logging
 from typing import Any
 from typing import Dict
-from typing import Generator
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -35,17 +34,20 @@ def get_apigateway_rest_apis(boto3_session: boto3.session.Session, region: str) 
 @aws_handle_regions
 def get_rest_api_details(
         boto3_session: boto3.session.Session, rest_apis: List[Dict], region: str,
-) -> Generator[Any, Any, Any]:
+) -> List[Tuple[Any, Any, Any, Any, Any]]:
     """
     Iterates over all API Gateway REST APIs.
     """
     client = boto3_session.client('apigateway', region_name=region)
+    apis = []
     for api in rest_apis:
         stages = get_rest_api_stages(api, client)
-        certificate = get_rest_api_client_certificate(stages, client)  # clientcertificate id is given by the api stage
+        # clientcertificate id is given by the api stage
+        certificate = get_rest_api_client_certificate(stages, client)  # type: ignore
         resources = get_rest_api_resources(api, client)
         policy = get_rest_api_policy(api, client)
-        yield api['id'], stages, certificate, resources, policy
+        apis.append((api['id'], stages, certificate, resources, policy))
+    return apis
 
 
 @timeit
@@ -296,7 +298,7 @@ def load_rest_api_details(
     for api_id, stage, certificate, resource, policy in stages_certificate_resources:
         parsed_policy = parse_policy(api_id, policy)
         if parsed_policy is not None:
-            policies.extend(parsed_policy)
+            policies.append(parsed_policy)
         if len(stage) > 0:
             for s in stage:
                 s['apiId'] = api_id
@@ -307,7 +309,7 @@ def load_rest_api_details(
             resources.extend(resource)
         if certificate:
             certificate['apiId'] = api_id
-            certificates.extend(certificate)
+            certificates.append(certificate)
 
     # cleanup existing properties
     run_cleanup_job(
@@ -328,15 +330,22 @@ def parse_policy(api_id: str, policy: Policy) -> Optional[Dict[Any, Any]]:
     """
     Uses PolicyUniverse to parse API Gateway REST API policy and returns the internet accessibility results
     """
+
     if policy is not None:
-        policy = Policy(json.loads(policy))
-        if policy.is_internet_accessible():
-            return {
-                "api_id": api_id,
-                "internet_accessible": True,
-                "accessible_actions": list(policy.internet_accessible_actions()),
-            }
-        else:
+        # unescape doubly escapped JSON
+        policy = policy.replace("\\", "")
+        try:
+            policy = Policy(json.loads(policy))
+            if policy.is_internet_accessible():
+                return {
+                    "api_id": api_id,
+                    "internet_accessible": True,
+                    "accessible_actions": list(policy.internet_accessible_actions()),
+                }
+            else:
+                return None
+        except json.JSONDecodeError:
+            logger.warn(f"failed to decode policy json : {policy}")
             return None
     else:
         return None

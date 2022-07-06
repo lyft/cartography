@@ -8,8 +8,8 @@ import adal
 import requests
 from azure.common.credentials import get_azure_cli_credentials
 from azure.common.credentials import get_cli_profile
-from azure.common.credentials import ServicePrincipalCredentials
 from azure.core.exceptions import HttpResponseError
+from azure.identity import ClientSecretCredential
 from msrestazure.azure_active_directory import AADTokenCredentials
 
 logger = logging.getLogger(__name__)
@@ -104,6 +104,7 @@ class Authenticator:
             logging.getLogger('msrest').setLevel(logging.ERROR)
             logging.getLogger('msrestazure.azure_active_directory').setLevel(logging.ERROR)
             logging.getLogger('urllib3').setLevel(logging.ERROR)
+            logging.getLogger('azure.core.pipeline.policies.http_logging_policy').setLevel(logging.ERROR)
 
             arm_credentials, subscription_id, tenant_id = get_azure_cli_credentials(with_tenant=True)
             aad_graph_credentials, placeholder_1, placeholder_2 = get_azure_cli_credentials(
@@ -139,25 +140,24 @@ class Authenticator:
             logging.getLogger('msrest').setLevel(logging.ERROR)
             logging.getLogger('msrestazure.azure_active_directory').setLevel(logging.ERROR)
             logging.getLogger('urllib3').setLevel(logging.ERROR)
+            logging.getLogger('azure.core.pipeline.policies.http_logging_policy').setLevel(logging.ERROR)
 
-            arm_credentials = ServicePrincipalCredentials(
+            arm_credentials = ClientSecretCredential(
                 client_id=client_id,
-                secret=client_secret,
-                tenant=tenant_id,
+                client_secret=client_secret,
+                tenant_id=tenant_id,
             )
 
-            aad_graph_credentials = ServicePrincipalCredentials(
+            aad_graph_credentials = ClientSecretCredential(
                 client_id=client_id,
-                secret=client_secret,
-                tenant=tenant_id,
+                client_secret=client_secret,
+                tenant_id=tenant_id,
                 resource='https://graph.windows.net',
             )
 
-            profile = get_cli_profile()
-
             return Credentials(
                 arm_credentials, aad_graph_credentials, tenant_id=tenant_id,
-                current_user=profile.get_current_account_user(),
+                current_user=client_id,
             )
 
         except HttpResponseError as e:

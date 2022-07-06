@@ -6,7 +6,9 @@ from typing import Optional
 import neo4j
 
 from . import compute
+from . import cosmosdb
 from . import sql
+from . import storage
 from . import subscription
 from . import tenant
 from .util.credentials import Authenticator
@@ -22,7 +24,9 @@ def _sync_one_subscription(
     common_job_parameters: Dict,
 ) -> None:
     compute.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
+    cosmosdb.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
     sql.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
+    storage.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters)
 
 
 def _sync_tenant(
@@ -30,7 +34,7 @@ def _sync_tenant(
     common_job_parameters: Dict,
 ) -> None:
     logger.info("Syncing Azure Tenant: %s", tenant_id)
-    tenant.sync(neo4j_session, tenant_id, current_user, update_tag, common_job_parameters)
+    tenant.sync(neo4j_session, tenant_id, current_user, update_tag, common_job_parameters)  # type: ignore
 
 
 def _sync_multiple_subscriptions(

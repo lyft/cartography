@@ -32,8 +32,8 @@ DESCRIBE_INSTANCES = {
                 },
                 'Hypervisor': 'xen',
                 'IamInstanceProfile': {
-                    'Arn': 'arn:aws:iam::ACCOUNT_NUM:instance-profile/PROFILE_NAME',
-                    'Id': 'PROFILE_ID',
+                    'Arn': 'arn:aws:iam::000000000000:instance-profile/PROFILE_NAME',
+                    'Id': 'PROFILE_NAME',
                 },
                 'ImageId': 'IMAGE_ID',
                 'InstanceId': 'i-01',
@@ -161,8 +161,8 @@ DESCRIBE_INSTANCES = {
                 },
                 'Hypervisor': 'xen',
                 'IamInstanceProfile': {
-                    'Arn': 'arn:aws:iam::OWNER_ACCOUNT_ID:instance-profile/SERVICE_NAME_2',
-                    'Id': 'PROFILE_ID_2',
+                    'Arn': 'arn:aws:iam::000000000000:instance-profile/SERVICE_NAME_2',
+                    'Id': 'SERVICE_NAME_2',
                 },
                 'ImageId': 'ami-2c',
                 'InstanceId': 'i-02',
@@ -288,8 +288,8 @@ DESCRIBE_INSTANCES = {
                     },
                     'Hypervisor': 'xen',
                     'IamInstanceProfile': {
-                        'Arn': 'arn:aws:iam::OWNER_ACCOUNT_ID:instance-profile/ANOTHER_SERVICE_NAME',
-                        'Id': 'IM_A_PROFILE_ID',
+                        'Arn': 'arn:aws:iam::000000000000:instance-profile/ANOTHER_SERVICE_NAME',
+                        'Id': 'ANOTHER_SERVICE_NAME',
                     },
                     'ImageId': 'THIS_IS_AN_IMAGE_ID',
                     'InstanceId': 'i-03',
@@ -408,8 +408,8 @@ DESCRIBE_INSTANCES = {
                     },
                     'Hypervisor': 'xen',
                     'IamInstanceProfile': {
-                        'Arn': 'arn:aws:iam::OWNER_ACCOUNT_ID:instance-profile/ANOTHER_SERVICE_NAME',
-                        'Id': 'IM_A_PROFILE_ID',
+                        'Arn': 'arn:aws:iam::000000000000:instance-profile/ANOTHER_SERVICE_NAME',
+                        'Id': 'ANOTHER_SERVICE_NAME',
                     },
                     'ImageId': 'THIS_IS_AN_IMAGE_ID',
                     'InstanceId': 'i-04',

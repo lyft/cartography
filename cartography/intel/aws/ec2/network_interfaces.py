@@ -238,7 +238,7 @@ def load(neo4j_session: neo4j.Session, data: List[Dict], region: str, aws_accoun
         if matchObj:
             elb_associations_v2.append({
                 'netinf_id': network_interface['NetworkInterfaceId'],
-                'elb_id': '{}-{}.elb.{}.amazonaws.com'.format(matchObj[1], matchObj[2], region),
+                'elb_id': f'{matchObj[1]}-{matchObj[2]}.elb.{region}.amazonaws.com',
             })
         else:
             matchObj = re.match(r'^ELB (.*)', network_interface.get('Description', ''))
@@ -253,7 +253,7 @@ def load(neo4j_session: neo4j.Session, data: List[Dict], region: str, aws_accoun
                 'netinf_id': network_interface['NetworkInterfaceId'],
                 'instance_id': network_interface['Attachment']['InstanceId'],
             })
-    load_network_interfaces(neo4j_session, data, region, aws_account_id, update_tag)
+    load_network_interfaces(neo4j_session, data, region, aws_account_id, update_tag)  # type: ignore
     load_network_interface_instance_relations(
         neo4j_session, instance_associations, region, aws_account_id, update_tag,
     )

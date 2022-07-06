@@ -10,6 +10,8 @@ from azure.core.exceptions import ClientAuthenticationError
 from azure.core.exceptions import HttpResponseError
 from azure.core.exceptions import ResourceNotFoundError
 from azure.mgmt.sql import SqlManagementClient
+from azure.mgmt.sql.models import SecurityAlertPolicyName
+from azure.mgmt.sql.models import TransparentDataEncryptionName
 from msrestazure.azure_exceptions import CloudError
 
 from .util.credentials import Credentials
@@ -94,7 +96,7 @@ def sync_server_details(
         server_list: List[Dict], sync_tag: int,
 ) -> None:
     details = get_server_details(credentials, subscription_id, server_list)
-    load_server_details(neo4j_session, credentials, subscription_id, details, sync_tag)
+    load_server_details(neo4j_session, credentials, subscription_id, details, sync_tag)  # type: ignore
 
 
 @timeit
@@ -607,7 +609,7 @@ def sync_database_details(
         subscription_id: str, databases: List[Dict], update_tag: int,
 ) -> None:
     db_details = get_database_details(credentials, subscription_id, databases)
-    load_database_details(neo4j_session, db_details, update_tag)
+    load_database_details(neo4j_session, db_details, update_tag)  # type: ignore
 
 
 @timeit
@@ -669,6 +671,7 @@ def get_db_threat_detection_policies(credentials: Credentials, subscription_id: 
             database['resource_group_name'],
             database['server_name'],
             database['name'],
+            SecurityAlertPolicyName.DEFAULT,
         ).as_dict()
     except ClientAuthenticationError as e:
         logger.warning(f"Client Authentication Error while retrieving threat detection policy - {e}")
@@ -725,6 +728,7 @@ def get_transparent_data_encryptions(credentials: Credentials, subscription_id: 
             database['resource_group_name'],
             database['server_name'],
             database['name'],
+            TransparentDataEncryptionName.CURRENT,
         ).as_dict()
     except ClientAuthenticationError as e:
         logger.warning(f"Client Authentication Error while retrieving transparent data encryptions - {e}")

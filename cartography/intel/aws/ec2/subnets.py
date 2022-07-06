@@ -37,6 +37,7 @@ def load_subnets(
     SET snet.lastupdated = {aws_update_tag}, snet.name = subnet.CidrBlock, snet.cidr_block = subnet.CidrBlock,
     snet.available_ip_address_count = subnet.AvailableIpAddressCount, snet.default_for_az = subnet.DefaultForAz,
     snet.map_customer_owned_ip_on_launch = subnet.MapCustomerOwnedIpOnLaunch,
+    snet.state = subnet.State, snet.assignipv6addressoncreation = subnet.AssignIpv6AddressOnCreation,
     snet.map_public_ip_on_launch = subnet.MapPublicIpOnLaunch, snet.subnet_arn = subnet.SubnetArn,
     snet.availability_zone = subnet.AvailabilityZone, snet.availability_zone_id = subnet.AvailabilityZoneId,
     snet.subnetid = subnet.SubnetId
@@ -80,7 +81,7 @@ def cleanup_subnets(neo4j_session: neo4j.Session, common_job_parameters: Dict) -
 @timeit
 def sync_subnets(
         neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str],
-        current_aws_account_id: str, update_tag: str, common_job_parameters: Dict,
+        current_aws_account_id: str, update_tag: int, common_job_parameters: Dict,
 ) -> None:
     for region in regions:
         logger.info("Syncing EC2 subnets for region '%s' in account '%s'.", region, current_aws_account_id)

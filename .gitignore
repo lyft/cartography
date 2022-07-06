@@ -13,3 +13,6 @@ build/
 .coverage
 .mypy_cache
 *.vscode
+.compose
+generated
+dist/
