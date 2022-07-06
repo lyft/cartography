@@ -1,8 +1,12 @@
-#Copyright (c) 2020, Oracle and/or its affiliates.
+# Copyright (c) 2020, Oracle and/or its affiliates.
 import re
-
 import logging
 
+from typing import Dict
+from typing import Any
+from typing import List
+
+import neo4j
 import oci
 from oci.exceptions import ConfigFileNotFound, ProfileNotFound, InvalidConfig
 
@@ -10,10 +14,12 @@ from cartography.util import run_cleanup_job
 
 logger = logging.getLogger(__name__)
 
-#def get_caller_identity():
-#    return {}
 
-def get_oci_account_default():
+def get_caller_identity() -> Dict[Any, Any]:
+    return {}
+
+
+def get_oci_account_default() -> Dict[str, Any]:
     try:
         profile_oci_credentials = oci.config.from_file("~/.oci/config", "DEFAULT")
         oci.config.validate_config(profile_oci_credentials)
@@ -30,16 +36,18 @@ def get_oci_account_default():
         )
         return {}
 
-def get_oci_profile_names_from_config():
+
+def get_oci_profile_names_from_config() -> List[Any]:
     config_path = oci.config._get_config_path_with_fallback("~/.oci/config")
     config = open(config_path, 'r').read()
     pattern = r'\[(.*)\]'
     m = re.findall(pattern, config)
     return m
 
-def get_oci_accounts_from_config():
 
-    available_profiles=get_oci_profile_names_from_config()
+def get_oci_accounts_from_config() -> Dict[str, Any]:
+
+    available_profiles = get_oci_profile_names_from_config()
 
     d = {}
     for profile_name in available_profiles:
@@ -71,7 +79,12 @@ def get_oci_accounts_from_config():
     return d
 
 
-def load_oci_accounts(neo4j_session, oci_accounts, oci_update_tag, common_job_parameters):
+def load_oci_accounts(
+    neo4j_session: neo4j.Session,
+    oci_accounts: Dict[str, Any],
+    oci_update_tag: int,
+    common_job_parameters: Dict[str, Any]
+) -> None:
     query = """
     MERGE (aa:OCITenancy{ocid: {TENANCY_ID}})
     ON CREATE SET aa.firstseen = timestamp()
@@ -85,10 +98,16 @@ def load_oci_accounts(neo4j_session, oci_accounts, oci_update_tag, common_job_pa
             oci_update_tag=oci_update_tag,
         )
 
-def cleanup(neo4j_session, common_job_parameters):
+
+def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict[str, Any]) -> None:
     run_cleanup_job('oci_tenancy_cleanup.json', neo4j_session, common_job_parameters)
 
 
-def sync(neo4j_session, accounts, oci_update_tag, common_job_parameters):
+def sync(
+    neo4j_session: neo4j.Session,
+    accounts: Dict[str, Any],
+    oci_update_tag: int,
+    common_job_parameters: Dict[str, Any]
+) -> None:
     load_oci_accounts(neo4j_session, accounts, oci_update_tag, common_job_parameters)
     cleanup(neo4j_session, common_job_parameters)
