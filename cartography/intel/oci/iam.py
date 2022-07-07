@@ -2,21 +2,16 @@
 # OCI Identity API-centric functions
 # https://docs.cloud.oracle.com/iaas/Content/Identity/Concepts/overview.htm
 
-import json
-import re
+
 import logging
-
-from typing import Dict
+import re
 from typing import Any
+from typing import Dict
 from typing import List
-
-import oci
 import neo4j
+import oci
 
 from . import utils
-
-from collections import namedtuple
-from string import Template
 
 from cartography.util import run_cleanup_job
 
@@ -28,7 +23,7 @@ def sync_compartments(
     iam: oci.identity.identity_client.IdentityClient,
     current_tenancy_id: str,
     oci_update_tag: int,
-    common_job_parameters: Dict[str, Any]
+    common_job_parameters: Dict[str, Any],
 ) -> None:
     logger.debug("Syncing IAM compartments for account '%s'.", current_tenancy_id)
     data = get_compartment_list_data(iam, current_tenancy_id)
@@ -39,20 +34,22 @@ def sync_compartments(
 def get_compartment_list_data_recurse(
     iam: oci.identity.identity_client.IdentityClient,
     compartment_list: Dict[str, Any],
-    compartment_id: str
+    compartment_id: str,
 ) -> None:
 
     response = oci.pagination.list_call_get_all_results(iam.list_compartments, compartment_id)
     if not response.data:
         return
-    compartment_list.update({"Compartments": list(compartment_list["Compartments"])+utils.oci_object_to_json(response.data)})
+    compartment_list.update(
+        {"Compartments": list(compartment_list["Compartments"]) + utils.oci_object_to_json(response.data)}
+    )
     for compartment in response.data:
         get_compartment_list_data_recurse(iam, compartment_list, compartment.id)
 
 
 def get_compartment_list_data(
     iam: oci.identity.identity_client.IdentityClient,
-    current_tenancy_id: str
+    current_tenancy_id: str,
 ) -> Dict[str, Any]:
     compartment_list = {"Compartments": ""}
     get_compartment_list_data_recurse(iam, compartment_list, current_tenancy_id)
@@ -63,7 +60,7 @@ def load_compartments(
     neo4j_session: neo4j.Session,
     compartments: List[Dict[str, Any]],
     current_oci_tenancy_id: str,
-    oci_update_tag: int
+    oci_update_tag: int,
 ) -> None:
     ingest_compartment = """
     MERGE (cnode:OCICompartment{ocid: {OCID}})
@@ -86,7 +83,7 @@ def load_compartments(
             NAME=compartment["name"],
             CREATE_DATE=compartment["time-created"],
             OCI_TENANCY_ID=current_oci_tenancy_id,
-            oci_update_tag=oci_update_tag
+            oci_update_tag=oci_update_tag,
         )
 
 
@@ -94,7 +91,7 @@ def load_users(
     neo4j_session: neo4j.Session,
     users: List[Dict[str, Any]],
     current_oci_tenancy_id: str,
-    oci_update_tag: int
+    oci_update_tag: int,
 ) -> None:
     ingest_user = """
     MERGE (unode:OCIUser{ocid: {OCID}})
@@ -103,7 +100,8 @@ def load_users(
     SET unode.name = {USERNAME}, unode.compartmentid = {COMPARTMENT_ID}, unode.description = {DESCRIPTION},
     unode.email = {EMAIL}, unode.lifecycle_state = {LIFECYCLE_STATE}, unode.is_mfa_activated = {IS_MFA_ACTIVATED},
     unode.can_use_api_keys = {CAN_USE_API_KEYS}, unode.can_use_auth_tokens = {CAN_USE_AUTH_TOKENS},
-    unode.can_use_console_password = {CAN_USE_CONSOLE_PASSWORD}, unode.can_use_customer_secret_keys = {CAN_USE_CUSTOMER_SECRET_KEYS},
+    unode.can_use_console_password = {CAN_USE_CONSOLE_PASSWORD},
+    unode.can_use_customer_secret_keys = {CAN_USE_CUSTOMER_SECRET_KEYS},
     unode.can_use_smtp_credentials = {CAN_USE_SMTP_CREDENTIALS},
     unode.lastupdated = {oci_update_tag}
     WITH unode
@@ -136,7 +134,7 @@ def load_users(
 
 def get_user_list_data(
     iam: oci.identity.identity_client.IdentityClient,
-    current_tenancy_id: str
+    current_tenancy_id: str,
 ) -> Dict[str, List[Dict[str, Any]]]:
     response = oci.pagination.list_call_get_all_results(iam.list_users, current_tenancy_id)
     return {'Users': utils.oci_object_to_json(response.data)}
@@ -147,7 +145,7 @@ def sync_users(
     iam: oci.identity.identity_client.IdentityClient,
     current_tenancy_id: str,
     oci_update_tag: int,
-    common_job_parameters: Dict[str, Any]
+    common_job_parameters: Dict[str, Any],
 ) -> None:
     logger.debug("Syncing IAM users for account '%s'.", current_tenancy_id)
     data = get_user_list_data(iam, current_tenancy_id)
@@ -167,7 +165,7 @@ def load_groups(
     neo4j_session: neo4j.Session,
     groups: List[Dict[str, Any]],
     current_tenancy_id: str,
-    oci_update_tag: int
+    oci_update_tag: int,
 ) -> None:
     ingest_group = """
     MERGE (gnode:OCIGroup{ocid: {OCID}})
@@ -199,7 +197,7 @@ def sync_groups(
     iam: oci.identity.identity_client.IdentityClient,
     current_tenancy_id: str,
     oci_update_tag: int,
-    common_job_parameters: Dict[str, Any]
+    common_job_parameters: Dict[str, Any],
 ) -> None:
     logger.debug("Syncing IAM groups for account '%s'.", current_tenancy_id)
     data = get_group_list_data(iam, current_tenancy_id)
@@ -210,9 +208,11 @@ def sync_groups(
 def get_group_membership_data(
     iam: oci.identity.identity_client.IdentityClient,
     group_id: str,
-    current_tenancy_id: str
+    current_tenancy_id: str,
 ) -> Dict[str, List[Dict[str, Any]]]:
-    response = oci.pagination.list_call_get_all_results(iam.list_user_group_memberships, compartment_id=current_tenancy_id, group_id=group_id)
+    response = oci.pagination.list_call_get_all_results(
+        iam.list_user_group_memberships, compartment_id=current_tenancy_id, group_id=group_id
+    )
     return {'GroupMemberships': utils.oci_object_to_json(response.data)}
 
 
@@ -227,7 +227,9 @@ def sync_group_memberships(
     query = "MATCH (group:OCIGroup)<-[:RESOURCE]-(OCITenancy{ocid: {OCI_TENANCY_ID}}) " \
             "return group.name as name, group.ocid as ocid;"
     groups = neo4j_session.run(query, OCI_TENANCY_ID=current_tenancy_id)
-    groups_membership = {group["ocid"]: get_group_membership_data(iam, group['ocid'], current_tenancy_id) for group in groups}
+    groups_membership = {
+        group["ocid"]: get_group_membership_data(iam, group['ocid'], current_tenancy_id) for group in groups
+    }
     load_group_memberships(neo4j_session, groups_membership, oci_update_tag)
     run_cleanup_job(
         'oci_import_groups_membership_cleanup.json',
@@ -239,7 +241,7 @@ def sync_group_memberships(
 def load_group_memberships(
     neo4j_session: neo4j.Session,
     group_memberships: Dict[str, Any],
-    oci_update_tag: int
+    oci_update_tag: int,
 ) -> None:
     ingest_membership = """
     MATCH (group:OCIGroup{ocid: {GROUP_OCID}})
@@ -264,7 +266,7 @@ def load_policies(
     neo4j_session: neo4j.Session,
     policies: List[Dict[str, Any]],
     current_tenancy_id: str,
-    oci_update_tag: int
+    oci_update_tag: int,
 ) -> None:
     ingest_policy = """
     MERGE (pnode:OCIPolicy{ocid: {OCID}})
@@ -296,7 +298,7 @@ def load_policies(
 
 def get_policy_list_data(
     iam: oci.identity.identity_client.IdentityClient,
-    current_tenancy_id: str
+    current_tenancy_id: str,
 ) -> Dict[str, List[Dict[str, Any]]]:
     response = oci.pagination.list_call_get_all_results(iam.list_policies, compartment_id=current_tenancy_id)
     return {'Policies': utils.oci_object_to_json(response.data)}
@@ -307,12 +309,14 @@ def sync_policies(
     iam: oci.identity.identity_client.IdentityClient,
     current_tenancy_id: str,
     oci_update_tag: int,
-    common_job_parameters: Dict[str, Any]
+    common_job_parameters: Dict[str, Any],
 ) -> None:
     logger.debug("Syncing IAM policies for account '%s'.", current_tenancy_id)
     compartments = utils.get_compartments_in_tenancy(neo4j_session, current_tenancy_id)
     for compartment in compartments:
-        logger.debug("Syncing OCI policies for compartment '%s' in account '%s'.", compartment['ocid'], current_tenancy_id)
+        logger.debug(
+            "Syncing OCI policies for compartment '%s' in account '%s'.", compartment['ocid'], current_tenancy_id
+        )
         data = get_policy_list_data(iam, compartment["ocid"])
         if(data["Policies"]):
             load_policies(neo4j_session, data["Policies"], current_tenancy_id, oci_update_tag)
@@ -324,7 +328,7 @@ def load_oci_policy_group_reference(
     policy_id: str,
     group_id: str,
     tenancy_id: str,
-    oci_update_tag: int
+    oci_update_tag: int,
 ) -> None:
     ingest_policy_group_reference = """
     MATCH (aa:OCIPolicy{ocid: {POLICY_ID}})
@@ -346,7 +350,7 @@ def load_oci_policy_compartment_reference(
     policy_id: str,
     compartment_id: str,
     tenancy_id: str,
-    oci_update_tag: int
+    oci_update_tag: int,
 ) -> None:
     ingest_policy_compartment_reference = """
     MATCH (aa:OCIPolicy{ocid: {POLICY_ID}})
@@ -368,30 +372,36 @@ def sync_oci_policy_references(
     neo4j_session: neo4j.Session,
     tenancy_id: str,
     oci_update_tag: int,
-    common_job_parameters: Dict[str, Any]
+    common_job_parameters: Dict[str, Any],
 ) -> None:
     groups = list(utils.get_groups_in_tenancy(neo4j_session, tenancy_id))
     compartments = list(utils.get_compartments_in_tenancy(neo4j_session, tenancy_id))
     policies = list(utils.get_policies_in_tenancy(neo4j_session, tenancy_id))
     for policy in policies:
+        check_compart = policy["compartmentid"]
         for statement in policy["statements"]:
             m = re.search('(?<=group\\s)[^ ]*(?=\\s)', statement)
             if m:
                 for group in groups:
-                    if group["name"].lower()==m.group(0).lower():
-                        load_oci_policy_group_reference(neo4j_session, policy["ocid"], group["ocid"], tenancy_id, oci_update_tag)
+                    if group["name"].lower() == m.group(0).lower():
+                        load_oci_policy_group_reference(
+                            neo4j_session, policy["ocid"], group["ocid"], tenancy_id, oci_update_tag
+                        )
             m = re.search('(?<=compartment\\s)[^ ]*(?=$)', statement)
             if m:
                 for compartment in compartments:
-                    # Only look at the compartment or subcompartment name referenced in the policy statement in which the policy is a member of.
-                    if compartment["ocid"] == policy["compartmentid"] or compartment["compartmentid"] == policy["compartmentid"]:
+                    # Only look at the compartment or subcompartment name referenced in the policy statement
+                    # in which the policy is a member of.
+                    if compartment["ocid"] == check_compart or compartment["compartmentid"] == check_compart:
                         if compartment["name"].lower() == m.group(0).lower():
-                            load_oci_policy_compartment_reference(neo4j_session, policy["ocid"], compartment['ocid'], tenancy_id, oci_update_tag)
+                            load_oci_policy_compartment_reference(
+                                neo4j_session, policy["ocid"], compartment['ocid'], tenancy_id, oci_update_tag
+                            )
 
 
 def get_region_subscriptions_list_data(
     iam: oci.identity.identity_client.IdentityClient,
-    current_tenancy_id: str
+    current_tenancy_id: str,
 ) -> Dict[str, List[Dict[str, Any]]]:
     response = oci.pagination.list_call_get_all_results(iam.list_region_subscriptions, current_tenancy_id)
     return {'RegionSubscriptions': utils.oci_object_to_json(response.data)}
@@ -401,7 +411,7 @@ def load_region_subscriptions(
     neo4j_session: neo4j.Session,
     regions: List[Dict[str, Any]],
     tenancy_id: str,
-    oci_update_tag: int
+    oci_update_tag: int,
 ) -> None:
     query = """
     MERGE (aa:OCIRegion{key: {REGION_KEY}})
@@ -428,12 +438,12 @@ def sync_region_subscriptions(
     iam: oci.identity.identity_client.IdentityClient,
     current_tenancy_id: str,
     oci_update_tag: int,
-    common_job_parameters: Dict[str, Any]
+    common_job_parameters: Dict[str, Any],
 ) -> None:
     logger.debug("Syncing IAM region subscriptions for account '%s'.", current_tenancy_id)
     data = get_region_subscriptions_list_data(iam, current_tenancy_id)
     load_region_subscriptions(neo4j_session, data["RegionSubscriptions"], current_tenancy_id, oci_update_tag)
-    #run_cleanup_job('oci_import_region_subscriptions_cleanup.json', neo4j_session, common_job_parameters)
+    # run_cleanup_job('oci_import_region_subscriptions_cleanup.json', neo4j_session, common_job_parameters)
 
 
 def sync(
@@ -441,7 +451,7 @@ def sync(
     iam: oci.identity.identity_client.IdentityClient,
     tenancy_id: str,
     oci_update_tag: int,
-    common_job_parameters: Dict[str, Any]
+    common_job_parameters: Dict[str, Any],
 ) -> None:
     logger.info("Syncing IAM for account '%s'.", tenancy_id)
     sync_users(neo4j_session, iam, tenancy_id, oci_update_tag, common_job_parameters)
