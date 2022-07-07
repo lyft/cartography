@@ -1,6 +1,5 @@
 # Copyright (c) 2020, Oracle and/or its affiliates.
 # OCI intel module - utility functions
-
 import json
 from typing import Any
 from typing import Dict
