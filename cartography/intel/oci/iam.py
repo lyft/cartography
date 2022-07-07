@@ -1,13 +1,12 @@
 # Copyright (c) 2020, Oracle and/or its affiliates.
 # OCI Identity API-centric functions
 # https://docs.cloud.oracle.com/iaas/Content/Identity/Concepts/overview.htm
-
-
 import logging
 import re
 from typing import Any
 from typing import Dict
 from typing import List
+
 import neo4j
 import oci
 
@@ -41,7 +40,7 @@ def get_compartment_list_data_recurse(
     if not response.data:
         return
     compartment_list.update(
-        {"Compartments": list(compartment_list["Compartments"]) + utils.oci_object_to_json(response.data)}
+       {"Compartments": list(compartment_list["Compartments"]) + utils.oci_object_to_json(response.data)},
     )
     for compartment in response.data:
         get_compartment_list_data_recurse(iam, compartment_list, compartment.id)
@@ -221,7 +220,7 @@ def sync_group_memberships(
     iam: oci.identity.identity_client.IdentityClient,
     current_tenancy_id: str,
     oci_update_tag: int,
-    common_job_parameters: Dict[str, Any]
+    common_job_parameters: Dict[str, Any],
 ) -> None:
     logger.debug("Syncing IAM group membership for account '%s'.", current_tenancy_id)
     query = "MATCH (group:OCIGroup)<-[:RESOURCE]-(OCITenancy{ocid: {OCI_TENANCY_ID}}) " \
@@ -315,7 +314,7 @@ def sync_policies(
     compartments = utils.get_compartments_in_tenancy(neo4j_session, current_tenancy_id)
     for compartment in compartments:
         logger.debug(
-            "Syncing OCI policies for compartment '%s' in account '%s'.", compartment['ocid'], current_tenancy_id
+            "Syncing OCI policies for compartment '%s' in account '%s'.", compartment['ocid'], current_tenancy_id,
         )
         data = get_policy_list_data(iam, compartment["ocid"])
         if(data["Policies"]):
@@ -385,7 +384,7 @@ def sync_oci_policy_references(
                 for group in groups:
                     if group["name"].lower() == m.group(0).lower():
                         load_oci_policy_group_reference(
-                            neo4j_session, policy["ocid"], group["ocid"], tenancy_id, oci_update_tag
+                            neo4j_session, policy["ocid"], group["ocid"], tenancy_id, oci_update_tag,
                         )
             m = re.search('(?<=compartment\\s)[^ ]*(?=$)', statement)
             if m:
@@ -395,7 +394,7 @@ def sync_oci_policy_references(
                     if compartment["ocid"] == check_compart or compartment["compartmentid"] == check_compart:
                         if compartment["name"].lower() == m.group(0).lower():
                             load_oci_policy_compartment_reference(
-                                neo4j_session, policy["ocid"], compartment['ocid'], tenancy_id, oci_update_tag
+                                neo4j_session, policy["ocid"], compartment['ocid'], tenancy_id, oci_update_tag,
                             )
 
 
