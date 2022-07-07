@@ -11,7 +11,6 @@ import neo4j
 import oci
 
 from . import utils
-
 from cartography.util import run_cleanup_job
 
 logger = logging.getLogger(__name__)
@@ -40,7 +39,7 @@ def get_compartment_list_data_recurse(
     if not response.data:
         return
     compartment_list.update(
-       {"Compartments": list(compartment_list["Compartments"]) + utils.oci_object_to_json(response.data)},
+        {"Compartments": list(compartment_list["Compartments"]) + utils.oci_object_to_json(response.data)},
     )
     for compartment in response.data:
         get_compartment_list_data_recurse(iam, compartment_list, compartment.id)
@@ -210,7 +209,7 @@ def get_group_membership_data(
     current_tenancy_id: str,
 ) -> Dict[str, List[Dict[str, Any]]]:
     response = oci.pagination.list_call_get_all_results(
-        iam.list_user_group_memberships, compartment_id=current_tenancy_id, group_id=group_id
+        iam.list_user_group_memberships, compartment_id=current_tenancy_id, group_id=group_id,
     )
     return {'GroupMemberships': utils.oci_object_to_json(response.data)}
 
@@ -340,7 +339,7 @@ def load_oci_policy_group_reference(
         ingest_policy_group_reference,
         POLICY_ID=policy_id,
         GROUP_ID=group_id,
-        oci_update_tag=oci_update_tag
+        oci_update_tag=oci_update_tag,
     )
 
 
@@ -362,7 +361,7 @@ def load_oci_policy_compartment_reference(
         ingest_policy_compartment_reference,
         POLICY_ID=policy_id,
         COMPARTMENT_ID=compartment_id,
-        oci_update_tag=oci_update_tag
+        oci_update_tag=oci_update_tag,
     )
 
 
