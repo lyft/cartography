@@ -47,7 +47,7 @@ def list_tenants(credentials: Credentials) -> List[Dict]:
     return tenants
 
 
-def get_active_tenant(credentials: Credentials, tenant_id: str) -> Dict:
+def get_active_tenant(credentials: Credentials) -> Dict:
     # Fetch current tenant
     tenants = list_tenants(credentials)
     tenant_obj = list(filter(lambda t: t['tenantId'] == credentials.get_tenant_id(), tenants))
@@ -63,13 +63,13 @@ def load_azure_tenant(
     neo4j_session: neo4j.Session, tenant_obj: Dict, current_user: str, update_tag: int, common_job_parameters: Dict
 ) -> None:
     query = """
-    MERGE (w:CloudanixWorkspace{id: {workspaceID}})
+    MERGE (w:CloudanixWorkspace{id: {workspaceId}})
     SET w.lastupdated = {update_tag}
     WITH w
-    MERGE (at:AzureTenant{id: {tenantID}})
+    MERGE (at:AzureTenant{id: {tenantId}})
     ON CREATE SET at.firstseen = timestamp()
     SET at.lastupdated = {update_tag},
-    at.id = {id},
+    at.path = {id},
     at.tenantCategory = {tenantCategory},
     at.tenantType = {tenantType},
     at.displayName = {displayName},
@@ -84,7 +84,7 @@ def load_azure_tenant(
     MERGE (ap:AzurePrincipal{id: {userEmail}})
     ON CREATE SET ap.email = {userEmail}, ap.firstseen = timestamp()
     SET ap.lastupdated = {update_tag},
-    ap.name={userName}, ap.userid={userID}
+    ap.name={userName}, ap.userid={userId}
     WITH at, ap
     MERGE (at)-[r:RESOURCE]->(ap)
     ON CREATE SET r.firstseen = timestamp()
@@ -92,9 +92,9 @@ def load_azure_tenant(
     """
     neo4j_session.run(
         query,
-        workspaceID=common_job_parameters['WORKSPACE_ID'],
+        workspaceId=common_job_parameters['WORKSPACE_ID'],
         id=tenant_obj['id'],
-        tenantID=tenant_obj['tenantId'],
+        tenantId=tenant_obj['tenantId'],
         tenantCategory=tenant_obj['tenantCategory'],
         tenantType=tenant_obj['tenantType'],
         displayName=tenant_obj['displayName'],
@@ -102,7 +102,7 @@ def load_azure_tenant(
         countryCode=tenant_obj['countryCode'],
         defaultDomain=tenant_obj['defaultDomain'],
         userEmail=current_user['email'],
-        userID=current_user.get('id'),
+        userId=current_user.get('id'),
         userName=current_user.get('name'),
         update_tag=update_tag,
     )

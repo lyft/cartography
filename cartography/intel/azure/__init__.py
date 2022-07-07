@@ -207,7 +207,7 @@ def start_azure_ingestion(
                 common_job_parameters['pagination'][service.get('name', None)] = pagination
         requested_syncs = parse_and_validate_azure_requested_syncs(azure_requested_syncs_string[:-1])
 
-    tenant_obj = tenant.get_active_tenant(credentials, credentials.get_tenant_id())
+    tenant_obj = tenant.get_active_tenant(credentials)
 
     _sync_tenant(
         neo4j_session,

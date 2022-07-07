@@ -12,7 +12,7 @@ from . import storage
 
 
 RESOURCE_FUNCTIONS: Dict = {
-    # 'iam': iam.sync,
+    'iam': iam.sync,
     'network': network.sync,
     'aks': aks.sync,
     'cosmosdb': cosmosdb.sync,

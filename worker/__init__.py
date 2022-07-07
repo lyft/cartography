@@ -97,8 +97,8 @@ def main(event: func.EventGridEvent, outputEvent: func.Out[func.EventGridOutputE
             logging.info(f'failed to process cartography: {msg["eventId"]} - {resp["message"]}')
 
         message = {
-            "status": resp['status'],
-            "params": msg['params'],
+            "status": resp.get('status'),
+            "params": msg.get('params'),
             "sessionString": msg.get('sessionString'),
             "eventId": msg.get('eventId'),
             "templateType": msg.get('templateType'),
@@ -113,7 +113,7 @@ def main(event: func.EventGridEvent, outputEvent: func.Out[func.EventGridOutputE
         }
 
         if message.get('services', None):
-            if 'requestTopic' in message['params']:
+            if 'requestTopic' in message.get('params'):
                 # Result should be pushed to "requestTopic" passed in the request
 
                 # Push message to Cartography Queue, if refresh is needed
@@ -123,7 +123,7 @@ def main(event: func.EventGridEvent, outputEvent: func.Out[func.EventGridOutputE
                 lib = EventGridLibrary(topic, access_key)
                 resp = lib.publish_event(message)
 
-        elif 'resultTopic' in message['params']:
+        elif 'resultTopic' in message.get('params'):
             # topic = message['resultTopic']
             # access_key = msg['resultTopicAccessKey']
 
