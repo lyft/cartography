@@ -40,7 +40,7 @@ Representation of an OCI Tenancy.
 	```
 	(OCITenancy)-[OCI_POLICY]->(OCIPolicy)
 	```
- 
+
  ## OCICompartment
 Representation of an [OCICompartment](https://docs.cloud.oracle.com/iaas/api/#/en/identity/20160918/Compartment)
 / Field / Description /
@@ -70,7 +70,7 @@ Representation of an [OCICompartment](https://docs.cloud.oracle.com/iaas/api/#/e
 	(OCICompartment)-[OCI_POLICY]->(OCIPolicy)
 	```
 
- 
+
 ## OCIUser
 Representation of an [OCIUser](https://docs.cloud.oracle.com/iaas/api/#/en/identity/20160918/User).
 
@@ -98,7 +98,7 @@ Representation of an [OCIUser](https://docs.cloud.oracle.com/iaas/api/#/en/ident
 	```
 	(OCIUser)-[MEMBER_OCI_GROUP]->(OCIGroup)
 	```
- 
+
 - OCI Tenancy's contain OCI Users.
 
 	```
@@ -155,7 +155,7 @@ Representation of an [OCI Policy](https://docs.cloud.oracle.com/iaas/api/#/en/id
 	```
 	(OCITenancy)-[OCI_POLICY]->(OCIPolicy)
 	```
- 
+
 - An `OCIPolicy` node is defined in an `OCICompartment`.
 
 	```
@@ -168,19 +168,19 @@ Representation of an [OCI Policy](https://docs.cloud.oracle.com/iaas/api/#/en/id
 	```
 	(OCITenancy)-[OCI_POLICY]->(OCIPolicy)
 	```
- 
+
 - An `OCIPolicy` node can reference an `OCICompartment`.
 
 	```
 	(OCIPolicy)-[OCI_POLICY_REFERENCE]->(OCICompartment)
 	```
- 
+
 - An `OCIPolicy` node can reference an `OCIGroup`.
 
 	```
 	(OCIPolicy)-[OCI_POLICY_REFERENCE]->(OCIGroup)
 	```
- 
+
 ## OCIRegion
 | Field | Description |
 |-------|-------------|
