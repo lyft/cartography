@@ -1,15 +1,16 @@
 # Copyright (c) 2020, Oracle and/or its affiliates.
-import re
-import logging
 
-from typing import Dict
+import logging
+import re
 from typing import Any
+from typing import Dict
 from typing import List
 
 import neo4j
 import oci
-from oci.exceptions import ConfigFileNotFound, ProfileNotFound, InvalidConfig
-
+from oci.exceptions import ConfigFileNotFound
+from oci.exceptions import InvalidConfig
+from oci.exceptions import ProfileNotFound
 from cartography.util import run_cleanup_job
 
 logger = logging.getLogger(__name__)
@@ -39,7 +40,7 @@ def get_oci_account_default() -> Dict[str, Any]:
 
 def get_oci_profile_names_from_config() -> List[Any]:
     config_path = oci.config._get_config_path_with_fallback("~/.oci/config")
-    config = open(config_path, 'r').read()
+    config = open(config_path).read()
     pattern = r'\[(.*)\]'
     m = re.findall(pattern, config)
     return m
@@ -55,15 +56,17 @@ def get_oci_accounts_from_config() -> Dict[str, Any]:
             logger.debug("Skipping OCI profile 'DEFAULT'.")
             continue
         try:
-            profile_oci_credentials = oci.config.from_file("~/.oci/config",profile_name)
+            profile_oci_credentials = oci.config.from_file("~/.oci/config", profile_name)
             oci.config.validate_config(profile_oci_credentials)
         except (ConfigFileNotFound, ProfileNotFound, InvalidConfig) as e:
-            logger.debug("Error occurred calling oci.config.from_file with profile_name '%s'.", profile_name, exc_info=True)
+            logger.debug("Error occurred calling oci.config.from_file with profile_name '%s'.",
+                         profile_name, exc_info=True)
             logger.error(
                 (
                     "Unable to initialize an OCI session using profile '%s', an error occurred: '%s'. Make sure your "
                     "OCI credentials are configured correctly, your OCI config file is valid, and your credentials "
-                    "have the required audit policies attached (https://docs.cloud.oracle.com/iaas/Content/Identity/Concepts/commonpolicies.htm)."
+                    "have the required audit policies attached "
+                    "(https://docs.cloud.oracle.com/iaas/Content/Identity/Concepts/commonpolicies.htm)."
                 ),
                 profile_name,
                 e,
@@ -83,7 +86,7 @@ def load_oci_accounts(
     neo4j_session: neo4j.Session,
     oci_accounts: Dict[str, Any],
     oci_update_tag: int,
-    common_job_parameters: Dict[str, Any]
+    common_job_parameters: Dict[str, Any],
 ) -> None:
     query = """
     MERGE (aa:OCITenancy{ocid: {TENANCY_ID}})
@@ -107,7 +110,7 @@ def sync(
     neo4j_session: neo4j.Session,
     accounts: Dict[str, Any],
     oci_update_tag: int,
-    common_job_parameters: Dict[str, Any]
+    common_job_parameters: Dict[str, Any],
 ) -> None:
     load_oci_accounts(neo4j_session, accounts, oci_update_tag, common_job_parameters)
     cleanup(neo4j_session, common_job_parameters)
