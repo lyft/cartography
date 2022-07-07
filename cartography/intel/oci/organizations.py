@@ -1,5 +1,4 @@
 # Copyright (c) 2020, Oracle and/or its affiliates.
-
 import logging
 import re
 from typing import Any
@@ -11,6 +10,7 @@ import oci
 from oci.exceptions import ConfigFileNotFound
 from oci.exceptions import InvalidConfig
 from oci.exceptions import ProfileNotFound
+
 from cartography.util import run_cleanup_job
 
 logger = logging.getLogger(__name__)
@@ -59,8 +59,10 @@ def get_oci_accounts_from_config() -> Dict[str, Any]:
             profile_oci_credentials = oci.config.from_file("~/.oci/config", profile_name)
             oci.config.validate_config(profile_oci_credentials)
         except (ConfigFileNotFound, ProfileNotFound, InvalidConfig) as e:
-            logger.debug("Error occurred calling oci.config.from_file with profile_name '%s'.",
-                         profile_name, exc_info=True)
+            logger.debug(
+                "Error occurred calling oci.config.from_file with profile_name '%s'.",
+                profile_name, exc_info=True,
+            )
             logger.error(
                 (
                     "Unable to initialize an OCI session using profile '%s', an error occurred: '%s'. Make sure your "
