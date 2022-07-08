@@ -61,7 +61,7 @@ def init_lambda(ctx):
 
 
 def process_request(context, args):
-    context.logger.info(f'request - {args.get("templateType")} - {args.get("eventId")} - {args.get("workspace")}')
+    context.logger.info(f'request - {args.get("templateType")} - {args.get("sessionString")} - {args.get("eventId")} - {args.get("workspace")}')
 
     svcs = []
     for svc in args.get('services',[]):
