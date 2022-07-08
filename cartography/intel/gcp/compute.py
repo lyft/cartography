@@ -951,7 +951,7 @@ def _attach_gcp_nics(neo4j_session: neo4j.Session, instance: Resource, gcp_updat
     """
     query = """
     MATCH (i:GCPInstance{id:{InstanceId}})
-    MERGE (nic:GCPNetworkInterface:NetworkInterface{id:{NicId}})
+    MERGE (nic:GCPNetworkInterface{id:{NicId}})
     ON CREATE SET nic.firstseen = timestamp(),
     nic.nic_id = {NicId}
     SET nic.private_ip = {NetworkIP},
