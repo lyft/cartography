@@ -47,6 +47,7 @@ def _load_ec2_instance_net_if_tx(
         instance_data: Dict[str, Any],
         update_tag: int,
         region: str,
+        current_aws_account_id: int
 ) -> None:
     query = """
     MATCH (instance:EC2Instance{instanceid: {InstanceId}})
@@ -83,9 +84,12 @@ def _load_ec2_instance_net_if_tx(
             ON CREATE SET r.firstseen = timestamp()
             SET r.lastupdated = {update_tag}
     """
+
+    interfaces = transform_network_interfaces(instance_data['NetworkInterfaces'], region, current_aws_account_id)
+
     tx.run(
         query,
-        Interfaces=instance_data['NetworkInterfaces'],
+        Interfaces=interfaces,
         InstanceId=instance_data['InstanceId'],
         region=region,
         update_tag=update_tag,
@@ -93,8 +97,16 @@ def _load_ec2_instance_net_if_tx(
 
 
 @timeit
+def transform_network_interfaces(network_interfaces: List[Dict], region: str, aws_account_id: str) -> List[Dict]:
+    # arn:${Partition}:ec2:${Region}:${Account}:network-interface/${NetworkInterfaceId}
+    for ni in network_interfaces:
+        ni['Arn'] = f"arn:aws:ec2:{region}:{aws_account_id}:network-interface/{ni['NetworkInterfaceId']}"
+
+    return network_interfaces
+
+@timeit
 def load_ec2_instance_network_interfaces(neo4j_session: neo4j.Session, instance_data: Dict, region: str, current_aws_account_id: str, update_tag: int) -> None:
-    neo4j_session.write_transaction(_load_ec2_instance_net_if_tx, instance_data, update_tag, region)
+    neo4j_session.write_transaction(_load_ec2_instance_net_if_tx, instance_data, update_tag, region, current_aws_account_id)
 
 
 def _load_ec2_reservation_tx(
