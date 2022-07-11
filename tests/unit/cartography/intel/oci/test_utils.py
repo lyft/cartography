@@ -11,9 +11,9 @@ OCI_OBJECT = """[{
 JSON_OCI_OBJECT = {
     "capabilities": {
         "can_use_api_keys": True,
-        "can_use_auth_tokens": True
+        "can_use_auth_tokens": True,
     },
-    "compartment_id": "ocid1.tenancy.oc1..123"
+    "compartment_id": "ocid1.tenancy.oc1..123",
 }
 
 
