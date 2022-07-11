@@ -1,8 +1,8 @@
 # Copyright (c) 2020, Oracle and/or its affiliates.
 # import cartography.intel.oci.iam
+import tests.data.oci.iam
 from cartography.intel.oci import iam
 from cartography.intel.oci import utils
-import tests.data.oci.iam
 
 
 TEST_TENANCY_ID = "ocid1.user.oc1..nqilyrb1l5t6gnmlcjgeim8q47vccnklev8k2ud9skn78eapu116oyv9wcr0"
@@ -57,7 +57,7 @@ def test_load_compartments(neo4j_session):
 def test_load_group_memberships(neo4j_session):
     group_memberships = tests.data.oci.iam.LIST_GROUP_MEMBERSHIPS
     groups = list(
-        utils.get_groups_in_tenancy(neo4j_session, TEST_TENANCY_ID)
+        utils.get_groups_in_tenancy(neo4j_session, TEST_TENANCY_ID),
     )
     data = {group["ocid"]: group_memberships for group in groups}
     iam.load_compartments(
