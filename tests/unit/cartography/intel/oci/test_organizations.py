@@ -1,6 +1,6 @@
-from unittest.mock import patch
 from unittest.mock import mock_open
-from unittest.mock import MagicMock
+from unittest.mock import patch
+
 from cartography.intel.oci import organizations
 
 CRED_DATA = """[DEFAULT]
