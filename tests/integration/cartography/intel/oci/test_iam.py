@@ -1,5 +1,4 @@
 # Copyright (c) 2020, Oracle and/or its affiliates.
-# import cartography.intel.oci.iam
 import tests.data.oci.iam
 from cartography.intel.oci import iam
 from cartography.intel.oci import utils
