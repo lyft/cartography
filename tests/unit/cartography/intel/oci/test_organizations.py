@@ -1,7 +1,6 @@
-from unittest.mock import MagicMock
-from unittest.mock import mock_open
 from unittest.mock import patch
-
+from unittest.mock import mock_open
+from unittest.mock import MagicMock
 from cartography.intel.oci import organizations
 
 CRED_DATA = """[DEFAULT]
@@ -21,7 +20,8 @@ def test_get_oci_profile_names_from_config(mock_file):
 
 
 def test_get_oci_accounts_from_config():
-    organizations.test_get_oci_profile_names_from_config = MagicMock()
-    organizations.test_get_oci_profile_names_from_config.return_value = ['DEFAULT']
-    x = organizations.get_oci_accounts_from_config()
-    assert x == {}
+    patch_func = 'cartography.intel.oci.organizations.get_oci_profile_names_from_config'
+    with patch(patch_func, return_value=['DEFAULT']) as profile_names:
+        oci_results = organizations.get_oci_accounts_from_config()
+        profile_names.assert_called_once()
+        assert oci_results == {}
