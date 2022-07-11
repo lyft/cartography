@@ -1,4 +1,4 @@
-#Copyright (c) 2020, Oracle and/or its affiliates.
+# Copyright (c) 2020, Oracle and/or its affiliates.
 import datetime
 
 
@@ -10,7 +10,7 @@ LIST_USERS = {
                 "can-use-auth-tokens": True,
                 "can-use-console-password": True,
                 "can-use-customer-secret-keys": True,
-                "can-use-smtp-credentials": True
+                "can-use-smtp-credentials": True,
             },
             "compartment-id": "ocid1.tenancy.oc1..nqilyrb1l5t6gnmlcjgeim8q47vccnklev8k2ud9skn78eapu116oyv9wcr0",
             "defined-tags": {},
@@ -24,7 +24,7 @@ LIST_USERS = {
             "is-mfa-activated": False,
             "lifecycle-state": "ACTIVE",
             "name": "example-user-0",
-            "time-created": datetime.datetime(2019, 1, 1, 0, 0, 1)
+            "time-created": datetime.datetime(2019, 1, 1, 0, 0, 1),
         },
         {
             "capabilities": {
@@ -32,7 +32,7 @@ LIST_USERS = {
                 "can-use-auth-tokens": True,
                 "can-use-console-password": True,
                 "can-use-customer-secret-keys": True,
-                "can-use-smtp-credentials": True
+                "can-use-smtp-credentials": True,
             },
             "compartment-id": "ocid1.tenancy.oc1..nqilyrb1l5t6gnmlcjgeim8q47vccnklev8k2ud9skn78eapu116oyv9wcr0",
             "defined-tags": {},
@@ -46,7 +46,7 @@ LIST_USERS = {
             "is-mfa-activated": False,
             "lifecycle-state": "ACTIVE",
             "name": "example-user-1",
-            "time-created": datetime.datetime(2019, 1, 1, 0, 0, 1)
+            "time-created": datetime.datetime(2019, 1, 1, 0, 0, 1),
         },
     ],
 }
@@ -63,7 +63,7 @@ LIST_GROUPS = {
             "inactive-status": None,
             "lifecycle-state": "ACTIVE",
             "name": "example-group-0",
-            "time-created": datetime.datetime(2019, 1, 1, 0, 0, 1)
+            "time-created": datetime.datetime(2019, 1, 1, 0, 0, 1),
         },
         {
             "compartment-id": "ocid1.tenancy.oc1..nqilyrb1l5t6gnmlcjgeim8q47vccnklev8k2ud9skn78eapu116oyv9wcr0",
@@ -74,7 +74,7 @@ LIST_GROUPS = {
             "inactive-status": None,
             "lifecycle-state": "ACTIVE",
             "name": "example-group-1",
-            "time-created": datetime.datetime(2019, 1, 1, 0, 0, 1)
+            "time-created": datetime.datetime(2019, 1, 1, 0, 0, 1),
         }
 
     ],
@@ -94,10 +94,10 @@ LIST_POLICIES = {
             "name": "example-policy-0",
             "statements": [
                 "allow group example-group-0 to read all-resources in compartment example-compartment-0",
-                "allow group example-group-0 to inspect all-resources in compartment example-compartment-0"
+                "allow group example-group-0 to inspect all-resources in compartment example-compartment-0",
             ],
             "time-created": datetime.datetime(2019, 1, 1, 0, 0, 1),
-            "version-date": None
+            "version-date": None,
         },
         {
             "compartment-id": "ocid1.tenancy.oc1..nqilyrb1l5t6gnmlcjgeim8q47vccnklev8k2ud9skn78eapu116oyv9wcr0",
@@ -110,10 +110,10 @@ LIST_POLICIES = {
             "name": "example-policy-1",
             "statements": [
                 "allow group example-group-1 to read all-resources in compartment example-compartment-1",
-                "allow group example-group-1 to inspect all-resources in compartment example-compartment-1"
+                "allow group example-group-1 to inspect all-resources in compartment example-compartment-1",
             ],
             "time-created": datetime.datetime(2019, 1, 1, 0, 0, 1),
-            "version-date": None
+            "version-date": None,
         },
     ],
 }
@@ -147,7 +147,7 @@ LIST_COMPARTMENTS = {
     ],
 }
 
-LIST_GROUP_MEMBERSHIPS= {
+LIST_GROUP_MEMBERSHIPS = {
     'GroupMemberships': [
         {
             'compartment-id': "ocid1.tenancy.oc1..nqilyrb1l5t6gnmlcjgeim8q47vccnklev8k2ud9skn78eapu116oyv9wcr0",
@@ -156,7 +156,8 @@ LIST_GROUP_MEMBERSHIPS= {
             'inactive-status': None,
             'lifecycle-state': 'ACTIVE',
             'time-created': datetime.datetime(2019, 1, 1, 0, 0, 1),
-            'user-id': 'ocid1.user.oc1..m5oaceraqeiq47zqstzy6ickbbfkw7vg4srozp4sskn78eapu116oyv9wcr0'},
+            'user-id': 'ocid1.user.oc1..m5oaceraqeiq47zqstzy6ickbbfkw7vg4srozp4sskn78eapu116oyv9wcr0',
+        },
         {
             'compartment-id': "ocid1.tenancy.oc1..nqilyrb1l5t6gnmlcjgeim8q47vccnklev8k2ud9skn78eapu116oyv9wcr0",
             'group-id': "ocid1.group.oc1..wa03xlg35zi0tb33qyrjteen36zrkauzhjz8pi0yzt4d2b78uo745h5ze6at",
@@ -164,6 +165,7 @@ LIST_GROUP_MEMBERSHIPS= {
             'inactive-status': None,
             'lifecycle-state': 'ACTIVE',
             'time-created': datetime.datetime(2019, 1, 1, 0, 0, 1),
-            'user-id': 'ocid1.user.oc1..srozp4sskn78eapu116oyv9wcr06ickbbfkw7vg4m5oaceraqeiq47zqstzy'},
+            'user-id': 'ocid1.user.oc1..srozp4sskn78eapu116oyv9wcr06ickbbfkw7vg4m5oaceraqeiq47zqstzy',
+        },
     ]
 }
