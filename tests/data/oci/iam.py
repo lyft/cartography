@@ -75,8 +75,7 @@ LIST_GROUPS = {
             "lifecycle-state": "ACTIVE",
             "name": "example-group-1",
             "time-created": datetime.datetime(2019, 1, 1, 0, 0, 1),
-        }
-
+        },
     ],
 }
 
@@ -167,5 +166,5 @@ LIST_GROUP_MEMBERSHIPS = {
             'time-created': datetime.datetime(2019, 1, 1, 0, 0, 1),
             'user-id': 'ocid1.user.oc1..srozp4sskn78eapu116oyv9wcr06ickbbfkw7vg4m5oaceraqeiq47zqstzy',
         },
-    ]
+    ],
 }
