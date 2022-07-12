@@ -32,13 +32,15 @@ def get_elastic_ip_addresses(boto3_session: boto3.session.Session, region: str) 
 
 
 @timeit
-def transform_elastic_ip_addresses(elastic_ip_addresses: List[Dict]) -> List[Dict]:
+def transform_elastic_ip_addresses(elastic_ip_addresses: List[Dict], current_aws_account_id: str,) -> List[Dict]:
     addresses: List[Dict] = []
     for address in elastic_ip_addresses:
+        address['arn'] = f"arn:aws:ec2:{address.get('region')}:{current_aws_account_id}:eip/{address.get('AllocationId')}"
         if address.get('AllocationId'):
             addresses.append(address)
 
     return addresses
+
 
 @timeit
 def load_elastic_ip_addresses(
@@ -63,7 +65,7 @@ def load_elastic_ip_addresses(
         address.private_ip_address = eia.PrivateIpAddress, address.public_ipv4_pool = eia.PublicIpv4Pool,
         address.network_border_group = eia.NetworkBorderGroup, address.customer_owned_ip = eia.CustomerOwnedIp,
         address.customer_owned_ipv4_pool = eia.CustomerOwnedIpv4Pool, address.carrier_ip = eia.CarrierIp,
-        address.region = address.region, address.lastupdated = {update_tag}
+        address.region = address.region, address.lastupdated = {update_tag}, address.arn = eia.arn
         WITH address
 
         MATCH (account:AWSAccount{id: {aws_account_id}})
@@ -133,7 +135,7 @@ def sync_elastic_ip_addresses(
             addresses = addresses[page_start:page_end]
             common_job_parameters['pagination']['elastic_ip_addresses']['hasNextPage'] = has_next_page
 
-    addresses = transform_elastic_ip_addresses(addresses)
+    addresses = transform_elastic_ip_addresses(addresses, current_aws_account_id)
     load_elastic_ip_addresses(neo4j_session, addresses, current_aws_account_id, update_tag)
     cleanup_elastic_ip_addresses(neo4j_session, common_job_parameters)
 

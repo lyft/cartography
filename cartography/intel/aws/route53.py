@@ -64,6 +64,7 @@ def load_a_records(neo4j_session: neo4j.Session, records: List[Dict], update_tag
     MERGE (a:DNSRecord:AWSDNSRecord{id: record.id})
     ON CREATE SET a.firstseen = timestamp(), a.name = record.name,
     a.region = record.Region,
+    a.arn = record.arn,
     a.type = record.type
     SET a.lastupdated = {update_tag}, a.value = record.value
     WITH a,record
@@ -87,6 +88,7 @@ def load_alias_records(neo4j_session: neo4j.Session, records: List[Dict], update
     MERGE (a:DNSRecord:AWSDNSRecord{id: record.id})
     ON CREATE SET a.firstseen = timestamp(), a.name = record.name,
     a.region = record.Region,
+    a.arn = record.arn,
     a.type = record.type
     SET a.lastupdated = {update_tag}, a.value = record.value
     WITH a,record
@@ -109,6 +111,7 @@ def load_cname_records(neo4j_session: neo4j.Session, records: List[Dict], update
     MERGE (a:DNSRecord:AWSDNSRecord{id: record.id})
     ON CREATE SET a.firstseen = timestamp(), a.name = record.name,
     a.region = record.Region,
+    a.arn = record.arn,
     a.type = record.type
     SET a.lastupdated = {update_tag}, a.value = record.value
     WITH a,record
@@ -337,6 +340,7 @@ def load_dns_details(
         for record_set in zone_record_sets:
             if record_set['Type'] == 'A' or record_set['Type'] == 'CNAME':
                 record = transform_record_set(record_set, zone['Id'], record_set['Name'][:-1])
+                record['arn'] = f"arn:aws:route53:::recordset/{record['id']}"
 
                 if record is not None:
                     record["Region"] = record_set.get("Region", "global")
@@ -350,6 +354,7 @@ def load_dns_details(
 
             if record_set['Type'] == 'NS':
                 record = transform_ns_record_set(record_set, zone['Id'])
+                record['arn'] = f"arn:aws:route53:::recordset/{record['id']}"
                 if record is not None:
                     record["Region"] = record_set.get("Region", "global")
                 zone_ns_records.append(record)
