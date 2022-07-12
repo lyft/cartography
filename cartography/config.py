@@ -43,6 +43,8 @@ class Config:
     :param crxcavator_api_key: Auth key for CRXcavator API. Optional.
     :type analysis_job_directory: str
     :param analysis_job_directory: Path to a directory tree containing analysis jobs to run. Optional.
+    :type oci_sync_all_profiles: bool
+    :param oci_sync_all_profiles: whether OCI will sync non-default profiles in OCI_CONFIG_FILE. Optional.
     :type okta_org_id: str
     :param okta_org_id: Okta organization id. Optional.
     :type okta_api_key: str
@@ -93,6 +95,7 @@ class Config:
         analysis_job_directory=None,
         crxcavator_api_base_uri=None,
         crxcavator_api_key=None,
+        oci_sync_all_profiles=None,
         okta_org_id=None,
         okta_api_key=None,
         okta_saml_role_regex=None,
@@ -130,6 +133,7 @@ class Config:
         self.analysis_job_directory = analysis_job_directory
         self.crxcavator_api_base_uri = crxcavator_api_base_uri
         self.crxcavator_api_key = crxcavator_api_key
+        self.oci_sync_all_profiles = oci_sync_all_profiles
         self.okta_org_id = okta_org_id
         self.okta_api_key = okta_api_key
         self.okta_saml_role_regex = okta_saml_role_regex
