@@ -35,7 +35,7 @@ def get_elastic_ip_addresses(boto3_session: boto3.session.Session, region: str) 
 def transform_elastic_ip_addresses(elastic_ip_addresses: List[Dict], current_aws_account_id: str,) -> List[Dict]:
     addresses: List[Dict] = []
     for address in elastic_ip_addresses:
-        address['arn'] = f"arn:aws:ec2:{address.get('region')}:{current_aws_account_id}:eip/{address.get('AllocationId')}"
+        address['arn'] = f"arn:aws:ec2:{address.get('region')}:{current_aws_account_id}:elastic-ip/{address.get('AllocationId')}"
         if address.get('AllocationId'):
             addresses.append(address)
 
