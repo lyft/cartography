@@ -33,19 +33,19 @@ def load_tags(session: neo4j.Session, data_list: List[Dict], update_tag: int) ->
 
     for counter in range(0, total_iterations):
         start = iteration_size * (counter)
-        
+
         if (start + iteration_size) >= total_items:
             end = total_items
             paginated_tags = data_list[start:]
-        
+
         else:
             end = start + iteration_size
             paginated_tags = data_list[start:end]
 
         logger.info(f"Start - Iteration {counter + 1} of {total_iterations}. {start} - {end} - {len(paginated_tags)}")
-    
+
         session.write_transaction(_load_tags_tx, paginated_tags, update_tag)
-        
+
         logger.info(f"End - Iteration {counter + 1} of {total_iterations}. {start} - {end} - {len(paginated_tags)}")
 
 
@@ -117,7 +117,7 @@ def concurrent_execution(config: Config, client: ResourceManagementClient, resou
         for tagname in resource_group['tags']:
             tags_list = tags_list + [{
                 'id': resource_group['id'] + "/providers/Microsoft.Resources/tags/" + tagname,
-                'name': tagname, 'value': resource_group['tags']
+                'key': tagname, 'value': resource_group['tags']
                 [tagname], 'type': 'Microsoft.Resources/tags', 'resource_id': resource_group['id'],
                 'resource_group': resource_group['name'],
             }]
@@ -128,7 +128,7 @@ def concurrent_execution(config: Config, client: ResourceManagementClient, resou
                     tags_list = tags_list + \
                         [{
                             'id': resource.id + "/providers/Microsoft.Resources/tags/" + tagname,
-                            'name': tagname, 'value': resource.tags[tagname],
+                            'key': tagname, 'value': resource.tags[tagname],
                             'type': 'Microsoft.Resources/tags',
                             'resource_id': resource.id, 'resource_group': resource_group['name'],
                         }]
@@ -166,7 +166,7 @@ def _load_tags_tx(tx: neo4j.Transaction, tags_list: List[Dict], update_tag: int)
     t.resource_group = tag.resource_group
     SET t.lastupdated = {update_tag},
     t.value = tag.value,
-    t.name = tag.name
+    t.key = tag.key
     WITH t,tag
     MATCH (l) where l.id = tag.resource_id
     MERGE (l)-[r:TAGGED]->(t)
