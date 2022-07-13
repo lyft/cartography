@@ -20,7 +20,7 @@ def get_labels_list(data: List[Dict]) -> List[Dict]:
         for key, value in labels.items():
             label = {}
             label['id'] = f"{item.get('id','')}/label/{key}"
-            label['name'] = key
+            label['key'] = key
             label['value'] = value
             label['resource_id'] = item.get('id', None)
 
@@ -28,6 +28,7 @@ def get_labels_list(data: List[Dict]) -> List[Dict]:
                 labels_data.append(label)
 
     return labels_data
+
 
 def load_labels(session: neo4j.Session, data_list: List[Dict], update_tag: int, common_job_parameters: Dict, service_label: str) -> None:
     iteration_size = 100
@@ -38,7 +39,7 @@ def load_labels(session: neo4j.Session, data_list: List[Dict], update_tag: int, 
 
     for counter in range(0, total_iterations):
         start = iteration_size * (counter)
-        
+
         if start + iteration_size >= total_items:
             end = total_items
             labels = data_list[start:]
@@ -50,7 +51,7 @@ def load_labels(session: neo4j.Session, data_list: List[Dict], update_tag: int, 
         logger.info(f"Start - Iteration {counter + 1} of {total_iterations}. {start} - {end} - {len(labels)}")
 
         session.write_transaction(_load_labels_tx, labels, update_tag, common_job_parameters, service_label)
-        
+
         logger.info(f"End - Iteration {counter + 1} of {total_iterations}. {start} - {end} - {len(labels)}")
 
 
@@ -61,7 +62,7 @@ def _load_labels_tx(tx: neo4j.Transaction, labels: List[Dict], update_tag: int, 
     ON CREATE SET l.firstseen = timestamp()
     SET l.lastupdated = {update_tag},
     l.value = label.value,
-    l.name = label.name
+    l.key = label.key
     WITH l,label
     MATCH (r:""" + service_label + """{id:label.resource_id})
     <-[:RESOURCE]-(:GCPProject{id: {GCP_PROJECT_ID}})<-[:OWNER]-(:CloudanixWorkspace{id: {WORKSPACE_ID}})
