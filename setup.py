@@ -43,7 +43,6 @@ setup(
         "requests>=2.22.0",
         "statsd",
         "packaging",
-        "cryptography<3.4,>=3.2",
         "python-digitalocean>=1.16.0",
         "adal>=1.2.4",
         "azure-cli-core>=2.26.0",
