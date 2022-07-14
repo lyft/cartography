@@ -37,6 +37,7 @@ setup(
         "google-api-python-client>=1.7.8",
         "oauth2client>=4.1.3",
         "marshmallow>=3.0.0rc7",
+        "oci>=2.71.0",
         "okta<1.0.0",
         "pyyaml>=5.3.1",
         "requests>=2.22.0",

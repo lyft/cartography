@@ -24,6 +24,7 @@ import cartography.intel.gcp
 import cartography.intel.github
 import cartography.intel.gsuite
 import cartography.intel.kubernetes
+import cartography.intel.oci
 import cartography.intel.okta
 from cartography.config import Config
 from cartography.stats import set_stats_client
@@ -180,6 +181,7 @@ def build_default_sync() -> Sync:
         ('gsuite', cartography.intel.gsuite.start_gsuite_ingestion),
         ('crxcavator', cartography.intel.crxcavator.start_extension_ingestion),
         ('cve', cartography.intel.cve.start_cve_ingestion),
+        ('oci', cartography.intel.oci.start_oci_ingestion),
         ('okta', cartography.intel.okta.start_okta_ingestion),
         ('github', cartography.intel.github.start_github_ingestion),
         ('digitalocean', cartography.intel.digitalocean.start_digitalocean_ingestion),
