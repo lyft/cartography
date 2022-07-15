@@ -57,6 +57,9 @@ def get_loadbalancer_v2_data(boto3_session: boto3.Session, region: str) -> List[
         elbv2['Listeners'] = get_load_balancer_v2_listeners(client, elbv2['LoadBalancerArn'])
         elbv2['TargetGroups'] = get_load_balancer_v2_target_groups(client, elbv2['LoadBalancerArn'])
         elbv2['region'] = region
+        elbv2['isPublicFacing'] = False
+        if not elbv2.get('VpcId'):
+            elbv2['isPublicFacing'] = True
     return elbv2s
 
 
@@ -71,6 +74,7 @@ def load_load_balancer_v2s(
     SET elbv2.lastupdated = {update_tag}, elbv2.name = {NAME}, elbv2.dnsname = {DNS_NAME},
     elbv2.canonicalhostedzonenameid = {HOSTED_ZONE_NAME_ID},
     elbv2.type = {ELBv2_TYPE},
+    elbv2.isPublicFacing = {isPublicFacing},
     elbv2.scheme = {SCHEME}, elbv2.region = {Region},
     elbv2.arn = {Arn}
     WITH elbv2
@@ -93,6 +97,7 @@ def load_load_balancer_v2s(
             HOSTED_ZONE_NAME_ID=lb.get("CanonicalHostedZoneNameID"),
             ELBv2_TYPE=lb.get("Type"),
             SCHEME=lb.get("Scheme"),
+            isPublicFacing=lb.get('isPublicFacing'),
             AWS_ACCOUNT_ID=current_aws_account_id,
             Region=region,
             Arn=load_balancer_arn,
