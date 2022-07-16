@@ -142,7 +142,11 @@ AWSGetFunc = TypeVar('AWSGetFunc', bound=Callable[..., List])
 # https://github.com/lyft/cartography/issues/65
 # https://github.com/lyft/cartography/issues/25
 def backoff_handler(details):
-    print("Backing off {wait:0.1f} seconds after {tries} tries. Calling function {target}".format(**details))
+    """
+    Handler that will be executed on exeption by backoff mechanism 
+    """
+    logger.warning("Backing off {wait:0.1f} seconds after {tries} tries. Calling function {target}".format(**details))
+
 
 # TODO Move this to cartography.intel.aws.util.common
 def aws_handle_regions(func: AWSGetFunc) -> AWSGetFunc:
