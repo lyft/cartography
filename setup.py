@@ -28,6 +28,7 @@ setup(
     },
     dependency_links=[],
     install_requires=[
+        "backoff==2.1.2",
         "boto3>=1.15.1",
         "botocore>=1.18.1",
         "dnspython>=1.15.0",
