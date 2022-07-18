@@ -24,9 +24,6 @@ def get_loadbalancer_data(boto3_session: boto3.session.Session, region: str) -> 
         elbs.extend(page['LoadBalancerDescriptions'])
     for elb in elbs:
         elb['region'] = region
-        elb['isPublicFacing'] = False
-        if not elb.get('VpcId'):
-            elb['isPublicFacing'] = True
     return elbs
 
 
@@ -90,7 +87,6 @@ def load_load_balancers(
     MERGE (elb:LoadBalancer{id: {ID}})
     ON CREATE SET elb.firstseen = timestamp(), elb.createdtime = {CREATED_TIME}
     SET elb.lastupdated = {update_tag}, elb.name = {NAME}, elb.dnsname = {DNS_NAME},
-    elb.isPublicFacing = {isPublicFacing},
     elb.canonicalhostedzonename = {HOSTED_ZONE_NAME}, elb.canonicalhostedzonenameid = {HOSTED_ZONE_NAME_ID},
     elb.scheme = {SCHEME}, elb.region = {Region}, elb.arn = {Arn}
     WITH elb

@@ -66,6 +66,9 @@ def _get_es_domains(client: botocore.client.BaseClient, region: str) -> List[Dic
         domains.extend(chunk_data['DomainStatusList'])
     for domain in domains:
         domain['region'] = region
+        domain['isPublicFacing'] = False
+        if not domain.get('VPCOptions', {}).get('VpcId'):
+            domain['isPublicFacing'] = True
     return domains
 
 
@@ -96,6 +99,7 @@ def _load_es_domains(
     es.ebs_options_volumetype = record.EBSOptions.VolumeType,
     es.ebs_options_volumesize = record.EBSOptions.VolumeSize,
     es.region = record.region,
+    es.isPublicFacing = record.isPublicFacing,
     es.ebs_options_iops = record.EBSOptions.Iops,
     es.encryption_at_rest_options_enabled = record.EncryptionAtRestOptions.Enabled,
     es.encryption_at_rest_options_kms_key_id = record.EncryptionAtRestOptions.KmsKeyId,

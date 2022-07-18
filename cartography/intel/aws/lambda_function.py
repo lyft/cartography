@@ -32,6 +32,9 @@ def get_lambda_data(boto3_session: boto3.session.Session, region: str) -> List[D
         for each_function in page['Functions']:
             each_function['region'] = region
             each_function['consolelink'] = aws_console_link.get_console_link(arn=each_function['FunctionArn'])
+            each_function['isPublicFacing'] = False
+            if not each_function.get('VpcConfig', {}).get('VpcId'):
+                each_function['isPublicFacing'] = True
             lambda_functions.append(each_function)
     return lambda_functions
 
@@ -49,6 +52,7 @@ def load_lambda_functions(
     lambda.region = lf.region,
     lambda.modifieddate = lf.LastModified,
     lambda.runtime = lf.Runtime,
+    lambda.isPublicFacing = lf.isPublicFacing,
     lambda.consolelink = lf.consolelink,
     lambda.description = lf.Description,
     lambda.timeout = lf.Timeout,
