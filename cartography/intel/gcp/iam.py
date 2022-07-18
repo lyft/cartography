@@ -141,6 +141,7 @@ def transform_service_accounts(service_accounts: List[Dict], project_id: str) ->
     for account in service_accounts:
         account['firstName'] = account['name'].split('@')[0]
         account['id'] = account['name']
+        account['service_account_name'] = account['name'].split('/')[-1]
         account['consolelink'] = gcp_console_link.get_console_link(
             resource_name='service_account', project_id=project_id, service_account_unique_id=account['uniqueId'])
     return service_accounts
@@ -154,6 +155,7 @@ def get_service_account_keys(iam: Resource, project_id: str, service_account: Di
         keys = res.get('keys', [])
         for key in keys:
             key['id'] = key['name'].split('/')[-1]
+            key['service_account_key_name'] = key['name'].split('/')[-1]
             key['serviceaccount'] = service_account['name']
             key['consolelink'] = gcp_console_link.get_console_link(
                 resource_name='service_account_key', project_id=project_id, service_account_unique_id=service_account['uniqueId'])
@@ -335,6 +337,7 @@ def load_service_accounts(
     MERGE (u:GCPServiceAccount{id: sa.id})
     ON CREATE SET u:GCPPrincipal, u.firstseen = timestamp()
     SET u.name = sa.name, u.displayname = sa.displayName,
+    u.service_account_name = sa.service_account_name,
     u.email = sa.email,
     u.consolelink = sa.consolelink,
     u.region = {region},

@@ -40,6 +40,7 @@ def get_kms_locations(kms: Resource, project_id: str, regions: list, common_job_
             if response.get('locations', []):
                 for location in response['locations']:
                     location['id'] = location['name']
+                    location['location_name'] = location['name'].split('/')[-1]
                     if regions is None:
                         locations.append(location)
                     else:
@@ -105,6 +106,7 @@ def get_kms_keyrings(kms: Resource, kms_locations: List[Dict], project_id: str) 
                     for key_ring in response['keyRings']:
                         key_ring['loc_id'] = loc['id']
                         key_ring['id'] = key_ring['name']
+                        key_ring['key_ring_name'] = key_ring['name'].split('/')[-1]
                         key_ring['region'] = loc.get("locationId", "global")
                         key_ring_entities, public_access = get_keyring_policy_entities(kms, key_ring, project_id)
                         key_ring['entities'] = key_ring_entities
@@ -193,6 +195,7 @@ def get_kms_crypto_keys(kms: Resource, key_rings: List[Dict], project_id: str) -
                     for crypto_key in response['cryptoKeys']:
                         crypto_key['keyring_id'] = key_ring['id']
                         crypto_key['id'] = crypto_key['name']
+                        crypto_key['crypto_key_name'] = crypto_key['name'].split('/')[-1]
                         crypto_key['region'] = key_ring.get("region", "global")
                         crypto_key['consolelink'] = gcp_console_link.get_console_link(
                             resource_name='kms_key', project_id=project_id, kms_key_ring_name=key_ring['name'].split('/')[-1], region=crypto_key['region'], kms_key_name=crypto_key['name'].split('/')[-1])
@@ -244,6 +247,7 @@ def _load_kms_locations_tx(
         location.firstseen = timestamp()
     SET
         location.name = loc.name,
+        location.location_name = loc.location_name,
         location.locationId = loc.locationId,
         location.displayName = loc.displayName,
         location.region = loc.locationId,
@@ -291,6 +295,7 @@ def _load_kms_key_rings_tx(
         keyring.firstseen = timestamp()
     SET
         keyring.name = keyr.name,
+        keyring.key_ring_name = keyr.key_ring_name,
         keyring.region = keyr.region,
         keyring.public_access = keyr.public_access,
         keyring.createTime = keyr.createTime,
@@ -380,6 +385,7 @@ def _load_kms_crypto_keys_tx(
         crypto_key.firstseen = timestamp()
     SET
         crypto_key.name = ck.name,
+        crypto_key.crypto_key_name = ck.crypto_key_name,
         crypto_key.purpose = ck.purpose,
         crypto_key.region = ck.region,
         crypto_key.createTime = ck.createTime,

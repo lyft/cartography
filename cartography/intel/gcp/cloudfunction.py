@@ -42,6 +42,7 @@ def get_gcp_functions(function: Resource, project_id: str, regions: list, common
             response = request.execute()
             for location in response['locations']:
                 location["id"] = location.get("name", None)
+                location['location_name'] = location['name'].split('/')[-1]
                 if regions is None:
                     locations.append(location)
                 else:
@@ -72,6 +73,7 @@ def get_gcp_functions(function: Resource, project_id: str, regions: list, common
                 response = request.execute()
                 for func in response.get('functions', []):
                     func['id'] = func['name']
+                    func['function_name'] = func['name'].split('/')[-1]
                     func['region'] = region.get('locationId', 'global')
                     function_entities, public_access = get_function_policy_entities(function, func, project_id)
                     func['entities'] = function_entities
@@ -168,6 +170,7 @@ def _load_functions_tx(tx: neo4j.Transaction, functions: List[Resource], project
         function.firstseen = timestamp()
     SET
         function.name = func.name,
+        function.function_name = func.function_name,
         function.description = func.description,
         function.status = func.status,
         function.region = func.region,
