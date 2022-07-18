@@ -38,6 +38,7 @@ def get_firestore_databases(firestore: Resource, project_id: str, regions: list,
         if response.get('databases', []):
             for database in response['databases']:
                 database['id'] = database['name']
+                database['database_name'] = database['name'].split('/')[-1]
                 database['consolelink'] = gcp_console_link.get_console_link(
                     resource_name='firestore_collection', project_id=project_id, firestore_collection_name=database['name'].split("/")[-1])
                 if regions is None:
@@ -116,6 +117,7 @@ def get_firestore_indexes(firestore: Resource, firestore_databases: List[Dict], 
                     for index in response['indexes']:
                         index['database_id'] = database['id']
                         index['id'] = index['name']
+                        index['index_name'] = index['name'].split('/')[-1]
                         index['region'] = database.get('locationId', 'global')
                         firestore_indexes.append(index)
                 request = firestore.projects().databases().collectionGroups().indexes().list_next(
@@ -171,6 +173,7 @@ def _load_firestore_databases_tx(
         d.firstseen = timestamp()
     SET
         d.name = database.name,
+        d.database_name = database.database_name,
         d.locationId = database.locationId,
         d.type = database.type,
         d.region = database.locationId,
@@ -222,6 +225,7 @@ def _load_firestore_indexes_tx(
         ix.firstseen = timestamp()
     SET
         ix.name = index.name,
+        ix.index_name = index.index_name,
         ix.queryScope = index.queryScope,
         ix.region = index.region,
         ix.state = index.state,

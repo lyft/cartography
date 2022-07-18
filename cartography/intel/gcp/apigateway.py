@@ -41,6 +41,7 @@ def get_apigateway_locations(apigateway: Resource, project_id: str, common_job_p
                 for location in res['locations']:
                     location['project_id'] = project_id
                     location['id'] = location['locationId']
+                    location['location_name'] = location.get('name').split('/')[-1]
                     locations.append(location)
             req = apigateway.projects().locations().list_next(previous_request=req, previous_response=res)
         if common_job_parameters.get('pagination', {}).get('apigateway', None):
@@ -106,6 +107,7 @@ def get_apis(apigateway: Resource, project_id: str, regions: list, common_job_pa
                     for api in res['apis']:
                         api['project_id'] = project_id
                         api['id'] = api['name']
+                        api['api_name'] = api.get('name').split('/')[-1]
                         x = api.get('name').split('/')
                         x = x[x.index('locations') + 1].split("-")
                         api['region'] = x[0]
@@ -228,6 +230,7 @@ def get_api_configs(apigateway: Resource, project_id: str, api: Dict, regions: l
                     # apiConfig['api_id'] = f"projects/{project_id}/locations/{region}/apis/\
                     # {apiConfig.get('name').split('/')[-3]}"
                     apiConfig['id'] = apiConfig['name']
+                    apiConfig['apiconfig_name'] = apiConfig.get('name').split('/')[-1]
                     apiConfig['project_id'] = project_id
                     x = apiConfig.get('name').split('/')
                     x = x[x.index('locations') + 1].split("-")
@@ -293,6 +296,7 @@ def get_gateways(apigateway: Resource, project_id: str, regions: list, common_jo
                 if res.get('gateways', []):
                     for gateway in res['gateways']:
                         gateway['id'] = gateway['name']
+                        gateway['geteway_name'] = gateway.get('name').split('/')[-1]
                         gateway['project_id'] = project_id
                         x = gateway.get('name').split('/')
                         x = x[x.index('locations') + 1].split("-")
@@ -415,6 +419,7 @@ def load_apigateway_locations_tx(
         location.firstseen = timestamp()
     SET
         location.name = loc.name,
+        location.location_name = loc.location_name,
         location.locationId = loc.locationId,
         location.displayName = loc.displayName,
         location.region = loc.locationId,
@@ -483,6 +488,7 @@ def load_apis_tx(tx: neo4j.Transaction, apis: List[Dict], project_id: str, gcp_u
         api.firstseen = timestamp()
     SET
         api.name = ap.name,
+        api.api_name = ap.api_name,
         api.createTime = ap.createTime,
         api.region = ap.region,
         api.updateTime = ap.updateTime,
@@ -633,6 +639,7 @@ def load_api_configs_tx(tx: neo4j.Transaction, configs: List[Dict], project_id: 
         config.firstseen = timestamp()
     SET
         config.name = conf.name,
+        config.apiconfig_name = conf.apiconfig_name,
         config.createTime = conf.createTime,
         config.region = conf.region,
         config.updateTime = conf.updateTime,
@@ -706,6 +713,7 @@ def load_gateways_tx(tx: neo4j.Transaction, gateways: List[Dict], project_id: st
         gateway.firstseen = timestamp()
     SET
         gateway.name = g.name,
+        gateway.gateway_name = g.gateway_name,
         gateway.createTime = g.createTime,
         gateway.updateTime = g.updateTime,
         gateway.displayName = g.displayName,

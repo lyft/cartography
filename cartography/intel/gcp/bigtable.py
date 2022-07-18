@@ -39,6 +39,7 @@ def get_bigtable_instances(bigtable: Resource, project_id: str, common_job_param
             if response.get('instances', []):
                 for instance in response['instances']:
                     instance['id'] = instance['name']
+                    instance['instance_name'] = instance['name'].split('/')[-1]
                     instance['consolelink'] = gcp_console_link.get_console_link(
                         resource_name='big_table_instance', project_id=project_id, bigtable_instance_name=instance['name'].split("/")[-1])
                     bigtable_instances.append(instance)
@@ -107,6 +108,7 @@ def get_bigtable_clusters(bigtable: Resource, bigtable_instances: List[Dict], pr
                         cluster['instance_id'] = instance['id']
                         cluster['instance_name'] = instance.get('name')
                         cluster['id'] = cluster['name']
+                        cluster['cluster_name'] = cluster['name'].split('/')[-1]
                         cluster['consolelink'] = gcp_console_link.get_console_link(
                             resource_name='big_table_cluster', project_id=project_id, bigtable_instance_name=instance['name'].split("/")[-1], bigtable_cluster_id=cluster['name'].split("/")[-1])
                         x = cluster.get("location", "global").split("/")
@@ -169,6 +171,7 @@ def get_bigtable_cluster_backups(bigtable: Resource, bigtable_clusters: List[Dic
                     for backup in response['backups']:
                         backup['cluster_id'] = cluster['id']
                         backup['id'] = backup['name']
+                        backup['backup_name'] = backup['name'].split('/')[-1]
                         backup['region'] = cluster.get('region', "global")
                         backup['consolelink'] = gcp_console_link.get_console_link(
                             resource_name='big_table_backup', project_id=project_id, bigtable_instance_name=cluster['instance_id'].split("/")[-1], bigtable_table_id=backup['sourceTable'].split("/")[-1])
@@ -221,6 +224,7 @@ def get_get_bigtable_tables(bigtable: Resource, bigtable_instances: List[Dict], 
                     for table in response['tables']:
                         table['instance_id'] = instance['id']
                         table['id'] = table['name']
+                        table['table_name'] = table['name'].split('/')[-1]
                         table['region'] = instance.get('region', 'global')
                         table['consolelink'] = gcp_console_link.get_console_link(
                             resource_name='big_table', project_id=project_id, bigtable_instance_name=instance['id'].split("/")[-1], bigtable_table_id=table['name'].split("/")[-1])
@@ -277,6 +281,7 @@ def _load_bigtable_instances_tx(
         i.firstseen = timestamp()
     SET
         i.name = instance.name,
+        i.instance_name = instance.instance_name,
         i.displayName = instance.displayName,
         i.state = instance.state,
         i.region = {region},
@@ -330,6 +335,7 @@ def _load_bigtable_clusters_tx(
         c.firstseen = timestamp()
     SET
         c.name = cluster.name,
+        c.cluster_name = cluster.cluster_name,
         c.location = cluster.location,
         c.region = cluster.region,
         c.state = cluster.state,
@@ -385,6 +391,7 @@ def _load_bigtable_cluster_backups_tx(
         b.firstseen = timestamp()
     SET
         b.name = backup.name,
+        b.backup_name = backup.backup_name,
         b.region = backup.region,
         b.sourceTable = backup.sourceTable,
         b.expireTime = backup.expireTime,
@@ -439,6 +446,7 @@ def _load_bigtable_tables_tx(
         t.firstseen = timestamp()
     SET
         t.name = table.name,
+        t.table_name = table.table_name,
         t.replicationState = table.clusterState.replicationState,
         t.granularity = table.granularity,
         t.region =table.region,

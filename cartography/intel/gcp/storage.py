@@ -102,6 +102,7 @@ def transform_gcp_buckets(bucket_res: Dict, regions: list) -> List[Dict]:
         bucket['iam_config_bucket_policy_only'] = \
             b.get('iamConfiguration', {}).get('bucketPolicyOnly', {}).get('enabled', None)
         bucket['id'] = b['id']
+        bucket['name'] = b['name']
         bucket['labels'] = [(key, val) for (key, val) in b.get('labels', {}).items()]
         bucket['owner_entity'] = b.get('owner', {}).get('entity')
         bucket['owner_entity_id'] = b.get('owner', {}).get('entityId')
@@ -167,6 +168,7 @@ def load_gcp_buckets(neo4j_session: neo4j.Session, buckets: List[Dict], gcp_upda
     SET bucket.self_link = {SelfLink},
     bucket.project_number = {ProjectNumber},
     bucket.kind = {Kind},
+    bucket.name = {name},
     bucket.location = {Location},
     bucket.region = {region},
     bucket.location_type = {LocationType},
