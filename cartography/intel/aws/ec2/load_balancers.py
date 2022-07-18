@@ -138,7 +138,6 @@ def load_load_balancers(
             HOSTED_ZONE_NAME=lb.get("CanonicalHostedZoneName"),
             HOSTED_ZONE_NAME_ID=lb.get("CanonicalHostedZoneNameID"),
             SCHEME=lb.get("Scheme", ""),
-            isPublicFacing=lb.get('isPublicFacing'),
             AWS_ACCOUNT_ID=current_aws_account_id,
             Region=region,
             Arn=load_balancer_arn,
