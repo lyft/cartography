@@ -23,12 +23,13 @@ def get_rds_cluster_data(boto3_session: boto3.session.Session, region: str) -> L
     """
     client = boto3_session.client('rds', region_name=region)
     paginator = client.get_paginator('describe_db_clusters')
-    instances: List[Any] = []
+    clusters: List[Any] = []
     for page in paginator.paginate():
-        instances.extend(page['DBClusters'])
-    for instance in instances:
-        instance['region'] = region
-    return instances
+        clusters.extend(page['DBClusters'])
+    for cluster in clusters:
+        cluster['region'] = region
+        cluster['name'] = cluster['DBClusterArn'].split(':')[-1]
+    return clusters
 
 
 @timeit
@@ -45,6 +46,7 @@ def load_rds_clusters(
         ON CREATE SET cluster.firstseen = timestamp(),
             cluster.arn = rds_cluster.DBClusterArn
         SET cluster.allocated_storage = rds_cluster.AllocatedStorage,
+            cluster.name = rds_cluster.name,
             cluster.availability_zones = rds_cluster.AvailabilityZones,
             cluster.backup_retention_period = rds_cluster.BackupRetentionPeriod,
             cluster.character_set_name = rds_cluster.CharacterSetName,

@@ -59,6 +59,7 @@ def load_elastic_ip_addresses(
         MERGE (address: ElasticIPAddress{id: eia.AllocationId})
         ON CREATE SET address.firstseen = timestamp()
         SET address.instance_id = eia.InstanceId, address.public_ip = eia.PublicIp,
+        address.name = eia.AllocationId,
         address.allocation_id = eia.AllocationId, address.association_id = eia.AssociationId,
         address.domain = eia.Domain, address.network_interface_id = eia.NetworkInterfaceId,
         address.network_interface_owner_id = eia.NetworkInterfaceOwnerId,
