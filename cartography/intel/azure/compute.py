@@ -172,6 +172,7 @@ def get_vm_extensions_list(vm_list: List[Dict], client: ComputeManagementClient,
                 'vm_id': extension.id[:extension.id.index("/extensions")],
                 'consolelink': azure_console_link.get_console_link(id=vm['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name']),
                 'type': extension.type,
+                'name': extension.name,
                 'location': extension.location,
             })
 
