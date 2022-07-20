@@ -104,9 +104,11 @@ def transform_network_interfaces(network_interfaces: List[Dict], region: str, aw
 
     return network_interfaces
 
+
 @timeit
 def load_ec2_instance_network_interfaces(neo4j_session: neo4j.Session, instance_data: Dict, region: str, current_aws_account_id: str, update_tag: int) -> None:
-    neo4j_session.write_transaction(_load_ec2_instance_net_if_tx, instance_data, update_tag, region, current_aws_account_id)
+    neo4j_session.write_transaction(_load_ec2_instance_net_if_tx, instance_data,
+                                    update_tag, region, current_aws_account_id)
 
 
 def _load_ec2_reservation_tx(
@@ -159,6 +161,7 @@ def _load_ec2_instance_tx(
         ON CREATE SET instance.firstseen = timestamp()
         SET instance.instanceid = {InstanceId},
             instance.publicdnsname = {PublicDnsName},
+            instance.privatednsname = {PrivateDnsName},
             instance.privateipaddress = {PrivateIpAddress},
             instance.publicipaddress = {PublicIpAddress},
             instance.imageid = {ImageId},
@@ -196,6 +199,7 @@ def _load_ec2_instance_tx(
         query,
         InstanceId=instanceid,
         PublicDnsName=instance.get("PublicDnsName"),
+        PrivateDnsName=instance.get("PrivateDnsName"),
         PublicIpAddress=instance.get("PublicIpAddress"),
         PrivateIpAddress=instance.get("PrivateIpAddress"),
         ImageId=instance.get("ImageId"),
