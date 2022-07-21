@@ -63,7 +63,7 @@ def patch_libraries():
 
     # API Changes
     # https://neo4j.com/docs/api/python-driver/current/breaking_changes.html#api-changes
-    neo4j.Result.summary = neo4j.Result.consume
+    # neo4j.Result.summary = neo4j.Result.consume
 
     # Dependency Changes
     # https://neo4j.com/docs/api/python-driver/current/breaking_changes.html#dependency-changes
