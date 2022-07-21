@@ -1,9 +1,9 @@
 from cartography.client.aws.iam import get_aws_admin_like_principals
-from tests.data.aws.iam import INLINE_POLICY_STATEMENTS
-from tests.data.aws.iam import LIST_GROUPS
 from cartography.intel.aws.iam import load_groups
 from cartography.intel.aws.iam import load_policy
 from cartography.intel.aws.iam import load_policy_statements
+from tests.data.aws.iam import INLINE_POLICY_STATEMENTS
+from tests.data.aws.iam import LIST_GROUPS
 
 TEST_ACCOUNT_ID = '1111'
 TEST_UPDATE_TAG = 0000

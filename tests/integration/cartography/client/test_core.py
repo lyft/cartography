@@ -1,8 +1,8 @@
 from cartography.client.core.tx import read_list_of_dicts_tx
+from cartography.client.core.tx import read_list_of_tuples_tx
 from cartography.client.core.tx import read_list_of_values_tx
 from cartography.client.core.tx import read_single_dict_tx
 from cartography.client.core.tx import read_single_value_tx
-from cartography.client.core.tx import read_list_of_tuples_tx
 
 
 def _ensure_test_data(neo4j_session):
