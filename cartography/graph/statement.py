@@ -115,7 +115,7 @@ class GraphStatement:
             result: neo4j.StatementResult = session.write_transaction(self._run_noniterative)
 
             # Exit if we have finished processing all items
-            if not result.summary().counters.contains_updates:
+            if not result.consume().counters.contains_updates:
                 # Ensure network buffers are cleared
                 result.consume()
                 break
