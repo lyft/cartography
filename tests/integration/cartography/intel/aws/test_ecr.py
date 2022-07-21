@@ -1,4 +1,5 @@
 import datetime
+import json
 
 import cartography.intel.aws.ecr
 import tests.data.aws.ecr
@@ -50,6 +51,8 @@ def test_cleanup_repositories(neo4j_session):
     create_test_account(neo4j_session, TEST_ACCOUNT_ID, TEST_UPDATE_TAG)
     repo_data = {**tests.data.aws.ecr.DESCRIBE_REPOSITORIES}
     # add additional repository noes, for a total of 103, since
+    cleanup_jobs = json.load(open('./cartography/data/jobs/cleanup/aws_import_ecr_cleanup.json'))
+    iter_size = cleanup_jobs['statements'][-1]['iterationsize']
     repo_data['repositories'].extend([
         {
             'repositoryArn': f'arn:aws:ecr:us-east-1:000000000000:repository/test-repository{i}',
@@ -58,7 +61,7 @@ def test_cleanup_repositories(neo4j_session):
             'repositoryUri': '000000000000.dkr.ecr.us-east-1/test-repository',
             'createdAt': datetime.datetime(2019, 1, 1, 0, 0, 1),
         }
-        for i in range(100)
+        for i in range(iter_size)
     ])
 
     # Act
