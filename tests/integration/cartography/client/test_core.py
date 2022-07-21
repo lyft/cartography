@@ -2,6 +2,7 @@ from cartography.client.core.tx import read_list_of_dicts_tx
 from cartography.client.core.tx import read_list_of_values_tx
 from cartography.client.core.tx import read_single_dict_tx
 from cartography.client.core.tx import read_single_value_tx
+from cartography.client.core.tx import read_list_of_tuples_tx
 
 
 def _ensure_test_data(neo4j_session):
@@ -60,3 +61,16 @@ def test_read_single_dict_tx(neo4j_session):
 
     # Assert
     assert {'name': 'Homer', 'age': 39} == result
+
+
+def test_read_list_of_tuples_tx(neo4j_session):
+    # Arrange
+    _ensure_test_data(neo4j_session)
+
+    # Act
+    query = "MATCH (a:TestNode) RETURN a.name AS name, a.age AS age ORDER BY age"
+    data = neo4j_session.read_transaction(read_list_of_tuples_tx, query)
+
+    # Assert
+    assert len(data) == 3
+    assert data[0][0] == 'Lisa'
