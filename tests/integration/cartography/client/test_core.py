@@ -21,7 +21,7 @@ def test_read_list_of_values_tx(neo4j_session):
     values = neo4j_session.read_transaction(read_list_of_values_tx, query)
 
     # Assert
-    assert values == ["Homer", "Lisa", "Marge", ]
+    assert values == ["Homer", "Lisa", "Marge"]
 
 
 def test_read_single_value_tx(neo4j_session):
