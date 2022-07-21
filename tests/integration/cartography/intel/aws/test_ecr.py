@@ -40,7 +40,7 @@ def test_cleanup_repositories(neo4j_session):
     '''
     Ensure that after the cleanup job runs, all ECRRepository nodes
     with a different UPDATE_TAG are removed from the AWSAccount node.
-    We load 100 additional nodes, becase the cleanup job is configured
+    We load 100 additional nodes, because the cleanup job is configured
     to run iteratively, processing 100 nodes at a time. So this test also ensures
     that iterative cleanups do work.
     '''
