@@ -20,8 +20,7 @@ import re
 from functools import wraps
 from typing import Callable
 
-import neo4j
-import neobolt.exceptions
+import neo4j.exceptions
 from distutils.util import strtobool
 
 # Enable these patches
@@ -68,7 +67,7 @@ def patch_libraries():
 
     # Dependency Changes
     # https://neo4j.com/docs/api/python-driver/current/breaking_changes.html#dependency-changes
-    neobolt.exceptions = neo4j.exceptions
+    # neo4j.exceptions = neo4j.exceptions
 
 
 if USING_4_X_DRIVER:

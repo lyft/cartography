@@ -88,7 +88,7 @@ class GraphStatement:
         result: neo4j.StatementResult = tx.run(self.query, self.parameters)
 
         # Handle stats
-        summary: neo4j.BoltStatementResultSummary = result.summary()
+        summary: neo4j.BoltStatementResultSummary = result.consume()
         stat_handler.incr('constraints_added', summary.counters.constraints_added)
         stat_handler.incr('constraints_removed', summary.counters.constraints_removed)
         stat_handler.incr('indexes_added', summary.counters.indexes_added)
