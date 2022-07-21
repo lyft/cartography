@@ -30,8 +30,8 @@ def test_read_list_of_values_tx_assert_returns_first_field_only(neo4j_session):
     _ensure_test_data(neo4j_session)
 
     # Act: test a query string that returns more than one field
-    query = "MATCH (a:TestNode) RETURN a.age, a.name ORDER BY a.name"
-    values = neo4j_session.read_transaction(read_list_of_tuples_tx, query)
+    query = "MATCH (a:TestNode) RETURN a.name, a.age ORDER BY a.name"
+    values = neo4j_session.read_transaction(read_list_of_values_tx, query)
 
     # Assert that only the first field is returned for each value in the list.
     assert values == ["Homer", "Lisa", "Marge"]
