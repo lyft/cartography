@@ -46,28 +46,28 @@ logger = logging.getLogger(__name__)
 
 
 # def patch_libraries():
-    # Logging
-    # https://github.com/neo4j/neo4j-python-driver/search?q=getLogger
-    # neo4j.bolt = neo4j
+# Logging
+# https://github.com/neo4j/neo4j-python-driver/search?q=getLogger
+# neo4j.bolt = neo4j
 
-    # Breaking Changes
-    # https://neo4j.com/docs/api/python-driver/current/breaking_changes.html
+# Breaking Changes
+# https://neo4j.com/docs/api/python-driver/current/breaking_changes.html
 
-    # Argument Renaming Changes
-    # https://neo4j.com/docs/api/python-driver/current/breaking_changes.html#class-renaming-changes
-    # neo4j.Result = neo4j.Result
-    # neo4j.StatementResult = neo4j.Result
-    # neo4j.BoltStatementResultSummary = neo4j.ResultSummary
-    # neo4j.StatementResultSummary = neo4j.ResultSummary
-    # neo4j.Statement = neo4j.Query
+# Argument Renaming Changes
+# https://neo4j.com/docs/api/python-driver/current/breaking_changes.html#class-renaming-changes
+# neo4j.Result = neo4j.Result
+# neo4j.StatementResult = neo4j.Result
+# neo4j.BoltStatementResultSummary = neo4j.ResultSummary
+# neo4j.StatementResultSummary = neo4j.ResultSummary
+# neo4j.Statement = neo4j.Query
 
-    # API Changes
-    # https://neo4j.com/docs/api/python-driver/current/breaking_changes.html#api-changes
-    # neo4j.Result.summary = neo4j.Result.consume
+# API Changes
+# https://neo4j.com/docs/api/python-driver/current/breaking_changes.html#api-changes
+# neo4j.Result.summary = neo4j.Result.consume
 
-    # Dependency Changes
-    # https://neo4j.com/docs/api/python-driver/current/breaking_changes.html#dependency-changes
-    # neo4j.exceptions = neo4j.exceptions
+# Dependency Changes
+# https://neo4j.com/docs/api/python-driver/current/breaking_changes.html#dependency-changes
+# neo4j.exceptions = neo4j.exceptions
 
 
 # if USING_4_X_DRIVER:
