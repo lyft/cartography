@@ -6,9 +6,9 @@ from cartography.client.core.tx import read_single_value_tx
 
 def _ensure_test_data(neo4j_session):
     neo4j_session.run("""
-            MERGE (t:TestNode{name: "Homer", age: 39})
-            MERGE (t:TestNode{name: "Lisa", age: 8})
-            MERGE (t:TestNode{name: "Marge", age: 36})
+            MERGE (t1:TestNode{name: "Homer", age: 39})
+            MERGE (t2:TestNode{name: "Lisa", age: 8})
+            MERGE (t3:TestNode{name: "Marge", age: 36})
         """)
 
 
