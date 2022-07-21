@@ -45,21 +45,21 @@ LOG_QUERIES = False
 logger = logging.getLogger(__name__)
 
 
-def patch_libraries():
+# def patch_libraries():
     # Logging
     # https://github.com/neo4j/neo4j-python-driver/search?q=getLogger
-    neo4j.bolt = neo4j
+    # neo4j.bolt = neo4j
 
     # Breaking Changes
     # https://neo4j.com/docs/api/python-driver/current/breaking_changes.html
 
     # Argument Renaming Changes
     # https://neo4j.com/docs/api/python-driver/current/breaking_changes.html#class-renaming-changes
-    neo4j.BoltStatementResult = neo4j.Result
-    neo4j.StatementResult = neo4j.Result
-    neo4j.BoltStatementResultSummary = neo4j.ResultSummary
-    neo4j.StatementResultSummary = neo4j.ResultSummary
-    neo4j.Statement = neo4j.Query
+    # neo4j.BoltStatementResult = neo4j.Result
+    # neo4j.StatementResult = neo4j.Result
+    # neo4j.BoltStatementResultSummary = neo4j.ResultSummary
+    # neo4j.StatementResultSummary = neo4j.ResultSummary
+    # neo4j.Statement = neo4j.Query
 
     # API Changes
     # https://neo4j.com/docs/api/python-driver/current/breaking_changes.html#api-changes
@@ -70,8 +70,8 @@ def patch_libraries():
     # neo4j.exceptions = neo4j.exceptions
 
 
-if USING_4_X_DRIVER:
-    patch_libraries()
+# if USING_4_X_DRIVER:
+#     patch_libraries()
 
 # Helper functions that patch the neo4j.GraphDatabase.driver().session().run()
 # codepath to include the query conversions:
