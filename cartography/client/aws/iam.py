@@ -11,6 +11,10 @@ def get_aws_admin_like_principals(neo4j_session: Session) -> List[Dict[str, Any]
     Return information on AWS principals that have admin-like privileges - that is, they have IAM policies that allow
     resource=* and action=*.
 
+    Credit to
+    https://github.com/marco-lancini/cartography-queries/blob/4d1f3913facdce7a4011141a4c7a15997c03553f/queries/
+    queries.json#L236
+
     Returned data shape: [
         {
             'account_name': 'my_account',
