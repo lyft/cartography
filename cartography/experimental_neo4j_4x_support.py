@@ -55,7 +55,7 @@ logger = logging.getLogger(__name__)
 
     # Argument Renaming Changes
     # https://neo4j.com/docs/api/python-driver/current/breaking_changes.html#class-renaming-changes
-    # neo4j.BoltStatementResult = neo4j.Result
+    # neo4j.Result = neo4j.Result
     # neo4j.StatementResult = neo4j.Result
     # neo4j.BoltStatementResultSummary = neo4j.ResultSummary
     # neo4j.StatementResultSummary = neo4j.ResultSummary
