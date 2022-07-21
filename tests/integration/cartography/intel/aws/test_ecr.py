@@ -1,4 +1,5 @@
 import datetime
+
 import cartography.intel.aws.ecr
 import tests.data.aws.ecr
 from tests.integration.cartography.intel.aws.common import create_test_account
@@ -36,6 +37,7 @@ def test_load_ecr_repositories(neo4j_session):
     actual_nodes = {n['r.arn'] for n in nodes}
     assert actual_nodes == expected_nodes
 
+
 def test_cleanup_repositories(neo4j_session):
     '''
     Ensure that after the cleanup job runs, all ECRRepository nodes
@@ -50,11 +52,11 @@ def test_cleanup_repositories(neo4j_session):
     # add additional repository noes, for a total of 103, since
     repo_data['repositories'].extend([
         {
-        'repositoryArn': f'arn:aws:ecr:us-east-1:000000000000:repository/test-repository{i}',
-        'registryId': '000000000000',
-        'repositoryName': f'test-repository{i}',
-        'repositoryUri': '000000000000.dkr.ecr.us-east-1/test-repository',
-        'createdAt': datetime.datetime(2019, 1, 1, 0, 0, 1),
+            'repositoryArn': f'arn:aws:ecr:us-east-1:000000000000:repository/test-repository{i}',
+            'registryId': '000000000000',
+            'repositoryName': f'test-repository{i}',
+            'repositoryUri': '000000000000.dkr.ecr.us-east-1/test-repository',
+            'createdAt': datetime.datetime(2019, 1, 1, 0, 0, 1),
         }
         for i in range(100)
     ])
@@ -69,7 +71,7 @@ def test_cleanup_repositories(neo4j_session):
     )
     common_job_params = {
         'AWS_ID': TEST_ACCOUNT_ID,
-        'UPDATE_TAG': TEST_UPDATE_TAG
+        'UPDATE_TAG': TEST_UPDATE_TAG,
     }
     nodes = neo4j_session.run(
         f"""
@@ -79,7 +81,7 @@ def test_cleanup_repositories(neo4j_session):
     )
     # there should be 103 nodes
     expected_nodes = {
-        len(repo_data['repositories'])
+        len(repo_data['repositories']),
     }
     actual_nodes = {(n['count(repo)']) for n in nodes}
     # Assert
@@ -87,15 +89,15 @@ def test_cleanup_repositories(neo4j_session):
 
     # Arrange
     additional_repo_data = {
-        'repositories' : [
+        'repositories': [
             {
                 'repositoryArn': 'arn:aws:ecr:us-east-1:000000000000:repository/test-repositoryX',
                 'registryId': '000000000000',
                 'repositoryName': 'test-repositoryX',
                 'repositoryUri': '000000000000.dkr.ecr.us-east-1/test-repository',
                 'createdAt': datetime.datetime(2019, 1, 1, 0, 0, 1),
-            }
-        ]
+            },
+        ],
     }
     additional_update_tag = 2
     common_job_params['UPDATE_TAG'] = additional_update_tag
@@ -121,8 +123,8 @@ def test_cleanup_repositories(neo4j_session):
     expected_nodes = {
         (
             'arn:aws:ecr:us-east-1:000000000000:repository/test-repositoryX',
-            additional_update_tag
-        )
+            additional_update_tag,
+        ),
     }
 
     # Assert
