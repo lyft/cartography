@@ -218,6 +218,7 @@ def load_gcp_buckets(neo4j_session: neo4j.Session, buckets: List[Dict], gcp_upda
             RequesterPays=bucket['requester_pays'],
             DefaultKmsKeyName=bucket['default_kms_key_name'],
             consolelink=bucket['consolelink'],
+            name=bucket['name'],
             gcp_update_tag=gcp_update_tag,
         )
 
