@@ -812,7 +812,6 @@ def sync(
     logger.info("Syncing IAM for project '%s', at %s.", project_id, tic)
 
     service_accounts_list = get_service_accounts(iam, project_id)
-
     if common_job_parameters.get('pagination', {}).get('iam', None):
         pageNo = common_job_parameters.get("pagination", {}).get("iam", None)["pageNo"]
         pageSize = common_job_parameters.get("pagination", {}).get("iam", None)["pageSize"]
@@ -951,6 +950,7 @@ def sync(
             has_next_page = True
             groups = groups[page_start:page_end]
             common_job_parameters['pagination']['iam']['hasNextPage'] = has_next_page
+
     load_groups(neo4j_session, groups, project_id, gcp_update_tag)
     cleanup_groups(neo4j_session, common_job_parameters)
     label.sync_labels(neo4j_session, groups, gcp_update_tag, common_job_parameters, 'groups', 'GCPGroup')
@@ -960,14 +960,12 @@ def sync(
             bindings = get_policy_bindings(crm, project_id)
             # users_from_bindings, groups_from_bindings, domains_from_bindings = transform_bindings(bindings, project_id)
 
-            load_bindings(neo4j_session, bindings, project_id, gcp_update_tag)
-            set_used_state(neo4j_session, project_id, common_job_parameters, gcp_update_tag)
     else:
         bindings = get_policy_bindings(crm, project_id)
         # users_from_bindings, groups_from_bindings, domains_from_bindings = transform_bindings(bindings, project_id)
 
-        load_bindings(neo4j_session, bindings, project_id, gcp_update_tag)
-        set_used_state(neo4j_session, project_id, common_job_parameters, gcp_update_tag)
+    load_bindings(neo4j_session, bindings, project_id, gcp_update_tag)
+    set_used_state(neo4j_session, project_id, common_job_parameters, gcp_update_tag)
 
     toc = time.perf_counter()
     logger.info(f"Time to process IAM: {toc - tic:0.4f} seconds")
