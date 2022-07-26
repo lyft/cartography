@@ -9,8 +9,10 @@ import neo4j
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
+from cloudconsolelink.clouds.aws import AWSLinker
 
 logger = logging.getLogger(__name__)
+aws_console_link = AWSLinker()
 
 
 @timeit
@@ -24,6 +26,7 @@ def get_ecr_repositories(boto3_session: boto3.session.Session, region: str) -> L
         ecr_repositories.extend(page['repositories'])
     for repo in ecr_repositories:
         repo['region'] = region
+        repo['consolelink'] = aws_console_link.get_console_link(arn=repo['repositoryArn'])
     return ecr_repositories
 
 
@@ -52,6 +55,7 @@ def load_ecr_repositories(
         ON CREATE SET repo.firstseen = timestamp(),
             repo.arn = ecr_repo.repositoryArn,
             repo.name = ecr_repo.repositoryName,
+            repo.consolelink = ecr_repo.consolelink,
             repo.region = ecr_repo.region,
             repo.created_at = ecr_repo.createdAt
         SET repo.lastupdated = {aws_update_tag},

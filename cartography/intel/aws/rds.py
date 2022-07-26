@@ -11,8 +11,10 @@ from cartography.util import aws_handle_regions
 from cartography.util import dict_value_to_str
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
+from cloudconsolelink.clouds.aws import AWSLinker
 
 logger = logging.getLogger(__name__)
+aws_console_link = AWSLinker()
 
 
 @timeit
@@ -159,6 +161,7 @@ def load_rds_instances(
             rds.performance_insights_enabled = rds_instance.PerformanceInsightsEnabled,
             rds.performance_insights_kms_key_id = rds_instance.PerformanceInsightsKMSKeyId,
             rds.region = rds_instance.region,
+            rds.consolelink = rds_instance.consolelink,
             rds.deletion_protection = rds_instance.DeletionProtection,
             rds.preferred_backup_window = rds_instance.PreferredBackupWindow,
             rds.latest_restorable_time = rds_instance.LatestRestorableTime,
@@ -203,7 +206,7 @@ def load_rds_instances(
         rds['EndpointAddress'] = ep.get('Address')
         rds['EndpointHostedZoneId'] = ep.get('HostedZoneId')
         rds['EndpointPort'] = ep.get('Port')
-
+        rds['consolelink'] = aws_console_link.get_console_link(arn=rds['DBInstanceArn'])
     neo4j_session.run(
         ingest_rds_instance,
         Instances=data,

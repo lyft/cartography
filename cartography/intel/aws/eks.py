@@ -10,8 +10,10 @@ import neo4j
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
+from cloudconsolelink.clouds.aws import AWSLinker
 
 logger = logging.getLogger(__name__)
+aws_console_link = AWSLinker()
 
 
 @timeit
@@ -28,6 +30,7 @@ def get_eks_clusters(boto3_session: boto3.session.Session, region: str) -> List[
         cluster_data['name'] = cluster
         cluster_data['region'] = region
         clusters_data.append(cluster_data)
+        clusters_data['consolelink'] = aws_console_link.get_console_link(arn=clusters_data['arn'])
     return clusters_data
 
 
@@ -49,6 +52,7 @@ def load_eks_clusters(
     ON CREATE SET cluster.firstseen = timestamp(),
                 cluster.arn = {ClusterArn},
                 cluster.name = {ClusterName},
+                cluster.consolelink = {consolelink},
                 cluster.region = {Region},
                 cluster.created_at = {CreatedAt}
     SET cluster.lastupdated = {aws_update_tag},
@@ -72,6 +76,7 @@ def load_eks_clusters(
             query,
             ClusterArn=cluster['arn'],
             ClusterName=cluster['name'],
+            consolelink=cluster['consolelink'],
             ClusterEndpoint=cluster.get('endpoint'),
             ClusterEndointPublic=cluster.get('resourcesVpcConfig', {}).get('endpointPublicAccess'),
             ClusterRoleArn=cluster.get('roleArn'),

@@ -11,8 +11,10 @@ from botocore.exceptions import ClientError
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
+from cloudconsolelink.clouds.aws import AWSLinker
 
 logger = logging.getLogger(__name__)
+aws_console_link = AWSLinker()
 
 
 @timeit
@@ -46,6 +48,7 @@ def load_ec2_key_pairs(
     MERGE (keypair:KeyPair:EC2KeyPair{arn: {ARN}, id: {ARN}})
     ON CREATE SET keypair.firstseen = timestamp()
     SET keypair.keyname = {KeyName}, keypair.keyfingerprint = {KeyFingerprint}, keypair.region = {Region},
+    keypair.consolelink = {consolelink},
     keypair.lastupdated = {update_tag}
     WITH keypair
     MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
@@ -59,6 +62,7 @@ def load_ec2_key_pairs(
         key_name = key_pair["KeyName"]
         key_fingerprint = key_pair.get("KeyFingerprint")
         key_pair_arn = f'arn:aws:ec2:{region}:{current_aws_account_id}:key-pair/{key_name}'
+        consolelink = aws_console_link.get_console_link(arn=key_pair_arn)
 
         neo4j_session.run(
             ingest_key_pair,
@@ -67,6 +71,7 @@ def load_ec2_key_pairs(
             KeyFingerprint=key_fingerprint,
             AWS_ACCOUNT_ID=current_aws_account_id,
             Region=region,
+            consolelink=consolelink,
             update_tag=update_tag,
         )
 

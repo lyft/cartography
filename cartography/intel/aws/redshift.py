@@ -9,8 +9,10 @@ import neo4j
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
+from cloudconsolelink.clouds.aws import AWSLinker
 
 logger = logging.getLogger(__name__)
+aws_console_link = AWSLinker()
 
 
 @timeit
@@ -52,6 +54,7 @@ def load_redshift_cluster_data(
     cluster.cluster_identifier = {ClusterIdentifier},
     cluster.cluster_revision_number = {ClusterRevisionNumber},
     cluster.db_name = {DBName},
+    cluster.consolelink = {consolelink},
     cluster.encrypted = {Encrypted},
     cluster.cluster_status = {ClusterStatus},
     cluster.endpoint_address = {EndpointAddress},
@@ -73,6 +76,7 @@ def load_redshift_cluster_data(
         neo4j_session.run(
             ingest_cluster,
             Arn=cluster['arn'],
+            consolelink=aws_console_link.get_console_link(arn=cluster['arn']),
             AZ=cluster['AvailabilityZone'],
             ClusterCreateTime=cluster['ClusterCreateTime'],
             ClusterIdentifier=cluster['ClusterIdentifier'],
