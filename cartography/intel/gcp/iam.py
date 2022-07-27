@@ -651,11 +651,13 @@ def load_bindings(neo4j_session: neo4j.Session, bindings: List[Dict], project_id
                 )
 
             elif member.startswith('serviceAccount:'):
+                is_deleted = False
                 attach_role_to_service_account(
                     neo4j_session,
                     role_id, f"projects/{project_id}/serviceAccounts/{member[len('serviceAccount:'):]}",
                     project_id,
                     gcp_update_tag,
+                    is_deleted
                 )
 
             elif member.startswith('group:'):
@@ -685,6 +687,61 @@ def load_bindings(neo4j_session: neo4j.Session, bindings: List[Dict], project_id
                     gcp_update_tag,
                 )
 
+            elif member.startswith('deleted:'):
+                member = member[len('deleted:'):]
+                if member.startswith('user:'):
+                    usr = member[len('user:'):]
+                    user = {
+                        'id': f"projects/{project_id}/users/{usr}",
+                        "email": usr,
+                        "name": usr.split("@")[0],
+                        "is_deleted": True
+
+                    }
+                    attach_role_to_user(
+                        neo4j_session, role_id, user,
+                        project_id, gcp_update_tag,
+                    )
+
+                elif member.startswith('serviceAccount:'):
+                    is_deleted = True
+                    attach_role_to_service_account(
+                        neo4j_session,
+                        role_id, f"projects/{project_id}/serviceAccounts/{member[len('serviceAccount:'):]}",
+                        project_id,
+                        gcp_update_tag,
+                        is_deleted,
+                    )
+
+                elif member.startswith('group:'):
+                    grp = member[len('group:'):]
+                    group = {
+                        "id": f'projects/{project_id}/groups/{grp}',
+                        "email": grp,
+                        "name": grp.split('@')[0],
+                        "is_deleted": True
+                    }
+                    attach_role_to_group(
+                        neo4j_session, role_id,
+                        group,
+                        project_id, gcp_update_tag,
+                    )
+
+                elif member.startswith('domain:'):
+                    dmn = member[len('domain:'):]
+                    domain = {
+                        "id": f'projects/{project_id}/domains/{dmn}',
+                        "email": dmn,
+                        "name": dmn,
+                        "is_deleted": True
+                    }
+                    attach_role_to_domain(
+                        neo4j_session, role_id,
+                        domain,
+                        project_id,
+                        gcp_update_tag,
+                    )
+
 
 @timeit
 def attach_role_to_user(
@@ -699,7 +756,8 @@ def attach_role_to_user(
     SET
     user.email = {UserEmail},
     user.name = {UserName},
-    user.lastupdated = {gcp_update_tag}
+    user.lastupdated = {gcp_update_tag},
+    user.isDeleted = {isDeleted}
     WITH user
     MATCH (role:GCPRole{id:{RoleId}})
     MERGE (user)-[r:ASSUME_ROLE]->(role)
@@ -719,6 +777,7 @@ def attach_role_to_user(
         UserId=user['id'],
         UserEmail=user['email'],
         UserName=user['name'],
+        isDeleted=user.get('is_deleted', False),
         gcp_update_tag=gcp_update_tag,
         project_id=project_id,
     )
@@ -728,10 +787,14 @@ def attach_role_to_user(
 def attach_role_to_service_account(
     neo4j_session: neo4j.Session, role_id: str,
     service_account_id: str, project_id: str, gcp_update_tag: int,
+    is_deleted: str
 ) -> None:
     ingest_script = """
+    MATCH (sa:GCPServiceAccount{id:{saId}})
+    SET
+    sa.isDeleted = {isDeleted}
+    WITH sa
     MATCH (role:GCPRole{id:{RoleId}})
-    MATCH (sa:GCPPrincipal{id:{saId}})
     MERGE (sa)-[r:ASSUME_ROLE]->(role)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {gcp_update_tag}
@@ -740,6 +803,7 @@ def attach_role_to_service_account(
     neo4j_session.run(
         ingest_script,
         RoleId=role_id,
+        isDeleted=is_deleted,
         saId=service_account_id,
         gcp_update_tag=gcp_update_tag,
     )
@@ -758,7 +822,8 @@ def attach_role_to_group(
     SET
     group.email = {GroupEmail},
     group.name = {GroupName},
-    group.lastupdated = {gcp_update_tag}
+    group.lastupdated = {gcp_update_tag},
+    group.isDeleted = {isDeleted}
     WITH group
     MATCH (role:GCPRole{id:{RoleId}})
     MERGE (group)-[r:ASSUME_ROLE]->(role)
@@ -778,6 +843,7 @@ def attach_role_to_group(
         GroupId=group['id'],
         GroupName=group['name'],
         GroupEmail=group['email'],
+        isDeleted=group.get('is_deleted', False),
         gcp_update_tag=gcp_update_tag,
         project_id=project_id,
     )
@@ -796,7 +862,8 @@ def attach_role_to_domain(
     SET
     domain.email = {DomainEmail},
     domain.name = {DomainName},
-    domain.lastupdated = {gcp_update_tag}
+    domain.lastupdated = {gcp_update_tag},
+    domain.isDeleted = {isDeleted}
     WITH domain
     MATCH (role:GCPRole{id:{RoleId}})
     MERGE (domain)-[r:ASSUME_ROLE]->(role)
@@ -816,6 +883,7 @@ def attach_role_to_domain(
         DomainId=domain['id'],
         DomainEmail=domain['email'],
         DomainName=domain['name'],
+        isDeleted=domain.get('is_deleted', False),
         gcp_update_tag=gcp_update_tag,
         project_id=project_id,
     )
