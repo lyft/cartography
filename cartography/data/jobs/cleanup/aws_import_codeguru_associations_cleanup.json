@@ -1,0 +1,10 @@
+{
+    "statements": [
+      {
+        "query": "MATCH (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(cga:CodeguruAssociation) WHERE cga.lastupdated <> {UPDATE_TAG} WITH cga LIMIT {LIMIT_SIZE} DETACH DELETE (cga)",
+        "iterative": true,
+        "iterationsize": 100
+      }
+    ],
+    "name": "cleanup Codeguru"
+}
