@@ -9,9 +9,9 @@ Time to set up the server that will run Cartography.  Cartography _should_ work 
 
             ⚠️ Make sure you have `JAVA_HOME` environment variable set. The following works for Mac OS: `export JAVA_HOME=$(/usr/libexec/java_home)`
 
-    1. Go to the [Neo4j download page](https://neo4j.com/download-center/#releases), click "Community Server" and download Neo4j Community Edition 3.5.\*.
+    1. Go to the [Neo4j download page](https://neo4j.com/download-center/#community), and download Neo4j Community Edition 4.4.\*.
 
-            ⚠️ At this time we run our automated tests on Neo4j version 3.5.\*.  Other versions may work but are not explicitly supported. ⚠️
+            ⚠️ Please read the "Get and run Cartography" instructions below carefully about Neo4j 4.x support. ⚠️
 
     1. [Install](https://neo4j.com/docs/operations-manual/current/installation/) Neo4j on the server you will run Cartography on.
 
@@ -22,6 +22,10 @@ Time to set up the server that will run Cartography.  Cartography _should_ work 
 1. **Get and run Cartography**
 
     1. Run `pip install cartography` to install our code.
+
+    1. Set up Neo4j 4.x support: Set environment variable to true with `export EXPERIMENTAL_NEO4J_4X_SUPPORT=True`
+
+            ⚠️ This is a temporary fix that is necessary for cartography to support the new query syntax of Neo4j 4.x. A more permanent solution is in progress. ⚠️
 
     1. Finally, to sync your data:
 
@@ -47,4 +51,4 @@ Time to set up the server that will run Cartography.  Cartography _should_ work 
 
         The sync will pull data from your configured accounts and ingest data to Neo4j!  This process might take a long time if your account has a lot of assets.
 
-    1. See our [Operations Guide](ops.html) for tips on running Cartography in production.
+    4. See our [Operations Guide](ops.html) for tips on running Cartography in production.
