@@ -788,8 +788,8 @@ def attach_role_to_user(
 
 @timeit
 def attach_role_to_service_account(
-    neo4j_session: neo4j.Session, serviceAccount: Dict,
-    service_account_id: str, project_id: str, gcp_update_tag: int,
+    neo4j_session: neo4j.Session, role_id: str,
+    serviceAccount: Dict, project_id: str, gcp_update_tag: int,
 ) -> None:
     ingest_script = """
     MATCH (sa:GCPServiceAccount{id:{saId}})
@@ -804,9 +804,9 @@ def attach_role_to_service_account(
 
     neo4j_session.run(
         ingest_script,
-        RoleId=serviceAccount['id'],
+        RoleId=role_id,
         isDeleted=serviceAccount.get('is_deleted', False),
-        saId=service_account_id,
+        saId=serviceAccount['id'],
         gcp_update_tag=gcp_update_tag,
     )
 
