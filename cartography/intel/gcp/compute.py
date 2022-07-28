@@ -17,6 +17,7 @@ import neo4j
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
 from cloudconsolelink.clouds.gcp import GCPLinker
+from neobolt.exceptions import ClientError
 
 from cartography.util import run_cleanup_job
 from . import label
@@ -1269,7 +1270,11 @@ def cleanup_gcp_firewall_rules(neo4j_session: neo4j.Session, common_job_paramete
     :param common_job_parameters: dict of other job parameters to pass to Neo4j
     :return: Nothing
     """
-    run_cleanup_job('gcp_compute_firewall_cleanup.json', neo4j_session, common_job_parameters)
+    try:
+        run_cleanup_job('gcp_compute_firewall_cleanup.json', neo4j_session, common_job_parameters)
+
+    except ClientError as ex:
+        logger.exception("error while syncing gcp firewall rules", ex)
 
 
 @timeit
@@ -1529,8 +1534,10 @@ def sync(
 
         regions = _zones_to_regions(zones)
         sync_gcp_vpcs(neo4j_session, compute, project_id, gcp_update_tag, common_job_parameters)
+
         sync_gcp_firewall_rules(neo4j_session, compute, project_id, gcp_update_tag,
                                 common_job_parameters)
+
         sync_gcp_subnets(neo4j_session, compute, project_id, regions,
                          gcp_update_tag, common_job_parameters)
         sync_gcp_instances(neo4j_session, compute, project_id, zones,
