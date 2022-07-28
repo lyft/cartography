@@ -578,7 +578,7 @@ def _parse_port_string_to_rule(port: Optional[str], protocol: str, fw_partial_ur
 
 @timeit
 def load_gcp_instances(session: neo4j.Session, instances_list: List[Dict], gcp_update_tag: int) -> None:
-    iteration_size = 100
+    iteration_size = 500
     total_items = len(instances_list)
     total_iterations = math.ceil(len(instances_list) / iteration_size)
     logger.info(f"total instances: {total_items}")
