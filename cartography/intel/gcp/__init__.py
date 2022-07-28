@@ -28,14 +28,14 @@ from cartography.util import timeit
 logger = logging.getLogger(__name__)
 Resources = namedtuple(
     'Resources', 'compute gke cloudfunction crm_v1 crm_v2 dns storage serviceusage \
-        iam admin apigateway cloudkms cloudrun sql bigtable firestore',
+        iam apigateway cloudkms cloudrun sql bigtable firestore',
 )
 
 # Mapping of service short names to their full names as in docs. See https://developers.google.com/apis-explorer,
 # and https://cloud.google.com/service-usage/docs/reference/rest/v1/services#ServiceConfig
 Services = namedtuple(
     'Services', 'compute storage gke dns cloudfunction crm_v1 crm_v2 \
-    cloudkms cloudrun iam admin apigateway sql bigtable firestore',
+    cloudkms cloudrun iam apigateway sql bigtable firestore',
 )
 service_names = Services(
     compute='compute.googleapis.com',
@@ -48,7 +48,6 @@ service_names = Services(
     cloudkms='cloudkms.googleapis.com',
     cloudrun='run.googleapis.com',
     iam='iam.googleapis.com',
-    admin='admin.googleapis.com',
     apigateway='apigateway.googleapis.com',
     sql='sqladmin.googleapis.com',
     bigtable='bigtableadmin.googleapis.com',
@@ -261,7 +260,6 @@ def _initialize_resources(credentials: GoogleCredentials) -> Resource:
         cloudkms=_get_cloudkms_resource(credentials),
         cloudrun=_get_cloudrun_resource(credentials),
         iam=_get_iam_resource(credentials),
-        admin=_get_admin_resource(credentials),
         apigateway=_get_apigateway_resource(credentials),
         cloudfunction=_get_cloudfunction_resource(credentials),
     )
@@ -298,7 +296,7 @@ def _services_enabled_on_project(serviceusage: Resource, project_id: str) -> Set
 
 def concurrent_execution(
     service: str, service_func: Any, config: Config, iam: Resource,
-    common_job_parameters: Dict, gcp_update_tag: int, project_id: str, crm: Resource, admin: Resource,
+    common_job_parameters: Dict, gcp_update_tag: int, project_id: str, crm: Resource,
 ):
     logger.info(f"BEGIN processing for service: {service}")
 
@@ -312,7 +310,7 @@ def concurrent_execution(
     )
 
     if service == 'iam':
-        service_func(neo4j_driver.session(), iam, crm, admin, project_id,
+        service_func(neo4j_driver.session(), iam, crm, project_id,
                      gcp_update_tag, common_job_parameters)
     else:
         service_func(neo4j_driver.session(), iam, project_id, gcp_update_tag,
@@ -344,7 +342,7 @@ def _sync_single_project(
                 # if getattr(service_names, request) in enabled_services:
 
                 futures.append(executor.submit(concurrent_execution, request, RESOURCE_FUNCTIONS[request], config, getattr(
-                    resources, request), common_job_parameters, gcp_update_tag, project_id, resources.crm_v1, resources.admin))
+                    resources, request), common_job_parameters, gcp_update_tag, project_id, resources.crm_v1))
 
             else:
                 raise ValueError(
@@ -409,7 +407,7 @@ def start_gcp_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
         "service_labels": [],
         "pagination": {},
     }
-    
+
     try:
         # Explicitly use Application Default Credentials.
         # See https://oauth2client.readthedocs.io/en/latest/source/

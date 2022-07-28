@@ -638,64 +638,165 @@ def load_bindings(neo4j_session: neo4j.Session, bindings: List[Dict], project_id
 
         for member in binding['members']:
             if member.startswith('user:'):
+                usr = member[len('user:'):]
+                user = {
+                    'id': f"projects/{project_id}/users/{usr}",
+                    "email": usr,
+                    "name": usr.split("@")[0],
+
+                }
                 attach_role_to_user(
-                    neo4j_session, role_id, f"projects/{project_id}/users/{member[len('user:'):]}",
+                    neo4j_session, role_id, user,
                     project_id, gcp_update_tag,
                 )
 
             elif member.startswith('serviceAccount:'):
+                serviceAccount = {
+                    'id': f"projects/{project_id}/serviceAccounts/{member[len('serviceAccount:'):]}"
+                }
                 attach_role_to_service_account(
                     neo4j_session,
-                    role_id, f"projects/{project_id}/serviceAccounts/{member[len('serviceAccount:'):]}",
+                    role_id, serviceAccount,
                     project_id,
                     gcp_update_tag,
                 )
 
             elif member.startswith('group:'):
+                grp = member[len('group:'):]
+                group = {
+                    "id": f'projects/{project_id}/groups/{grp}',
+                    "email": grp,
+                    "name": grp.split('@')[0],
+                }
                 attach_role_to_group(
                     neo4j_session, role_id,
-                    f"projects/{project_id}/groups/{member[len('group:'):]}",
+                    group,
                     project_id, gcp_update_tag,
                 )
 
             elif member.startswith('domain:'):
+                dmn = member[len('domain:'):]
+                domain = {
+                    "id": f'projects/{project_id}/domains/{dmn}',
+                    "email": dmn,
+                    "name": dmn,
+                }
                 attach_role_to_domain(
                     neo4j_session, role_id,
-                    f"projects/{project_id}/domains/{member[len('domain:'):]}",
+                    domain,
                     project_id,
                     gcp_update_tag,
                 )
 
+            elif member.startswith('deleted:'):
+                member = member[len('deleted:'):]
+                if member.startswith('user:'):
+                    usr = member[len('user:'):]
+                    user = {
+                        'id': f"projects/{project_id}/users/{usr}",
+                        "email": usr,
+                        "name": usr.split("@")[0],
+                        "is_deleted": True
+
+                    }
+                    attach_role_to_user(
+                        neo4j_session, role_id, user,
+                        project_id, gcp_update_tag,
+                    )
+
+                elif member.startswith('serviceAccount:'):
+                    serviceAccount = {
+                        'id': f"projects/{project_id}/serviceAccounts/{member[len('serviceAccount:'):]}",
+                        'is_deleted': True
+                    }
+                    attach_role_to_service_account(
+                        neo4j_session,
+                        role_id, serviceAccount,
+                        project_id,
+                        gcp_update_tag,
+                    )
+
+                elif member.startswith('group:'):
+                    grp = member[len('group:'):]
+                    group = {
+                        "id": f'projects/{project_id}/groups/{grp}',
+                        "email": grp,
+                        "name": grp.split('@')[0],
+                        "is_deleted": True
+                    }
+                    attach_role_to_group(
+                        neo4j_session, role_id,
+                        group,
+                        project_id, gcp_update_tag,
+                    )
+
+                elif member.startswith('domain:'):
+                    dmn = member[len('domain:'):]
+                    domain = {
+                        "id": f'projects/{project_id}/domains/{dmn}',
+                        "email": dmn,
+                        "name": dmn,
+                        "is_deleted": True
+                    }
+                    attach_role_to_domain(
+                        neo4j_session, role_id,
+                        domain,
+                        project_id,
+                        gcp_update_tag,
+                    )
+
 
 @timeit
 def attach_role_to_user(
-    neo4j_session: neo4j.Session, role_id: str, user_id: str,
+    neo4j_session: neo4j.Session, role_id: str, user: Dict,
     project_id: str, gcp_update_tag: int,
 ) -> None:
     ingest_script = """
+    MERGE (user:GCPUser{id:{UserId}})
+    ON CREATE SET
+    user:GCPPrincipal,
+    user.firstseen = timestamp()
+    SET
+    user.email = {UserEmail},
+    user.name = {UserName},
+    user.lastupdated = {gcp_update_tag},
+    user.isDeleted = {isDeleted}
+    WITH user
     MATCH (role:GCPRole{id:{RoleId}})
-    MATCH (user:GCPPrincipal{id:{UserId}})
     MERGE (user)-[r:ASSUME_ROLE]->(role)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {gcp_update_tag}
+    WITH user
+    MATCH (p:GCPProject{id: {project_id}})
+    MERGE (p)-[pr:RESOURCE]->(user)
+    ON CREATE SET
+    pr.firstseen = timestamp()
+    SET pr.lastupdated = {gcp_update_tag}
     """
 
     neo4j_session.run(
         ingest_script,
         RoleId=role_id,
-        UserId=user_id,
+        UserId=user['id'],
+        UserEmail=user['email'],
+        UserName=user['name'],
+        isDeleted=user.get('is_deleted', False),
         gcp_update_tag=gcp_update_tag,
+        project_id=project_id,
     )
 
 
 @timeit
 def attach_role_to_service_account(
     neo4j_session: neo4j.Session, role_id: str,
-    service_account_id: str, project_id: str, gcp_update_tag: int,
+    serviceAccount: Dict, project_id: str, gcp_update_tag: int,
 ) -> None:
     ingest_script = """
+    MATCH (sa:GCPServiceAccount{id:{saId}})
+    SET
+    sa.isDeleted = {isDeleted}
+    WITH sa
     MATCH (role:GCPRole{id:{RoleId}})
-    MATCH (sa:GCPPrincipal{id:{saId}})
     MERGE (sa)-[r:ASSUME_ROLE]->(role)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {gcp_update_tag}
@@ -704,50 +805,89 @@ def attach_role_to_service_account(
     neo4j_session.run(
         ingest_script,
         RoleId=role_id,
-        saId=service_account_id,
+        isDeleted=serviceAccount.get('is_deleted', False),
+        saId=serviceAccount['id'],
         gcp_update_tag=gcp_update_tag,
     )
 
 
 @timeit
 def attach_role_to_group(
-    neo4j_session: neo4j.Session, role_id: str, group_id: str,
+    neo4j_session: neo4j.Session, role_id: str, group: Dict,
     project_id: str, gcp_update_tag: int,
 ) -> None:
     ingest_script = """
+    MERGE (group:GCPGroup{id:{GroupId}})
+    ON CREATE SET
+    group:GCPPrincipal,
+    group.firstseen = timestamp()
+    SET
+    group.email = {GroupEmail},
+    group.name = {GroupName},
+    group.lastupdated = {gcp_update_tag},
+    group.isDeleted = {isDeleted}
+    WITH group
     MATCH (role:GCPRole{id:{RoleId}})
-    MATCH (group:GCPPrincipal{id:{GroupId}})
     MERGE (group)-[r:ASSUME_ROLE]->(role)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {gcp_update_tag}
+    WITH group
+    MATCH (p:GCPProject{id: {project_id}})
+    MERGE (p)-[pr:RESOURCE]->(group)
+    ON CREATE SET
+    pr.firstseen = timestamp()
+    SET pr.lastupdated = {gcp_update_tag}
     """
 
     neo4j_session.run(
         ingest_script,
         RoleId=role_id,
-        GroupId=group_id,
+        GroupId=group['id'],
+        GroupName=group['name'],
+        GroupEmail=group['email'],
+        isDeleted=group.get('is_deleted', False),
         gcp_update_tag=gcp_update_tag,
+        project_id=project_id,
     )
 
 
 @timeit
 def attach_role_to_domain(
-    neo4j_session: neo4j.Session, role_id: str, domain_id: str,
+    neo4j_session: neo4j.Session, role_id: str, domain: Dict,
     project_id: str, gcp_update_tag: int,
 ) -> None:
     ingest_script = """
+    MERGE (domain:GCPDomain{id:{DomainId}})
+    ON CREATE SET
+    domain:GCPPrincipal,
+    domain.firstseen = timestamp()
+    SET
+    domain.email = {DomainEmail},
+    domain.name = {DomainName},
+    domain.lastupdated = {gcp_update_tag},
+    domain.isDeleted = {isDeleted}
+    WITH domain
     MATCH (role:GCPRole{id:{RoleId}})
-    MATCH (domain:GCPPrincipal{id:{DomainId}})
     MERGE (domain)-[r:ASSUME_ROLE]->(role)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {gcp_update_tag}
+    WITH domain
+    MATCH (p:GCPProject{id: {project_id}})
+    MERGE (p)-[pr:RESOURCE]->(domain)
+    ON CREATE SET
+    pr.firstseen = timestamp()
+    SET pr.lastupdated = {gcp_update_tag}
     """
 
     neo4j_session.run(
         ingest_script,
         RoleId=role_id,
-        DomainId=domain_id,
+        DomainId=domain['id'],
+        DomainEmail=domain['email'],
+        DomainName=domain['name'],
+        isDeleted=domain.get('is_deleted', False),
         gcp_update_tag=gcp_update_tag,
+        project_id=project_id,
     )
 
 
@@ -771,9 +911,8 @@ def _set_used_state_tx(
 
     ingest_entity_used = """
     MATCH (:CloudanixWorkspace{id: {WORKSPACE_ID}})-[:OWNER]->
-    (:GCPProject{id: {GCP_PROJECT_ID}})-[:RESOURCE]->(n)
+    (:GCPProject{id: {GCP_PROJECT_ID}})-[:RESOURCE]->(n:GCPPrincipal)
     WHERE ()<-[:ASSUME_ROLE]-(n) AND n.lastupdated = {update_tag}
-    AND labels(n) IN [['GCPCustomer'], ['GCPDomain'], ['GCPGroup'], ['GCPServiceAccount'], ['GCPUser']]
     SET n.isUsed = {isUsed}
     """
 
@@ -787,9 +926,8 @@ def _set_used_state_tx(
 
     ingest_entity_unused = """
     MATCH (:CloudanixWorkspace{id: {WORKSPACE_ID}})-[:OWNER]->
-    (:GCPProject{id: {GCP_PROJECT_ID}})-[:RESOURCE]->(n)
+    (:GCPProject{id: {GCP_PROJECT_ID}})-[:RESOURCE]->(n:GCPPrincipal)
     WHERE NOT EXISTS(n.isUsed) AND n.lastupdated = {update_tag}
-    AND labels(n) IN [['GCPCustomer'], ['GCPDomain'], ['GCPGroup'], ['GCPServiceAccount'], ['GCPUser'], ['GCPRole']]
     SET n.isUsed = {isUsed}
     """
 
@@ -804,7 +942,7 @@ def _set_used_state_tx(
 
 @timeit
 def sync(
-    neo4j_session: neo4j.Session, iam: Resource, crm: Resource, admin: Resource,
+    neo4j_session: neo4j.Session, iam: Resource, crm: Resource,
     project_id: str, gcp_update_tag: int, common_job_parameters: Dict
 ) -> None:
     tic = time.perf_counter()
@@ -879,93 +1017,93 @@ def sync(
     cleanup_roles(neo4j_session, common_job_parameters)
     label.sync_labels(neo4j_session, roles_list, gcp_update_tag, common_job_parameters, 'roles', 'GCPRole')
 
-    users = get_users(admin)
+    # users = get_users(admin)
 
-    if common_job_parameters.get('pagination', {}).get('iam', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("iam", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("iam", None)["pageSize"]
-        totalPages = len(users) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
+    # if common_job_parameters.get('pagination', {}).get('iam', None):
+    #     pageNo = common_job_parameters.get("pagination", {}).get("iam", None)["pageNo"]
+    #     pageSize = common_job_parameters.get("pagination", {}).get("iam", None)["pageSize"]
+    #     totalPages = len(users) / pageSize
+    #     if int(totalPages) != totalPages:
+    #         totalPages = totalPages + 1
 
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for iam users {pageNo}/{totalPages} pageSize is {pageSize}')
+    #     totalPages = int(totalPages)
+    #     if pageNo < totalPages or pageNo == totalPages:
+    #         logger.info(f'pages process for iam users {pageNo}/{totalPages} pageSize is {pageSize}')
 
-        page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
-        if page_end > len(users) or page_end == len(users):
-            users = users[page_start:]
+    #     page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
+    #                   'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
+    #     page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
+    #     if page_end > len(users) or page_end == len(users):
+    #         users = users[page_start:]
 
-        else:
-            has_next_page = True
-            users = users[page_start:page_end]
-            common_job_parameters['pagination']['iam']['hasNextPage'] = has_next_page
+    #     else:
+    #         has_next_page = True
+    #         users = users[page_start:page_end]
+    #         common_job_parameters['pagination']['iam']['hasNextPage'] = has_next_page
 
-    customer_ids = []
-    for user in users:
-        customer_ids.append(get_customer(user.get('customerId')))
+    # customer_ids = []
+    # for user in users:
+    #     customer_ids.append(get_customer(user.get('customerId')))
 
-    customer_ids = list(set(customer_ids))
-    customer_ids.sort()
+    # customer_ids = list(set(customer_ids))
+    # customer_ids.sort()
 
-    customers = []
-    for customer_id in customer_ids:
-        customers.append(get_customer(customer_id))
+    # customers = []
+    # for customer_id in customer_ids:
+    #     customers.append(get_customer(customer_id))
 
-    load_customers(neo4j_session, customers, project_id, gcp_update_tag)
-    cleanup_customers(neo4j_session, common_job_parameters)
+    # load_customers(neo4j_session, customers, project_id, gcp_update_tag)
+    # cleanup_customers(neo4j_session, common_job_parameters)
 
-    load_users(neo4j_session, users, project_id, gcp_update_tag)
-    cleanup_users(neo4j_session, common_job_parameters)
-    label.sync_labels(neo4j_session, users, gcp_update_tag, common_job_parameters, 'users', 'GCPUser')
+    # load_users(neo4j_session, users, project_id, gcp_update_tag)
+    # cleanup_users(neo4j_session, common_job_parameters)
+    # label.sync_labels(neo4j_session, users, gcp_update_tag, common_job_parameters, 'users', 'GCPUser')
 
-    for customer in customers:
-        domains = get_domains(admin, customer, project_id)
-        load_domains(neo4j_session, domains, customer.get('id'), project_id, gcp_update_tag)
+    # for customer in customers:
+    #     domains = get_domains(admin, customer, project_id)
+    #     load_domains(neo4j_session, domains, customer.get('id'), project_id, gcp_update_tag)
 
-    cleanup_domains(neo4j_session, common_job_parameters)
+    # cleanup_domains(neo4j_session, common_job_parameters)
 
-    groups = get_groups(admin)
+    # groups = get_groups(admin)
 
-    if common_job_parameters.get('pagination', {}).get('iam', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("iam", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("iam", None)["pageSize"]
-        totalPages = len(groups) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
+    # if common_job_parameters.get('pagination', {}).get('iam', None):
+    #     pageNo = common_job_parameters.get("pagination", {}).get("iam", None)["pageNo"]
+    #     pageSize = common_job_parameters.get("pagination", {}).get("iam", None)["pageSize"]
+    #     totalPages = len(groups) / pageSize
+    #     if int(totalPages) != totalPages:
+    #         totalPages = totalPages + 1
 
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for iam groups {pageNo}/{totalPages} pageSize is {pageSize}')
+    #     totalPages = int(totalPages)
+    #     if pageNo < totalPages or pageNo == totalPages:
+    #         logger.info(f'pages process for iam groups {pageNo}/{totalPages} pageSize is {pageSize}')
 
-        page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
-        if page_end > len(groups) or page_end == len(groups):
-            groups = groups[page_start:]
+    #     page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
+    #                   'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
+    #     page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
+    #     if page_end > len(groups) or page_end == len(groups):
+    #         groups = groups[page_start:]
 
-        else:
-            has_next_page = True
-            groups = groups[page_start:page_end]
-            common_job_parameters['pagination']['iam']['hasNextPage'] = has_next_page
+    #     else:
+    #         has_next_page = True
+    #         groups = groups[page_start:page_end]
+    #         common_job_parameters['pagination']['iam']['hasNextPage'] = has_next_page
 
-    load_groups(neo4j_session, groups, project_id, gcp_update_tag)
-    cleanup_groups(neo4j_session, common_job_parameters)
-    label.sync_labels(neo4j_session, groups, gcp_update_tag, common_job_parameters, 'groups', 'GCPGroup')
+    # load_groups(neo4j_session, groups, project_id, gcp_update_tag)
+    # cleanup_groups(neo4j_session, common_job_parameters)
+    # label.sync_labels(neo4j_session, groups, gcp_update_tag, common_job_parameters, 'groups', 'GCPGroup')
 
     if common_job_parameters.get('pagination', {}).get('iam', None):
         if not common_job_parameters.get('pagination', {}).get('iam', {}).get('hasNextPage', False):
             bindings = get_policy_bindings(crm, project_id)
             # users_from_bindings, groups_from_bindings, domains_from_bindings = transform_bindings(bindings, project_id)
-
+            load_bindings(neo4j_session, bindings, project_id, gcp_update_tag)
+            set_used_state(neo4j_session, project_id, common_job_parameters, gcp_update_tag)
     else:
         bindings = get_policy_bindings(crm, project_id)
         # users_from_bindings, groups_from_bindings, domains_from_bindings = transform_bindings(bindings, project_id)
-
-    load_bindings(neo4j_session, bindings, project_id, gcp_update_tag)
-    set_used_state(neo4j_session, project_id, common_job_parameters, gcp_update_tag)
+        load_bindings(neo4j_session, bindings, project_id, gcp_update_tag)
+        set_used_state(neo4j_session, project_id, common_job_parameters, gcp_update_tag)
 
     toc = time.perf_counter()
     logger.info(f"Time to process IAM: {toc - tic:0.4f} seconds")
