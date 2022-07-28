@@ -651,13 +651,14 @@ def load_bindings(neo4j_session: neo4j.Session, bindings: List[Dict], project_id
                 )
 
             elif member.startswith('serviceAccount:'):
-                is_deleted = False
+                serviceAccount = {
+                    'id': f"projects/{project_id}/serviceAccounts/{member[len('serviceAccount:'):]}"
+                }
                 attach_role_to_service_account(
                     neo4j_session,
-                    role_id, f"projects/{project_id}/serviceAccounts/{member[len('serviceAccount:'):]}",
+                    role_id, serviceAccount,
                     project_id,
                     gcp_update_tag,
-                    is_deleted
                 )
 
             elif member.startswith('group:'):
@@ -704,13 +705,15 @@ def load_bindings(neo4j_session: neo4j.Session, bindings: List[Dict], project_id
                     )
 
                 elif member.startswith('serviceAccount:'):
-                    is_deleted = True
+                    serviceAccount = {
+                        'id': f"projects/{project_id}/serviceAccounts/{member[len('serviceAccount:'):]}",
+                        'is_deleted': True
+                    }
                     attach_role_to_service_account(
                         neo4j_session,
-                        role_id, f"projects/{project_id}/serviceAccounts/{member[len('serviceAccount:'):]}",
+                        role_id, serviceAccount,
                         project_id,
                         gcp_update_tag,
-                        is_deleted,
                     )
 
                 elif member.startswith('group:'):
@@ -785,9 +788,8 @@ def attach_role_to_user(
 
 @timeit
 def attach_role_to_service_account(
-    neo4j_session: neo4j.Session, role_id: str,
+    neo4j_session: neo4j.Session, serviceAccount: Dict,
     service_account_id: str, project_id: str, gcp_update_tag: int,
-    is_deleted: str
 ) -> None:
     ingest_script = """
     MATCH (sa:GCPServiceAccount{id:{saId}})
@@ -802,8 +804,8 @@ def attach_role_to_service_account(
 
     neo4j_session.run(
         ingest_script,
-        RoleId=role_id,
-        isDeleted=is_deleted,
+        RoleId=serviceAccount['id'],
+        isDeleted=serviceAccount.get('is_deleted', False),
         saId=service_account_id,
         gcp_update_tag=gcp_update_tag,
     )
