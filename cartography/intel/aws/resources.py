@@ -2,6 +2,7 @@ from typing import Dict
 
 from . import apigateway
 from . import config
+from . import cloudtrail
 from . import dynamodb
 from . import ecr
 from . import ecs
@@ -78,6 +79,7 @@ RESOURCE_FUNCTIONS: Dict = {
     'securityhub': securityhub.sync,
     'sqs': sqs.sync,
     'config': config.sync,
+    'cloudtrail': cloudtrail.sync,
     'permission_relationships': permission_relationships.sync,
     'resourcegroupstaggingapi': resourcegroupstaggingapi.sync,
 }
