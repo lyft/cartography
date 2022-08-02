@@ -296,7 +296,8 @@ def _services_enabled_on_project(serviceusage: Resource, project_id: str) -> Set
 
 def concurrent_execution(
     service: str, service_func: Any, config: Config, iam: Resource,
-    common_job_parameters: Dict, gcp_update_tag: int, project_id: str, crm: Resource,
+    common_job_parameters: Dict, gcp_update_tag: int, project_id: str, crm_v1: Resource,
+    crm_v2: Resource,
 ):
     logger.info(f"BEGIN processing for service: {service}")
 
@@ -310,7 +311,7 @@ def concurrent_execution(
     )
 
     if service == 'iam':
-        service_func(neo4j_driver.session(), iam, crm, project_id,
+        service_func(neo4j_driver.session(), iam, crm_v1, crm_v2, project_id,
                      gcp_update_tag, common_job_parameters)
     else:
         service_func(neo4j_driver.session(), iam, project_id, gcp_update_tag,
@@ -342,7 +343,7 @@ def _sync_single_project(
                 # if getattr(service_names, request) in enabled_services:
 
                 futures.append(executor.submit(concurrent_execution, request, RESOURCE_FUNCTIONS[request], config, getattr(
-                    resources, request), common_job_parameters, gcp_update_tag, project_id, resources.crm_v1))
+                    resources, request), common_job_parameters, gcp_update_tag, project_id, resources.crm_v1, resources.crm_v2))
 
             else:
                 raise ValueError(

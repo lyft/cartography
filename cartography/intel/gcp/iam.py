@@ -177,7 +177,7 @@ def get_service_account_keys(iam: Resource, project_id: str, service_account: Di
 
 
 @timeit
-def get_roles(iam: Resource, project_id: str) -> List[Dict]:
+def get_roles(iam: Resource, crm_v1: Resource, project_id: str) -> List[Dict]:
     roles: List[Dict] = []
     try:
         req = iam.roles().list(view="FULL")
@@ -186,6 +186,17 @@ def get_roles(iam: Resource, project_id: str) -> List[Dict]:
             page = res.get('roles', [])
             roles.extend(page)
             req = iam.roles().list_next(previous_request=req, previous_response=res)
+
+        req = crm_v1.projects().get(projectId=project_id)
+        res_project = req.execute()
+        if res_project.get('parent').get('type') == 'organization':
+            req = iam.organizations().roles().list(
+                parent=f"organizations/{res_project.get('parent').get('id')}", view="FULL")
+            while req is not None:
+                res = req.execute()
+                page = res.get('roles', [])
+                roles.extend(page)
+                req = iam.organizations().roles().list_next(previous_request=req, previous_response=res)
         return roles
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -195,7 +206,7 @@ def get_roles(iam: Resource, project_id: str) -> List[Dict]:
                     "Could not retrieve role on project %s due to permissions issue. Code: %s, Message: %s"
                 ), project_id, err['code'], err['message'],
             )
-            return []
+            return roles
         else:
             raise
 
@@ -219,7 +230,7 @@ def get_project_roles(iam: Resource, project_id: str) -> List[Dict]:
                     "Could not retrieve role on project %s due to permissions issue. Code: %s, Message: %s"
                 ), project_id, err['code'], err['message'],
             )
-            return []
+            return roles
         else:
             raise
 
@@ -247,15 +258,37 @@ def get_role_id(role_name: str, project_id: str) -> str:
 
 
 @timeit
-def get_policy_bindings(crm: Resource, project_id: str) -> List[Dict]:
+def get_policy_bindings(crm_v1: Resource, crm_v2: Resource, project_id: str) -> List[Dict]:
     try:
-        req = crm.projects().getIamPolicy(resource=project_id, body={'options': {'requestedPolicyVersion': 3}})
+        bindings = []
+        req = crm_v1.projects().get(projectId=project_id)
+        res_project = req.execute()
+        if res_project.get('parent').get('type') == 'organization':
+            req = crm_v1.organizations().getIamPolicy(resource=f"organizations/{res_project.get('parent').get('id')}")
+            res = req.execute()
+            if res.get('bindings'):
+                for binding in res['bindings']:
+                    binding['parent'] = 'organization'
+                    binding['parent_id'] = f"organizations/{res_project.get('parent').get('id')}"
+                    bindings.append(binding)
+        elif res_project.get('parent').get('type') == 'folder':
+            req = crm_v2.folders().getIamPolicy(resource=f"folders/{res_project.get('parent').get('id')}")
+            res = req.execute()
+            if res.get('bindings'):
+                for binding in res['bindings']:
+                    binding['parent'] = 'folder'
+                    binding['parent_id'] = f"folders/{res_project.get('parent').get('id')}"
+                    bindings.append(binding)
+
+        req = crm_v1.projects().getIamPolicy(resource=project_id, body={'options': {'requestedPolicyVersion': 3}})
         res = req.execute()
-
         if res.get('bindings'):
-            return res['bindings']
+            for binding in res['bindings']:
+                binding['parent'] = 'projects'
+                binding['parent_id'] = f"projects/{project_id}"
+                bindings.append(binding)
 
-        return []
+        return bindings
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
         if err['status'] == 'PERMISSION_DENIED':
@@ -643,6 +676,8 @@ def load_bindings(neo4j_session: neo4j.Session, bindings: List[Dict], project_id
                     'id': f"projects/{project_id}/users/{usr}",
                     "email": usr,
                     "name": usr.split("@")[0],
+                    "parent": binding['parent'],
+                    "parent_id": binding['parent_id'],
 
                 }
                 attach_role_to_user(
@@ -652,7 +687,9 @@ def load_bindings(neo4j_session: neo4j.Session, bindings: List[Dict], project_id
 
             elif member.startswith('serviceAccount:'):
                 serviceAccount = {
-                    'id': f"projects/{project_id}/serviceAccounts/{member[len('serviceAccount:'):]}"
+                    'id': f"projects/{project_id}/serviceAccounts/{member[len('serviceAccount:'):]}",
+                    "parent": binding['parent'],
+                    "parent_id": binding['parent_id'],
                 }
                 attach_role_to_service_account(
                     neo4j_session,
@@ -667,6 +704,8 @@ def load_bindings(neo4j_session: neo4j.Session, bindings: List[Dict], project_id
                     "id": f'projects/{project_id}/groups/{grp}',
                     "email": grp,
                     "name": grp.split('@')[0],
+                    "parent": binding['parent'],
+                    "parent_id": binding['parent_id'],
                 }
                 attach_role_to_group(
                     neo4j_session, role_id,
@@ -680,6 +719,8 @@ def load_bindings(neo4j_session: neo4j.Session, bindings: List[Dict], project_id
                     "id": f'projects/{project_id}/domains/{dmn}',
                     "email": dmn,
                     "name": dmn,
+                    "parent": binding['parent'],
+                    "parent_id": binding['parent_id'],
                 }
                 attach_role_to_domain(
                     neo4j_session, role_id,
@@ -696,7 +737,9 @@ def load_bindings(neo4j_session: neo4j.Session, bindings: List[Dict], project_id
                         'id': f"projects/{project_id}/users/{usr}",
                         "email": usr,
                         "name": usr.split("@")[0],
-                        "is_deleted": True
+                        "is_deleted": True,
+                        "parent": binding['parent'],
+                        "parent_id": binding['parent_id'],
 
                     }
                     attach_role_to_user(
@@ -707,7 +750,9 @@ def load_bindings(neo4j_session: neo4j.Session, bindings: List[Dict], project_id
                 elif member.startswith('serviceAccount:'):
                     serviceAccount = {
                         'id': f"projects/{project_id}/serviceAccounts/{member[len('serviceAccount:'):]}",
-                        'is_deleted': True
+                        'is_deleted': True,
+                        "parent": binding['parent'],
+                        "parent_id": binding['parent_id'],
                     }
                     attach_role_to_service_account(
                         neo4j_session,
@@ -722,7 +767,9 @@ def load_bindings(neo4j_session: neo4j.Session, bindings: List[Dict], project_id
                         "id": f'projects/{project_id}/groups/{grp}',
                         "email": grp,
                         "name": grp.split('@')[0],
-                        "is_deleted": True
+                        "is_deleted": True,
+                        "parent": binding['parent'],
+                        "parent_id": binding['parent_id'],
                     }
                     attach_role_to_group(
                         neo4j_session, role_id,
@@ -736,7 +783,9 @@ def load_bindings(neo4j_session: neo4j.Session, bindings: List[Dict], project_id
                         "id": f'projects/{project_id}/domains/{dmn}',
                         "email": dmn,
                         "name": dmn,
-                        "is_deleted": True
+                        "is_deleted": True,
+                        "parent": binding['parent'],
+                        "parent_id": binding['parent_id'],
                     }
                     attach_role_to_domain(
                         neo4j_session, role_id,
@@ -772,6 +821,12 @@ def attach_role_to_user(
     ON CREATE SET
     pr.firstseen = timestamp()
     SET pr.lastupdated = {gcp_update_tag}
+    WITH user
+    WHERE (NOT EXISTS(user.parent)) OR
+    NOT user.parent IN ['organization', 'folder']
+    SET
+    user.parent = {Parent},
+    user.parent_id = {ParentId}
     """
 
     neo4j_session.run(
@@ -780,6 +835,8 @@ def attach_role_to_user(
         UserId=user['id'],
         UserEmail=user['email'],
         UserName=user['name'],
+        Parent=user['parent'],
+        ParentId=user['parent_id'],
         isDeleted=user.get('is_deleted', False),
         gcp_update_tag=gcp_update_tag,
         project_id=project_id,
@@ -800,14 +857,38 @@ def attach_role_to_service_account(
     MERGE (sa)-[r:ASSUME_ROLE]->(role)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {gcp_update_tag}
+    WITH sa
+    WHERE (NOT EXISTS(sa.parent)) OR
+    NOT sa.parent IN ['organization', 'folder']
+    SET
+    sa.parent = {Parent},
+    sa.parent_id = {ParentId}
     """
 
     neo4j_session.run(
         ingest_script,
         RoleId=role_id,
         isDeleted=serviceAccount.get('is_deleted', False),
+        Parent=serviceAccount['parent'],
+        ParentId=serviceAccount['parent_id'],
         saId=serviceAccount['id'],
         gcp_update_tag=gcp_update_tag,
+    )
+
+    ingest_script = """
+    MATCH (sa:GCPServiceAccount{id:{saId}})
+    WITH sa
+    WHERE (NOT EXISTS(sa.parent)) OR
+    NOT sa.parent IN ['organization', 'folder']
+    SET
+    sa.parent = {Parent},
+    sa.parent_id = {ParentId}
+    """
+    neo4j_session.run(
+        ingest_script,
+        Parent=serviceAccount['parent'],
+        ParentId=serviceAccount['parent_id'],
+        saId=serviceAccount['id']
     )
 
 
@@ -837,6 +918,12 @@ def attach_role_to_group(
     ON CREATE SET
     pr.firstseen = timestamp()
     SET pr.lastupdated = {gcp_update_tag}
+    WITH group
+    WHERE (NOT EXISTS(group.parent)) OR
+    NOT group.parent IN ['organization', 'folder']
+    SET
+    group.parent = {Parent},
+    group.parent_id = {ParentId}
     """
 
     neo4j_session.run(
@@ -845,6 +932,8 @@ def attach_role_to_group(
         GroupId=group['id'],
         GroupName=group['name'],
         GroupEmail=group['email'],
+        Parent=group['parent'],
+        ParentId=group['parent_id'],
         isDeleted=group.get('is_deleted', False),
         gcp_update_tag=gcp_update_tag,
         project_id=project_id,
@@ -877,12 +966,20 @@ def attach_role_to_domain(
     ON CREATE SET
     pr.firstseen = timestamp()
     SET pr.lastupdated = {gcp_update_tag}
+    WITH domain
+    WHERE (NOT EXISTS(domain.parent)) OR
+    NOT domain.parent IN ['organization', 'folder']
+    SET
+    domain.parent = {Parent},
+    domain.parent_id = {ParentId}
     """
 
     neo4j_session.run(
         ingest_script,
         RoleId=role_id,
         DomainId=domain['id'],
+        Parent=domain['parent'],
+        ParentId=domain['parent_id'],
         DomainEmail=domain['email'],
         DomainName=domain['name'],
         isDeleted=domain.get('is_deleted', False),
@@ -942,7 +1039,7 @@ def _set_used_state_tx(
 
 @timeit
 def sync(
-    neo4j_session: neo4j.Session, iam: Resource, crm: Resource,
+    neo4j_session: neo4j.Session, iam: Resource, crm_v1: Resource, crm_v2: Resource,
     project_id: str, gcp_update_tag: int, common_job_parameters: Dict
 ) -> None:
     tic = time.perf_counter()
@@ -985,7 +1082,7 @@ def sync(
     label.sync_labels(neo4j_session, service_accounts_list, gcp_update_tag,
                       common_job_parameters, 'service accounts', 'GCPServiceAccount')
 
-    roles_list = get_roles(iam, project_id)
+    roles_list = get_roles(iam, crm_v1, project_id)
     custom_roles_list = get_project_roles(iam, project_id)
     roles_list.extend(custom_roles_list)
 
@@ -1095,12 +1192,12 @@ def sync(
 
     if common_job_parameters.get('pagination', {}).get('iam', None):
         if not common_job_parameters.get('pagination', {}).get('iam', {}).get('hasNextPage', False):
-            bindings = get_policy_bindings(crm, project_id)
+            bindings = get_policy_bindings(crm_v1, crm_v2, project_id)
             # users_from_bindings, groups_from_bindings, domains_from_bindings = transform_bindings(bindings, project_id)
             load_bindings(neo4j_session, bindings, project_id, gcp_update_tag)
             set_used_state(neo4j_session, project_id, common_job_parameters, gcp_update_tag)
     else:
-        bindings = get_policy_bindings(crm, project_id)
+        bindings = get_policy_bindings(crm_v1, crm_v2, project_id)
         # users_from_bindings, groups_from_bindings, domains_from_bindings = transform_bindings(bindings, project_id)
         load_bindings(neo4j_session, bindings, project_id, gcp_update_tag)
         set_used_state(neo4j_session, project_id, common_job_parameters, gcp_update_tag)
