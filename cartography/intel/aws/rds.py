@@ -19,6 +19,112 @@ aws_console_link = AWSLinker()
 
 @timeit
 @aws_handle_regions
+def get_rds_reserved_db_instances_data(boto3_session: boto3.session.Session, region: str) -> List[Any]:
+    """
+    Create an RDS boto3 client and grab all the reserved db instances.
+    """
+    client = boto3_session.client('rds', region_name=region)
+    paginator = client.get_paginator('describe_reserved_db_instances')
+    instances: List[Any] = []
+    for page in paginator.paginate():
+        instances.extend(page['ReservedDBInstances'])
+    for instance in instances:
+        instance['region'] = region
+        instance['name'] = instance['ReservedDBInstanceArn'].split(':')[-1]
+    return instances
+
+
+def load_rds_reserved_db_instances(session: neo4j.Session, instances: Dict, current_aws_account_id: str, aws_update_tag: int) -> None:
+    session.write_transaction(_load_rds_reserved_db_instances_tx, instances, current_aws_account_id, aws_update_tag)
+
+
+@timeit
+def _load_rds_reserved_db_instances_tx(
+    neo4j_session: neo4j.Session, data: Dict, current_aws_account_id: str,
+    aws_update_tag: int,
+) -> None:
+    """
+    Ingest the RDS reserved db instances to neo4j and link them to necessary nodes.
+    """
+    ingest_rds_reserved_db_instance = """
+    UNWIND {Instances} as rds_instance
+        MERGE (instance:RDSReservedDBInstance{id: rds_instance.ReservedDBInstanceArn})
+        ON CREATE SET instance.firstseen = timestamp(),
+            instance.arn = rds_instance.ReservedDBInstanceArn
+        SET instance.reserved_db_instance_id = rds_instance.ReservedDBInstanceId,
+            instance.name = rds_instance.name,
+            instance.reserved_db_instances_offering_id = rds_instance.ReservedDBInstancesOfferingId,
+            instance.db_instance_class = rds_instance.DBInstanceClass,
+            instance.start_time = rds_instance.StartTime,
+            instance.duration = rds_instance.Duration,
+            instance.fixed_price = rds_instance.FixedPrice,
+            instance.usage_price = rds_instance.UsagePrice,
+            instance.currency_code = rds_instance.CurrencyCode,
+            instance.db_instance_count = rds_instance.DBInstanceCount,
+            instance.product_description = rds_instance.ProductDescription,
+            instance.offering_type = rds_instance.OfferingType,
+            instance.multi_az = rds_instance.MultiAZ,
+            instance.state = rds_instance.State,
+            instance.lease_id = rds_instance.LeaseId,
+            instance.region = rds_instance.region,
+            instance.lastupdated = {aws_update_tag}
+        WITH instance
+        MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+        MERGE (aa)-[r:RESOURCE]->(instance)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {aws_update_tag}
+    """
+
+    neo4j_session.run(
+        ingest_rds_reserved_db_instance,
+        Instances=data,
+        AWS_ACCOUNT_ID=current_aws_account_id,
+        aws_update_tag=aws_update_tag,
+    )
+
+
+def cleanup_rds_reserved_db_instances(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('aws_import_rds_reserved_db_instances_cleanup.json', neo4j_session, common_job_parameters)
+
+
+@timeit
+def sync_rds_reserved_db_instances(
+    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
+    update_tag: int, common_job_parameters: Dict,
+) -> None:
+    """
+    Grab RDS reserved db instance data from AWS, ingest to neo4j, and run the cleanup job.
+    """
+    data = []
+    for region in regions:
+        logger.info("Syncing RDS reserved db instance for region '%s' in account '%s'.", region, current_aws_account_id)
+        data.extend(get_rds_reserved_db_instances_data(boto3_session, region))
+
+    if common_job_parameters.get('pagination', {}).get('rds', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("rds", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("rds", None)["pageSize"]
+        totalPages = len(data) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for rds reserved db instance {pageNo}/{totalPages} pageSize is {pageSize}')
+        page_start = (common_job_parameters.get('pagination', {}).get('rds', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('rds', {})['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('rds', {})['pageSize']
+        if page_end > len(data) or page_end == len(data):
+            data = data[page_start:]
+        else:
+            has_next_page = True
+            data = data[page_start:page_end]
+            common_job_parameters['pagination']['rds']['hasNextPage'] = has_next_page
+
+    load_rds_reserved_db_instances(neo4j_session, data, current_aws_account_id, update_tag)
+    cleanup_rds_reserved_db_instances(neo4j_session, common_job_parameters)
+
+
+@timeit
+@aws_handle_regions
 def get_rds_cluster_data(boto3_session: boto3.session.Session, region: str) -> List[Any]:
     """
     Create an RDS boto3 client and grab all the DBClusters.
@@ -495,6 +601,9 @@ def sync(
         neo4j_session, boto3_session, regions, current_aws_account_id, update_tag,
         common_job_parameters,
     )
-
+    sync_rds_reserved_db_instances(
+        neo4j_session, boto3_session, regions, current_aws_account_id, update_tag,
+        common_job_parameters,
+    )
     toc = time.perf_counter()
     print(f"Total Time to process RDS: {toc - tic:0.4f} seconds")
