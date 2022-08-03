@@ -140,7 +140,7 @@ def get_service_accounts(iam: Resource, project_id: str) -> List[Dict]:
 def transform_service_accounts(service_accounts: List[Dict], project_id: str) -> List[Dict]:
     for account in service_accounts:
         account['firstName'] = account['name'].split('@')[0]
-        account['id'] = account['name']
+        account['id'] = account['email']
         account['service_account_name'] = account['name'].split('/')[-1]
         account['consolelink'] = gcp_console_link.get_console_link(
             resource_name='service_account', project_id=project_id, service_account_unique_id=account['uniqueId'])
@@ -261,6 +261,15 @@ def get_role_id(role_name: str, project_id: str) -> str:
 def get_policy_bindings(crm_v1: Resource, crm_v2: Resource, project_id: str) -> List[Dict]:
     try:
         bindings = []
+
+        req = crm_v1.projects().getIamPolicy(resource=project_id, body={'options': {'requestedPolicyVersion': 3}})
+        res = req.execute()
+        if res.get('bindings'):
+            for binding in res['bindings']:
+                binding['parent'] = 'project'
+                binding['parent_id'] = f"projects/{project_id}"
+                bindings.append(binding)
+
         req = crm_v1.projects().get(projectId=project_id)
         res_project = req.execute()
         if res_project.get('parent').get('type') == 'organization':
@@ -280,14 +289,6 @@ def get_policy_bindings(crm_v1: Resource, crm_v2: Resource, project_id: str) -> 
                     binding['parent_id'] = f"folders/{res_project.get('parent').get('id')}"
                     bindings.append(binding)
 
-        req = crm_v1.projects().getIamPolicy(resource=project_id, body={'options': {'requestedPolicyVersion': 3}})
-        res = req.execute()
-        if res.get('bindings'):
-            for binding in res['bindings']:
-                binding['parent'] = 'projects'
-                binding['parent_id'] = f"projects/{project_id}"
-                bindings.append(binding)
-
         return bindings
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -297,7 +298,7 @@ def get_policy_bindings(crm_v1: Resource, crm_v2: Resource, project_id: str) -> 
                     "Could not retrieve policy bindings on project %s due to permissions issue. Code: %s, Message: %s"
                 ), project_id, err['code'], err['message'],
             )
-            return []
+            return bindings
         else:
             raise
 
@@ -413,7 +414,7 @@ def load_service_account_keys(
     u.algorithm = sa.keyAlgorithm, u.validbeforetime = sa.validBeforeTime,
     u.validaftertime = sa.validAfterTime, u.lastupdated = {gcp_update_tag}
     WITH u, sa
-    MATCH (d:GCPServiceAccount{id: sa.serviceaccount})
+    MATCH (d:GCPServiceAccount{id: {serviceaccount}})
     MERGE (d)-[r:HAS_KEY]->(u)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {gcp_update_tag}
@@ -673,7 +674,7 @@ def load_bindings(neo4j_session: neo4j.Session, bindings: List[Dict], project_id
             if member.startswith('user:'):
                 usr = member[len('user:'):]
                 user = {
-                    'id': f"projects/{project_id}/users/{usr}",
+                    'id': usr,
                     "email": usr,
                     "name": usr.split("@")[0],
                     "parent": binding['parent'],
@@ -687,7 +688,7 @@ def load_bindings(neo4j_session: neo4j.Session, bindings: List[Dict], project_id
 
             elif member.startswith('serviceAccount:'):
                 serviceAccount = {
-                    'id': f"projects/{project_id}/serviceAccounts/{member[len('serviceAccount:'):]}",
+                    'id': member[len('serviceAccount:'):],
                     "parent": binding['parent'],
                     "parent_id": binding['parent_id'],
                 }
@@ -701,7 +702,7 @@ def load_bindings(neo4j_session: neo4j.Session, bindings: List[Dict], project_id
             elif member.startswith('group:'):
                 grp = member[len('group:'):]
                 group = {
-                    "id": f'projects/{project_id}/groups/{grp}',
+                    "id": grp,
                     "email": grp,
                     "name": grp.split('@')[0],
                     "parent": binding['parent'],
@@ -716,7 +717,7 @@ def load_bindings(neo4j_session: neo4j.Session, bindings: List[Dict], project_id
             elif member.startswith('domain:'):
                 dmn = member[len('domain:'):]
                 domain = {
-                    "id": f'projects/{project_id}/domains/{dmn}',
+                    "id": dmn,
                     "email": dmn,
                     "name": dmn,
                     "parent": binding['parent'],
@@ -734,7 +735,7 @@ def load_bindings(neo4j_session: neo4j.Session, bindings: List[Dict], project_id
                 if member.startswith('user:'):
                     usr = member[len('user:'):]
                     user = {
-                        'id': f"projects/{project_id}/users/{usr}",
+                        'id': usr,
                         "email": usr,
                         "name": usr.split("@")[0],
                         "is_deleted": True,
@@ -749,7 +750,7 @@ def load_bindings(neo4j_session: neo4j.Session, bindings: List[Dict], project_id
 
                 elif member.startswith('serviceAccount:'):
                     serviceAccount = {
-                        'id': f"projects/{project_id}/serviceAccounts/{member[len('serviceAccount:'):]}",
+                        'id': member[len('serviceAccount:'):],
                         'is_deleted': True,
                         "parent": binding['parent'],
                         "parent_id": binding['parent_id'],
@@ -764,7 +765,7 @@ def load_bindings(neo4j_session: neo4j.Session, bindings: List[Dict], project_id
                 elif member.startswith('group:'):
                     grp = member[len('group:'):]
                     group = {
-                        "id": f'projects/{project_id}/groups/{grp}',
+                        "id": grp,
                         "email": grp,
                         "name": grp.split('@')[0],
                         "is_deleted": True,
@@ -780,7 +781,7 @@ def load_bindings(neo4j_session: neo4j.Session, bindings: List[Dict], project_id
                 elif member.startswith('domain:'):
                     dmn = member[len('domain:'):]
                     domain = {
-                        "id": f'projects/{project_id}/domains/{dmn}',
+                        "id": dmn,
                         "email": dmn,
                         "name": dmn,
                         "is_deleted": True,
@@ -1076,7 +1077,7 @@ def sync(
 
     for service_account in service_accounts_list:
         service_account_keys = get_service_account_keys(iam, project_id, service_account)
-        load_service_account_keys(neo4j_session, service_account_keys, service_account['name'], gcp_update_tag)
+        load_service_account_keys(neo4j_session, service_account_keys, service_account['id'], gcp_update_tag)
 
     cleanup_service_accounts(neo4j_session, common_job_parameters)
     label.sync_labels(neo4j_session, service_accounts_list, gcp_update_tag,
