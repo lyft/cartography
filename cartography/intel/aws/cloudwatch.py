@@ -13,10 +13,6 @@ from cartography.util import timeit
 logger = logging.getLogger(__name__)
 
 
-def load_cloudwatch_alarm(session: neo4j.Session, alarms: Dict, current_aws_account_id: str, aws_update_tag: int) -> None:
-    session.write_transaction(_load_cloudwatch_alarm_tx, alarms, current_aws_account_id, aws_update_tag)
-
-
 @timeit
 @aws_handle_regions
 def get_cloudwatch_alarm(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
@@ -28,6 +24,10 @@ def get_cloudwatch_alarm(boto3_session: boto3.session.Session, region: str) -> L
         alarms.append(alarm)
 
     return alarms
+
+
+def load_cloudwatch_alarm(session: neo4j.Session, alarms: Dict, current_aws_account_id: str, aws_update_tag: int) -> None:
+    session.write_transaction(_load_cloudwatch_alarm_tx, alarms, current_aws_account_id, aws_update_tag)
 
 
 @timeit
@@ -63,8 +63,63 @@ def _load_cloudwatch_alarm_tx(tx: neo4j.Transaction, alarms: Dict, current_aws_a
 
 
 @timeit
-def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+def cleanup_cloudwatch_alarm(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('aws_import_cloudwatch_alarm_cleanup.json', neo4j_session, common_job_parameters)
+
+
+@timeit
+@aws_handle_regions
+def get_cloudwatch_flowlogs(boto3_session: boto3.session.Session, region: str, current_aws_account_id: str) -> List[Dict]:
+    client = boto3_session.client('ec2', region_name=region)
+    response = client.describe_flow_logs()
+    flowlogs = []
+    for flowlog in response.get('FlowLogs', []):
+        flowlog['arn'] = f"arn:aws:ec2:{region}:{current_aws_account_id}:vcp-flow-log/{flowlog['FlowLogId']}"
+        flowlog['region'] = region
+        flowlogs.append(flowlog)
+
+    return flowlogs
+
+
+def load_cloudwatch_flowlogs(session: neo4j.Session, alarms: Dict, current_aws_account_id: str, aws_update_tag: int) -> None:
+    session.write_transaction(_load_cloudwatch_flowlogs_tx, alarms, current_aws_account_id, aws_update_tag)
+
+
+@timeit
+def _load_cloudwatch_flowlogs_tx(tx: neo4j.Transaction, flowlogs: Dict, current_aws_account_id: str, aws_update_tag: int) -> None:
+    query: str = """
+    UNWIND {Records} as record
+    MERGE (log:AWSCloudWatchFlowLog{id: record.arn})
+    ON CREATE SET log.firstseen = timestamp(),
+        log.arn = record.arn
+    SET log.lastupdated = {aws_update_tag},
+        log.name = record.FlowLogId,
+        log.region = record.region,
+        log.creation_time = record.CreationTime,
+        log.deliver_logs_status = record.DeliverLogsStatus,
+        log.flow_log_id = record.FlowLogId,
+        log.flow_log_status = record.FlowLogStatus,
+        log.log_group_name = record.LogGroupName,
+        log.resource_id = record.ResourceId,
+        log.log_destination_type = record.LogDestinationType
+    WITH log
+    MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MERGE (owner)-[r:RESOURCE]->(log)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {aws_update_tag}
+    """
+
+    tx.run(
+        query,
+        Records=flowlogs,
+        AWS_ACCOUNT_ID=current_aws_account_id,
+        aws_update_tag=aws_update_tag,
+    )
+
+
+@timeit
+def cleanup_cloudwatch_flowlogs(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('aws_import_cloudwatch_flowlog_cleanup.json', neo4j_session, common_job_parameters)
 
 
 @timeit
@@ -77,10 +132,12 @@ def sync(
     logger.info("Syncing Cloudwatch for account '%s', at %s.", current_aws_account_id, tic)
 
     alarms = []
+    flowlogs = []
     for region in regions:
         logger.info("Syncing Cloudwatch for region '%s' in account '%s'.", region, current_aws_account_id)
 
         alarms.extend(get_cloudwatch_alarm(boto3_session, region))
+        flowlogs.extend(get_cloudwatch_flowlogs(boto3_session, region, current_aws_account_id))
 
     if common_job_parameters.get('pagination', {}).get('cloudwatch', None):
         pageNo = common_job_parameters.get("pagination", {}).get("cloudwatch", None)["pageNo"]
@@ -106,7 +163,33 @@ def sync(
 
     load_cloudwatch_alarm(neo4j_session, alarms, current_aws_account_id, update_tag)
 
-    cleanup(neo4j_session, common_job_parameters)
+    cleanup_cloudwatch_alarm(neo4j_session, common_job_parameters)
+
+    if common_job_parameters.get('pagination', {}).get('cloudwatch', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("cloudwatch", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("cloudwatch", None)["pageSize"]
+        totalPages = len(flowlogs) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for cloudwatch flowlogs {pageNo}/{totalPages} pageSize is {pageSize}')
+
+        page_start = (common_job_parameters.get('pagination', {}).get('cloudwatch', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('cloudwatch', {})['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('cloudwatch', {})['pageSize']
+        if page_end > len(flowlogs) or page_end == len(flowlogs):
+            flowlogs = flowlogs[page_start:]
+
+        else:
+            has_next_page = True
+            flowlogs = flowlogs[page_start:page_end]
+            common_job_parameters['pagination']['cloudwatch']['hasNextPage'] = has_next_page
+
+    load_cloudwatch_flowlogs(neo4j_session, flowlogs, current_aws_account_id, update_tag)
+
+    cleanup_cloudwatch_flowlogs(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()
     print(f"Total Time to process cloudwatch: {toc - tic:0.4f} seconds")

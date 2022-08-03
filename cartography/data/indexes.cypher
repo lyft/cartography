@@ -35,6 +35,7 @@ CREATE INDEX ON :AWSUser(arn);
 CREATE INDEX ON :AWSUser(name);
 CREATE INDEX ON :AWSVpc(id);
 CREATE INDEX ON :AWSCloudWatchAlarm(id);
+CREATE INDEX ON :AWSCloudWatchFlowLog(id);
 CREATE INDEX ON :AccountAccessKey(accesskeyid);
 CREATE INDEX ON :AutoScalingGroup(arn);
 CREATE INDEX ON :ChromeExtension(id);
