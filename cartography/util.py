@@ -1,4 +1,3 @@
-import backoff
 import logging
 import re
 import sys
@@ -15,6 +14,7 @@ from typing import Optional
 from typing import TypeVar
 from typing import Union
 
+import backoff
 import botocore
 import neo4j
 
@@ -143,7 +143,7 @@ AWSGetFunc = TypeVar('AWSGetFunc', bound=Callable[..., List])
 # https://github.com/lyft/cartography/issues/25
 def backoff_handler(details):
     """
-    Handler that will be executed on exeption by backoff mechanism 
+    Handler that will be executed on exception by backoff mechanism
     """
     logger.warning("Backing off {wait:0.1f} seconds after {tries} tries. Calling function {target}".format(**details))
 
