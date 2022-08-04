@@ -1114,6 +1114,10 @@ Representation of an AWS EC2 [Subnet](https://docs.aws.amazon.com/AWSEC2/latest/
         (AWSAccount)-[RESOURCE]->(EC2Subnet)
         ```
 
+-  EC2PrivateIps are connected with NetworkInterfaces.
+
+        (NetworkInterface)-[PRIVATE_IP_ADDRESS]->(EC2PrivateIp)
+
 
 ### AWSInternetGateway
 
@@ -1573,7 +1577,7 @@ Represents an AWS Elastic Load Balancer.  See [spec for details](https://docs.aw
 
 ### LoadBalancerV2
 
-Represents an Elastic Load Balancer V2 ([Application Load Balancer](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/introduction.html) or [Network Load Balancer](https://docs.aws.amazon.com/elasticloadbalancing/latest/network/introduction.html).)
+Represents an Elastic Load Balancer V2 ([Application Load Balancer](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/introduction.html) or [Network Load Balancer](https://docs.aws.amazon.com/elasticloadbalancing/latest/network/introduction.html).) API reference [here](https://docs.aws.amazon.com/elasticloadbalancing/latest/APIReference/API_LoadBalancer.html).
 
 | Field | Description |
 |-------|-------------|
@@ -1599,7 +1603,7 @@ Represents an Elastic Load Balancer V2 ([Application Load Balancer](https://docs
         (LoadBalancerV2)-[EXPOSE]->(EC2Instance)
         ```
 
-- LoadBalancerV2's can be part of EC2SecurityGroups.
+- LoadBalancerV2's can be part of EC2SecurityGroups but only if their `type` = "application". NLBs don't have SGs.
 
         ```
         (LoadBalancerV2)-[MEMBER_OF_EC2_SECURITY_GROUP]->(EC2SecurityGroup)
