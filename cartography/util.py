@@ -173,10 +173,12 @@ def aws_handle_regions(func: AWSGetFunc) -> AWSGetFunc:
     # https://github.com/lyft/cartography/issues/243
     # https://github.com/lyft/cartography/issues/65
     # https://github.com/lyft/cartography/issues/25
-    @backoff.on_exception(backoff.expo,
-                          botocore.exceptions.ClientError,
-                          max_time=600,
-                          on_backoff=backoff_handler)
+    @backoff.on_exception(
+        backoff.expo,
+        botocore.exceptions.ClientError,
+        max_time=600,
+        on_backoff=backoff_handler,
+    )
     def inner_function(*args, **kwargs):  # type: ignore
         try:
             return func(*args, **kwargs)
