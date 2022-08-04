@@ -9,12 +9,81 @@ import boto3
 import botocore
 import neo4j
 from cloudconsolelink.clouds.aws import AWSLinker
+from botocore.exceptions import ClientError
 
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 aws_console_link = AWSLinker()
+
+
+@timeit
+def get_domains(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
+    domains = []
+    try:
+        client = boto3_session.client('route53domains', region_name=region)
+        paginator = client.get_paginator('list_domains')
+
+        page_iterator = paginator.paginate()
+        for page in page_iterator:
+            domains.extend(page.get('Domains', []))
+
+        for domain in domains:
+            domain['arn'] = domain['DomainName']
+            domain['details'] = client.get_domain_detail(DomainName=domain['DomainName'])
+
+        return domains
+
+    except ClientError as e:
+        logger.error(f'Failed to call Route53Domains list_domains: {region} - {e}')
+        return domains
+
+
+def load_domains(session: neo4j.Session, domains: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
+    session.write_transaction(_load_domains_tx, domains, current_aws_account_id, aws_update_tag)
+
+
+@timeit
+def _load_domains_tx(tx: neo4j.Transaction, domains: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
+    query: str = """
+    UNWIND {Records} as record
+    MERGE (domain:AWSRoute53Domain{id: record.DomainName})
+    ON CREATE SET domain.firstseen = timestamp()
+    SET domain.lastupdated = {aws_update_tag},
+        domain.name = record.DomainName,
+        domain.region = record.region,
+        domain.auto_renew = record.AutoRenew,
+        domain.transfer_lock = record.TransferLock,
+        domain.expiry = record.Expiry,
+        domain.admin_privacy = record.AdminPrivacy,
+        domain.registrant_privacy = record.RegistrantPrivacy,
+        domain.tech_privacy = record.TechPrivacy,
+        domain.registrar_name = record.RegistrarName,
+        domain.who_is_server = record.WhoIsServer,
+        domain.registrar_url = record.RegistrarUrl,
+        domain.abuse_contact_email = record.AbuseContactEmail,
+        domain.abuse_contact_phone = record.AbuseContactPhone,
+        domain.creation_date = record.CreationDate,
+        domain.expiration_date = record.ExpirationDate
+    WITH domain
+    MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MERGE (owner)-[r:RESOURCE]->(domain)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {aws_update_tag}
+    """
+
+    tx.run(
+        query,
+        Records=domains,
+        AWS_ACCOUNT_ID=current_aws_account_id,
+        aws_update_tag=aws_update_tag,
+    )
+
+
+@timeit
+def cleanup_domains(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('aws_import_route53_domains_cleanup.json', neo4j_session, common_job_parameters)
 
 
 @timeit
@@ -447,6 +516,38 @@ def sync(
     load_dns_details(neo4j_session, zones, current_aws_account_id, update_tag)
     link_sub_zones(neo4j_session, update_tag)
     cleanup_route53(neo4j_session, common_job_parameters)
+
+    domains = []
+    for region in regions:
+        logger.info("Syncing Route53 Domains for region '%s' in account '%s'.", region, current_aws_account_id)
+
+        domains.extend(get_domains(boto3_session, region))
+
+    if common_job_parameters.get('pagination', {}).get('route53', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("route53", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("route53", None)["pageSize"]
+        totalPages = len(domains) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for Route53 Domains {pageNo}/{totalPages} pageSize is {pageSize}')
+
+        page_start = (common_job_parameters.get('pagination', {}).get('route53', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('route53', {})['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('route53', {})['pageSize']
+        if page_end > len(domains) or page_end == len(domains):
+            domains = domains[page_start:]
+
+        else:
+            has_next_page = True
+            domains = domains[page_start:page_end]
+            common_job_parameters['pagination']['route53']['hasNextPage'] = has_next_page
+
+    load_domains(neo4j_session, domains, current_aws_account_id, update_tag)
+
+    cleanup_domains(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()
     print(f"Total Time to process Route53: {toc - tic:0.4f} seconds")
