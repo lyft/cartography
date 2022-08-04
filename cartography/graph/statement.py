@@ -81,14 +81,14 @@ class GraphStatement:
             "iterationsize": self.iterationsize,
         }
 
-    def _run_noniterative(self, tx: neo4j.Transaction) -> neo4j.StatementResult:
+    def _run_noniterative(self, tx: neo4j.Transaction) -> neo4j.Result:
         """
         Non-iterative statement execution.
         """
-        result: neo4j.StatementResult = tx.run(self.query, self.parameters)
+        result: neo4j.Result = tx.run(self.query, self.parameters)
 
         # Handle stats
-        summary: neo4j.BoltStatementResultSummary = result.summary()
+        summary: neo4j.ResultSummary = result.consume()
         stat_handler.incr('constraints_added', summary.counters.constraints_added)
         stat_handler.incr('constraints_removed', summary.counters.constraints_removed)
         stat_handler.incr('indexes_added', summary.counters.indexes_added)
@@ -112,10 +112,10 @@ class GraphStatement:
         self.parameters["LIMIT_SIZE"] = self.iterationsize
 
         while True:
-            result: neo4j.StatementResult = session.write_transaction(self._run_noniterative)
+            result: neo4j.Result = session.write_transaction(self._run_noniterative)
 
             # Exit if we have finished processing all items
-            if not result.summary().counters.contains_updates:
+            if not result.consume().counters.contains_updates:
                 # Ensure network buffers are cleared
                 result.consume()
                 break

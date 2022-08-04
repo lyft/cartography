@@ -30,7 +30,7 @@ def test_load_okta_group_members(neo4j_session):
     load_okta_group_members(neo4j_session, TEST_GROUP_ID, transformed_members, TEST_UPDATE_TAG)
 
     # Assert: members are attached to group 123
-    result: neo4j.BoltStatementResult = neo4j_session.run(
+    result: neo4j.Result = neo4j_session.run(
         'MATCH (o:OktaGroup{id: {GROUP_ID}})<-[:MEMBER_OF_OKTA_GROUP]-(u:OktaUser) RETURN u.last_name',
         GROUP_ID=TEST_GROUP_ID,
     )
