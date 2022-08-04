@@ -2,6 +2,7 @@ import time
 import logging
 from typing import Dict
 from typing import List
+from botocore.exceptions import ClientError
 
 import boto3
 import neo4j
@@ -16,22 +17,30 @@ logger = logging.getLogger(__name__)
 @timeit
 @aws_handle_regions
 def get_cloudwatch_alarm(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
-    client = boto3_session.client('cloudwatch', region_name=region)
-    response = client.describe_alarms()
     alarms = []
-    for alarm in response.get('MetricAlarms', []):
-        alarm['region'] = region
-        alarms.append(alarm)
+    try:
+        client = boto3_session.client('cloudwatch', region_name=region)
+        paginator = client.get_paginator('describe_alarms')
 
-    return alarms
+        page_iterator = paginator.paginate()
+        for page in page_iterator:
+            alarms.extend(page['MetricAlarms'])
+        for alarm in alarms:
+            alarm['region'] = region
+
+        return alarms
+
+    except ClientError as e:
+        logger.error(f'Failed to call CloudWatch describe_alarms: {region} - {e}')
+        return alarms
 
 
-def load_cloudwatch_alarm(session: neo4j.Session, alarms: Dict, current_aws_account_id: str, aws_update_tag: int) -> None:
+def load_cloudwatch_alarm(session: neo4j.Session, alarms: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
     session.write_transaction(_load_cloudwatch_alarm_tx, alarms, current_aws_account_id, aws_update_tag)
 
 
 @timeit
-def _load_cloudwatch_alarm_tx(tx: neo4j.Transaction, alarms: Dict, current_aws_account_id: str, aws_update_tag: int) -> None:
+def _load_cloudwatch_alarm_tx(tx: neo4j.Transaction, alarms: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
     query: str = """
     UNWIND {Records} as record
     MERGE (alarm:AWSCloudWatchAlarm{id: record.AlarmArn})
@@ -70,23 +79,32 @@ def cleanup_cloudwatch_alarm(neo4j_session: neo4j.Session, common_job_parameters
 @timeit
 @aws_handle_regions
 def get_cloudwatch_flowlogs(boto3_session: boto3.session.Session, region: str, current_aws_account_id: str) -> List[Dict]:
-    client = boto3_session.client('ec2', region_name=region)
-    response = client.describe_flow_logs()
     flowlogs = []
-    for flowlog in response.get('FlowLogs', []):
-        flowlog['arn'] = f"arn:aws:ec2:{region}:{current_aws_account_id}:vcp-flow-log/{flowlog['FlowLogId']}"
-        flowlog['region'] = region
-        flowlogs.append(flowlog)
+    try:
+        client = boto3_session.client('ec2', region_name=region)
+        paginator = client.get_paginator('describe_flow_logs')
 
-    return flowlogs
+        page_iterator = paginator.paginate()
+        for page in page_iterator:
+            flowlogs.extend(page['FlowLogs'])
+
+        for flowlog in flowlogs:
+            flowlog['arn'] = f"arn:aws:ec2:{region}:{current_aws_account_id}:vcp-flow-log/{flowlog['FlowLogId']}"
+            flowlog['region'] = region
+
+        return flowlogs
+
+    except ClientError as e:
+        logger.error(f'Failed to call EC2 describe_flow_logs: {region} - {e}')
+        return flowlogs
 
 
-def load_cloudwatch_flowlogs(session: neo4j.Session, alarms: Dict, current_aws_account_id: str, aws_update_tag: int) -> None:
-    session.write_transaction(_load_cloudwatch_flowlogs_tx, alarms, current_aws_account_id, aws_update_tag)
+def load_cloudwatch_flowlogs(session: neo4j.Session, flowlogs: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
+    session.write_transaction(_load_cloudwatch_flowlogs_tx, flowlogs, current_aws_account_id, aws_update_tag)
 
 
 @timeit
-def _load_cloudwatch_flowlogs_tx(tx: neo4j.Transaction, flowlogs: Dict, current_aws_account_id: str, aws_update_tag: int) -> None:
+def _load_cloudwatch_flowlogs_tx(tx: neo4j.Transaction, flowlogs: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
     query: str = """
     UNWIND {Records} as record
     MERGE (log:AWSCloudWatchFlowLog{id: record.arn})
