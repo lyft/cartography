@@ -31,6 +31,7 @@ def get_domains(boto3_session: boto3.session.Session, region: str) -> List[Dict]
 
         for domain in domains:
             domain['arn'] = domain['DomainName']
+            domain['region'] = region
             domain['details'] = client.get_domain_detail(DomainName=domain['DomainName'])
 
         return domains
