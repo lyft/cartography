@@ -34,13 +34,13 @@ def get_rds_reserved_db_instances_data(boto3_session: boto3.session.Session, reg
     return instances
 
 
-def load_rds_reserved_db_instances(session: neo4j.Session, instances: Dict, current_aws_account_id: str, aws_update_tag: int) -> None:
+def load_rds_reserved_db_instances(session: neo4j.Session, instances: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
     session.write_transaction(_load_rds_reserved_db_instances_tx, instances, current_aws_account_id, aws_update_tag)
 
 
 @timeit
 def _load_rds_reserved_db_instances_tx(
-    neo4j_session: neo4j.Session, data: Dict, current_aws_account_id: str,
+    neo4j_session: neo4j.Session, data: List[Dict], current_aws_account_id: str,
     aws_update_tag: int,
 ) -> None:
     """
