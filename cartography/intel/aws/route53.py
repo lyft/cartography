@@ -50,23 +50,24 @@ def _load_domains_tx(tx: neo4j.Transaction, domains: List[Dict], current_aws_acc
     query: str = """
     UNWIND {Records} as record
     MERGE (domain:AWSRoute53Domain{id: record.DomainName})
-    ON CREATE SET domain.firstseen = timestamp()
+    ON CREATE SET domain.firstseen = timestamp(),
+        domain.arn = record.DomainName
     SET domain.lastupdated = {aws_update_tag},
         domain.name = record.DomainName,
         domain.region = record.region,
         domain.auto_renew = record.AutoRenew,
         domain.transfer_lock = record.TransferLock,
         domain.expiry = record.Expiry,
-        domain.admin_privacy = record.AdminPrivacy,
-        domain.registrant_privacy = record.RegistrantPrivacy,
-        domain.tech_privacy = record.TechPrivacy,
-        domain.registrar_name = record.RegistrarName,
-        domain.who_is_server = record.WhoIsServer,
-        domain.registrar_url = record.RegistrarUrl,
-        domain.abuse_contact_email = record.AbuseContactEmail,
-        domain.abuse_contact_phone = record.AbuseContactPhone,
-        domain.creation_date = record.CreationDate,
-        domain.expiration_date = record.ExpirationDate
+        domain.admin_privacy = record.details.AdminPrivacy,
+        domain.registrant_privacy = record.details.RegistrantPrivacy,
+        domain.tech_privacy = record.details.TechPrivacy,
+        domain.registrar_name = record.details.RegistrarName,
+        domain.who_is_server = record.details.WhoIsServer,
+        domain.registrar_url = record.details.RegistrarUrl,
+        domain.abuse_contact_email = record.details.AbuseContactEmail,
+        domain.abuse_contact_phone = record.details.AbuseContactPhone,
+        domain.creation_date = record.details.CreationDate,
+        domain.expiration_date = record.details.ExpirationDate
     WITH domain
     MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
     MERGE (owner)-[r:RESOURCE]->(domain)

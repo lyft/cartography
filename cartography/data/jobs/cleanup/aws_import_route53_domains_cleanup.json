@@ -11,5 +11,5 @@
             "iterationsize": 100
         }
     ],
-    "name": "cleanup AWS Route53 Domain Alarms"
+    "name": "cleanup AWS Route53 Domain"
 }
