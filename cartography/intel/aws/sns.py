@@ -14,6 +14,31 @@ from cartography.util import timeit
 logger = logging.getLogger(__name__)
 
 
+@aws_handle_regions
+@timeit
+def list_subscriptions(boto3_session: boto3.session.Session, region):
+    # List all Subscriptions
+    subscriptions = []
+    try:
+        client = boto3_session.client('sns', region_name=region)
+        paginator = client.get_paginator('list_subscriptions')
+
+        page_iterator = paginator.paginate()
+        for page in page_iterator:
+            subscriptions.extend(page.get('Subscriptions', []))
+
+    except ClientError as e:
+        logger.error(f'Failed to call SNS list_subscriptions: {region} - {e}')
+
+    for subscription in subscriptions:
+        # subscription arn - arn:aws:sns:<region>:<account_id>:<topic_name>:<subscription_id>
+        subscription['arn'] = subscription['SubscriptionArn']
+        subscription['region'] = region
+        subscription['name'] = subscription['SubscriptionArn'].split(':')[-1]
+
+    return subscriptions
+
+
 @timeit
 @aws_handle_regions
 def get_sns_topic(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
@@ -25,9 +50,14 @@ def get_sns_topic(boto3_session: boto3.session.Session, region: str) -> List[Dic
         page_iterator = paginator.paginate()
         for page in page_iterator:
             topics.extend(page.get('Topics', []))
+
+        subscriptions = list_subscriptions(boto3_session, region)
+
         for topic in topics:
             topic['region'] = region
             topic['name'] = topic['TopicArn'].split(':')[-1]
+            topic['attributes'] = client.get_topic_attributes(TopicArn=topic['TopicArn']).get('Attributes', {})
+            topic['subscriptions'] = list(filter(lambda s: s['TopicArn'] == topic['TopicArn'], subscriptions))
 
         return topics
 
@@ -49,7 +79,13 @@ def _load_sns_topic_tx(tx: neo4j.Transaction, topics: List[Dict], current_aws_ac
         topic.arn = record.TopicArn
     SET topic.lastupdated = {aws_update_tag},
         topic.name = record.name,
-        topic.region = record.region
+        topic.region = record.region,
+        topic.subscriptions_confirmed = record.attributes.SubscriptionsConfirmed,
+        topic.display_name = record.attributes.DisplayName,
+        topic.subscriptions_deleted = record.attributes.SubscriptionsDeleted,
+        topic.owner = record.attributes.Owner,
+        topic.subscriptions_pending = record.attributes.SubscriptionsPending,
+        topic.kms_master_key_id = record.attributes.KmsMasterKeyId
     WITH topic
     MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
     MERGE (owner)-[r:RESOURCE]->(topic)
@@ -68,6 +104,44 @@ def _load_sns_topic_tx(tx: neo4j.Transaction, topics: List[Dict], current_aws_ac
 @timeit
 def cleanup_sns_topic(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('aws_import_sns_topic_cleanup.json', neo4j_session, common_job_parameters)
+
+
+@timeit
+def load_sns_subscription_topic(session: neo4j.Session, subscriptions: List[Dict], topic_arn: str, aws_update_tag: int) -> None:
+    session.write_transaction(_load_sns_topic_subscription_tx, subscriptions, topic_arn, aws_update_tag)
+
+
+@timeit
+def _load_sns_topic_subscription_tx(tx: neo4j.Transaction, subscriptions: List[Dict], topic_arn: str, aws_update_tag: int) -> None:
+    query: str = """
+    UNWIND {Records} as record
+    MERGE (sub:AWSSNSTopicSubscription{id: record.SubscriptionArn})
+    ON CREATE SET sub.firstseen = timestamp(),
+        sub.arn = record.SubscriptionArn
+    SET sub.lastupdated = {aws_update_tag},
+        sub.name = record.name,
+        sub.region = record.region,
+        sub.Endpoint = record.Endpoint,
+        sub.Protocol = record.Protocol,
+        sub.owner = record.Owner
+    WITH sub
+    MATCH (owner:AWSSNSTopic{id: {Topic_ARN}})
+    MERGE (owner)-[r:RESOURCE]->(sub)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {aws_update_tag}
+    """
+
+    tx.run(
+        query,
+        Records=subscriptions,
+        Topic_ARN=topic_arn,
+        aws_update_tag=aws_update_tag,
+    )
+
+
+@timeit
+def cleanup_sns_topic_subscription(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('aws_import_sns_topic_subscription_cleanup.json', neo4j_session, common_job_parameters)
 
 
 @timeit
@@ -109,4 +183,8 @@ def sync(
 
     load_sns_topic(neo4j_session, topics, current_aws_account_id, update_tag)
 
+    for topic in topics:
+        load_sns_subscription_topic(neo4j_session, topic['subscriptions'], topic['TopicArn'], update_tag)
+
+    cleanup_sns_topic_subscription(neo4j_session, common_job_parameters)
     cleanup_sns_topic(neo4j_session, common_job_parameters)
