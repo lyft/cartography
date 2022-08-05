@@ -23,6 +23,7 @@ from . import s3
 from . import secretsmanager
 from . import securityhub
 from . import sqs
+from . import sns
 from .ec2.auto_scaling_groups import sync_ec2_auto_scaling_groups
 from .ec2.elastic_ip_addresses import sync_elastic_ip_addresses
 from .ec2.images import sync_ec2_images
@@ -79,6 +80,7 @@ RESOURCE_FUNCTIONS: Dict = {
     'secretsmanager': secretsmanager.sync,
     'securityhub': securityhub.sync,
     'sqs': sqs.sync,
+    'sns': sns.sync,
     'config': config.sync,
     'cloudtrail': cloudtrail.sync,
     'cloudwatch': cloudwatch.sync,
