@@ -148,4 +148,4 @@ def sync(
     )
 
     toc = time.perf_counter()
-    print(f"Total Time to process DynamoDB: {toc - tic:0.4f} seconds")
+    logger.info(f"Total Time to process DynamoDB: {toc - tic:0.4f} seconds")

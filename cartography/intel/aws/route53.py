@@ -519,6 +519,10 @@ def sync(
     link_sub_zones(neo4j_session, update_tag)
     cleanup_route53(neo4j_session, common_job_parameters)
 
+    # Route53 has only 1 region. us-east-1
+    # https://github.com/aws/aws-cli/issues/1354
+    regions = ['us-east-1']
+
     domains = []
     for region in regions:
         logger.info("Syncing Route53 Domains for region '%s' in account '%s'.", region, current_aws_account_id)
@@ -552,4 +556,4 @@ def sync(
     cleanup_domains(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()
-    print(f"Total Time to process Route53: {toc - tic:0.4f} seconds")
+    logger.info(f"Total Time to process Route53: {toc - tic:0.4f} seconds")

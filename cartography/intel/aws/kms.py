@@ -403,4 +403,4 @@ def sync(
     cleanup_kms(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()
-    print(f"Total Time to process KMS: {toc - tic:0.4f} seconds")
+    logger.info(f"Total Time to process KMS: {toc - tic:0.4f} seconds")

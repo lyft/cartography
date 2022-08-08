@@ -606,4 +606,4 @@ def sync(
         common_job_parameters,
     )
     toc = time.perf_counter()
-    print(f"Total Time to process RDS: {toc - tic:0.4f} seconds")
+    logger.info(f"Total Time to process RDS: {toc - tic:0.4f} seconds")

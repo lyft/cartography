@@ -194,4 +194,4 @@ def sync(
     cleanup_sqs_queues(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()
-    print(f"Total Time to process SQS: {toc - tic:0.4f} seconds")
+    logger.info(f"Total Time to process SQS: {toc - tic:0.4f} seconds")

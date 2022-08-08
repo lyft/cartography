@@ -265,4 +265,4 @@ def sync_load_balancer_v2s(
     cleanup_load_balancer_v2s(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()
-    print(f"Total Time to process EC2 load balancers v2: {toc - tic:0.4f} seconds")
+    logger.info(f"Total Time to process EC2 load balancers v2: {toc - tic:0.4f} seconds")

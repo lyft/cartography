@@ -704,4 +704,4 @@ def sync(
     cleanup_s3_bucket_acl_and_policy(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()
-    print(f"Total Time to process S3: {toc - tic:0.4f} seconds")
+    logger.info(f"Total Time to process S3: {toc - tic:0.4f} seconds")

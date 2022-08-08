@@ -227,4 +227,4 @@ def sync_vpc(
     cleanup_ec2_vpcs(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()
-    print(f"Total Time to process EC2 VPC: {toc - tic:0.4f} seconds")
+    logger.info(f"Total Time to process EC2 VPC: {toc - tic:0.4f} seconds")

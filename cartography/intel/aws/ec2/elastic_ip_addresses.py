@@ -141,4 +141,4 @@ def sync_elastic_ip_addresses(
     cleanup_elastic_ip_addresses(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()
-    print(f"Total Time to process Elastic IP Addresses: {toc - tic:0.4f} seconds")
+    logger.info(f"Total Time to process Elastic IP Addresses: {toc - tic:0.4f} seconds")

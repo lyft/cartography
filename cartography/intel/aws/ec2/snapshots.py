@@ -164,4 +164,4 @@ def sync_ebs_snapshots(
     cleanup_snapshots(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()
-    print(f"Total Time to process Snapshots: {toc - tic:0.4f} seconds")
+    logger.info(f"Total Time to process Snapshots: {toc - tic:0.4f} seconds")

@@ -225,7 +225,7 @@ def sync(
     # Process each region in parallel.
     with ThreadPoolExecutor(max_workers=len(regions)) as executor:
         futures = []
-    
+
         for region in regions:
             logger.info("Syncing AWS tags for region '%s'.", region)
             for resource_type in tag_resource_type_mappings.keys():
@@ -235,10 +235,9 @@ def sync(
             logger.info(f'Result from Future - Tags Processing: {future.result()}')
 
     cleanup(neo4j_session, common_job_parameters)
-    
-    toc = time.perf_counter()
-    print(f"Total Time to process tags: {toc - tic:0.4f} seconds")
 
+    toc = time.perf_counter()
+    logger.info(f"Total Time to process tags: {toc - tic:0.4f} seconds")
 
 
 def concurrent_execution(
@@ -246,9 +245,9 @@ def concurrent_execution(
     region: str,
     resource_type: str,
     update_tag: int,
-    ):
+):
     logger.info(f"BEGIN processing tags for {region} & {resource_type}")
-    
+
     if config.credentials['type'] == 'self':
         boto3_session = boto3.Session(
             aws_access_key_id=config.credentials['aws_access_key_id'],
@@ -261,14 +260,14 @@ def concurrent_execution(
             aws_secret_access_key=config.credentials['aws_secret_access_key'],
             aws_session_token=config.credentials['session_token'],
         )
-        
+
     neo4j_auth = (config.neo4j_user, config.neo4j_password)
     neo4j_driver = GraphDatabase.driver(
         config.neo4j_uri,
         auth=neo4j_auth,
         max_connection_lifetime=config.neo4j_max_connection_lifetime,
     )
-    
+
     tag_data = get_tags(boto3_session, [resource_type], region)
 
     transform_tags(tag_data, resource_type)

@@ -109,11 +109,9 @@ def sync(
 
     trails = transform_trails(trails)
 
-    print(trails)
-
     load_trails(neo4j_session, trails, current_aws_account_id, update_tag)
 
     cleanup(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()
-    print(f"Total Time to process CloudTrail: {toc - tic:0.4f} seconds")
+    logger.info(f"Total Time to process CloudTrail: {toc - tic:0.4f} seconds")
