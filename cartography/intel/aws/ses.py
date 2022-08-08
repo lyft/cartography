@@ -131,3 +131,6 @@ def sync(
 
     load_ses_identity(neo4j_session, identities, current_aws_account_id, update_tag)
     cleanup_ses_identities(neo4j_session, common_job_parameters)
+
+    toc = time.perf_counter()
+    logger.info(f"Total Time to process SES Service: {toc - tic:0.4f} seconds")
