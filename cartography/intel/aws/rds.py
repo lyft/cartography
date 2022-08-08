@@ -182,7 +182,7 @@ def sync_rds_security_groups(
     data = []
     for region in regions:
         logger.info("Syncing RDS security groups for region '%s' in account '%s'.", region, current_aws_account_id)
-        data.extend(get_rds_reserved_db_instances_data(boto3_session, region))
+        data.extend(get_rds_security_groups(boto3_session, region))
 
     if common_job_parameters.get('pagination', {}).get('rds', None):
         pageNo = common_job_parameters.get("pagination", {}).get("rds", None)["pageNo"]
@@ -205,6 +205,108 @@ def sync_rds_security_groups(
 
     load_rds_security_groups(neo4j_session, data, current_aws_account_id, update_tag)
     cleanup_rds_security_groups(neo4j_session, common_job_parameters)
+
+
+@timeit
+@aws_handle_regions
+def get_rds_snapshots(boto3_session: boto3.session.Session, region: str) -> List[Any]:
+    client = boto3_session.client('rds', region_name=region)
+    paginator = client.get_paginator('describe_db_snapshots')
+    snapshots: List[Any] = []
+    for page in paginator.paginate():
+        snapshots.extend(page['DBSnapshots'])
+    for snapshot in snapshots:
+        snapshot['region'] = region
+        snapshot['name'] = snapshot.get('DBSnapshotArn').split(':')[-1]
+    return snapshots
+
+
+def load_rds_snapshots(session: neo4j.Session, snapshots: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
+    session.write_transaction(_load_rds_snapshots_tx, snapshots, current_aws_account_id, aws_update_tag)
+
+
+@timeit
+def _load_rds_snapshots_tx(
+    tx: neo4j.Transaction, data: List[Dict], current_aws_account_id: str,
+    aws_update_tag: int,
+) -> None:
+    ingest_rds_snapshot = """
+    UNWIND {snapshots} as rds_snapshot
+        MERGE (snap:RDSSnapshot{id: rds_snapshot.DBSnapshotArn})
+        ON CREATE SET snap.firstseen = timestamp(),
+            snap.arn = rds_snapshot.DBSnapshotArn
+        SET snap.db_snapshot_identifier = rds_snapshot.DBSnapshotIdentifier,
+            snap.name = rds_snapshot.name,
+            snap.db_instance_identifier = rds_snapshot.DBInstanceIdentifier,
+            snap.snapshot_create_time = rds_snapshot.SnapshotCreateTime,
+            snap.engine = rds_snapshot.Engine,
+            snap.allocated_storage = rds_snapshot.AllocatedStorage,
+            snap.status = rds_snapshot.Status,
+            snap.port = rds_snapshot.Port,
+            snap.availability_zone = rds_snapshot.AvailabilityZone,
+            snap.vpc_id = rds_snapshot.VpcId,
+            snap.instance_create_time = rds_snapshot.InstanceCreateTime,
+            snap.master_username = rds_snapshot.MasterUsername,
+            snap.engine_version = rds_snapshot.EngineVersion,
+            snap.license_model = rds_snapshot.LicenseModel,
+            snap.snapshot_type = rds_snapshot.SnapshotType,
+            snap.option_group_name = rds_snapshot.OptionGroupName,
+            snap.percent_progress = rds_snapshot.PercentProgress,
+            snap.storage_type = rds_snapshot.StorageType,
+            snap.encrypted = rds_snapshot.Encrypted,
+            snap.iam_database_authentication_enabled = rds_snapshot.IAMDatabaseAuthenticationEnabled,
+            snap.dbi_resource_id = rds_snapshot.DbiResourceId,
+            snap.lastupdated = {aws_update_tag}
+        WITH snap
+        MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+        MERGE (aa)-[r:RESOURCE]->(snap)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {aws_update_tag}
+    """
+
+    tx.run(
+        ingest_rds_snapshot,
+        snapshots=data,
+        AWS_ACCOUNT_ID=current_aws_account_id,
+        aws_update_tag=aws_update_tag,
+    )
+
+
+def cleanup_rds_snapshots(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('aws_import_rds_snapshots_cleanup.json', neo4j_session, common_job_parameters)
+
+
+@timeit
+def sync_rds_snapshots(
+    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
+    update_tag: int, common_job_parameters: Dict,
+) -> None:
+    data = []
+    for region in regions:
+        logger.info("Syncing RDS snapshots for region '%s' in account '%s'.", region, current_aws_account_id)
+        data.extend(get_rds_snapshots(boto3_session, region))
+
+    if common_job_parameters.get('pagination', {}).get('rds', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("rds", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("rds", None)["pageSize"]
+        totalPages = len(data) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for rds snapshots {pageNo}/{totalPages} pageSize is {pageSize}')
+        page_start = (common_job_parameters.get('pagination', {}).get('rds', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('rds', {})['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('rds', {})['pageSize']
+        if page_end > len(data) or page_end == len(data):
+            data = data[page_start:]
+        else:
+            has_next_page = True
+            data = data[page_start:page_end]
+            common_job_parameters['pagination']['rds']['hasNextPage'] = has_next_page
+
+    load_rds_snapshots(neo4j_session, data, current_aws_account_id, update_tag)
+    cleanup_rds_snapshots(neo4j_session, common_job_parameters)
 
 
 @timeit
@@ -690,6 +792,10 @@ def sync(
         common_job_parameters,
     )
     sync_rds_security_groups(
+        neo4j_session, boto3_session, regions, current_aws_account_id, update_tag,
+        common_job_parameters,
+    )
+    sync_rds_snapshots(
         neo4j_session, boto3_session, regions, current_aws_account_id, update_tag,
         common_job_parameters,
     )
