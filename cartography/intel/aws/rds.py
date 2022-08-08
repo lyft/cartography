@@ -40,7 +40,7 @@ def load_rds_reserved_db_instances(session: neo4j.Session, instances: List[Dict]
 
 @timeit
 def _load_rds_reserved_db_instances_tx(
-    neo4j_session: neo4j.Session, data: List[Dict], current_aws_account_id: str,
+    tx: neo4j.Transaction, data: List[Dict], current_aws_account_id: str,
     aws_update_tag: int,
 ) -> None:
     """
@@ -75,7 +75,7 @@ def _load_rds_reserved_db_instances_tx(
         SET r.lastupdated = {aws_update_tag}
     """
 
-    neo4j_session.run(
+    tx.run(
         ingest_rds_reserved_db_instance,
         Instances=data,
         AWS_ACCOUNT_ID=current_aws_account_id,
@@ -121,6 +121,90 @@ def sync_rds_reserved_db_instances(
 
     load_rds_reserved_db_instances(neo4j_session, data, current_aws_account_id, update_tag)
     cleanup_rds_reserved_db_instances(neo4j_session, common_job_parameters)
+
+
+@timeit
+@aws_handle_regions
+def get_rds_security_groups(boto3_session: boto3.session.Session, region: str) -> List[Any]:
+    client = boto3_session.client('rds', region_name=region)
+    paginator = client.get_paginator('describe_db_security_groups')
+    secgroups: List[Any] = []
+    for page in paginator.paginate():
+        secgroups.extend(page['DBSecurityGroups'])
+    for secgroup in secgroups:
+        secgroup['region'] = region
+    return secgroups
+
+
+def load_rds_security_groups(session: neo4j.Session, secgroups: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
+    session.write_transaction(_load_rds_security_groups_tx, secgroups, current_aws_account_id, aws_update_tag)
+
+
+@timeit
+def _load_rds_security_groups_tx(
+    tx: neo4j.Transaction, data: List[Dict], current_aws_account_id: str,
+    aws_update_tag: int,
+) -> None:
+    ingest_rds_secgroup = """
+    UNWIND {secgroups} as rds_secgroup
+        MERGE (secgroup:RDSSecurityGroup{id: rds_secgroup.DBSecurityGroupArn})
+        ON CREATE SET secgroup.firstseen = timestamp(),
+            secgroup.arn = rds_secgroup.DBSecurityGroupArn
+        SET secgroup.db_security_group_description = rds_secgroup.DBSecurityGroupDescription,
+            secgroup.name = rds_secgroup.DBSecurityGroupName,
+            secgroup.owner_id = rds_secgroup.OwnerId,
+            secgroup.vpc_id = rds_secgroup.VpcId,
+            secgroup.lastupdated = {aws_update_tag}
+        WITH secgroup
+        MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+        MERGE (aa)-[r:RESOURCE]->(secgroup)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {aws_update_tag}
+    """
+
+    tx.run(
+        ingest_rds_secgroup,
+        secgroups=data,
+        AWS_ACCOUNT_ID=current_aws_account_id,
+        aws_update_tag=aws_update_tag,
+    )
+
+
+def cleanup_rds_security_groups(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('aws_import_rds_security_groups_cleanup.json', neo4j_session, common_job_parameters)
+
+
+@timeit
+def sync_rds_security_groups(
+    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
+    update_tag: int, common_job_parameters: Dict,
+) -> None:
+    data = []
+    for region in regions:
+        logger.info("Syncing RDS security groups for region '%s' in account '%s'.", region, current_aws_account_id)
+        data.extend(get_rds_reserved_db_instances_data(boto3_session, region))
+
+    if common_job_parameters.get('pagination', {}).get('rds', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("rds", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("rds", None)["pageSize"]
+        totalPages = len(data) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for rds security group {pageNo}/{totalPages} pageSize is {pageSize}')
+        page_start = (common_job_parameters.get('pagination', {}).get('rds', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('rds', {})['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('rds', {})['pageSize']
+        if page_end > len(data) or page_end == len(data):
+            data = data[page_start:]
+        else:
+            has_next_page = True
+            data = data[page_start:page_end]
+            common_job_parameters['pagination']['rds']['hasNextPage'] = has_next_page
+
+    load_rds_security_groups(neo4j_session, data, current_aws_account_id, update_tag)
+    cleanup_rds_security_groups(neo4j_session, common_job_parameters)
 
 
 @timeit
@@ -602,6 +686,10 @@ def sync(
         common_job_parameters,
     )
     sync_rds_reserved_db_instances(
+        neo4j_session, boto3_session, regions, current_aws_account_id, update_tag,
+        common_job_parameters,
+    )
+    sync_rds_security_groups(
         neo4j_session, boto3_session, regions, current_aws_account_id, update_tag,
         common_job_parameters,
     )
