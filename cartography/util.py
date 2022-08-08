@@ -143,7 +143,7 @@ AWSGetFunc = TypeVar('AWSGetFunc', bound=Callable[..., List])
 # https://github.com/lyft/cartography/issues/25
 
 
-def backoff_handler(details):
+def backoff_handler(details: Dict):
     """
     Handler that will be executed on exception by backoff mechanism
     """
