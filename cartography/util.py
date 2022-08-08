@@ -14,6 +14,7 @@ from typing import Optional
 from typing import TypeVar
 from typing import Union
 
+import backoff
 import botocore
 import neo4j
 
@@ -135,6 +136,19 @@ def timeit(method: F) -> F:
 
 AWSGetFunc = TypeVar('AWSGetFunc', bound=Callable[..., List])
 
+# fix for AWS TooManyRequestsException
+# https://github.com/lyft/cartography/issues/297
+# https://github.com/lyft/cartography/issues/243
+# https://github.com/lyft/cartography/issues/65
+# https://github.com/lyft/cartography/issues/25
+
+
+def backoff_handler(details: Dict) -> None:
+    """
+    Handler that will be executed on exception by backoff mechanism
+    """
+    logger.warning("Backing off {wait:0.1f} seconds after {tries} tries. Calling function {target}".format(**details))
+
 
 # TODO Move this to cartography.intel.aws.util.common
 def aws_handle_regions(func: AWSGetFunc) -> AWSGetFunc:
@@ -156,6 +170,17 @@ def aws_handle_regions(func: AWSGetFunc) -> AWSGetFunc:
     ]
 
     @wraps(func)
+    # fix for AWS TooManyRequestsException
+    # https://github.com/lyft/cartography/issues/297
+    # https://github.com/lyft/cartography/issues/243
+    # https://github.com/lyft/cartography/issues/65
+    # https://github.com/lyft/cartography/issues/25
+    @backoff.on_exception(
+        backoff.expo,
+        botocore.exceptions.ClientError,
+        max_time=600,
+        on_backoff=backoff_handler,
+    )
     def inner_function(*args, **kwargs):  # type: ignore
         try:
             return func(*args, **kwargs)
