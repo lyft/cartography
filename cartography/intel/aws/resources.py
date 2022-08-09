@@ -4,6 +4,7 @@ from . import apigateway
 from . import config
 from . import cloudtrail
 from . import cloudwatch
+from . import cloudformation
 from . import dynamodb
 from . import ecr
 from . import ecs
@@ -84,6 +85,7 @@ RESOURCE_FUNCTIONS: Dict = {
     'config': config.sync,
     'cloudtrail': cloudtrail.sync,
     'cloudwatch': cloudwatch.sync,
+    'cloudformation': cloudformation.sync,
     'permission_relationships': permission_relationships.sync,
     'resourcegroupstaggingapi': resourcegroupstaggingapi.sync,
 }
