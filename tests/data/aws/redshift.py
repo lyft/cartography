@@ -4,6 +4,7 @@ CLUSTERS = [{
     'AllowVersionUpgrade': True,
     'AutomatedSnapshotRetentionPeriod': 35,
     'AvailabilityZone': 'us-east-1e',
+    'region': 'us-east-1',
     'ClusterCreateTime': datetime.datetime(2018, 9, 12, 0, 19, 33, 652000),
     'ClusterIdentifier': 'my-cluster',
     'ClusterNodes': [
@@ -99,3 +100,25 @@ CLUSTERS = [{
         'VpcSecurityGroupId': 'my-vpc-sg',
     }],
 }]
+
+NODES = [
+    {
+        "arn": 'arn:aws:redshift:us-east-1:1111:reserved-node/1ba8e2e3-bc01-4d65-b35d-a4a3e931547e',
+        'region': 'us-east-1',
+        "OfferingType": "Heavy Utilization",
+        "FixedPrice": "",
+        "NodeType": "dw.hs1.xlarge",
+        "ReservedNodeId": "1ba8e2e3-bc01-4d65-b35d-a4a3e931547e",
+        "UsagePrice": "",
+        "RecurringCharges": [
+            {
+                "RecurringChargeAmount": "",
+                "RecurringChargeFrequency": "Hourly"
+            }],
+        "NodeCount": 1,
+        "State": "payment-pending",
+        "StartTime": "2013-02-13T17:08:39.051Z",
+        "Duration": 31536000,
+        "ReservedNodeOfferingId": "ceb6a579-cf4c-4343-be8b-d832c45ab51c"
+    }
+]
