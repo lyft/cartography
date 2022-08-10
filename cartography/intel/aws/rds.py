@@ -175,6 +175,26 @@ def cleanup_rds_security_groups(neo4j_session: neo4j.Session, common_job_paramet
 
 
 @timeit
+def attach_db_security_groups_to_ec2_security_groups(session: neo4j.Session, data: List[Dict],
+                                                     db_sg_id: str, aws_update_tag: int,):
+    for sg in data:
+        ingest_script = """
+        MATCH (dbsg:RDSSecurityGroup{id:{DBSecurityGroupId}})
+        MATCH (sg:EC2SecurityGroup{id:{EC2SecurityGroupId}})
+        MERGE (dbsg)-[r:HAS]->(sg)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {aws_update_tag}
+        """
+
+        session.run(
+            ingest_script,
+            DBSecurityGroupArn=db_sg_id,
+            EC2SecurityGroupId=sg.get('EC2SecurityGroupId'),
+            aws_update_tag=aws_update_tag,
+        )
+
+
+@timeit
 def sync_rds_security_groups(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
     update_tag: int, common_job_parameters: Dict,
@@ -204,6 +224,9 @@ def sync_rds_security_groups(
             common_job_parameters['pagination']['rds']['hasNextPage'] = has_next_page
 
     load_rds_security_groups(neo4j_session, data, current_aws_account_id, update_tag)
+    for db_sg in data:
+        attach_db_security_groups_to_ec2_security_groups(neo4j_session, db_sg.get(
+            'EC2SecurityGroups', []), db_sg.get('DBSecurityGroupArn'), update_tag)
     cleanup_rds_security_groups(neo4j_session, common_job_parameters)
 
 
