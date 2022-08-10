@@ -43,3 +43,12 @@ DESCRIBE_METRICS_RESPONSE = [
         "MetricName": "PublishSize"
     }
 ]
+DESCRIBE_EVENT_RULES_RESPONSE = [
+    {
+        "EventPattern": "{\"source\":[\"aws.autoscaling\"],\"detail-type\":[\"EC2 Instance Launch Successful\",\"EC2 Instance Terminate Successful\",\"EC2 Instance Launch Unsuccessful\",\"EC2 Instance Terminate Unsuccessful\"]}",
+        "State": "DISABLED",
+        "Name": "test",
+        "Arn": "arn:aws:events:us-east-1:123456789012:rule/test",
+        "Description": "Test rule for Auto Scaling events"
+    }
+]
