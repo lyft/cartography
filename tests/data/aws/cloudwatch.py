@@ -5,3 +5,29 @@ DESCRIBE_EVENTBUS_RESPONSE = [
         "Policy": "string"
     }
 ]
+DESCRIBE_LOG_GROUPS_RESPONSE = [
+    {
+        "storedBytes": 0,
+        "metricFilterCount": 0,
+        "creationTime": 1433189500783,
+        "logGroupName": "my-logs",
+        "retentionInDays": 5,
+        "arn": "arn:aws:logs:us-west-2:0123456789012:log-group:my-logs:*",
+        "kms": {
+            "AWSAccountId": "846764612917",
+            "KeyId": "b8a9477d-836c-491f-857e-07937918959b",
+            "Arn": "arn:aws:kms:us-west-2:846764612917:key/b8a9477d-836c-491f-857e-07937918959b",
+            "CreationDate": 1566518783.394,
+            "Enabled": True,
+            "Description": "Default KMS key that protects my S3 objects when no other key is defined",
+            "KeyUsage": "ENCRYPT_DECRYPT",
+            "KeyState": "Enabled",
+            "Origin": "AWS_KMS",
+            "KeyManager": "AWS",
+            "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
+            "EncryptionAlgorithms": [
+                "SYMMETRIC_DEFAULT"
+            ]
+        }
+    }
+]
