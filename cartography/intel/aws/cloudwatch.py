@@ -147,6 +147,62 @@ def cleanup_log_groups(neo4j_session: neo4j.Session, common_job_parameters: Dict
 
 @timeit
 @aws_handle_regions
+def get_metrics(boto3_session: boto3.session.Session, region):
+    metrics = []
+    try:
+        client = boto3_session.client('cloudwatch', region_name=region)
+        paginator = client.get_paginator('list_metrics')
+
+        page_iterator = paginator.paginate()
+        for page in page_iterator:
+            metrics.extend(page['Metrics'])
+
+        for metric in metrics:
+            metric['arn'] = metric['MetricName']
+            metric['region'] = region
+
+    except ClientError as e:
+        logger.error(f'Failed to call CloudWatch list_metrics: {region} - {e}')
+    return metrics
+
+
+def load_metrics(session: neo4j.Session, metrics: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
+    session.write_transaction(_load_metrics_tx, metrics, current_aws_account_id, aws_update_tag)
+
+
+@timeit
+def _load_metrics_tx(tx: neo4j.Transaction, metrics: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
+    query: str = """
+    UNWIND {Records} as record
+    MERGE (metric:AWSCloudWatchMetric{id: record.MetricName})
+    ON CREATE SET metric.firstseen = timestamp(),
+        metric.arn = record.arn
+    SET metric.lastupdated = {aws_update_tag},
+        metric.name = record.MetricName,
+        metric.region = record.region,
+        metric.namespace = record.Namespace
+    WITH metric
+    MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MERGE (owner)-[r:RESOURCE]->(metric)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {aws_update_tag}
+    """
+
+    tx.run(
+        query,
+        Records=metrics,
+        AWS_ACCOUNT_ID=current_aws_account_id,
+        aws_update_tag=aws_update_tag,
+    )
+
+
+@timeit
+def cleanup_metrics(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('aws_import_cloudwatch_metrics_cleanup.json', neo4j_session, common_job_parameters)
+
+
+@timeit
+@aws_handle_regions
 def get_cloudwatch_alarm(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
     alarms = []
     try:
@@ -284,6 +340,7 @@ def sync(
     flowlogs = []
     event_buses = []
     log_groups = []
+    metrics = []
     for region in regions:
         logger.info("Syncing Cloudwatch for region '%s' in account '%s'.", region, current_aws_account_id)
 
@@ -291,6 +348,7 @@ def sync(
         flowlogs.extend(get_cloudwatch_flowlogs(boto3_session, region, current_aws_account_id))
         event_buses.extend(get_event_buses(boto3_session, region))
         log_groups.extend(get_log_groups(boto3_session, region))
+        metrics.extend(get_metrics(boto3_session, region))
 
     if common_job_parameters.get('pagination', {}).get('cloudwatch', None):
         pageNo = common_job_parameters.get("pagination", {}).get("cloudwatch", None)["pageNo"]
@@ -395,6 +453,32 @@ def sync(
     load_log_groups(neo4j_session, log_groups, current_aws_account_id, update_tag)
 
     cleanup_log_groups(neo4j_session, common_job_parameters)
+
+    if common_job_parameters.get('pagination', {}).get('cloudwatch', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("cloudwatch", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("cloudwatch", None)["pageSize"]
+        totalPages = len(metrics) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for cloudwatch metrics {pageNo}/{totalPages} pageSize is {pageSize}')
+
+        page_start = (common_job_parameters.get('pagination', {}).get('cloudwatch', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('cloudwatch', {})['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('cloudwatch', {})['pageSize']
+        if page_end > len(metrics) or page_end == len(metrics):
+            metrics = metrics[page_start:]
+
+        else:
+            has_next_page = True
+            metrics = metrics[page_start:page_end]
+            common_job_parameters['pagination']['cloudwatch']['hasNextPage'] = has_next_page
+
+    load_metrics(neo4j_session, metrics, current_aws_account_id, update_tag)
+
+    cleanup_metrics(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()
     print(f"Total Time to process cloudwatch: {toc - tic:0.4f} seconds")

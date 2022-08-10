@@ -1,6 +1,7 @@
 import cartography.intel.aws.cloudwatch
 from tests.data.aws.cloudwatch import DESCRIBE_EVENTBUS_RESPONSE
 from tests.data.aws.cloudwatch import DESCRIBE_LOG_GROUPS_RESPONSE
+from tests.data.aws.cloudwatch import DESCRIBE_METRICS_RESPONSE
 TEST_UPDATE_TAG = 123456789
 
 
@@ -45,6 +46,29 @@ def _ensure_local_neo4j_has_test_cloudwatch_log_groups_data(neo4j_session):
     cartography.intel.aws.cloudwatch.load_log_groups(
         neo4j_session,
         DESCRIBE_LOG_GROUPS_RESPONSE,
+        '123456789012',
+        TEST_UPDATE_TAG,
+    )
+
+
+def test_load_cloudwatch_metrics_data(neo4j_session):
+    _ensure_local_neo4j_has_test_cloudwatch_metrics_data(neo4j_session)
+    expected_nodes = {
+        "PublishSize",
+    }
+    nodes = neo4j_session.run(
+        """
+        MATCH (n:AWSCloudWatchMetric) RETURN n.id;
+        """,
+    )
+    actual_nodes = {n['n.id'] for n in nodes}
+    assert actual_nodes == expected_nodes
+
+
+def _ensure_local_neo4j_has_test_cloudwatch_metrics_data(neo4j_session):
+    cartography.intel.aws.cloudwatch.load_metrics(
+        neo4j_session,
+        DESCRIBE_METRICS_RESPONSE,
         '123456789012',
         TEST_UPDATE_TAG,
     )

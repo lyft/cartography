@@ -31,3 +31,15 @@ DESCRIBE_LOG_GROUPS_RESPONSE = [
         }
     }
 ]
+DESCRIBE_METRICS_RESPONSE = [
+    {
+        "Namespace": "AWS/SNS",
+        "Dimensions": [
+            {
+                "Name": "TopicName",
+                "Value": "NotifyMe"
+            }
+        ],
+        "MetricName": "PublishSize"
+    }
+]

@@ -38,6 +38,7 @@ CREATE INDEX ON :AWSCloudWatchAlarm(id);
 CREATE INDEX ON :AWSCloudWatchFlowLog(id);
 CREATE INDEX ON :AWSCloudWatchEventBus(id);
 CREATE INDEX ON :AWSCloudWatchLogGroup(id);
+CREATE INDEX ON :AWSCloudWatchMetric(id);
 CREATE INDEX ON :RDSReservedDBInstance(id);
 CREATE INDEX ON :AccountAccessKey(accesskeyid);
 CREATE INDEX ON :AutoScalingGroup(arn);
