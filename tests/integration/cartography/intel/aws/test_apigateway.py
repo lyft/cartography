@@ -257,7 +257,7 @@ def test_load_apigateway_resources_relationships(neo4j_session):
 
 
 def test_load_apigateway_client_certificates_data(neo4j_session):
-    _ensure_local_neo4j_has_test_pigateway_client_certificates_data(neo4j_session)
+    _ensure_local_neo4j_has_test_apigateway_client_certificates_data(neo4j_session)
     expected_nodes = {
         "arn:aws:apigateway:us-east-1:12345678:clientcertificates/128bdfs34",
         "arn:aws:apigateway:us-east-1:12345678:clientcertificates/128bdfs34msgd",
@@ -271,7 +271,7 @@ def test_load_apigateway_client_certificates_data(neo4j_session):
     assert actual_nodes == expected_nodes
 
 
-def _ensure_local_neo4j_has_test_pigateway_client_certificates_data(neo4j_session):
+def _ensure_local_neo4j_has_test_apigateway_client_certificates_data(neo4j_session):
     cartography.intel.aws.apigateway.load_client_certificates(
         neo4j_session,
         tests.data.aws.apigateway.GET_CERTIFICATES,
