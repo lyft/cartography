@@ -24,6 +24,100 @@ logger = logging.getLogger(__name__)
 
 @timeit
 @aws_handle_regions
+def get_client_certificates(boto3_session: boto3.session.Session, region: str, current_aws_account_id: str) -> List[Dict]:
+    certificates = []
+    try:
+        client = boto3_session.client('apigateway', region_name=region)
+        paginator = client.get_paginator('get_client_certificates')
+
+        page_iterator = paginator.paginate()
+        for page in page_iterator:
+            certificates.extend(page['items'])
+        for certificate in certificates:
+            certificate['region'] = region
+            certificate['arn'] = f"arn:aws:apigateway:{region}:{current_aws_account_id}:clientcertificates/{certificate['clientCertificateId']}"
+
+        return certificates
+
+    except ClientError as e:
+        logger.error(f'Failed to call Apigateway get_client_certificates: {region} - {e}')
+        return certificates
+
+
+def load_client_certificates(session: neo4j.Session, certificates: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
+    session.write_transaction(_load_client_certificates_tx, certificates, current_aws_account_id, aws_update_tag)
+
+
+@timeit
+def _load_client_certificates_tx(tx: neo4j.Transaction, certificates: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
+    query: str = """
+    UNWIND {Records} as record
+    MERGE (certificate:APIGatewayClientCertificate{id: record.arn})
+    ON CREATE SET certificate.firstseen = timestamp(),
+        certificate.arn = record.arn
+    SET certificate.lastupdated = {aws_update_tag},
+        certificate.name = record.clientCertificateId,
+        certificate.region = record.region,
+        certificate.pem_encoded_certificate = record.pemEncodedCertificate,
+        certificate.expiration_date = record.expirationDate,
+        certificate.description = record.description,
+        certificate.created_date = record.createdDate
+    WITH certificate
+    MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MERGE (owner)-[r:RESOURCE]->(certificate)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {aws_update_tag}
+    """
+
+    tx.run(
+        query,
+        Records=certificates,
+        AWS_ACCOUNT_ID=current_aws_account_id,
+        aws_update_tag=aws_update_tag,
+    )
+
+
+@timeit
+def cleanup_client_certificates(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('aws_import_client_certificates_cleanup.json', neo4j_session, common_job_parameters)
+
+
+@timeit
+def sync_client_certificates(
+    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
+    aws_update_tag: int, common_job_parameters: Dict,
+) -> None:
+    data = []
+    for region in regions:
+        data.extend(get_client_certificates(boto3_session, region, current_aws_account_id))
+
+    if common_job_parameters.get('pagination', {}).get('apigateway', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("apigateway", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("apigateway", None)["pageSize"]
+        totalPages = len(data) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(
+                f'pages process for apigateway client certificates {pageNo}/{totalPages} pageSize is {pageSize}')
+        page_start = (common_job_parameters.get('pagination', {}).get('apigateway', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('apigateway', {})['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('apigateway', {})['pageSize']
+        if page_end > len(data) or page_end == len(data):
+            data = data[page_start:]
+        else:
+            has_next_page = True
+            data = data[page_start:page_end]
+            common_job_parameters['pagination']['apigateway']['hasNextPage'] = has_next_page
+
+    load_client_certificates(neo4j_session, data, current_aws_account_id, aws_update_tag)
+
+    cleanup_client_certificates(neo4j_session, common_job_parameters)
+
+
+@timeit
+@aws_handle_regions
 def get_apigateway_rest_apis(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
     config = Config(
         region_name=region,
@@ -260,10 +354,11 @@ def _load_apigateway_certificates(
     """
     ingest_certificates = """
     UNWIND {certificates_list} as certificate
-    MERGE (c:APIGatewayClientCertificate{id: certificate.clientCertificateId})
+    MERGE (c:APIGatewayClientCertificate{id: certificate.arn})
     ON CREATE SET c.firstseen = timestamp(), c.createddate = certificate.createdDate
     SET c.lastupdated = {UpdateTag}, c.expirationdate = certificate.expirationDate,
     c.region = certificate.region,
+    c.client_certificate_id = certificate.clientCertificateId,
     c.arn = certificate.arn
     WITH c, certificate
     MATCH (stage:APIGatewayStage{clientcertificateid: certificate.clientCertificateId})
@@ -277,8 +372,7 @@ def _load_apigateway_certificates(
     for certificate in certificates:
         certificate['createdDate'] = str(certificate['createdDate'])
         certificate['expirationDate'] = str(certificate.get('expirationDate'))
-        certificate['arn'] = f"arn:aws:apigateway:{certificate['region']}::restapis/{certificate['apiId']}/clientcertificates/{certificate['clientCertificateId']}"
-
+        certificate['arn'] = f"arn:aws:apigateway:{certificate['region']}:{certificate['aws_account_id']}:clientcertificates/{certificate['clientCertificateId']}"
     neo4j_session.run(
         ingest_certificates,
         certificates_list=certificates,
@@ -355,6 +449,7 @@ def load_rest_api_details(
         if certificate:
             certificate['apiId'] = api_id
             certificate['region'] = region
+            certificate['aws_account_id'] = aws_account_id
 
             certificates.append(certificate)
 
@@ -434,7 +529,7 @@ def sync_apigateway_rest_apis(
     load_apigateway_rest_apis(neo4j_session, data, current_aws_account_id, aws_update_tag)
 
     stages_certificate_resources = get_rest_api_details(boto3_session, data)
-    
+
     load_rest_api_details(
         neo4j_session, stages_certificate_resources, current_aws_account_id, aws_update_tag, common_job_parameters,
     )
@@ -448,6 +543,9 @@ def sync(
     tic = time.perf_counter()
     logger.info("Syncing AWS APIGateway for account '%s', at %s.", current_aws_account_id, tic)
     sync_apigateway_rest_apis(
+        neo4j_session, boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters,
+    )
+    sync_client_certificates(
         neo4j_session, boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters,
     )
     cleanup(neo4j_session, common_job_parameters)
