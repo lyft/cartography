@@ -92,24 +92,24 @@ def sync_redshift_reserved_node(
         logger.info("Syncing redshift_reserved_node for region '%s' in account '%s'.", region, current_aws_account_id)
         data.extend(get_redshift_reserved_node(boto3_session, region, current_aws_account_id))
 
-    if common_job_parameters.get('pagination', {}).get('rds', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("rds", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("rds", None)["pageSize"]
+    if common_job_parameters.get('pagination', {}).get('redshift', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("redshift", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("redshift", None)["pageSize"]
         totalPages = len(data) / pageSize
         if int(totalPages) != totalPages:
             totalPages = totalPages + 1
         totalPages = int(totalPages)
         if pageNo < totalPages or pageNo == totalPages:
             logger.info(f'pages process for redshift_reserved_node {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (common_job_parameters.get('pagination', {}).get('rds', {})[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('rds', {})['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('rds', {})['pageSize']
+        page_start = (common_job_parameters.get('pagination', {}).get('redshift', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('redshift', {})['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('redshift', {})['pageSize']
         if page_end > len(data) or page_end == len(data):
             data = data[page_start:]
         else:
             has_next_page = True
             data = data[page_start:page_end]
-            common_job_parameters['pagination']['rds']['hasNextPage'] = has_next_page
+            common_job_parameters['pagination']['redshift']['hasNextPage'] = has_next_page
 
     load_redshift_reserved_node(neo4j_session, data, current_aws_account_id, update_tag)
     cleanup_redshift_reserved_node(neo4j_session, common_job_parameters)
