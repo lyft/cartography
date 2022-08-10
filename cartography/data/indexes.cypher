@@ -7,6 +7,7 @@ CREATE INDEX ON :APIGatewayRestAPI(id);
 CREATE INDEX ON :APIGatewayResource(id);
 CREATE INDEX ON :APIGatewayStage(id);
 CREATE INDEX ON :APIGatewayStage(clientcertificateid);
+CREATE INDEX ON :AWSCloudfrontDistribution(id);
 CREATE INDEX ON :AWSAccount(id);
 CREATE INDEX ON :AWSCidrBlock(id);
 CREATE INDEX ON :AWSDNSRecord(id);
