@@ -96,6 +96,7 @@ CREATE INDEX ON :AWSCloudTrailTrail(id);
 CREATE INDEX ON :AWSRoute53Domain(id);
 CREATE INDEX ON :AWSCloudformationStack(id);
 CREATE INDEX ON :AWSSNSTopic(id);
+CREATE INDEX ON :AWSESReservedInstance(id);
 CREATE INDEX ON :AWSSESIdentity(id);
 CREATE INDEX ON :GCPDNSZone(id);
 CREATE INDEX ON :GCPRecordSet(id);
