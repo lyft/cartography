@@ -11,7 +11,6 @@ def test_load_apigateway_rest_apis(neo4j_session):
     cartography.intel.aws.apigateway.load_apigateway_rest_apis(
         neo4j_session,
         data,
-        TEST_REGION,
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG,
     )
@@ -48,7 +47,6 @@ def test_load_apigateway_rest_apis_relationships(neo4j_session):
     cartography.intel.aws.apigateway.load_apigateway_rest_apis(
         neo4j_session,
         data,
-        TEST_REGION,
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG,
     )
@@ -99,7 +97,6 @@ def test_load_apigateway_stages_relationships(neo4j_session):
     cartography.intel.aws.apigateway.load_apigateway_rest_apis(
         neo4j_session,
         data_rest_api,
-        TEST_REGION,
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG,
     )
@@ -228,7 +225,6 @@ def test_load_apigateway_resources_relationships(neo4j_session):
     cartography.intel.aws.apigateway.load_apigateway_rest_apis(
         neo4j_session,
         data_rest_api,
-        TEST_REGION,
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG,
     )
@@ -258,3 +254,27 @@ def test_load_apigateway_resources_relationships(neo4j_session):
     }
 
     assert actual == expected
+
+
+def test_load_apigateway_client_certificates_data(neo4j_session):
+    _ensure_local_neo4j_has_test_apigateway_client_certificates_data(neo4j_session)
+    expected_nodes = {
+        "arn:aws:apigateway:us-east-1:12345678:clientcertificates/128bdfs34",
+        "arn:aws:apigateway:us-east-1:12345678:clientcertificates/128bdfs34msgd",
+    }
+    nodes = neo4j_session.run(
+        """
+        MATCH (n:APIGatewayClientCertificate) RETURN n.id;
+        """,
+    )
+    actual_nodes = {n['n.id'] for n in nodes}
+    assert actual_nodes == expected_nodes
+
+
+def _ensure_local_neo4j_has_test_apigateway_client_certificates_data(neo4j_session):
+    cartography.intel.aws.apigateway.load_client_certificates(
+        neo4j_session,
+        tests.data.aws.apigateway.GET_CERTIFICATES,
+        '123456789012',
+        TEST_UPDATE_TAG,
+    )
