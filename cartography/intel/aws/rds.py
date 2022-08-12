@@ -181,7 +181,7 @@ def attach_db_security_groups_to_ec2_security_groups(session: neo4j.Session, dat
         ingest_script = """
         MATCH (dbsg:RDSSecurityGroup{id:{DBSecurityGroupId}})
         MATCH (sg:EC2SecurityGroup{id:{EC2SecurityGroupId}})
-        MERGE (dbsg)-[r:HAS]->(sg)
+        MERGE (dbsg)-[r:USING]->(sg)
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = {aws_update_tag}
         """
