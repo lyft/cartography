@@ -82,7 +82,7 @@ def test_load_cloudwatch_event_rules_data(neo4j_session):
     }
     nodes = neo4j_session.run(
         """
-        MATCH (n:AWSCloudWatchEventRule) RETURN n.id;
+        MATCH (n:AWSEventBridgeRule) RETURN n.id;
         """,
     )
     actual_nodes = {n['n.id'] for n in nodes}
