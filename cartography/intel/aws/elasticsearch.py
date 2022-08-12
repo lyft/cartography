@@ -8,6 +8,7 @@ import boto3
 import botocore.config
 import neo4j
 from policyuniverse.policy import Policy
+from botocore.exceptions import ClientError
 
 from cartography.intel.dns import ingest_dns_record_by_fqdn
 from cartography.util import aws_handle_regions
@@ -237,6 +238,73 @@ def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
 
 
 @timeit
+@aws_handle_regions
+def get_elasticsearch_reserved_instances(client: botocore.client.BaseClient, region: str, current_aws_account_id: str) -> List[Dict]:
+    reserved_instances = []
+    try:
+        paginator = client.get_paginator('describe_reserved_elasticsearch_instances')
+
+        page_iterator = paginator.paginate()
+        for page in page_iterator:
+            reserved_instances.extend(page.get('ReservedElasticsearchInstances', []))
+        for reserved_instance in reserved_instances:
+            reserved_instance['arn'] = f"arn:aws:es:{region}:{current_aws_account_id}:reserved-instances/{reserved_instance['ReservedElasticsearchInstanceId']}"
+            reserved_instance['region'] = region
+
+        return reserved_instances
+
+    except ClientError as e:
+        logger.error(f'Failed to call ES describe_reserved_elasticsearch_instances: {region} - {e}')
+        return reserved_instances
+
+
+def load_elasticsearch_reserved_instances(session: neo4j.Session, reserved_instances: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
+    session.write_transaction(_load_elasticsearch_reserved_instances_tx,
+                              reserved_instances, current_aws_account_id, aws_update_tag)
+
+
+@timeit
+def _load_elasticsearch_reserved_instances_tx(tx: neo4j.Transaction, reserved_instances: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
+    query: str = """
+    UNWIND {Records} as record
+    MERGE (instance:AWSESReservedInstance{id: record.arn})
+    ON CREATE SET instance.firstseen = timestamp(),
+        instance.arn = record.arn
+    SET instance.lastupdated = {aws_update_tag},
+        instance.name = record.ReservedElasticsearchInstanceId,
+        instance.region = record.region,
+        instance.fixed_price = record.FixedPrice,
+        instance.reserved_elasticsearch_instance_offering_id = record.ReservedElasticsearchInstanceOfferingId,
+        instance.reservation_name = record.ReservationName,
+        instance.payment_option = record.PaymentOption,
+        instance.usage_price = record.UsagePrice,
+        instance.state = record.State,
+        instance.start_time = record.StartTime,
+        instance.elasticsearch_instance_count = record.ElasticsearchInstanceCount,
+        instance.duration = record.Duration,
+        instance.elasticsearch_instance_type = record.ElasticsearchInstanceType,
+        instance.currency_code = record.CurrencyCode
+    WITH instance
+    MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MERGE (owner)-[r:RESOURCE]->(instance)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {aws_update_tag}
+    """
+
+    tx.run(
+        query,
+        Records=reserved_instances,
+        AWS_ACCOUNT_ID=current_aws_account_id,
+        aws_update_tag=aws_update_tag,
+    )
+
+
+@timeit
+def cleanup_elasticsearch_reserved_instances(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('aws_import_elasticsearch_reserved_instance_cleanup.json', neo4j_session, common_job_parameters)
+
+
+@timeit
 def sync(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
     update_tag: int, common_job_parameters: Dict,
@@ -246,9 +314,11 @@ def sync(
     logger.info("Syncing Elasticsearch Service for account '%s', at %s.", current_aws_account_id, tic)
 
     data = []
+    reserved_instances = []
     for region in es_regions:
         client = boto3_session.client('es', region_name=region, config=_get_botocore_config())
         data.extend(_get_es_domains(client, region))
+        reserved_instances.extend(get_elasticsearch_reserved_instances(client, region, current_aws_account_id))
 
     if common_job_parameters.get('pagination', {}).get('elasticsearch', None):
         pageNo = common_job_parameters.get("pagination", {}).get("elasticsearch", None)["pageNo"]
@@ -272,6 +342,29 @@ def sync(
     _load_es_domains(neo4j_session, data, current_aws_account_id, update_tag)
 
     cleanup(neo4j_session, common_job_parameters)
+
+    if common_job_parameters.get('pagination', {}).get('elasticsearch', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("elasticsearch", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("elasticsearch", None)["pageSize"]
+        totalPages = len(reserved_instances) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(
+                f'pages process for elasticsearch reserved instances {pageNo}/{totalPages} pageSize is {pageSize}')
+        page_start = (common_job_parameters.get('pagination', {}).get('elasticsearch', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('elasticsearch', {})['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('elasticsearch', {})['pageSize']
+        if page_end > len(reserved_instances) or page_end == len(reserved_instances):
+            reserved_instances = reserved_instances[page_start:]
+        else:
+            has_next_page = True
+            reserved_instances = reserved_instances[page_start:page_end]
+            common_job_parameters['pagination']['elasticsearch']['hasNextPage'] = has_next_page
+
+    load_elasticsearch_reserved_instances(neo4j_session, reserved_instances, current_aws_account_id, update_tag)
+    cleanup_elasticsearch_reserved_instances(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()
     logger.info(f"Total Time to process Elasticsearch Service: {toc - tic:0.4f} seconds")

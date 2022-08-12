@@ -116,8 +116,10 @@ GET_STAGES = [
 
 GET_CERTIFICATES = [
     {
+        'arn': 'arn:aws:apigateway:us-east-1:12345678:clientcertificates/128bdfs34',
         'clientCertificateId': 'cert-001',
         'description': 'Protection',
+        'region': 'us-east-1',
         'createdDate': datetime.datetime(2021, 2, 1),
         'expirationDate': datetime.datetime(2021, 4, 1),
         'stageName': 'Cartography-testing-infra',
@@ -125,8 +127,10 @@ GET_CERTIFICATES = [
         'stageArn': 'arn:aws:apigateway:::test-001/Cartography-testing-infra',
     },
     {
+        'arn': 'arn:aws:apigateway:us-east-1:12345678:clientcertificates/128bdfs34msgd',
         'clientCertificateId': 'cert-002',
         'description': 'Protection',
+        'region': 'us-east-1',
         'createdDate': datetime.datetime(2021, 2, 1),
         'expirationDate': datetime.datetime(2021, 4, 1),
         'stageName': 'Cartography-testing-unit',
