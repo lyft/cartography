@@ -1,5 +1,7 @@
 from typing import Dict
 
+from cartography.intel.aws import s3_list_only
+
 from . import apigateway
 from . import config
 from . import dynamodb
@@ -19,6 +21,7 @@ from . import redshift
 from . import resourcegroupstaggingapi
 from . import route53
 from . import s3
+from . import s3_list_only
 from . import secretsmanager
 from . import securityhub
 from . import sqs
@@ -45,6 +48,7 @@ from .ec2.vpc_peerings import sync_vpc_peerings
 RESOURCE_FUNCTIONS: Dict = {
     'iam': iam.sync,
     's3': s3.sync,
+    's3_list_only': s3_list_only.sync,
     'dynamodb': dynamodb.sync,
     'ec2:launch_templates': sync_ec2_launch_templates,
     'ec2:autoscalinggroup': sync_ec2_auto_scaling_groups,
