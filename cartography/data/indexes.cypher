@@ -36,7 +36,7 @@ CREATE INDEX ON :AWSUser(name);
 CREATE INDEX ON :AWSVpc(id);
 CREATE INDEX ON :AWSCloudWatchAlarm(id);
 CREATE INDEX ON :AWSCloudWatchFlowLog(id);
-CREATE INDEX ON :AWSCloudWatchEventBus(id);
+CREATE INDEX ON :AWSEventBridgeEventBus(id);
 CREATE INDEX ON :AWSEventBridgeRule(id);
 CREATE INDEX ON :AWSCloudWatchLogGroup(id);
 CREATE INDEX ON :AWSCloudWatchMetric(id);

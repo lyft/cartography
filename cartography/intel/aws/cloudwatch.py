@@ -48,7 +48,7 @@ def load_event_buses(session: neo4j.Session, event_buses: List[Dict], current_aw
 def _load_event_buses_tx(tx: neo4j.Transaction, event_buses: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
     query: str = """
     UNWIND {Records} as record
-    MERGE (bus:AWSCloudWatchEventBus{id: record.Arn})
+    MERGE (bus:AWSEventBridgeEventBus{id: record.Arn})
     ON CREATE SET bus.firstseen = timestamp(),
         bus.arn = record.Arn
     SET bus.lastupdated = {aws_update_tag},
