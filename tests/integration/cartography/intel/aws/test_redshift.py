@@ -22,6 +22,20 @@ def test_load_redshift_cluster_data(neo4j_session):
     assert actual_nodes == expected_nodes
 
 
+def test_load_redshift_redshift_reserved_node_data(neo4j_session):
+    _ensure_local_neo4j_has_test_redshift_reserved_node_data(neo4j_session)
+    expected_nodes = {
+        "arn:aws:redshift:us-east-1:1111:reserved-node/1ba8e2e3-bc01-4d65-b35d-a4a3e931547e",
+    }
+    nodes = neo4j_session.run(
+        """
+        MATCH (n:RedshiftReservedNode) RETURN n.id;
+        """,
+    )
+    actual_nodes = {n['n.id'] for n in nodes}
+    assert actual_nodes == expected_nodes
+
+
 def test_load_redshift_cluster_and_aws_account(neo4j_session):
     # Create test AWSAccount
     neo4j_session.run(
@@ -139,13 +153,21 @@ def _ensure_local_neo4j_has_test_cluster_data(neo4j_session):
     clusters = tests.data.aws.redshift.CLUSTERS
     cartography.intel.aws.redshift.transform_redshift_cluster_data(
         clusters,
-        TEST_REGION,
         TEST_ACCOUNT_ID,
     )
     cartography.intel.aws.redshift.load_redshift_cluster_data(
         neo4j_session,
         clusters,
-        TEST_REGION,
+        TEST_ACCOUNT_ID,
+        TEST_UPDATE_TAG,
+    )
+
+
+def _ensure_local_neo4j_has_test_redshift_reserved_node_data(neo4j_session):
+    nodes = tests.data.aws.redshift.NODES
+    cartography.intel.aws.redshift.load_redshift_reserved_node(
+        neo4j_session,
+        nodes,
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG,
     )

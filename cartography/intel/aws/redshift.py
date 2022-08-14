@@ -10,9 +10,109 @@ from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 from cloudconsolelink.clouds.aws import AWSLinker
+from botocore.exceptions import ClientError
 
 logger = logging.getLogger(__name__)
 aws_console_link = AWSLinker()
+
+
+@timeit
+@aws_handle_regions
+def get_redshift_reserved_node(boto3_session: boto3.session.Session, region: str, current_aws_account_id: str) -> List[Dict]:
+    try:
+        client = boto3_session.client('redshift', region_name=region)
+        paginator = client.get_paginator('describe_reserved_nodes')
+        reserved_nodes: List = []
+        for page in paginator.paginate():
+            reserved_nodes.extend(page['ReservedNodes'])
+        for reserved_node in reserved_nodes:
+            reserved_node['region'] = region
+            reserved_node['arn'] = f"arn:aws:redshift:{region}:{current_aws_account_id}:reserved-node/{reserved_node['ReservedNodeId']}"
+        return reserved_nodes
+
+    except ClientError as e:
+        logger.error(f'Failed to call redshift describe_reserved_nodes: {region} - {e}')
+        return reserved_nodes
+
+
+def load_redshift_reserved_node(session: neo4j.Session, reserved_nodes: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
+    session.write_transaction(_load_redshift_reserved_node_tx, reserved_nodes, current_aws_account_id, aws_update_tag)
+
+
+@timeit
+def _load_redshift_reserved_node_tx(
+    tx: neo4j.Transaction, data: List[Dict], current_aws_account_id: str,
+    aws_update_tag: int,
+) -> None:
+    ingest_rds_secgroup = """
+    UNWIND {reserved_nodes} as reserved_node
+        MERGE (node:RedshiftReservedNode{id: reserved_node.arn})
+        ON CREATE SET node.firstseen = timestamp(),
+            node.arn = reserved_node.arn
+        SET node.reserved_node_offering_id = reserved_node.ReservedNodeOfferingId,
+            node.name = reserved_node.ReservedNodeId,
+            node.reserved_node_id = reserved_node.ReservedNodeId,
+            node.node_type = reserved_node.NodeType,
+            node.start_time = reserved_node.StartTime,
+            node.duration = reserved_node.Duration,
+            node.fixed_price = reserved_node.FixedPrice,
+            node.usage_price = reserved_node.UsagePrice,
+            node.currency_code = reserved_node.CurrencyCode,
+            node.node_count = reserved_node.NodeCount,
+            node.state = reserved_node.State,
+            node.offering_type = reserved_node.OfferingType,
+            node.reserved_node_offering_type = reserved_node.ReservedNodeOfferingType,
+            node.lastupdated = {aws_update_tag}
+        WITH node
+        MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+        MERGE (aa)-[r:RESOURCE]->(node)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {aws_update_tag}
+    """
+
+    tx.run(
+        ingest_rds_secgroup,
+        reserved_nodes=data,
+        AWS_ACCOUNT_ID=current_aws_account_id,
+        aws_update_tag=aws_update_tag,
+    )
+
+
+def cleanup_redshift_reserved_node(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('aws_import_redshift_reserved_nodes_cleanup.json', neo4j_session, common_job_parameters)
+
+
+@timeit
+def sync_redshift_reserved_node(
+    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
+    update_tag: int, common_job_parameters: Dict,
+) -> None:
+    data = []
+    for region in regions:
+        logger.info("Syncing redshift_reserved_node for region '%s' in account '%s'.", region, current_aws_account_id)
+        data.extend(get_redshift_reserved_node(boto3_session, region, current_aws_account_id))
+
+    if common_job_parameters.get('pagination', {}).get('redshift', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("redshift", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("redshift", None)["pageSize"]
+        totalPages = len(data) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for redshift_reserved_node {pageNo}/{totalPages} pageSize is {pageSize}')
+        page_start = (common_job_parameters.get('pagination', {}).get('redshift', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('redshift', {})['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('redshift', {})['pageSize']
+        if page_end > len(data) or page_end == len(data):
+            data = data[page_start:]
+        else:
+            has_next_page = True
+            data = data[page_start:page_end]
+            common_job_parameters['pagination']['redshift']['hasNextPage'] = has_next_page
+
+    load_redshift_reserved_node(neo4j_session, data, current_aws_account_id, update_tag)
+    cleanup_redshift_reserved_node(neo4j_session, common_job_parameters)
 
 
 @timeit
@@ -201,6 +301,8 @@ def sync(
     logger.info("Syncing Redshift clusters for account '%s', at %s.", current_aws_account_id, tic)
     sync_redshift_clusters(neo4j_session, boto3_session, regions,
                            current_aws_account_id, update_tag, common_job_parameters)
+    sync_redshift_reserved_node(neo4j_session, boto3_session, regions,
+                                current_aws_account_id, update_tag, common_job_parameters)
     cleanup(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()

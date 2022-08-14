@@ -101,6 +101,7 @@ CREATE INDEX ON :AWSCloudTrailTrail(id);
 CREATE INDEX ON :AWSRoute53Domain(id);
 CREATE INDEX ON :AWSCloudformationStack(id);
 CREATE INDEX ON :AWSSNSTopic(id);
+CREATE INDEX ON :RedshiftReservedNode(id);
 CREATE INDEX ON :RDSSecurityGroup(id);
 CREATE INDEX ON :RDSSnapshot(id);
 CREATE INDEX ON :AWSESReservedInstance(id);
