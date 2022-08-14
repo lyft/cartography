@@ -1,6 +1,8 @@
 import cartography.intel.aws.rds
 from tests.data.aws.rds import DESCRIBE_DBCLUSTERS_RESPONSE
 from tests.data.aws.rds import DESCRIBE_DBINSTANCES_RESPONSE
+from tests.data.aws.rds import DESCRIBE_SECURITY_GROUPS_RESPONSE
+from tests.data.aws.rds import DESCRIBE_SNAPSHOTS_RESPONSE
 TEST_UPDATE_TAG = 123456789
 
 
@@ -9,7 +11,6 @@ def test_load_rds_clusters_basic(neo4j_session):
     cartography.intel.aws.rds.load_rds_clusters(
         neo4j_session,
         DESCRIBE_DBCLUSTERS_RESPONSE['DBClusters'],
-        'us-east1',
         '1234',
         TEST_UPDATE_TAG,
     )
@@ -29,7 +30,6 @@ def test_load_rds_clusters_basic(neo4j_session):
     cartography.intel.aws.rds.load_rds_instances(
         neo4j_session,
         DESCRIBE_DBINSTANCES_RESPONSE['DBInstances'],
-        'us-east1',
         '1234',
         TEST_UPDATE_TAG,
     )
@@ -68,7 +68,6 @@ def test_load_rds_instances_basic(neo4j_session):
     cartography.intel.aws.rds.load_rds_instances(
         neo4j_session,
         DESCRIBE_DBINSTANCES_RESPONSE['DBInstances'],
-        'us-east1',
         '1234',
         TEST_UPDATE_TAG,
     )
@@ -84,3 +83,49 @@ def test_load_rds_instances_basic(neo4j_session):
         ),
     }
     assert actual_nodes == expected_nodes
+
+
+def test_load_rds_security_group_data(neo4j_session):
+    _ensure_local_neo4j_has_test_rds_security_group_data(neo4j_session)
+    expected_nodes = {
+        "arn:aws:rds:us-east-1:111122223333:secgrp:mysecgroup",
+    }
+    nodes = neo4j_session.run(
+        """
+        MATCH (n:RDSSecurityGroup) RETURN n.id;
+        """,
+    )
+    actual_nodes = {n['n.id'] for n in nodes}
+    assert actual_nodes == expected_nodes
+
+
+def _ensure_local_neo4j_has_test_rds_security_group_data(neo4j_session):
+    cartography.intel.aws.rds.load_rds_security_groups(
+        neo4j_session,
+        DESCRIBE_SECURITY_GROUPS_RESPONSE,
+        '111122223333',
+        TEST_UPDATE_TAG,
+    )
+
+
+def test_load_rds_snapshots_data(neo4j_session):
+    _ensure_local_neo4j_has_test_rds_snapshots_data(neo4j_session)
+    expected_nodes = {
+        "arn:aws:rds:us-east-1:123456789012:snapshot:mydbsnapshot",
+    }
+    nodes = neo4j_session.run(
+        """
+        MATCH (n:RDSSnapshot) RETURN n.id;
+        """,
+    )
+    actual_nodes = {n['n.id'] for n in nodes}
+    assert actual_nodes == expected_nodes
+
+
+def _ensure_local_neo4j_has_test_rds_snapshots_data(neo4j_session):
+    cartography.intel.aws.rds.load_rds_snapshots(
+        neo4j_session,
+        DESCRIBE_SNAPSHOTS_RESPONSE,
+        '123456789012',
+        TEST_UPDATE_TAG,
+    )

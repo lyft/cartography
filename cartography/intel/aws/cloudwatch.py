@@ -48,7 +48,7 @@ def load_event_buses(session: neo4j.Session, event_buses: List[Dict], current_aw
 def _load_event_buses_tx(tx: neo4j.Transaction, event_buses: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
     query: str = """
     UNWIND {Records} as record
-    MERGE (bus:AWSCloudWatchEventBus{id: record.Arn})
+    MERGE (bus:AWSEventBridgeEventBus{id: record.Arn})
     ON CREATE SET bus.firstseen = timestamp(),
         bus.arn = record.Arn
     SET bus.lastupdated = {aws_update_tag},
@@ -73,6 +73,198 @@ def _load_event_buses_tx(tx: neo4j.Transaction, event_buses: List[Dict], current
 @timeit
 def cleanup_event_buses(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('aws_import_cloudwatch_event_buses_cleanup.json', neo4j_session, common_job_parameters)
+
+
+@timeit
+@aws_handle_regions
+def get_event_rules(boto3_session: boto3.session.Session, region):
+    event_rules = []
+    try:
+        client = boto3_session.client('events', region_name=region)
+        paginator = client.get_paginator('list_rules')
+
+        page_iterator = paginator.paginate()
+        for page in page_iterator:
+            event_rules.extend(page['Rules'])
+
+        for event_rule in event_rules:
+            event_rule['region'] = region
+
+    except ClientError as e:
+        logger.error(f'Failed to call CloudWatch event list_rules: {region} - {e}')
+    return event_rules
+
+
+def load_event_rules(session: neo4j.Session, event_buses: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
+    session.write_transaction(_load_event_rules_tx, event_buses, current_aws_account_id, aws_update_tag)
+
+
+@timeit
+def _load_event_rules_tx(tx: neo4j.Transaction, event_buses: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
+    query: str = """
+    UNWIND {Records} as record
+    MERGE (rule:AWSEventBridgeRule{id: record.Arn})
+    ON CREATE SET rule.firstseen = timestamp(),
+        rule.arn = record.Arn
+    SET rule.lastupdated = {aws_update_tag},
+        rule.name = record.Name,
+        rule.region = record.region,
+        rule.event_bus_name = record.EventBusName,
+        rule.event_pattern = record.EventPattern,
+        rule.managed_by = record.ManagedBy,
+        rule.schedule_expression = record.ScheduleExpression,
+        rule.state = record.State,
+        rule.role_arn = record.RoleArn
+    WITH rule, record
+    MATCH (bus:AWSCloudWatchEventBus{arn:record.EventBusName})
+    MERGE (bus)-[rt:HAS]->(rule)
+    ON CREATE SET
+        rt.firstseen = timestamp()
+    SET rt.lastupdated = {aws_update_tag}
+    WITH rule
+    MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MERGE (owner)-[r:RESOURCE]->(rule)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {aws_update_tag}
+    """
+
+    tx.run(
+        query,
+        Records=event_buses,
+        AWS_ACCOUNT_ID=current_aws_account_id,
+        aws_update_tag=aws_update_tag,
+    )
+
+
+@timeit
+def cleanup_event_rules(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('aws_import_cloudwatch_event_rules_cleanup.json', neo4j_session, common_job_parameters)
+
+
+@timeit
+@aws_handle_regions
+def get_log_groups(boto3_session: boto3.session.Session, region):
+    log_groups = []
+    try:
+        client = boto3_session.client('logs', region_name=region)
+        paginator = client.get_paginator('describe_log_groups')
+
+        page_iterator = paginator.paginate()
+        for page in page_iterator:
+            log_groups.extend(page['logGroups'])
+
+        kms_client = boto3_session.client('kms', region_name=region)
+
+        for log_group in log_groups:
+            log_group['arn'] = log_group['arn']
+            log_group['region'] = region
+            if log_group.get('kmsKeyId'):
+                log_group['kms'] = kms_client.describe_key(KeyId=log_group.get(
+                    'kmsKeyId', None).split('/')[1]).get('KeyMetadata', {})
+
+    except ClientError as e:
+        logger.error(f'Failed to call CloudWatch Logs describe_log_groups: {region} - {e}')
+    return log_groups
+
+
+def load_log_groups(session: neo4j.Session, log_groups: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
+    session.write_transaction(_load_log_groups_tx, log_groups, current_aws_account_id, aws_update_tag)
+
+
+@timeit
+def _load_log_groups_tx(tx: neo4j.Transaction, log_groups: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
+    query: str = """
+    UNWIND {Records} as record
+    MERGE (gr:AWSCloudWatchLogGroup{id: record.arn})
+    ON CREATE SET gr.firstseen = timestamp(),
+        gr.arn = record.arn
+    SET gr.lastupdated = {aws_update_tag},
+        gr.name = record.logGroupName,
+        gr.region = record.region,
+        gr.stored_bytes = record.storedBytes,
+        gr.metric_filter_count = record.metricFilterCount,
+        gr.creation_time = record.creationTime,
+        gr.retention_in_days = record.retentionInDays,
+        gr.aws_account_id = record.kms.AWSAccountId,
+        gr.kms_key_id = record.kms.kmsKeyId,
+        gr.key_enabled = record.kms.Enabled,
+        gr.Key_usage = record.kms.KeyUsage,
+        gr.Key_state = record.kms.KeyState,
+        gr.Key_manager = record.kms.KeyManager
+    WITH gr
+    MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MERGE (owner)-[r:RESOURCE]->(gr)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {aws_update_tag}
+    """
+
+    tx.run(
+        query,
+        Records=log_groups,
+        AWS_ACCOUNT_ID=current_aws_account_id,
+        aws_update_tag=aws_update_tag,
+    )
+
+
+@timeit
+def cleanup_log_groups(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('aws_import_cloudwatch_log_groups_cleanup.json', neo4j_session, common_job_parameters)
+
+
+@timeit
+@aws_handle_regions
+def get_metrics(boto3_session: boto3.session.Session, region):
+    metrics = []
+    try:
+        client = boto3_session.client('cloudwatch', region_name=region)
+        paginator = client.get_paginator('list_metrics')
+
+        page_iterator = paginator.paginate()
+        for page in page_iterator:
+            metrics.extend(page['Metrics'])
+
+        for metric in metrics:
+            metric['arn'] = metric['MetricName']
+            metric['region'] = region
+
+    except ClientError as e:
+        logger.error(f'Failed to call CloudWatch list_metrics: {region} - {e}')
+    return metrics
+
+
+def load_metrics(session: neo4j.Session, metrics: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
+    session.write_transaction(_load_metrics_tx, metrics, current_aws_account_id, aws_update_tag)
+
+
+@timeit
+def _load_metrics_tx(tx: neo4j.Transaction, metrics: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
+    query: str = """
+    UNWIND {Records} as record
+    MERGE (metric:AWSCloudWatchMetric{id: record.MetricName})
+    ON CREATE SET metric.firstseen = timestamp(),
+        metric.arn = record.arn
+    SET metric.lastupdated = {aws_update_tag},
+        metric.name = record.MetricName,
+        metric.region = record.region,
+        metric.namespace = record.Namespace
+    WITH metric
+    MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MERGE (owner)-[r:RESOURCE]->(metric)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {aws_update_tag}
+    """
+
+    tx.run(
+        query,
+        Records=metrics,
+        AWS_ACCOUNT_ID=current_aws_account_id,
+        aws_update_tag=aws_update_tag,
+    )
+
+
+@timeit
+def cleanup_metrics(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('aws_import_cloudwatch_metrics_cleanup.json', neo4j_session, common_job_parameters)
 
 
 @timeit
@@ -213,12 +405,17 @@ def sync(
     alarms = []
     flowlogs = []
     event_buses = []
+    log_groups = []
+    metrics = []
+    rules = []
     for region in regions:
         logger.info("Syncing Cloudwatch for region '%s' in account '%s'.", region, current_aws_account_id)
 
         alarms.extend(get_cloudwatch_alarm(boto3_session, region))
         flowlogs.extend(get_cloudwatch_flowlogs(boto3_session, region, current_aws_account_id))
         event_buses.extend(get_event_buses(boto3_session, region))
+        log_groups.extend(get_log_groups(boto3_session, region))
+        metrics.extend(get_metrics(boto3_session, region))
 
     if common_job_parameters.get('pagination', {}).get('cloudwatch', None):
         pageNo = common_job_parameters.get("pagination", {}).get("cloudwatch", None)["pageNo"]
@@ -296,6 +493,69 @@ def sync(
 
     load_event_buses(neo4j_session, event_buses, current_aws_account_id, update_tag)
 
+    if common_job_parameters.get('pagination', {}).get('cloudwatch', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("cloudwatch", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("cloudwatch", None)["pageSize"]
+        totalPages = len(log_groups) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for cloudwatch event buses {pageNo}/{totalPages} pageSize is {pageSize}')
+
+        page_start = (common_job_parameters.get('pagination', {}).get('cloudwatch', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('cloudwatch', {})['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('cloudwatch', {})['pageSize']
+        if page_end > len(log_groups) or page_end == len(log_groups):
+            log_groups = log_groups[page_start:]
+
+        else:
+            has_next_page = True
+            log_groups = log_groups[page_start:page_end]
+            common_job_parameters['pagination']['cloudwatch']['hasNextPage'] = has_next_page
+
+    load_log_groups(neo4j_session, log_groups, current_aws_account_id, update_tag)
+
+    cleanup_log_groups(neo4j_session, common_job_parameters)
+
+    if common_job_parameters.get('pagination', {}).get('cloudwatch', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("cloudwatch", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("cloudwatch", None)["pageSize"]
+        totalPages = len(metrics) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for cloudwatch metrics {pageNo}/{totalPages} pageSize is {pageSize}')
+
+        page_start = (common_job_parameters.get('pagination', {}).get('cloudwatch', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('cloudwatch', {})['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('cloudwatch', {})['pageSize']
+        if page_end > len(metrics) or page_end == len(metrics):
+            metrics = metrics[page_start:]
+
+        else:
+            has_next_page = True
+            metrics = metrics[page_start:page_end]
+            common_job_parameters['pagination']['cloudwatch']['hasNextPage'] = has_next_page
+
+    load_metrics(neo4j_session, metrics, current_aws_account_id, update_tag)
+
+    cleanup_metrics(neo4j_session, common_job_parameters)
+
+    if common_job_parameters.get('pagination', {}).get('cloudwatch', None):
+        if not common_job_parameters.get('pagination', {}).get('cloudwatch', {}).get('hasNextPage', False):
+            for region in regions:
+                rules.extend(get_event_rules(boto3_session, region))
+    else:
+        for region in regions:
+            rules.extend(get_event_rules(boto3_session, region))
+
+    load_event_rules(neo4j_session, rules, current_aws_account_id, update_tag)
+
+    cleanup_event_rules(neo4j_session, common_job_parameters)
     cleanup_event_buses(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()
