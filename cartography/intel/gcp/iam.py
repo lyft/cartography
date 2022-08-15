@@ -21,98 +21,6 @@ def set_used_state(session: neo4j.Session, project_id: str, common_job_parameter
 
 
 @timeit
-def get_users(admin: Resource) -> List[Dict]:
-    users = []
-    try:
-        req = admin.users().list()
-        while req is not None:
-            res = req.execute()
-            page = res.get('users', [])
-            users.extend(page)
-            req = admin.users().list_next(previous_request=req, previous_response=res)
-
-        return users
-    except HttpError as e:
-        err = json.loads(e.content.decode('utf-8'))['error']
-        if err['status'] == 'PERMISSION_DENIED':
-            logger.warning(
-                (
-                    "Could not retrieve users due to permissions issue. Code: %s, Message: %s"
-                ), err['code'], err['message'],
-            )
-            return []
-        else:
-            raise
-
-
-@timeit
-def get_customer(admin: Resource, customer_id: str) -> Dict:
-    try:
-        req = admin.customers().get(customer=customer_id)
-        return req.execute()
-    except HttpError as e:
-        err = json.loads(e.content.decode('utf-8'))['error']
-        if err['status'] == 'PERMISSION_DENIED':
-            logger.warning(
-                (
-                    "Could not retrieve customer due to permissions issue. Code: %s, Message: %s"
-                ), err['code'], err['message'],
-            )
-            return {}
-        else:
-            raise
-
-
-@timeit
-def get_domains(admin: Resource, customer_id: str, project_id: str) -> List[Dict]:
-    domains = []
-    try:
-        req = admin.domains().list(customer=customer_id)
-        while req is not None:
-            res = req.execute()
-            page = res.get('domains', [])
-            domains.extend(page)
-        for domain in domains:
-            domain["id"] = f"projects/{project_id}/domains/{domain.get('domainName',None)}"
-        return domains
-    except HttpError as e:
-        err = json.loads(e.content.decode('utf-8'))['error']
-        if err['status'] == 'PERMISSION_DENIED':
-            logger.warning(
-                (
-                    "Could not retrieve domains due to permissions issue. Code: %s, Message: %s"
-                ), err['code'], err['message'],
-            )
-            return []
-        else:
-            raise
-
-
-@timeit
-def get_groups(admin: Resource) -> List[Dict]:
-    groups = []
-    try:
-        req = admin.groups().list()
-        while req is not None:
-            res = req.execute()
-            page = res.get('groups', [])
-            groups.extend(page)
-            req = admin.groups().list_next(previous_request=req, previous_response=res)
-        return groups
-    except HttpError as e:
-        err = json.loads(e.content.decode('utf-8'))['error']
-        if err['status'] == 'PERMISSION_DENIED':
-            logger.warning(
-                (
-                    "Could not retrieve groups due to permissions issue. Code: %s, Message: %s"
-                ), err['code'], err['message'],
-            )
-            return []
-        else:
-            raise
-
-
-@timeit
 def get_service_accounts(iam: Resource, project_id: str) -> List[Dict]:
     service_accounts: List[Dict] = []
     try:
@@ -122,6 +30,7 @@ def get_service_accounts(iam: Resource, project_id: str) -> List[Dict]:
             page = res.get('accounts', [])
             service_accounts.extend(page)
             req = iam.projects().serviceAccounts().list_next(previous_request=req, previous_response=res)
+
         return service_accounts
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -186,6 +95,7 @@ def get_roles(iam: Resource, project_id: str) -> List[Dict]:
             page = res.get('roles', [])
             roles.extend(page)
             req = iam.roles().list_next(previous_request=req, previous_response=res)
+
         return roles
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -210,6 +120,7 @@ def get_project_roles(iam: Resource, project_id: str) -> List[Dict]:
             page = res.get('roles', [])
             roles.extend(page)
             req = iam.projects().roles().list_next(previous_request=req, previous_response=res)
+
         return roles
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -406,11 +317,14 @@ def load_roles(neo4j_session: neo4j.Session, roles: List[Dict], project_id: str,
     UNWIND {roles_list} AS d
     MERGE (u:GCPRole{id: d.id})
     ON CREATE SET u.firstseen = timestamp()
-    SET u.name = d.name, u.title = d.title,
+    SET u.name = d.name,
+    u.title = d.title,
     u.region = {region},
-    u.description = d.description, u.deleted = d.deleted,
+    u.description = d.description,
+    u.deleted = d.deleted,
     u.consolelink = d.consolelink,
-    u.permissions = d.includedPermissions, u.roleid = d.id,
+    u.permissions = d.includedPermissions,
+    u.roleid = d.id,
     u.lastupdated = {gcp_update_tag}
     WITH u
     MATCH (p:GCPProject{id: {project_id}})
@@ -434,204 +348,6 @@ def cleanup_roles(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> 
 
 
 @timeit
-def load_customers(session: neo4j.Session, data_list: List[Dict], project_id: str, update_tag: int) -> None:
-    session.write_transaction(_load_customers_tx, data_list, project_id, update_tag)
-
-
-@timeit
-def _load_customers_tx(tx: neo4j.Transaction, customers: List[Dict], project_id: str, gcp_update_tag: int) -> None:
-    ingest_customers = """
-    UNWIND {customers} as cst
-        MERGE (customer:GCPcustomer{id:cst.id})
-        ON CREATE SET
-            customer.firstseen = timestamp()
-        SET
-            customer.customerDomain = cst.customerDomain,
-            customer.kind = cst.kind,
-            customer.region = {region},
-            customer.alternateEmail = cst.alternateEmail,
-            customer.customerCreationTime = cst.customerCreationTime,
-            customer.phoneNumber = cst.phoneNumber,
-            customer.lastupdated = {gcp_update_tag}
-        WITH customer, cst
-        MATCH (p:GCPProject{id: {project_id}})
-        MERGE (p)-[r:RESOURCE]->(customer)
-        ON CREATE SET
-            r.firstseen = timestamp()
-        SET r.lastupdated = {gcp_update_tag}
-    """
-    tx.run(
-        ingest_customers,
-        customers=customers,
-        project_id=project_id,
-        region="global",
-        gcp_update_tag=gcp_update_tag,
-    )
-
-
-@timeit
-def cleanup_customers(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
-    run_cleanup_job('gcp_iam_customers_cleanup.json', neo4j_session, common_job_parameters)
-
-
-@timeit
-def load_users(session: neo4j.Session, data_list: List[Dict], project_id: str, update_tag: int) -> None:
-    session.write_transaction(_load_users_tx, data_list, project_id, update_tag)
-
-
-@timeit
-def _load_users_tx(tx: neo4j.Transaction, users: List[Dict], project_id: str, gcp_update_tag: int) -> None:
-    ingest_users = """
-    UNWIND {users} as usr
-    MERGE (user:GCPUser{id:usr.id})
-    ON CREATE SET
-        user:GCPPrincipal,
-        user.firstseen = timestamp()
-    SET
-        user.id = usr.id,
-        user.primaryEmail = usr.primaryEmail,
-        user.email = usr.primaryEmail,
-        user.isAdmin = usr.isAdmin,
-        user.isDelegatedAdmin = usr.isDelegatedAdmin,
-        user.agreedToTerms = usr.agreedToTerms,
-        user.suspended = usr.suspended,
-        user.changePasswordAtNextLogin = usr.changePasswordAtNextLogin,
-        user.ipWhitelisted = usr.ipWhitelisted,
-        user.fullName = usr.name.fullName,
-        user.region = {region},
-        user.familyName = usr.name.familyName,
-        user.givenName = usr.name.givenName,
-        user.isMailboxSetup = usr.isMailboxSetup,
-        user.customerId = usr.customerId,
-        user.addresses = usr.addresses,
-        user.organizations = usr.organizations,
-        user.lastLoginTime = usr.lastLoginTime,
-        user.suspensionReason = usr.suspensionReason,
-        user.creationTime = usr.creationTime,
-        user.deletionTime = usr.deletionTime,
-        user.gender = usr.gender,
-        user.consolelink = {consolelink},
-        user.lastupdated = {gcp_update_tag}
-    WITH user, usr
-    MATCH (p:GCPProject{id: {project_id}})
-    MERGE (p)-[r:RESOURCE]->(user)
-    ON CREATE SET
-        r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
-    """
-    tx.run(
-        ingest_users,
-        users=users,
-        project_id=project_id,
-        region="global",
-        gcp_update_tag=gcp_update_tag,
-        consolelink=f"https://console.cloud.google.com/iam-admin/iam?orgonly=true&project={project_id}&supportedpurview=organizationId",
-    )
-
-
-@timeit
-def cleanup_users(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
-    run_cleanup_job('gcp_iam_users_cleanup.json', neo4j_session, common_job_parameters)
-
-
-@timeit
-def load_groups(session: neo4j.Session, data_list: List[Dict], project_id: str, update_tag: int) -> None:
-    session.write_transaction(_load_groups_tx, data_list, project_id, update_tag)
-
-
-@timeit
-def _load_groups_tx(tx: neo4j.Transaction, groups: List[Dict], project_id: str, gcp_update_tag: int) -> None:
-    ingest_groups = """
-    UNWIND {groups} as grp
-    MERGE (group:GCPGroup{id:grp.id})
-    ON CREATE SET
-        group:GCPPrincipal,
-        group.firstseen = timestamp()
-    SET
-        group.id = grp.id,
-        group.id = grp.name,
-        group.email = grp.email,
-        group.region = {region},
-        group.adminCreated = grp.adminCreated,
-        group.directMembersCount = grp.directMembersCount,
-        group.lastupdated = {gcp_update_tag}
-    WITH group,grp
-    MATCH (p:GCPProject{id: {project_id}})
-    MERGE (p)-[r:RESOURCE]->(group)
-    ON CREATE SET
-        r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
-    """
-    tx.run(
-        ingest_groups,
-        groups=groups,
-        region="global",
-        project_id=project_id,
-        gcp_update_tag=gcp_update_tag,
-    )
-
-
-@timeit
-def cleanup_groups(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
-    run_cleanup_job('gcp_iam_groups_cleanup.json', neo4j_session, common_job_parameters)
-
-
-@timeit
-def load_domains(
-    session: neo4j.Session, data_list: List[Dict], customer_id: str, project_id: str, update_tag: int,
-) -> None:
-    session.write_transaction(_load_domains_tx, data_list, customer_id, project_id, update_tag)
-
-
-@timeit
-def _load_domains_tx(
-    tx: neo4j.Transaction, domains: List[Dict], customer_id: str, project_id: str, gcp_update_tag: int,
-) -> None:
-    ingest_domains = """
-    UNWIND {domains} as dmn
-    MERGE (domain:GCPDomain{id:dmn.id})
-    ON CREATE SET
-        domain:GCPPrincipal,
-        domain.firstseen = timestamp()
-    SET
-        domain.verified = dmn.verified,
-        domain.creationTime = dmn.creationTime,
-        domain.region = {region},
-        domain.isPrimary = dmn.isPrimary,
-        domain.domainName = dmn.domainName,
-        domain.kind = dmn.kind,
-        domain.name = dmn.domainName,
-        domain.email = dmn.domainName
-        domain.lastupdated = {gcp_update_tag}
-    WITH domain
-    MATCH (p:GCPProject{id: {project_id}})
-    MERGE (p)-[r:RESOURCE]->(domain)
-    ON CREATE SET
-        r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
-    WITH domain
-    MATCH (p:GCPCustomer{id: {customer_id}})
-    MERGE (p)-[r:RESOURCE]->(domain)
-    ON CREATE SET
-        r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
-    """
-    tx.run(
-        ingest_domains,
-        domains=domains,
-        region="global",
-        project_id=project_id,
-        customer_id=customer_id,
-        gcp_update_tag=gcp_update_tag,
-    )
-
-
-@timeit
-def cleanup_domains(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
-    run_cleanup_job('gcp_iam_domains_cleanup.json', neo4j_session, common_job_parameters)
-
-
-@timeit
 def load_bindings(neo4j_session: neo4j.Session, bindings: List[Dict], project_id: str, gcp_update_tag: int) -> None:
     for binding in bindings:
         role_id = get_role_id(binding['role'], project_id)
@@ -643,7 +359,6 @@ def load_bindings(neo4j_session: neo4j.Session, bindings: List[Dict], project_id
                     'id': f"projects/{project_id}/users/{usr}",
                     "email": usr,
                     "name": usr.split("@")[0],
-
                 }
                 attach_role_to_user(
                     neo4j_session, role_id, user,
@@ -697,7 +412,6 @@ def load_bindings(neo4j_session: neo4j.Session, bindings: List[Dict], project_id
                         "email": usr,
                         "name": usr.split("@")[0],
                         "is_deleted": True
-
                     }
                     attach_role_to_user(
                         neo4j_session, role_id, user,
@@ -1017,93 +731,18 @@ def sync(
     cleanup_roles(neo4j_session, common_job_parameters)
     label.sync_labels(neo4j_session, roles_list, gcp_update_tag, common_job_parameters, 'roles', 'GCPRole')
 
-    # users = get_users(admin)
-
     # if common_job_parameters.get('pagination', {}).get('iam', None):
-    #     pageNo = common_job_parameters.get("pagination", {}).get("iam", None)["pageNo"]
-    #     pageSize = common_job_parameters.get("pagination", {}).get("iam", None)["pageSize"]
-    #     totalPages = len(users) / pageSize
-    #     if int(totalPages) != totalPages:
-    #         totalPages = totalPages + 1
+    #     if not common_job_parameters.get('pagination', {}).get('iam', {}).get('hasNextPage', False):
+    #         bindings = get_policy_bindings(crm, project_id)
+    #         # users_from_bindings, groups_from_bindings, domains_from_bindings = transform_bindings(bindings, project_id)
+    #         load_bindings(neo4j_session, bindings, project_id, gcp_update_tag)
+    #         set_used_state(neo4j_session, project_id, common_job_parameters, gcp_update_tag)
+    # else:
 
-    #     totalPages = int(totalPages)
-    #     if pageNo < totalPages or pageNo == totalPages:
-    #         logger.info(f'pages process for iam users {pageNo}/{totalPages} pageSize is {pageSize}')
-
-    #     page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
-    #                   'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
-    #     page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
-    #     if page_end > len(users) or page_end == len(users):
-    #         users = users[page_start:]
-
-    #     else:
-    #         has_next_page = True
-    #         users = users[page_start:page_end]
-    #         common_job_parameters['pagination']['iam']['hasNextPage'] = has_next_page
-
-    # customer_ids = []
-    # for user in users:
-    #     customer_ids.append(get_customer(user.get('customerId')))
-
-    # customer_ids = list(set(customer_ids))
-    # customer_ids.sort()
-
-    # customers = []
-    # for customer_id in customer_ids:
-    #     customers.append(get_customer(customer_id))
-
-    # load_customers(neo4j_session, customers, project_id, gcp_update_tag)
-    # cleanup_customers(neo4j_session, common_job_parameters)
-
-    # load_users(neo4j_session, users, project_id, gcp_update_tag)
-    # cleanup_users(neo4j_session, common_job_parameters)
-    # label.sync_labels(neo4j_session, users, gcp_update_tag, common_job_parameters, 'users', 'GCPUser')
-
-    # for customer in customers:
-    #     domains = get_domains(admin, customer, project_id)
-    #     load_domains(neo4j_session, domains, customer.get('id'), project_id, gcp_update_tag)
-
-    # cleanup_domains(neo4j_session, common_job_parameters)
-
-    # groups = get_groups(admin)
-
-    # if common_job_parameters.get('pagination', {}).get('iam', None):
-    #     pageNo = common_job_parameters.get("pagination", {}).get("iam", None)["pageNo"]
-    #     pageSize = common_job_parameters.get("pagination", {}).get("iam", None)["pageSize"]
-    #     totalPages = len(groups) / pageSize
-    #     if int(totalPages) != totalPages:
-    #         totalPages = totalPages + 1
-
-    #     totalPages = int(totalPages)
-    #     if pageNo < totalPages or pageNo == totalPages:
-    #         logger.info(f'pages process for iam groups {pageNo}/{totalPages} pageSize is {pageSize}')
-
-    #     page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
-    #                   'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
-    #     page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
-    #     if page_end > len(groups) or page_end == len(groups):
-    #         groups = groups[page_start:]
-
-    #     else:
-    #         has_next_page = True
-    #         groups = groups[page_start:page_end]
-    #         common_job_parameters['pagination']['iam']['hasNextPage'] = has_next_page
-
-    # load_groups(neo4j_session, groups, project_id, gcp_update_tag)
-    # cleanup_groups(neo4j_session, common_job_parameters)
-    # label.sync_labels(neo4j_session, groups, gcp_update_tag, common_job_parameters, 'groups', 'GCPGroup')
-
-    if common_job_parameters.get('pagination', {}).get('iam', None):
-        if not common_job_parameters.get('pagination', {}).get('iam', {}).get('hasNextPage', False):
-            bindings = get_policy_bindings(crm, project_id)
-            # users_from_bindings, groups_from_bindings, domains_from_bindings = transform_bindings(bindings, project_id)
-            load_bindings(neo4j_session, bindings, project_id, gcp_update_tag)
-            set_used_state(neo4j_session, project_id, common_job_parameters, gcp_update_tag)
-    else:
-        bindings = get_policy_bindings(crm, project_id)
-        # users_from_bindings, groups_from_bindings, domains_from_bindings = transform_bindings(bindings, project_id)
-        load_bindings(neo4j_session, bindings, project_id, gcp_update_tag)
-        set_used_state(neo4j_session, project_id, common_job_parameters, gcp_update_tag)
+    bindings = get_policy_bindings(crm, project_id)
+    # users_from_bindings, groups_from_bindings, domains_from_bindings = transform_bindings(bindings, project_id)
+    load_bindings(neo4j_session, bindings, project_id, gcp_update_tag)
+    set_used_state(neo4j_session, project_id, common_job_parameters, gcp_update_tag)
 
     toc = time.perf_counter()
     logger.info(f"Time to process IAM: {toc - tic:0.4f} seconds")
