@@ -1,5 +1,5 @@
-from typing import List
 from string import Template
+from typing import List
 
 
 def build_cleanup_queries(
@@ -16,9 +16,9 @@ def build_cleanup_queries(
         MATCH (n:$node_label)<-[:$rel_label]-(:$sub_resource_label{$sub_resource_key: {$sub_resource_value}})
         WHERE n.lastupdated <> {UPDATE_TAG}
         WITH n
-        LIMIT {LIMIT_SIZE} 
+        LIMIT {LIMIT_SIZE}
         DETACH DELETE (n)
-        """
+        """,
     )
     if not sub_resource_key:
         sub_resource_key = 'id'
@@ -39,7 +39,7 @@ def build_cleanup_queries(
             WHERE r.lastupdated <> {UPDATE_TAG}
             WITH r LIMIT {LIMIT_SIZE}
             DELETE r
-            """
+            """,
         )
         rel_cleanup_query = rel_cleanup_query_template.safe_substitute(
             node_label=node_label,
@@ -66,7 +66,7 @@ def build_remove_attribute_query(
         MATCH (n:$node_label)<-[:$rel_label]-(:$sub_resource_label{$sub_resource_key: $sub_resource_value})
         WHERE EXISTS (n.$attribute_name)
         REMOVE n.$attribute_name
-        """
+        """,
     )
     if not sub_resource_key:
         sub_resource_key = 'id'

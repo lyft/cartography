@@ -1,8 +1,9 @@
-from string import Template
-from typing import Dict, Optional
-from typing import List
-from enum import Enum
 from enum import auto
+from enum import Enum
+from string import Template
+from typing import Dict
+from typing import List
+from typing import Optional
 
 
 class LinkDirection(Enum):
@@ -106,7 +107,7 @@ def _build_attach_sub_resource_statement(sub_resource_link: CartographyLink) -> 
         SubResourceRef=sub_resource_link.dict_field_ref,
         RelMergeClause=rel_merge_clause,
         SubResourceRelLabel=sub_resource_link.rel_label,
-        set_rel_properties_statement=_build_rel_properties_statement('r', sub_resource_link.rel_property_map)
+        set_rel_properties_statement=_build_rel_properties_statement('r', sub_resource_link.rel_property_map),
     )
     return attach_sub_resource_statement
 
@@ -115,14 +116,15 @@ def _build_attach_additional_links_statement(additional_links: List[CartographyL
     """
     Attaches one or more CartographyLinks to node i.
     """
-    additional_links_template = Template("""
+    additional_links_template = Template(
+        """
         WITH i, item
         MATCH ($node_var:$AddlLabel{$AddlKey: $AddlRef})
         $RelMerge
         ON CREATE SET $rel_var.firstseen = timestamp()
         SET
             $set_rel_properties_statement
-    """
+    """,
     )
     links = []
     for num, link in enumerate(additional_links):
@@ -147,7 +149,7 @@ def _build_attach_additional_links_statement(additional_links: List[CartographyL
             node_var=node_var,
             rel_var=rel_var,
             RelMerge=rel_merge,
-            set_rel_properties_statement=_build_rel_properties_statement(rel_var, link.rel_property_map)
+            set_rel_properties_statement=_build_rel_properties_statement(rel_var, link.rel_property_map),
         )
         links.append(additional_ref)
 
@@ -165,7 +167,7 @@ def build_ingest_query(
     UNWIND {DictList} AS item
         MERGE (i:$node_label{id: item.$dict_id_field})
         ON CREATE SET i.firstseen = timestamp()
-        SET 
+        SET
             $set_node_properties_statement
         $attach_sub_resource_statement
         $attach_additional_links_statement
