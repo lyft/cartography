@@ -28,7 +28,7 @@ from cartography.util import timeit
 logger = logging.getLogger(__name__)
 Resources = namedtuple(
     'Resources', 'compute gke cloudfunction crm_v1 crm_v2 dns storage serviceusage \
-        iam apigateway cloudkms cloudrun sql bigtable firestore',
+        iam apigateway cloudkms cloudrun sql bigtable firestore pubsub',
 )
 
 # Mapping of service short names to their full names as in docs. See https://developers.google.com/apis-explorer,
@@ -96,6 +96,16 @@ def _get_cloudfunction_resource(credentials: GoogleCredentials) -> Resource:
     :return: A serviceusage resource object
     """
     return googleapiclient.discovery.build('cloudfunctions', 'v1', credentials=credentials, cache_discovery=False)
+
+
+def _get_pubsub_resource(credentials: GoogleCredentials) -> Resource:
+    """
+    Instantiates a cloud pubsub resource object.
+    See: https://cloud.google.com/pubsub/docs/reference/rest
+    :param credentials: The GoogleCredentials object
+    :return: A serviceusage resource object
+    """
+    return googleapiclient.discovery.build('pubsub', 'v1', credentials=credentials, cache_discovery=False)
 
 
 def _get_compute_resource(credentials: GoogleCredentials) -> Resource:
@@ -262,6 +272,7 @@ def _initialize_resources(credentials: GoogleCredentials) -> Resource:
         iam=_get_iam_resource(credentials),
         apigateway=_get_apigateway_resource(credentials),
         cloudfunction=_get_cloudfunction_resource(credentials),
+        pubsub=_get_pubsub_resource(credentials),
     )
 
 
@@ -295,7 +306,7 @@ def _services_enabled_on_project(serviceusage: Resource, project_id: str) -> Set
 
 
 def concurrent_execution(
-    service: str, service_func: Any, config: Config, iam: Resource,
+    service: str, service_func: Any, config: Config, resource: Resource,
     common_job_parameters: Dict, gcp_update_tag: int, project_id: str, crm: Resource,
 ):
     logger.info(f"BEGIN processing for service: {service}")
@@ -310,10 +321,10 @@ def concurrent_execution(
     )
 
     if service == 'iam':
-        service_func(neo4j_driver.session(), iam, crm, project_id,
+        service_func(neo4j_driver.session(), resource, crm, project_id,
                      gcp_update_tag, common_job_parameters)
     else:
-        service_func(neo4j_driver.session(), iam, project_id, gcp_update_tag,
+        service_func(neo4j_driver.session(), resource, project_id, gcp_update_tag,
                      common_job_parameters, regions)
     logger.info(f"END processing for service: {service}")
 
@@ -445,7 +456,7 @@ def start_gcp_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
     resources = _initialize_resources(credentials)
 
     # If we don't have perms to pull Orgs or Folders from GCP, we will skip safely
-    crm.sync_gcp_organizations(neo4j_session, resources.crm_v1, config.update_tag, common_job_parameters)
+    # crm.sync_gcp_organizations(neo4j_session, resources.crm_v1, config.update_tag, common_job_parameters)
     crm.sync_gcp_folders(neo4j_session, resources.crm_v2, config.update_tag, common_job_parameters)
 
     projects = crm.get_gcp_projects(resources.crm_v1)

@@ -12,6 +12,7 @@ from . import gke
 from . import iam
 from . import sql
 from . import storage
+from . import pubsub
 
 
 RESOURCE_FUNCTIONS: Dict = {
@@ -27,4 +28,5 @@ RESOURCE_FUNCTIONS: Dict = {
     'sql': sql.sync,
     'storage': storage.sync,
     'apigateway': apigateway.sync,
+    'pubsub': pubsub.sync,
 }
