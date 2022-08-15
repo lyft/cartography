@@ -162,7 +162,7 @@ def get_bigtable_cluster_backups(bigtable: Resource, bigtable_clusters: List[Dic
     cluster_backups = []
     for cluster in bigtable_clusters:
         try:
-            request = bigtable.projects().instances().clusters().backup().list(
+            request = bigtable.projects().instances().clusters().backups().list(
                 parent=cluster.get('name', None),
             )
             while request is not None:
@@ -176,7 +176,7 @@ def get_bigtable_cluster_backups(bigtable: Resource, bigtable_clusters: List[Dic
                         backup['consolelink'] = gcp_console_link.get_console_link(
                             resource_name='big_table_backup', project_id=project_id, bigtable_instance_name=cluster['instance_id'].split("/")[-1], bigtable_table_id=backup['sourceTable'].split("/")[-1])
                         cluster_backups.append(backup)
-                request = bigtable.projects().instances().clusters().backup().list_next(
+                request = bigtable.projects().instances().clusters().backups().list_next(
                     previous_request=request, previous_response=response,
                 )
 
