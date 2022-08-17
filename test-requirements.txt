@@ -1,3 +1,4 @@
+backoff>=2.1.2
 pre-commit
 pytest>=6.2.4
 pytest-mock
