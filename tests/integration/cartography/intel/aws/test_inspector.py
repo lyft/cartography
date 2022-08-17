@@ -64,7 +64,7 @@ def test_load_inspector_findings(neo4j_session):
         'i-instanceid',
         'i-88503981029833100',
     }
-    assert actual_nodes == expected_nodes
+    assert actual_nodes == set(expected_nodes)
 
     # Check Packages
     nodes = neo4j_session.run(
@@ -75,7 +75,7 @@ def test_load_inspector_findings(neo4j_session):
         'kernel|X86_64|4.9.17|6.29.amzn1|0',
         'kernel-tools|X86_64|4.9.17|6.29.amzn1|0',
     }
-    assert actual_nodes == expected_nodes
+    assert actual_nodes == set(expected_nodes)
 
     # Check Finding:Package relationship
     findings_run = neo4j_session.run(
@@ -87,7 +87,7 @@ def test_load_inspector_findings(neo4j_session):
         {'a.id': 'kernel-tools|X86_64|4.9.17|6.29.amzn1|0'},
         {'a.id': 'kernel|X86_64|4.9.17|6.29.amzn1|0'},
     ]
-    assert findings_run.data() == expected_nodes
+    assert findings_run.data() == set(expected_nodes)
 
     # Check Finding:AWSAccount relationship
     findings_run = neo4j_session.run(
@@ -99,7 +99,7 @@ def test_load_inspector_findings(neo4j_session):
         {'a.id': '123456789011'},
         {'a.id': '123456789012'},
     ]
-    assert findings_run.data() == expected_nodes
+    assert findings_run.data() == set(expected_nodes)
 
     # Check Package:AWSAccount relationship
     findings_run = neo4j_session.run(
@@ -111,7 +111,7 @@ def test_load_inspector_findings(neo4j_session):
         {'a.id': '123456789012'},
         {'a.id': '123456789012'},
     ]
-    assert findings_run.data() == expected_nodes
+    assert findings_run.data() == set(expected_nodes)
 
     # Check Instance:Finding relationship
     ec2_instances_run = neo4j_session.run(
@@ -123,4 +123,4 @@ def test_load_inspector_findings(neo4j_session):
         {'a.id': 'arn:aws:test123'},
         {'a.id': 'arn:aws:test456'},
     ]
-    assert ec2_instances_run.data() == expected_nodes
+    assert ec2_instances_run.data() == set(expected_nodes)
