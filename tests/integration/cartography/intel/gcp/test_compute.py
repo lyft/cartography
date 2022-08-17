@@ -1,7 +1,7 @@
 import cartography.intel.gcp.compute
 import tests.data.gcp.compute
 
-
+TEST_PROJECT_ID = 'project123'
 TEST_UPDATE_TAG = 123456789
 
 
@@ -422,4 +422,28 @@ def test_vpc_to_firewall_to_iprule_to_iprange(neo4j_session):
         'projects/project-abc/global/firewalls/default-allow-ssh',
         'projects/project-abc/global/networks/default',
     )}
+    assert actual_nodes == expected_nodes
+
+
+def test_compute_disks(neo4j_session):
+    data = tests.data.gcp.compute.TEST_DISKS
+    cartography.intel.gcp.compute.load_compute_disks(
+        neo4j_session,
+        data,
+        TEST_PROJECT_ID,
+        TEST_UPDATE_TAG,
+    )
+
+    expected_nodes = {
+        'projects/project123/disks/disks123',
+    }
+
+    nodes = neo4j_session.run(
+        """
+        MATCH (r:GCPComputeDisk) RETURN r.id;
+        """,
+    )
+
+    actual_nodes = {n['r.id'] for n in nodes}
+
     assert actual_nodes == expected_nodes

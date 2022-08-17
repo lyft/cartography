@@ -28,6 +28,124 @@ gcp_console_link = GCPLinker()
 InstanceUriPrefix = namedtuple('InstanceUriPrefix', 'zone_name project_id')
 
 
+@timeit
+def get_compute_disks(compute: Resource, project_id: str, zones: list, common_job_parameters) -> List[Dict]:
+    if not zones:
+        return []
+    disks = []
+    try:
+        for zone in zones:
+            req = compute.disks().list(project=f"projects/{project_id}", zone=zone)
+            while req is not None:
+                res = req.execute()
+                if res.get('items'):
+                    for disk in res['items']:
+                        disk['project_id'] = project_id
+                        disk['id'] = f"projects/{project_id}/disks/{disk['name']}"
+                        disks.append(disk)
+                req = compute.disks().list_next(previous_request=req, previous_response=res)
+
+        if common_job_parameters.get('pagination', {}).get('compute', None):
+            pageNo = common_job_parameters.get("pagination", {}).get("compute", None)["pageNo"]
+            pageSize = common_job_parameters.get("pagination", {}).get("compute", None)["pageSize"]
+            totalPages = len(disks) / pageSize
+            if int(totalPages) != totalPages:
+                totalPages = totalPages + 1
+            totalPages = int(totalPages)
+            if pageNo < totalPages or pageNo == totalPages:
+                logger.info(f'pages process for compute disks {pageNo}/{totalPages} pageSize is {pageSize}')
+            page_start = (common_job_parameters.get('pagination', {}).get('compute', None)[
+                          'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
+            page_end = page_start + common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
+            if page_end > len(disks) or page_end == len(disks):
+                disks = disks[page_start:]
+            else:
+                has_next_page = True
+                disks = disks[page_start:page_end]
+                common_job_parameters['pagination']['compute']['hasNextPage'] = has_next_page
+
+        return disks
+    except HttpError as e:
+        err = json.loads(e.content.decode('utf-8'))['error']
+        if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
+            logger.warning(
+                (
+                    "Could not retrieve compute disks on project %s due to permissions issues. Code: %s, Message: %s"
+                ), project_id, err['code'], err['message'],
+            )
+            return []
+        else:
+            raise
+
+
+@timeit
+def load_compute_disks(session: neo4j.Session, data_list: List[Dict], project_id: str, update_tag: int) -> None:
+    session.write_transaction(load_compute_disks_tx, data_list, project_id, update_tag)
+
+
+@timeit
+def load_compute_disks_tx(
+    tx: neo4j.Transaction, data: List[Dict],
+    project_id: str, gcp_update_tag: int,
+) -> None:
+
+    query = """
+    UNWIND {Records} as record
+    MERGE (disk:GCPComputeDisk{id:record.id})
+    ON CREATE SET
+        disk.firstseen = timestamp()
+    SET
+        disk.lastupdated = {gcp_update_tag},
+        disk.region = record.region,
+        disk.name = record.name,
+        disk.creation_timestamp = record.creationTimestamp,
+        disk.description = record.description,
+        disk.zone = record.zone,
+        disk.status = record.status,
+        disk.source_snapshot = record.sourceSnapshot,
+        disk.source_snapshot_id = record.sourceSnapshotId,
+        disk.source_storage_object = record.sourceStorageObject,
+        disk.options = record.options,
+        disk.self_link = record.selfLink,
+        disk.source_image = record.sourceImage,
+        disk.last_attach_timestamp = record.lastAttachTimestamp,
+        disk.last_detach_timestamp = record.lastDetachTimestamp,
+        disk.physical_block_size_bytes = record.physicalBlockSizeBytes,
+        disk.source_disk = record.sourceDisk,
+        disk.source_disk_id = record.sourceDiskId,
+        disk.source_image_id = record.sourceImageId
+    WITH disk
+    MATCH (owner:GCPProject{id:{ProjectId}})
+    MERGE (owner)-[r:RESOURCE]->(disk)
+    ON CREATE SET
+        r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}
+    """
+    tx.run(
+        query,
+        Records=data,
+        ProjectId=project_id,
+        gcp_update_tag=gcp_update_tag,
+    )
+
+
+@timeit
+def cleanup_compute_disks(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('gcp_compute_disks_cleanup.json', neo4j_session, common_job_parameters)
+
+
+@timeit
+def sync_compute_disks(
+    neo4j_session: neo4j.Session, compute: Resource, project_id: str, zones: Optional[List[Dict]],
+    gcp_update_tag: int, common_job_parameters: Dict,
+) -> None:
+
+    disks = get_compute_disks(compute, project_id, zones, common_job_parameters)
+
+    load_compute_disks(neo4j_session, disks, project_id, gcp_update_tag)
+    cleanup_compute_disks(neo4j_session, common_job_parameters)
+
+
 def _get_error_reason(http_error: HttpError) -> str:
     """
     Helper function to get an error reason out of the googleapiclient's HttpError object
@@ -1544,6 +1662,8 @@ def sync(
                            gcp_update_tag, common_job_parameters)
         sync_gcp_forwarding_rules(neo4j_session, compute, project_id, regions,
                                   gcp_update_tag, common_job_parameters)
+        sync_compute_disks(neo4j_session, compute, project_id, zones,
+                           gcp_update_tag, common_job_parameters)
 
     toc = time.perf_counter()
     logger.info(f"Time to process Compute: {toc - tic:0.4f} seconds")
