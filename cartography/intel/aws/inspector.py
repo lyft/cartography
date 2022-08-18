@@ -7,6 +7,7 @@ from typing import Tuple
 import boto3
 import neo4j
 
+from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
@@ -15,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
+@aws_handle_regions
 def get_inspector_findings(session: boto3.session.Session, region: str) -> List[Dict]:
     client = session.client('inspector2', region_name=region)
     paginator = client.get_paginator('list_findings')
