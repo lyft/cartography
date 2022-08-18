@@ -35,7 +35,7 @@ def get_compute_disks(compute: Resource, project_id: str, zones: list, common_jo
     disks = []
     try:
         for zone in zones:
-            req = compute.disks().list(project=f"projects/{project_id}", zone=zone)
+            req = compute.disks().list(project=project_id, zone=zone['name'])
             while req is not None:
                 res = req.execute()
                 if res.get('items'):
