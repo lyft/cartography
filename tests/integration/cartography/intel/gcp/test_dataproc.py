@@ -5,7 +5,7 @@ TEST_PROJECT_ID = 'project123'
 TEST_UPDATE_TAG = 123456789
 
 
-def test_pubsub_topics(neo4j_session):
+def test_dataproc_clusters(neo4j_session):
     data = tests.data.gcp.dataproc.TEST_CLUSTERS
     cartography.intel.gcp.dataproc.load_dataproc_clusters(
         neo4j_session,

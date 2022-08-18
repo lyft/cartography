@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
-def get_dataproc_clusters(dataproc: Resource, project_id: str, regions: list, common_job_parameters) -> List[Dict]:
+def get_dataproc_clusters(dataproc: Resource, project_id: str, regions: list) -> List[Dict]:
     clusters = []
     try:
         if regions:
@@ -94,7 +94,7 @@ def sync_dataproc_clusters(
     gcp_update_tag: int, common_job_parameters: Dict,
 ) -> None:
 
-    clusters = get_dataproc_clusters(dataproc, project_id, regions, common_job_parameters)
+    clusters = get_dataproc_clusters(dataproc, project_id, regions)
 
     if common_job_parameters.get('pagination', {}).get('dataproc', None):
         pageNo = common_job_parameters.get("pagination", {}).get("dataproc", None)["pageNo"]
@@ -133,4 +133,4 @@ def sync(
                                   gcp_update_tag, common_job_parameters)
 
     toc = time.perf_counter()
-    logger.info(f"Time to process Compute: {toc - tic:0.4f} seconds")
+    logger.info(f"Time to process dataproc: {toc - tic:0.4f} seconds")
