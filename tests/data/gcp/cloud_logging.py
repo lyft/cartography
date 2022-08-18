@@ -10,3 +10,15 @@ TEST_METRICS=[
 
     }
 ]
+
+TEST_SINKS=[
+    {
+        'name': 'sink123',
+        'id': 'projects/project123/sinks/sink123',
+        'region': 'us-east-a1',
+        'description': 'jbjbjdqwnknkd',
+        'writerIdentity': 'xyx',
+        'disabled': False,
+
+    }
+]
