@@ -141,6 +141,7 @@ CREATE INDEX ON :GCPFirestoreDatabase(id);
 CREATE INDEX ON :GCPFirestoreIndex(id);
 CREATE INDEX ON :GCPPubsubSubscription(id);
 CREATE INDEX ON :GCPPubsubTopic(id);
+CREATE INDEX ON :GCPDataprocCluster(id);
 CREATE INDEX ON :Ip(id);
 CREATE INDEX ON :Ip(ip);
 CREATE INDEX ON :IpPermissionInbound(ruleid);
