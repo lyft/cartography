@@ -78,49 +78,50 @@ def test_load_inspector_findings(neo4j_session):
     assert actual_nodes == set(expected_nodes)
 
     # Check Finding:Package relationship
-    findings_run = neo4j_session.run(
+    nodes = neo4j_session.run(
         """MATCH (:AWSInspectorFinding)-[:HAS]->(a:AWSInspectorPackage)
         RETURN a.id""",
     )
-
+    actual_nodes = {(n['a.id']) for n in nodes}
     expected_nodes = [
-        {'a.id': 'kernel-tools|X86_64|4.9.17|6.29.amzn1|0'},
-        {'a.id': 'kernel|X86_64|4.9.17|6.29.amzn1|0'},
+        'kernel-tools|X86_64|4.9.17|6.29.amzn1|0',
+        'kernel|X86_64|4.9.17|6.29.amzn1|0',
     ]
-    assert findings_run.data() == set(expected_nodes)
+    assert actual_nodes == set(expected_nodes)
 
     # Check Finding:AWSAccount relationship
-    findings_run = neo4j_session.run(
+    nodes = neo4j_session.run(
         """MATCH (a:AWSAccount)-[:RESOURCE]->(:AWSInspectorFinding)
         RETURN a.id""",
     )
+    actual_nodes = {(n['a.id']) for n in nodes}
 
     expected_nodes = [
-        {'a.id': '123456789011'},
-        {'a.id': '123456789012'},
+        '123456789011',
+        '123456789012',
     ]
-    assert findings_run.data() == set(expected_nodes)
+    assert actual_nodes == set(expected_nodes)
 
     # Check Package:AWSAccount relationship
-    findings_run = neo4j_session.run(
+    nodes = neo4j_session.run(
         """MATCH (a:AWSAccount)-[:RESOURCE]->(:AWSInspectorPackage)
         RETURN a.id""",
     )
-
+    actual_nodes = {(n['a.id']) for n in nodes}
     expected_nodes = [
-        {'a.id': '123456789012'},
-        {'a.id': '123456789012'},
+        '123456789012',
+        '123456789012',
     ]
-    assert findings_run.data() == set(expected_nodes)
+    assert actual_nodes == set(expected_nodes)
 
     # Check Instance:Finding relationship
-    ec2_instances_run = neo4j_session.run(
+    nodes = neo4j_session.run(
         """MATCH (:EC2Instance)<-[:AFFECTS]-(a:AWSInspectorFinding)
         RETURN a.id""",
     )
-
+    actual_nodes = {(n['a.id']) for n in nodes}
     expected_nodes = [
-        {'a.id': 'arn:aws:test123'},
-        {'a.id': 'arn:aws:test456'},
+        'arn:aws:test123',
+        'arn:aws:test456',
     ]
-    assert ec2_instances_run.data() == set(expected_nodes)
+    assert actual_nodes == set(expected_nodes)
