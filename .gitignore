@@ -16,3 +16,4 @@ build/
 .compose
 generated
 dist/
+node_modules

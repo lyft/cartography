@@ -1,0 +1,11 @@
+{
+  "watch": [
+    "src"
+  ],
+  "ext": "ts",
+  "env": {
+    "NODE_ENV": "development",
+    "NEO4j_PASSWORD": "neo4j"
+  },
+  "exec": "node --inspect=9229 -r tsconfig-paths/register -r ts-node/register ./src/"
+}

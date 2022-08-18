@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    "suppressImplicitAnyIndexErrors": true,
+    "lib" : ["es2020"],
+    "module": "commonjs",
+    "esModuleInterop": true,
+    "target": "es2020",
+    "noImplicitAny": true,
+    "moduleResolution": "node",
+    "sourceMap": true,
+    "outDir": "dist",
+    "baseUrl": ".",
+    "paths": {
+      "*": [
+        "node_modules/*"
+      ]
+    },
+    "typeRoots": [
+      "types"
+    ],
+    "types": [
+      "node"
+    ]
+  },
+  "include": [
+      "cartography"
+  ],
+  "exclude": [
+  "node_modules",
+  ".env"
+  ]
+}

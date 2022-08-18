@@ -1,4 +1,8 @@
 import sys
+import pathlib
+
+directory = pathlib.Path(__file__).parent.absolute()
+sys.path.append(str(directory.parent))
 
 import cartography.cli
 

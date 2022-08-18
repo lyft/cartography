@@ -1,0 +1,47 @@
+{
+  "name": "temporal-cartography",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "tsc --build",
+    "build.watch": "tsc --build --watch",
+    "lint": "eslint .",
+    "start": "nodemon --config nodemon.json",
+    "start-activity-worker": "export $(cat .env | xargs) && ts-node src/activities/cartography/worker.ts",
+    "start-activity-worker.watch": "nodemon src/activities/cartography/worker.ts",
+    "start-workflow-worker": "export $(cat .env | xargs) && ts-node src/workflows/worker.ts",
+    "start-workflow-worker.watch": "nodemon src/workflows/worker.ts",
+    "neo4j-sync": "export $(cat .env | xargs) && ts-node src/client.ts"
+  },
+  "nodemonConfig": {
+    "execMap": {
+      "ts": "ts-node"
+    },
+    "ext": "ts",
+    "watch": [
+      "src"
+    ]
+  },
+  "dependencies": {
+    "nanoid": "3.x",
+    "@temporalio/client": "1.0.1",
+    "@temporalio/workflow": "1.0.1",
+    "@temporalio/worker": "1.0.1",
+    "python-shell": "3.0.1"
+  },
+  "devDependencies": {
+    "@tsconfig/node16": "^1.0.0",
+    "@types/node": "^16.0.0",
+    "@typescript-eslint/eslint-plugin": "^5.0.0",
+    "@typescript-eslint/parser": "^5.0.0",
+    "eslint": "^7.32.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-deprecation": "^1.2.1",
+    "nodemon": "^2.0.12",
+    "ts-node": "^10.8.1",
+    "tsconfig-paths": "^3.9.0",
+    "tslint": "^5.20.1",
+    "tslint-config-standard": "^9.0.0",
+    "typescript": "^4.4.2"
+  }
+}
