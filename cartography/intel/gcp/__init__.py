@@ -28,7 +28,7 @@ from cartography.util import timeit
 logger = logging.getLogger(__name__)
 Resources = namedtuple(
     'Resources', 'compute gke cloudfunction crm_v1 crm_v2 dns storage serviceusage \
-        iam apigateway cloudkms cloudrun sql bigtable firestore pubsub',
+        iam apigateway cloudkms cloudrun sql bigtable firestore pubsub cloudmonitoring',
 )
 
 # Mapping of service short names to their full names as in docs. See https://developers.google.com/apis-explorer,
@@ -106,6 +106,16 @@ def _get_pubsub_resource(credentials: GoogleCredentials) -> Resource:
     :return: A serviceusage resource object
     """
     return googleapiclient.discovery.build('pubsub', 'v1', credentials=credentials, cache_discovery=False)
+
+
+def _get_cloudmonitoring_resource(credentials: GoogleCredentials) -> Resource:
+    """
+    Instantiates a cloud monitoring resource object.
+    See: https://cloud.google.com/monitoring/api/ref_v3/rest
+    :param credentials: The GoogleCredentials object
+    :return: A serviceusage resource object
+    """
+    return googleapiclient.discovery.build('monitoring', 'v3', credentials=credentials, cache_discovery=False)
 
 
 def _get_compute_resource(credentials: GoogleCredentials) -> Resource:
@@ -273,6 +283,7 @@ def _initialize_resources(credentials: GoogleCredentials) -> Resource:
         apigateway=_get_apigateway_resource(credentials),
         cloudfunction=_get_cloudfunction_resource(credentials),
         pubsub=_get_pubsub_resource(credentials),
+        cloudmonitoring=_get_cloudmonitoring_resource(credentials),
     )
 
 
