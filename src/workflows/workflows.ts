@@ -1,9 +1,9 @@
 import { proxyActivities } from '@temporalio/workflow';
 // Only import the activity types
-import type * as activities from '../activities/cartography';
+import pythonActivities from '../activities/cartography';
 import { CartographyResult } from '../activities/cartography/types'
 
-const { cartographyRun } = proxyActivities<typeof activities>({
+const { cartographyRun } = proxyActivities<pythonActivities>({
   startToCloseTimeout: '1 hour',
   taskQueue: 'cartography-wf-activity'
 });

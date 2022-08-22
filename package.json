@@ -7,8 +7,7 @@
     "build.watch": "tsc --build --watch",
     "lint": "eslint .",
     "start": "nodemon --config nodemon.json",
-    "start-activity-worker": "export $(cat .env | xargs) && ts-node src/activities/cartography/worker.ts",
-    "start-activity-worker.watch": "nodemon src/activities/cartography/worker.ts",
+    "start-activity-worker": "export $(cat .env | xargs) && python3 python_cartography_worker.py --neo4j-uri bolt://localhost:7687 --neo4j-user neo4j --neo4j-password-env-var NEO4J_PASSWORD --permission-relationships-file cartography/permissions_mapping_file.yaml --aws-best-effort-mode --aws-requested-syncs 'dynamodb,s3_list_only'",
     "start-workflow-worker": "export $(cat .env | xargs) && ts-node src/workflows/worker.ts",
     "start-workflow-worker.watch": "nodemon src/workflows/worker.ts",
     "neo4j-sync": "export $(cat .env | xargs) && ts-node src/client.ts"
