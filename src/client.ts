@@ -1,12 +1,12 @@
 import { Connection, WorkflowClient } from '@temporalio/client';
 import { nanoid } from 'nanoid'
-import { runSync } from './workflows/workflows';
+import { runCartographySync } from './workflows/workflows';
 
 async function run() {
   const connection = await Connection.connect();
   const client = new WorkflowClient({ connection });
 
-  const handle = await client.start(runSync, {
+  const handle = await client.start(runCartographySync, {
     taskQueue: 'cartography-wf',
     workflowId: `cartography-wf-${ nanoid() }`
   });

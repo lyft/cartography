@@ -8,7 +8,7 @@ const { cartographyRun } = proxyActivities<typeof activities>({
   taskQueue: 'cartography-wf-activity'
 });
 
-export async function runSync(): Promise<CartographyResult> {
+export async function runCartographySync(): Promise<CartographyResult> {
   const results = await cartographyRun()
   return results
 }
