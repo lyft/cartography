@@ -145,6 +145,7 @@ CREATE INDEX ON :GCPMonitoringAlertPolicy(id);
 CREATE INDEX ON :GCPMonitoringMetricDescriptor(id);
 CREATE INDEX ON :GCPMonitoringNotificationChannel(id);
 CREATE INDEX ON :GCPMonitoringUptimeCheckConfig(id);
+CREATE INDEX ON :GCPDataprocCluster(id);
 CREATE INDEX ON :Ip(id);
 CREATE INDEX ON :Ip(ip);
 CREATE INDEX ON :IpPermissionInbound(ruleid);
