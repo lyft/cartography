@@ -14,6 +14,8 @@ from . import sql
 from . import storage
 from . import pubsub
 from . import cloud_logging
+from . import cloudmonitoring
+from . import dataproc
 
 
 RESOURCE_FUNCTIONS: Dict = {
@@ -31,4 +33,6 @@ RESOURCE_FUNCTIONS: Dict = {
     'apigateway': apigateway.sync,
     'pubsub': pubsub.sync,
     'cloud_logging': cloud_logging.sync,
+    'cloudmonitoring': cloudmonitoring.sync,
+    'dataproc': dataproc.sync,
 }
