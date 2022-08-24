@@ -20,8 +20,13 @@ def get_ec2_auto_scaling_groups(boto3_session: boto3.session.Session, region: st
     client = boto3_session.client('autoscaling', region_name=region)
     paginator = client.get_paginator('describe_auto_scaling_groups')
     asgs: List[Dict] = []
-    for page in paginator.paginate():
-        asgs.extend(page['AutoScalingGroups'])
+    try:
+        for page in paginator.paginate():
+            asgs.extend(page['AutoScalingGroups'])
+
+    except Exception as e:
+        logger.warning(f"Failed retrieve autoscaling groups for region - {region}. Error - {e}")
+
     return asgs
 
 

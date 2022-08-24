@@ -24,16 +24,21 @@ DESCRIBE_SLEEP = 1
 def get_emr_clusters(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
     client = boto3_session.client('emr', region_name=region, config=get_botocore_config())
     clusters: List[Dict] = []
+    counter = 0
     paginator = client.get_paginator('list_clusters')
     for page in paginator.paginate():
         cluster = page['Clusters']
         clusters.extend(cluster)
-        time.sleep(LIST_SLEEP)
+        counter += 1
+        print(f"counter: {counter} - items: {len(page['Clusters'])}")
+        # time.sleep(LIST_SLEEP)
+
     return clusters
 
 
 @timeit
 def get_emr_describe_cluster(boto3_session: boto3.session.Session, region: str, cluster_id: str) -> Dict:
+    print(f"describe for {cluster_id}")
     client = boto3_session.client('emr', region_name=region, config=get_botocore_config())
     cluster_details: Dict = {}
     try:
@@ -103,7 +108,7 @@ def sync(
             cluster_details = get_emr_describe_cluster(boto3_session, region, cluster_id)
             if cluster_details:
                 cluster_data.append(cluster_details)
-            time.sleep(DESCRIBE_SLEEP)
+            # time.sleep(DESCRIBE_SLEEP)
 
         load_emr_clusters(neo4j_session, cluster_data, region, current_aws_account_id, update_tag)
 

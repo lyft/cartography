@@ -20,8 +20,12 @@ logger = logging.getLogger(__name__)
 def get_load_balancer_v2_listeners(client: botocore.client.BaseClient, load_balancer_arn: str) -> List[Dict]:
     paginator = client.get_paginator('describe_listeners')
     listeners: List[Dict] = []
-    for page in paginator.paginate(LoadBalancerArn=load_balancer_arn):
-        listeners.extend(page['Listeners'])
+    try:
+        for page in paginator.paginate(LoadBalancerArn=load_balancer_arn):
+            listeners.extend(page['Listeners'])
+
+    except Exception as e:
+        logger.warning(f"Failed retrieve load balancer listeners for region - {region}. Error - {e}")
 
     return listeners
 

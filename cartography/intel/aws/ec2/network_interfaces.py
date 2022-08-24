@@ -20,8 +20,14 @@ def get_network_interface_data(boto3_session: boto3.session.Session, region: str
     client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
     paginator = client.get_paginator('describe_network_interfaces')
     subnets: List[Dict] = []
-    for page in paginator.paginate():
-        subnets.extend(page['NetworkInterfaces'])
+
+    try:
+        for page in paginator.paginate():
+            subnets.extend(page['NetworkInterfaces'])
+
+    except Exception as e:
+        logger.warning(f"Failed retrieve network interfaces for region - {region}. Error - {e}")
+
     return subnets
 
 
@@ -270,6 +276,7 @@ def load_network_interface_items(neo4j_session: neo4j.Session, data: List[Dict],
 def cleanup_network_interfaces(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('aws_ingest_network_interfaces_cleanup.json', neo4j_session, common_job_parameters)
 
+
 @timeit
 def transform_network_interfaces(network_interfaces: List[Dict], region: str, aws_account_id: str) -> List[Dict]:
     # arn:${Partition}:ec2:${Region}:${Account}:network-interface/${NetworkInterfaceId}
@@ -277,6 +284,7 @@ def transform_network_interfaces(network_interfaces: List[Dict], region: str, aw
         ni['Arn'] = f"arn:aws:ec2:{region}:{aws_account_id}:network-interface/{ni['NetworkInterfaceId']}"
 
     return network_interfaces
+
 
 @timeit
 def sync_network_interfaces(

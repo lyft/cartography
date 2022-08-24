@@ -16,8 +16,15 @@ logger = logging.getLogger(__name__)
 @timeit
 @aws_handle_regions
 def get_internet_gateways(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
-    client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
-    return client.describe_internet_gateways()['InternetGateways']
+    internet_gateways = []
+    try:
+        client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
+        internet_gateways = client.describe_internet_gateways()['InternetGateways']
+
+    except Exception as e:
+        logger.warning(f"Failed retrieve internet gateways for region - {region}. Error - {e}")
+
+    return internet_gateways
 
 
 @timeit

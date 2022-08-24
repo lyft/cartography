@@ -62,7 +62,12 @@ def load_ec2_key_pairs(
         key_name = key_pair["KeyName"]
         key_fingerprint = key_pair.get("KeyFingerprint")
         key_pair_arn = f'arn:aws:ec2:{region}:{current_aws_account_id}:key-pair/{key_name}'
-        consolelink = aws_console_link.get_console_link(arn=key_pair_arn)
+
+        consolelink = ''
+        try:
+            consolelink = aws_console_link.get_console_link(arn=key_pair_arn)
+        except Exception as e:
+            print(e)
 
         neo4j_session.run(
             ingest_key_pair,

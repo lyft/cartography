@@ -53,7 +53,7 @@ def load_snapshots(
     s.progress = snapshot.Progress, s.starttime = snapshot.StartTime, s.state = snapshot.State,
     s.statemessage = snapshot.StateMessage, s.volumeid = snapshot.VolumeId, s.volumesize = snapshot.VolumeSize,
     s.outpostarn = snapshot.OutpostArn, s.dataencryptionkeyid = snapshot.DataEncryptionKeyId,
-    s.kmskeyid = snapshot.KmsKeyId, s.region = {Region}, s.arn = snapshot.Arn
+    s.kmskeyid = snapshot.KmsKeyId, s.region = snapshot.region, s.arn = snapshot.Arn
     WITH s
     MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
     MERGE (aa)-[r:RESOURCE]->(s)
@@ -72,7 +72,6 @@ def load_snapshots(
         ingest_snapshots,
         snapshots_list=data,
         AWS_ACCOUNT_ID=current_aws_account_id,
-        Region=region,
         update_tag=update_tag,
     )
 

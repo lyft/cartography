@@ -16,8 +16,15 @@ logger = logging.getLogger(__name__)
 @timeit
 @aws_handle_regions
 def get_vpc_peerings_data(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
-    client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
-    return client.describe_vpc_peering_connections()['VpcPeeringConnections']
+    vpc_peerings = []
+    try:
+        client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
+        vpc_peerings = client.describe_vpc_peering_connections()['VpcPeeringConnections']
+
+    except Exception as e:
+        logger.warning(f"Failed retrieve VPC Peerings for region - {region}. Error - {e}")
+
+    return vpc_peerings
 
 
 @timeit

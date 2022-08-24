@@ -17,12 +17,14 @@ logger = logging.getLogger(__name__)
 @timeit
 @aws_handle_regions
 def get_reserved_instances(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
+    reserved_instances = []
     client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
     try:
         reserved_instances = client.describe_reserved_instances()['ReservedInstances']
-    except ClientError as e:
+
+    except Exception as e:
         logger.warning(f"Failed retrieve reserved instances for region - {region}. Error - {e}")
-        raise
+
     return reserved_instances
 
 

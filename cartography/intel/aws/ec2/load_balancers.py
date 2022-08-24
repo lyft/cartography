@@ -20,10 +20,15 @@ def get_loadbalancer_data(boto3_session: boto3.session.Session, region: str) -> 
     client = boto3_session.client('elb', region_name=region, config=get_botocore_config())
     paginator = client.get_paginator('describe_load_balancers')
     elbs: List[Dict] = []
-    for page in paginator.paginate():
-        elbs.extend(page['LoadBalancerDescriptions'])
-    for elb in elbs:
-        elb['region'] = region
+    try:
+        for page in paginator.paginate():
+            elbs.extend(page['LoadBalancerDescriptions'])
+        for elb in elbs:
+            elb['region'] = region
+
+    except Exception as e:
+        logger.warning(f"Failed retrieve load balancers for region - {region}. Error - {e}")
+
     return elbs
 
 

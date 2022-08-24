@@ -20,14 +20,20 @@ def get_launch_templates(boto3_session: boto3.session.Session, region: str) -> L
     client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
     paginator = client.get_paginator('describe_launch_templates')
     templates: List[Dict] = []
-    for page in paginator.paginate():
-        templates.extend(page['LaunchTemplates'])
-    for template in templates:
-        template_versions: List[Dict] = []
-        v_paginator = client.get_paginator('describe_launch_template_versions')
-        for versions in v_paginator.paginate(LaunchTemplateId=template['LaunchTemplateId']):
-            template_versions.extend(versions["LaunchTemplateVersions"])
-        template["_template_versions"] = template_versions
+    try:
+        for page in paginator.paginate():
+            templates.extend(page['LaunchTemplates'])
+
+        for template in templates:
+            template_versions: List[Dict] = []
+            v_paginator = client.get_paginator('describe_launch_template_versions')
+            for versions in v_paginator.paginate(LaunchTemplateId=template['LaunchTemplateId']):
+                template_versions.extend(versions["LaunchTemplateVersions"])
+            template["_template_versions"] = template_versions
+
+    except Exception as e:
+        logger.warning(f"Failed retrieve address for region - {region}. Error - {e}")
+
     return templates
 
 

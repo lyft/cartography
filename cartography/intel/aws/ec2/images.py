@@ -81,7 +81,7 @@ def load_images(
     i.sriov_net_support = image.SriovNetSupport,
     i.bootmode = image.BootMode, i.owner = image.OwnerId, i.image_owner_alias = image.ImageOwnerAlias,
     i.kernel_id = image.KernelId, i.ramdisk_id = image.RamdiskId,
-    i.region={Region}, i.arn=image.arn
+    i.region=image.region, i.arn=image.arn
     WITH i
     MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
     MERGE (aa)-[r:RESOURCE]->(i)
@@ -98,7 +98,6 @@ def load_images(
         ingest_images,
         images_list=data,
         AWS_ACCOUNT_ID=current_aws_account_id,
-        Region=image.get('region', ''),
         update_tag=update_tag,
     )
 

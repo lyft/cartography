@@ -6,6 +6,8 @@ from typing import List
 import boto3
 import neo4j
 
+from botocore.exceptions import ClientError, ConnectTimeoutError
+
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
@@ -27,6 +29,7 @@ def transform_hub(hub_data: Dict) -> None:
     if 'SubscribedAt' in hub_data and hub_data['SubscribedAt']:
         subbed_at = datetime.datetime.strptime(hub_data['SubscribedAt'], "%Y-%m-%dT%H:%M:%S.%fZ")
         hub_data['SubscribedAt'] = int(subbed_at.timestamp())
+
     else:
         hub_data['SubscribedAt'] = None
 
@@ -72,7 +75,13 @@ def sync(
     update_tag: int, common_job_parameters: Dict,
 ) -> None:
     logger.info("Syncing Security Hub in account '%s'.", current_aws_account_id)
-    hub = get_hub(boto3_session)
+    hub = {}
+    try:
+        hub = get_hub(boto3_session)
+
+    except (ClientError, ConnectTimeoutError) as e:
+        logger.error(f'Failed to get Security Hub details - {e}')
+
     if hub:
         transform_hub(hub)
         load_hub(neo4j_session, hub, current_aws_account_id, update_tag)
