@@ -16,23 +16,25 @@ from . import pubsub
 from . import cloud_logging
 from . import cloudmonitoring
 from . import dataproc
+from . import cloudcdn
 
 
 RESOURCE_FUNCTIONS: Dict = {
-    'iam': iam.sync,
-    'bigtable': bigtable.sync,
-    'cloudfunction': cloudfunction.sync,
-    'cloudkms': cloudkms.sync,
-    'cloudrun': cloudrun.sync,
-    'compute': compute.sync,
-    'dns': dns.sync,
-    'firestore': firestore.sync,
-    'gke': gke.sync,
-    'sql': sql.sync,
-    'storage': storage.sync,
-    'apigateway': apigateway.sync,
-    'pubsub': pubsub.sync,
-    'cloud_logging': cloud_logging.sync,
-    'cloudmonitoring': cloudmonitoring.sync,
-    'dataproc': dataproc.sync,
+    # 'iam': iam.sync,
+    # 'bigtable': bigtable.sync,
+    # 'cloudfunction': cloudfunction.sync,
+    # 'cloudkms': cloudkms.sync,
+    # 'cloudrun': cloudrun.sync,
+    # 'compute': compute.sync,
+    # 'dns': dns.sync,
+    # 'firestore': firestore.sync,
+    # 'gke': gke.sync,
+    # 'sql': sql.sync,
+    # 'storage': storage.sync,
+    # 'apigateway': apigateway.sync,
+    # 'pubsub': pubsub.sync,
+    # 'cloud_logging': cloud_logging.sync,
+    # 'cloudmonitoring': cloudmonitoring.sync,
+    # 'dataproc': dataproc.sync,
+    'cloudcdn': cloudcdn.sync,
 }
