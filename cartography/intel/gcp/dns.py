@@ -351,7 +351,7 @@ def load_dns_polices(neo4j_session: neo4j.Session, policies: List[Dict], project
         pol.region = {region},
         pol.enableInboundForwarding = policy.enableInboundForwarding,
         pol.enableLogging = policy.enableLogging,
-        pol.firstseen = {gcp_update_tag}
+        pol.lastupdated = {gcp_update_tag}
     WITH pol
     MATCH (owner:GCPProject{id:{ProjectId}})
     MERGE (owner)-[r:RESOURCE]->(pol)
@@ -398,7 +398,7 @@ def load_dns_keys(neo4j_session: neo4j.Session, dns_keys: List[Dict], project_id
         ky.algorithm = key.algorithm,
         ky.keyLength = key.keyLength,
         ky.isActive = key.isActive,
-        ky.firstseen = {gcp_update_tag}
+        ky.lastupdated = {gcp_update_tag}
     WITH ky, key
     MATCH (zone:GCPDNSZone{id:key.zone})
     MERGE (zone)-[r:HAS_KEY]->(ky)
