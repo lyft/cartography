@@ -58,6 +58,7 @@ def load_backend_buckets_tx(
     SET
         bucket.lastupdated = {gcp_update_tag},
         bucket.region = b.region,
+        bucket.uniqueId = b.id,
         bucket.name = b.bucketName,
         bucket.enableCdn = b.enableCdn,
         bucket.defaultTtl = b.cdnPolicy.defaultTtl,
@@ -121,6 +122,7 @@ def get_global_backend_services(compute: Resource, project_id: str) -> List[Dict
             if res.get('items'):
                 for backend_service in res('items'):
                     backend_service['region'] = 'global'
+                    backend_service['type'] = 'global'
                     backend_service['id'] = f"projects/{project_id}/global/backendServices/{backend_service['name']}"
                     global_backend_services.append(backend_service)
             req = compute.backendServices().list_next(previous_request=req,previous_response=res)
@@ -139,23 +141,25 @@ def get_global_backend_services(compute: Resource, project_id: str) -> List[Dict
             raise
 
 @timeit
-def load_global_backend_services(session: neo4j.Session, global_backend_services: List[Dict], project_id: str, update_tag: int) -> None:
-    session.write_transaction(load_global_backend_services_tx, global_backend_services, project_id, update_tag)
+def load_backend_services(session: neo4j.Session, backend_services: List[Dict], project_id: str, update_tag: int) -> None:
+    session.write_transaction(load_backend_services_tx, backend_services, project_id, update_tag)
 
 @timeit
-def load_global_backend_services_tx(
+def load_backend_services_tx(
     tx: neo4j.Transaction, global_backend_services: List[Dict],
     project_id: str, gcp_update_tag: int,
 ) -> None:
 
     query = """
     UNWIND {Services} as s
-    MERGE (service:GCPGlobalBackendService{id:s.id})
+    MERGE (service:GCPBackendService{id:s.id})
     ON CREATE SET
         service.firstseen = timestamp()
     SET
         service.lastupdated = {gcp_update_tag},
         service.region = s.region,
+        service.type = s.type,
+        service.uniqueId = s.id,
         service.name = s.name,
         service.enableCDN = s.enableCDN,
         service.sessionAffinity = s.sessionAffinity,
@@ -178,8 +182,8 @@ def load_global_backend_services_tx(
     )
 
 @timeit
-def cleanup_global_backend_services(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
-    run_cleanup_job('gcp_global_backend_services_cleanup.json', neo4j_session, common_job_parameters)
+def cleanup_backend_services(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('gcp_backend_services_cleanup.json', neo4j_session, common_job_parameters)
 
 @timeit
 def sync_global_backend_services(
@@ -208,9 +212,9 @@ def sync_global_backend_services(
             global_services = global_services[page_start:page_end]
             common_job_parameters['pagination']['dataproc']['hasNextPage'] = has_next_page
 
-    load_global_backend_services(neo4j_session, global_services, project_id, gcp_update_tag)
-    cleanup_global_backend_services(neo4j_session,common_job_parameters)
-    label.sync_labels(neo4j_session, global_services, gcp_update_tag, common_job_parameters, 'global_backend_serivices', 'GCPGlobalBackendService')
+    load_backend_services(neo4j_session, global_services, project_id, gcp_update_tag)
+    cleanup_backend_services(neo4j_session,common_job_parameters)
+    label.sync_labels(neo4j_session, global_services, gcp_update_tag, common_job_parameters, 'backend_serivice', 'GCPBackendService')
 
 @timeit
 def get_regional_backend_services(compute: Resource, project_id: str, regions: list) -> List[Dict]:
@@ -224,6 +228,7 @@ def get_regional_backend_services(compute: Resource, project_id: str, regions: l
                     if req.get('items'):
                         for region_service in req['items']:
                             region_service['region'] = region
+                            region_service['type'] = 'regional'
                             region_service['id'] = f"projects/{project_id}/regions/{region}/backendServices/{region_service['name']}"
                             regional_backend_services.append(region_service)
                     req = compute.regionBackendServices().list_next(previous_request=req,previous_response=res)
@@ -242,47 +247,8 @@ def get_regional_backend_services(compute: Resource, project_id: str, regions: l
             raise
 
 @timeit
-def load_regional_backend_services(session: neo4j.Session, region_services: List[Dict], project_id: str, update_tag: int) -> None:
-    session.write_transaction(load_regional_backend_services_tx, region_services, project_id, update_tag)
-
-@timeit
-def load_regional_backend_services_tx(
-    tx: neo4j.Transaction, region_services: List[Dict],
-    project_id: str, gcp_update_tag: int,
-) -> None:
-    query = """
-    UNWIND {Services} as rs
-    MERGE (rservice:GCPRegionalBackendService{id:rs.id})
-    ON CREATE SET 
-        rservice.firstseen = timestamp()
-    SET
-        rservice.lastupdated = {gcp_update_tag},
-        rservice.region = rs.region,
-        rservice.name = rs.name,
-        rservice.enableCDN = rs.enableCDN,
-        rservice.sessionAffinity = rs.sessionAffinity,
-        rservice.loadBalancingScheme = rs.loadBalancingScheme,
-        rservice.defaultTtl = rs.defaultTtl,
-        rservice.negativeCaching = rs.cdnPolicy.negativeCaching
-    WITH rservice
-    MATCH (owner:GCPProject{id:{ProjectId}})
-    MERGE (owner)-[r:RESOURCE]->(rservice)
-    ON CREATE SET
-        r.firstseeen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
-    """
-
-    tx.run(
-        query,
-        Services=region_services,
-        ProjectId=project_id,
-        gcp_update_tag=gcp_update_tag,
-    )
-
-@timeit
-def cleanup_regional_backend_services(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
-    run_cleanup_job('gcp_regional_backend_services_cleanup.json', neo4j_session, common_job_parameters)
-
+def load_backend_services(session: neo4j.Session, region_services: List[Dict], project_id: str, update_tag: int) -> None:
+    session.write_transaction(load_backend_services_tx, region_services, project_id, update_tag)
 
 @timeit
 def sync_regional_backend_services(
@@ -311,9 +277,9 @@ def sync_regional_backend_services(
             regional_services = regional_services[page_start:page_end]
             common_job_parameters['pagination']['dataproc']['hasNextPage'] = has_next_page
 
-    load_regional_backend_services(neo4j_session, regional_services, project_id, gcp_update_tag)
-    cleanup_regional_backend_services(neo4j_session,common_job_parameters)
-    label.sync_labels(neo4j_session, regional_services, gcp_update_tag, common_job_parameters, 'regional_backend_serivices', 'GCPRegionalBackendService')
+    load_backend_services(neo4j_session, regional_services, project_id, gcp_update_tag)
+    cleanup_backend_services(neo4j_session,common_job_parameters)
+    label.sync_labels(neo4j_session, regional_services, gcp_update_tag, common_job_parameters, 'backend_serivice', 'GCPBackendService')
 
 @timeit
 def get_global_url_maps(compute: Resource, project_id: str) -> List[Dict]:
@@ -325,6 +291,7 @@ def get_global_url_maps(compute: Resource, project_id: str) -> List[Dict]:
             if res.get('items'):
                 for url_map in res['items']:
                     url_map['region'] = 'global'
+                    url_map['type'] = 'global'
                     url_map['id'] = f"projects/{project_id}/global/urlmaps/{url_map['name']}"
                     global_url_maps.append(url_map)
             req = compute.urlMaps().list_next(previous_request=req,previous_response=res)
@@ -343,23 +310,25 @@ def get_global_url_maps(compute: Resource, project_id: str) -> List[Dict]:
             raise
 
 @timeit
-def load_global_url_maps(session: neo4j.Session, global_maps: List[Dict], project_id: str, update_tag: int) -> None:
-    session.write_transaction(load_global_url_maps_tx, global_maps, project_id, update_tag)
+def load_url_maps(session: neo4j.Session, global_maps: List[Dict], project_id: str, update_tag: int) -> None:
+    session.write_transaction(load_url_maps_tx, global_maps, project_id, update_tag)
 
 @timeit
-def load_global_url_maps_tx(
+def load_url_maps_tx(
     tx: neo4j.Transaction, global_maps: List[Dict],
     project_id: str, gcp_update_tag: int,
 ) -> None:
     
     query = """
     UNWIND {Maps} as mp
-    MERGE (map:GCPGlobalUrlMap{id:mp.id})
+    MERGE (map:GCPUrlMap{id:mp.id})
     ON CREATE SET
         map.firstseen = timestamp()
     SET
         map.lastupdated = {gcp_update_tag},
         map.region = mp.region,
+        map.type = mp.type,
+        map.uniqueId = mp.id,
         map.name = mp.name,
         map.defaultService = mp.defaultService
     WITH map
@@ -378,8 +347,8 @@ def load_global_url_maps_tx(
     )
 
 @timeit
-def cleanup_global_url_maps(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
-    run_cleanup_job('gcp_global_url_maps_cleanup.json', neo4j_session, common_job_parameters)
+def cleanup_url_maps(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('gcp_url_maps_cleanup.json', neo4j_session, common_job_parameters)
 
 @timeit
 def sync_global_url_maps(
@@ -408,9 +377,9 @@ def sync_global_url_maps(
             global_maps = global_maps[page_start:page_end]
             common_job_parameters['pagination']['dataproc']['hasNextPage'] = has_next_page
 
-    load_global_url_maps(neo4j_session, global_maps, project_id, gcp_update_tag)
-    cleanup_global_url_maps(neo4j_session,common_job_parameters)
-    label.sync_labels(neo4j_session, global_maps, gcp_update_tag, common_job_parameters, 'global_url_maps', 'GCPGlobalUrlMap')
+    load_url_maps(neo4j_session, global_maps, project_id, gcp_update_tag)
+    cleanup_url_maps(neo4j_session,common_job_parameters)
+    label.sync_labels(neo4j_session, global_maps, gcp_update_tag, common_job_parameters, 'url_map', 'GCPUrlMap')
 
 @timeit
 def get_regional_url_maps(compute: Resource, project_id: str, regions: list) -> List[Dict]:
@@ -424,6 +393,7 @@ def get_regional_url_maps(compute: Resource, project_id: str, regions: list) -> 
                     if res.get('items'):
                         for url_map in res('items'):
                             url_map['region'] = region
+                            url_map['type'] = 'regional'
                             url_map['id'] = f"projects/{project_id}/regions/{region}/urlmaps/{url_map['name']}"
                             regional_url_maps.append(url_map)
                     req = compute.regionUrlMaps().list_next(previous_request=req, previous_response=res)
@@ -442,43 +412,8 @@ def get_regional_url_maps(compute: Resource, project_id: str, regions: list) -> 
             raise
 
 @timeit
-def load_regional_url_maps(session: neo4j.Session, regional_maps: List[Dict], project_id: str, update_tag: int) -> None:
-    session.write_transaction(load_regional_url_maps_tx, regional_maps, project_id, update_tag)
-
-@timeit
-def load_regional_url_maps_tx(
-    tx: neo4j.Transaction, regional_maps: List[Dict],
-    project_id: str, gcp_update_tag: int,
-) -> None:
-    
-    query = """
-    UNWIND {Maps} as rmp
-    MERGE (rmap:GCPRegionalUrlMap{id:rmp.id})
-    ON CREATE SET
-        rmap.firstseen = timestamp()
-    SET
-        rmap.lastupdated = {gcp_update_tag},
-        rmap.region = rmp.region,
-        rmap.name = rmp.name,
-        rmap.defaultService = rmp.defaultService
-    WITH rmap
-    MATCH (owner:GCPProject{id:{ProjectId}})
-    MERGE (owner)-[r:RESOURCE]->(rmap)
-    ON CREATE SET
-        r.firstseeen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
-    """
-
-    tx.run(
-        query,
-        Maps=regional_maps,
-        ProjectId=project_id,
-        gcp_update_tag=gcp_update_tag,
-    )
-        
-@timeit
-def cleanup_regional_url_maps(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
-    run_cleanup_job('gcp_regional_url_maps_cleanup.json', neo4j_session, common_job_parameters)
+def load_url_maps(session: neo4j.Session, regional_maps: List[Dict], project_id: str, update_tag: int) -> None:
+    session.write_transaction(load_url_maps_tx, regional_maps, project_id, update_tag)
 
 @timeit
 def sync_regional_url_maps(
@@ -507,9 +442,9 @@ def sync_regional_url_maps(
             regional_maps = regional_maps[page_start:page_end]
             common_job_parameters['pagination']['dataproc']['hasNextPage'] = has_next_page
 
-    load_regional_url_maps(neo4j_session, regional_maps, project_id, gcp_update_tag)
-    cleanup_regional_url_maps(neo4j_session,common_job_parameters)
-    label.sync_labels(neo4j_session, regional_maps, gcp_update_tag, common_job_parameters, 'regional_url_maps', 'GCPRegionalUrlMap')
+    load_url_maps(neo4j_session, regional_maps, project_id, gcp_update_tag)
+    cleanup_url_maps(neo4j_session,common_job_parameters)
+    label.sync_labels(neo4j_session, regional_maps, gcp_update_tag, common_job_parameters, 'url_map', 'GCPUrlMap')
 
 def sync(
     neo4j_session: neo4j.Session, compute: Resource, project_id: str, gcp_update_tag: int,

@@ -27,7 +27,7 @@ TEST_REGIONAL_BACKEND_SERVICE = [
     {
         "name": "regionalser123",
         "id": "projects/project123/regions/us-east1-a/backendServices/regionalser123",
-        "regiona": "us-east1-a",
+        "region": "us-east1-a",
         "enableCdn": True,
         "cdnPolicy":{
             "defaultTtl": 122,

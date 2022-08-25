@@ -29,7 +29,7 @@ def test_backend_buckets(neo4j_session):
 
 def test_global_backend_service(neo4j_session):
     data =  tests.data.gcp.cloudcdn.TEST_GLOBAL_BACKEND_SERVICE
-    cartography.intel.gcp.cloudcdn.load_global_backend_services(
+    cartography.intel.gcp.cloudcdn.load_backend_services(
         neo4j_session,
         data,
         TEST_PROJECT_ID,
@@ -42,7 +42,7 @@ def test_global_backend_service(neo4j_session):
 
     nodes = neo4j_session.run(
         """
-        MATCH (r:GCPGlobalBackendService) RETURN r.id;
+        MATCH (r:GCPBackendService) RETURN r.id;
         """,
     )
 
@@ -52,7 +52,7 @@ def test_global_backend_service(neo4j_session):
 
 def test_regional_backend_service(neo4j_session):
     data =  tests.data.gcp.cloudcdn.TEST_REGIONAL_BACKEND_SERVICE
-    cartography.intel.gcp.cloudcdn.load_regional_backend_services(
+    cartography.intel.gcp.cloudcdn.load_backend_services(
         neo4j_session,
         data,
         TEST_PROJECT_ID,
@@ -65,7 +65,7 @@ def test_regional_backend_service(neo4j_session):
 
     nodes = neo4j_session.run(
         """
-        MATCH (r:GCPRegionalBackendService) RETURN r.id;
+        MATCH (r:GCPBackendService) RETURN r.id;
         """,
     )
 
@@ -75,7 +75,7 @@ def test_regional_backend_service(neo4j_session):
 
 def test_global_url_map(neo4j_session):
     data =  tests.data.gcp.cloudcdn.TEST_GLOBAL_URL_MAP
-    cartography.intel.gcp.cloudcdn.load_global_url_maps(
+    cartography.intel.gcp.cloudcdn.load_url_maps(
         neo4j_session,
         data,
         TEST_PROJECT_ID,
@@ -88,7 +88,7 @@ def test_global_url_map(neo4j_session):
 
     nodes = neo4j_session.run(
         """
-        MATCH (r:GCPGlobalUrlMap) RETURN r.id;
+        MATCH (r:GCPUrlMap) RETURN r.id;
         """,
     )
 
@@ -98,7 +98,7 @@ def test_global_url_map(neo4j_session):
 
 def test_regional_url_map(neo4j_session):
     data =  tests.data.gcp.cloudcdn.TEST_REGIONAL_URL_MAP
-    cartography.intel.gcp.cloudcdn.load_regional_url_maps(
+    cartography.intel.gcp.cloudcdn.load_url_maps(
         neo4j_session,
         data,
         TEST_PROJECT_ID,
@@ -111,7 +111,7 @@ def test_regional_url_map(neo4j_session):
 
     nodes = neo4j_session.run(
         """
-        MATCH (r:GCPRegionalUrlMap) RETURN r.id;
+        MATCH (r:GCPUrlMap) RETURN r.id;
         """,
     )
 
