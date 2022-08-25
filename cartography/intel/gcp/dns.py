@@ -121,6 +121,103 @@ def get_dns_rrs(dns: Resource, dns_zones: List[Dict], project_id: str) -> List[R
             # raise
             return []
 
+@timeit
+def get_dns_keys(dns: Resource, dns_zones: List[Dict], project_id: str) -> List[Resource]:
+    """
+    Returns a list of DNS Keys within the given project.
+
+    :type dns: The GCP DNS resource object
+    :param dns: The DNS resource object created by googleapiclient.discovery.build()
+
+    :type dns_zones: list
+    :param dns_zones: List of DNS zones for the project
+
+    :type project_id: str
+    :param project_id: Current Google Project Id
+
+    :rtype: list
+    :return: List of Resource Record Sets
+    """
+    try:
+        dns_keys = []
+        for zone in dns_zones:
+            request = dns.dnsKeys().list(project=project_id, managedZone=zone['name'])
+            while request is not None:
+                response = request.execute()
+                if response.get('dnsKeys'):
+                    for key in response['dnsKeys']:
+                        key['zone'] = zone['id']
+                        key['id'] = f"projects/{project_id}/managedZones/{zone['name']}/dnsKeys/{key['id']}"
+                        dns_keys.append(key)
+                request = dns.dnsKeys().list_next(previous_request=request, previous_response=response)
+        return dns_keys
+    except HttpError as e:
+        err = json.loads(e.content.decode('utf-8'))['error']
+        if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
+            logger.warning(
+                (
+                    "Could not retrieve DNS Keys on project %s due to permissions issues. Code: %s, Message: %s"
+                ), project_id, err['code'], err['message'],
+            )
+            return []
+        else:
+            # raise
+            return []
+
+@timeit
+def get_dns_policies(dns: Resource, project_id: str, common_job_parameters) -> List[Resource]:
+    """
+    Returns a list of DNS policies within the given project.
+
+    :type dns: The GCP DNS resource object
+    :param dns: The DNS resource object created by googleapiclient.discovery.build()
+
+    :type project_id: str
+    :param project_id: Current Google Project Id
+
+    :rtype: list
+    :return: List of DNS Policies
+    """
+    try:
+        policies = []
+        request = dns.policies().list(project=project_id)
+        while request is not None:
+            response = request.execute()
+            if response.get('policies'):
+                for policy in response['policies']:
+                    policy['id'] = f"projects/{project_id}/policies/{policy['name']}"
+                    policies.append(policy)
+            request = dns.policies().list_next(previous_request=request, previous_response=response)
+        if common_job_parameters.get('pagination', {}).get('dns', None):
+            pageNo = common_job_parameters.get("pagination", {}).get("dns", None)["pageNo"]
+            pageSize = common_job_parameters.get("pagination", {}).get("dns", None)["pageSize"]
+            totalPages = len(policies) / pageSize
+            if int(totalPages) != totalPages:
+                totalPages = totalPages + 1
+            totalPages = int(totalPages)
+            if pageNo < totalPages or pageNo == totalPages:
+                logger.info(f'pages process for dns zones {pageNo}/{totalPages} pageSize is {pageSize}')
+            page_start = (common_job_parameters.get('pagination', {}).get('dns', None)[
+                          'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('dns', None)['pageSize']
+            page_end = page_start + common_job_parameters.get('pagination', {}).get('dns', None)['pageSize']
+            if page_end > len(policies) or page_end == len(policies):
+                policies = policies[page_start:]
+            else:
+                has_next_page = True
+                policies = policies[page_start:page_end]
+                common_job_parameters['pagination']['dns']['hasNextPage'] = has_next_page
+        return policies
+    except HttpError as e:
+        err = json.loads(e.content.decode('utf-8'))['error']
+        if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
+            logger.warning(
+                (
+                    "Could not retrieve DNS policies on project %s due to permissions issues. Code: %s, Message: %s"
+                ), project_id, err['code'], err['message'],
+            )
+            return []
+        else:
+            raise
 
 @timeit
 def load_dns_zones(neo4j_session: neo4j.Session, dns_zones: List[Dict], project_id: str, gcp_update_tag: int) -> None:
@@ -223,6 +320,99 @@ def load_rrs(neo4j_session: neo4j.Session, dns_rrs: List[Resource], project_id: 
         gcp_update_tag=gcp_update_tag,
     )
 
+@timeit
+def load_dns_polices(neo4j_session: neo4j.Session, policies: List[Dict], project_id: str, gcp_update_tag: int) -> None:
+    """
+    Ingest GCP DNS Policies into Neo4j
+
+    :type neo4j_session: Neo4j session object
+    :param neo4j session: The Neo4j session object
+
+    :type policies: Dict
+    :param policies: A DNS Policies response
+
+    :type project_id: str
+    :param project_id: Current Google Project Id
+
+    :type gcp_update_tag: timestamp
+    :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
+
+    :rtype: NoneType
+    :return: Nothing
+    """
+    ingest_policies = """
+    UNWIND {DNSPolicies} as policy
+    MERGE (pol:GCPDNSPolicy{id:policy.id})
+    ON CREATE SET
+        pol.firstseen = timestamp()
+    SET
+        pol.uniqueId = policy.id,
+        pol.name = policy.name,
+        pol.region = {region},
+        pol.enableInboundForwarding = policy.enableInboundForwarding,
+        pol.enableLogging = policy.enableLogging,
+        pol.firstseen = {gcp_update_tag}
+    WITH pol
+    MATCH (owner:GCPProject{id:{ProjectId}})
+    MERGE (owner)-[r:RESOURCE]->(pol)
+    ON CREATE SET
+        r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}
+    """
+    neo4j_session.run(
+        ingest_policies,
+        DNSPolicies=policies,
+        region="global",
+        ProjectId=project_id,
+        gcp_update_tag=gcp_update_tag,
+    )
+
+@timeit
+def load_dns_keys(neo4j_session: neo4j.Session, dns_keys: List[Dict], project_id: str, gcp_update_tag: int) -> None:
+    """
+    Ingest GCP DNS Keys into Neo4j
+
+    :type neo4j_session: Neo4j session object
+    :param neo4j session: The Neo4j session object
+
+    :type dns keys: Dict
+    :param dns keys: A DNS Keys response
+
+    :type project_id: str
+    :param project_id: Current Google Project Id
+
+    :type gcp_update_tag: timestamp
+    :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
+
+    :rtype: NoneType
+    :return: Nothing
+    """
+    ingest_keys = """
+    UNWIND {DNSKeys} as key
+    MERGE (ky:GCPDNSKey{id:key.id})
+    ON CREATE SET
+        ky.firstseen = timestamp()
+    SET
+        ky.uniqueId = key.id,
+        ky.region = {region},
+        ky.algorithm = key.algorithm,
+        ky.keyLength = key.keyLength,
+        ky.isActive = key.isActive,
+        ky.firstseen = {gcp_update_tag}
+    WITH ky, key
+    MATCH (zone:GCPDNSZone{id:key.zone})
+    MERGE (zone)-[r:HAS_KEY]->(ky)
+    ON CREATE SET
+        r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}
+    """
+    neo4j_session.run(
+        ingest_keys,
+        DNSKeys=dns_keys,
+        region="global",
+        ProjectId=project_id,
+        gcp_update_tag=gcp_update_tag,
+    )
 
 @timeit
 def cleanup_dns_records(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
@@ -278,6 +468,12 @@ def sync(
     # RECORD SETS
     dns_rrs = get_dns_rrs(dns, dns_zones, project_id)
     load_rrs(neo4j_session, dns_rrs, project_id, gcp_update_tag)
+    # DNS POLICIES
+    policies = get_dns_policies(dns, project_id, common_job_parameters)
+    load_dns_polices(neo4j_session, policies, project_id, gcp_update_tag)
+    # DNS Keys
+    dns_keys = get_dns_keys(dns, dns_zones, project_id)
+    load_dns_keys(neo4j_session, dns_keys, project_id, gcp_update_tag)
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_dns_records(neo4j_session, common_job_parameters)
 
