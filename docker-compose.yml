@@ -6,8 +6,6 @@ services:
     ports:
       - 7474:7474
       - 7687:7687
-    # expose:
-    #   - 7687
     volumes:
       - ./.compose/neo4j/conf:/conf
       - ./.compose/neo4j/data:/data
@@ -47,8 +45,4 @@ services:
     environment:
       - EXPERIMENTAL_NEO4J_4X_SUPPORT=True 
     volumes:
-      - /Users/stevesolun/.aws:/root/.aws/
-    #command:
-    #  - -v
-    #  - --neo4j-uri=bolt://192.168.110.9:7687
-    #  - --aws-sync-all-profiles
+      - ~/.aws:/cartography/.aws/
