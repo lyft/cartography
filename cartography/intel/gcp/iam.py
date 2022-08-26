@@ -177,7 +177,7 @@ def get_service_account_keys(iam: Resource, project_id: str, service_account: Di
 
 
 @timeit
-def get_roles(iam: Resource, crm_v1: Resource, project_id: str) -> List[Dict]:
+def get_predefined_roles(iam: Resource, project_id: str) -> List[Dict]:
     roles: List[Dict] = []
     try:
         req = iam.roles().list(view="FULL")
@@ -187,6 +187,24 @@ def get_roles(iam: Resource, crm_v1: Resource, project_id: str) -> List[Dict]:
             roles.extend(page)
             req = iam.roles().list_next(previous_request=req, previous_response=res)
 
+        return roles
+    except HttpError as e:
+        err = json.loads(e.content.decode('utf-8'))['error']
+        if err['status'] == 'PERMISSION_DENIED':
+            logger.warning(
+                (
+                    "Could not retrieve predefined roles on project %s due to permissions issue. Code: %s, Message: %s"
+                ), project_id, err['code'], err['message'],
+            )
+            return roles
+        else:
+            raise
+
+
+@timeit
+def get_organization_custom_roles(iam: Resource, crm_v1: Resource, project_id: str) -> List[Dict]:
+    roles: List[Dict] = []
+    try:
         req = crm_v1.projects().get(projectId=project_id)
         res_project = req.execute()
         if res_project.get('parent').get('type') == 'organization':
@@ -203,7 +221,7 @@ def get_roles(iam: Resource, crm_v1: Resource, project_id: str) -> List[Dict]:
         if err['status'] == 'PERMISSION_DENIED':
             logger.warning(
                 (
-                    "Could not retrieve role on project %s due to permissions issue. Code: %s, Message: %s"
+                    "Could not retrieve organization custom roles on project %s due to permissions issue. Code: %s, Message: %s"
                 ), project_id, err['code'], err['message'],
             )
             return roles
@@ -212,7 +230,7 @@ def get_roles(iam: Resource, crm_v1: Resource, project_id: str) -> List[Dict]:
 
 
 @timeit
-def get_project_roles(iam: Resource, project_id: str) -> List[Dict]:
+def get_project_custom_roles(iam: Resource, project_id: str) -> List[Dict]:
     roles: List[Dict] = []
     try:
         req = iam.projects().roles().list(parent=f'projects/{project_id}', view="FULL")
@@ -227,7 +245,7 @@ def get_project_roles(iam: Resource, project_id: str) -> List[Dict]:
         if err['status'] == 'PERMISSION_DENIED':
             logger.warning(
                 (
-                    "Could not retrieve role on project %s due to permissions issue. Code: %s, Message: %s"
+                    "Could not retrieve project custom role on project %s due to permissions issue. Code: %s, Message: %s"
                 ), project_id, err['code'], err['message'],
             )
             return roles
@@ -236,9 +254,10 @@ def get_project_roles(iam: Resource, project_id: str) -> List[Dict]:
 
 
 @timeit
-def transform_roles(roles_list: List[Dict], project_id: str) -> List[Dict]:
+def transform_roles(roles_list: List[Dict], project_id: str, type: str) -> List[Dict]:
     for role in roles_list:
         role['id'] = get_role_id(role['name'], project_id)
+        role['type'] = type
         role['consolelink'] = gcp_console_link.get_console_link(
             resource_name='iam_role', project_id=project_id, role_id=role['name'])
     return roles_list
@@ -253,7 +272,7 @@ def get_role_id(role_name: str, project_id: str) -> str:
         return role_name
 
     elif role_name.startswith('roles/'):
-        return f'projects/{project_id}/roles/{role_name}'
+        return f'projects/{project_id}/{role_name}'
     return ''
 
 
@@ -444,6 +463,7 @@ def load_roles(neo4j_session: neo4j.Session, roles: List[Dict], project_id: str,
     u.region = {region},
     u.description = d.description, u.deleted = d.deleted,
     u.consolelink = d.consolelink,
+    u.type = d.type,
     u.permissions = d.includedPermissions, u.roleid = d.id,
     u.lastupdated = {gcp_update_tag}
     WITH u
@@ -1083,9 +1103,19 @@ def sync(
     label.sync_labels(neo4j_session, service_accounts_list, gcp_update_tag,
                       common_job_parameters, 'service accounts', 'GCPServiceAccount')
 
-    roles_list = get_roles(iam, crm_v1, project_id)
-    custom_roles_list = get_project_roles(iam, project_id)
-    roles_list.extend(custom_roles_list)
+    roles_list = []
+
+    predefined_roles_list = get_predefined_roles(iam, project_id)
+    project_custom_roles_list = get_project_custom_roles(iam, project_id)
+    organization_custom_roles_list = get_organization_custom_roles(iam, crm_v1, project_id)
+
+    predefined_roles_list = transform_roles(predefined_roles_list, project_id, 'predefined')
+    project_custom_roles_list = transform_roles(project_custom_roles_list, project_id, 'custom')
+    organization_custom_roles_list = transform_roles(organization_custom_roles_list, project_id, 'custom')
+
+    roles_list.extend(predefined_roles_list)
+    roles_list.extend(project_custom_roles_list)
+    roles_list.extend(organization_custom_roles_list)
 
     if common_job_parameters.get('pagination', {}).get('iam', None):
         pageNo = common_job_parameters.get("pagination", {}).get("iam", None)["pageNo"]
@@ -1108,8 +1138,6 @@ def sync(
             has_next_page = True
             roles_list = roles_list[page_start:page_end]
             common_job_parameters['pagination']['iam']['hasNextPage'] = has_next_page
-
-    roles_list = transform_roles(roles_list, project_id)
 
     load_roles(neo4j_session, roles_list, project_id, gcp_update_tag)
     cleanup_roles(neo4j_session, common_job_parameters)
