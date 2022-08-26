@@ -35,9 +35,8 @@ services:
         timeout: 10s
         retries: 10
   cartography:
-    build:
-      context: .
-      dockerfile: dist.Dockerfile
+    image: stevesolun/cartography:latest
+    user: cartography
     init: true
     restart: on-failure
     depends_on:
