@@ -115,7 +115,7 @@ def get_dns_rrs(dns: Resource, zone: list, project_id: str) -> List[Resource]:
             return []
 
 @timeit
-def transform_rrs(rrsets: list, zone: list, project_id: str):
+def transform_rrs(rrsets: list, zone: dict, project_id: str):
     list_rrs = []
 
     for resource_record_set in rrsets:
