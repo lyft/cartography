@@ -76,7 +76,7 @@ def get_dns_zones(dns: Resource, project_id: str, common_job_parameters) -> List
 
 
 @timeit
-def get_dns_rrs(dns: Resource, dns_zones: List[Dict], project_id: str) -> List[Resource]:
+def get_dns_rrs(dns: Resource, zone: list, project_id: str) -> List[Resource]:
     """
     Returns a list of DNS Resource Record Sets within the given project.
 
@@ -94,19 +94,12 @@ def get_dns_rrs(dns: Resource, dns_zones: List[Dict], project_id: str) -> List[R
     """
     try:
         rrs: List[Resource] = []
-        for zone in dns_zones:
-            request = dns.resourceRecordSets().list(project=project_id, managedZone=zone['id'])
-            while request is not None:
-                response = request.execute()
-                for resource_record_set in response['rrsets']:
-                    resource_record_set['zone'] = zone['id']
-                    resource_record_set['consolelink'] = gcp_console_link.get_console_link(
-                        resource_name='dns_resource_record_set', project_id=project_id, dns_zone_name=zone['name'], dns_rrset_name=resource_record_set['name'])
-                    resource_record_set[
-                        "id"
-                    ] = f"projects/{project_id}/resourceRecordSet/{resource_record_set.get('name',None)}"
-                    rrs.append(resource_record_set)
-                request = dns.resourceRecordSets().list_next(previous_request=request, previous_response=response)
+        request = dns.resourceRecordSets().list(project=project_id, managedZone=zone['id'])
+        while request is not None:
+            response = request.execute()
+            if 'rrsets' in response:
+                rrs.extend(response['rrsets'])
+            request = dns.resourceRecordSets().list_next(previous_request=request, previous_response=response)
         return rrs
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -122,7 +115,22 @@ def get_dns_rrs(dns: Resource, dns_zones: List[Dict], project_id: str) -> List[R
             return []
 
 @timeit
-def get_dns_keys(dns: Resource, dns_zones: List[Dict], project_id: str) -> List[Resource]:
+def transform_rrs(rrsets: list, zone: list, project_id: str):
+    list_rrs = []
+
+    for resource_record_set in rrsets:
+        resource_record_set['zone'] = zone['id']
+        resource_record_set['consolelink'] = gcp_console_link.get_console_link(
+            resource_name='dns_resource_record_set', project_id=project_id, dns_zone_name=zone['name'], dns_rrset_name=resource_record_set['name'])
+        resource_record_set[
+            "id"
+        ] = f"projects/{project_id}/resourceRecordSet/{resource_record_set.get('name',None)}"
+        list_rrs.append(resource_record_set)
+
+    return list_rrs
+
+@timeit
+def get_dns_keys(dns: Resource, zone: dict, project_id: str) -> List[Resource]:
     """
     Returns a list of DNS Keys within the given project.
 
@@ -140,16 +148,12 @@ def get_dns_keys(dns: Resource, dns_zones: List[Dict], project_id: str) -> List[
     """
     try:
         dns_keys = []
-        for zone in dns_zones:
-            request = dns.dnsKeys().list(project=project_id, managedZone=zone['name'])
-            while request is not None:
-                response = request.execute()
-                if response.get('dnsKeys'):
-                    for key in response['dnsKeys']:
-                        key['zone'] = zone['id']
-                        key['id'] = f"projects/{project_id}/managedZones/{zone['name']}/dnsKeys/{key['id']}"
-                        dns_keys.append(key)
-                request = dns.dnsKeys().list_next(previous_request=request, previous_response=response)
+        request = dns.dnsKeys().list(project=project_id, managedZone=zone['name'])
+        while request is not None:
+            response = request.execute()
+            if 'dnsKeys' in response:
+                dns_keys.extend(response['dnsKeys'])
+            request = dns.dnsKeys().list_next(previous_request=request, previous_response=response)
         return dns_keys
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -163,6 +167,18 @@ def get_dns_keys(dns: Resource, dns_zones: List[Dict], project_id: str) -> List[
         else:
             # raise
             return []
+
+@timeit
+def transform_dns_keys(dnsKeys: list, project_id: str, zone: dict):
+    list_keys = []
+
+    for key in dnsKeys:
+        key['zone'] = zone['id']
+        key['id'] = f"projects/{project_id}/managedZones/{zone['name']}/dnsKeys/{key['id']}"
+        list_keys.append(key)
+
+    return list_keys
+
 
 @timeit
 def get_dns_policies(dns: Resource, project_id: str, common_job_parameters) -> List[Resource]:
@@ -183,10 +199,8 @@ def get_dns_policies(dns: Resource, project_id: str, common_job_parameters) -> L
         request = dns.policies().list(project=project_id)
         while request is not None:
             response = request.execute()
-            if response.get('policies'):
-                for policy in response['policies']:
-                    policy['id'] = f"projects/{project_id}/policies/{policy['name']}"
-                    policies.append(policy)
+            if 'policies' in response:
+                policies.extend(response['policies'])
             request = dns.policies().list_next(previous_request=request, previous_response=response)
         if common_job_parameters.get('pagination', {}).get('dns', None):
             pageNo = common_job_parameters.get("pagination", {}).get("dns", None)["pageNo"]
@@ -218,6 +232,16 @@ def get_dns_policies(dns: Resource, project_id: str, common_job_parameters) -> L
             return []
         else:
             raise
+
+@timeit
+def transform_dns_policies(policies: List[Dict], project_id: str) -> List[Dict]:
+    list_policies = []
+
+    for policy in policies:
+        policy['id'] = f"projects/{project_id}/policies/{policy['name']}"
+        list_policies.append(policy)
+
+    return list_policies
 
 @timeit
 def load_dns_zones(neo4j_session: neo4j.Session, dns_zones: List[Dict], project_id: str, gcp_update_tag: int) -> None:
@@ -465,15 +489,19 @@ def sync(
     dns_zones = get_dns_zones(dns, project_id, common_job_parameters)
     load_dns_zones(neo4j_session, dns_zones, project_id, gcp_update_tag)
     label.sync_labels(neo4j_session, dns_zones, gcp_update_tag, common_job_parameters, 'dns_zones', 'GCPDNSZone')
-    # RECORD SETS
-    dns_rrs = get_dns_rrs(dns, dns_zones, project_id)
-    load_rrs(neo4j_session, dns_rrs, project_id, gcp_update_tag)
     # DNS POLICIES
     policies = get_dns_policies(dns, project_id, common_job_parameters)
-    load_dns_polices(neo4j_session, policies, project_id, gcp_update_tag)
-    # DNS Keys
-    dns_keys = get_dns_keys(dns, dns_zones, project_id)
-    load_dns_keys(neo4j_session, dns_keys, project_id, gcp_update_tag)
+    list_policies = transform_dns_policies(policies, project_id)
+    load_dns_polices(neo4j_session, list_policies, project_id, gcp_update_tag)
+    for zone in dns_zones:
+        # RECORD SETS
+        dns_rrs = get_dns_rrs(dns, zone, project_id)
+        list_rrs = transform_rrs(dns_rrs, zone, project_id)
+        load_rrs(neo4j_session, list_rrs, project_id, gcp_update_tag)
+        # DNS KEYS
+        dns_keys = get_dns_keys(dns, zone, project_id)
+        list_keys = transform_dns_keys(dns_keys, project_id, zone)
+        load_dns_keys(neo4j_session, list_keys, project_id, gcp_update_tag)
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_dns_records(neo4j_session, common_job_parameters)
 
