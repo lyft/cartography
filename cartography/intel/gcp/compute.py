@@ -17,6 +17,7 @@ import neo4j
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
 from cloudconsolelink.clouds.gcp import GCPLinker
+from neobolt.exceptions import ClientError
 
 from cartography.util import run_cleanup_job
 from . import label
@@ -25,6 +26,159 @@ from cartography.util import timeit
 logger = logging.getLogger(__name__)
 gcp_console_link = GCPLinker()
 InstanceUriPrefix = namedtuple('InstanceUriPrefix', 'zone_name project_id')
+
+
+@timeit
+def get_compute_disks(compute: Resource, project_id: str, zones: list, common_job_parameters) -> List[Dict]:
+    if not zones:
+        return []
+    disks = []
+    try:
+        for zone in zones:
+            req = compute.disks().list(project=project_id, zone=zone['name'])
+            while req is not None:
+                res = req.execute()
+                if res.get('items'):
+                    for disk in res['items']:
+                        disk['project_id'] = project_id
+                        disk['id'] = f"projects/{project_id}/disks/{disk['name']}"
+                        x = zone['name'].split('-')
+                        disk['region'] = f"{x[0]}-{x[1]}"
+                        disks.append(disk)
+                req = compute.disks().list_next(previous_request=req, previous_response=res)
+
+        if common_job_parameters.get('pagination', {}).get('compute', None):
+            pageNo = common_job_parameters.get("pagination", {}).get("compute", None)["pageNo"]
+            pageSize = common_job_parameters.get("pagination", {}).get("compute", None)["pageSize"]
+            totalPages = len(disks) / pageSize
+            if int(totalPages) != totalPages:
+                totalPages = totalPages + 1
+            totalPages = int(totalPages)
+            if pageNo < totalPages or pageNo == totalPages:
+                logger.info(f'pages process for compute disks {pageNo}/{totalPages} pageSize is {pageSize}')
+            page_start = (common_job_parameters.get('pagination', {}).get('compute', None)[
+                          'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
+            page_end = page_start + common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
+            if page_end > len(disks) or page_end == len(disks):
+                disks = disks[page_start:]
+            else:
+                has_next_page = True
+                disks = disks[page_start:page_end]
+                common_job_parameters['pagination']['compute']['hasNextPage'] = has_next_page
+
+        return disks
+    except HttpError as e:
+        err = json.loads(e.content.decode('utf-8'))['error']
+        if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
+            logger.warning(
+                (
+                    "Could not retrieve compute disks on project %s due to permissions issues. Code: %s, Message: %s"
+                ), project_id, err['code'], err['message'],
+            )
+            return []
+        else:
+            raise
+
+
+@timeit
+def load_compute_disks(session: neo4j.Session, data_list: List[Dict], project_id: str, update_tag: int) -> None:
+    session.write_transaction(load_compute_disks_tx, data_list, project_id, update_tag)
+
+
+@timeit
+def load_compute_disks_tx(
+    tx: neo4j.Transaction, data: List[Dict],
+    project_id: str, gcp_update_tag: int,
+) -> None:
+
+    query = """
+    UNWIND {Records} as record
+    MERGE (disk:GCPComputeDisk{id:record.id})
+    ON CREATE SET
+        disk.firstseen = timestamp()
+    SET
+        disk.lastupdated = {gcp_update_tag},
+        disk.region = record.region,
+        disk.name = record.name,
+        disk.creation_timestamp = record.creationTimestamp,
+        disk.description = record.description,
+        disk.zone = record.zone,
+        disk.status = record.status,
+        disk.source_snapshot = record.sourceSnapshot,
+        disk.source_snapshot_id = record.sourceSnapshotId,
+        disk.source_storage_object = record.sourceStorageObject,
+        disk.options = record.options,
+        disk.self_link = record.selfLink,
+        disk.source_image = record.sourceImage,
+        disk.last_attach_timestamp = record.lastAttachTimestamp,
+        disk.last_detach_timestamp = record.lastDetachTimestamp,
+        disk.physical_block_size_bytes = record.physicalBlockSizeBytes,
+        disk.source_disk = record.sourceDisk,
+        disk.source_disk_id = record.sourceDiskId,
+        disk.source_image_id = record.sourceImageId
+    WITH disk
+    MATCH (owner:GCPProject{id:{ProjectId}})
+    MERGE (owner)-[r:RESOURCE]->(disk)
+    ON CREATE SET
+        r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}
+    """
+    tx.run(
+        query,
+        Records=data,
+        ProjectId=project_id,
+        gcp_update_tag=gcp_update_tag,
+    )
+
+
+@timeit
+def cleanup_compute_disks(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('gcp_compute_disks_cleanup.json', neo4j_session, common_job_parameters)
+
+
+@timeit
+def sync_compute_disks(
+    neo4j_session: neo4j.Session, compute: Resource, project_id: str, zones: Optional[List[Dict]],
+    gcp_update_tag: int, common_job_parameters: Dict,
+) -> None:
+
+    disks = get_compute_disks(compute, project_id, zones, common_job_parameters)
+
+    load_compute_disks(neo4j_session, disks, project_id, gcp_update_tag)
+    cleanup_compute_disks(neo4j_session, common_job_parameters)
+
+
+@timeit
+def attach_compute_disks_to_inastance(session: neo4j.Session, data_list: List[Dict], instance_id: str, update_tag: int) -> None:
+    session.write_transaction(attach_compute_disks_to_inastance_tx, data_list, instance_id, update_tag)
+
+
+@timeit
+def attach_compute_disks_to_inastance_tx(
+    tx: neo4j.Transaction, data: List[Dict],
+    instance_id: str, gcp_update_tag: int,
+) -> None:
+
+    query = """
+    UNWIND {Records} as record
+    MERGE (disk:GCPComputeDisk{id:record.id})
+    ON CREATE SET
+        disk.firstseen = timestamp()
+    SET
+        disk.lastupdated = {gcp_update_tag}
+    WITH disk
+    MATCH (i:GCPInstance{id:{InstanceId}})
+    MERGE (i)-[r:USES]->(disk)
+    ON CREATE SET
+        r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}
+    """
+    tx.run(
+        query,
+        Records=data,
+        InstanceId=instance_id,
+        gcp_update_tag=gcp_update_tag,
+    )
 
 
 def _get_error_reason(http_error: HttpError) -> str:
@@ -239,10 +393,10 @@ def transform_gcp_instances(response_objects: List[Dict], compute: Resource) -> 
         prefix = res['zone']
 
         prefix_fields = _parse_instance_uri_prefix(prefix)
-        
+
         res['id'] = f"projects/{prefix_fields.project_id}/zones/{prefix_fields.zone_name}/instances/{res['name']}"
         res['partial_uri'] = res['id']
-        
+
         res['project_id'] = prefix_fields.project_id
         res['zone_name'] = prefix_fields.zone_name
         res['accessConfig'] = res.get('accessConfig', None)
@@ -352,9 +506,9 @@ def transform_gcp_subnets(subnet_res: Dict) -> List[Dict]:
     for s in subnet_res.get('items', []):
         subnet = {}
 
-        # Has the form `projects/{project}/regions/{region}/subnetworks/{subnet_name}`
+        # Has the form `projects/{project}/locations/{region}/subnetworks/{subnet_name}`
         partial_uri = f"{prefix}/{s['name']}"
-        subnet['id'] = f"projects/{projectid}/regions/{s['region'].split('/')[-1]}/subnetworks/{s['name']}"
+        subnet['id'] = f"projects/{projectid}/locations/{s['region'].split('/')[-1]}/subnetworks/{s['name']}"
         subnet['partial_uri'] = subnet['id']
 
         # Let's maintain an on-node reference to the VPC that this subnet belongs to.
@@ -396,8 +550,8 @@ def transform_gcp_forwarding_rules(fwd_response: Resource,) -> List[Dict]:
         # Region looks like "https://www.googleapis.com/compute/v1/projects/{project}/regions/{region name}"
         region = fwd.get('region', None)
         forwarding_rule['region'] = region.split('/')[-1] if region else 'global'
-        
-        forwarding_rule['id'] = f"projects/{project_id}/regions/{forwarding_rule['region']}/forwardingRules/{fwd['name']}"
+
+        forwarding_rule['id'] = f"projects/{project_id}/locations/{forwarding_rule['region']}/forwardingRules/{fwd['name']}"
         forwarding_rule['partial_uri'] = forwarding_rule['id']
 
         forwarding_rule['ip_address'] = fwd.get('IPAddress', None)
@@ -574,9 +728,10 @@ def _parse_port_string_to_rule(port: Optional[str], protocol: str, fw_partial_ur
         'protocol': protocol,
     }
 
+
 @timeit
 def load_gcp_instances(session: neo4j.Session, instances_list: List[Dict], gcp_update_tag: int) -> None:
-    iteration_size = 100
+    iteration_size = 500
     total_items = len(instances_list)
     total_iterations = math.ceil(len(instances_list) / iteration_size)
     logger.info(f"total instances: {total_items}")
@@ -584,19 +739,19 @@ def load_gcp_instances(session: neo4j.Session, instances_list: List[Dict], gcp_u
 
     for counter in range(0, total_iterations):
         start = iteration_size * (counter)
-        
+
         if (start + iteration_size) >= total_items:
             end = total_items
             paginated_instances = instances_list[start:]
-        
+
         else:
             end = start + iteration_size
             paginated_instances = instances_list[start:end]
 
         logger.info(f"Start - Iteration {counter + 1} of {total_iterations}. {start} - {end} - {len(paginated_instances)}")
-    
+
         session.write_transaction(load_gcp_instances_tx, paginated_instances, gcp_update_tag)
-        
+
         logger.info(f"End - Iteration {counter + 1} of {total_iterations}. {start} - {end} - {len(paginated_instances)}")
 
     # for instance in instances_list:
@@ -1268,7 +1423,11 @@ def cleanup_gcp_firewall_rules(neo4j_session: neo4j.Session, common_job_paramete
     :param common_job_parameters: dict of other job parameters to pass to Neo4j
     :return: Nothing
     """
-    run_cleanup_job('gcp_compute_firewall_cleanup.json', neo4j_session, common_job_parameters)
+    try:
+        run_cleanup_job('gcp_compute_firewall_cleanup.json', neo4j_session, common_job_parameters)
+
+    except ClientError as ex:
+        logger.error("error while syncing gcp firewall rules", ex)
 
 
 @timeit
@@ -1314,6 +1473,14 @@ def sync_gcp_instances(
 
     load_gcp_instances(neo4j_session, instance_list, gcp_update_tag)
 
+    # attach compute inastance to disks
+    for instance in instance_list:
+        disks = []
+        for disk in instance.get('disks', []):
+            disk['id'] = f"projects/{project_id}/disks/{disk.get('initializeParams', {}).get('diskName', '')}"
+            disks.append(disk)
+        attach_compute_disks_to_inastance(neo4j_session, disks, instance['partial_uri'], gcp_update_tag)
+        
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gcp_instances(neo4j_session, common_job_parameters)
     label.sync_labels(neo4j_session, instance_list, gcp_update_tag, common_job_parameters, 'instances', 'GCPInstance')
@@ -1528,14 +1695,18 @@ def sync(
 
         regions = _zones_to_regions(zones)
         sync_gcp_vpcs(neo4j_session, compute, project_id, gcp_update_tag, common_job_parameters)
+
         sync_gcp_firewall_rules(neo4j_session, compute, project_id, gcp_update_tag,
                                 common_job_parameters)
+
         sync_gcp_subnets(neo4j_session, compute, project_id, regions,
                          gcp_update_tag, common_job_parameters)
         sync_gcp_instances(neo4j_session, compute, project_id, zones,
                            gcp_update_tag, common_job_parameters)
         sync_gcp_forwarding_rules(neo4j_session, compute, project_id, regions,
                                   gcp_update_tag, common_job_parameters)
+        sync_compute_disks(neo4j_session, compute, project_id, zones,
+                           gcp_update_tag, common_job_parameters)
 
     toc = time.perf_counter()
     logger.info(f"Time to process Compute: {toc - tic:0.4f} seconds")

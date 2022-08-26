@@ -31,7 +31,7 @@ def get_labels_list(data: List[Dict]) -> List[Dict]:
 
 
 def load_labels(session: neo4j.Session, data_list: List[Dict], update_tag: int, common_job_parameters: Dict, service_label: str) -> None:
-    iteration_size = 100
+    iteration_size = 500
     total_items = len(data_list)
     total_iterations = math.ceil(len(data_list) / iteration_size)
     logger.info(f"total labels: {total_items}")

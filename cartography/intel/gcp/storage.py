@@ -84,7 +84,7 @@ def get_gcp_buckets(storage: Resource, project_id: str, common_job_parameters) -
 
 
 @timeit
-def transform_gcp_buckets(bucket_res: Dict, regions: list) -> List[Dict]:
+def transform_gcp_buckets(bucket_res: Dict, project_id: str, regions: list) -> List[Dict]:
     '''
     Transform the GCP Storage Bucket response object for Neo4j ingestion
 
@@ -101,7 +101,7 @@ def transform_gcp_buckets(bucket_res: Dict, regions: list) -> List[Dict]:
         bucket['etag'] = b.get('etag')
         bucket['iam_config_bucket_policy_only'] = \
             b.get('iamConfiguration', {}).get('bucketPolicyOnly', {}).get('enabled', None)
-        bucket['id'] = b['id']
+        bucket['id'] = f"projects/{project_id}/locations/{str(b['location']).lower()}/buckets/{b['name']}"
         bucket['name'] = b['name']
         bucket['labels'] = [(key, val) for (key, val) in b.get('labels', {}).items()]
         bucket['owner_entity'] = b.get('owner', {}).get('entity')
@@ -129,13 +129,15 @@ def transform_gcp_buckets(bucket_res: Dict, regions: list) -> List[Dict]:
         bucket['default_kms_key_name'] = b.get('encryption', {}).get('defaultKmsKeyName')
         bucket['log_bucket'] = b.get('logging', {}).get('logBucket')
         bucket['requester_pays'] = b.get('billing', {}).get('requesterPays', None)
-        bucket['consolelink'] = gcp_console_link.get_console_link(
-            resource_name='storage_bucket', bucket_name=b['name'])
+        bucket['consolelink'] = gcp_console_link.get_console_link(resource_name='storage_bucket', bucket_name=b['name'])
+
         if regions is None:
             bucket_list.append(bucket)
+
         else:
             if bucket['region'] in regions:
                 bucket_list.append(bucket)
+
     return bucket_list
 
 
@@ -272,7 +274,7 @@ def sync(
 
     logger.info("Syncing Storage objects for project %s.", project_id)
     storage_res = get_gcp_buckets(storage, project_id, common_job_parameters)
-    bucket_list = transform_gcp_buckets(storage_res, regions)
+    bucket_list = transform_gcp_buckets(storage_res, project_id, regions)
     load_gcp_buckets(neo4j_session, bucket_list, gcp_update_tag)
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gcp_buckets(neo4j_session, common_job_parameters)

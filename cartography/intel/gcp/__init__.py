@@ -28,7 +28,8 @@ from cartography.util import timeit
 logger = logging.getLogger(__name__)
 Resources = namedtuple(
     'Resources', 'compute gke cloudfunction crm_v1 crm_v2 dns storage serviceusage \
-        iam apigateway cloudkms cloudrun sql bigtable firestore',
+        iam apigateway cloudkms cloudrun sql bigtable firestore pubsub dataproc cloudmonitoring cloud_logging \
+        cloudcdn',
 )
 
 # Mapping of service short names to their full names as in docs. See https://developers.google.com/apis-explorer,
@@ -96,6 +97,46 @@ def _get_cloudfunction_resource(credentials: GoogleCredentials) -> Resource:
     :return: A serviceusage resource object
     """
     return googleapiclient.discovery.build('cloudfunctions', 'v1', credentials=credentials, cache_discovery=False)
+
+
+def _get_pubsub_resource(credentials: GoogleCredentials) -> Resource:
+    """
+    Instantiates a cloud pubsub resource object.
+    See: https://cloud.google.com/pubsub/docs/reference/rest
+    :param credentials: The GoogleCredentials object
+    :return: A serviceusage resource object
+    """
+    return googleapiclient.discovery.build('pubsub', 'v1', credentials=credentials, cache_discovery=False)
+
+
+def _get_cloud_logging_resource(credentials: GoogleCredentials) -> Resource:
+    """
+    Instantiates a cloud logging resource object.
+    See: https://cloud.google.com/logging/docs/reference/v2/rest
+    :param credentials: The GoogleCredentials object
+    :return: A serviceusage resource object
+    """
+    return googleapiclient.discovery.build('logging', 'v2', credentials=credentials, cache_discovery=False)
+
+
+def _get_cloudmonitoring_resource(credentials: GoogleCredentials) -> Resource:
+    """
+    Instantiates a cloud monitoring resource object.
+    See: https://cloud.google.com/monitoring/api/ref_v3/rest
+    :param credentials: The GoogleCredentials object
+    :return: A serviceusage resource object
+    """
+    return googleapiclient.discovery.build('monitoring', 'v3', credentials=credentials, cache_discovery=False)
+
+
+def _get_dataproc_resource(credentials: GoogleCredentials) -> Resource:
+    """
+    Instantiates a cloud dataproc resource object.
+    See: https://cloud.google.com/dataproc/docs/reference/rest/
+    :param credentials: The GoogleCredentials object
+    :return: A serviceusage resource object
+    """
+    return googleapiclient.discovery.build('dataproc', 'v1', credentials=credentials, cache_discovery=False)
 
 
 def _get_compute_resource(credentials: GoogleCredentials) -> Resource:
@@ -262,6 +303,11 @@ def _initialize_resources(credentials: GoogleCredentials) -> Resource:
         iam=_get_iam_resource(credentials),
         apigateway=_get_apigateway_resource(credentials),
         cloudfunction=_get_cloudfunction_resource(credentials),
+        pubsub=_get_pubsub_resource(credentials),
+        cloud_logging=_get_cloud_logging_resource(credentials),
+        cloudmonitoring=_get_cloudmonitoring_resource(credentials),
+        dataproc=_get_dataproc_resource(credentials),
+        cloudcdn=_get_compute_resource(credentials),
     )
 
 
