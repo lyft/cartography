@@ -46,4 +46,4 @@ services:
     environment:
       - EXPERIMENTAL_NEO4J_4X_SUPPORT=True 
     volumes:
-    - ~/.aws:/cartography/.aws/
+      - ~/.aws:/cartography/.aws/
