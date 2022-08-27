@@ -24,7 +24,7 @@ services:
       - apoc.import.file.enabled=true
       - apoc.import.file.use_neo4j_config=true
       - NEO4JLABS_PLUGINS=["graph-data-science", "apoc"]
-      - NEO4J_dbms_security_procedures_whitelist=gds.*, apoc.*
+      - NEO4J_dbms_security_procedures_allowlist=gds.*, apoc.*
       - NEO4J_dbms_security_procedures_unrestricted=gds.*, apoc.*
       # Networking:
       - dbms.connector.bolt.listen_address=0.0.0.0:7687
@@ -35,7 +35,9 @@ services:
         timeout: 10s
         retries: 10
   cartography:
-    image: stevesolun/cartography:latest
+    image: ghcr.io/lyft/cartography:0.63.0
+    # EXAMPLE: Our ENTRYPOINT is cartography, running specific command to sync AWS
+    # command: ["-v", "--neo4j-uri=bolt://neo4j:7687", "--aws-sync-all-profiles"]
     user: cartography
     init: true
     restart: on-failure
@@ -44,4 +46,4 @@ services:
     environment:
       - EXPERIMENTAL_NEO4J_4X_SUPPORT=True 
     volumes:
-      - ~/.aws:/cartography/.aws/
+    - ~/.aws:/cartography/.aws/
