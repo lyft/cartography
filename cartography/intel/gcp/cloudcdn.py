@@ -157,7 +157,7 @@ def load_backend_services(session: neo4j.Session, backend_services: List[Dict], 
 
 @timeit
 def load_backend_services_tx(
-    tx: neo4j.Transaction, global_backend_services: List[Dict],
+    tx: neo4j.Transaction, backend_services: List[Dict],
     project_id: str, gcp_update_tag: int,
 ) -> None:
 
@@ -187,7 +187,7 @@ def load_backend_services_tx(
 
     tx.run(
         query,
-        Services=global_backend_services,
+        Services=backend_services,
         ProjectId=project_id,
         gcp_update_tag=gcp_update_tag,
     )
@@ -265,6 +265,7 @@ def get_regional_backend_services(compute: Resource, project_id: str, regions: l
 
 
 @timeit
+
 def load_backend_services(session: neo4j.Session, region_services: List[Dict], project_id: str, update_tag: int) -> None:
     session.write_transaction(load_backend_services_tx, region_services, project_id, update_tag)
 
@@ -334,13 +335,13 @@ def get_global_url_maps(compute: Resource, project_id: str) -> List[Dict]:
 
 
 @timeit
-def load_url_maps(session: neo4j.Session, global_maps: List[Dict], project_id: str, update_tag: int) -> None:
-    session.write_transaction(load_url_maps_tx, global_maps, project_id, update_tag)
+def load_url_maps(session: neo4j.Session, url_maps: List[Dict], project_id: str, update_tag: int) -> None:
+    session.write_transaction(load_url_maps_tx, url_maps, project_id, update_tag)
 
 
 @timeit
 def load_url_maps_tx(
-    tx: neo4j.Transaction, global_maps: List[Dict],
+    tx: neo4j.Transaction, url_maps: List[Dict],
     project_id: str, gcp_update_tag: int,
 ) -> None:
 
@@ -366,7 +367,7 @@ def load_url_maps_tx(
 
     tx.run(
         query,
-        Maps=global_maps,
+        Maps=url_maps,
         ProjectId=project_id,
         gcp_update_tag=gcp_update_tag,
     )
