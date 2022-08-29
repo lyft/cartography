@@ -1,18 +1,19 @@
 import json
 import logging
+import time
 from typing import Dict
 from typing import List
 
-import time
 import neo4j
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
 
-from cartography.util import run_cleanup_job
 from . import label
+from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+
 
 @timeit
 def get_backend_buckets(compute: Resource, project_id: str) -> List[Dict]:
@@ -41,9 +42,11 @@ def get_backend_buckets(compute: Resource, project_id: str) -> List[Dict]:
         else:
             raise
 
+
 @timeit
 def load_backend_buckets(session: neo4j.Session, buckets: List[Dict], project_id: str, update_tag: int) -> None:
     session.write_transaction(load_backend_buckets_tx, buckets, project_id, update_tag)
+
 
 @timeit
 def load_backend_buckets_tx(
@@ -77,9 +80,11 @@ def load_backend_buckets_tx(
         gcp_update_tag=gcp_update_tag,
     )
 
+
 @timeit
 def cleanup_backend_buckets(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('gcp_backend_buckets_cleanup.json', neo4j_session, common_job_parameters)
+
 
 @timeit
 def sync_backend_buckets(
@@ -87,7 +92,7 @@ def sync_backend_buckets(
     gcp_update_tag: int, common_job_parameters: Dict,
 ) -> None:
 
-    backend_buckets = get_backend_buckets(compute,project_id)
+    backend_buckets = get_backend_buckets(compute, project_id)
 
     if common_job_parameters.get('pagination', {}).get('compute', None):
         pageNo = common_job_parameters.get("pagination", {}).get("compute", None)["pageNo"]
@@ -98,8 +103,11 @@ def sync_backend_buckets(
         totalPages = int(totalPages)
         if pageNo < totalPages or pageNo == totalPages:
             logger.info(f'pages process for backend buckets {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (common_job_parameters.get('pagination', {}).get('compute', None)[
-                        'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
+        page_start = (
+            common_job_parameters.get('pagination', {}).get('compute', None)[
+            'pageNo'
+            ] - 1
+        ) * common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
         if page_end > len(backend_buckets) or page_end == len(backend_buckets):
             backend_buckets = backend_buckets[page_start:]
@@ -109,8 +117,9 @@ def sync_backend_buckets(
             common_job_parameters['pagination']['dataproc']['hasNextPage'] = has_next_page
 
     load_backend_buckets(neo4j_session, backend_buckets, project_id, gcp_update_tag)
-    cleanup_backend_buckets(neo4j_session,common_job_parameters)
+    cleanup_backend_buckets(neo4j_session, common_job_parameters)
     label.sync_labels(neo4j_session, backend_buckets, gcp_update_tag, common_job_parameters, 'backend_bucket', 'GCPBackendBucket')
+
 
 @timeit
 def get_global_backend_services(compute: Resource, project_id: str) -> List[Dict]:
@@ -125,7 +134,7 @@ def get_global_backend_services(compute: Resource, project_id: str) -> List[Dict
                     backend_service['type'] = 'global'
                     backend_service['id'] = f"projects/{project_id}/global/backendServices/{backend_service['name']}"
                     global_backend_services.append(backend_service)
-            req = compute.backendServices().list_next(previous_request=req,previous_response=res)
+            req = compute.backendServices().list_next(previous_request=req, previous_response=res)
 
         return global_backend_services
     except HttpError as e:
@@ -140,9 +149,11 @@ def get_global_backend_services(compute: Resource, project_id: str) -> List[Dict
         else:
             raise
 
+
 @timeit
 def load_backend_services(session: neo4j.Session, backend_services: List[Dict], project_id: str, update_tag: int) -> None:
     session.write_transaction(load_backend_services_tx, backend_services, project_id, update_tag)
+
 
 @timeit
 def load_backend_services_tx(
@@ -181,9 +192,11 @@ def load_backend_services_tx(
         gcp_update_tag=gcp_update_tag,
     )
 
+
 @timeit
 def cleanup_backend_services(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('gcp_backend_services_cleanup.json', neo4j_session, common_job_parameters)
+
 
 @timeit
 def sync_global_backend_services(
@@ -202,8 +215,11 @@ def sync_global_backend_services(
         totalPages = int(totalPages)
         if pageNo < totalPages or pageNo == totalPages:
             logger.info(f'pages process for global backend services {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (common_job_parameters.get('pagination', {}).get('compute', None)[
-                        'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
+        page_start = (
+            common_job_parameters.get('pagination', {}).get('compute', None)[
+            'pageNo'
+            ] - 1
+        ) * common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
         if page_end > len(global_services) or page_end == len(global_services):
             global_services = global_services[page_start:]
@@ -213,8 +229,9 @@ def sync_global_backend_services(
             common_job_parameters['pagination']['dataproc']['hasNextPage'] = has_next_page
 
     load_backend_services(neo4j_session, global_services, project_id, gcp_update_tag)
-    cleanup_backend_services(neo4j_session,common_job_parameters)
+    cleanup_backend_services(neo4j_session, common_job_parameters)
     label.sync_labels(neo4j_session, global_services, gcp_update_tag, common_job_parameters, 'backend_serivice', 'GCPBackendService')
+
 
 @timeit
 def get_regional_backend_services(compute: Resource, project_id: str, regions: list) -> List[Dict]:
@@ -222,7 +239,7 @@ def get_regional_backend_services(compute: Resource, project_id: str, regions: l
     try:
         if regions:
             for region in regions:
-                req = compute.regionBackendServices().list(project=project_id,region=region)
+                req = compute.regionBackendServices().list(project=project_id, region=region)
                 while req is not None:
                     res = req.execute()
                     if req.get('items'):
@@ -231,7 +248,7 @@ def get_regional_backend_services(compute: Resource, project_id: str, regions: l
                             region_service['type'] = 'regional'
                             region_service['id'] = f"projects/{project_id}/regions/{region}/backendServices/{region_service['name']}"
                             regional_backend_services.append(region_service)
-                    req = compute.regionBackendServices().list_next(previous_request=req,previous_response=res)
+                    req = compute.regionBackendServices().list_next(previous_request=req, previous_response=res)
 
         return regional_backend_services
     except HttpError as e:
@@ -245,6 +262,13 @@ def get_regional_backend_services(compute: Resource, project_id: str, regions: l
             return []
         else:
             raise
+
+
+@timeit
+
+def load_backend_services(session: neo4j.Session, region_services: List[Dict], project_id: str, update_tag: int) -> None:
+    session.write_transaction(load_backend_services_tx, region_services, project_id, update_tag)
+
 
 @timeit
 def sync_regional_backend_services(
@@ -263,8 +287,11 @@ def sync_regional_backend_services(
         totalPages = int(totalPages)
         if pageNo < totalPages or pageNo == totalPages:
             logger.info(f'pages process for regional backend services {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (common_job_parameters.get('pagination', {}).get('compute', None)[
-                        'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
+        page_start = (
+            common_job_parameters.get('pagination', {}).get('compute', None)[
+            'pageNo'
+            ] - 1
+        ) * common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
         if page_end > len(regional_services) or page_end == len(regional_services):
             regional_services = regional_services[page_start:]
@@ -274,8 +301,9 @@ def sync_regional_backend_services(
             common_job_parameters['pagination']['dataproc']['hasNextPage'] = has_next_page
 
     load_backend_services(neo4j_session, regional_services, project_id, gcp_update_tag)
-    cleanup_backend_services(neo4j_session,common_job_parameters)
+    cleanup_backend_services(neo4j_session, common_job_parameters)
     label.sync_labels(neo4j_session, regional_services, gcp_update_tag, common_job_parameters, 'backend_serivice', 'GCPBackendService')
+
 
 @timeit
 def get_global_url_maps(compute: Resource, project_id: str) -> List[Dict]:
@@ -290,7 +318,7 @@ def get_global_url_maps(compute: Resource, project_id: str) -> List[Dict]:
                     url_map['type'] = 'global'
                     url_map['id'] = f"projects/{project_id}/global/urlmaps/{url_map['name']}"
                     global_url_maps.append(url_map)
-            req = compute.urlMaps().list_next(previous_request=req,previous_response=res)
+            req = compute.urlMaps().list_next(previous_request=req, previous_response=res)
 
         return global_url_maps
     except HttpError as e:
@@ -305,16 +333,18 @@ def get_global_url_maps(compute: Resource, project_id: str) -> List[Dict]:
         else:
             raise
 
+
 @timeit
 def load_url_maps(session: neo4j.Session, url_maps: List[Dict], project_id: str, update_tag: int) -> None:
     session.write_transaction(load_url_maps_tx, url_maps, project_id, update_tag)
+
 
 @timeit
 def load_url_maps_tx(
     tx: neo4j.Transaction, url_maps: List[Dict],
     project_id: str, gcp_update_tag: int,
 ) -> None:
-    
+
     query = """
     UNWIND {Maps} as mp
     MERGE (map:GCPUrlMap{id:mp.id})
@@ -342,9 +372,11 @@ def load_url_maps_tx(
         gcp_update_tag=gcp_update_tag,
     )
 
+
 @timeit
 def cleanup_url_maps(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('gcp_url_maps_cleanup.json', neo4j_session, common_job_parameters)
+
 
 @timeit
 def sync_global_url_maps(
@@ -363,8 +395,11 @@ def sync_global_url_maps(
         totalPages = int(totalPages)
         if pageNo < totalPages or pageNo == totalPages:
             logger.info(f'pages process for global url maps {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (common_job_parameters.get('pagination', {}).get('compute', None)[
-                        'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
+        page_start = (
+            common_job_parameters.get('pagination', {}).get('compute', None)[
+            'pageNo'
+            ] - 1
+        ) * common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
         if page_end > len(global_maps) or page_end == len(global_maps):
             global_maps = global_maps[page_start:]
@@ -374,8 +409,9 @@ def sync_global_url_maps(
             common_job_parameters['pagination']['dataproc']['hasNextPage'] = has_next_page
 
     load_url_maps(neo4j_session, global_maps, project_id, gcp_update_tag)
-    cleanup_url_maps(neo4j_session,common_job_parameters)
+    cleanup_url_maps(neo4j_session, common_job_parameters)
     label.sync_labels(neo4j_session, global_maps, gcp_update_tag, common_job_parameters, 'url_map', 'GCPUrlMap')
+
 
 @timeit
 def get_regional_url_maps(compute: Resource, project_id: str, regions: list) -> List[Dict]:
@@ -383,7 +419,7 @@ def get_regional_url_maps(compute: Resource, project_id: str, regions: list) -> 
     try:
         if regions:
             for region in regions:
-                req = compute.regionUrlMaps().list(project=project_id,region=region)
+                req = compute.regionUrlMaps().list(project=project_id, region=region)
                 while req is not None:
                     res = req.execute()
                     if res.get('items'):
@@ -393,7 +429,7 @@ def get_regional_url_maps(compute: Resource, project_id: str, regions: list) -> 
                             url_map['id'] = f"projects/{project_id}/regions/{region}/urlmaps/{url_map['name']}"
                             regional_url_maps.append(url_map)
                     req = compute.regionUrlMaps().list_next(previous_request=req, previous_response=res)
-                
+
         return regional_url_maps
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -406,6 +442,12 @@ def get_regional_url_maps(compute: Resource, project_id: str, regions: list) -> 
             return []
         else:
             raise
+
+
+@timeit
+def load_url_maps(session: neo4j.Session, regional_maps: List[Dict], project_id: str, update_tag: int) -> None:
+    session.write_transaction(load_url_maps_tx, regional_maps, project_id, update_tag)
+
 
 @timeit
 def sync_regional_url_maps(
@@ -424,8 +466,11 @@ def sync_regional_url_maps(
         totalPages = int(totalPages)
         if pageNo < totalPages or pageNo == totalPages:
             logger.info(f'pages process for global url maps {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (common_job_parameters.get('pagination', {}).get('compute', None)[
-                        'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
+        page_start = (
+            common_job_parameters.get('pagination', {}).get('compute', None)[
+            'pageNo'
+            ] - 1
+        ) * common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
         if page_end > len(regional_maps) or page_end == len(regional_maps):
             regional_maps = regional_maps[page_start:]
@@ -435,14 +480,15 @@ def sync_regional_url_maps(
             common_job_parameters['pagination']['dataproc']['hasNextPage'] = has_next_page
 
     load_url_maps(neo4j_session, regional_maps, project_id, gcp_update_tag)
-    cleanup_url_maps(neo4j_session,common_job_parameters)
+    cleanup_url_maps(neo4j_session, common_job_parameters)
     label.sync_labels(neo4j_session, regional_maps, gcp_update_tag, common_job_parameters, 'url_map', 'GCPUrlMap')
+
 
 def sync(
     neo4j_session: neo4j.Session, compute: Resource, project_id: str, gcp_update_tag: int,
     common_job_parameters: dict, regions: list,
 ) -> None:
-    
+
     tic = time.perf_counter()
 
     logger.info(f"Syncing cloudcdn for project {project_id}, at {tic}")

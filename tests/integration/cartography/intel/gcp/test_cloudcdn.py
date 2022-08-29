@@ -4,13 +4,14 @@ import tests.data.gcp.cloudcdn
 TEST_PROJECT_ID = 'project123'
 TEST_UPDATE_TAG = 123456789
 
+
 def test_backend_buckets(neo4j_session):
-    data =  tests.data.gcp.cloudcdn.TEST_BACKEND_BUCKET
+    data = tests.data.gcp.cloudcdn.TEST_BACKEND_BUCKET
     cartography.intel.gcp.cloudcdn.load_backend_buckets(
         neo4j_session,
         data,
         TEST_PROJECT_ID,
-        TEST_UPDATE_TAG
+        TEST_UPDATE_TAG,
     )
 
     expected_nodes = {
@@ -27,13 +28,14 @@ def test_backend_buckets(neo4j_session):
 
     assert actual_nodes == expected_nodes
 
+
 def test_global_backend_service(neo4j_session):
-    data =  tests.data.gcp.cloudcdn.TEST_GLOBAL_BACKEND_SERVICE
+    data = tests.data.gcp.cloudcdn.TEST_GLOBAL_BACKEND_SERVICE
     cartography.intel.gcp.cloudcdn.load_backend_services(
         neo4j_session,
         data,
         TEST_PROJECT_ID,
-        TEST_UPDATE_TAG
+        TEST_UPDATE_TAG,
     )
 
     expected_nodes = {
@@ -50,13 +52,14 @@ def test_global_backend_service(neo4j_session):
 
     assert actual_nodes == expected_nodes
 
+
 def test_regional_backend_service(neo4j_session):
-    data =  tests.data.gcp.cloudcdn.TEST_REGIONAL_BACKEND_SERVICE
+    data = tests.data.gcp.cloudcdn.TEST_REGIONAL_BACKEND_SERVICE
     cartography.intel.gcp.cloudcdn.load_backend_services(
         neo4j_session,
         data,
         TEST_PROJECT_ID,
-        TEST_UPDATE_TAG
+        TEST_UPDATE_TAG,
     )
 
     expected_nodes = {
@@ -73,13 +76,14 @@ def test_regional_backend_service(neo4j_session):
 
     assert actual_nodes == expected_nodes
 
+
 def test_global_url_map(neo4j_session):
-    data =  tests.data.gcp.cloudcdn.TEST_GLOBAL_URL_MAP
+    data = tests.data.gcp.cloudcdn.TEST_GLOBAL_URL_MAP
     cartography.intel.gcp.cloudcdn.load_url_maps(
         neo4j_session,
         data,
         TEST_PROJECT_ID,
-        TEST_UPDATE_TAG
+        TEST_UPDATE_TAG,
     )
 
     expected_nodes = {
@@ -96,13 +100,14 @@ def test_global_url_map(neo4j_session):
 
     assert actual_nodes == expected_nodes
 
+
 def test_regional_url_map(neo4j_session):
-    data =  tests.data.gcp.cloudcdn.TEST_REGIONAL_URL_MAP
+    data = tests.data.gcp.cloudcdn.TEST_REGIONAL_URL_MAP
     cartography.intel.gcp.cloudcdn.load_url_maps(
         neo4j_session,
         data,
         TEST_PROJECT_ID,
-        TEST_UPDATE_TAG
+        TEST_UPDATE_TAG,
     )
 
     expected_nodes = {

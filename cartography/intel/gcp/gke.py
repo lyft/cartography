@@ -1,15 +1,15 @@
 import json
 import logging
+import time
 from typing import Dict
 
-import time
 import neo4j
+from cloudconsolelink.clouds.gcp import GCPLinker
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
-from cloudconsolelink.clouds.gcp import GCPLinker
 
-from cartography.util import run_cleanup_job
 from . import label
+from cartography.util import run_cleanup_job
 from cartography.util import timeit
 logger = logging.getLogger(__name__)
 gcp_console_link = GCPLinker()
@@ -36,7 +36,8 @@ def get_gke_clusters(container: Resource, project_id: str, regions: list, common
         for item in res.get('clusters', []):
             item['id'] = f"projects/{project_id}/clusters/{item['name']}"
             item['consolelink'] = gcp_console_link.get_console_link(
-                resource_name='gke_cluster', project_id=project_id, zone=item['zone'], gke_cluster_name=item['name'])
+                resource_name='gke_cluster', project_id=project_id, zone=item['zone'], gke_cluster_name=item['name'],
+            )
             if regions is None:
                 data.append(item)
             else:
@@ -51,8 +52,11 @@ def get_gke_clusters(container: Resource, project_id: str, regions: list, common
             totalPages = int(totalPages)
             if pageNo < totalPages or pageNo == totalPages:
                 logger.info(f'pages process for gke Cluster {pageNo}/{totalPages} pageSize is {pageSize}')
-            page_start = (common_job_parameters.get('pagination', {}).get('gke', None)[
-                          'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('gke', None)['pageSize']
+            page_start = (
+                common_job_parameters.get('pagination', {}).get('gke', None)[
+                'pageNo'
+                ] - 1
+            ) * common_job_parameters.get('pagination', {}).get('gke', None)['pageSize']
             page_end = page_start + common_job_parameters.get('pagination', {}).get('gke', None)['pageSize']
             if page_end > len(data) or page_end == len(data):
                 data = data[page_start:]
@@ -167,7 +171,8 @@ def load_gke_clusters(neo4j_session: neo4j.Session, cluster_resp: Dict, project_
             ClusterPrivateEndpointEnabled=cluster.get('privateClusterConfig', {}).get('enablePrivateEndpoint'),
             ClusterPrivateEndpoint=cluster.get('privateClusterConfig', {}).get('privateEndpoint'),
             ClusterMasterGlobalAccessConfig=cluster.get('privateClusterConfig', {}).get(
-                'masterGlobalAccessConfig', {}).get('enabled'),
+                'masterGlobalAccessConfig', {},
+            ).get('enabled'),
             ClusterPublicEndpoint=cluster.get('privateClusterConfig', {}).get('publicEndpoint'),
             ClusterMasterUsername=cluster.get('masterAuth', {}).get('username'),
             ClusterMasterPassword=cluster.get('masterAuth', {}).get('password'),
@@ -208,7 +213,7 @@ def cleanup_gke_clusters(neo4j_session: neo4j.Session, common_job_parameters: Di
 @timeit
 def sync(
     neo4j_session: neo4j.Session, container: Resource, project_id: str, gcp_update_tag: int,
-    common_job_parameters: Dict, regions: list
+    common_job_parameters: Dict, regions: list,
 ) -> None:
     """
     Get GCP GKE Clusters using the Container resource object, ingest to Neo4j, and clean up old data.

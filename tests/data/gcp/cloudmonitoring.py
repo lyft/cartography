@@ -1,4 +1,4 @@
-TEST_POLICIES =[
+TEST_POLICIES = [
     {
         'policy_name': 'policy123',
         'id': 'projects/project123/policies/policy123',
@@ -6,10 +6,10 @@ TEST_POLICIES =[
         'region': 'us-east-a1',
         'enabled': True,
 
-    }
+    },
 ]
 
-TEST_METRICS =[
+TEST_METRICS = [
     {
         'name': 'metric123',
         'id': 'projects/project123/metricDescriptors/metric123',
@@ -17,10 +17,10 @@ TEST_METRICS =[
         'region': 'us-east-a1',
         'unit': 1,
 
-    }
+    },
 ]
 
-TEST_CHANELS =[
+TEST_CHANELS = [
     {
         'chanel_name': 'notificationChannels123',
         'id': 'projects/project123/notificationChannels/notificationChannels123',
@@ -28,10 +28,10 @@ TEST_CHANELS =[
         'region': 'us-east-a1',
         'enabled': True,
 
-    }
+    },
 ]
 
-TEST_CONGIGS =[
+TEST_CONGIGS = [
     {
         'config_name': 'uptimeCheckConfigs123',
         'id': 'projects/project123/uptimeCheckConfigs/uptimeCheckConfigs123',
@@ -39,5 +39,5 @@ TEST_CONGIGS =[
         'region': 'us-east-a1',
         'isInternal': True,
 
-    }
+    },
 ]

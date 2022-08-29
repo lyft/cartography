@@ -1,15 +1,15 @@
 import json
 import logging
+import time
 from typing import Dict
 from typing import List
 
-import time
 import neo4j
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
 
-from cartography.util import run_cleanup_job
 from . import label
+from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -21,7 +21,7 @@ def get_dataproc_clusters(dataproc: Resource, project_id: str, regions: list) ->
     try:
         if regions:
             for region in regions:
-                req = dataproc.projects().regions().clusters().list(projectId=project_id,region=region)
+                req = dataproc.projects().regions().clusters().list(projectId=project_id, region=region)
                 while req is not None:
                     res = req.execute()
                     if res.get('clusters'):
@@ -30,7 +30,6 @@ def get_dataproc_clusters(dataproc: Resource, project_id: str, regions: list) ->
                             cluster['id'] = f"projects/{project_id}/clusters/{cluster['clusterName']}"
                             clusters.append(cluster)
                     req = dataproc.projects().regions().clusters().list_next(previous_request=req, previous_response=res)
-
 
         return clusters
     except HttpError as e:
@@ -105,8 +104,11 @@ def sync_dataproc_clusters(
         totalPages = int(totalPages)
         if pageNo < totalPages or pageNo == totalPages:
             logger.info(f'pages process for dataproc clusters {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (common_job_parameters.get('pagination', {}).get('dataproc', None)[
-                        'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('dataproc', None)['pageSize']
+        page_start = (
+            common_job_parameters.get('pagination', {}).get('dataproc', None)[
+            'pageNo'
+            ] - 1
+        ) * common_job_parameters.get('pagination', {}).get('dataproc', None)['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('dataproc', None)['pageSize']
         if page_end > len(clusters) or page_end == len(clusters):
             clusters = clusters[page_start:]
@@ -129,8 +131,10 @@ def sync(
 
     logger.info(f"Syncing Dataproc for project {project_id}, at {tic}")
 
-    sync_dataproc_clusters(neo4j_session, dataproc, project_id, regions,
-                                  gcp_update_tag, common_job_parameters)
+    sync_dataproc_clusters(
+        neo4j_session, dataproc, project_id, regions,
+        gcp_update_tag, common_job_parameters,
+    )
 
     toc = time.perf_counter()
     logger.info(f"Time to process dataproc: {toc - tic:0.4f} seconds")

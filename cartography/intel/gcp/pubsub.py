@@ -1,15 +1,15 @@
 import json
 import logging
+import time
 from typing import Dict
 from typing import List
 
-import time
 import neo4j
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
 
-from cartography.util import run_cleanup_job
 from . import label
+from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -126,8 +126,11 @@ def get_pubsub_topics(pubsub: Resource, project_id: str, regions: list, common_j
             totalPages = int(totalPages)
             if pageNo < totalPages or pageNo == totalPages:
                 logger.info(f'pages process for pubsub topics {pageNo}/{totalPages} pageSize is {pageSize}')
-            page_start = (common_job_parameters.get('pagination', {}).get('pubsub', None)[
-                          'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('pubsub', None)['pageSize']
+            page_start = (
+                common_job_parameters.get('pagination', {}).get('pubsub', None)[
+                'pageNo'
+                ] - 1
+            ) * common_job_parameters.get('pagination', {}).get('pubsub', None)['pageSize']
             page_end = page_start + common_job_parameters.get('pagination', {}).get('pubsub', None)['pageSize']
             if page_end > len(topics) or page_end == len(topics):
                 topics = topics[page_start:]
@@ -205,8 +208,10 @@ def sync(
     topics = get_pubsub_topics(pubsub, project_id, regions, common_job_parameters)
     load_pubsub_topics(neo4j_session, topics, project_id, gcp_update_tag)
 
-    label.sync_labels(neo4j_session, topics, gcp_update_tag,
-                      common_job_parameters, 'pubsub_topics', 'GCPPubsubTopic')
+    label.sync_labels(
+        neo4j_session, topics, gcp_update_tag,
+        common_job_parameters, 'pubsub_topics', 'GCPPubsubTopic',
+    )
 
     if common_job_parameters.get('pagination', {}).get('pubsub', None):
         if not common_job_parameters.get('pagination', {}).get('pubsub', {}).get('hasNextPage', False):
@@ -214,16 +219,20 @@ def sync(
             load_pubsub_subscriptions(neo4j_session, subscriptions, project_id, gcp_update_tag)
 
             cleanup_pubsub_subscriptions(neo4j_session, common_job_parameters)
-            label.sync_labels(neo4j_session, subscriptions, gcp_update_tag,
-                              common_job_parameters, 'pubsub_subscription', 'GCPPubsubSubscription')
+            label.sync_labels(
+                neo4j_session, subscriptions, gcp_update_tag,
+                common_job_parameters, 'pubsub_subscription', 'GCPPubsubSubscription',
+            )
 
     else:
         subscriptions = get_pubsub_subscriptions(pubsub, project_id, regions, common_job_parameters)
         load_pubsub_subscriptions(neo4j_session, subscriptions, project_id, gcp_update_tag)
 
         cleanup_pubsub_subscriptions(neo4j_session, common_job_parameters)
-        label.sync_labels(neo4j_session, subscriptions, gcp_update_tag,
-                          common_job_parameters, 'pubsub_subscription', 'GCPPubsubSubscription')
+        label.sync_labels(
+            neo4j_session, subscriptions, gcp_update_tag,
+            common_job_parameters, 'pubsub_subscription', 'GCPPubsubSubscription',
+        )
 
     cleanup_pubsub_topics(neo4j_session, common_job_parameters)
 

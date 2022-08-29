@@ -1,16 +1,16 @@
 import json
 import logging
+import time
 from typing import Dict
 from typing import List
 
-import time
 import neo4j
+from cloudconsolelink.clouds.gcp import GCPLinker
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
-from cloudconsolelink.clouds.gcp import GCPLinker
 
-from cartography.util import run_cleanup_job
 from . import label
+from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -40,7 +40,8 @@ def get_firestore_databases(firestore: Resource, project_id: str, regions: list,
                 database['id'] = database['name']
                 database['database_name'] = database['name'].split('/')[-1]
                 database['consolelink'] = gcp_console_link.get_console_link(
-                    resource_name='firestore_collection', project_id=project_id, firestore_collection_name=database['name'].split("/")[-1])
+                    resource_name='firestore_collection', project_id=project_id, firestore_collection_name=database['name'].split("/")[-1],
+                )
                 if regions is None:
                     firestore_databases.append(database)
                 else:
@@ -55,8 +56,11 @@ def get_firestore_databases(firestore: Resource, project_id: str, regions: list,
             totalPages = int(totalPages)
             if pageNo < totalPages or pageNo == totalPages:
                 logger.info(f'pages process for firestore databases {pageNo}/{totalPages} pageSize is {pageSize}')
-            page_start = (common_job_parameters.get('pagination', {}).get('firestore', None)[
-                          'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('firestore', None)['pageSize']
+            page_start = (
+                common_job_parameters.get('pagination', {}).get('firestore', None)[
+                'pageNo'
+                ] - 1
+            ) * common_job_parameters.get('pagination', {}).get('firestore', None)['pageSize']
             page_end = page_start + common_job_parameters.get('pagination', {}).get('firestore', None)['pageSize']
             if page_end > len(firestore_databases) or page_end == len(firestore_databases):
                 firestore_databases = firestore_databases[page_start:]
@@ -265,7 +269,7 @@ def cleanup_firestore(neo4j_session: neo4j.Session, common_job_parameters: Dict)
 @timeit
 def sync(
     neo4j_session: neo4j.Session, firestore: Resource, project_id: str, gcp_update_tag: int,
-    common_job_parameters: Dict, regions: list
+    common_job_parameters: Dict, regions: list,
 ) -> None:
     """
         Get GCP Cloud Firestore using the Cloud Firestore resource object, ingest to Neo4j, and clean up old data.
@@ -294,10 +298,13 @@ def sync(
 
     # FIRESTORE DATABASES
     firestore_databases = get_firestore_databases(
-        firestore, project_id, regions, common_job_parameters)
+        firestore, project_id, regions, common_job_parameters,
+    )
     load_firestore_databases(neo4j_session, firestore_databases, project_id, gcp_update_tag)
-    label.sync_labels(neo4j_session, firestore_databases, gcp_update_tag,
-                      common_job_parameters, 'firestore databases', 'GCPFirestoreDatabase')
+    label.sync_labels(
+        neo4j_session, firestore_databases, gcp_update_tag,
+        common_job_parameters, 'firestore databases', 'GCPFirestoreDatabase',
+    )
     # FIRESTORE INDEXES
     firestore_indexes = get_firestore_indexes(firestore, firestore_databases, project_id)
     load_firestore_indexes(neo4j_session, firestore_indexes, project_id, gcp_update_tag)

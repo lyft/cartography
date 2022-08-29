@@ -17,5 +17,5 @@ TEST_TOPICS = [
         'region': 'us-east-a1',
         'messageRetentionDuration': 123,
 
-    }
+    },
 ]
