@@ -7,7 +7,6 @@
   - rds:ListTagsForResource
   relationship_name: READ
 
-
 - target_label: RDSInstance
   permissions:
   - rds:AuthorizeDBSecurityGroupIngress
@@ -151,3 +150,189 @@
   - rds:StopDBInstance
   - rds:StopDBInstanceAutomatedBackupsReplication
   relationship_name: WRITE
+
+
+- target_label: DynamoDBTable
+  permissions:
+  - dynamodb:BatchGetItem
+  - dynamodb:BatchWriteItem
+  - dynamodb:ConditionCheckItem
+  - dynamodb:DescribeBackup
+  - dynamodb:DescribeContinuousBackups
+  - dynamodb:DescribeContributorInsights
+  - dynamodb:DescribeExport
+  - dynamodb:DescribeGlobalTable
+  - dynamodb:DescribeGlobalTableSettings
+  - dynamodb:DescribeKinesisStreamingDestination
+  - dynamodb:DescribeLimits
+  - dynamodb:DescribeReservedCapacity
+  - dynamodb:DescribeReservedCapacityOfferings
+  - dynamodb:DescribeStream
+  - dynamodb:DescribeTable
+  - dynamodb:DescribeTableReplicaAutoScaling
+  - dynamodb:DescribeTimeToLive
+  - dynamodb:GetItem
+  - dynamodb:GetRecords
+  - dynamodb:GetShardIterator
+  - dynamodb:ListStreams
+  - dynamodb:ListTagOfResource
+  - dynamodb:PartiQLSelect
+  - dynamodb:Query
+  - dynamodb:Scan
+  relationship_name: READ
+
+- target_label: DynamoDBTable
+  permissions:
+  - dynamodb:CreateBackup
+  - dynamodb:CreateTable
+  - dynamodb:CreateTableReplica
+  - dynamodb:DeleteBackup
+  - dynamodb:DeleteItem
+  - dynamodb:DeleteTable
+  - dynamodb:DeleteTableReplica
+  - dynamodb:DisableKinesisStreamingDistribution
+  - dynamodb:EnableKinesisStreamingDistribution
+  - dynamodb:ExportTableToPointInTime
+  - dynamodb:PartiQLDelete
+  - dynamodb:PartiQLInsert
+  - dynamodb:PartiQLUpdate
+  - dynamodb:PurchaseReservedCapacityOfferings
+  - dynamodb:PutItem
+  - dynamodb:RestoreTableFromAwsBackup
+  - dynamodb:RestoreTableFromBackup
+  - dynamodb:RestoreTableToPointInTime
+  - dynamodb:StartAwsBackupJob
+  - dynamodb:UpdateContinuousBackups
+  - dynamodb:UpdateContributorInsights
+  - dynamodb:UpdateGlobalTable
+  - dynamodb:UpdateGlobalTableSettings
+  - dynamodb:UpdateItem
+  - dynamodb:UpdateTable
+  - dynamodb:UpdateTableReplicaAutoScaling
+  - dynamodb:UpdateTimeToLive
+  relationship_name: WRITE
+
+
+- target_label: DynamoDBTable
+  permissions:
+  - dynamodb:TagResource
+  - dynamodb:UntagResource
+  relationship_name: TAGGING
+
+- target_label: DynamoDBTable
+  permissions:
+  - dynamodb:ListBackups
+  - dynamodb:ListContributorInsights
+  - dynamodb:ListExports
+  - dynamodb:ListGlobalTables
+  - dynamodb:ListStreams
+  - dynamodb:ListTables
+  - dynamodb:ListTagOfResource
+  relationship_name: LIST
+
+- target_label: S3Bucket
+  permissions:
+  - s3:GetAccelerateConfiguration
+  - s3:GetAnalyticsConfiguration
+  - s3:GetBucketAcl
+  - s3:GetBucketCORS
+  - s3:GetBucketLocation
+  - s3:GetBucketLogging
+  - s3:GetBucketNotification
+  - s3:GetBucketObjectLockConfiguration
+  - s3:GetBucketOwnershipControls
+  - s3:GetBucketPolicy
+  - s3:GetBucketPolicyStatus
+  - s3:GetBucketPublicAccessBlock
+  - s3:GetBucketRequestPayment
+  - s3:GetBucketTagging
+  - s3:GetBucketVersioning
+  - s3:GetBucketWebsite
+  - s3:GetEncryptionConfiguration
+  - s3:GetIntelligentTieringConfiguration
+  - s3:GetInventoryConfiguration
+  - s3:GetLifecycleConfiguration
+  - s3:GetMetricsConfiguration
+  - s3:GetObject
+  - s3:GetObjectAcl
+  - s3:GetObjectAttributes
+  - s3:GetObjectLegalHold
+  - s3:GetObjectRetention
+  - s3:GetObjectTagging
+  - s3:GetObjectTorrent
+  - s3:GetObjectVersion
+  - s3:GetObjectVersionAcl
+  - s3:GetObjectVersionAttributes
+  - s3:GetObjectVersionForReplication
+  - s3:GetObjectVersionTagging
+  - s3:GetObjectVersionTorrent
+  - s3:GetReplicationConfiguration
+  - s3:InitiateReplication
+  relationship_name: READ
+
+- target_label: S3Bucket
+  permissions:
+  - s3:AbortMultipartUpload
+  - s3:CreateBucket
+  - s3:CreateJob
+  - s3:DeleteBucket
+  - s3:DeleteBucketWebsite
+  - s3:DeleteObject
+  - s3:DeleteObjectVersion
+  - s3:PutAccelerateConfiguration
+  - s3:PutAnalyticsConfiguration
+  - s3:PutBucketAcl
+  - s3:PutBucketCORS
+  - s3:PutBucketLogging
+  - s3:PutBucketNotification
+  - s3:PutBucketObjectLockConfiguration
+  - s3:PutBucketOwnershipControls
+  - s3:PutBucketRequestPayment
+  - s3:PutBucketVersioning
+  - s3:PutBucketWebsite
+  - s3:PutEncryptionConfiguration
+  - s3:PutIntelligentTieringConfiguration
+  - s3:PutInventoryConfiguration
+  - s3:PutLifecycleConfiguration
+  - s3:PutMetricsConfiguration
+  - s3:PutObject
+  - s3:PutObjectLegalHold
+  - s3:PutObjectRetention
+  - s3:PutReplicationConfiguration
+  - s3:ReplicateDelete
+  - s3:ReplicateObject
+  - s3:RestoreObject
+  relationship_name: WRITE
+
+- target_label: S3Bucket
+  permissions:
+  - s3:ListAllMyBuckets
+  - s3:ListBucket
+  - s3:ListBucketMultipartUploads
+  - s3:ListBucketVersions
+  - s3:ListMultipartUploadParts
+  relationship_name: LIST
+
+- target_label: S3Bucket
+  permissions:
+  - s3:DeleteObjectTagging
+  - s3:DeleteObjectVersionTagging
+  - s3:PutBucketTagging
+  - s3:PutObjectTagging
+  - s3:PutObjectVersionTagging
+  - s3:ReplicateTags
+  relationship_name: TAGGING
+
+- target_label: S3Bucket
+  permissions:
+  - s3:BypassGovernanceRetention
+  - s3:DeleteBucketPolicy
+  - s3:ObjectOwnerOverrideToBucketOwner
+  - s3:PutAccessPointPublicAccessBlock
+  - s3:PutAccountPublicAccessBlock
+  - s3:PutBucketPolicy
+  - s3:PutBucketPublicAccessBlock
+  - s3:PutObjectAcl
+  - s3:PutObjectVersionAcl
+  relationship_name: PERMISSIONS
+
