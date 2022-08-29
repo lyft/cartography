@@ -8,10 +8,6 @@ ARG gid=10001
 COPY . /var/cartography
 WORKDIR /var/cartography
 
-RUN apt-get update --fix-missing
-RUN apt --allow-unauthenticated  update -y
-RUN apt-get install vim telnet curl gcc -y
-
 RUN pip install -U -e .
 
 USER ${uid}:${gid}
@@ -20,6 +16,4 @@ USER ${uid}:${gid}
 RUN cartography -h
 
 ENTRYPOINT ["cartography"]
-#CMD ["-v", "--neo4j-uri=${NEO4J_URI}", "--aws-sync-all-profiles"]
-
-CMD ["-v", "--neo4j-uri=bolt://neo4j:7687", "--aws-sync-all-profiles"]
+CMD ["-h"]
