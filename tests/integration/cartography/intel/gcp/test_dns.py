@@ -57,6 +57,7 @@ def test_load_rrs(neo4j_session):
 
     assert actual_nodes == expected_nodes
 
+
 def test_load_policies(neo4j_session):
     data = tests.data.gcp.dns.DNS_POLICIES
     cartography.intel.gcp.dns.load_dns_polices(
@@ -83,6 +84,7 @@ def test_load_policies(neo4j_session):
 
     assert actual_nodes == expected_nodes
 
+
 def test_load_keys(neo4j_session):
     data = tests.data.gcp.dns.DNS_KEYS
     cartography.intel.gcp.dns.load_dns_keys(
@@ -107,6 +109,7 @@ def test_load_keys(neo4j_session):
     actual_nodes = {n['r.id'] for n in nodes}
 
     assert actual_nodes == expected_nodes
+
 
 def test_zones_relationships(neo4j_session):
     # Create Test GCPProject
@@ -186,6 +189,7 @@ def test_rrs_relationships(neo4j_session):
 
     assert actual == expected
 
+
 def test_policies_relationships(neo4j_session):
     # Create Test GCPProject
     neo4j_session.run(
@@ -225,6 +229,7 @@ def test_policies_relationships(neo4j_session):
     }
 
     assert actual == expected
+
 
 def test_dns_keys_relationships(neo4j_session):
     # Load Test DNS Zone

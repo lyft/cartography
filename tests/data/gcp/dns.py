@@ -83,20 +83,20 @@ DNS_POLICIES = [
         'id': 'projects/project123/policies/policy123',
         'name': 'policy123',
         'enableInboundForwarding': True,
-        'enableLogging': True
+        'enableLogging': True,
     },
     {
         'id': 'projects/project123/policies/policy456',
         'name': 'policy456',
         'enableInboundForwarding': False,
-        'enableLogging': True
+        'enableLogging': True,
     },
     {
         'id': 'projects/project123/policies/policy789',
         'name': 'policy789',
         'enableInboundForwarding': False,
-        'enableLogging': False
-    }
+        'enableLogging': False,
+    },
 ]
 
 DNS_KEYS = [
@@ -106,7 +106,7 @@ DNS_KEYS = [
         'algorithm': 'rsasha512',
         'keyLength': 34,
         'isActive': True,
-        'zone': '111111111111111111111'
+        'zone': '111111111111111111111',
     },
     {
         'name': 'key123',
@@ -114,6 +114,6 @@ DNS_KEYS = [
         'algorithm': 'rsasha512',
         'keyLength': 34,
         'isActive': True,
-        'zone': '2222222222222222222'
-    }
+        'zone': '2222222222222222222',
+    },
 ]

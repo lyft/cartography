@@ -1,28 +1,27 @@
 import json
 import logging
 from collections import namedtuple
+from concurrent.futures import as_completed
+from concurrent.futures import ThreadPoolExecutor
+from typing import Any
 from typing import Dict
 from typing import List
 from typing import Set
-from typing import Any
-
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import googleapiclient.discovery
 import neo4j
-from neo4j import GraphDatabase
 from googleapiclient.discovery import Resource
+from neo4j import GraphDatabase
 from oauth2client.client import ApplicationDefaultCredentialsError
 from oauth2client.client import GoogleCredentials
 
-
+from . import label
 from .resources import RESOURCE_FUNCTIONS
 from cartography.config import Config
-from cartography.intel.gcp.auth import AuthHelper
 from cartography.intel.gcp import crm
+from cartography.intel.gcp.auth import AuthHelper
 from cartography.intel.gcp.util.common import parse_and_validate_gcp_requested_syncs
 from cartography.util import run_analysis_job
-from . import label
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -356,11 +355,15 @@ def concurrent_execution(
     )
 
     if service == 'iam':
-        service_func(neo4j_driver.session(), resource, crm, project_id,
-                     gcp_update_tag, common_job_parameters)
+        service_func(
+            neo4j_driver.session(), resource, crm, project_id,
+            gcp_update_tag, common_job_parameters,
+        )
     else:
-        service_func(neo4j_driver.session(), resource, project_id, gcp_update_tag,
-                     common_job_parameters, regions)
+        service_func(
+            neo4j_driver.session(), resource, project_id, gcp_update_tag,
+            common_job_parameters, regions,
+        )
     logger.info(f"END processing for service: {service}")
 
 
@@ -387,12 +390,18 @@ def _sync_single_project(
             if request in RESOURCE_FUNCTIONS:
                 # if getattr(service_names, request) in enabled_services:
 
-                futures.append(executor.submit(concurrent_execution, request, RESOURCE_FUNCTIONS[request], config, getattr(
-                    resources, request), common_job_parameters, gcp_update_tag, project_id, resources.crm_v1))
+                futures.append(
+                    executor.submit(
+                        concurrent_execution, request, RESOURCE_FUNCTIONS[request], config, getattr(
+                        resources, request,
+                        ), common_job_parameters, gcp_update_tag, project_id, resources.crm_v1,
+                    ),
+                )
 
             else:
                 raise ValueError(
-                    f'GCP sync function "{request}" was specified but does not exist. Did you misspell it?')
+                    f'GCP sync function "{request}" was specified but does not exist. Did you misspell it?',
+                )
 
         for future in as_completed(futures):
             logger.info(f'Result from Future - Service Processing: {future.result()}')
@@ -430,7 +439,7 @@ def _sync_multiple_projects(
         logger.info("Syncing GCP project %s.", project_id)
         _sync_single_project(
             neo4j_session, resources, requested_syncs,
-            project_id, gcp_update_tag, common_job_parameters, config
+            project_id, gcp_update_tag, common_job_parameters, config,
         )
 
     del common_job_parameters["GCP_PROJECT_ID"]
@@ -498,7 +507,7 @@ def start_gcp_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
 
     _sync_multiple_projects(
         neo4j_session, resources, requested_syncs,
-        projects, config.update_tag, common_job_parameters, config
+        projects, config.update_tag, common_job_parameters, config,
     )
 
     # run_analysis_job(

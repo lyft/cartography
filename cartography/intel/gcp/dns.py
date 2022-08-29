@@ -1,16 +1,16 @@
 import json
 import logging
+import time
 from typing import Dict
 from typing import List
 
-import time
 import neo4j
+from cloudconsolelink.clouds.gcp import GCPLinker
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
-from cloudconsolelink.clouds.gcp import GCPLinker
 
-from cartography.util import run_cleanup_job
 from . import label
+from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -36,11 +36,8 @@ def get_dns_zones(dns: Resource, project_id: str, common_job_parameters) -> List
         request = dns.managedZones().list(project=project_id)
         while request is not None:
             response = request.execute()
-            for managed_zone in response['managedZones']:
-                managed_zone['id'] = f"projects/{project_id}/managedZones/{managed_zone['name']}"
-                managed_zone['consolelink'] = gcp_console_link.get_console_link(
-                    resource_name='dns_zone', project_id=project_id, dns_zone_name=managed_zone['name'])
-                zones.append(managed_zone)
+            if 'managedZones' in response:
+                zones.extend(response['managedZone'])
             request = dns.managedZones().list_next(previous_request=request, previous_response=response)
         if common_job_parameters.get('pagination', {}).get('dns', None):
             pageNo = common_job_parameters.get("pagination", {}).get("dns", None)["pageNo"]
@@ -51,8 +48,11 @@ def get_dns_zones(dns: Resource, project_id: str, common_job_parameters) -> List
             totalPages = int(totalPages)
             if pageNo < totalPages or pageNo == totalPages:
                 logger.info(f'pages process for dns zones {pageNo}/{totalPages} pageSize is {pageSize}')
-            page_start = (common_job_parameters.get('pagination', {}).get('dns', None)[
-                          'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('dns', None)['pageSize']
+            page_start = (
+                common_job_parameters.get('pagination', {}).get('dns', None)[
+                    'pageNo'
+                ] - 1
+            ) * common_job_parameters.get('pagination', {}).get('dns', None)['pageSize']
             page_end = page_start + common_job_parameters.get('pagination', {}).get('dns', None)['pageSize']
             if page_end > len(zones) or page_end == len(zones):
                 zones = zones[page_start:]
@@ -76,7 +76,20 @@ def get_dns_zones(dns: Resource, project_id: str, common_job_parameters) -> List
 
 
 @timeit
-def get_dns_rrs(dns: Resource, zone: list, project_id: str) -> List[Resource]:
+def transform_managed_zones(zones: List, project_id: str) -> List[Resource]:
+    list_zones = []
+    for managed_zone in zones:
+        managed_zone['id'] = f"projects/{project_id}/managedZones/{managed_zone['name']}"
+        managed_zone['consolelink'] = gcp_console_link.get_console_link(
+            resource_name='dns_zone', project_id=project_id, dns_zone_name=managed_zone['name'],
+        )
+        list_zones.append(managed_zone)
+
+    return list_zones
+
+
+@timeit
+def get_dns_rrs(dns: Resource, zone: Dict, project_id: str) -> List[Resource]:
     """
     Returns a list of DNS Resource Record Sets within the given project.
 
@@ -114,14 +127,16 @@ def get_dns_rrs(dns: Resource, zone: list, project_id: str) -> List[Resource]:
             # raise
             return []
 
+
 @timeit
-def transform_rrs(rrsets: list, zone: dict, project_id: str):
+def transform_rrs(rrsets: List, zone: Dict, project_id: str):
     list_rrs = []
 
     for resource_record_set in rrsets:
         resource_record_set['zone'] = zone['id']
         resource_record_set['consolelink'] = gcp_console_link.get_console_link(
-            resource_name='dns_resource_record_set', project_id=project_id, dns_zone_name=zone['name'], dns_rrset_name=resource_record_set['name'])
+            resource_name='dns_resource_record_set', project_id=project_id, dns_zone_name=zone['name'], dns_rrset_name=resource_record_set['name'],
+        )
         resource_record_set[
             "id"
         ] = f"projects/{project_id}/resourceRecordSet/{resource_record_set.get('name',None)}"
@@ -129,8 +144,9 @@ def transform_rrs(rrsets: list, zone: dict, project_id: str):
 
     return list_rrs
 
+
 @timeit
-def get_dns_keys(dns: Resource, zone: dict, project_id: str) -> List[Resource]:
+def get_dns_keys(dns: Resource, zone: Dict, project_id: str) -> List[Resource]:
     """
     Returns a list of DNS Keys within the given project.
 
@@ -168,8 +184,9 @@ def get_dns_keys(dns: Resource, zone: dict, project_id: str) -> List[Resource]:
             # raise
             return []
 
+
 @timeit
-def transform_dns_keys(dnsKeys: list, project_id: str, zone: dict):
+def transform_dns_keys(dnsKeys: List, project_id: str, zone: Dict):
     list_keys = []
 
     for key in dnsKeys:
@@ -211,8 +228,11 @@ def get_dns_policies(dns: Resource, project_id: str, common_job_parameters) -> L
             totalPages = int(totalPages)
             if pageNo < totalPages or pageNo == totalPages:
                 logger.info(f'pages process for dns zones {pageNo}/{totalPages} pageSize is {pageSize}')
-            page_start = (common_job_parameters.get('pagination', {}).get('dns', None)[
-                          'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('dns', None)['pageSize']
+            page_start = (
+                common_job_parameters.get('pagination', {}).get('dns', None)[
+                    'pageNo'
+                ] - 1
+            ) * common_job_parameters.get('pagination', {}).get('dns', None)['pageSize']
             page_end = page_start + common_job_parameters.get('pagination', {}).get('dns', None)['pageSize']
             if page_end > len(policies) or page_end == len(policies):
                 policies = policies[page_start:]
@@ -233,6 +253,7 @@ def get_dns_policies(dns: Resource, project_id: str, common_job_parameters) -> L
         else:
             raise
 
+
 @timeit
 def transform_dns_policies(policies: List[Dict], project_id: str) -> List[Dict]:
     list_policies = []
@@ -242,6 +263,7 @@ def transform_dns_policies(policies: List[Dict], project_id: str) -> List[Dict]:
         list_policies.append(policy)
 
     return list_policies
+
 
 @timeit
 def load_dns_zones(neo4j_session: neo4j.Session, dns_zones: List[Dict], project_id: str, gcp_update_tag: int) -> None:
@@ -344,6 +366,7 @@ def load_rrs(neo4j_session: neo4j.Session, dns_rrs: List[Resource], project_id: 
         gcp_update_tag=gcp_update_tag,
     )
 
+
 @timeit
 def load_dns_polices(neo4j_session: neo4j.Session, policies: List[Dict], project_id: str, gcp_update_tag: int) -> None:
     """
@@ -390,6 +413,7 @@ def load_dns_polices(neo4j_session: neo4j.Session, policies: List[Dict], project
         ProjectId=project_id,
         gcp_update_tag=gcp_update_tag,
     )
+
 
 @timeit
 def load_dns_keys(neo4j_session: neo4j.Session, dns_keys: List[Dict], project_id: str, gcp_update_tag: int) -> None:
@@ -438,6 +462,7 @@ def load_dns_keys(neo4j_session: neo4j.Session, dns_keys: List[Dict], project_id
         gcp_update_tag=gcp_update_tag,
     )
 
+
 @timeit
 def cleanup_dns_records(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     """
@@ -458,7 +483,7 @@ def cleanup_dns_records(neo4j_session: neo4j.Session, common_job_parameters: Dic
 @timeit
 def sync(
     neo4j_session: neo4j.Session, dns: Resource, project_id: str, gcp_update_tag: int,
-    common_job_parameters: Dict, regions: list
+    common_job_parameters: Dict, regions: List,
 ) -> None:
     """
     Get GCP DNS Zones and Resource Record Sets using the DNS resource object, ingest to Neo4j, and clean up old data.
@@ -486,7 +511,8 @@ def sync(
     logger.info("Syncing DNS for project '%s', at %s.", project_id, tic)
 
     # DNS ZONES
-    dns_zones = get_dns_zones(dns, project_id, common_job_parameters)
+    zones = get_dns_zones(dns, project_id, common_job_parameters)
+    dns_zones = transform_managed_zones(zones, project_id)
     load_dns_zones(neo4j_session, dns_zones, project_id, gcp_update_tag)
     label.sync_labels(neo4j_session, dns_zones, gcp_update_tag, common_job_parameters, 'dns_zones', 'GCPDNSZone')
     # DNS POLICIES

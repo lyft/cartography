@@ -1,17 +1,17 @@
 import json
 import logging
+import time
 from typing import Dict
 from typing import List
-from . import iam
 
-import time
 import neo4j
+from cloudconsolelink.clouds.gcp import GCPLinker
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
-from cloudconsolelink.clouds.gcp import GCPLinker
 
-from cartography.util import run_cleanup_job
+from . import iam
 from . import label
+from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -56,8 +56,11 @@ def get_kms_locations(kms: Resource, project_id: str, regions: list, common_job_
             totalPages = int(totalPages)
             if pageNo < totalPages or pageNo == totalPages:
                 logger.info(f'pages process for cloudkms locations {pageNo}/{totalPages} pageSize is {pageSize}')
-            page_start = (common_job_parameters.get('pagination', {}).get('cloudkms', None)[
-                          'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('cloudkms', None)['pageSize']
+            page_start = (
+                common_job_parameters.get('pagination', {}).get('cloudkms', None)[
+                'pageNo'
+                ] - 1
+            ) * common_job_parameters.get('pagination', {}).get('cloudkms', None)['pageSize']
             page_end = page_start + common_job_parameters.get('pagination', {}).get('cloudkms', None)['pageSize']
             if page_end > len(locations) or page_end == len(locations):
                 locations = locations[page_start:]
@@ -112,7 +115,8 @@ def get_kms_keyrings(kms: Resource, kms_locations: List[Dict], project_id: str) 
                         key_ring['entities'] = key_ring_entities
                         key_ring['public_access'] = public_access
                         key_ring['consolelink'] = gcp_console_link.get_console_link(
-                            resource_name='kms_key_ring', project_id=project_id, kms_key_ring_name=key_ring['name'].split('/')[-1], region=key_ring['region'])
+                            resource_name='kms_key_ring', project_id=project_id, kms_key_ring_name=key_ring['name'].split('/')[-1], region=key_ring['region'],
+                        )
                         key_rings.append(key_ring)
                 request = kms.projects().locations().keyRings().list_next(
                     previous_request=request,
@@ -198,7 +202,8 @@ def get_kms_crypto_keys(kms: Resource, key_rings: List[Dict], project_id: str) -
                         crypto_key['crypto_key_name'] = crypto_key['name'].split('/')[-1]
                         crypto_key['region'] = key_ring.get("region", "global")
                         crypto_key['consolelink'] = gcp_console_link.get_console_link(
-                            resource_name='kms_key', project_id=project_id, kms_key_ring_name=key_ring['name'].split('/')[-1], region=crypto_key['region'], kms_key_name=crypto_key['name'].split('/')[-1])
+                            resource_name='kms_key', project_id=project_id, kms_key_ring_name=key_ring['name'].split('/')[-1], region=crypto_key['region'], kms_key_name=crypto_key['name'].split('/')[-1],
+                        )
                         crypto_keys.append(crypto_key)
                 request = kms.projects().locations().keyRings().cryptoKeys().list_next(
                     previous_request=request,
@@ -428,7 +433,7 @@ def cleanup_gcp_kms(neo4j_session: neo4j.Session, common_job_parameters: Dict) -
 @timeit
 def sync(
     neo4j_session: neo4j.Session, kms: Resource, project_id: str, gcp_update_tag: int,
-    common_job_parameters: Dict, regions: list
+    common_job_parameters: Dict, regions: list,
 ) -> None:
     """
     Get GCP Cloud KMS using the Cloud KMS resource object, ingest to Neo4j, and clean up old data.

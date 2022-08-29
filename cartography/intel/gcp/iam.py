@@ -1,16 +1,16 @@
 import json
 import logging
+import time
 from typing import Dict
 from typing import List
 
-import time
 import neo4j
+from cloudconsolelink.clouds.gcp import GCPLinker
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
-from cloudconsolelink.clouds.gcp import GCPLinker
 
-from cartography.util import run_cleanup_job
 from . import label
+from cartography.util import run_cleanup_job
 from cartography.util import timeit
 logger = logging.getLogger(__name__)
 gcp_console_link = GCPLinker()
@@ -52,7 +52,8 @@ def transform_service_accounts(service_accounts: List[Dict], project_id: str) ->
         account['id'] = account['name']
         account['service_account_name'] = account['name'].split('/')[-1]
         account['consolelink'] = gcp_console_link.get_console_link(
-            resource_name='service_account', project_id=project_id, service_account_unique_id=account['uniqueId'])
+            resource_name='service_account', project_id=project_id, service_account_unique_id=account['uniqueId'],
+        )
     return service_accounts
 
 
@@ -67,7 +68,8 @@ def get_service_account_keys(iam: Resource, project_id: str, service_account: Di
             key['service_account_key_name'] = key['name'].split('/')[-1]
             key['serviceaccount'] = service_account['name']
             key['consolelink'] = gcp_console_link.get_console_link(
-                resource_name='service_account_key', project_id=project_id, service_account_unique_id=service_account['uniqueId'])
+                resource_name='service_account_key', project_id=project_id, service_account_unique_id=service_account['uniqueId'],
+            )
 
         service_keys.extend(keys)
 
@@ -140,7 +142,8 @@ def transform_roles(roles_list: List[Dict], project_id: str) -> List[Dict]:
     for role in roles_list:
         role['id'] = get_role_id(role['name'], project_id)
         role['consolelink'] = gcp_console_link.get_console_link(
-            resource_name='iam_role', project_id=project_id, role_id=role['name'])
+            resource_name='iam_role', project_id=project_id, role_id=role['name'],
+        )
     return roles_list
 
 
@@ -367,7 +370,7 @@ def load_bindings(neo4j_session: neo4j.Session, bindings: List[Dict], project_id
 
             elif member.startswith('serviceAccount:'):
                 serviceAccount = {
-                    'id': f"projects/{project_id}/serviceAccounts/{member[len('serviceAccount:'):]}"
+                    'id': f"projects/{project_id}/serviceAccounts/{member[len('serviceAccount:'):]}",
                 }
                 attach_role_to_service_account(
                     neo4j_session,
@@ -411,7 +414,7 @@ def load_bindings(neo4j_session: neo4j.Session, bindings: List[Dict], project_id
                         'id': f"projects/{project_id}/users/{usr}",
                         "email": usr,
                         "name": usr.split("@")[0],
-                        "is_deleted": True
+                        "is_deleted": True,
                     }
                     attach_role_to_user(
                         neo4j_session, role_id, user,
@@ -421,7 +424,7 @@ def load_bindings(neo4j_session: neo4j.Session, bindings: List[Dict], project_id
                 elif member.startswith('serviceAccount:'):
                     serviceAccount = {
                         'id': f"projects/{project_id}/serviceAccounts/{member[len('serviceAccount:'):]}",
-                        'is_deleted': True
+                        'is_deleted': True,
                     }
                     attach_role_to_service_account(
                         neo4j_session,
@@ -436,7 +439,7 @@ def load_bindings(neo4j_session: neo4j.Session, bindings: List[Dict], project_id
                         "id": f'projects/{project_id}/groups/{grp}',
                         "email": grp,
                         "name": grp.split('@')[0],
-                        "is_deleted": True
+                        "is_deleted": True,
                     }
                     attach_role_to_group(
                         neo4j_session, role_id,
@@ -450,7 +453,7 @@ def load_bindings(neo4j_session: neo4j.Session, bindings: List[Dict], project_id
                         "id": f'projects/{project_id}/domains/{dmn}',
                         "email": dmn,
                         "name": dmn,
-                        "is_deleted": True
+                        "is_deleted": True,
                     }
                     attach_role_to_domain(
                         neo4j_session, role_id,
@@ -657,7 +660,7 @@ def _set_used_state_tx(
 @timeit
 def sync(
     neo4j_session: neo4j.Session, iam: Resource, crm: Resource,
-    project_id: str, gcp_update_tag: int, common_job_parameters: Dict
+    project_id: str, gcp_update_tag: int, common_job_parameters: Dict,
 ) -> None:
     tic = time.perf_counter()
 
@@ -676,8 +679,11 @@ def sync(
         if pageNo < totalPages or pageNo == totalPages:
             logger.info(f'pages process for iam service_accounts {pageNo}/{totalPages} pageSize is {pageSize}')
 
-        page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
+        page_start = (
+            common_job_parameters.get('pagination', {}).get('iam', {})[
+            'pageNo'
+            ] - 1
+        ) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
 
         if page_end > len(service_accounts_list) or page_end == len(service_accounts_list):
@@ -696,8 +702,10 @@ def sync(
         load_service_account_keys(neo4j_session, service_account_keys, service_account['name'], gcp_update_tag)
 
     cleanup_service_accounts(neo4j_session, common_job_parameters)
-    label.sync_labels(neo4j_session, service_accounts_list, gcp_update_tag,
-                      common_job_parameters, 'service accounts', 'GCPServiceAccount')
+    label.sync_labels(
+        neo4j_session, service_accounts_list, gcp_update_tag,
+        common_job_parameters, 'service accounts', 'GCPServiceAccount',
+    )
 
     roles_list = get_roles(iam, project_id)
     custom_roles_list = get_project_roles(iam, project_id)
@@ -714,8 +722,11 @@ def sync(
         if pageNo < totalPages or pageNo == totalPages:
             logger.info(f'pages process for iam roles {pageNo}/{totalPages} pageSize is {pageSize}')
 
-        page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
+        page_start = (
+            common_job_parameters.get('pagination', {}).get('iam', {})[
+            'pageNo'
+            ] - 1
+        ) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
         if page_end > len(roles_list) or page_end == len(roles_list):
             roles_list = roles_list[page_start:]
