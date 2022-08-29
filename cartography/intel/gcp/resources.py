@@ -17,6 +17,7 @@ from . import cloud_logging
 from . import cloudmonitoring
 from . import dataproc
 from . import cloudcdn
+from . import loadbalancer
 
 
 RESOURCE_FUNCTIONS: Dict = {
@@ -37,4 +38,5 @@ RESOURCE_FUNCTIONS: Dict = {
     'cloudmonitoring': cloudmonitoring.sync,
     'dataproc': dataproc.sync,
     'cloudcdn': cloudcdn.sync,
+    'loadbalancer': loadbalancer.sync,
 }
