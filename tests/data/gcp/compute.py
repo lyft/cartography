@@ -742,3 +742,12 @@ TEST_DISKS = [
 
     },
 ]
+
+TEST_PROXIES = [
+    {
+        'name': 'httpsproxy123',
+        'id': 'projects/project123/global/targetHttpsProxies/httpsproxy123',
+        'certificateMap': 'map123',
+        'sslPolicy': 'policy123'
+    }
+]
