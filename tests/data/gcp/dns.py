@@ -77,3 +77,43 @@ DNS_RRS = [
         'zone': '2222222222222222222',
     },
 ]
+
+DNS_POLICIES = [
+    {
+        'id': 'projects/project123/policies/policy123',
+        'name': 'policy123',
+        'enableInboundForwarding': True,
+        'enableLogging': True,
+    },
+    {
+        'id': 'projects/project123/policies/policy456',
+        'name': 'policy456',
+        'enableInboundForwarding': False,
+        'enableLogging': True,
+    },
+    {
+        'id': 'projects/project123/policies/policy789',
+        'name': 'policy789',
+        'enableInboundForwarding': False,
+        'enableLogging': False,
+    },
+]
+
+DNS_KEYS = [
+    {
+        'name': 'key123',
+        'id': 'projects/project123/managedZones/zone123/dnsKeys/key123',
+        'algorithm': 'rsasha512',
+        'keyLength': 34,
+        'isActive': True,
+        'zone': '111111111111111111111',
+    },
+    {
+        'name': 'key123',
+        'id': 'projects/project123/managedZones/zone456/dnsKeys/key456',
+        'algorithm': 'rsasha512',
+        'keyLength': 34,
+        'isActive': True,
+        'zone': '2222222222222222222',
+    },
+]

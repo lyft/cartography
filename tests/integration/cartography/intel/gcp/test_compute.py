@@ -470,3 +470,4 @@ def test_proxies(neo4j_session):
     actual_nodes = {n['r.id'] for n in nodes}
 
     assert actual_nodes == expected_nodes
+

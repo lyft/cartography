@@ -1,15 +1,15 @@
 import json
 import logging
+import time
 from typing import Dict
 from typing import List
 
-import time
 import neo4j
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
 
-from cartography.util import run_cleanup_job
 from . import label
+from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -30,7 +30,6 @@ def get_monitoring_alertpolicies(monitoring: Resource, project_id: str) -> List[
                     policy['labels'] = policy.get('userLabels', {})
                     policies.append(policy)
             req = monitoring.projects().alertPolicies().list_next(previous_request=req, previous_response=res)
-
 
         return policies
     except HttpError as e:
@@ -105,8 +104,11 @@ def sync_monitoring_alertpolicies(
         totalPages = int(totalPages)
         if pageNo < totalPages or pageNo == totalPages:
             logger.info(f'pages process for monitoring alertpolicies {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (common_job_parameters.get('pagination', {}).get('monitoring', None)[
-                        'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('monitoring', None)['pageSize']
+        page_start = (
+            common_job_parameters.get('pagination', {}).get('monitoring', None)[
+            'pageNo'
+            ] - 1
+        ) * common_job_parameters.get('pagination', {}).get('monitoring', None)['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('monitoring', None)['pageSize']
         if page_end > len(policies) or page_end == len(policies):
             policies = policies[page_start:]
@@ -117,8 +119,10 @@ def sync_monitoring_alertpolicies(
 
     load_monitoring_alertpolicies(neo4j_session, policies, project_id, gcp_update_tag)
     cleanup_monitoring_alertpolicies(neo4j_session, common_job_parameters)
-    label.sync_labels(neo4j_session, policies, gcp_update_tag,
-                              common_job_parameters, 'monitoring_alertpolicies', 'GCPMonitoringAlertPolicy')
+    label.sync_labels(
+        neo4j_session, policies, gcp_update_tag,
+        common_job_parameters, 'monitoring_alertpolicies', 'GCPMonitoringAlertPolicy',
+    )
 
 
 @timeit
@@ -134,7 +138,6 @@ def get_monitoring_metric_descriptors(monitoring: Resource, project_id: str) -> 
                     metric['id'] = f"projects/{project_id}/metricDescriptors/{metric['name']}"
                     metric_descriptors.append(metric)
             req = monitoring.projects().metricDescriptors().list_next(previous_request=req, previous_response=res)
-
 
         return metric_descriptors
     except HttpError as e:
@@ -211,8 +214,11 @@ def sync_monitoring_metric_descriptors(
         totalPages = int(totalPages)
         if pageNo < totalPages or pageNo == totalPages:
             logger.info(f'pages process for monitoring metric descriptors {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (common_job_parameters.get('pagination', {}).get('monitoring', None)[
-                        'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('monitoring', None)['pageSize']
+        page_start = (
+            common_job_parameters.get('pagination', {}).get('monitoring', None)[
+            'pageNo'
+            ] - 1
+        ) * common_job_parameters.get('pagination', {}).get('monitoring', None)['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('monitoring', None)['pageSize']
         if page_end > len(metric_descriptors) or page_end == len(metric_descriptors):
             metric_descriptors = metric_descriptors[page_start:]
@@ -239,7 +245,6 @@ def get_monitoring_notification_channels(monitoring: Resource, project_id: str) 
                     channel['channel_name'] = channel.get('name').split('/')[-1]
                     channels.append(channel)
             req = monitoring.projects().notificationChannels().list_next(previous_request=req, previous_response=res)
-
 
         return channels
     except HttpError as e:
@@ -316,8 +321,11 @@ def sync_monitoring_notification_channels(
         totalPages = int(totalPages)
         if pageNo < totalPages or pageNo == totalPages:
             logger.info(f'pages process for monitoring notification channels {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (common_job_parameters.get('pagination', {}).get('monitoring', None)[
-                        'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('monitoring', None)['pageSize']
+        page_start = (
+            common_job_parameters.get('pagination', {}).get('monitoring', None)[
+            'pageNo'
+            ] - 1
+        ) * common_job_parameters.get('pagination', {}).get('monitoring', None)['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('monitoring', None)['pageSize']
         if page_end > len(channels) or page_end == len(channels):
             channels = channels[page_start:]
@@ -328,8 +336,10 @@ def sync_monitoring_notification_channels(
 
     load_monitoring_notification_channels(neo4j_session, channels, project_id, gcp_update_tag)
     cleanup_monitoring_notification_channels(neo4j_session, common_job_parameters)
-    label.sync_labels(neo4j_session, channels, gcp_update_tag,
-                              common_job_parameters, 'monitoring_notification_channels', 'GCPMonitoringNotificationChannel')
+    label.sync_labels(
+        neo4j_session, channels, gcp_update_tag,
+        common_job_parameters, 'monitoring_notification_channels', 'GCPMonitoringNotificationChannel',
+    )
 
 
 @timeit
@@ -347,7 +357,6 @@ def get_monitoring_uptimecheckconfigs(monitoring: Resource, project_id: str) -> 
                     config['labels'] = config.get('userLabels', {})
                     configs.append(config)
             req = monitoring.projects().uptimeCheckConfigs().list_next(previous_request=req, previous_response=res)
-
 
         return configs
     except HttpError as e:
@@ -424,8 +433,11 @@ def sync_monitoring_uptimecheckconfigs(
         totalPages = int(totalPages)
         if pageNo < totalPages or pageNo == totalPages:
             logger.info(f'pages process for monitoring uptimecheckconfigs {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (common_job_parameters.get('pagination', {}).get('monitoring', None)[
-                        'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('monitoring', None)['pageSize']
+        page_start = (
+            common_job_parameters.get('pagination', {}).get('monitoring', None)[
+            'pageNo'
+            ] - 1
+        ) * common_job_parameters.get('pagination', {}).get('monitoring', None)['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('monitoring', None)['pageSize']
         if page_end > len(configs) or page_end == len(configs):
             configs = configs[page_start:]
@@ -436,8 +448,10 @@ def sync_monitoring_uptimecheckconfigs(
 
     load_monitoring_uptimecheckconfigs(neo4j_session, configs, project_id, gcp_update_tag)
     cleanup_monitoring_uptimecheckconfigs(neo4j_session, common_job_parameters)
-    label.sync_labels(neo4j_session, configs, gcp_update_tag,
-                              common_job_parameters, 'monitoring_uptimecheckconfigs', 'GCPMonitoringUptimeCheckConfig')
+    label.sync_labels(
+        neo4j_session, configs, gcp_update_tag,
+        common_job_parameters, 'monitoring_uptimecheckconfigs', 'GCPMonitoringUptimeCheckConfig',
+    )
 
 
 def sync(
@@ -449,14 +463,22 @@ def sync(
 
     logger.info(f"Syncing monitoring for project {project_id}, at {tic}")
 
-    sync_monitoring_alertpolicies(neo4j_session, monitoring, project_id,
-                                  gcp_update_tag, common_job_parameters)
-    sync_monitoring_metric_descriptors(neo4j_session, monitoring, project_id,
-                                  gcp_update_tag, common_job_parameters)
-    sync_monitoring_notification_channels(neo4j_session, monitoring, project_id,
-                                  gcp_update_tag, common_job_parameters)
-    sync_monitoring_uptimecheckconfigs(neo4j_session, monitoring, project_id,
-                                  gcp_update_tag, common_job_parameters)
+    sync_monitoring_alertpolicies(
+        neo4j_session, monitoring, project_id,
+        gcp_update_tag, common_job_parameters,
+    )
+    sync_monitoring_metric_descriptors(
+        neo4j_session, monitoring, project_id,
+        gcp_update_tag, common_job_parameters,
+    )
+    sync_monitoring_notification_channels(
+        neo4j_session, monitoring, project_id,
+        gcp_update_tag, common_job_parameters,
+    )
+    sync_monitoring_uptimecheckconfigs(
+        neo4j_session, monitoring, project_id,
+        gcp_update_tag, common_job_parameters,
+    )
 
     toc = time.perf_counter()
     logger.info(f"Time to process monitoring: {toc - tic:0.4f} seconds")

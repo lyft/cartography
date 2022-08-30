@@ -74,7 +74,7 @@ class GraphJob:
         }
 
     @classmethod
-    def from_json(cls, blob: str, short_name: str = None, parameters: Dict = None,):
+    def from_json(cls, blob: str, short_name: str = None, parameters: Dict = None):
         """
         Create a job from a JSON blob.
         """

@@ -743,6 +743,7 @@ TEST_DISKS = [
     },
 ]
 
+
 TEST_PROXIES = [
     {
         'name': 'httpsproxy123',
@@ -751,3 +752,4 @@ TEST_PROXIES = [
         'sslPolicy': 'policy123'
     }
 ]
+

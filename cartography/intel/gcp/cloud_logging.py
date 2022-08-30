@@ -1,15 +1,15 @@
 import json
 import logging
+import time
 from typing import Dict
 from typing import List
 
-import time
 import neo4j
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
 
-from cartography.util import run_cleanup_job
 from . import label
+from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -29,7 +29,6 @@ def get_logging_metrics(logging: Resource, project_id: str) -> List[Dict]:
                     metric['metric_name'] = metric.get('name').split('/')[-1]
                     metrics.append(metric)
             req = logging.projects().metrics().list_next(previous_request=req, previous_response=res)
-
 
         return metrics
     except HttpError as e:
@@ -109,8 +108,11 @@ def sync_logging_metrics(
         totalPages = int(totalPages)
         if pageNo < totalPages or pageNo == totalPages:
             logger.info(f'pages process for logging metrics {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (common_job_parameters.get('pagination', {}).get('cloud_logging', None)[
-                        'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('cloud_logging', None)['pageSize']
+        page_start = (
+            common_job_parameters.get('pagination', {}).get('cloud_logging', None)[
+            'pageNo'
+            ] - 1
+        ) * common_job_parameters.get('pagination', {}).get('cloud_logging', None)['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('cloud_logging', None)['pageSize']
         if page_end > len(metrics) or page_end == len(metrics):
             metrics = metrics[page_start:]
@@ -136,7 +138,6 @@ def get_logging_sinks(logging: Resource, project_id: str) -> List[Dict]:
                     sink['id'] = f"projects/{project_id}/sinks/{sink['name']}"
                     sink.append(sink)
             req = logging.projects().sinks().list_next(previous_request=req, previous_response=res)
-
 
         return sinks
     except HttpError as e:
@@ -216,8 +217,11 @@ def sync_logging_sinks(
         totalPages = int(totalPages)
         if pageNo < totalPages or pageNo == totalPages:
             logger.info(f'pages process for logging sinks {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (common_job_parameters.get('pagination', {}).get('cloud_logging', None)[
-                        'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('cloud_logging', None)['pageSize']
+        page_start = (
+            common_job_parameters.get('pagination', {}).get('cloud_logging', None)[
+            'pageNo'
+            ] - 1
+        ) * common_job_parameters.get('pagination', {}).get('cloud_logging', None)['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('cloud_logging', None)['pageSize']
         if page_end > len(sinks) or page_end == len(sinks):
             sinks = sinks[page_start:]
@@ -239,10 +243,14 @@ def sync(
 
     logger.info(f"Syncing logging for project {project_id}, at {tic}")
 
-    sync_logging_metrics(neo4j_session, logging, project_id,
-                                  gcp_update_tag, common_job_parameters)
-    sync_logging_sinks(neo4j_session, logging, project_id,
-                                  gcp_update_tag, common_job_parameters)
+    sync_logging_metrics(
+        neo4j_session, logging, project_id,
+        gcp_update_tag, common_job_parameters,
+    )
+    sync_logging_sinks(
+        neo4j_session, logging, project_id,
+        gcp_update_tag, common_job_parameters,
+    )
 
     toc = time.perf_counter()
     logger.info(f"Time to process logging: {toc - tic:0.4f} seconds")

@@ -1,16 +1,16 @@
 import json
 import logging
+import time
 from typing import Dict
 from typing import List
 
-import time
 import neo4j
+from cloudconsolelink.clouds.gcp import GCPLinker
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
-from cloudconsolelink.clouds.gcp import GCPLinker
 
-from cartography.util import run_cleanup_job
 from . import label
+from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -41,7 +41,8 @@ def get_sql_instances(sql: Resource, project_id: str, regions: list, common_job_
                     item['id'] = f"projects/{project_id}/instances/{item['name']}"
                     item['ipV4Enabled'] = item.get('settings', {}).get('ipConfiguration', {}).get('ipV4Enabled', False)
                     item['consolelink'] = gcp_console_link.get_console_link(
-                        resource_name='sql_instance', project_id=project_id, sql_instance_name=item['name'])
+                        resource_name='sql_instance', project_id=project_id, sql_instance_name=item['name'],
+                    )
                     if regions is None:
                         sql_instances.append(item)
                     else:
@@ -57,8 +58,11 @@ def get_sql_instances(sql: Resource, project_id: str, regions: list, common_job_
             totalPages = int(totalPages)
             if pageNo < totalPages or pageNo == totalPages:
                 logger.info(f'pages process for sql instances {pageNo}/{totalPages} pageSize is {pageSize}')
-            page_start = (common_job_parameters.get('pagination', {}).get('sql', None)[
-                          'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('sql', None)['pageSize']
+            page_start = (
+                common_job_parameters.get('pagination', {}).get('sql', None)[
+                'pageNo'
+                ] - 1
+            ) * common_job_parameters.get('pagination', {}).get('sql', None)['pageSize']
             page_end = page_start + common_job_parameters.get('pagination', {}).get('sql', None)['pageSize']
             if page_end > len(sql_instances) or page_end == len(sql_instances):
                 sql_instances = sql_instances[page_start:]
@@ -108,7 +112,8 @@ def get_sql_users(sql: Resource, sql_instances: List[Dict], project_id: str) -> 
                         item['instance_id'] = inst['id']
                         item['id'] = f"projects/{project_id}/instances/{inst['name']}/users/{item['name']}"
                         item['consolelink'] = gcp_console_link.get_console_link(
-                            project_id=project_id, resource_name='sql_user', sql_instance_name=inst['name'])
+                            project_id=project_id, resource_name='sql_user', sql_instance_name=inst['name'],
+                        )
                         sql_users.append(item)
                 if 'nextPageToken' in response:
                     request = sql.users().list(
@@ -263,7 +268,7 @@ def cleanup_sql(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> No
 @timeit
 def sync(
     neo4j_session: neo4j.Session, sql: Resource, project_id: str, gcp_update_tag: int,
-    common_job_parameters: Dict, regions: list
+    common_job_parameters: Dict, regions: list,
 ) -> None:
     """
         Get GCP Cloud SQL Instances and Users using the Cloud SQL resource object,
@@ -295,8 +300,10 @@ def sync(
     sqlinstances = get_sql_instances(sql, project_id, regions, common_job_parameters)
     load_sql_instances(neo4j_session, sqlinstances, project_id, gcp_update_tag)
     logger.info("Load GCP Cloud SQL Instances completed for project %s.", project_id)
-    label.sync_labels(neo4j_session, sqlinstances, gcp_update_tag,
-                      common_job_parameters, 'sql instances', 'GCPSQLInstance')
+    label.sync_labels(
+        neo4j_session, sqlinstances, gcp_update_tag,
+        common_job_parameters, 'sql instances', 'GCPSQLInstance',
+    )
 
     logger.info("Syncing GCP Cloud SQL Users for project %s.", project_id)
     # SQL USERS

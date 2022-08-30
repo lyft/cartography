@@ -1,14 +1,13 @@
 # Used by GCP Functions
-
 import base64
 import json
-import os
 import logging
+import os
 
 import cartography.cli
+import utils.logger as lgr
 from libraries.pubsublibrary import PubSubLibrary
 from utils.errors import PubSubPublishError
-import utils.logger as lgr
 
 # Used by GCP Functions
 
@@ -57,13 +56,13 @@ def cartography_worker(event, ctx):
 
 def process_request(logger, params):
     logger.info(f'request - {params.get("templateType")} - {params.get("eventId")} - {params.get("workspace")}')
-    
+
     svcs = []
-    for svc in params.get('services',[]):
-        page = svc.get('pagination',{}).get('pageSize')
+    for svc in params.get('services', []):
+        page = svc.get('pagination', {}).get('pageSize')
         if page:
             svc['pagination']['pageSize'] = 10000
-        
+
         svcs.append(svc)
 
     body = {
@@ -104,8 +103,8 @@ def process_request(logger, params):
                         "name": service,
                         "pagination": {
                             "pageSize": pagination.get('pageSize', 1),
-                            "pageNo": pagination.get('pageNo', 0) + 1
-                        }
+                            "pageNo": pagination.get('pageNo', 0) + 1,
+                        },
                     })
             if len(services) > 0:
                 resp['services'] = services
