@@ -28,7 +28,6 @@ services:
       - NEO4J_dbms_security_procedures_unrestricted=gds.*, apoc.*
       # Networking:
       - dbms.connector.bolt.listen_address=0.0.0.0:7687
-
     healthcheck:
         test: ["CMD", "curl", "-f", "http://localhost:7474"]
         interval: 10s
@@ -44,6 +43,6 @@ services:
     depends_on:
       - neo4j
     environment:
-      - EXPERIMENTAL_NEO4J_4X_SUPPORT=True 
+      - EXPERIMENTAL_NEO4J_4X_SUPPORT=True
     volumes:
       - ~/.aws:/cartography/.aws/
