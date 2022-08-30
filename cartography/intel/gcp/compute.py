@@ -196,6 +196,7 @@ def transform_https_proxies(proxies: List, project_id: str) -> List[Resource]:
     list_proxies = []
     for proxy in proxies:
         proxy['id'] = f"projects/{project_id}/global/targetHttpsProxies/{proxy['name']}"
+        proxy['type'] = 'https'
         list_proxies.append(proxy)
 
     return list_proxies
@@ -249,6 +250,7 @@ def transform_ssl_proxies(proxies: List, project_id: str) -> List[Resource]:
     list_proxies = []
     for proxy in proxies:
         proxy['id'] = f"projects/{project_id}/global/targetSslProxies/{proxy['name']}"
+        proxy['typr'] = 'ssl'
         list_proxies.append(proxy)
 
     return list_proxies
@@ -271,6 +273,7 @@ def load_proxies_tx(
     SET
         proxy.lastupdated = {gcp_update_tag},
         proxy.uniqueId = p.id,
+        proxy.type = p.type,
         proxy.name = p.name,
         proxy.certificateMap = p.certificateMap,
         proxy.sslPolicy = p.sslPolicy
