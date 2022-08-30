@@ -1,8 +1,9 @@
 # Google Compute Engine API-centric functions
 # https://cloud.google.com/compute/docs/concepts
-import math
 import json
 import logging
+import math
+import time
 from collections import namedtuple
 from string import Template
 from typing import Any
@@ -10,17 +11,16 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Set
-from . import iam
 
-import time
 import neo4j
+from cloudconsolelink.clouds.gcp import GCPLinker
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
-from cloudconsolelink.clouds.gcp import GCPLinker
 from neobolt.exceptions import ClientError
 
-from cartography.util import run_cleanup_job
+from . import iam
 from . import label
+from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -56,8 +56,11 @@ def get_compute_disks(compute: Resource, project_id: str, zones: list, common_jo
             totalPages = int(totalPages)
             if pageNo < totalPages or pageNo == totalPages:
                 logger.info(f'pages process for compute disks {pageNo}/{totalPages} pageSize is {pageSize}')
-            page_start = (common_job_parameters.get('pagination', {}).get('compute', None)[
-                          'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
+            page_start = (
+                common_job_parameters.get('pagination', {}).get('compute', None)[
+                'pageNo'
+                ] - 1
+            ) * common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
             page_end = page_start + common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
             if page_end > len(disks) or page_end == len(disks):
                 disks = disks[page_start:]
@@ -290,7 +293,8 @@ def get_gcp_instance_policy_entities(item: Dict, compute: Resource) -> List[Reso
     try:
         project_id = item['project_id']
         iam_policy = compute.instances().getIamPolicy(
-            project=project_id, zone=item['zone_name'], resource=item.get("id")).execute()
+            project=project_id, zone=item['zone_name'], resource=item.get("id"),
+        ).execute()
         bindings = iam_policy.get('bindings', [])
         entity_list, public_access = iam.transform_bindings(bindings, project_id)
         return entity_list, public_access
@@ -403,7 +407,8 @@ def transform_gcp_instances(response_objects: List[Dict], compute: Resource) -> 
         res['public_access'] = res.get('public_access', [])
         res['consolelink'] = gcp_console_link.get_console_link(
             resource_name="compute_instance", instance_name=res['name'],
-            project_id=res['project_id'], zone=res['zone_name'])
+            project_id=res['project_id'], zone=res['zone_name'],
+        )
         x = res['zone_name'].split('-')
         res['region'] = f"{x[0]}-{x[1]}"
 
@@ -476,7 +481,8 @@ def transform_gcp_vpcs(vpc_res: Dict) -> List[Dict]:
         vpc = {}
         partial_uri = f"{prefix}/{v['name']}"
         vpc['consolelink'] = gcp_console_link.get_console_link(
-            resource_name='compute_instance_vpc_network', project_id=projectid, network_name=v['name'])
+            resource_name='compute_instance_vpc_network', project_id=projectid, network_name=v['name'],
+        )
         vpc['id'] = f"projects/{projectid}/global/networks/{v['name']}"
         vpc['partial_uri'] = vpc['id']
         vpc['name'] = v['name']
@@ -523,7 +529,8 @@ def transform_gcp_subnets(subnet_res: Dict) -> List[Dict]:
         subnet['ip_cidr_range'] = s.get('ipCidrRange', None)
         subnet['self_link'] = s['selfLink']
         subnet['consolelink'] = gcp_console_link.get_console_link(
-            resource_name='compute_instance_vpc_network_subnet', project_id=projectid, region=subnet['region'], subnet_name=subnet['name'])
+            resource_name='compute_instance_vpc_network_subnet', project_id=projectid, region=subnet['region'], subnet_name=subnet['name'],
+        )
         subnet['private_ip_google_access'] = s.get('privateIpGoogleAccess', None)
 
         subnet_list.append(subnet)
@@ -531,7 +538,7 @@ def transform_gcp_subnets(subnet_res: Dict) -> List[Dict]:
 
 
 @timeit
-def transform_gcp_forwarding_rules(fwd_response: Resource,) -> List[Dict]:
+def transform_gcp_forwarding_rules(fwd_response: Resource) -> List[Dict]:
     """
     Add additional fields to the forwarding rule object to make it easier to process in `load_gcp_forwarding_rules()`.
     :param fwd_response: The response object returned from compute.forwardRules.list()
@@ -565,7 +572,8 @@ def transform_gcp_forwarding_rules(fwd_response: Resource,) -> List[Dict]:
         forwarding_rule['self_link'] = fwd['selfLink']
         forwarding_rule['consolelink'] = gcp_console_link.get_console_link(
             resource_name='compute_forwarding_rule', project_id=project_id,
-            rule_name=forwarding_rule['name'], region=forwarding_rule['region'])
+            rule_name=forwarding_rule['name'], region=forwarding_rule['region'],
+        )
         target = fwd.get('target', None)
         if target:
             forwarding_rule['target'] = _parse_compute_full_uri_to_partial_uri(target)
@@ -603,7 +611,8 @@ def transform_gcp_firewall(fw_response: Resource) -> List[Dict]:
         fw['id'] = f"projects/{projectid}/global/firewalls/{fw['name']}"
         fw['vpc_partial_uri'] = _parse_compute_full_uri_to_partial_uri(fw['network'])
         fw['consolelink'] = gcp_console_link.get_console_link(
-            resource_name='compute_firewall_rule', project_id=projectid, rule_name=fw['name'])
+            resource_name='compute_firewall_rule', project_id=projectid, rule_name=fw['name'],
+        )
         fw['transformed_allow_list'] = []
         fw['transformed_deny_list'] = []
         # Mark whether this FW is defined on a target service account.
@@ -1459,8 +1468,11 @@ def sync_gcp_instances(
         totalPages = int(totalPages)
         if pageNo < totalPages or pageNo == totalPages:
             logger.info(f'pages process for compute instance {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (common_job_parameters.get('pagination', {}).get('compute', None)[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
+        page_start = (
+            common_job_parameters.get('pagination', {}).get('compute', None)[
+            'pageNo'
+            ] - 1
+        ) * common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
         if page_end > len(instance_responses) or page_end == len(instance_responses):
             instance_responses = instance_responses[page_start:]
@@ -1480,7 +1492,7 @@ def sync_gcp_instances(
             disk['id'] = f"projects/{project_id}/disks/{disk.get('initializeParams', {}).get('diskName', '')}"
             disks.append(disk)
         attach_compute_disks_to_inastance(neo4j_session, disks, instance['partial_uri'], gcp_update_tag)
-        
+
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gcp_instances(neo4j_session, common_job_parameters)
     label.sync_labels(neo4j_session, instance_list, gcp_update_tag, common_job_parameters, 'instances', 'GCPInstance')
@@ -1511,8 +1523,11 @@ def sync_gcp_vpcs(
         totalPages = int(totalPages)
         if pageNo < totalPages or pageNo == totalPages:
             logger.info(f'pages process for compute vpcs {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (common_job_parameters.get('pagination', {}).get('compute', None)[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
+        page_start = (
+            common_job_parameters.get('pagination', {}).get('compute', None)[
+            'pageNo'
+            ] - 1
+        ) * common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
         if page_end > len(vpcs) or page_end == len(vpcs):
             vpcs = vpcs[page_start:]
@@ -1545,8 +1560,11 @@ def sync_gcp_subnets(
             totalPages = int(totalPages)
             if pageNo < totalPages or pageNo == totalPages:
                 logger.info(f'pages process for compute subnets {pageNo}/{totalPages} pageSize is {pageSize}')
-            page_start = (common_job_parameters.get('pagination', {}).get('compute', None)[
-                          'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
+            page_start = (
+                common_job_parameters.get('pagination', {}).get('compute', None)[
+                'pageNo'
+                ] - 1
+            ) * common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
             page_end = page_start + common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
             if page_end > len(subnets) or page_end == len(subnets):
                 subnets = subnets[page_start:]
@@ -1587,8 +1605,11 @@ def sync_gcp_forwarding_rules(
         totalPages = int(totalPages)
         if pageNo < totalPages or pageNo == totalPages:
             logger.info(f'pages process for compute forwarding_rules {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (common_job_parameters.get('pagination', {}).get('compute', None)[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
+        page_start = (
+            common_job_parameters.get('pagination', {}).get('compute', None)[
+            'pageNo'
+            ] - 1
+        ) * common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
         if page_end > len(forwarding_rules) or page_end == len(forwarding_rules):
             forwarding_rules = forwarding_rules[page_start:]
@@ -1633,8 +1654,11 @@ def sync_gcp_firewall_rules(
         totalPages = int(totalPages)
         if pageNo < totalPages or pageNo == totalPages:
             logger.info(f'pages process for compute firewalls {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (common_job_parameters.get('pagination', {}).get('compute', None)[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
+        page_start = (
+            common_job_parameters.get('pagination', {}).get('compute', None)[
+            'pageNo'
+            ] - 1
+        ) * common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
         if page_end > len(fw_list) or page_end == len(fw_list):
             fw_list = fw_list[page_start:]
@@ -1696,17 +1720,27 @@ def sync(
         regions = _zones_to_regions(zones)
         sync_gcp_vpcs(neo4j_session, compute, project_id, gcp_update_tag, common_job_parameters)
 
-        sync_gcp_firewall_rules(neo4j_session, compute, project_id, gcp_update_tag,
-                                common_job_parameters)
+        sync_gcp_firewall_rules(
+            neo4j_session, compute, project_id, gcp_update_tag,
+            common_job_parameters,
+        )
 
-        sync_gcp_subnets(neo4j_session, compute, project_id, regions,
-                         gcp_update_tag, common_job_parameters)
-        sync_gcp_instances(neo4j_session, compute, project_id, zones,
-                           gcp_update_tag, common_job_parameters)
-        sync_gcp_forwarding_rules(neo4j_session, compute, project_id, regions,
-                                  gcp_update_tag, common_job_parameters)
-        sync_compute_disks(neo4j_session, compute, project_id, zones,
-                           gcp_update_tag, common_job_parameters)
+        sync_gcp_subnets(
+            neo4j_session, compute, project_id, regions,
+            gcp_update_tag, common_job_parameters,
+        )
+        sync_gcp_instances(
+            neo4j_session, compute, project_id, zones,
+            gcp_update_tag, common_job_parameters,
+        )
+        sync_gcp_forwarding_rules(
+            neo4j_session, compute, project_id, regions,
+            gcp_update_tag, common_job_parameters,
+        )
+        sync_compute_disks(
+            neo4j_session, compute, project_id, zones,
+            gcp_update_tag, common_job_parameters,
+        )
 
     toc = time.perf_counter()
     logger.info(f"Time to process Compute: {toc - tic:0.4f} seconds")

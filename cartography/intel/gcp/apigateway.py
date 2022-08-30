@@ -1,17 +1,17 @@
 import json
 import logging
+import time
 from typing import Dict
 from typing import List
-from . import iam
 
-import time
 import neo4j
+from cloudconsolelink.clouds.gcp import GCPLinker
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
-from cloudconsolelink.clouds.gcp import GCPLinker
 
-from cartography.util import run_cleanup_job
+from . import iam
 from . import label
+from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -53,8 +53,11 @@ def get_apigateway_locations(apigateway: Resource, project_id: str, common_job_p
             totalPages = int(totalPages)
             if pageNo < totalPages or pageNo == totalPages:
                 logger.info(f'pages process for apigateway location {pageNo}/{totalPages} pageSize is {pageSize}')
-            page_start = (common_job_parameters.get('pagination', {}).get('apigateway', None)[
-                'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('apigateway', None)['pageSize']
+            page_start = (
+                common_job_parameters.get('pagination', {}).get('apigateway', None)[
+                'pageNo'
+                ] - 1
+            ) * common_job_parameters.get('pagination', {}).get('apigateway', None)['pageSize']
             page_end = page_start + common_job_parameters.get('pagination', {}).get('apigateway', None)['pageSize']
             if page_end > len(locations) or page_end == len(locations):
                 locations = locations[page_start:]
@@ -118,7 +121,8 @@ def get_apis(apigateway: Resource, project_id: str, regions: list, common_job_pa
                         api['entities'] = api_entities
                         api['public_access'] = public_access
                         api['consolelink'] = gcp_console_link.get_console_link(
-                            resource_name='api', project_id=project_id, managed_service_name=api['managedService'], api_name=api['displayName'])
+                            resource_name='api', project_id=project_id, managed_service_name=api['managedService'], api_name=api['displayName'],
+                        )
                         apis.append(api)
                 req = apigateway.projects().locations().apis().list_next(previous_request=req, previous_response=res)
 
@@ -131,8 +135,11 @@ def get_apis(apigateway: Resource, project_id: str, regions: list, common_job_pa
             totalPages = int(totalPages)
             if pageNo < totalPages or pageNo == totalPages:
                 logger.info(f'pages process for apigateway apis {pageNo}/{totalPages} pageSize is {pageSize}')
-            page_start = (common_job_parameters.get('pagination', {}).get('apigateway', None)[
-                          'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('apigateway', None)['pageSize']
+            page_start = (
+                common_job_parameters.get('pagination', {}).get('apigateway', None)[
+                'pageNo'
+                ] - 1
+            ) * common_job_parameters.get('pagination', {}).get('apigateway', None)['pageSize']
             page_end = page_start + common_job_parameters.get('pagination', {}).get('apigateway', None)['pageSize']
             if page_end > len(apis) or page_end == len(apis):
                 apis = apis[page_start:]
@@ -178,7 +185,8 @@ def get_api_policy_entities(apigateway: Resource, api: Dict, project_id: str) ->
     entity_list = []
     try:
         iam_policy = apigateway.projects().locations().apis().getIamPolicy(
-            resource=api['id']).execute()
+            resource=api['id'],
+        ).execute()
         bindings = iam_policy.get('bindings', [])
         entity_list, public_access = iam.transform_bindings(bindings, project_id)
         return entity_list, public_access
@@ -220,7 +228,7 @@ def get_api_configs(apigateway: Resource, project_id: str, api: Dict, regions: l
         # for region in regions:
         req = apigateway.projects().locations().apis().configs().list(
             # parent=f'projects/{project_id}/locations/{region}/apis/{api["name"].split('/')[-1]}',
-            parent=api['name']
+            parent=api['name'],
         )
         while req is not None:
             res = req.execute()
@@ -240,7 +248,8 @@ def get_api_configs(apigateway: Resource, project_id: str, api: Dict, regions: l
                     apiConfig['consolelink'] = gcp_console_link.get_console_link(
                         resource_name='api_config', project_id=project_id, managed_service_name=api['managedService'],
                         api_name=api.get('name').split('/')[-1],
-                        api_config_name=apiConfig.get('name').split('/')[-1], api_configuration_id=apiConfig['serviceConfigId'])
+                        api_config_name=apiConfig.get('name').split('/')[-1], api_configuration_id=apiConfig['serviceConfigId'],
+                    )
                     api_configs.append(apiConfig)
             req = apigateway.projects().locations().apis().configs().list_next(
                 previous_request=req,
@@ -307,7 +316,8 @@ def get_gateways(apigateway: Resource, project_id: str, regions: list, common_jo
                         gateway['entities'] = gateway_entities
                         gateway['public_access'] = public_access
                         gateway['consolelink'] = gcp_console_link.get_console_link(
-                            resource_name='api_gateway', project_id=project_id, region=gateway['region'], api_gateway_name=gateway.get('name').split('/')[-1])
+                            resource_name='api_gateway', project_id=project_id, region=gateway['region'], api_gateway_name=gateway.get('name').split('/')[-1],
+                        )
                         gateways.append(gateway)
                 req = apigateway.projects().locations().gateways().list_next(previous_request=req, previous_response=res)
         if common_job_parameters.get('pagination', {}).get('apigateway', None):
@@ -319,8 +329,11 @@ def get_gateways(apigateway: Resource, project_id: str, regions: list, common_jo
             totalPages = int(totalPages)
             if pageNo < totalPages or pageNo == totalPages:
                 logger.info(f'pages process for apigateway gateways {pageNo}/{totalPages} pageSize is {pageSize}')
-            page_start = (common_job_parameters.get('pagination', {}).get('apigateway', None)[
-                'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('apigateway', None)['pageSize']
+            page_start = (
+                common_job_parameters.get('pagination', {}).get('apigateway', None)[
+                'pageNo'
+                ] - 1
+            ) * common_job_parameters.get('pagination', {}).get('apigateway', None)['pageSize']
             page_end = page_start + common_job_parameters.get('pagination', {}).get('apigateway', None)['pageSize']
             if page_end > len(gateways) or page_end == len(gateways):
                 gateways = gateways[page_start:]
@@ -365,7 +378,8 @@ def get_api_gateway_policy_entities(apigateway: Resource, gateway: Dict, project
     """
     try:
         iam_policy = apigateway.projects().locations().gateways().getIamPolicy(
-            resource=gateway.get('name')).execute()
+            resource=gateway.get('name'),
+        ).execute()
         bindings = iam_policy.get('bindings', [])
         entity_list, public_access = iam.transform_bindings(bindings, project_id)
         return entity_list, public_access
@@ -792,8 +806,10 @@ def sync(
 
     # Cleanup Locations
     cleanup_apigateway_locations(neo4j_session, common_job_parameters)
-    label.sync_labels(neo4j_session, locations, gcp_update_tag,
-                      common_job_parameters, 'apigateway_locations', 'GCPLocation')
+    label.sync_labels(
+        neo4j_session, locations, gcp_update_tag,
+        common_job_parameters, 'apigateway_locations', 'GCPLocation',
+    )
 
     # API Gateway APIs
     apis = get_apis(apigateway, project_id, regions, common_job_parameters)

@@ -1,16 +1,16 @@
 import logging
+import time
 from typing import Dict
 from typing import List
 
-import time
 import neo4j
+from cloudconsolelink.clouds.gcp import GCPLinker
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
-from cloudconsolelink.clouds.gcp import GCPLinker
 
+from . import label
 from cartography.intel.gcp import compute
 from cartography.util import run_cleanup_job
-from . import label
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -50,8 +50,11 @@ def get_gcp_buckets(storage: Resource, project_id: str, common_job_parameters) -
             totalPages = int(totalPages)
             if pageNo < totalPages or pageNo == totalPages:
                 logger.info(f'pages process for storage buckets {pageNo}/{totalPages} pageSize is {pageSize}')
-            page_start = (common_job_parameters.get('pagination', {}).get('storage', None)[
-                          'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('storage', None)['pageSize']
+            page_start = (
+                common_job_parameters.get('pagination', {}).get('storage', None)[
+                'pageNo'
+                ] - 1
+            ) * common_job_parameters.get('pagination', {}).get('storage', None)['pageSize']
             page_end = page_start + common_job_parameters.get('pagination', {}).get('storage', None)['pageSize']
             if page_end > len(res['items']) or len(res['items']) == page_end:
                 res['items'] = res['items'][page_start:]
@@ -122,7 +125,8 @@ def transform_gcp_buckets(bucket_res: Dict, project_id: str, regions: list) -> L
         bucket['entity'] = b.get('entity', None)
         bucket['defaultentity'] = b.get('defaultentity', None)
         bucket['uniform_bucket_level_access'] = b.get('iamConfiguration', {}).get(
-            'uniformBucketLevelAccess', {}).get('enabled', None)
+            'uniformBucketLevelAccess', {},
+        ).get('enabled', None)
         bucket['versioning_enabled'] = b.get('versioning', {}).get('enabled', None)
         bucket['default_event_based_hold'] = b.get('defaultEventBasedHold', None)
         bucket['retention_period'] = b.get('retentionPolicy', {}).get('retentionPeriod', None)
