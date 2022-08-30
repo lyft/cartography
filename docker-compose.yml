@@ -1,7 +1,7 @@
 version: "3.7"
 services:
   neo4j:
-    image: neo4j:3.5
+    image: neo4j:4.4.5-community
     restart: unless-stopped
     ports:
       - 7474:7474
@@ -13,19 +13,36 @@ services:
       - ./.compose/neo4j/logs:/logs
       - ./.compose/neo4j/plugins:/plugins
     environment:
-      # Raise memory limits
+      # Raise memory limits:
       - NEO4J_dbms_memory_pagecache_size=1G
       - NEO4J_dbms.memory.heap.initial_size=1G
       - NEO4J_dbms_memory_heap_max__size=1G
+      # Auth:
+      - NEO4J_AUTH=none
+      # Add APOC and GDS:
+      - apoc.export.file.enabled=true
+      - apoc.import.file.enabled=true
+      - apoc.import.file.use_neo4j_config=true
+      - NEO4JLABS_PLUGINS=["graph-data-science", "apoc"]
+      - NEO4J_dbms_security_procedures_allowlist=gds.*, apoc.*
+      - NEO4J_dbms_security_procedures_unrestricted=gds.*, apoc.*
+      # Networking:
+      - dbms.connector.bolt.listen_address=0.0.0.0:7687
     healthcheck:
         test: ["CMD", "curl", "-f", "http://localhost:7474"]
-        interval: 30s
+        interval: 10s
         timeout: 10s
-        retries: 5
+        retries: 10
   cartography:
-    image: lyft/cartography
+    image: ghcr.io/lyft/cartography
+    # EXAMPLE: Our ENTRYPOINT is cartography, running specific command to sync AWS
+    # command: ["-v", "--neo4j-uri=bolt://neo4j:7687", "--aws-sync-all-profiles"]
     user: cartography
     init: true
     restart: on-failure
     depends_on:
       - neo4j
+    environment:
+      - EXPERIMENTAL_NEO4J_4X_SUPPORT=True
+    volumes:
+      - ~/.aws:/cartography/.aws/
