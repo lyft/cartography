@@ -290,6 +290,73 @@ def transform_bindings(bindings: Dict, project_id: str) -> tuple:
     # )
     return entity_list, public_access
 
+@timeit
+def get_apikeys_keys(apikey: Resource, project_id: str) -> List[Resource]:
+    api_keys = []
+    try: 
+        req = apikey.projects().locations().keys().list(parent=f"projects/{project_id}/locations/global")
+        while req is not None:
+            res = req.execute()
+            if 'keys' in res:
+                api_keys.extend(res['keys'])
+            req = apikey.projects().locations().keys().list_next(previous_request=req, previous_response=res)
+
+        return api_keys
+    except HttpError as e:
+        err = json.loads(e.content.decode('utf-8'))['error']
+        if err['status'] == 'PERMISSION_DENIED':
+            logger.warning(
+                (
+                    "Could not retrieve api keys on project %s due to permissions issue. Code: %s, Message: %s"
+                ), project_id, err['code'], err['message'],
+            )
+        else:
+            raise
+
+@timeit
+def transform_api_keys(apikeys: List, project_id: str) -> List[Dict]:
+    list_keys = []
+
+    for key in apikeys:
+        key['id'] = key['name']
+        list_keys.append(key)
+    
+    return list_keys
+
+@timeit
+def load_api_keys(
+    neo4j_session: neo4j.Session, api_keys: List[Dict],
+    project_id: str, gcp_update_tag: int,
+) -> None:
+
+    query = """
+    UNWIND {ApiKeys} as key
+    MERGE (apikey:GCPApiKey{id: key.id})
+    ON CREATE SET
+        apikey.firstseen = timestamp()
+    SET
+        apikey.lastupdated = {gcp_update_tag},
+        apikey.uniqueId = key.name,
+        apikey.region = key.region,
+        apikey.updateTime = key.updateTime,
+        apikey.deleteTime = key.deleteTime
+    WITH apikey
+    MATCH (p:GCPProject{id:{project_id}})
+    MERGE (p)-[r:RESOURCE]->(apikey)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}
+    """
+    neo4j_session.run(
+        query,
+        ApiKeys=api_keys,
+        project_id=project_id,
+        region="global",
+        gcp_update_tag=gcp_update_tag,
+    )
+
+@timeit
+def cleanup_api_keys(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('gcp_api_keys_cleanup.json', neo4j_session, common_job_parameters)
 
 @timeit
 def load_service_accounts(
@@ -781,7 +848,7 @@ def _set_used_state_tx(
 
 @timeit
 def sync(
-    neo4j_session: neo4j.Session, iam: Resource, crm_v1: Resource, crm_v2: Resource,
+    neo4j_session: neo4j.Session, iam: Resource, crm_v1: Resource, crm_v2: Resource, apikey: Resource,
     project_id: str, gcp_update_tag: int, common_job_parameters: Dict
 ) -> None:
     tic = time.perf_counter()
@@ -959,6 +1026,39 @@ def sync(
         # users_from_bindings, groups_from_bindings, domains_from_bindings = transform_bindings(bindings, project_id)
         load_bindings(neo4j_session, bindings, project_id, gcp_update_tag)
         set_used_state(neo4j_session, project_id, common_job_parameters, gcp_update_tag)
+
+    keys = get_apikeys_keys(apikey, project_id)
+
+    if common_job_parameters.get('pagination', {}).get('iam', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("iam", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("iam", None)["pageSize"]
+        totalPages = len(keys) / pageSize
+
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for iam service_accounts {pageNo}/{totalPages} pageSize is {pageSize}')
+
+        page_start = (
+            common_job_parameters.get('pagination', {}).get('iam', {})[
+            'pageNo'
+            ] - 1
+        ) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
+
+        if page_end > len(keys) or page_end == len(keys):
+            keys = keys[page_start:]
+
+        else:
+            has_next_page = True
+            keys= keys[page_start:page_end]
+            common_job_parameters['pagination']['iam']['hasNextPage'] = has_next_page
+
+    api_keys = transform_api_keys(keys, project_id)
+    load_api_keys(neo4j_session, api_keys, project_id, gcp_update_tag) 
+    cleanup_api_keys(neo4j_session, common_job_parameters)   
 
     toc = time.perf_counter()
     logger.info(f"Time to process IAM: {toc - tic:0.4f} seconds")

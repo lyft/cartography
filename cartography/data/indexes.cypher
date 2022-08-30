@@ -154,6 +154,7 @@ CREATE INDEX ON :GCPDataprocCluster(id);
 CREATE INDEX ON :GCPBackendBucket(id);
 CREATE INDEX ON :GCPBackendService(id);
 CREATE INDEX ON :GCPUrlMap(id);
+CREATE INDEX ON: GCPApiKey(id);
 CREATE INDEX ON :Ip(id);
 CREATE INDEX ON :Ip(ip);
 CREATE INDEX ON :IpPermissionInbound(ruleid);
