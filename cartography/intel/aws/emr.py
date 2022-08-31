@@ -102,6 +102,8 @@ def sync(
 
         clusters = get_emr_clusters(boto3_session, region)
 
+        logger.info(f"Total EMR Clusters: {len(clusters)} for {region}")
+
         cluster_data: List[Dict] = []
         for cluster in clusters:
             cluster_id = cluster['Id']

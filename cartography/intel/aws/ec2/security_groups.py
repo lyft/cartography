@@ -208,6 +208,8 @@ def sync_ec2_security_groupinfo(
         logger.info("Syncing EC2 security groups for region '%s' in account '%s'.", region, current_aws_account_id)
         data.extend(get_ec2_security_group_data(boto3_session, region))
 
+    logger.info(f"Total EC2 Security Groups: {len(data)}")
+
     if common_job_parameters.get('pagination', {}).get('ec2:security_group', None):
         pageNo = common_job_parameters.get("pagination", {}).get("ec2:security_group", None)["pageNo"]
         pageSize = common_job_parameters.get("pagination", {}).get("ec2:security_group", None)["pageSize"]
@@ -231,4 +233,4 @@ def sync_ec2_security_groupinfo(
     cleanup_ec2_security_groupinfo(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()
-    logger.info(f"Total Time to process EC2 security groups: {toc - tic:0.4f} seconds")
+    logger.info(f"Time to process EC2 security groups: {toc - tic:0.4f} seconds")

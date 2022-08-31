@@ -159,6 +159,8 @@ def sync(
 
         topics.extend(get_sns_topic(boto3_session, region))
 
+    logger.info(f"Total SNS Topics: {len(topics)}")
+
     if common_job_parameters.get('pagination', {}).get('sns', None):
         pageNo = common_job_parameters.get("pagination", {}).get("sns", None)["pageNo"]
         pageSize = common_job_parameters.get("pagination", {}).get("sns", None)["pageSize"]

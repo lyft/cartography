@@ -247,6 +247,9 @@ def sync_transit_gateways(
     for region in regions:
         logger.info("Syncing AWS Transit Gateways for region '%s' in account '%s'.", region, current_aws_account_id)
         tgws = get_transit_gateways(boto3_session, region)
+
+        logger.info(f"Total Transit Gateways: {len(tgws)} for {region}")
+
         load_transit_gateways(neo4j_session, tgws, region, current_aws_account_id, update_tag)
 
         logger.debug(

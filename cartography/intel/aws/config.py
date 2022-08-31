@@ -183,9 +183,21 @@ def sync(
     for region in regions:
         logger.info("Syncing AWS Config for region '%s' in account '%s'.", region, current_aws_account_id)
         recorders = get_configuration_recorders(boto3_session, region)
+
+        logger.info(f"Total Config Recorders: {len(recorders)} for {region}")
+
         load_configuration_recorders(neo4j_session, recorders, region, current_aws_account_id, update_tag)
+
         channels = get_delivery_channels(boto3_session, region)
+
+        logger.info(f"Total Config Channels: {len(channels)} for {region}")
+
         load_delivery_channels(neo4j_session, channels, region, current_aws_account_id, update_tag)
+
         rules = get_config_rules(boto3_session, region)
+
+        logger.info(f"Total Config Rules: {len(rules)} for {region}")
+
         load_config_rules(neo4j_session, rules, region, current_aws_account_id, update_tag)
+
     cleanup_config(neo4j_session, common_job_parameters)

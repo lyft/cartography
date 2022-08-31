@@ -82,6 +82,9 @@ def sync_internet_gateways(
     for region in regions:
         logger.info("Syncing Internet Gateways for region '%s' in account '%s'.", region, current_aws_account_id)
         internet_gateways = get_internet_gateways(boto3_session, region)
+
+        logger.info(f"Total Internet Gateways: {len(internet_gateways)} for {region}")
+
         load_internet_gateways(neo4j_session, internet_gateways, region, current_aws_account_id, update_tag)
 
     cleanup(neo4j_session, common_job_parameters)

@@ -126,6 +126,8 @@ def sync_ec2_images(
         images_in_use = get_images_in_use(neo4j_session, region, current_aws_account_id)
         data.extend(get_images(boto3_session, region, images_in_use))
 
+    logger.info(f"Total EC2 Images: {len(data)}")
+
     if common_job_parameters.get('pagination', {}).get('ec2:images', None):
         pageNo = common_job_parameters.get("pagination", {}).get("ec2:images", None)["pageNo"]
         pageSize = common_job_parameters.get("pagination", {}).get("ec2:images", None)["pageSize"]
@@ -149,4 +151,4 @@ def sync_ec2_images(
     cleanup_images(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()
-    logger.info(f"Total Time to process images: {toc - tic:0.4f} seconds")
+    logger.info(f"Time to process Images: {toc - tic:0.4f} seconds")

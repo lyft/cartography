@@ -118,5 +118,8 @@ def sync_ec2_launch_templates(
     for region in regions:
         logger.debug("Syncing launch templates for region '%s' in account '%s'.", region, current_aws_account_id)
         data = get_launch_templates(boto3_session, region)
+
+        logger.info(f"Total EC2 Launch Templates: {len(data)} for {region}")
+
         load_launch_templates(neo4j_session, data, region, current_aws_account_id, update_tag)
     cleanup_ec2_launch_templates(neo4j_session, common_job_parameters)

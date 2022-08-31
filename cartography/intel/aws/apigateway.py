@@ -91,6 +91,8 @@ def sync_client_certificates(
     for region in regions:
         data.extend(get_client_certificates(boto3_session, region, current_aws_account_id))
 
+    logger.info(f"Total API Gateway Certificates: {len(data)}")
+
     if common_job_parameters.get('pagination', {}).get('apigateway', None):
         pageNo = common_job_parameters.get("pagination", {}).get("apigateway", None)["pageNo"]
         pageSize = common_job_parameters.get("pagination", {}).get("apigateway", None)["pageSize"]
@@ -507,6 +509,8 @@ def sync_apigateway_rest_apis(
     for region in regions:
         data.extend(get_apigateway_rest_apis(boto3_session, region))
 
+    logger.info(f"Total API Gateway APIs: {len(data)}")
+
     if common_job_parameters.get('pagination', {}).get('apigateway', None):
         pageNo = common_job_parameters.get("pagination", {}).get("apigateway", None)["pageNo"]
         pageSize = common_job_parameters.get("pagination", {}).get("apigateway", None)["pageSize"]
@@ -551,4 +555,4 @@ def sync(
     cleanup(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()
-    logger.info(f"Total Time to process AWS APIGateway: {toc - tic:0.4f} seconds")
+    logger.info(f"Time to process AWS APIGateway: {toc - tic:0.4f} seconds")

@@ -124,6 +124,8 @@ def sync(
 
         clusters.extend(get_eks_clusters(boto3_session, region))
 
+    logger.info(f"Total EKS Clusters: {len(clusters)}")
+
     if common_job_parameters.get('pagination', {}).get('eks', None):
         pageNo = common_job_parameters.get("pagination", {}).get("eks", None)["pageNo"]
         pageSize = common_job_parameters.get("pagination", {}).get("eks", None)["pageSize"]
@@ -152,4 +154,4 @@ def sync(
     cleanup(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()
-    logger.info(f"Total Time to process EKS: {toc - tic:0.4f} seconds")
+    logger.info(f"Time to process EKS: {toc - tic:0.4f} seconds")

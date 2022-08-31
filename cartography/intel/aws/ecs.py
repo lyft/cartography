@@ -549,6 +549,8 @@ def sync(
         logger.info("Syncing ECS for region '%s' in account '%s'.", region, current_aws_account_id)
         cluster_arns.extend(get_ecs_clusters(boto3_session, region))
 
+    logger.info(f"Total ECS Clusters: {len(cluster_arns)}")
+
     if common_job_parameters.get('pagination', {}).get('ecs', None):
         pageNo = common_job_parameters.get("pagination", {}).get("ecs", None)["pageNo"]
         pageSize = common_job_parameters.get("pagination", {}).get("ecs", None)["pageSize"]
@@ -645,4 +647,4 @@ def sync(
     cleanup_ecs(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()
-    logger.info(f"Total Time to process ECS: {toc - tic:0.4f} seconds")
+    logger.info(f"Time to process ECS: {toc - tic:0.4f} seconds")

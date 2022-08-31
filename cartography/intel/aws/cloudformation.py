@@ -95,6 +95,8 @@ def sync(
 
         stacks.extend(get_cloudformation_stack(boto3_session, region))
 
+    logger.info(f"Total Cloudformation Stacks: {len(stacks)}")
+
     if common_job_parameters.get('pagination', {}).get('cloudformation', None):
         pageNo = common_job_parameters.get("pagination", {}).get("cloudformation", None)["pageNo"]
         pageSize = common_job_parameters.get("pagination", {}).get("cloudformation", None)["pageSize"]
@@ -122,4 +124,4 @@ def sync(
     cleanup_cloudformation_stack(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()
-    logger.info(f"Total Time to process cloudwatch: {toc - tic:0.4f} seconds")
+    logger.info(f"Time to process Cloudformation: {toc - tic:0.4f} seconds")

@@ -100,6 +100,8 @@ def sync_rds_reserved_db_instances(
         logger.info("Syncing RDS reserved db instance for region '%s' in account '%s'.", region, current_aws_account_id)
         data.extend(get_rds_reserved_db_instances_data(boto3_session, region))
 
+    logger.info(f"Total RDS Reserved Instances: {len(data)}")
+
     if common_job_parameters.get('pagination', {}).get('rds', None):
         pageNo = common_job_parameters.get("pagination", {}).get("rds", None)["pageNo"]
         pageSize = common_job_parameters.get("pagination", {}).get("rds", None)["pageSize"]
@@ -203,6 +205,8 @@ def sync_rds_security_groups(
     for region in regions:
         logger.info("Syncing RDS security groups for region '%s' in account '%s'.", region, current_aws_account_id)
         data.extend(get_rds_security_groups(boto3_session, region))
+
+    logger.info(f"Total RDS Security Groups: {len(data)}")
 
     if common_job_parameters.get('pagination', {}).get('rds', None):
         pageNo = common_job_parameters.get("pagination", {}).get("rds", None)["pageNo"]
@@ -308,6 +312,8 @@ def sync_rds_snapshots(
     for region in regions:
         logger.info("Syncing RDS snapshots for region '%s' in account '%s'.", region, current_aws_account_id)
         data.extend(get_rds_snapshots(boto3_session, region))
+
+    logger.info(f"Total RDS Snapshots: {len(data)}")
 
     if common_job_parameters.get('pagination', {}).get('rds', None):
         pageNo = common_job_parameters.get("pagination", {}).get("rds", None)["pageNo"]
@@ -734,6 +740,8 @@ def sync_rds_clusters(
         logger.info("Syncing RDS for region '%s' in account '%s'.", region, current_aws_account_id)
         data.extend(get_rds_cluster_data(boto3_session, region))
 
+    logger.info(f"Total RDS Clusters: {len(data)}")
+
     if common_job_parameters.get('pagination', {}).get('rds', None):
         pageNo = common_job_parameters.get("pagination", {}).get("rds", None)["pageNo"]
         pageSize = common_job_parameters.get("pagination", {}).get("rds", None)["pageSize"]
@@ -769,6 +777,8 @@ def sync_rds_instances(
     for region in regions:
         logger.info("Syncing RDS for region '%s' in account '%s'.", region, current_aws_account_id)
         data.extend(get_rds_instance_data(boto3_session, region))
+
+    logger.info(f"Total RDS Instances: {len(data)}")
 
     if common_job_parameters.get('pagination', {}).get('rds', None):
         pageNo = common_job_parameters.get("pagination", {}).get("rds", None)["pageNo"]
@@ -823,4 +833,4 @@ def sync(
         common_job_parameters,
     )
     toc = time.perf_counter()
-    logger.info(f"Total Time to process RDS: {toc - tic:0.4f} seconds")
+    logger.info(f"Time to process RDS: {toc - tic:0.4f} seconds")

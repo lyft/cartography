@@ -117,6 +117,8 @@ def sync(
         logger.info(f"Syncing ElastiCache clusters for region '{region}' in account {current_aws_account_id}")
         clusters.extend(get_elasticache_clusters(boto3_session, region))
 
+    logger.info(f"Total Elasticache Clusters: {len(clusters)}")
+
     if common_job_parameters.get('pagination', {}).get('elasticache', None):
         pageNo = common_job_parameters.get("pagination", {}).get("elasticache", None)["pageNo"]
         pageSize = common_job_parameters.get("pagination", {}).get("elasticache", None)["pageSize"]
@@ -140,4 +142,4 @@ def sync(
     cleanup(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()
-    logger.info(f"Total Time to process ElastiCache: {toc - tic:0.4f} seconds")
+    logger.info(f"Time to process ElastiCache: {toc - tic:0.4f} seconds")

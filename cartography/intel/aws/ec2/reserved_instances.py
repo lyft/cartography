@@ -84,5 +84,8 @@ def sync_ec2_reserved_instances(
     for region in regions:
         logger.debug("Syncing reserved instances for region '%s' in account '%s'.", region, current_aws_account_id)
         data = get_reserved_instances(boto3_session, region)
+
+        logger.info(f"Total EBS Reserved Instances: {len(data)} for {region}")
+
         load_reserved_instances(neo4j_session, data, region, current_aws_account_id, update_tag)
     cleanup_reserved_instances(neo4j_session, common_job_parameters)

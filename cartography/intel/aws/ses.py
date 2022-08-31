@@ -2,7 +2,7 @@ import time
 import logging
 from typing import Dict
 from typing import List
-from botocore.exceptions import ClientError, ConnectTimeoutError
+from botocore.exceptions import ClientError, ConnectTimeoutError, EndpointConnectionError
 from botocore.client import Config
 
 import boto3
@@ -48,7 +48,7 @@ def get_ses_identity(boto3_session: boto3.session.Session, region: str, current_
 
         return resources
 
-    except (ClientError, ConnectTimeoutError) as e:
+    except (ClientError, ConnectTimeoutError, EndpointConnectionError) as e:
         logger.error(f'Failed to call SES list_identities: {region} - {e}')
         return resources
 
@@ -107,6 +107,8 @@ def sync(
 
         identities.extend(get_ses_identity(boto3_session, region, current_aws_account_id))
 
+    logger.info(f"Total SES Identities: {len(identities)}")
+
     if common_job_parameters.get('pagination', {}).get('ses', None):
         pageNo = common_job_parameters.get("pagination", {}).get("ses", None)["pageNo"]
         pageSize = common_job_parameters.get("pagination", {}).get("ses", None)["pageSize"]
@@ -133,4 +135,4 @@ def sync(
     cleanup_ses_identities(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()
-    logger.info(f"Total Time to process SES Service: {toc - tic:0.4f} seconds")
+    logger.info(f"Time to process SES Service: {toc - tic:0.4f} seconds")

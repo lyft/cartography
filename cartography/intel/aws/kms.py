@@ -382,6 +382,8 @@ def sync_kms_keys(
             kms_keys = kms_keys[page_start:page_end]
             common_job_parameters['pagination']['kms']['hasNextPage'] = has_next_page
 
+    logger.info(f"Total KMS Keys: {len(kms_keys)}")
+
     load_kms_keys(neo4j_session, kms_keys, current_aws_account_id, aws_update_tag)
 
     policy_alias_grants_data = get_kms_key_details(boto3_session, kms_keys)
@@ -403,4 +405,4 @@ def sync(
     cleanup_kms(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()
-    logger.info(f"Total Time to process KMS: {toc - tic:0.4f} seconds")
+    logger.info(f"Time to process KMS: {toc - tic:0.4f} seconds")

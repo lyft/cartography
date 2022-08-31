@@ -632,6 +632,8 @@ def sync_users(
     logger.info("Syncing IAM users for account '%s'.", current_aws_account_id)
     data = get_user_list_data(boto3_session)
 
+    logger.info(f"Total Users: {len(data['Users'])}")
+
     if common_job_parameters.get('pagination', {}).get('iam', None):
         pageNo = common_job_parameters.get("pagination", {}).get("iam", None)["pageNo"]
         pageSize = common_job_parameters.get("pagination", {}).get("iam", None)["pageSize"]
@@ -853,6 +855,8 @@ def sync_groups(
     logger.info("Syncing IAM groups for account '%s'.", current_aws_account_id)
     data = get_group_list_data(boto3_session)
 
+    logger.info(f"Total Groups: {len(data['Groups'])}")
+
     if common_job_parameters.get('pagination', {}).get('iam', None):
         pageNo = common_job_parameters.get("pagination", {}).get("iam", None)["pageNo"]
         pageSize = common_job_parameters.get("pagination", {}).get("iam", None)["pageSize"]
@@ -909,6 +913,8 @@ def sync_roles(
 ) -> None:
     logger.info("Syncing IAM roles for account '%s'.", current_aws_account_id)
     data = get_role_list_data(boto3_session)
+
+    logger.info(f"Total Roles: {len(data['Roles'])}")
 
     if common_job_parameters.get('pagination', {}).get('iam', None):
         pageNo = common_job_parameters.get("pagination", {}).get("iam", None)["pageNo"]
@@ -1082,7 +1088,7 @@ def sync(
     run_cleanup_job('aws_import_principals_cleanup.json', neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()
-    logger.info(f"Total Time to process IAM: {toc - tic:0.4f} seconds")
+    logger.info(f"Time to process IAM: {toc - tic:0.4f} seconds")
 
 # https://docs.aws.amazon.com/cli/latest/reference/iam/generate-service-last-accessed-details.html
 #

@@ -204,6 +204,8 @@ def sync_vpc(
         logger.info("Syncing EC2 VPC for region '%s' in account '%s'.", region, current_aws_account_id)
         data.extend(get_ec2_vpcs(boto3_session, region))
 
+    logger.info(f"Total VPCs: {len(data)}")
+
     if common_job_parameters.get('pagination', {}).get('ec2:vpc', None):
         pageNo = common_job_parameters.get("pagination", {}).get("ec2:vpc", None)["pageNo"]
         pageSize = common_job_parameters.get("pagination", {}).get("ec2:vpc", None)["pageSize"]
@@ -227,4 +229,4 @@ def sync_vpc(
     cleanup_ec2_vpcs(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()
-    logger.info(f"Total Time to process EC2 VPC: {toc - tic:0.4f} seconds")
+    logger.info(f"Time to process EC2 VPC: {toc - tic:0.4f} seconds")

@@ -390,4 +390,4 @@ def sync(
         cleanup_rpr(neo4j_session, target_label, relationship_name, update_tag, current_aws_account_id)
 
     toc = time.perf_counter()
-    logger.info(f"Total Time to process Permission Relationships: {toc - tic:0.4f} seconds")
+    logger.info(f"Time to process Permission Relationships: {toc - tic:0.4f} seconds")

@@ -417,6 +417,18 @@ def sync(
         log_groups.extend(get_log_groups(boto3_session, region))
         metrics.extend(get_metrics(boto3_session, region))
 
+    logger.info(f"Total Cloudwatch Alarms: {len(alarms)}")
+
+    logger.info(f"Total Cloudwatch FlowLogs: {len(flowlogs)}")
+
+    logger.info(f"Total Cloudwatch Event Buses: {len(event_buses)}")
+
+    logger.info(f"Total Cloudwatch Log Groups: {len(log_groups)}")
+
+    logger.info(f"Total Cloudwatch Metrics: {len(metrics)}")
+
+    logger.info(f"Total Cloudwatch Rules: {len(rules)}")
+
     if common_job_parameters.get('pagination', {}).get('cloudwatch', None):
         pageNo = common_job_parameters.get("pagination", {}).get("cloudwatch", None)["pageNo"]
         pageSize = common_job_parameters.get("pagination", {}).get("cloudwatch", None)["pageSize"]
@@ -559,4 +571,4 @@ def sync(
     cleanup_event_buses(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()
-    logger.info(f"Total Time to process cloudwatch: {toc - tic:0.4f} seconds")
+    logger.info(f"Time to process Cloudwatch: {toc - tic:0.4f} seconds")

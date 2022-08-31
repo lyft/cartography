@@ -246,6 +246,8 @@ def sync_load_balancer_v2s(
         logger.info("Syncing EC2 load balancers v2 for region '%s' in account '%s'.", region, current_aws_account_id)
         data.extend(get_loadbalancer_v2_data(boto3_session, region))
 
+    logger.info(f"Total Load Balancer V2s: {len(data)}")
+
     if common_job_parameters.get('pagination', {}).get('ec2:load_balancer_v2', None):
         pageNo = common_job_parameters.get("pagination", {}).get("ec2:load_balancer_v2", None)["pageNo"]
         pageSize = common_job_parameters.get("pagination", {}).get("ec2:load_balancer_v2", None)["pageSize"]
@@ -269,4 +271,4 @@ def sync_load_balancer_v2s(
     cleanup_load_balancer_v2s(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()
-    logger.info(f"Total Time to process EC2 load balancers v2: {toc - tic:0.4f} seconds")
+    logger.info(f"Time to process EC2 load balancers v2: {toc - tic:0.4f} seconds")

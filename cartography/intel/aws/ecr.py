@@ -156,6 +156,8 @@ def sync(
         logger.info("Syncing ECR for region '%s' in account '%s'.", region, current_aws_account_id)
         repositories.extend(get_ecr_repositories(boto3_session, region))
 
+    logger.info(f"Total ECR Repositories: {len(repositories)}")
+
     if common_job_parameters.get('pagination', {}).get('ecr', None):
         pageNo = common_job_parameters.get("pagination", {}).get("ecr", None)["pageNo"]
         pageSize = common_job_parameters.get("pagination", {}).get("ecr", None)["pageSize"]
@@ -174,14 +176,17 @@ def sync(
             has_next_page = True
             repositories = repositories[page_start:page_end]
             common_job_parameters['pagination']['ecr']['hasNextPage'] = has_next_page
+
+    load_ecr_repositories(neo4j_session, repositories, current_aws_account_id, update_tag)
+
     image_data = {}
     for repo in repositories:
         repo_image_obj = get_ecr_repository_images(boto3_session, repo['region'], repo['repositoryName'])
         image_data[repo['repositoryUri']] = repo_image_obj
-    load_ecr_repositories(neo4j_session, repositories, current_aws_account_id, update_tag)
+
     repo_images_list = transform_ecr_repository_images(image_data)
     load_ecr_repository_images(neo4j_session, repo_images_list, update_tag)
     cleanup(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()
-    logger.info(f"Total Time to process ECR: {toc - tic:0.4f} seconds")
+    logger.info(f"Time to process ECR: {toc - tic:0.4f} seconds")

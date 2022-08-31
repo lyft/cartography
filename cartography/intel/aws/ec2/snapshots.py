@@ -138,6 +138,8 @@ def sync_ebs_snapshots(
         logger.debug("Syncing snapshots for region '%s' in account '%s'.", region, current_aws_account_id)
         data.extend(get_snapshots(boto3_session, region))
 
+    logger.info(f"Total EBS Snapshot: {len(data)}")
+
     if common_job_parameters.get('pagination', {}).get('ec2:snapshots', None):
         pageNo = common_job_parameters.get("pagination", {}).get("ec2:snapshots", None)["pageNo"]
         pageSize = common_job_parameters.get("pagination", {}).get("ec2:snapshots", None)["pageSize"]
@@ -158,9 +160,13 @@ def sync_ebs_snapshots(
             common_job_parameters['pagination']['ec2:snapshots']['hasNextPage'] = has_next_page
 
     load_snapshots(neo4j_session, data, current_aws_account_id, update_tag)
+
     snapshot_volumes = get_snapshot_volumes(data)
+
+    logger.info(f"Total EBS Volumes: {len(snapshot_volumes)}")
+
     load_snapshot_volume_relations(neo4j_session, snapshot_volumes, current_aws_account_id, update_tag)
     cleanup_snapshots(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()
-    logger.info(f"Total Time to process Snapshots: {toc - tic:0.4f} seconds")
+    logger.info(f"Time to process Snapshots: {toc - tic:0.4f} seconds")

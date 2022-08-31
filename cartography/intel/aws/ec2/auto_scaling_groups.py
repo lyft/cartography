@@ -244,8 +244,16 @@ def sync_ec2_auto_scaling_groups(
     for region in regions:
         logger.debug("Syncing auto scaling groups for region '%s' in account '%s'.", region, current_aws_account_id)
         lc_data = get_launch_configurations(boto3_session, region)
+
+        logger.info(f"Total EC2 Launch Configurations: {len(lc_data)} for {region}")
+
         load_launch_configurations(neo4j_session, lc_data, region, current_aws_account_id, update_tag)
+
         data = get_ec2_auto_scaling_groups(boto3_session, region)
+
+        logger.info(f"Total EC2 AutoScaling Groups: {len(data)} for {region}")
+
         load_ec2_auto_scaling_groups(neo4j_session, data, region, current_aws_account_id, update_tag)
+
     cleanup_ec2_auto_scaling_groups(neo4j_session, common_job_parameters)
     cleanup_ec2_launch_configurations(neo4j_session, common_job_parameters)

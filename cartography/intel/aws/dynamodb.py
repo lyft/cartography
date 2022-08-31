@@ -130,7 +130,11 @@ def sync_dynamodb_tables(
     for region in regions:
         logger.info("Syncing DynamoDB for region in '%s' in account '%s'.", region, current_aws_account_id)
         data = get_dynamodb_tables(boto3_session, region, common_job_parameters)
+
+        logger.info(f"Total DynamoDB tables: {len(data)} for {region}")
+
         load_dynamodb_tables(neo4j_session, data, region, current_aws_account_id, aws_update_tag)
+
     cleanup_dynamodb_tables(neo4j_session, common_job_parameters)
 
 
@@ -148,4 +152,4 @@ def sync(
     )
 
     toc = time.perf_counter()
-    logger.info(f"Total Time to process DynamoDB: {toc - tic:0.4f} seconds")
+    logger.info(f"Time to process DynamoDB: {toc - tic:0.4f} seconds")

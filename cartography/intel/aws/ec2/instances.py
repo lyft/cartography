@@ -485,6 +485,8 @@ def sync_ec2_instances(
         logger.info("Syncing EC2 instances for region '%s' in account '%s'.", region, current_aws_account_id)
         data.extend(get_ec2_instances(boto3_session, region))
 
+    logger.info(f"Total EC2 Instances: {len(data)}")
+
     if common_job_parameters.get('pagination', {}).get('ec2:instance', None):
         pageNo = common_job_parameters.get("pagination", {}).get("ec2:instance", {}).get("pageNo")
         pageSize = common_job_parameters.get("pagination", {}).get("ec2:instance", {}).get("pageSize")
@@ -514,4 +516,4 @@ def sync_ec2_instances(
     cleanup_ec2_instances(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()
-    logger.info(f"Total Time to process EC2 instances: {toc - tic:0.4f} seconds")
+    logger.info(f"Time to process EC2 instances: {toc - tic:0.4f} seconds")

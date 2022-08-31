@@ -88,6 +88,8 @@ def sync(
 
     distributions = get_cloudfront_distributions(boto3_session)
 
+    logger.info(f"Total Cloudfront Distributions: {len(distributions)}")
+
     if common_job_parameters.get('pagination', {}).get('cloudfront', None):
         pageNo = common_job_parameters.get("pagination", {}).get("cloudfront", None)["pageNo"]
         pageSize = common_job_parameters.get("pagination", {}).get("cloudfront", None)["pageSize"]
@@ -115,4 +117,4 @@ def sync(
     cleanup_cloudfront_distributions(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()
-    logger.info(f"Total Time to process cloudwatch: {toc - tic:0.4f} seconds")
+    logger.info(f"Time to process Cloudfront: {toc - tic:0.4f} seconds")

@@ -173,6 +173,9 @@ def sync_vpc_peerings(
     for region in regions:
         logger.debug("Syncing EC2 VPC peering for region '%s' in account '%s'.", region, current_aws_account_id)
         data = get_vpc_peerings_data(boto3_session, region)
+
+        logger.info(f"Total VPC Peering data: {len(data)} for {region}")
+
         load_vpc_peerings(neo4j_session, data, region, current_aws_account_id, update_tag)
         load_accepter_cidrs(neo4j_session, data, region, current_aws_account_id, update_tag)
         load_requester_cidrs(neo4j_session, data, region, current_aws_account_id, update_tag)

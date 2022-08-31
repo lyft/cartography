@@ -100,6 +100,8 @@ def sync_ec2_key_pairs(
         logger.info("Syncing EC2 key pairs for region '%s' in account '%s'.", region, current_aws_account_id)
         data.extend(get_ec2_key_pairs(boto3_session, region))
 
+    logger.info(f"Total EC2 Key Pairs: {len(data)}")
+
     if common_job_parameters.get('pagination', {}).get('ec2:keypair', None):
         pageNo = common_job_parameters.get("pagination", {}).get("ec2:keypair", None)["pageNo"]
         pageSize = common_job_parameters.get("pagination", {}).get("ec2:keypair", None)["pageSize"]
@@ -123,4 +125,4 @@ def sync_ec2_key_pairs(
     cleanup_ec2_key_pairs(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()
-    logger.info(f"Total Time to process EC2 key pairs: {toc - tic:0.4f} seconds")
+    logger.info(f"Time to process EC2 key pairs: {toc - tic:0.4f} seconds")

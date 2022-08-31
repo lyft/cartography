@@ -696,6 +696,8 @@ def sync(
     logger.info("Syncing S3 for account '%s', at %s.", current_aws_account_id, tic)
     bucket_data = get_s3_bucket_list(boto3_session, common_job_parameters)
 
+    logger.info(f"Total S3 Buckets: {len(bucket_data)}")
+
     load_s3_buckets(neo4j_session, bucket_data, current_aws_account_id, update_tag)
     cleanup_s3_buckets(neo4j_session, common_job_parameters)
 
@@ -704,4 +706,4 @@ def sync(
     cleanup_s3_bucket_acl_and_policy(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()
-    logger.info(f"Total Time to process S3: {toc - tic:0.4f} seconds")
+    logger.info(f"Time to process S3: {toc - tic:0.4f} seconds")

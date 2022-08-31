@@ -117,6 +117,8 @@ def sync_elastic_ip_addresses(
         logger.info(f"Syncing Elastic IP Addresses for region {region} in account {current_aws_account_id}.")
         addresses.extend(get_elastic_ip_addresses(boto3_session, region))
 
+    logger.info(f"Total Elastic IP Addresses: {len(addresses)}")
+
     if common_job_parameters.get('pagination', {}).get('elastic_ip_addresses', None):
         pageNo = common_job_parameters.get("pagination", {}).get("elastic_ip_addresses", None)["pageNo"]
         pageSize = common_job_parameters.get("pagination", {}).get("elastic_ip_addresses", None)["pageSize"]
@@ -141,4 +143,4 @@ def sync_elastic_ip_addresses(
     cleanup_elastic_ip_addresses(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()
-    logger.info(f"Total Time to process Elastic IP Addresses: {toc - tic:0.4f} seconds")
+    logger.info(f"Time to process Elastic IP Addresses: {toc - tic:0.4f} seconds")

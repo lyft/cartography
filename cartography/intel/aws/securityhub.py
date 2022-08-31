@@ -48,7 +48,8 @@ def load_hub(
     SET n.subscribed_at = hub.SubscribedAt,
     n.region = {region},
     n.auto_enable_controls = hub.AutoEnableControls,
-        n.lastupdated = {aws_update_tag}, n.arn = hub.HubArn
+    n.lastupdated = {aws_update_tag},
+    n.arn = hub.HubArn
     WITH n
     MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
     MERGE (owner)-[r:RESOURCE]->(n)

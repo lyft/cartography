@@ -133,6 +133,8 @@ def sync_ebs_volumes(
         data = get_volumes(boto3_session, region)
         transformed_data.extend(transform_volumes(data, region, current_aws_account_id))
 
+    logger.info(f"Total EC2 Volumes: {len(data)}")
+
     if common_job_parameters.get('pagination', {}).get('ec2:volumes', None):
         pageNo = common_job_parameters.get("pagination", {}).get("ec2:volumes", None)["pageNo"]
         pageSize = common_job_parameters.get("pagination", {}).get("ec2:volumes", None)["pageSize"]
@@ -157,4 +159,4 @@ def sync_ebs_volumes(
     cleanup_volumes(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()
-    logger.info(f"Total Time to process volumes: {toc - tic:0.4f} seconds")
+    logger.info(f"Time to process Volumes: {toc - tic:0.4f} seconds")

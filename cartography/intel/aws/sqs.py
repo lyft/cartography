@@ -170,6 +170,8 @@ def sync(
             continue
         data.extend(queue_urls)
 
+    logger.info(f"Total SQS Queues: {len(data)}")
+
     if common_job_parameters.get('pagination', {}).get('sqs', None):
         pageNo = common_job_parameters.get("pagination", {}).get("sqs", None)["pageNo"]
         pageSize = common_job_parameters.get("pagination", {}).get("sqs", None)["pageSize"]
@@ -194,4 +196,4 @@ def sync(
     cleanup_sqs_queues(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()
-    logger.info(f"Total Time to process SQS: {toc - tic:0.4f} seconds")
+    logger.info(f"Time to process SQS: {toc - tic:0.4f} seconds")

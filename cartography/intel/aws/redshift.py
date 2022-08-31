@@ -92,6 +92,8 @@ def sync_redshift_reserved_node(
         logger.info("Syncing redshift_reserved_node for region '%s' in account '%s'.", region, current_aws_account_id)
         data.extend(get_redshift_reserved_node(boto3_session, region, current_aws_account_id))
 
+    logger.info(f"Total Redshift Reserved Nodes: {len(data)}")
+
     if common_job_parameters.get('pagination', {}).get('redshift', None):
         pageNo = common_job_parameters.get("pagination", {}).get("redshift", None)["pageNo"]
         pageSize = common_job_parameters.get("pagination", {}).get("redshift", None)["pageSize"]
@@ -268,6 +270,8 @@ def sync_redshift_clusters(
     for region in regions:
         data.extend(get_redshift_cluster_data(boto3_session, region))
 
+    logger.info(f"Total Redshift Clusters: {len(data)}")
+
     if common_job_parameters.get('pagination', {}).get('redshift', None):
         pageNo = common_job_parameters.get("pagination", {}).get("redshift", None)["pageNo"]
         pageSize = common_job_parameters.get("pagination", {}).get("redshift", None)["pageSize"]
@@ -306,4 +310,4 @@ def sync(
     cleanup(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()
-    logger.info(f"Total Time to process Redshift clusters: {toc - tic:0.4f} seconds")
+    logger.info(f"Time to process Redshift clusters: {toc - tic:0.4f} seconds")

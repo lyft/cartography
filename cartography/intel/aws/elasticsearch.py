@@ -320,6 +320,10 @@ def sync(
         data.extend(_get_es_domains(client, region))
         reserved_instances.extend(get_elasticsearch_reserved_instances(client, region, current_aws_account_id))
 
+    logger.info(f"Total ElasticSearch Domains: {len(data)}")
+
+    logger.info(f"Total ElasticSearch Reserved Instances: {len(data)}")
+
     if common_job_parameters.get('pagination', {}).get('elasticsearch', None):
         pageNo = common_job_parameters.get("pagination", {}).get("elasticsearch", None)["pageNo"]
         pageSize = common_job_parameters.get("pagination", {}).get("elasticsearch", None)["pageSize"]
@@ -367,4 +371,4 @@ def sync(
     cleanup_elasticsearch_reserved_instances(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()
-    logger.info(f"Total Time to process Elasticsearch Service: {toc - tic:0.4f} seconds")
+    logger.info(f"Time to process Elasticsearch Service: {toc - tic:0.4f} seconds")

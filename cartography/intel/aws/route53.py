@@ -496,6 +496,8 @@ def sync(
     client = boto3_session.client('route53')
     zones = get_zones(client)
 
+    logger.info(f"Total Route53 Zones: {len(zones)}")
+
     if common_job_parameters.get('pagination', {}).get('route53', None):
         pageNo = common_job_parameters.get("pagination", {}).get("route53", None)["pageNo"]
         pageSize = common_job_parameters.get("pagination", {}).get("route53", None)["pageSize"]
@@ -529,6 +531,8 @@ def sync(
 
         domains.extend(get_domains(boto3_session, region))
 
+    logger.info(f"Total Route Domains: {len(domains)}")
+
     if common_job_parameters.get('pagination', {}).get('route53', None):
         pageNo = common_job_parameters.get("pagination", {}).get("route53", None)["pageNo"]
         pageSize = common_job_parameters.get("pagination", {}).get("route53", None)["pageSize"]
@@ -556,4 +560,4 @@ def sync(
     cleanup_domains(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()
-    logger.info(f"Total Time to process Route53: {toc - tic:0.4f} seconds")
+    logger.info(f"Time to process Route53: {toc - tic:0.4f} seconds")

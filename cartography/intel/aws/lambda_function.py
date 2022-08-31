@@ -288,6 +288,8 @@ def sync_lambda_functions(
             data = data[page_start:page_end]
             common_job_parameters['pagination']['lambda_function']['hasNextPage'] = has_next_page
 
+    logger.info(f"Total Lambdas: {len(data)}")
+
     load_lambda_functions(neo4j_session, data, current_aws_account_id, aws_update_tag)
     lambda_function_details = get_lambda_function_details(boto3_session, data)
     load_lambda_function_details(neo4j_session, lambda_function_details, aws_update_tag)
@@ -309,4 +311,4 @@ def sync(
     )
 
     toc = time.perf_counter()
-    logger.info(f"Total Time to process Lambda: {toc - tic:0.4f} seconds")
+    logger.info(f"Time to process Lambda: {toc - tic:0.4f} seconds")
