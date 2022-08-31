@@ -1,3 +1,4 @@
+import time
 import logging
 import re
 from typing import Dict
@@ -291,6 +292,10 @@ def sync_network_interfaces(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
     update_tag: int, common_job_parameters: Dict,
 ) -> None:
+    tic = time.perf_counter()
+
+    logger.info("Syncing EC2 Network Interfaces for account '%s', at %s.", current_aws_account_id, tic)
+
     for region in regions:
         logger.info("Syncing EC2 network interfaces for region '%s' in account '%s'.", region, current_aws_account_id)
         data = get_network_interface_data(boto3_session, region)
@@ -300,3 +305,6 @@ def sync_network_interfaces(
         data = transform_network_interfaces(data, region, current_aws_account_id)
         load_network_interface_items(neo4j_session, data, region, current_aws_account_id, update_tag)
     cleanup_network_interfaces(neo4j_session, common_job_parameters)
+
+    toc = time.perf_counter()
+    logger.info(f"Time to process EC2 Network Interfaces: {toc - tic:0.4f} seconds")

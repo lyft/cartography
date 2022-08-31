@@ -241,6 +241,10 @@ def sync_ec2_auto_scaling_groups(
         neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str],
         current_aws_account_id: str, update_tag: int, common_job_parameters: Dict,
 ) -> None:
+    tic = time.perf_counter()
+
+    logger.info("Syncing EC2 Auto Scaling Groups for account '%s', at %s.", current_aws_account_id, tic)
+
     for region in regions:
         logger.debug("Syncing auto scaling groups for region '%s' in account '%s'.", region, current_aws_account_id)
         lc_data = get_launch_configurations(boto3_session, region)
@@ -257,3 +261,6 @@ def sync_ec2_auto_scaling_groups(
 
     cleanup_ec2_auto_scaling_groups(neo4j_session, common_job_parameters)
     cleanup_ec2_launch_configurations(neo4j_session, common_job_parameters)
+
+    toc = time.perf_counter()
+    logger.info(f"Time to process EC2 Auto Scaling Groups: {toc - tic:0.4f} seconds")

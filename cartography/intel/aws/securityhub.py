@@ -1,3 +1,4 @@
+import time
 import datetime
 import logging
 from typing import Dict
@@ -75,7 +76,11 @@ def sync(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
     update_tag: int, common_job_parameters: Dict,
 ) -> None:
-    logger.info("Syncing Security Hub in account '%s'.", current_aws_account_id)
+
+    tic = time.perf_counter()
+
+    logger.info("Syncing Security Hub for account '%s', at %s.", current_aws_account_id, tic)
+
     hub = {}
     try:
         hub = get_hub(boto3_session)
@@ -87,3 +92,6 @@ def sync(
         transform_hub(hub)
         load_hub(neo4j_session, hub, current_aws_account_id, update_tag)
         cleanup_securityhub(neo4j_session, common_job_parameters)
+
+    toc = time.perf_counter()
+    logger.info(f"Time to process Security Hub: {toc - tic:0.4f} seconds")

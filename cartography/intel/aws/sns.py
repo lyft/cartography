@@ -190,3 +190,6 @@ def sync(
 
     cleanup_sns_topic_subscription(neo4j_session, common_job_parameters)
     cleanup_sns_topic(neo4j_session, common_job_parameters)
+
+    toc = time.perf_counter()
+    logger.info(f"Time to process SNS: {toc - tic:0.4f} seconds")

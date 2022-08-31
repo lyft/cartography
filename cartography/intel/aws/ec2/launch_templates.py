@@ -115,6 +115,10 @@ def sync_ec2_launch_templates(
         neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str],
         current_aws_account_id: str, update_tag: int, common_job_parameters: Dict,
 ) -> None:
+    tic = time.perf_counter()
+
+    logger.info("Syncing EC2 Launch Templates for account '%s', at %s.", current_aws_account_id, tic)
+
     for region in regions:
         logger.debug("Syncing launch templates for region '%s' in account '%s'.", region, current_aws_account_id)
         data = get_launch_templates(boto3_session, region)
@@ -123,3 +127,6 @@ def sync_ec2_launch_templates(
 
         load_launch_templates(neo4j_session, data, region, current_aws_account_id, update_tag)
     cleanup_ec2_launch_templates(neo4j_session, common_job_parameters)
+
+    toc = time.perf_counter()
+    logger.info(f"Time to process EC2 Launch Templates: {toc - tic:0.4f} seconds")
