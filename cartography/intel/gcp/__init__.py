@@ -28,14 +28,14 @@ logger = logging.getLogger(__name__)
 Resources = namedtuple(
     'Resources', 'compute gke cloudfunction crm_v1 crm_v2 dns storage serviceusage \
         iam apigateway cloudkms cloudrun sql bigtable firestore pubsub dataproc cloudmonitoring cloud_logging \
-        cloudcdn loadbalancer',
+        cloudcdn loadbalancer apikey',
 )
 
 # Mapping of service short names to their full names as in docs. See https://developers.google.com/apis-explorer,
 # and https://cloud.google.com/service-usage/docs/reference/rest/v1/services#ServiceConfig
 Services = namedtuple(
     'Services', 'compute storage gke dns cloudfunction crm_v1 crm_v2 \
-    cloudkms cloudrun iam apigateway sql bigtable firestore',
+    cloudkms cloudrun iam apigateway sql bigtable firestore apikey',
 )
 service_names = Services(
     compute='compute.googleapis.com',
@@ -52,6 +52,7 @@ service_names = Services(
     sql='sqladmin.googleapis.com',
     bigtable='bigtableadmin.googleapis.com',
     firestore='firestore.googleapis.com',
+    apikey='apikeys.googleapis.com',
 )
 
 
@@ -279,6 +280,15 @@ def _get_firestore_resource(credentials: GoogleCredentials) -> Resource:
     """
     return googleapiclient.discovery.build('firestore', 'v1', credentials=credentials, cache_discovery=False)
 
+def _get_apikey_resource(credentials: GoogleCredentials) -> Resource:
+    """
+    Instantiates a cloud api key resource object.
+    See: https://cloud.google.com/firestore/docs/reference/rest
+    :param credentials: The GoogleCredentials object
+    :return: A serviceusage resource object
+    """
+    return googleapiclient.discovery.build('apikeys', 'v2', credentials=credentials, cache_discovery=False)
+
 
 def _initialize_resources(credentials: GoogleCredentials) -> Resource:
     """
@@ -308,6 +318,7 @@ def _initialize_resources(credentials: GoogleCredentials) -> Resource:
         dataproc=_get_dataproc_resource(credentials),
         cloudcdn=_get_compute_resource(credentials),
         loadbalancer=_get_compute_resource(credentials),
+        apikey=_get_apikey_resource(credentials),
     )
 
 
@@ -343,7 +354,7 @@ def _services_enabled_on_project(serviceusage: Resource, project_id: str) -> Set
 def concurrent_execution(
     service: str, service_func: Any, config: Config, iam: Resource,
     common_job_parameters: Dict, gcp_update_tag: int, project_id: str, crm_v1: Resource,
-    crm_v2: Resource,
+    crm_v2: Resource, apikey: Resource,
 ):
     logger.info(f"BEGIN processing for service: {service}")
 
@@ -358,15 +369,12 @@ def concurrent_execution(
 
     if service == 'iam':
 
-        service_func(
-            neo4j_driver.session(), resource, crm, project_id,
-            gcp_update_tag, common_job_parameters,
-        )
+        service_func(neo4j_driver.session(), iam, crm_v1, crm_v2, apikey, project_id,
+                     gcp_update_tag, common_job_parameters)
     else:
-        service_func(
-            neo4j_driver.session(), resource, project_id, gcp_update_tag,
-            common_job_parameters, regions,
-        )
+        service_func(neo4j_driver.session(), iam, project_id, gcp_update_tag,
+                     common_job_parameters, regions)
+
     logger.info(f"END processing for service: {service}")
 
 
@@ -398,7 +406,7 @@ def _sync_single_project(
                     executor.submit(
                         concurrent_execution, request, RESOURCE_FUNCTIONS[request], config, getattr(
                         resources, request,
-                        ), common_job_parameters, gcp_update_tag, project_id, resources.crm_v1,
+                        ), common_job_parameters, gcp_update_tag, project_id, resources.crm_v1, resources.crm_v2, resources.apikey,
                     ),
                 )
 
