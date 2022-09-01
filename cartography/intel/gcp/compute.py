@@ -253,7 +253,7 @@ def transform_ssl_proxies(proxies: List, project_id: str) -> List[Resource]:
     list_proxies = []
     for proxy in proxies:
         proxy['id'] = f"projects/{project_id}/global/targetSslProxies/{proxy['name']}"
-        proxy['typr'] = 'ssl'
+        proxy['type'] = 'ssl'
         list_proxies.append(proxy)
 
     return list_proxies
