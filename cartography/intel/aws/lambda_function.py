@@ -269,6 +269,8 @@ def sync_lambda_functions(
         logger.info("Syncing Lambda for region in '%s' in account '%s'.", region, current_aws_account_id)
         data.extend(get_lambda_data(boto3_session, region))
 
+    logger.info(f"Total Lambdas: {len(data)}")
+
     if common_job_parameters.get('pagination', {}).get('lambda_function', None):
         pageNo = common_job_parameters.get("pagination", {}).get("lambda_function", None)["pageNo"]
         pageSize = common_job_parameters.get("pagination", {}).get("lambda_function", None)["pageSize"]
@@ -287,8 +289,6 @@ def sync_lambda_functions(
             has_next_page = True
             data = data[page_start:page_end]
             common_job_parameters['pagination']['lambda_function']['hasNextPage'] = has_next_page
-
-    logger.info(f"Total Lambdas: {len(data)}")
 
     load_lambda_functions(neo4j_session, data, current_aws_account_id, aws_update_tag)
     lambda_function_details = get_lambda_function_details(boto3_session, data)

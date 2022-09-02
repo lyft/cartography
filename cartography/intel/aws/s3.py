@@ -46,24 +46,6 @@ def get_s3_bucket_list(boto3_session: boto3.session.Session, common_job_paramete
                     continue
                 else:
                     raise
-        if common_job_parameters.get('pagination', {}).get('s3', None):
-            pageNo = common_job_parameters.get("pagination", {}).get("s3", None)["pageNo"]
-            pageSize = common_job_parameters.get("pagination", {}).get("s3", None)["pageSize"]
-            totalPages = len(buckets['Buckets']) / pageSize
-            if int(totalPages) != totalPages:
-                totalPages = totalPages + 1
-            totalPages = int(totalPages)
-            if pageNo < totalPages or pageNo == totalPages:
-                logger.info(f'pages process for s3 {pageNo}/{totalPages} pageSize is {pageSize}')
-            page_start = (common_job_parameters.get('pagination', {}).get('s3', {})[
-                          'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('s3', {})['pageSize']
-            page_end = page_start + common_job_parameters.get('pagination', {}).get('s3', {})['pageSize']
-            if page_end > len(buckets['Buckets']) or page_end == len(buckets['Buckets']):
-                buckets['Buckets'] = buckets['Buckets'][page_start:]
-            else:
-                has_next_page = True
-                buckets['Buckets'] = buckets['Buckets'][page_start:page_end]
-                common_job_parameters['pagination']['s3']['hasNextPage'] = has_next_page
 
     except ClientError as e:
         if "AccessDenied" in e.args[0]:
@@ -78,6 +60,25 @@ def get_s3_bucket_list(boto3_session: boto3.session.Session, common_job_paramete
             )
         else:
             raise
+
+    if common_job_parameters.get('pagination', {}).get('s3', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("s3", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("s3", None)["pageSize"]
+        totalPages = len(buckets['Buckets']) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for s3 {pageNo}/{totalPages} pageSize is {pageSize}')
+        page_start = (common_job_parameters.get('pagination', {}).get('s3', {})[
+            'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('s3', {})['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('s3', {})['pageSize']
+        if page_end > len(buckets['Buckets']) or page_end == len(buckets['Buckets']):
+            buckets['Buckets'] = buckets['Buckets'][page_start:]
+        else:
+            has_next_page = True
+            buckets['Buckets'] = buckets['Buckets'][page_start:page_end]
+            common_job_parameters['pagination']['s3']['hasNextPage'] = has_next_page
 
     return buckets
 
@@ -696,7 +697,7 @@ def sync(
     logger.info("Syncing S3 for account '%s', at %s.", current_aws_account_id, tic)
     bucket_data = get_s3_bucket_list(boto3_session, common_job_parameters)
 
-    logger.info(f"Total S3 Buckets: {len(bucket_data)}")
+    logger.info(f"Total S3 Buckets: {len(bucket_data.get('Buckets'))}")
 
     load_s3_buckets(neo4j_session, bucket_data, current_aws_account_id, update_tag)
     cleanup_s3_buckets(neo4j_session, common_job_parameters)

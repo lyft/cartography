@@ -101,24 +101,24 @@ def sync(
 
     logger.info("Syncing EMR for account '%s', at %s.", current_aws_account_id, tic)
 
-    for region in regions:
-        logger.info("Syncing EMR for region '%s' in account '%s'.", region, current_aws_account_id)
+    # for region in regions:
+    #     logger.info("Syncing EMR for region '%s' in account '%s'.", region, current_aws_account_id)
 
-        clusters = get_emr_clusters(boto3_session, region)
+    #     clusters = get_emr_clusters(boto3_session, region)
 
-        logger.info(f"Total EMR Clusters: {len(clusters)} for {region}")
+    #     logger.info(f"Total EMR Clusters: {len(clusters)} for {region}")
 
-        cluster_data: List[Dict] = []
-        for cluster in clusters:
-            cluster_id = cluster['Id']
-            cluster_details = get_emr_describe_cluster(boto3_session, region, cluster_id)
-            if cluster_details:
-                cluster_data.append(cluster_details)
-            # time.sleep(DESCRIBE_SLEEP)
+    #     cluster_data: List[Dict] = []
+    #     for cluster in clusters:
+    #         cluster_id = cluster['Id']
+    #         cluster_details = get_emr_describe_cluster(boto3_session, region, cluster_id)
+    #         if cluster_details:
+    #             cluster_data.append(cluster_details)
+    #         # time.sleep(DESCRIBE_SLEEP)
 
-        load_emr_clusters(neo4j_session, cluster_data, region, current_aws_account_id, update_tag)
+    #     load_emr_clusters(neo4j_session, cluster_data, region, current_aws_account_id, update_tag)
 
-    cleanup(neo4j_session, common_job_parameters)
+    # cleanup(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()
     logger.info(f"Time to process EMR: {toc - tic:0.4f} seconds")

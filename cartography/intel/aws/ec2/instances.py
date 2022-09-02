@@ -59,8 +59,8 @@ def load_ec2_instance_network_interfaces(
 def load_ec2_instance_network_interfaces_tx(
         tx: neo4j.Transaction,
         network_interfaces: List[Dict[str, Any]],
+        current_aws_account_id: int,
         update_tag: int,
-        current_aws_account_id: int
 ) -> None:
     query = """
         UNWIND {NetworkInterfaces} as interface
@@ -454,16 +454,16 @@ def sync_ec2_instance_ebs_volumes(
     neo4j_session.write_transaction(
         sync_ec2_instance_ebs_volumes_tx,
         ebs_volumes,
-        update_tag,
         current_aws_account_id,
+        update_tag,
     )
 
 
 def sync_ec2_instance_ebs_volumes_tx(
         tx: neo4j.Transaction,
         ebs_volumes: List[Dict[str, Any]],
-        update_tag: str,
         current_aws_account_id: str,
+        update_tag: str,
 ) -> None:
     query = """
         UNWIND {EBSVolumes} as volume
