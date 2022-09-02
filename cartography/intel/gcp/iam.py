@@ -290,10 +290,11 @@ def transform_bindings(bindings: Dict, project_id: str) -> tuple:
     # )
     return entity_list, public_access
 
+
 @timeit
 def get_apikeys_keys(apikey: Resource, project_id: str) -> List[Resource]:
     api_keys = []
-    try: 
+    try:
         req = apikey.projects().locations().keys().list(parent=f"projects/{project_id}/locations/global")
         while req is not None:
             res = req.execute()
@@ -313,6 +314,7 @@ def get_apikeys_keys(apikey: Resource, project_id: str) -> List[Resource]:
         else:
             raise
 
+
 @timeit
 def transform_api_keys(apikeys: List, project_id: str) -> List[Dict]:
     list_keys = []
@@ -320,8 +322,9 @@ def transform_api_keys(apikeys: List, project_id: str) -> List[Dict]:
     for key in apikeys:
         key['id'] = key['name']
         list_keys.append(key)
-    
+
     return list_keys
+
 
 @timeit
 def load_api_keys(
@@ -354,9 +357,11 @@ def load_api_keys(
         gcp_update_tag=gcp_update_tag,
     )
 
+
 @timeit
 def cleanup_api_keys(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('gcp_api_keys_cleanup.json', neo4j_session, common_job_parameters)
+
 
 @timeit
 def load_service_accounts(
@@ -494,7 +499,7 @@ def load_bindings(neo4j_session: neo4j.Session, bindings: List[Dict], project_id
             elif member.startswith('serviceAccount:'):
                 serviceAccount = {
 
-                    'id': f"projects/{project_id}/serviceAccounts/{member[len('serviceAccount:'):]}",
+                    'id': member[len('serviceAccount:'):],
                     "parent": binding['parent'],
                     "parent_id": binding['parent_id'],
                 }
@@ -557,7 +562,7 @@ def load_bindings(neo4j_session: neo4j.Session, bindings: List[Dict], project_id
                 elif member.startswith('serviceAccount:'):
                     serviceAccount = {
 
-                        'id': f"projects/{project_id}/serviceAccounts/{member[len('serviceAccount:'):]}",
+                        'id': member[len('serviceAccount:'):],
                         'is_deleted': True,
                         "parent": binding['parent'],
                         "parent_id": binding['parent_id'],
@@ -870,7 +875,7 @@ def sync(
 
         page_start = (
             common_job_parameters.get('pagination', {}).get('iam', {})[
-            'pageNo'
+                'pageNo'
             ] - 1
         ) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
@@ -923,7 +928,7 @@ def sync(
 
         page_start = (
             common_job_parameters.get('pagination', {}).get('iam', {})[
-            'pageNo'
+                'pageNo'
             ] - 1
         ) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
@@ -1015,18 +1020,6 @@ def sync(
     # cleanup_groups(neo4j_session, common_job_parameters)
     # label.sync_labels(neo4j_session, groups, gcp_update_tag, common_job_parameters, 'groups', 'GCPGroup')
 
-    if common_job_parameters.get('pagination', {}).get('iam', None):
-        if not common_job_parameters.get('pagination', {}).get('iam', {}).get('hasNextPage', False):
-            bindings = get_policy_bindings(crm_v1, crm_v2, project_id)
-            # users_from_bindings, groups_from_bindings, domains_from_bindings = transform_bindings(bindings, project_id)
-            load_bindings(neo4j_session, bindings, project_id, gcp_update_tag)
-            set_used_state(neo4j_session, project_id, common_job_parameters, gcp_update_tag)
-    else:
-        bindings = get_policy_bindings(crm_v1, crm_v2, project_id)
-        # users_from_bindings, groups_from_bindings, domains_from_bindings = transform_bindings(bindings, project_id)
-        load_bindings(neo4j_session, bindings, project_id, gcp_update_tag)
-        set_used_state(neo4j_session, project_id, common_job_parameters, gcp_update_tag)
-
     keys = get_apikeys_keys(apikey, project_id)
 
     if common_job_parameters.get('pagination', {}).get('iam', None):
@@ -1043,7 +1036,7 @@ def sync(
 
         page_start = (
             common_job_parameters.get('pagination', {}).get('iam', {})[
-            'pageNo'
+                'pageNo'
             ] - 1
         ) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
@@ -1053,12 +1046,24 @@ def sync(
 
         else:
             has_next_page = True
-            keys= keys[page_start:page_end]
+            keys = keys[page_start:page_end]
             common_job_parameters['pagination']['iam']['hasNextPage'] = has_next_page
 
     api_keys = transform_api_keys(keys, project_id)
-    load_api_keys(neo4j_session, api_keys, project_id, gcp_update_tag) 
-    cleanup_api_keys(neo4j_session, common_job_parameters)   
+    load_api_keys(neo4j_session, api_keys, project_id, gcp_update_tag)
+    cleanup_api_keys(neo4j_session, common_job_parameters)
+
+    if common_job_parameters.get('pagination', {}).get('iam', None):
+        if not common_job_parameters.get('pagination', {}).get('iam', {}).get('hasNextPage', False):
+            bindings = get_policy_bindings(crm_v1, crm_v2, project_id)
+            # users_from_bindings, groups_from_bindings, domains_from_bindings = transform_bindings(bindings, project_id)
+            load_bindings(neo4j_session, bindings, project_id, gcp_update_tag)
+            set_used_state(neo4j_session, project_id, common_job_parameters, gcp_update_tag)
+    else:
+        bindings = get_policy_bindings(crm_v1, crm_v2, project_id)
+        # users_from_bindings, groups_from_bindings, domains_from_bindings = transform_bindings(bindings, project_id)
+        load_bindings(neo4j_session, bindings, project_id, gcp_update_tag)
+        set_used_state(neo4j_session, project_id, common_job_parameters, gcp_update_tag)
 
     toc = time.perf_counter()
     logger.info(f"Time to process IAM: {toc - tic:0.4f} seconds")
