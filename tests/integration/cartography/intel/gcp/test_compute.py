@@ -447,3 +447,27 @@ def test_compute_disks(neo4j_session):
     actual_nodes = {n['r.id'] for n in nodes}
 
     assert actual_nodes == expected_nodes
+
+def test_proxies(neo4j_session):
+    data = tests.data.gcp.compute.TEST_PROXIES
+    cartography.intel.gcp.compute.load_proxies(
+        neo4j_session,
+        data,
+        TEST_PROJECT_ID,
+        TEST_UPDATE_TAG,
+    )
+
+    expected_nodes = {
+        'projects/project123/global/targetHttpsProxies/httpsproxy123',
+    }
+
+    nodes = neo4j_session.run(
+        """
+        MATCH (r:GCPProxy) RETURN r.id;
+        """,
+    )
+
+    actual_nodes = {n['r.id'] for n in nodes}
+
+    assert actual_nodes == expected_nodes
+

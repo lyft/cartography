@@ -150,6 +150,150 @@ def sync_compute_disks(
     load_compute_disks(neo4j_session, disks, project_id, gcp_update_tag)
     cleanup_compute_disks(neo4j_session, common_job_parameters)
 
+@timeit
+def get_https_proxies(compute: Resource, project_id: str, common_job_parameters) -> List[Dict]:
+    https_proxies = []
+    try:
+        req = compute.targetHttpsProxies().list(project=project_id)
+        while req is not None:
+            res = req.execute()
+            if 'items' in res:
+                https_proxies.extend(res['items'])
+            req = compute.targetHttpsProxies().list_next(previous_request=req, previous_response=res)
+
+        if common_job_parameters.get('pagination', {}).get('compute', None):
+            pageNo = common_job_parameters.get("pagination", {}).get("compute", None)["pageNo"]
+            pageSize = common_job_parameters.get("pagination", {}).get("compute", None)["pageSize"]
+            totalPages = len(https_proxies) / pageSize
+            if int(totalPages) != totalPages:
+                totalPages = totalPages + 1
+            totalPages = int(totalPages)
+            if pageNo < totalPages or pageNo == totalPages:
+                logger.info(f'pages process for compute https proxies {pageNo}/{totalPages} pageSize is {pageSize}')
+            page_start = (common_job_parameters.get('pagination', {}).get('compute', None)[
+                          'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
+            page_end = page_start + common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
+            if page_end > len(https_proxies) or page_end == len(https_proxies):
+                https_proxies = https_proxies[page_start:]
+            else:
+                has_next_page = True
+                https_proxies = https_proxies[page_start:page_end]
+                common_job_parameters['pagination']['compute']['hasNextPage'] = has_next_page
+
+        return https_proxies
+
+    except HttpError as e:
+        err = json.loads(e.content.decode('utf-8'))['error']
+        if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
+            logger.warning(
+                (
+                    "Could not retrieve https proxies on project %s due to permissions issues. Code: %s, Message: %s"
+                ), project_id, err['code'], err['message'],
+            )
+            return []
+        else:
+            raise
+
+@timeit
+def transform_https_proxies(proxies: List, project_id: str) -> List[Resource]:
+    list_proxies = []
+    for proxy in proxies:
+        proxy['id'] = f"projects/{project_id}/global/targetHttpsProxies/{proxy['name']}"
+        proxy['type'] = 'https'
+        list_proxies.append(proxy)
+
+    return list_proxies
+
+@timeit
+def get_ssl_proxies(compute: Resource, project_id: str, common_job_parameters) -> List[Dict]:
+    ssl_proxies = []
+    try:
+        req = compute.targetSslProxies().list(project=project_id)
+        while req is not None:
+            res = req.execute()
+            if 'items' in res:
+                ssl_proxies.extend(res['items'])
+            req = compute.targetSslProxies().list_next(previous_request=req, previous_response=res)
+
+        if common_job_parameters.get('pagination', {}).get('compute', None):
+            pageNo = common_job_parameters.get("pagination", {}).get("compute", None)["pageNo"]
+            pageSize = common_job_parameters.get("pagination", {}).get("compute", None)["pageSize"]
+            totalPages = len(ssl_proxies) / pageSize
+            if int(totalPages) != totalPages:
+                totalPages = totalPages + 1
+            totalPages = int(totalPages)
+            if pageNo < totalPages or pageNo == totalPages:
+                logger.info(f'pages process for compute ssl proxies {pageNo}/{totalPages} pageSize is {pageSize}')
+            page_start = (common_job_parameters.get('pagination', {}).get('compute', None)[
+                          'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
+            page_end = page_start + common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
+            if page_end > len(ssl_proxies) or page_end == len(ssl_proxies):
+                ssl_proxies = ssl_proxies[page_start:]
+            else:
+                has_next_page = True
+                ssl_proxies = ssl_proxies[page_start:page_end]
+                common_job_parameters['pagination']['compute']['hasNextPage'] = has_next_page
+
+        return ssl_proxies
+
+    except HttpError as e:
+        err = json.loads(e.content.decode('utf-8'))['error']
+        if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
+            logger.warning(
+                (
+                    "Could not retrieve ssl proxies on project %s due to permissions issues. Code: %s, Message: %s"
+                ), project_id, err['code'], err['message'],
+            )
+            return []
+        else:
+            raise
+
+@timeit
+def transform_ssl_proxies(proxies: List, project_id: str) -> List[Resource]:
+    list_proxies = []
+    for proxy in proxies:
+        proxy['id'] = f"projects/{project_id}/global/targetSslProxies/{proxy['name']}"
+        proxy['type'] = 'ssl'
+        list_proxies.append(proxy)
+
+    return list_proxies
+
+@timeit
+def load_proxies(session: neo4j.Session, proxies: List[Dict], project_id: str, update_tag: int) -> None:
+    session.write_transaction(load_proxies_tx, proxies, project_id, update_tag)
+
+@timeit
+def load_proxies_tx(
+    tx: neo4j.Transaction, proxies: List[Dict],
+    project_id: str, gcp_update_tag: int,
+) -> None:
+
+    query = """
+    UNWIND {Proxies} as p
+    MERGE (proxy:GCPProxy{id:p.id})
+    ON CREATE SET
+        proxy.firstseen = timestamp()
+    SET
+        proxy.lastupdated = {gcp_update_tag},
+        proxy.uniqueId = p.id,
+        proxy.type = p.type,
+        proxy.name = p.name,
+        proxy.certificateMap = p.certificateMap,
+        proxy.sslPolicy = p.sslPolicy
+    WITH proxy
+    MATCH (owner:GCPProject{id:{ProjectId}})
+    MERGE (owner)-[r:RESOURCE]->(proxy)
+    ON CREATE SET
+        r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}
+    """
+
+    tx.run(
+        query,
+        Proxies=proxies,
+        ProjectId=project_id,
+        gcp_update_tag=gcp_update_tag,
+    )
 
 @timeit
 def attach_compute_disks_to_inastance(session: neo4j.Session, data_list: List[Dict], instance_id: str, update_tag: int) -> None:
@@ -1438,6 +1582,63 @@ def cleanup_gcp_firewall_rules(neo4j_session: neo4j.Session, common_job_paramete
     except ClientError as ex:
         logger.error("error while syncing gcp firewall rules", ex)
 
+@timeit
+def cleanup_gcp_proxies(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    """
+    Delete out of date GCP Proxies and their relationships
+    :param neo4j_session: The Neo4j session
+    :param common_job_parameters: dict of other job parameters to pass to Neo4j
+    :return: Nothing
+    """
+    try:
+        run_cleanup_job('gcp_compute_proxies_cleanup.json', neo4j_session, common_job_parameters)
+
+    except ClientError as ex:
+        logger.error("error while syncing gcp proxies", ex)
+
+@timeit
+def sync_gcp_https_proxies(
+    neo4j_session: neo4j.Session, compute: Resource, project_id: str, gcp_update_tag: int,
+    common_job_parameters: Dict,
+) -> None:
+    """
+    Get GCP Https Proxies, ingest to Neo4j, and clean up old data.
+    :param neo4j_session: The Neo4j session
+    :param compute: The GCP Compute resource object
+    :param project_id: The project ID to sync
+    :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
+    :param common_job_parameters: dict of other job parameters to pass to Neo4j
+    :return: Nothing
+    """
+    h_proxies = get_https_proxies(compute, project_id, common_job_parameters)
+    https_proxies = transform_https_proxies(h_proxies, project_id)
+    load_proxies(neo4j_session, https_proxies, project_id, gcp_update_tag)
+
+    # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
+    cleanup_gcp_proxies(neo4j_session, common_job_parameters)
+    label.sync_labels(neo4j_session, https_proxies, gcp_update_tag, common_job_parameters, 'proxies', 'GCPProxy')
+
+@timeit
+def sync_gcp_ssl_proxies(
+    neo4j_session: neo4j.Session, compute: Resource, project_id: str, gcp_update_tag: int,
+    common_job_parameters: Dict,
+) -> None:
+    """
+    Get GCP SSL Proxies, ingest to Neo4j, and clean up old data.
+    :param neo4j_session: The Neo4j session
+    :param compute: The GCP Compute resource object
+    :param project_id: The project ID to sync
+    :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
+    :param common_job_parameters: dict of other job parameters to pass to Neo4j
+    :return: Nothing
+    """
+    s_proxies = get_ssl_proxies(compute, project_id, common_job_parameters)
+    ssl_proxies = transform_ssl_proxies(s_proxies, project_id)
+    load_proxies(neo4j_session, ssl_proxies, project_id, gcp_update_tag)
+
+    # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
+    cleanup_gcp_proxies(neo4j_session, common_job_parameters)
+    label.sync_labels(neo4j_session, ssl_proxies, gcp_update_tag, common_job_parameters, 'proxies', 'GCPProxy')
 
 @timeit
 def sync_gcp_instances(
@@ -1720,27 +1921,21 @@ def sync(
         regions = _zones_to_regions(zones)
         sync_gcp_vpcs(neo4j_session, compute, project_id, gcp_update_tag, common_job_parameters)
 
-        sync_gcp_firewall_rules(
-            neo4j_session, compute, project_id, gcp_update_tag,
-            common_job_parameters,
-        )
+        sync_gcp_firewall_rules(neo4j_session, compute, project_id, gcp_update_tag,
+                                common_job_parameters)
 
-        sync_gcp_subnets(
-            neo4j_session, compute, project_id, regions,
-            gcp_update_tag, common_job_parameters,
-        )
-        sync_gcp_instances(
-            neo4j_session, compute, project_id, zones,
-            gcp_update_tag, common_job_parameters,
-        )
-        sync_gcp_forwarding_rules(
-            neo4j_session, compute, project_id, regions,
-            gcp_update_tag, common_job_parameters,
-        )
-        sync_compute_disks(
-            neo4j_session, compute, project_id, zones,
-            gcp_update_tag, common_job_parameters,
-        )
+        sync_gcp_subnets(neo4j_session, compute, project_id, regions,
+                         gcp_update_tag, common_job_parameters)
+        sync_gcp_instances(neo4j_session, compute, project_id, zones,
+                           gcp_update_tag, common_job_parameters)
+        sync_gcp_forwarding_rules(neo4j_session, compute, project_id, regions,
+                                  gcp_update_tag, common_job_parameters)
+        sync_compute_disks(neo4j_session, compute, project_id, zones,
+                           gcp_update_tag, common_job_parameters)
+        sync_gcp_https_proxies(neo4j_session, compute, project_id, 
+                                gcp_update_tag, common_job_parameters)
+        sync_gcp_ssl_proxies(neo4j_session, compute, project_id, 
+                            gcp_update_tag, common_job_parameters)
 
     toc = time.perf_counter()
     logger.info(f"Time to process Compute: {toc - tic:0.4f} seconds")
