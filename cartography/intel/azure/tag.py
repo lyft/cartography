@@ -143,13 +143,14 @@ def get_tags_list(
     config: Config, client: ResourceManagementClient, resource_groups_list: List[Dict], update_tag: int,
 ) -> List[Dict]:
     try:
-        with ThreadPoolExecutor(max_workers=len(resource_groups_list)) as executor:
-            futures = []
-            for resource_group in resource_groups_list:
-                futures.append(executor.submit(concurrent_execution, config, client, resource_group, update_tag))
+        if len(resource_groups_list) > 0:
+            with ThreadPoolExecutor(max_workers=len(resource_groups_list)) as executor:
+                futures = []
+                for resource_group in resource_groups_list:
+                    futures.append(executor.submit(concurrent_execution, config, client, resource_group, update_tag))
 
-            for future in as_completed(futures):
-                logger.info(f'Result from Future: #{future.result()}')
+                for future in as_completed(futures):
+                    logger.info(f'Result from Future: #{future.result()}')
 
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving tags - {e}")
