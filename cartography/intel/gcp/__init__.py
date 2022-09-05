@@ -280,6 +280,7 @@ def _get_firestore_resource(credentials: GoogleCredentials) -> Resource:
     """
     return googleapiclient.discovery.build('firestore', 'v1', credentials=credentials, cache_discovery=False)
 
+
 def _get_apikey_resource(credentials: GoogleCredentials) -> Resource:
     """
     Instantiates a cloud api key resource object.
@@ -401,11 +402,10 @@ def _sync_single_project(
             if request in RESOURCE_FUNCTIONS:
                 # if getattr(service_names, request) in enabled_services:
 
-
                 futures.append(
                     executor.submit(
                         concurrent_execution, request, RESOURCE_FUNCTIONS[request], config, getattr(
-                        resources, request,
+                            resources, request,
                         ), common_job_parameters, gcp_update_tag, project_id, resources.crm_v1, resources.crm_v2, resources.apikey,
                     ),
                 )
@@ -446,13 +446,12 @@ def _sync_multiple_projects(
     crm.sync_gcp_projects(neo4j_session, projects, gcp_update_tag, common_job_parameters)
 
     for project in projects:
-        project_id = project['projectId']
-        common_job_parameters["GCP_PROJECT_ID"] = project_id
-        logger.info("Syncing GCP project %s.", project_id)
-        _sync_single_project(
-            neo4j_session, resources, requested_syncs,
-            project_id, gcp_update_tag, common_job_parameters, config,
-        )
+        if common_job_parameters["GCP_PROJECT_ID"] == project['projectId']:
+            logger.info("Syncing GCP project %s.", common_job_parameters["GCP_PROJECT_ID"])
+            _sync_single_project(
+                neo4j_session, resources, requested_syncs,
+                common_job_parameters["GCP_PROJECT_ID"], gcp_update_tag, common_job_parameters, config,
+            )
 
     del common_job_parameters["GCP_PROJECT_ID"]
 
