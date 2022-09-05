@@ -16,6 +16,7 @@ TEST_UPDATE_TAG = 123456789
 
 def test_get_inspector_findings():
     mock_boto = mock.MagicMock()
+    mock_boto.get_available_services = mock.MagicMock(return_value=['inspector2'])
 
     ret = get_inspector_findings(mock_boto, 'us-east-1')
 

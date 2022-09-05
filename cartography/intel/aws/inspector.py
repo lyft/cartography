@@ -18,12 +18,12 @@ logger = logging.getLogger(__name__)
 @timeit
 @aws_handle_regions
 def get_inspector_findings(session: boto3.session.Session, region: str) -> List[Dict]:
-    client = session.client('inspector2', region_name=region)
-    paginator = client.get_paginator('list_findings')
     findings = []
-
-    for page in paginator.paginate():
-        findings.extend(page['findings'])
+    if 'inspector2' in session.get_available_services():
+        client = session.client('inspector2', region_name=region)
+        paginator = client.get_paginator('list_findings')
+        for page in paginator.paginate():
+            findings.extend(page['findings'])
     return findings
 
 
