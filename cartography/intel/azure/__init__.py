@@ -68,11 +68,11 @@ def _sync_one_subscription(
                     executor.submit(
                         concurrent_execution,
                         request,
-                        RESOURCE_FUNCTIONS[request], 
-                        config, 
-                        credentials, 
-                        common_job_parameters, 
-                        update_tag, 
+                        RESOURCE_FUNCTIONS[request],
+                        config,
+                        credentials,
+                        common_job_parameters,
+                        update_tag,
                         subscription_id
                     )
                 )
@@ -112,7 +112,7 @@ def _sync_multiple_subscriptions(
     config: Config,
 ) -> None:
     logger.info("Syncing Azure subscriptions")
-    
+
     tenant_id = tenant_obj['tenantId']
 
     subscription.sync(

@@ -506,8 +506,7 @@ def _load_roles_tx(
     ingest_role = """
     UNWIND {roles_list} AS role
     MERGE (i:AzureRole{id: role.id})
-    ON CREATE SET i:AzurePrincipal,
-    i.firstseen = timestamp(),
+    ON CREATE SET i.firstseen = timestamp(),
     i.name = role.name,
     i.consolelink = role.consolelink,
     i.region = {region},
@@ -555,29 +554,14 @@ def _set_used_state_tx(
 ) -> None:
     ingest_role_used = """
     MATCH (:CloudanixWorkspace{id: {WORKSPACE_ID}})-[:OWNER]->
-    (:AzureTenant{id: {AZURE_TENANT_ID}})-[r:RESOURCE]->(n:AzureRole)
-    WHERE (n)<-[:ASSUME_ROLE]-() AND n.lastupdated = {update_tag}
-    SET n.isUsed = {isUsed}
+    (:AzureTenant{id: {AZURE_TENANT_ID}})-[r:RESOURCE]->(n:AzureRole)<-[:ASSUME_ROLE]-(p:AzurePrincipal)
+    WHERE n.lastupdated = {update_tag}
+    SET n.isUsed = {isUsed},
+    p.isUsed = {isUsed}
     """
 
     tx.run(
         ingest_role_used,
-        WORKSPACE_ID=common_job_parameters['WORKSPACE_ID'],
-        update_tag=update_tag,
-        AZURE_TENANT_ID=tenant_id,
-        isUsed=True,
-    )
-
-    ingest_entity_used = """
-    MATCH (:CloudanixWorkspace{id: {WORKSPACE_ID}})-[:OWNER]->
-    (:AzureTenant{id: {AZURE_TENANT_ID}})-[r:RESOURCE]->(n)
-    WHERE ()<-[:ASSUME_ROLE]-(n) AND n.lastupdated = {update_tag}
-    AND labels(n) IN [['AzureUser'], ['AzureGroup'], ['AzureServiceAccount']]
-    SET n.isUsed = {isUsed}
-    """
-
-    tx.run(
-        ingest_entity_used,
         WORKSPACE_ID=common_job_parameters['WORKSPACE_ID'],
         update_tag=update_tag,
         AZURE_TENANT_ID=tenant_id,
@@ -609,12 +593,12 @@ def sync(
     logger.info("Syncing IAM for Tenant '%s'.", tenant_id)
 
     common_job_parameters['AZURE_TENANT_ID'] = tenant_id
-    
+
     try:
         sync_tenant_users(neo4j_session, credentials.aad_graph_credentials, tenant_id,
-                        update_tag, common_job_parameters)
+                          update_tag, common_job_parameters)
         sync_tenant_groups(neo4j_session, credentials.aad_graph_credentials, tenant_id,
-                        update_tag, common_job_parameters)
+                           update_tag, common_job_parameters)
         sync_tenant_applications(
             neo4j_session, credentials.aad_graph_credentials,
             tenant_id, update_tag, common_job_parameters)
