@@ -4,6 +4,7 @@ from typing import List
 
 import boto3
 import neo4j
+import uuid
 
 from cartography.stats import get_stats_client
 from cartography.util import aws_handle_regions
@@ -38,7 +39,8 @@ def load_dynamodb_tables(
     table.region = {Region}
     SET table.lastupdated = {aws_update_tag}, table.rows = {Rows}, table.size = {Size},
     table.provisioned_throughput_read_capacity_units = {ProvisionedThroughputReadCapacityUnits},
-    table.provisioned_throughput_write_capacity_units = {ProvisionedThroughputWriteCapacityUnits}
+    table.provisioned_throughput_write_capacity_units = {ProvisionedThroughputWriteCapacityUnits},
+    table.borneo_id = {table_borneo_id}
     WITH table
     MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
     MERGE (owner)-[r:RESOURCE]->(table)
@@ -58,6 +60,7 @@ def load_dynamodb_tables(
             Rows=table['Table']['ItemCount'],
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag,
+            table_borneo_id=uuid.uuid4()
         )
         load_gsi(neo4j_session, table, region, current_aws_account_id, aws_update_tag)
 
@@ -73,7 +76,8 @@ def load_gsi(
     gsi.region = {Region}
     SET gsi.lastupdated = {aws_update_tag},
     gsi.provisioned_throughput_read_capacity_units = {ProvisionedThroughputReadCapacityUnits},
-    gsi.provisioned_throughput_write_capacity_units = {ProvisionedThroughputWriteCapacityUnits}
+    gsi.provisioned_throughput_write_capacity_units = {ProvisionedThroughputWriteCapacityUnits},
+    gsi.borneo_id = {gsi_borneo_id}
     WITH gsi
     MATCH (table:DynamoDBTable{arn: {TableArn}})
     MERGE (table)-[r:GLOBAL_SECONDARY_INDEX]->(gsi)
@@ -92,6 +96,7 @@ def load_gsi(
             GSIName=gsi['IndexName'],
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag,
+            gsi_borneo_id=uuid.uuid4()
         )
 
 

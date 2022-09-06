@@ -5,6 +5,7 @@ from typing import List
 
 import boto3
 import neo4j
+import uuid
 
 from cartography.util import aws_handle_regions
 from cartography.util import dict_date_to_epoch
@@ -98,7 +99,8 @@ def load_instance_information(
             i.source_id = instance.SourceId,
             i.source_type = instance.SourceType,
             i.region = {Region},
-            i.lastupdated = {aws_update_tag}
+            i.lastupdated = {aws_update_tag},
+            i.borneo_id = {info_borneo_id}
         WITH i
         MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
         MERGE (owner)-[r:RESOURCE]->(i)
@@ -122,6 +124,7 @@ def load_instance_information(
         Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
         aws_update_tag=aws_update_tag,
+        info_borneo_id=uuid.uuid4()
     )
 
 
@@ -146,7 +149,8 @@ def load_instance_patches(
             p.installed_time = patch.InstalledTime,
             p.cve_ids = patch.CVEIds,
             p.region = {Region},
-            p.lastupdated = {aws_update_tag}
+            p.lastupdated = {aws_update_tag},
+            p.borneo_id = {patch_borneo_id}
         WITH p
         MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
         MERGE (owner)-[r:RESOURCE]->(p)
@@ -170,6 +174,7 @@ def load_instance_patches(
         Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
         aws_update_tag=aws_update_tag,
+        patch_borneo_id=uuid.uuid4()
     )
 
 

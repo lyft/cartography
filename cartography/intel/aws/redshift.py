@@ -4,6 +4,7 @@ from typing import List
 
 import boto3
 import neo4j
+import uuid
 
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
@@ -58,7 +59,8 @@ def load_redshift_cluster_data(
     cluster.publicly_accessible = {PubliclyAccessible},
     cluster.vpc_id = {VpcId},
     cluster.lastupdated = {aws_update_tag},
-    cluster.region = {Region}
+    cluster.region = {Region},
+    cluster.borneo_id = {cluster_borneo_id}
     WITH cluster
     MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
     MERGE (aa)-[r:RESOURCE]->(cluster)
@@ -86,6 +88,7 @@ def load_redshift_cluster_data(
             Region=region,
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag,
+            cluster_borneo_id=uuid.uuid4()
         )
         _attach_ec2_security_groups(neo4j_session, cluster, aws_update_tag)
         _attach_iam_roles(neo4j_session, cluster, aws_update_tag)

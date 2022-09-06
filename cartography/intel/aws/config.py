@@ -4,6 +4,7 @@ from typing import List
 
 import boto3
 import neo4j
+import uuid
 
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
@@ -61,7 +62,8 @@ def load_configuration_recorders(
             n.recording_group_all_supported = recorder.recordingGroup.allSupported,
             n.recording_group_include_global_resource_types = recorder.recordingGroup.includeGlobalResourceTypes,
             n.recording_group_resource_types = recorder.recordingGroup.resourceTypes,
-            n.region = {Region}, n.lastupdated = {aws_update_tag}
+            n.region = {Region}, n.lastupdated = {aws_update_tag},
+            n.borneo_id = {recorder_borneo_id}
         WITH n
         MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
         MERGE (owner)-[r:RESOURCE]->(n)
@@ -80,6 +82,7 @@ def load_configuration_recorders(
         Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
         aws_update_tag=aws_update_tag,
+        recorder_borneo_id=uuid.uuid4()
     )
 
 
@@ -101,7 +104,8 @@ def load_delivery_channels(
             n.s3_kms_key_arn = channel.s3KmsKeyArn,
             n.sns_topic_arn = channel.snsTopicARN,
             n.config_snapshot_delivery_properties_delivery_frequency = channel.configSnapshotDeliveryProperties.deliveryFrequency,
-            n.region = {Region}, n.lastupdated = {aws_update_tag}
+            n.region = {Region}, n.lastupdated = {aws_update_tag},
+            n.borneo_id = {channel_borneo_id}
         WITH n
         MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
         MERGE (owner)-[r:RESOURCE]->(n)
@@ -120,6 +124,7 @@ def load_delivery_channels(
         Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
         aws_update_tag=aws_update_tag,
+        channel_borneo_id=uuid.uuid4()
     )
 
 
@@ -148,7 +153,8 @@ def load_config_rules(
             n.input_parameters = rule.InputParameters,
             n.maximum_execution_frequency = rule.MaximumExecutionFrequency,
             n.created_by = rule.CreatedBy,
-            n.region = {Region}, n.lastupdated = {aws_update_tag}
+            n.region = {Region}, n.lastupdated = {aws_update_tag},
+            n.borneo_id = {rule_borneo_id}
         WITH n
         MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
         MERGE (owner)-[r:RESOURCE]->(n)
@@ -167,6 +173,7 @@ def load_config_rules(
         Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
         aws_update_tag=aws_update_tag,
+        rule_borneo_id=uuid.uuid4()
     )
 
 
