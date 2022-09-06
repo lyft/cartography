@@ -526,7 +526,7 @@ class CLI:
         if config.experimental_neo4j_4x_support:
             logger.warning(
                 'EXPERIMENTAL_NEO4J_4X_SUPPORT is now enabled by default,'
-                ' and this option will be removed when code hard-coded syntax upgrades are completed'
+                ' and this option will be removed when code hard-coded syntax upgrades are completed',
             )
 
         # Run cartography

@@ -14,15 +14,12 @@ from cartography import patch_session_obj
 patch_session_obj(neo4j_session)
 ```
 '''
-
 import logging
-import os
 import re
 from functools import wraps
 from typing import Callable
 
 import neo4j.exceptions
-from distutils.util import strtobool
 
 # Enable these patches, by default
 EXPERIMENTAL_NEO4J_4X_SUPPORT = True
