@@ -7,7 +7,6 @@ import sys
 import cartography.config
 import cartography.sync
 import cartography.util
-from cartography.experimental_neo4j_4x_support import patch_driver
 from cartography.intel.aws.util.common import parse_and_validate_aws_requested_syncs
 
 
@@ -525,8 +524,10 @@ class CLI:
             config.crowdstrike_client_secret = None
 
         if config.experimental_neo4j_4x_support:
-            cartography.EXPERIMENTAL_NEO4J_4X_SUPPORT = True
-            patch_driver()
+            logger.warning(
+                'EXPERIMENTAL_NEO4J_4X_SUPPORT is now enabled by default,'
+                ' and this option will be removed when code hard-coded syntax upgrades are completed'
+            )
 
         # Run cartography
         try:

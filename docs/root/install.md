@@ -23,10 +23,6 @@ Time to set up the server that will run Cartography.  Cartography _should_ work 
 
     1. Run `pip install cartography` to install our code.
 
-    1. Set up Neo4j 4.x support: Set environment variable to true with `export EXPERIMENTAL_NEO4J_4X_SUPPORT=True`
-
-            ⚠️ This is a temporary fix that is necessary for cartography to support the new query syntax of Neo4j 4.x. A more permanent solution is in progress. ⚠️
-
     1. Finally, to sync your data:
 
         - For one account using the `default` profile defined in your AWS config file, run
