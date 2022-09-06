@@ -24,7 +24,7 @@ def load_resource_groups(session: neo4j.Session, subscription_id: str, data_list
     session.write_transaction(_load_resource_groups_tx, subscription_id, data_list, update_tag)
 
 
-def load_tags(session: neo4j.Session, data_list: List[Dict], update_tag: int) -> None:
+def load_tags(session: neo4j.Session, data_list: List[Dict], update_tag: int, common_job_parameters: Dict) -> None:
     iteration_size = 100
     total_items = len(data_list)
     total_iterations = math.ceil(len(data_list) / iteration_size)
@@ -44,7 +44,7 @@ def load_tags(session: neo4j.Session, data_list: List[Dict], update_tag: int) ->
 
         logger.info(f"Start - Iteration {counter + 1} of {total_iterations}. {start} - {end} - {len(paginated_tags)}")
 
-        session.write_transaction(_load_tags_tx, paginated_tags, update_tag)
+        session.write_transaction(_load_tags_tx, paginated_tags, update_tag, common_job_parameters)
 
         logger.info(f"End - Iteration {counter + 1} of {total_iterations}. {start} - {end} - {len(paginated_tags)}")
 
@@ -103,7 +103,7 @@ def cleanup_resource_groups(neo4j_session: neo4j.Session, common_job_parameters:
     run_cleanup_job('azure_import_resource_groups_cleanup.json', neo4j_session, common_job_parameters)
 
 
-def concurrent_execution(config: Config, client: ResourceManagementClient, resource_group: Dict, update_tag: int):
+def concurrent_execution(config: Config, client: ResourceManagementClient, resource_group: Dict, update_tag: int, common_job_parameters: Dict):
     logger.info(f"BEGIN processing for resource group: {resource_group['name']}")
 
     neo4j_auth = (config.neo4j_user, config.neo4j_password)
@@ -122,7 +122,13 @@ def concurrent_execution(config: Config, client: ResourceManagementClient, resou
                 'resource_group': resource_group['name'],
             }]
     for resource in client.resources.list_by_resource_group(resource_group_name=resource_group['name']):
-        if neo4j_driver.session().run("MATCH (n) WHERE n.id={id} return count(*)", id=resource.id).single().value() == 1:
+        query = """
+        MATCH (:CloudanixWorkspace{id: {WORKSPACE_ID}})-[:OWNER]->
+        (:AzureTenant{id: {AZURE_TENANT_ID}})-[:RESOURCE]->
+        (:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}})-[*]->(n)
+        WHERE n.id={resource_id} return count(*)
+        """
+        if neo4j_driver.session().run(query, resource_id=resource.id, WORKSPACE_ID=common_job_parameters['WORKSPACE_ID'], AZURE_TENANT_ID=common_job_parameters['AZURE_TENANT_ID'], AZURE_SUBSCRIPTION_ID=common_job_parameters['AZURE_SUBSCRIPTION_ID']).single().value() == 1:
             if resource.tags:
                 for tagname in resource.tags:
                     tags_list = tags_list + \
@@ -133,7 +139,7 @@ def concurrent_execution(config: Config, client: ResourceManagementClient, resou
                             'resource_id': resource.id, 'resource_group': resource_group['name'],
                         }]
 
-    load_tags(neo4j_driver.session(), tags_list, update_tag)
+    load_tags(neo4j_driver.session(), tags_list, update_tag, common_job_parameters)
 
     logger.info(f"END processing for resource group: {resource_group['name']}")
 
@@ -141,13 +147,14 @@ def concurrent_execution(config: Config, client: ResourceManagementClient, resou
 @timeit
 def get_tags_list(
     config: Config, client: ResourceManagementClient, resource_groups_list: List[Dict], update_tag: int,
+    common_job_parameters: Dict,
 ) -> List[Dict]:
     try:
         if len(resource_groups_list) > 0:
             with ThreadPoolExecutor(max_workers=len(resource_groups_list)) as executor:
                 futures = []
                 for resource_group in resource_groups_list:
-                    futures.append(executor.submit(concurrent_execution, config, client, resource_group, update_tag))
+                    futures.append(executor.submit(concurrent_execution, config, client, resource_group, update_tag, common_job_parameters))
 
                 for future in as_completed(futures):
                     logger.info(f'Result from Future: #{future.result()}')
@@ -157,7 +164,7 @@ def get_tags_list(
         return []
 
 
-def _load_tags_tx(tx: neo4j.Transaction, tags_list: List[Dict], update_tag: int) -> None:
+def _load_tags_tx(tx: neo4j.Transaction, tags_list: List[Dict], update_tag: int, common_job_parameters: Dict) -> None:
     ingest_tag = """
     UNWIND {tags_list} AS tag
     MERGE (t:AzureTag{id: tag.id})
@@ -169,7 +176,10 @@ def _load_tags_tx(tx: neo4j.Transaction, tags_list: List[Dict], update_tag: int)
     t.value = tag.value,
     t.key = tag.key
     WITH t,tag
-    MATCH (l) where l.id = tag.resource_id
+    MATCH (:CloudanixWorkspace{id: {WORKSPACE_ID}})-[:OWNER]->
+    (:AzureTenant{id: {AZURE_TENANT_ID}})-[:RESOURCE]->
+    (:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}})-[*]->(l)
+    where l.id = tag.resource_id
     MERGE (l)-[r:TAGGED]->(t)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {update_tag}
@@ -180,6 +190,9 @@ def _load_tags_tx(tx: neo4j.Transaction, tags_list: List[Dict], update_tag: int)
         region="global",
         tags_list=tags_list,
         update_tag=update_tag,
+        WORKSPACE_ID=common_job_parameters['WORKSPACE_ID'],
+        AZURE_TENANT_ID=common_job_parameters['AZURE_TENANT_ID'],
+        AZURE_SUBSCRIPTION_ID=common_job_parameters['AZURE_SUBSCRIPTION_ID']
     )
 
 
@@ -191,7 +204,7 @@ def sync_tags(
     neo4j_session: neo4j.Session, client: ResourceManagementClient, resource_groups_list: List[Dict], update_tag: int,
     common_job_parameters: Dict, config: Config,
 ) -> None:
-    get_tags_list(config, client, resource_groups_list, update_tag)
+    get_tags_list(config, client, resource_groups_list, update_tag, common_job_parameters)
     cleanup_tags(neo4j_session, common_job_parameters)
 
 
