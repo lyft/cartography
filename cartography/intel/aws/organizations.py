@@ -4,6 +4,7 @@ from typing import Dict
 import boto3
 import botocore.exceptions
 import neo4j
+import uuid
 
 from cartography.util import timeit
 
@@ -92,13 +93,15 @@ def load_aws_accounts(
 ) -> None:
     query = """
     MERGE (aa:AWSAccount{id: $ACCOUNT_ID})
-    ON CREATE SET aa.firstseen = timestamp()
+    ON CREATE SET aa.firstseen = timestamp(),
+    aa.borneo_id = {account_borneo_id}
     SET aa.lastupdated = $aws_update_tag, aa.name = $ACCOUNT_NAME, aa.inscope=true
     REMOVE aa.foreign
     WITH aa
-    MERGE (root:AWSPrincipal{arn: $RootArn})
-    ON CREATE SET root.firstseen = timestamp(), root.type = 'AWS'
-    SET root.lastupdated = $aws_update_tag
+    MERGE (root:AWSPrincipal{arn: {RootArn}})
+    ON CREATE SET root.firstseen = timestamp(), root.type = 'AWS',
+    root.borneo_id = {root_borneo_id}
+    SET root.lastupdated = {aws_update_tag}
     WITH aa, root
     MERGE (aa)-[r:RESOURCE]->(root)
     ON CREATE SET r.firstseen = timestamp()
@@ -112,6 +115,8 @@ def load_aws_accounts(
             ACCOUNT_NAME=account_name,
             RootArn=root_arn,
             aws_update_tag=aws_update_tag,
+            account_borneo_id=uuid.uuid4(),
+            root_borneo_id=uuid.uuid4()
         )
 
 

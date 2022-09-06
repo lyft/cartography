@@ -4,6 +4,7 @@ from typing import List
 
 import boto3
 import neo4j
+import uuid
 
 from cartography.util import aws_handle_regions
 from cartography.util import dict_date_to_epoch
@@ -43,8 +44,9 @@ def load_secrets(
             s.last_rotated_date = secret.LastRotatedDate, s.last_changed_date = secret.LastChangedDate,
             s.last_accessed_date = secret.LastAccessedDate, s.deleted_date = secret.DeletedDate,
             s.owning_service = secret.OwningService, s.created_date = secret.CreatedDate,
-            s.primary_region = secret.PrimaryRegion, s.region = $Region,
-            s.lastupdated = $aws_update_tag
+            s.primary_region = secret.PrimaryRegion, s.region = {Region},
+            s.lastupdated = {aws_update_tag},
+            s.borneo_id = {secret_borneo_id}
         WITH s
         MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
         MERGE (owner)-[r:RESOURCE]->(s)
@@ -64,6 +66,7 @@ def load_secrets(
         Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
         aws_update_tag=aws_update_tag,
+        secret_borneo_id=uuid.uuid4()
     )
 
 

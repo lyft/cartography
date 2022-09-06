@@ -5,6 +5,7 @@ from typing import List
 import boto3
 import neo4j
 from dateutil import parser
+import uuid
 
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -41,7 +42,8 @@ def load_hub(
     ingest_hub = """
     WITH $Hub AS hub
     MERGE (n:SecurityHub{id: hub.HubArn})
-    ON CREATE SET n.firstseen = timestamp()
+    ON CREATE SET n.firstseen = timestamp(),
+    n.borneo_id = {hub_borneo_id}
     SET n.subscribed_at = hub.SubscribedAt, n.auto_enable_controls = hub.AutoEnableControls,
         n.lastupdated = $aws_update_tag
     WITH n
@@ -55,6 +57,7 @@ def load_hub(
         Hub=data,
         AWS_ACCOUNT_ID=current_aws_account_id,
         aws_update_tag=aws_update_tag,
+        hub_borneo_id=uuid.uuid4()
     )
 
 

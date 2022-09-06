@@ -5,6 +5,7 @@ from typing import List
 
 import boto3
 import neo4j
+import uuid
 
 from cartography.client.core.tx import load
 from cartography.graph.job import GraphJob
@@ -99,13 +100,57 @@ def load_instance_information(
     current_aws_account_id: str,
     aws_update_tag: int,
 ) -> None:
-    load(
-        neo4j_session,
-        SSMInstanceInformationSchema(),
-        data,
+    ingest_query = """
+    UNWIND {InstanceInformation} AS instance
+        MERGE (i:SSMInstanceInformation{id: instance.InstanceId})
+        ON CREATE SET i.firstseen = timestamp()
+        SET i.instance_id = instance.InstanceId,
+            i.ping_status = instance.PingStatus,
+            i.last_ping_date_time = instance.LastPingDateTime,
+            i.agent_version = instance.AgentVersion,
+            i.is_latest_version = instance.IsLatestVersion,
+            i.platform_type = instance.PlatformType,
+            i.platform_name = instance.PlatformName,
+            i.platform_version = instance.PlatformVersion,
+            i.activation_id = instance.ActivationId,
+            i.iam_role = instance.IamRole,
+            i.registration_date = instance.RegistrationDate,
+            i.resource_type = instance.ResourceType,
+            i.name = instance.Name,
+            i.ip_address = instance.IPAddress,
+            i.computer_name = instance.ComputerName,
+            i.association_status = instance.AssociationStatus,
+            i.last_association_execution_date = instance.LastAssociationExecutionDate,
+            i.last_successful_association_execution_date = instance.LastSuccessfulAssociationExecutionDate,
+            i.source_id = instance.SourceId,
+            i.source_type = instance.SourceType,
+            i.region = {Region},
+            i.lastupdated = {aws_update_tag},
+            i.borneo_id = {info_borneo_id}
+        WITH i
+        MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
+        MERGE (owner)-[r:RESOURCE]->(i)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {aws_update_tag}
+        WITH i
+        MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})-[:RESOURCE]->(ec2_instance:EC2Instance{id: i.instance_id})
+        MERGE (ec2_instance)-[r2:HAS_INFORMATION]->(i)
+        ON CREATE SET r2.firstseen = timestamp()
+        SET r2.lastupdated = {aws_update_tag}
+    """
+    for ii in data:
+        ii["LastPingDateTime"] = dict_date_to_epoch(ii, "LastPingDateTime")
+        ii["RegistrationDate"] = dict_date_to_epoch(ii, "RegistrationDate")
+        ii["LastAssociationExecutionDate"] = dict_date_to_epoch(ii, "LastAssociationExecutionDate")
+        ii["LastSuccessfulAssociationExecutionDate"] = dict_date_to_epoch(ii, "LastSuccessfulAssociationExecutionDate")
+
+    neo4j_session.run(
+        ingest_query,
+        InstanceInformation=data,
         Region=region,
-        AWS_ID=current_aws_account_id,
-        lastupdated=aws_update_tag,
+        AWS_ACCOUNT_ID=current_aws_account_id,
+        aws_update_tag=aws_update_tag,
+        info_borneo_id=uuid.uuid4()
     )
 
 
@@ -117,13 +162,45 @@ def load_instance_patches(
     current_aws_account_id: str,
     aws_update_tag: int,
 ) -> None:
-    load(
-        neo4j_session,
-        SSMInstancePatchSchema(),
-        data,
+    ingest_query = """
+    UNWIND {InstancePatch} AS patch
+        MERGE (p:SSMInstancePatch{id: patch._instance_id + "-" + patch.Title})
+        ON CREATE SET p.firstseen = timestamp()
+        SET p.instance_id = patch._instance_id,
+            p.title = patch.Title,
+            p.kb_id = patch.KBId,
+            p.classification = patch.Classification,
+            p.severity = patch.Severity,
+            p.state = patch.State,
+            p.installed_time = patch.InstalledTime,
+            p.cve_ids = patch.CVEIds,
+            p.region = {Region},
+            p.lastupdated = {aws_update_tag},
+            p.borneo_id = {patch_borneo_id}
+        WITH p
+        MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
+        MERGE (owner)-[r:RESOURCE]->(p)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {aws_update_tag}
+        WITH p
+        MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})-[:RESOURCE]->(ec2_instance:EC2Instance{id: p.instance_id})
+        MERGE (ec2_instance)-[r2:HAS_PATCH]->(p)
+        ON CREATE SET r2.firstseen = timestamp()
+        SET r2.lastupdated = {aws_update_tag}
+    """
+    for p in data:
+        p["InstalledTime"] = dict_date_to_epoch(p, "InstalledTime")
+        # Split the comma separated CVEIds, if they exist, and strip
+        # the empty string from the list if not.
+        p["CVEIds"] = list(filter(None, p.get("CVEIds", "").split(",")))
+
+    neo4j_session.run(
+        ingest_query,
+        InstancePatch=data,
         Region=region,
-        AWS_ID=current_aws_account_id,
-        lastupdated=aws_update_tag,
+        AWS_ACCOUNT_ID=current_aws_account_id,
+        aws_update_tag=aws_update_tag,
+        patch_borneo_id=uuid.uuid4()
     )
 
 

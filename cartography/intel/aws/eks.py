@@ -5,6 +5,7 @@ from typing import List
 
 import boto3
 import neo4j
+import uuid
 
 from cartography.client.core.tx import load
 from cartography.graph.job import GraphJob
@@ -41,14 +42,48 @@ def load_eks_clusters(
         current_aws_account_id: str,
         aws_update_tag: int,
 ) -> None:
-    load(
-        neo4j_session,
-        EKSClusterSchema(),
-        cluster_data,
-        Region=region,
-        AWS_ID=current_aws_account_id,
-        lastupdated=aws_update_tag,
-    )
+    query: str = """
+    MERGE (cluster:EKSCluster{id: {ClusterArn}})
+    ON CREATE SET cluster.firstseen = timestamp(),
+                cluster.arn = {ClusterArn},
+                cluster.name = {ClusterName},
+                cluster.region = {Region},
+                cluster.created_at = {CreatedAt},
+                cluster.borneo_id = {cluster_borneo_id}
+    SET cluster.lastupdated = {aws_update_tag},
+        cluster.endpoint = {ClusterEndpoint},
+        cluster.endpoint_public_access = {ClusterEndointPublic},
+        cluster.rolearn = {ClusterRoleArn},
+        cluster.version = {ClusterVersion},
+        cluster.platform_version = {ClusterPlatformVersion},
+        cluster.status = {ClusterStatus},
+        cluster.audit_logging = {ClusterLogging}
+    WITH cluster
+    MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MERGE (owner)-[r:RESOURCE]->(cluster)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {aws_update_tag}
+    """
+
+    for cd in cluster_data:
+        cluster = cluster_data[cd]
+        neo4j_session.run(
+            query,
+            ClusterArn=cluster['arn'],
+            ClusterName=cluster['name'],
+            ClusterEndpoint=cluster.get('endpoint'),
+            ClusterEndointPublic=cluster.get('resourcesVpcConfig', {}).get('endpointPublicAccess'),
+            ClusterRoleArn=cluster.get('roleArn'),
+            ClusterVersion=cluster.get('version'),
+            ClusterPlatformVersion=cluster.get('platformVersion'),
+            ClusterStatus=cluster.get('status'),
+            CreatedAt=str(cluster.get('createdAt')),
+            ClusterLogging=_process_logging(cluster),
+            Region=region,
+            aws_update_tag=aws_update_tag,
+            AWS_ACCOUNT_ID=current_aws_account_id,
+            cluster_borneo_id=uuid.uuid4()
+        )
 
 
 def _process_logging(cluster: Dict) -> bool:

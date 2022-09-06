@@ -12,6 +12,7 @@ import botocore
 import neo4j
 from botocore.exceptions import ClientError
 from policyuniverse.policy import Policy
+import uuid
 
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
@@ -120,8 +121,9 @@ def _load_kms_key_aliases(neo4j_session: neo4j.Session, aliases: List[Dict], upd
     ingest_aliases = """
     UNWIND $alias_list AS alias
     MERGE (a:KMSAlias{id: alias.AliasArn})
-    ON CREATE SET a.firstseen = timestamp(), a.targetkeyid = alias.TargetKeyId
-    SET a.aliasname = alias.AliasName, a.lastupdated = $UpdateTag
+    ON CREATE SET a.firstseen = timestamp(), a.targetkeyid = alias.TargetKeyId,
+    a.borneo_id = {alia_borneo_id}
+    SET a.aliasname = alias.AliasName, a.lastupdated = {UpdateTag}
     WITH a, alias
     MATCH (kmskey:KMSKey{id: alias.TargetKeyId})
     MERGE (a)-[r:KNOWN_AS]->(kmskey)
@@ -133,6 +135,7 @@ def _load_kms_key_aliases(neo4j_session: neo4j.Session, aliases: List[Dict], upd
         ingest_aliases,
         alias_list=aliases,
         UpdateTag=update_tag,
+        alias_borneo_id=uuid.uuid4()
     )
 
 
@@ -145,8 +148,9 @@ def _load_kms_key_grants(neo4j_session: neo4j.Session, grants_list: List[Dict], 
     UNWIND $grants AS grant
     MERGE (g:KMSGrant{id: grant.GrantId})
     ON CREATE SET g.firstseen = timestamp(), g.granteeprincipal = grant.GranteePrincipal,
-    g.creationdate = grant.CreationDate
-    SET g.name = grant.GrantName, g.lastupdated = $UpdateTag
+    g.creationdate = grant.CreationDate,
+    g.borneo_id = {grant_borneo_id}
+    SET g.name = grant.GrantName, g.lastupdated = {UpdateTag}
     WITH g, grant
     MATCH (kmskey:KMSKey{id: grant.KeyId})
     MERGE (g)-[r:APPLIED_ON]->(kmskey)
@@ -163,6 +167,7 @@ def _load_kms_key_grants(neo4j_session: neo4j.Session, grants_list: List[Dict], 
         ingest_grants,
         grants=grants_list,
         UpdateTag=update_tag,
+        grant_borneo_id=uuid.uuid4()
     )
 
 
@@ -310,8 +315,9 @@ def load_kms_keys(
     kmskey.keystate = k.KeyState,
     kmskey.customkeystoreid = k.CustomKeyStoreId,
     kmskey.cloudhsmclusterid = k.CloudHsmClusterId,
-    kmskey.lastupdated = $aws_update_tag,
-    kmskey.region = $Region
+    kmskey.lastupdated = {aws_update_tag},
+    kmskey.region = {Region},
+    kmskey.borneo_id = {kms_borneo_id}
     WITH kmskey
     MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (aa)-[r:RESOURCE]->(kmskey)
@@ -332,6 +338,7 @@ def load_kms_keys(
         Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
         aws_update_tag=aws_update_tag,
+        kms_borneo_id=uuid.uuid4()
     )
 
 

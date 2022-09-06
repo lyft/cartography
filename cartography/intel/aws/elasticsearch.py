@@ -7,6 +7,7 @@ import boto3
 import botocore.config
 import neo4j
 from policyuniverse.policy import Policy
+import uuid
 
 from cartography.intel.dns import ingest_dns_record_by_fqdn
 from cartography.util import aws_handle_regions
@@ -75,7 +76,8 @@ def _load_es_domains(
     es.encryption_at_rest_options_enabled = record.EncryptionAtRestOptions.Enabled,
     es.encryption_at_rest_options_kms_key_id = record.EncryptionAtRestOptions.KmsKeyId,
     es.log_publishing_options_cloudwatch_log_group_arn = record.LogPublishingOptions.CloudWatchLogsLogGroupArn,
-    es.log_publishing_options_enabled = record.LogPublishingOptions.Enabled
+    es.log_publishing_options_enabled = record.LogPublishingOptions.Enabled,
+    es.borneo_id = {es_borneo_id}
     WITH es
     MATCH (account:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (account)-[r:RESOURCE]->(es)
@@ -93,6 +95,7 @@ def _load_es_domains(
         Records=domain_list,
         AWS_ACCOUNT_ID=aws_account_id,
         aws_update_tag=aws_update_tag,
+        es_borneo_id=uuid.uuid4()
     )
 
     for domain in domain_list:

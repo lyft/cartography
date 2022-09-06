@@ -7,6 +7,7 @@ from typing import List
 import boto3
 import botocore.exceptions
 import neo4j
+import uuid
 
 from cartography.client.core.tx import load
 from cartography.graph.job import GraphJob
@@ -57,15 +58,50 @@ def load_emr_clusters(
         current_aws_account_id: str,
         aws_update_tag: int,
 ) -> None:
-    logger.info(f"Loading EMR {len(cluster_data)} clusters for region '{region}' into graph.")
-    load(
-        neo4j_session,
-        EMRClusterSchema(),
-        cluster_data,
-        lastupdated=aws_update_tag,
+    query = """
+    UNWIND {Clusters} as emr_cluster
+        MERGE (cluster:EMRCluster{id: emr_cluster.Name})
+        ON CREATE SET cluster.firstseen = timestamp(),
+            cluster.arn = emr_cluster.ClusterArn,
+            cluster.id = emr_cluster.Id,
+            cluster.region = {Region}
+        SET cluster.name = emr_cluster.Name,
+            cluster.instance_collection_type = emr_cluster.InstanceCollectionType,
+            cluster.log_encryption_kms_key_id = emr_cluster.LogEncryptionKmsKeyId,
+            cluster.requested_ami_version = emr_cluster.RequestedAmiVersion,
+            cluster.running_ami_version = emr_cluster.RunningAmiVersion,
+            cluster.release_label = emr_cluster.ReleaseLabel,
+            cluster.auto_terminate = emr_cluster.AutoTerminate,
+            cluster.termination_protected = emr_cluster.TerminationProtected,
+            cluster.visible_to_all_users = emr_cluster.VisibleToAllUsers,
+            cluster.master_public_dns_name = emr_cluster.MasterPublicDnsName,
+            cluster.security_configuration = emr_cluster.SecurityConfiguration,
+            cluster.autoscaling_role = emr_cluster.AutoScalingRole,
+            cluster.scale_down_behavior = emr_cluster.ScaleDownBehavior,
+            cluster.custom_ami_id = emr_cluster.CustomAmiId,
+            cluster.repo_upgrade_on_boot = emr_cluster.RepoUpgradeOnBoot,
+            cluster.outpost_arn = emr_cluster.OutpostArn,
+            cluster.log_uri = emr_cluster.LogUri,
+            cluster.servicerole = emr_cluster.ServiceRole,
+            cluster.lastupdated = {aws_update_tag},
+            cluster.borneo_id = {cluster_borneo_id}
+        WITH cluster
+
+        MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
+        MERGE (owner)-[r:RESOURCE]->(cluster)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {aws_update_tag}
+    """
+
+    logger.info("Loading EMR %d clusters for region '%s' into graph.", len(cluster_data), region)
+    neo4j_session.run(
+        query,
+        Clusters=cluster_data,
         Region=region,
-        AWS_ID=current_aws_account_id,
-    )
+        aws_update_tag=aws_update_tag,
+        AWS_ACCOUNT_ID=current_aws_account_id,
+        cluster_borneo_id=uuid.uuid4()
+    ).consume()
 
 
 @timeit

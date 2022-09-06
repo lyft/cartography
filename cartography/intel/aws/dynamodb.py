@@ -5,6 +5,7 @@ from typing import List
 
 import boto3
 import neo4j
+import uuid
 
 from cartography.client.core.tx import load
 from cartography.graph.job import GraphJob
@@ -64,15 +65,36 @@ def load_dynamodb_tables(
     neo4j_session: neo4j.Session, tables_data: List[Dict[str, Any]], region: str, current_aws_account_id: str,
     aws_update_tag: int,
 ) -> None:
-    logger.info(f"Loading Dynamo DB tables {len(tables_data)} for region '{region}' into graph.")
-    load(
-        neo4j_session,
-        DynamoDBTableSchema(),
-        tables_data,
-        lastupdated=aws_update_tag,
-        Region=region,
-        AWS_ID=current_aws_account_id,
-    )
+    ingest_table = """
+    MERGE (table:DynamoDBTable{id: {Arn}})
+    ON CREATE SET table.firstseen = timestamp(), table.arn = {Arn}, table.name = {TableName},
+    table.region = {Region}
+    SET table.lastupdated = {aws_update_tag}, table.rows = {Rows}, table.size = {Size},
+    table.provisioned_throughput_read_capacity_units = {ProvisionedThroughputReadCapacityUnits},
+    table.provisioned_throughput_write_capacity_units = {ProvisionedThroughputWriteCapacityUnits},
+    table.borneo_id = {table_borneo_id}
+    WITH table
+    MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MERGE (owner)-[r:RESOURCE]->(table)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {aws_update_tag}
+    """
+
+    for table in data:
+        neo4j_session.run(
+            ingest_table,
+            Arn=table['Table']['TableArn'],
+            Region=region,
+            ProvisionedThroughputReadCapacityUnits=table['Table']['ProvisionedThroughput']['ReadCapacityUnits'],
+            ProvisionedThroughputWriteCapacityUnits=table['Table']['ProvisionedThroughput']['WriteCapacityUnits'],
+            Size=table['Table']['TableSizeBytes'],
+            TableName=table['Table']['TableName'],
+            Rows=table['Table']['ItemCount'],
+            AWS_ACCOUNT_ID=current_aws_account_id,
+            aws_update_tag=aws_update_tag,
+            table_borneo_id=uuid.uuid4()
+        )
+        load_gsi(neo4j_session, table, region, current_aws_account_id, aws_update_tag)
 
 
 @timeit
@@ -80,15 +102,34 @@ def load_dynamodb_gsi(
     neo4j_session: neo4j.Session, gsi_data: List[Dict[str, Any]], region: str, current_aws_account_id: str,
     aws_update_tag: int,
 ) -> None:
-    logger.info(f"Loading Dynamo DB GSI {len(gsi_data)} for region '{region}' into graph.")
-    load(
-        neo4j_session,
-        DynamoDBGSISchema(),
-        gsi_data,
-        lastupdated=aws_update_tag,
-        Region=region,
-        AWS_ID=current_aws_account_id,
-    )
+    ingest_gsi = """
+    MERGE (gsi:DynamoDBGlobalSecondaryIndex{id: {Arn}})
+    ON CREATE SET gsi.firstseen = timestamp(), gsi.arn = {Arn}, gsi.name = {GSIName},
+    gsi.region = {Region}
+    SET gsi.lastupdated = {aws_update_tag},
+    gsi.provisioned_throughput_read_capacity_units = {ProvisionedThroughputReadCapacityUnits},
+    gsi.provisioned_throughput_write_capacity_units = {ProvisionedThroughputWriteCapacityUnits},
+    gsi.borneo_id = {gsi_borneo_id}
+    WITH gsi
+    MATCH (table:DynamoDBTable{arn: {TableArn}})
+    MERGE (table)-[r:GLOBAL_SECONDARY_INDEX]->(gsi)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {aws_update_tag}
+    """
+
+    for gsi in table['Table'].get('GlobalSecondaryIndexes', []):
+        neo4j_session.run(
+            ingest_gsi,
+            TableArn=table['Table']['TableArn'],
+            Arn=gsi['IndexArn'],
+            Region=region,
+            ProvisionedThroughputReadCapacityUnits=gsi['ProvisionedThroughput']['ReadCapacityUnits'],
+            ProvisionedThroughputWriteCapacityUnits=gsi['ProvisionedThroughput']['WriteCapacityUnits'],
+            GSIName=gsi['IndexName'],
+            AWS_ACCOUNT_ID=current_aws_account_id,
+            aws_update_tag=aws_update_tag,
+            gsi_borneo_id=uuid.uuid4()
+        )
 
 
 @timeit
