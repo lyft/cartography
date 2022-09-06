@@ -141,34 +141,34 @@ Representation of AWS [IAM Groups](https://docs.aws.amazon.com/IAM/latest/APIRef
 Representation of an AWS [Inspector Finding](https://docs.aws.amazon.com/inspector/v2/APIReference/API_Finding.html)
 
 | Field | Description | Required|
-|-------|-------------|------|---|
-|arn|The AWS ARN|yes
-|id|Reuses the AWS ARN since it's unique|yes
-|region|AWS region the finding is from|yes
-|awsaccount|AWS account the finding is from|yes
-|name|The finding name|
-|instanceid|The instance ID of the EC2 instance with the issue|
-|ecrimageid|The image ID of the ECR image with the issue|
-|ecrrepositoryid|The repository ID of the ECR repository with the issue|
-|severity|The finding severity|
-|firstobservedat|Date the finding was first identified|
-|updatedat|Date the finding was last updated|
-|description|The finding description|
-|type|The finding type|
-|cvssscore|CVSS score of the finding|
-|protocol|Network protocol for network findings|
-|portrange|Port range affected for network findings|
-|portrangebegin|Beginning of the port range affected for network findings|
-|portrangeend|End of the port range affected for network findings|
-|vulnerabilityid|Vulnerability ID associdated with the finding for package findings|
-|referenceurls|Reference URLs for the found vulnerabilities|
-|relatedvulnerabilities|A list of any related vulnerabilities|
-|source|Source for the vulnerability|
-|sourceurl|URL for the vulnerability source|
-|vendorcreatedat|Date the vulnerability notice was created by the vendor|
-|vendorseverity|Vendor chosen issue severity|
-|vendorupdatedat|Date the vendor information was last updated|
-|vulnerablepackageids|IDs for any related packages|
+|-------|-------------|------|
+|arn|The AWS ARN|yes|
+|id|Reuses the AWS ARN since it's unique|yes|
+|region|AWS region the finding is from|yes|
+|awsaccount|AWS account the finding is from|yes|
+|name|The finding name||
+|instanceid|The instance ID of the EC2 instance with the issue||
+|ecrimageid|The image ID of the ECR image with the issue||
+|ecrrepositoryid|The repository ID of the ECR repository with the issue||
+|severity|The finding severity||
+|firstobservedat|Date the finding was first identified||
+|updatedat|Date the finding was last updated||
+|description|The finding description||
+|type|The finding type||
+|cvssscore|CVSS score of the finding||
+|protocol|Network protocol for network findings||
+|portrange|Port range affected for network findings||
+|portrangebegin|Beginning of the port range affected for network findings||
+|portrangeend|End of the port range affected for network findings||
+|vulnerabilityid|Vulnerability ID associdated with the finding for package findings||
+|referenceurls|Reference URLs for the found vulnerabilities||
+|relatedvulnerabilities|A list of any related vulnerabilities||
+|source|Source for the vulnerability||
+|sourceurl|URL for the vulnerability source||
+|vendorcreatedat|Date the vulnerability notice was created by the vendor||
+|vendorseverity|Vendor chosen issue severity||
+|vendorupdatedat|Date the vendor information was last updated||
+|vulnerablepackageids|IDs for any related packages||
 
 #### Relationships
 
