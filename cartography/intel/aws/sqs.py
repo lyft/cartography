@@ -7,6 +7,8 @@ from typing import Tuple
 
 import boto3
 import neo4j
+import uuid
+
 from botocore.exceptions import ClientError
 
 from cartography.util import aws_handle_regions
@@ -81,7 +83,8 @@ def load_sqs_queues(
             queue.content_based_deduplication = sqs_queue.ContentBasedDeduplication,
             queue.deduplication_scope = sqs_queue.DeduplicationScope,
             queue.fifo_throughput_limit = sqs_queue.FifoThroughputLimit,
-            queue.lastupdated = $aws_update_tag
+            queue.lastupdated = $aws_update_tag,
+            queue.borneo_id = {queue_borneo_id}
         WITH queue
         MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
         MERGE (owner)-[r:RESOURCE]->(queue)
@@ -116,6 +119,7 @@ def load_sqs_queues(
         Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
         aws_update_tag=aws_update_tag,
+        queue_borneo_id=uuid.uuid4()
     )
 
     _attach_dead_letter_queues(neo4j_session, dead_letter_queues, aws_update_tag)

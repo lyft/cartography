@@ -8,6 +8,7 @@ from typing import Tuple
 
 import boto3
 import neo4j
+import uuid
 
 from cartography.intel.aws.permission_relationships import parse_statement_node
 from cartography.intel.aws.permission_relationships import principal_allowed_on_resource
@@ -211,7 +212,8 @@ def load_users(
     ingest_user = """
     MERGE (unode:AWSUser{arn: $ARN})
     ON CREATE SET unode:AWSPrincipal, unode.userid = $USERID, unode.firstseen = timestamp(),
-    unode.createdate = $CREATE_DATE
+    unode.createdate = $CREATE_DATE,
+    unode.borneo_id = {user_borneo_id}
     SET unode.name = $USERNAME, unode.path = $PATH, unode.passwordlastused = $PASSWORD_LASTUSED,
     unode.lastupdated = $aws_update_tag
     WITH unode
@@ -232,6 +234,7 @@ def load_users(
             PASSWORD_LASTUSED=str(user.get("PasswordLastUsed", "")),
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag,
+            user_borneo_id=uuid.uuid4()
         )
 
 
@@ -241,7 +244,8 @@ def load_groups(
 ) -> None:
     ingest_group = """
     MERGE (gnode:AWSGroup{arn: $ARN})
-    ON CREATE SET gnode.groupid = $GROUP_ID, gnode.firstseen = timestamp(), gnode.createdate = $CREATE_DATE
+    ON CREATE SET gnode.groupid = $GROUP_ID, gnode.firstseen = timestamp(), gnode.createdate = $CREATE_DATE,
+    gnode.borneo_id = {group_borneo_id}
     SET gnode:AWSPrincipal, gnode.name = $GROUP_NAME, gnode.path = $PATH,gnode.lastupdated = $aws_update_tag
     WITH gnode
     MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
@@ -260,6 +264,7 @@ def load_groups(
             PATH=group["Path"],
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag,
+            group_borneo_id=uuid.uuid4()
         )
 
 
@@ -285,7 +290,8 @@ def load_roles(
     ingest_role = """
     MERGE (rnode:AWSRole{arn: $Arn})
     ON CREATE SET rnode:AWSPrincipal, rnode.roleid = $RoleId, rnode.firstseen = timestamp(),
-    rnode.createdate = $CreateDate
+    rnode.createdate = $CreateDate,
+    rnode.borneo_id = {role_borneo_id}
     ON MATCH SET rnode.name = $RoleName, rnode.path = $Path
     SET rnode.lastupdated = $aws_update_tag
     WITH rnode
@@ -337,6 +343,7 @@ def load_roles(
             Path=role["Path"],
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag,
+            role_borneo_id=uuid.uuid4()
         )
 
         for statement in role["AssumeRolePolicyDocument"]["Statement"]:
@@ -459,7 +466,8 @@ def load_user_access_keys(neo4j_session: neo4j.Session, user_access_keys: Dict, 
     MATCH (user:AWSUser{arn: $UserARN})
     WITH user
     MERGE (key:AccountAccessKey{accesskeyid: $AccessKeyId})
-    ON CREATE SET key.firstseen = timestamp(), key.createdate = $CreateDate
+    ON CREATE SET key.firstseen = timestamp(), key.createdate = $CreateDate,
+    key.borneo_id = {key_borneo_id}
     SET key.status = $Status, key.lastupdated = $aws_update_tag
     WITH user,key
     MERGE (user)-[r:AWS_ACCESS_KEY]->(key)
@@ -477,6 +485,7 @@ def load_user_access_keys(neo4j_session: neo4j.Session, user_access_keys: Dict, 
                     CreateDate=str(key['CreateDate']),
                     Status=key['Status'],
                     aws_update_tag=aws_update_tag,
+                    key_borneo_id=uuid.uuid4()
                 )
 
 
@@ -533,7 +542,8 @@ def _load_policy_tx(
     ON CREATE SET
         policy.firstseen = timestamp(),
         policy.type = $PolicyType,
-        policy.name = $PolicyName
+        policy.name = $PolicyName,
+        policy.borneo_id = {policy_borneo_id}
     SET policy.lastupdated = $aws_update_tag
     WITH policy
     MATCH (principal:AWSPrincipal{arn: $PrincipalArn})
@@ -547,6 +557,7 @@ def _load_policy_tx(
         PolicyType=policy_type,
         PrincipalArn=principal_arn,
         aws_update_tag=aws_update_tag,
+        policy_borneo_id=uuid.uuid4()
     )
 
 
@@ -576,7 +587,8 @@ def load_policy_statements(
         statement.notresource = statement_data.NotResource,
         statement.condition = statement_data.Condition,
         statement.sid = statement_data.Sid,
-        statement.lastupdated = $aws_update_tag
+        statement.lastupdated = $aws_update_tag,
+        statement.borneo_id = {statement_borneo_id}
         MERGE (policy)-[r:STATEMENT]->(statement)
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = $aws_update_tag
@@ -587,6 +599,7 @@ def load_policy_statements(
         PolicyName=policy_name,
         Statements=statements,
         aws_update_tag=aws_update_tag,
+        statement_borneo_id=uuid.uuid4()
     ).consume()
 
 

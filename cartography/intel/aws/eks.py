@@ -5,6 +5,7 @@ from typing import List
 
 import boto3
 import neo4j
+import uuid
 
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
@@ -42,7 +43,8 @@ def load_eks_clusters(
                 cluster.arn = $ClusterArn,
                 cluster.name = $ClusterName,
                 cluster.region = $Region,
-                cluster.created_at = $CreatedAt
+                cluster.created_at = $CreatedAt,
+                cluster.borneo_id = {cluster_borneo_id}
     SET cluster.lastupdated = $aws_update_tag,
         cluster.endpoint = $ClusterEndpoint,
         cluster.endpoint_public_access = $ClusterEndointPublic,
@@ -75,6 +77,7 @@ def load_eks_clusters(
             Region=region,
             aws_update_tag=aws_update_tag,
             AWS_ACCOUNT_ID=current_aws_account_id,
+            cluster_borneo_id=uuid.uuid4()
         )
 
 

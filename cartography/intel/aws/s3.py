@@ -11,6 +11,8 @@ from typing import Tuple
 import boto3
 import botocore
 import neo4j
+import uuid
+
 from botocore.exceptions import ClientError
 from botocore.exceptions import EndpointConnectionError
 from policyuniverse.policy import Policy
@@ -214,7 +216,8 @@ def _load_s3_acls(neo4j_session: neo4j.Session, acls: Dict, aws_account_id: str,
     UNWIND $acls AS acl
     MERGE (a:S3Acl{id: acl.id})
     ON CREATE SET a.firstseen = timestamp(), a.owner = acl.owner, a.ownerid = acl.ownerid, a.type = acl.type,
-    a.displayname = acl.displayname, a.granteeid = acl.granteeid, a.uri = acl.uri, a.permission = acl.permission
+    a.displayname = acl.displayname, a.granteeid = acl.granteeid, a.uri = acl.uri, a.permission = acl.permission,
+    a.borneo_id = {acl_borneo_id}
     SET a.lastupdated = $UpdateTag
     WITH a,acl MATCH (s3:S3Bucket{id: acl.bucket})
     MERGE (a)-[r:APPLIES_TO]->(s3)
@@ -226,6 +229,7 @@ def _load_s3_acls(neo4j_session: neo4j.Session, acls: Dict, aws_account_id: str,
         ingest_acls,
         acls=acls,
         UpdateTag=update_tag,
+        acl_borneo_id=uuid.uuid4()
     )
 
     # implement the acl permission
@@ -679,7 +683,8 @@ def load_s3_buckets(neo4j_session: neo4j.Session, data: Dict, current_aws_accoun
     MERGE (bucket:S3Bucket{id:$BucketName})
     ON CREATE SET bucket.firstseen = timestamp(), bucket.creationdate = $CreationDate
     SET bucket.name = $BucketName, bucket.region = $BucketRegion, bucket.arn = $Arn,
-    bucket.lastupdated = $aws_update_tag
+    bucket.lastupdated = $aws_update_tag,
+    bucket.borneo_id = {bucket_borneo_id}
     WITH bucket
     MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (owner)-[r:RESOURCE]->(bucket)
@@ -701,6 +706,7 @@ def load_s3_buckets(neo4j_session: neo4j.Session, data: Dict, current_aws_accoun
             CreationDate=str(bucket["CreationDate"]),
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag,
+            bucket_borneo_id=uuid.uuid4()
         )
 
 

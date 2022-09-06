@@ -5,6 +5,7 @@ from typing import Set
 
 import boto3
 import neo4j
+import uuid
 
 from cartography.stats import get_stats_client
 from cartography.util import aws_handle_regions
@@ -59,7 +60,8 @@ def load_elasticache_clusters(
             cluster.arn = elasticache_cluster.ARN,
             cluster.topic_arn = elasticache_cluster.NotificationConfiguration.TopicArn,
             cluster.id = elasticache_cluster.CacheClusterId,
-            cluster.region = $region
+            cluster.region = $region, 
+            cluster.borneo_id = {cluster_borneo_id}
         SET cluster.lastupdated = $aws_update_tag
 
         WITH cluster, elasticache_cluster
@@ -72,7 +74,8 @@ def load_elasticache_clusters(
         WHERE NOT elasticache_cluster.NotificationConfiguration IS NULL
         MERGE (topic:ElasticacheTopic{id: elasticache_cluster.NotificationConfiguration.TopicArn})
         ON CREATE SET topic.firstseen = timestamp(),
-            topic.arn = elasticache_cluster.NotificationConfiguration.TopicArn
+            topic.arn = elasticache_cluster.NotificationConfiguration.TopicArn,
+            topic.borneo_id = {topic_borneo_id}
         SET topic.lastupdated = $aws_update_tag,
             topic.status = elasticache_cluster.NotificationConfiguration.Status
 
@@ -92,6 +95,8 @@ def load_elasticache_clusters(
         region=region,
         aws_update_tag=update_tag,
         aws_account_id=aws_account_id,
+        cluster_borneo_id=uuid.uuid4(),
+        topic_borneo_id=uuid.uuid4()
     )
 
 

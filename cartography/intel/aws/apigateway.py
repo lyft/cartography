@@ -1,5 +1,7 @@
 import json
 import logging
+import resource
+import uuid
 from typing import Any
 from typing import Dict
 from typing import List
@@ -124,7 +126,8 @@ def load_apigateway_rest_apis(
     rest_api.minimumcompressionsize = r.minimumCompressionSize,
     rest_api.disableexecuteapiendpoint = r.disableExecuteApiEndpoint,
     rest_api.lastupdated = $aws_update_tag,
-    rest_api.region = $Region
+    rest_api.region = $Region,
+    rest_api.borneo_id = {rest_api_borneo_id}
     WITH rest_api
     MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (aa)-[r:RESOURCE]->(rest_api)
@@ -143,6 +146,7 @@ def load_apigateway_rest_apis(
         aws_update_tag=aws_update_tag,
         Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
+        rest_api_borneo_id=uuid.uuid4()
     )
 
 
@@ -199,7 +203,8 @@ def _load_apigateway_stages(
     s.cacheclusterstatus = stage.cacheClusterStatus,
     s.tracingenabled = stage.tracingEnabled,
     s.webaclarn = stage.webAclArn,
-    s.lastupdated = $UpdateTag
+    s.lastupdated = $UpdateTag,
+    s.borneo_id = {stage_borneo_id}
     WITH s, stage
     MATCH (rest_api:APIGatewayRestAPI{id: stage.apiId})
     MERGE (rest_api)-[r:ASSOCIATED_WITH]->(s)
@@ -217,6 +222,7 @@ def _load_apigateway_stages(
         ingest_stages,
         stages_list=stages,
         UpdateTag=update_tag,
+        stage_borneo_id=uuid.uuid4()
     )
 
 
@@ -231,7 +237,8 @@ def _load_apigateway_certificates(
     UNWIND $certificates_list as certificate
     MERGE (c:APIGatewayClientCertificate{id: certificate.clientCertificateId})
     ON CREATE SET c.firstseen = timestamp(), c.createddate = certificate.createdDate
-    SET c.lastupdated = $UpdateTag, c.expirationdate = certificate.expirationDate
+    SET c.lastupdated = $UpdateTag, c.expirationdate = certificate.expirationDate,
+    c.borneo_id = {cert_borneo_id}
     WITH c, certificate
     MATCH (stage:APIGatewayStage{id: certificate.stageArn})
     MERGE (stage)-[r:HAS_CERTIFICATE]->(c)
@@ -250,6 +257,7 @@ def _load_apigateway_certificates(
         ingest_certificates,
         certificates_list=certificates,
         UpdateTag=update_tag,
+        cert_borneo_id=uuid.uuid4()
     )
 
 
@@ -267,7 +275,8 @@ def _load_apigateway_resources(
     SET s.path = res.path,
     s.pathpart = res.pathPart,
     s.parentid = res.parentId,
-    s.lastupdated =$UpdateTag
+    s.lastupdated =$UpdateTag,
+    s.borneo_id = {resource_borneo_id}
     WITH s, res
     MATCH (rest_api:APIGatewayRestAPI{id: res.apiId})
     MERGE (rest_api)-[r:RESOURCE]->(s)
@@ -279,6 +288,7 @@ def _load_apigateway_resources(
         ingest_resources,
         resources_list=resources,
         UpdateTag=update_tag,
+        resource_borneo_id=uuid.uuid4()
     )
 
 

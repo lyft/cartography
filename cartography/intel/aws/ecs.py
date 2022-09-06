@@ -5,6 +5,7 @@ from typing import List
 
 import boto3
 import neo4j
+import uuid
 
 from cartography.util import aws_handle_regions
 from cartography.util import camel_to_snake
@@ -150,7 +151,8 @@ def load_ecs_clusters(
             c.settings_container_insights = cluster.settings_container_insights,
             c.capacity_providers = cluster.capacityProviders,
             c.attachments_status = cluster.attachmentsStatus,
-            c.lastupdated = $aws_update_tag
+            c.lastupdated = $aws_update_tag,
+            c.borneo_id = {cluster_borneo_id}
         WITH c
         MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
         MERGE (owner)-[r:RESOURCE]->(c)
@@ -170,6 +172,7 @@ def load_ecs_clusters(
         Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
         aws_update_tag=aws_update_tag,
+        cluster_borneo_id=uuid.uuid4()
     )
 
 
@@ -198,7 +201,8 @@ def load_ecs_container_instances(
             i.agent_connected = instance.agentConnected,
             i.agent_update_status = instance.agentUpdateStatus,
             i.registered_at = instance.registeredAt,
-            i.lastupdated = $aws_update_tag
+            i.lastupdated = $aws_update_tag,
+            i.borneo_id = {instance_borneo_id}
         WITH i
         MATCH (c:ECSCluster{id: $ClusterARN})
         MERGE (c)-[r:HAS_CONTAINER_INSTANCE]->(i)
@@ -217,6 +221,7 @@ def load_ecs_container_instances(
         Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
         aws_update_tag=aws_update_tag,
+        instance_borneo_id=uuid.uuid4()
     )
 
 
@@ -255,7 +260,8 @@ def load_ecs_services(
             s.enable_ecs_managed_tags = service.enableECSManagedTags,
             s.propagate_tags = service.propagateTags,
             s.enable_execute_command = service.enableExecuteCommand,
-            s.lastupdated = $aws_update_tag
+            s.lastupdated = $aws_update_tag,
+            s.borneo_id = {service_borneo_id}
         WITH s
         MATCH (c:ECSCluster{id: $ClusterARN})
         MERGE (c)-[r:HAS_SERVICE]->(s)
@@ -279,6 +285,7 @@ def load_ecs_services(
         Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
         aws_update_tag=aws_update_tag,
+        service_borneo_id=uuid.uuid4()
     )
 
 
@@ -315,7 +322,8 @@ def load_ecs_task_definitions(
             d.deregistered_at = def.deregisteredAt,
             d.registered_by = def.registeredBy,
             d.ephemeral_storage_size_in_gib = def.ephemeralStorage.sizeInGiB,
-            d.lastupdated = $aws_update_tag
+            d.lastupdated = $aws_update_tag,
+            d.borneo_id = {definition_borneo_id}
         WITH d
         MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
         MERGE (owner)-[r:RESOURCE]->(d)
@@ -338,6 +346,7 @@ def load_ecs_task_definitions(
         Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
         aws_update_tag=aws_update_tag,
+        definition_borneo_id=uuid.uuid4()
     )
 
     load_ecs_container_definitions(
@@ -392,7 +401,8 @@ def load_ecs_tasks(
             t.task_definition_arn = task.taskDefinitionArn,
             t.version = task.version,
             t.ephemeral_storage_size_in_gib = task.ephemeralStorage.sizeInGiB,
-            t.lastupdated = $aws_update_tag
+            t.lastupdated = $aws_update_tag,
+            t.borneo_id = {task_borneo_id}
         WITH t
         MATCH (c:ECSCluster{id: $ClusterARN})
         MERGE (c)-[r:HAS_TASK]->(t)
@@ -430,6 +440,7 @@ def load_ecs_tasks(
         Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
         aws_update_tag=aws_update_tag,
+        task_borneo_id=uuid.uuid4()
     )
 
     load_ecs_containers(
@@ -476,7 +487,8 @@ def load_ecs_container_definitions(
             d.docker_security_options = def.dockerSecurityOptions,
             d.interactive = def.interactive,
             d.pseudo_terminal = def.pseudoTerminal,
-            d.lastupdated = $aws_update_tag
+            d.lastupdated = $aws_update_tag,
+            d.borneo_id = {definition_borneo_id}
         WITH d
         MATCH (td:ECSTaskDefinition{id: d.task_definition_arn})
         MERGE (td)-[r:HAS_CONTAINER_DEFINITION]->(d)
@@ -489,6 +501,7 @@ def load_ecs_container_definitions(
         Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
         aws_update_tag=aws_update_tag,
+        definition_borneo_id=uuid.uuid4()
     )
 
 
@@ -518,7 +531,8 @@ def load_ecs_containers(
             c.memory = container.memory,
             c.memory_reservation = container.memoryReservation,
             c.gpu_ids = container.gpuIds,
-            c.lastupdated = $aws_update_tag
+            c.lastupdated = $aws_update_tag,
+            c.borneo_id = {container_borneo_id}
         WITH c
         MATCH (t:ECSTask{id: c.task_arn})
         MERGE (t)-[r:HAS_CONTAINER]->(c)
@@ -531,6 +545,7 @@ def load_ecs_containers(
         Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
         aws_update_tag=aws_update_tag,
+        containers_borneo_id=uuid.uuid4()
     )
 
 

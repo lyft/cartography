@@ -6,6 +6,7 @@ from typing import List
 import boto3
 import botocore.exceptions
 import neo4j
+import uuid
 
 from cartography.intel.aws.ec2.util import get_botocore_config
 from cartography.util import aws_handle_regions
@@ -78,7 +79,8 @@ def load_emr_clusters(
             cluster.outpost_arn = emr_cluster.OutpostArn,
             cluster.log_uri = emr_cluster.LogUri,
             cluster.servicerole = emr_cluster.ServiceRole,
-            cluster.lastupdated = $aws_update_tag
+            cluster.lastupdated = $aws_update_tag,
+            cluster.borneo_id = {cluster_borneo_id}
         WITH cluster
 
         MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
@@ -94,6 +96,7 @@ def load_emr_clusters(
         Region=region,
         aws_update_tag=aws_update_tag,
         AWS_ACCOUNT_ID=current_aws_account_id,
+        cluster_borneo_id=uuid.uuid4()
     ).consume()
 
 
