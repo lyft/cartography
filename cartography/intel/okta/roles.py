@@ -95,20 +95,20 @@ def transform_group_roles_data(data: str, okta_org_id: str) -> List[Dict]:
 @timeit
 def _load_user_role(neo4j_session: neo4j.Session, user_id: str, roles_data: List[Dict], okta_update_tag: int) -> None:
     ingest = """
-    MATCH (user:OktaUser{id: $USER_ID})<-[:RESOURCE]-(org:OktaOrganization)
+    MATCH (user:OktaUser{id: {USER_ID}})<-[:RESOURCE]-(org:OktaOrganization)
     WITH user,org
-    UNWIND $ROLES_DATA as role_data
+    UNWIND {ROLES_DATA} as role_data
     MERGE (role_node:OktaAdministrationRole{id: role_data.type})
     ON CREATE SET role_node.type = role_data.type, role_node.firstseen = timestamp()
-    SET role_node.label = role_data.label, role_node.lastupdated = $okta_update_tag
+    SET role_node.label = role_data.label, role_node.lastupdated = {okta_update_tag}
     WITH user, role_node, org
     MERGE (user)-[r:MEMBER_OF_OKTA_ROLE]->(role_node)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = $okta_update_tag
+    SET r.lastupdated = {okta_update_tag}
     WITH role_node, org
     MERGE (org)-[r2:RESOURCE]->(role_node)
     ON CREATE SET r2.firstseen = timestamp()
-    SET r2.lastupdated = $okta_update_tag
+    SET r2.lastupdated = {okta_update_tag}
     """
 
     neo4j_session.run(
@@ -125,20 +125,20 @@ def _load_group_role(
     okta_update_tag: int,
 ) -> None:
     ingest = """
-    MATCH (group:OktaGroup{id: $GROUP_ID})<-[:RESOURCE]-(org:OktaOrganization)
+    MATCH (group:OktaGroup{id: {GROUP_ID}})<-[:RESOURCE]-(org:OktaOrganization)
     WITH group,org
-    UNWIND $ROLES_DATA as role_data
+    UNWIND {ROLES_DATA} as role_data
     MERGE (role_node:OktaAdministrationRole{id: role_data.type})
     ON CREATE SET role_node.type = role_data.type, role_node.firstseen = timestamp()
-    SET role_node.label = role_data.label, role_node.lastupdated = $okta_update_tag
+    SET role_node.label = role_data.label, role_node.lastupdated = {okta_update_tag}
     WITH group, role_node, org
     MERGE (group)-[r:MEMBER_OF_OKTA_ROLE]->(role_node)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = $okta_update_tag
+    SET r.lastupdated = {okta_update_tag}
     WITH role_node, org
     MERGE (org)-[r2:RESOURCE]->(role_node)
     ON CREATE SET r2.firstseen = timestamp()
-    SET r2.lastupdated = $okta_update_tag
+    SET r2.lastupdated = {okta_update_tag}
     """
 
     neo4j_session.run(
