@@ -42,7 +42,5 @@ services:
     restart: on-failure
     depends_on:
       - neo4j
-    environment:
-      - EXPERIMENTAL_NEO4J_4X_SUPPORT=True
     volumes:
       - ~/.aws:/cartography/.aws/

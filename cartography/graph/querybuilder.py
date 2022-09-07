@@ -81,7 +81,7 @@ def build_relationship_ingestion_query(
     :param dict_key_b: The dict key on what value of `search_property_b` to search for.
     :param rel_label: The $RELATIONSHIP_NAME from $NodeA to $NodeB.
     :param rel_property_map: Optional mapping of relationship property names to set and their
-    corresponding keys on the input data dict. Note: relationships in Neo4j 3.5 cannot be indexed
+    corresponding keys on the input data dict. Note: relationships in cartography are not indexed
     so performing searches on them is slow. Reconsider your schema design if you expect to need
     to run queries using relationship fields as search keys.
     :return: Neo4j query string to draw relationships between $NodeA and $NodeB. This exposes 2
