@@ -104,9 +104,9 @@ def _load_user_factors(neo4j_session: neo4j.Session, user_id: str, factors: List
     """
 
     ingest = """
-    MATCH (user:OktaUser{id: {USER_ID}})
+    MATCH (user:OktaUser{id: $USER_ID})
     WITH user
-    UNWIND {FACTOR_LIST} as factor_data
+    UNWIND $FACTOR_LIST as factor_data
     MERGE (new_factor:OktaUserFactor{id: factor_data.id})
     ON CREATE SET new_factor.firstseen = timestamp()
     SET new_factor.factor_type = factor_data.factor_type,
@@ -114,11 +114,11 @@ def _load_user_factors(neo4j_session: neo4j.Session, user_id: str, factors: List
     new_factor.status = factor_data.status,
     new_factor.created = factor_data.created,
     new_factor.okta_last_updated = factor_data.okta_last_updated,
-    new_factor.lastupdated = {okta_update_tag}
+    new_factor.lastupdated = $okta_update_tag
     WITH user, new_factor
     MERGE (user)-[r:FACTOR]->(new_factor)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {okta_update_tag}
+    SET r.lastupdated = $okta_update_tag
     """
 
     neo4j_session.run(
