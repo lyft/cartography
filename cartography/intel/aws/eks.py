@@ -39,7 +39,7 @@ def get_eks_describe_cluster(boto3_session: boto3.session.Session, region: str, 
     client = boto3_session.client('eks', region_name=region)
     response = client.describe_cluster(name=cluster_name)
     response['cluster']['region'] = region
-    response['cluster']['arn'] = aws_console_link.get_console_link(arn=response['cluster']['arn'])
+    # response['cluster']['arn'] = aws_console_link.get_console_link(arn=response['cluster']['arn'])
     return response['cluster']
 
 

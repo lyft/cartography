@@ -190,7 +190,7 @@ def attach_db_security_groups_to_ec2_security_groups(session: neo4j.Session, dat
 
         session.run(
             ingest_script,
-            DBSecurityGroupArn=db_sg_id,
+            DBSecurityGroupId=db_sg_id,
             EC2SecurityGroupId=sg.get('EC2SecurityGroupId'),
             aws_update_tag=aws_update_tag,
         )
@@ -527,7 +527,7 @@ def load_rds_instances(
         rds['EndpointAddress'] = ep.get('Address')
         rds['EndpointHostedZoneId'] = ep.get('HostedZoneId')
         rds['EndpointPort'] = ep.get('Port')
-        rds['consolelink'] = aws_console_link.get_console_link(arn=rds['DBInstanceArn'])
+        # rds['consolelink'] = aws_console_link.get_console_link(arn=rds['DBInstanceArn'])
     neo4j_session.run(
         ingest_rds_instance,
         Instances=data,

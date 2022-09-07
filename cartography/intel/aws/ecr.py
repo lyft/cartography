@@ -26,7 +26,7 @@ def get_ecr_repositories(boto3_session: boto3.session.Session, region: str) -> L
         ecr_repositories.extend(page['repositories'])
     for repo in ecr_repositories:
         repo['region'] = region
-        repo['consolelink'] = aws_console_link.get_console_link(arn=repo['repositoryArn'])
+        # repo['consolelink'] = aws_console_link.get_console_link(arn=repo['repositoryArn'])
     return ecr_repositories
 
 
