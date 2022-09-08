@@ -32,7 +32,7 @@ def start_cve_ingestion(
     for year in range(2002, current_year + 1):
         if year in existing_years:
             continue
-        logger.info(f"Syncing CVE data for year $year")
+        logger.info(f"Syncing CVE data for year {year}")
         cves = feed.get_cves(config.nist_cve_url, str(year))
         feed.load_cves(neo4j_session, cves, config.update_tag)
         merge_module_sync_metadata(
