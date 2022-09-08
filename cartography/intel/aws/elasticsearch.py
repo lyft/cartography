@@ -60,8 +60,9 @@ def _load_es_domains(
     ingest_records = """
     UNWIND $Records as record
     MERGE (es:ESDomain{id: record.DomainId})
-    ON CREATE SET es.firstseen = timestamp(), es.arn = record.ARN, es.domainid = record.DomainId
-    SET es.lastupdated = $aws_update_tag, es.deleted = record.Deleted, es.created = record.created,
+    ON CREATE SET es.firstseen = timestamp(), es.arn = record.ARN, es.domainid = record.DomainId,
+    es.borneo_id = {es_borneo_id}
+    SET es.lastupdated = {aws_update_tag}, es.deleted = record.Deleted, es.created = record.created,
     es.endpoint = record.Endpoint, es.elasticsearch_version = record.ElasticsearchVersion,
     es.elasticsearch_cluster_config_instancetype = record.ElasticsearchClusterConfig.InstanceType,
     es.elasticsearch_cluster_config_instancecount = record.ElasticsearchClusterConfig.InstanceCount,
@@ -76,8 +77,7 @@ def _load_es_domains(
     es.encryption_at_rest_options_enabled = record.EncryptionAtRestOptions.Enabled,
     es.encryption_at_rest_options_kms_key_id = record.EncryptionAtRestOptions.KmsKeyId,
     es.log_publishing_options_cloudwatch_log_group_arn = record.LogPublishingOptions.CloudWatchLogsLogGroupArn,
-    es.log_publishing_options_enabled = record.LogPublishingOptions.Enabled,
-    es.borneo_id = {es_borneo_id}
+    es.log_publishing_options_enabled = record.LogPublishingOptions.Enabled
     WITH es
     MATCH (account:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (account)-[r:RESOURCE]->(es)

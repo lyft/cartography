@@ -66,8 +66,9 @@ def load_sqs_queues(
     ingest_queues = """
     UNWIND $Queues as sqs_queue
         MERGE (queue:SQSQueue{id: sqs_queue.QueueArn})
-        ON CREATE SET queue.firstseen = timestamp(), queue.url = sqs_queue.url
-        SET queue.name = sqs_queue.name, queue.region = $Region, queue.arn = sqs_queue.QueueArn,
+        ON CREATE SET queue.firstseen = timestamp(), queue.url = sqs_queue.url,
+            queue.borneo_id = {queue_borneo_id}
+        SET queue.name = sqs_queue.name, queue.region = {Region}, queue.arn = sqs_queue.QueueArn,
             queue.created_timestamp = sqs_queue.CreatedTimestamp, queue.delay_seconds = sqs_queue.DelaySeconds,
             queue.last_modified_timestamp = sqs_queue.LastModifiedTimestamp,
             queue.maximum_message_size = sqs_queue.MaximumMessageSize,
@@ -83,8 +84,7 @@ def load_sqs_queues(
             queue.content_based_deduplication = sqs_queue.ContentBasedDeduplication,
             queue.deduplication_scope = sqs_queue.DeduplicationScope,
             queue.fifo_throughput_limit = sqs_queue.FifoThroughputLimit,
-            queue.lastupdated = {aws_update_tag},
-            queue.borneo_id = {queue_borneo_id}
+            queue.lastupdated = {aws_update_tag}
         WITH queue
         MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
         MERGE (owner)-[r:RESOURCE]->(queue)

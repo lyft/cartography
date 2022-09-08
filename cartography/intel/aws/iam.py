@@ -627,6 +627,8 @@ def load_policy_statements(
         WITH policy
         UNWIND $Statements as statement_data
         MERGE (statement:AWSPolicyStatement{id: statement_data.id})
+        ON CREATE SET
+        statement.borneo_id = {statement_borneo_id}
         SET
         statement.effect = statement_data.Effect,
         statement.action = statement_data.Action,
@@ -635,8 +637,7 @@ def load_policy_statements(
         statement.notresource = statement_data.NotResource,
         statement.condition = statement_data.Condition,
         statement.sid = statement_data.Sid,
-        statement.lastupdated = {aws_update_tag},
-        statement.borneo_id = {statement_borneo_id}
+        statement.lastupdated = {aws_update_tag}
         MERGE (policy)-[r:STATEMENT]->(statement)
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = $aws_update_tag

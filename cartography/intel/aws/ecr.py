@@ -103,19 +103,19 @@ def _load_ecr_repo_img_tx(
     query = """
     UNWIND $RepoList as repo_img
         MERGE (ri:ECRRepositoryImage{id: repo_img.repo_uri + COALESCE(":" + repo_img.imageTag, '')})
-        ON CREATE SET ri.firstseen = timestamp()
-        SET ri.lastupdated = $aws_update_tag,
+        ON CREATE SET ri.firstseen = timestamp(),
+        ri.borneo_id = {ri_borneo_id}
+        SET ri.lastupdated = {aws_update_tag},
             ri.tag = repo_img.imageTag,
-            ri.uri = repo_img.repo_uri + COALESCE(":" + repo_img.imageTag, ''),
-            ri.borneo_id = {ri_borneo_id}
+            ri.uri = repo_img.repo_uri + COALESCE(":" + repo_img.imageTag, '')
         WITH ri, repo_img
 
         MERGE (img:ECRImage{id: repo_img.imageDigest})
         ON CREATE SET img.firstseen = timestamp(),
-            img.digest = repo_img.imageDigest
-        SET img.lastupdated = {aws_update_tag},
-            img.region = {Region},
+            img.digest = repo_img.imageDigest,
             img.borneo_id = {img_borneo_id}
+        SET img.lastupdated = {aws_update_tag},
+            img.region = {Region}
         WITH ri, img, repo_img
 
         MERGE (ri)-[r1:IMAGE]->(img)

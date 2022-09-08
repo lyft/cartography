@@ -196,15 +196,15 @@ def _load_apigateway_stages(
     UNWIND $stages_list AS stage
     MERGE (s:APIGatewayStage{id: stage.arn})
     ON CREATE SET s.firstseen = timestamp(), s.stagename = stage.stageName,
-    s.createddate = stage.createdDate
+    s.createddate = stage.createdDate,
+    s.borneo_id = {stage_borneo_id}
     SET s.deploymentid = stage.deploymentId,
     s.clientcertificateid = stage.clientCertificateId,
     s.cacheclusterenabled = stage.cacheClusterEnabled,
     s.cacheclusterstatus = stage.cacheClusterStatus,
     s.tracingenabled = stage.tracingEnabled,
     s.webaclarn = stage.webAclArn,
-    s.lastupdated = {UpdateTag},
-    s.borneo_id = {stage_borneo_id}
+    s.lastupdated = {UpdateTag}
     WITH s, stage
     MATCH (rest_api:APIGatewayRestAPI{id: stage.apiId})
     MERGE (rest_api)-[r:ASSOCIATED_WITH]->(s)
@@ -271,12 +271,12 @@ def _load_apigateway_resources(
     ingest_resources = """
     UNWIND $resources_list AS res
     MERGE (s:APIGatewayResource{id: res.id})
-    ON CREATE SET s.firstseen = timestamp()
+    ON CREATE SET s.firstseen = timestamp(),
+    s.borneo_id = {resource_borneo_id}
     SET s.path = res.path,
     s.pathpart = res.pathPart,
     s.parentid = res.parentId,
-    s.lastupdated ={UpdateTag},
-    s.borneo_id = {resource_borneo_id}
+    s.lastupdated ={UpdateTag}
     WITH s, res
     MATCH (rest_api:APIGatewayRestAPI{id: res.apiId})
     MERGE (rest_api)-[r:RESOURCE]->(s)

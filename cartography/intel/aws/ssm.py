@@ -103,7 +103,8 @@ def load_instance_information(
     ingest_query = """
     UNWIND {InstanceInformation} AS instance
         MERGE (i:SSMInstanceInformation{id: instance.InstanceId})
-        ON CREATE SET i.firstseen = timestamp()
+        ON CREATE SET i.firstseen = timestamp(),
+            i.borneo_id = {info_borneo_id}
         SET i.instance_id = instance.InstanceId,
             i.ping_status = instance.PingStatus,
             i.last_ping_date_time = instance.LastPingDateTime,
@@ -125,8 +126,7 @@ def load_instance_information(
             i.source_id = instance.SourceId,
             i.source_type = instance.SourceType,
             i.region = {Region},
-            i.lastupdated = {aws_update_tag},
-            i.borneo_id = {info_borneo_id}
+            i.lastupdated = {aws_update_tag}
         WITH i
         MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
         MERGE (owner)-[r:RESOURCE]->(i)
@@ -165,7 +165,8 @@ def load_instance_patches(
     ingest_query = """
     UNWIND {InstancePatch} AS patch
         MERGE (p:SSMInstancePatch{id: patch._instance_id + "-" + patch.Title})
-        ON CREATE SET p.firstseen = timestamp()
+        ON CREATE SET p.firstseen = timestamp(),
+            p.borneo_id = {patch_borneo_id}
         SET p.instance_id = patch._instance_id,
             p.title = patch.Title,
             p.kb_id = patch.KBId,
@@ -175,8 +176,7 @@ def load_instance_patches(
             p.installed_time = patch.InstalledTime,
             p.cve_ids = patch.CVEIds,
             p.region = {Region},
-            p.lastupdated = {aws_update_tag},
-            p.borneo_id = {patch_borneo_id}
+            p.lastupdated = {aws_update_tag}
         WITH p
         MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
         MERGE (owner)-[r:RESOURCE]->(p)

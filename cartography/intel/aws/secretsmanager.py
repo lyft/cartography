@@ -36,17 +36,16 @@ def load_secrets(
     ingest_secrets = """
     UNWIND $Secrets as secret
         MERGE (s:SecretsManagerSecret{id: secret.ARN})
-        ON CREATE SET s.firstseen = timestamp()
-        SET s.name = secret.Name, s.arn = secret.ARN, s.description = secret.Description,
-            s.kms_key_id = secret.KmsKeyId, s.rotation_enabled = secret.RotationEnabled,
-            s.rotation_lambda_arn = secret.RotationLambdaARN,
+        ON CREATE SET s.firstseen = timestamp(),
+            s.borneo_id = {secret_borneo_id}
+        SET s.name = secret.Name, s.description = secret.Description, s.kms_key_id = secret.KmsKeyId,
+            s.rotation_enabled = secret.RotationEnabled, s.rotation_lambda_arn = secret.RotationLambdaARN,
             s.rotation_rules_automatically_after_days = secret.RotationRules.AutomaticallyAfterDays,
             s.last_rotated_date = secret.LastRotatedDate, s.last_changed_date = secret.LastChangedDate,
             s.last_accessed_date = secret.LastAccessedDate, s.deleted_date = secret.DeletedDate,
             s.owning_service = secret.OwningService, s.created_date = secret.CreatedDate,
             s.primary_region = secret.PrimaryRegion, s.region = {Region},
-            s.lastupdated = {aws_update_tag},
-            s.borneo_id = {secret_borneo_id}
+            s.lastupdated = {aws_update_tag}
         WITH s
         MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
         MERGE (owner)-[r:RESOURCE]->(s)
