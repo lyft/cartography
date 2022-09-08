@@ -685,6 +685,8 @@ def load_s3_buckets(neo4j_session: neo4j.Session, data: Dict, current_aws_accoun
     SET bucket.name = $BucketName, bucket.region = $BucketRegion, bucket.arn = $Arn,
     bucket.lastupdated = $aws_update_tag,
     bucket.borneo_id = {bucket_borneo_id}
+    SET bucket.name = {BucketName}, bucket.region = {BucketRegion}, bucket.arn = {Arn},
+    bucket.lastupdated = {aws_update_tag}
     WITH bucket
     MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (owner)-[r:RESOURCE]->(bucket)

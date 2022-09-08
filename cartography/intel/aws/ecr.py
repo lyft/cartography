@@ -103,8 +103,7 @@ def _load_ecr_repo_img_tx(
         ON CREATE SET ri.firstseen = timestamp()
         SET ri.lastupdated = $aws_update_tag,
             ri.tag = repo_img.imageTag,
-            ri.uri = repo_img.repo_uri + COALESCE(":" + repo_img.imageTag, ''),
-            ri.borneo_id = {ri_borneo_id}
+            ri.uri = repo_img.repo_uri + COALESCE(":" + repo_img.imageTag, '')
         WITH ri, repo_img
 
         MERGE (img:ECRImage{id: repo_img.imageDigest})
@@ -113,6 +112,8 @@ def _load_ecr_repo_img_tx(
         SET img.lastupdated = $aws_update_tag,
             img.region = $Region,
             img.borneo_id = {img_borneo_id}
+        SET img.lastupdated = {aws_update_tag},
+            img.region = {Region}
         WITH ri, img, repo_img
 
         MERGE (ri)-[r1:IMAGE]->(img)

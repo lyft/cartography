@@ -232,7 +232,8 @@ def _attach_ec2_subnet_groups(
     attach_rds_to_subnet_group = """
     UNWIND $SubnetGroups as rds_sng
         MERGE (sng:DBSubnetGroup{id: rds_sng.arn})
-        ON CREATE SET sng.firstseen = timestamp()
+        ON CREATE SET sng.firstseen = timestamp(),
+            sng.borneo_id = {subnet_group_borneo_id}
         SET sng.name = rds_sng.DBSubnetGroupName,
             sng.vpc_id = rds_sng.VpcId,
             sng.description = rds_sng.DBSubnetGroupDescription,

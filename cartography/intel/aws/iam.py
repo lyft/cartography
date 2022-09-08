@@ -579,6 +579,8 @@ def load_policy_statements(
         WITH policy
         UNWIND $Statements as statement_data
         MERGE (statement:AWSPolicyStatement{id: statement_data.id})
+        ON CREATE SET
+        statement.borneo_id = {statement_borneo_id}
         SET
         statement.effect = statement_data.Effect,
         statement.action = statement_data.Action,

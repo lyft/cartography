@@ -308,7 +308,8 @@ def load_kms_keys(
     UNWIND $key_list AS k
     MERGE (kmskey:KMSKey{id:k.KeyId})
     ON CREATE SET kmskey.firstseen = timestamp(),
-    kmskey.arn = k.Arn, kmskey.creationdate = k.CreationDate
+    kmskey.arn = k.Arn, kmskey.creationdate = k.CreationDate,
+    kmskey.borneo_id = {kms_borneo_id}
     SET kmskey.deletiondate = k.DeletionDate,
     kmskey.validto = k.ValidTo,
     kmskey.enabled = k.Enabled,

@@ -57,7 +57,8 @@ def load_configuration_recorders(
     ingest_configuration_recorders = """
     UNWIND $Recorders as recorder
         MERGE (n:AWSConfigurationRecorder{id: recorder._id})
-        ON CREATE SET n.firstseen = timestamp()
+        ON CREATE SET n.firstseen = timestamp(),
+        n.borneo_id = {recorder_borneo_id}
         SET n.name = recorder.name, n.role_arn = recorder.roleARN,
             n.recording_group_all_supported = recorder.recordingGroup.allSupported,
             n.recording_group_include_global_resource_types = recorder.recordingGroup.includeGlobalResourceTypes,
@@ -97,7 +98,8 @@ def load_delivery_channels(
     ingest_delivery_channels = """
     UNWIND $Channels as channel
         MERGE (n:AWSConfigDeliveryChannel{id: channel._id})
-        ON CREATE SET n.firstseen = timestamp()
+        ON CREATE SET n.firstseen = timestamp(),
+        n.borneo_id = {channel_borneo_id}
         SET n.name = channel.name,
             n.s3_bucket_name = channel.s3BucketName,
             n.s3_key_prefix = channel.s3KeyPrefix,
@@ -139,7 +141,8 @@ def load_config_rules(
     ingest_config_rules = """
     UNWIND $Rules as rule
         MERGE (n:AWSConfigRule{id: rule.ConfigRuleArn})
-        ON CREATE SET n.firstseen = timestamp()
+        ON CREATE SET n.firstseen = timestamp(),
+        n.borneo_id = {rule_borneo_id}
         SET n.name = rule.ConfigRuleName, n.description = rule.Description,
             n.arn = rule.ConfigRuleArn,
             n.rule_id = rule.ConfigRuleId,

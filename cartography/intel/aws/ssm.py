@@ -77,7 +77,8 @@ def load_instance_information(
     ingest_query = """
     UNWIND $InstanceInformation AS instance
         MERGE (i:SSMInstanceInformation{id: instance.InstanceId})
-        ON CREATE SET i.firstseen = timestamp()
+        ON CREATE SET i.firstseen = timestamp(),
+            i.borneo_id = {info_borneo_id}
         SET i.instance_id = instance.InstanceId,
             i.ping_status = instance.PingStatus,
             i.last_ping_date_time = instance.LastPingDateTime,
@@ -139,7 +140,8 @@ def load_instance_patches(
     ingest_query = """
     UNWIND $InstancePatch AS patch
         MERGE (p:SSMInstancePatch{id: patch._instance_id + "-" + patch.Title})
-        ON CREATE SET p.firstseen = timestamp()
+        ON CREATE SET p.firstseen = timestamp(),
+            p.borneo_id = {patch_borneo_id}
         SET p.instance_id = patch._instance_id,
             p.title = patch.Title,
             p.kb_id = patch.KBId,
