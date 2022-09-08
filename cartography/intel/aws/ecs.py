@@ -137,7 +137,8 @@ def load_ecs_clusters(
     ingest_clusters = """
     UNWIND {Clusters} AS cluster
         MERGE (c:ECSCluster{id: cluster.clusterArn})
-        ON CREATE SET c.firstseen = timestamp()
+        ON CREATE SET c.firstseen = timestamp(),
+            c.borneo_id = {cluster_borneo_id}
         SET c.name = cluster.clusterName, c.region = {Region},
             c.arn = cluster.clusterArn,
             c.ecc_kms_key_id = cluster.configuration.executeCommandConfiguration.kmsKeyId,
@@ -151,8 +152,7 @@ def load_ecs_clusters(
             c.settings_container_insights = cluster.settings_container_insights,
             c.capacity_providers = cluster.capacityProviders,
             c.attachments_status = cluster.attachmentsStatus,
-            c.lastupdated = {aws_update_tag},
-            c.borneo_id = {cluster_borneo_id}
+            c.lastupdated = {aws_update_tag}
         WITH c
         MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
         MERGE (owner)-[r:RESOURCE]->(c)
@@ -188,7 +188,8 @@ def load_ecs_container_instances(
     ingest_instances = """
     UNWIND {Instances} AS instance
         MERGE (i:ECSContainerInstance{id: instance.containerInstanceArn})
-        ON CREATE SET i.firstseen = timestamp()
+        ON CREATE SET i.firstseen = timestamp(),
+            i.borneo_id = {instance_borneo_id}
         SET i.ec2_instance_id = instance.ec2InstanceId, i.region = {Region},
             i.arn = instance.containerInstanceArn,
             i.capacity_provider_name = instance.capacityProviderName,
@@ -201,8 +202,7 @@ def load_ecs_container_instances(
             i.agent_connected = instance.agentConnected,
             i.agent_update_status = instance.agentUpdateStatus,
             i.registered_at = instance.registeredAt,
-            i.lastupdated = {aws_update_tag},
-            i.borneo_id = {instance_borneo_id}
+            i.lastupdated = {aws_update_tag}
         WITH i
         MATCH (c:ECSCluster{id: {ClusterARN}})
         MERGE (c)-[r:HAS_CONTAINER_INSTANCE]->(i)
@@ -237,7 +237,8 @@ def load_ecs_services(
     ingest_services = """
     UNWIND {Services} AS service
         MERGE (s:ECSService{id: service.serviceArn})
-        ON CREATE SET s.firstseen = timestamp()
+        ON CREATE SET s.firstseen = timestamp(),
+            s.borneo_id = {service_borneo_id}
         SET s.name = service.serviceName, s.region = {Region},
             s.arn = service.serviceArn,
             s.cluster_arn = service.clusterArn,
@@ -260,8 +261,7 @@ def load_ecs_services(
             s.enable_ecs_managed_tags = service.enableECSManagedTags,
             s.propagate_tags = service.propagateTags,
             s.enable_execute_command = service.enableExecuteCommand,
-            s.lastupdated = {aws_update_tag},
-            s.borneo_id = {service_borneo_id}
+            s.lastupdated = {aws_update_tag}
         WITH s
         MATCH (c:ECSCluster{id: {ClusterARN}})
         MERGE (c)-[r:HAS_SERVICE]->(s)
@@ -300,7 +300,8 @@ def load_ecs_task_definitions(
     ingest_task_definitions = """
     UNWIND {Definitions} AS def
         MERGE (d:ECSTaskDefinition{id: def.taskDefinitionArn})
-        ON CREATE SET d.firstseen = timestamp()
+        ON CREATE SET d.firstseen = timestamp(),
+            d.borneo_id = {definition_borneo_id}
         SET d.arn = def.taskDefinitionArn, d.region = {Region},
             d.family = def.family,
             d.task_role_arn = def.taskRoleArn,
@@ -322,8 +323,7 @@ def load_ecs_task_definitions(
             d.deregistered_at = def.deregisteredAt,
             d.registered_by = def.registeredBy,
             d.ephemeral_storage_size_in_gib = def.ephemeralStorage.sizeInGiB,
-            d.lastupdated = {aws_update_tag},
-            d.borneo_id = {definition_borneo_id}
+            d.lastupdated = {aws_update_tag}
         WITH d
         MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
         MERGE (owner)-[r:RESOURCE]->(d)
@@ -370,7 +370,8 @@ def load_ecs_tasks(
     ingest_tasks = """
     UNWIND {Tasks} AS task
         MERGE (t:ECSTask{id: task.taskArn})
-        ON CREATE SET t.firstseen = timestamp()
+        ON CREATE SET t.firstseen = timestamp(),
+            t.borneo_id = {task_borneo_id}
         SET t.arn = task.taskArn, t.region = {Region},
             t.availability_zone = task.availabilityZone,
             t.capacity_provider_name = task.capacityProviderName,
@@ -401,8 +402,7 @@ def load_ecs_tasks(
             t.task_definition_arn = task.taskDefinitionArn,
             t.version = task.version,
             t.ephemeral_storage_size_in_gib = task.ephemeralStorage.sizeInGiB,
-            t.lastupdated = {aws_update_tag},
-            t.borneo_id = {task_borneo_id}
+            t.lastupdated = {aws_update_tag}
         WITH t
         MATCH (c:ECSCluster{id: {ClusterARN}})
         MERGE (c)-[r:HAS_TASK]->(t)
@@ -463,7 +463,8 @@ def load_ecs_container_definitions(
     ingest_definitions = """
     UNWIND {Definitions} AS def
         MERGE (d:ECSContainerDefinition{id: def._taskDefinitionArn + "-" + def.name})
-        ON CREATE SET d.firstseen = timestamp()
+        ON CREATE SET d.firstseen = timestamp(),
+            d.borneo_id = {definition_borneo_id}
         SET d.task_definition_arn = def._taskDefinitionArn, d.region = {Region},
             d.name = def.name,
             d.image = def.image,
@@ -487,8 +488,7 @@ def load_ecs_container_definitions(
             d.docker_security_options = def.dockerSecurityOptions,
             d.interactive = def.interactive,
             d.pseudo_terminal = def.pseudoTerminal,
-            d.lastupdated = {aws_update_tag},
-            d.borneo_id = {definition_borneo_id}
+            d.lastupdated = {aws_update_tag}
         WITH d
         MATCH (td:ECSTaskDefinition{id: d.task_definition_arn})
         MERGE (td)-[r:HAS_CONTAINER_DEFINITION]->(d)
@@ -516,7 +516,8 @@ def load_ecs_containers(
     ingest_containers = """
     UNWIND {Containers} AS container
         MERGE (c:ECSContainer{id: container.containerArn})
-        ON CREATE SET c.firstseen = timestamp()
+        ON CREATE SET c.firstseen = timestamp(),
+            c.borneo_id = {container_borneo_id}
         SET c.arn = container.containerArn, c.region = {Region},
             c.task_arn = container.taskArn,
             c.name = container.name,
@@ -531,8 +532,7 @@ def load_ecs_containers(
             c.memory = container.memory,
             c.memory_reservation = container.memoryReservation,
             c.gpu_ids = container.gpuIds,
-            c.lastupdated = {aws_update_tag},
-            c.borneo_id = {container_borneo_id}
+            c.lastupdated = {aws_update_tag}
         WITH c
         MATCH (t:ECSTask{id: c.task_arn})
         MERGE (t)-[r:HAS_CONTAINER]->(c)

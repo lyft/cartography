@@ -604,10 +604,10 @@ def parse_public_access_block(bucket: str, public_access_block: Optional[Dict]) 
 def load_s3_buckets(neo4j_session: neo4j.Session, data: Dict, current_aws_account_id: str, aws_update_tag: int) -> None:
     ingest_bucket = """
     MERGE (bucket:S3Bucket{id:{BucketName}})
-    ON CREATE SET bucket.firstseen = timestamp(), bucket.creationdate = {CreationDate}
-    SET bucket.name = {BucketName}, bucket.region = {BucketRegion}, bucket.arn = {Arn},
-    bucket.lastupdated = {aws_update_tag},
+    ON CREATE SET bucket.firstseen = timestamp(), bucket.creationdate = {CreationDate},
     bucket.borneo_id = {bucket_borneo_id}
+    SET bucket.name = {BucketName}, bucket.region = {BucketRegion}, bucket.arn = {Arn},
+    bucket.lastupdated = {aws_update_tag}
     WITH bucket
     MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
     MERGE (owner)-[r:RESOURCE]->(bucket)

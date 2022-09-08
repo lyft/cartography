@@ -43,7 +43,8 @@ def load_redshift_cluster_data(
     ingest_cluster = """
     MERGE (cluster:RedshiftCluster{id: {Arn}})
     ON CREATE SET cluster.firstseen = timestamp(),
-    cluster.arn = {Arn}
+    cluster.arn = {Arn},
+    cluster.borneo_id = {cluster_borneo_id}
     SET cluster.availability_zone = {AZ},
     cluster.cluster_create_time = {ClusterCreateTime},
     cluster.cluster_identifier = {ClusterIdentifier},
@@ -59,8 +60,7 @@ def load_redshift_cluster_data(
     cluster.publicly_accessible = {PubliclyAccessible},
     cluster.vpc_id = {VpcId},
     cluster.lastupdated = {aws_update_tag},
-    cluster.region = {Region},
-    cluster.borneo_id = {cluster_borneo_id}
+    cluster.region = {Region}
     WITH cluster
     MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
     MERGE (aa)-[r:RESOURCE]->(cluster)
