@@ -34,7 +34,7 @@ def get_gcp_buckets(storage: Resource, project_id: str, common_job_parameters) -
     try:
         req = storage.buckets().list(project=project_id)
         res = req.execute()
-        for item in res['items']:
+        for item in res.get('items', []):
             acl = item.get('acl', [])
             for item2 in acl:
                 item['entity'] = item2.get('entity', None)
@@ -52,7 +52,7 @@ def get_gcp_buckets(storage: Resource, project_id: str, common_job_parameters) -
                 logger.info(f'pages process for storage buckets {pageNo}/{totalPages} pageSize is {pageSize}')
             page_start = (
                 common_job_parameters.get('pagination', {}).get('storage', None)[
-                'pageNo'
+                    'pageNo'
                 ] - 1
             ) * common_job_parameters.get('pagination', {}).get('storage', None)['pageSize']
             page_end = page_start + common_job_parameters.get('pagination', {}).get('storage', None)['pageSize']
