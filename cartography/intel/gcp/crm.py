@@ -84,12 +84,12 @@ def load_gcp_organizations(neo4j_session: neo4j.Session, data: List[Dict], gcp_u
     :return: Nothing
     """
     query = """
-    MERGE (org:GCPOrganization{id:{OrgName}})
+    MERGE (org:GCPOrganization{id:$OrgName})
     ON CREATE SET org.firstseen = timestamp()
-    SET org.orgname = {OrgName},
-    org.displayname = {DisplayName},
-    org.lifecyclestate = {LifecycleState},
-    org.lastupdated = {gcp_update_tag}
+    SET org.orgname = $OrgName,
+    org.displayname = $DisplayName,
+    org.lifecyclestate = $LifecycleState,
+    org.lastupdated = $gcp_update_tag
     """
     for org_object in data:
         neo4j_session.run(
@@ -115,23 +115,23 @@ def load_gcp_folders(neo4j_session: neo4j.Session, data: List[Dict], gcp_update_
         # Parents of folders can only be GCPOrganizations or other folders, see
         # https://cloud.google.com/resource-manager/docs/cloud-platform-resource-hierarchy
         if folder['parent'].startswith("organizations"):
-            query = "MATCH (parent:GCPOrganization{id:{ParentId}})"
+            query = "MATCH (parent:GCPOrganization{id:$ParentId})"
         elif folder['parent'].startswith("folders"):
             query = """
-            MERGE (parent:GCPFolder{id:{ParentId}})
+            MERGE (parent:GCPFolder{id:$ParentId})
             ON CREATE SET parent.firstseen = timestamp()
             """
         query += """
-        MERGE (folder:GCPFolder{id:{FolderName}})
+        MERGE (folder:GCPFolder{id:$FolderName})
         ON CREATE SET folder.firstseen = timestamp()
-        SET folder.foldername = {FolderName},
-        folder.displayname = {DisplayName},
-        folder.lifecyclestate = {LifecycleState},
-        folder.lastupdated = {gcp_update_tag}
+        SET folder.foldername = $FolderName,
+        folder.displayname = $DisplayName,
+        folder.lifecyclestate = $LifecycleState,
+        folder.lastupdated = $gcp_update_tag
         WITH parent, folder
         MERGE (parent)-[r:RESOURCE]->(folder)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {gcp_update_tag}
+        SET r.lastupdated = $gcp_update_tag
         """
         neo4j_session.run(
             query,
@@ -153,13 +153,13 @@ def load_gcp_projects(neo4j_session: neo4j.Session, data: List[Dict], gcp_update
     :return: Nothing
     """
     query = """
-    MERGE (project:GCPProject{id:{ProjectId}})
+    MERGE (project:GCPProject{id:$ProjectId})
     ON CREATE SET project.firstseen = timestamp()
-    SET project.projectid = {ProjectId},
-    project.projectnumber = {ProjectNumber},
-    project.displayname = {DisplayName},
-    project.lifecyclestate = {LifecycleState},
-    project.lastupdated = {gcp_update_tag}
+    SET project.projectid = $ProjectId,
+    project.projectnumber = $ProjectNumber,
+    project.displayname = $DisplayName,
+    project.lifecyclestate = $LifecycleState,
+    project.lastupdated = $gcp_update_tag
     """
 
     for project in data:
@@ -194,14 +194,14 @@ def _attach_gcp_project_parent(neo4j_session: neo4j.Session, project: Dict, gcp_
         )
     parent_id = f"{project['parent']['type']}s/{project['parent']['id']}"
     INGEST_PARENT_TEMPLATE = Template("""
-    MATCH (project:GCPProject{id:{ProjectId}})
+    MATCH (project:GCPProject{id:$ProjectId})
 
-    MERGE (parent:$parent_label{id:{ParentId}})
+    MERGE (parent:$parent_label{id:$ParentId})
     ON CREATE SET parent.firstseen = timestamp()
 
     MERGE (parent)-[r:RESOURCE]->(project)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """)
     neo4j_session.run(
         INGEST_PARENT_TEMPLATE.safe_substitute(parent_label=parent_label),
