@@ -82,35 +82,35 @@ def _get_project_id_for_droplet(droplet_id: int, project_resources: dict) -> Opt
 @timeit
 def load_droplets(neo4j_session: neo4j.Session, data: list, digitalocean_update_tag: int) -> None:
     query = """
-        MERGE (p:DOProject{id:{ProjectId}})
+        MERGE (p:DOProject{id:$ProjectId})
         ON CREATE SET p.firstseen = timestamp()
-        SET p.lastupdated = {digitalocean_update_tag}
+        SET p.lastupdated = $digitalocean_update_tag
 
-        MERGE (d:DODroplet{id:{DropletId}})
+        MERGE (d:DODroplet{id:$DropletId})
         ON CREATE SET d.firstseen = timestamp()
-        SET d.account_id = {AccountId},
-        d.name = {Name},
-        d.locked = {Locked},
-        d.status = {Status},
-        d.features = {Features},
-        d.region = {RegionSlug},
-        d.created_at = {CreatedAt},
-        d.image = {ImageSlug},
-        d.size = {SizeSlug},
-        d.kernel = {Kernel},
-        d.ip_address = {IpAddress},
-        d.private_ip_address = {PrivateIpAddress},
-        d.project_id = {ProjectId},
-        d.ip_v6_address = {IpV6Address},
-        d.tags = {Tags},
-        d.volumes = {Volumes},
-        d.vpc_uuid = {VpcUuid},
-        d.lastupdated = {digitalocean_update_tag}
+        SET d.account_id = $AccountId,
+        d.name = $Name,
+        d.locked = $Locked,
+        d.status = $Status,
+        d.features = $Features,
+        d.region = $RegionSlug,
+        d.created_at = $CreatedAt,
+        d.image = $ImageSlug,
+        d.size = $SizeSlug,
+        d.kernel = $Kernel,
+        d.ip_address = $IpAddress,
+        d.private_ip_address = $PrivateIpAddress,
+        d.project_id = $ProjectId,
+        d.ip_v6_address = $IpV6Address,
+        d.tags = $Tags,
+        d.volumes = $Volumes,
+        d.vpc_uuid = $VpcUuid,
+        d.lastupdated = $digitalocean_update_tag
         WITH d, p
 
         MERGE (p)-[r:RESOURCE]->(d)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {digitalocean_update_tag}
+        SET r.lastupdated = $digitalocean_update_tag
         """
     for droplet in data:
         neo4j_session.run(
