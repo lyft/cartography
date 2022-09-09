@@ -40,7 +40,7 @@ def load_cves(neo4j_session: neo4j.Session, data: Dict[str, Any], update_tag: in
     Transform and load cve information
     """
     ingestion_cypher_query = """
-    UNWIND {cves} AS cve
+    UNWIND $cves AS cve
         MERGE (c:CVE{id: cve.cve.CVE_data_meta.ID})
         ON CREATE SET c.id = cve.cve.CVE_data_meta.ID,
             c.firstseen = timestamp()
@@ -63,12 +63,12 @@ def load_cves(neo4j_session: neo4j.Session, data: Dict[str, Any], update_tag: in
             c.impact_score = cve.impact.baseMetricV3.impactScore,
             c.published_date = cve.publishedDate,
             c.last_modified_date = cve.lastModifiedDate,
-            c.lastupdated = {update_tag}
+            c.lastupdated = $update_tag
         WITH c, cve
         MATCH (v:SpotlightVulnerability{id: cve.vuln_id})
         MERGE (v)-[hc:HAS_CVE]->(c)
         ON CREATE SET hc.firstseen = timestamp()
-        SET hc.lastupdated = {update_tag}
+        SET hc.lastupdated = $update_tag
     """
     for cve in data["CVE_Items"]:
         parsed_desc = {}

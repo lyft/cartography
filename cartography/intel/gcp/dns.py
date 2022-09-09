@@ -113,7 +113,7 @@ def load_dns_zones(neo4j_session: neo4j.Session, dns_zones: List[Dict], project_
     """
 
     ingest_records = """
-    UNWIND {records} as record
+    UNWIND $records as record
     MERGE(zone:GCPDNSZone{id:record.id})
     ON CREATE SET
         zone.firstseen = timestamp(),
@@ -125,13 +125,13 @@ def load_dns_zones(neo4j_session: neo4j.Session, dns_zones: List[Dict], project_
         zone.visibility = record.visibility,
         zone.kind = record.kind,
         zone.nameservers = record.nameServers,
-        zone.lastupdated = {gcp_update_tag}
+        zone.lastupdated = $gcp_update_tag
     WITH zone
-    MATCH (owner:GCPProject{id:{ProjectId}})
+    MATCH (owner:GCPProject{id:$ProjectId})
     MERGE (owner)-[r:RESOURCE]->(zone)
     ON CREATE SET
         r.firstseen = timestamp(),
-        r.lastupdated = {gcp_update_tag}
+        r.lastupdated = $gcp_update_tag
     """
     neo4j_session.run(
         ingest_records,
@@ -163,7 +163,7 @@ def load_rrs(neo4j_session: neo4j.Session, dns_rrs: List[Resource], project_id: 
     """
 
     ingest_records = """
-    UNWIND {records} as record
+    UNWIND $records as record
     MERGE(rrs:GCPRecordSet{id:record.name})
     ON CREATE SET
         rrs.firstseen = timestamp()
@@ -172,13 +172,13 @@ def load_rrs(neo4j_session: neo4j.Session, dns_rrs: List[Resource], project_id: 
         rrs.type = record.type,
         rrs.ttl = record.ttl,
         rrs.data = record.rrdatas,
-        rrs.lastupdated = {gcp_update_tag}
+        rrs.lastupdated = $gcp_update_tag
     WITH rrs, record
     MATCH (zone:GCPDNSZone{id:record.zone})
     MERGE (zone)-[r:HAS_RECORD]->(rrs)
     ON CREATE SET
         r.firstseen = timestamp(),
-        r.lastupdated = {gcp_update_tag}
+        r.lastupdated = $gcp_update_tag
     """
     neo4j_session.run(
         ingest_records,

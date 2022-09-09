@@ -22,7 +22,7 @@ def test_transform_and_load_droplets(neo4j_session):
     cartography.intel.digitalocean.compute.load_droplets(neo4j_session, droplet_list, TEST_UPDATE_TAG)
 
     query = """
-        MATCH(d:DODroplet{id:{DropletId}})
+        MATCH(d:DODroplet{id:$DropletId})
         RETURN d.id, d.name, d.ip_address, d.image, d.region, d.project_id, d.account_id, d.lastupdated
         """
     nodes = neo4j_session.run(
