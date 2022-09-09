@@ -31,7 +31,7 @@ def load_vulnerability_data(
     Transform and load scan information
     """
     ingestion_cypher_query = """
-    UNWIND {Vulnerabilities} AS vuln
+    UNWIND $Vulnerabilities AS vuln
         MERGE (v:SpotlightVulnerability{id: vuln.id})
         ON CREATE SET v.aid = vuln.aid,
             v.cid = vuln.cid,
@@ -44,12 +44,12 @@ def load_vulnerability_data(
             v.host_info_local_ip = vuln.host_info_local_ip,
             v.remediation_ids = vuln.remediation_ids,
             v.app_product_name_version = vuln.app_product_name_version,
-            v.lastupdated = {update_tag}
+            v.lastupdated = $update_tag
         WITH v
         MATCH (h:CrowdstrikeHost{id: v.aid})
         MERGE (h)-[hv:HAS_VULNERABILITY]->(v)
         ON CREATE SET hv.firstseen = timestamp()
-        SET hv.lastupdated = {update_tag}
+        SET hv.lastupdated = $update_tag
     """
     logger.info(f"Loading {len(data)} crowdstrike spotlight vulnerabilities.")
     vulns = []
@@ -90,19 +90,19 @@ def _load_cves(neo4j_session: neo4j.Session, data: List[Dict], update_tag: int) 
     Transform and load cve information
     """
     ingestion_cypher_query = """
-    UNWIND {cves} AS cve
+    UNWIND $cves AS cve
         MERGE (c:CVE:CrowdstrikeFinding{id: cve.id})
         ON CREATE SET c.id = cve.id,
             c.firstseen = timestamp()
         SET c.base_score = cve.base_score,
             c.base_severity = cve.severity,
             c.exploitability_score = cve.exploit_status,
-            c.lastupdated = {update_tag}
+            c.lastupdated = $update_tag
         WITH c, cve
         MATCH (v:SpotlightVulnerability{id: cve.vuln_id})
         MERGE (v)-[hc:HAS_CVE]->(c)
         ON CREATE SET hc.firstseen = timestamp()
-        SET hc.lastupdated = {update_tag}
+        SET hc.lastupdated = $update_tag
     """
     neo4j_session.run(
         ingestion_cypher_query,

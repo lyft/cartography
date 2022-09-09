@@ -114,34 +114,34 @@ def load_gcp_buckets(neo4j_session: neo4j.Session, buckets: List[Dict], gcp_upda
     '''
 
     query = """
-    MERGE(p:GCPProject{projectnumber:{ProjectNumber}})
+    MERGE(p:GCPProject{projectnumber:$ProjectNumber})
     ON CREATE SET p.firstseen = timestamp()
-    SET p.lastupdated = {gcp_update_tag}
+    SET p.lastupdated = $gcp_update_tag
 
-    MERGE(bucket:GCPBucket{id:{BucketId}})
+    MERGE(bucket:GCPBucket{id:$BucketId})
     ON CREATE SET bucket.firstseen = timestamp(),
-    bucket.bucket_id = {BucketId}
-    SET bucket.self_link = {SelfLink},
-    bucket.project_number = {ProjectNumber},
-    bucket.kind = {Kind},
-    bucket.location = {Location},
-    bucket.location_type = {LocationType},
-    bucket.meta_generation = {MetaGeneration},
-    bucket.storage_class = {StorageClass},
-    bucket.time_created = {TimeCreated},
-    bucket.retention_period = {RetentionPeriod},
-    bucket.iam_config_bucket_policy_only = {IamConfigBucketPolicyOnly},
-    bucket.owner_entity = {OwnerEntity},
-    bucket.owner_entity_id = {OwnerEntityId},
-    bucket.lastupdated = {gcp_update_tag},
-    bucket.versioning_enabled = {VersioningEnabled},
-    bucket.log_bucket = {LogBucket},
-    bucket.requester_pays = {RequesterPays},
-    bucket.default_kms_key_name = {DefaultKmsKeyName}
+    bucket.bucket_id = $BucketId
+    SET bucket.self_link = $SelfLink,
+    bucket.project_number = $ProjectNumber,
+    bucket.kind = $Kind,
+    bucket.location = $Location,
+    bucket.location_type = $LocationType,
+    bucket.meta_generation = $MetaGeneration,
+    bucket.storage_class = $StorageClass,
+    bucket.time_created = $TimeCreated,
+    bucket.retention_period = $RetentionPeriod,
+    bucket.iam_config_bucket_policy_only = $IamConfigBucketPolicyOnly,
+    bucket.owner_entity = $OwnerEntity,
+    bucket.owner_entity_id = $OwnerEntityId,
+    bucket.lastupdated = $gcp_update_tag,
+    bucket.versioning_enabled = $VersioningEnabled,
+    bucket.log_bucket = $LogBucket,
+    bucket.requester_pays = $RequesterPays,
+    bucket.default_kms_key_name = $DefaultKmsKeyName
 
     MERGE (p)-[r:RESOURCE]->(bucket)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """
     for bucket in buckets:
         neo4j_session.run(
@@ -178,16 +178,16 @@ def _attach_gcp_bucket_labels(neo4j_session: neo4j.Session, bucket: Resource, gc
     :return: Nothing
     """
     query = """
-    MERGE (l:Label:GCPBucketLabel{id: {BucketLabelId}})
+    MERGE (l:Label:GCPBucketLabel{id: $BucketLabelId})
     ON CREATE SET l.firstseen = timestamp(),
-    l.key = {Key}
-    SET l.value = {Value},
-    l.lastupdated = {gcp_update_tag}
+    l.key = $Key
+    SET l.value = $Value,
+    l.lastupdated = $gcp_update_tag
     WITH l
-    MATCH (bucket:GCPBucket{id:{BucketId}})
+    MATCH (bucket:GCPBucket{id:$BucketId})
     MERGE (l)<-[r:LABELED]-(bucket)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """
     for (key, val) in bucket.get('labels', []):
         neo4j_session.run(
