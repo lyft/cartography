@@ -31,7 +31,7 @@ def load_host_data(
     Transform and load scan information
     """
     ingestion_cypher_query = """
-    UNWIND {Hosts} AS host
+    UNWIND $Hosts AS host
         MERGE (h:CrowdstrikeHost{id: host.device_id})
         ON CREATE SET h.cid = host.cid,
             h.cid = host.cid,
@@ -66,7 +66,7 @@ def load_host_data(
             h.minor_version = host.minor_version,
             h.tags = host.tags,
             h.modified_timestamp = host.modified_timestamp,
-            h.lastupdated = {update_tag}
+            h.lastupdated = $update_tag
     """
     logger.info(f"Loading {len(data)} crowdstrike hosts.")
     neo4j_session.run(

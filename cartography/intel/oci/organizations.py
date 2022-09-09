@@ -91,9 +91,9 @@ def load_oci_accounts(
     common_job_parameters: Dict[str, Any],
 ) -> None:
     query = """
-    MERGE (aa:OCITenancy{ocid: {TENANCY_ID}})
+    MERGE (aa:OCITenancy{ocid: $TENANCY_ID})
     ON CREATE SET aa.firstseen = timestamp()
-    SET aa.lastupdated = {oci_update_tag}, aa.name = {ACCOUNT_NAME}
+    SET aa.lastupdated = $oci_update_tag, aa.name = $ACCOUNT_NAME
     """
     for name in oci_accounts:
         neo4j_session.run(
