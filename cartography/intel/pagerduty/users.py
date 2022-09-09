@@ -36,7 +36,7 @@ def load_user_data(
     Transform and load user information
     """
     ingestion_cypher_query = """
-    UNWIND {Users} AS user
+    UNWIND $Users AS user
         MERGE (u:PagerDutyUser{id: user.id})
         ON CREATE SET u.html_url = user.html_url,
             u.firstseen = timestamp()
@@ -51,7 +51,7 @@ def load_user_data(
             u.description = user.description,
             u.invitation_sent = user.invitation_sent,
             u.job_title = user.job_title,
-            u.lastupdated = {update_tag}
+            u.lastupdated = $update_tag
     """
     logger.info(f"Loading {len(data)} pagerduty users.")
 

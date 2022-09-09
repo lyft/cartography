@@ -37,7 +37,7 @@ def load_escalation_policy_data(
     Transform and load escalation_policy information
     """
     ingestion_cypher_query = """
-    UNWIND {EscalationPolicies} AS policy
+    UNWIND $EscalationPolicies AS policy
         MERGE (p:PagerDutyEscalationPolicy{id: policy.id})
         ON CREATE SET p.html_url = policy.html_url,
             p.firstseen = timestamp()
@@ -46,7 +46,7 @@ def load_escalation_policy_data(
             p.on_call_handoff_notifications = policy.on_call_handoff_notifications,
             p.name = policy.name,
             p.num_loops = policy.num_loops,
-            p.lastupdated = {update_tag}
+            p.lastupdated = $update_tag
     """
     logger.info(f"Loading {len(data)} pagerduty escalation_policies.")
 
@@ -88,11 +88,11 @@ def _attach_rules(
     Add escalation policy rules, and attach them to targets.
     """
     ingestion_cypher_query = """
-    UNWIND {Rules} AS rule
+    UNWIND $Rules AS rule
         MERGE (epr:PagerDutyEscalationPolicyRule{id: rule.id})
         ON CREATE SET epr.firstseen = timestamp()
         SET epr.escalation_delay_in_minutes = rule.escalation_delay_in_minutes,
-            epr.lastupdated = {update_tag}
+            epr.lastupdated = $update_tag
         WITH epr, rule
         MATCH (ep:PagerDutyEscalationPolicy{id: rule._escalation_policy_id})
         MERGE (ep)-[r:HAS_RULE]->(epr)
@@ -128,7 +128,7 @@ def _attach_user_targets(
     Add relationship between escalation policy and services.
     """
     ingestion_cypher_query = """
-    UNWIND {Relations} AS relation
+    UNWIND $Relations AS relation
         MATCH (p:PagerDutyEscalationPolicyRule{id: relation.rule}),
         (u:PagerDutyUser{id: relation.user})
         MERGE (p)-[r:ASSOCIATED_WITH]->(u)
@@ -148,7 +148,7 @@ def _attach_schedule_targets(
     Add relationship between escalation policy and services.
     """
     ingestion_cypher_query = """
-    UNWIND {Relations} AS relation
+    UNWIND $Relations AS relation
         MATCH (p:PagerDutyEscalationPolicyRule{id: relation.rule}),
         (s:PagerDutySchedule{id: relation.schedule})
         MERGE (p)-[r:ASSOCIATED_WITH]->(s)
@@ -168,7 +168,7 @@ def _attach_services(
     Add relationship between escalation policy and services.
     """
     ingestion_cypher_query = """
-    UNWIND {Relations} AS relation
+    UNWIND $Relations AS relation
         MATCH (p:PagerDutyEscalationPolicy{id: relation.escalation_policy}),
         (s:PagerDutyService{id: relation.service})
         MERGE (s)-[r:ASSOCIATED_WITH]->(p)
@@ -188,7 +188,7 @@ def _attach_teams(
     Add relationship between escalation policy and teams.
     """
     ingestion_cypher_query = """
-    UNWIND {Relations} AS relation
+    UNWIND $Relations AS relation
         MATCH (p:PagerDutyEscalationPolicy{id: relation.escalation_policy}),
         (t:PagerDutyTeam{id: relation.team})
         MERGE (t)-[r:ASSOCIATED_WITH]->(p)

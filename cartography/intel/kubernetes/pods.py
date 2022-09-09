@@ -69,10 +69,10 @@ def get_pods(client: K8sClient, cluster: Dict) -> List[Dict]:
 
 def load_pods(session: Session, data: List[Dict], update_tag: int) -> None:
     ingestion_cypher_query = """
-    UNWIND {pods} as k8pod
+    UNWIND $pods as k8pod
         MERGE (pod:KubernetesPod {id: k8pod.uid})
         ON CREATE SET pod.firstseen = timestamp()
-        SET pod.lastupdated = {update_tag},
+        SET pod.lastupdated = $update_tag,
             pod.name = k8pod.name,
             pod.status_phase = k8pod.status_phase,
             pod.created_at = k8pod.creation_timestamp,
@@ -81,7 +81,7 @@ def load_pods(session: Session, data: List[Dict], update_tag: int) -> None:
         MATCH (cluster:KubernetesCluster {id: cuid})-[:HAS_NAMESPACE]->(space:KubernetesNamespace {name: ns})
         MERGE (space)-[rel1:HAS_POD]->(pod)
         ON CREATE SET rel1.firstseen = timestamp()
-        SET rel1.lastupdated = {update_tag}
+        SET rel1.lastupdated = $update_tag
         WITH pod, space, cluster, k8containers
         UNWIND k8containers as k8container
             MERGE (container: KubernetesContainer {id: k8container.uid})
@@ -93,15 +93,15 @@ def load_pods(session: Session, data: List[Dict], update_tag: int) -> None:
                 container.status_started = k8container.status.started,
                 container.status_state = k8container.status.state,
                 container.name = k8container.name,
-                container.lastupdated = {update_tag}
+                container.lastupdated = $update_tag
             WITH pod, space, cluster, container
             MERGE (pod)-[rel2:HAS_CONTAINER]->(container)
             ON CREATE SET rel2.firstseen = timestamp()
-            SET rel2.lastupdated = {update_tag}
+            SET rel2.lastupdated = $update_tag
             WITH pod, space, container
             MERGE (cluster)-[rel3:HAS_POD]->(pod)
             ON CREATE SET rel3.firstseen = timestamp()
-            SET rel3.lastupdated = {update_tag}
+            SET rel3.lastupdated = $update_tag
     """
     logger.info(f"Loading {len(data)} kubernetes pods.")
     session.run(ingestion_cypher_query, pods=data, update_tag=update_tag)
