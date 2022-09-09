@@ -36,7 +36,7 @@ def load_vendor_data(
     Transform and load vendor information
     """
     ingestion_cypher_query = """
-    UNWIND {Vendors} AS vendor
+    UNWIND $Vendors AS vendor
         MERGE (v:PagerDutyVendor{id: vendor.id})
         ON CREATE SET v.firstseen = timestamp()
         SET v.type = vendor.type,
@@ -47,7 +47,7 @@ def load_vendor_data(
             v.thumbnail_url = vendor.thumbnail_url,
             v.description = vendor.description,
             v.integration_guide_url = vendor.integration_guide_url,
-            v.lastupdated = {update_tag}
+            v.lastupdated = $update_tag
     """
     logger.info(f"Loading {len(data)} pagerduty vendors.")
 
