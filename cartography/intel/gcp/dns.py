@@ -37,7 +37,7 @@ def get_dns_zones(dns: Resource, project_id: str, common_job_parameters) -> List
         while request is not None:
             response = request.execute()
             if 'managedZones' in response:
-                zones.extend(response['managedZone'])
+                zones.extend(response.get('managedZone', []))
             request = dns.managedZones().list_next(previous_request=request, previous_response=response)
         if common_job_parameters.get('pagination', {}).get('dns', None):
             pageNo = common_job_parameters.get("pagination", {}).get("dns", None)["pageNo"]
