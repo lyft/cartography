@@ -345,7 +345,7 @@ def parse_policy(api_id: str, policy: Policy) -> Optional[Dict[Any, Any]]:
             else:
                 return None
         except json.JSONDecodeError:
-            logger.warn(f"failed to decode policy json : $policy")
+            logger.warn(f"failed to decode policy json : {policy}")
             return None
     else:
         return None
