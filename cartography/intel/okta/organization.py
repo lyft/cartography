@@ -18,9 +18,9 @@ def create_okta_organization(neo4j_session: neo4j.Session, organization: str, ok
     :return: Nothing
     """
     ingest = """
-    MERGE (org:OktaOrganization{id: {ORG_NAME}})
+    MERGE (org:OktaOrganization{id: $ORG_NAME})
     ON CREATE SET org.name = org.id, org.firstseen = timestamp()
-    SET org.lastupdated = {okta_update_tag}
+    SET org.lastupdated = $okta_update_tag
     """
 
     neo4j_session.run(
