@@ -428,7 +428,7 @@ def sync_assumerole_relationships(
 def load_user_access_keys(neo4j_session: neo4j.Session, user_access_keys: Dict, aws_update_tag: int) -> None:
     # TODO change the node label to reflect that this is a user access key, not an account access key
     ingest_account_key = """
-    MATCH (user:AWSUser{name: {UserName}})
+    MATCH (user:AWSUser{arn: {UserARN}})
     WITH user
     MERGE (key:AccountAccessKey{accesskeyid: {AccessKeyId}})
     ON CREATE SET key.firstseen = timestamp(), key.createdate = {CreateDate}
@@ -439,12 +439,12 @@ def load_user_access_keys(neo4j_session: neo4j.Session, user_access_keys: Dict, 
     SET r.lastupdated = {aws_update_tag}
     """
 
-    for username, access_keys in user_access_keys.items():
+    for arn, access_keys in user_access_keys.items():
         for key in access_keys["AccessKeyMetadata"]:
             if key.get('AccessKeyId'):
                 neo4j_session.run(
                     ingest_account_key,
-                    UserName=username,
+                    UserARN=arn,
                     AccessKeyId=key['AccessKeyId'],
                     CreateDate=str(key['CreateDate']),
                     Status=key['Status'],
@@ -702,13 +702,12 @@ def sync_user_access_keys(
     current_aws_account_id: str, aws_update_tag: int, common_job_parameters: Dict,
 ) -> None:
     logger.info("Syncing IAM user access keys for account '%s'.", current_aws_account_id)
-    query = "MATCH (user:AWSUser)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ACCOUNT_ID}}) return user.name as name"
-    result = neo4j_session.run(query, AWS_ACCOUNT_ID=current_aws_account_id)
-    usernames = [r['name'] for r in result]
-    for name in usernames:
-        access_keys = get_account_access_key_data(boto3_session, name)
+    query = "MATCH (user:AWSUser)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ACCOUNT_ID}}) " \
+            "RETURN user.name as name, user.arn as arn"
+    for user in neo4j_session.run(query, AWS_ACCOUNT_ID=current_aws_account_id):
+        access_keys = get_account_access_key_data(boto3_session, user["name"])
         if access_keys:
-            account_access_keys = {name: access_keys}
+            account_access_keys = {user["arn"]: access_keys}
             load_user_access_keys(neo4j_session, account_access_keys, aws_update_tag)
     run_cleanup_job(
         'aws_import_account_access_key_cleanup.json',
