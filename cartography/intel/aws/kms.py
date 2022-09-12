@@ -118,15 +118,15 @@ def _load_kms_key_aliases(neo4j_session: neo4j.Session, aliases: List[Dict], upd
     Ingest KMS Aliases into neo4j.
     """
     ingest_aliases = """
-    UNWIND {alias_list} AS alias
+    UNWIND $alias_list AS alias
     MERGE (a:KMSAlias{id: alias.AliasArn})
     ON CREATE SET a.firstseen = timestamp(), a.targetkeyid = alias.TargetKeyId
-    SET a.aliasname = alias.AliasName, a.lastupdated = {UpdateTag}
+    SET a.aliasname = alias.AliasName, a.lastupdated = $UpdateTag
     WITH a, alias
     MATCH (kmskey:KMSKey{id: alias.TargetKeyId})
     MERGE (a)-[r:KNOWN_AS]->(kmskey)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {UpdateTag}
+    SET r.lastupdated = $UpdateTag
     """
 
     neo4j_session.run(
@@ -142,16 +142,16 @@ def _load_kms_key_grants(neo4j_session: neo4j.Session, grants_list: List[Dict], 
     Ingest KMS Key Grants into neo4j.
     """
     ingest_grants = """
-    UNWIND {grants} AS grant
+    UNWIND $grants AS grant
     MERGE (g:KMSGrant{id: grant.GrantId})
     ON CREATE SET g.firstseen = timestamp(), g.granteeprincipal = grant.GranteePrincipal,
     g.creationdate = grant.CreationDate
-    SET g.name = grant.GrantName, g.lastupdated = {UpdateTag}
+    SET g.name = grant.GrantName, g.lastupdated = $UpdateTag
     WITH g, grant
     MATCH (kmskey:KMSKey{id: grant.KeyId})
     MERGE (g)-[r:APPLIED_ON]->(kmskey)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {UpdateTag}
+    SET r.lastupdated = $UpdateTag
     """
 
     # neo4j does not accept datetime objects and values. This loop is used to convert
@@ -173,11 +173,11 @@ def _load_kms_key_policies(neo4j_session: neo4j.Session, policies: List[Dict], u
     """
     # NOTE we use the coalesce function so appending works when the value is null initially
     ingest_policies = """
-    UNWIND {policies} AS policy
+    UNWIND $policies AS policy
     MATCH (k:KMSKey) where k.name = policy.kms_key
     SET k.anonymous_access = (coalesce(k.anonymous_access, false) OR policy.internet_accessible),
     k.anonymous_actions = coalesce(k.anonymous_actions, []) + policy.accessible_actions,
-    k.lastupdated = {UpdateTag}
+    k.lastupdated = $UpdateTag
     """
 
     neo4j_session.run(
@@ -189,7 +189,7 @@ def _load_kms_key_policies(neo4j_session: neo4j.Session, policies: List[Dict], u
 
 def _set_default_values(neo4j_session: neo4j.Session, aws_account_id: str) -> None:
     set_defaults = """
-    MATCH (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(kmskey:KMSKey) where NOT EXISTS(kmskey.anonymous_actions)
+    MATCH (:AWSAccount{id: $AWS_ID})-[:RESOURCE]->(kmskey:KMSKey) where NOT EXISTS(kmskey.anonymous_actions)
     SET kmskey.anonymous_access = false, kmskey.anonymous_actions = []
     """
 
@@ -300,7 +300,7 @@ def load_kms_keys(
     aws_update_tag: int,
 ) -> None:
     ingest_keys = """
-    UNWIND {key_list} AS k
+    UNWIND $key_list AS k
     MERGE (kmskey:KMSKey{id:k.KeyId})
     ON CREATE SET kmskey.firstseen = timestamp(),
     kmskey.arn = k.Arn, kmskey.creationdate = k.CreationDate
@@ -310,13 +310,13 @@ def load_kms_keys(
     kmskey.keystate = k.KeyState,
     kmskey.customkeystoreid = k.CustomKeyStoreId,
     kmskey.cloudhsmclusterid = k.CloudHsmClusterId,
-    kmskey.lastupdated = {aws_update_tag},
-    kmskey.region = {Region}
+    kmskey.lastupdated = $aws_update_tag,
+    kmskey.region = $Region
     WITH kmskey
-    MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (aa)-[r:RESOURCE]->(kmskey)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
 
     # neo4j does not accept datetime objects and values. This loop is used to convert
