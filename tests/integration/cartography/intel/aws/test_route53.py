@@ -21,8 +21,8 @@ def _ensure_local_neo4j_has_test_route53_records(neo4j_session):
     """
     neo4j_session.run(
         """
-        MERGE (a:AWSAccount{id:{AccountId}})
-        SET a.lastupdated={UpdateTag}
+        MERGE (a:AWSAccount{id:$AccountId})
+        SET a.lastupdated=$UpdateTag
         """,
         AccountId=TEST_AWS_ACCOUNTID,
         UpdateTag=TEST_UPDATE_TAG,
@@ -134,9 +134,9 @@ def test_cleanup_dnspointsto_relationships(neo4j_session):
     # This is to simulate having a DNS record pointing to a node that was synced in another module.
     neo4j_session.run(
         """
-        MERGE (n1:AWSDNSRecord{id:"/hostedzone/HOSTED_ZONE/example.com/NS", lastupdated:{UpdateTag}})
-        -[:DNS_POINTS_TO{lastupdated:{UpdateTag}}]->
-        (:NewTestAsset{name:"hello", lastupdated:{UpdateTag}})
+        MERGE (n1:AWSDNSRecord{id:"/hostedzone/HOSTED_ZONE/example.com/NS", lastupdated:$UpdateTag})
+        -[:DNS_POINTS_TO{lastupdated:$UpdateTag}]->
+        (:NewTestAsset{name:"hello", lastupdated:$UpdateTag})
         """,
         UpdateTag=TEST_UPDATE_TAG,
     )
