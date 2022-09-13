@@ -545,7 +545,7 @@ def load_ecs_containers(
         Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
         aws_update_tag=aws_update_tag,
-        containers_borneo_id=uuid.uuid4()
+        container_borneo_id=uuid.uuid4()
     )
 
 
