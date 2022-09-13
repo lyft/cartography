@@ -16,9 +16,9 @@ def test_get_snapshots_in_use(neo4j_session):
     # Act
     neo4j_session.run(
         """
-        MERGE (aws:AWSAccount{id: {aws_account_id}})
+        MERGE (aws:AWSAccount{id: $aws_account_id})
         ON CREATE SET aws.firstseen = timestamp()
-        SET aws.lastupdated = {aws_update_tag}
+        SET aws.lastupdated = $aws_update_tag
         """,
         aws_account_id=TEST_ACCOUNT_ID,
         aws_update_tag=TEST_UPDATE_TAG,
@@ -72,9 +72,9 @@ def test_load_volumes_relationships(neo4j_session):
     # Create Test AWSAccount
     neo4j_session.run(
         """
-        MERGE (aws:AWSAccount{id: {aws_account_id}})
+        MERGE (aws:AWSAccount{id: $aws_account_id})
         ON CREATE SET aws.firstseen = timestamp()
-        SET aws.lastupdated = {aws_update_tag}
+        SET aws.lastupdated = $aws_update_tag
         """,
         aws_account_id=TEST_ACCOUNT_ID,
         aws_update_tag=TEST_UPDATE_TAG,
