@@ -123,11 +123,11 @@ def _load_findings_tx(
     aws_update_tag: int,
 ) -> None:
     query = """
-    UNWIND {Findings} as new_finding
+    UNWIND $Findings as new_finding
         MERGE (finding:AWSInspectorFinding{id: new_finding.id})
         ON CREATE SET finding.firstseen = timestamp(),
             finding.arn = new_finding.arn,
-            finding.region = {Region},
+            finding.region = $Region,
             finding.awsaccount = new_finding.awsaccount
         SET finding.name = new_finding.title,
             finding.instanceid = new_finding.instanceid,
@@ -157,22 +157,22 @@ def _load_findings_tx(
         MATCH (account:AWSAccount{id: finding.awsaccount})
         MERGE (account)-[r:RESOURCE]->(finding)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {UpdateTag}
+        SET r.lastupdated = $UpdateTag
         WITH finding
         MATCH (instance:EC2Instance{id: finding.instanceid})
         MERGE (instance)<-[r2:AFFECTS]-(finding)
         ON CREATE SET r2.firstseen = timestamp()
-        SET r2.lastupdated = {UpdateTag}
+        SET r2.lastupdated = $UpdateTag
         WITH finding
         MATCH (repo:ECRRepository{id: finding.ecrrepositoryid})
         MERGE (repo)<-[r3:AFFECTS]-(finding)
         ON CREATE SET r3.firstseen = timestamp()
-        SET r3.lastupdated = {UpdateTag}
+        SET r3.lastupdated = $UpdateTag
         WITH finding
         MATCH (image:ECRImage{id: finding.ecrimageid})
         MERGE (image)<-[r4:AFFECTS]-(finding)
         ON CREATE SET r4.firstseen = timestamp()
-        SET r4.lastupdated = {UpdateTag}
+        SET r4.lastupdated = $UpdateTag
     """
 
     tx.run(
@@ -203,10 +203,10 @@ def _load_packages_tx(
     aws_update_tag: int,
 ) -> None:
     query = """
-    UNWIND {Packages} as new_package
+    UNWIND $Packages as new_package
         MERGE (package:AWSInspectorPackage{id: new_package.id})
         ON CREATE SET package.firstseen = timestamp(),
-            package.region = {Region},
+            package.region = $Region,
             package.awsaccount = new_package.awsaccount,
             package.findingarn = new_package.findingarn
         SET package.name = new_package.name,
@@ -225,7 +225,7 @@ def _load_packages_tx(
         MATCH (account:AWSAccount{id: package.awsaccount})
         MERGE (account)-[r:RESOURCE]->(package)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {UpdateTag}
+        SET r.lastupdated = $UpdateTag
     """
 
     tx.run(
