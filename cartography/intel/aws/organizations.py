@@ -91,17 +91,17 @@ def load_aws_accounts(
     common_job_parameters: Dict,
 ) -> None:
     query = """
-    MERGE (aa:AWSAccount{id: {ACCOUNT_ID}})
+    MERGE (aa:AWSAccount{id: $ACCOUNT_ID})
     ON CREATE SET aa.firstseen = timestamp()
-    SET aa.lastupdated = {aws_update_tag}, aa.name = {ACCOUNT_NAME}
+    SET aa.lastupdated = $aws_update_tag, aa.name = $ACCOUNT_NAME
     WITH aa
-    MERGE (root:AWSPrincipal{arn: {RootArn}})
+    MERGE (root:AWSPrincipal{arn: $RootArn})
     ON CREATE SET root.firstseen = timestamp(), root.type = 'AWS'
-    SET root.lastupdated = {aws_update_tag}
+    SET root.lastupdated = $aws_update_tag
     WITH aa, root
     MERGE (aa)-[r:RESOURCE]->(root)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag};
+    SET r.lastupdated = $aws_update_tag;
     """
     for account_name, account_id in aws_accounts.items():
         root_arn = f'arn:aws:iam::{account_id}:root'
