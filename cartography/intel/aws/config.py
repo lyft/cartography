@@ -54,19 +54,19 @@ def load_configuration_recorders(
     aws_update_tag: int,
 ) -> None:
     ingest_configuration_recorders = """
-    UNWIND {Recorders} as recorder
+    UNWIND $Recorders as recorder
         MERGE (n:AWSConfigurationRecorder{id: recorder._id})
         ON CREATE SET n.firstseen = timestamp()
         SET n.name = recorder.name, n.role_arn = recorder.roleARN,
             n.recording_group_all_supported = recorder.recordingGroup.allSupported,
             n.recording_group_include_global_resource_types = recorder.recordingGroup.includeGlobalResourceTypes,
             n.recording_group_resource_types = recorder.recordingGroup.resourceTypes,
-            n.region = {Region}, n.lastupdated = {aws_update_tag}
+            n.region = $Region, n.lastupdated = $aws_update_tag
         WITH n
-        MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
+        MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
         MERGE (owner)-[r:RESOURCE]->(n)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {aws_update_tag}
+        SET r.lastupdated = $aws_update_tag
     """
     # Recorders don't have a unique ID, as the name is autoset to "default", but we can
     # generate a unique id using a combo of the name, account id and region, since the name
@@ -92,7 +92,7 @@ def load_delivery_channels(
     aws_update_tag: int,
 ) -> None:
     ingest_delivery_channels = """
-    UNWIND {Channels} as channel
+    UNWIND $Channels as channel
         MERGE (n:AWSConfigDeliveryChannel{id: channel._id})
         ON CREATE SET n.firstseen = timestamp()
         SET n.name = channel.name,
@@ -101,12 +101,12 @@ def load_delivery_channels(
             n.s3_kms_key_arn = channel.s3KmsKeyArn,
             n.sns_topic_arn = channel.snsTopicARN,
             n.config_snapshot_delivery_properties_delivery_frequency = channel.configSnapshotDeliveryProperties.deliveryFrequency,
-            n.region = {Region}, n.lastupdated = {aws_update_tag}
+            n.region = $Region, n.lastupdated = $aws_update_tag
         WITH n
-        MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
+        MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
         MERGE (owner)-[r:RESOURCE]->(n)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {aws_update_tag}
+        SET r.lastupdated = $aws_update_tag
     """  # noqa:E501
     # Delivery channels don't have a unique ID, as the name is autoset to "default", but we can
     # generate a unique id using a combo of the name, account id and region, since the name
@@ -132,7 +132,7 @@ def load_config_rules(
     aws_update_tag: int,
 ) -> None:
     ingest_config_rules = """
-    UNWIND {Rules} as rule
+    UNWIND $Rules as rule
         MERGE (n:AWSConfigRule{id: rule.ConfigRuleArn})
         ON CREATE SET n.firstseen = timestamp()
         SET n.name = rule.ConfigRuleName, n.description = rule.Description,
@@ -148,12 +148,12 @@ def load_config_rules(
             n.input_parameters = rule.InputParameters,
             n.maximum_execution_frequency = rule.MaximumExecutionFrequency,
             n.created_by = rule.CreatedBy,
-            n.region = {Region}, n.lastupdated = {aws_update_tag}
+            n.region = $Region, n.lastupdated = $aws_update_tag
         WITH n
-        MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
+        MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
         MERGE (owner)-[r:RESOURCE]->(n)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {aws_update_tag}
+        SET r.lastupdated = $aws_update_tag
     """
     for rule in data:
         details = []
