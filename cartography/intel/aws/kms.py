@@ -122,7 +122,7 @@ def _load_kms_key_aliases(neo4j_session: neo4j.Session, aliases: List[Dict], upd
     UNWIND $alias_list AS alias
     MERGE (a:KMSAlias{id: alias.AliasArn})
     ON CREATE SET a.firstseen = timestamp(), a.targetkeyid = alias.TargetKeyId,
-    a.borneo_id = {alia_borneo_id}
+    a.borneo_id = {alias_borneo_id}
     SET a.aliasname = alias.AliasName, a.lastupdated = {UpdateTag}
     WITH a, alias
     MATCH (kmskey:KMSKey{id: alias.TargetKeyId})
