@@ -73,23 +73,23 @@ def load_transit_gateways(
     update_tag: int,
 ) -> None:
     ingest_transit_gateway = """
-    MERGE (ownerAccount:AWSAccount {id: {OwnerId}})
+    MERGE (ownerAccount:AWSAccount {id: $OwnerId})
     ON CREATE SET ownerAccount.firstseen = timestamp(), ownerAccount.foreign = true
-    SET ownerAccount.lastupdated = {update_tag}
+    SET ownerAccount.lastupdated = $update_tag
 
-    MERGE (tgw:AWSTransitGateway {id: {ARN}})
-    ON CREATE SET tgw.firstseen = timestamp(), tgw.arn = {ARN}
-    SET tgw.tgw_id = {TgwId},
-    tgw.ownerid = {OwnerId},
-    tgw.state = {State},
-    tgw.description = {Description},
-    tgw.region = {Region},
-    tgw.lastupdated = {update_tag}
+    MERGE (tgw:AWSTransitGateway {id: $ARN})
+    ON CREATE SET tgw.firstseen = timestamp(), tgw.arn = $ARN
+    SET tgw.tgw_id = $TgwId,
+    tgw.ownerid = $OwnerId,
+    tgw.state = $State,
+    tgw.description = $Description,
+    tgw.region = $Region,
+    tgw.lastupdated = $update_tag
 
     WITH tgw
     MERGE (ownerAccount)-[r:RESOURCE]->(tgw)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {update_tag}
+    SET r.lastupdated = $update_tag
     """
 
     for tgw in data:
@@ -116,15 +116,15 @@ def _attach_shared_transit_gateway(
     neo4j_session: neo4j.Session, tgw: Dict, region: str, current_aws_account_id: str, update_tag: int,
 ) -> None:
     attach_tgw = """
-    MERGE (tgw:AWSTransitGateway {id: {ARN}})
+    MERGE (tgw:AWSTransitGateway {id: $ARN})
     ON CREATE SET tgw.firstseen = timestamp()
-    SET tgw.lastupdated = {update_tag}
+    SET tgw.lastupdated = $update_tag
 
     WITH tgw
-    MATCH (currentAccount:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MATCH (currentAccount:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (tgw)-[s:SHARED_WITH]->(currentAccount)
     ON CREATE SET s.firstseen = timestamp()
-    SET s.lastupdated = {update_tag}
+    SET s.lastupdated = $update_tag
     """
 
     if tgw["OwnerId"] != current_aws_account_id:
@@ -143,24 +143,24 @@ def load_tgw_attachments(
     update_tag: int,
 ) -> None:
     ingest_transit_gateway = """
-    MERGE (tgwa:AWSTransitGatewayAttachment{id: {TgwAttachmentId}})
+    MERGE (tgwa:AWSTransitGatewayAttachment{id: $TgwAttachmentId})
     ON CREATE SET tgwa.firstseen = timestamp()
-    SET tgwa.region = {Region},
-    tgwa.resource_type = {ResourceType},
-    tgwa.state = {State},
-    tgwa.lastupdated = {update_tag}
+    SET tgwa.region = $Region,
+    tgwa.resource_type = $ResourceType,
+    tgwa.state = $State,
+    tgwa.lastupdated = $update_tag
 
     WITH tgwa
-    MATCH (awsAccount:AWSAccount {id: {AWS_ACCOUNT_ID}})
+    MATCH (awsAccount:AWSAccount {id: $AWS_ACCOUNT_ID})
     MERGE (awsAccount)-[r:RESOURCE]->(tgwa)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {update_tag}
+    SET r.lastupdated = $update_tag
 
     WITH tgwa
-    MATCH (tgw:AWSTransitGateway {tgw_id: {TransitGatewayId}})
+    MATCH (tgw:AWSTransitGateway {tgw_id: $TransitGatewayId})
     MERGE (tgwa)-[attach:ATTACHED_TO]->(tgw)
     ON CREATE SET attach.firstseen = timestamp()
-    SET attach.lastupdated = {update_tag}
+    SET attach.lastupdated = $update_tag
     """
 
     for tgwa in data:
@@ -193,27 +193,27 @@ def _attach_tgw_vpc_attachment_to_vpc_subnets(
     Attach a VPC Transit Gateway Attachment to the VPC and and subnets
     """
     attach_vpc_tgw_attachment_to_vpc = """
-    MERGE (vpc:AWSVpc {id: {VpcId}})
+    MERGE (vpc:AWSVpc {id: $VpcId})
     ON CREATE SET vpc.firstseen = timestamp()
-    SET vpc.lastupdated = {update_tag}
+    SET vpc.lastupdated = $update_tag
 
     WITH vpc
-    MATCH (tgwa:AWSTransitGatewayAttachment {id: {TgwAttachmentId}})
+    MATCH (tgwa:AWSTransitGatewayAttachment {id: $TgwAttachmentId})
     MERGE (vpc)-[r:RESOURCE]->(tgwa)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {update_tag}
+    SET r.lastupdated = $update_tag
     """
 
     attach_vpc_tgw_attachment_to_subnet = """
-    MERGE (sub:EC2Subnet {subnetid: {SubnetId}})
+    MERGE (sub:EC2Subnet {subnetid: $SubnetId})
     ON CREATE SET sub.firstseen = timestamp()
-    SET sub.lastupdated = {update_tag}
+    SET sub.lastupdated = $update_tag
 
     WITH sub
-    MATCH (tgwa:AWSTransitGatewayAttachment {id: {TgwAttachmentId}})
+    MATCH (tgwa:AWSTransitGatewayAttachment {id: $TgwAttachmentId})
     MERGE (tgwa)-[p:PART_OF_SUBNET]->(sub)
     ON CREATE SET p.firstseen = timestamp()
-    SET p.lastupdated = {update_tag}
+    SET p.lastupdated = $update_tag
     """
 
     neo4j_session.run(
