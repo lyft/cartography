@@ -42,9 +42,9 @@ def test_load_volume_to_account_rels(neo4j_session):
     # Arrange: Create Test AWSAccount
     neo4j_session.run(
         """
-        MERGE (aws:AWSAccount{id: {aws_account_id}})
+        MERGE (aws:AWSAccount{id: $aws_account_id})
         ON CREATE SET aws.firstseen = timestamp()
-        SET aws.lastupdated = {aws_update_tag}
+        SET aws.lastupdated = $aws_update_tag
         """,
         aws_account_id=TEST_ACCOUNT_ID,
         aws_update_tag=TEST_UPDATE_TAG,
