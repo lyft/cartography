@@ -7,6 +7,8 @@ from typing import Tuple
 
 import boto3
 import neo4j
+import uuid
+
 from botocore.exceptions import ClientError
 
 from cartography.util import aws_handle_regions
@@ -64,7 +66,8 @@ def load_sqs_queues(
     ingest_queues = """
     UNWIND {Queues} as sqs_queue
         MERGE (queue:SQSQueue{id: sqs_queue.QueueArn})
-        ON CREATE SET queue.firstseen = timestamp(), queue.url = sqs_queue.url
+        ON CREATE SET queue.firstseen = timestamp(), queue.url = sqs_queue.url,
+            queue.borneo_id = {queue_borneo_id}
         SET queue.name = sqs_queue.name, queue.region = {Region}, queue.arn = sqs_queue.QueueArn,
             queue.created_timestamp = sqs_queue.CreatedTimestamp, queue.delay_seconds = sqs_queue.DelaySeconds,
             queue.last_modified_timestamp = sqs_queue.LastModifiedTimestamp,
@@ -116,6 +119,7 @@ def load_sqs_queues(
         Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
         aws_update_tag=aws_update_tag,
+        queue_borneo_id=uuid.uuid4()
     )
 
     _attach_dead_letter_queues(neo4j_session, dead_letter_queues, aws_update_tag)

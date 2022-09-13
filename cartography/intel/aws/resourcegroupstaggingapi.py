@@ -5,6 +5,7 @@ from typing import List
 
 import boto3
 import neo4j
+import uuid
 
 from cartography.util import aws_handle_regions
 from cartography.util import batch
@@ -144,7 +145,8 @@ def _load_tags_tx(
             (a:AWSAccount{id:{Account}})-[res:RESOURCE]->(resource:$resource_label{$property:tag_mapping.resource_id})
             MERGE
             (aws_tag:AWSTag:Tag{id:input_tag.Key + ":" + input_tag.Value})
-            ON CREATE SET aws_tag.firstseen = timestamp()
+            ON CREATE SET aws_tag.firstseen = timestamp(),
+            aws_tag.borneo_id = {tag_borneo_id}
 
             SET aws_tag.lastupdated = {UpdateTag},
             aws_tag.key = input_tag.Key,
@@ -165,6 +167,7 @@ def _load_tags_tx(
         UpdateTag=aws_update_tag,
         Region=region,
         Account=current_aws_account_id,
+        tag_borneo_id=uuid.uuid4()
     )
 
 

@@ -4,6 +4,7 @@ from typing import List
 
 import boto3
 import neo4j
+import uuid
 
 from cartography.util import aws_handle_regions
 from cartography.util import dict_date_to_epoch
@@ -35,7 +36,8 @@ def load_secrets(
     ingest_secrets = """
     UNWIND {Secrets} as secret
         MERGE (s:SecretsManagerSecret{id: secret.ARN})
-        ON CREATE SET s.firstseen = timestamp()
+        ON CREATE SET s.firstseen = timestamp(),
+            s.borneo_id = {secret_borneo_id}
         SET s.name = secret.Name, s.description = secret.Description, s.kms_key_id = secret.KmsKeyId,
             s.rotation_enabled = secret.RotationEnabled, s.rotation_lambda_arn = secret.RotationLambdaARN,
             s.rotation_rules_automatically_after_days = secret.RotationRules.AutomaticallyAfterDays,
@@ -63,6 +65,7 @@ def load_secrets(
         Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
         aws_update_tag=aws_update_tag,
+        secret_borneo_id=uuid.uuid4()
     )
 
 

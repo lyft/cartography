@@ -5,6 +5,7 @@ from typing import List
 
 import boto3
 import neo4j
+import uuid
 
 from cartography.stats import get_stats_client
 from cartography.util import aws_handle_regions
@@ -44,7 +45,8 @@ def load_rds_clusters(
     UNWIND {Clusters} as rds_cluster
         MERGE (cluster:RDSCluster{id: rds_cluster.DBClusterArn})
         ON CREATE SET cluster.firstseen = timestamp(),
-            cluster.arn = rds_cluster.DBClusterArn
+            cluster.arn = rds_cluster.DBClusterArn,
+            cluster.borneo_id = {cluster_borneo_id}
         SET cluster.allocated_storage = rds_cluster.AllocatedStorage,
             cluster.availability_zones = rds_cluster.AvailabilityZones,
             cluster.backup_retention_period = rds_cluster.BackupRetentionPeriod,
@@ -107,6 +109,7 @@ def load_rds_clusters(
         Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
         aws_update_tag=aws_update_tag,
+        cluster_borneo_id=uuid.uuid4()
     )
 
 
@@ -137,7 +140,8 @@ def load_rds_instances(
     UNWIND {Instances} as rds_instance
         MERGE (rds:RDSInstance{id: rds_instance.DBInstanceArn})
         ON CREATE SET rds.firstseen = timestamp(),
-            rds.arn = rds_instance.DBInstanceArn
+            rds.arn = rds_instance.DBInstanceArn,
+            rds.borneo_id = instance_borneo_id
         SET rds.db_instance_identifier = rds_instance.DBInstanceIdentifier,
             rds.db_instance_class = rds_instance.DBInstanceClass,
             rds.engine = rds_instance.Engine,
@@ -209,6 +213,7 @@ def load_rds_instances(
         Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
         aws_update_tag=aws_update_tag,
+        instance_borneo_id=uuid.uuid4()
     )
     _attach_ec2_security_groups(neo4j_session, secgroups, aws_update_tag)
     _attach_ec2_subnet_groups(neo4j_session, subnets, region, current_aws_account_id, aws_update_tag)
@@ -227,7 +232,8 @@ def _attach_ec2_subnet_groups(
     attach_rds_to_subnet_group = """
     UNWIND {SubnetGroups} as rds_sng
         MERGE (sng:DBSubnetGroup{id: rds_sng.arn})
-        ON CREATE SET sng.firstseen = timestamp()
+        ON CREATE SET sng.firstseen = timestamp(),
+            sng.borneo_id = {subnet_group_borneo_id}
         SET sng.name = rds_sng.DBSubnetGroupName,
             sng.vpc_id = rds_sng.VpcId,
             sng.description = rds_sng.DBSubnetGroupDescription,
@@ -249,6 +255,7 @@ def _attach_ec2_subnet_groups(
         attach_rds_to_subnet_group,
         SubnetGroups=db_sngs,
         aws_update_tag=aws_update_tag,
+        subnet_group_borneo_id=uuid.uuid4()
     )
     _attach_ec2_subnets_to_subnetgroup(neo4j_session, db_sngs, region, current_aws_account_id, aws_update_tag)
 

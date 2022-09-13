@@ -4,6 +4,7 @@ from typing import List
 
 import boto3
 import neo4j
+import uuid
 
 from cartography.util import aws_handle_regions
 from cartography.util import batch
@@ -49,7 +50,8 @@ def load_ecr_repositories(
             repo.arn = ecr_repo.repositoryArn,
             repo.name = ecr_repo.repositoryName,
             repo.region = {Region},
-            repo.created_at = ecr_repo.createdAt
+            repo.created_at = ecr_repo.createdAt,
+            repo.borneo_id = {repo_borneo_id}
         SET repo.lastupdated = {aws_update_tag},
             repo.uri = ecr_repo.repositoryUri
         WITH repo
@@ -66,6 +68,7 @@ def load_ecr_repositories(
         Region=region,
         aws_update_tag=aws_update_tag,
         AWS_ACCOUNT_ID=current_aws_account_id,
+        repo_borneo_id=uuid.uuid4()
     ).consume()  # See issue #440
 
 
@@ -97,7 +100,8 @@ def _load_ecr_repo_img_tx(
     query = """
     UNWIND {RepoList} as repo_img
         MERGE (ri:ECRRepositoryImage{id: repo_img.repo_uri + COALESCE(":" + repo_img.imageTag, '')})
-        ON CREATE SET ri.firstseen = timestamp()
+        ON CREATE SET ri.firstseen = timestamp(),
+        ri.borneo_id = {ri_borneo_id}
         SET ri.lastupdated = {aws_update_tag},
             ri.tag = repo_img.imageTag,
             ri.uri = repo_img.repo_uri + COALESCE(":" + repo_img.imageTag, '')
@@ -105,7 +109,8 @@ def _load_ecr_repo_img_tx(
 
         MERGE (img:ECRImage{id: repo_img.imageDigest})
         ON CREATE SET img.firstseen = timestamp(),
-            img.digest = repo_img.imageDigest
+            img.digest = repo_img.imageDigest,
+            img.borneo_id = {img_borneo_id}
         SET img.lastupdated = {aws_update_tag},
             img.region = {Region}
         WITH ri, img, repo_img
@@ -120,7 +125,8 @@ def _load_ecr_repo_img_tx(
         ON CREATE SET r2.firstseen = timestamp()
         SET r2.lastupdated = {aws_update_tag}
     """
-    tx.run(query, RepoList=repo_images_list, Region=region, aws_update_tag=aws_update_tag)
+    tx.run(query, RepoList=repo_images_list, Region=region, aws_update_tag=aws_update_tag,
+        ri_borneo_id=uuid.uuid4(), img_borneo_id=uuid.uuid4())
 
 
 @timeit

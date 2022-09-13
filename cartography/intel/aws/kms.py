@@ -12,6 +12,7 @@ import botocore
 import neo4j
 from botocore.exceptions import ClientError
 from policyuniverse.policy import Policy
+import uuid
 
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
@@ -120,7 +121,8 @@ def _load_kms_key_aliases(neo4j_session: neo4j.Session, aliases: List[Dict], upd
     ingest_aliases = """
     UNWIND {alias_list} AS alias
     MERGE (a:KMSAlias{id: alias.AliasArn})
-    ON CREATE SET a.firstseen = timestamp(), a.targetkeyid = alias.TargetKeyId
+    ON CREATE SET a.firstseen = timestamp(), a.targetkeyid = alias.TargetKeyId,
+    a.borneo_id = {alias_borneo_id}
     SET a.aliasname = alias.AliasName, a.lastupdated = {UpdateTag}
     WITH a, alias
     MATCH (kmskey:KMSKey{id: alias.TargetKeyId})
@@ -133,6 +135,7 @@ def _load_kms_key_aliases(neo4j_session: neo4j.Session, aliases: List[Dict], upd
         ingest_aliases,
         alias_list=aliases,
         UpdateTag=update_tag,
+        alias_borneo_id=uuid.uuid4()
     )
 
 
@@ -145,7 +148,8 @@ def _load_kms_key_grants(neo4j_session: neo4j.Session, grants_list: List[Dict], 
     UNWIND {grants} AS grant
     MERGE (g:KMSGrant{id: grant.GrantId})
     ON CREATE SET g.firstseen = timestamp(), g.granteeprincipal = grant.GranteePrincipal,
-    g.creationdate = grant.CreationDate
+    g.creationdate = grant.CreationDate,
+    g.borneo_id = {grant_borneo_id}
     SET g.name = grant.GrantName, g.lastupdated = {UpdateTag}
     WITH g, grant
     MATCH (kmskey:KMSKey{id: grant.KeyId})
@@ -163,6 +167,7 @@ def _load_kms_key_grants(neo4j_session: neo4j.Session, grants_list: List[Dict], 
         ingest_grants,
         grants=grants_list,
         UpdateTag=update_tag,
+        grant_borneo_id=uuid.uuid4()
     )
 
 
@@ -303,7 +308,8 @@ def load_kms_keys(
     UNWIND {key_list} AS k
     MERGE (kmskey:KMSKey{id:k.KeyId})
     ON CREATE SET kmskey.firstseen = timestamp(),
-    kmskey.arn = k.Arn, kmskey.creationdate = k.CreationDate
+    kmskey.arn = k.Arn, kmskey.creationdate = k.CreationDate,
+    kmskey.borneo_id = {kms_borneo_id}
     SET kmskey.deletiondate = k.DeletionDate,
     kmskey.validto = k.ValidTo,
     kmskey.enabled = k.Enabled,
@@ -332,6 +338,7 @@ def load_kms_keys(
         Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
         aws_update_tag=aws_update_tag,
+        kms_borneo_id=uuid.uuid4()
     )
 
 

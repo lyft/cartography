@@ -7,6 +7,7 @@ import boto3
 import botocore.config
 import neo4j
 from policyuniverse.policy import Policy
+import uuid
 
 from cartography.intel.dns import ingest_dns_record_by_fqdn
 from cartography.util import aws_handle_regions
@@ -80,7 +81,8 @@ def _load_es_domains(
     ingest_records = """
     UNWIND {Records} as record
     MERGE (es:ESDomain{id: record.DomainId})
-    ON CREATE SET es.firstseen = timestamp(), es.arn = record.ARN, es.domainid = record.DomainId
+    ON CREATE SET es.firstseen = timestamp(), es.arn = record.ARN, es.domainid = record.DomainId,
+    es.borneo_id = {es_borneo_id}
     SET es.lastupdated = {aws_update_tag}, es.deleted = record.Deleted, es.created = record.created,
     es.endpoint = record.Endpoint, es.elasticsearch_version = record.ElasticsearchVersion,
     es.elasticsearch_cluster_config_instancetype = record.ElasticsearchClusterConfig.InstanceType,
@@ -114,6 +116,7 @@ def _load_es_domains(
         Records=domain_list,
         AWS_ACCOUNT_ID=aws_account_id,
         aws_update_tag=aws_update_tag,
+        es_borneo_id=uuid.uuid4()
     )
 
     for domain in domain_list:

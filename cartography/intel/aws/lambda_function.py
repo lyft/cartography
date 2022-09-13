@@ -7,6 +7,7 @@ from typing import Tuple
 import boto3
 import botocore
 import neo4j
+import uuid
 
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
@@ -37,7 +38,8 @@ def load_lambda_functions(
     ingest_lambda_functions = """
     UNWIND {lambda_functions_list} AS lf
         MERGE (lambda:AWSLambda{id: lf.FunctionArn})
-        ON CREATE SET lambda.firstseen = timestamp()
+        ON CREATE SET lambda.firstseen = timestamp(),
+        lambda.borneo_id = {lambda_borneo_id}
         SET lambda.name = lf.FunctionName,
         lambda.modifieddate = lf.LastModified,
         lambda.runtime = lf.Runtime,
@@ -81,6 +83,7 @@ def load_lambda_functions(
         Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
         aws_update_tag=aws_update_tag,
+        lambda_borneo_id=uuid.uuid4()
     )
 
 
@@ -151,7 +154,8 @@ def _load_lambda_function_aliases(neo4j_session: neo4j.Session, lambda_aliases: 
     ingest_aliases = """
     UNWIND {aliases_list} AS alias
         MERGE (a:AWSLambdaFunctionAlias{id: alias.AliasArn})
-        ON CREATE SET a.firstseen = timestamp()
+        ON CREATE SET a.firstseen = timestamp(),
+        a.borneo_id = {alias_borneo_id}
         SET a.aliasname = alias.Name,
         a.functionversion = alias.FunctionVersion,
         a.description = alias.Description,
@@ -168,6 +172,7 @@ def _load_lambda_function_aliases(neo4j_session: neo4j.Session, lambda_aliases: 
         ingest_aliases,
         aliases_list=lambda_aliases,
         aws_update_tag=update_tag,
+        alias_borneo_id=uuid.uuid4()
     )
 
 
@@ -178,7 +183,8 @@ def _load_lambda_event_source_mappings(
     ingest_esms = """
     UNWIND {esm_list} AS esm
         MERGE (e:AWSLambdaEventSourceMapping{id: esm.UUID})
-        ON CREATE SET e.firstseen = timestamp()
+        ON CREATE SET e.firstseen = timestamp(),
+        e.borneo_id = {esm_borneo_id}
         SET e.batchsize = esm.BatchSize,
         e.startingposition = esm.StartingPosition,
         e.startingpositiontimestamp = esm.StartingPositionTimestamp,
@@ -204,6 +210,7 @@ def _load_lambda_event_source_mappings(
         ingest_esms,
         esm_list=lambda_event_source_mappings,
         aws_update_tag=update_tag,
+        esm_borneo_id=uuid.uuid4()
     )
 
 
@@ -212,7 +219,8 @@ def _load_lambda_layers(neo4j_session: neo4j.Session, lambda_layers: List[Dict],
     ingest_layers = """
     UNWIND {layers_list} AS layer
         MERGE (l:AWSLambdaLayer{id: layer.Arn})
-        ON CREATE SET l.firstseen = timestamp()
+        ON CREATE SET l.firstseen = timestamp(),
+        l.borneo_id = {layer_borneo_id}
         SET l.codesize = layer.CodeSize,
         l.signingprofileversionarn  = layer.SigningProfileVersionArn,
         l.signingjobarn = layer.SigningJobArn,
@@ -228,6 +236,7 @@ def _load_lambda_layers(neo4j_session: neo4j.Session, lambda_layers: List[Dict],
         ingest_layers,
         layers_list=lambda_layers,
         aws_update_tag=update_tag,
+        layer_borneo_id=uuid.uuid4()
     )
 
 
