@@ -121,7 +121,8 @@ def load_apigateway_rest_apis(
     UNWIND $rest_apis_list AS r
     MERGE (rest_api:APIGatewayRestAPI{id:r.id})
     ON CREATE SET rest_api.firstseen = timestamp(),
-    rest_api.createddate = r.createdDate
+    rest_api.createddate = r.createdDate,
+    rest_api.borneo_id = {rest_api_borneo_id}
     SET rest_api.version = r.version,
     rest_api.minimumcompressionsize = r.minimumCompressionSize,
     rest_api.disableexecuteapiendpoint = r.disableExecuteApiEndpoint,
@@ -240,6 +241,7 @@ def _load_apigateway_certificates(
     ON CREATE SET c.firstseen = timestamp(), c.createddate = certificate.createdDate
     SET c.lastupdated = $UpdateTag, c.expirationdate = certificate.expirationDate,
     c.borneo_id = {cert_borneo_id}
+    SET c.lastupdated = {UpdateTag}, c.expirationdate = certificate.expirationDate
     WITH c, certificate
     MATCH (stage:APIGatewayStage{id: certificate.stageArn})
     MERGE (stage)-[r:HAS_CERTIFICATE]->(c)
