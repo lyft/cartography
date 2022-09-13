@@ -26,9 +26,9 @@ def test_load_redshift_cluster_and_aws_account(neo4j_session):
     # Create test AWSAccount
     neo4j_session.run(
         """
-        MERGE (aws:AWSAccount{id: {aws_account_id}})
+        MERGE (aws:AWSAccount{id: $aws_account_id})
         ON CREATE SET aws.firstseen = timestamp()
-        SET aws.lastupdated = {aws_update_tag}
+        SET aws.lastupdated = $aws_update_tag
         """,
         aws_account_id=TEST_ACCOUNT_ID,
         aws_update_tag=TEST_UPDATE_TAG,
@@ -54,9 +54,9 @@ def test_load_redshift_cluster_and_security_group(neo4j_session):
     # Create test EC2 security group
     neo4j_session.run(
         """
-        MERGE (aws:EC2SecurityGroup{id: {GroupId}})
+        MERGE (aws:EC2SecurityGroup{id: $GroupId})
         ON CREATE SET aws.firstseen = timestamp()
-        SET aws.lastupdated = {aws_update_tag}
+        SET aws.lastupdated = $aws_update_tag
         """,
         GroupId='my-vpc-sg',
         aws_update_tag=TEST_UPDATE_TAG,
@@ -82,9 +82,9 @@ def test_load_redshift_cluster_and_iam_role(neo4j_session):
     # Create test IAM role
     neo4j_session.run(
         """
-        MERGE (aws:AWSPrincipal:AWSRole{arn: {RoleArn}})
+        MERGE (aws:AWSPrincipal:AWSRole{arn: $RoleArn})
         ON CREATE SET aws.firstseen = timestamp()
-        SET aws.lastupdated = {aws_update_tag}
+        SET aws.lastupdated = $aws_update_tag
         """,
         RoleArn='arn:aws:iam::1111:role/my-test-role',
         aws_update_tag=TEST_UPDATE_TAG,
@@ -110,9 +110,9 @@ def test_load_redshift_cluster_and_vpc(neo4j_session):
     # Create test VPC
     neo4j_session.run(
         """
-        MERGE (aws:AWSVpc{id: {VpcId}})
+        MERGE (aws:AWSVpc{id: $VpcId})
         ON CREATE SET aws.firstseen = timestamp()
-        SET aws.lastupdated = {aws_update_tag}
+        SET aws.lastupdated = $aws_update_tag
         """,
         VpcId='my_vpc',
         aws_update_tag=TEST_UPDATE_TAG,
