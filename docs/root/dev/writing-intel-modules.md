@@ -120,13 +120,13 @@ MERGE (n:NodeType)-[r:RELATIONSHIP]->(n2:NodeType2)
     - Every `MERGE` query that creates a new node should look like this
 
         ```cypher
-        ON CREATE SET n.firstseen = {UpdateTag}
+        ON CREATE SET n.firstseen = $UpdateTag
         SET
-        n.lastupdated = {UpdateTag},
-        node.field1 = {value1},
-        node.field2 = {value2},
+        n.lastupdated = $UpdateTag,
+        node.field1 = $value1,
+        node.field2 = $value2,
         ...
-        node.fieldN = {valueN}
+        node.fieldN = $valueN
         ```
 
 - To handle relationships in this case,
@@ -134,9 +134,9 @@ MERGE (n:NodeType)-[r:RELATIONSHIP]->(n2:NodeType2)
     - Every `MERGE` query that creates a new relationship should look like this
 
         ```cypher
-        ON CREATE SET r.firstseen = {UpdateTag}
+        ON CREATE SET r.firstseen = $UpdateTag
         SET
-        r.lastupdated = {UpdateTag}
+        r.lastupdated = $UpdateTag
         ```
 
 #### Connecting different node types with the `_attach` pattern
