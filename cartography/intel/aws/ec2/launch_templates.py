@@ -36,7 +36,7 @@ def load_launch_templates(
         neo4j_session: neo4j.Session, data: List[Dict], region: str, current_aws_account_id: str, update_tag: int,
 ) -> None:
     ingest_lt = """
-    UNWIND {launch_templates} as lt
+    UNWIND $launch_templates as lt
         MERGE (template:LaunchTemplate{id: lt.LaunchTemplateId})
         ON CREATE SET template.firstseen = timestamp(),
         template.name = lt.LaunchTemplateName,
@@ -44,13 +44,13 @@ def load_launch_templates(
         template.created_by = lt.CreatedBy
         SET template.default_version_number = lt.DefaultVersionNumber,
         template.latest_version_number = lt.LatestVersionNumber,
-        template.lastupdated = {update_tag},
-        template.region={Region}
+        template.lastupdated = $update_tag,
+        template.region=$Region
         WITH template, lt._template_versions as versions
-        MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+        MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
         MERGE (aa)-[r:RESOURCE]->(template)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {update_tag}
+        SET r.lastupdated = $update_tag
         WITH template, versions
         UNWIND versions as tv
             MERGE (version:LaunchTemplateVersion{id: tv.LaunchTemplateId + '-' + tv.VersionNumber})
@@ -74,12 +74,12 @@ def load_launch_templates(
             version.instance_initiated_shutdown_behavior = tv.LaunchTemplateData.InstanceInitiatedShutdownBehavior,
             version.security_group_ids = tv.LaunchTemplateData.SecurityGroupIds,
             version.security_groups = tv.LaunchTemplateData.SecurityGroups
-            SET version.lastupdated = {update_tag},
-            version.region={Region}
+            SET version.lastupdated = $update_tag,
+            version.region=$Region
             WITH template, version
             MERGE (template)-[r:VERSION]->(version)
             ON CREATE SET r.firstseen = timestamp()
-            SET r.lastupdated = {update_tag}
+            SET r.lastupdated = $update_tag
     """
     for lt in data:
         lt['CreateTime'] = str(time.mktime(lt['CreateTime'].timetuple()))
