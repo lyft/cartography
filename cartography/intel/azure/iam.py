@@ -7,6 +7,7 @@ from azure.core.exceptions import HttpResponseError
 from azure.graphrbac import GraphRbacManagementClient
 from azure.mgmt.authorization import AuthorizationManagementClient
 from cloudconsolelink.clouds.azure import AzureLinker
+from datetime import datetime
 
 from .util.credentials import Credentials
 from cartography.util import run_cleanup_job
@@ -87,6 +88,7 @@ def _load_tenant_users_tx(
     i.object_id=user.object_id,
     i.name = user.display_name,
     i.region = {region},
+    i.create_date = {createDate},
     i.given_name = user.given_name,
     i.surname = user.surname,
     i.user_type = user.user_type,
@@ -107,6 +109,7 @@ def _load_tenant_users_tx(
         ingest_user,
         region="global",
         tenant_users_list=tenant_users_list,
+        createDate=datetime.utcnow(),
         tenant_id=tenant_id,
         update_tag=update_tag,
     )
@@ -172,6 +175,7 @@ def _load_tenant_groups_tx(
     i.firstseen = timestamp(),
     i.object_id=group.object_id,
     i.region = {region},
+    i.create_date = {createDate},
     i.name = group.display_name,
     i.visibility = group.visibility,
     i.classification = group.classification,
@@ -192,6 +196,7 @@ def _load_tenant_groups_tx(
         region="global",
         tenant_groups_list=tenant_groups_list,
         tenant_id=tenant_id,
+        createDate=datetime.utcnow(),
         update_tag=update_tag,
     )
 
@@ -256,6 +261,7 @@ def _load_tenant_applications_tx(
     i.firstseen = timestamp(),
     i.object_id=app.object_id,
     i.region = {region},
+    i.create_date = {createDate},
     i.name = app.display_name,
     i.consolelink = app.consolelink,
     i.publisherDomain = app.publisher_domain
@@ -273,6 +279,7 @@ def _load_tenant_applications_tx(
         region="global",
         tenant_applications_list=tenant_applications_list,
         tenant_id=tenant_id,
+        createDate=datetime.utcnow(),
         update_tag=update_tag,
     )
 
@@ -338,6 +345,7 @@ def _load_tenant_service_accounts_tx(
     i.firstseen = timestamp(),
     i.name = service.display_name,
     i.region = {region},
+    i.create_date = {createDate},
     i.object_id=service.object_id,
     i.accountEnabled = service.account_enabled,
     i.servicePrincipalType = service.service_principal_type
@@ -355,6 +363,7 @@ def _load_tenant_service_accounts_tx(
         region="global",
         tenant_service_accounts_list=tenant_service_accounts_list,
         tenant_id=tenant_id,
+        createDate=datetime.utcnow(),
         update_tag=update_tag,
     )
 
@@ -418,6 +427,7 @@ def _load_tenant_domains_tx(
     i.firstseen = timestamp(),
     i.isRoot = domain.isRoot,
     i.region = {region},
+    i.create_date = {createDate},
     i.name = domain.name,
     i.isInitial = domain.isInitial
     SET i.lastupdated = {update_tag},
@@ -435,6 +445,7 @@ def _load_tenant_domains_tx(
         region="global",
         tenant_domains_list=tenant_domains_list,
         tenant_id=tenant_id,
+        createDate=datetime.utcnow(),
         update_tag=update_tag,
     )
 
@@ -510,6 +521,7 @@ def _load_roles_tx(
     i.name = role.name,
     i.consolelink = role.consolelink,
     i.region = {region},
+    i.create_date = {createDate},
     i.type = role.type
     SET i.lastupdated = {update_tag},
     i.roleName = role.roleName,
@@ -531,6 +543,7 @@ def _load_roles_tx(
         region="global",
         roles_list=roles_list,
         update_tag=update_tag,
+        createDate=datetime.utcnow(),
         tenant_id=tenant_id,
     )
 
