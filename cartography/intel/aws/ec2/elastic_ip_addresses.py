@@ -39,7 +39,7 @@ def load_elastic_ip_addresses(
     """
     logger.info(f"Loading {len(elastic_ip_addresses)} Elastic IP Addresses in {region}.")
     ingest_addresses = """
-    UNWIND {elastic_ip_addresses} as eia
+    UNWIND $elastic_ip_addresses as eia
         MERGE (address: ElasticIPAddress{id: eia.PublicIp})
         ON CREATE SET address.firstseen = timestamp()
         SET address.instance_id = eia.InstanceId, address.public_ip = eia.PublicIp,
@@ -49,25 +49,25 @@ def load_elastic_ip_addresses(
         address.private_ip_address = eia.PrivateIpAddress, address.public_ipv4_pool = eia.PublicIpv4Pool,
         address.network_border_group = eia.NetworkBorderGroup, address.customer_owned_ip = eia.CustomerOwnedIp,
         address.customer_owned_ipv4_pool = eia.CustomerOwnedIpv4Pool, address.carrier_ip = eia.CarrierIp,
-        address.region = {Region}, address.lastupdated = {update_tag}
+        address.region = $Region, address.lastupdated = $update_tag
         WITH address
 
-        MATCH (account:AWSAccount{id: {aws_account_id}})
+        MATCH (account:AWSAccount{id: $aws_account_id})
         MERGE (account)-[r:RESOURCE]->(address)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {update_tag}
+        SET r.lastupdated = $update_tag
         WITH address
 
         MATCH (instance:EC2Instance) WHERE instance.id = address.instance_id
         MERGE (instance)-[r:ELASTIC_IP_ADDRESS]->(address)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {update_tag}
+        SET r.lastupdated = $update_tag
         WITH address
 
         MATCH (ni:NetworkInterface{id: address.network_interface_id})
         MERGE (ni)-[r:ELASTIC_IP_ADDRESS]->(address)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {update_tag}
+        SET r.lastupdated = $update_tag
     """
 
     neo4j_session.run(

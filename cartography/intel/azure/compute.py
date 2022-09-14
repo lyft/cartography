@@ -36,22 +36,22 @@ def get_vm_list(credentials: Credentials, subscription_id: str) -> List[Dict]:
 
 def load_vms(neo4j_session: neo4j.Session, subscription_id: str, vm_list: List[Dict], update_tag: int) -> None:
     ingest_vm = """
-    UNWIND {vms} AS vm
+    UNWIND $vms AS vm
     MERGE (v:AzureVirtualMachine{id: vm.id})
     ON CREATE SET v.firstseen = timestamp(),
     v.type = vm.type, v.location = vm.location,
     v.resourcegroup = vm.resource_group
-    SET v.lastupdated = {update_tag}, v.name = vm.name,
+    SET v.lastupdated = $update_tag, v.name = vm.name,
     v.plan = vm.plan.product, v.size = vm.hardware_profile.vm_size,
     v.license_type=vm.license_type, v.computer_name=vm.os_profile.computer_ame,
     v.identity_type=vm.identity.type, v.zones=vm.zones,
     v.ultra_ssd_enabled=vm.additional_capabilities.ultra_ssd_enabled,
     v.priority=vm.priority, v.eviction_policy=vm.eviction_policy
     WITH v
-    MATCH (owner:AzureSubscription{id: {SUBSCRIPTION_ID}})
+    MATCH (owner:AzureSubscription{id: $SUBSCRIPTION_ID})
     MERGE (owner)-[r:RESOURCE]->(v)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {update_tag}
+    SET r.lastupdated = $update_tag
     """
 
     neo4j_session.run(
@@ -68,19 +68,19 @@ def load_vms(neo4j_session: neo4j.Session, subscription_id: str, vm_list: List[D
 
 def load_vm_data_disks(neo4j_session: neo4j.Session, vm_id: str, data_disks: List[Dict], update_tag: int) -> None:
     ingest_data_disk = """
-    UNWIND {disks} AS disk
+    UNWIND $disks AS disk
     MERGE (d:AzureDataDisk{id: disk.managed_disk.id})
     ON CREATE SET d.firstseen = timestamp(), d.lun = disk.lun
-    SET d.lastupdated = {update_tag}, d.name = disk.name,
+    SET d.lastupdated = $update_tag, d.name = disk.name,
     d.vhd = disk.vhd.uri, d.image = disk.image.uri,
     d.size = disk.disk_size_gb, d.caching = disk.caching,
     d.createoption = disk.create_option, d.write_accelerator_enabled=disk.write_accelerator_enabled,
     d.managed_disk_storage_type=disk.managed_disk.storage_account_type
     WITH d
-    MATCH (owner:AzureVirtualMachine{id: {VM_ID}})
+    MATCH (owner:AzureVirtualMachine{id: $VM_ID})
     MERGE (owner)-[r:ATTACHED_TO]->(d)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {update_tag}
+    SET r.lastupdated = $update_tag
     """
 
     # for disk in data_disks:
@@ -114,22 +114,22 @@ def get_disks(credentials: Credentials, subscription_id: str) -> List[Dict]:
 
 def load_disks(neo4j_session: neo4j.Session, subscription_id: str, disk_list: List[Dict], update_tag: int) -> None:
     ingest_disks = """
-    UNWIND {disks} AS disk
+    UNWIND $disks AS disk
     MERGE (d:AzureDisk{id: disk.id})
     ON CREATE SET d.firstseen = timestamp(),
     d.type = disk.type, d.location = disk.location,
     d.resourcegroup = disk.resource_group
-    SET d.lastupdated = {update_tag}, d.name = disk.name,
+    SET d.lastupdated = $update_tag, d.name = disk.name,
     d.createoption = disk.creation_data.create_option, d.disksizegb = disk.disk_size_gb,
     d.encryption = disk.encryption_settings_collection.enabled, d.maxshares = disk.max_shares,
     d.network_access_policy = disk.network_access_policy,
     d.ostype = disk.os_type, d.tier = disk.tier,
     d.sku = disk.sku.name, d.zones = disk.zones
     WITH d
-    MATCH (owner:AzureSubscription{id: {SUBSCRIPTION_ID}})
+    MATCH (owner:AzureSubscription{id: $SUBSCRIPTION_ID})
     MERGE (owner)-[r:RESOURCE]->(d)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {update_tag}"""
+    SET r.lastupdated = $update_tag"""
 
     neo4j_session.run(
         ingest_disks,
@@ -161,21 +161,21 @@ def get_snapshots_list(credentials: Credentials, subscription_id: str) -> List[D
 
 def load_snapshots(neo4j_session: neo4j.Session, subscription_id: str, snapshots: List[Dict], update_tag: int) -> None:
     ingest_snapshots = """
-    UNWIND {snapshots} as snapshot
+    UNWIND $snapshots as snapshot
     MERGE (s:AzureSnapshot{id: snapshot.id})
     ON CREATE SET s.firstseen = timestamp(),
     s.resourcegroup = snapshot.resource_group,
     s.type = snapshot.type, s.location = snapshot.location
-    SET s.lastupdated = {update_tag}, s.name = snapshot.name,
+    SET s.lastupdated = $update_tag, s.name = snapshot.name,
     s.createoption = snapshot.creation_data.create_option, s.disksizegb = snapshot.disk_size_gb,
     s.encryption = snapshot.encryption_settings_collection.enabled, s.incremental = snapshot.incremental,
     s.network_access_policy = snapshot.network_access_policy, s.ostype = snapshot.os_type,
     s.tier = snapshot.tier, s.sku = snapshot.sku.name
     WITH s
-    MATCH (owner:AzureSubscription{id: {SUBSCRIPTION_ID}})
+    MATCH (owner:AzureSubscription{id: $SUBSCRIPTION_ID})
     MERGE (owner)-[r:RESOURCE]->(s)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {update_tag}"""
+    SET r.lastupdated = $update_tag"""
 
     neo4j_session.run(
         ingest_snapshots,
