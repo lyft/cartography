@@ -41,12 +41,12 @@ def load_launch_configurations(
         neo4j_session: neo4j.Session, data: List[Dict], region: str, current_aws_account_id: str, update_tag: int,
 ) -> None:
     ingest_lc = """
-    UNWIND {launch_configurations} as lc
+    UNWIND $launch_configurations as lc
         MERGE (config:LaunchConfiguration{id: lc.LaunchConfigurationARN})
         ON CREATE SET config.firstseen = timestamp(), config.name = lc.LaunchConfigurationName,
         config.arn = lc.LaunchConfigurationARN,
         config.created_time = lc.CreatedTime
-        SET config.lastupdated = {update_tag}, config.image_id = lc.ImageId,
+        SET config.lastupdated = $update_tag, config.image_id = lc.ImageId,
         config.key_name = lc.KeyName,
         config.security_groups = lc.SecurityGroups,
         config.instance_type = lc.InstanceType,
@@ -58,12 +58,12 @@ def load_launch_configurations(
         config.ebs_optimized = lc.EbsOptimized,
         config.associate_public_ip_address = lc.AssociatePublicIpAddress,
         config.placement_tenancy = lc.PlacementTenancy,
-        config.region={Region}
+        config.region=$Region
         WITH config
-        MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+        MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
         MERGE (aa)-[r:RESOURCE]->(config)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {update_tag}
+        SET r.lastupdated = $update_tag
     """
     for lc in data:
         lc['CreatedTime'] = str(time.mktime(lc['CreatedTime'].timetuple()))
@@ -82,7 +82,7 @@ def load_ec2_auto_scaling_groups(
         neo4j_session: neo4j.Session, data: List[Dict], region: str, current_aws_account_id: str, update_tag: int,
 ) -> None:
     ingest_group = """
-    UNWIND {autoscaling_groups_list} as ag
+    UNWIND $autoscaling_groups_list as ag
         MERGE (group:AutoScalingGroup{arn: ag.AutoScalingGroupARN})
         ON CREATE SET group.firstseen = timestamp(),
         group.createdtime = ag.CreatedTime
@@ -96,60 +96,60 @@ def load_ec2_auto_scaling_groups(
         group.newinstancesprotectedfromscalein = ag.NewInstancesProtectedFromScaleIn,
         group.maxinstancelifetime = ag.MaxInstanceLifetime, group.capacityrebalance = ag.CapacityRebalance,
         group.name = ag.AutoScalingGroupName,
-        group.lastupdated = {update_tag},
-        group.region={Region}
+        group.lastupdated = $update_tag,
+        group.region=$Region
         WITH group
-        MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+        MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
         MERGE (aa)-[r:RESOURCE]->(group)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {update_tag}
+        SET r.lastupdated = $update_tag
     """
 
     ingest_vpc = """
-    UNWIND {vpc_id_list} as vpc_id
+    UNWIND $vpc_id_list as vpc_id
         MERGE (subnet:EC2Subnet{subnetid: vpc_id})
         ON CREATE SET subnet.firstseen = timestamp()
-        SET subnet.lastupdated = {update_tag}
+        SET subnet.lastupdated = $update_tag
         WITH subnet
-        MATCH (group:AutoScalingGroup{arn: {GROUPARN}})
+        MATCH (group:AutoScalingGroup{arn: $GROUPARN})
         MERGE (subnet)<-[r:VPC_IDENTIFIER]-(group)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {update_tag}
+        SET r.lastupdated = $update_tag
     """
 
     ingest_instance = """
-    UNWIND {instances_list} as i
+    UNWIND $instances_list as i
         MERGE (instance:Instance:EC2Instance{id: i.InstanceId})
         ON CREATE SET instance.firstseen = timestamp()
-        SET instance.lastupdated = {update_tag}, instance.region={Region}
+        SET instance.lastupdated = $update_tag, instance.region=$Region
         WITH instance
-        MATCH (group:AutoScalingGroup{arn: {GROUPARN}})
+        MATCH (group:AutoScalingGroup{arn: $GROUPARN})
         MERGE (instance)-[r:MEMBER_AUTO_SCALE_GROUP]->(group)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {update_tag}
+        SET r.lastupdated = $update_tag
         WITH instance
-        MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+        MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
         MERGE (aa)-[r:RESOURCE]->(instance)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {update_tag}
+        SET r.lastupdated = $update_tag
     """
 
     ingest_lts = """
-    UNWIND {autoscaling_groups_list} as ag
+    UNWIND $autoscaling_groups_list as ag
         MATCH (group:AutoScalingGroup{arn: ag.AutoScalingGroupARN})
         MATCH (template:LaunchTemplate{id: ag.LaunchTemplate.LaunchTemplateId})
         MERGE (group)-[r:HAS_LAUNCH_TEMPLATE]->(template)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {update_tag}
+        SET r.lastupdated = $update_tag
     """
 
     ingest_lcs = """
-    UNWIND {autoscaling_groups_list} as ag
+    UNWIND $autoscaling_groups_list as ag
         MATCH (group:AutoScalingGroup{arn: ag.AutoScalingGroupARN})
         MATCH (config:LaunchConfiguration{name: ag.LaunchConfigurationName})
         MERGE (group)-[r:HAS_LAUNCH_CONFIG]->(config)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {update_tag}
+        SET r.lastupdated = $update_tag
     """
 
     launch_configs = []

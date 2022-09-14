@@ -35,7 +35,7 @@ def load_lambda_functions(
         neo4j_session: neo4j.Session, data: List[Dict], region: str, current_aws_account_id: str, aws_update_tag: int,
 ) -> None:
     ingest_lambda_functions = """
-    UNWIND {lambda_functions_list} AS lf
+    UNWIND $lambda_functions_list AS lf
         MERGE (lambda:AWSLambda{id: lf.FunctionArn})
         ON CREATE SET lambda.firstseen = timestamp()
         SET lambda.name = lf.FunctionName,
@@ -62,17 +62,17 @@ def load_lambda_functions(
         lambda.architectures = lf.Architectures,
         lambda.masterarn = lf.MasterArn,
         lambda.kmskeyarn = lf.KMSKeyArn,
-        lambda.lastupdated = {aws_update_tag}
+        lambda.lastupdated = $aws_update_tag
         WITH lambda, lf
-        MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
+        MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
         MERGE (owner)-[r:RESOURCE]->(lambda)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {aws_update_tag}
+        SET r.lastupdated = $aws_update_tag
         WITH lambda, lf
         MATCH (role:AWSPrincipal{arn: lf.Role})
         MERGE (lambda)-[r:STS_ASSUME_ROLE_ALLOW]->(role)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {aws_update_tag}
+        SET r.lastupdated = $aws_update_tag
     """
 
     neo4j_session.run(
@@ -149,19 +149,19 @@ def load_lambda_function_details(
 @timeit
 def _load_lambda_function_aliases(neo4j_session: neo4j.Session, lambda_aliases: List[Dict], update_tag: int) -> None:
     ingest_aliases = """
-    UNWIND {aliases_list} AS alias
+    UNWIND $aliases_list AS alias
         MERGE (a:AWSLambdaFunctionAlias{id: alias.AliasArn})
         ON CREATE SET a.firstseen = timestamp()
         SET a.aliasname = alias.Name,
         a.functionversion = alias.FunctionVersion,
         a.description = alias.Description,
         a.revisionid = alias.RevisionId,
-        a.lastupdated = {aws_update_tag}
+        a.lastupdated = $aws_update_tag
         WITH a, alias
         MATCH (lambda:AWSLambda{id: alias.FunctionArn})
         MERGE (lambda)-[r:KNOWN_AS]->(a)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {aws_update_tag}
+        SET r.lastupdated = $aws_update_tag
     """
 
     neo4j_session.run(
@@ -176,7 +176,7 @@ def _load_lambda_event_source_mappings(
         neo4j_session: neo4j.Session, lambda_event_source_mappings: List[Dict], update_tag: int,
 ) -> None:
     ingest_esms = """
-    UNWIND {esm_list} AS esm
+    UNWIND $esm_list AS esm
         MERGE (e:AWSLambdaEventSourceMapping{id: esm.UUID})
         ON CREATE SET e.firstseen = timestamp()
         SET e.batchsize = esm.BatchSize,
@@ -192,12 +192,12 @@ def _load_lambda_event_source_mappings(
         e.bisectbatchonfunctionerror = esm.BisectBatchOnFunctionError,
         e.maximumretryattempts = esm.MaximumRetryAttempts,
         e.tumblingwindowinseconds = esm.TumblingWindowInSeconds,
-        e.lastupdated = {aws_update_tag}
+        e.lastupdated = $aws_update_tag
         WITH e, esm
         MATCH (lambda:AWSLambda{id: esm.FunctionArn})
         MERGE (lambda)-[r:RESOURCE]->(e)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {aws_update_tag}
+        SET r.lastupdated = $aws_update_tag
     """
 
     neo4j_session.run(
@@ -210,18 +210,18 @@ def _load_lambda_event_source_mappings(
 @timeit
 def _load_lambda_layers(neo4j_session: neo4j.Session, lambda_layers: List[Dict], update_tag: int) -> None:
     ingest_layers = """
-    UNWIND {layers_list} AS layer
+    UNWIND $layers_list AS layer
         MERGE (l:AWSLambdaLayer{id: layer.Arn})
         ON CREATE SET l.firstseen = timestamp()
         SET l.codesize = layer.CodeSize,
         l.signingprofileversionarn  = layer.SigningProfileVersionArn,
         l.signingjobarn = layer.SigningJobArn,
-        l.lastupdated = {aws_update_tag}
+        l.lastupdated = $aws_update_tag
         WITH l, layer
         MATCH (lambda:AWSLambda{id: layer.FunctionArn})
         MERGE (lambda)-[r:HAS]->(l)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {aws_update_tag}
+        SET r.lastupdated = $aws_update_tag
     """
 
     neo4j_session.run(
