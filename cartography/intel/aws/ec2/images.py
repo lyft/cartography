@@ -18,14 +18,14 @@ logger = logging.getLogger(__name__)
 def get_images_in_use(neo4j_session: neo4j.Session, region: str, current_aws_account_id: str) -> List[str]:
     # We use OPTIONAL here to allow query chaining with queries that may not match.
     get_images_query = """
-    OPTIONAL MATCH (:AWSAccount{id: {AWS_ACCOUNT_ID}})-[:RESOURCE]->(i:EC2Instance)
-    WHERE i.region = {Region}
+    OPTIONAL MATCH (:AWSAccount{id: $AWS_ACCOUNT_ID})-[:RESOURCE]->(i:EC2Instance)
+    WHERE i.region = $Region
     WITH collect(DISTINCT i.imageid) AS images
-    OPTIONAL MATCH (:AWSAccount{id: {AWS_ACCOUNT_ID}})-[:RESOURCE]->(lc:LaunchConfiguration)
-    WHERE lc.region = {Region}
+    OPTIONAL MATCH (:AWSAccount{id: $AWS_ACCOUNT_ID})-[:RESOURCE]->(lc:LaunchConfiguration)
+    WHERE lc.region = $Region
     WITH collect(DISTINCT lc.image_id)+images AS images
-    OPTIONAL MATCH (:AWSAccount{id: {AWS_ACCOUNT_ID}})-[:RESOURCE]->(ltv:LaunchTemplateVersion)
-    WHERE ltv.region = {Region}
+    OPTIONAL MATCH (:AWSAccount{id: $AWS_ACCOUNT_ID})-[:RESOURCE]->(ltv:LaunchTemplateVersion)
+    WHERE ltv.region = $Region
     WITH collect(DISTINCT ltv.image_id)+images AS images
     RETURN images
     """
@@ -64,11 +64,11 @@ def load_images(
         neo4j_session: neo4j.Session, data: List[Dict], region: str, current_aws_account_id: str, update_tag: int,
 ) -> None:
     ingest_images = """
-    UNWIND {images_list} as image
+    UNWIND $images_list as image
         MERGE (i:EC2Image{id: image.ID})
         ON CREATE SET i.firstseen = timestamp(), i.imageid = image.ImageId, i.name = image.Name,
         i.creationdate = image.CreationDate
-        SET i.lastupdated = {update_tag},
+        SET i.lastupdated = $update_tag,
         i.architecture = image.Architecture, i.location = image.ImageLocation, i.type = image.ImageType,
         i.ispublic = image.Public, i.platform = image.Platform,
         i.platform_details = image.PlatformDetails, i.usageoperation = image.UsageOperation,
@@ -78,12 +78,12 @@ def load_images(
         i.sriov_net_support = image.SriovNetSupport,
         i.bootmode = image.BootMode, i.owner = image.OwnerId, i.image_owner_alias = image.ImageOwnerAlias,
         i.kernel_id = image.KernelId, i.ramdisk_id = image.RamdiskId,
-        i.region={Region}
+        i.region=$Region
         WITH i
-        MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+        MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
         MERGE (aa)-[r:RESOURCE]->(i)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {update_tag}
+        SET r.lastupdated = $update_tag
     """
 
     # AMI IDs are unique to each AWS Region. Hence we make an 'ID' string that is a combo of ImageId and region
