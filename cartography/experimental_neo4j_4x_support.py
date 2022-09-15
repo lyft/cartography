@@ -24,7 +24,6 @@ def my_sync_function(ne4j_session, commong_job_params, ...):
    ...
 ```
 '''
-
 import logging
 import re
 from functools import wraps
