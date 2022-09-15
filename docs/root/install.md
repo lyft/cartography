@@ -9,9 +9,9 @@ Time to set up the server that will run Cartography.  Cartography _should_ work 
 
             ⚠️ Make sure you have `JAVA_HOME` environment variable set. The following works for Mac OS: `export JAVA_HOME=$(/usr/libexec/java_home)`
 
-    1. Go to the [Neo4j download page](https://neo4j.com/download-center/#releases), click "Community Server" and download Neo4j Community Edition 3.5.\*.
+    1. Go to the [Neo4j download page](https://neo4j.com/download-center/#community), and download Neo4j Community Edition 4.4.\*.
 
-            ⚠️ At this time we run our automated tests on Neo4j version 3.5.\*.  Other versions may work but are not explicitly supported. ⚠️
+            ⚠️ Please read the "Get and run Cartography" instructions below carefully about Neo4j 4.x support. ⚠️
 
     1. [Install](https://neo4j.com/docs/operations-manual/current/installation/) Neo4j on the server you will run Cartography on.
 

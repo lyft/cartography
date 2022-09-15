@@ -13,7 +13,7 @@ def test_state_no_drift():
     :return:
     """
     mock_session = MagicMock()
-    mock_boltstatementresult = MagicMock()
+    mock_result = MagicMock()
     key = "d.test"
     results = [
         {key: "1"},
@@ -24,9 +24,9 @@ def test_state_no_drift():
         {key: "6"},
     ]
 
-    mock_boltstatementresult.__getitem__.side_effect = results.__getitem__
-    mock_boltstatementresult.__iter__.side_effect = results.__iter__
-    mock_session.run.return_value = mock_boltstatementresult
+    mock_result.__getitem__.side_effect = results.__getitem__
+    mock_result.__iter__.side_effect = results.__iter__
+    mock_session.run.return_value = mock_result
     data = FileSystem.load("tests/data/detectors/test_expectations.json")
     state_old = StateSchema().load(data)
     state_new = State(state_old.name, state_old.validation_query, state_old.properties, [])
@@ -43,7 +43,7 @@ def test_state_picks_up_drift():
     """
     key = "d.test"
     mock_session = MagicMock()
-    mock_boltstatementresult = MagicMock()
+    mock_result = MagicMock()
     results = [
         {key: "1"},
         {key: "2"},
@@ -54,9 +54,9 @@ def test_state_picks_up_drift():
         {key: "7"},
     ]
 
-    mock_boltstatementresult.__getitem__.side_effect = results.__getitem__
-    mock_boltstatementresult.__iter__.side_effect = results.__iter__
-    mock_session.run.return_value = mock_boltstatementresult
+    mock_result.__getitem__.side_effect = results.__getitem__
+    mock_result.__iter__.side_effect = results.__iter__
+    mock_session.run.return_value = mock_result
     data = FileSystem.load("tests/data/detectors/test_expectations.json")
     state_old = StateSchema().load(data)
     state_new = State(state_old.name, state_old.validation_query, state_old.properties, [])
@@ -76,7 +76,7 @@ def test_state_multiple_expectations():
     key_1 = "d.test"
     key_2 = "d.test2"
     mock_session = MagicMock()
-    mock_boltstatementresult = MagicMock()
+    mock_result = MagicMock()
     results = [
         {key_1: "1", key_2: "8"},
         {key_1: "2", key_2: "9"},
@@ -87,9 +87,9 @@ def test_state_multiple_expectations():
         {key_1: "7", key_2: "14"},
     ]
 
-    mock_boltstatementresult.__getitem__.side_effect = results.__getitem__
-    mock_boltstatementresult.__iter__.side_effect = results.__iter__
-    mock_session.run.return_value = mock_boltstatementresult
+    mock_result.__getitem__.side_effect = results.__getitem__
+    mock_result.__iter__.side_effect = results.__iter__
+    mock_session.run.return_value = mock_result
     data = FileSystem.load("tests/data/detectors/test_multiple_expectations.json")
     state_old = StateSchema().load(data)
     state_new = State(state_old.name, state_old.validation_query, state_old.properties, [])
@@ -106,7 +106,7 @@ def test_drift_from_multiple_properties():
     :return:
     """
     mock_session = MagicMock()
-    mock_boltstatementresult = MagicMock()
+    mock_result = MagicMock()
     key_1 = "d.test"
     key_2 = "d.test2"
     key_3 = "d.test3"
@@ -119,9 +119,9 @@ def test_drift_from_multiple_properties():
         {key_1: "6", key_2: "13", key_3: ["20", "27", "34"]},
         {key_1: "7", key_2: "14", key_3: ["21", "28", "35"]},
     ]
-    mock_boltstatementresult.__getitem__.side_effect = results.__getitem__
-    mock_boltstatementresult.__iter__.side_effect = results.__iter__
-    mock_session.run.return_value = mock_boltstatementresult
+    mock_result.__getitem__.side_effect = results.__getitem__
+    mock_result.__iter__.side_effect = results.__iter__
+    mock_session.run.return_value = mock_result
     data = FileSystem.load("tests/data/detectors/test_multiple_properties.json")
     state_old = StateSchema().load(data)
     state_new = State(state_old.name, state_old.validation_query, state_old.properties, [])

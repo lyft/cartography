@@ -507,25 +507,25 @@ def load_gcp_instances(neo4j_session: neo4j.Session, data: List[Dict], gcp_updat
     :return: Nothing
     """
     query = """
-    MERGE (p:GCPProject{id:{ProjectId}})
+    MERGE (p:GCPProject{id:$ProjectId})
     ON CREATE SET p.firstseen = timestamp()
-    SET p.lastupdated = {gcp_update_tag}
+    SET p.lastupdated = $gcp_update_tag
 
-    MERGE (i:Instance:GCPInstance{id:{PartialUri}})
+    MERGE (i:Instance:GCPInstance{id:$PartialUri})
     ON CREATE SET i.firstseen = timestamp(),
-    i.partial_uri = {PartialUri}
-    SET i.self_link = {SelfLink},
-    i.instancename = {InstanceName},
-    i.hostname = {Hostname},
-    i.zone_name = {ZoneName},
-    i.project_id = {ProjectId},
-    i.status = {Status},
-    i.lastupdated = {gcp_update_tag}
+    i.partial_uri = $PartialUri
+    SET i.self_link = $SelfLink,
+    i.instancename = $InstanceName,
+    i.hostname = $Hostname,
+    i.zone_name = $ZoneName,
+    i.project_id = $ProjectId,
+    i.status = $Status,
+    i.lastupdated = $gcp_update_tag
     WITH i, p
 
     MERGE (p)-[r:RESOURCE]->(i)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """
     for instance in data:
         neo4j_session.run(
@@ -554,24 +554,24 @@ def load_gcp_vpcs(neo4j_session: neo4j.Session, vpcs: List[Dict], gcp_update_tag
     :return: Nothing
     """
     query = """
-    MERGE(p:GCPProject{id:{ProjectId}})
+    MERGE(p:GCPProject{id:$ProjectId})
     ON CREATE SET p.firstseen = timestamp()
-    SET p.lastupdated = {gcp_update_tag}
+    SET p.lastupdated = $gcp_update_tag
 
-    MERGE(vpc:GCPVpc{id:{PartialUri}})
+    MERGE(vpc:GCPVpc{id:$PartialUri})
     ON CREATE SET vpc.firstseen = timestamp(),
-    vpc.partial_uri = {PartialUri}
-    SET vpc.self_link = {SelfLink},
-    vpc.name = {VpcName},
-    vpc.project_id = {ProjectId},
-    vpc.auto_create_subnetworks = {AutoCreateSubnetworks},
-    vpc.routing_config_routing_mode = {RoutingMode},
-    vpc.description = {Description},
-    vpc.lastupdated = {gcp_update_tag}
+    vpc.partial_uri = $PartialUri
+    SET vpc.self_link = $SelfLink,
+    vpc.name = $VpcName,
+    vpc.project_id = $ProjectId,
+    vpc.auto_create_subnetworks = $AutoCreateSubnetworks,
+    vpc.routing_config_routing_mode = $RoutingMode,
+    vpc.description = $Description,
+    vpc.lastupdated = $gcp_update_tag
 
     MERGE (p)-[r:RESOURCE]->(vpc)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """
     for vpc in vpcs:
         neo4j_session.run(
@@ -597,26 +597,26 @@ def load_gcp_subnets(neo4j_session: neo4j.Session, subnets: List[Dict], gcp_upda
     :return: Nothing
     """
     query = """
-    MERGE(vpc:GCPVpc{id:{VpcPartialUri}})
+    MERGE(vpc:GCPVpc{id:$VpcPartialUri})
     ON CREATE SET vpc.firstseen = timestamp(),
-    vpc.partial_uri = {VpcPartialUri}
+    vpc.partial_uri = $VpcPartialUri
 
-    MERGE(subnet:GCPSubnet{id:{PartialUri}})
+    MERGE(subnet:GCPSubnet{id:$PartialUri})
     ON CREATE SET subnet.firstseen = timestamp(),
-    subnet.partial_uri = {PartialUri}
-    SET subnet.self_link = {SubnetSelfLink},
-    subnet.project_id = {ProjectId},
-    subnet.name = {SubnetName},
-    subnet.region = {Region},
-    subnet.gateway_address = {GatewayAddress},
-    subnet.ip_cidr_range = {IpCidrRange},
-    subnet.private_ip_google_access = {PrivateIpGoogleAccess},
-    subnet.vpc_partial_uri = {VpcPartialUri},
-    subnet.lastupdated = {gcp_update_tag}
+    subnet.partial_uri = $PartialUri
+    SET subnet.self_link = $SubnetSelfLink,
+    subnet.project_id = $ProjectId,
+    subnet.name = $SubnetName,
+    subnet.region = $Region,
+    subnet.gateway_address = $GatewayAddress,
+    subnet.ip_cidr_range = $IpCidrRange,
+    subnet.private_ip_google_access = $PrivateIpGoogleAccess,
+    subnet.vpc_partial_uri = $VpcPartialUri,
+    subnet.lastupdated = $gcp_update_tag
 
     MERGE (vpc)-[r:RESOURCE]->(subnet)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """
     for s in subnets:
         neo4j_session.run(
@@ -646,22 +646,22 @@ def load_gcp_forwarding_rules(neo4j_session: neo4j.Session, fwd_rules: List[Dict
     """
 
     query = """
-        MERGE(fwd:GCPForwardingRule{id:{PartialUri}})
+        MERGE(fwd:GCPForwardingRule{id:$PartialUri})
         ON CREATE SET fwd.firstseen = timestamp(),
-        fwd.partial_uri = {PartialUri}
-        SET fwd.ip_address = {IPAddress},
-        fwd.ip_protocol = {IPProtocol},
-        fwd.load_balancing_scheme = {LoadBalancingScheme},
-        fwd.name = {Name},
-        fwd.network = {NetworkPartialUri},
-        fwd.port_range = {PortRange},
-        fwd.ports = {Ports},
-        fwd.project_id = {ProjectId},
-        fwd.region = {Region},
-        fwd.self_link = {SelfLink},
-        fwd.subnetwork = {SubNetworkPartialUri},
-        fwd.target = {TargetPartialUri},
-        fwd.lastupdated = {gcp_update_tag}
+        fwd.partial_uri = $PartialUri
+        SET fwd.ip_address = $IPAddress,
+        fwd.ip_protocol = $IPProtocol,
+        fwd.load_balancing_scheme = $LoadBalancingScheme,
+        fwd.name = $Name,
+        fwd.network = $NetworkPartialUri,
+        fwd.port_range = $PortRange,
+        fwd.ports = $Ports,
+        fwd.project_id = $ProjectId,
+        fwd.region = $Region,
+        fwd.self_link = $SelfLink,
+        fwd.subnetwork = $SubNetworkPartialUri,
+        fwd.target = $TargetPartialUri,
+        fwd.lastupdated = $gcp_update_tag
     """
 
     for fwd in fwd_rules:
@@ -697,17 +697,17 @@ def load_gcp_forwarding_rules(neo4j_session: neo4j.Session, fwd_rules: List[Dict
 @timeit
 def _attach_fwd_rule_to_subnet(neo4j_session: neo4j.Session, fwd: Dict, gcp_update_tag: int) -> None:
     query = """
-        MERGE(subnet:GCPSubnet{id:{SubNetworkPartialUri}})
+        MERGE(subnet:GCPSubnet{id:$SubNetworkPartialUri})
         ON CREATE SET subnet.firstseen = timestamp(),
-        subnet.partial_uri = {SubNetworkPartialUri}
-        SET subnet.lastupdated = {gcp_update_tag}
+        subnet.partial_uri = $SubNetworkPartialUri
+        SET subnet.lastupdated = $gcp_update_tag
 
         WITH subnet
-        MATCH(fwd:GCPForwardingRule{id:{PartialUri}})
+        MATCH(fwd:GCPForwardingRule{id:$PartialUri})
 
         MERGE(subnet)-[p:RESOURCE]->(fwd)
         ON CREATE SET p.firstseen = timestamp()
-        SET p.lastupdated = {gcp_update_tag}
+        SET p.lastupdated = $gcp_update_tag
     """
 
     neo4j_session.run(
@@ -721,16 +721,16 @@ def _attach_fwd_rule_to_subnet(neo4j_session: neo4j.Session, fwd: Dict, gcp_upda
 @timeit
 def _attach_fwd_rule_to_vpc(neo4j_session: neo4j.Session, fwd: Dict, gcp_update_tag: int) -> None:
     query = """
-        MERGE (vpc:GCPVpc{id:{NetworkPartialUri}})
+        MERGE (vpc:GCPVpc{id:$NetworkPartialUri})
         ON CREATE SET vpc.firstseen = timestamp(),
-        vpc.partial_uri = {NetworkPartialUri}
+        vpc.partial_uri = $NetworkPartialUri
 
         WITH vpc
-        MATCH (fwd:GCPForwardingRule{id:{PartialUri}})
+        MATCH (fwd:GCPForwardingRule{id:$PartialUri})
 
         MERGE (vpc)-[r:RESOURCE]->(fwd)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {gcp_update_tag}
+        SET r.lastupdated = $gcp_update_tag
     """
 
     neo4j_session.run(
@@ -751,24 +751,24 @@ def _attach_instance_tags(neo4j_session: neo4j.Session, instance: Resource, gcp_
     :return: Nothing
     """
     query = """
-    MATCH (i:GCPInstance{id:{InstanceId}})
+    MATCH (i:GCPInstance{id:$InstanceId})
 
-    MERGE (t:GCPNetworkTag{id:{TagId}})
-    ON CREATE SET t.tag_id = {TagId},
-    t.value = {TagValue},
+    MERGE (t:GCPNetworkTag{id:$TagId})
+    ON CREATE SET t.tag_id = $TagId,
+    t.value = $TagValue,
     t.firstseen = timestamp()
-    SET t.lastupdated = {gcp_update_tag}
+    SET t.lastupdated = $gcp_update_tag
 
     MERGE (i)-[h:TAGGED]->(t)
     ON CREATE SET h.firstseen = timestamp()
-    SET h.lastupdated = {gcp_update_tag}
+    SET h.lastupdated = $gcp_update_tag
 
     WITH t
-    MATCH (vpc:GCPVpc{id:{VpcPartialUri}})
+    MATCH (vpc:GCPVpc{id:$VpcPartialUri})
 
     MERGE (vpc)<-[d:DEFINED_IN]-(t)
     ON CREATE SET d.firstseen = timestamp()
-    SET d.lastupdated = {gcp_update_tag}
+    SET d.lastupdated = $gcp_update_tag
     """
     for tag in instance.get('tags', {}).get('items', []):
         for nic in instance.get('networkInterfaces', []):
@@ -794,26 +794,26 @@ def _attach_gcp_nics(neo4j_session: neo4j.Session, instance: Resource, gcp_updat
     :return: Nothing
     """
     query = """
-    MATCH (i:GCPInstance{id:{InstanceId}})
-    MERGE (nic:GCPNetworkInterface:NetworkInterface{id:{NicId}})
+    MATCH (i:GCPInstance{id:$InstanceId})
+    MERGE (nic:GCPNetworkInterface:NetworkInterface{id:$NicId})
     ON CREATE SET nic.firstseen = timestamp(),
-    nic.nic_id = {NicId}
-    SET nic.private_ip = {NetworkIP},
-    nic.name = {NicName},
-    nic.lastupdated = {gcp_update_tag}
+    nic.nic_id = $NicId
+    SET nic.private_ip = $NetworkIP,
+    nic.name = $NicName,
+    nic.lastupdated = $gcp_update_tag
 
     MERGE (i)-[r:NETWORK_INTERFACE]->(nic)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
 
-    MERGE (subnet:GCPSubnet{id:{SubnetPartialUri}})
+    MERGE (subnet:GCPSubnet{id:$SubnetPartialUri})
     ON CREATE SET subnet.firstseen = timestamp(),
-    subnet.partial_uri = {SubnetPartialUri}
-    SET subnet.lastupdated = {gcp_update_tag}
+    subnet.partial_uri = $SubnetPartialUri
+    SET subnet.lastupdated = $gcp_update_tag
 
     MERGE (nic)-[p:PART_OF_SUBNET]->(subnet)
     ON CREATE SET p.firstseen = timestamp()
-    SET p.lastupdated = {gcp_update_tag}
+    SET p.lastupdated = $gcp_update_tag
     """
     for nic in instance.get('networkInterfaces', []):
         # Make an ID for GCPNetworkInterface nodes because GCP doesn't define one but we need to uniquely identify them
@@ -842,21 +842,21 @@ def _attach_gcp_nic_access_configs(
     :return: Nothing
     """
     query = """
-    MATCH (nic{id:{NicId}})
-    MERGE (ac:GCPNicAccessConfig{id:{AccessConfigId}})
+    MATCH (nic{id:$NicId})
+    MERGE (ac:GCPNicAccessConfig{id:$AccessConfigId})
     ON CREATE SET ac.firstseen = timestamp(),
-    ac.access_config_id = {AccessConfigId}
-    SET ac.type={Type},
-    ac.name = {Name},
-    ac.public_ip = {NatIP},
-    ac.set_public_ptr = {SetPublicPtr},
-    ac.public_ptr_domain_name = {PublicPtrDomainName},
-    ac.network_tier = {NetworkTier},
-    ac.lastupdated = {gcp_update_tag}
+    ac.access_config_id = $AccessConfigId
+    SET ac.type=$Type,
+    ac.name = $Name,
+    ac.public_ip = $NatIP,
+    ac.set_public_ptr = $SetPublicPtr,
+    ac.public_ptr_domain_name = $PublicPtrDomainName,
+    ac.network_tier = $NetworkTier,
+    ac.lastupdated = $gcp_update_tag
 
     MERGE (nic)-[r:RESOURCE]->(ac)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """
     for ac in nic.get('accessConfigs', []):
         # Make an ID for GCPNicAccessConfig nodes because GCP doesn't define one but we need to uniquely identify them
@@ -885,11 +885,11 @@ def _attach_gcp_vpc(neo4j_session: neo4j.Session, instance_id: str, gcp_update_t
     :return: Nothing
     """
     query = """
-    MATCH (i:GCPInstance{id:{InstanceId}})-[:NETWORK_INTERFACE]->(nic:GCPNetworkInterface)
+    MATCH (i:GCPInstance{id:$InstanceId})-[:NETWORK_INTERFACE]->(nic:GCPNetworkInterface)
           -[p:PART_OF_SUBNET]->(sn:GCPSubnet)<-[r:RESOURCE]-(vpc:GCPVpc)
     MERGE (i)-[m:MEMBER_OF_GCP_VPC]->(vpc)
     ON CREATE SET m.firstseen = timestamp()
-    SET m.lastupdated = {gcp_update_tag}
+    SET m.lastupdated = $gcp_update_tag
     """
     neo4j_session.run(
         query,
@@ -906,25 +906,25 @@ def load_gcp_ingress_firewalls(neo4j_session: neo4j.Session, fw_list: List[Resou
     :return: Nothing
     """
     query = """
-    MERGE (fw:GCPFirewall{id:{FwPartialUri}})
+    MERGE (fw:GCPFirewall{id:$FwPartialUri})
     ON CREATE SET fw.firstseen = timestamp(),
-    fw.partial_uri = {FwPartialUri}
-    SET fw.direction = {Direction},
-    fw.disabled = {Disabled},
-    fw.name = {Name},
-    fw.priority = {Priority},
-    fw.self_link = {SelfLink},
-    fw.has_target_service_accounts = {HasTargetServiceAccounts},
-    fw.lastupdated = {gcp_update_tag}
+    fw.partial_uri = $FwPartialUri
+    SET fw.direction = $Direction,
+    fw.disabled = $Disabled,
+    fw.name = $Name,
+    fw.priority = $Priority,
+    fw.self_link = $SelfLink,
+    fw.has_target_service_accounts = $HasTargetServiceAccounts,
+    fw.lastupdated = $gcp_update_tag
 
-    MERGE (vpc:GCPVpc{id:{VpcPartialUri}})
+    MERGE (vpc:GCPVpc{id:$VpcPartialUri})
     ON CREATE SET vpc.firstseen = timestamp(),
-    vpc.partial_uri = {VpcPartialUri}
-    SET vpc.lastupdated = {gcp_update_tag}
+    vpc.partial_uri = $VpcPartialUri
+    SET vpc.lastupdated = $gcp_update_tag
 
     MERGE (vpc)-[r:RESOURCE]->(fw)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """
     for fw in fw_list:
         neo4j_session.run(
@@ -953,28 +953,28 @@ def _attach_firewall_rules(neo4j_session: neo4j.Session, fw: Resource, gcp_updat
     :return: Nothing
     """
     template = Template("""
-    MATCH (fw:GCPFirewall{id:{FwPartialUri}})
+    MATCH (fw:GCPFirewall{id:$FwPartialUri})
 
-    MERGE (rule:IpRule:IpPermissionInbound:GCPIpRule{id:{RuleId}})
+    MERGE (rule:IpRule:IpPermissionInbound:GCPIpRule{id:$RuleId})
     ON CREATE SET rule.firstseen = timestamp(),
-    rule.ruleid = {RuleId}
-    SET rule.protocol = {Protocol},
-    rule.fromport = {FromPort},
-    rule.toport = {ToPort},
-    rule.lastupdated = {gcp_update_tag}
+    rule.ruleid = $RuleId
+    SET rule.protocol = $Protocol,
+    rule.fromport = $FromPort,
+    rule.toport = $ToPort,
+    rule.lastupdated = $gcp_update_tag
 
-    MERGE (rng:IpRange{id:{Range}})
+    MERGE (rng:IpRange{id:$Range})
     ON CREATE SET rng.firstseen = timestamp(),
-    rng.range = {Range}
-    SET rng.lastupdated = {gcp_update_tag}
+    rng.range = $Range
+    SET rng.lastupdated = $gcp_update_tag
 
     MERGE (rng)-[m:MEMBER_OF_IP_RULE]->(rule)
     ON CREATE SET m.firstseen = timestamp()
-    SET m.lastupdated = {gcp_update_tag}
+    SET m.lastupdated = $gcp_update_tag
 
     MERGE (fw)<-[r:$fw_rule_relationship_label]-(rule)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """)
     for list_type in 'transformed_allow_list', 'transformed_deny_list':
         if list_type == 'transformed_allow_list':
@@ -1008,17 +1008,17 @@ def _attach_target_tags(neo4j_session: neo4j.Session, fw: Resource, gcp_update_t
     :return: Nothing
     """
     query = """
-    MATCH (fw:GCPFirewall{id:{FwPartialUri}})
+    MATCH (fw:GCPFirewall{id:$FwPartialUri})
 
-    MERGE (t:GCPNetworkTag{id:{TagId}})
+    MERGE (t:GCPNetworkTag{id:$TagId})
     ON CREATE SET t.firstseen = timestamp(),
-    t.tag_id = {TagId},
-    t.value = {TagValue}
-    SET t.lastupdated = {gcp_update_tag}
+    t.tag_id = $TagId,
+    t.value = $TagValue
+    SET t.lastupdated = $gcp_update_tag
 
     MERGE (fw)-[h:TARGET_TAG]->(t)
     ON CREATE SET h.firstseen = timestamp()
-    SET h.lastupdated = {gcp_update_tag}
+    SET h.lastupdated = $gcp_update_tag
     """
     for tag in fw.get('targetTags', []):
         tag_id = _create_gcp_network_tag_id(fw['vpc_partial_uri'], tag)

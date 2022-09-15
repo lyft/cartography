@@ -7,7 +7,6 @@ import sys
 import cartography.config
 import cartography.sync
 import cartography.util
-from cartography.experimental_neo4j_4x_support import patch_driver
 from cartography.intel.aws.util.common import parse_and_validate_aws_requested_syncs
 
 
@@ -125,6 +124,25 @@ class CLI:
                 'account you want to sync and use the AWS_CONFIG_FILE environment variable to point to that config '
                 'file (see https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html). cartography '
                 'respects the AWS CLI/SDK environment variables and does not override them.'
+            ),
+        )
+        parser.add_argument(
+            '--aws-best-effort-mode',
+            action='store_true',
+            help=(
+                'Enable AWS sync best effort mode when syncing AWS accounts. This will allow cartography to continue '
+                'syncing other accounts and delay raising an exception until the very end.'
+            ),
+        )
+        parser.add_argument(
+            '--oci-sync-all-profiles',
+            action='store_true',
+            help=(
+                'Enable OCI sync for all discovered named profiles. When this parameter is supplied cartography will '
+                'discover all configured OCI named profiles (see '
+                'https://docs.oracle.com/en-us/iaas/Content/API/Concepts/sdkconfig.htm) and run the OCI sync '
+                'job for each profile not named "DEFAULT". If this parameter is not supplied, cartography will use the '
+                'default OCI credentials available in your environment to run the OCI sync once.'
             ),
         )
         parser.add_argument(
@@ -506,8 +524,10 @@ class CLI:
             config.crowdstrike_client_secret = None
 
         if config.experimental_neo4j_4x_support:
-            cartography.EXPERIMENTAL_NEO4J_4X_SUPPORT = True
-            patch_driver()
+            logger.warning(
+                'EXPERIMENTAL_NEO4J_4X_SUPPORT is now enabled by default,'
+                ' and this option will be removed when code hard-coded syntax upgrades are completed',
+            )
 
         # Run cartography
         try:
@@ -528,7 +548,7 @@ def main(argv=None):
     logging.basicConfig(level=logging.INFO)
     logging.getLogger('botocore').setLevel(logging.WARNING)
     logging.getLogger('googleapiclient').setLevel(logging.WARNING)
-    logging.getLogger('neo4j.bolt').setLevel(logging.WARNING)
+    logging.getLogger('neo4j').setLevel(logging.WARNING)
     argv = argv if argv is not None else sys.argv[1:]
     default_sync = cartography.sync.build_default_sync()
     sys.exit(CLI(default_sync, prog='cartography').main(argv))

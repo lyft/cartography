@@ -127,10 +127,10 @@ def get_all_users(admin: Resource) -> List[Dict]:
 @timeit
 def load_gsuite_groups(neo4j_session: neo4j.Session, groups: List[Dict], gsuite_update_tag: int) -> None:
     ingestion_qry = """
-        UNWIND {GroupData} as group
+        UNWIND $GroupData as group
         MERGE (g:GSuiteGroup{id: group.id})
         ON CREATE SET
-        g.firstseen = {UpdateTag}
+        g.firstseen = $UpdateTag
         ON MATCH SET
         g.group_id = group.id,
         g.admin_created = group.adminCreated,
@@ -140,7 +140,7 @@ def load_gsuite_groups(neo4j_session: neo4j.Session, groups: List[Dict], gsuite_
         g.etag = group.etag,
         g.kind = group.kind,
         g.name = group.name,
-        g.lastupdated = {UpdateTag}
+        g.lastupdated = $UpdateTag
     """
     logger.info(f'Ingesting {len(groups)} gsuite groups')
     neo4j_session.run(ingestion_qry, GroupData=groups, UpdateTag=gsuite_update_tag)
@@ -149,10 +149,10 @@ def load_gsuite_groups(neo4j_session: neo4j.Session, groups: List[Dict], gsuite_
 @timeit
 def load_gsuite_users(neo4j_session: neo4j.Session, users: List[Dict], gsuite_update_tag: int) -> None:
     ingestion_qry = """
-        UNWIND {UserData} as user
+        UNWIND $UserData as user
         MERGE (u:GSuiteUser{id: user.id})
         ON CREATE SET
-        u.firstseen = {UpdateTag}
+        u.firstseen = $UpdateTag
         ON MATCH SET
         u.user_id = user.id,
         u.agreed_to_terms = user.agreedToTerms,
@@ -179,7 +179,7 @@ def load_gsuite_users(neo4j_session: neo4j.Session, users: List[Dict], gsuite_up
         u.suspended = user.suspended,
         u.thumbnail_photo_etag = user.thumbnailPhotoEtag,
         u.thumbnail_photo_url = user.thumbnailPhotoUrl,
-        u.lastupdated = {UpdateTag}
+        u.lastupdated = $UpdateTag
     """
     logger.info(f'Ingesting {len(users)} gsuite users')
     neo4j_session.run(ingestion_qry, UserData=users, UpdateTag=gsuite_update_tag)
@@ -188,13 +188,13 @@ def load_gsuite_users(neo4j_session: neo4j.Session, users: List[Dict], gsuite_up
 @timeit
 def load_gsuite_members(neo4j_session: neo4j.Session, group: Dict, members: List[Dict], gsuite_update_tag: int) -> None:
     ingestion_qry = """
-        UNWIND {MemberData} as member
-        MATCH (user:GSuiteUser {id: member.id}),(group:GSuiteGroup {id: {GroupID} })
+        UNWIND $MemberData as member
+        MATCH (user:GSuiteUser {id: member.id}),(group:GSuiteGroup {id: $GroupID })
         MERGE (user)-[r:MEMBER_GSUITE_GROUP]->(group)
         ON CREATE SET
-        r.firstseen = {UpdateTag}
+        r.firstseen = $UpdateTag
         ON MATCH SET
-        r.lastupdated = {UpdateTag}
+        r.lastupdated = $UpdateTag
     """
     neo4j_session.run(
         ingestion_qry,
@@ -203,13 +203,13 @@ def load_gsuite_members(neo4j_session: neo4j.Session, group: Dict, members: List
         UpdateTag=gsuite_update_tag,
     )
     membership_qry = """
-        UNWIND {MemberData} as member
-        MATCH(group_1: GSuiteGroup{id: member.id}), (group_2:GSuiteGroup {id: {GroupID}})
+        UNWIND $MemberData as member
+        MATCH(group_1: GSuiteGroup{id: member.id}), (group_2:GSuiteGroup {id: $GroupID})
         MERGE (group_1)-[r:MEMBER_GSUITE_GROUP]->(group_2)
         ON CREATE SET
-        r.firstseen = {UpdateTag}
+        r.firstseen = $UpdateTag
         ON MATCH SET
-        r.lastupdated = {UpdateTag}
+        r.lastupdated = $UpdateTag
     """
     neo4j_session.run(membership_qry, MemberData=members, GroupID=group.get("id"), UpdateTag=gsuite_update_tag)
 

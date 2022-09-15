@@ -6,6 +6,7 @@ from typing import List
 from unittest import mock
 
 import neo4j
+from pytest import raises
 
 import cartography.config
 import cartography.intel.aws
@@ -48,8 +49,11 @@ def make_aws_sync_test_kwargs(neo4j_session: neo4j.Session, mock_boto3_session: 
 def test_sync_multiple_accounts(
     mock_cleanup, mock_autodiscover, mock_sync_one, mock_boto3_session, mock_sync_orgs, neo4j_session,
 ):
+    test_config = cartography.config.Config(
+        neo4j_uri='bolt://localhost:7687',
+    )
     cartography.intel.aws._sync_multiple_accounts(
-        neo4j_session, TEST_ACCOUNTS, TEST_UPDATE_TAG, GRAPH_JOB_PARAMETERS,
+        neo4j_session, TEST_ACCOUNTS, TEST_UPDATE_TAG, GRAPH_JOB_PARAMETERS, test_config,
     )
 
     # Ensure we call _sync_one_account on all accounts in our list.
@@ -76,7 +80,7 @@ def test_sync_multiple_accounts(
 
 @mock.patch('cartography.intel.aws.boto3.Session')
 @mock.patch('cartography.intel.aws.organizations')
-@mock.patch.object(cartography.intel.aws, '_sync_multiple_accounts', return_value=None)
+@mock.patch.object(cartography.intel.aws, '_sync_multiple_accounts', return_value=True)
 @mock.patch.object(cartography.intel.aws, 'run_analysis_job', return_value=None)
 def test_start_aws_ingestion(mock_run_analysis, mock_sync_multiple, mock_orgs, mock_boto3, neo4j_session):
     test_config = cartography.config.Config(
@@ -89,6 +93,77 @@ def test_start_aws_ingestion(mock_run_analysis, mock_sync_multiple, mock_orgs, m
 
     # Brittle, but here to ensure that our mock_run_analysis path is correct.
     assert mock_run_analysis.call_count == 3
+
+
+@mock.patch('cartography.intel.aws.boto3.Session')
+@mock.patch('cartography.intel.aws.organizations.get_aws_accounts_from_botocore_config')
+@mock.patch.object(cartography.intel.aws, '_sync_one_account', return_value=None)
+@mock.patch.object(cartography.intel.aws, 'run_analysis_job')
+@mock.patch.object(cartography.intel.aws, 'run_cleanup_job')
+def test_start_aws_ingestion_raises_aggregated_exceptions_with_aws_best_effort_mode(
+    mock_run_cleanup_job, mock_run_analysis, mock_sync_one, mock_get_aws_account, mock_boto3, neo4j_session,
+):
+    test_config = cartography.config.Config(
+        neo4j_uri='bolt://localhost:7687',
+        update_tag=TEST_UPDATE_TAG,
+        aws_sync_all_profiles=True,
+        aws_best_effort_mode=True,
+    )
+    mock_sync_one.side_effect = KeyError('foo')
+    mock_get_aws_account.return_value = {'test_profile': 'test_account', 'test_profile2': 'test_account2'}
+    with raises(Exception) as e:
+        cartography.intel.aws.start_aws_ingestion(neo4j_session, test_config)
+    message = str(e.value)
+    assert message.count('KeyError') == 2
+    assert 'test_account' in message
+    assert 'test_account2' in message
+    assert mock_sync_one.call_count == 2
+    assert mock_run_cleanup_job.call_count == 0
+    assert mock_run_analysis.call_count == 0
+
+
+@mock.patch('cartography.intel.aws.boto3.Session')
+@mock.patch('cartography.intel.aws.organizations.get_aws_accounts_from_botocore_config')
+@mock.patch.object(cartography.intel.aws, '_sync_one_account', return_value=None)
+@mock.patch.object(cartography.intel.aws, 'run_analysis_job')
+@mock.patch.object(cartography.intel.aws, 'run_cleanup_job')
+def test_start_aws_ingestion_raises_one_exception_without_aws_best_effort_mode(
+    mock_run_cleanup_job, mock_run_analysis, mock_sync_one, mock_get_aws_account, mock_boto3, neo4j_session,
+):
+    test_config = cartography.config.Config(
+        neo4j_uri='bolt://localhost:7687',
+        update_tag=TEST_UPDATE_TAG,
+        aws_sync_all_profiles=True,
+    )
+    mock_sync_one.side_effect = KeyError('foo')
+    mock_get_aws_account.return_value = {'test_profile': 'test_account', 'test_profile2': 'test_account2'}
+    with raises(Exception) as e:
+        cartography.intel.aws.start_aws_ingestion(neo4j_session, test_config)
+    assert 'KeyError' in str(e)
+    assert str(e.value).count('foo') == 1
+    assert mock_sync_one.call_count == 1
+    assert mock_run_cleanup_job.call_count == 0
+    assert mock_run_analysis.call_count == 0
+
+
+@mock.patch('cartography.intel.aws.boto3.Session')
+@mock.patch('cartography.intel.aws.organizations.get_aws_accounts_from_botocore_config')
+@mock.patch.object(cartography.intel.aws, '_sync_one_account', return_value=None)
+@mock.patch.object(cartography.intel.aws, 'run_analysis_job', return_value=None)
+@mock.patch.object(cartography.intel.aws, 'run_cleanup_job')
+def test_start_aws_ingestion_does_cleanup(
+    mock_run_cleanup_job, mock_run_analysis, mock_sync_one, mock_get_aws_account, mock_boto3, neo4j_session,
+):
+    test_config = cartography.config.Config(
+        neo4j_uri='bolt://localhost:7687',
+        update_tag=TEST_UPDATE_TAG,
+        aws_sync_all_profiles=True,
+    )
+    mock_get_aws_account.return_value = {'test_profile': 'test_account', 'test_profile2': 'test_account2'}
+    cartography.intel.aws.start_aws_ingestion(neo4j_session, test_config)
+
+    assert mock_run_analysis.call_count == 3
+    assert mock_run_cleanup_job.call_count == 1
 
 
 @mock.patch('cartography.intel.aws.boto3.Session')
