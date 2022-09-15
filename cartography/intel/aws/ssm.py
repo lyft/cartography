@@ -124,7 +124,7 @@ def load_instance_information(
         Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
         aws_update_tag=aws_update_tag,
-        info_borneo_id=uuid.uuid4()
+        info_borneo_id=str(uuid.uuid4())
     )
 
 
@@ -174,7 +174,7 @@ def load_instance_patches(
         Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
         aws_update_tag=aws_update_tag,
-        patch_borneo_id=uuid.uuid4()
+        patch_borneo_id=str(uuid.uuid4())
     )
 
 
