@@ -13,6 +13,16 @@ experimental neo4j 4.x support
 from cartography import patch_session_obj
 patch_session_obj(neo4j_session)
 ```
+
+You can also use the decorator `disable_syntax_upgrade` to disable the upgrade temporarily,
+for the duration of the function being docerated. Use it if you have your own sync modules or synbc methods
+that already have upgraded syntax. For example:
+
+```
+@disable_syntax_upgrade
+def my_sync_function(ne4j_session, commong_job_params, ...):
+   ...
+```
 '''
 import logging
 import re
@@ -38,6 +48,23 @@ logger = logging.getLogger(__name__)
 
 # Helper functions that patch the neo4j.GraphDatabase.driver().session().run()
 # codepath to include the query conversions:
+
+
+# decorator to disable the syntax upgrader for the duration of any specific function decorated
+def disable_syntax_upgrade(func: Callable) -> Callable:
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        global UPGRADE_SYNTAX
+        original = UPGRADE_SYNTAX
+        UPGRADE_SYNTAX = False
+        try:
+            return_value = func(*args, **kwargs)
+            UPGRADE_SYNTAX = original
+            return return_value
+        except Exception:
+            UPGRADE_SYNTAX = original
+            raise
+    return wrapper
 
 
 def convert_index_statement(old_statement: str) -> str:
