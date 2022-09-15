@@ -54,5 +54,5 @@ def load_secrets(session: Session, data: List[Dict], update_tag: int) -> None:
         ON CREATE SET rel1.firstseen = timestamp()
         SET rel1.lastupdated = $update_tag
     """
-    logger.info(f"Loading {len(data)} kubernetes secret.")
+    logger.info(f"Loading {len(data)} kubernetes secrets.")
     session.run(ingestion_cypher_query, secrets=data, update_tag=update_tag)
