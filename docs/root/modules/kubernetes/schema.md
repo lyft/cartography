@@ -121,11 +121,11 @@ Representation of a [Kubernetes Secret.](https://kubernetes.io/docs/concepts/con
 |-------|-------------|
 | firstseen | Timestamp of when a sync job first discovered this node |
 | lastupdated | Timestamp of the last time the node was updated |
-| id | UID of the kubernetes service |
-| name | Name of the kubernetes service |
-| created\_at | Timestamp of the creation time of the kubernetes service |
-| deleted\_at | Timestamp of the deletion time of the kubernetes service |
-| type | Type of kubernetes service e.g. `Opaque` |
+| id | UID of the kubernetes secret |
+| name | Name of the kubernetes secret |
+| created\_at | Timestamp of the creation time of the kubernetes secret |
+| deleted\_at | Timestamp of the deletion time of the kubernetes secret |
+| type | Type of kubernetes secret e.g. `Opaque` |
 
 #### Relationships
 - KubernetesNamespace can have KubernetesSecrets.
