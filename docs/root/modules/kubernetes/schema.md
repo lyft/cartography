@@ -46,6 +46,11 @@ Representation of a [Kubernetes Namespace.](https://kubernetes.io/docs/concepts/
     (KubernetesNamespace)-[HAS_SERVICE]->(KubernetesService)
     ```
 
+- KubernetesNamespace can have KubernetesSecrets.
+    ```
+    (KubernetesNamespace)-[HAS_SECRET]->(KubernetesSecret)
+    ```
+
 ### KubernetesPod
 Representation of a [Kubernetes Pod.](https://kubernetes.io/docs/concepts/workloads/pods/)
 
@@ -107,4 +112,23 @@ Representation of a [Kubernetes Service.](https://kubernetes.io/docs/concepts/se
 - KubernetesService can serve KubernetesPods.
     ```
     (KubernetesService)-[SERVES_POD]->(KubernetesPod)
+    ```
+
+### KubernetesSecret
+Representation of a [Kubernetes Secret.](https://kubernetes.io/docs/concepts/configuration/secret/)
+
+| Field | Description |
+|-------|-------------|
+| firstseen | Timestamp of when a sync job first discovered this node |
+| lastupdated | Timestamp of the last time the node was updated |
+| id | UID of the kubernetes service |
+| name | Name of the kubernetes service |
+| created\_at | Timestamp of the creation time of the kubernetes service |
+| deleted\_at | Timestamp of the deletion time of the kubernetes service |
+| type | Type of kubernetes service e.g. `Opaque` |
+
+#### Relationships
+- KubernetesNamespace can have KubernetesSecrets.
+    ```
+    (KubernetesNamespace)-[HAS_SECRET]->(KubernetesSecret)
     ```
