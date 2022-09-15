@@ -30,20 +30,20 @@ def load_load_balancer_listeners(
     update_tag: int,
 ) -> None:
     ingest_listener = """
-    MATCH (elb:LoadBalancer{id: {LoadBalancerId}})
+    MATCH (elb:LoadBalancer{id: $LoadBalancerId})
     WITH elb
-    UNWIND {Listeners} as data
+    UNWIND $Listeners as data
         MERGE (l:Endpoint:ELBListener{id: elb.id + toString(data.Listener.LoadBalancerPort) +
                 toString(data.Listener.Protocol)})
         ON CREATE SET l.port = data.Listener.LoadBalancerPort, l.protocol = data.Listener.Protocol,
         l.firstseen = timestamp()
         SET l.instance_port = data.Listener.InstancePort, l.instance_protocol = data.Listener.InstanceProtocol,
         l.policy_names = data.PolicyNames,
-        l.lastupdated = {update_tag}
+        l.lastupdated = $update_tag
         WITH l, elb
         MERGE (elb)-[r:ELB_LISTENER]->(l)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {update_tag}
+        SET r.lastupdated = $update_tag
     """
 
     neo4j_session.run(
@@ -60,10 +60,10 @@ def load_load_balancer_subnets(
     update_tag: int,
 ) -> None:
     ingest_load_balancer_subnet = """
-    MATCH (elb:LoadBalancer{id: {ID}}), (subnet:EC2Subnet{subnetid: {SUBNET_ID}})
+    MATCH (elb:LoadBalancer{id: $ID}), (subnet:EC2Subnet{subnetid: $SUBNET_ID})
     MERGE (elb)-[r:SUBNET]->(subnet)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {update_tag}
+    SET r.lastupdated = $update_tag
     """
 
     for subnet_id in subnets_data:
@@ -81,44 +81,44 @@ def load_load_balancers(
     update_tag: int,
 ) -> None:
     ingest_load_balancer = """
-    MERGE (elb:LoadBalancer{id: {ID}})
-    ON CREATE SET elb.firstseen = timestamp(), elb.createdtime = {CREATED_TIME}
-    SET elb.lastupdated = {update_tag}, elb.name = {NAME}, elb.dnsname = {DNS_NAME},
-    elb.canonicalhostedzonename = {HOSTED_ZONE_NAME}, elb.canonicalhostedzonenameid = {HOSTED_ZONE_NAME_ID},
-    elb.scheme = {SCHEME}, elb.region = {Region}
+    MERGE (elb:LoadBalancer{id: $ID})
+    ON CREATE SET elb.firstseen = timestamp(), elb.createdtime = $CREATED_TIME
+    SET elb.lastupdated = $update_tag, elb.name = $NAME, elb.dnsname = $DNS_NAME,
+    elb.canonicalhostedzonename = $HOSTED_ZONE_NAME, elb.canonicalhostedzonenameid = $HOSTED_ZONE_NAME_ID,
+    elb.scheme = $SCHEME, elb.region = $Region
     WITH elb
-    MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (aa)-[r:RESOURCE]->(elb)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {update_tag}
+    SET r.lastupdated = $update_tag
     """
 
     ingest_load_balancersource_security_group = """
-    MATCH (elb:LoadBalancer{id: {ID}}),
-    (group:EC2SecurityGroup{name: {GROUP_NAME}})
+    MATCH (elb:LoadBalancer{id: $ID}),
+    (group:EC2SecurityGroup{name: $GROUP_NAME})
     MERGE (elb)-[r:SOURCE_SECURITY_GROUP]->(group)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {update_tag}
+    SET r.lastupdated = $update_tag
     """
 
     ingest_load_balancer_security_group = """
-    MATCH (elb:LoadBalancer{id: {ID}}),
-    (group:EC2SecurityGroup{groupid: {GROUP_ID}})
+    MATCH (elb:LoadBalancer{id: $ID}),
+    (group:EC2SecurityGroup{groupid: $GROUP_ID})
     MERGE (elb)-[r:MEMBER_OF_EC2_SECURITY_GROUP]->(group)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {update_tag}
+    SET r.lastupdated = $update_tag
     """
 
     ingest_instances = """
-    MATCH (elb:LoadBalancer{id: {ID}}), (instance:EC2Instance{instanceid: {INSTANCE_ID}})
+    MATCH (elb:LoadBalancer{id: $ID}), (instance:EC2Instance{instanceid: $INSTANCE_ID})
     MERGE (elb)-[r:EXPOSE]->(instance)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {update_tag}
+    SET r.lastupdated = $update_tag
     WITH instance
-    MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (aa)-[r:RESOURCE]->(instance)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {update_tag}
+    SET r.lastupdated = $update_tag
     """
 
     for lb in data:

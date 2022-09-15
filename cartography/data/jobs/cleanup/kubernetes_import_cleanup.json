@@ -21,6 +21,11 @@
             "iterationsize": 100
         },
         {
+            "query": "MATCH (s:KubernetesSecret) WHERE s.lastupdated <> $UPDATE_TAG WITH s LIMIT $LIMIT_SIZE DETACH DELETE (s)",
+            "iterative": true,
+            "iterationsize": 100
+        },
+        {
             "query": "MATCH (s:KubernetesService) WHERE s.lastupdated <> $UPDATE_TAG WITH s LIMIT $LIMIT_SIZE DETACH DELETE (s)",
             "iterative": true,
             "iterationsize": 100
@@ -37,6 +42,11 @@
         },
         {
             "query": "MATCH (:KubernetesCluster)-[rel:HAS_POD]->(:KubernetesPod) WHERE rel.lastupdated <> $UPDATE_TAG WITH rel LIMIT $LIMIT_SIZE DELETE (rel)",
+            "iterative": true,
+            "iterationsize": 100
+        },
+        {
+            "query": "MATCH (:KubernetesNamespace)-[rel:HAS_SECRET]->(:KubernetesSecret) WHERE rel.lastupdated <> $UPDATE_TAG WITH rel LIMIT $LIMIT_SIZE DELETE (rel)",
             "iterative": true,
             "iterationsize": 100
         },

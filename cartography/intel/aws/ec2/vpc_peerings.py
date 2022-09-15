@@ -26,11 +26,11 @@ def load_vpc_peerings(
     aws_account_id: str, update_tag: int,
 ) -> None:
     ingest_vpc_peerings = """
-    UNWIND {vpc_peerings} AS vpc_peering
+    UNWIND $vpc_peerings AS vpc_peering
 
     MERGE (pcx:AWSPeeringConnection{id: vpc_peering.VpcPeeringConnectionId})
     ON CREATE SET pcx.firstseen = timestamp()
-    SET pcx.lastupdated = {update_tag},
+    SET pcx.lastupdated = $update_tag,
     pcx.allow_dns_resolution_from_remote_vpc =
         vpc_peering.RequesterVpcInfo.PeeringOptions.AllowDnsResolutionFromRemoteVpc,
     pcx.allow_egress_from_local_classic_link_to_remote_vpc =
@@ -44,35 +44,35 @@ def load_vpc_peerings(
 
     MERGE (avpc:AWSVpc{id: vpc_peering.AccepterVpcInfo.VpcId})
     ON CREATE SET avpc.firstseen = timestamp()
-    SET avpc.lastupdated = {update_tag}, avpc.vpcid = vpc_peering.AccepterVpcInfo.VpcId
+    SET avpc.lastupdated = $update_tag, avpc.vpcid = vpc_peering.AccepterVpcInfo.VpcId
 
     MERGE (rvpc:AWSVpc{id: vpc_peering.RequesterVpcInfo.VpcId})
     ON CREATE SET rvpc.firstseen = timestamp()
-    SET rvpc.lastupdated = {update_tag}, rvpc.vpcid = vpc_peering.RequesterVpcInfo.VpcId
+    SET rvpc.lastupdated = $update_tag, rvpc.vpcid = vpc_peering.RequesterVpcInfo.VpcId
 
     MERGE (aaccount:AWSAccount{id: vpc_peering.AccepterVpcInfo.OwnerId})
     ON CREATE SET aaccount.firstseen = timestamp(), aaccount.foreign = true
-    SET aaccount.lastupdated = {update_tag}
+    SET aaccount.lastupdated = $update_tag
 
     MERGE (raccount:AWSAccount{id: vpc_peering.RequesterVpcInfo.OwnerId})
     ON CREATE SET raccount.firstseen = timestamp(), raccount.foreign = true
-    SET raccount.lastupdated = {update_tag}
+    SET raccount.lastupdated = $update_tag
 
     MERGE (pcx)-[rav:ACCEPTER_VPC]->(avpc)
     ON CREATE SET rav.firstseen = timestamp()
-    SET rav.lastupdated = {update_tag}
+    SET rav.lastupdated = $update_tag
 
     MERGE (aaccount)-[ra:RESOURCE]->(avpc)
     ON CREATE SET ra.firstseen = timestamp()
-    SET ra.lastupdated = {update_tag}
+    SET ra.lastupdated = $update_tag
 
     MERGE (pcx)-[rrv:REQUESTER_VPC]->(rvpc)
     ON CREATE SET rrv.firstseen = timestamp()
-    SET rrv.lastupdated = {update_tag}
+    SET rrv.lastupdated = $update_tag
 
     MERGE (raccount)-[rr:RESOURCE]->(rvpc)
     ON CREATE SET rr.firstseen = timestamp()
-    SET rr.lastupdated = {update_tag}
+    SET rr.lastupdated = $update_tag
 
     """
 
@@ -89,24 +89,24 @@ def load_accepter_cidrs(
 ) -> None:
 
     ingest_accepter_cidr = """
-    UNWIND {vpc_peerings} AS vpc_peering
+    UNWIND $vpc_peerings AS vpc_peering
     UNWIND vpc_peering.AccepterVpcInfo.CidrBlockSet AS c_b
 
     MERGE (ac_b:AWSCidrBlock:AWSIpv4CidrBlock{id: vpc_peering.AccepterVpcInfo.VpcId + '|' + c_b.CidrBlock})
     ON CREATE SET ac_b.firstseen = timestamp()
-    SET ac_b.lastupdated = {update_tag}, ac_b.cidr_block  =  c_b.CidrBlock
+    SET ac_b.lastupdated = $update_tag, ac_b.cidr_block  =  c_b.CidrBlock
 
     WITH vpc_peering, ac_b
     MATCH (pcx:AWSPeeringConnection{id: vpc_peering.VpcPeeringConnectionId}), (cb:AWSCidrBlock{id: ac_b.id})
     MERGE (pcx)-[r:ACCEPTER_CIDR]->(cb)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {update_tag}
+    SET r.lastupdated = $update_tag
 
     WITH vpc_peering, ac_b
     MATCH (vpc:AWSVpc{id: vpc_peering.AccepterVpcInfo.VpcId}), (cb:AWSCidrBlock{id: ac_b.id})
     MERGE (vpc)-[r:BLOCK_ASSOCIATION]->(cb)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {update_tag}
+    SET r.lastupdated = $update_tag
     """
 
     neo4j_session.run(
@@ -122,24 +122,24 @@ def load_requester_cidrs(
 ) -> None:
 
     ingest_requester_cidr = """
-    UNWIND {vpc_peerings} AS vpc_peering
+    UNWIND $vpc_peerings AS vpc_peering
     UNWIND vpc_peering.RequesterVpcInfo.CidrBlockSet AS c_b
 
     MERGE (rc_b:AWSCidrBlock:AWSIpv4CidrBlock{id: vpc_peering.RequesterVpcInfo.VpcId + '|' + c_b.CidrBlock})
     ON CREATE SET rc_b.firstseen = timestamp()
-    SET rc_b.lastupdated = {update_tag}, rc_b.cidr_block  =  c_b.CidrBlock
+    SET rc_b.lastupdated = $update_tag, rc_b.cidr_block  =  c_b.CidrBlock
 
     WITH vpc_peering, rc_b
     MATCH (pcx:AWSPeeringConnection{id: vpc_peering.VpcPeeringConnectionId}), (cb:AWSCidrBlock{id: rc_b.id})
     MERGE (pcx)-[r:REQUESTER_CIDR]->(cb)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {update_tag}
+    SET r.lastupdated = $update_tag
 
     WITH vpc_peering, rc_b
     MATCH (vpc:AWSVpc{id: vpc_peering.RequesterVpcInfo.VpcId}), (cb:AWSCidrBlock{id: rc_b.id})
     MERGE (vpc)-[r:BLOCK_ASSOCIATION]->(cb)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {update_tag}
+    SET r.lastupdated = $update_tag
     """
 
     neo4j_session.run(
