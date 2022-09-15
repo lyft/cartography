@@ -34,6 +34,7 @@ def get_secrets(client: K8sClient, cluster: Dict) -> List[Dict]:
             "namespace": secret.metadata.namespace,
             "cluster_uid": cluster["uid"],
             "labels": secret.metadata.labels,
+            "type": secret.type,
         }
         for secret in client.core.list_secret_for_all_namespaces().items
     ]
@@ -47,7 +48,8 @@ def load_secrets(session: Session, data: List[Dict], update_tag: int) -> None:
         SET secret.lastupdated = $update_tag,
             secret.name = k8secret.name,
             secret.created_at = k8secret.creation_timestamp,
-            secret.deleted_at = k8secret.deletion_timestamp
+            secret.deleted_at = k8secret.deletion_timestamp,
+            secret.type = k8secret.type
         WITH secret, k8secret.namespace as ns, k8secret.cluster_uid as cuid
         MATCH (cluster:KubernetesCluster {id: cuid})-[:HAS_NAMESPACE]->(space:KubernetesNamespace {name: ns})
         MERGE (space)-[rel1:HAS_SECRET]->(secret)
