@@ -84,7 +84,7 @@ def load_lambda_functions(
         Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
         aws_update_tag=aws_update_tag,
-        lambda_borneo_id=uuid.uuid4()
+        lambda_borneo_id=str(uuid.uuid4())
     )
 
 
@@ -174,7 +174,7 @@ def _load_lambda_function_aliases(neo4j_session: neo4j.Session, lambda_aliases: 
         ingest_aliases,
         aliases_list=lambda_aliases,
         aws_update_tag=update_tag,
-        alias_borneo_id=uuid.uuid4()
+        alias_borneo_id=str(uuid.uuid4())
     )
 
 
@@ -213,7 +213,7 @@ def _load_lambda_event_source_mappings(
         ingest_esms,
         esm_list=lambda_event_source_mappings,
         aws_update_tag=update_tag,
-        esm_borneo_id=uuid.uuid4()
+        esm_borneo_id=str(uuid.uuid4())
     )
 
 
@@ -240,7 +240,7 @@ def _load_lambda_layers(neo4j_session: neo4j.Session, lambda_layers: List[Dict],
         ingest_layers,
         layers_list=lambda_layers,
         aws_update_tag=update_tag,
-        layer_borneo_id=uuid.uuid4()
+        layer_borneo_id=str(uuid.uuid4())
     )
 
 

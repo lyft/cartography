@@ -234,7 +234,7 @@ def load_users(
             PASSWORD_LASTUSED=str(user.get("PasswordLastUsed", "")),
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag,
-            user_borneo_id=uuid.uuid4()
+            user_borneo_id=str(uuid.uuid4())
         )
 
 
@@ -264,7 +264,7 @@ def load_groups(
             PATH=group["Path"],
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag,
-            group_borneo_id=uuid.uuid4()
+            group_borneo_id=str(uuid.uuid4())
         )
 
 
@@ -343,7 +343,7 @@ def load_roles(
             Path=role["Path"],
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag,
-            role_borneo_id=uuid.uuid4()
+            role_borneo_id=str(uuid.uuid4())
         )
 
         for statement in role["AssumeRolePolicyDocument"]["Statement"]:
@@ -485,7 +485,7 @@ def load_user_access_keys(neo4j_session: neo4j.Session, user_access_keys: Dict, 
                     CreateDate=str(key['CreateDate']),
                     Status=key['Status'],
                     aws_update_tag=aws_update_tag,
-                    key_borneo_id=uuid.uuid4()
+                    key_borneo_id=str(uuid.uuid4())
                 )
 
 
@@ -557,7 +557,7 @@ def _load_policy_tx(
         PolicyType=policy_type,
         PrincipalArn=principal_arn,
         aws_update_tag=aws_update_tag,
-        policy_borneo_id=uuid.uuid4()
+        policy_borneo_id=str(uuid.uuid4())
     )
 
 
@@ -601,7 +601,7 @@ def load_policy_statements(
         PolicyName=policy_name,
         Statements=statements,
         aws_update_tag=aws_update_tag,
-        statement_borneo_id=uuid.uuid4()
+        statement_borneo_id=str(uuid.uuid4())
     ).consume()
 
 

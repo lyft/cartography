@@ -77,7 +77,7 @@ def load_eks_clusters(
             Region=region,
             aws_update_tag=aws_update_tag,
             AWS_ACCOUNT_ID=current_aws_account_id,
-            cluster_borneo_id=uuid.uuid4()
+            cluster_borneo_id=str(uuid.uuid4())
         )
 
 

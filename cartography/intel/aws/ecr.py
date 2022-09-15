@@ -68,7 +68,7 @@ def load_ecr_repositories(
         Region=region,
         aws_update_tag=aws_update_tag,
         AWS_ACCOUNT_ID=current_aws_account_id,
-        repo_borneo_id=uuid.uuid4()
+        repo_borneo_id=str(uuid.uuid4())
     ).consume()  # See issue #440
 
 
@@ -127,7 +127,7 @@ def _load_ecr_repo_img_tx(
         SET r2.lastupdated = $aws_update_tag
     """
     tx.run(query, RepoList=repo_images_list, Region=region, aws_update_tag=aws_update_tag,
-           ri_borneo_id=uuid.uuid4(), img_borneo_id=uuid.uuid4())
+        ri_borneo_id=str(uuid.uuid4()), img_borneo_id=str(uuid.uuid4()))
 
 
 @timeit

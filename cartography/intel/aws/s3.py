@@ -229,7 +229,7 @@ def _load_s3_acls(neo4j_session: neo4j.Session, acls: Dict, aws_account_id: str,
         ingest_acls,
         acls=acls,
         UpdateTag=update_tag,
-        acl_borneo_id=uuid.uuid4()
+        acl_borneo_id=str(uuid.uuid4())
     )
 
     # implement the acl permission
@@ -708,7 +708,7 @@ def load_s3_buckets(neo4j_session: neo4j.Session, data: Dict, current_aws_accoun
             CreationDate=str(bucket["CreationDate"]),
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag,
-            bucket_borneo_id=uuid.uuid4()
+            bucket_borneo_id=str(uuid.uuid4())
         )
 
 

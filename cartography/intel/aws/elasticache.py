@@ -95,8 +95,8 @@ def load_elasticache_clusters(
         region=region,
         aws_update_tag=update_tag,
         aws_account_id=aws_account_id,
-        cluster_borneo_id=uuid.uuid4(),
-        topic_borneo_id=uuid.uuid4()
+        cluster_borneo_id=str(uuid.uuid4()),
+        topic_borneo_id=str(uuid.uuid4())
     )
 
 

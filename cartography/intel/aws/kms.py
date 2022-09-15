@@ -135,7 +135,7 @@ def _load_kms_key_aliases(neo4j_session: neo4j.Session, aliases: List[Dict], upd
         ingest_aliases,
         alias_list=aliases,
         UpdateTag=update_tag,
-        alias_borneo_id=uuid.uuid4()
+        alias_borneo_id=str(uuid.uuid4())
     )
 
 
@@ -167,7 +167,7 @@ def _load_kms_key_grants(neo4j_session: neo4j.Session, grants_list: List[Dict], 
         ingest_grants,
         grants=grants_list,
         UpdateTag=update_tag,
-        grant_borneo_id=uuid.uuid4()
+        grant_borneo_id=str(uuid.uuid4())
     )
 
 
@@ -339,7 +339,7 @@ def load_kms_keys(
         Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
         aws_update_tag=aws_update_tag,
-        kms_borneo_id=uuid.uuid4()
+        kms_borneo_id=str(uuid.uuid4())
     )
 
 

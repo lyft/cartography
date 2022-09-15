@@ -119,7 +119,7 @@ def load_sqs_queues(
         Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
         aws_update_tag=aws_update_tag,
-        queue_borneo_id=uuid.uuid4()
+        queue_borneo_id=str(uuid.uuid4())
     )
 
     _attach_dead_letter_queues(neo4j_session, dead_letter_queues, aws_update_tag)

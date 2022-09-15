@@ -83,7 +83,7 @@ def load_configuration_recorders(
         Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
         aws_update_tag=aws_update_tag,
-        recorder_borneo_id=uuid.uuid4()
+        recorder_borneo_id=str(uuid.uuid4())
     )
 
 
@@ -126,7 +126,7 @@ def load_delivery_channels(
         Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
         aws_update_tag=aws_update_tag,
-        channel_borneo_id=uuid.uuid4()
+        channel_borneo_id=str(uuid.uuid4())
     )
 
 
@@ -176,7 +176,7 @@ def load_config_rules(
         Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
         aws_update_tag=aws_update_tag,
-        rule_borneo_id=uuid.uuid4()
+        rule_borneo_id=str(uuid.uuid4())
     )
 
 

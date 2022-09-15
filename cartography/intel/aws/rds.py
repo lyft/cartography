@@ -109,7 +109,7 @@ def load_rds_clusters(
         Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
         aws_update_tag=aws_update_tag,
-        cluster_borneo_id=uuid.uuid4()
+        cluster_borneo_id=str(uuid.uuid4())
     )
 
 
@@ -213,7 +213,7 @@ def load_rds_instances(
         Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
         aws_update_tag=aws_update_tag,
-        instance_borneo_id=uuid.uuid4()
+        instance_borneo_id=str(uuid.uuid4())
     )
     _attach_ec2_security_groups(neo4j_session, secgroups, aws_update_tag)
     _attach_ec2_subnet_groups(neo4j_session, subnets, region, current_aws_account_id, aws_update_tag)
@@ -256,7 +256,7 @@ def _attach_ec2_subnet_groups(
         attach_rds_to_subnet_group,
         SubnetGroups=db_sngs,
         aws_update_tag=aws_update_tag,
-        subnet_group_borneo_id=uuid.uuid4()
+        subnet_group_borneo_id=str(uuid.uuid4())
     )
     _attach_ec2_subnets_to_subnetgroup(neo4j_session, db_sngs, region, current_aws_account_id, aws_update_tag)
 
