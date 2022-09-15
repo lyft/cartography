@@ -3,6 +3,7 @@ import logging
 import time
 from typing import Dict
 from typing import List
+from datetime import datetime
 
 import neo4j
 from cloudconsolelink.clouds.gcp import GCPLinker
@@ -376,6 +377,7 @@ def load_service_accounts(
     ON CREATE SET u:GCPPrincipal, u.firstseen = timestamp()
     SET u.name = sa.name, u.displayname = sa.displayName,
     u.service_account_name = sa.service_account_name,
+    u.create_date = {createDate},
     u.email = sa.email,
     u.consolelink = sa.consolelink,
     u.region = {region},
@@ -392,6 +394,7 @@ def load_service_accounts(
         ingest_service_accounts,
         service_accounts_list=service_accounts,
         project_id=project_id,
+        createDate=datetime.utcnow(),
         region="global",
         gcp_update_tag=gcp_update_tag,
     )
@@ -413,6 +416,7 @@ def load_service_account_keys(
     ON CREATE SET u.firstseen = timestamp()
     SET u.name=sa.name, u.serviceaccountid={serviceaccount},
     u.region = {region},
+    u.create_date = {createDate},
     u.keytype = sa.keyType, u.origin = sa.keyOrigin,
     u.consolelink = sa.consolelink,
     u.algorithm = sa.keyAlgorithm, u.validbeforetime = sa.validBeforeTime,
@@ -428,6 +432,7 @@ def load_service_account_keys(
         ingest_service_accounts,
         service_account_keys_list=service_account_keys,
         serviceaccount=service_account,
+        createDate=datetime.utcnow(),
         region="global",
         gcp_update_tag=gcp_update_tag,
     )
@@ -447,6 +452,7 @@ def load_roles(neo4j_session: neo4j.Session, roles: List[Dict], project_id: str,
     SET u.name = d.name,
     u.title = d.title,
     u.region = {region},
+    u.create_date = {createDate},
     u.description = d.description,
     u.deleted = d.deleted,
     u.consolelink = d.consolelink,
@@ -465,6 +471,7 @@ def load_roles(neo4j_session: neo4j.Session, roles: List[Dict], project_id: str,
         ingest_roles,
         roles_list=roles,
         region="global",
+        createDate=datetime.utcnow(),
         project_id=project_id,
         gcp_update_tag=gcp_update_tag,
     )
@@ -622,6 +629,7 @@ def attach_role_to_user(
     SET
     user.email = {UserEmail},
     user.name = {UserName},
+    user.create_date = {createDate},
     user.lastupdated = {gcp_update_tag},
     user.isDeleted = {isDeleted}
     WITH user
@@ -649,6 +657,7 @@ def attach_role_to_user(
         UserId=user['id'],
         UserEmail=user['email'],
         UserName=user['name'],
+        createDate=datetime.utcnow(),
         Parent=user['parent'],
         ParentId=user['parent_id'],
         isDeleted=user.get('is_deleted', False),
@@ -719,6 +728,7 @@ def attach_role_to_group(
     SET
     group.email = {GroupEmail},
     group.name = {GroupName},
+    group.create_date = {createDate},
     group.lastupdated = {gcp_update_tag},
     group.isDeleted = {isDeleted}
     WITH group
@@ -745,6 +755,7 @@ def attach_role_to_group(
         RoleId=role_id,
         GroupId=group['id'],
         GroupName=group['name'],
+        createDate=datetime.utcnow(),
         GroupEmail=group['email'],
         Parent=group['parent'],
         ParentId=group['parent_id'],
@@ -767,6 +778,7 @@ def attach_role_to_domain(
     SET
     domain.email = {DomainEmail},
     domain.name = {DomainName},
+    domain.create_date = {createDate},
     domain.lastupdated = {gcp_update_tag},
     domain.isDeleted = {isDeleted}
     WITH domain
@@ -793,6 +805,7 @@ def attach_role_to_domain(
         RoleId=role_id,
         DomainId=domain['id'],
         Parent=domain['parent'],
+        createDate=datetime.utcnow(),
         ParentId=domain['parent_id'],
         DomainEmail=domain['email'],
         DomainName=domain['name'],
