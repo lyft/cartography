@@ -22,10 +22,10 @@ def test_build_node_ingestion_query():
         },
     )
     assert query == """
-    UNWIND {DictList} AS item
+    UNWIND $DictList AS item
         MERGE (i:EC2Instance{id:item.Arn})
         ON CREATE SET i.firstseen = timestamp()
-        SET i.lastupdated = {UpdateTag},
+        SET i.lastupdated = $UpdateTag,
         i.arn = item.Arn,
         i.publicdnsname = item.PublicDnsName,
         i.privateipaddress = item.PrivateIpAddress,
@@ -48,10 +48,10 @@ def test_build_node_ingestion_query_only_id():
         },
     )
     assert query == """
-    UNWIND {DictList} AS item
+    UNWIND $DictList AS item
         MERGE (i:SomeNodeWithOnlyAnId{id:item.IdOnTheDictObject})
         ON CREATE SET i.firstseen = timestamp()
-        SET i.lastupdated = {UpdateTag}"""
+        SET i.lastupdated = $UpdateTag"""
 
 
 def test_build_relationship_ingestion_query():
@@ -61,12 +61,12 @@ def test_build_relationship_ingestion_query():
         'RESOURCE',
     )
     assert query == """
-    UNWIND {RelMappingList} AS item
+    UNWIND $RelMappingList AS item
         MATCH (a:AWSAccount{id:item.Id})
         MATCH (b:EC2Instance{instanceid:item.InstanceId})
         MERGE (a)-[r:RESOURCE]->(b)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {UpdateTag}"""
+        SET r.lastupdated = $UpdateTag"""
 
 
 def test_build_relationship_with_attributes_query():
@@ -80,11 +80,11 @@ def test_build_relationship_with_attributes_query():
         },
     )
     assert query == """
-    UNWIND {RelMappingList} AS item
+    UNWIND $RelMappingList AS item
         MATCH (a:Service{name:item.Name})
         MATCH (b:GoLibrary{id:item.Id})
         MERGE (a)-[r:REQUIRES]->(b)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {UpdateTag},
+        SET r.lastupdated = $UpdateTag,
         r.libraryspecifier = item.LibrarySpecifier,
         r.someotherrelfield = item.SomeOtherRelField"""
