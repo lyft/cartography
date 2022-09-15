@@ -93,12 +93,11 @@ def merge_module_sync_metadata(
             n:SyncMetadata, n.firstseen=timestamp()
         SET n.syncedtype='${synced_type}',
             n.grouptype='${group_type}',
-            n.groupid={group_id},
-            n.lastupdated={UPDATE_TAG}
+            n.groupid='${group_id}',
+            n.lastupdated=$UPDATE_TAG
     """)
     neo4j_session.run(
         template.safe_substitute(group_type=group_type, group_id=group_id, synced_type=synced_type),
-        group_id=group_id,
         UPDATE_TAG=update_tag,
     )
     stat_handler.incr(f'{group_type}_{group_id}_{synced_type}_lastupdated', update_tag)
