@@ -14,15 +14,15 @@ SAMPLE_CLEANUP_JOB = """
 {
   "statements": [
     {
-      "query": "MATCH(:TypeA)-[r:REL]->(:TypeB) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE r",
+      "query": "MATCH(:TypeA)-[r:REL]->(:TypeB) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE r",
       "iterative": true,
       "iterationsize": 100
     },{
-      "query": "MATCH (n:TypeA) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n)",
+      "query": "MATCH (n:TypeA) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n)",
       "iterative": true,
       "iterationsize": 100
     },{
-      "query": "MATCH (n:TypeB) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n)",
+      "query": "MATCH (n:TypeB) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n)",
       "iterative": true,
       "iterationsize": 100
     }],
@@ -38,8 +38,8 @@ def test_run_cleanup_job_on_relationships(mock_read_text: mock.MagicMock, neo4j_
     # Arrange: nodes id1 and id2 are connected to each other at time T2 via stale RELship r
     neo4j_session.run(
         """
-        MERGE (a:TypeA{id:"id1", lastupdated:{UPDATE_TAG_T2}})-[r:REL{lastupdated:{UPDATE_TAG_T1}}]->
-              (b:TypeB{id:"id2", lastupdated:{UPDATE_TAG_T2}})
+        MERGE (a:TypeA{id:"id1", lastupdated:$UPDATE_TAG_T2})-[r:REL{lastupdated:$UPDATE_TAG_T1}]->
+              (b:TypeB{id:"id2", lastupdated:$UPDATE_TAG_T2})
         """,
         UPDATE_TAG_T1=UPDATE_TAG_T1,
         UPDATE_TAG_T2=UPDATE_TAG_T2,
@@ -82,7 +82,7 @@ def test_run_cleanup_job_on_nodes(mock_read_text: mock.MagicMock, neo4j_session)
     # Arrange: we are now at time T3, and node id1 exists but node id2 no longer exists
     neo4j_session.run(
         """
-        MATCH (a:TypeA{id:"id1"}) SET a.lastupdated={UPDATE_TAG_T3}
+        MATCH (a:TypeA{id:"id1"}) SET a.lastupdated=$UPDATE_TAG_T3
         """,
         UPDATE_TAG_T3=UPDATE_TAG_T3,
     )
@@ -111,7 +111,7 @@ def test_run_cleanup_job_iterative_multiple_batches(mock_read_text: mock.MagicMo
     for i in range(300):
         neo4j_session.run(
             """
-            MATCH (a:TypeA{id:{Id}}) SET a.lastupdated={UPDATE_TAG_T3}
+            MATCH (a:TypeA{id:$Id}) SET a.lastupdated=$UPDATE_TAG_T3
             """,
             Id=i,
             UPDATE_TAG_T3=UPDATE_TAG_T3,
