@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
-def sync_secret(
+def sync_secrets(
     session: Session,
     client: K8sClient,
     update_tag: int,
