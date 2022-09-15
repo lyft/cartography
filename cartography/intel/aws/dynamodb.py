@@ -60,7 +60,7 @@ def load_dynamodb_tables(
             Rows=table['Table']['ItemCount'],
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag,
-            table_borneo_id=uuid.uuid4()
+            table_borneo_id=str(uuid.uuid4())
         )
         load_gsi(neo4j_session, table, region, current_aws_account_id, aws_update_tag)
 
@@ -96,7 +96,7 @@ def load_gsi(
             GSIName=gsi['IndexName'],
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag,
-            gsi_borneo_id=uuid.uuid4()
+            gsi_borneo_id=str(uuid.uuid4())
         )
 
 
