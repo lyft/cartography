@@ -146,7 +146,7 @@ def load_apigateway_rest_apis(
         aws_update_tag=aws_update_tag,
         Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
-        rest_api_borneo_id=uuid.uuid4()
+        rest_api_borneo_id=str(uuid.uuid4())
     )
 
 
@@ -222,7 +222,7 @@ def _load_apigateway_stages(
         ingest_stages,
         stages_list=stages,
         UpdateTag=update_tag,
-        stage_borneo_id=uuid.uuid4()
+        stage_borneo_id=str(uuid.uuid4())
     )
 
 
@@ -257,7 +257,7 @@ def _load_apigateway_certificates(
         ingest_certificates,
         certificates_list=certificates,
         UpdateTag=update_tag,
-        cert_borneo_id=uuid.uuid4()
+        cert_borneo_id=str(uuid.uuid4())
     )
 
 
@@ -288,7 +288,7 @@ def _load_apigateway_resources(
         ingest_resources,
         resources_list=resources,
         UpdateTag=update_tag,
-        resource_borneo_id=uuid.uuid4()
+        resource_borneo_id=str(uuid.uuid4())
     )
 
 

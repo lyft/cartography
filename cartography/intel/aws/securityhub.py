@@ -57,7 +57,7 @@ def load_hub(
         Hub=data,
         AWS_ACCOUNT_ID=current_aws_account_id,
         aws_update_tag=aws_update_tag,
-        hub_borneo_id=uuid.uuid4()
+        hub_borneo_id=str(uuid.uuid4())
     )
 
 

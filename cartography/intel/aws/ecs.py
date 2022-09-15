@@ -172,7 +172,7 @@ def load_ecs_clusters(
         Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
         aws_update_tag=aws_update_tag,
-        cluster_borneo_id=uuid.uuid4()
+        cluster_borneo_id=str(uuid.uuid4())
     )
 
 
@@ -221,7 +221,7 @@ def load_ecs_container_instances(
         Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
         aws_update_tag=aws_update_tag,
-        instance_borneo_id=uuid.uuid4()
+        instance_borneo_id=str(uuid.uuid4())
     )
 
 
@@ -285,7 +285,7 @@ def load_ecs_services(
         Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
         aws_update_tag=aws_update_tag,
-        service_borneo_id=uuid.uuid4()
+        service_borneo_id=str(uuid.uuid4())
     )
 
 
@@ -352,7 +352,7 @@ def load_ecs_task_definitions(
         Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
         aws_update_tag=aws_update_tag,
-        definition_borneo_id=uuid.uuid4()
+        definition_borneo_id=str(uuid.uuid4())
     )
 
     load_ecs_container_definitions(
@@ -446,7 +446,7 @@ def load_ecs_tasks(
         Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
         aws_update_tag=aws_update_tag,
-        task_borneo_id=uuid.uuid4()
+        task_borneo_id=str(uuid.uuid4())
     )
 
     load_ecs_containers(
@@ -507,7 +507,7 @@ def load_ecs_container_definitions(
         Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
         aws_update_tag=aws_update_tag,
-        definition_borneo_id=uuid.uuid4()
+        definition_borneo_id=str(uuid.uuid4())
     )
 
 
@@ -551,7 +551,7 @@ def load_ecs_containers(
         Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
         aws_update_tag=aws_update_tag,
-        container_borneo_id=uuid.uuid4()
+        container_borneo_id=str(uuid.uuid4())
     )
 
 

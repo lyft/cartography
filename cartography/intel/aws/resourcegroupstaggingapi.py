@@ -178,7 +178,7 @@ def _load_tags_tx(
         UpdateTag=aws_update_tag,
         Region=region,
         Account=current_aws_account_id,
-        tag_borneo_id=uuid.uuid4()
+        tag_borneo_id=str(uuid.uuid4())
     )
 
 

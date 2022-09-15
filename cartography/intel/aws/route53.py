@@ -78,7 +78,7 @@ def load_a_records(neo4j_session: neo4j.Session, records: List[Dict], update_tag
         ingest_records,
         records=records,
         update_tag=update_tag,
-        record_borneo_id=uuid.uuid4()
+        record_borneo_id=str(uuid.uuid4())
     )
 
 
@@ -106,7 +106,7 @@ def load_alias_records(neo4j_session: neo4j.Session, records: List[Dict], update
         ingest_records,
         records=records,
         update_tag=update_tag,
-        record_borneo_id=uuid.uuid4()
+        record_borneo_id=str(uuid.uuid4())
     )
 
 
@@ -133,7 +133,7 @@ def load_cname_records(neo4j_session: neo4j.Session, records: List[Dict], update
         ingest_records,
         records=records,
         update_tag=update_tag,
-        record_borneo_id=uuid.uuid4()
+        record_borneo_id=str(uuid.uuid4())
     )
 
 
@@ -163,7 +163,7 @@ def load_zone(neo4j_session: neo4j.Session, zone: Dict, current_aws_id: str, upd
         PrivateZone=zone['privatezone'],
         AWS_ACCOUNT_ID=current_aws_id,
         update_tag=update_tag,
-        zone_borneo_id=uuid.uuid4()
+        zone_borneo_id=str(uuid.uuid4())
     )
 
 
@@ -199,7 +199,7 @@ def load_ns_records(neo4j_session: neo4j.Session, records: List[Dict], zone_name
         ingest_records,
         records=records,
         update_tag=update_tag,
-        record_borneo_id=uuid.uuid4()
+        record_borneo_id=str(uuid.uuid4())
     )
 
     # Map the official name servers for a domain.

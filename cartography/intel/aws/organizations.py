@@ -115,8 +115,8 @@ def load_aws_accounts(
             ACCOUNT_NAME=account_name,
             RootArn=root_arn,
             aws_update_tag=aws_update_tag,
-            account_borneo_id=uuid.uuid4(),
-            root_borneo_id=uuid.uuid4()
+            account_borneo_id=str(uuid.uuid4()),
+            root_borneo_id=str(uuid.uuid4())
         )
 
 
