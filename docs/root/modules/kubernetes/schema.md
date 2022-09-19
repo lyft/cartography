@@ -51,6 +51,11 @@ Representation of a [Kubernetes Namespace.](https://kubernetes.io/docs/concepts/
     (KubernetesNamespace)-[HAS_SECRET]->(KubernetesSecret)
     ```
 
+- KubernetesNamespace can have KubernetesIngresses.
+    ```
+    (KubernetesNamespace)-[HAS_INGRESS]->(KubernetesIngress)
+    ```
+
 ### KubernetesPod
 Representation of a [Kubernetes Pod.](https://kubernetes.io/docs/concepts/workloads/pods/)
 
@@ -114,6 +119,11 @@ Representation of a [Kubernetes Service.](https://kubernetes.io/docs/concepts/se
     (KubernetesService)-[SERVES_POD]->(KubernetesPod)
     ```
 
+- KubernetesIngressRuleHttpPath can have a KubernetesService.
+    ```
+    (KubernetesIngressRuleHttpPath)-[HAS_PATH]->(KubernetesService)
+    ```
+
 ### KubernetesSecret
 Representation of a [Kubernetes Secret.](https://kubernetes.io/docs/concepts/configuration/secret/)
 
@@ -131,4 +141,71 @@ Representation of a [Kubernetes Secret.](https://kubernetes.io/docs/concepts/con
 - KubernetesNamespace can have KubernetesSecrets.
     ```
     (KubernetesNamespace)-[HAS_SECRET]->(KubernetesSecret)
+    ```
+
+### KubernetesIngress
+Representation of a [Kubernetes Ingress.](https://kubernetes.io/docs/concepts/services-networking/ingress/)
+
+| Field | Description |
+|-------|-------------|
+| firstseen | Timestamp of when a sync job first discovered this node |
+| lastupdated | Timestamp of the last time the node was updated |
+| id | UID of the kubernetes ingress |
+| name | Name of the kubernetes ingress |
+| created\_at | Timestamp of the creation time of the kubernetes ingress |
+| deleted\_at | Timestamp of the deletion time of the kubernetes ingress |
+| tls | TLS data for ingress |
+
+#### Relationships
+- KubernetesNamespace can have KubernetesIngresses.
+    ```
+    (KubernetesNamespace)-[HAS_INGRESS]->(KubernetesIngress)
+    ```
+
+- KubernetesIngress can have KubernetesIngressRules.
+    ```
+    (KubernetesIngress)-[HAS_RULE]->(KubernetesIngressRule)
+    ```
+
+### KubernetesIngressRule
+Representation of a [Kubernetes Ingress Rule.](https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules)
+
+| Field | Description |
+|-------|-------------|
+| firstseen | Timestamp of when a sync job first discovered this node |
+| lastupdated | Timestamp of the last time the node was updated |
+| ingress_id | UID of the kubernetes ingress that has the rule |
+| host | Name of the rule host |
+
+#### Relationships
+- KubernetesIngress can have KubernetesIngressRules.
+    ```
+    (KubernetesIngress)-[HAS_RULE]->(KubernetesIngressRule)
+    ```
+
+- KubernetesIngressRule can have KubernetesIngressRuleHttpPaths.
+    ```
+    (KubernetesIngressRule)-[HAS_PATH]->(KubernetesIngressRuleHttpPath)
+    ```
+
+### KubernetesIngressRuleHttpPath
+Representation of a [Kubernetes Ingress Rule HTTP Path.](https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types)
+
+| Field | Description |
+|-------|-------------|
+| firstseen | Timestamp of when a sync job first discovered this node |
+| lastupdated | Timestamp of the last time the node was updated |
+| ingress_id | UID of the kubernetes ingress that has the rule |
+| host | Name of the rule host |
+| path | Name of the path |
+
+#### Relationships
+- KubernetesIngressRule can have KubernetesIngressRuleHttpPaths.
+    ```
+    (KubernetesIngressRule)-[HAS_PATH]->(KubernetesIngressRuleHttpPath)
+    ```
+
+- KubernetesIngressRuleHttpPath can have a KubernetesService.
+    ```
+    (KubernetesIngressRuleHttpPath)-[HAS_PATH]->(KubernetesService)
     ```

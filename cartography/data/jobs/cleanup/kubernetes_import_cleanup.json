@@ -31,6 +31,21 @@
             "iterationsize": 100
         },
         {
+            "query": "MATCH (s:KubernetesIngress) WHERE s.lastupdated <> $UPDATE_TAG WITH s LIMIT $LIMIT_SIZE DETACH DELETE (s)",
+            "iterative": true,
+            "iterationsize": 100
+        },
+        {
+            "query": "MATCH (s:KubernetesIngressRule) WHERE s.lastupdated <> $UPDATE_TAG WITH s LIMIT $LIMIT_SIZE DETACH DELETE (s)",
+            "iterative": true,
+            "iterationsize": 100
+        },
+        {
+            "query": "MATCH (s:KubernetesIngressRuleHttpPath) WHERE s.lastupdated <> $UPDATE_TAG WITH s LIMIT $LIMIT_SIZE DETACH DELETE (s)",
+            "iterative": true,
+            "iterationsize": 100
+        },
+        {
             "query": "MATCH (:KubernetesPod)-[rel:HAS_CONTAINER]->(:KubernetesContainer) WHERE rel.lastupdated <> $UPDATE_TAG WITH rel LIMIT $LIMIT_SIZE DELETE (rel)",
             "iterative": true,
             "iterationsize": 100
@@ -52,6 +67,26 @@
         },
         {
             "query": "MATCH (:KubernetesNamespace)-[rel:HAS_SERVICE]->(:KubernetesService) WHERE rel.lastupdated <> $UPDATE_TAG WITH rel LIMIT $LIMIT_SIZE DELETE (rel)",
+            "iterative": true,
+            "iterationsize": 100
+        },
+        {
+            "query": "MATCH (:KubernetesNamespace)-[rel:HAS_INGRESS]->(:KubernetesIngress) WHERE rel.lastupdated <> $UPDATE_TAG WITH rel LIMIT $LIMIT_SIZE DELETE (rel)",
+            "iterative": true,
+            "iterationsize": 100
+        },
+        {
+            "query": "MATCH (:KubernetesIngress)-[rel:HAS_RULE]->(:KubernetesIngressRule) WHERE rel.lastupdated <> $UPDATE_TAG WITH rel LIMIT $LIMIT_SIZE DELETE (rel)",
+            "iterative": true,
+            "iterationsize": 100
+        },
+        {
+            "query": "MATCH (:KubernetesIngressRule)-[rel:HAS_PATH]->(:KubernetesIngressRuleHttpPath) WHERE rel.lastupdated <> $UPDATE_TAG WITH rel LIMIT $LIMIT_SIZE DELETE (rel)",
+            "iterative": true,
+            "iterationsize": 100
+        },
+        {
+            "query": "MATCH (:KubernetesIngressRuleHttpPath)-[rel:HAS_SERVICE]->(:KubernetesService) WHERE rel.lastupdated <> $UPDATE_TAG WITH rel LIMIT $LIMIT_SIZE DELETE (rel)",
             "iterative": true,
             "iterationsize": 100
         },
