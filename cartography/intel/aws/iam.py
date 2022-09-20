@@ -11,10 +11,12 @@ import neo4j
 
 from cartography.intel.aws.permission_relationships import parse_statement_node
 from cartography.intel.aws.permission_relationships import principal_allowed_on_resource
+from cartography.intel.aws.util.common import get_account_from_arn
 from cartography.stats import get_stats_client
 from cartography.util import merge_module_sync_metadata
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
+
 logger = logging.getLogger(__name__)
 stat_handler = get_stats_client(__name__)
 
@@ -303,6 +305,13 @@ def load_roles(
     MERGE (role)-[r:TRUSTS_AWS_PRINCIPAL]->(spnnode)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {aws_update_tag}
+    WITH spnnode
+    MERGE (aa:AWSAccount{id: {SpnAccountId}})
+    ON CREATE SET aa.firstseen = timestamp(), aa.lastupdated = {aws_update_tag}
+    WITH aa, spnnode
+    MERGE (aa)-[r:RESOURCE]->(spnnode)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {aws_update_tag}
     """
 
     # TODO support conditions
@@ -326,6 +335,7 @@ def load_roles(
                     ingest_policy_statement,
                     SpnArn=principal_value,
                     SpnType=principal_type,
+                    SpnAccountId=get_account_from_arn(principal_value),
                     RoleArn=role['Arn'],
                     aws_update_tag=aws_update_tag,
                 )
