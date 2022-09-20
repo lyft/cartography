@@ -23,9 +23,9 @@ def test_get_state_detectors(neo4j_session):
         ["36", "37", ["38", "39", "40"]],
     ]
     ingest_nodes = """
-        MERGE (person:Person{test: {test}})
-        SET person.test2 = {test2},
-        person.test3 = {test3}
+        MERGE (person:Person{test: $test})
+        SET person.test2 = $test2,
+        person.test3 = $test3
         """
     for node in data:
         test = node[0]
@@ -79,9 +79,9 @@ def test_faulty_queries(neo4j_session):
         ["36", "37", ["38", "39", "40"]],
     ]
     ingest_nodes = """
-            MERGE (person:Person{test: {test}})
-            SET person.test2 = {test2},
-            person.test3 = {test3}
+            MERGE (person:Person{test: $test})
+            SET person.test2 = $test2,
+            person.test3 = $test3
             """
     for node in data:
         test = node[0]

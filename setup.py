@@ -1,7 +1,7 @@
 from setuptools import find_packages
 from setuptools import setup
 
-__version__ = '0.64.0'
+__version__ = '0.65.0'
 
 
 setup(
@@ -53,7 +53,7 @@ setup(
         "azure-mgmt-storage>=16.0.0",
         "azure-mgmt-sql<=1.0.0",
         "azure-identity>=1.5.0",
-        "kubernetes>=18.20.0,<=21.7.0",
+        "kubernetes>=22.6.0",
         "pdpyras>=4.3.0",
         "crowdstrike-falconpy>=0.5.1",
     ],

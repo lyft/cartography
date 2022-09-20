@@ -16,7 +16,7 @@ def _ensure_test_data(neo4j_session):
     This helps ensure that the queries in the client functions won't get stale or stop working.
     """
     neo4j_session.run(
-        "MERGE (a:AWSAccount{id:{AccountId}, name:{AccountName}})",
+        "MERGE (a:AWSAccount{id:$AccountId, name:$AccountName})",
         AccountId=TEST_ACCOUNT_ID,
         AccountName=TEST_ACCOUNT_NAME,
     )
