@@ -51,11 +51,11 @@ def load_vpc_peerings(
     SET rvpc.lastupdated = {update_tag}, rvpc.vpcid = vpc_peering.RequesterVpcInfo.VpcId
 
     MERGE (aaccount:AWSAccount{id: vpc_peering.AccepterVpcInfo.OwnerId})
-    ON CREATE SET aaccount.firstseen = timestamp(), aaccount.foreign = true
+    ON CREATE SET aaccount.firstseen = timestamp()
     SET aaccount.lastupdated = {update_tag}
 
     MERGE (raccount:AWSAccount{id: vpc_peering.RequesterVpcInfo.OwnerId})
-    ON CREATE SET raccount.firstseen = timestamp(), raccount.foreign = true
+    ON CREATE SET raccount.firstseen = timestamp()
     SET raccount.lastupdated = {update_tag}
 
     MERGE (pcx)-[rav:ACCEPTER_VPC]->(avpc)

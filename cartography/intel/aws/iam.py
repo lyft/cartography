@@ -307,7 +307,8 @@ def load_roles(
     SET r.lastupdated = {aws_update_tag}
     WITH spnnode
     MERGE (aa:AWSAccount{id: {SpnAccountId}})
-    ON CREATE SET aa.firstseen = timestamp(), aa.lastupdated = {aws_update_tag}
+    ON CREATE SET aa.firstseen = timestamp()
+    SET aa.lastupdated = {aws_update_tag}
     WITH aa, spnnode
     MERGE (aa)-[r:RESOURCE]->(spnnode)
     ON CREATE SET r.firstseen = timestamp()

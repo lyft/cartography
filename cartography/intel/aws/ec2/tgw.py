@@ -74,7 +74,7 @@ def load_transit_gateways(
 ) -> None:
     ingest_transit_gateway = """
     MERGE (ownerAccount:AWSAccount {id: {OwnerId}})
-    ON CREATE SET ownerAccount.firstseen = timestamp(), ownerAccount.foreign = true
+    ON CREATE SET ownerAccount.firstseen = timestamp()
     SET ownerAccount.lastupdated = {update_tag}
 
     MERGE (tgw:AWSTransitGateway {id: {ARN}})

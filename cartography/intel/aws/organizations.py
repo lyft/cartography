@@ -92,7 +92,7 @@ def load_aws_accounts(
 ) -> None:
     query = """
     MERGE (aa:AWSAccount{id: {ACCOUNT_ID}})
-    ON CREATE SET aa.firstseen = timestamp()
+    ON CREATE SET aa.firstseen = timestamp(), aa.inscope=true
     SET aa.lastupdated = {aws_update_tag}, aa.name = {ACCOUNT_NAME}
     WITH aa
     MERGE (root:AWSPrincipal{arn: {RootArn}})
