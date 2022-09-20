@@ -186,7 +186,7 @@ def load_extensions(extensions: List[Dict], neo4j_session: neo4j.Session, update
     :return: None
     """
     ingestion_cypher = """
-    UNWIND {ExtensionsData} as extension
+    UNWIND $ExtensionsData as extension
     MERGE (e:ChromeExtension{id: extension.id})
     ON CREATE SET
     e.extension_id = extension.extension_id,
@@ -220,7 +220,7 @@ def load_extensions(extensions: List[Dict], neo4j_session: neo4j.Session, update
     e.type = extension.type,
     e.price = extension.price,
     e.report_link = extension.report_link,
-    e.lastupdated = {UpdateTag}
+    e.lastupdated = $UpdateTag
     """
 
     logger.info(f'Ingesting {len(extensions)} extensions')
@@ -281,20 +281,20 @@ def load_user_extensions(
     """
 
     user_ingestion_cypher = """
-    UNWIND {Users} as user_email
+    UNWIND $Users as user_email
     MERGE (user:GSuiteUser{email: user_email})
     ON CREATE SET
     user.firstseen = timestamp()
-    SET user.lastupdated = {UpdateTag}
+    SET user.lastupdated = $UpdateTag
     """
 
     extension_ingestion_cypher = """
-    UNWIND {ExtensionsUsers} as extension_user
+    UNWIND $ExtensionsUsers as extension_user
     MATCH (user:GSuiteUser{email: extension_user.user}),(ext:ChromeExtension{id:extension_user.id})
     MERGE (user)-[r:INSTALLS]->(ext)
     ON CREATE SET
     r.firstseen = timestamp()
-    SET r.lastupdated = {UpdateTag}
+    SET r.lastupdated = $UpdateTag
     """
 
     logger.info(f'Ingesting {len(users)} users')

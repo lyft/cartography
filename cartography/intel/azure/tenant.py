@@ -16,17 +16,17 @@ def get_tenant_id(credentials: Credentials) -> str:
 
 def load_azure_tenant(neo4j_session: neo4j.Session, tenant_id: str, current_user: str, update_tag: int) -> None:
     query = """
-    MERGE (at:AzureTenant{id: {TENANT_ID}})
+    MERGE (at:AzureTenant{id: $TENANT_ID})
     ON CREATE SET at.firstseen = timestamp()
-    SET at.lastupdated = {update_tag}
+    SET at.lastupdated = $update_tag
     WITH at
-    MERGE (ap:AzurePrincipal{id: {CURRENT_USER}})
-    ON CREATE SET ap.email = {CURRENT_USER}, ap.firstseen = timestamp()
-    SET ap.lastupdated = {update_tag}
+    MERGE (ap:AzurePrincipal{id: $CURRENT_USER})
+    ON CREATE SET ap.email = $CURRENT_USER, ap.firstseen = timestamp()
+    SET ap.lastupdated = $update_tag
     WITH at, ap
     MERGE (at)-[r:RESOURCE]->(ap)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {update_tag};
+    SET r.lastupdated = $update_tag;
     """
     neo4j_session.run(
         query,

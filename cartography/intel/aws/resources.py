@@ -10,6 +10,7 @@ from . import elasticache
 from . import elasticsearch
 from . import emr
 from . import iam
+from . import inspector
 from . import kms
 from . import lambda_function
 from . import permission_relationships
@@ -83,5 +84,6 @@ RESOURCE_FUNCTIONS: Dict = {
     'securityhub': securityhub.sync,
     'sqs': sqs.sync,
     'ssm': ssm.sync,
+    'inspector': inspector.sync,
     'config': config.sync,
 }

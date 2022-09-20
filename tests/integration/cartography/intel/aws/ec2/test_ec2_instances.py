@@ -101,9 +101,9 @@ def test_ec2_iaminstanceprofiles(neo4j_session):
     """
     neo4j_session.run(
         """
-        MERGE (aws:AWSAccount{id: {aws_account_id}})
+        MERGE (aws:AWSAccount{id: $aws_account_id})
         ON CREATE SET aws.firstseen = timestamp()
-        SET aws.lastupdated = {aws_update_tag}
+        SET aws.lastupdated = $aws_update_tag
         """,
         aws_account_id=TEST_ACCOUNT_ID,
         aws_update_tag=TEST_UPDATE_TAG,

@@ -1,4 +1,6 @@
+import datetime
 import logging
+import traceback
 from typing import Any
 from typing import Dict
 from typing import Iterable
@@ -139,10 +141,14 @@ def _sync_multiple_accounts(
     accounts: Dict[str, str],
     sync_tag: int,
     common_job_parameters: Dict[str, Any],
+    aws_best_effort_mode: bool,
     aws_requested_syncs: List[str] = [],
-) -> None:
+) -> bool:
     logger.info("Syncing AWS accounts: %s", ', '.join(accounts.values()))
     organizations.sync(neo4j_session, accounts, sync_tag, common_job_parameters)
+
+    failed_account_ids = []
+    exception_tracebacks = []
 
     for profile_name, account_id in accounts.items():
         logger.info("Syncing AWS account with ID '%s' using configured profile '%s'.", account_id, profile_name)
@@ -151,20 +157,38 @@ def _sync_multiple_accounts(
 
         _autodiscover_accounts(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters)
 
-        _sync_one_account(
-            neo4j_session,
-            boto3_session,
-            account_id,
-            sync_tag,
-            common_job_parameters,
-            aws_requested_syncs=aws_requested_syncs,  # Could be replaced later with per-account requested syncs
-        )
+        try:
+            _sync_one_account(
+                neo4j_session,
+                boto3_session,
+                account_id,
+                sync_tag,
+                common_job_parameters,
+                aws_requested_syncs=aws_requested_syncs,  # Could be replaced later with per-account requested syncs
+            )
+        except Exception as e:
+            if aws_best_effort_mode:
+                timestamp = datetime.datetime.now()
+                failed_account_ids.append(account_id)
+                exception_traceback = traceback.TracebackException.from_exception(e)
+                traceback_string = ''.join(exception_traceback.format())
+                exception_tracebacks.append(f'{timestamp} - Exception for account ID: {account_id}\n{traceback_string}')
+                continue
+            else:
+                raise
+
+    if failed_account_ids:
+        logger.error(f'AWS sync failed for accounts {failed_account_ids}')
+        raise Exception('\n'.join(exception_tracebacks))
 
     del common_job_parameters["AWS_ID"]
 
     # There may be orphan Principals which point outside of known AWS accounts. This job cleans
     # up those nodes after all AWS accounts have been synced.
-    run_cleanup_job('aws_post_ingestion_principals_cleanup.json', neo4j_session, common_job_parameters)
+    if not failed_account_ids:
+        run_cleanup_job('aws_post_ingestion_principals_cleanup.json', neo4j_session, common_job_parameters)
+        return True
+    return False
 
 
 @timeit
@@ -210,28 +234,30 @@ def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
     if config.aws_requested_syncs:
         requested_syncs = parse_and_validate_aws_requested_syncs(config.aws_requested_syncs)
 
-    _sync_multiple_accounts(
+    sync_successful = _sync_multiple_accounts(
         neo4j_session,
         aws_accounts,
         config.update_tag,
         common_job_parameters,
+        config.aws_best_effort_mode,
         requested_syncs,
     )
 
-    run_analysis_job(
-        'aws_ec2_asset_exposure.json',
-        neo4j_session,
-        common_job_parameters,
-    )
+    if sync_successful:
+        run_analysis_job(
+            'aws_ec2_asset_exposure.json',
+            neo4j_session,
+            common_job_parameters,
+        )
 
-    run_analysis_job(
-        'aws_ec2_keypair_analysis.json',
-        neo4j_session,
-        common_job_parameters,
-    )
+        run_analysis_job(
+            'aws_ec2_keypair_analysis.json',
+            neo4j_session,
+            common_job_parameters,
+        )
 
-    run_analysis_job(
-        'aws_eks_asset_exposure.json',
-        neo4j_session,
-        common_job_parameters,
-    )
+        run_analysis_job(
+            'aws_eks_asset_exposure.json',
+            neo4j_session,
+            common_job_parameters,
+        )

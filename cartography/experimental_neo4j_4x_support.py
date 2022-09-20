@@ -1,37 +1,38 @@
-# Implement the Moneky Patching described in
-# https://github.com/lyft/cartography/issues/838 and in
-# https://docs.google.com/document/d/1DR-XPzEpd5o_aqvgH28mdIJG-2WSeektx2V9hETFXuM/edit#heading=h.cqtqxkjjli6n
-# To really use these patches, you also need the 4.x python driver installed.
-# $ pip install neo4j==4.4.4
-# For now, this version is not included in our setup.py, so you must manually install it later,
-# or we may cut pre-releases with a special siuffix, like cartography==0.61.0-neo4j-4x-rc1
-# The library patches here automatically detect the driver versions and do some patching on library paths
-# We must auto-patch libraries because the typing hints are loaded before the cli is loaded.
-# The driver patch can also auto-detect the database version, and determine if the query upgrades are needed.
-# Once EXPERIMENTAL_NEO4J_4X_SUPPORT is True, the driver patches apply automatically.
-# But for your own forks of cartography, you can directly driver patch like this:
-# experimental neo4j 4.x support
-# from cartography import EXPERIMENTAL_NEO4J_4X_SUPPORT, patch_session_obj
-# if EXPERIMENTAL_NEO4J_4X_SUPPORT:
-#     patch_session_obj(neo4j_session)
+'''
+Implement the Moneky Patching described in
+https://github.com/lyft/cartography/issues/838 and in
+https://docs.google.com/document/d/1DR-XPzEpd5o_aqvgH28mdIJG-2WSeektx2V9hETFXuM/edit#heading=h.cqtqxkjjli6n
+
+The driver patch can also auto-detect the database version,
+and determine if the query upgrades are needed.
+By default, the driver patches apply automatically.
+But for your own forks of cartography, you can directly driver patch like this:
+experimental neo4j 4.x support
+
+```
+from cartography import patch_session_obj
+patch_session_obj(neo4j_session)
+```
+
+You can also use the decorator `disable_syntax_upgrade` to disable the upgrade temporarily,
+for the duration of the function being docerated. Use it if you have your own sync modules or synbc methods
+that already have upgraded syntax. For example:
+
+```
+@disable_syntax_upgrade
+def my_sync_function(ne4j_session, commong_job_params, ...):
+   ...
+```
+'''
 import logging
-import os
 import re
 from functools import wraps
 from typing import Callable
 
-import neo4j
-import neobolt.exceptions
-from distutils.util import strtobool
+import neo4j.exceptions
 
-# Enable these patches
-# Initially is set by the environment variable
-# but then can also be set to true by the cli switch --experimental-neo4j-4x-support
-EXPERIMENTAL_NEO4J_4X_SUPPORT = bool(strtobool(os.getenv("EXPERIMENTAL_NEO4J_4X_SUPPORT", "False")))
-# EXPERIMENTAL_NEO4J_4X_SUPPORT = True
-
-# Detect the driver version
-USING_4_X_DRIVER = neo4j.__version__ >= '4.0.0'
+# Enable these patches, by default
+EXPERIMENTAL_NEO4J_4X_SUPPORT = True
 
 # Detect the database version
 USING_4x_DATABASE = None
@@ -45,37 +46,25 @@ LOG_QUERIES = False
 
 logger = logging.getLogger(__name__)
 
-
-def patch_libraries():
-    # Logging
-    # https://github.com/neo4j/neo4j-python-driver/search?q=getLogger
-    neo4j.bolt = neo4j
-
-    # Breaking Changes
-    # https://neo4j.com/docs/api/python-driver/current/breaking_changes.html
-
-    # Argument Renaming Changes
-    # https://neo4j.com/docs/api/python-driver/current/breaking_changes.html#class-renaming-changes
-    neo4j.BoltStatementResult = neo4j.Result
-    neo4j.StatementResult = neo4j.Result
-    neo4j.BoltStatementResultSummary = neo4j.ResultSummary
-    neo4j.StatementResultSummary = neo4j.ResultSummary
-    neo4j.Statement = neo4j.Query
-
-    # API Changes
-    # https://neo4j.com/docs/api/python-driver/current/breaking_changes.html#api-changes
-    neo4j.Result.summary = neo4j.Result.consume
-
-    # Dependency Changes
-    # https://neo4j.com/docs/api/python-driver/current/breaking_changes.html#dependency-changes
-    neobolt.exceptions = neo4j.exceptions
-
-
-if USING_4_X_DRIVER:
-    patch_libraries()
-
 # Helper functions that patch the neo4j.GraphDatabase.driver().session().run()
 # codepath to include the query conversions:
+
+
+# decorator to disable the syntax upgrader for the duration of any specific function decorated
+def disable_syntax_upgrade(func: Callable) -> Callable:
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        global UPGRADE_SYNTAX
+        original = UPGRADE_SYNTAX
+        UPGRADE_SYNTAX = False
+        try:
+            return_value = func(*args, **kwargs)
+            UPGRADE_SYNTAX = original
+            return return_value
+        except Exception:
+            UPGRADE_SYNTAX = original
+            raise
+    return wrapper
 
 
 def convert_index_statement(old_statement: str) -> str:

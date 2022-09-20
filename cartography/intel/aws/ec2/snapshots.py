@@ -16,8 +16,8 @@ logger = logging.getLogger(__name__)
 @timeit
 def get_snapshots_in_use(neo4j_session: neo4j.Session, region: str, current_aws_account_id: str) -> List[str]:
     query = """
-    MATCH (:AWSAccount{id: {AWS_ACCOUNT_ID}})-[:RESOURCE]->(v:EBSVolume)
-    WHERE v.region = {Region}
+    MATCH (:AWSAccount{id: $AWS_ACCOUNT_ID})-[:RESOURCE]->(v:EBSVolume)
+    WHERE v.region = $Region
     RETURN v.snapshotid as snapshot
     """
     results = neo4j_session.run(query, AWS_ACCOUNT_ID=current_aws_account_id, Region=region)
@@ -55,19 +55,19 @@ def load_snapshots(
         neo4j_session: neo4j.Session, data: List[Dict], region: str, current_aws_account_id: str, update_tag: int,
 ) -> None:
     ingest_snapshots = """
-    UNWIND {snapshots_list} as snapshot
+    UNWIND $snapshots_list as snapshot
         MERGE (s:EBSSnapshot{id: snapshot.SnapshotId})
         ON CREATE SET s.firstseen = timestamp()
-        SET s.lastupdated = {update_tag}, s.description = snapshot.Description, s.encrypted = snapshot.Encrypted,
+        SET s.lastupdated = $update_tag, s.description = snapshot.Description, s.encrypted = snapshot.Encrypted,
         s.progress = snapshot.Progress, s.starttime = snapshot.StartTime, s.state = snapshot.State,
         s.statemessage = snapshot.StateMessage, s.volumeid = snapshot.VolumeId, s.volumesize = snapshot.VolumeSize,
         s.outpostarn = snapshot.OutpostArn, s.dataencryptionkeyid = snapshot.DataEncryptionKeyId,
-        s.kmskeyid = snapshot.KmsKeyId, s.region={Region}
+        s.kmskeyid = snapshot.KmsKeyId, s.region=$Region
         WITH s
-        MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+        MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
         MERGE (aa)-[r:RESOURCE]->(s)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {update_tag}
+        SET r.lastupdated = $update_tag
     """
 
     for snapshot in data:
@@ -97,20 +97,20 @@ def load_snapshot_volume_relations(
         neo4j_session: neo4j.Session, data: List[Dict], current_aws_account_id: str, update_tag: int,
 ) -> None:
     ingest_volumes = """
-    UNWIND {snapshot_volumes_list} as volume
+    UNWIND $snapshot_volumes_list as volume
         MERGE (v:EBSVolume{id: volume.VolumeId})
         ON CREATE SET v.firstseen = timestamp()
-        SET v.lastupdated = {update_tag}, v.snapshotid = volume.SnapshotId
+        SET v.lastupdated = $update_tag, v.snapshotid = volume.SnapshotId
         WITH v, volume
-        MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+        MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
         MERGE (aa)-[r:RESOURCE]->(v)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {update_tag}
+        SET r.lastupdated = $update_tag
         WITH v, volume
         MATCH (s:EBSSnapshot{id: volume.SnapshotId})
         MERGE (s)-[r:CREATED_FROM]->(v)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {update_tag}
+        SET r.lastupdated = $update_tag
     """
 
     neo4j_session.run(

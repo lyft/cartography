@@ -77,16 +77,16 @@ def _link_ip_to_A_record(neo4j_session: neo4j.Session, update_tag: int, ip_list:
     :param parent_record: parent record to set DNS_POINTS_TO relationship to
     """
     ingest = """
-    MATCH (parent:DNSRecord{id: {ParentId}})
+    MATCH (parent:DNSRecord{id: $ParentId})
     WITH parent
-    UNWIND {IP_LIST} as current_ip
+    UNWIND $IP_LIST as current_ip
     MERGE (ip_node:Ip{id: current_ip})
     ON CREATE SET ip_node.firstseen = timestamp(), ip_node.ip = current_ip
-    SET ip_node.lastupdated = {update_tag}
+    SET ip_node.lastupdated = $update_tag
     WITH parent, ip_node
     MERGE (parent)-[r:DNS_POINTS_TO]->(ip_node)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {update_tag}
+    SET r.lastupdated = $update_tag
     """
 
     neo4j_session.run(
@@ -116,14 +116,14 @@ def ingest_dns_record(
     :return: the intel graph node id for the new/merged record
     """
     template = Template("""
-    MERGE (record:DNSRecord:$dns_node_additional_label{id: {Id}})
-    ON CREATE SET record.firstseen = timestamp(), record.name = {Name}, record.type = {Type}
-    SET record.lastupdated = {update_tag}, record.value = {Value}
+    MERGE (record:DNSRecord:$dns_node_additional_label{id: $Id})
+    ON CREATE SET record.firstseen = timestamp(), record.name = $Name, record.type = $Type
+    SET record.lastupdated = $update_tag, record.value = $Value
     WITH record
-    MATCH (n:$record_label{id: {PointsToId}})
+    MATCH (n:$record_label{id: $PointsToId})
     MERGE (record)-[r:DNS_POINTS_TO]->(n)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {update_tag}
+    SET r.lastupdated = $update_tag
     """)
 
     record_id = f"{name}+{type}"
