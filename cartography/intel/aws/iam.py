@@ -11,11 +11,11 @@ import neo4j
 
 from cartography.intel.aws.permission_relationships import parse_statement_node
 from cartography.intel.aws.permission_relationships import principal_allowed_on_resource
-from cartography.intel.aws.util.common import get_account_from_arn
 from cartography.stats import get_stats_client
 from cartography.util import merge_module_sync_metadata
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
+# from cartography.intel.aws.util.common import get_account_from_arn
 
 logger = logging.getLogger(__name__)
 stat_handler = get_stats_client(__name__)
@@ -305,14 +305,25 @@ def load_roles(
     MERGE (role)-[r:TRUSTS_AWS_PRINCIPAL]->(spnnode)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $aws_update_tag
-    WITH spnnode
+    """
+
+    # Note - why we don't set inscope or foreign attribute on the account
+    #
+    # we are agnostic here if this is the AWSAccount is part of the sync scope or
+    # a foreign AWS account that contains a trusted principal. The account could also be inscope
+    # but not sync yet.
+    # - The inscope attribute - set when the account is being sync.
+    # - The foreign attribute - the attribute assignment logic is in aws_foreign_accounts.json analysis job
+    # - Why seperate statement is needed - the arn may point to service level principals ex - ec2.amazonaws.com
+    ingest_spnmap_statement = """
     MERGE (aa:AWSAccount{id: $SpnAccountId})
     ON CREATE SET aa.firstseen = timestamp()
     SET aa.lastupdated = $aws_update_tag
-    WITH aa, spnnode
+    WITH aa
+    MATCH (spnnode:AWSPrincipal{arn: $SpnArn})
+    WITH spnnode, aa
     MERGE (aa)-[r:RESOURCE]->(spnnode)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = $aws_update_tag
     """
 
     # TODO support conditions
@@ -336,10 +347,17 @@ def load_roles(
                     ingest_policy_statement,
                     SpnArn=principal_value,
                     SpnType=principal_type,
-                    SpnAccountId=get_account_from_arn(principal_value),
                     RoleArn=role['Arn'],
                     aws_update_tag=aws_update_tag,
                 )
+                spn_arn = get_account_from_arn(principal_value)
+                if spn_arn:
+                    neo4j_session.run(
+                        ingest_spnmap_statement,
+                        SpnArn=principal_value,
+                        SpnAccountId=get_account_from_arn(principal_value),
+                        aws_update_tag=aws_update_tag,
+                    )
 
 
 @timeit
@@ -750,3 +768,18 @@ def sync(
         update_tag=update_tag,
         stat_handler=stat_handler,
     )
+
+
+@timeit
+def get_account_from_arn(arn: str) -> str:
+    if not arn:
+        return ""
+
+    if not arn.startswith("arn:"):
+        return ""
+
+    parts = arn.split(":")
+    if len(parts) < 4:
+        return ""
+    else:
+        return parts[4]

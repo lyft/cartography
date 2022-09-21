@@ -7,7 +7,7 @@
     },
     {
       "__comment": "Remove accounts that were set with foreign and inscope. This can happen as we finish the list of sync accounts through assume role mapping and vpc peering",
-      "query": "MATCH (a:AWSAccount) where EXISTS(foreign.inscope) AND EXISTS(a.foreign) REMOVE a.foreign = true",
+      "query": "MATCH (a:AWSAccount) where EXISTS(a.inscope) AND EXISTS(a.foreign) REMOVE a.foreign",
       "iterative": false
     }
   ],

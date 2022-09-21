@@ -1,7 +1,7 @@
 import pytest
 
-from cartography.intel.aws.util.common import get_account_from_arn
 from cartography.intel.aws.util.common import parse_and_validate_aws_requested_syncs
+# from cartography.intel.aws.util.common import get_account_from_arn
 
 
 def test_parse_and_validate_requested_syncs():
@@ -20,6 +20,6 @@ def test_parse_and_validate_requested_syncs():
         parse_and_validate_aws_requested_syncs(absolute_garbage)
 
 
-def test_get_account_from_arn():
-    result = get_account_from_arn("arn:aws:iam::081157660428:role/TestRole")
-    assert result == "081157660428"
+# def test_get_account_from_arn():
+#     result = get_account_from_arn("arn:aws:iam::081157660428:role/TestRole")
+#     assert result == "081157660428"
