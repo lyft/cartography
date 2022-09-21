@@ -68,6 +68,8 @@ class Config:
     :param k8s_kubeconfig: Path to kubeconfig file for kubernetes cluster(s). Optional
     :type: pagerduty_api_key: str
     :param pagerduty_api_key: API authentication key for pagerduty. Optional.
+    :type: pagerduty_request_timeout: int
+    :param pagerduty_request_timeout: Seconds to timeout for pagerduty session requests. Optional
     :type: nist_cve_url: str
     :param nist_cve_url: NIST CVE data provider base URI, e.g. https://nvd.nist.gov/feeds/json/cve/1.1. Optional.
     """
@@ -104,6 +106,7 @@ class Config:
         statsd_host=None,
         statsd_port=None,
         pagerduty_api_key=None,
+        pagerduty_request_timeout=None,
         nist_cve_url=None,
         cve_enabled=False,
         crowdstrike_client_id=None,
@@ -140,6 +143,7 @@ class Config:
         self.statsd_host = statsd_host
         self.statsd_port = statsd_port
         self.pagerduty_api_key = pagerduty_api_key
+        self.pagerduty_request_timeout = pagerduty_request_timeout
         self.nist_cve_url = nist_cve_url
         self.cve_enabled = cve_enabled
         self.crowdstrike_client_id = crowdstrike_client_id
