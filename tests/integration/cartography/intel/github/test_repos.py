@@ -87,7 +87,7 @@ def test_repository_to_owners(neo4j_session):
     """
     _ensure_local_neo4j_has_test_data(neo4j_session)
     query = """
-    MATCH(owner:GitHubOrganization)<-[:OWNER]-(repo:GitHubRepository{id:{RepositoryId}})
+    MATCH(owner:GitHubOrganization)<-[:OWNER]-(repo:GitHubRepository{id:$RepositoryId})
     RETURN owner.username, repo.id, repo.name
     """
     expected_repository_id = 'https://github.com/example_org/SampleRepo2'
@@ -119,7 +119,7 @@ def test_repository_to_branches(neo4j_session):
     """
     _ensure_local_neo4j_has_test_data(neo4j_session)
     query = """
-    MATCH(branch:GitHubBranch)<-[:BRANCH]-(repo:GitHubRepository{id:{RepositoryId}})
+    MATCH(branch:GitHubBranch)<-[:BRANCH]-(repo:GitHubRepository{id:$RepositoryId})
     RETURN branch.name, repo.id, repo.name
     """
     expected_repository_id = 'https://github.com/example_org/sample_repo'
@@ -151,7 +151,7 @@ def test_repository_to_languages(neo4j_session):
     """
     _ensure_local_neo4j_has_test_data(neo4j_session)
     query = """
-    MATCH(lang:ProgrammingLanguage)<-[:LANGUAGE]-(repo:GitHubRepository{id:{RepositoryId}})
+    MATCH(lang:ProgrammingLanguage)<-[:LANGUAGE]-(repo:GitHubRepository{id:$RepositoryId})
     RETURN lang.name, repo.id, repo.name
     """
     expected_repository_id = 'https://github.com/example_org/SampleRepo2'

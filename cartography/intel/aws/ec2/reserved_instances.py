@@ -32,19 +32,19 @@ def load_reserved_instances(
         current_aws_account_id: str, update_tag: int,
 ) -> None:
     ingest_reserved_instances = """
-    UNWIND {reserved_instances_list} as res
+    UNWIND $reserved_instances_list as res
         MERGE (ri:EC2ReservedInstance{id: res.ReservedInstancesId})
         ON CREATE SET ri.firstseen = timestamp()
-        SET ri.lastupdated = {update_tag}, ri.availabilityzone = res.AvailabilityZone, ri.duration = res.Duration,
+        SET ri.lastupdated = $update_tag, ri.availabilityzone = res.AvailabilityZone, ri.duration = res.Duration,
         ri.end = res.End, ri.start = res.Start, ri.count = res.InstanceCount, ri.type = res.InstanceType,
         ri.productdescription = res.ProductDescription, ri.state = res.State, ri.currencycode = res.CurrencyCode,
         ri.instancetenancy = res.InstanceTenancy, ri.offeringclass = res.OfferingClass,
-        ri.offeringtype = res.OfferingType, ri.scope = res.Scope, ri.fixedprice = res.FixedPrice, ri.region={Region}
+        ri.offeringtype = res.OfferingType, ri.scope = res.Scope, ri.fixedprice = res.FixedPrice, ri.region=$Region
         WITH ri
-        MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+        MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
         MERGE (aa)-[r:RESOURCE]->(ri)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {update_tag}
+        SET r.lastupdated = $update_tag
     """
 
     for r_instance in data:

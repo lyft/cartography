@@ -40,30 +40,30 @@ def load_redshift_cluster_data(
     current_aws_account_id: str, aws_update_tag: int,
 ) -> None:
     ingest_cluster = """
-    MERGE (cluster:RedshiftCluster{id: {Arn}})
+    MERGE (cluster:RedshiftCluster{id: $Arn})
     ON CREATE SET cluster.firstseen = timestamp(),
-    cluster.arn = {Arn}
-    SET cluster.availability_zone = {AZ},
-    cluster.cluster_create_time = {ClusterCreateTime},
-    cluster.cluster_identifier = {ClusterIdentifier},
-    cluster.cluster_revision_number = {ClusterRevisionNumber},
-    cluster.db_name = {DBName},
-    cluster.encrypted = {Encrypted},
-    cluster.cluster_status = {ClusterStatus},
-    cluster.endpoint_address = {EndpointAddress},
-    cluster.endpoint_port = {EndpointPort},
-    cluster.master_username = {MasterUsername},
-    cluster.node_type = {NodeType},
-    cluster.number_of_nodes = {NumberOfNodes},
-    cluster.publicly_accessible = {PubliclyAccessible},
-    cluster.vpc_id = {VpcId},
-    cluster.lastupdated = {aws_update_tag},
-    cluster.region = {Region}
+    cluster.arn = $Arn
+    SET cluster.availability_zone = $AZ,
+    cluster.cluster_create_time = $ClusterCreateTime,
+    cluster.cluster_identifier = $ClusterIdentifier,
+    cluster.cluster_revision_number = $ClusterRevisionNumber,
+    cluster.db_name = $DBName,
+    cluster.encrypted = $Encrypted,
+    cluster.cluster_status = $ClusterStatus,
+    cluster.endpoint_address = $EndpointAddress,
+    cluster.endpoint_port = $EndpointPort,
+    cluster.master_username = $MasterUsername,
+    cluster.node_type = $NodeType,
+    cluster.number_of_nodes = $NumberOfNodes,
+    cluster.publicly_accessible = $PubliclyAccessible,
+    cluster.vpc_id = $VpcId,
+    cluster.lastupdated = $aws_update_tag,
+    cluster.region = $Region
     WITH cluster
-    MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (aa)-[r:RESOURCE]->(cluster)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
     for cluster in clusters:
         neo4j_session.run(
@@ -95,11 +95,11 @@ def load_redshift_cluster_data(
 @timeit
 def _attach_ec2_security_groups(neo4j_session: neo4j.Session, cluster: Dict, aws_update_tag: int) -> None:
     attach_cluster_to_group = """
-    MATCH (c:RedshiftCluster{id:{ClusterArn}})
-    MERGE (sg:EC2SecurityGroup{id:{GroupId}})
+    MATCH (c:RedshiftCluster{id:$ClusterArn})
+    MERGE (sg:EC2SecurityGroup{id:$GroupId})
     MERGE (c)-[m:MEMBER_OF_EC2_SECURITY_GROUP]->(sg)
     ON CREATE SET m.firstseen = timestamp()
-    SET m.lastupdated = {aws_update_tag}
+    SET m.lastupdated = $aws_update_tag
     """
     for group in cluster.get('VpcSecurityGroups', []):
         neo4j_session.run(
@@ -113,11 +113,11 @@ def _attach_ec2_security_groups(neo4j_session: neo4j.Session, cluster: Dict, aws
 @timeit
 def _attach_iam_roles(neo4j_session: neo4j.Session, cluster: Dict, aws_update_tag: int) -> None:
     attach_cluster_to_role = """
-    MATCH (c:RedshiftCluster{id:{ClusterArn}})
-    MERGE (p:AWSPrincipal{arn:{RoleArn}})
+    MATCH (c:RedshiftCluster{id:$ClusterArn})
+    MERGE (p:AWSPrincipal{arn:$RoleArn})
     MERGE (c)-[s:STS_ASSUMEROLE_ALLOW]->(p)
     ON CREATE SET s.firstseen = timestamp()
-    SET s.lastupdated = {aws_update_tag}
+    SET s.lastupdated = $aws_update_tag
     """
     for role in cluster.get('IamRoles', []):
         neo4j_session.run(
@@ -131,11 +131,11 @@ def _attach_iam_roles(neo4j_session: neo4j.Session, cluster: Dict, aws_update_ta
 @timeit
 def _attach_aws_vpc(neo4j_session: neo4j.Session, cluster: Dict, aws_update_tag: int) -> None:
     attach_cluster_to_vpc = """
-    MATCH (c:RedshiftCluster{id:{ClusterArn}})
-    MERGE (v:AWSVpc{id:{VpcId}})
+    MATCH (c:RedshiftCluster{id:$ClusterArn})
+    MERGE (v:AWSVpc{id:$VpcId})
     MERGE (c)-[m:MEMBER_OF_AWS_VPC]->(v)
     ON CREATE SET m.firstseen = timestamp()
-    SET m.lastupdated = {aws_update_tag}
+    SET m.lastupdated = $aws_update_tag
     """
     if cluster.get('VpcId'):
         neo4j_session.run(

@@ -63,12 +63,12 @@ def load_storage_account_data(
     Ingest Storage Account details into neo4j.
     """
     ingest_storage_account = """
-    UNWIND {storage_accounts_list} as account
+    UNWIND $storage_accounts_list as account
     MERGE (s:AzureStorageAccount{id: account.id})
     ON CREATE SET s.firstseen = timestamp(),
     s.type = account.type, s.resourcegroup = account.resourceGroup,
     s.location = account.location
-    SET s.lastupdated = {azure_update_tag},
+    SET s.lastupdated = $azure_update_tag,
     s.kind = account.kind,
     s.name = account.name,
     s.creationtime = account.creation_time,
@@ -80,10 +80,10 @@ def load_storage_account_data(
     s.statusofsecondary = account.status_of_secondary,
     s.supportshttpstrafficonly = account.enable_https_traffic_only
     WITH s
-    MATCH (owner:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}})
+    MATCH (owner:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})
     MERGE (owner)-[r:RESOURCE]->(s)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {azure_update_tag}
+    SET r.lastupdated = $azure_update_tag
     """
 
     neo4j_session.run(
@@ -282,16 +282,16 @@ def _load_queue_services(
     Ingest Queue Service details into neo4j.
     """
     ingest_queue_services = """
-    UNWIND {queue_services_list} as qservice
+    UNWIND $queue_services_list as qservice
     MERGE (qs:AzureStorageQueueService{id: qservice.id})
     ON CREATE SET qs.firstseen = timestamp(), qs.type = qservice.type
     SET qs.name = qservice.name,
-    qs.lastupdated = {azure_update_tag}
+    qs.lastupdated = $azure_update_tag
     WITH qs, qservice
     MATCH (s:AzureStorageAccount{id: qservice.storage_account_id})
     MERGE (s)-[r:USES]->(qs)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {azure_update_tag}
+    SET r.lastupdated = $azure_update_tag
     """
 
     neo4j_session.run(
@@ -309,16 +309,16 @@ def _load_table_services(
     Ingest Table Service details into neo4j.
     """
     ingest_table_services = """
-    UNWIND {table_services_list} as tservice
+    UNWIND $table_services_list as tservice
     MERGE (ts:AzureStorageTableService{id: tservice.id})
     ON CREATE SET ts.firstseen = timestamp(), ts.type = tservice.type
     SET ts.name = tservice.name,
-    ts.lastupdated = {azure_update_tag}
+    ts.lastupdated = $azure_update_tag
     WITH ts, tservice
     MATCH (s:AzureStorageAccount{id: tservice.storage_account_id})
     MERGE (s)-[r:USES]->(ts)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {azure_update_tag}
+    SET r.lastupdated = $azure_update_tag
     """
 
     neo4j_session.run(
@@ -336,16 +336,16 @@ def _load_file_services(
     Ingest File Service details into neo4j.
     """
     ingest_file_services = """
-    UNWIND {file_services_list} as fservice
+    UNWIND $file_services_list as fservice
     MERGE (fs:AzureStorageFileService{id: fservice.id})
     ON CREATE SET fs.firstseen = timestamp(), fs.type = fservice.type
     SET fs.name = fservice.name,
-    fs.lastupdated = {azure_update_tag}
+    fs.lastupdated = $azure_update_tag
     WITH fs, fservice
     MATCH (s:AzureStorageAccount{id: fservice.storage_account_id})
     MERGE (s)-[r:USES]->(fs)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {azure_update_tag}
+    SET r.lastupdated = $azure_update_tag
     """
 
     neo4j_session.run(
@@ -363,16 +363,16 @@ def _load_blob_services(
     Ingest Blob Service details into neo4j.
     """
     ingest_blob_services = """
-    UNWIND {blob_services_list} as bservice
+    UNWIND $blob_services_list as bservice
     MERGE (bs:AzureStorageBlobService{id: bservice.id})
     ON CREATE SET bs.firstseen = timestamp(), bs.type = bservice.type
     SET bs.name = bservice.name,
-    bs.lastupdated = {azure_update_tag}
+    bs.lastupdated = $azure_update_tag
     WITH bs, bservice
     MATCH (s:AzureStorageAccount{id: bservice.storage_account_id})
     MERGE (s)-[r:USES]->(bs)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {azure_update_tag}
+    SET r.lastupdated = $azure_update_tag
     """
 
     neo4j_session.run(
@@ -456,16 +456,16 @@ def _load_queues(neo4j_session: neo4j.Session, queues: List[Dict], update_tag: i
     Ingest Queue details into neo4j.
     """
     ingest_queues = """
-    UNWIND {queues_list} as queue
+    UNWIND $queues_list as queue
     MERGE (q:AzureStorageQueue{id: queue.id})
     ON CREATE SET q.firstseen = timestamp(), q.type = queue.type
     SET q.name = queue.name,
-    q.lastupdated = {azure_update_tag}
+    q.lastupdated = $azure_update_tag
     WITH q, queue
     MATCH (qs:AzureStorageQueueService{id: queue.service_id})
     MERGE (qs)-[r:CONTAINS]->(q)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {azure_update_tag}
+    SET r.lastupdated = $azure_update_tag
     """
 
     neo4j_session.run(
@@ -549,17 +549,17 @@ def _load_tables(neo4j_session: neo4j.Session, tables: List[Dict], update_tag: i
     Ingest Table details into neo4j.
     """
     ingest_tables = """
-    UNWIND {tables_list} as table
+    UNWIND $tables_list as table
     MERGE (t:AzureStorageTable{id: table.id})
     ON CREATE SET t.firstseen = timestamp(), t.type = table.type
     SET t.name = table.name,
     t.tablename = table.table_name,
-    t.lastupdated = {azure_update_tag}
+    t.lastupdated = $azure_update_tag
     WITH t, table
     MATCH (ts:AzureStorageTableService{id: table.service_id})
     MERGE (ts)-[r:CONTAINS]->(t)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {azure_update_tag}
+    SET r.lastupdated = $azure_update_tag
     """
 
     neo4j_session.run(
@@ -643,11 +643,11 @@ def _load_shares(neo4j_session: neo4j.Session, shares: List[Dict], update_tag: i
     Ingest Share details into neo4j.
     """
     ingest_shares = """
-    UNWIND {shares_list} as s
+    UNWIND $shares_list as s
     MERGE (share:AzureStorageFileShare{id: s.id})
     ON CREATE SET share.firstseen = timestamp(), share.type = s.type
     SET share.name = s.name,
-    share.lastupdated = {azure_update_tag},
+    share.lastupdated = $azure_update_tag,
     share.lastmodifiedtime = s.last_modified_time,
     share.sharequota = s.share_quota,
     share.accesstier = s.access_tier,
@@ -663,7 +663,7 @@ def _load_shares(neo4j_session: neo4j.Session, shares: List[Dict], update_tag: i
     MATCH (fs:AzureStorageFileService{id: s.service_id})
     MERGE (fs)-[r:CONTAINS]->(share)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {azure_update_tag}
+    SET r.lastupdated = $azure_update_tag
     """
 
     neo4j_session.run(
@@ -750,11 +750,11 @@ def _load_blob_containers(
     Ingest Blob Container details into neo4j.
     """
     ingest_blob_containers = """
-    UNWIND {blob_containers_list} as blob
+    UNWIND $blob_containers_list as blob
     MERGE (bc:AzureStorageBlobContainer{id: blob.id})
     ON CREATE SET bc.firstseen = timestamp(), bc.type = blob.type
     SET bc.name = blob.name,
-    bc.lastupdated = {azure_update_tag},
+    bc.lastupdated = $azure_update_tag,
     bc.deleted = blob.deleted,
     bc.deletedtime = blob.deleted_time,
     bc.defaultencryptionscope = blob.default_encryption_scope,
@@ -771,7 +771,7 @@ def _load_blob_containers(
     MATCH (bs:AzureStorageBlobService{id: blob.service_id})
     MERGE (bs)-[r:CONTAINS]->(bc)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {azure_update_tag}
+    SET r.lastupdated = $azure_update_tag
     """
 
     neo4j_session.run(

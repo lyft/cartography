@@ -52,7 +52,7 @@ def load_team_data(
     Transform and load teamuser information
     """
     ingestion_cypher_query = """
-    UNWIND {Teams} AS team
+    UNWIND $Teams AS team
         MERGE (t:PagerDutyTeam{id: team.id})
         ON CREATE SET t.html_url = team.html_url,
             t.firstseen = timestamp()
@@ -61,7 +61,7 @@ def load_team_data(
             t.name = team.name,
             t.description = team.description,
             t.default_role = team.default_role,
-            t.lastupdated = {update_tag}
+            t.lastupdated = $update_tag
     """
     logger.info(f"Loading {len(data)} pagerduty teams.")
 
@@ -79,7 +79,7 @@ def load_team_relations(
     Attach users to their teams
     """
     ingestion_cypher_query = """
-    UNWIND {Relations} AS relation
+    UNWIND $Relations AS relation
         MATCH (t:PagerDutyTeam{id: relation.team}), (u:PagerDutyUser{id: relation.user})
         MERGE (u)-[r:MEMBER_OF]->(t)
         ON CREATE SET r.firstseen = timestamp()

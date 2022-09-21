@@ -5,6 +5,7 @@ from neo4j import Session
 from cartography.config import Config
 from cartography.intel.kubernetes.namespaces import sync_namespaces
 from cartography.intel.kubernetes.pods import sync_pods
+from cartography.intel.kubernetes.secrets import sync_secrets
 from cartography.intel.kubernetes.services import sync_services
 from cartography.intel.kubernetes.util import get_k8s_clients
 from cartography.util import run_cleanup_job
@@ -27,6 +28,7 @@ def start_k8s_ingestion(session: Session, config: Config) -> None:
             cluster = sync_namespaces(session, client, config.update_tag)
             pods = sync_pods(session, client, config.update_tag, cluster)
             sync_services(session, client, config.update_tag, cluster, pods)
+            sync_secrets(session, client, config.update_tag, cluster)
         except Exception:
             logger.exception(f"Failed to sync data for k8s cluster {client.name}...")
             raise

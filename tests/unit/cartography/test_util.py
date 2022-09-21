@@ -1,3 +1,6 @@
+from unittest.mock import Mock
+from unittest.mock import patch
+
 import botocore
 import pytest
 
@@ -20,6 +23,11 @@ def test_run_analysis_job_custom_package(mocker):
     read_text_mock.assert_called_once_with('a.b.c', 'test.json')
 
 
+@patch(
+    'cartography.util.backoff', Mock(
+        on_exception=lambda *args, **kwargs: lambda func: func,
+    ),
+)
 def test_aws_handle_regions(mocker):
     # no exception
     @aws_handle_regions

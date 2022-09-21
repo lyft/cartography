@@ -7,8 +7,7 @@ from typing import List
 from typing import Tuple
 from typing import Union
 
-import neo4j
-import neobolt.exceptions
+import neo4j.exceptions
 from neo4j import GraphDatabase
 from statsd import StatsClient
 
@@ -24,6 +23,7 @@ import cartography.intel.gcp
 import cartography.intel.github
 import cartography.intel.gsuite
 import cartography.intel.kubernetes
+import cartography.intel.oci
 import cartography.intel.okta
 from cartography.config import Config
 from cartography.stats import set_stats_client
@@ -125,7 +125,7 @@ def run_with_config(sync: Sync, config: Union[Config, argparse.Namespace]) -> in
             auth=neo4j_auth,
             max_connection_lifetime=config.neo4j_max_connection_lifetime,
         )
-    except neobolt.exceptions.ServiceUnavailable as e:
+    except neo4j.exceptions.ServiceUnavailable as e:
         logger.debug("Error occurred during Neo4j connect.", exc_info=True)
         logger.error(
             (
@@ -136,7 +136,7 @@ def run_with_config(sync: Sync, config: Union[Config, argparse.Namespace]) -> in
             e,
         )
         return STATUS_FAILURE
-    except neobolt.exceptions.AuthError as e:
+    except neo4j.exceptions.AuthError as e:
         logger.debug("Error occurred during Neo4j auth.", exc_info=True)
         if not neo4j_auth:
             logger.error(
@@ -180,6 +180,7 @@ def build_default_sync() -> Sync:
         ('gsuite', cartography.intel.gsuite.start_gsuite_ingestion),
         ('crxcavator', cartography.intel.crxcavator.start_extension_ingestion),
         ('cve', cartography.intel.cve.start_cve_ingestion),
+        ('oci', cartography.intel.oci.start_oci_ingestion),
         ('okta', cartography.intel.okta.start_okta_ingestion),
         ('github', cartography.intel.github.start_github_ingestion),
         ('digitalocean', cartography.intel.digitalocean.start_digitalocean_ingestion),
