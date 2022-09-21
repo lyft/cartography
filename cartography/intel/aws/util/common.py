@@ -19,17 +19,3 @@ def parse_and_validate_aws_requested_syncs(aws_requested_syncs: str) -> List[str
                 f'Our full list of valid values is: {valid_syncs}.',
             )
     return validated_resources
-
-
-def get_account_from_arn(arn: str) -> str:
-    if not arn:
-        return ""
-
-    if not arn.startswith("arn:"):
-        return ""
-
-    parts = arn.split(":")
-    if len(parts) < 4:
-        return ""
-    else:
-        return parts[4]
