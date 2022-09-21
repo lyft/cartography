@@ -11,11 +11,11 @@ import neo4j
 
 from cartography.intel.aws.permission_relationships import parse_statement_node
 from cartography.intel.aws.permission_relationships import principal_allowed_on_resource
+from cartography.intel.aws.util.common import get_account_from_arn
 from cartography.stats import get_stats_client
 from cartography.util import merge_module_sync_metadata
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
-# from cartography.intel.aws.util.common import get_account_from_arn
 
 logger = logging.getLogger(__name__)
 stat_handler = get_stats_client(__name__)
@@ -768,18 +768,3 @@ def sync(
         update_tag=update_tag,
         stat_handler=stat_handler,
     )
-
-
-@timeit
-def get_account_from_arn(arn: str) -> str:
-    if not arn:
-        return ""
-
-    if not arn.startswith("arn:"):
-        return ""
-
-    parts = arn.split(":")
-    if len(parts) < 4:
-        return ""
-    else:
-        return parts[4]

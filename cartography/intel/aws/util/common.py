@@ -22,4 +22,14 @@ def parse_and_validate_aws_requested_syncs(aws_requested_syncs: str) -> List[str
 
 
 def get_account_from_arn(arn: str) -> str:
-    return arn.split(":")[4]
+    if not arn:
+        return ""
+
+    if not arn.startswith("arn:"):
+        return ""
+
+    parts = arn.split(":")
+    if len(parts) < 4:
+        return ""
+    else:
+        return parts[4]
