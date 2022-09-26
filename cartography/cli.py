@@ -362,6 +362,14 @@ class CLI:
             ),
         )
         parser.add_argument(
+            '--pagerduty-request-timeout',
+            type=int,
+            default=None,
+            help=(
+                'Seconds to timeout for pagerduty API sessions.'
+            ),
+        )
+        parser.add_argument(
             '--crowdstrike-client-id-env-var',
             type=str,
             default=None,
