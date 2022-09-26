@@ -15,6 +15,7 @@ from typing import TypeVar
 from typing import Union
 
 import backoff
+import boto3
 import botocore
 import neo4j
 
@@ -34,6 +35,7 @@ logger = logging.getLogger(__name__)
 STATUS_SUCCESS = 0
 STATUS_FAILURE = 1
 STATUS_KEYBOARD_INTERRUPT = 130
+DEFAULT_BATCH_SIZE = 1000
 
 
 def run_analysis_job(
@@ -133,6 +135,26 @@ def timeit(method: F) -> F:
     return cast(F, timed)
 
 
+def aws_paginate(
+    client: boto3.client,
+    method_name: str,
+    object_name: str,
+    **kwargs: Any,
+) -> List[Dict]:
+    '''
+    Helper method for boilerplate boto3 pagination
+    The **kwargs will be forwarded to the paginator
+    '''
+    paginator = client.get_paginator(method_name)
+    items = []
+    i = 0
+    for i, page in enumerate(paginator.paginate(**kwargs), start=1):
+        if i % 100 == 0:
+            logger.info(f'fetching page number {i}')
+        items.extend(page[object_name])
+    return items
+
+
 AWSGetFunc = TypeVar('AWSGetFunc', bound=Callable[..., List])
 
 # fix for AWS TooManyRequestsException
@@ -166,6 +188,7 @@ def aws_handle_regions(func: AWSGetFunc) -> AWSGetFunc:
         'AuthFailure',
         'InvalidClientTokenId',
         'UnrecognizedClientException',
+        'InternalServerErrorException',
     ]
 
     @wraps(func)
@@ -222,7 +245,7 @@ def camel_to_snake(name: str) -> str:
     return re.sub(r'(?<!^)(?=[A-Z])', '_', name).lower()
 
 
-def batch(items: Iterable, size: int = 1000) -> List[List]:
+def batch(items: Iterable, size: int = DEFAULT_BATCH_SIZE) -> List[List]:
     '''
     Takes an Iterable of items and returns a list of lists of the same items,
      batched into chunks of the provided `size`.
