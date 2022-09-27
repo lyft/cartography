@@ -209,9 +209,10 @@ def build_azure_sync(init_indexes):
     if init_indexes:
         stages.append(('create-indexes', cartography.intel.create_indexes.run))
 
-    stages.append(('cloudanix-workspace', cloudanix.run))
-    stages.append(('azure', cartography.intel.azure.start_azure_ingestion))
-    stages.append(('analysis', cartography.intel.analysis.run))
+    else:
+        stages.append(('cloudanix-workspace', cloudanix.run))
+        stages.append(('azure', cartography.intel.azure.start_azure_ingestion))
+        stages.append(('analysis', cartography.intel.analysis.run))
 
     sync.add_stages(stages)
 

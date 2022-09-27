@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import uuid
+import traceback
 
 import azure.functions as func
 
@@ -13,13 +14,13 @@ from libraries.eventgridlibrary import EventGridLibrary
 
 def process_request(msg: Dict):
     logging.info(f'{msg["templateType"]} request received - {msg["eventId"]} - {msg["workspace"]}')
-    
+
     svcs = []
-    for svc in msg.get('services',[]):
-        page = svc.get('pagination',{}).get('pageSize')
+    for svc in msg.get('services', []):
+        page = svc.get('pagination', {}).get('pageSize')
         if page:
-            svc['pagination']['pageSize'] = 10000
-        
+            svc['pagination']['pageSize'] = 50000
+
         svcs.append(svc)
 
     body = {
@@ -27,7 +28,7 @@ def process_request(msg: Dict):
             "client_id": os.environ.get('client_id'),
             "client_secret": os.environ.get('client_secret'),
             "redirect_uri": os.environ.get('redirect_uri'),
-            "subscription_id": msg.get('workspace',{}).get('account_id'),
+            "subscription_id": msg.get('workspace', {}).get('account_id'),
             "refresh_token": msg.get('refreshToken'),
             "graph_scope": os.environ.get('graph_scope'),
             "azure_scope": os.environ.get('azure_scope'),
@@ -147,5 +148,7 @@ def main(event: func.EventGridEvent, outputEvent: func.Out[func.EventGridOutputE
 
         logging.info(f'worker processed successfully: {msg["eventId"]}')
 
-    except Exception as e:
-        logging.info(f'failed to process request from event grid: {str(e)}')
+    except Exception as ex:
+        logging.error(f"failed to process request from event grid: {str(ex)}")
+
+        traceback.print_exception(type(ex), ex, ex.__traceback__)

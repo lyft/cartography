@@ -67,7 +67,8 @@ def get_tenant_users_list(client: GraphRbacManagementClient, tenant_id: str) -> 
         )
 
         for user in tenant_users_list:
-            user['id'] = f"tenants/{tenant_id}/users/{user.get('object_id',None)}"
+            # user['id'] = f"tenants/{tenant_id}/users/{user.get('object_id',None)}"
+            user['id'] = f"tenants/{tenant_id}/users/{user.get('user_principal_name',None)}"
             user['consolelink'] = azure_console_link.get_console_link(id=user['object_id'], iam_entity_type='user')
 
         return tenant_users_list
@@ -97,7 +98,8 @@ def _load_tenant_users_tx(
     SET i.lastupdated = {update_tag},
     i.account_enabled = user.account_enabled,
     i.refreshTokensValidFromDateTime = user.refreshTokensValidFromDateTime,
-    i.user_principal_name = user.user_principal_name
+    i.user_principal_name = user.user_principal_name,
+    i.mail_address = user.mail_address,
     WITH i
     MATCH (owner:AzureTenant{id: {tenant_id}})
     MERGE (owner)-[r:RESOURCE]->(i)
@@ -608,17 +610,26 @@ def sync(
     common_job_parameters['AZURE_TENANT_ID'] = tenant_id
 
     try:
-        sync_tenant_users(neo4j_session, credentials.aad_graph_credentials, tenant_id,
-                          update_tag, common_job_parameters)
-        sync_tenant_groups(neo4j_session, credentials.aad_graph_credentials, tenant_id,
-                           update_tag, common_job_parameters)
+        sync_tenant_users(
+            neo4j_session, credentials.aad_graph_credentials,
+            tenant_id, update_tag, common_job_parameters
+        )
+
+        sync_tenant_groups(
+            neo4j_session, credentials.aad_graph_credentials,
+            tenant_id, update_tag, common_job_parameters
+        )
+
         sync_tenant_applications(
             neo4j_session, credentials.aad_graph_credentials,
-            tenant_id, update_tag, common_job_parameters)
+            tenant_id, update_tag, common_job_parameters
+        )
+
         sync_tenant_service_accounts(
             neo4j_session, credentials.aad_graph_credentials,
             tenant_id, update_tag, common_job_parameters,
         )
+
         sync_tenant_domains(neo4j_session, credentials.aad_graph_credentials, tenant_id, update_tag, common_job_parameters)
         if common_job_parameters.get('pagination', {}).get('iam', None):
             if not common_job_parameters.get('pagination', {}).get('iam', {}).get('hasNextPage', False):
