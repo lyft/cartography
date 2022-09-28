@@ -5,12 +5,14 @@ from typing import List
 import neo4j
 from azure.core.exceptions import HttpResponseError
 from azure.mgmt.network import NetworkManagementClient
+from cloudconsolelink.clouds.azure import AzureLinker
 
 from .util.credentials import Credentials
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+azure_console_link = AzureLinker()
 
 
 def load_networks(session: neo4j.Session, subscription_id: str, data_list: List[Dict], update_tag: int) -> None:
@@ -56,6 +58,19 @@ def load_public_ip_addresses(
     session.write_transaction(_load_public_ip_addresses_tx, subscription_id, data_list, update_tag)
 
 
+def load_network_interfaces(
+    session: neo4j.Session,
+    subscription_id: str,
+    data_list: List[Dict],
+    update_tag: int,
+) -> None:
+    session.write_transaction(_load_network_interfaces_tx, subscription_id, data_list, update_tag)
+
+
+def load_public_ip_network_interfaces_relationship(session: neo4j.Session, interface_id: str, data_list: List[Dict], update_tag: int) -> None:
+    session.write_transaction(_load_public_ip_network_interfaces_relationship, interface_id, data_list, update_tag)
+
+
 def load_usages(session: neo4j.Session, data_list: List[Dict], update_tag: int) -> None:
     session.write_transaction(_load_usages_tx, data_list, update_tag)
 
@@ -67,14 +82,21 @@ def get_network_client(credentials: Credentials, subscription_id: str) -> Networ
 
 
 @timeit
-def get_networks_list(client: NetworkManagementClient) -> List[Dict]:
+def get_networks_list(client: NetworkManagementClient, regions: list, common_job_parameters: Dict) -> List[Dict]:
     try:
         networks_list = list(map(lambda x: x.as_dict(), client.virtual_networks.list_all()))
-
+        network_data = []
         for network in networks_list:
             x = network['id'].split('/')
             network['resource_group'] = x[x.index('resourceGroups') + 1]
-        return networks_list
+            network['consolelink'] = azure_console_link.get_console_link(
+                id=network['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+            if regions is None:
+                network_data.append(network)
+            else:
+                if network.get('location') in regions or network.get('location') == 'global':
+                    network_data.append(network)
+        return network_data
 
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving networks - {e}")
@@ -88,9 +110,11 @@ def _load_networks_tx(tx: neo4j.Transaction, subscription_id: str, networks_list
     ON CREATE SET n.firstseen = timestamp(),
     n.type = network.type,
     n.location = network.location,
+    n.region = network.location,
     n.resourcegroup = network.resource_group
     SET n.lastupdated = {update_tag},
     n.name = network.name,
+    n.consolelink = network.consolelink,
     n.resource_guid = network.resource_guid,
     n.provisioning_state=network.provisioning_state,
     n.enable_ddos_protection=network.enable_ddos_protection,
@@ -116,38 +140,62 @@ def cleanup_networks(neo4j_session: neo4j.Session, common_job_parameters: Dict) 
 
 def sync_networks(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict,
+    common_job_parameters: Dict, regions: list
 ) -> None:
     client = get_network_client(credentials, subscription_id)
-    networks_list = get_networks_list(client)
+    networks_list = get_networks_list(client, regions, common_job_parameters)
+
+    if common_job_parameters.get('pagination', {}).get('network', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("network", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("network", None)["pageSize"]
+        totalPages = len(networks_list) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for network {pageNo}/{totalPages} pageSize is {pageSize}')
+        page_start = (common_job_parameters.get('pagination', {}).get('network', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('network', {})['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('network', {})['pageSize']
+        if page_end > len(networks_list) or page_end == len(networks_list):
+            networks_list = networks_list[page_start:]
+        else:
+            has_next_page = True
+            networks_list = networks_list[page_start:page_end]
+            common_job_parameters['pagination']['network']['hasNextPage'] = has_next_page
+
     load_networks(neo4j_session, subscription_id, networks_list, update_tag)
     cleanup_networks(neo4j_session, common_job_parameters)
     sync_networks_subnets(neo4j_session, networks_list, client, update_tag, common_job_parameters)
-    sync_network_routetables(neo4j_session, client, subscription_id, update_tag, common_job_parameters)
-    sync_network_security_groups(neo4j_session, client, subscription_id, update_tag, common_job_parameters)
-    sync_public_ip_addresses(neo4j_session, client, subscription_id, update_tag, common_job_parameters)
+    sync_network_routetables(neo4j_session, client, subscription_id, update_tag, common_job_parameters, regions)
+    sync_public_ip_addresses(neo4j_session, client, subscription_id, update_tag, common_job_parameters, regions)
+    sync_network_interfaces(neo4j_session, client, subscription_id, update_tag, common_job_parameters, regions)
     sync_usages(neo4j_session, networks_list, client, update_tag, common_job_parameters)
 
 
-@ timeit
-def get_networks_subnets_list(networks_list: List[Dict], client: NetworkManagementClient) -> List[Dict]:
+@timeit
+def get_networks_subnets_list(networks_list: List[Dict], client: NetworkManagementClient, common_job_parameters: Dict) -> List[Dict]:
     try:
         networks_subnets_list: List[Dict] = []
         for network in networks_list:
-            networks_subnets_list = networks_subnets_list + \
-                list(
-                    map(
-                        lambda x: x.as_dict(), client.subnets.list(
-                            resource_group_name=network['resource_group'], virtual_network_name=network["name"],
-                        ),
+            subnets_list = list(
+                map(
+                    lambda x: x.as_dict(), client.subnets.list(
+                        resource_group_name=network['resource_group'], virtual_network_name=network["name"],
                     ),
-                )
+                ),
+            )
 
-        for subnet in networks_subnets_list:
-            x = subnet['id'].split('/')
-            subnet['resource_group'] = x[x.index('resourceGroups') + 1]
-            subnet['network_id'] = subnet['id'][:subnet['id'].index("/subnets")]
-            subnet['type'] = "Microsoft.Network/Subnets"
+            for subnet in subnets_list:
+                x = subnet['id'].split('/')
+                subnet['resource_group'] = x[x.index('resourceGroups') + 1]
+                subnet['network_id'] = subnet['id'][:subnet['id'].index("/subnets")]
+                subnet['type'] = "Microsoft.Network/Subnets"
+                subnet['location'] = network.get('location', 'global')
+                subnet['network_security_group_id'] = subnet.get('network_security_group', {}).get('id', None)
+                subnet['consolelink'] = azure_console_link.get_console_link(
+                    id=subnet['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+            networks_subnets_list.extend(subnets_list)
         return networks_subnets_list
 
     except HttpResponseError as e:
@@ -167,6 +215,8 @@ def _load_networks_subnets_tx(
     n.type = subnet.type
     SET n.name = subnet.name,
     n.lastupdated = {azure_update_tag},
+    n.region= subnet.location,
+    n.consolelink = subnet.consolelink,
     n.resource_group_name=subnet.resource_group,
     n.private_endpoint_network_policies=subnet.private_endpoint_network_policies,
     n.private_link_service_network_policies=subnet.private_link_service_network_policies,
@@ -176,6 +226,11 @@ def _load_networks_subnets_tx(
     MERGE (s)-[r:CONTAIN]->(n)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {azure_update_tag}
+    WITH n, subnet
+    MATCH (sg:AzureNetworkSecurityGroup{id: subnet.network_security_group_id})
+    MERGE (n)-[sgr:MEMBER_NETWORK_SECURITY_GROUP]->(sg)
+    ON CREATE SET sgr.firstseen = timestamp()
+    SET sgr.lastupdated = {azure_update_tag}
     """
 
     tx.run(
@@ -193,19 +248,26 @@ def sync_networks_subnets(
     neo4j_session: neo4j.Session, networks_list: List[Dict],
     client: NetworkManagementClient, update_tag: int, common_job_parameters: Dict,
 ) -> None:
-    networks_subnets_list = get_networks_subnets_list(networks_list, client)
+    networks_subnets_list = get_networks_subnets_list(networks_list, client, common_job_parameters)
     load_networks_subnets(neo4j_session, networks_subnets_list, update_tag)
     cleanup_networks_subnets(neo4j_session, common_job_parameters)
 
 
-def get_network_routetables_list(client: NetworkManagementClient) -> List[Dict]:
+def get_network_routetables_list(client: NetworkManagementClient, regions: list, common_job_parameters: Dict) -> List[Dict]:
     try:
         network_routetables_list = list(map(lambda x: x.as_dict(), client.route_tables.list_all()))
-
+        tables_data = []
         for routetable in network_routetables_list:
             x = routetable['id'].split('/')
             routetable['resource_group'] = x[x.index('resourceGroups') + 1]
-        return network_routetables_list
+            routetable['consolelink'] = azure_console_link.get_console_link(
+                id=routetable['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+            if regions is None:
+                tables_data.append(routetable)
+            else:
+                if routetable.get('location') in regions or routetable.get('location') == 'global':
+                    tables_data.append(routetable)
+        return tables_data
 
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving routetables - {e}")
@@ -221,9 +283,11 @@ def _load_network_routetables_tx(
     ON CREATE SET n.firstseen = timestamp(),
     n.type = routetable.type,
     n.location = routetable.location,
+    n.region = routetable.location,
     n.resourcegroup = routetable.resource_group
     SET n.lastupdated = {update_tag},
     n.name = routetable.name,
+    n.consolelink = routetable.consolelink,
     n.etag=routetable.etag
     WITH n
     MATCH (owner:AzureSubscription{id: {SUBSCRIPTION_ID}})
@@ -246,32 +310,35 @@ def cleanup_network_routetables(neo4j_session: neo4j.Session, common_job_paramet
 
 def sync_network_routetables(
     neo4j_session: neo4j.Session, client: NetworkManagementClient, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict,
+    common_job_parameters: Dict, regions: list
 ) -> None:
-    network_routetables_list = get_network_routetables_list(client)
+    network_routetables_list = get_network_routetables_list(client, regions, common_job_parameters)
     load_network_routetables(neo4j_session, subscription_id, network_routetables_list, update_tag)
     cleanup_network_routetables(neo4j_session, common_job_parameters)
     sync_network_routes(neo4j_session, network_routetables_list, client, update_tag, common_job_parameters)
 
 
-@ timeit
-def get_network_routes_list(network_routetables_list: List[Dict], client: NetworkManagementClient) -> List[Dict]:
+@timeit
+def get_network_routes_list(network_routetables_list: List[Dict], client: NetworkManagementClient, common_job_parameters: Dict) -> List[Dict]:
     try:
         network_routes_list: List[Dict] = []
         for routetable in network_routetables_list:
-            network_routes_list = network_routes_list + \
-                list(
-                    map(
-                        lambda x: x.as_dict(), client.routes.list(
-                            resource_group_name=routetable['resource_group'], route_table_name=routetable['name'],
-                        ),
+            routes_list = list(
+                map(
+                    lambda x: x.as_dict(), client.routes.list(
+                        resource_group_name=routetable['resource_group'], route_table_name=routetable['name'],
                     ),
-                )
+                ),
+            )
 
-        for route in network_routes_list:
-            x = route['id'].split('/')
-            route['resource_group'] = x[x.index('resourceGroups') + 1]
-            route['routetable_id'] = route['id'][:route['id'].index("/routes")]
+            for route in routes_list:
+                x = route['id'].split('/')
+                route['resource_group'] = x[x.index('resourceGroups') + 1]
+                route['routetable_id'] = route['id'][:route['id'].index("/routes")]
+                route['location'] = routetable.get('location', 'global')
+                route['consolelink'] = azure_console_link.get_console_link(
+                    id=route['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+            network_routes_list.extend(routes_list)
         return network_routes_list
 
     except HttpResponseError as e:
@@ -290,6 +357,8 @@ def _load_network_routes_tx(
     ON CREATE SET n.firstseen = timestamp(),
     n.type = route.type
     SET n.name = route.name,
+    n.region= route.location,
+    n.consolelink = route.consolelink,
     n.lastupdated = {azure_update_tag},
     n.etag=route.etag
     WITH n, route
@@ -315,19 +384,26 @@ def sync_network_routes(
     client: NetworkManagementClient, update_tag: int,
     common_job_parameters: Dict,
 ) -> None:
-    networks_routes_list = get_network_routes_list(network_routetables_list, client)
+    networks_routes_list = get_network_routes_list(network_routetables_list, client, common_job_parameters)
     load_network_routes(neo4j_session, networks_routes_list, update_tag)
     cleanup_network_routes(neo4j_session, common_job_parameters)
 
 
-def get_network_security_groups_list(client: NetworkManagementClient) -> List[Dict]:
+def get_network_security_groups_list(client: NetworkManagementClient, regions: list, common_job_parameters: Dict) -> List[Dict]:
     try:
         network_security_groups_list = list(map(lambda x: x.as_dict(), client.network_security_groups.list_all()))
-
+        group_list = []
         for network in network_security_groups_list:
             x = network['id'].split('/')
             network['resource_group'] = x[x.index('resourceGroups') + 1]
-        return network_security_groups_list
+            network['consolelink'] = azure_console_link.get_console_link(
+                id=network['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+            if regions is None:
+                group_list.append(network)
+            else:
+                if network.get('location') in regions or network.get('location') == 'global':
+                    group_list.append(network)
+        return group_list
 
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving network_security_groups - {e}")
@@ -343,6 +419,8 @@ def _load_network_security_groups_tx(
     ON CREATE SET n.firstseen = timestamp(),
     n.type = network.type,
     n.location = network.location,
+    n.region = network.location,
+    n.consolelink = network.consolelink,
     n.resourcegroup = network.resource_group
     SET n.lastupdated = {update_tag},
     n.name = network.name,
@@ -368,34 +446,58 @@ def cleanup_network_security_groups(neo4j_session: neo4j.Session, common_job_par
 
 def sync_network_security_groups(
     neo4j_session: neo4j.Session, client: NetworkManagementClient, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict,
+    common_job_parameters: Dict, regions: list
 ) -> None:
-    network_security_groups_list = get_network_security_groups_list(client)
+    network_security_groups_list = get_network_security_groups_list(client, regions, common_job_parameters)
+
+    if common_job_parameters.get('pagination', {}).get('network', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("network", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("network", None)["pageSize"]
+        totalPages = len(network_security_groups_list) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for network security_groups {pageNo}/{totalPages} pageSize is {pageSize}')
+        page_start = (common_job_parameters.get('pagination', {}).get('network', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('network', {})['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('network', {})['pageSize']
+        if page_end > len(network_security_groups_list) or page_end == len(network_security_groups_list):
+            network_security_groups_list = network_security_groups_list[page_start:]
+        else:
+            has_next_page = True
+            network_security_groups_list = network_security_groups_list[page_start:page_end]
+            common_job_parameters['pagination']['network']['hasNextPage'] = has_next_page
+
     load_network_security_groups(neo4j_session, subscription_id, network_security_groups_list, update_tag)
     cleanup_network_security_groups(neo4j_session, common_job_parameters)
     sync_network_security_rules(neo4j_session, network_security_groups_list, client, update_tag, common_job_parameters)
 
 
-@ timeit
+@timeit
 def get_network_security_rules_list(
-    network_security_groups_list: List[Dict], client: NetworkManagementClient,
+    network_security_groups_list: List[Dict], client: NetworkManagementClient, common_job_parameters: Dict
 ) -> List[Dict]:
     try:
         network_security_rules_list: List[Dict] = []
         for security_group in network_security_groups_list:
-            network_security_rules_list = network_security_rules_list + list(
-                map(
-                    lambda x: x.as_dict(), client.security_rules.list(
-                        resource_group_name=security_group['resource_group'],
-                        network_security_group_name=security_group['name'],
-                    ),
-                ),
-            )
-
-        for rule in network_security_rules_list:
-            x = rule['id'].split('/')
-            rule['resource_group'] = x[x.index('resourceGroups') + 1]
-            rule['security_group_id'] = rule['id'][:rule['id'].index("/securityRules")]
+            security_rules_list = security_group.get('security_rules', [])
+            for rule in security_rules_list:
+                x = rule['id'].split('/')
+                rule['resource_group'] = x[x.index('resourceGroups') + 1]
+                rule['security_group_id'] = rule['id'][:rule['id'].index("/securityRules")]
+                rule['location'] = rule.get('location', 'global')
+                rule['access'] = rule.get('access', 'Deny')
+                rule['source_port_range'] = rule.get('source_port_range', None)
+                rule['source_address_prefix'] = rule.get('source_address_prefix', None)
+                rule['protocol'] = rule.get('protocol', None)
+                rule['direction'] = rule.get('direction', None)
+                rule['destination_port_ranges'] = rule.get(
+                    'properties', {}).get('destination_port_ranges', None)
+                rule['destination_address_prefix'] = rule.get('destination_address_prefix', None)
+                rule['consolelink'] = azure_console_link.get_console_link(
+                    id=rule['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+            network_security_rules_list.extend(security_rules_list)
         return network_security_rules_list
 
     except HttpResponseError as e:
@@ -412,8 +514,17 @@ def _load_network_security_rules_tx(
     UNWIND {network_security_rules_list} as rule
     MERGE (n:AzureNetworkSecurityRule{id: rule.id})
     ON CREATE SET n.firstseen = timestamp(),
+    n.access = rule.access,
+    n.source_port_range = rule.source_port_range,
+    n.protocol = rule.protocol,
+    n.direction = rule.direction,
+    n.consolelink = rule.consolelink,
+    n.destination_address_prefix = rule.destination_address_prefix,
+    n.source_address_prefix = rule.source_address_prefix,
+    n.destination_port_ranges = rule.destination_port_ranges,
     n.type = rule.type
     SET n.name = rule.name,
+    n.region= rule.location,
     n.lastupdated = {azure_update_tag},
     n.etag=rule.etag
     WITH n, rule
@@ -439,15 +550,25 @@ def sync_network_security_rules(
     client: NetworkManagementClient, update_tag: int,
     common_job_parameters: Dict,
 ) -> None:
-    network_security_rules_list = get_network_security_rules_list(network_security_groups_list, client)
+    network_security_rules_list = get_network_security_rules_list(
+        network_security_groups_list, client, common_job_parameters)
     load_network_security_rules(neo4j_session, network_security_rules_list, update_tag)
     cleanup_network_security_rules(neo4j_session, common_job_parameters)
 
 
-def get_public_ip_addresses_list(client: NetworkManagementClient) -> List[Dict]:
+def get_public_ip_addresses_list(client: NetworkManagementClient, regions: list, common_job_parameters: Dict) -> List[Dict]:
     try:
         public_ip_addresses_list = list(map(lambda x: x.as_dict(), client.public_ip_addresses.list_all()))
-        return public_ip_addresses_list
+        publicip_list = []
+        for ip in public_ip_addresses_list:
+            ip['consolelink'] = azure_console_link.get_console_link(
+                id=ip['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+            if regions is None:
+                publicip_list.append(ip)
+            else:
+                if ip.get('location') in regions or ip.get('location') == 'global':
+                    publicip_list.append(ip)
+        return publicip_list
 
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving public_ip_addresses - {e}")
@@ -462,7 +583,10 @@ def _load_public_ip_addresses_tx(
     MERGE (n:AzurePublicIPAddress{id: address.id})
     ON CREATE SET n.firstseen = timestamp(),
     n.type = address.type,
-    n.location = address.location
+    n.location = address.location,
+    n.region = address.location,
+    n.consolelink = address.consolelink,
+    n.isPublicFacing = true
     SET n.lastupdated = {update_tag},
     n.name = address.name,
     n.etag=address.etag
@@ -487,19 +611,109 @@ def cleanup_public_ip_addresses(neo4j_session: neo4j.Session, common_job_paramet
 
 def sync_public_ip_addresses(
     neo4j_session: neo4j.Session, client: NetworkManagementClient, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict,
+    common_job_parameters: Dict, regions: list
 ) -> None:
-    public_ip_addresses_list = get_public_ip_addresses_list(client)
+    public_ip_addresses_list = get_public_ip_addresses_list(client, regions, common_job_parameters)
     load_public_ip_addresses(neo4j_session, subscription_id, public_ip_addresses_list, update_tag)
     cleanup_public_ip_addresses(neo4j_session, common_job_parameters)
 
 
-@ timeit
+def get_network_interfaces_list(client: NetworkManagementClient, regions: list, common_job_parameters: Dict) -> List[Dict]:
+    try:
+        network_interfaces_list = list(map(lambda x: x.as_dict(), client.network_interfaces.list_all()))
+        interfaces_list = []
+        for interface in network_interfaces_list:
+            interface['public_ip_address'] = []
+            for conf in interface.get('ip_configurations', []):
+                interface['public_ip_address'].append(
+                    {'public_ip_id': conf.get('public_ip_address', {}).get('id', None)})
+            interface['consolelink'] = azure_console_link.get_console_link(
+                id=interface['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+            if regions is None:
+                interfaces_list.append(interface)
+            else:
+                if interface.get('location') in regions or interface.get('location') == 'global':
+                    interfaces_list.append(interface)
+        return interfaces_list
+
+    except HttpResponseError as e:
+        logger.warning(f"Error while retrieving network interface - {e}")
+        return []
+
+
+def _load_network_interfaces_tx(
+    tx: neo4j.Transaction, subscription_id: str, network_interfaces_list: List[Dict], update_tag: int,
+) -> None:
+    ingest_interface = """
+    UNWIND {network_interfaces_list} AS interface
+    MERGE (n:AzureNetworkInterface{id: interface.id})
+    ON CREATE SET n.firstseen = timestamp(),
+    n.type = interface.type,
+    n.location = interface.location,
+    n.consolelink = interface.consolelink,
+    n.region = interface.location
+    SET n.lastupdated = {update_tag},
+    n.name = interface.name
+    WITH n, interface
+    MATCH (owner:AzureSubscription{id: {SUBSCRIPTION_ID}})
+    MERGE (owner)-[r:RESOURCE]->(n)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {update_tag}
+    WITH n, interface
+    MATCH (sg:AzureNetworkSecurityGroup{id: interface.network_security_group.id})
+    MERGE (n)-[sgr:MEMBER_NETWORK_SECURITY_GROUP]->(sg)
+    ON CREATE SET sgr.firstseen = timestamp()
+    SET sgr.lastupdated = {update_tag}
+    """
+
+    tx.run(
+        ingest_interface,
+        network_interfaces_list=network_interfaces_list,
+        SUBSCRIPTION_ID=subscription_id,
+        update_tag=update_tag,
+    )
+
+
+def cleanup_network_interfaces(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('azure_import_network_interfaces_cleanup.json', neo4j_session, common_job_parameters)
+
+
+def sync_network_interfaces(
+    neo4j_session: neo4j.Session, client: NetworkManagementClient, subscription_id: str, update_tag: int,
+    common_job_parameters: Dict, regions: list
+) -> None:
+    network_interfaces_list = get_network_interfaces_list(client, regions, common_job_parameters)
+    load_network_interfaces(neo4j_session, subscription_id, network_interfaces_list, update_tag)
+    cleanup_network_interfaces(neo4j_session, common_job_parameters)
+    for interface in network_interfaces_list:
+        load_public_ip_network_interfaces_relationship(neo4j_session, interface.get(
+            'id'), interface.get('public_ip_address', []), update_tag)
+
+
+def _load_public_ip_network_interfaces_relationship(tx: neo4j.Transaction, interface_id: str, data_list: List[Dict], update_tag: int) -> None:
+    ingest_ip_ni = """
+    UNWIND {ip_list} AS public_ip
+    MATCH (ip:AzurePublicIPAddress{id: public_ip.public_ip_id})
+    WITH ip
+    MATCH (i:AzureNetworkInterface{id: {interface_id}})
+    MERGE (i)-[r:MEMBER_PUBLIC_IP_ADDRESS]->(ip)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {update_tag}
+    """
+    tx.run(
+        ingest_ip_ni,
+        ip_list=data_list,
+        interface_id=interface_id,
+        update_tag=update_tag,
+    )
+
+
+@timeit
 def get_usages_list(networks_list: List[Dict], client: NetworkManagementClient) -> List[Dict]:
     try:
         usages_list: List[Dict] = []
         for network in networks_list:
-            usages_list = usages_list + list(
+            usages = list(
                 map(
                     lambda x: x.as_dict(), client.virtual_networks.list_usage(
                         resource_group_name=network['resource_group'], virtual_network_name=network['name'],
@@ -507,8 +721,10 @@ def get_usages_list(networks_list: List[Dict], client: NetworkManagementClient) 
                 ),
             )
 
-        for usage in usages_list:
-            usage['network_id'] = usage['id'][:usage['id'].index("/subnets")]
+            for usage in usages:
+                usage['network_id'] = usage['id'][:usage['id'].index("/subnets")]
+                usage['location'] = network.get('location', 'global')
+            usages_list.extend(usages)
         return usages_list
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving usages - {e}")
@@ -525,6 +741,7 @@ def _load_usages_tx(
     MERGE (n:AzureNetworkUsage{id: usage.id})
     ON CREATE SET n.firstseen = timestamp()
     SET n.currentValue = usage.currentValue,
+    n.region= usage.location,
     n.lastupdated = {azure_update_tag},
     n.limit=usage.limit,
     n.unit=usage.unit
@@ -537,6 +754,7 @@ def _load_usages_tx(
 
     tx.run(
         ingest_usages,
+        location="global",
         usages_list=usages_list,
         azure_update_tag=update_tag,
     )
@@ -555,11 +773,13 @@ def sync_usages(
     cleanup_usages(neo4j_session, common_job_parameters)
 
 
-@ timeit
+@timeit
 def sync(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict,
+    common_job_parameters: Dict, regions: list
 ) -> None:
     logger.info("Syncing networks for subscription '%s'.", subscription_id)
 
-    sync_networks(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
+    client = get_network_client(credentials, subscription_id)
+    sync_network_security_groups(neo4j_session, client, subscription_id, update_tag, common_job_parameters, regions)
+    sync_networks(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters, regions)

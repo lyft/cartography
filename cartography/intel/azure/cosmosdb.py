@@ -11,12 +11,14 @@ from azure.core.exceptions import ClientAuthenticationError
 from azure.core.exceptions import HttpResponseError
 from azure.core.exceptions import ResourceNotFoundError
 from azure.mgmt.cosmosdb import CosmosDBManagementClient
+from cloudconsolelink.clouds.azure import AzureLinker
 
 from .util.credentials import Credentials
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+azure_console_link = AzureLinker()
 
 
 @timeit
@@ -29,7 +31,7 @@ def get_client(credentials: Credentials, subscription_id: str) -> CosmosDBManage
 
 
 @timeit
-def get_database_account_list(credentials: Credentials, subscription_id: str) -> List[Dict]:
+def get_database_account_list(credentials: Credentials, subscription_id: str, regions: list, common_job_parameters: Dict) -> List[Dict]:
     """
     Get a list of all database accounts.
     """
@@ -47,12 +49,20 @@ def get_database_account_list(credentials: Credentials, subscription_id: str) ->
     except HttpResponseError:
         logger.warning('Error while retrieving database accounts', exc_info=True)
         return []
-
+    account_list = []
     for database_account in database_account_list:
         x = database_account['id'].split('/')
         database_account['resourceGroup'] = x[x.index('resourceGroups') + 1]
-
-    return database_account_list
+        database_account['publicNetworkAccess'] = database_account.get(
+            'properties', {}).get('public_network_access', 'Disabled')
+        database_account['consolelink'] = azure_console_link.get_console_link(
+            id=database_account['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+        if regions is None:
+            account_list.append(database_account)
+        else:
+            if database_account.get('location') in regions or database_account.get('location') == 'global':
+                account_list.append(database_account)
+    return account_list
 
 
 @timeit
@@ -85,12 +95,14 @@ def load_database_account_data(
     MERGE (d:AzureCosmosDBAccount{id: da.id})
     ON CREATE SET d.firstseen = timestamp(),
     d.type = da.type, d.resourcegroup = da.resourceGroup,
-    d.location = da.location
+    d.location = da.location,
+    d.region = da.location
     SET d.lastupdated = {azure_update_tag},
     d.kind = da.kind,
     d.name = da.name,
     d.ipranges = da.ipruleslist,
     d.capabilities = da.list_of_capabilities,
+    d.publicNetworkAccess = da.publicNetworkAccess,
     d.documentendpoint = da.document_endpoint,
     d.virtualnetworkfilterenabled = da.is_virtual_network_filter_enabled,
     d.enableautomaticfailover = da.enable_automatic_failover,
@@ -100,6 +112,7 @@ def load_database_account_data(
     d.publicnetworkaccess = da.public_network_access,
     d.enablecassandraconnector = da.enable_cassandra_connector,
     d.connectoroffer = da.connector_offer,
+    d.consolelink = da.consolelink,
     d.disablekeybasedmetadatawriteaccess = da.disable_key_based_metadata_write_access,
     d.keyvaulturi = da.key_vault_key_uri,
     d.enablefreetier = da.enable_free_tier,
@@ -156,7 +169,8 @@ def _load_database_account_write_locations(
         MERGE (loc:AzureCosmosDBLocation{id: wl.id})
         ON CREATE SET loc.firstseen = timestamp()
         SET loc.lastupdated = {azure_update_tag},
-        loc.locationname = wl.location_name,
+        loc.location = wl.location_name,
+        loc.region = wl.location_name,
         loc.documentendpoint = wl.document_endpoint,
         loc.provisioningstate = wl.provisioning_state,
         loc.failoverpriority = wl.failover_priority,
@@ -192,7 +206,8 @@ def _load_database_account_read_locations(
         MERGE (loc:AzureCosmosDBLocation{id: rl.id})
         ON CREATE SET loc.firstseen = timestamp()
         SET loc.lastupdated = {azure_update_tag},
-        loc.locationname = rl.location_name,
+        loc.location = rl.location_name,
+        loc.region = rl.location_name,
         loc.documentendpoint = rl.document_endpoint,
         loc.provisioningstate = rl.provisioning_state,
         loc.failoverpriority = rl.failover_priority,
@@ -228,7 +243,8 @@ def _load_database_account_associated_locations(
         MERGE (loc:AzureCosmosDBLocation{id: al.id})
         ON CREATE SET loc.firstseen = timestamp()
         SET loc.lastupdated = {azure_update_tag},
-        loc.locationname = al.location_name,
+        loc.location = al.location_name,
+        loc.region = al.location_name,
         loc.documentendpoint = al.document_endpoint,
         loc.provisioningstate = al.provisioning_state,
         loc.failoverpriority = al.failover_priority,
@@ -280,6 +296,7 @@ def _load_cosmosdb_cors_policy(
         SET corspolicy.lastupdated = {azure_update_tag},
         corspolicy.allowedmethods = cp.allowed_methods,
         corspolicy.allowedheaders = cp.allowed_headers,
+        corspolicy.region = {region},
         corspolicy.exposedheaders = cp.exposed_headers,
         corspolicy.maxageinseconds = cp.max_age_in_seconds
         WITH corspolicy
@@ -293,6 +310,7 @@ def _load_cosmosdb_cors_policy(
             ingest_cors_policy,
             cors_policies_list=cors_policies,
             DatabaseAccountId=database_account_id,
+            region="global",
             azure_update_tag=azure_update_tag,
         )
 
@@ -313,7 +331,8 @@ def _load_cosmosdb_failover_policies(
         MERGE (fpolicy:AzureCosmosDBAccountFailoverPolicy{id: fp.id})
         ON CREATE SET fpolicy.firstseen = timestamp()
         SET fpolicy.lastupdated = {azure_update_tag},
-        fpolicy.locationname = fp.location_name,
+        fpolicy.location = fp.location_name,
+        fpolicy.region = fp.location_name,
         fpolicy.failoverpriority = fp.failover_priority
         WITH fpolicy
         MATCH (d:AzureCosmosDBAccount{id: {DatabaseAccountId}})
@@ -349,6 +368,7 @@ def _load_cosmosdb_private_endpoint_connections(
         ON CREATE SET pec.firstseen = timestamp()
         SET pec.lastupdated = {azure_update_tag},
         pec.name = connection.name,
+        pec.region = {region},
         pec.privateendpointid = connection.private_endpoint.id,
         pec.status = connection.private_link_service_connection_state.status,
         pec.actionrequired = connection.private_link_service_connection_state.actions_required
@@ -363,6 +383,7 @@ def _load_cosmosdb_private_endpoint_connections(
             ingest_private_endpoint_connections,
             private_endpoint_connections_list=private_endpoint_connections,
             DatabaseAccountId=database_account_id,
+            region=database_account.get("location", "global"),
             azure_update_tag=azure_update_tag,
         )
 
@@ -381,7 +402,8 @@ def _load_cosmosdb_virtual_network_rules(
         ingest_virtual_network_rules = """
         UNWIND {virtual_network_rules_list} AS vnr
         MERGE (rules:AzureCosmosDBVirtualNetworkRule{id: vnr.id})
-        ON CREATE SET rules.firstseen = timestamp()
+        ON CREATE SET rules.firstseen = timestamp(),
+        rules.region = {region},
         SET rules.lastupdated = {azure_update_tag},
         rules.ignoremissingvnetserviceendpoint = vnr.ignore_missing_v_net_service_endpoint
         WITH rules
@@ -395,6 +417,7 @@ def _load_cosmosdb_virtual_network_rules(
             ingest_virtual_network_rules,
             virtual_network_rules_list=virtual_network_rules,
             DatabaseAccountId=database_account_id,
+            region=database_account.get("location", "global"),
             azure_update_tag=azure_update_tag,
         )
 
@@ -623,7 +646,8 @@ def _load_sql_databases(neo4j_session: neo4j.Session, sql_databases: List[Dict],
     UNWIND {sql_databases_list} AS database
     MERGE (sdb:AzureCosmosDBSqlDatabase{id: database.id})
     ON CREATE SET sdb.firstseen = timestamp(), sdb.type = database.type,
-    sdb.location = database.location
+    sdb.location = database.location,
+    sdb.region = database.location
     SET sdb.name = database.name,
     sdb.throughput = database.options.throughput,
     sdb.maxthroughput = database.options.autoscale_setting.max_throughput,
@@ -651,7 +675,8 @@ def _load_cassandra_keyspaces(neo4j_session: neo4j.Session, cassandra_keyspaces:
     UNWIND {cassandra_keyspaces_list} AS keyspace
     MERGE (ck:AzureCosmosDBCassandraKeyspace{id: keyspace.id})
     ON CREATE SET ck.firstseen = timestamp(), ck.type = keyspace.type,
-    ck.location = keyspace.location
+    ck.location = keyspace.location,
+    ck.region = keyspace.location
     SET ck.name = keyspace.name,
     ck.lastupdated = {azure_update_tag},
     ck.throughput = keyspace.options.throughput,
@@ -679,7 +704,8 @@ def _load_mongodb_databases(neo4j_session: neo4j.Session, mongodb_databases: Lis
     UNWIND {mongodb_databases_list} AS database
     MERGE (mdb:AzureCosmosDBMongoDBDatabase{id: database.id})
     ON CREATE SET mdb.firstseen = timestamp(), mdb.type = database.type,
-    mdb.location = database.location
+    mdb.location = database.location,
+    mdb.region = database.location
     SET mdb.name = database.name,
     mdb.throughput = database.options.throughput,
     mdb.maxthroughput = database.options.autoscale_setting.max_throughput,
@@ -707,7 +733,8 @@ def _load_table_resources(neo4j_session: neo4j.Session, table_resources: List[Di
     UNWIND {table_resources_list} AS table
     MERGE (tr:AzureCosmosDBTableResource{id: table.id})
     ON CREATE SET tr.firstseen = timestamp(), tr.type = table.type,
-    tr.location = table.location
+    tr.location = table.location,
+    tr.region = table.location
     SET tr.name = table.name,
     tr.lastupdated = {azure_update_tag},
     tr.throughput = table.options.throughput,
@@ -804,7 +831,8 @@ def _load_sql_containers(neo4j_session: neo4j.Session, containers: List[Dict], u
     UNWIND {sql_containers_list} AS container
     MERGE (c:AzureCosmosDBSqlContainer{id: container.id})
     ON CREATE SET c.firstseen = timestamp(), c.type = container.type,
-    c.location = container.location
+    c.location = container.location,
+    c.region = container.location
     SET c.name = container.name,
     c.lastupdated = {azure_update_tag},
     c.throughput = container.options.throughput,
@@ -909,7 +937,8 @@ def _load_cassandra_tables(neo4j_session: neo4j.Session, cassandra_tables: List[
     UNWIND {cassandra_tables_list} AS table
     MERGE (ct:AzureCosmosDBCassandraTable{id: table.id})
     ON CREATE SET ct.firstseen = timestamp(), ct.type = table.type,
-    ct.location = table.location
+    ct.location = table.location,
+    ct.region = table.location
     SET ct.name = table.name,
     ct.lastupdated = {azure_update_tag},
     ct.throughput = table.options.throughput,
@@ -1011,7 +1040,8 @@ def _load_collections(neo4j_session: neo4j.Session, collections: List[Dict], upd
     UNWIND {mongodb_collections_list} AS collection
     MERGE (col:AzureCosmosDBMongoDBCollection{id: collection.id})
     ON CREATE SET col.firstseen = timestamp(), col.type = collection.type,
-    col.location = collection.location
+    col.location = collection.location,
+    col.region = collection.location
     SET col.name = collection.name,
     col.lastupdated = {azure_update_tag},
     col.throughput = collection.options.throughput,
@@ -1060,10 +1090,30 @@ def cleanup_table_resources(neo4j_session: neo4j.Session, common_job_parameters:
 @timeit
 def sync(
         neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str,
-        sync_tag: int, common_job_parameters: Dict,
+        sync_tag: int, common_job_parameters: Dict, regions: list
 ) -> None:
     logger.info("Syncing Azure CosmosDB for subscription '%s'.", subscription_id)
-    database_account_list = get_database_account_list(credentials, subscription_id)
+    database_account_list = get_database_account_list(credentials, subscription_id, regions, common_job_parameters)
+
+    if common_job_parameters.get('pagination', {}).get('cosmosdb', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("cosmosdb", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("cosmosdb", None)["pageSize"]
+        totalPages = len(database_account_list) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for cosmosdb database_account {pageNo}/{totalPages} pageSize is {pageSize}')
+        page_start = (common_job_parameters.get('pagination', {}).get('cosmosdb', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('cosmosdb', {})['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('cosmosdb', {})['pageSize']
+        if page_end > len(database_account_list) or page_end == len(database_account_list):
+            database_account_list = database_account_list[page_start:]
+        else:
+            has_next_page = True
+            database_account_list = database_account_list[page_start:page_end]
+            common_job_parameters['pagination']['cosmosdb']['hasNextPage'] = has_next_page
+
     database_account_list = transform_database_account_data(database_account_list)
     load_database_account_data(neo4j_session, subscription_id, database_account_list, sync_tag)
     sync_database_account_data_resources(neo4j_session, subscription_id, database_account_list, sync_tag)

@@ -1,20 +1,24 @@
 import json
 import logging
+import time
 from typing import Dict
 from typing import List
 
 import neo4j
+from cloudconsolelink.clouds.gcp import GCPLinker
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
 
+from . import label
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+gcp_console_link = GCPLinker()
 
 
 @timeit
-def get_firestore_databases(firestore: Resource, project_id: str) -> List[Dict]:
+def get_firestore_databases(firestore: Resource, project_id: str, regions: list, common_job_parameters) -> List[Dict]:
     """
         Returns a list of firestore databases for a given project.
 
@@ -34,7 +38,36 @@ def get_firestore_databases(firestore: Resource, project_id: str) -> List[Dict]:
         if response.get('databases', []):
             for database in response['databases']:
                 database['id'] = database['name']
-                firestore_databases.append(database)
+                database['database_name'] = database['name'].split('/')[-1]
+                database['consolelink'] = gcp_console_link.get_console_link(
+                    resource_name='firestore_collection', project_id=project_id, firestore_collection_name=database['name'].split("/")[-1],
+                )
+                if regions is None:
+                    firestore_databases.append(database)
+                else:
+                    if database['locationId'] in regions or database['locationId'] == 'global':
+                        firestore_databases.append(database)
+        if common_job_parameters.get('pagination', {}).get('firestore', None):
+            pageNo = common_job_parameters.get("pagination", {}).get("firestore", None)["pageNo"]
+            pageSize = common_job_parameters.get("pagination", {}).get("firestore", None)["pageSize"]
+            totalPages = len(firestore_databases) / pageSize
+            if int(totalPages) != totalPages:
+                totalPages = totalPages + 1
+            totalPages = int(totalPages)
+            if pageNo < totalPages or pageNo == totalPages:
+                logger.info(f'pages process for firestore databases {pageNo}/{totalPages} pageSize is {pageSize}')
+            page_start = (
+                common_job_parameters.get('pagination', {}).get('firestore', None)[
+                    'pageNo'
+                ] - 1
+            ) * common_job_parameters.get('pagination', {}).get('firestore', None)['pageSize']
+            page_end = page_start + common_job_parameters.get('pagination', {}).get('firestore', None)['pageSize']
+            if page_end > len(firestore_databases) or page_end == len(firestore_databases):
+                firestore_databases = firestore_databases[page_start:]
+            else:
+                has_next_page = True
+                firestore_databases = firestore_databases[page_start:page_end]
+                common_job_parameters['pagination']['firestore']['hasNextPage'] = has_next_page
         return firestore_databases
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -42,6 +75,15 @@ def get_firestore_databases(firestore: Resource, project_id: str) -> List[Dict]:
             logger.warning(
                 (
                     "Could not retrieve Firestore Databases on project %s due to permissions issues.\
+                         Code: %s, Message: %s"
+                ), project_id, err['code'], err['message'],
+            )
+            return []
+
+        elif err.get('status', '') == 'NOT_FOUND' or err.get('code', '') == 404:
+            logger.warning(
+                (
+                    "Could not retrieve Firestore Databases due to customer has not enabled Firestore for Project %s \
                          Code: %s, Message: %s"
                 ), project_id, err['code'], err['message'],
             )
@@ -79,6 +121,8 @@ def get_firestore_indexes(firestore: Resource, firestore_databases: List[Dict], 
                     for index in response['indexes']:
                         index['database_id'] = database['id']
                         index['id'] = index['name']
+                        index['index_name'] = index['name'].split('/')[-1]
+                        index['region'] = database.get('locationId', 'global')
                         firestore_indexes.append(index)
                 request = firestore.projects().databases().collectionGroups().indexes().list_next(
                     previous_request=request, previous_response=response,
@@ -133,16 +177,19 @@ def _load_firestore_databases_tx(
         d.firstseen = timestamp()
     SET
         d.name = database.name,
+        d.database_name = database.database_name,
         d.locationId = database.locationId,
         d.type = database.type,
+        d.region = database.locationId,
         d.concurrencyMode = database.concurrencyMode,
+        d.consolelink = database.consolelink,
         d.lastupdated = {gcp_update_tag}
     WITH d
     MATCH (owner:GCPProject{id:{ProjectId}})
     MERGE (owner)-[r:RESOURCE]->(d)
     ON CREATE SET
-        r.firstseen = timestamp(),
-        r.lastupdated = {gcp_update_tag}
+        r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}
     """
     tx.run(
         ingest_firestore_databases,
@@ -182,15 +229,17 @@ def _load_firestore_indexes_tx(
         ix.firstseen = timestamp()
     SET
         ix.name = index.name,
+        ix.index_name = index.index_name,
         ix.queryScope = index.queryScope,
+        ix.region = index.region,
         ix.state = index.state,
         ix.lastupdated = {gcp_update_tag}
     WITH ix,index
     MATCH (d:GCPFirestoreDatabase{id:index.database_id})
     MERGE (d)-[r:HAS_INDEX]->(ix)
     ON CREATE SET
-        r.firstseen = timestamp(),
-        r.lastupdated = {gcp_update_tag}
+        r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}
     """
     tx.run(
         ingest_firestore_indexes,
@@ -220,7 +269,7 @@ def cleanup_firestore(neo4j_session: neo4j.Session, common_job_parameters: Dict)
 @timeit
 def sync(
     neo4j_session: neo4j.Session, firestore: Resource, project_id: str, gcp_update_tag: int,
-    common_job_parameters: Dict,
+    common_job_parameters: Dict, regions: list,
 ) -> None:
     """
         Get GCP Cloud Firestore using the Cloud Firestore resource object, ingest to Neo4j, and clean up old data.
@@ -243,11 +292,23 @@ def sync(
         :rtype: NoneType
         :return: Nothing
     """
-    logger.info("Syncing GCP Cloud Firestore for project %s.", project_id)
+    tic = time.perf_counter()
+
+    logger.info("Syncing Firestore for project '%s', at %s.", project_id, tic)
+
     # FIRESTORE DATABASES
-    firestore_databases = get_firestore_databases(firestore, project_id)
+    firestore_databases = get_firestore_databases(
+        firestore, project_id, regions, common_job_parameters,
+    )
     load_firestore_databases(neo4j_session, firestore_databases, project_id, gcp_update_tag)
+    label.sync_labels(
+        neo4j_session, firestore_databases, gcp_update_tag,
+        common_job_parameters, 'firestore databases', 'GCPFirestoreDatabase',
+    )
     # FIRESTORE INDEXES
     firestore_indexes = get_firestore_indexes(firestore, firestore_databases, project_id)
     load_firestore_indexes(neo4j_session, firestore_indexes, project_id, gcp_update_tag)
     cleanup_firestore(neo4j_session, common_job_parameters)
+
+    toc = time.perf_counter()
+    logger.info(f"Time to process Firestore: {toc - tic:0.4f} seconds")

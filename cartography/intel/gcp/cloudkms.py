@@ -1,20 +1,25 @@
 import json
 import logging
+import time
 from typing import Dict
 from typing import List
 
 import neo4j
+from cloudconsolelink.clouds.gcp import GCPLinker
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
 
+from . import iam
+from . import label
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+gcp_console_link = GCPLinker()
 
 
 @timeit
-def get_kms_locations(kms: Resource, project_id: str) -> List[Dict]:
+def get_kms_locations(kms: Resource, project_id: str, regions: list, common_job_parameters) -> List[Dict]:
     """
         Returns a list of kms locations for a given project.
 
@@ -35,8 +40,34 @@ def get_kms_locations(kms: Resource, project_id: str) -> List[Dict]:
             if response.get('locations', []):
                 for location in response['locations']:
                     location['id'] = location['name']
-                    locations.append(location)
+                    location['location_name'] = location['name'].split('/')[-1]
+                    if regions is None:
+                        locations.append(location)
+                    else:
+                        if location['locationId'] in regions or location['locationId'] == 'global':
+                            locations.append(location)
             request = kms.projects().locations().list_next(previous_request=request, previous_response=response)
+        if common_job_parameters.get('pagination', {}).get('cloudkms', None):
+            pageNo = common_job_parameters.get("pagination", {}).get("cloudkms", None)["pageNo"]
+            pageSize = common_job_parameters.get("pagination", {}).get("cloudkms", None)["pageSize"]
+            totalPages = len(locations) / pageSize
+            if int(totalPages) != totalPages:
+                totalPages = totalPages + 1
+            totalPages = int(totalPages)
+            if pageNo < totalPages or pageNo == totalPages:
+                logger.info(f'pages process for cloudkms locations {pageNo}/{totalPages} pageSize is {pageSize}')
+            page_start = (
+                common_job_parameters.get('pagination', {}).get('cloudkms', None)[
+                    'pageNo'
+                ] - 1
+            ) * common_job_parameters.get('pagination', {}).get('cloudkms', None)['pageSize']
+            page_end = page_start + common_job_parameters.get('pagination', {}).get('cloudkms', None)['pageSize']
+            if page_end > len(locations) or page_end == len(locations):
+                locations = locations[page_start:]
+            else:
+                has_next_page = True
+                locations = locations[page_start:page_end]
+                common_job_parameters['pagination']['cloudkms']['hasNextPage'] = has_next_page
         return locations
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -78,6 +109,14 @@ def get_kms_keyrings(kms: Resource, kms_locations: List[Dict], project_id: str) 
                     for key_ring in response['keyRings']:
                         key_ring['loc_id'] = loc['id']
                         key_ring['id'] = key_ring['name']
+                        key_ring['key_ring_name'] = key_ring['name'].split('/')[-1]
+                        key_ring['region'] = loc.get("locationId", "global")
+                        key_ring_entities, public_access = get_keyring_policy_entities(kms, key_ring, project_id)
+                        key_ring['entities'] = key_ring_entities
+                        key_ring['public_access'] = public_access
+                        key_ring['consolelink'] = gcp_console_link.get_console_link(
+                            resource_name='kms_key_ring', project_id=project_id, kms_key_ring_name=key_ring['name'].split('/')[-1], region=key_ring['region'],
+                        )
                         key_rings.append(key_ring)
                 request = kms.projects().locations().keyRings().list_next(
                     previous_request=request,
@@ -96,6 +135,41 @@ def get_kms_keyrings(kms: Resource, kms_locations: List[Dict], project_id: str) 
         else:
             raise
     return key_rings
+
+
+@timeit
+def get_keyring_policy_entities(kms: Resource, keyring: Dict, project_id: str) -> List[Dict]:
+    """
+        Returns a list of users attached to IAM policy of a keyring within the given project.
+
+        :type kms: The GCP KMS resource object
+        :param kms: The KMS resource object created by googleapiclient.discovery.build()
+
+        :type keyrings: Dict
+        :param keyrings: The Dict of Keyring object
+
+        :type project_id: str
+        :param project_id: Current Google Project Id
+
+        :rtype: list
+        :return: List of keyring iam policy users
+    """
+    try:
+        iam_policy = kms.projects().locations().keyRings().getIamPolicy(resource=keyring['id']).execute()
+        bindings = iam_policy.get('bindings', [])
+        entity_list, public_access = iam.transform_bindings(bindings, project_id)
+        return entity_list, public_access
+    except HttpError as e:
+        err = json.loads(e.content.decode('utf-8'))['error']
+        if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
+            logger.warning(
+                (
+                    "Could not retrieve iam policy of keyring on project %s due to permissions issues. Code: %s, Message: %s"
+                ), project_id, err['code'], err['message'],
+            )
+            return []
+        else:
+            raise
 
 
 @timeit
@@ -125,6 +199,11 @@ def get_kms_crypto_keys(kms: Resource, key_rings: List[Dict], project_id: str) -
                     for crypto_key in response['cryptoKeys']:
                         crypto_key['keyring_id'] = key_ring['id']
                         crypto_key['id'] = crypto_key['name']
+                        crypto_key['crypto_key_name'] = crypto_key['name'].split('/')[-1]
+                        crypto_key['region'] = key_ring.get("region", "global")
+                        crypto_key['consolelink'] = gcp_console_link.get_console_link(
+                            resource_name='kms_key', project_id=project_id, kms_key_ring_name=key_ring['name'].split('/')[-1], region=crypto_key['region'], kms_key_name=crypto_key['name'].split('/')[-1],
+                        )
                         crypto_keys.append(crypto_key)
                 request = kms.projects().locations().keyRings().cryptoKeys().list_next(
                     previous_request=request,
@@ -173,15 +252,17 @@ def _load_kms_locations_tx(
         location.firstseen = timestamp()
     SET
         location.name = loc.name,
+        location.location_name = loc.location_name,
         location.locationId = loc.locationId,
         location.displayName = loc.displayName,
+        location.region = loc.locationId,
         location.lastupdated = {gcp_update_tag}
     WITH location, loc
     MATCH (owner:GCPProject{id:{ProjectId}})
     MERGE (owner)-[r:RESOURCE]->(location)
     ON CREATE SET
-        r.firstseen = timestamp(),
-        r.lastupdated = {gcp_update_tag}
+        r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}
     """
     tx.run(
         ingest_kms_locations,
@@ -219,19 +300,62 @@ def _load_kms_key_rings_tx(
         keyring.firstseen = timestamp()
     SET
         keyring.name = keyr.name,
+        keyring.key_ring_name = keyr.key_ring_name,
+        keyring.region = keyr.region,
+        keyring.public_access = keyr.public_access,
         keyring.createTime = keyr.createTime,
+        keyring.consolelink = keyr.consolelink,
         keyring.lastupdated = {gcp_update_tag}
     WITH keyring, keyr
     MATCH (location:GCPLocation{id:keyr.loc_id})
     MERGE (location)-[r:RESOURCE]->(keyring)
     ON CREATE SET
-        r.firstseen = timestamp(),
-        r.lastupdated = {gcp_update_tag}
+        r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}
     """
     tx.run(
         ingest_kms_key_rings,
         key_rings=key_rings,
         ProjectId=project_id,
+        gcp_update_tag=gcp_update_tag,
+    )
+
+
+@timeit
+def load_keyring_entity_relation(session: neo4j.Session, keyring: Dict, update_tag: int) -> None:
+    session.write_transaction(load_keyring_entity_relation_tx, keyring, update_tag)
+
+
+@timeit
+def load_keyring_entity_relation_tx(tx: neo4j.Transaction, keyring: Dict, gcp_update_tag: int) -> None:
+    """
+        :type neo4j_session: Neo4j session object
+        :param neo4j session: The Neo4j session object
+
+        :type keyring: Dict
+        :param keyring: Keyring Dict object
+
+        :type project_id: str
+        :param project_id: Current Google Project Id
+
+        :type gcp_update_tag: timestamp
+        :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
+
+        :rtype: NoneType
+        :return: Nothing
+    """
+    ingest_entities = """
+    UNWIND {entities} AS entity
+    MATCH (principal:GCPPrincipal{email:entity.email})
+    WITH principal
+    MATCH (keyring:GCPKMSKeyRing{id: {keyring_id}})
+    MERGE (principal)-[r:USES]->(keyring)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}    """
+    tx.run(
+        ingest_entities,
+        keyring_id=keyring.get('id', None),
+        entities=keyring.get('entities', []),
         gcp_update_tag=gcp_update_tag,
     )
 
@@ -266,17 +390,20 @@ def _load_kms_crypto_keys_tx(
         crypto_key.firstseen = timestamp()
     SET
         crypto_key.name = ck.name,
+        crypto_key.crypto_key_name = ck.crypto_key_name,
         crypto_key.purpose = ck.purpose,
+        crypto_key.region = ck.region,
         crypto_key.createTime = ck.createTime,
         crypto_key.nextRotationTime = ck.nextRotationTime,
         crypto_key.rotationPeriod = ck.rotationPeriod,
+        crypto_key.consolelink = ck.consolelink,
         crypto_key.lastupdated = {gcp_update_tag}
     WITH crypto_key, ck
     MATCH (key_ring:GCPKMSKeyRing{id:ck.keyring_id})
     MERGE (key_ring)-[r:RESOURCE]->(crypto_key)
     ON CREATE SET
-        r.firstseen = timestamp(),
-        r.lastupdated = {gcp_update_tag}
+        r.firstseen = timestamp()
+    SET r.lastupdated = {gcp_update_tag}
     """
     tx.run(
         ingest_crypto_keys,
@@ -306,7 +433,7 @@ def cleanup_gcp_kms(neo4j_session: neo4j.Session, common_job_parameters: Dict) -
 @timeit
 def sync(
     neo4j_session: neo4j.Session, kms: Resource, project_id: str, gcp_update_tag: int,
-    common_job_parameters: Dict,
+    common_job_parameters: Dict, regions: list,
 ) -> None:
     """
     Get GCP Cloud KMS using the Cloud KMS resource object, ingest to Neo4j, and clean up old data.
@@ -329,14 +456,23 @@ def sync(
     :rtype: NoneType
     :return: Nothing
     """
-    logger.info("Syncing GCP Cloud KMS for project %s.", project_id)
+    tic = time.perf_counter()
+
+    logger.info("Syncing Cloud KMS for project '%s', at %s.", project_id, tic)
+
     # KMS LOCATIONS
-    locations = get_kms_locations(kms, project_id)
+    locations = get_kms_locations(kms, project_id, regions, common_job_parameters)
     load_kms_locations(neo4j_session, locations, project_id, gcp_update_tag)
+    label.sync_labels(neo4j_session, locations, gcp_update_tag, common_job_parameters, 'kms_locations', 'GCPLocation')
     # KMS KEYRINGS
     key_rings = get_kms_keyrings(kms, locations, project_id)
     load_kms_key_rings(neo4j_session, key_rings, project_id, gcp_update_tag)
-    # KMS CRYPTOKEYS
+    for key_ring in key_rings:
+        load_keyring_entity_relation(neo4j_session, key_ring, gcp_update_tag)
+    label.sync_labels(neo4j_session, key_rings, gcp_update_tag, common_job_parameters, 'keyrings', 'GCPKMSKeyRing')
     crypto_keys = get_kms_crypto_keys(kms, key_rings, project_id)
     load_kms_crypto_keys(neo4j_session, crypto_keys, project_id, gcp_update_tag)
     cleanup_gcp_kms(neo4j_session, common_job_parameters)
+
+    toc = time.perf_counter()
+    logger.info(f"Time to process Cloud KMS: {toc - tic:0.4f} seconds")

@@ -13,12 +13,14 @@ from azure.mgmt.sql import SqlManagementClient
 from azure.mgmt.sql.models import SecurityAlertPolicyName
 from azure.mgmt.sql.models import TransparentDataEncryptionName
 from msrestazure.azure_exceptions import CloudError
+from cloudconsolelink.clouds.azure import AzureLinker
 
 from .util.credentials import Credentials
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+azure_console_link = AzureLinker()
 
 
 @timeit
@@ -31,7 +33,7 @@ def get_client(credentials: Credentials, subscription_id: str) -> SqlManagementC
 
 
 @timeit
-def get_server_list(credentials: Credentials, subscription_id: str) -> List[Dict]:
+def get_server_list(credentials: Credentials, subscription_id: str, regions: list, common_job_parameters: Dict) -> List[Dict]:
     """
     Returning the list of Azure SQL servers.
     """
@@ -49,12 +51,20 @@ def get_server_list(credentials: Credentials, subscription_id: str) -> List[Dict
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving servers - {e}")
         return []
-
+    server_data = []
     for server in server_list:
         x = server['id'].split('/')
         server['resourceGroup'] = x[x.index('resourceGroups') + 1]
+        server['publicNetworkAccess'] = server.get('properties', {}).get('public_network_access', 'Disabled')
+        server['consolelink'] = azure_console_link.get_console_link(
+            id=server['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+        if regions is None:
+            server_data.append(server)
+        else:
+            if server.get('location') in regions or server.get('location') == 'global':
+                server_data.append(server)
 
-    return server_list
+    return server_data
 
 
 @timeit
@@ -69,9 +79,12 @@ def load_server_data(
     UNWIND {server_list} as server
     MERGE (s:AzureSQLServer{id: server.id})
     ON CREATE SET s.firstseen = timestamp(),
-    s.resourcegroup = server.resourceGroup, s.location = server.location
+    s.resourcegroup = server.resourceGroup, s.location = server.location,
+    s.region = server.location
     SET s.lastupdated = {azure_update_tag},
     s.name = server.name,
+    s.publicNetworkAccess = server.publicNetworkAccess,
+    s.consolelink = server.consolelink,
     s.kind = server.kind,
     s.state = server.state,
     s.version = server.version
@@ -93,10 +106,10 @@ def load_server_data(
 @timeit
 def sync_server_details(
         neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str,
-        server_list: List[Dict], sync_tag: int,
+        server_list: List[Dict], sync_tag: int, common_job_parameters: Dict
 ) -> None:
     details = get_server_details(credentials, subscription_id, server_list)
-    load_server_details(neo4j_session, credentials, subscription_id, details, sync_tag)
+    load_server_details(neo4j_session, credentials, subscription_id, details, sync_tag, common_job_parameters)
 
 
 @timeit
@@ -132,7 +145,8 @@ def get_dns_aliases(credentials: Credentials, subscription_id: str, server: Dict
                 client.server_dns_aliases.list_by_server(server['resourceGroup'], server['name']),
             ),
         )
-
+        for aliase in dns_aliases:
+            aliase["location"] = server.get("location", "global")
     except ClientAuthenticationError as e:
         logger.warning(f"Client Authentication Error while retrieving DNS Aliases - {e}")
         return []
@@ -162,6 +176,8 @@ def get_ad_admins(credentials: Credentials, subscription_id: str, server: Dict) 
                 ),
             ),
         )
+        for admin in ad_admins:
+            admin["location"] = server.get("location", "global")
 
     except ClientAuthenticationError as e:
         logger.warning(f"Client Authentication Error while retrieving Azure AD Administrators - {e}")
@@ -313,7 +329,7 @@ def get_databases(credentials: Credentials, subscription_id: str, server: Dict) 
 @timeit
 def load_server_details(
         neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str,
-        details: List[Tuple[Any, Any, Any, Any, Any, Any, Any, Any, Any, Any]], update_tag: int,
+        details: List[Tuple[Any, Any, Any, Any, Any, Any, Any, Any, Any, Any]], update_tag: int, common_job_parameters: Dict
 ) -> None:
     """
     Create dictionaries for every resource in the server so we can import them in a single query
@@ -331,36 +347,48 @@ def load_server_details(
             for alias in dns_alias:
                 alias['server_name'] = name
                 alias['server_id'] = server_id
+                alias['consolelink'] = azure_console_link.get_console_link(
+                    id=alias['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
                 dns_aliases.append(alias)
 
         if len(ad_admin) > 0:
             for admin in ad_admin:
                 admin['server_name'] = name
                 admin['server_id'] = server_id
+                admin['consolelink'] = azure_console_link.get_console_link(
+                    id=admin['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
                 ad_admins.append(admin)
 
         if len(r_database) > 0:
             for rdb in r_database:
                 rdb['server_name'] = name
                 rdb['server_id'] = server_id
+                rdb['consolelink'] = azure_console_link.get_console_link(
+                    id=rdb['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
                 recoverable_databases.append(rdb)
 
         if len(rd_database) > 0:
             for rddb in rd_database:
                 rddb['server_name'] = name
                 rddb['server_id'] = server_id
+                rddb['consolelink'] = azure_console_link.get_console_link(
+                    id=rddb['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
                 restorable_dropped_databases.append(rddb)
 
         if len(fg) > 0:
             for group in fg:
                 group['server_name'] = name
                 group['server_id'] = server_id
+                group['consolelink'] = azure_console_link.get_console_link(
+                    id=group['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
                 failover_groups.append(group)
 
         if len(elastic_pool) > 0:
             for pool in elastic_pool:
                 pool['server_name'] = name
                 pool['server_id'] = server_id
+                pool['consolelink'] = azure_console_link.get_console_link(
+                    id=pool['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
                 elastic_pools.append(pool)
 
         if len(database) > 0:
@@ -368,6 +396,8 @@ def load_server_details(
                 db['server_name'] = name
                 db['server_id'] = server_id
                 db['resource_group_name'] = rg
+                db['consolelink'] = azure_console_link.get_console_link(
+                    id=db['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
                 databases.append(db)
 
     _load_server_dns_aliases(neo4j_session, dns_aliases, update_tag)
@@ -393,6 +423,9 @@ def _load_server_dns_aliases(
     MERGE (alias:AzureServerDNSAlias{id: dns_alias.id})
     ON CREATE SET alias.firstseen = timestamp()
     SET alias.name = dns_alias.name,
+    alias.location = dns_alias.location,
+    alias.region = dns_alias.location,
+    alias.consolelink = dns_alias.consolelink,
     alias.dnsrecord = dns_alias.azure_dns_record,
     alias.lastupdated = {azure_update_tag}
     WITH alias, dns_alias
@@ -422,7 +455,10 @@ def _load_server_ad_admins(
     ON CREATE SET a.firstseen = timestamp()
     SET a.name = ad_admin.name,
     a.administratortype = ad_admin.administrator_type,
+    a.consolelink = ad_admin.consolelink,
     a.login = ad_admin.login,
+    a.location = ad_admin.location,
+    a.region = ad_admin.location,
     a.lastupdated = {azure_update_tag}
     WITH a, ad_admin
     MATCH (s:AzureSQLServer{id: ad_admin.server_id})
@@ -450,7 +486,9 @@ def _load_recoverable_databases(
     MERGE (rd:AzureRecoverableDatabase{id: rec_db.id})
     ON CREATE SET rd.firstseen = timestamp()
     SET rd.name = rec_db.name,
+    rd.region = {region},
     rd.edition = rec_db.edition,
+    rd.consolelink = rec_db.consolelink,
     rd.servicelevelobjective = rec_db.service_level_objective,
     rd.lastbackupdate = rec_db.last_available_backup_date,
     rd.lastupdated = {azure_update_tag}
@@ -464,6 +502,7 @@ def _load_recoverable_databases(
     neo4j_session.run(
         ingest_recoverable_databases,
         recoverable_databases_list=recoverable_databases,
+        region='global',
         azure_update_tag=update_tag,
     )
 
@@ -478,10 +517,12 @@ def _load_restorable_dropped_databases(
     ingest_restorable_dropped_databases = """
     UNWIND {restorable_dropped_databases_list} as res_dropped_db
     MERGE (rdd:AzureRestorableDroppedDatabase{id: res_dropped_db.id})
-    ON CREATE SET rdd.firstseen = timestamp(), rdd.location = res_dropped_db.location
+    ON CREATE SET rdd.firstseen = timestamp(), rdd.location = res_dropped_db.location,
+    rdd.region = res_dropped_db.location
     SET rdd.name = res_dropped_db.name,
     rdd.databasename = res_dropped_db.database_name,
     rdd.creationdate = res_dropped_db.creation_date,
+    rdd.consolelink = res_dropped_db.consolelink,
     rdd.deletiondate = res_dropped_db.deletion_date,
     rdd.restoredate = res_dropped_db.earliest_restore_date,
     rdd.edition = res_dropped_db.edition,
@@ -514,6 +555,7 @@ def _load_failover_groups(
     MERGE (f:AzureFailoverGroup{id: fg.id})
     ON CREATE SET f.firstseen = timestamp(), f.location = fg.location
     SET f.name = fg.name,
+    f.consolelink = fg.consolelink,
     f.replicationrole = fg.replication_role,
     f.replicationstate = fg.replication_state,
     f.lastupdated = {azure_update_tag}
@@ -541,8 +583,10 @@ def _load_elastic_pools(
     ingest_elastic_pools = """
     UNWIND {elastic_pools_list} as ep
     MERGE (e:AzureElasticPool{id: ep.id})
-    ON CREATE SET e.firstseen = timestamp(), e.location = ep.location
+    ON CREATE SET e.firstseen = timestamp(), e.location = ep.location,
+    e.region = ep.location
     SET e.name = ep.name,
+    e.consolelink = ep.consolelink,
     e.kind = ep.kind,
     e.creationdate = ep.creation_date,
     e.state = ep.state,
@@ -574,8 +618,10 @@ def _load_databases(
     ingest_databases = """
     UNWIND {databases_list} as az_database
     MERGE (d:AzureSQLDatabase{id: az_database.id})
-    ON CREATE SET d.firstseen = timestamp(), d.location = az_database.location
+    ON CREATE SET d.firstseen = timestamp(), d.location = az_database.location,
+    d.region = az_database.location
     SET d.name = az_database.name,
+    d.consolelink = az_database.consolelink,
     d.kind = az_database.kind,
     d.creationdate = az_database.creation_date,
     d.databaseid = az_database.database_id,
@@ -791,7 +837,8 @@ def _load_replication_links(
     UNWIND {replication_links_list} as replication_link
     MERGE (rl:AzureReplicationLink{id: replication_link.id})
     ON CREATE SET rl.firstseen = timestamp(),
-    rl.location = replication_link.location
+    rl.location = replication_link.location,
+    rl.region = replication_link.location
     SET rl.name = replication_link.name,
     rl.partnerdatabase = replication_link.partner_database,
     rl.partnerlocation = replication_link.partner_location,
@@ -832,6 +879,7 @@ def _load_db_threat_detection_policies(
     policy.location = tdp.location
     SET policy.name = tdp.name,
     policy.location = tdp.location,
+    policy.region = tdp.location,
     policy.kind = tdp.kind,
     policy.emailadmins = tdp.email_account_admins,
     policy.emailaddresses = tdp.email_addresses,
@@ -866,7 +914,8 @@ def _load_restore_points(
     UNWIND {restore_points_list} as rp
     MERGE (point:AzureRestorePoint{id: rp.id})
     ON CREATE SET point.firstseen = timestamp(),
-    point.location = rp.location
+    point.location = rp.location,
+    point.region = rp.location
     SET point.name = rp.name,
     point.restoredate = rp.earliest_restore_date,
     point.restorepointtype = rp.restore_point_type,
@@ -897,7 +946,8 @@ def _load_transparent_data_encryptions(
     UNWIND {transparent_data_encryptions_list} as e
     MERGE (tae:AzureTransparentDataEncryption{id: e.id})
     ON CREATE SET tae.firstseen = timestamp(),
-    tae.location = e.location
+    tae.location = e.location,
+    tae.region = e.location
     SET tae.name = e.name,
     tae.status = e.status,
     tae.lastupdated = {azure_update_tag}
@@ -925,10 +975,30 @@ def cleanup_azure_sql_servers(
 @timeit
 def sync(
         neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str,
-        sync_tag: int, common_job_parameters: Dict,
+        sync_tag: int, common_job_parameters: Dict, regions: list
 ) -> None:
     logger.info("Syncing Azure SQL for subscription '%s'.", subscription_id)
-    server_list = get_server_list(credentials, subscription_id)
+    server_list = get_server_list(credentials, subscription_id, regions, common_job_parameters)
+
+    if common_job_parameters.get('pagination', {}).get('sql', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("sql", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("sql", None)["pageSize"]
+        totalPages = len(server_list) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for sql server {pageNo}/{totalPages} pageSize is {pageSize}')
+        page_start = (common_job_parameters.get('pagination', {}).get('sql', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('sql', {})['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('sql', {})['pageSize']
+        if page_end > len(server_list) or page_end == len(server_list):
+            server_list = server_list[page_start:]
+        else:
+            has_next_page = True
+            server_list = server_list[page_start:page_end]
+            common_job_parameters['pagination']['sql']['hasNextPage'] = has_next_page
+
     load_server_data(neo4j_session, subscription_id, server_list, sync_tag)
-    sync_server_details(neo4j_session, credentials, subscription_id, server_list, sync_tag)
+    sync_server_details(neo4j_session, credentials, subscription_id, server_list, sync_tag, common_job_parameters)
     cleanup_azure_sql_servers(neo4j_session, common_job_parameters)

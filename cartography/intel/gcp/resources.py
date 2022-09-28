@@ -2,16 +2,26 @@ from typing import Dict
 
 from . import apigateway
 from . import bigtable
+from . import cloud_logging
+from . import cloudcdn
 from . import cloudfunction
 from . import cloudkms
+from . import cloudmonitoring
 from . import cloudrun
 from . import compute
+from . import dataproc
 from . import dns
 from . import firestore
 from . import gke
 from . import iam
+from . import pubsub
 from . import sql
 from . import storage
+from . import cloud_logging
+from . import cloudmonitoring
+from . import dataproc
+from . import cloudcdn
+from . import loadbalancer
 
 
 RESOURCE_FUNCTIONS: Dict = {
@@ -27,4 +37,10 @@ RESOURCE_FUNCTIONS: Dict = {
     'sql': sql.sync,
     'storage': storage.sync,
     'apigateway': apigateway.sync,
+    'pubsub': pubsub.sync,
+    'cloud_logging': cloud_logging.sync,
+    'cloudmonitoring': cloudmonitoring.sync,
+    'dataproc': dataproc.sync,
+    'cloudcdn': cloudcdn.sync,
+    'loadbalancer': loadbalancer.sync,
 }

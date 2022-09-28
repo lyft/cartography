@@ -1,18 +1,22 @@
 import json
 import logging
+import time
 from typing import Dict
 
 import neo4j
+from cloudconsolelink.clouds.gcp import GCPLinker
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
 
+from . import label
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 logger = logging.getLogger(__name__)
+gcp_console_link = GCPLinker()
 
 
 @timeit
-def get_gke_clusters(container: Resource, project_id: str) -> Dict:
+def get_gke_clusters(container: Resource, project_id: str, regions: list, common_job_parameters) -> Dict:
     """
     Returns a GCP response object containing a list of GKE clusters within the given project.
 
@@ -28,7 +32,39 @@ def get_gke_clusters(container: Resource, project_id: str) -> Dict:
     try:
         req = container.projects().zones().clusters().list(projectId=project_id, zone='-')
         res = req.execute()
-        return res
+        data = []
+        for item in res.get('clusters', []):
+            item['id'] = f"projects/{project_id}/clusters/{item['name']}"
+            item['consolelink'] = gcp_console_link.get_console_link(
+                resource_name='gke_cluster', project_id=project_id, zone=item['zone'], gke_cluster_name=item['name'],
+            )
+            if regions is None:
+                data.append(item)
+            else:
+                if item['zone'][:-2] in regions:
+                    data.append(item)
+        if common_job_parameters.get('pagination', {}).get('gke', None):
+            pageNo = common_job_parameters.get("pagination", {}).get("gke", None)["pageNo"]
+            pageSize = common_job_parameters.get("pagination", {}).get("gke", None)["pageSize"]
+            totalPages = len(data) / pageSize
+            if int(totalPages) != totalPages:
+                totalPages = totalPages + 1
+            totalPages = int(totalPages)
+            if pageNo < totalPages or pageNo == totalPages:
+                logger.info(f'pages process for gke Cluster {pageNo}/{totalPages} pageSize is {pageSize}')
+            page_start = (
+                common_job_parameters.get('pagination', {}).get('gke', None)[
+                    'pageNo'
+                ] - 1
+            ) * common_job_parameters.get('pagination', {}).get('gke', None)['pageSize']
+            page_end = page_start + common_job_parameters.get('pagination', {}).get('gke', None)['pageSize']
+            if page_end > len(data) or page_end == len(data):
+                data = data[page_start:]
+            else:
+                has_next_page = True
+                data = data[page_start:page_end]
+                common_job_parameters['pagination']['gke']['hasNextPage'] = has_next_page
+        return data
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
         if err['status'] == 'PERMISSION_DENIED':
@@ -85,6 +121,7 @@ def load_gke_clusters(neo4j_session: neo4j.Session, cluster_resp: Dict, project_
         cluster.database_encryption = {ClusterDatabaseEncryption},
         cluster.network_policy = {ClusterNetworkPolicy},
         cluster.master_authorized_networks = {ClusterMasterAuthorizedNetworks},
+        cluster.masterGlobalAccessConfig = {ClusterMasterGlobalAccessConfig},
         cluster.legacy_abac = {ClusterAbac},
         cluster.shielded_nodes = {ClusterShieldedNodes},
         cluster.private_nodes = {ClusterPrivateNodes},
@@ -92,6 +129,7 @@ def load_gke_clusters(neo4j_session: neo4j.Session, cluster_resp: Dict, project_
         cluster.private_endpoint = {ClusterPrivateEndpoint},
         cluster.public_endpoint = {ClusterPublicEndpoint},
         cluster.masterauth_username = {ClusterMasterUsername},
+        cluster.consolelink = {consolelink},
         cluster.masterauth_password = {ClusterMasterPassword},
         cluster.lastupdated = {gcp_update_tag}
     WITH cluster
@@ -100,13 +138,13 @@ def load_gke_clusters(neo4j_session: neo4j.Session, cluster_resp: Dict, project_
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {gcp_update_tag}
     """
-    for cluster in cluster_resp.get('clusters', []):
+    for cluster in cluster_resp:
         cluster['region'] = cluster.get('zone')[:-2]
 
         neo4j_session.run(
             query,
             ProjectId=project_id,
-            ClusterId=f"project/{project_id}/clusters/{cluster['name']}",
+            ClusterId=f"projects/{project_id}/clusters/{cluster['name']}",
             ClusterSelfLink=cluster['selfLink'],
             ClusterCreateTime=cluster['createTime'],
             ClusterName=cluster['name'],
@@ -132,9 +170,13 @@ def load_gke_clusters(neo4j_session: neo4j.Session, cluster_resp: Dict, project_
             ClusterPrivateNodes=cluster.get('privateClusterConfig', {}).get('enablePrivateNodes'),
             ClusterPrivateEndpointEnabled=cluster.get('privateClusterConfig', {}).get('enablePrivateEndpoint'),
             ClusterPrivateEndpoint=cluster.get('privateClusterConfig', {}).get('privateEndpoint'),
+            ClusterMasterGlobalAccessConfig=cluster.get('privateClusterConfig', {}).get(
+                'masterGlobalAccessConfig', {},
+            ).get('enabled'),
             ClusterPublicEndpoint=cluster.get('privateClusterConfig', {}).get('publicEndpoint'),
             ClusterMasterUsername=cluster.get('masterAuth', {}).get('username'),
             ClusterMasterPassword=cluster.get('masterAuth', {}).get('password'),
+            consolelink=cluster.get('consolelink'),
             gcp_update_tag=gcp_update_tag,
         )
 
@@ -171,7 +213,7 @@ def cleanup_gke_clusters(neo4j_session: neo4j.Session, common_job_parameters: Di
 @timeit
 def sync(
     neo4j_session: neo4j.Session, container: Resource, project_id: str, gcp_update_tag: int,
-    common_job_parameters: Dict,
+    common_job_parameters: Dict, regions: list,
 ) -> None:
     """
     Get GCP GKE Clusters using the Container resource object, ingest to Neo4j, and clean up old data.
@@ -194,8 +236,16 @@ def sync(
     :rtype: NoneType
     :return: Nothing
     """
-    logger.info("Syncing Compute objects for project %s.", project_id)
-    gke_res = get_gke_clusters(container, project_id)
+    tic = time.perf_counter()
+
+    logger.info("Syncing GKE for project '%s', at %s.", project_id, tic)
+
+    gke_res = get_gke_clusters(container, project_id, regions, common_job_parameters)
+
     load_gke_clusters(neo4j_session, gke_res, project_id, gcp_update_tag)
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gke_clusters(neo4j_session, common_job_parameters)
+    label.sync_labels(neo4j_session, gke_res, gcp_update_tag, common_job_parameters, 'gke clusters', 'GKECluster')
+
+    toc = time.perf_counter()
+    logger.info(f"Time to process GKE: {toc - tic:0.4f} seconds")
