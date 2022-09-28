@@ -20,6 +20,7 @@ from cartography.util import merge_module_sync_metadata
 from cartography.util import run_analysis_job
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
+from pprint import pprint
 
 logger = logging.getLogger(__name__)
 stat_handler = get_stats_client(__name__)
@@ -242,15 +243,20 @@ def _load_s3_policies(neo4j_session: neo4j.Session, policies: List[Dict], update
     """
     Ingest S3 policy results into neo4j.
     """
+    pprint(policies)
     # NOTE we use the coalesce function so appending works when the value is null initially
     ingest_policies = """
     UNWIND $policies AS policy
-    MATCH (s:S3Bucket) where s.name = policy.bucket
+    MERGE (p:S3PolicyStatement{bucket: policy.bucket})
+    ON CREATE SET p.firstseen = timestamp(), p.statements = policy.statements
+    WITH p, policy MATCH (s:S3Bucket{id: policy.bucket})
+    MERGE (s)-[r:POLICY_STATEMENT]->(p)
+    ON CREATE SET r.firstseen = timestamp()
     SET s.anonymous_access = (coalesce(s.anonymous_access, false) OR policy.internet_accessible),
     s.anonymous_actions = coalesce(s.anonymous_actions, []) + policy.accessible_actions,
-    s.lastupdated = $UpdateTag
+    s.lastupdated = $UpdateTag, r.lastupdated = $UpdateTag
     """
-
+    #TODO THIS IS WHERE BUCKET POLICIES ARE INGESTED
     neo4j_session.run(
         ingest_policies,
         policies=policies,
@@ -435,9 +441,14 @@ def parse_policy(bucket: str, policyDict: Optional[Dict]) -> Optional[Dict]:
         return None
     # get just the policy element and convert to JSON because boto3 returns this as string
     policy = Policy(json.loads(policyDict['Policy']))
+    statements = []
+    for s in policy.statements:
+        statements.append(s.statement)
     if policy.is_internet_accessible():
         return {
+            #TODO PARSE STATEMENTS HERE
             "bucket": bucket,
+            "statements": statements,
             "internet_accessible": True,
             "accessible_actions": list(policy.internet_accessible_actions()),
         }
