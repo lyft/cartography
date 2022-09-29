@@ -1,7 +1,7 @@
 {
   "statements": [
     {
-      "__comment": "This analyze AWS accounts we created and tag the ones that are forein. Forein accounts are ones that were not in the sync scope",
+      "__comment": "This analyze AWS accounts we created and tag the ones that are foreign. Foreign accounts are ones that were not in the sync scope",
       "query": "MATCH (foreign:AWSAccount) where NOT EXISTS(foreign.inscope) SET foreign.foreign = true",
       "iterative": false
     },
