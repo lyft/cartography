@@ -7,13 +7,14 @@ from typing import List
 import neo4j
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
+from cloudconsolelink.clouds.gcp import GCPLinker
 
 from . import label
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
-
+gcp_console_link = GCPLinker()
 
 @timeit
 def get_logging_metrics(logging: Resource, project_id: str) -> List[Dict]:
@@ -27,6 +28,7 @@ def get_logging_metrics(logging: Resource, project_id: str) -> List[Dict]:
                     metric['region'] = 'global'
                     metric['id'] = metric['name']
                     metric['metric_name'] = metric.get('name').split('/')[-1]
+                    metric['consoleLink'] = gcp_console_link.get_console_link(project_id=project_id, resource_name="cloud_logging_metric")
                     metrics.append(metric)
             req = logging.projects().metrics().list_next(previous_request=req, previous_response=res)
 
@@ -68,6 +70,7 @@ def load_logging_metrics_tx(
         metric.filter = record.filter,
         metric.bucket_name = record.bucketName,
         metric.disabled = record.disabled,
+        metric.consoleLink = record.consoleLink,
         metric.value_extractor = record.valueExtractor,
         metric.create_time = record.createTime,
         metric.update_time = record.updateTime
@@ -136,6 +139,7 @@ def get_logging_sinks(logging: Resource, project_id: str) -> List[Dict]:
                 for sink in res['sinks']:
                     sink['region'] = 'global'
                     sink['id'] = f"projects/{project_id}/sinks/{sink['name']}"
+                    sink['consoleLink'] = gcp_console_link.get_console_link(project_id=project_id, resource_name='cloud_logging_sink')
                     sink.append(sink)
             req = logging.projects().sinks().list_next(previous_request=req, previous_response=res)
 
@@ -177,6 +181,7 @@ def load_logging_sinks_tx(
         sink.filter = record.filter,
         sink.destination = record.destination,
         sink.disabled = record.disabled,
+        sink.consoleLink = record.consoleLink,
         sink.writerIdentity = record.writerIdentity,
         sink.create_time = record.createTime,
         sink.update_time = record.updateTime
