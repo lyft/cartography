@@ -1,41 +1,41 @@
 {
-    "statements": [
-        {
-            "query": "MATCH (n:GCPKMSCryptoKey)<-[:RESOURCE]-(:GCPKMSKeyRing)<-[:RESOURCE]-(:GCPLocation)<-[:RESOURCE]-(:GCPProject{id: {GCP_PROJECT_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
-            "iterative": true,
-            "iterationsize": 100,
-            "__comment__": "Delete GCP KMS Cryptokeys that no longer exist and detach them from all previously connected nodes."
-        },
-        {
-            "query": "MATCH (:GCPKMSCryptoKey)<-[r:RESOURCE]-(:GCPKMSKeyRing)<-[:RESOURCE]-(:GCPLocation)<-[:RESOURCE]-(:GCPProject{id: {GCP_PROJECT_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
-            "iterative": true,
-            "iterationsize": 100,
-            "__comment__": "Remove GCP GCPKMSCryptoKey-to-Keyrings relationships that are out of date."
-        },
-        {
-            "query": "MATCH (n:GCPKMSKeyRing)<-[:RESOURCE]-(:GCPLocation)<-[:RESOURCE]-(:GCPProject{id: {GCP_PROJECT_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
-            "iterative": true,
-            "iterationsize": 100,
-            "__comment__": "Delete GCP KMS Keyrings that no longer exist and detach them from all previously connected nodes."
-        },
-        {
-            "query": "MATCH (:GCPKMSKeyRing)<-[r:RESOURCE]-(:GCPLocation)<-[:RESOURCE]-(:GCPProject{id: {GCP_PROJECT_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
-            "iterative": true,
-            "iterationsize": 100,
-            "__comment__": "Remove GCP GCPKMSKeyRing-to-Location relationships that are out of date."
-        },
-        {
-            "query": "MATCH (n:GCPLocation)<-[:RESOURCE]-(:GCPProject{id: {GCP_PROJECT_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
-            "iterative": true,
-            "iterationsize": 100,
-            "__comment__": "Delete GCP KMSLocations that no longer exist and detach them from all previously connected nodes."
-        },
-        {
-            "query": "MATCH (:GCPLocation)<-[r:RESOURCE]-(:GCPProject{id: {GCP_PROJECT_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
-            "iterative": true,
-            "iterationsize": 100,
-            "__comment__": "Remove GCP GCPLocation-to-Project relationships that are out of date."
-        }
-    ],
-    "name": "Cleanup GCP KMS Locations, Keyrings and Cryptokeys."
+	"statements": [
+		{
+			"query": "MATCH (n:GCPKMSCryptoKey)<-[:RESOURCE]-(:GCPKMSKeyRing)<-[:RESOURCE]-(:GCPLocation)<-[:RESOURCE]-(:GCPProject{id: {GCP_PROJECT_ID}})<-[:OWNER]-(:CloudanixWorkspace{id: {WORKSPACE_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 100,
+			"__comment__": "Delete GCP KMS Cryptokeys that no longer exist and detach them from all previously connected nodes."
+		},
+		{
+			"query": "MATCH (:GCPKMSCryptoKey)<-[r:RESOURCE]-(:GCPKMSKeyRing)<-[:RESOURCE]-(:GCPLocation)<-[:RESOURCE]-(:GCPProject{id: {GCP_PROJECT_ID}})<-[:OWNER]-(:CloudanixWorkspace{id: {WORKSPACE_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 100,
+			"__comment__": "Remove GCP GCPKMSCryptoKey-to-Keyrings relationships that are out of date."
+		},
+		{
+			"query": "MATCH (n:GCPKMSKeyRing)<-[:RESOURCE]-(:GCPLocation)<-[:RESOURCE]-(:GCPProject{id: {GCP_PROJECT_ID}})<-[:OWNER]-(:CloudanixWorkspace{id: {WORKSPACE_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 100,
+			"__comment__": "Delete GCP KMS Keyrings that no longer exist and detach them from all previously connected nodes."
+		},
+		{
+			"query": "MATCH (:GCPKMSKeyRing)<-[r:RESOURCE]-(:GCPLocation)<-[:RESOURCE]-(:GCPProject{id: {GCP_PROJECT_ID}})<-[:OWNER]-(:CloudanixWorkspace{id: {WORKSPACE_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 100,
+			"__comment__": "Remove GCP GCPKMSKeyRing-to-Location relationships that are out of date."
+		},
+		{
+			"query": "MATCH (n:GCPLocation)<-[:RESOURCE]-(:GCPProject{id: {GCP_PROJECT_ID}})<-[:OWNER]-(:CloudanixWorkspace{id: {WORKSPACE_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 100,
+			"__comment__": "Delete GCP KMSLocations that no longer exist and detach them from all previously connected nodes."
+		},
+		{
+			"query": "MATCH (:GCPLocation)<-[r:RESOURCE]-(:GCPProject{id: {GCP_PROJECT_ID}})<-[:OWNER]-(:CloudanixWorkspace{id: {WORKSPACE_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 100,
+			"__comment__": "Remove GCP GCPLocation-to-Project relationships that are out of date."
+		}
+	],
+	"name": "Cleanup GCP KMS Locations, Keyrings and Cryptokeys."
 }

@@ -5,12 +5,15 @@ from typing import List
 import neo4j
 from azure.core.exceptions import HttpResponseError
 from azure.mgmt.web import WebSiteManagementClient
+from msrest.exceptions import DeserializationError
+from cloudconsolelink.clouds.azure import AzureLinker
 
 from .util.credentials import Credentials
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+azure_console_link = AzureLinker()
 
 
 def load_function_apps(
@@ -105,16 +108,25 @@ def get_client(
 
 
 @timeit
-def get_function_apps_list(client: WebSiteManagementClient) -> List[Dict]:
+def get_function_apps_list(client: WebSiteManagementClient, regions: list, common_job_parameters: Dict) -> List[Dict]:
     try:
         function_app_list = list(
             map(lambda x: x.as_dict(), client.web_apps.list()),
         )
+        function_list = []
         for function in function_app_list:
             x = function['id'].split('/')
             function['resource_group'] = x[x.index('resourceGroups') + 1]
-
-        return function_app_list
+            function['hostNamesDisabled'] = function.get('properties', {}).get('host_names_disabled', True)
+            function['location'] = function.get('location', '').replace(" ", "").lower()
+            function['consolelink'] = azure_console_link.get_console_link(
+                id=function['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+            if regions is None:
+                function_list.append(function)
+            else:
+                if function.get('location') in regions or function.get('location') == 'global':
+                    function_list.append(function)
+        return function_list
 
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving function apps - {e}")
@@ -132,6 +144,9 @@ def _load_function_apps_tx(
     ON CREATE SET f.firstseen = timestamp(),
     f.type = function_app.type,
     f.location = function_app.location,
+    f.region = function_app.location,
+    f.consolelink = function_app.consolelink,
+    f.hostNamesDisabled = function_app.hostNamesDisabled,
     f.resourcegroup = function_app.resource_group
     SET f.lastupdated = {update_tag},
     f.name = function_app.name,
@@ -174,9 +189,30 @@ def sync_function_apps(
     subscription_id: str,
     update_tag: int,
     common_job_parameters: Dict,
+    regions: list
 ) -> None:
     client = get_client(credentials, subscription_id)
-    function_apps_list = get_function_apps_list(client)
+    function_apps_list = get_function_apps_list(client, regions, common_job_parameters)
+
+    if common_job_parameters.get('pagination', {}).get('function_app', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("function_app", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("function_app", None)["pageSize"]
+        totalPages = len(function_apps_list) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for function_app {pageNo}/{totalPages} pageSize is {pageSize}')
+        page_start = (common_job_parameters.get('pagination', {}).get('function_app', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('function_app', {})['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('function_app', {})['pageSize']
+        if page_end > len(function_apps_list) or page_end == len(function_apps_list):
+            function_apps_list = function_apps_list[page_start:]
+        else:
+            has_next_page = True
+            function_apps_list = function_apps_list[page_start:page_end]
+            common_job_parameters['pagination']['function_app']['hasNextPage'] = has_next_page
+
     load_function_apps(
         neo4j_session, subscription_id, function_apps_list,
         update_tag,
@@ -194,10 +230,10 @@ def sync_function_apps(
         neo4j_session, function_apps_list, client,
         update_tag, common_job_parameters,
     )
-    sync_function_apps_processes(
-        neo4j_session, function_apps_list, client,
-        update_tag, common_job_parameters,
-    )
+    # sync_function_apps_processes(
+    #     neo4j_session, function_apps_list, client,
+    #     update_tag, common_job_parameters,
+    # )
     sync_function_apps_backups(
         neo4j_session, function_apps_list, client,
         update_tag, common_job_parameters,
@@ -206,20 +242,20 @@ def sync_function_apps(
         neo4j_session, function_apps_list, client,
         update_tag, common_job_parameters,
     )
-    sync_function_apps_webjobs(
-        neo4j_session, function_apps_list, client,
-        update_tag, common_job_parameters,
-    )
+    # sync_function_apps_webjobs(
+    #     neo4j_session, function_apps_list, client,
+    #     update_tag, common_job_parameters,
+    # )
 
 
 def get_function_apps_configuration_list(
         function_apps_list: List[Dict],
-        client: WebSiteManagementClient,
+        client: WebSiteManagementClient, common_job_parameters: Dict
 ) -> List[Dict]:
     try:
         function_apps_conf_list: List[Dict] = []
         for function in function_apps_list:
-            function_apps_conf_list = function_apps_conf_list + list(
+            apps_conf_list = list(
                 map(
                     lambda x: x.as_dict(),
                     client.web_apps.list_configurations(
@@ -228,13 +264,18 @@ def get_function_apps_configuration_list(
                 ),
             )
 
-        for conf in function_apps_conf_list:
-            x = conf['id'].split('/')
-            conf['resource_group'] = x[x.index('resourceGroups') + 1]
-            conf['function_app_id'] = conf['id'][
-                :conf['id'].
-                index("/config/web")
-            ]
+            for conf in apps_conf_list:
+                x = conf['id'].split('/')
+                conf['resource_group'] = x[x.index('resourceGroups') + 1]
+                conf['function_app_id'] = conf['id'][
+                    :conf['id'].
+                    index("/config/web")
+                ]
+                conf['consolelink'] = azure_console_link.get_console_link(
+                    id=conf['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+                conf["location"] = function.get("location")
+                conf['publicNetworkAccess'] = conf.get('properties', {}).get('public_network_access', 'Disabled')
+            function_apps_conf_list.extend(apps_conf_list)
         return function_apps_conf_list
 
     except HttpResponseError as e:
@@ -260,6 +301,10 @@ def _load_function_apps_configurations_tx(
     fc.number_of_workers=function_conf.number_of_workers,
     fc.net_framework_version=function_conf.net_framework_version,
     fc.php_version=function_conf.php_version,
+    fc.location = function_conf.location,
+    fc.region = function_conf.location,
+    fc.consolelink = function_conf.consolelink,
+    fc.publicNetworkAccess = function_conf.publicNetworkAccess,
     fc.python_version=function_conf.python_version,
     fc.node_version=function_conf.node_version,
     fc.linux_fx_version=function_conf.linux_fx_version,
@@ -306,7 +351,7 @@ def sync_function_apps_conf(
     common_job_parameters: Dict,
 ) -> None:
     function_app_conf_list = get_function_apps_configuration_list(
-        function_apps_list, client,
+        function_apps_list, client, common_job_parameters
     )
     load_function_apps_configurations(
         neo4j_session, function_app_conf_list,
@@ -317,12 +362,12 @@ def sync_function_apps_conf(
 
 def get_function_apps_functions_list(
         function_apps_list: List[Dict],
-        client: WebSiteManagementClient,
+        client: WebSiteManagementClient, common_job_parameters: Dict
 ) -> List[Dict]:
     try:
         function_apps_functions_list: List[Dict] = []
         for function in function_apps_list:
-            function_apps_functions_list = function_apps_functions_list + list(
+            functions_list = list(
                 map(
                     lambda x: x.as_dict(),
                     client.web_apps.list_functions(
@@ -332,13 +377,17 @@ def get_function_apps_functions_list(
                 ),
             )
 
-        for function in function_apps_functions_list:
-            x = function['id'].split('/')
-            function['resource_group'] = x[x.index('resourceGroups') + 1]
-            function['function_app_id'] = function['id'][
-                :function['id'].
-                index("/functions")
-            ]
+            for fun in functions_list:
+                x = fun['id'].split('/')
+                fun['resource_group'] = x[x.index('resourceGroups') + 1]
+                fun['function_app_id'] = fun['id'][
+                    :fun['id'].
+                    index("/functions")
+                ]
+                fun["location"] = function.get("location", "global")
+                fun['consolelink'] = azure_console_link.get_console_link(
+                    id=fun['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+            function_apps_functions_list.extend(functions_list)
         return function_apps_functions_list
 
     except HttpResponseError as e:
@@ -358,8 +407,11 @@ def _load_function_apps_functions_tx(
     f.type = function.type
     SET f.name = function.name,
     f.lastupdated = {azure_update_tag},
+    f.location = function.location,
+    f.region = function.location,
     f.resource_group_name=function.resource_group,
     f.href=function.href,
+    f.consolelink = function.consolelink,
     f.language=function.language,
     f.is_disabled=function.is_disabled
     WITH f, function
@@ -394,7 +446,7 @@ def sync_function_apps_functions(
     common_job_parameters: Dict,
 ) -> None:
     function_apps_function_list = get_function_apps_functions_list(
-        function_apps_list, client,
+        function_apps_list, client, common_job_parameters
     )
     load_function_apps_functions(
         neo4j_session, function_apps_function_list,
@@ -410,7 +462,7 @@ def get_function_apps_deployments_list(
     try:
         function_apps_deployments_list: List[Dict] = []
         for function in function_apps_list:
-            function_apps_deployments_list = function_apps_deployments_list + list(
+            deployments_list = list(
                 map(
                     lambda x: x.as_dict(),
                     client.web_apps.list_deployments(
@@ -420,12 +472,14 @@ def get_function_apps_deployments_list(
                 ),
             )
 
-        for deployment in function_apps_deployments_list:
-            x = deployment['id'].split('/')
-            deployment['resource_group'] = x[x.index('resourceGroups') + 1]
-            deployment['function_app_id'] = deployment[
-                'id'
-            ][:deployment['id'].index("/deployments")]
+            for deployment in deployments_list:
+                x = deployment['id'].split('/')
+                deployment['resource_group'] = x[x.index('resourceGroups') + 1]
+                deployment['function_app_id'] = deployment[
+                    'id'
+                ][:deployment['id'].index("/deployments")]
+                deployment["location"] = function.get("location", "global")
+            function_apps_deployments_list.extend(deployments_list)
         return function_apps_deployments_list
 
     except HttpResponseError as e:
@@ -447,6 +501,8 @@ def _load_function_apps_deployments_tx(
     f.type = function_deploy.type
     SET f.name = function_deploy.name,
     f.lastupdated = {azure_update_tag},
+    f.location = function_deploy.location,
+    f.region = function_deploy.location,
     f.resource_group_name=function_deploy.resource_group
     WITH f, function_deploy
     MATCH (s:AzureFunctionApp{id: function_deploy.function_app_id})
@@ -496,7 +552,7 @@ def get_function_apps_backups_list(
     try:
         function_apps_backups_list: List[Dict] = []
         for function in function_apps_list:
-            function_apps_backups_list = function_apps_backups_list + list(
+            backups_list = list(
                 map(
                     lambda x: x.as_dict(),
                     client.web_apps.list_backups(
@@ -506,13 +562,15 @@ def get_function_apps_backups_list(
                 ),
             )
 
-        for backup in function_apps_backups_list:
-            x = backup['id'].split('/')
-            backup['resource_group'] = x[x.index('resourceGroups') + 1]
-            backup['function_app_id'] = backup['id'][
-                :backup['id'].
-                index("/backups")
-            ]
+            for backup in backups_list:
+                x = backup['id'].split('/')
+                backup['resource_group'] = x[x.index('resourceGroups') + 1]
+                backup['function_app_id'] = backup['id'][
+                    :backup['id'].
+                    index("/backups")
+                ]
+                backup["location"] = function.get("location", "global")
+            function_apps_backups_list.extend(backups_list)
         return function_apps_backups_list
 
     except HttpResponseError as e:
@@ -529,6 +587,8 @@ def _load_function_apps_backups_tx(
     UNWIND {function_apps_backups_list} as function_backup
     MERGE (f:AzureFunctionAppBackup{id: function_backup.id})
     ON CREATE SET f.firstseen = timestamp(),
+    f.location = function_backup.location,
+    f.region = function_backup.location,
     f.type = function_backup.type
     SET f.name = function_backup.name,
     f.lastupdated = {azure_update_tag},
@@ -581,26 +641,30 @@ def get_function_apps_processes_list(
     try:
         function_apps_processes_list: List[Dict] = []
         for function in function_apps_list:
-            function_apps_processes_list = function_apps_processes_list + list(
+            items = client.web_apps.list_processes(
+                function['resource_group'],
+                function['name'],
+            )
+
+            processes_list = list(
                 map(
                     lambda x: x.as_dict(),
-                    client.web_apps.list_processes(
-                        function['resource_group'],
-                        function['name'],
-                    ),
+                    items,
                 ),
             )
 
-        for process in function_apps_processes_list:
-            x = process['id'].split('/')
-            process['resource_group'] = x[x.index('resourceGroups') + 1]
-            process['function_app_id'] = process['id'][
-                :process['id'].
-                index("/processes")
-            ]
+            for process in processes_list:
+                x = process['id'].split('/')
+                process['resource_group'] = x[x.index('resourceGroups') + 1]
+                process['function_app_id'] = process['id'][
+                    :process['id'].
+                    index("/processes")
+                ]
+                process["location"] = function.get("location", "global")
+            function_apps_processes_list.extend(processes_list)
         return function_apps_processes_list
 
-    except HttpResponseError as e:
+    except DeserializationError as e:
         logger.warning(f"Error while retrieving function apps processes - {e}")
         return []
 
@@ -614,6 +678,8 @@ def _load_function_apps_processes_tx(
     UNWIND {function_apps_processes_list} as function_process
     MERGE (f:AzureFunctionAppProcess{id: function_process.id})
     ON CREATE SET f.firstseen = timestamp(),
+    f.location = function_process.location,
+    f.region = function_process.location,
     f.type = function_process.type
     SET f.name = function_process.name,
     f.lastupdated = {azure_update_tag},
@@ -666,7 +732,7 @@ def get_function_apps_snapshots_list(
     try:
         function_apps_snapshots_list: List[Dict] = []
         for function in function_apps_list:
-            function_apps_snapshots_list = function_apps_snapshots_list + list(
+            snapshots_list = list(
                 map(
                     lambda x: x.as_dict(),
                     client.web_apps.list_snapshots(
@@ -676,13 +742,15 @@ def get_function_apps_snapshots_list(
                 ),
             )
 
-        for snapshot in function_apps_snapshots_list:
-            x = snapshot['id'].split('/')
-            snapshot['resource_group'] = x[x.index('resourceGroups') + 1]
-            snapshot['function_app_id'] = snapshot['id'][
-                :snapshot['id'].
-                index("/snapshots")
-            ]
+            for snapshot in snapshots_list:
+                x = snapshot['id'].split('/')
+                snapshot['resource_group'] = x[x.index('resourceGroups') + 1]
+                snapshot['function_app_id'] = snapshot['id'][
+                    :snapshot['id'].
+                    index("/snapshots")
+                ]
+                snapshot["location"] = function.get("location", "global")
+            function_apps_snapshots_list.extend(snapshots_list)
         return function_apps_snapshots_list
 
     except HttpResponseError as e:
@@ -699,6 +767,8 @@ def _load_function_apps_snapshots_tx(
     UNWIND {function_apps_snapshots_list} as function_snapshot
     MERGE (f:AzureFunctionAppSnapshot{id: function_snapshot.id})
     ON CREATE SET f.firstseen = timestamp(),
+    f.location = function_snapshot.location,
+    f.region = function_snapshot.location,
     f.type = function_snapshot.type
     SET f.name = function_snapshot.name,
     f.lastupdated = {azure_update_tag},
@@ -751,7 +821,7 @@ def get_function_apps_webjobs_list(
     try:
         function_apps_webjobs_list: List[Dict] = []
         for function in function_apps_list:
-            function_apps_webjobs_list = function_apps_webjobs_list + list(
+            webjobs_list = list(
                 map(
                     lambda x: x.as_dict(),
                     client.web_apps.list_web_jobs(
@@ -761,16 +831,18 @@ def get_function_apps_webjobs_list(
                 ),
             )
 
-        for webjob in function_apps_webjobs_list:
-            x = webjob['id'].split('/')
-            webjob['resource_group'] = x[x.index('resourceGroups') + 1]
-            webjob['function_app_id'] = webjob['id'][
-                :webjob['id'].
-                index("/webjobs")
-            ]
+            for webjob in webjobs_list:
+                x = webjob['id'].split('/')
+                webjob['resource_group'] = x[x.index('resourceGroups') + 1]
+                webjob['function_app_id'] = webjob['id'][
+                    :webjob['id'].
+                    index("/webjobs")
+                ]
+                webjob["location"] = function.get("location", "global")
+            function_apps_webjobs_list.extend(webjobs_list)
         return function_apps_webjobs_list
 
-    except HttpResponseError as e:
+    except DeserializationError as e:
         logger.warning(f"Error while retrieving function apps webjobs - {e}")
         return []
 
@@ -784,6 +856,8 @@ def _load_function_apps_webjobs_tx(
     UNWIND {function_apps_webjobs_list} as function_webjob
     MERGE (f:AzureFunctionAppWebjob{id: function_webjob.id})
     ON CREATE SET f.firstseen = timestamp(),
+    f.location = function_webjob.location,
+    f.region = function_webjob.location,
     f.type = function_webjob.type
     SET f.name = function_webjob.name,
     f.lastupdated = {azure_update_tag},
@@ -836,6 +910,7 @@ def sync(
     subscription_id: str,
     update_tag: int,
     common_job_parameters: Dict,
+    regions: list
 ) -> None:
     logger.info(
         "Syncing function apps for subscription '%s'.",
@@ -844,5 +919,5 @@ def sync(
 
     sync_function_apps(
         neo4j_session, credentials, subscription_id, update_tag,
-        common_job_parameters,
+        common_job_parameters, regions
     )

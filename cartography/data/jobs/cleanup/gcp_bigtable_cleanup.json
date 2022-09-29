@@ -1,53 +1,53 @@
 {
-    "statements": [
-        {
-            "query": "MATCH (n:GCPBigtableClusterBackup)<-[:HAS_BACKUP]-(:GCPBigtableCluster)<-[:HAS_CLUSTER]-(:GCPBigtableInstance)<-[:RESOURCE]-(:GCPProject{id: {GCP_PROJECT_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
-            "iterative": true,
-            "iterationsize": 100,
-            "__comment__": "Delete GCP Bigtable Cluster Backup that no longer exist and detach them from all previously connected nodes."
-        },
-        {
-            "query": "MATCH (:GCPBigtableClusterBackup)<-[r:HAS_BACKUP]-(:GCPBigtableCluster)<-[:HAS_CLUSTER]-(:GCPBigtableInstance)<-[:RESOURCE]-(:GCPProject{id: {GCP_PROJECT_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
-            "iterative": true,
-            "iterationsize": 100,
-            "__comment__": "Remove GCP GCPBigtableClusterBackup-to-Cluster relationships that are out of date."
-        },
-        {
-            "query": "MATCH (n:GCPBigtableCluster)<-[:HAS_CLUSTER]-(:GCPBigtableInstance)<-[:RESOURCE]-(:GCPProject{id: {GCP_PROJECT_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
-            "iterative": true,
-            "iterationsize": 100,
-            "__comment__": "Delete GCP Bigtable Cluster that no longer exist and detach them from all previously connected nodes."
-        },
-        {
-            "query": "MATCH (:GCPBigtableCluster)<-[r:HAS_CLUSTER]-(:GCPBigtableInstance)<-[:RESOURCE]-(:GCPProject{id: {GCP_PROJECT_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
-            "iterative": true,
-            "iterationsize": 100,
-            "__comment__": "Remove GCP GCPBigtableCluster-to-Instance relationships that are out of date."
-        },
-        {
-            "query": "MATCH (n:GCPBigtableTable)<-[:HAS_TABLE]-(:GCPBigtableInstance)<-[:RESOURCE]->(:GCPProject{id: {GCP_PROJECT_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
-            "iterative": true,
-            "iterationsize": 100,
-            "__comment__": "Delete GCP Bigtable Table that no longer exist and detach them from all previously connected nodes."
-        },
-        {
-            "query": "MATCH (:GCPBigtableTable)<-[r:HAS_TABLE]-(:GCPBigtableInstance)<-[:RESOURCE]-(:GCPProject{id: {GCP_PROJECT_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
-            "iterative": true,
-            "iterationsize": 100,
-            "__comment__": "Remove GCP GCPBigtableTable-to-Instance relationships that are out of date."
-        },
-        {
-            "query": "MATCH (n:GCPBigtableInstance)<-[:RESOURCE]-(:GCPProject{id: {GCP_PROJECT_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
-            "iterative": true,
-            "iterationsize": 100,
-            "__comment__": "Delete GCP Bigtable Instance that no longer exist and detach them from all previously connected nodes."
-        },
-        {
-            "query": "MATCH (:GCPBigtableInstance)<-[r:RESOURCE]-(:GCPProject{id: {GCP_PROJECT_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
-            "iterative": true,
-            "iterationsize": 100,
-            "__comment__": "Remove GCP GCPBigtableInstance-to-Project relationships that are out of date."
-        }
-    ],
-    "name": "Cleanup GCP Bigtable."
+	"statements": [
+		{
+			"query": "MATCH (n:GCPBigtableClusterBackup)<-[:HAS_BACKUP]-(:GCPBigtableCluster)<-[:HAS_CLUSTER]-(:GCPBigtableInstance)<-[:RESOURCE]-(:GCPProject{id: {GCP_PROJECT_ID}})<-[:OWNER]-(:CloudanixWorkspace{id: {WORKSPACE_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 100,
+			"__comment__": "Delete GCP Bigtable Cluster Backup that no longer exist and detach them from all previously connected nodes."
+		},
+		{
+			"query": "MATCH (:GCPBigtableClusterBackup)<-[r:HAS_BACKUP]-(:GCPBigtableCluster)<-[:HAS_CLUSTER]-(:GCPBigtableInstance)<-[:RESOURCE]-(:GCPProject{id: {GCP_PROJECT_ID}})<-[:OWNER]-(:CloudanixWorkspace{id: {WORKSPACE_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 100,
+			"__comment__": "Remove GCP GCPBigtableClusterBackup-to-Cluster relationships that are out of date."
+		},
+		{
+			"query": "MATCH (n:GCPBigtableCluster)<-[:HAS_CLUSTER]-(:GCPBigtableInstance)<-[:RESOURCE]-(:GCPProject{id: {GCP_PROJECT_ID}})<-[:OWNER]-(:CloudanixWorkspace{id: {WORKSPACE_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 100,
+			"__comment__": "Delete GCP Bigtable Cluster that no longer exist and detach them from all previously connected nodes."
+		},
+		{
+			"query": "MATCH (:GCPBigtableCluster)<-[r:HAS_CLUSTER]-(:GCPBigtableInstance)<-[:RESOURCE]-(:GCPProject{id: {GCP_PROJECT_ID}})<-[:OWNER]-(:CloudanixWorkspace{id: {WORKSPACE_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 100,
+			"__comment__": "Remove GCP GCPBigtableCluster-to-Instance relationships that are out of date."
+		},
+		{
+			"query": "MATCH (n:GCPBigtableTable)<-[:HAS_TABLE]-(:GCPBigtableInstance)<-[:RESOURCE]->(:GCPProject{id: {GCP_PROJECT_ID}})<-[:OWNER]-(:CloudanixWorkspace{id: {WORKSPACE_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 100,
+			"__comment__": "Delete GCP Bigtable Table that no longer exist and detach them from all previously connected nodes."
+		},
+		{
+			"query": "MATCH (:GCPBigtableTable)<-[r:HAS_TABLE]-(:GCPBigtableInstance)<-[:RESOURCE]-(:GCPProject{id: {GCP_PROJECT_ID}})<-[:OWNER]-(:CloudanixWorkspace{id: {WORKSPACE_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 100,
+			"__comment__": "Remove GCP GCPBigtableTable-to-Instance relationships that are out of date."
+		},
+		{
+			"query": "MATCH (n:GCPBigtableInstance)<-[:RESOURCE]-(:GCPProject{id: {GCP_PROJECT_ID}})<-[:OWNER]-(:CloudanixWorkspace{id: {WORKSPACE_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 100,
+			"__comment__": "Delete GCP Bigtable Instance that no longer exist and detach them from all previously connected nodes."
+		},
+		{
+			"query": "MATCH (:GCPBigtableInstance)<-[r:RESOURCE]-(:GCPProject{id: {GCP_PROJECT_ID}})<-[:OWNER]-(:CloudanixWorkspace{id: {WORKSPACE_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 100,
+			"__comment__": "Remove GCP GCPBigtableInstance-to-Project relationships that are out of date."
+		}
+	],
+	"name": "Cleanup GCP Bigtable."
 }

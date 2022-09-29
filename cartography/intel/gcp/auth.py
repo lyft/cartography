@@ -8,7 +8,7 @@ from google.oauth2 import credentials
 
 class AuthHelper:
 
-    def get_credentials(self, token_uri, account_email):
+    def get_credentials(self, token_uri: str, account_email: str) -> credentials.Credentials:
         try:
             session_string = str(uuid.uuid4())
 

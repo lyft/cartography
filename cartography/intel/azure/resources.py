@@ -13,12 +13,12 @@ from . import storage
 
 RESOURCE_FUNCTIONS: Dict = {
     'iam': iam.sync,
+    'network': network.sync,
     'aks': aks.sync,
     'cosmosdb': cosmosdb.sync,
     'function_app': function_app.sync,
     'key_vaults': key_vaults.sync,
     'compute': compute.sync,
-    'network': network.sync,
     'sql': sql.sync,
     'storage': storage.sync,
 }

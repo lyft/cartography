@@ -20,5 +20,30 @@ maya
 pytz
 google-cloud-pubsub>=2.3.0
 click<8.0,>=7.0
-
+pyparsing==2.4.7
+markupsafe==2.0.1
 cloudconsolelink~=1.0.5
+# Azure specific packages
+azure-eventgrid~=4.1.1
+azure-functions~=1.6.0
+adal>=1.2.4
+azure-core<2.0.0,>=1.15.0
+azure-cli-core>=2.26.0
+azure-mgmt-compute>=5.0.0
+azure-mgmt-resource>=10.2.0
+azure-mgmt-cosmosdb>=6.1.0
+msrestazure >= 0.6.4
+azure-mgmt-storage>=16.0.0
+azure-mgmt-sql<=1.0.0
+azure-identity>=1.5.0
+azure-mgmt-containerinstance>=1.5.0
+azure-mgmt-containerregistry>=2.8.0
+azure-mgmt-containerservice>=4.4.0
+azure-mgmt-keyvault>=1.1.0
+azure-graphrbac>=0.61.1
+azure-mgmt-authorization==0.50.0
+azure-mgmt-resource>=10.2.0
+azure-mgmt-network>=2.7.0
+azure-mgmt-web>=0.47.0
+kubernetes>=18.20.0
+pdpyras>=4.3.0

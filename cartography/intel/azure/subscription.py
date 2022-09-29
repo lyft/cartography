@@ -75,11 +75,13 @@ def load_azure_subscriptions(
 ) -> None:
     query = """
     MERGE (at:AzureTenant{id: {TENANT_ID}})
-    ON CREATE SET at.firstseen = timestamp()
+    ON CREATE SET at.firstseen = timestamp(),
+    at.region = {region}
     SET at.lastupdated = {update_tag}
     WITH at
     MERGE (as:AzureSubscription{id: {SUBSCRIPTION_ID}})
-    ON CREATE SET as.firstseen = timestamp(), as.path = {SUBSCRIPTION_PATH}
+    ON CREATE SET as.firstseen = timestamp(), as.path = {SUBSCRIPTION_PATH},
+    as.region = {region}
     SET as.lastupdated = {update_tag}, as.name = {SUBSCRIPTION_NAME}, as.state = {SUBSCRIPTION_STATE}
     WITH as, at
     MERGE (at)-[r:RESOURCE]->(as)
@@ -95,6 +97,7 @@ def load_azure_subscriptions(
             SUBSCRIPTION_NAME=sub['displayName'],
             SUBSCRIPTION_STATE=sub['state'],
             update_tag=update_tag,
+            region='global',
         )
 
 
@@ -108,4 +111,12 @@ def sync(
     common_job_parameters: Dict,
 ) -> None:
     load_azure_subscriptions(neo4j_session, tenant_id, subscriptions, update_tag)
-    cleanup(neo4j_session, common_job_parameters)
+
+    for sub in subscriptions:
+        common_job_parameters['AZURE_SUBSCRIPTION_ID'] = sub['subscriptionId']
+        common_job_parameters['AZURE_TENANT_ID'] = tenant_id
+
+        cleanup(neo4j_session, common_job_parameters)
+
+    del common_job_parameters['AZURE_SUBSCRIPTION_ID']
+    del common_job_parameters['AZURE_TENANT_ID']

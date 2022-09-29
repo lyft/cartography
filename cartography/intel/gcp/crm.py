@@ -75,7 +75,7 @@ def get_gcp_projects(crm_v1: Resource) -> List[Resource]:
 
 
 @timeit
-def load_gcp_organizations(neo4j_session: neo4j.Session, data: List[Dict], gcp_update_tag: int) -> None:
+def load_gcp_organizations(neo4j_session: neo4j.Session, data: List[Dict], gcp_update_tag: int, common_job_parameters: Dict,) -> None:
     """
     Ingest the GCP organizations to Neo4j
     :param neo4j_session: The Neo4j session
@@ -90,6 +90,7 @@ def load_gcp_organizations(neo4j_session: neo4j.Session, data: List[Dict], gcp_u
     MERGE (org:GCPOrganization{id:{OrgName}})
     ON CREATE SET org.firstseen = timestamp()
     SET org.orgname = {OrgName},
+    org.region = {region},
     org.displayname = {DisplayName},
     org.lifecyclestate = {LifecycleState},
     org.lastupdated = {gcp_update_tag}
@@ -101,8 +102,10 @@ def load_gcp_organizations(neo4j_session: neo4j.Session, data: List[Dict], gcp_u
     for org_object in data:
         neo4j_session.run(
             query,
+            WorkspaceId=common_job_parameters['WORKSPACE_ID'],
             OrgName=org_object['name'],
             DisplayName=org_object.get('displayName', None),
+            region="global",
             LifecycleState=org_object.get('lifecycleState', None),
             gcp_update_tag=gcp_update_tag,
         )
@@ -127,11 +130,13 @@ def load_gcp_folders(neo4j_session: neo4j.Session, data: List[Dict], gcp_update_
             query = """
             MERGE (parent:GCPFolder{id:{ParentId}})
             ON CREATE SET parent.firstseen = timestamp()
+            SET parent.lastupated = {gcp_update_tag}
             """
         query += """
         MERGE (folder:GCPFolder{id:{FolderName}})
         ON CREATE SET folder.firstseen = timestamp()
         SET folder.foldername = {FolderName},
+        folder.region = {region},
         folder.displayname = {DisplayName},
         folder.lifecyclestate = {LifecycleState},
         folder.lastupdated = {gcp_update_tag}
@@ -145,6 +150,7 @@ def load_gcp_folders(neo4j_session: neo4j.Session, data: List[Dict], gcp_update_
             ParentId=folder['parent'],
             FolderName=folder['name'],
             DisplayName=folder.get('displayName', None),
+            region="global",
             LifecycleState=folder.get('lifecycleState', None),
             gcp_update_tag=gcp_update_tag,
         )
@@ -168,6 +174,7 @@ def load_gcp_projects(
     MERGE (project:GCPProject{id:{ProjectId}})
     ON CREATE SET project.firstseen = timestamp()
     SET project.projectid = {ProjectId},
+    project.region = {region},
     project.projectnumber = {ProjectNumber},
     project.displayname = {DisplayName},
     project.lifecyclestate = {LifecycleState},
@@ -187,7 +194,8 @@ def load_gcp_projects(
             ProjectNumber=project['projectNumber'],
             DisplayName=project.get('name', None),
             LifecycleState=project.get('lifecycleState', None),
-            WorkspaceAccountId=common_job_parameters['WORKSPACE_ACCOUNT_ID'],
+            region="global",
+            WorkspaceAccountId=common_job_parameters['GCP_PROJECT_ID'],
             gcp_update_tag=gcp_update_tag,
         )
         if project.get('parent'):
@@ -217,6 +225,7 @@ def _attach_gcp_project_parent(neo4j_session: neo4j.Session, project: Dict, gcp_
 
     MERGE (parent:$parent_label{id:{ParentId}})
     ON CREATE SET parent.firstseen = timestamp()
+    SET parent.lastupdated = {gcp_update_tag}
 
     MERGE (parent)-[r:RESOURCE]->(project)
     ON CREATE SET r.firstseen = timestamp()
@@ -279,7 +288,7 @@ def sync_gcp_organizations(
     """
     logger.debug("Syncing GCP organizations")
     data = get_gcp_organizations(crm_v1)
-    load_gcp_organizations(neo4j_session, data, gcp_update_tag)
+    load_gcp_organizations(neo4j_session, data, gcp_update_tag, common_job_parameters)
     cleanup_gcp_organizations(neo4j_session, common_job_parameters)
 
 
