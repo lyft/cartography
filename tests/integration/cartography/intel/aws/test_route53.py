@@ -67,8 +67,8 @@ def test_transform_and_load_ns_records(neo4j_session):
     second_data = [cartography.intel.aws.route53.transform_ns_record_set(data, TEST_ZONE_ID + "2")]
     cartography.intel.aws.route53.load_ns_records(neo4j_session, second_data, TEST_ZONE_NAME, TEST_UPDATE_TAG)
     result = neo4j_session.run("MATCH (n:AWSDNSRecord{name:'testdomain.net'}) return count(n) as recordcount")
-    # for r in result:
-    #     assert r["recordcount"] == 2
+    for r in result:
+        assert r["recordcount"] == 2
 
 
 def test_load_dnspointsto_ec2_relationships(neo4j_session):

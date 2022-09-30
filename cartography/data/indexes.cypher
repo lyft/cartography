@@ -110,7 +110,6 @@ CREATE INDEX ON :GCPDNSZone(id);
 CREATE INDEX ON :GCPDNSPolicy(id);
 CREATE INDEX ON :GCPDNSKey(id);
 CREATE INDEX ON :GCPLabel(id);
-
 CREATE INDEX ON :GCPRecordSet(id);
 CREATE INDEX ON :GCPFolder(id);
 CREATE INDEX ON :GCPForwardingRule(id);
@@ -323,4 +322,3 @@ CREATE INDEX ON :KubernetesService(id);
 CREATE INDEX ON :KubernetesService(name);
 CREATE INDEX ON :AzureFunction(id);
 CREATE INDEX ON :AzureLocation(id);
-

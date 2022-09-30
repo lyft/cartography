@@ -79,5 +79,5 @@ def test_load_sqs_queues(neo4j_session, *args):
         )
         for r in relation
     }
-    print(actual_relationship)
+
     assert actual_relationship == expected_relationship
