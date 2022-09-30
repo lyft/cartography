@@ -22,14 +22,14 @@ from cartography.intel.gcp.auth import AuthHelper
 logger = logging.getLogger(__name__)
 Resources = namedtuple(
     'Resources', 'compute gke cloudfunction crm_v1 crm_v2 dns storage serviceusage \
-        iam admin cloudfunction apigateway cloudkms cloudrun sql bigtable firestore',
+        iam admin apigateway cloudkms cloudrun sql bigtable firestore',
 )
 
 # Mapping of service short names to their full names as in docs. See https://developers.google.com/apis-explorer,
 # and https://cloud.google.com/service-usage/docs/reference/rest/v1/services#ServiceConfig
 Services = namedtuple(
     'Services', 'compute storage gke dns crm_v1 crm_v2 \
-    cloudkms cloudrun iam admin apigateway sql bigtable firestore',
+    cloudkms cloudrun iam admin apigateway sql bigtable firestore bigquery',
 )
 service_names = Services(
     compute='compute.googleapis.com',
@@ -46,6 +46,7 @@ service_names = Services(
     sql='sqladmin.googleapis.com',
     bigtable='bigtableadmin.googleapis.com',
     firestore='firestore.googleapis.com',
+    bigquery='bigquery.googleapis.com',
 )
 
 
@@ -218,6 +219,24 @@ def _get_firestore_resource(credentials: GoogleCredentials) -> Resource:
     """
     return googleapiclient.discovery.build('firestore', 'v1', credentials=credentials, cache_discovery=False)
 
+def _get_cloudfunction_resource(credentials: GoogleCredentials) -> Resource:
+    """
+    Instantiates a cloud function resource object.
+    See: https://cloud.google.com/functions/docs/reference/rest
+    :param credentials: The GoogleCredentials object
+    :return: A serviceusage resource object
+    """
+    return googleapiclient.discovery.build('cloudfunctions', 'v1', credentials=credentials, cache_discovery=False)
+
+def _get_bigquery_resource(credentials: GoogleCredentials) -> Resource:
+    """
+    Instantiates a bigquery resource object.
+    See: https://cloud.google.com/bigquery/docs/reference/rest
+    :param credentials: The GoogleCredentials object
+    :return: A serviceusage resource object
+    """
+    return googleapiclient.discovery.build('bigquery', 'v2', credentials=credentials, cache_discovery=False)
+
 
 def _initialize_resources(credentials: GoogleCredentials) -> Resource:
     """
@@ -239,10 +258,10 @@ def _initialize_resources(credentials: GoogleCredentials) -> Resource:
         firestore=_get_firestore_resource(credentials),
         cloudkms=_get_cloudkms_resource(credentials),
         cloudrun=_get_cloudrun_resource(credentials),
-        iam=_get_iam_resource(credentials),
         admin=_get_admin_resource(credentials),
         apigateway=_get_apigateway_resource(credentials),
         cloudfunction=_get_cloudfunction_resource(credentials),
+        bigquery=_get_bigquery_resource(credentials),
     )
 
 

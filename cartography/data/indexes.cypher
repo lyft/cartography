@@ -157,6 +157,8 @@ CREATE INDEX ON :GCPBigtableClusterBackup(id);
 CREATE INDEX ON :GCPBigtableTable(id);
 CREATE INDEX ON :GCPFirestoreDatabase(id);
 CREATE INDEX ON :GCPFirestoreIndex(id);
+CREATE INDEX ON :GCPBigqueryDataset(id);
+CREATE INDEX ON :GCPBigqueryTable(id);
 CREATE INDEX ON :Ip(id);
 CREATE INDEX ON :Ip(ip);
 CREATE INDEX ON :IpPermissionInbound(ruleid);

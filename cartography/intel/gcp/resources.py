@@ -22,6 +22,7 @@ from . import cloudmonitoring
 from . import dataproc
 from . import cloudcdn
 from . import loadbalancer
+from . import bigquery
 
 
 RESOURCE_FUNCTIONS: Dict = {
@@ -43,4 +44,5 @@ RESOURCE_FUNCTIONS: Dict = {
     'dataproc': dataproc.sync,
     'cloudcdn': cloudcdn.sync,
     'loadbalancer': loadbalancer.sync,
+    'bigquery': bigquery.sync,
 }
