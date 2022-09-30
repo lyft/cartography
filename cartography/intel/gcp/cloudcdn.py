@@ -27,7 +27,7 @@ def get_backend_buckets(compute: Resource, project_id: str) -> List[Dict]:
                 for bucket in res['items']:
                     bucket['region'] = 'global'
                     bucket['id'] = f"projects/{project_id}/global/backendBuckets/{bucket['bucketName']}"
-                    bucket['consoleLink'] = gcp_console_link.get_console_link(project_id=project_id,\
+                    bucket['consolelink'] = gcp_console_link.get_console_link(project_id=project_id,\
                         backend_bucket_name=bucket['name'], resource_name='backend_bucket')
                     backend_buckets.append(bucket)
             req = compute.backendBuckets().list_next(previous_request=req, previous_response=res)
@@ -66,7 +66,7 @@ def load_backend_buckets_tx(
         bucket.region = b.region,
         bucket.uniqueId = b.id,
         bucket.name = b.bucketName,
-        bucket.consoleLink = b.consoleLink,
+        bucket.consolelink = b.consolelink,
         bucket.enableCdn = b.enableCdn,
         bucket.defaultTtl = b.cdnPolicy.defaultTtl,
         bucket.maxTtl = b.cdnPolicy.maxTtl
@@ -137,7 +137,7 @@ def get_global_backend_services(compute: Resource, project_id: str) -> List[Dict
                     backend_service['region'] = 'global'
                     backend_service['type'] = 'global'
                     backend_service['id'] = f"projects/{project_id}/global/backendServices/{backend_service['name']}"
-                    backend_service['consoleLink'] = gcp_console_link.get_console_link(project_id=project_id,\
+                    backend_service['consolelink'] = gcp_console_link.get_console_link(project_id=project_id,\
                         backend_service_name=backend_service['name'], resource_name='global_backend_service')
                     global_backend_services.append(backend_service)
             req = compute.backendServices().list_next(previous_request=req, previous_response=res)
@@ -178,7 +178,7 @@ def load_backend_services_tx(
         service.type = s.type,
         service.uniqueId = s.id,
         service.name = s.name,
-        service.consoleLink = s.consoleLink,
+        service.consolelink = s.consolelink,
         service.enableCDN = s.enableCDN,
         service.sessionAffinity = s.sessionAffinity,
         service.loadBalancingScheme = s.loadBalancingScheme,
@@ -254,7 +254,7 @@ def get_regional_backend_services(compute: Resource, project_id: str, regions: l
                             region_service['region'] = region
                             region_service['type'] = 'regional'
                             region_service['id'] = f"projects/{project_id}/regions/{region}/backendServices/{region_service['name']}"
-                            region_service['consoleLink'] = gcp_console_link.get_console_link(project_id=project_id,\
+                            region_service['consolelink'] = gcp_console_link.get_console_link(project_id=project_id,\
                                 backend_service_name=region_service['name'], region=region_service['region'], resource_name='regional_backend_service')
                             regional_backend_services.append(region_service)
                     req = compute.regionBackendServices().list_next(previous_request=req, previous_response=res)

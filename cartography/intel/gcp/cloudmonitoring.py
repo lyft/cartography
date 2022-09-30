@@ -29,7 +29,7 @@ def get_monitoring_alertpolicies(monitoring: Resource, project_id: str) -> List[
                     policy['id'] = policy['name']
                     policy['policy_name'] = policy.get('name').split('/')[-1]
                     policy['labels'] = policy.get('userLabels', {})
-                    policy['consoleLink'] = gcp_console_link.get_console_link(project_id=project_id,\
+                    policy['consolelink'] = gcp_console_link.get_console_link(project_id=project_id,\
                         alert_policy_name=policy['name'], resource_name='cloud_monitoring_alert_policy')
                     policies.append(policy)
             req = monitoring.projects().alertPolicies().list_next(previous_request=req, previous_response=res)
@@ -69,7 +69,7 @@ def load_monitoring_alertpolicies_tx(
         policy.region = record.region,
         policy.name = record.policy_name,
         policy.display_name = record.displayName,
-        policy.consoleLink = record.consoleLink,
+        policy.consolelink = record.consolelink,
         policy.enabled = record.enabled
     WITH policy
     MATCH (owner:GCPProject{id:{ProjectId}})
@@ -247,7 +247,7 @@ def get_monitoring_notification_channels(monitoring: Resource, project_id: str) 
                     channel['region'] = 'global'
                     channel['id'] = channel['name']
                     channel['channel_name'] = channel.get('name').split('/')[-1]
-                    channel['consoleLink'] = gcp_console_link.get_console_link(project_id=project_id, resource_name='cloud_monitoring_notification_channels')
+                    channel['consolelink'] = gcp_console_link.get_console_link(project_id=project_id, resource_name='cloud_monitoring_notification_channels')
                     channels.append(channel)
             req = monitoring.projects().notificationChannels().list_next(previous_request=req, previous_response=res)
 
@@ -287,7 +287,7 @@ def load_monitoring_notification_channels_tx(
         channel.name = record.channel_name,
         channel.display_name = record.displayName,
         channel.enabled = record.enabled,
-        channel.consoleLink = record.consoleLink,
+        channel.consolelink = record.consolelink,
         channel.description = record.description,
         channel.type = record.type
     WITH channel
@@ -361,7 +361,7 @@ def get_monitoring_uptimecheckconfigs(monitoring: Resource, project_id: str) -> 
                     config['id'] = config['name']
                     config['config_name'] = config.get('name').split('/')[-1]
                     config['labels'] = config.get('userLabels', {})
-                    config['consoleLink'] = gcp_console_link.get_console_link(project_id=project_id,\
+                    config['consolelink'] = gcp_console_link.get_console_link(project_id=project_id,\
                         uptimecheck_config_name=config['name'], resource_name='cloud_monitoring_uptime_check_config')
                     configs.append(config)
             req = monitoring.projects().uptimeCheckConfigs().list_next(previous_request=req, previous_response=res)
@@ -403,7 +403,7 @@ def load_monitoring_uptimecheckconfigs_tx(
         config.display_name = record.displayName,
         config.is_internal = record.isInternal,
         config.timeout = record.timeout,
-        config.consoleLink = record.consoleLink,
+        config.consolelink = record.consolelink,
         config.period = record.period
     WITH config
     MATCH (owner:GCPProject{id:{ProjectId}})

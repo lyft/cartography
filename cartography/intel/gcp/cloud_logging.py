@@ -28,7 +28,7 @@ def get_logging_metrics(logging: Resource, project_id: str) -> List[Dict]:
                     metric['region'] = 'global'
                     metric['id'] = metric['name']
                     metric['metric_name'] = metric.get('name').split('/')[-1]
-                    metric['consoleLink'] = gcp_console_link.get_console_link(project_id=project_id, resource_name="cloud_logging_metric")
+                    metric['consolelink'] = gcp_console_link.get_console_link(project_id=project_id, resource_name="cloud_logging_metric")
                     metrics.append(metric)
             req = logging.projects().metrics().list_next(previous_request=req, previous_response=res)
 
@@ -70,7 +70,7 @@ def load_logging_metrics_tx(
         metric.filter = record.filter,
         metric.bucket_name = record.bucketName,
         metric.disabled = record.disabled,
-        metric.consoleLink = record.consoleLink,
+        metric.consolelink = record.consolelink,
         metric.value_extractor = record.valueExtractor,
         metric.create_time = record.createTime,
         metric.update_time = record.updateTime
@@ -139,7 +139,7 @@ def get_logging_sinks(logging: Resource, project_id: str) -> List[Dict]:
                 for sink in res['sinks']:
                     sink['region'] = 'global'
                     sink['id'] = f"projects/{project_id}/sinks/{sink['name']}"
-                    sink['consoleLink'] = gcp_console_link.get_console_link(project_id=project_id, resource_name='cloud_logging_sink')
+                    sink['consolelink'] = gcp_console_link.get_console_link(project_id=project_id, resource_name='cloud_logging_sink')
                     sink.append(sink)
             req = logging.projects().sinks().list_next(previous_request=req, previous_response=res)
 
@@ -181,7 +181,7 @@ def load_logging_sinks_tx(
         sink.filter = record.filter,
         sink.destination = record.destination,
         sink.disabled = record.disabled,
-        sink.consoleLink = record.consoleLink,
+        sink.consolelink = record.consolelink,
         sink.writerIdentity = record.writerIdentity,
         sink.create_time = record.createTime,
         sink.update_time = record.updateTime
