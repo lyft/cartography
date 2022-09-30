@@ -73,9 +73,9 @@ def load_transit_gateways(
     update_tag: int,
 ) -> None:
     ingest_transit_gateway = """
-    MERGE (ownerAccount:AWSAccount {id: {OwnerId}})
+    MERGE (ownerAccount:AWSAccount {id: $OwnerId})
     ON CREATE SET ownerAccount.firstseen = timestamp()
-    SET ownerAccount.lastupdated = {update_tag}
+    SET ownerAccount.lastupdated = $update_tag
 
     MERGE (tgw:AWSTransitGateway {id: $ARN})
     ON CREATE SET tgw.firstseen = timestamp(), tgw.arn = $ARN
