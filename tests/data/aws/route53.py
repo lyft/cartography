@@ -37,6 +37,8 @@ ZONE_RECORDS = [
     {
         "Id": "/hostedzone/FAKEZONEID1",
         "Name": "test.com.",
+        'arn': 'arn:aws:kms:eu-west-1:000000000000:alias/key2-cartography',
+        'consolelink': '',
         "CallerReference": "BD057866-DA11-69AA-AE7C-339CDB669D49",
         "Config": {
             "PrivateZone": False,
@@ -46,6 +48,8 @@ ZONE_RECORDS = [
     {
         "Id": "/hostedzone/FAKEZONEID2",
         "Name": "test.com.",
+        'arn': 'arn:aws:kms:eu-west-1:000000000000:alias/key2-cartography',
+        'consolelink': '',
         "CallerReference": "BD057866-DA11-69AA-AE7C-339CDB669D49",
         "Config": {
             "PrivateZone": False,
@@ -57,6 +61,8 @@ ZONE_RECORDS = [
 GET_ZONES_SAMPLE_RESPONSE = [(
     {
         'CallerReference': '044a41db-b8e1-45f8-9962-91c95a123456',
+        'arn': '',
+        'consolelink': '',
         'Config': {
             'PrivateZone': False,
         },
@@ -66,6 +72,7 @@ GET_ZONES_SAMPLE_RESPONSE = [(
     }, [
         {
             'Name': 'example.com.',
+
             'ResourceRecords': [{
                 'Value': '1.2.3.4',
             }],

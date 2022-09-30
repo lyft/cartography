@@ -13,6 +13,7 @@ GET_REST_APIS = [
         'description': 'Testing for Cartography',
         'createdDate': datetime.datetime(2021, 1, 1),
         'version': '1.0',
+        'region': 'us-east-1',
         'warnings': [
             'Possible Failure',
         ],
@@ -34,6 +35,7 @@ GET_REST_APIS = [
         'description': 'Unit Testing for Cartography',
         'createdDate': datetime.datetime(2021, 2, 1),
         'version': '1.0',
+        'region': 'us-east-1',
         'warnings': [
             'Possible Failure',
         ],
@@ -56,6 +58,7 @@ GET_STAGES = [
         'arn': 'arn:aws:apigateway:::test-001/Cartography-testing-infra',
         'deploymentId': 'd-001',
         'apiId': 'test-001',
+        'region': 'us-east-1',
         'clientCertificateId': 'cert-001',
         'stageName': 'Cartography-testing-infra',
         'description': 'Testing',
@@ -86,6 +89,7 @@ GET_STAGES = [
         'arn': 'arn:aws:apigateway:::test-002/Cartography-testing-unit',
         'deploymentId': 'd-002',
         'apiId': 'test-002',
+        'region': 'us-east-1',
         'clientCertificateId': 'cert-002',
         'stageName': 'Cartography-testing-unit',
         'description': 'Testing',
@@ -124,6 +128,7 @@ GET_CERTIFICATES = [
         'expirationDate': datetime.datetime(2021, 4, 1),
         'stageName': 'Cartography-testing-infra',
         'apiId': 'test-001',
+        'aws_account_id': 'aws-001',
         'stageArn': 'arn:aws:apigateway:::test-001/Cartography-testing-infra',
     },
     {
@@ -135,6 +140,7 @@ GET_CERTIFICATES = [
         'expirationDate': datetime.datetime(2021, 4, 1),
         'stageName': 'Cartography-testing-unit',
         'apiId': 'test-002',
+        'aws_account_id': 'aws-001',
         'stageArn': 'arn:aws:apigateway:::test-002/Cartography-testing-unit',
     },
 ]
@@ -144,6 +150,7 @@ GET_RESOURCES = [
         'id': '3kzxbg5sa2',
         'apiId': 'test-001',
         'parentId': 'ababababab',
+        'region': 'us-east-1',
         'pathPart': 'resource',
         'path': '/restapis/test-001/resources/3kzxbg5sa2',
     },

@@ -92,7 +92,7 @@ def _sync_one_account(
     )
 
     # Process each service in parallel.
-    with ThreadPoolExecutor(max_workers=len(RESOURCE_FUNCTIONS)-2) as executor:
+    with ThreadPoolExecutor(max_workers=len(RESOURCE_FUNCTIONS) - 2) as executor:
         futures = []
 
         for func_name in aws_requested_syncs:

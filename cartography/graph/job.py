@@ -74,12 +74,15 @@ class GraphJob:
         }
 
     @classmethod
-    def from_json(cls, blob: str, short_name: str = None):
+    def from_json(cls, blob: str, short_name: str = None, parameters: Dict = None):
         """
         Create a job from a JSON blob.
         """
         data: Dict = json.loads(blob)
         statements = _get_statements_from_json(data, short_name)
+        if parameters.get('service_label', None):
+            for statement in statements:
+                statement.query = statement.query.replace('<-(m)-', f"<-(:{parameters['service_label']})-")
         name = data["name"]
         return cls(name, statements, short_name)
 
@@ -106,7 +109,7 @@ class GraphJob:
         if not parameters:
             parameters = {}
 
-        job: GraphJob = cls.from_json(blob, short_name)
+        job: GraphJob = cls.from_json(blob, short_name, parameters)
         job.merge_parameters(parameters)
         job.run(neo4j_session)
 

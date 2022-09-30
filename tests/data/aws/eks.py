@@ -13,6 +13,7 @@ DESCRIBE_CLUSTERS = {
         "endpoint": "https://1111111.sk1.eu-west-1.eks.amazonaws.com",
         "version": "1.14",
         "platformVersion": "eks.9",
+        "region": "eu-west-2",
         "roleArn": "arn:aws:iam::111111111111:role/cluster_1",
         "resourcesVpcConfig": {
             "subnetIds": ["subnet-1111", "subnet-2222", "subnet-3333"],
@@ -41,6 +42,7 @@ DESCRIBE_CLUSTERS = {
         "createdAt": datetime.datetime(2019, 1, 1, 0, 0, 1),
         "endpoint": "https://222222222222.sk1.eu-west-1.eks.amazonaws.com",
         "version": "1.14",
+        "region": "eu-west-2",
         "platformVersion": "eks.9",
         "roleArn": "arn:aws:iam::222222222222:role/cluster_2",
         "resourcesVpcConfig": {

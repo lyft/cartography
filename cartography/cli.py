@@ -566,7 +566,7 @@ def run_azure(request):
         graph_scope=request['azure']['graph_scope'],
         azure_scope=request['azure']['azure_scope'],
         params=request['params'],
-        neo4j_max_connection_lifetime=3600,
+        # neo4j_max_connection_lifetime=3600,
         azure_requested_syncs=request.get('services', None),
         update_tag=request.get('updateTag', None)
     )

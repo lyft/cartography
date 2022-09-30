@@ -13,7 +13,7 @@ def test_load_clusters(neo4j_session):
     cartography.intel.aws.elasticache.load_elasticache_clusters(
         neo4j_session,
         clusters,
-        TEST_REGION,
+
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG,
     )

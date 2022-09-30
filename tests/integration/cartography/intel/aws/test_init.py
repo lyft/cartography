@@ -48,8 +48,13 @@ def make_aws_sync_test_kwargs(neo4j_session: neo4j.Session, mock_boto3_session: 
 def test_sync_multiple_accounts(
     mock_cleanup, mock_autodiscover, mock_sync_one, mock_boto3_session, mock_sync_orgs, neo4j_session,
 ):
+    test_config = cartography.config.Config(
+        neo4j_uri='bolt://localhost:7687',
+        update_tag=TEST_UPDATE_TAG,
+        aws_sync_all_profiles=True,
+    )
     cartography.intel.aws._sync_multiple_accounts(
-        neo4j_session, TEST_ACCOUNTS, TEST_UPDATE_TAG, GRAPH_JOB_PARAMETERS,
+        neo4j_session, TEST_ACCOUNTS, test_config, GRAPH_JOB_PARAMETERS,
     )
 
     # Ensure we call _sync_one_account on all accounts in our list.
