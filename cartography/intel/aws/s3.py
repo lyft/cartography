@@ -1,6 +1,7 @@
 import hashlib
 import json
 import logging
+from pprint import pprint
 from typing import Any
 from typing import Dict
 from typing import Generator
@@ -20,7 +21,6 @@ from cartography.util import merge_module_sync_metadata
 from cartography.util import run_analysis_job
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
-from pprint import pprint
 
 logger = logging.getLogger(__name__)
 stat_handler = get_stats_client(__name__)
@@ -243,25 +243,54 @@ def _load_s3_policies(neo4j_session: neo4j.Session, policies: List[Dict], update
     """
     Ingest S3 policy results into neo4j.
     """
-    pprint(policies)
     # NOTE we use the coalesce function so appending works when the value is null initially
     ingest_policies = """
     UNWIND $policies AS policy
-    MERGE (p:S3PolicyStatement{bucket: policy.bucket})
-    ON CREATE SET p.firstseen = timestamp(), p.statements = policy.statements
-    WITH p, policy MATCH (s:S3Bucket{id: policy.bucket})
-    MERGE (s)-[r:POLICY_STATEMENT]->(p)
-    ON CREATE SET r.firstseen = timestamp()
+    MATCH (s:S3Bucket) where s.name = policy.bucket
     SET s.anonymous_access = (coalesce(s.anonymous_access, false) OR policy.internet_accessible),
     s.anonymous_actions = coalesce(s.anonymous_actions, []) + policy.accessible_actions,
-    s.lastupdated = $UpdateTag, r.lastupdated = $UpdateTag
+    s.lastupdated = $UpdateTag
     """
-    #TODO THIS IS WHERE BUCKET POLICIES ARE INGESTED
+
     neo4j_session.run(
         ingest_policies,
         policies=policies,
         UpdateTag=update_tag,
     )
+
+    pprint("_load_s3_policies: finish load s3 policies")
+
+
+@timeit
+def _load_s3_policy_statements(
+    neo4j_session: neo4j.Session, statements: List[Dict], update_tag: int,
+) -> None:
+    pprint("_load_s3_policy_statements: start load s3 policy statements")
+    pprint(statements)
+    ingest_policy_statement = """
+        UNWIND $Statements as statement_data
+        MERGE (statement:S3PolicyStatement{id: statement_data.statement_id})
+        SET
+        statement.policy_id = statement_data.policy_id,
+        statement.policy_version = statement_data.policy_version,
+        statement.bucket = statement_data.bucket,
+        statement.sid = statement_data.Sid,
+        statement.effect = statement_data.Effect,
+        statement.action = statement_data.Action,
+        statement.resource = statement_data.Resource,
+        statement.condition = statement_data.Condition,
+        statement.lastupdated = $UpdateTag
+        WITH statement
+        MATCH (bucket:S3Bucket) where bucket.name = statement.bucket
+        MERGE (bucket)-[r:POLICY_STATEMENT]->(statement)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = $UpdateTag
+        """
+    neo4j_session.run(
+        ingest_policy_statement,
+        Statements=statements,
+        UpdateTag=update_tag,
+    ).consume()
 
 
 @timeit
@@ -362,6 +391,7 @@ def load_s3_details(
     """
     acls: List[Dict] = []
     policies: List[Dict] = []
+    statements = []
     encryption_configs: List[Dict] = []
     versioning_configs: List[Dict] = []
     public_access_block_configs: List[Dict] = []
@@ -369,9 +399,15 @@ def load_s3_details(
         parsed_acls = parse_acl(acl, bucket, aws_account_id)
         if parsed_acls is not None:
             acls.extend(parsed_acls)
+        pprint("Bucket: " + bucket)
+        pprint("~~~~~~~~~~~load_s3_details:policy~~~~~~~~~~~~~~~~")
+        pprint(policy)
         parsed_policy = parse_policy(bucket, policy)
         if parsed_policy is not None:
             policies.append(parsed_policy)
+        parsed_statements = parse_policy_statements(bucket, policy)
+        if parsed_statements is not None:
+            statements.extend(parsed_statements)
         parsed_encryption = parse_encryption(bucket, encryption)
         if parsed_encryption is not None:
             encryption_configs.append(parsed_encryption)
@@ -390,7 +426,14 @@ def load_s3_details(
     )
 
     _load_s3_acls(neo4j_session, acls, aws_account_id, update_tag)
+
+    pprint(policies)
+    pprint(type(policies))
     _load_s3_policies(neo4j_session, policies, update_tag)
+    pprint("~~~~~~~~~~~load_s3_details:statement~~~~~~~~~~~~~~~~")
+    pprint(statements)
+    pprint(type(statements))
+    _load_s3_policy_statements(neo4j_session, statements, update_tag)
     _load_s3_encryption(neo4j_session, encryption_configs, update_tag)
     _load_s3_versioning(neo4j_session, versioning_configs, update_tag)
     _load_s3_public_access_block(neo4j_session, public_access_block_configs, update_tag)
@@ -441,19 +484,61 @@ def parse_policy(bucket: str, policyDict: Optional[Dict]) -> Optional[Dict]:
         return None
     # get just the policy element and convert to JSON because boto3 returns this as string
     policy = Policy(json.loads(policyDict['Policy']))
-    statements = []
-    for s in policy.statements:
-        statements.append(s.statement)
     if policy.is_internet_accessible():
         return {
-            #TODO PARSE STATEMENTS HERE
             "bucket": bucket,
-            "statements": statements,
             "internet_accessible": True,
             "accessible_actions": list(policy.internet_accessible_actions()),
         }
     else:
+        return {
+            "bucket": bucket,
+            "internet_accessible": False,
+            "accessible_actions": [],
+        }
+
+
+def ensure_list(obj: Any) -> List[Any]:
+    if not isinstance(obj, list):
+        obj = [obj]
+    return obj
+
+
+@timeit
+def parse_policy_statements(bucket: str, policyDict: Policy) -> List[Dict]:
+    if policyDict is None:
         return None
+
+    policy = json.loads(policyDict['Policy'])
+    pprint("************parse_policy_statements:policy********")
+    pprint(policy)
+    statements = []
+    stmt_index = 1
+    for s in policy["Statement"]:
+        stmt = dict()
+        stmt["bucket"] = bucket
+        stmt["statement_id"] = bucket + "/policy_statement/" + str(stmt_index)
+        stmt_index += 1
+        if "Id" in policy:
+            stmt["policy_id"] = policy["Id"]
+        if "Version" in policy:
+            stmt["policy_version"] = policy["Version"]
+        if "Sid" in s:
+            stmt["Sid"] = s["Sid"]
+            stmt["statement_id"] += "/" + s["Sid"]
+        if "Resource" in s:
+            stmt["Resource"] = s["Resource"]
+        if "Action" in s:
+            stmt["Action"] = s["Action"]
+        if "Condition" in s:
+            stmt["Condition"] = json.dumps(s["Condition"])
+        if "Principal" in s:
+            stmt["Principal"] = s["Principal"]
+
+        statements.append(stmt)
+    pprint("************parse_policy_statements:statements********")
+    pprint(statements)
+    return statements
 
 
 @timeit
