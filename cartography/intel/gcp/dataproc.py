@@ -7,12 +7,14 @@ from typing import List
 import neo4j
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
+from cloudconsolelink.clouds.gcp import GCPLinker
 
 from . import label
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+gcp_console_link = GCPLinker()
 
 
 @timeit
@@ -28,6 +30,8 @@ def get_dataproc_clusters(dataproc: Resource, project_id: str, regions: list) ->
                         for cluster in res['clusters']:
                             cluster['region'] = region
                             cluster['id'] = f"projects/{project_id}/clusters/{cluster['clusterName']}"
+                            cluster['consolelink'] = gcp_console_link.get_console_link(project_id=project_id,\
+                                dataproc_clusters_name=cluster['clusterName'],region=cluster['region'], resource_name='dataproc_cluster')
                             clusters.append(cluster)
                     req = dataproc.projects().regions().clusters().list_next(previous_request=req, previous_response=res)
 
@@ -66,6 +70,7 @@ def load_dataproc_clusters_tx(
         cluster.region = record.region,
         cluster.name = record.clusterName,
         cluster.state = record.status.state,
+        cluster.consolelink = record.consolelink,
         cluster.cluster_uuid = record.clusterUuid
     WITH cluster
     MATCH (owner:GCPProject{id:{ProjectId}})
