@@ -22,25 +22,25 @@ def test_load_load_secrets(neo4j_session, *args):
 
     expected_nodes = {
         (
-            "test-secret-1",
+            'test-secret-1',
             True,
             90,
-            "arn:aws:lambda:us-east-1:000000000000:function:test-secret-rotate",
-            "arn:aws:kms:us-east-1:000000000000:key/00000000-0000-0000-0000-000000000000",
-            "us-west-1",
-            "us-east-1",
-            1397672089,
+            'arn:aws:lambda:us-east-1:000000000000:function:test-secret-rotate',
+            'arn:aws:kms:us-east-1:000000000000:key/00000000-0000-0000-0000-000000000000',
+            'us-west-1',
+            'us-east-1',
+            1397652289
         ),
         (
-            "test-secret-2",
+            'test-secret-2',
             False,
             None,
             None,
             None,
             None,
-            "us-east-1",
-            1397672089,
-        ),
+            'us-east-1',
+            1397652289
+        )
     }
 
     nodes = neo4j_session.run(
@@ -63,4 +63,5 @@ def test_load_load_secrets(neo4j_session, *args):
         )
         for n in nodes
     }
+
     assert actual_nodes == expected_nodes

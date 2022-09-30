@@ -77,8 +77,9 @@ def test_load_apigateway_stages(neo4j_session):
     )
 
     expected_nodes = {
-        "arn:aws:apigateway:::test-001/Cartography-testing-infra",
-        "arn:aws:apigateway:::test-002/Cartography-testing-unit",
+        'arn:aws:apigateway:us-east-1::restapis/test-001/stages/Cartography-testing-infra',
+        "arn:aws:apigateway:us-east-1::restapis/test-002/stages/Cartography-testing-unit",
+
     }
 
     nodes = neo4j_session.run(
@@ -112,11 +113,11 @@ def test_load_apigateway_stages_relationships(neo4j_session):
     expected = {
         (
             'test-001',
-            'arn:aws:apigateway:::test-001/Cartography-testing-infra',
+            'arn:aws:apigateway:us-east-1::restapis/test-001/stages/Cartography-testing-infra',
         ),
         (
             'test-002',
-            'arn:aws:apigateway:::test-002/Cartography-testing-unit',
+            'arn:aws:apigateway:us-east-1::restapis/test-002/stages/Cartography-testing-unit',
         ),
     }
 
@@ -142,8 +143,8 @@ def test_load_apigateway_certificates(neo4j_session):
     )
 
     expected_nodes = {
-        "cert-001",
-        "cert-002",
+        'arn:aws:apigateway:us-east-1:aws-001:clientcertificates/cert-002',
+        'arn:aws:apigateway:us-east-1:aws-001:clientcertificates/cert-001'
     }
 
     nodes = neo4j_session.run(
@@ -152,7 +153,6 @@ def test_load_apigateway_certificates(neo4j_session):
         """,
     )
     actual_nodes = {n['r.id'] for n in nodes}
-
     assert actual_nodes == expected_nodes
 
 
@@ -174,14 +174,10 @@ def test_load_apigateway_certificates_relationships(neo4j_session):
     )
 
     expected = {
-        (
-            'arn:aws:apigateway:::test-001/Cartography-testing-infra',
-            'cert-001',
-        ),
-        (
-            'arn:aws:apigateway:::test-002/Cartography-testing-unit',
-            'cert-002',
-        ),
+        ('arn:aws:apigateway:us-east-1::restapis/test-002/stages/Cartography-testing-unit',
+         'arn:aws:apigateway:us-east-1:aws-001:clientcertificates/cert-002'),
+        ('arn:aws:apigateway:us-east-1::restapis/test-001/stages/Cartography-testing-infra',
+         'arn:aws:apigateway:us-east-1:aws-001:clientcertificates/cert-001')
     }
 
     # Fetch relationships
@@ -259,8 +255,8 @@ def test_load_apigateway_resources_relationships(neo4j_session):
 def test_load_apigateway_client_certificates_data(neo4j_session):
     _ensure_local_neo4j_has_test_apigateway_client_certificates_data(neo4j_session)
     expected_nodes = {
-        "arn:aws:apigateway:us-east-1:12345678:clientcertificates/128bdfs34",
-        "arn:aws:apigateway:us-east-1:12345678:clientcertificates/128bdfs34msgd",
+        "arn:aws:apigateway:us-east-1:aws-001:clientcertificates/cert-002",
+        "arn:aws:apigateway:us-east-1:aws-001:clientcertificates/cert-001",
     }
     nodes = neo4j_session.run(
         """

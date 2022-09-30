@@ -10,7 +10,7 @@ CLUSTER_ARN = 'arn:aws:ecs:us-east-1:000000000000:cluster/test_cluster'
 
 def test_load_ecs_clusters(neo4j_session, *args):
     data = tests.data.aws.ecs.GET_ECS_CLUSTERS
-    cartography.intel.aws.ecs.load_ecs_clusters(neo4j_session, data, TEST_REGION, TEST_ACCOUNT_ID, TEST_UPDATE_TAG)
+    cartography.intel.aws.ecs.load_ecs_clusters(neo4j_session, data, TEST_ACCOUNT_ID, TEST_UPDATE_TAG)
 
     expected_nodes = {
         (
@@ -41,7 +41,7 @@ def test_load_ecs_container_instances(neo4j_session, *args):
     cartography.intel.aws.ecs.load_ecs_clusters(
         neo4j_session,
         tests.data.aws.ecs.GET_ECS_CLUSTERS,
-        TEST_REGION,
+
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG,
     )
@@ -95,7 +95,7 @@ def test_load_ecs_services(neo4j_session, *args):
     cartography.intel.aws.ecs.load_ecs_clusters(
         neo4j_session,
         tests.data.aws.ecs.GET_ECS_CLUSTERS,
-        TEST_REGION,
+
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG,
     )
@@ -115,7 +115,7 @@ def test_load_ecs_services(neo4j_session, *args):
             "test_service",
             "arn:aws:ecs:us-east-1:000000000000:cluster/test_cluster",
             "ACTIVE",
-            1631096157,
+            1631076357,
         ),
     }
 
@@ -135,6 +135,7 @@ def test_load_ecs_services(neo4j_session, *args):
         )
         for n in nodes
     }
+
     assert actual_nodes == expected_nodes
 
     nodes = neo4j_session.run(
@@ -163,7 +164,7 @@ def test_load_ecs_task_definitions(neo4j_session, *args):
             "test_family",
             "ACTIVE",
             4,
-            1626747090,
+            1626727290,
         ),
     }
 
@@ -236,7 +237,7 @@ def test_load_ecs_tasks(neo4j_session, *args):
             "arn:aws:ecs:us-east-1:000000000000:task-definition/test_definition:0",
             "arn:aws:ecs:us-east-1:000000000000:cluster/test_cluster",
             "service:test_service",
-            1640673743,
+            1640653943,
         ),
     }
 

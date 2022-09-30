@@ -727,3 +727,29 @@ LIST_FORWARDING_RULES_RESPONSE = {
     'selfLink': 'https://www.googleapis.com/compute/v1/projects/project-abc/regions/europe-west4/forwardingRules',
     'kind': 'compute#forwardingRuleList',
 }
+
+TEST_DISKS = [
+    {
+        'name': 'disk123',
+        'id': 'projects/project123/disks/disk123',
+        'status': 'START',
+        'region': 'us-east-a1',
+        'source_snapshot_id': '123',
+        'lastAttachTimestamp': '1234567888',
+        'lastDetachTimestamp': '1234567888',
+        'physicalBlockSizeBytes': '1234567888',
+        'sourceDiskId': '1234',
+
+    },
+]
+
+
+TEST_PROXIES = [
+    {
+        'name': 'httpsproxy123',
+        'id': 'projects/project123/global/targetHttpsProxies/httpsproxy123',
+        'certificateMap': 'map123',
+        'sslPolicy': 'policy123'
+    }
+]
+

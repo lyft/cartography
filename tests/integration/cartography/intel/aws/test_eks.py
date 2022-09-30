@@ -11,7 +11,7 @@ def test_load_eks_clusters_nodes(neo4j_session):
     cartography.intel.aws.eks.load_eks_clusters(
         neo4j_session,
         data,
-        TEST_REGION,
+
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG,
     )
@@ -48,7 +48,7 @@ def test_load_eks_clusters_relationships(neo4j_session):
     cartography.intel.aws.eks.load_eks_clusters(
         neo4j_session,
         data,
-        TEST_REGION,
+
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG,
     )
