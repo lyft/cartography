@@ -127,28 +127,6 @@ def get_bigquery_tables(bigquery: Resource, dataset: Dict, project_id: str, comm
             if 'tables' in response:
                 tables.extend(response.get('tables', []))
             request = bigquery.tables().list_next(previous_request=request, previous_response=response)
-        if common_job_parameters.get('pagination', {}).get('bigquery', None):
-            pageNo = common_job_parameters.get("pagination", {}).get("bigquery", None)["pageNo"]
-            pageSize = common_job_parameters.get("pagination", {}).get("bigquery", None)["pageSize"]
-            totalPages = len(tables) / pageSize
-            if int(totalPages) != totalPages:
-                totalPages = totalPages + 1
-            totalPages = int(totalPages)
-            if pageNo < totalPages or pageNo == totalPages:
-                logger.info(f'pages process for tables {pageNo}/{totalPages} pageSize is {pageSize}')
-            page_start = (
-                common_job_parameters.get('pagination', {}).get('bigquery', None)[
-                    'pageNo'
-                ] - 1
-            ) * common_job_parameters.get('pagination', {}).get('bigquey', None)['pageSize']
-            page_end = page_start + common_job_parameters.get('pagination', {}).get('bigquery', None)['pageSize']
-            if page_end > len(tables) or page_end == len(tables):
-                tables = tables[page_start:]
-            else:
-                has_next_page = True
-                tables = tables[page_start:page_end]
-                common_job_parameters['pagination']['bigquery']['hasNextPage'] = has_next_page
-
         return tables
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -329,4 +307,4 @@ def sync(
     cleanup_gcp_bigquery(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()
-    logger.info(f"Time to process Cloud KMS: {toc - tic:0.4f} seconds")
+    logger.info(f"Time to process GCP Big query: {toc - tic:0.4f} seconds")
