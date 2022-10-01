@@ -48,6 +48,7 @@ service_names = Services(
     cloudkms='cloudkms.googleapis.com',
     cloudrun='run.googleapis.com',
     iam='iam.googleapis.com',
+    admin='admin.googleapis.com',
     apigateway='apigateway.googleapis.com',
     sql='sqladmin.googleapis.com',
     bigtable='bigtableadmin.googleapis.com',
@@ -320,6 +321,7 @@ def _initialize_resources(credentials: GoogleCredentials) -> Resource:
         loadbalancer=_get_compute_resource(credentials),
         apikey=_get_apikey_resource(credentials),
         bigquery=_get_bigquery_resource(credentials),
+        admin=_get_admin_resource(credentials),
     )
 
 
