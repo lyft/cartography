@@ -191,17 +191,6 @@ def _get_serviceusage_resource(credentials: GoogleCredentials) -> Resource:
     """
     return googleapiclient.discovery.build('serviceusage', 'v1', credentials=credentials, cache_discovery=False)
 
-
-def _get_cloudfunction_resource(credentials: GoogleCredentials) -> Resource:
-    """
-    Instantiates a cloud function resource object.
-    See: https://cloud.google.com/functions/docs/reference/rest
-    :param credentials: The GoogleCredentials object
-    :return: A serviceusage resource object
-    """
-    return googleapiclient.discovery.build('cloudfunctions', 'v1', credentials=credentials, cache_discovery=False)
-
-
 def _get_cloudkms_resource(credentials: GoogleCredentials) -> Resource:
     """
     Instantiates a cloud kms resource object.
