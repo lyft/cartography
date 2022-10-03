@@ -265,6 +265,7 @@ def _load_s3_policy_statements(
     ingest_policy_statement = """
         UNWIND $Statements as statement_data
         MERGE (statement:S3PolicyStatement{id: statement_data.statement_id})
+        ON CREATE SET statement.firstseen = timestamp()
         SET
         statement.policy_id = statement_data.policy_id,
         statement.policy_version = statement_data.policy_version,
@@ -278,7 +279,6 @@ def _load_s3_policy_statements(
         WITH statement
         MATCH (bucket:S3Bucket) where bucket.name = statement.bucket
         MERGE (bucket)-[r:POLICY_STATEMENT]->(statement)
-        ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = $UpdateTag
         """
     neo4j_session.run(
@@ -523,7 +523,7 @@ def parse_policy_statements(bucket: str, policyDict: Policy) -> List[Dict]:
             stmt["Principal"] = s["Principal"]
 
         statements.append(stmt)
-        
+
     return statements
 
 
