@@ -83,3 +83,74 @@ def test_load_s3_encryption(neo4j_session, *args):
         for n in nodes
     }
     assert actual_nodes == expected_nodes
+
+
+def test_load_s3_policies(neo4j_session, *args):
+    """
+    Ensure that expected bucket policy statements are loaded with their key fields.
+    """
+    data = cartography.intel.aws.s3.parse_policy_statements("bucket-1", tests.data.aws.s3.LIST_STATEMENTS)
+    cartography.intel.aws.s3._load_s3_policy_statements(neo4j_session, data, TEST_UPDATE_TAG)
+
+    expected_nodes = [
+        (
+            "S3PolicyId1",
+            "2012-10-17",
+            "bucket-1/policy_statement/1/IPAllow",
+            "IPAllow",
+            "Deny",
+            "\"*\"",
+            "s3:*",
+            [
+                "arn:aws:s3:::DOC-EXAMPLE-BUCKET",
+                "arn:aws:s3:::DOC-EXAMPLE-BUCKET/*",
+            ],
+            "{\"NotIpAddress\": {\"aws:SourceIp\": \"54.240.143.0/24\"}}",
+        ),
+        (
+            "S3PolicyId1",
+            "2012-10-17",
+            "bucket-1/policy_statement/2/S3PolicyId2",
+            "S3PolicyId2",
+            "Deny",
+            "\"*\"",
+            "s3:*",
+            "arn:aws:s3:::DOC-EXAMPLE-BUCKET/taxdocuments/*",
+            "{\"Null\": {\"aws:MultiFactorAuthAge\": true}}",
+        ),
+        (
+            "S3PolicyId1",
+            "2012-10-17",
+            "bucket-1/policy_statement/3/",
+            "",
+            "Allow",
+            "\"*\"",
+            ["s3:GetObject"],
+            "arn:aws:s3:::DOC-EXAMPLE-BUCKET/*",
+            None,
+        ),
+    ]
+
+    nodes = neo4j_session.run(
+        """
+        MATCH (s:S3PolicyStatement)
+        WHERE s.bucket = 'bucket-1'
+        RETURN
+        s.policy_id, s.policy_version, s.id, s.sid, s.effect, s.principal, s.action, s.resource, s.condition
+        """,
+    )
+    actual_nodes = [
+        (
+            n['s.policy_id'],
+            n['s.policy_version'],
+            n['s.id'],
+            n['s.sid'],
+            n['s.effect'],
+            n['s.principal'],
+            n['s.action'],
+            n['s.resource'],
+            n['s.condition'],
+        )
+        for n in nodes
+    ]
+    assert actual_nodes == expected_nodes
