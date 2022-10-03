@@ -2105,6 +2105,7 @@ Representation of an AWS S3 [Bucket Policy Statements](https://docs.aws.amazon.c
 | lastupdated |  Timestamp of the last time the node was updated |
 | policy_id | Optional string "Id" for the bucket's policy |
 | policy_version| Version of the bucket's policy |
+| **id** | The unique identifier for a bucket policy statement. <br>If the statement has an Sid the id will be calculated as _S3Bucket.id_/policy_statement/_index of statement in statement/_Sid_. <br>If the statement has no Sid the id will be calculated as  _S3Bucket.id_/policy_statement/_index of statement in statement  |
 | effect | Specifies "Deny" or "Allow" for the policy statement |
 | action | Specifies permissions that policy statement applies to, as defined [here](https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-with-s3-actions.html) |
 | resource | Specifies the resource the bucket policy statement is based on |
