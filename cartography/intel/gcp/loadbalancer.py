@@ -7,12 +7,14 @@ import time
 import neo4j
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
+from cloudconsolelink.clouds.gcp import GCPLinker
 
 from cartography.util import run_cleanup_job
 from . import label
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+gcp_console_link = GCPLinker()
 
 @timeit
 def get_compute_zones(compute: Resource, project_id: str) -> List[Dict]:
@@ -89,6 +91,8 @@ def transform_global_health_checks(health_checks: List, project_id: str):
         health_check['id'] = f"projects/{project_id}/global/healthChecks/{health_check['name']}"
         health_check['region'] = 'global'
         health_check['type'] = 'global'
+        health_check['consolelink'] = gcp_console_link.get_console_link(project_id=project_id,\
+            health_check_name=health_check['name'], resource_name='global_health_check')
         list_health_checks.append(health_check)
 
     return list_health_checks
@@ -144,6 +148,8 @@ def transfrom_regional_health_checks(health_checks: List, project_id: str, regio
         health_check['id'] = f"projects/{project_id}/regions/{region}/healthChecks/{health_check['name']}"
         health_check['region'] = region
         health_check['type'] = 'regional'
+        health_check['consolelink'] = gcp_console_link.get_console_link(project_id=project_id, health_check_name=health_check['name'],\
+            region=health_check['region'], resource_name='regional_health_check')
         list_health_checks.append(health_check)
 
     return list_health_checks
@@ -167,6 +173,7 @@ def load_health_checks_tx(
         healthcheck.uniqueId = hc.id,
         healthcheck.region = hc.region,
         healthcheck.type = hc.type,
+        healthcheck.consolelink = hc.consolelink,
         healthcheck.checkIntervalSec = hc.checkIntervalSec,
         healthcheck.timeoutSec = hc.timeoutSec,
         healthcheck.lastupdated = {gcp_update_tag}
@@ -269,6 +276,8 @@ def transform_global_instance_groups(instance_groups: List, project_id: str, zon
         instancegroup['id'] = f"projects/{project_id}/zones/{zone['name']}/instanceGroups/{instancegroup['name']}"
         instancegroup['type'] = 'global'
         instancegroup['region'] = 'global'
+        instancegroup['consolelink']=gcp_console_link.get_console_link(project_id=project_id, instance_group_name=instancegroup['name'],\
+            zone=zone['name'], resource_name='global_instance_group')
         list_instance_groups.append(instancegroup)
 
     return list_instance_groups
@@ -325,6 +334,8 @@ def transform_regional_instance_groups(instance_groups: List, project_id: str, r
         instancegroup['id'] = f"projects/{project_id}/regions/{region}/instanceGroups/{instancegroup['name']}"
         instancegroup['type'] = 'regional'
         instancegroup['region'] = region
+        instancegroup['consolelink']=gcp_console_link.get_console_link(project_id=project_id, instance_group_name=instancegroup['name'],\
+            region=instancegroup['name'], resource_name='regional_instance_group')
         list_instance_groups.append(instancegroup)
 
     return list_instance_groups
@@ -349,6 +360,7 @@ def load_instance_groups_tx(
         instancegroup.type = ig.type,
         instancegroup.region = ig.region,
         instancegroup.size = ig.size,
+        instancegroup.consolelink = ig.consolelink,
         instancegroup.network = ig.network,
         instancegroup.subnetwork = ig.subnetwork,
         instancegroup.lastupdated = {gcp_update_tag}
@@ -629,6 +641,8 @@ def transfrom_ssl_policies(ssl_policies: List, project_id: str):
     for policy in ssl_policies:
         policy['id'] = f"projects/{project_id}/global/sslPolicies/{policy['name']}"
         policy['region'] = 'global'
+        policy['consolelink'] = gcp_console_link.get_console_link(project_id=project_id,\
+            ssl_policy_name=policy['name'], resource_name='ssl_policy')
         ssl_policies.append(policy)
     
     return list_ssl_policies
@@ -652,6 +666,7 @@ def load_ssl_policies_tx(
         policy.uniqueId = pol.id,
         policy.region = pol.region,
         policy.name = pol.name,
+        polciy.consolelink = pol.consolelink,
         policy.minTlsVersion = pol.minTlsVersion,
         policy.lastupdated = {gcp_update_tag}
     WITH policy

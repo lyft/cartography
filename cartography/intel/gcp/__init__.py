@@ -28,14 +28,18 @@ logger = logging.getLogger(__name__)
 Resources = namedtuple(
     'Resources', 'compute gke cloudfunction crm_v1 crm_v2 dns storage serviceusage \
         iam apigateway cloudkms cloudrun sql bigtable firestore pubsub dataproc cloudmonitoring cloud_logging \
-        cloudcdn loadbalancer apikey',
+
+        cloudcdn loadbalancer apikey bigquery',
+
 )
 
 # Mapping of service short names to their full names as in docs. See https://developers.google.com/apis-explorer,
 # and https://cloud.google.com/service-usage/docs/reference/rest/v1/services#ServiceConfig
 Services = namedtuple(
     'Services', 'compute storage gke dns cloudfunction crm_v1 crm_v2 \
-    cloudkms cloudrun iam apigateway sql bigtable firestore apikey',
+
+    cloudkms cloudrun iam apigateway sql bigtable firestore apikey bigquery',
+
 )
 service_names = Services(
     compute='compute.googleapis.com',
@@ -53,6 +57,9 @@ service_names = Services(
     bigtable='bigtableadmin.googleapis.com',
     firestore='firestore.googleapis.com',
     apikey='apikeys.googleapis.com',
+
+    bigquery='bigquery.googleapis.com',
+
 )
 
 
@@ -191,6 +198,7 @@ def _get_serviceusage_resource(credentials: GoogleCredentials) -> Resource:
     return googleapiclient.discovery.build('serviceusage', 'v1', credentials=credentials, cache_discovery=False)
 
 
+
 def _get_cloudfunction_resource(credentials: GoogleCredentials) -> Resource:
     """
     Instantiates a cloud function resource object.
@@ -199,6 +207,7 @@ def _get_cloudfunction_resource(credentials: GoogleCredentials) -> Resource:
     :return: A serviceusage resource object
     """
     return googleapiclient.discovery.build('cloudfunctions', 'v1', credentials=credentials, cache_discovery=False)
+
 
 
 def _get_cloudkms_resource(credentials: GoogleCredentials) -> Resource:
@@ -291,6 +300,16 @@ def _get_apikey_resource(credentials: GoogleCredentials) -> Resource:
     return googleapiclient.discovery.build('apikeys', 'v2', credentials=credentials, cache_discovery=False)
 
 
+def _get_bigquery_resource(credentials: GoogleCredentials) -> Resource:
+    """
+    Instantiates a bigquery resource object.
+    See: https://cloud.google.com/bigquery/docs/reference/rest
+    :param credentials: The GoogleCredentials object
+    :return: A serviceusage resource object
+    """
+    return googleapiclient.discovery.build('bigquery', 'v2', credentials=credentials, cache_discovery=False)
+
+
 def _initialize_resources(credentials: GoogleCredentials) -> Resource:
     """
     Create namedtuple of all resource objects necessary for GCP data gathering.
@@ -320,6 +339,9 @@ def _initialize_resources(credentials: GoogleCredentials) -> Resource:
         cloudcdn=_get_compute_resource(credentials),
         loadbalancer=_get_compute_resource(credentials),
         apikey=_get_apikey_resource(credentials),
+        bigquery=_get_bigquery_resource(credentials),
+        admin=_get_admin_resource(credentials),
+
     )
 
 
@@ -539,4 +561,6 @@ def start_gcp_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
     #     common_job_parameters,
     # )
     del common_job_parameters['service_labels']
+
     return common_job_parameters
+
