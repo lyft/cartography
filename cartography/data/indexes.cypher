@@ -311,6 +311,7 @@ CREATE INDEX ON :AzureFunctionAppProcess(id);
 CREATE INDEX ON :AzureFunctionAppBackup(id);
 CREATE INDEX ON :AzureFunctionAppSnapshot(id);
 CREATE INDEX ON :AzureFunctionAppWebjob(id);
+CREATE INDEX ON :AzureMonitorLogProfile(id);
 CREATE INDEX ON :KubernetesCluster(id);
 CREATE INDEX ON :KubernetesCluster(name);
 CREATE INDEX ON :KubernetesNamespace(id);
