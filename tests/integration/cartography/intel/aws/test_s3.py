@@ -1,3 +1,5 @@
+from unittest import mock
+
 import cartography.intel.aws.s3
 import tests.data.aws.s3
 
@@ -154,3 +156,11 @@ def test_load_s3_policies(neo4j_session, *args):
         for n in nodes
     ]
     assert actual_nodes == expected_nodes
+
+    actual_relationships = neo4j_session.run(
+        """
+        MATCH (:S3Bucket{id:"bucket-1"})-[r:POLICY_STATEMENT]->(:S3PolicyStatement) RETURN count(r)
+        """,
+    )
+
+    assert actual_relationships.single().value() == 3
