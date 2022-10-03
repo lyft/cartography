@@ -6,7 +6,7 @@ TEST_UPDATE_TAG = 123456789
 
 
 def test_load_gke_clusters(neo4j_session):
-    data = tests.data.gcp.gke.GKE_RESPONSE.get('clusters', {})
+    data = tests.data.gcp.gke.GKE_CLUSTERS
     cartography.intel.gcp.gke.load_gke_clusters(
         neo4j_session,
         data,
@@ -44,7 +44,7 @@ def test_load_eks_clusters_relationships(neo4j_session):
     )
 
     # Load Test GKE Clusters
-    data = tests.data.gcp.gke.GKE_RESPONSE.get('clusters', {})
+    data = tests.data.gcp.gke.GKE_CLUSTERS
     cartography.intel.gcp.gke.load_gke_clusters(
         neo4j_session,
         data,

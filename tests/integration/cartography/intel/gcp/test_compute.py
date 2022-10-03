@@ -218,7 +218,7 @@ def test_transform_and_load_gcp_instances_and_nics(neo4j_session):
             TEST_UPDATE_TAG,
         ),
     }
-    print(actual_nodes)
+
     assert actual_nodes == expected_nodes
 
 
