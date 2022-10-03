@@ -61,6 +61,7 @@ def _load_monitor_log_profiles_tx(
     MERGE (log:AzureMonitorLogProfile{id: l.id})
     ON CREATE SET log.firstseen = timestamp(),
     log.type = l.type,
+    log.name = l.name,
     log.resourcegroup = l.resource_group,
     log.location = l.location,
     log.service_bus_rule_id = l.service_bus_rule_id,
