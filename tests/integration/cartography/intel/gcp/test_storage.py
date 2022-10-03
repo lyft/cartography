@@ -3,11 +3,12 @@ import tests.data.gcp.storage
 
 
 TEST_UPDATE_TAG = 123456789
+TEST_PROJECT_NUMBER = '000000000000'
 
 
 def _ensure_local_neo4j_has_test_storage_bucket_data(neo4j_session):
     bucket_res = tests.data.gcp.storage.STORAGE_RESPONSE
-    bucket_list = cartography.intel.gcp.storage.transform_gcp_buckets(bucket_res)
+    bucket_list = cartography.intel.gcp.storage.transform_gcp_buckets(bucket_res, TEST_PROJECT_NUMBER, regions=None)
     cartography.intel.gcp.storage.load_gcp_buckets(neo4j_session, bucket_list, TEST_UPDATE_TAG)
 
 
@@ -31,6 +32,7 @@ def test_transform_and_load_storage_buckets(neo4j_session):
     expected_nodes = {
         (expected_id, expected_project_num, expected_kind),
     }
+
     assert actual_nodes == expected_nodes
 
 

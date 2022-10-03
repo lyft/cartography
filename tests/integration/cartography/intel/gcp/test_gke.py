@@ -6,7 +6,7 @@ TEST_UPDATE_TAG = 123456789
 
 
 def test_load_gke_clusters(neo4j_session):
-    data = tests.data.gcp.gke.GKE_RESPONSE
+    data = tests.data.gcp.gke.GKE_RESPONSE.get('clusters', {})
     cartography.intel.gcp.gke.load_gke_clusters(
         neo4j_session,
         data,
@@ -16,7 +16,8 @@ def test_load_gke_clusters(neo4j_session):
 
     expected_nodes = {
         # flake8: noqa
-        'project/000000000000/clusters/test-cluster',
+        'projects/000000000000/clusters/test-cluster',
+
     }
 
     nodes = neo4j_session.run(
@@ -43,7 +44,7 @@ def test_load_eks_clusters_relationships(neo4j_session):
     )
 
     # Load Test GKE Clusters
-    data = tests.data.gcp.gke.GKE_RESPONSE
+    data = tests.data.gcp.gke.GKE_RESPONSE.get('clusters', {})
     cartography.intel.gcp.gke.load_gke_clusters(
         neo4j_session,
         data,
@@ -52,7 +53,7 @@ def test_load_eks_clusters_relationships(neo4j_session):
     )
 
     expected = {
-        (TEST_PROJECT_NUMBER, 'project/000000000000/clusters/test-cluster'),
+        (TEST_PROJECT_NUMBER, 'projects/000000000000/clusters/test-cluster'),
     }
 
     # Fetch relationships
@@ -65,5 +66,4 @@ def test_load_eks_clusters_relationships(neo4j_session):
     actual = {
         (r['n1.id'], r['n2.id']) for r in result
     }
-
     assert actual == expected

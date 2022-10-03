@@ -88,7 +88,7 @@ def test_transform_and_load_subnets(neo4j_session):
 
     expected_nodes = {
         (
-            'projects/project-abc/regions/europe-west2/subnetworks/default',
+            'projects/project-abc/locations/europe-west2/subnetworks/default',
             'europe-west2',
             '10.0.0.1',
             '10.0.0.0/20',
@@ -130,7 +130,7 @@ def test_transform_and_load_gcp_forwarding_rules(neo4j_session):
 
     expected_nodes = {
         (
-            'projects/project-abc/regions/europe-west2/forwardingRules/internal-service-1111',
+            'projects/project-abc/locations/europe-west2/forwardingRules/internal-service-1111',
             '10.0.0.10',
             'TCP',
             'INTERNAL',
@@ -142,7 +142,7 @@ def test_transform_and_load_gcp_forwarding_rules(neo4j_session):
             'projects/project-abc/regions/europe-west2/targetPools/node-pool-12345',
         ),
         (
-            'projects/project-abc/regions/europe-west2/forwardingRules/public-ingress-controller-1234567',
+            'projects/project-abc/locations/europe-west2/forwardingRules/public-ingress-controller-1234567',
             '1.2.3.11',
             'TCP',
             'EXTERNAL',
@@ -154,7 +154,7 @@ def test_transform_and_load_gcp_forwarding_rules(neo4j_session):
             'projects/project-abc/regions/europe-west2/targetVpnGateways/vpn-12345',
         ),
         (
-            'projects/project-abc/regions/europe-west2/forwardingRules/shard-server-22222',
+            'projects/project-abc/locations/europe-west2/forwardingRules/shard-server-22222',
             '10.0.0.20',
             'TCP',
             'INTERNAL',
@@ -166,7 +166,6 @@ def test_transform_and_load_gcp_forwarding_rules(neo4j_session):
             'projects/project-abc/regions/europe-west2/targetPools/node-pool-234567',
         ),
     }
-
     assert actual_nodes == expected_nodes
 
 
@@ -175,7 +174,7 @@ def test_transform_and_load_gcp_instances_and_nics(neo4j_session):
     Ensure that we can correctly transform and load GCP instances.
     """
     instance_responses = [tests.data.gcp.compute.GCP_LIST_INSTANCES_RESPONSE]
-    instance_list = cartography.intel.gcp.compute.transform_gcp_instances(instance_responses)
+    instance_list = cartography.intel.gcp.compute.transform_gcp_instances(instance_responses, compute=None)
     cartography.intel.gcp.compute.load_gcp_instances(neo4j_session, instance_list, TEST_UPDATE_TAG)
 
     instance_id1 = 'projects/project-abc/zones/europe-west2-b/instances/instance-1-test'
@@ -219,6 +218,7 @@ def test_transform_and_load_gcp_instances_and_nics(neo4j_session):
             TEST_UPDATE_TAG,
         ),
     }
+    print(actual_nodes)
     assert actual_nodes == expected_nodes
 
 
@@ -306,6 +306,14 @@ def test_vpc_to_subnets(neo4j_session):
     expected_nodes = {
         (
             'projects/project-abc/global/networks/default',
+            'projects/project-abc/locations/europe-west2/subnetworks/default',
+            'europe-west2',
+            '10.0.0.1',
+            '10.0.0.0/20',
+            False
+        ),
+        (
+            'projects/project-abc/global/networks/default',
             'projects/project-abc/regions/europe-west2/subnetworks/default',
             'europe-west2',
             '10.0.0.1',
@@ -313,6 +321,7 @@ def test_vpc_to_subnets(neo4j_session):
             False,
         ),
     }
+
     assert actual_nodes == expected_nodes
 
 
