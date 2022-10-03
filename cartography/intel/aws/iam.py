@@ -774,9 +774,6 @@ def get_account_from_arn(arn: str) -> str:
     # ARN documentation
     # https://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html
 
-    if not arn:
-        return ""
-
     if not arn.startswith("arn:"):
         return ""
 
