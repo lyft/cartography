@@ -1,5 +1,6 @@
 import logging
 
+from kubernetes.client.exceptions import ApiException
 from neo4j import Session
 
 from cartography.config import Config
@@ -29,6 +30,8 @@ def start_k8s_ingestion(session: Session, config: Config) -> None:
             pods = sync_pods(session, client, config.update_tag, cluster)
             sync_services(session, client, config.update_tag, cluster, pods)
             sync_secrets(session, client, config.update_tag, cluster)
+        except ApiException:
+            logger.exception(f"Failed to sync data for k8s cluster {client.name}...")
         except Exception:
             logger.exception(f"Failed to sync data for k8s cluster {client.name}...")
             raise
