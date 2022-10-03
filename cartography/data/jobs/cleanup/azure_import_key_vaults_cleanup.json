@@ -1,6 +1,36 @@
 {
     "statements": [
         {
+            "query": "MATCH (n:AzureKeyVaultKey)<-[:HAS_KEY]-(:AzureKeyVault)<-[:RESOURCE]-(:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}})<-[:RESOURCE]-(:AzureTenant{id: {AZURE_TENANT_ID}})<-[:OWNER]-(:CloudanixWorkspace{id: {WORKSPACE_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+            "iterative": true,
+            "iterationsize": 100
+        },
+        {
+            "query": "MATCH (:AzureKeyVaultKey)<-[r:HAS_KEY]-(:AzureKeyVault)<-[:RESOURCE]-(:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}})<-[:RESOURCE]-(:AzureTenant{id: {AZURE_TENANT_ID}})<-[:OWNER]-(:CloudanixWorkspace{id: {WORKSPACE_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+            "iterative": true,
+            "iterationsize": 100
+        },
+        {
+            "query": "MATCH (n:AzureKeyVaultSecret)<-[:HAS_SECRET]-(:AzureKeyVault)<-[:RESOURCE]-(:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}})<-[:RESOURCE]-(:AzureTenant{id: {AZURE_TENANT_ID}})<-[:OWNER]-(:CloudanixWorkspace{id: {WORKSPACE_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+            "iterative": true,
+            "iterationsize": 100
+        },
+        {
+            "query": "MATCH (:AzureKeyVaultSecret)<-[r:HAS_SECRET]-(:AzureKeyVault)<-[:RESOURCE]-(:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}})<-[:RESOURCE]-(:AzureTenant{id: {AZURE_TENANT_ID}})<-[:OWNER]-(:CloudanixWorkspace{id: {WORKSPACE_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+            "iterative": true,
+            "iterationsize": 100
+        },
+        {
+            "query": "MATCH (n:AzureKeyVaultCertificate)<-[:HAS_CERTIFICATE]-(:AzureKeyVault)<-[:RESOURCE]-(:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}})<-[:RESOURCE]-(:AzureTenant{id: {AZURE_TENANT_ID}})<-[:OWNER]-(:CloudanixWorkspace{id: {WORKSPACE_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+            "iterative": true,
+            "iterationsize": 100
+        },
+        {
+            "query": "MATCH (:AzureKeyVaultCertificate)<-[r:HAS_CERTIFICATE]-(:AzureKeyVault)<-[:RESOURCE]-(:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}})<-[:RESOURCE]-(:AzureTenant{id: {AZURE_TENANT_ID}})<-[:OWNER]-(:CloudanixWorkspace{id: {WORKSPACE_ID}}) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+            "iterative": true,
+            "iterationsize": 100
+        },
+        {
             "query": "MATCH (n:AzureKeyVault)<-[:RESOURCE]-(:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}})<-[:RESOURCE]-(:AzureTenant{id: {AZURE_TENANT_ID}})<-[:OWNER]-(:CloudanixWorkspace{id: {WORKSPACE_ID}}) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
             "iterative": true,
             "iterationsize": 100
