@@ -274,6 +274,7 @@ def _load_s3_policy_statements(
         statement.effect = statement_data.Effect,
         statement.action = statement_data.Action,
         statement.resource = statement_data.Resource,
+        statement.principal = statement_data.Principal,
         statement.condition = statement_data.Condition,
         statement.lastupdated = $UpdateTag
         WITH statement
@@ -514,7 +515,7 @@ def parse_policy_statements(bucket: str, policyDict: Policy) -> List[Dict]:
         if "Condition" in s:
             stmt["Condition"] = json.dumps(s["Condition"])
         if "Principal" in s:
-            stmt["Principal"] = s["Principal"]
+            stmt["Principal"] = json.dumps(s["Principal"])
 
         statements.append(stmt)
 
