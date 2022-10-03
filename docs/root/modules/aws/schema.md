@@ -2095,6 +2095,31 @@ Representation of an AWS S3 [Bucket](https://docs.aws.amazon.com/AmazonS3/latest
         (S3Bucket)-[TAGGED]->(AWSTag)
         ```
 
+### S3PolicyStatement
+
+Representation of an AWS S3 [Bucket Policy Statements](https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucket-policies.html) for controlling ownership of objects and ACLs of the bucket.
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| policy_id | Optional string "Id" for the bucket's policy |
+| policy_version| Version of the bucket's policy |
+| effect | Specifies "Deny" or "Allow" for the policy statement |
+| action | Specifies permissions that policy statement applies to, as defined [here](https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-with-s3-actions.html) |
+| resource | Specifies the resource the bucket policy statement is based on |
+| condition | Specifies conditions where permissions are granted: [examples](https://docs.aws.amazon.com/AmazonS3/latest/userguide/amazon-s3-policy-keys.html) |
+| sid | Optional string to label the specific bucket policy statement |
+
+#### Relationships
+
+- S3PolicyStatements define the policy for S3 Buckets.
+
+        ```
+        (:S3Bucket)-[:POLICY_STATEMENT]->(:S3PolicyStatement)
+        ```
+
+
 ### KMSKey
 
 Representation of an AWS [KMS Key](https://docs.aws.amazon.com/kms/latest/APIReference/API_KeyListEntry.html).
