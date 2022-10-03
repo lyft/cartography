@@ -485,12 +485,6 @@ def parse_policy(bucket: str, policyDict: Optional[Dict]) -> Optional[Dict]:
         }
 
 
-def ensure_list(obj: Any) -> List[Any]:
-    if not isinstance(obj, list):
-        obj = [obj]
-    return obj
-
-
 @timeit
 def parse_policy_statements(bucket: str, policyDict: Policy) -> List[Dict]:
     if policyDict is None:
