@@ -214,6 +214,7 @@ DESCRIBE_VMAVAILABLESIZES = [
     {
         "numberOfCores":
         2,
+        "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachines/TestVM",
         "type":
         "Microsoft.Compute/virtualMachines/availablesizes",
         "osDiskSizeInMB":
@@ -238,6 +239,8 @@ DESCRIBE_VMAVAILABLESIZES = [
         1234,
         "name":
         "size2",
+        "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachines/TestVM1",
+
         "resourceDiskSizeInMB":
         2312,
         "memoryInMB":
