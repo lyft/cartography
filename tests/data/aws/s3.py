@@ -68,5 +68,6 @@ LIST_STATEMENTS = {
                     "Resource": "arn:aws:s3:::DOC-EXAMPLE-BUCKET/*",
                 },
             ],
-        },)
+        },
+    ),
 }
