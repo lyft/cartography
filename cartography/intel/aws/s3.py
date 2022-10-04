@@ -178,6 +178,9 @@ def _is_common_exception(e: Exception, bucket: Dict) -> bool:
     if "AccessDenied" in e.args[0]:
         logger.warning(f"{error_msg} for {bucket['Name']} - Access Denied")
         return True
+    elif "NoSuchBucketPolicy" in e.args[0]:
+        logger.warning(f"{error_msg} for {bucket['Name']} - NoSuchBucketPolicy")
+        return True
     elif "NoSuchBucket" in e.args[0]:
         logger.warning(f"{error_msg} for {bucket['Name']} - No Such Bucket")
         return True
@@ -186,9 +189,6 @@ def _is_common_exception(e: Exception, bucket: Dict) -> bool:
         return True
     elif "EndpointConnectionError" in e.args[0]:
         logger.warning(f"{error_msg} for {bucket['Name']} - EndpointConnectionError")
-        return True
-    elif "NoSuchBucketPolicy" in e.args[0]:
-        logger.warning(f"{error_msg} for {bucket['Name']} - NoSuchBucketPolicy")
         return True
     elif "ServerSideEncryptionConfigurationNotFoundError" in e.args[0]:
         logger.warning(f"{error_msg} for {bucket['Name']} - ServerSideEncryptionConfigurationNotFoundError")
