@@ -10,7 +10,7 @@ from . import network
 from . import sql
 from . import storage
 from . import monitor
-
+from . import securitycenter
 
 RESOURCE_FUNCTIONS: Dict = {
     'iam': iam.sync,
@@ -23,4 +23,5 @@ RESOURCE_FUNCTIONS: Dict = {
     'sql': sql.sync,
     'storage': storage.sync,
     'monitor': monitor.sync,
+    'securitycenter': securitycenter.sync,
 }
