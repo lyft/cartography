@@ -775,6 +775,7 @@ def get_account_from_arn(arn: str) -> str:
     # https://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html
 
     if not arn.startswith("arn:"):
+        # must be a service principal arn, such as ec2.amazonaws.com
         return ""
 
     parts = arn.split(":")
