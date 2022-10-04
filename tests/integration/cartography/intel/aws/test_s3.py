@@ -1,5 +1,3 @@
-from unittest import mock
-
 import cartography.intel.aws.s3
 import tests.data.aws.s3
 
