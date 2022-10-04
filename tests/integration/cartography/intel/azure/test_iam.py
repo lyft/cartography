@@ -25,9 +25,9 @@ def test_load_users(neo4j_session):
 
     nodes = neo4j_session.run(
         """
-        MATCH (r:AzureUser) RETURN r.id;
+        MATCH (r:AzureUser) RETURN r.object_id;
         """, )
-    actual_nodes = {n['r.id'] for n in nodes}
+    actual_nodes = {n['r.object_id'] for n in nodes}
 
     assert actual_nodes == expected_nodes
 
@@ -52,13 +52,13 @@ def test_load_user_relationships(neo4j_session):
 
     expected = {
         (
-            TEST_TENANT_ID,
-            "gdvsd43562",
+            '00-00-00-00',
+            'user-123'
         ),
         (
-            TEST_TENANT_ID,
-            "gdvsd43562we34",
-        ),
+            '00-00-00-00',
+            'user-321'
+        )
     }
 
     result = neo4j_session.run(
@@ -318,6 +318,7 @@ def test_load_domain_relationships(neo4j_session):
 def test_load_roles(neo4j_session):
     iam.load_roles(
         neo4j_session,
+        TEST_TENANT_ID,
         DESCRIBE_ROLES,
         TEST_UPDATE_TAG,
     )
@@ -356,6 +357,7 @@ def test_load_role_relationships(neo4j_session):
 
     iam.load_roles(
         neo4j_session,
+        TEST_TENANT_ID,
         DESCRIBE_ROLES,
         TEST_UPDATE_TAG,
     )

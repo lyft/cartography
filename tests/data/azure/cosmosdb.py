@@ -110,7 +110,7 @@ DESCRIBE_DATABASE_ACCOUNTS = [
         "virtual_network_rules": [
             {
                 "id": rg + "/providers/Microsoft.Network/virtualNetworks/vn1",
-                "ignore_missing_v_net_service_endpoint": False,
+                "ignore_missing_v_net_service_endpoint": True,
             },
         ],
     },
@@ -164,7 +164,7 @@ DESCRIBE_DATABASE_ACCOUNTS = [
         "virtual_network_rules": [
             {
                 "id": rg + "/providers/Microsoft.Network/virtualNetworks/vn2",
-                "ignore_missing_v_net_service_endpoint": False,
+                "ignore_missing_v_net_service_endpoint": True,
             },
         ],
     },

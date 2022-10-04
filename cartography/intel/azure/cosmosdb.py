@@ -403,7 +403,7 @@ def _load_cosmosdb_virtual_network_rules(
         UNWIND {virtual_network_rules_list} AS vnr
         MERGE (rules:AzureCosmosDBVirtualNetworkRule{id: vnr.id})
         ON CREATE SET rules.firstseen = timestamp(),
-        rules.region = {region},
+        rules.region = {region}
         SET rules.lastupdated = {azure_update_tag},
         rules.ignoremissingvnetserviceendpoint = vnr.ignore_missing_v_net_service_endpoint
         WITH rules

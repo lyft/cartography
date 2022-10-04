@@ -19,6 +19,7 @@ IAM_ROLES = [
 IAM_SERVICE_ACCOUNTS = [
     {
         'name': 'projects/project123/serviceAccounts/abc@gmail.com',
+        'id': 'projects/project123/serviceAccounts/abc@gmail.com',
         'projectId': 'project123',
         'uniqueId': 'abcproject123',
         'displayName': 'abc',
@@ -26,6 +27,7 @@ IAM_SERVICE_ACCOUNTS = [
     },
     {
         'name': 'projects/project123/serviceAccounts/defg@gmail.com',
+        'id': 'projects/project123/serviceAccounts/defg@gmail.com',
         'projectId': 'project123',
         'uniqueId': 'defgproject123',
         'displayName': 'defg',

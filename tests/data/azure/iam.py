@@ -1,5 +1,6 @@
 DESCRIBE_USERS = [
     {
+        "id": "user-123",
         "display_name": "contoso1",
         "object_id": "gdvsd43562",
         "mail": "'contoso1@gmail.com",
@@ -9,6 +10,7 @@ DESCRIBE_USERS = [
         "userPrincipalName":"contoso1_gmail.com#EXT#@microsoft.onmicrosoft.com",
     },
     {
+        "id": "user-321",
         "display_name": "contoso2",
         "object_id": "gdvsd43562we34",
         "mail": "'contoso2@gmail.com",
@@ -21,6 +23,7 @@ DESCRIBE_USERS = [
 
 DESCRIBE_GROUPS = [
     {
+        "id": "45b7d2e7-b882-4a80-ba97-10b7a63b8fa4",
         "object_id": "45b7d2e7-b882-4a80-ba97-10b7a63b8fa4",
         "deletedDateTime": None,
         "classification": None,
@@ -55,6 +58,7 @@ DESCRIBE_GROUPS = [
         "onPremisesProvisioningErrors": [],
     },
     {
+        "id": "d7797254-3084-44d0-99c9-a3b5ab149538",
         "object_id": "d7797254-3084-44d0-99c9-a3b5ab149538",
         "deletedDateTime": None,
         "classification": None,
@@ -91,6 +95,7 @@ DESCRIBE_GROUPS = [
 
 DESCRIBE_APPLICATIONS = [
     {
+        "id": "00000000-0000-0000-0000-000000000001",
         "object_id": "00000000-0000-0000-0000-000000000001",
         "identifierUris": ["http://contoso/"],
         "display_name": "My app1",
@@ -98,6 +103,7 @@ DESCRIBE_APPLICATIONS = [
         "sign_in_audience": "AzureADMyOrg",
     },
     {
+        "id": "00000000-0000-0000-0000-000000000002",
         "object_id": "00000000-0000-0000-0000-000000000002",
         "identifierUris": ["http://contoso/"],
         "display_name": "My app2",
@@ -109,6 +115,7 @@ DESCRIBE_APPLICATIONS = [
 
 DESCRIBE_SERVICE_ACCOUNTS = [
     {
+        "id": "86823hkhjhd",
         "object_id": "86823hkhjhd",
         "account_enabled": True,
         "display_name": "amasf1",
@@ -116,6 +123,7 @@ DESCRIBE_SERVICE_ACCOUNTS = [
         "signInAudience": "AzureADMyOrg",
     },
     {
+        "id": "hvhg575757g",
         "object_id": "hvhg575757g",
         "account_enabled": True,
         "display_name": "amasf2",

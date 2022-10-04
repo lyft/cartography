@@ -1,6 +1,7 @@
 # flake8: noqa
 VPC_RESPONSE = {
     'id': 'projects/project-abc/global/networks',
+
     'items': [{
         'autoCreateSubnetworks': True,
         'creationTimestamp': '2018-05-10T17:33:18.968-07:00',
@@ -206,6 +207,8 @@ GCP_LIST_INSTANCES_RESPONSE = {
     ],
     'kind': 'compute#instanceList',
     'selfLink': 'https://www.googleapis.com/compute/v1/projects/project-abc/zones/europe-west2-b/instances',
+    'zone': 'https://www.googleapis.com/compute/v1/projects/project-abc/zones/europe-west2-b',
+    'name': 'vpc-1',
 }
 
 TRANSFORMED_GCP_VPCS = [{
@@ -215,6 +218,8 @@ TRANSFORMED_GCP_VPCS = [{
     'project_id': 'project-abc',
     'auto_create_subnetworks': True,
     'description': 'Default network for the project',
+    'consolelink': 'www.gcp/demo/consolelink.com',
+    'region': 'east-us-1',
     'routing_config_routing_mode': 'REGIONAL',
 }]
 
@@ -226,6 +231,7 @@ TRANSFORMED_GCP_SUBNETS = [{
     'vpc_partial_uri': 'projects/project-abc/global/networks/default',
     'project_id': 'project-abc',
     'region': 'europe-west2',
+    'consolelink': 'www.gcp/demo/consolelink.com',
     'gateway_address': '10.0.0.1',
     'ip_cidr_range': '10.0.0.0/20',
     'self_link': 'https://www.googleapis.com/compute/v1/projects/project-abc/regions/europe-west2/subnetworks/default',
@@ -504,6 +510,7 @@ TRANSFORMED_FW_LIST = [
             'IPProtocol': 'icmp',
         }],
         'creationTimestamp': '2018-05-10T17:33:45.769-07:00',
+        'consolelink': 'www.gcp/demo/consolelink.com',
         'description': 'Allow ICMP from anywhere',
         'direction': 'INGRESS',
         'disabled': False,
@@ -541,6 +548,7 @@ TRANSFORMED_FW_LIST = [
         'creationTimestamp': '2018-05-10T17:33:45.754-07:00',
         'description': 'Allow internal traffic on the default network',
         'direction': 'INGRESS',
+        'consolelink': 'www.gcp/demo/consolelink.com',
         'disabled': False,
         'id': 'projects/project-abc/global/firewalls/default-allow-internal',
         'kind': 'compute#firewall',
@@ -580,6 +588,7 @@ TRANSFORMED_FW_LIST = [
         }],
         'creationTimestamp': '2018-05-10T17:33:45.764-07:00',
         'description': 'Allow RDP from anywhere',
+        'consolelink': 'www.gcp/demo/consolelink.com',
         'direction': 'INGRESS',
         'disabled': False,
         'id': 'projects/project-abc/global/firewalls/default-allow-rdp',
@@ -608,6 +617,7 @@ TRANSFORMED_FW_LIST = [
         }],
         'creationTimestamp': '2018-05-10T17:33:45.759-07:00',
         'description': 'Allow SSH from anywhere',
+        'consolelink': 'www.gcp/demo/consolelink.com',
         'direction': 'INGRESS',
         'disabled': False,
         'id': 'projects/project-abc/global/firewalls/default-allow-ssh',
@@ -639,6 +649,7 @@ TRANSFORMED_FW_LIST = [
         'direction': 'INGRESS',
         'disabled': False,
         'id': 'projects/project-abc/global/firewalls/custom-port-incoming',
+        'consolelink': 'www.gcp/demo/consolelink.com',
         'kind': 'compute#firewall',
         'logConfig': {
             'enable': True,
@@ -752,4 +763,3 @@ TEST_PROXIES = [
         'sslPolicy': 'policy123'
     }
 ]
-
