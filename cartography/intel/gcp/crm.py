@@ -178,7 +178,7 @@ def load_gcp_projects(
     project.projectnumber = {ProjectNumber},
     project.displayname = {DisplayName},
     project.lifecyclestate = {LifecycleState},
-    project.accountid = {WorkspaceAccountId},
+    project.accountid = {ProjectId},
     project.lastupdated = {gcp_update_tag}
     WITH w, project
     MERGE (w)-[o:OWNER]->(project)

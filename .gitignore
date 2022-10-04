@@ -16,4 +16,3 @@ build/
 .env*
 .compose
 generated
-env.yml
