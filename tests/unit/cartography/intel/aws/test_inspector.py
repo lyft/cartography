@@ -17,7 +17,7 @@ TEST_UPDATE_TAG = 123456789
 def test_get_inspector_findings():
     mock_boto = mock.MagicMock()
 
-    ret = get_inspector_findings(mock_boto, 'us-east-1')
+    ret = get_inspector_findings(mock_boto, 'us-east-1', '1234')
 
     assert ret == []
     mock_boto.client.assert_called_once_with('inspector2', region_name='us-east-1')
@@ -43,6 +43,7 @@ def test_transform_inspector_findings_network():
             'portrangeend': 124,
             'portrangebegin': 123,
             'type': 'NETWORK_REACHABILITY',
+            'status': 'ACTIVE',
         },
     ]
 
@@ -75,6 +76,7 @@ def test_transform_inspector_findings_package():
             'vendorupdatedat': None,
             'vendorseverity': 'Moderate',
             'sourceurl': 'https://access.redhat.com/security/cve/CVE-2017-9059',
+            'status': 'ACTIVE',
 
             'vulnerablepackageids': [
                 'kernel-tools|X86_64|4.9.17|6.29.amzn1|0',
@@ -117,14 +119,14 @@ def test_transform_inspector_findings_package():
 @mock.patch("cartography.intel.aws.inspector._load_findings_tx")
 def test_load_inspector_findings(load_mock):
     mock_neo4j = mock.MagicMock()
-    findings = []
+    findings = ['any']
     region = 'us-east-1'
     aws_update_tag = 0
 
     load_inspector_findings(mock_neo4j, findings, region, aws_update_tag)
 
     mock_neo4j.write_transaction.assert_called_once_with(
-        load_mock, findings=[], region='us-east-1', aws_update_tag=0,
+        load_mock, findings=['any'], region='us-east-1', aws_update_tag=0,
     )
 
 
@@ -177,8 +179,8 @@ def test_sync(
     sync(mock_neo4j, mock_boto3, regions, current_aws_account_id, update_tag, common_job_parameters)
 
     get_findings_mock.assert_has_calls([
-        mock.call(mock_boto3, 'us-east-1'),
-        mock.call(mock_boto3, 'us-east-2'),
+        mock.call(mock_boto3, 'us-east-1', current_aws_account_id),
+        mock.call(mock_boto3, 'us-east-2', current_aws_account_id),
     ])
     transform_mock.assert_has_calls([
         mock.call([]),
