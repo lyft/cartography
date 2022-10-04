@@ -52,7 +52,7 @@ def load_vpc_peerings(
 
     MERGE (aaccount:AWSAccount{id: vpc_peering.AccepterVpcInfo.OwnerId})
     ON CREATE SET aaccount.firstseen = timestamp()
-    SET aaccount.lastupdated = {update_tag}
+    SET aaccount.lastupdated = $update_tag
 
     MERGE (raccount:AWSAccount{id: vpc_peering.RequesterVpcInfo.OwnerId})
     ON CREATE SET raccount.firstseen = timestamp()
