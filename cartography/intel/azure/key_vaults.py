@@ -108,7 +108,7 @@ def _load_key_vaults_tx(
 def get_key_vault_keys_list(client: KeyClient, vault_id: str, regions: List, common_job_parameters: Dict) -> List[Dict]:
 
     try:
-        keys_list = list(map(lambda x:x.as_dict, client.list_properties_of_keys()))
+        keys_list = list(map(lambda x:x.as_dict(), client.list_properties_of_keys()))
         return keys_list
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving key vaults keys - {e}")
