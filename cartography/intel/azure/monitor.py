@@ -26,21 +26,10 @@ def get_monitoring_client(credentials: Credentials, subscription_id: str) -> Mon
     return client
 
 @timeit
-def get_log_profiles_list(client: MonitorManagementClient, regions: list, common_job_parameters: Dict) -> List[Dict]:
+def get_log_profiles_list(client: MonitorManagementClient, regions: List, common_job_parameters: Dict) -> List[Dict]:
     try:    
         list_logs_profiles=list(map(lambda x: x.as_dict(),client.log_profiles.list()))
-        log_profiles_data = []
-        for log in list_logs_profiles:
-            x = log['id'].split('/')
-            log['resource_group'] = x[x.index('resourceGroups') + 1]
-            log['consolelink'] = azure_console_link.get_console_link(
-                id=log['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
-            if regions is None:
-                log_profiles_data.append(log)
-            else:
-                if log.get('location') in regions or log.get('location') == 'global':
-                    log_profiles_data.append(log)
-        return log_profiles_data 
+        return list_logs_profiles
     except ClientAuthenticationError as e:
         logger.warning(f"Client Authentication Error while  logs profiles - {e}")
         return []
@@ -50,6 +39,21 @@ def get_log_profiles_list(client: MonitorManagementClient, regions: list, common
     except HttpResponseError as e:
         logger.warning(f"Error while  logs profiles - {e}")
         return []
+
+@timeit
+def transform_log_profiles(log_profiles: List[Dict], regions: List, common_job_parameters: str):
+    log_profiles_data = []
+    for log in log_profiles:
+        x = log['id'].split('/')
+        log['resource_group'] = x[x.index('resourceGroups') + 1]
+        log['consolelink'] = azure_console_link.get_console_link(
+            id=log['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+        if regions is None:
+            log_profiles_data.append(log)
+        else:
+            if log.get('location') in regions or log.get('location') == 'global':
+                log_profiles_data.append(log)
+    return log_profiles_data
 
 @timeit
 def _load_monitor_log_profiles_tx(
@@ -62,6 +66,7 @@ def _load_monitor_log_profiles_tx(
     ON CREATE SET log.firstseen = timestamp(),
     log.type = l.type,
     log.name = l.name,
+    log.consolelink = l.consolelink,
     log.resourcegroup = l.resource_group,
     log.location = l.location,
     log.service_bus_rule_id = l.service_bus_rule_id,
@@ -89,7 +94,8 @@ def sync_monitor_log_profiles(
     common_job_parameters: Dict, regions: list
 ) -> None:
     client = get_monitoring_client(credentials, subscription_id)
-    log_profiles_list = get_log_profiles_list(client, regions, common_job_parameters )
+    log_profiles = get_log_profiles_list(client, regions, common_job_parameters )
+    log_profiles_list = transform_log_profiles(log_profiles, regions, common_job_parameters)
 
     if common_job_parameters.get('pagination', {}).get('log_profiles', None):
         pageNo = common_job_parameters.get("pagination", {}).get("log_profiles", None)["pageNo"]
