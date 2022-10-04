@@ -9,6 +9,7 @@ from . import key_vaults
 from . import network
 from . import sql
 from . import storage
+from . import monitor
 
 
 RESOURCE_FUNCTIONS: Dict = {
@@ -21,4 +22,5 @@ RESOURCE_FUNCTIONS: Dict = {
     'compute': compute.sync,
     'sql': sql.sync,
     'storage': storage.sync,
+    'monitor': monitor.sync,
 }
