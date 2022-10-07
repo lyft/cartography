@@ -1,11 +1,10 @@
 import logging
+import uuid
 from typing import Dict
 
 import boto3
 import botocore.exceptions
 import neo4j
-import uuid
-
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
