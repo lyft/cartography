@@ -546,14 +546,11 @@ def main(argv=None):
     """
     # default result
     result = 1
-    try:
-        logging.basicConfig(level=logging.INFO)
-        logging.getLogger('botocore').setLevel(logging.WARNING)
-        logging.getLogger('googleapiclient').setLevel(logging.WARNING)
-        logging.getLogger('neo4j').setLevel(logging.WARNING)
-        argv = argv if argv is not None else sys.argv[1:]
-        default_sync = cartography.sync.build_default_sync()
-        result = CLI(default_sync, prog='cartography').main(argv)
-    except:
-        print("Error while processing sync")
+    logging.basicConfig(level=logging.INFO)
+    logging.getLogger('botocore').setLevel(logging.WARNING)
+    logging.getLogger('googleapiclient').setLevel(logging.WARNING)
+    logging.getLogger('neo4j').setLevel(logging.WARNING)
+    argv = argv if argv is not None else sys.argv[1:]
+    default_sync = cartography.sync.build_default_sync()
+    result = CLI(default_sync, prog='cartography').main(argv)
     return result
