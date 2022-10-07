@@ -8,6 +8,8 @@ import boto3
 import neo4j
 
 from cartography.util import aws_handle_regions
+from cartography.util import aws_paginate
+from cartography.util import batch
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
@@ -17,13 +19,45 @@ logger = logging.getLogger(__name__)
 
 @timeit
 @aws_handle_regions
-def get_inspector_findings(session: boto3.session.Session, region: str) -> List[Dict]:
+def get_inspector_findings(
+    session: boto3.session.Session,
+    region: str,
+    current_aws_account_id: str,
+) -> List[Dict]:
+    '''
+    We must list_findings by filtering the request, otherwise the request could tiemout.
+    First, we filter by account_id. And since there may be millions of CLOSED findings that may never go away,
+    we will only fetch those in ACTIVE or SUPPRESSED statuses.
+    list_members will get us all the accounts that
+    have delegated access to the account specified by current_aws_account_id.
+    '''
     client = session.client('inspector2', region_name=region)
-    paginator = client.get_paginator('list_findings')
-    findings = []
 
-    for page in paginator.paginate():
-        findings.extend(page['findings'])
+    members = aws_paginate(client, 'list_members', 'members')
+    # the current host account may not be considered a "member", but we still fetch its findings
+    accounts = [current_aws_account_id] + [m['accountId'] for m in members]
+
+    findings = []
+    for account in accounts:
+        logger.info(f'Getting findings for member account {account} in region {region}')
+        findings.extend(
+            aws_paginate(
+                client, 'list_findings', 'findings', filterCriteria={
+                    'awsAccountId': [
+                        {
+                            'comparison': 'EQUALS',
+                            'value': account,
+                        },
+                    ],
+                    'findingStatus': [
+                        {
+                            'comparison': 'NOT_EQUALS',
+                            'value': 'CLOSED',
+                        },
+                    ],
+                },
+            ),
+        )
     return findings
 
 
@@ -43,7 +77,9 @@ def transform_inspector_findings(results: List[Dict]) -> Tuple[List, List]:
         finding['awsaccount'] = f['awsAccountId']
         finding['description'] = f['description']
         finding['type'] = f['type']
-        finding['cvssscore'] = f['inspectorScoreDetails']['adjustedCvss']['score']
+        finding['status'] = f['status']
+        if f.get('inspectorScoreDetails'):
+            finding['cvssscore'] = f['inspectorScoreDetails']['adjustedCvss']['score']
         if f['resources'][0]['type'] == "AWS_EC2_INSTANCE":
             finding['instanceid'] = f['resources'][0]['id']
         if f['resources'][0]['type'] == "AWS_ECR_CONTAINER_IMAGE":
@@ -148,6 +184,7 @@ def _load_findings_tx(
             finding.relatedvulnerabilities = new_finding.relatedvulnerabilities,
             finding.source = new_finding.source,
             finding.sourceurl = new_finding.sourceurl,
+            finding.status = new_finding.status,
             finding.vendorcreatedat = new_finding.vendorcreatedat,
             finding.vendorseverity = new_finding.vendorseverity,
             finding.vendorupdatedat = new_finding.vendorupdatedat,
@@ -188,12 +225,14 @@ def load_inspector_findings(
     neo4j_session: neo4j.Session, findings: List[Dict], region: str,
     aws_update_tag: int,
 ) -> None:
-    neo4j_session.write_transaction(
-        _load_findings_tx,
-        findings=findings,
-        region=region,
-        aws_update_tag=aws_update_tag,
-    )
+    for i, findings_batch in enumerate(batch(findings), start=1):
+        logger.info(f'Loading batch number {i}')
+        neo4j_session.write_transaction(
+            _load_findings_tx,
+            findings=findings_batch,
+            region=region,
+            aws_update_tag=aws_update_tag,
+        )
 
 
 def _load_packages_tx(
@@ -265,7 +304,7 @@ def sync(
 ) -> None:
     for region in regions:
         logger.info(f"Syncing AWS Inspector findings for account {current_aws_account_id} and region {region}")
-        findings = get_inspector_findings(boto3_session, region)
+        findings = get_inspector_findings(boto3_session, region, current_aws_account_id)
         finding_data, package_data = transform_inspector_findings(findings)
         logger.info(f"Loading {len(package_data)} packages")
         load_inspector_packages(neo4j_session, package_data, region, update_tag)
