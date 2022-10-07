@@ -141,7 +141,7 @@ def load_rds_instances(
         MERGE (rds:RDSInstance{id: rds_instance.DBInstanceArn})
         ON CREATE SET rds.firstseen = timestamp(),
             rds.arn = rds_instance.DBInstanceArn,
-            rds.borneo_id = instance_borneo_id
+            rds.borneo_id = {instance_borneo_id}
         SET rds.db_instance_identifier = rds_instance.DBInstanceIdentifier,
             rds.db_instance_class = rds_instance.DBInstanceClass,
             rds.engine = rds_instance.Engine,
