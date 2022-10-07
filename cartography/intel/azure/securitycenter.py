@@ -17,7 +17,7 @@ azure_console_link = AzureLinker()
 def load_security_contacts(session: neo4j.Session, subscription_id: str, data_list: List[Dict], update_tag: int) -> None:
     session.write_transaction(_load_security_contacts_tx, subscription_id, data_list, update_tag)
 
-def get_security_center_client(credentials: Credentials, subscription_id: str, region: str):
+def get_security_center_client(credentials: Credentials, subscription_id: str, region: str) -> SecurityCenter:
     client = client=SecurityCenter(credentials,subscription_id,region)
     return client
 
@@ -32,7 +32,7 @@ def get_security_contacts_list(client: SecurityCenter) -> List[Dict]:
         return []
 
 @timeit
-def transform_security_contacts(security_contacts: List[Dict], subscription_id: str, common_job_parameters: str):
+def transform_security_contacts(security_contacts: List[Dict], subscription_id: str, common_job_parameters: str) -> List[Dict]:
 
     security_contacts_data = []
     for contact in security_contacts:
@@ -53,6 +53,7 @@ def _load_security_contacts_tx(
     MERGE (c:AzureSecurityContact{id: cont.id})
     ON CREATE SET c.firstseen = timestamp(),
     c.name = cont.name,
+    c.region = cont.region,
     c.consolelink = cont.consolelink,
     c.phone = cont.phone
     SET c.lastupdated = {update_tag}
@@ -82,24 +83,24 @@ def sync_security_contacts(
         contacts = get_security_contacts_list(client)
         security_contacts_list = transform_security_contacts(contacts, subscription_id, common_job_parameters)
 
-        if common_job_parameters.get('pagination', {}).get('security_contacts', None):
-            pageNo = common_job_parameters.get("pagination", {}).get("security_contacts", None)["pageNo"]
-            pageSize = common_job_parameters.get("pagination", {}).get("security_contacts", None)["pageSize"]
+        if common_job_parameters.get('pagination', {}).get('securitycenter', None):
+            pageNo = common_job_parameters.get("pagination", {}).get("securitycenter", None)["pageNo"]
+            pageSize = common_job_parameters.get("pagination", {}).get("securitycenter", None)["pageSize"]
             totalPages = len(security_contacts_list) / pageSize
             if int(totalPages) != totalPages:
                 totalPages = totalPages + 1
             totalPages = int(totalPages)
             if pageNo < totalPages or pageNo == totalPages:
                 logger.info(f'pages process for security_contacts {pageNo}/{totalPages} pageSize is {pageSize}')
-            page_start = (common_job_parameters.get('pagination', {}).get('security_contacts', {})[
-                            'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('security_contacts', {})['pageSize']
-            page_end = page_start + common_job_parameters.get('pagination', {}).get('security_contacts', {})['pageSize']
+            page_start = (common_job_parameters.get('pagination', {}).get('ssecuritycenter', {})[
+                            'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('securitycenter', {})['pageSize']
+            page_end = page_start + common_job_parameters.get('pagination', {}).get('securitycenter', {})['pageSize']
             if page_end > len(security_contacts_list) or page_end == len(security_contacts_list):
                 security_contacts_list = security_contacts_list[page_start:]
             else:
                 has_next_page = True
                 security_contacts_list = security_contacts_list[page_start:page_end]
-                common_job_parameters['pagination']['secuirty_contacts']['hasNextPage'] = has_next_page
+                common_job_parameters['pagination']['securitycenter']['hasNextPage'] = has_next_page
 
         load_security_contacts(neo4j_session, subscription_id, security_contacts_list, update_tag)
         cleanup_security_contacts(neo4j_session, common_job_parameters)
