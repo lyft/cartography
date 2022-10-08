@@ -2,18 +2,19 @@
 cartography/intel/mde/util
 """
 # pylint: disable=invalid-name,broad-except
-import logging
-from array import array
 import json
-import urllib.request
+import logging
 import urllib.parse
+import urllib.request
+from array import array
+
 import requests
 
 logger = logging.getLogger(__name__)
 
 
 def get_authorization(
-    client_id: str, client_secret: str, api_url: str, tenant_id: str
+    client_id: str, client_secret: str, api_url: str, tenant_id: str,
 ) -> str:
     """
     Get Authentication token
@@ -63,7 +64,7 @@ def MdeHosts(
     # https://docs.microsoft.com/en-us/microsoft-365/security/defender-endpoint/exposed-apis-odata-samples?view=o365-worldwide
     params = {
         # '$stop': limit,
-        "$skip": 0
+        "$skip": 0,
         # '$filter': "riskScore eq 'High'"
         # '$filter': "healthStatus ne 'Active'"
         # '$filter': "lastSeen gt 2018-08-01Z"

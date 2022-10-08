@@ -3,9 +3,8 @@ from typing import Dict
 from typing import List
 
 import neo4j
-from falconpy.oauth2 import OAuth2
-from falconpy.spotlight_vulnerabilities import Spotlight_Vulnerabilities
 
+from .util import MdeHosts
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -15,7 +14,7 @@ logger = logging.getLogger(__name__)
 def sync_vulnerabilities(
     neo4j_session: neo4j.Session,
     update_tag: int,
-    authorization: OAuth2,
+    authorization: str,
 ) -> None:
     client = ...
     mde_hosts = MDEHosts(client)
@@ -91,7 +90,7 @@ def _load_cves(neo4j_session: neo4j.Session, data: List[Dict], update_tag: int) 
     """
     ingestion_cypher_query = """
     UNWIND $cves AS cve
-        MERGE (c:CVE:CrowdstrikeFinding{id: cve.id})
+        MERGE (c:CVE:MdeFinding{id: cve.id})
         ON CREATE SET c.id = cve.id,
             c.firstseen = timestamp()
         SET c.base_score = cve.base_score,
@@ -99,7 +98,7 @@ def _load_cves(neo4j_session: neo4j.Session, data: List[Dict], update_tag: int) 
             c.exploitability_score = cve.exploit_status,
             c.lastupdated = $update_tag
         WITH c, cve
-        MATCH (v:SpotlightVulnerability{id: cve.vuln_id})
+        MATCH (v:MdeVulnerability{id: cve.vuln_id})
         MERGE (v)-[hc:HAS_CVE]->(c)
         ON CREATE SET hc.firstseen = timestamp()
         SET hc.lastupdated = $update_tag

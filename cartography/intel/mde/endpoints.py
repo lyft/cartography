@@ -5,10 +5,10 @@ cartography/intel/mde/endpoints
 import logging
 from typing import Dict
 from typing import List
-from .util import MdeHosts
 
 import neo4j
 
+from .util import MdeHosts
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)

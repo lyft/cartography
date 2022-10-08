@@ -16,7 +16,6 @@ import cartography.intel.aws
 import cartography.intel.azure
 import cartography.intel.create_indexes
 import cartography.intel.crowdstrike
-import cartography.intel.mde
 import cartography.intel.crxcavator.crxcavator
 import cartography.intel.cve
 import cartography.intel.digitalocean
@@ -24,6 +23,7 @@ import cartography.intel.gcp
 import cartography.intel.github
 import cartography.intel.gsuite
 import cartography.intel.kubernetes
+import cartography.intel.mde
 import cartography.intel.oci
 import cartography.intel.okta
 from cartography.config import Config
