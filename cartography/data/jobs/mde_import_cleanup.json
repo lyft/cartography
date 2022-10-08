@@ -1,0 +1,10 @@
+{
+  "statements": [
+    {
+      "query": "MATCH (h:MdeHost) WHERE h.lastupdated <> $UPDATE_TAG WITH h LIMIT $LIMIT_SIZE DETACH DELETE (h)",
+      "iterative": true,
+      "iterationsize": 100
+    }
+  ],
+  "name": "cleanup mde"
+}

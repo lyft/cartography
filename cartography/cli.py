@@ -394,6 +394,38 @@ class CLI:
             ),
         )
         parser.add_argument(
+            '--mde-tenant-id',
+            type=str,
+            default=None,
+            help=(
+                'The mde tenant id for authentication.'
+            ),
+        )
+        parser.add_argument(
+            '--mde-client-id-env-var',
+            type=str,
+            default=None,
+            help=(
+                'The name of environment variable containing the mde client id for authentication.'
+            ),
+        )
+        parser.add_argument(
+            '--mde-client-secret-env-var',
+            type=str,
+            default=None,
+            help=(
+                'The name of environment variable containing the mde secret key for authentication.'
+            ),
+        )
+        parser.add_argument(
+            '--mde-api-url',
+            type=str,
+            default=None,
+            help=(
+                'The mde URL, if using self-hosted. Defaults to "https://api.securitycenter.microsoft.com" otherwise.'
+            ),
+        )
+        parser.add_argument(
             '--experimental-neo4j-4x-support',
             default=False,
             action='store_true',
@@ -530,6 +562,23 @@ class CLI:
             config.crowdstrike_client_secret = os.environ.get(config.crowdstrike_client_secret_env_var)
         else:
             config.crowdstrike_client_secret = None
+
+        # MDE config
+        if config.mde_client_id_env_var:
+            logger.debug(
+                f"Reading API key for mde from environment variable {config.mde_client_id_env_var}",
+            )
+            config.mde_client_id = os.environ.get(config.mde_client_id_env_var)
+        else:
+            config.mde_client_id = None
+
+        if config.mde_client_secret_env_var:
+            logger.debug(
+                f"Reading API key for mde from environment variable {config.mde_client_secret_env_var}",
+            )
+            config.mde_client_secret = os.environ.get(config.mde_client_secret_env_var)
+        else:
+            config.mde_client_secret = None
 
         if config.experimental_neo4j_4x_support:
             logger.warning(
