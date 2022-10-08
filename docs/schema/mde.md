@@ -59,3 +59,4 @@ TBD
 ```
 * Azure Virtual Machine is one single Mde Host.
 * Similarly for other cloud providers and Onpremises.
+
