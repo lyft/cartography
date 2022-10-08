@@ -394,6 +394,39 @@ class CLI:
             ),
         )
         parser.add_argument(
+            '--rapid7-user',
+            type=str,
+            default=None,
+            help=(
+                'The rapid7 user for authentication.'
+            ),
+        )
+        parser.add_argument(
+            '--rapid7-password-env-var',
+            type=str,
+            default=None,
+            help=(
+                'The name of environment variable containing the rapid7 user password for authentication.'
+            ),
+        )
+        parser.add_argument(
+            '--rapid7-server-url',
+            type=str,
+            default=None,
+            help=(
+                'The url of the Rapid7 InsightsVM server.'
+            ),
+        )
+        # FIXME! not passed correctly
+        parser.add_argument(
+            '--rapid7-verify-cert',
+            type=bool,
+            default=True,
+            help=(
+                'Validate https certificate of Rapid7 InsightsVM server.'
+            ),
+        )
+        parser.add_argument(
             '--experimental-neo4j-4x-support',
             default=False,
             action='store_true',
@@ -536,6 +569,15 @@ class CLI:
                 'EXPERIMENTAL_NEO4J_4X_SUPPORT is now enabled by default,'
                 ' and this option will be removed when code hard-coded syntax upgrades are completed',
             )
+
+        # Rapid7 config
+        if config.rapid7_password_env_var:
+            logger.debug(
+                f"Reading password for rapid7 from environment variable {config.rapid7_password_env_var}",
+            )
+            config.rapid7_password = os.environ.get(config.rapid7_password_env_var)
+        else:
+            config.rapid7_password = None
 
         # Run cartography
         try:
