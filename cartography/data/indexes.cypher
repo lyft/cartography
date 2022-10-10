@@ -315,6 +315,7 @@ CREATE INDEX ON :AzureMonitorLogProfile(id);
 CREATE INDEX ON :AzureKeyVaultKey(id);
 CREATE INDEX ON :AzureKeyVaultSecret(id);
 CREATE INDEX ON :AzureKeyVaultCertificate(id);
+CREATE INDEX ON :AzureSecurityContact(id);
 CREATE INDEX ON :KubernetesCluster(id);
 CREATE INDEX ON :KubernetesCluster(name);
 CREATE INDEX ON :KubernetesNamespace(id);
