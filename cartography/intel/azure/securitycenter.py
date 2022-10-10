@@ -39,6 +39,7 @@ def transform_security_contacts(security_contacts: List[Dict], subscription_id: 
         x = contact['id'].split('/')
         contact['resource_group'] = x[x.index('resourceGroups') + 1]
         contact['subscriptionid']=subscription_id
+        contact['region'] = 'global'
         contact['consolelink'] = azure_console_link.get_console_link(
             id=contact['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
         security_contacts_data.append(contact)
