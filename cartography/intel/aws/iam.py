@@ -15,6 +15,7 @@ from cartography.stats import get_stats_client
 from cartography.util import merge_module_sync_metadata
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
+
 logger = logging.getLogger(__name__)
 stat_handler = get_stats_client(__name__)
 
@@ -305,6 +306,25 @@ def load_roles(
     SET r.lastupdated = $aws_update_tag
     """
 
+    # Note - why we don't set inscope or foreign attribute on the account
+    #
+    # we are agnostic here if this is the AWSAccount is part of the sync scope or
+    # a foreign AWS account that contains a trusted principal. The account could also be inscope
+    # but not sync yet.
+    # - The inscope attribute - set when the account is being sync.
+    # - The foreign attribute - the attribute assignment logic is in aws_foreign_accounts.json analysis job
+    # - Why seperate statement is needed - the arn may point to service level principals ex - ec2.amazonaws.com
+    ingest_spnmap_statement = """
+    MERGE (aa:AWSAccount{id: $SpnAccountId})
+    ON CREATE SET aa.firstseen = timestamp()
+    SET aa.lastupdated = $aws_update_tag
+    WITH aa
+    MATCH (spnnode:AWSPrincipal{arn: $SpnArn})
+    WITH spnnode, aa
+    MERGE (aa)-[r:RESOURCE]->(spnnode)
+    ON CREATE SET r.firstseen = timestamp()
+    """
+
     # TODO support conditions
     logger.info(f"Loading {len(roles)} IAM roles to the graph.")
     for role in roles:
@@ -329,6 +349,14 @@ def load_roles(
                     RoleArn=role['Arn'],
                     aws_update_tag=aws_update_tag,
                 )
+                spn_arn = get_account_from_arn(principal_value)
+                if spn_arn:
+                    neo4j_session.run(
+                        ingest_spnmap_statement,
+                        SpnArn=principal_value,
+                        SpnAccountId=get_account_from_arn(principal_value),
+                        aws_update_tag=aws_update_tag,
+                    )
 
 
 @timeit
@@ -739,3 +767,19 @@ def sync(
         update_tag=update_tag,
         stat_handler=stat_handler,
     )
+
+
+@timeit
+def get_account_from_arn(arn: str) -> str:
+    # ARN documentation
+    # https://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html
+
+    if not arn.startswith("arn:"):
+        # must be a service principal arn, such as ec2.amazonaws.com
+        return ""
+
+    parts = arn.split(":")
+    if len(parts) < 4:
+        return ""
+    else:
+        return parts[4]
