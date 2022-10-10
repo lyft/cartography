@@ -92,8 +92,9 @@ def load_aws_accounts(
 ) -> None:
     query = """
     MERGE (aa:AWSAccount{id: $ACCOUNT_ID})
-    ON CREATE SET aa.firstseen = timestamp(), aa.inscope=true
-    SET aa.lastupdated = $aws_update_tag, aa.name = $ACCOUNT_NAME
+    ON CREATE SET aa.firstseen = timestamp()
+    SET aa.lastupdated = $aws_update_tag, aa.name = $ACCOUNT_NAME, aa.inscope=true
+    REMOVE aa.foreign
     WITH aa
     MERGE (root:AWSPrincipal{arn: $RootArn})
     ON CREATE SET root.firstseen = timestamp(), root.type = 'AWS'
