@@ -2,6 +2,7 @@ import json
 import logging
 import os
 from pathlib import Path
+from typing import Any
 from typing import Dict
 from typing import Union
 
@@ -43,9 +44,7 @@ class GraphStatement:
         parent_job_name: str = None, parent_job_sequence_num: int = None,
     ):
         self.query = query
-        self.parameters: Dict = parameters
-        if not parameters:
-            self.parameters = {}
+        self.parameters = parameters or {}
         self.iterative = iterative
         self.iterationsize = iterationsize
         self.parameters["LIMIT_SIZE"] = self.iterationsize
@@ -53,7 +52,7 @@ class GraphStatement:
         self.parent_job_name = parent_job_name if parent_job_name else None
         self.parent_job_sequence_num = parent_job_sequence_num if parent_job_sequence_num else None
 
-    def merge_parameters(self, parameters):
+    def merge_parameters(self, parameters: Dict) -> None:
         """
         Merge given parameters with existing parameters.
         """
@@ -71,7 +70,7 @@ class GraphStatement:
             session.write_transaction(self._run_noniterative).consume()
         logger.info(f"Completed {self.parent_job_name} statement #{self.parent_job_sequence_num}")
 
-    def as_dict(self):
+    def as_dict(self) -> Dict[str, Any]:
         """
         Convert statement to a dictionary.
         """
@@ -82,14 +81,14 @@ class GraphStatement:
             "iterationsize": self.iterationsize,
         }
 
-    def _run_noniterative(self, tx: neo4j.Transaction) -> neo4j.StatementResult:
+    def _run_noniterative(self, tx: neo4j.Transaction) -> neo4j.Result:
         """
         Non-iterative statement execution.
         """
-        result: neo4j.StatementResult = tx.run(self.query, self.parameters)
+        result: neo4j.Result = tx.run(self.query, self.parameters)
 
         # Handle stats
-        summary: neo4j.BoltStatementResultSummary = result.summary()
+        summary: neo4j.ResultSummary = result.consume()
         stat_handler.incr('constraints_added', summary.counters.constraints_added)
         stat_handler.incr('constraints_removed', summary.counters.constraints_removed)
         stat_handler.incr('indexes_added', summary.counters.indexes_added)
@@ -107,16 +106,15 @@ class GraphStatement:
     def _run_iterative(self, session: neo4j.Session) -> None:
         """
         Iterative statement execution.
-
         Expects the query to return the total number of records updated.
         """
         self.parameters["LIMIT_SIZE"] = self.iterationsize
 
         while True:
-            result: neo4j.StatementResult = session.write_transaction(self._run_noniterative)
+            result: neo4j.Result = session.write_transaction(self._run_noniterative)
 
             # Exit if we have finished processing all items
-            if not result.summary().counters.contains_updates:
+            if not result.consume().counters.contains_updates:
                 # Ensure network buffers are cleared
                 result.consume()
                 break

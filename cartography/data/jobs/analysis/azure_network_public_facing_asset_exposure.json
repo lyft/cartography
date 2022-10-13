@@ -1,12 +1,12 @@
 {
     "statements": [
         {
-            "query": "MATCH ((n) <-[:RESOURCE]-(:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}})<-[:RESOURCE]-(:AzureTenant{id: {AZURE_TENANT_ID}})<-[:OWNER]-(:CloudanixWorkspace{id: {WORKSPACE_ID}})) where EXISTS(n.exposed_internet) AND labels(n) IN [['AzureNetwork']] WITH n LIMIT {LIMIT_SIZE} REMOVE n.exposed_internet return COUNT(*) as TotalCompleted",
+            "query": "MATCH ((n) <-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID})) where EXISTS(n.exposed_internet) AND labels(n) IN [['AzureNetwork']] WITH n LIMIT $LIMIT_SIZE REMOVE n.exposed_internet return COUNT(*) as TotalCompleted",
             "iterative": true,
             "iterationsize": 100
         },
         {
-            "query": "MATCH ((rule:AzureNetworkSecurityRule)<-[:CONTAIN]-(group:AzureNetworkSecurityGroup)<-[:MEMBER_NETWORK_SECURITY_GROUP]-(subnet:AzureNetworkSubnet)<-[:CONTAIN]-(n:AzureNetwork)<-[:RESOURCE]-(:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}})<-[:RESOURCE]-(:AzureTenant{id: {AZURE_TENANT_ID}})<-[:OWNER]-(:CloudanixWorkspace{id: {WORKSPACE_ID}}))\nWHERE rule.access='Allow' And rule.source_port_range='*' OR rule.protocol='*' OR rule.source_address_prefix='0.0.0.0/0' \nSET n.exposed_internet = true;",
+            "query": "MATCH ((rule:AzureNetworkSecurityRule)<-[:CONTAIN]-(group:AzureNetworkSecurityGroup)<-[:MEMBER_NETWORK_SECURITY_GROUP]-(subnet:AzureNetworkSubnet)<-[:CONTAIN]-(n:AzureNetwork)<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}))\nWHERE rule.access='Allow' And rule.source_port_range='*' OR rule.protocol='*' OR rule.source_address_prefix='0.0.0.0/0' \nSET n.exposed_internet = true;",
             "iterative": false
         }
     ],

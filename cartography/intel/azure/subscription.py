@@ -74,19 +74,19 @@ def load_azure_subscriptions(
     neo4j_session: neo4j.Session, tenant_id: str, subscriptions: List[Dict], update_tag: int,
 ) -> None:
     query = """
-    MERGE (at:AzureTenant{id: {TENANT_ID}})
+    MERGE (at:AzureTenant{id: $TENANT_ID})
     ON CREATE SET at.firstseen = timestamp(),
-    at.region = {region}
-    SET at.lastupdated = {update_tag}
+    at.region = $region
+    SET at.lastupdated = $update_tag
     WITH at
-    MERGE (as:AzureSubscription{id: {SUBSCRIPTION_ID}})
-    ON CREATE SET as.firstseen = timestamp(), as.path = {SUBSCRIPTION_PATH},
-    as.region = {region}
-    SET as.lastupdated = {update_tag}, as.name = {SUBSCRIPTION_NAME}, as.state = {SUBSCRIPTION_STATE}
+    MERGE (as:AzureSubscription{id: $SUBSCRIPTION_ID})
+    ON CREATE SET as.firstseen = timestamp(), as.path = $SUBSCRIPTION_PATH,
+    as.region = $region
+    SET as.lastupdated = $update_tag, as.name = $SUBSCRIPTION_NAME, as.state = $SUBSCRIPTION_STATE
     WITH as, at
     MERGE (at)-[r:RESOURCE]->(as)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {update_tag};
+    SET r.lastupdated = $update_tag;
     """
     for sub in subscriptions:
         neo4j_session.run(
