@@ -22,10 +22,10 @@ def load_cloudanix_workspace(neo4j_session, update_tag, common_job_parameters):
 
 def load_cloudanix_workspace_tx(tx, update_tag, common_job_parameters):
     query = """
-    MERGE (w:CloudanixWorkspace{id: {WORKSPACE_ID}})
-    ON CREATE SET w.firstseen = timestamp(), w.lastupdated = {UPDATE_TAG},
-    w.name = {WORKSPACE_NAME}, w.account_id= {WORKSPACE_ACCOUNT_ID}
-    SET w.lastupdated = {UPDATE_TAG}, w.name = {WORKSPACE_NAME}, w.account_id= {WORKSPACE_ACCOUNT_ID}
+    MERGE (w:CloudanixWorkspace{id: $WORKSPACE_ID})
+    ON CREATE SET w.firstseen = timestamp(), w.lastupdated = $UPDATE_TAG,
+    w.name = $WORKSPACE_NAME, w.account_id= $WORKSPACE_ACCOUNT_ID
+    SET w.lastupdated = $UPDATE_TAG, w.name = $WORKSPACE_NAME, w.account_id= $WORKSPACE_ACCOUNT_ID
     """
 
     tx.run(

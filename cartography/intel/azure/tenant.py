@@ -63,32 +63,32 @@ def load_azure_tenant(
     neo4j_session: neo4j.Session, tenant_obj: Dict, current_user: str, update_tag: int, common_job_parameters: Dict
 ) -> None:
     query = """
-    MERGE (w:CloudanixWorkspace{id: {workspaceId}})
-    SET w.lastupdated = {update_tag}
+    MERGE (w:CloudanixWorkspace{id: $workspaceId})
+    SET w.lastupdated = $update_tag
     WITH w
-    MERGE (at:AzureTenant{id: {tenantId}})
+    MERGE (at:AzureTenant{id: $tenantId})
     ON CREATE SET at.firstseen = timestamp()
-    SET at.lastupdated = {update_tag},
-    at.path = {id},
-    at.tenantCategory = {tenantCategory},
-    at.tenantType = {tenantType},
-    at.displayName = {displayName},
-    at.country = {country},
-    at.countryCode = {countryCode},
-    at.defaultDomain = {defaultDomain}
+    SET at.lastupdated = $update_tag,
+    at.path = $id,
+    at.tenantCategory = $tenantCategory,
+    at.tenantType = $tenantType,
+    at.displayName = $displayName,
+    at.country = $country,
+    at.countryCode = $countryCode,
+    at.defaultDomain = $defaultDomain
     WITH w, at
     MERGE (w)-[o:OWNER]->(at)
     ON CREATE SET o.firstseen = timestamp()
-    SET o.lastupdated = {update_tag}
+    SET o.lastupdated = $update_tag
     WITH at
-    MERGE (ap:AzurePrincipal{id: {userEmail}})
-    ON CREATE SET ap.email = {userEmail}, ap.firstseen = timestamp()
-    SET ap.lastupdated = {update_tag},
-    ap.name={userName}, ap.userid={userId}
+    MERGE (ap:AzurePrincipal{id: $userEmail})
+    ON CREATE SET ap.email = $userEmail, ap.firstseen = timestamp()
+    SET ap.lastupdated = $update_tag,
+    ap.name=$userName, ap.userid=$userId
     WITH at, ap
     MERGE (at)-[r:RESOURCE]->(ap)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {update_tag};
+    SET r.lastupdated = $update_tag;
     """
     neo4j_session.run(
         query,

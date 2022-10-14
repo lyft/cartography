@@ -512,7 +512,7 @@ def main(argv=None):
     logging.basicConfig(level=logging.INFO)
     logging.getLogger('botocore').setLevel(logging.WARNING)
     logging.getLogger('googleapiclient').setLevel(logging.WARNING)
-    logging.getLogger('neo4j.bolt').setLevel(logging.WARNING)
+    logging.getLogger('neo4j').setLevel(logging.WARNING)
     argv = argv if argv is not None else sys.argv[1:]
     default_sync = cartography.sync.build_default_sync()
     return CLI(default_sync, prog='cartography').main(argv)
@@ -521,7 +521,7 @@ def main(argv=None):
 def run_aws(request):
     logging.basicConfig(level=logging.INFO)
     logging.getLogger('botocore').setLevel(logging.WARNING)
-    logging.getLogger('neo4j.bolt').setLevel(logging.WARNING)
+    logging.getLogger('neo4j').setLevel(logging.WARNING)
 
     default_sync = cartography.sync.build_aws_sync(request.get('config', {}).get('initIndexes', False))
 
@@ -548,9 +548,9 @@ def run_aws(request):
 def run_azure(request):
     logging.basicConfig(level=logging.INFO)
     logging.getLogger('botocore').setLevel(logging.WARNING)
-    logging.getLogger('neo4j.bolt').setLevel(logging.WARNING)
+    logging.getLogger('neo4j').setLevel(logging.WARNING)
 
-    default_sync = cartography.sync.build_azure_sync()
+    default_sync = cartography.sync.build_azure_sync(request.get('config', {}).get('initIndexes', False))
 
     # TODO: Define config and pass it forward
     config = Config(
@@ -560,13 +560,12 @@ def run_azure(request):
         neo4j_max_connection_lifetime=request['neo4j']['connection_lifetime'],
         azure_client_id=request['azure']['client_id'],
         azure_client_secret=request['azure']['client_secret'],
-        redirect_uri=request['azure']['redirect_uri'],
-        subscription_id=request['azure']['subscription_id'],
-        refresh_token=request['azure']['refresh_token'],
-        graph_scope=request['azure']['graph_scope'],
-        azure_scope=request['azure']['azure_scope'],
+        azure_redirect_uri=request['azure']['redirect_uri'],
+        azure_subscription_id=request['azure']['subscription_id'],
+        azure_refresh_token=request['azure']['refresh_token'],
+        azure_graph_scope=request['azure']['graph_scope'],
+        azure_azure_scope=request['azure']['azure_scope'],
         params=request['params'],
-        neo4j_max_connection_lifetime=3600,
         azure_requested_syncs=request.get('services', None),
         update_tag=request.get('updateTag', None)
     )
@@ -582,7 +581,7 @@ def run_azure(request):
 def run_gcp(request):
     logging.basicConfig(level=logging.INFO)
     logging.getLogger('botocore').setLevel(logging.WARNING)
-    logging.getLogger('neo4j.bolt').setLevel(logging.WARNING)
+    logging.getLogger('neo4j').setLevel(logging.WARNING)
 
     default_sync = cartography.sync.build_gcp_sync()
 
