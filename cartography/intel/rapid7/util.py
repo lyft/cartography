@@ -17,7 +17,7 @@ def Rapid7Hosts(
     limit: int = 1000,
     page: int = 0,
     sort: str = "",
-) -> array[Any]:
+) -> array:
     """
     Get Nexpose inventory full data to array
     https://help.rapid7.com/insightvm/en-us/api/index.html#operation/getAssets
@@ -93,7 +93,7 @@ def Rapid7Hosts(
 def Rapid7VulnerabilitiesByHost(
     authorization: tuple[str, str, str, bool],
     machine_id,
-) -> array[Any]:
+) -> array:
     """
     Get Rapid7 vulnerabilities
 
