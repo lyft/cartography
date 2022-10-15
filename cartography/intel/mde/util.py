@@ -4,10 +4,12 @@ cartography/intel/mde/util
 # pylint: disable=invalid-name,broad-except
 import json
 import logging
+import re
 import urllib.parse
 import urllib.request
 from array import array
 
+import pandas
 import requests
 
 logger = logging.getLogger(__name__)
@@ -107,7 +109,14 @@ def MdeHosts(
 
     logger.info("MdeHosts count final: %s", len(full_data))
 
-    return full_data
+    logger.info("Flattening data")
+    df_mde_tmp = pandas.json_normalize(full_data, sep='_', max_level=3)
+    # this makes easier comparison in neo4j
+    df_mde_tmp['resource_group'] = df_mde_tmp['vmMetadata_resourceId'].apply(extract_rg_from_resourceid)
+    flatten_data = json.loads(df_mde_tmp.to_json(orient="records"))
+    logger.debug("Example: %s", flatten_data[0])
+
+    return flatten_data
 
 
 # pylint: disable=unused-argument
@@ -124,3 +133,16 @@ def MdeVulnerabilitiesByHost(
     # TBD
 
     return []
+
+
+def extract_rg_from_resourceid(resourceid: str) -> str:
+    """
+    Get Azure resource group from Azure resource id
+    """
+    if type(resourceid) is str:
+        try:
+            rg = re.search('/resourceGroups/(.*?)/providers/', resourceid, flags=re.IGNORECASE).group(1)
+            return rg
+        except AttributeError as exception:
+            logging.exception("exception: %s", exception)
+    return None

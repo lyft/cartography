@@ -39,39 +39,28 @@ def load_host_data(
       'message: Property values can only be of primitive types or arrays thereof.'
 
     FIXME! Processing per batch of 28 hosts? mde api per 10k hosts?
-
-    FIXME!
-    h.mde_ipaddresses = host.ipAddresses,
-    h.mde_vmmetadata = host.vmMetadata,
-
-    h.mde_ipaddresses = host.ipAddresses | toString(value),
-    h.mde_vmmetadata = host.vmMetadata | toString(value),
-
-    h.mde_ipaddresses = [value in host.ipAddresses | toString(value)],
-    h.mde_vmmetadata = [value in host.vmMetadata | toString(value)],
-
-
-    FIXME! missing instance_id, subscription_id, resource_id
     """
     ingestion_cypher_query = """
     UNWIND $Hosts AS host
         MERGE (h:MdeHost{id: host.id})
         ON CREATE SET h.mde_id = host.id,
-            h.instance_id = host.vmMetadata.vmId,
-            h.subscription_id = host.vmMetadata.subscriptionId,
-            h.resource_id = host.vmMetadata.resourceId,
             h.firstseen = timestamp()
         SET h.status = host.status,
             h.hostname = host.computerDnsName,
             h.machine_domain = host.machine_domain,
-            h.mde_first_seen = host.firstSeen,
-            h.mde_last_seen = host.lastSeen,
+            h.tool_first_seen = host.firstSeen,
+            h.tool_last_seen = host.lastSeen,
             h.platform_name = host.osPlatform,
             h.os_version = host.osVersion,
             h.cpu_signature = host.osProcessor,
             h.agent_version = host.agentVersion,
             h.local_ip = host.lastIpAddress,
             h.external_ip = host.lastExternalIpAddress,
+            h.cloud_provider = host.vmMetadata_cloudProvider,
+            h.instance_id = host.vmMetadata_vmId,
+            h.subscription_id = host.vmMetadata_subscriptionId,
+            h.resource_group = host.resource_group,
+            h.resource_id = host.vmMetadata_resourceId,
             // MDE fields
             h.mde_healthstatus = host.healthStatus,
             h.mde_devicevalue = host.deviceValue,
@@ -87,6 +76,11 @@ def load_host_data(
             h.mde_managedbystatus = host.managedByStatus,
             h.modified_timestamp = host.modified_timestamp,
             h.lastupdated = $update_tag
+        WITH h
+        MATCH (s:AzureVirtualMachine{id: h.resource_id})
+        MERGE (s)-[r:PRESENT_IN]->(h)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = $update_tag
     """
     logger.info("Loading %s mde hosts.", len(data))
     neo4j_session.run(
