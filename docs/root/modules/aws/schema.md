@@ -10,6 +10,8 @@ Representation of an AWS Account.
 |-------|-------------|
 |firstseen| Timestamp of when a sync job discovered this node|
 |name| The name of the account|
+|inscope| Indicates that the account is part of the sync scope (true or false).
+|foreign| Indicates if the account is not part of the sync scope (true or false). One such example is an account that is trusted as part of cross-account AWSRole trust not in scope for sync.
 |lastupdated| Timestamp of the last time the node was updated|
 |**id**| The AWS Account ID number|
 

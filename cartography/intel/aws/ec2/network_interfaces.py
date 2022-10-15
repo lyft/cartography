@@ -82,9 +82,8 @@ def load_network_interfaces(
             ON CREATE SET r.firstseen = timestamp()
             SET r.lastupdated = $update_tag
         WITH network_interface, netinf
-
         MERGE (acc:AWSAccount{id: $aws_account_id})
-        ON CREATE SET acc.firstseen = timestamp()
+        ON CREATE SET acc.firstseen = timestamp(), acc.inscope=true
         SET acc.lastupdated = $update_tag
         MERGE (acc)-[r:RESOURCE]->(netinf)
         ON CREATE SET r.firstseen = timestamp()
