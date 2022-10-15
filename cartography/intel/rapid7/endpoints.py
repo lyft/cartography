@@ -32,30 +32,6 @@ def load_host_data(
 ) -> None:
     """
     Transform and load scan information
-
-    NOK array/json value?
-    {code: Neo.ClientError.Statement.TypeError}
-    {message: Property values can only be of primitive types or arrays thereof.
-    Encountered: Map{mac -> String("00:1A:AA:01:13:12"), ip -> String("10.1.12.123")}.}
-            h.r7_addresses = host.addresses,
-            h.r7_configurations = host.configurations,
-            h.r7_databases = host.databases,
-            h.r7_files = host.files,
-            h.r7_history = host.history,
-            h.r7_hostnames = host.hostNames,
-            h.r7_ids = host.ids,
-            h.r7_links = host.links,
-            h.r7_osfingerprint = host.osFingerprint,
-            h.r7_services = host.services,
-            h.r7_software = host.software,
-            h.r7_usergroups = host.userGroups,
-            h.r7_users = host.users,
-            h.r7_vulnerabilities = host.vulnerabilities,
-    NOK array
-            h.instance_id = host.configurations[0].value.instanceId,
-            h.resource_id = host.configurations[0].value.resourceId,
-
-    For instanceId, resourceId, this supposed configurations array first or only entry is the azure one.
     """
     ingestion_cypher_query = """
     UNWIND $Hosts AS host
@@ -70,9 +46,30 @@ def load_host_data(
             h.r7_os = host.os,
             h.r7_rawriskscore = host.rawRiskScore,
             h.r7_riskscore = host.riskScore,
+            h.r7_architecture = host.osFingerprint_architecture,
+            h.r7_os_product = host.osFingerprint_product,
+            h.r7_os_version = host.osFingerprint_version,
+            h.r7_vulnerabilities_critical = host.vulnerabilities_critical,
+            h.r7_vulnerabilities_exploits = host.vulnerabilities_exploits,
+            h.r7_vulnerabilities_malwareKits = host.vulnerabilities_malwareKits,
+            h.r7_vulnerabilities_moderate = host.vulnerabilities_moderate,
+            h.r7_vulnerabilities_severe = host.vulnerabilities_severe,
+            h.r7_vulnerabilities_total = host.vulnerabilities_total,
+            h.tool_first_seen = host.tool_first_seen,
+            h.tool_last_seen = host.tool_last_seen,
             h.r7_type = host.type,
+            h.cloud_provider = host.cloud_provider,
+            h.instance_id = host.instance_id,
+            h.subscription_id = host.subscription_id,
+            h.resource_id = host.resource_id,
+            h.resource_group = host.resource_group,
             h.modified_timestamp = host.modified_timestamp,
             h.lastupdated = $update_tag
+        WITH h
+        MATCH (s:AzureVirtualMachine{id: h.resource_id})
+        MERGE (s)-[r:PRESENT_IN]->(h)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = $update_tag
     """
     logger.info("Loading %s rapid7 hosts.", len(data))
     neo4j_session.run(

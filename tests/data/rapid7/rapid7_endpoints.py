@@ -6,7 +6,17 @@ GET_HOSTS = [
         "assessedForVulnerabilities": True,
         "configurations": [
             {"name": "<name>", "value": "<value>"},
-            {"name": "azure", "value": {"instanceId": "", "resourceId": ""}},
+            {"name": "cpuinfo", "value": "Intel(R) Core(TM) iXXXX CPU @ XHz"},
+            {"name": "proxies", "value": "{}"},
+            {"name": "release", "value": "10"},
+            {"name": "timezone", "value": "GMT-4"},
+            {
+                "name": "azure",
+                "value": {
+                    "instanceId": "c56b2c59-4e9b-4b89-85e2-13f8146eb071",
+                    "resourceId": "/subscriptions/SUB/resourceGroups/RG/providers/Microsoft.Compute/virtualMachines/HOST",
+                },
+            },
         ],
         "databases": [
             {"description": "Microsoft SQL Server", "id": 13, "name": "MSSQL"},
