@@ -188,3 +188,9 @@ def build_default_sync() -> Sync:
         ('analysis', cartography.intel.analysis.run),
     ])
     return sync
+
+def build_rule_check_sync() -> Sync:
+    sync = Sync()
+    sync.add_stages([
+        ('analysis', cartography.intel.analysis.run)
+    ])

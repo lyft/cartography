@@ -1,0 +1,10 @@
+{
+    "name": "S3 Config Rules",
+    "statements": [
+        {
+            "__comment": "rds-cluster-deletion-protection-enabled",
+            "query": "match (n:RDSCluster) where n.deletion_protection = false SET n.compliance_failure = true , n.failed_rules = CASE WHEN 'rds-cluster-deletion-protection-enabled' in n.failed_rules THEN n.failed_rules ELSE coalesce(n.failed_rules+['rds-cluster-deletion-protection-enabled'], ['rds-cluster-deletion-protection-enabled']) END return n",
+            "iterative": false
+        }
+    ]
+}
