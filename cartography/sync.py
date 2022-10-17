@@ -189,6 +189,14 @@ def build_default_sync() -> Sync:
     ])
     return sync
 
+def build_default_borneo_sync() -> Sync:
+    sync = Sync()
+    sync.add_stages([
+        ('create-indexes', cartography.intel.create_indexes.run),
+        ('aws', cartography.intel.aws.start_aws_ingestion),
+        ('analysis', cartography.intel.analysis.run)
+    ])
+
 def build_rule_check_sync() -> Sync:
     sync = Sync()
     sync.add_stages([
