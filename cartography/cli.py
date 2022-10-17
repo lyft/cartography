@@ -1,4 +1,5 @@
 import argparse
+from distutils.log import error
 import getpass
 import logging
 import os
@@ -692,7 +693,7 @@ class CLI:
             return cartography.util.STATUS_KEYBOARD_INTERRUPT
         return STATUS_SUCCESS
 
-def main(argv=None):
+def main(argv=None, sync_flag=None):
     """
     Entrypoint for the default cartography command line interface.
 
@@ -708,6 +709,15 @@ def main(argv=None):
     logging.getLogger('googleapiclient').setLevel(logging.WARNING)
     logging.getLogger('neo4j').setLevel(logging.WARNING)
     argv = argv if argv is not None else sys.argv[1:]
-    default_sync = cartography.sync.build_default_sync()
-    result = CLI(default_sync, prog='cartography').main(argv)
+    requested_sync = sync_flag if sync_flag is not None else 'default'
+    if(requested_sync == 'default'):
+        default_sync = cartography.sync.build_default_sync()
+        result = CLI(default_sync, prog='cartography').main(argv)
+    elif(requested_sync == 'rule_check'):
+        sync = cartography.sync.build_rule_check_sync()
+        result = CLI(sync, prog='cartography').main(argv)
+    else:
+        logger.warning("The requested sync doesn't exist, running the default sync")
+        default_sync = cartography.sync.build_default_sync()
+        result = CLI(default_sync, prog='cartography').main(argv)
     return result

@@ -237,3 +237,9 @@ def build_sync(selected_modules_as_str: str) -> Sync:
         [(sync_name, TOP_LEVEL_MODULES[sync_name]) for sync_name in selected_modules],
     )
     return sync
+
+def build_rule_check_sync() -> Sync:
+    sync = Sync()
+    sync.add_stages([
+        ('analysis', cartography.intel.analysis.run)
+    ])
