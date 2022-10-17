@@ -1,0 +1,105 @@
+{
+    "name": "RDS Check Rules",
+    "statements":[
+        {
+            "__comment": "rds-cluster-default-admin-check",
+            "query": "match (n:RDSCluster) where n.master_username in ['admin', 'postgres', 'root'] SET n.compliance_failure = true , n.failed_rules = CASE WHEN 'rds-cluster-default-admin-check' in n.failed_rules THEN n.failed_rules ELSE coalesce(n.failed_rules+['rds-cluster-default-admin-check'], ['rds-cluster-default-admin-check']) END return n",
+            "iterative": false
+        },
+        {
+            "__comment": "rds-cluster-multi-az-enabled",
+            "query": "match (n:RDSCluster) where n.multi_az = false SET n.compliance_failure = true , n.failed_rules = CASE WHEN 'rds-cluster-multi-az-enabled' in n.failed_rules THEN n.failed_rules ELSE coalesce(n.failed_rules+['rds-cluster-multi-az-enabled'], ['rds-cluster-multi-az-enabled']) END return n",
+            "iterative": false
+        },
+        {
+            "__comment": "rds-db-security-group-not-allowed",
+            "query": "match (n:RDSInstance)-[:MEMBER_OF_EC2_SECURITY_GROUP]->(m:EC2SecurityGroup) SET n.compliance_failure = true , n.failed_rules = CASE WHEN 'rds-db-security-group-not-allowed' in n.failed_rules THEN n.failed_rules ELSE coalesce(n.failed_rules+['rds-db-security-group-not-allowed'], ['rds-db-security-group-not-allowed']) END return n",
+            "iterative": false
+        },
+        {
+            "__comment": "rds-instance-default-admin-check",
+            "query": "match (n:RDSInstance) where n.master_username in ['root', 'admin', 'postgres'] SET n.compliance_failure = true , n.failed_rules = CASE WHEN 'rds-instance-default-admin-check' in n.failed_rules THEN n.failed_rules ELSE coalesce(n.failed_rules+['rds-instance-default-admin-check'], ['rds-instance-default-admin-check']) END return n",
+            "iterative": false
+        },
+        {
+            "__comment": "rds-instance-deletion-protection-enabled",
+            "query": "match (n:RDSInstance) where n.deletion_protection = false SET n.compliance_failure = true , n.failed_rules = CASE WHEN 'rds-instance-deletion-protection-enabled' in n.failed_rules THEN n.failed_rules ELSE coalesce(n.failed_rules+['rds-instance-deletion-protection-enabled'], ['rds-instance-deletion-protection-enabled']) END return n",
+            "iterative": false
+        },
+        {
+            "__comment": "rds-instance-iam-authentication-enabled",
+            "query": "match (n:RDSInstance) where n.iam_database_authentication_enabled = false SET n.compliance_failure = true , n.failed_rules = CASE WHEN 'rds-instance-iam-authentication-enabled' in n.failed_rules THEN n.failed_rules ELSE coalesce(n.failed_rules+['rds-instance-iam-authentication-enabled'], ['rds-instance-iam-authentication-enabled']) END return n",
+            "iterative": false
+        },
+        {
+            "__comment": "rds-instance-public-access-check",
+            "query": "match(n:RDSInstance) WHERE n.publicly_accessible = true SET n.compliance_failure = true , n.failed_rules = CASE WHEN 'rds-instance-public-access-check' in n.failed_rules THEN n.failed_rules ELSE coalesce(n.failed_rules+['rds-instance-public-access-check'], ['rds-instance-public-access-check']) END return n",
+            "iterative": false
+        },
+        {
+            "__comment": "rds-multi-az-support",
+            "query": "match (n:RDSInstance) where n.multi_az = false SET n.compliance_failure = true, n.failed_rules = CASE WHEN 'rds-multi-az-support' in n.failed_rules THEN n.failed_rules ELSE coalesce(n.failed_rules+['rds-multi-az-support'], ['rds-multi-az-support']) END return n",
+            "iterative": false
+        },
+        {
+            "__comment": "rds-storage-encrypted",
+            "query": "match (n:RDSInstance) where n.storage_encrypted = false SET n.compliance_failure = true, n.failed_rules = CASE WHEN 'rds-storage-encrypted' in n.failed_rules THEN n.failed_rules ELSE coalesce(n.failed_rules+['rds-storage-encrypted'], ['rds-storage-encrypted']) END return n",
+            "iterative": false
+        },
+        {
+            "__comment": "rds-cluster-default-admin-check.",
+            "query" : "match (n:RDSCluster) where not n.master_username in ['admin', 'postgres'] SET n.failed_rules = [x IN n.failed_rules WHERE x <> 'rds-cluster-default-admin-check'] return n",
+            "iterative": false
+        },
+        {
+            "__comment": "rds-cluster-deletion-protection-enabled",
+            "query" : "match (n:RDSCluster) where n.deletion_protection = false SET n.failed_rules = [x IN n.failed_rules WHERE x <> 'rds-cluster-deletion-protection-enabled'] return n",
+            "iterative": false
+        },
+        {
+            "__comment": "rds-cluster-multi-az-enabled",
+            "query" : "match (n:RDSCluster) where n.multi_az = false SET n.failed_rules = [x IN n.failed_rules WHERE x <> 'rds-cluster-multi-az-enabled'] return n",
+            "iterative": false
+        },
+        {
+            "__comment": "rds-db-security-group-not-allowed",
+            "query" : "match (n:RDSInstance)-[:MEMBER_OF_EC2_SECURITY_GROUP]->(m:EC2SecurityGroup) SET n.failed_rules = [x IN n.failed_rules WHERE x <> 'rds-db-security-group-not-allowed'] return n",
+            "iterative": false
+        },
+        {
+            "__comment": "rds-instance-default-admin-check",
+            "query" : "match (n:RDSInstance) where n.master_username in ['root', 'admin', 'postgres'] SET n.failed_rules = [x IN n.failed_rules WHERE x <> 'rds-instance-default-admin-check'] return n",
+            "iterative": false
+        },
+        {
+            "__comment": "rds-instance-deletion-protection-enabled",
+            "query" : "match (n:RDSInstance) where n.deletion_protection = false SET n.failed_rules = [x IN n.failed_rules WHERE x <> 'rds-instance-deletion-protection-enabled'] return n",
+            "iterative": false
+        },
+        {
+            "__comment": "rds-instance-iam-authentication-enabled",
+            "query" : "match (n:RDSInstance) where n.iam_database_authentication_enabled = false SET n.failed_rules = [x IN n.failed_rules WHERE x <> 'rds-instance-iam-authentication-enabled'] return n",
+            "iterative": false
+        },
+        {
+            "__comment": "rds-instance-public-access-check",
+            "query" : "match(n:RDSInstance) WHERE n.publicly_accessible = true SET n.failed_rules = [x IN n.failed_rules WHERE x <> 'rds-instance-public-access-check'] return n",
+            "iterative": false
+        },
+        {
+            "__comment": "rds-multi-az-support",
+            "query" : "match (n:RDSInstance) where n.multi_az = false SET n.failed_rules = [x IN n.failed_rules WHERE x <> 'rds-multi-az-support'] return n",
+            "iterative": false
+        },
+        {
+            "__comment": "rds-storage-encrypted",
+            "query" : "match (n:RDSInstance) where n.storage_encrypted = false SET n.failed_rules = [x IN n.failed_rules WHERE x <> 'rds-storage-encrypted'] return n",
+            "iterative": false
+        },
+        {
+            "__comment": "Change the compliance_failure flag to false in case the the failed_rules array is empty",
+            "query": "MATCH (n:RDSInstance) WHERE isEmpty(n.failed_rules) SET n.compliance_failure = false",
+            "iterative": false
+        }
+    ]
+}
