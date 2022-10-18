@@ -850,7 +850,7 @@ def _load_replication_links(
     SET rl.name = replication_link.name,
     rl.partnerdatabase = replication_link.partner_database,
     rl.partnerlocation = replication_link.partner_location,
-    rl.consoleLink = replication_link.consolelink,
+    rl.consolelink = replication_link.consolelink,
     rl.partnerrole = replication_link.partner_role,
     rl.partnerserver = replication_link.partner_server,
     rl.mode = replication_link.replication_mode,
@@ -889,7 +889,7 @@ def _load_db_threat_detection_policies(
     SET policy.name = tdp.name,
     policy.location = tdp.location,
     policy.region = tdp.location,
-    policy.consoleLink = tdp.consolelink,
+    policy.consolelink = tdp.consolelink,
     policy.kind = tdp.kind,
     policy.emailadmins = tdp.email_account_admins,
     policy.emailaddresses = tdp.email_addresses,
@@ -929,7 +929,7 @@ def _load_restore_points(
     SET point.name = rp.name,
     point.restoredate = rp.earliest_restore_date,
     point.restorepointtype = rp.restore_point_type,
-    point.consoleLink = rp.consolelink,
+    point.consolelink = rp.consolelink,
     point.creationdate = rp.restore_point_creation_date,
     point.lastupdated = {azure_update_tag}
     WITH point, rp
@@ -961,7 +961,7 @@ def _load_transparent_data_encryptions(
     tae.region = e.location
     SET tae.name = e.name,
     tae.status = e.status,
-    tae.consoleLink = tae.consolelink,
+    tae.consolelink = tae.consolelink,
     tae.lastupdated = {azure_update_tag}
     WITH tae, e
     MATCH (d:AzureSQLDatabase{id: e.database_id})

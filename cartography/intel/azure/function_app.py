@@ -504,7 +504,7 @@ def _load_function_apps_deployments_tx(
     f.type = function_deploy.type
     SET f.name = function_deploy.name,
     f.lastupdated = {azure_update_tag},
-    f.consoleLink = function_deploy.consolelink,
+    f.consolelink = function_deploy.consolelink,
     f.location = function_deploy.location,
     f.region = function_deploy.location,
     f.resource_group_name=function_deploy.resource_group
@@ -600,7 +600,7 @@ def _load_function_apps_backups_tx(
     f.region = function_backup.location,
     f.type = function_backup.type
     SET f.name = function_backup.name,
-    f.consoleLink = function_backup.consolelink,
+    f.consolelink = function_backup.consolelink,
     f.lastupdated = {azure_update_tag},
     f.resource_group_name=function_backup.resource_group
     WITH f, function_backup
@@ -698,7 +698,7 @@ def _load_function_apps_processes_tx(
     f.region = function_process.location,
     f.type = function_process.type
     SET f.name = function_process.name,
-    f.consoleLink = function_process.consolelink,
+    f.consolelink = function_process.consolelink,
     f.lastupdated = {azure_update_tag},
     f.resource_group_name=function_process.resource_group
     WITH f, function_process
@@ -794,7 +794,7 @@ def _load_function_apps_snapshots_tx(
     f.region = function_snapshot.location,
     f.type = function_snapshot.type
     SET f.name = function_snapshot.name,
-    f.consoleLink = function.consolelink,
+    f.consolelink = function.consolelink,
     f.lastupdated = {azure_update_tag},
     f.resource_group_name=function_snapshot.resource_group
     WITH f, function_snapshot
@@ -888,7 +888,7 @@ def _load_function_apps_webjobs_tx(
     f.region = function_webjob.location,
     f.type = function_webjob.type
     SET f.name = function_webjob.name,
-    f.consoleLink = function_webjob.consolelink,
+    f.consolelink = function_webjob.consolelink,
     f.lastupdated = {azure_update_tag},
     f.resource_group_name=function_webjob.resource_group
     WITH f, function_webjob

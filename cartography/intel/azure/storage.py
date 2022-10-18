@@ -497,7 +497,7 @@ def _load_queues(neo4j_session: neo4j.Session, queues: List[Dict], update_tag: i
     ON CREATE SET q.firstseen = timestamp(), q.type = queue.type
     SET q.name = queue.name,
     q.region = {region},
-    q.consoleLink = queue.consolelink,
+    q.consolelink = queue.consolelink,
     q.lastupdated = {azure_update_tag}
     WITH q, queue
     MATCH (qs:AzureStorageQueueService{id: queue.service_id})
@@ -595,7 +595,7 @@ def _load_tables(neo4j_session: neo4j.Session, tables: List[Dict], update_tag: i
     ON CREATE SET t.firstseen = timestamp(), t.type = table.type
     SET t.name = table.name,
     t.region = {region},
-    t.consoleLink = table.consolelink,
+    t.consolelink = table.consolelink,
     t.tablename = table.table_name,
     t.lastupdated = {azure_update_tag}
     WITH t, table
@@ -698,7 +698,7 @@ def _load_shares(neo4j_session: neo4j.Session, shares: List[Dict], update_tag: i
     share.region = {region},
     share.sharequota = s.share_quota,
     share.accesstier = s.access_tier,
-    share.consoleLink = s.consolelink,
+    share.consolelink = s.consolelink,
     share.deleted = s.deleted,
     share.accesstierchangetime = s.access_tier_change_time,
     share.accesstierstatus = s.access_tier_status,
@@ -812,7 +812,7 @@ def _load_blob_containers(
     bc.defaultencryptionscope = blob.default_encryption_scope,
     bc.publicaccess = blob.public_access,
     bc.leasestatus = blob.lease_status,
-    bc.consoleLink = blob.consolelink,
+    bc.consolelink = blob.consolelink,
     bc.leasestate = blob.lease_state,
     bc.lastmodifiedtime = blob.last_modified_time,
     bc.remainingretentiondays = blob.remaining_retention_days,

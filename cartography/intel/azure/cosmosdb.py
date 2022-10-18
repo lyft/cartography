@@ -408,7 +408,7 @@ def _load_cosmosdb_virtual_network_rules(
         rules.region = {region}
         SET rules.lastupdated = {azure_update_tag},
         rules.ignoremissingvnetserviceendpoint = vnr.ignore_missing_v_net_service_endpoint,
-        rules.consoleLink = vnr.consolelink
+        rules.consolelink = vnr.consolelink
         WITH rules
         MATCH (d:AzureCosmosDBAccount{id: {DatabaseAccountId}})
         MERGE (d)-[r:CONFIGURED_WITH]->(rules)
@@ -661,7 +661,7 @@ def _load_sql_databases(neo4j_session: neo4j.Session, sql_databases: List[Dict],
     sdb.region = database.location
     SET sdb.name = database.name,
     sdb.throughput = database.options.throughput,
-    sdb.consoleLink = database.consolelink,
+    sdb.consolelink = database.consolelink,
     sdb.maxthroughput = database.options.autoscale_setting.max_throughput,
     sdb.lastupdated = {azure_update_tag}
     WITH sdb, database
@@ -691,7 +691,7 @@ def _load_cassandra_keyspaces(neo4j_session: neo4j.Session, cassandra_keyspaces:
     ck.region = keyspace.location
     SET ck.name = keyspace.name,
     ck.lastupdated = {azure_update_tag},
-    ck.consoleLink = keyspace.consolelink,
+    ck.consolelink = keyspace.consolelink,
     ck.throughput = keyspace.options.throughput,
     ck.maxthroughput = keyspace.options.autoscale_setting.max_throughput
     WITH ck, keyspace
@@ -720,7 +720,7 @@ def _load_mongodb_databases(neo4j_session: neo4j.Session, mongodb_databases: Lis
     mdb.location = database.location,
     mdb.region = database.location
     SET mdb.name = database.name,
-    mdb.consoleLink = database.consolelink,
+    mdb.consolelink = database.consolelink,
     mdb.throughput = database.options.throughput,
     mdb.maxthroughput = database.options.autoscale_setting.max_throughput,
     mdb.lastupdated = {azure_update_tag}
@@ -750,7 +750,7 @@ def _load_table_resources(neo4j_session: neo4j.Session, table_resources: List[Di
     tr.location = table.location,
     tr.region = table.location
     SET tr.name = table.name,
-    tr.consoleLink = table.consolelink,
+    tr.consolelink = table.consolelink,
     tr.lastupdated = {azure_update_tag},
     tr.throughput = table.options.throughput,
     tr.maxthroughput = table.options.autoscale_setting.max_throughput
@@ -855,7 +855,7 @@ def _load_sql_containers(neo4j_session: neo4j.Session, containers: List[Dict], u
     c.throughput = container.options.throughput,
     c.maxthroughput = container.options.autoscale_setting.max_throughput,
     c.container = container.resource.id,
-    c.consoleLink = container.consolelink,
+    c.consolelink = container.consolelink,
     c.defaultttl = container.resource.default_ttl,
     c.analyticalttl = container.resource.analytical_storage_ttl,
     c.isautomaticindexingpolicy = container.resource.indexing_policy.automatic,
@@ -961,7 +961,7 @@ def _load_cassandra_tables(neo4j_session: neo4j.Session, cassandra_tables: List[
     ct.region = table.location
     SET ct.name = table.name,
     ct.lastupdated = {azure_update_tag},
-    ct.consoleLink = table.consolelink,
+    ct.consolelink = table.consolelink,
     ct.throughput = table.options.throughput,
     ct.maxthroughput = table.options.autoscale_setting.max_throughput,
     ct.container = table.resource.id,
@@ -1067,7 +1067,7 @@ def _load_collections(neo4j_session: neo4j.Session, collections: List[Dict], upd
     col.region = collection.location
     SET col.name = collection.name,
     col.lastupdated = {azure_update_tag},
-    col.consoleLink = collection.consolelink,
+    col.consolelink = collection.consolelink,
     col.throughput = collection.options.throughput,
     col.maxthroughput = collection.options.autoscale_setting.max_throughput,
     col.collectionname = collection.resource.id,

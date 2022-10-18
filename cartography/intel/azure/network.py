@@ -744,7 +744,7 @@ def _load_usages_tx(
     ON CREATE SET n.firstseen = timestamp()
     SET n.currentValue = usage.currentValue,
     n.region= usage.location,
-    n.consoleLink = usage.consolelink,
+    n.consolelink = usage.consolelink,
     n.lastupdated = {azure_update_tag},
     n.limit=usage.limit,
     n.unit=usage.unit

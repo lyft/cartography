@@ -40,7 +40,7 @@ def get_all_azure_subscriptions(credentials: Credentials, common_job_parameters:
             'subscriptionId': sub.subscription_id,
             'displayName': sub.display_name,
             'state': sub.state,
-            'consoleLink': azure_console_link.get_console_link(id=sub.subscription_id,\
+            'consolelink': azure_console_link.get_console_link(id=sub.subscription_id,\
                      primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
         })
 
@@ -70,7 +70,7 @@ def get_current_azure_subscription(credentials: Credentials, subscription_id: Op
             'subscriptionId': sub.subscription_id,
             'displayName': sub.display_name,
             'state': sub.state,
-            'consoleLink': sub.consoleLink,
+            'consolelink': sub.consoleLink,
         },
     ]
 
@@ -87,7 +87,7 @@ def load_azure_subscriptions(
     MERGE (as:AzureSubscription{id: $SUBSCRIPTION_ID})
     ON CREATE SET as.firstseen = timestamp(), as.path = $SUBSCRIPTION_PATH,
     as.region = $region
-    SET as.lastupdated = $update_tag, as.name = $SUBSCRIPTION_NAME, as.state = $SUBSCRIPTION_STATE, as.consoleLink = $CONSOLE_LINK
+    SET as.lastupdated = $update_tag, as.name = $SUBSCRIPTION_NAME, as.state = $SUBSCRIPTION_STATE, as.consolelink = $CONSOLE_LINK
     WITH as, at
     MERGE (at)-[r:RESOURCE]->(as)
     ON CREATE SET r.firstseen = timestamp()
@@ -101,7 +101,7 @@ def load_azure_subscriptions(
             SUBSCRIPTION_PATH=sub['id'],
             SUBSCRIPTION_NAME=sub['displayName'],
             SUBSCRIPTION_STATE=sub['state'],
-            CONSOLE_LINK=sub['consoleLink'],
+            CONSOLE_LINK=sub['consolelink'],
             update_tag=update_tag,
             region='global',
         )
