@@ -91,3 +91,8 @@ RESOURCE_FUNCTIONS: Dict = {
     'inspector': inspector.sync,
     'config': config.sync,
 }
+
+RESOURCE_IDENTIFIERS: Dict = {
+  'rds_cluster': 'DBClusterIdentifier',
+  'rds_instance': 'DBInstanceIdentifier',
+}
