@@ -116,7 +116,7 @@ def _load_event_rules_tx(tx: neo4j.Transaction, event_buses: List[Dict], current
         rule.state = record.State,
         rule.role_arn = record.RoleArn
     WITH rule, record
-    MATCH (bus:AWSCloudWatchEventBus{arn:record.EventBusName})
+    MATCH (bus:AWSEventBridgeEventBus{arn:record.EventBusName})
     MERGE (bus)-[rt:HAS]->(rule)
     ON CREATE SET
         rt.firstseen = timestamp()
