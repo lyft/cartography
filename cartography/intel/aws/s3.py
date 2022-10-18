@@ -13,6 +13,7 @@ import botocore
 import neo4j
 import uuid
 
+import cartography.intel.aws.util.common as filterfn
 from botocore.exceptions import ClientError
 from botocore.exceptions import EndpointConnectionError
 from policyuniverse.policy import Policy
@@ -729,7 +730,9 @@ def sync(
 ) -> None:
     logger.info("Syncing S3 for account '%s'.", current_aws_account_id)
     bucket_data = get_s3_bucket_list(boto3_session)
-
+    if common_job_parameters['aws_resource_name'] is not None:
+      logger.info('Filtering to run updation for: %s', common_job_parameters['aws_resource_name'])
+      filtered = filterfn.filter_resources(bucket_data, common_job_parameters['aws_resource_name'], 's3') #bucket_data is updated in the function itself
     load_s3_buckets(neo4j_session, bucket_data, current_aws_account_id, update_tag)
     cleanup_s3_buckets(neo4j_session, common_job_parameters)
 

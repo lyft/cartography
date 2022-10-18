@@ -1,16 +1,11 @@
 import logging
+import uuid
 from string import Template
-from typing import Dict
-from typing import List
+from typing import Dict, List
 
 import boto3
 import neo4j
-import uuid
-
-from cartography.util import aws_handle_regions
-from cartography.util import batch
-from cartography.util import run_cleanup_job
-from cartography.util import timeit
+from cartography.util import aws_handle_regions, batch, run_cleanup_job, timeit
 
 logger = logging.getLogger(__name__)
 

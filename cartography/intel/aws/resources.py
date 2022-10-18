@@ -2,30 +2,11 @@ from typing import Dict
 
 from cartography.intel.aws import s3_list_only
 
-from . import apigateway
-from . import config
-from . import dynamodb
-from . import ecr
-from . import ecs
-from . import eks
-from . import elasticache
-from . import elasticsearch
-from . import emr
-from . import iam
-from . import inspector
-from . import kms
-from . import lambda_function
-from . import permission_relationships
-from . import rds
-from . import redshift
-from . import resourcegroupstaggingapi
-from . import route53
-from . import s3
-from . import s3_list_only
-from . import secretsmanager
-from . import securityhub
-from . import sqs
-from . import ssm
+from . import (apigateway, config, dynamodb, ecr, ecs, eks, elasticache,
+               elasticsearch, emr, iam, kms, lambda_function,
+               permission_relationships, rds, redshift,
+               resourcegroupstaggingapi, route53, s3, s3_list_only,
+               secretsmanager, securityhub, sqs, ssm)
 from .ec2.auto_scaling_groups import sync_ec2_auto_scaling_groups
 from .ec2.elastic_ip_addresses import sync_elastic_ip_addresses
 from .ec2.images import sync_ec2_images
@@ -90,4 +71,9 @@ RESOURCE_FUNCTIONS: Dict = {
     'ssm': ssm.sync,
     'inspector': inspector.sync,
     'config': config.sync,
+}
+
+RESOURCE_IDENTIFIERS: Dict = {
+  'rds_cluster': 'DBClusterIdentifier',
+  'rds_instance': 'DBInstanceIdentifier',
 }
