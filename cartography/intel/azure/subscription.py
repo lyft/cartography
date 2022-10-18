@@ -9,12 +9,14 @@ from azure.mgmt.resource import SubscriptionClient
 
 from .util.credentials import Credentials
 from cartography.util import run_cleanup_job
+from cloudconsolelink.clouds.azure import AzureLinker
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+azure_console_link = AzureLinker()
 
 
-def get_all_azure_subscriptions(credentials: Credentials) -> List[Dict]:
+def get_all_azure_subscriptions(credentials: Credentials, common_job_parameters: Dict) -> List[Dict]:
     try:
         # Create the client
         client = SubscriptionClient(credentials.arm_credentials)
@@ -38,6 +40,8 @@ def get_all_azure_subscriptions(credentials: Credentials) -> List[Dict]:
             'subscriptionId': sub.subscription_id,
             'displayName': sub.display_name,
             'state': sub.state,
+            'consoleLink': azure_console_link.get_console_link(id=sub.subscription_id,\
+                     primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
         })
 
     return subscriptions
@@ -66,6 +70,7 @@ def get_current_azure_subscription(credentials: Credentials, subscription_id: Op
             'subscriptionId': sub.subscription_id,
             'displayName': sub.display_name,
             'state': sub.state,
+            'consoleLink': sub.consoleLink,
         },
     ]
 
@@ -82,7 +87,7 @@ def load_azure_subscriptions(
     MERGE (as:AzureSubscription{id: $SUBSCRIPTION_ID})
     ON CREATE SET as.firstseen = timestamp(), as.path = $SUBSCRIPTION_PATH,
     as.region = $region
-    SET as.lastupdated = $update_tag, as.name = $SUBSCRIPTION_NAME, as.state = $SUBSCRIPTION_STATE
+    SET as.lastupdated = $update_tag, as.name = $SUBSCRIPTION_NAME, as.state = $SUBSCRIPTION_STATE, as.consoleLink = $CONSOLE_LINK
     WITH as, at
     MERGE (at)-[r:RESOURCE]->(as)
     ON CREATE SET r.firstseen = timestamp()
@@ -96,6 +101,7 @@ def load_azure_subscriptions(
             SUBSCRIPTION_PATH=sub['id'],
             SUBSCRIPTION_NAME=sub['displayName'],
             SUBSCRIPTION_STATE=sub['state'],
+            CONSOLE_LINK=sub['consoleLink'],
             update_tag=update_tag,
             region='global',
         )

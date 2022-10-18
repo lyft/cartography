@@ -290,10 +290,10 @@ def load_storage_account_details(
     _load_file_services(neo4j_session, file_services, update_tag)
     _load_blob_services(neo4j_session, blob_services, update_tag)
 
-    sync_queue_services_details(neo4j_session, credentials, subscription_id, queue_services, update_tag)
-    sync_table_services_details(neo4j_session, credentials, subscription_id, table_services, update_tag)
-    sync_file_services_details(neo4j_session, credentials, subscription_id, file_services, update_tag)
-    sync_blob_services_details(neo4j_session, credentials, subscription_id, blob_services, update_tag)
+    sync_queue_services_details(neo4j_session, credentials, subscription_id, queue_services, update_tag, common_job_parameters)
+    sync_table_services_details(neo4j_session, credentials, subscription_id, table_services, update_tag, common_job_parameters)
+    sync_file_services_details(neo4j_session, credentials, subscription_id, file_services, update_tag, common_job_parameters)
+    sync_blob_services_details(neo4j_session, credentials, subscription_id, blob_services, update_tag, common_job_parameters)
 
 
 @timeit
@@ -419,10 +419,10 @@ def _load_blob_services(
 @timeit
 def sync_queue_services_details(
         neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str,
-        queue_services: List[Dict], update_tag: int,
+        queue_services: List[Dict], update_tag: int, common_job_parameters: Dict,
 ) -> None:
     queue_services_details = get_queue_services_details(credentials, subscription_id, queue_services)
-    load_queue_services_details(neo4j_session, queue_services_details, update_tag)
+    load_queue_services_details(neo4j_session, queue_services_details, update_tag, common_job_parameters)
 
 
 @timeit
@@ -468,7 +468,7 @@ def get_queues(credentials: Credentials, subscription_id: str, queue_service: Di
 
 @timeit
 def load_queue_services_details(
-        neo4j_session: neo4j.Session, details: List[Tuple[Any, Any]], update_tag: int,
+        neo4j_session: neo4j.Session, details: List[Tuple[Any, Any]], update_tag: int, common_job_parameters: Dict,
 ) -> None:
     """
     Create dictionary for the queue so we can import them in a single query
@@ -479,6 +479,8 @@ def load_queue_services_details(
         if len(queue) > 0:
             for q in queue:
                 q['service_id'] = queue_service_id
+                q['consolelink'] = azure_console_link.get_console_link(id=q['id'],\
+                         primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
             queues.extend(queue)
 
     _load_queues(neo4j_session, queues, update_tag)
@@ -495,6 +497,7 @@ def _load_queues(neo4j_session: neo4j.Session, queues: List[Dict], update_tag: i
     ON CREATE SET q.firstseen = timestamp(), q.type = queue.type
     SET q.name = queue.name,
     q.region = {region},
+    q.consoleLink = queue.consolelink,
     q.lastupdated = {azure_update_tag}
     WITH q, queue
     MATCH (qs:AzureStorageQueueService{id: queue.service_id})
@@ -514,10 +517,10 @@ def _load_queues(neo4j_session: neo4j.Session, queues: List[Dict], update_tag: i
 @timeit
 def sync_table_services_details(
         neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str,
-        table_services: List[Dict], update_tag: int,
+        table_services: List[Dict], update_tag: int, common_job_parameters: Dict,
 ) -> None:
     table_services_details = get_table_services_details(credentials, subscription_id, table_services)
-    load_table_services_details(neo4j_session, table_services_details, update_tag)
+    load_table_services_details(neo4j_session, table_services_details, update_tag, common_job_parameters)
 
 
 @timeit
@@ -563,7 +566,7 @@ def get_tables(credentials: Credentials, subscription_id: str, table_service: Di
 
 @timeit
 def load_table_services_details(
-        neo4j_session: neo4j.Session, details: List[Tuple[Any, Any]], update_tag: int,
+        neo4j_session: neo4j.Session, details: List[Tuple[Any, Any]], update_tag: int, common_job_parameters: Dict,
 ) -> None:
     """
     Create dictionary for the table so we can import them in a single query
@@ -574,6 +577,8 @@ def load_table_services_details(
         if len(table) > 0:
             for t in table:
                 t['service_id'] = table_service_id
+                t['consolelink'] = azure_console_link.get_console_link(id=t['id'],\
+                         primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
             tables.extend(table)
 
     _load_tables(neo4j_session, tables, update_tag)
@@ -590,6 +595,7 @@ def _load_tables(neo4j_session: neo4j.Session, tables: List[Dict], update_tag: i
     ON CREATE SET t.firstseen = timestamp(), t.type = table.type
     SET t.name = table.name,
     t.region = {region},
+    t.consoleLink = table.consolelink,
     t.tablename = table.table_name,
     t.lastupdated = {azure_update_tag}
     WITH t, table
@@ -610,10 +616,10 @@ def _load_tables(neo4j_session: neo4j.Session, tables: List[Dict], update_tag: i
 @timeit
 def sync_file_services_details(
         neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str,
-        file_services: List[Dict], update_tag: int,
+        file_services: List[Dict], update_tag: int, common_job_parameters: Dict,
 ) -> None:
     file_services_details = get_file_services_details(credentials, subscription_id, file_services)
-    load_file_services_details(neo4j_session, file_services_details, update_tag)
+    load_file_services_details(neo4j_session, file_services_details, update_tag, common_job_parameters)
 
 
 @timeit
@@ -659,7 +665,7 @@ def get_shares(credentials: Credentials, subscription_id: str, file_service: Dic
 
 @timeit
 def load_file_services_details(
-        neo4j_session: neo4j.Session, details: List[Tuple[Any, Any]], update_tag: int,
+        neo4j_session: neo4j.Session, details: List[Tuple[Any, Any]], update_tag: int, common_job_parameters: Dict,
 ) -> None:
     """
     Create dictionary for the shares so we can import them in a single query
@@ -670,6 +676,8 @@ def load_file_services_details(
         if len(share) > 0:
             for s in share:
                 s['service_id'] = file_service_id
+                s['consolelink'] = azure_console_link.get_console_link(id=s['id'],\
+                         primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
             shares.extend(share)
 
     _load_shares(neo4j_session, shares, update_tag)
@@ -690,6 +698,7 @@ def _load_shares(neo4j_session: neo4j.Session, shares: List[Dict], update_tag: i
     share.region = {region},
     share.sharequota = s.share_quota,
     share.accesstier = s.access_tier,
+    share.consoleLink = s.consolelink,
     share.deleted = s.deleted,
     share.accesstierchangetime = s.access_tier_change_time,
     share.accesstierstatus = s.access_tier_status,
@@ -716,10 +725,10 @@ def _load_shares(neo4j_session: neo4j.Session, shares: List[Dict], update_tag: i
 @timeit
 def sync_blob_services_details(
         neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str,
-        blob_services: List[Dict], update_tag: int,
+        blob_services: List[Dict], update_tag: int, common_job_parameters: Dict
 ) -> None:
     blob_services_details = get_blob_services_details(credentials, subscription_id, blob_services)
-    load_blob_services_details(neo4j_session, blob_services_details, update_tag)
+    load_blob_services_details(neo4j_session, blob_services_details, update_tag, common_job_parameters)
 
 
 @timeit
@@ -766,7 +775,7 @@ def get_blob_containers(credentials: Credentials, subscription_id: str, blob_ser
 
 @timeit
 def load_blob_services_details(
-        neo4j_session: neo4j.Session, details: List[Tuple[Any, Any]], update_tag: int,
+        neo4j_session: neo4j.Session, details: List[Tuple[Any, Any]], update_tag: int, common_job_parameters: Dict,
 ) -> None:
     """
     Create dictionary for the blob containers so we can import them in a single query
@@ -777,6 +786,8 @@ def load_blob_services_details(
         if len(container) > 0:
             for c in container:
                 c['service_id'] = blob_service_id
+                c['consolelink'] = azure_console_link.get_console_link(id=c['id'],\
+                         primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
             blob_containers.extend(container)
 
     _load_blob_containers(neo4j_session, blob_containers, update_tag)
@@ -801,6 +812,7 @@ def _load_blob_containers(
     bc.defaultencryptionscope = blob.default_encryption_scope,
     bc.publicaccess = blob.public_access,
     bc.leasestatus = blob.lease_status,
+    bc.consoleLink = blob.consolelink,
     bc.leasestate = blob.lease_state,
     bc.lastmodifiedtime = blob.last_modified_time,
     bc.remainingretentiondays = blob.remaining_retention_days,

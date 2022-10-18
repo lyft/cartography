@@ -408,7 +408,7 @@ def load_server_details(
     _load_elastic_pools(neo4j_session, elastic_pools, update_tag)
     _load_databases(neo4j_session, databases, update_tag)
 
-    sync_database_details(neo4j_session, credentials, subscription_id, databases, update_tag)
+    sync_database_details(neo4j_session, credentials, subscription_id, databases, update_tag, common_job_parameters)
 
 
 @timeit
@@ -652,10 +652,10 @@ def _load_databases(
 @timeit
 def sync_database_details(
         neo4j_session: neo4j.Session, credentials: Credentials,
-        subscription_id: str, databases: List[Dict], update_tag: int,
+        subscription_id: str, databases: List[Dict], update_tag: int, common_job_parameters: Dict,
 ) -> None:
     db_details = get_database_details(credentials, subscription_id, databases)
-    load_database_details(neo4j_session, db_details, update_tag)
+    load_database_details(neo4j_session, db_details, update_tag, common_job_parameters)
 
 
 @timeit
@@ -791,7 +791,7 @@ def get_transparent_data_encryptions(credentials: Credentials, subscription_id: 
 
 @timeit
 def load_database_details(
-        neo4j_session: neo4j.Session, details: List[Tuple[Any, Any, Any, Any, Any]], update_tag: int,
+        neo4j_session: neo4j.Session, details: List[Tuple[Any, Any, Any, Any, Any]], update_tag: int, common_job_parameters: Dict,
 ) -> None:
     """
     Create dictionaries for every resource in a database so we can import them in a single query
@@ -804,20 +804,28 @@ def load_database_details(
     for databaseId, replication_link, db_threat_detection_policy, restore_point, transparent_data_encryption in details:
         if len(replication_link) > 0:
             for link in replication_link:
+                link['consolelink'] = azure_console_link.get_console_link(id=link['id'],\
+                         primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
                 link['database_id'] = databaseId
                 replication_links.append(link)
 
         if len(db_threat_detection_policy) > 0:
             db_threat_detection_policy['database_id'] = databaseId
+            db_threat_detection_policy['consolelink'] = azure_console_link.get_console_link(id=db_threat_detection_policy['id'],\
+                         primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
             threat_detection_policies.append(db_threat_detection_policy)
 
         if len(restore_point) > 0:
             for point in restore_point:
                 point['database_id'] = databaseId
+                point['consolelink'] = azure_console_link.get_console_link(id=point['id'],\
+                         primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
                 restore_points.append(point)
 
         if len(transparent_data_encryption) > 0:
             transparent_data_encryption['database_id'] = databaseId
+            transparent_data_encryption['consolelink'] = azure_console_link.get_console_link(id=transparent_data_encryption['id'],\
+                     primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
             encryptions_list.append(transparent_data_encryption)
 
     _load_replication_links(neo4j_session, replication_links, update_tag)
@@ -842,6 +850,7 @@ def _load_replication_links(
     SET rl.name = replication_link.name,
     rl.partnerdatabase = replication_link.partner_database,
     rl.partnerlocation = replication_link.partner_location,
+    rl.consoleLink = replication_link.consolelink,
     rl.partnerrole = replication_link.partner_role,
     rl.partnerserver = replication_link.partner_server,
     rl.mode = replication_link.replication_mode,
@@ -880,6 +889,7 @@ def _load_db_threat_detection_policies(
     SET policy.name = tdp.name,
     policy.location = tdp.location,
     policy.region = tdp.location,
+    policy.consoleLink = tdp.consolelink,
     policy.kind = tdp.kind,
     policy.emailadmins = tdp.email_account_admins,
     policy.emailaddresses = tdp.email_addresses,
@@ -919,6 +929,7 @@ def _load_restore_points(
     SET point.name = rp.name,
     point.restoredate = rp.earliest_restore_date,
     point.restorepointtype = rp.restore_point_type,
+    point.consoleLink = rp.consolelink,
     point.creationdate = rp.restore_point_creation_date,
     point.lastupdated = {azure_update_tag}
     WITH point, rp
@@ -950,6 +961,7 @@ def _load_transparent_data_encryptions(
     tae.region = e.location
     SET tae.name = e.name,
     tae.status = e.status,
+    tae.consoleLink = tae.consolelink,
     tae.lastupdated = {azure_update_tag}
     WITH tae, e
     MATCH (d:AzureSQLDatabase{id: e.database_id})
