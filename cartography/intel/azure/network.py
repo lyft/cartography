@@ -775,7 +775,7 @@ def sync_usages(
         usages = get_usages_list(networks_list, client)
         networks_usages_list  = transform_usages(usages, network, common_job_parameters)
         load_usages(neo4j_session, networks_usages_list, update_tag)
-        cleanup_usages(neo4j_session, common_job_parameters)
+    cleanup_usages(neo4j_session, common_job_parameters)
 
 
 @timeit

@@ -47,7 +47,7 @@ def get_all_azure_subscriptions(credentials: Credentials, common_job_parameters:
     return subscriptions
 
 
-def get_current_azure_subscription(credentials: Credentials, subscription_id: Optional[str]) -> List[Dict]:
+def get_current_azure_subscription(credentials: Credentials, subscription_id: Optional[str], common_job_parameters: Dict) -> List[Dict]:
     try:
         # Create the client
         client = SubscriptionClient(credentials.arm_credentials)
@@ -70,7 +70,8 @@ def get_current_azure_subscription(credentials: Credentials, subscription_id: Op
             'subscriptionId': sub.subscription_id,
             'displayName': sub.display_name,
             'state': sub.state,
-            'consolelink': sub.consoleLink,
+            'consolelink': azure_console_link.get_console_link(id=sub.subscription_id,\
+                     primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name']),
         },
     ]
 

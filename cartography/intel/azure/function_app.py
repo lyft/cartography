@@ -548,7 +548,7 @@ def sync_function_apps_deployments(
             neo4j_session,
             function_apps_deployments_list, update_tag,
         )
-        cleanup_function_apps_deployments(neo4j_session, common_job_parameters)
+    cleanup_function_apps_deployments(neo4j_session, common_job_parameters)
 
 
 def get_function_apps_backups_list(
@@ -643,7 +643,7 @@ def sync_function_apps_backups(
             neo4j_session, function_apps_backups_list,
             update_tag,
         )
-        cleanup_function_apps_backups(neo4j_session, common_job_parameters)
+    cleanup_function_apps_backups(neo4j_session, common_job_parameters)
 
 
 def get_function_apps_processes_list(
@@ -741,7 +741,7 @@ def sync_function_apps_processes(
             neo4j_session, function_apps_processes_list,
             update_tag,
         )
-        cleanup_function_apps_processes(neo4j_session, common_job_parameters)
+    cleanup_function_apps_processes(neo4j_session, common_job_parameters)
 
 
 def get_function_apps_snapshots_list(
@@ -837,7 +837,7 @@ def sync_function_apps_snapshots(
             neo4j_session, function_apps_snapshots_list,
             update_tag,
         )
-        cleanup_function_apps_snapshots(neo4j_session, common_job_parameters)
+    cleanup_function_apps_snapshots(neo4j_session, common_job_parameters)
 
 
 def get_function_apps_webjobs_list(
@@ -931,7 +931,7 @@ def sync_function_apps_webjobs(
             neo4j_session, function_apps_webjobs_list,
             update_tag,
         )
-        cleanup_function_apps_webjobs(neo4j_session, common_job_parameters)
+    cleanup_function_apps_webjobs(neo4j_session, common_job_parameters)
 
 
 @timeit

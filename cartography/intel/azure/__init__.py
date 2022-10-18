@@ -222,7 +222,7 @@ def start_azure_ingestion(
 
     else:
         subscriptions = subscription.get_current_azure_subscription(
-            credentials, credentials.subscription_id,
+            credentials, credentials.subscription_id, common_job_parameters,
         )
 
     if not subscriptions:
