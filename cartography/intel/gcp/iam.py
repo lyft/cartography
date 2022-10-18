@@ -312,6 +312,7 @@ def get_apikeys_keys(apikey: Resource, project_id: str) -> List[Resource]:
                     "Could not retrieve api keys on project %s due to permissions issue. Code: %s, Message: %s"
                 ), project_id, err['code'], err['message'],
             )
+            return []
         else:
             raise
 
@@ -637,12 +638,16 @@ def attach_role_to_user(
     MERGE (user)-[r:ASSUME_ROLE]->(role)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {gcp_update_tag}
-    WITH user
+    WITH user,role
     MATCH (p:GCPProject{id: {project_id}})
     MERGE (p)-[pr:RESOURCE]->(user)
     ON CREATE SET
     pr.firstseen = timestamp()
     SET pr.lastupdated = {gcp_update_tag}
+    WITH user,role
+    SET
+    role.parent = {Parent},
+    role.parent_id = {ParentId}
     WITH user
     WHERE (NOT EXISTS(user.parent)) OR
     NOT user.parent IN ['organization', 'folder']
@@ -680,6 +685,10 @@ def attach_role_to_service_account(
     MERGE (sa)-[r:ASSUME_ROLE]->(role)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {gcp_update_tag}
+    WITH sa,role
+    SET
+    role.parent = {Parent},
+    role.parent_id = {ParentId}
     WITH sa
     WHERE (NOT EXISTS(sa.parent)) OR
     NOT sa.parent IN ['organization', 'folder']
@@ -696,22 +705,6 @@ def attach_role_to_service_account(
         ParentId=serviceAccount['parent_id'],
         saId=serviceAccount['id'],
         gcp_update_tag=gcp_update_tag,
-    )
-
-    ingest_script = """
-    MATCH (sa:GCPServiceAccount{id:{saId}})
-    WITH sa
-    WHERE (NOT EXISTS(sa.parent)) OR
-    NOT sa.parent IN ['organization', 'folder']
-    SET
-    sa.parent = {Parent},
-    sa.parent_id = {ParentId}
-    """
-    neo4j_session.run(
-        ingest_script,
-        Parent=serviceAccount['parent'],
-        ParentId=serviceAccount['parent_id'],
-        saId=serviceAccount['id']
     )
 
 
@@ -736,12 +729,16 @@ def attach_role_to_group(
     MERGE (group)-[r:ASSUME_ROLE]->(role)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {gcp_update_tag}
-    WITH group
+    WITH group,role
     MATCH (p:GCPProject{id: {project_id}})
     MERGE (p)-[pr:RESOURCE]->(group)
     ON CREATE SET
     pr.firstseen = timestamp()
     SET pr.lastupdated = {gcp_update_tag}
+    WITH group,role
+    SET
+    role.parent = {Parent},
+    role.parent_id = {ParentId}
     WITH group
     WHERE (NOT EXISTS(group.parent)) OR
     NOT group.parent IN ['organization', 'folder']
@@ -786,12 +783,16 @@ def attach_role_to_domain(
     MERGE (domain)-[r:ASSUME_ROLE]->(role)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {gcp_update_tag}
-    WITH domain
+    WITH domain,role
     MATCH (p:GCPProject{id: {project_id}})
     MERGE (p)-[pr:RESOURCE]->(domain)
     ON CREATE SET
     pr.firstseen = timestamp()
     SET pr.lastupdated = {gcp_update_tag}
+    WITH domain,role
+    SET
+    role.parent = {Parent},
+    role.parent_id = {ParentId}
     WITH domain
     WHERE (NOT EXISTS(domain.parent)) OR
     NOT domain.parent IN ['organization', 'folder']
