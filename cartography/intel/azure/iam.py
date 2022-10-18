@@ -327,6 +327,8 @@ def get_tenant_service_accounts_list(client: GraphRbacManagementClient, tenant_i
 
         for account in tenant_service_accounts_list:
             account['id'] = f"tenants/{tenant_id}/ServiceAccounts/{account.get('object_id',None)}"
+            account['consolelink'] = azure_console_link.get_console_link(id=account['object_id'],\
+                         app_id = account['app_id'], iam_entity_type='service_principal')
 
         return tenant_service_accounts_list
 
@@ -344,6 +346,7 @@ def _load_tenant_service_accounts_tx(
     ON CREATE SET i:AzurePrincipal,
     i.firstseen = timestamp(),
     i.name = service.display_name,
+    i.consolelink = service.consolelink,
     i.region = {region},
     i.create_date = {createDate},
     i.object_id=service.object_id,
@@ -409,6 +412,7 @@ def get_tenant_domains_list(client: GraphRbacManagementClient, tenant_id: str) -
 
         for domain in tenant_domains_list:
             domain["id"] = f"tenants/{tenant_id}/domains/{domain.get('name',None)}"
+            domain['consolelink'] = azure_console_link.get_console_link(id=domain['name'], iam_entity_type='domain')
 
         return tenant_domains_list
 
@@ -426,6 +430,7 @@ def _load_tenant_domains_tx(
     ON CREATE SET i:AzurePrincipal,
     i.firstseen = timestamp(),
     i.isRoot = domain.isRoot,
+    i.consolelink = domain.consolelink,
     i.region = {region},
     i.create_date = {createDate},
     i.name = domain.name,

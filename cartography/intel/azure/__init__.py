@@ -218,11 +218,11 @@ def start_azure_ingestion(
     )
 
     if config.azure_sync_all_subscriptions:
-        subscriptions = subscription.get_all_azure_subscriptions(credentials)
+        subscriptions = subscription.get_all_azure_subscriptions(credentials, common_job_parameters)
 
     else:
         subscriptions = subscription.get_current_azure_subscription(
-            credentials, credentials.subscription_id,
+            credentials, credentials.subscription_id, common_job_parameters,
         )
 
     if not subscriptions:

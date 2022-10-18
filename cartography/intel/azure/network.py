@@ -709,27 +709,29 @@ def _load_public_ip_network_interfaces_relationship(tx: neo4j.Transaction, inter
 
 
 @timeit
-def get_usages_list(networks_list: List[Dict], client: NetworkManagementClient) -> List[Dict]:
+def get_usages_list(network: Dict, client: NetworkManagementClient) -> List[Dict]:
     try:
-        usages_list: List[Dict] = []
-        for network in networks_list:
-            usages = list(
-                map(
-                    lambda x: x.as_dict(), client.virtual_networks.list_usage(
-                        resource_group_name=network['resource_group'], virtual_network_name=network['name'],
-                    ),
+        usages = list(
+            map(
+                lambda x: x.as_dict(), client.virtual_networks.list_usage(
+                    resource_group_name=network['resource_group'], virtual_network_name=network['name'],
                 ),
-            )
-
-            for usage in usages:
-                usage['network_id'] = usage['id'][:usage['id'].index("/subnets")]
-                usage['location'] = network.get('location', 'global')
-            usages_list.extend(usages)
-        return usages_list
+            ),
+        )
+        return usages
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving usages - {e}")
         return []
 
+def transform_usages(usages: List[Dict], network: Dict, common_job_parameters: Dict) -> List[Dict]:
+    usages_list: List[Dict] = []
+    for usage in usages:
+        usage['network_id'] = usage['id'][:usage['id'].index("/subnets")]
+        usage['consolelink'] = azure_console_link.get_console_link(id=usage['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+        usage['location'] = network.get('location', 'global')
+    usages_list.extend(usages)
+
+    return usages_list
 
 def _load_usages_tx(
     tx: neo4j.Transaction,
@@ -742,6 +744,7 @@ def _load_usages_tx(
     ON CREATE SET n.firstseen = timestamp()
     SET n.currentValue = usage.currentValue,
     n.region= usage.location,
+    n.consolelink = usage.consolelink,
     n.lastupdated = {azure_update_tag},
     n.limit=usage.limit,
     n.unit=usage.unit
@@ -768,8 +771,10 @@ def sync_usages(
     neo4j_session: neo4j.Session, networks_list: List[Dict], client: NetworkManagementClient, update_tag: int,
     common_job_parameters: Dict,
 ) -> None:
-    networks_usages_list = get_usages_list(networks_list, client)
-    load_usages(neo4j_session, networks_usages_list, update_tag)
+    for network in networks_list:
+        usages = get_usages_list(networks_list, client)
+        networks_usages_list  = transform_usages(usages, network, common_job_parameters)
+        load_usages(neo4j_session, networks_usages_list, update_tag)
     cleanup_usages(neo4j_session, common_job_parameters)
 
 
