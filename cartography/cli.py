@@ -197,6 +197,14 @@ class CLI:
             ),
         )
         parser.add_argument(
+            '--aws-resource-name',
+            type=str,
+            default=None,
+            help=(
+                'AWS resource name for which the updation of resource needs to be performed'
+            ),
+        )
+        parser.add_argument(
             '--crxcavator-api-base-uri',
             type=str,
             default='https://api.crxcavator.io/v1',
@@ -407,6 +415,7 @@ class CLI:
         """
         # TODO support parameter lookup in environment variables if not present on command line
         config: argparse.Namespace = self.parser.parse_args(argv)
+        
         # Logging config
         if config.verbose:
             logging.getLogger('cartography').setLevel(logging.DEBUG)
