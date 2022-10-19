@@ -12,6 +12,7 @@ from cartography.graph.job import GraphJob
 from cartography.intel.aws.ec2.util import get_botocore_config
 from cartography.models.aws.dynamodb.gsi import DynamoDBGSISchema
 from cartography.models.aws.dynamodb.tables import DynamoDBTableSchema
+import cartography.intel.aws.util.common as filterfn
 from cartography.stats import get_stats_client
 from cartography.util import aws_handle_regions
 from cartography.util import merge_module_sync_metadata

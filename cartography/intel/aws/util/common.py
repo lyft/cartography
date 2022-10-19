@@ -32,6 +32,12 @@ def filter_resources(data: List[Any], aws_resource_name: str, aws_resource_type:
                   break
         data['Buckets'] = filtered # type: ignore
         return data
+    elif aws_resource_type == 'dynamodb':
+        for table in data:
+            if table["Table"]["TableName"] == aws_resource_name:
+                filtered.append(table)
+                break
+        return filtered
     else:
       for resource in data:
           if resource[_get_resource_identifier(aws_resource_type)] == aws_resource_name :

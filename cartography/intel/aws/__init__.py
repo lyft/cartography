@@ -46,7 +46,10 @@ def _sync_one_account(
 ) -> None:
     if not regions:
         regions = _autodiscover_account_regions(boto3_session, current_aws_account_id)
-
+    if common_job_parameters["aws_region"] is not None and common_job_parameters["aws_region"] in regions:
+        logger.info("Running syncs for region %s", common_job_parameters["aws_region"])
+        regions.clear()
+        regions.append(common_job_parameters["aws_region"])
     sync_args = _build_aws_sync_kwargs(
         neo4j_session, boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters,
     )
@@ -252,6 +255,7 @@ def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
         "UPDATE_TAG": config.update_tag,
         "permission_relationships_file": config.permission_relationships_file,
         "aws_resource_name": config.aws_resource_name,
+        "aws_region": config.aws_region,
     }
     try:
         boto3_session = boto3.Session()
