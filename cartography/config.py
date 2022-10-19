@@ -86,6 +86,8 @@ class Config:
         update_tag=None,
         aws_sync_all_profiles=False,
         aws_best_effort_mode=False,
+        aws_resource_name=None,
+        aws_region=None,
         azure_sync_all_subscriptions=False,
         azure_sp_auth=None,
         azure_tenant_id=None,
@@ -124,6 +126,8 @@ class Config:
         self.update_tag = update_tag
         self.aws_sync_all_profiles = aws_sync_all_profiles
         self.aws_best_effort_mode = aws_best_effort_mode
+        self.aws_resource_name = aws_resource_name
+        self.aws_region = aws_region
         self.azure_sync_all_subscriptions = azure_sync_all_subscriptions
         self.azure_sp_auth = azure_sp_auth
         self.azure_tenant_id = azure_tenant_id
