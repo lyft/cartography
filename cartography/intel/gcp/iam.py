@@ -421,6 +421,7 @@ def load_service_account_keys(
     u.keytype = sa.keyType, u.origin = sa.keyOrigin,
     u.consolelink = sa.consolelink,
     u.algorithm = sa.keyAlgorithm, u.validbeforetime = sa.validBeforeTime,
+    u.disabled = sa.disabled,
     u.validaftertime = sa.validAfterTime, u.lastupdated = {gcp_update_tag}
     WITH u, sa
     MATCH (d:GCPServiceAccount{id: {serviceaccount}})
