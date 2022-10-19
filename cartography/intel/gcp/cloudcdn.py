@@ -479,33 +479,35 @@ def sync_regional_url_maps(
     gcp_update_tag: int, common_job_parameters: Dict,
 ) -> None:
     
+    regional_maps = []
     for region in regions:
         maps = get_regional_url_maps(compute, project_id, region)
-        regional_maps = transform_regional_url_maps(maps, region, project_id)
+        regional_maps_list = transform_regional_url_maps(maps, region, project_id)
+        regional_maps.extend(regional_maps_list)
 
-        if common_job_parameters.get('pagination', {}).get('compute', None):
-            pageNo = common_job_parameters.get("pagination", {}).get("compute", None)["pageNo"]
-            pageSize = common_job_parameters.get("pagination", {}).get("compute", None)["pageSize"]
-            totalPages = len(regional_maps) / pageSize
-            if int(totalPages) != totalPages:
-                totalPages = totalPages + 1
-            totalPages = int(totalPages)
-            if pageNo < totalPages or pageNo == totalPages:
-                logger.info(f'pages process for global url maps {pageNo}/{totalPages} pageSize is {pageSize}')
-            page_start = (
-                common_job_parameters.get('pagination', {}).get('compute', None)[
-                'pageNo'
-                ] - 1
-            ) * common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
-            page_end = page_start + common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
-            if page_end > len(regional_maps) or page_end == len(regional_maps):
-                regional_maps = regional_maps[page_start:]
-            else:
-                has_next_page = True
-                regional_maps = regional_maps[page_start:page_end]
-                common_job_parameters['pagination']['dataproc']['hasNextPage'] = has_next_page
+    if common_job_parameters.get('pagination', {}).get('compute', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("compute", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("compute", None)["pageSize"]
+        totalPages = len(regional_maps) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for global url maps {pageNo}/{totalPages} pageSize is {pageSize}')
+        page_start = (
+            common_job_parameters.get('pagination', {}).get('compute', None)[
+            'pageNo'
+            ] - 1
+        ) * common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
+        if page_end > len(regional_maps) or page_end == len(regional_maps):
+            regional_maps = regional_maps[page_start:]
+        else:
+            has_next_page = True
+            regional_maps = regional_maps[page_start:page_end]
+            common_job_parameters['pagination']['dataproc']['hasNextPage'] = has_next_page
 
-        load_url_maps(neo4j_session, regional_maps, project_id, gcp_update_tag)
+    load_url_maps(neo4j_session, regional_maps, project_id, gcp_update_tag)
     cleanup_url_maps(neo4j_session, common_job_parameters)
     label.sync_labels(neo4j_session, regional_maps, gcp_update_tag, common_job_parameters, 'url_map', 'GCPUrlMap')
 
