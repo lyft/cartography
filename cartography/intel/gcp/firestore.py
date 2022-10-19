@@ -93,7 +93,7 @@ def get_firestore_databases(firestore: Resource, project_id: str, regions: list,
 
 
 @timeit
-def get_firestore_indexes(firestore: Resource, firestore_databases: List[Dict], project_id: str) -> List[Dict]:
+def get_firestore_indexes(firestore: Resource, database: Dict, project_id: str) -> List[Dict]:
     """
         Returns a list of firestore indexes for a given project.
 
@@ -110,37 +110,44 @@ def get_firestore_indexes(firestore: Resource, firestore_databases: List[Dict], 
         :return: List of Firestore Indexes
     """
     firestore_indexes = []
-    for database in firestore_databases:
-        try:
-            request = firestore.projects().databases().collectionGroups().indexes().list(
-                parent=f"{database['name']}/collectionGroups/*",
+    try:
+        request = firestore.projects().databases().collectionGroups().indexes().list(
+            parent=f"{database['name']}/collectionGroups/*",
+        )
+        while request is not None:
+            response = request.execute()
+            if response.get('indexes', []):
+                firestore_indexes.extend(response.get('indexes', []))
+            request = firestore.projects().databases().collectionGroups().indexes().list_next(
+                previous_request=request, previous_response=response,
             )
-            while request is not None:
-                response = request.execute()
-                if response.get('indexes', []):
-                    for index in response['indexes']:
-                        index['database_id'] = database['id']
-                        index['id'] = index['name']
-                        index['index_name'] = index['name'].split('/')[-1]
-                        index['region'] = database.get('locationId', 'global')
-                        firestore_indexes.append(index)
-                request = firestore.projects().databases().collectionGroups().indexes().list_next(
-                    previous_request=request, previous_response=response,
-                )
-        except HttpError as e:
-            err = json.loads(e.content.decode('utf-8'))['error']
-            if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
-                logger.warning(
-                    (
-                        "Could not retrieve Firestore Indexes on project %s due to permissions issues.\
-                             Code: %s, Message: %s"
-                    ), project_id, err['code'], err['message'],
-                )
-                return []
-            else:
-                logger.error(e)
-                # raise
-                return []
+    except HttpError as e:
+        err = json.loads(e.content.decode('utf-8'))['error']
+        if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
+            logger.warning(
+                (
+                    "Could not retrieve Firestore Indexes on project %s due to permissions issues.\
+                            Code: %s, Message: %s"
+                ), project_id, err['code'], err['message'],
+            )
+            return []
+        else:
+            logger.error(e)
+            # raise
+            return []
+    return firestore_indexes
+
+@timeit
+def transform_indexes(indexes: List[Dict], database: Dict, project_id: str) -> List[Dict]:
+    firestore_indexes = []
+    for index in indexes:
+        index['database_id'] = database['id']
+        index['id'] = index['name']
+        index['index_name'] = index['name'].split('/')[-1]
+        index['region'] = database.get('locationId', 'global')
+        index['consolelink'] = gcp_console_link.get_console_link(project_id=project_id, resource_name='firestore_index')
+        firestore_indexes.append(index)
+
     return firestore_indexes
 
 
@@ -233,6 +240,7 @@ def _load_firestore_indexes_tx(
         ix.queryScope = index.queryScope,
         ix.region = index.region,
         ix.state = index.state,
+        ix.consolelink = index.consolelink,
         ix.lastupdated = {gcp_update_tag}
     WITH ix,index
     MATCH (d:GCPFirestoreDatabase{id:index.database_id})
@@ -306,8 +314,10 @@ def sync(
         common_job_parameters, 'firestore databases', 'GCPFirestoreDatabase',
     )
     # FIRESTORE INDEXES
-    firestore_indexes = get_firestore_indexes(firestore, firestore_databases, project_id)
-    load_firestore_indexes(neo4j_session, firestore_indexes, project_id, gcp_update_tag)
+    for database in firestore_databases:
+        indexes = get_firestore_indexes(firestore, database, project_id)
+        firestore_indexes = transform_indexes(indexes, database, project_id)
+        load_firestore_indexes(neo4j_session, firestore_indexes, project_id, gcp_update_tag)
     cleanup_firestore(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()

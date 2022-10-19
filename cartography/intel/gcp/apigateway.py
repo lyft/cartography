@@ -38,11 +38,7 @@ def get_apigateway_locations(apigateway: Resource, project_id: str, common_job_p
         while req is not None:
             res = req.execute()
             if res.get('locations', []):
-                for location in res['locations']:
-                    location['project_id'] = project_id
-                    location['id'] = location['locationId']
-                    location['location_name'] = location.get('name').split('/')[-1]
-                    locations.append(location)
+                locations.extend(res.get('locations', []))
             req = apigateway.projects().locations().list_next(previous_request=req, previous_response=res)
         if common_job_parameters.get('pagination', {}).get('apigateway', None):
             pageNo = common_job_parameters.get("pagination", {}).get("apigateway", None)["pageNo"]
@@ -79,6 +75,17 @@ def get_apigateway_locations(apigateway: Resource, project_id: str, common_job_p
         else:
             raise
 
+@timeit
+def transform_locations(locations: List[Dict], project_id: str) -> List[Dict]:
+    locations = []
+    for location in locations:
+        location['project_id'] = project_id
+        location['id'] = location['locationId']
+        location['consolelink'] = gcp_console_link.get_console_link(project_id=project_id, resource_name='apigateway')
+        location['location_name'] = location.get('name').split('/')[-1]
+        locations.append(location)
+
+    return locations
 
 @timeit
 def get_apis(apigateway: Resource, project_id: str, regions: list, common_job_parameters) -> List[Dict]:
@@ -435,6 +442,7 @@ def load_apigateway_locations_tx(
         location.name = loc.name,
         location.location_name = loc.location_name,
         location.locationId = loc.locationId,
+        location.consolelink = loc.consolelink,
         location.displayName = loc.displayName,
         location.region = loc.locationId,
         location.lastupdated = {gcp_update_tag}
@@ -801,7 +809,8 @@ def sync(
     logger.info("Syncing Apigateway for project '%s', at %s.", project_id, tic)
 
     # API Gateway Locations
-    locations = get_apigateway_locations(apigateway, project_id, common_job_parameters)
+    locs = get_apigateway_locations(apigateway, project_id, common_job_parameters)
+    locations = transform_locations(locs, project_id)
     load_apigateway_locations(neo4j_session, locations, project_id, gcp_update_tag)
 
     # Cleanup Locations
