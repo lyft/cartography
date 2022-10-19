@@ -205,6 +205,14 @@ class CLI:
             ),
         )
         parser.add_argument(
+            '--aws-region',
+            type=str,
+            default=None,
+            help=(
+                'AWS region name for which the updation of resource needs to be performed'
+            ),
+        )
+        parser.add_argument(
             '--crxcavator-api-base-uri',
             type=str,
             default='https://api.crxcavator.io/v1',
