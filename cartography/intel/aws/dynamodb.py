@@ -6,6 +6,7 @@ import boto3
 import neo4j
 import uuid
 
+import cartography.intel.aws.util.common as filterfn
 from cartography.stats import get_stats_client
 from cartography.util import aws_handle_regions
 from cartography.util import merge_module_sync_metadata
@@ -113,6 +114,9 @@ def sync_dynamodb_tables(
     for region in regions:
         logger.info("Syncing DynamoDB for region in '%s' in account '%s'.", region, current_aws_account_id)
         data = get_dynamodb_tables(boto3_session, region)
+        if common_job_parameters['aws_resource_name'] is not None:
+          logger.info('Filtering to run updation for: %s', common_job_parameters['aws_resource_name'])
+          data = filterfn.filter_resources(data, common_job_parameters['aws_resource_name'], 'dynamodb') #bucket_data is updated in the function itself
         load_dynamodb_tables(neo4j_session, data, region, current_aws_account_id, aws_update_tag)
     cleanup_dynamodb_tables(neo4j_session, common_job_parameters)
 
