@@ -422,7 +422,7 @@ def transform_services(services: List[Dict], project_id: str) -> List[Dict]:
     for item in services:
         item['region'] = item.get('metadata').get('labels').get('cloud.googleapis.com/location')
         item['consolelink'] = gcp_console_link.get_console_link(project_id=project_id,\
-                cloud_run_service_name=item.get('metadata').get('name'), resource_name='cloud_run_revision')
+                cloud_run_service_name=item.get('metadata').get('name'), region=item['region'], resource_name='cloud_run_service')
         item['id'] = f"projects/{project_id}/services/{item.get('metadata').get('name')}"
         services.append(item)
     
