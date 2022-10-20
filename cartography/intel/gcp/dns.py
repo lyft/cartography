@@ -191,7 +191,7 @@ def transform_dns_keys(dnsKeys: List, project_id: str, zone: Dict):
 
     for key in dnsKeys:
         key['zone'] = zone['id']
-        key['consolelink'] = gcp_console_link.get_console_link(project_id=project_id, resource_name='dns')
+        key['consolelink'] = gcp_console_link.get_console_link(project_id=project_id, resource_name='dns_console')
         key['id'] = f"projects/{project_id}/managedZones/{zone['name']}/dnsKeys/{key['id']}"
         list_keys.append(key)
 

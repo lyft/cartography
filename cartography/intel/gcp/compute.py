@@ -203,7 +203,7 @@ def get_https_proxies(compute: Resource, project_id: str, common_job_parameters)
 def transform_https_proxies(proxies: List, project_id: str) -> List[Resource]:
     list_proxies = []
     for proxy in proxies:
-        proxy['consolelink'] = gcp_console_link.get_console_link(project_id=project_id, resource_name='vpc')
+        proxy['consolelink'] = gcp_console_link.get_console_link(project_id=project_id, resource_name='vpc_console')
         proxy['id'] = f"projects/{project_id}/global/targetHttpsProxies/{proxy['name']}"
         proxy['type'] = 'https'
         list_proxies.append(proxy)
@@ -260,7 +260,7 @@ def get_ssl_proxies(compute: Resource, project_id: str, common_job_parameters) -
 def transform_ssl_proxies(proxies: List, project_id: str) -> List[Resource]:
     list_proxies = []
     for proxy in proxies:
-        proxy['consolelink'] = gcp_console_link.get_console_link(project_id=project_id, resource_name='vpc')
+        proxy['consolelink'] = gcp_console_link.get_console_link(project_id=project_id, resource_name='vpc_console')
         proxy['id'] = f"projects/{project_id}/global/targetSslProxies/{proxy['name']}"
         proxy['type'] = 'ssl'
         list_proxies.append(proxy)

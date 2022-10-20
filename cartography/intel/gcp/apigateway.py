@@ -81,7 +81,7 @@ def transform_locations(locations: List[Dict], project_id: str) -> List[Dict]:
     for location in locations:
         location['project_id'] = project_id
         location['id'] = location['locationId']
-        location['consolelink'] = gcp_console_link.get_console_link(project_id=project_id, resource_name='apigateway')
+        location['consolelink'] = gcp_console_link.get_console_link(project_id=project_id, resource_name='apigateway_console')
         location['location_name'] = location.get('name').split('/')[-1]
         locations.append(location)
 

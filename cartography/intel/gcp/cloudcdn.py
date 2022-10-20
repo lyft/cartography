@@ -344,7 +344,7 @@ def transform_global_url_maps(url_maps: List[Dict], project_id: str) -> List[Dic
     for url_map in url_maps:
         url_map['region'] = 'global'
         url_map['type'] = 'global'
-        url_map['consolelink'] = gcp_console_link.get_console_link(project_id=project_id, resource_name='cdn')
+        url_map['consolelink'] = gcp_console_link.get_console_link(project_id=project_id, resource_name='cdn_console')
         url_map['id'] = f"projects/{project_id}/global/urlmaps/{url_map['name']}"
         global_url_maps.append(url_map)
 
@@ -461,7 +461,7 @@ def transform_regional_url_maps(url_maps: List[Dict], region: Dict, project_id: 
     for url_map in url_maps:
         url_map['region'] = region
         url_map['type'] = 'regional'
-        url_map['consolelink'] = gcp_console_link.get_console_link(project_id=project_id, resource_name='cdn')
+        url_map['consolelink'] = gcp_console_link.get_console_link(project_id=project_id, resource_name='cdn_console')
         url_map['id'] = f"projects/{project_id}/regions/{region['name']}/urlmaps/{url_map['name']}"
         regional_url_maps.append(url_map)
 
