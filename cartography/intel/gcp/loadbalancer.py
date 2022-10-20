@@ -463,7 +463,7 @@ def transfrom_global_url_maps(url_maps: List, project_id: str):
     for url_map in url_maps:
         url_map['region'] = 'global'
         url_map['type'] = 'global'
-        url_map['consolelink'] = gcp_console_link.get_console_link(project_id=project_id, resource_name='load_balancer')
+        url_map['consolelink'] = gcp_console_link.get_console_link(project_id=project_id, resource_name='load_balancer_console')
         url_map['id'] = f"projects/{project_id}/global/urlmaps/{url_map['name']}"
         list_url_maps.append(url_map)
 
@@ -519,7 +519,7 @@ def transform_regional_url_maps(maps: List, region: str, project_id: str):
     for url_map in maps:
         url_map['region'] = region
         url_map['type'] = 'regional'
-        url_map['consolelink'] = gcp_console_link.get_console_link(project_id=project_id, resource_name='load_balancer')
+        url_map['consolelink'] = gcp_console_link.get_console_link(project_id=project_id, resource_name='load_balancer_console')
         url_map['id'] = f"projects/{project_id}/regions/{region}/urlmaps/{url_map['name']}"
         list_url_maps.append(url_map)
 
