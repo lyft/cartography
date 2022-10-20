@@ -16,7 +16,7 @@ def test_transform_and_load_projects(neo4j_session):
     cartography.intel.digitalocean.management.load_projects(neo4j_session, projects_list, TEST_UPDATE_TAG)
 
     query = """
-        MATCH(p:DOProject{id:{ProjectId}})
+        MATCH(p:DOProject{id:$ProjectId})
         RETURN p.id, p.name, p.owner_uuid, p.description, p.is_default, p.created_at, p.updated_at, p.account_id,
         p.lastupdated
         """

@@ -54,21 +54,21 @@ def load_elasticache_clusters(
     aws_account_id: str, update_tag: int,
 ) -> None:
     query = """
-    UNWIND {clusters} as elasticache_cluster
+    UNWIND $clusters as elasticache_cluster
         MERGE (cluster:ElasticacheCluster{id:elasticache_cluster.ARN})
         ON CREATE SET cluster.firstseen = timestamp(),
             cluster.arn = elasticache_cluster.ARN,
             cluster.topic_arn = elasticache_cluster.NotificationConfiguration.TopicArn,
             cluster.id = elasticache_cluster.CacheClusterId,
-            cluster.region = {region},
+            cluster.region = $region, 
             cluster.borneo_id = {cluster_borneo_id}
-        SET cluster.lastupdated = {aws_update_tag}
+        SET cluster.lastupdated = $aws_update_tag
 
         WITH cluster, elasticache_cluster
-        MATCH (owner:AWSAccount{id: {aws_account_id}})
+        MATCH (owner:AWSAccount{id: $aws_account_id})
         MERGE (owner)-[r3:RESOURCE]->(cluster)
         ON CREATE SET r3.firstseen = timestamp()
-        SET r3.lastupdated = {aws_update_tag}
+        SET r3.lastupdated = $aws_update_tag
 
         WITH elasticache_cluster, owner
         WHERE NOT elasticache_cluster.NotificationConfiguration IS NULL
@@ -76,17 +76,17 @@ def load_elasticache_clusters(
         ON CREATE SET topic.firstseen = timestamp(),
             topic.arn = elasticache_cluster.NotificationConfiguration.TopicArn,
             topic.borneo_id = {topic_borneo_id}
-        SET topic.lastupdated = {aws_update_tag},
+        SET topic.lastupdated = $aws_update_tag,
             topic.status = elasticache_cluster.NotificationConfiguration.Status
 
         MERGE (topic)-[r:CACHE_CLUSTER]->(cluster)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {aws_update_tag}
+        SET r.lastupdated = $aws_update_tag
         WITH cluster, topic
 
         MERGE (owner)-[r2:RESOURCE]->(topic)
         ON CREATE SET r2.firstseen = timestamp()
-        SET r2.lastupdated = {aws_update_tag}
+        SET r2.lastupdated = $aws_update_tag
     """
     logger.info(f"Loading f{len(clusters)} ElastiCache clusters for region '{region}' into graph.")
     neo4j_session.run(

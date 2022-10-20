@@ -35,18 +35,18 @@ def load_dynamodb_tables(
     aws_update_tag: int,
 ) -> None:
     ingest_table = """
-    MERGE (table:DynamoDBTable{id: {Arn}})
-    ON CREATE SET table.firstseen = timestamp(), table.arn = {Arn}, table.name = {TableName},
-    table.region = {Region},
+    MERGE (table:DynamoDBTable{id: $Arn})
+    ON CREATE SET table.firstseen = timestamp(), table.arn = $Arn, table.name = $TableName,
+    table.region = $Region
+    SET table.lastupdated = $aws_update_tag, table.rows = $Rows, table.size = $Size,
+    table.provisioned_throughput_read_capacity_units = $ProvisionedThroughputReadCapacityUnits,
+    table.provisioned_throughput_write_capacity_units = $ProvisionedThroughputWriteCapacityUnits,
     table.borneo_id = {table_borneo_id}
-    SET table.lastupdated = {aws_update_tag}, table.rows = {Rows}, table.size = {Size},
-    table.provisioned_throughput_read_capacity_units = {ProvisionedThroughputReadCapacityUnits},
-    table.provisioned_throughput_write_capacity_units = {ProvisionedThroughputWriteCapacityUnits}
     WITH table
-    MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (owner)-[r:RESOURCE]->(table)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
 
     for table in data:
@@ -72,18 +72,18 @@ def load_gsi(
     aws_update_tag: int,
 ) -> None:
     ingest_gsi = """
-    MERGE (gsi:DynamoDBGlobalSecondaryIndex{id: {Arn}})
-    ON CREATE SET gsi.firstseen = timestamp(), gsi.arn = {Arn}, gsi.name = {GSIName},
-    gsi.region = {Region},
+    MERGE (gsi:DynamoDBGlobalSecondaryIndex{id: $Arn})
+    ON CREATE SET gsi.firstseen = timestamp(), gsi.arn = $Arn, gsi.name = $GSIName,
+    gsi.region = $Region
+    SET gsi.lastupdated = $aws_update_tag,
+    gsi.provisioned_throughput_read_capacity_units = $ProvisionedThroughputReadCapacityUnits,
+    gsi.provisioned_throughput_write_capacity_units = $ProvisionedThroughputWriteCapacityUnits,
     gsi.borneo_id = {gsi_borneo_id}
-    SET gsi.lastupdated = {aws_update_tag},
-    gsi.provisioned_throughput_read_capacity_units = {ProvisionedThroughputReadCapacityUnits},
-    gsi.provisioned_throughput_write_capacity_units = {ProvisionedThroughputWriteCapacityUnits}
     WITH gsi
-    MATCH (table:DynamoDBTable{arn: {TableArn}})
+    MATCH (table:DynamoDBTable{arn: $TableArn})
     MERGE (table)-[r:GLOBAL_SECONDARY_INDEX]->(gsi)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
 
     for gsi in table['Table'].get('GlobalSecondaryIndexes', []):
@@ -115,8 +115,9 @@ def sync_dynamodb_tables(
         logger.info("Syncing DynamoDB for region in '%s' in account '%s'.", region, current_aws_account_id)
         data = get_dynamodb_tables(boto3_session, region)
         if common_job_parameters['aws_resource_name'] is not None:
-          logger.info('Filtering to run updation for: %s', common_job_parameters['aws_resource_name'])
-          data = filterfn.filter_resources(data, common_job_parameters['aws_resource_name'], 'dynamodb') #bucket_data is updated in the function itself
+            logger.info('Filtering to run updation for: %s', common_job_parameters['aws_resource_name'])
+            # bucket_data is updated in the function itself
+            data = filterfn.filter_resources(data, common_job_parameters['aws_resource_name'], 'dynamodb')
         load_dynamodb_tables(neo4j_session, data, region, current_aws_account_id, aws_update_tag)
     cleanup_dynamodb_tables(neo4j_session, common_job_parameters)
 

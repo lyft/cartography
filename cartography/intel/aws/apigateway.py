@@ -118,7 +118,7 @@ def load_apigateway_rest_apis(
     Ingest the details of API Gateway REST APIs into neo4j.
     """
     ingest_rest_apis = """
-    UNWIND {rest_apis_list} AS r
+    UNWIND $rest_apis_list AS r
     MERGE (rest_api:APIGatewayRestAPI{id:r.id})
     ON CREATE SET rest_api.firstseen = timestamp(),
     rest_api.createddate = r.createdDate,
@@ -126,13 +126,14 @@ def load_apigateway_rest_apis(
     SET rest_api.version = r.version,
     rest_api.minimumcompressionsize = r.minimumCompressionSize,
     rest_api.disableexecuteapiendpoint = r.disableExecuteApiEndpoint,
-    rest_api.lastupdated = {aws_update_tag},
-    rest_api.region = {Region}
+    rest_api.lastupdated = $aws_update_tag,
+    rest_api.region = $Region,
+    rest_api.borneo_id = {rest_api_borneo_id}
     WITH rest_api
-    MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (aa)-[r:RESOURCE]->(rest_api)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
 
     # neo4j does not accept datetime objects and values. This loop is used to convert
@@ -158,11 +159,11 @@ def _load_apigateway_policies(
     Ingest API Gateway REST API policy results into neo4j.
     """
     ingest_policies = """
-    UNWIND {policies} as policy
+    UNWIND $policies as policy
     MATCH (r:APIGatewayRestAPI) where r.name = policy.api_id
     SET r.anonymous_access = (coalesce(r.anonymous_access, false) OR policy.internet_accessible),
     r.anonymous_actions = coalesce(r.anonymous_actions, []) + policy.accessible_actions,
-    r.lastupdated = {UpdateTag}
+    r.lastupdated = $UpdateTag
     """
 
     neo4j_session.run(
@@ -174,7 +175,7 @@ def _load_apigateway_policies(
 
 def _set_default_values(neo4j_session: neo4j.Session, aws_account_id: str) -> None:
     set_defaults = """
-    MATCH (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(restApi:APIGatewayRestAPI)
+    MATCH (:AWSAccount{id: $AWS_ID})-[:RESOURCE]->(restApi:APIGatewayRestAPI)
     where NOT EXISTS(restApi.anonymous_actions)
     SET restApi.anonymous_access = false, restApi.anonymous_actions = []
     """
@@ -193,7 +194,7 @@ def _load_apigateway_stages(
     Ingest the Stage resource details into neo4j.
     """
     ingest_stages = """
-    UNWIND {stages_list} AS stage
+    UNWIND $stages_list AS stage
     MERGE (s:APIGatewayStage{id: stage.arn})
     ON CREATE SET s.firstseen = timestamp(), s.stagename = stage.stageName,
     s.createddate = stage.createdDate,
@@ -204,12 +205,13 @@ def _load_apigateway_stages(
     s.cacheclusterstatus = stage.cacheClusterStatus,
     s.tracingenabled = stage.tracingEnabled,
     s.webaclarn = stage.webAclArn,
-    s.lastupdated = {UpdateTag}
+    s.lastupdated = $UpdateTag,
+    s.borneo_id = {stage_borneo_id}
     WITH s, stage
     MATCH (rest_api:APIGatewayRestAPI{id: stage.apiId})
     MERGE (rest_api)-[r:ASSOCIATED_WITH]->(s)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {UpdateTag}
+    SET r.lastupdated = $UpdateTag
     """
 
     # neo4j does not accept datetime objects and values. This loop is used to convert
@@ -234,16 +236,17 @@ def _load_apigateway_certificates(
     Ingest the API Gateway Client Certificate details into neo4j.
     """
     ingest_certificates = """
-    UNWIND {certificates_list} as certificate
+    UNWIND $certificates_list as certificate
     MERGE (c:APIGatewayClientCertificate{id: certificate.clientCertificateId})
-    ON CREATE SET c.firstseen = timestamp(), c.createddate = certificate.createdDate,
+    ON CREATE SET c.firstseen = timestamp(), c.createddate = certificate.createdDate
+    SET c.lastupdated = $UpdateTag, c.expirationdate = certificate.expirationDate,
     c.borneo_id = {cert_borneo_id}
     SET c.lastupdated = {UpdateTag}, c.expirationdate = certificate.expirationDate
     WITH c, certificate
     MATCH (stage:APIGatewayStage{id: certificate.stageArn})
     MERGE (stage)-[r:HAS_CERTIFICATE]->(c)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {UpdateTag}
+    SET r.lastupdated = $UpdateTag
     """
 
     # neo4j does not accept datetime objects and values. This loop is used to convert
@@ -269,19 +272,20 @@ def _load_apigateway_resources(
     Ingest the API Gateway Resource details into neo4j.
     """
     ingest_resources = """
-    UNWIND {resources_list} AS res
+    UNWIND $resources_list AS res
     MERGE (s:APIGatewayResource{id: res.id})
     ON CREATE SET s.firstseen = timestamp(),
     s.borneo_id = {resource_borneo_id}
     SET s.path = res.path,
     s.pathpart = res.pathPart,
     s.parentid = res.parentId,
-    s.lastupdated ={UpdateTag}
+    s.lastupdated =$UpdateTag,
+    s.borneo_id = {resource_borneo_id}
     WITH s, res
     MATCH (rest_api:APIGatewayRestAPI{id: res.apiId})
     MERGE (rest_api)-[r:RESOURCE]->(s)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {UpdateTag}
+    SET r.lastupdated = $UpdateTag
     """
 
     neo4j_session.run(

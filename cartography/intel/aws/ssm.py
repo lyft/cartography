@@ -18,8 +18,8 @@ logger = logging.getLogger(__name__)
 @timeit
 def get_instance_ids(neo4j_session: neo4j.Session, region: str, current_aws_account_id: str) -> List[str]:
     get_instances_query = """
-    MATCH (:AWSAccount{id: {AWS_ACCOUNT_ID}})-[:RESOURCE]->(i:EC2Instance)
-    WHERE i.region = {Region}
+    MATCH (:AWSAccount{id: $AWS_ACCOUNT_ID})-[:RESOURCE]->(i:EC2Instance)
+    WHERE i.region = $Region
     RETURN i.id
     """
     results = neo4j_session.run(get_instances_query, AWS_ACCOUNT_ID=current_aws_account_id, Region=region)
@@ -75,7 +75,7 @@ def load_instance_information(
     aws_update_tag: int,
 ) -> None:
     ingest_query = """
-    UNWIND {InstanceInformation} AS instance
+    UNWIND $InstanceInformation AS instance
         MERGE (i:SSMInstanceInformation{id: instance.InstanceId})
         ON CREATE SET i.firstseen = timestamp(),
             i.borneo_id = {info_borneo_id}
@@ -99,18 +99,19 @@ def load_instance_information(
             i.last_successful_association_execution_date = instance.LastSuccessfulAssociationExecutionDate,
             i.source_id = instance.SourceId,
             i.source_type = instance.SourceType,
-            i.region = {Region},
-            i.lastupdated = {aws_update_tag}
+            i.region = $Region,
+            i.lastupdated = $aws_update_tag,
+            i.borneo_id = {info_borneo_id}
         WITH i
-        MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
+        MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
         MERGE (owner)-[r:RESOURCE]->(i)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {aws_update_tag}
+        SET r.lastupdated = $aws_update_tag
         WITH i
-        MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})-[:RESOURCE]->(ec2_instance:EC2Instance{id: i.instance_id})
+        MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})-[:RESOURCE]->(ec2_instance:EC2Instance{id: i.instance_id})
         MERGE (ec2_instance)-[r2:HAS_INFORMATION]->(i)
         ON CREATE SET r2.firstseen = timestamp()
-        SET r2.lastupdated = {aws_update_tag}
+        SET r2.lastupdated = $aws_update_tag
     """
     for ii in data:
         ii["LastPingDateTime"] = dict_date_to_epoch(ii, "LastPingDateTime")
@@ -137,7 +138,7 @@ def load_instance_patches(
     aws_update_tag: int,
 ) -> None:
     ingest_query = """
-    UNWIND {InstancePatch} AS patch
+    UNWIND $InstancePatch AS patch
         MERGE (p:SSMInstancePatch{id: patch._instance_id + "-" + patch.Title})
         ON CREATE SET p.firstseen = timestamp(),
             p.borneo_id = {patch_borneo_id}
@@ -149,18 +150,19 @@ def load_instance_patches(
             p.state = patch.State,
             p.installed_time = patch.InstalledTime,
             p.cve_ids = patch.CVEIds,
-            p.region = {Region},
-            p.lastupdated = {aws_update_tag}
+            p.region = $Region,
+            p.lastupdated = $aws_update_tag,
+            p.borneo_id = {patch_borneo_id}
         WITH p
-        MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
+        MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
         MERGE (owner)-[r:RESOURCE]->(p)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {aws_update_tag}
+        SET r.lastupdated = $aws_update_tag
         WITH p
-        MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})-[:RESOURCE]->(ec2_instance:EC2Instance{id: p.instance_id})
+        MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})-[:RESOURCE]->(ec2_instance:EC2Instance{id: p.instance_id})
         MERGE (ec2_instance)-[r2:HAS_PATCH]->(p)
         ON CREATE SET r2.firstseen = timestamp()
-        SET r2.lastupdated = {aws_update_tag}
+        SET r2.lastupdated = $aws_update_tag
     """
     for p in data:
         p["InstalledTime"] = dict_date_to_epoch(p, "InstalledTime")

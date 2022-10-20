@@ -69,10 +69,11 @@ RESOURCE_FUNCTIONS: Dict = {
     'securityhub': securityhub.sync,
     'sqs': sqs.sync,
     'ssm': ssm.sync,
+    'inspector': inspector.sync,
     'config': config.sync,
 }
 
 RESOURCE_IDENTIFIERS: Dict = {
-  'rds_cluster': 'DBClusterIdentifier',
-  'rds_instance': 'DBInstanceIdentifier',
+    'rds_cluster': 'DBClusterIdentifier',
+    'rds_instance': 'DBInstanceIdentifier',
 }

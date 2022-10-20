@@ -261,3 +261,9 @@ def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
             neo4j_session,
             common_job_parameters,
         )
+
+        run_analysis_job(
+            'aws_foreign_accounts.json',
+            neo4j_session,
+            common_job_parameters,
+        )

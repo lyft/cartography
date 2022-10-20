@@ -39,7 +39,7 @@ def load_rds_clusters(
     Ingest the RDS clusters to neo4j and link them to necessary nodes.
     """
     ingest_rds_cluster = """
-    UNWIND {Clusters} as rds_cluster
+    UNWIND $Clusters as rds_cluster
         MERGE (cluster:RDSCluster{id: rds_cluster.DBClusterArn})
         ON CREATE SET cluster.firstseen = timestamp(),
             cluster.arn = rds_cluster.DBClusterArn,
@@ -78,13 +78,13 @@ def load_rds_clusters(
             cluster.scaling_configuration_info_max_capacity = rds_cluster.ScalingConfigurationInfoMaxCapacity,
             cluster.scaling_configuration_info_auto_pause = rds_cluster.ScalingConfigurationInfoAutoPause,
             cluster.deletion_protection = rds_cluster.DeletionProtection,
-            cluster.region = {Region},
-            cluster.lastupdated = {aws_update_tag}
+            cluster.region = $Region,
+            cluster.lastupdated = $aws_update_tag
         WITH cluster
-        MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+        MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
         MERGE (aa)-[r:RESOURCE]->(cluster)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {aws_update_tag}
+        SET r.lastupdated = $aws_update_tag
     """
     for cluster in data:
         # TODO: track read replicas
@@ -134,7 +134,7 @@ def load_rds_instances(
     Ingest the RDS instances to neo4j and link them to necessary nodes.
     """
     ingest_rds_instance = """
-    UNWIND {Instances} as rds_instance
+    UNWIND $Instances as rds_instance
         MERGE (rds:RDSInstance{id: rds_instance.DBInstanceArn})
         ON CREATE SET rds.firstseen = timestamp(),
             rds.arn = rds_instance.DBInstanceArn,
@@ -169,12 +169,12 @@ def load_rds_instances(
             rds.endpoint_port = rds_instance.EndpointPort,
             rds.iam_database_authentication_enabled = rds_instance.IAMDatabaseAuthenticationEnabled,
             rds.auto_minor_version_upgrade = rds_instance.AutoMinorVersionUpgrade,
-            rds.lastupdated = {aws_update_tag}
+            rds.lastupdated = $aws_update_tag
         WITH rds
-        MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+        MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
         MERGE (aa)-[r:RESOURCE]->(rds)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {aws_update_tag}
+        SET r.lastupdated = $aws_update_tag
     """
     read_replicas = []
     clusters = []
@@ -227,7 +227,7 @@ def _attach_ec2_subnet_groups(
     Attach RDS instances to their EC2 subnet groups
     """
     attach_rds_to_subnet_group = """
-    UNWIND {SubnetGroups} as rds_sng
+    UNWIND $SubnetGroups as rds_sng
         MERGE (sng:DBSubnetGroup{id: rds_sng.arn})
         ON CREATE SET sng.firstseen = timestamp(),
             sng.borneo_id = {subnet_group_borneo_id}
@@ -235,12 +235,13 @@ def _attach_ec2_subnet_groups(
             sng.vpc_id = rds_sng.VpcId,
             sng.description = rds_sng.DBSubnetGroupDescription,
             sng.status = rds_sng.DBSubnetGroupStatus,
-            sng.lastupdated = {aws_update_tag}
+            sng.lastupdated = $aws_update_tag,
+            sng.borneo_id = {subnet_group_borneo_id}
         WITH sng, rds_sng.instance_arn AS instance_arn
         MATCH(rds:RDSInstance{id: instance_arn})
         MERGE(rds)-[r:MEMBER_OF_DB_SUBNET_GROUP]->(sng)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {aws_update_tag}
+        SET r.lastupdated = $aws_update_tag
     """
     db_sngs = []
     for instance in instances:
@@ -271,15 +272,15 @@ def _attach_ec2_subnets_to_subnetgroup(
     Availability Zone to select a subnet and an IP address within that subnet to associate with your DB instance.`
     """
     attach_subnets_to_sng = """
-    UNWIND {Subnets} as rds_sn
+    UNWIND $Subnets as rds_sn
         MATCH(sng:DBSubnetGroup{id: rds_sn.sng_arn})
         MERGE(subnet:EC2Subnet{subnetid: rds_sn.sn_id})
         ON CREATE SET subnet.firstseen = timestamp()
         MERGE(sng)-[r:RESOURCE]->(subnet)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {aws_update_tag},
+        SET r.lastupdated = $aws_update_tag,
         subnet.availability_zone = rds_sn.az,
-        subnet.lastupdated = {aws_update_tag}
+        subnet.lastupdated = $aws_update_tag
     """
     subnets = []
     for subnet_group in db_subnet_groups:
@@ -305,12 +306,12 @@ def _attach_ec2_security_groups(neo4j_session: neo4j.Session, instances: List[Di
     Attach an RDS instance to its EC2SecurityGroups
     """
     attach_rds_to_group = """
-    UNWIND {Groups} as rds_sg
+    UNWIND $Groups as rds_sg
         MATCH (rds:RDSInstance{id: rds_sg.arn})
         MERGE (sg:EC2SecurityGroup{id: rds_sg.group_id})
         MERGE (rds)-[m:MEMBER_OF_EC2_SECURITY_GROUP]->(sg)
         ON CREATE SET m.firstseen = timestamp()
-        SET m.lastupdated = {aws_update_tag}
+        SET m.lastupdated = $aws_update_tag
     """
     groups = []
     for instance in instances:
@@ -332,12 +333,12 @@ def _attach_read_replicas(neo4j_session: neo4j.Session, read_replicas: List[Dict
     Attach read replicas to their source instances
     """
     attach_replica_to_source = """
-    UNWIND {Replicas} as rds_replica
+    UNWIND $Replicas as rds_replica
         MATCH (replica:RDSInstance{id: rds_replica.DBInstanceArn}),
         (source:RDSInstance{db_instance_identifier: rds_replica.ReadReplicaSourceDBInstanceIdentifier})
         MERGE (replica)-[r:IS_READ_REPLICA_OF]->(source)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {aws_update_tag}
+        SET r.lastupdated = $aws_update_tag
     """
     neo4j_session.run(
         attach_replica_to_source,
@@ -352,12 +353,12 @@ def _attach_clusters(neo4j_session: neo4j.Session, cluster_members: List[Dict], 
     Attach cluster members to their source clusters
     """
     attach_member_to_source = """
-    UNWIND {Members} as rds_cluster_member
+    UNWIND $Members as rds_cluster_member
     MATCH (member:RDSInstance{id: rds_cluster_member.DBInstanceArn}),
     (source:RDSCluster{db_cluster_identifier: rds_cluster_member.DBClusterIdentifier})
     MERGE (member)-[r:IS_CLUSTER_MEMBER_OF]->(source)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
     neo4j_session.run(
         attach_member_to_source,

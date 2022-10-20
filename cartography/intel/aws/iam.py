@@ -16,6 +16,7 @@ from cartography.stats import get_stats_client
 from cartography.util import merge_module_sync_metadata
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
+
 logger = logging.getLogger(__name__)
 stat_handler = get_stats_client(__name__)
 
@@ -209,17 +210,17 @@ def load_users(
     neo4j_session: neo4j.Session, users: List[Dict], current_aws_account_id: str, aws_update_tag: int,
 ) -> None:
     ingest_user = """
-    MERGE (unode:AWSUser{arn: {ARN}})
-    ON CREATE SET unode:AWSPrincipal, unode.userid = {USERID}, unode.firstseen = timestamp(),
-    unode.createdate = {CREATE_DATE},
+    MERGE (unode:AWSUser{arn: $ARN})
+    ON CREATE SET unode:AWSPrincipal, unode.userid = $USERID, unode.firstseen = timestamp(),
+    unode.createdate = $CREATE_DATE,
     unode.borneo_id = {user_borneo_id}
-    SET unode.name = {USERNAME}, unode.path = {PATH}, unode.passwordlastused = {PASSWORD_LASTUSED},
-    unode.lastupdated = {aws_update_tag}
+    SET unode.name = $USERNAME, unode.path = $PATH, unode.passwordlastused = $PASSWORD_LASTUSED,
+    unode.lastupdated = $aws_update_tag
     WITH unode
-    MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (aa)-[r:RESOURCE]->(unode)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
     logger.info(f"Loading {len(users)} IAM users.")
     for user in users:
@@ -242,15 +243,15 @@ def load_groups(
     neo4j_session: neo4j.Session, groups: List[Dict], current_aws_account_id: str, aws_update_tag: int,
 ) -> None:
     ingest_group = """
-    MERGE (gnode:AWSGroup{arn: {ARN}})
-    ON CREATE SET gnode.groupid = {GROUP_ID}, gnode.firstseen = timestamp(), gnode.createdate = {CREATE_DATE},
+    MERGE (gnode:AWSGroup{arn: $ARN})
+    ON CREATE SET gnode.groupid = $GROUP_ID, gnode.firstseen = timestamp(), gnode.createdate = $CREATE_DATE,
     gnode.borneo_id = {group_borneo_id}
-    SET gnode:AWSPrincipal, gnode.name = {GROUP_NAME}, gnode.path = {PATH},gnode.lastupdated = {aws_update_tag}
+    SET gnode:AWSPrincipal, gnode.name = $GROUP_NAME, gnode.path = $PATH,gnode.lastupdated = $aws_update_tag
     WITH gnode
-    MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (aa)-[r:RESOURCE]->(gnode)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
     logger.info(f"Loading {len(groups)} IAM groups to the graph.")
     for group in groups:
@@ -287,28 +288,47 @@ def load_roles(
     neo4j_session: neo4j.Session, roles: List[Dict], current_aws_account_id: str, aws_update_tag: int,
 ) -> None:
     ingest_role = """
-    MERGE (rnode:AWSRole{arn: {Arn}})
-    ON CREATE SET rnode:AWSPrincipal, rnode.roleid = {RoleId}, rnode.firstseen = timestamp(),
-    rnode.createdate = {CreateDate},
+    MERGE (rnode:AWSRole{arn: $Arn})
+    ON CREATE SET rnode:AWSPrincipal, rnode.roleid = $RoleId, rnode.firstseen = timestamp(),
+    rnode.createdate = $CreateDate,
     rnode.borneo_id = {role_borneo_id}
-    ON MATCH SET rnode.name = {RoleName}, rnode.path = {Path}
-    SET rnode.lastupdated = {aws_update_tag}
+    ON MATCH SET rnode.name = $RoleName, rnode.path = $Path
+    SET rnode.lastupdated = $aws_update_tag
     WITH rnode
-    MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (aa)-[r:RESOURCE]->(rnode)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
 
     ingest_policy_statement = """
-    MERGE (spnnode:AWSPrincipal{arn: {SpnArn}})
+    MERGE (spnnode:AWSPrincipal{arn: $SpnArn})
     ON CREATE SET spnnode.firstseen = timestamp()
-    SET spnnode.lastupdated = {aws_update_tag}, spnnode.type = {SpnType}
+    SET spnnode.lastupdated = $aws_update_tag, spnnode.type = $SpnType
     WITH spnnode
-    MATCH (role:AWSRole{arn: {RoleArn}})
+    MATCH (role:AWSRole{arn: $RoleArn})
     MERGE (role)-[r:TRUSTS_AWS_PRINCIPAL]->(spnnode)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
+    """
+
+    # Note - why we don't set inscope or foreign attribute on the account
+    #
+    # we are agnostic here if this is the AWSAccount is part of the sync scope or
+    # a foreign AWS account that contains a trusted principal. The account could also be inscope
+    # but not sync yet.
+    # - The inscope attribute - set when the account is being sync.
+    # - The foreign attribute - the attribute assignment logic is in aws_foreign_accounts.json analysis job
+    # - Why seperate statement is needed - the arn may point to service level principals ex - ec2.amazonaws.com
+    ingest_spnmap_statement = """
+    MERGE (aa:AWSAccount{id: $SpnAccountId})
+    ON CREATE SET aa.firstseen = timestamp()
+    SET aa.lastupdated = $aws_update_tag
+    WITH aa
+    MATCH (spnnode:AWSPrincipal{arn: $SpnArn})
+    WITH spnnode, aa
+    MERGE (aa)-[r:RESOURCE]->(spnnode)
+    ON CREATE SET r.firstseen = timestamp()
     """
 
     # TODO support conditions
@@ -336,21 +356,29 @@ def load_roles(
                     RoleArn=role['Arn'],
                     aws_update_tag=aws_update_tag,
                 )
+                spn_arn = get_account_from_arn(principal_value)
+                if spn_arn:
+                    neo4j_session.run(
+                        ingest_spnmap_statement,
+                        SpnArn=principal_value,
+                        SpnAccountId=get_account_from_arn(principal_value),
+                        aws_update_tag=aws_update_tag,
+                    )
 
 
 @timeit
 def load_group_memberships(neo4j_session: neo4j.Session, group_memberships: Dict, aws_update_tag: int) -> None:
     ingest_membership = """
-    MATCH (group:AWSGroup{arn: {GroupArn}})
+    MATCH (group:AWSGroup{arn: $GroupArn})
     WITH group
-    MATCH (user:AWSUser{arn: {PrincipalArn}})
+    MATCH (user:AWSUser{arn: $PrincipalArn})
     MERGE (user)-[r:MEMBER_AWS_GROUP]->(group)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     WITH user, group
     MATCH (group)-[:POLICY]->(policy:AWSPolicy)
     MERGE (user)-[r2:POLICY]->(policy)
-    SET r2.lastupdated = {aws_update_tag}
+    SET r2.lastupdated = $aws_update_tag
     """
 
     for group_arn, membership_data in group_memberships.items():
@@ -368,7 +396,7 @@ def load_group_memberships(neo4j_session: neo4j.Session, group_memberships: Dict
 def get_policies_for_principal(neo4j_session: neo4j.Session, principal_arn: str) -> Dict:
     get_policy_query = """
     MATCH
-    (principal:AWSPrincipal{arn:{Arn}})-[:POLICY]->
+    (principal:AWSPrincipal{arn:$Arn})-[:POLICY]->
     (policy:AWSPolicy)-[:STATEMENT]->
     (statements:AWSPolicyStatement)
     RETURN
@@ -392,7 +420,7 @@ def sync_assumerole_relationships(
     # Computes and syncs the STS_ASSUME_ROLE allow relationship
     logger.info("Syncing assume role mappings for account '%s'.", current_aws_account_id)
     query_potential_matches = """
-    MATCH (:AWSAccount{id:{AccountId}})-[:RESOURCE]->(target:AWSRole)-[:TRUSTS_AWS_PRINCIPAL]->(source:AWSPrincipal)
+    MATCH (:AWSAccount{id:$AccountId})-[:RESOURCE]->(target:AWSRole)-[:TRUSTS_AWS_PRINCIPAL]->(source:AWSPrincipal)
     WHERE NOT source.arn ENDS WITH 'root'
     AND NOT source.type = 'Service'
     AND NOT source.type = 'Federated'
@@ -401,13 +429,13 @@ def sync_assumerole_relationships(
     """
 
     ingest_policies_assume_role = """
-    MATCH (source:AWSPrincipal{arn: {SourceArn}})
+    MATCH (source:AWSPrincipal{arn: $SourceArn})
     WITH source
-    MATCH (role:AWSRole{arn: {TargetArn}})
+    MATCH (role:AWSRole{arn: $TargetArn})
     WITH role, source
     MERGE (source)-[r:STS_ASSUMEROLE_ALLOW]->(role)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
 
     results = neo4j_session.run(
@@ -435,24 +463,24 @@ def sync_assumerole_relationships(
 def load_user_access_keys(neo4j_session: neo4j.Session, user_access_keys: Dict, aws_update_tag: int) -> None:
     # TODO change the node label to reflect that this is a user access key, not an account access key
     ingest_account_key = """
-    MATCH (user:AWSUser{name: {UserName}})
+    MATCH (user:AWSUser{arn: $UserARN})
     WITH user
-    MERGE (key:AccountAccessKey{accesskeyid: {AccessKeyId}})
-    ON CREATE SET key.firstseen = timestamp(), key.createdate = {CreateDate},
+    MERGE (key:AccountAccessKey{accesskeyid: $AccessKeyId})
+    ON CREATE SET key.firstseen = timestamp(), key.createdate = $CreateDate,
     key.borneo_id = {key_borneo_id}
-    SET key.status = {Status}, key.lastupdated = {aws_update_tag}
+    SET key.status = $Status, key.lastupdated = $aws_update_tag
     WITH user,key
     MERGE (user)-[r:AWS_ACCESS_KEY]->(key)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
 
-    for username, access_keys in user_access_keys.items():
+    for arn, access_keys in user_access_keys.items():
         for key in access_keys["AccessKeyMetadata"]:
             if key.get('AccessKeyId'):
                 neo4j_session.run(
                     ingest_account_key,
-                    UserName=username,
+                    UserARN=arn,
                     AccessKeyId=key['AccessKeyId'],
                     CreateDate=str(key['CreateDate']),
                     Status=key['Status'],
@@ -510,17 +538,17 @@ def _load_policy_tx(
     aws_update_tag: int,
 ) -> None:
     ingest_policy = """
-    MERGE (policy:AWSPolicy{id: {PolicyId}})
+    MERGE (policy:AWSPolicy{id: $PolicyId})
     ON CREATE SET
         policy.firstseen = timestamp(),
-        policy.type = {PolicyType},
-        policy.name = {PolicyName},
+        policy.type = $PolicyType,
+        policy.name = $PolicyName,
         policy.borneo_id = {policy_borneo_id}
-    SET policy.lastupdated = {aws_update_tag}
+    SET policy.lastupdated = $aws_update_tag
     WITH policy
-    MATCH (principal:AWSPrincipal{arn: {PrincipalArn}})
+    MATCH (principal:AWSPrincipal{arn: $PrincipalArn})
     MERGE (policy) <-[r:POLICY]-(principal)
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
     tx.run(
         ingest_policy,
@@ -547,9 +575,9 @@ def load_policy_statements(
     aws_update_tag: int,
 ) -> None:
     ingest_policy_statement = """
-        MATCH (policy:AWSPolicy{id: {PolicyId}})
+        MATCH (policy:AWSPolicy{id: $PolicyId})
         WITH policy
-        UNWIND {Statements} as statement_data
+        UNWIND $Statements as statement_data
         MERGE (statement:AWSPolicyStatement{id: statement_data.id})
         ON CREATE SET
         statement.borneo_id = {statement_borneo_id}
@@ -561,10 +589,11 @@ def load_policy_statements(
         statement.notresource = statement_data.NotResource,
         statement.condition = statement_data.Condition,
         statement.sid = statement_data.Sid,
-        statement.lastupdated = {aws_update_tag}
+        statement.lastupdated = $aws_update_tag,
+        statement.borneo_id = {statement_borneo_id}
         MERGE (policy)-[r:STATEMENT]->(statement)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {aws_update_tag}
+        SET r.lastupdated = $aws_update_tag
         """
     neo4j_session.run(
         ingest_policy_statement,
@@ -698,7 +727,7 @@ def sync_group_memberships(
     current_aws_account_id: str, aws_update_tag: int, common_job_parameters: Dict,
 ) -> None:
     logger.info("Syncing IAM group membership for account '%s'.", current_aws_account_id)
-    query = "MATCH (group:AWSGroup)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ACCOUNT_ID}}) " \
+    query = "MATCH (group:AWSGroup)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ACCOUNT_ID}) " \
             "return group.name as name, group.arn as arn;"
     groups = neo4j_session.run(query, AWS_ACCOUNT_ID=current_aws_account_id)
     groups_membership = {group["arn"]: get_group_membership_data(boto3_session, group["name"]) for group in groups}
@@ -716,13 +745,12 @@ def sync_user_access_keys(
     current_aws_account_id: str, aws_update_tag: int, common_job_parameters: Dict,
 ) -> None:
     logger.info("Syncing IAM user access keys for account '%s'.", current_aws_account_id)
-    query = "MATCH (user:AWSUser)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ACCOUNT_ID}}) return user.name as name"
-    result = neo4j_session.run(query, AWS_ACCOUNT_ID=current_aws_account_id)
-    usernames = [r['name'] for r in result]
-    for name in usernames:
-        access_keys = get_account_access_key_data(boto3_session, name)
+    query = "MATCH (user:AWSUser)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ACCOUNT_ID}) " \
+            "RETURN user.name as name, user.arn as arn"
+    for user in neo4j_session.run(query, AWS_ACCOUNT_ID=current_aws_account_id):
+        access_keys = get_account_access_key_data(boto3_session, user["name"])
         if access_keys:
-            account_access_keys = {name: access_keys}
+            account_access_keys = {user["arn"]: access_keys}
             load_user_access_keys(neo4j_session, account_access_keys, aws_update_tag)
     run_cleanup_job(
         'aws_import_account_access_key_cleanup.json',
@@ -754,3 +782,19 @@ def sync(
         update_tag=update_tag,
         stat_handler=stat_handler,
     )
+
+
+@timeit
+def get_account_from_arn(arn: str) -> str:
+    # ARN documentation
+    # https://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html
+
+    if not arn.startswith("arn:"):
+        # must be a service principal arn, such as ec2.amazonaws.com
+        return ""
+
+    parts = arn.split(":")
+    if len(parts) < 4:
+        return ""
+    else:
+        return parts[4]

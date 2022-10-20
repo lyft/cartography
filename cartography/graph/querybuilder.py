@@ -8,10 +8,10 @@ def build_node_ingestion_query(node_label: str, node_property_map: Dict[str, str
     given node_label, id_field, and other arbitrary fields as provided by field_list. The
     resulting query looks like
 
-    UNWIND {DictList} AS item
+    UNWIND $DictList AS item
         MERGE (i:`node_label`{id:item.`node_property_map['id']`})
         ON CREATE SET i.firstseen = timestamp()
-        SET i.lastupdated = {UpdateTag},
+        SET i.lastupdated = $UpdateTag,
         ... <expand the given node property map to set the other node fields> ...
 
     Note that `node_property_map` **must** have an `id` key defined.
@@ -19,17 +19,17 @@ def build_node_ingestion_query(node_label: str, node_property_map: Dict[str, str
     :param node_label: The label of the nodes to write, e.g. EC2Instance
     :param node_property_map: A mapping of node property names to dict key names.
     :return: A Neo4j query string using the UNWIND + MERGE pattern to write a list of nodes
-    in batch. This exposes 2 parameters: `{DictList}` accepts a list of dictionaries to
-    write as nodes to the graph, and `{UpdateTag}` is the standard cartography int update tag.
+    in batch. This exposes 2 parameters: `$DictList` accepts a list of dictionaries to
+    write as nodes to the graph, and `$UpdateTag` is the standard cartography int update tag.
     """
     if 'id' not in node_property_map or not node_property_map['id']:
         raise ValueError('node_property_map must have key `id` set.')
 
     ingest_preamble_template = Template("""
-    UNWIND {DictList} AS item
+    UNWIND $DictList AS item
         MERGE (i:$NodeLabel{id:item.$DictIdField})
         ON CREATE SET i.firstseen = timestamp()
-        SET i.lastupdated = {UpdateTag}""")
+        SET i.lastupdated = $UpdateTag""")
     ingest_fields_template = Template('        i.$NodeProperty = item.$DictProperty')
 
     ingest_preamble = ingest_preamble_template.safe_substitute(
@@ -58,12 +58,12 @@ def build_relationship_ingestion_query(
     """
     Generates Neo4j query string that looks like
 
-    UNWIND {RelMappingList} AS item
+    UNWIND $RelMappingList AS item
         MATCH (a:`node_label_a`{`search_property_a`:item.`dict_key_a`})
         MATCH (b:`node_label_b`{`search_property_b`:item.`dict_key_b})
         MERGE (a)-[r:`rel_label`]->(b)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {UpdateTag},
+        SET r.lastupdated = $UpdateTag,
             ... <optionally expands the relationship property map too> ...
 
     To summarize, for each dict in RelMappingList, we create the paths
@@ -81,20 +81,20 @@ def build_relationship_ingestion_query(
     :param dict_key_b: The dict key on what value of `search_property_b` to search for.
     :param rel_label: The $RELATIONSHIP_NAME from $NodeA to $NodeB.
     :param rel_property_map: Optional mapping of relationship property names to set and their
-    corresponding keys on the input data dict. Note: relationships in Neo4j 3.5 cannot be indexed
+    corresponding keys on the input data dict. Note: relationships in cartography are not indexed
     so performing searches on them is slow. Reconsider your schema design if you expect to need
     to run queries using relationship fields as search keys.
     :return: Neo4j query string to draw relationships between $NodeA and $NodeB. This exposes 2
-    parameters: `{RelMappingList}` accepts a list of dictionaries to write as relationships to the
-    graph, and `{UpdateTag}` is the standard cartography int update tag.
+    parameters: `$RelMappingList` accepts a list of dictionaries to write as relationships to the
+    graph, and `$UpdateTag` is the standard cartography int update tag.
     """
     ingest_preamble_template = Template("""
-    UNWIND {RelMappingList} AS item
+    UNWIND $RelMappingList AS item
         MATCH (a:$NodeLabelA{$SearchPropertyA:item.$DictKeyA})
         MATCH (b:$NodeLabelB{$SearchPropertyB:item.$DictKeyB})
         MERGE (a)-[r:$LabelR]->(b)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {UpdateTag}""")
+        SET r.lastupdated = $UpdateTag""")
     ingest_fields_template = Template('        r.$RelProperty = item.$DictProperty')
 
     ingest_preamble = ingest_preamble_template.safe_substitute(

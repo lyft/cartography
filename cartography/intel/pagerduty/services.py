@@ -57,7 +57,7 @@ def load_service_data(
     Transform and load service information
     """
     ingestion_cypher_query = """
-    UNWIND {Services} AS service
+    UNWIND $Services AS service
         MERGE (s:PagerDutyService{id: service.id})
         ON CREATE SET s.html_url = service.html_url,
             s.firstseen = timestamp()
@@ -81,7 +81,7 @@ def load_service_data(
             s.support_hours_start_time = s.support_hours.start_time,
             s.support_hours_end_time = s.support_hours.end_time,
             s.support_hours_days_of_week = s.support_hours.days_of_week,
-            s.lastupdated = {update_tag}
+            s.lastupdated = $update_tag
     """  # noqa: E501
     logger.info(f"Loading {len(data)} pagerduty services.")
 
@@ -110,7 +110,7 @@ def _attach_teams(
     Add relationship between teams and services.
     """
     ingestion_cypher_query = """
-    UNWIND {Relations} AS relation
+    UNWIND $Relations AS relation
         MATCH (t:PagerDutyTeam{id: relation.team}), (s:PagerDutyService{id: relation.service})
         MERGE (t)-[r:ASSOCIATED_WITH]->(s)
         ON CREATE SET r.firstseen = timestamp()
@@ -129,7 +129,7 @@ def load_integration_data(
     Transform and load integration information
     """
     ingestion_cypher_query = """
-    UNWIND {Integrations} AS integration
+    UNWIND $Integrations AS integration
         MERGE (i:PagerDutyIntegration{id: integration.id})
         ON CREATE SET i.html_url = integration.html_url,
             i.firstseen = timestamp()
@@ -137,17 +137,17 @@ def load_integration_data(
             i.summary = integration.summary,
             i.name = integration.name,
             i.created_at = integration.created_at,
-            i.lastupdated = {update_tag}
+            i.lastupdated = $update_tag
         WITH i, integration
         MATCH (v:PagerDutyVendor{id: integration.vendor.id})
         MERGE (i)-[vr:HAS_VENDOR]->(v)
         ON CREATE SET vr.firstseen = timestamp()
-        SET vr.lastupdated = {update_tag}
+        SET vr.lastupdated = $update_tag
         WITH i, integration
         MATCH (s:PagerDutyService{id: integration.service.id})
         MERGE (s)-[sr:HAS_INTEGRATION]->(i)
         ON CREATE SET sr.firstseen = timestamp()
-        SET sr.lastupdated = {update_tag}
+        SET sr.lastupdated = $update_tag
     """
     logger.info(f"Loading {len(data)} pagerduty integrations.")
 

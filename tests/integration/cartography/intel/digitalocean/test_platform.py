@@ -14,7 +14,7 @@ def test_transform_and_load_account(neo4j_session):
     cartography.intel.digitalocean.platform.load_account(neo4j_session, account, TEST_UPDATE_TAG)
 
     query = """
-        MATCH(a:DOAccount{id:{AccountId}})
+        MATCH(a:DOAccount{id:$AccountId})
         RETURN a.id, a.uuid, a.droplet_limit, a.floating_ip_limit, a.status, a.lastupdated
         """
     nodes = neo4j_session.run(

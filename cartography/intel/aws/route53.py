@@ -23,7 +23,7 @@ def link_aws_resources(neo4j_session: neo4j.Session, update_tag: int) -> None:
     WHERE NOT n = v
     MERGE (v)-[p:DNS_POINTS_TO]->(n)
     ON CREATE SET p.firstseen = timestamp()
-    SET p.lastupdated = {update_tag}
+    SET p.lastupdated = $update_tag
     """
     neo4j_session.run(link_records, update_tag=update_tag)
 
@@ -32,7 +32,7 @@ def link_aws_resources(neo4j_session: neo4j.Session, update_tag: int) -> None:
     MATCH (n:AWSDNSRecord) WITH n MATCH (l:LoadBalancer{dnsname: n.value})
     MERGE (n)-[p:DNS_POINTS_TO]->(l)
     ON CREATE SET p.firstseen = timestamp()
-    SET p.lastupdated = {update_tag}
+    SET p.lastupdated = $update_tag
     """
     neo4j_session.run(link_elb, update_tag=update_tag)
 
@@ -41,7 +41,7 @@ def link_aws_resources(neo4j_session: neo4j.Session, update_tag: int) -> None:
     MATCH (n:AWSDNSRecord) WITH n MATCH (l:LoadBalancerV2{dnsname: n.value})
     MERGE (n)-[p:DNS_POINTS_TO]->(l)
     ON CREATE SET p.firstseen = timestamp()
-    SET p.lastupdated = {update_tag}
+    SET p.lastupdated = $update_tag
     """
     neo4j_session.run(link_elbv2, update_tag=update_tag)
 
@@ -50,7 +50,7 @@ def link_aws_resources(neo4j_session: neo4j.Session, update_tag: int) -> None:
     MATCH (n:AWSDNSRecord) WITH n MATCH (e:EC2Instance{publicdnsname: n.value})
     MERGE (n)-[p:DNS_POINTS_TO]->(e)
     ON CREATE SET p.firstseen = timestamp()
-    SET p.lastupdated = {update_tag}
+    SET p.lastupdated = $update_tag
     """
     neo4j_session.run(link_ec2, update_tag=update_tag)
 
@@ -58,7 +58,7 @@ def link_aws_resources(neo4j_session: neo4j.Session, update_tag: int) -> None:
 @timeit
 def load_a_records(neo4j_session: neo4j.Session, records: List[Dict], update_tag: int) -> None:
     ingest_records = """
-    UNWIND {records} as record
+    UNWIND $records as record
         MERGE (a:DNSRecord:AWSDNSRecord{id: record.id})
         ON CREATE SET
             a.firstseen = timestamp(),
@@ -66,13 +66,13 @@ def load_a_records(neo4j_session: neo4j.Session, records: List[Dict], update_tag
             a.type = record.type,
             a.borneo_id = {record_borneo_id}
         SET
-            a.lastupdated = {update_tag},
+            a.lastupdated = $update_tag,
             a.value = record.value
         WITH a,record
         MATCH (zone:AWSDNSZone{zoneid: record.zoneid})
         MERGE (a)-[r:MEMBER_OF_DNS_ZONE]->(zone)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {update_tag}
+        SET r.lastupdated = $update_tag
     """
     neo4j_session.run(
         ingest_records,
@@ -86,7 +86,7 @@ def load_a_records(neo4j_session: neo4j.Session, records: List[Dict], update_tag
 def load_alias_records(neo4j_session: neo4j.Session, records: List[Dict], update_tag: int) -> None:
     # create the DNSRecord nodes and link them to matching DNSZone and S3Bucket nodes
     ingest_records = """
-    UNWIND {records} as record
+    UNWIND $records as record
         MERGE (a:DNSRecord:AWSDNSRecord{id: record.id})
         ON CREATE SET
             a.firstseen = timestamp(),
@@ -94,13 +94,13 @@ def load_alias_records(neo4j_session: neo4j.Session, records: List[Dict], update
             a.type = record.type,
             a.borneo_id = {record_borneo_id}
         SET
-            a.lastupdated = {update_tag},
+            a.lastupdated = $update_tag,
             a.value = record.value
         WITH a,record
         MATCH (zone:AWSDNSZone{zoneid: record.zoneid})
         MERGE (a)-[r:MEMBER_OF_DNS_ZONE]->(zone)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {update_tag}
+        SET r.lastupdated = $update_tag
     """
     neo4j_session.run(
         ingest_records,
@@ -113,7 +113,7 @@ def load_alias_records(neo4j_session: neo4j.Session, records: List[Dict], update
 @timeit
 def load_cname_records(neo4j_session: neo4j.Session, records: List[Dict], update_tag: int) -> None:
     ingest_records = """
-    UNWIND {records} as record
+    UNWIND $records as record
         MERGE (a:DNSRecord:AWSDNSRecord{id: record.id})
         ON CREATE SET
             a.firstseen = timestamp(),
@@ -121,13 +121,13 @@ def load_cname_records(neo4j_session: neo4j.Session, records: List[Dict], update
             a.type = record.type,
             a.borneo_id = {record_borneo_id}
         SET
-            a.lastupdated = {update_tag},
+            a.lastupdated = $update_tag,
             a.value = record.value
         WITH a,record
         MATCH (zone:AWSDNSZone{zoneid: record.zoneid})
         MERGE (a)-[r:MEMBER_OF_DNS_ZONE]->(zone)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {update_tag}
+        SET r.lastupdated = $update_tag
     """
     neo4j_session.run(
         ingest_records,
@@ -140,20 +140,20 @@ def load_cname_records(neo4j_session: neo4j.Session, records: List[Dict], update
 @timeit
 def load_zone(neo4j_session: neo4j.Session, zone: Dict, current_aws_id: str, update_tag: int) -> None:
     ingest_z = """
-    MERGE (zone:DNSZone:AWSDNSZone{zoneid:{ZoneId}})
+    MERGE (zone:DNSZone:AWSDNSZone{zoneid:$ZoneId})
     ON CREATE SET
         zone.firstseen = timestamp(),
-        zone.name = {ZoneName},
+        zone.name = $ZoneName,
         zone.borneo_id = {zone_borneo_id}
     SET
-        zone.lastupdated = {update_tag},
-        zone.comment = {Comment},
-        zone.privatezone = {PrivateZone}
+        zone.lastupdated = $update_tag,
+        zone.comment = $Comment,
+        zone.privatezone = $PrivateZone
     WITH zone
-    MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (aa)-[r:RESOURCE]->(zone)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {update_tag}
+    SET r.lastupdated = $update_tag
     """
     neo4j_session.run(
         ingest_z,
@@ -170,7 +170,7 @@ def load_zone(neo4j_session: neo4j.Session, zone: Dict, current_aws_id: str, upd
 @timeit
 def load_ns_records(neo4j_session: neo4j.Session, records: List[Dict], zone_name: str, update_tag: int) -> None:
     ingest_records = """
-    UNWIND {records} as record
+    UNWIND $records as record
         MERGE (a:DNSRecord:AWSDNSRecord{id: record.id})
         ON CREATE SET
             a.firstseen = timestamp(),
@@ -178,22 +178,22 @@ def load_ns_records(neo4j_session: neo4j.Session, records: List[Dict], zone_name
             a.type = record.type,
             a.borneo_id = record.borneo_id
         SET
-            a.lastupdated = {update_tag},
+            a.lastupdated = $update_tag,
             a.value = record.name
         WITH a,record
         MATCH (zone:AWSDNSZone{zoneid: record.zoneid})
         MERGE (a)-[r:MEMBER_OF_DNS_ZONE]->(zone)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {update_tag}
+        SET r.lastupdated = $update_tag
         WITH a,record
         UNWIND record.servers as server
             MERGE (ns:NameServer{id:server})
             ON CREATE SET ns.firstseen = timestamp()
             SET
-                ns.lastupdated = {update_tag},
+                ns.lastupdated = $update_tag,
                 ns.name = server
             MERGE (a)-[pt:DNS_POINTS_TO]->(ns)
-            SET pt.lastupdated = {update_tag}
+            SET pt.lastupdated = $update_tag
     """
     neo4j_session.run(
         ingest_records,
@@ -204,11 +204,11 @@ def load_ns_records(neo4j_session: neo4j.Session, records: List[Dict], zone_name
 
     # Map the official name servers for a domain.
     map_ns_records = """
-    UNWIND {servers} as server
+    UNWIND $servers as server
         MATCH (ns:NameServer{id:server})
-        MATCH (zone:AWSDNSZone{zoneid:{zoneid}})
+        MATCH (zone:AWSDNSZone{zoneid:$zoneid})
         MERGE (ns)<-[r:NAMESERVER]-(zone)
-        SET r.lastupdated = {update_tag}
+        SET r.lastupdated = $update_tag
     """
     for record in records:
         if zone_name == record["name"]:
@@ -233,7 +233,7 @@ def link_sub_zones(neo4j_session: neo4j.Session, update_tag: int) -> None:
     WHERE record.name=z2.name AND NOT z=z2
     MERGE (z2)<-[r:SUBZONE]-(z)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {update_tag}
+    SET r.lastupdated = $update_tag
     """
     neo4j_session.run(
         query,

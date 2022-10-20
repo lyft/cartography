@@ -10,6 +10,8 @@ Representation of an AWS Account.
 |-------|-------------|
 |firstseen| Timestamp of when a sync job discovered this node|
 |name| The name of the account|
+|inscope| Indicates that the account is part of the sync scope (true or false).
+|foreign| Indicates if the account is not part of the sync scope (true or false). One such example is an account that is trusted as part of cross-account AWSRole trust not in scope for sync.
 |lastupdated| Timestamp of the last time the node was updated|
 |**id**| The AWS Account ID number|
 
@@ -19,6 +21,8 @@ Representation of an AWS Account.
         ```
         (AWSAccount)-[RESOURCE]->(AWSDNSZone,
                               AWSGroup,
+                              AWSInspectorFinding,
+                              AWSInspectorPackage,
                               AWSLambda,
                               AWSPrincipal,
                               AWSUser,
@@ -132,6 +136,102 @@ Representation of AWS [IAM Groups](https://docs.aws.amazon.com/IAM/latest/APIRef
 
         ```
         (AWSAccount)-[RESOURCE]->(AWSGroup)
+        ```
+
+### AWSInspectorFinding
+
+Representation of an AWS [Inspector Finding](https://docs.aws.amazon.com/inspector/v2/APIReference/API_Finding.html)
+
+| Field | Description | Required|
+|-------|-------------|------|---|
+|arn|The AWS ARN|yes
+|id|Reuses the AWS ARN since it's unique|yes
+|region|AWS region the finding is from|yes
+|awsaccount|AWS account the finding is from|yes
+|name|The finding name|
+|instanceid|The instance ID of the EC2 instance with the issue|
+|ecrimageid|The image ID of the ECR image with the issue|
+|ecrrepositoryid|The repository ID of the ECR repository with the issue|
+|severity|The finding severity|
+|firstobservedat|Date the finding was first identified|
+|updatedat|Date the finding was last updated|
+|description|The finding description|
+|type|The finding type|
+|cvssscore|CVSS score of the finding|
+|protocol|Network protocol for network findings|
+|portrange|Port range affected for network findings|
+|portrangebegin|Beginning of the port range affected for network findings|
+|portrangeend|End of the port range affected for network findings|
+|vulnerabilityid|Vulnerability ID associdated with the finding for package findings|
+|referenceurls|Reference URLs for the found vulnerabilities|
+|relatedvulnerabilities|A list of any related vulnerabilities|
+|source|Source for the vulnerability|
+|sourceurl|URL for the vulnerability source|
+|vendorcreatedat|Date the vulnerability notice was created by the vendor|
+|vendorseverity|Vendor chosen issue severity|
+|vendorupdatedat|Date the vendor information was last updated|
+|vulnerablepackageids|IDs for any related packages|
+
+#### Relationships
+
+- AWSInspectorFinding may affect EC2 Instances
+
+    ```
+    (AWSInspectorFinding)-[:AFFECTS]->(EC2Instance)
+    ```
+
+- AWSInspectorFinding may affect ECR Repositories
+
+    ```
+    (AWSInspectorFinding)-[:AFFECTS]->(ECRRepository)
+    ```
+
+- AWSInspectorFinding may affect ECR Images
+
+    ```
+    (AWSInspectorFinding)-[:AFFECTS]->(ECRImage)
+    ```
+
+- AWSInspectorFindings belong to AWSAccounts.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(AWSInspectorFinding)
+        ```
+
+### AWSInspectorPackage
+
+Representation of an AWS [Inspector Finding Package](https://docs.aws.amazon.com/inspector/v2/APIReference/API_Finding.html)
+
+| Field | Description | Required|
+|-------|-------------|------|---|
+|**arn**|The AWS ARN|yes
+|id|Uses the format of `name|arch|version|release|epoch` to uniqulely identify packages|yes
+|region|AWS region the finding is from|yes
+|awsaccount|AWS account the finding is from|yes
+|findingarn|The AWS ARN for a related finding|yes
+|name|The finding name|
+|arch|Architecture for the package|
+|version|Version of the package|
+|release|Release of the package
+|epoch|Package epoch|
+|manager|Related package manager|
+|filepath|Path to the file or package|
+|fixedinversion|Version the related finding was fixed in|
+|sourcelayerhash|Source layer hash for container images|
+
+
+#### Relationships
+
+- AWSInspectorFindings have AWSInspectorPackages.
+
+        ```
+        (AWSInspectorFindings)-[HAS]->(AWSInspectorPackages)
+        ```
+
+- AWSInspectorPackages belong to AWSAccounts.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(AWSInspectorPackages)
         ```
 
 ### AWSLambda
@@ -1996,6 +2096,32 @@ Representation of an AWS S3 [Bucket](https://docs.aws.amazon.com/AmazonS3/latest
         ```
         (S3Bucket)-[TAGGED]->(AWSTag)
         ```
+
+### S3PolicyStatement
+
+Representation of an AWS S3 [Bucket Policy Statements](https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucket-policies.html) for controlling ownership of objects and ACLs of the bucket.
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| policy_id | Optional string "Id" for the bucket's policy |
+| policy_version| Version of the bucket's policy |
+| **id** | The unique identifier for a bucket policy statement. <br>If the statement has an Sid the id will be calculated as _S3Bucket.id_/policy_statement/_index of statement in statement_/_Sid_. <br>If the statement has no Sid the id will be calculated as  _S3Bucket.id_/policy_statement/_index of statement in statement_/  |
+| effect | Specifies "Deny" or "Allow" for the policy statement |
+| action | Specifies permissions that policy statement applies to, as defined [here](https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-with-s3-actions.html) |
+| resource | Specifies the resource the bucket policy statement is based on |
+| condition | Specifies conditions where permissions are granted: [examples](https://docs.aws.amazon.com/AmazonS3/latest/userguide/amazon-s3-policy-keys.html) |
+| sid | Optional string to label the specific bucket policy statement |
+
+#### Relationships
+
+- S3PolicyStatements define the policy for S3 Buckets.
+
+        ```
+        (:S3Bucket)-[:POLICY_STATEMENT]->(:S3PolicyStatement)
+        ```
+
 
 ### KMSKey
 

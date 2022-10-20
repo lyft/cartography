@@ -36,11 +36,11 @@ def load_volumes(
         neo4j_session: neo4j.Session, data: List[Dict], region: str, current_aws_account_id: str, update_tag: int,
 ) -> None:
     ingest_volumes = """
-    UNWIND {volumes_list} as volume
+    UNWIND $volumes_list as volume
         MERGE (vol:EBSVolume{id: volume.VolumeId})
         ON CREATE SET vol.firstseen = timestamp()
         SET vol.arn = volume.VolumeArn,
-            vol.lastupdated = {update_tag},
+            vol.lastupdated = $update_tag,
             vol.availabilityzone = volume.AvailabilityZone,
             vol.createtime = volume.CreateTime,
             vol.encrypted = volume.Encrypted,
@@ -53,12 +53,12 @@ def load_volumes(
             vol.multiattachenabled = volume.MultiAttachEnabled,
             vol.type = volume.VolumeType,
             vol.kmskeyid = volume.KmsKeyId,
-            vol.region={Region}
+            vol.region=$Region
         WITH vol
-        MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+        MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
         MERGE (aa)-[r:RESOURCE]->(vol)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {update_tag}
+        SET r.lastupdated = $update_tag
     """
 
     neo4j_session.run(
@@ -76,12 +76,12 @@ def load_volume_relationships(
         aws_update_tag: int,
 ) -> None:
     add_relationship_query = """
-        MATCH (volume:EBSVolume{arn: {VolumeArn}})
+        MATCH (volume:EBSVolume{arn: $VolumeArn})
         WITH volume
-        MATCH (instance:EC2Instance{instanceid: {InstanceId}})
+        MATCH (instance:EC2Instance{instanceid: $InstanceId})
         MERGE (volume)-[r:ATTACHED_TO_EC2_INSTANCE]->(instance)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {aws_update_tag}
+        SET r.lastupdated = $aws_update_tag
     """
     for volume in volumes:
         for attachment in volume.get('Attachments', []):
