@@ -1,4 +1,5 @@
 import logging
+import resource
 from typing import Dict
 from typing import List
 
@@ -111,14 +112,18 @@ def sync_dynamodb_tables(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
     aws_update_tag: int, common_job_parameters: Dict,
 ) -> None:
+    resourceFound = False
     for region in regions:
         logger.info("Syncing DynamoDB for region in '%s' in account '%s'.", region, current_aws_account_id)
         data = get_dynamodb_tables(boto3_session, region)
         if common_job_parameters['aws_resource_name'] is not None:
-          logger.info('Filtering to run updation for: %s', common_job_parameters['aws_resource_name'])
-          data = filterfn.filter_resources(data, common_job_parameters['aws_resource_name'], 'dynamodb') #bucket_data is updated in the function itself
+            logger.info('Filtering to run updation for: %s', common_job_parameters['aws_resource_name'])
+            # bucket_data is updated in the function itself
+            data = filterfn.filter_resources(data, common_job_parameters['aws_resource_name'], 'dynamodb')
+            resourceFound = True
         load_dynamodb_tables(neo4j_session, data, region, current_aws_account_id, aws_update_tag)
-    cleanup_dynamodb_tables(neo4j_session, common_job_parameters)
+    if(not resourceFound):
+        cleanup_dynamodb_tables(neo4j_session, common_job_parameters)
 
 
 @timeit
