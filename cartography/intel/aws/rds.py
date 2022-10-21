@@ -533,16 +533,19 @@ def sync_rds_clusters(
     """
     Grab RDS instance data from AWS, ingest to neo4j, and run the cleanup job.
     """
+    resourceFound = False
     for region in regions:
         logger.info("Syncing RDS for region '%s' in account '%s'.", region, current_aws_account_id)
         data = get_rds_cluster_data(boto3_session, region)
         if common_job_parameters['aws_resource_name'] is not None:
-          logger.info('Filtering to run updation for: %s', common_job_parameters['aws_resource_name'])
-          filtered = filterfn.filter_resources(data, common_job_parameters["aws_resource_name"], 'rds_cluster')
-          if (len(filtered) != 0 ):
-            data = filtered 
+            logger.info('Filtering to run updation for: %s', common_job_parameters['aws_resource_name'])
+            filtered = filterfn.filter_resources(data, common_job_parameters["aws_resource_name"], 'rds_cluster')
+            if (len(filtered) != 0):
+                data = filtered
+        resourceFound = True
         load_rds_clusters(neo4j_session, data, region, current_aws_account_id, update_tag)  # type: ignore
-    cleanup_rds_clusters(neo4j_session, common_job_parameters)
+    if (not resourceFound):
+        cleanup_rds_clusters(neo4j_session, common_job_parameters)
 
 
 @timeit
@@ -553,16 +556,19 @@ def sync_rds_instances(
     """
     Grab RDS instance data from AWS, ingest to neo4j, and run the cleanup job.
     """
+    resourceFound = False
     for region in regions:
         logger.info("Syncing RDS for region '%s' in account '%s'.", region, current_aws_account_id)
         data = get_rds_instance_data(boto3_session, region)
         if common_job_parameters['aws_resource_name'] is not None:
-          logger.info('Filtering to run updation for: %s', common_job_parameters['aws_resource_name'])
-          filtered = filterfn.filter_resources(data, common_job_parameters["aws_resource_name"], 'rds_instance')
-          if (len(filtered) != 0 ):
-            data = filtered 
+            logger.info('Filtering to run updation for: %s', common_job_parameters['aws_resource_name'])
+            filtered = filterfn.filter_resources(data, common_job_parameters["aws_resource_name"], 'rds_instance')
+            if (len(filtered) != 0):
+                data = filtered
+            resourceFound = True
         load_rds_instances(neo4j_session, data, region, current_aws_account_id, update_tag)  # type: ignore
-    cleanup_rds_instances_and_db_subnet_groups(neo4j_session, common_job_parameters)
+    if (not resourceFound):
+        cleanup_rds_instances_and_db_subnet_groups(neo4j_session, common_job_parameters)
 
 
 @timeit
@@ -590,7 +596,7 @@ def sync(
         neo4j_session, boto3_session, regions, current_aws_account_id, update_tag,
         common_job_parameters,
     )
-    
+
     sync_rds_instances(
         neo4j_session, boto3_session, regions, current_aws_account_id, update_tag,
         common_job_parameters,

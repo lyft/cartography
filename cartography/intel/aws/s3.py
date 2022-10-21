@@ -747,17 +747,22 @@ def sync(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
     update_tag: int, common_job_parameters: Dict,
 ) -> None:
+    resourceFound = False
     logger.info("Syncing S3 for account '%s'.", current_aws_account_id)
     bucket_data = get_s3_bucket_list(boto3_session)
     if common_job_parameters['aws_resource_name'] is not None:
-      logger.info('Filtering to run updation for: %s', common_job_parameters['aws_resource_name'])
-      filtered = filterfn.filter_resources(bucket_data, common_job_parameters['aws_resource_name'], 's3') #bucket_data is updated in the function itself
+        logger.info('Filtering to run updation for: %s', common_job_parameters['aws_resource_name'])
+        # bucket_data is updated in the function itself
+        filtered = filterfn.filter_resources(bucket_data, common_job_parameters['aws_resource_name'], 's3')
+        resourceFound = True
     load_s3_buckets(neo4j_session, bucket_data, current_aws_account_id, update_tag)
-    cleanup_s3_buckets(neo4j_session, common_job_parameters)
+    if (not resourceFound):
+        cleanup_s3_buckets(neo4j_session, common_job_parameters)
 
     acl_and_policy_data_iter = get_s3_bucket_details(boto3_session, bucket_data)
     load_s3_details(neo4j_session, acl_and_policy_data_iter, current_aws_account_id, update_tag)
-    cleanup_s3_bucket_acl_and_policy(neo4j_session, common_job_parameters)
+    if (not resourceFound):
+        cleanup_s3_bucket_acl_and_policy(neo4j_session, common_job_parameters)
 
     merge_module_sync_metadata(
         neo4j_session,
