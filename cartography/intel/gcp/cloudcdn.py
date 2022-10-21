@@ -322,11 +322,7 @@ def get_global_url_maps(compute: Resource, project_id: str) -> List[Dict]:
         while req is not None:
             res = req.execute()
             if res.get('items'):
-                for url_map in res['items']:
-                    url_map['region'] = 'global'
-                    url_map['type'] = 'global'
-                    url_map['id'] = f"projects/{project_id}/global/urlmaps/{url_map['name']}"
-                    global_url_maps.append(url_map)
+                global_url_maps.extend(res.get('items',[]))
             req = compute.urlMaps().list_next(previous_request=req, previous_response=res)
 
         return global_url_maps
@@ -342,6 +338,17 @@ def get_global_url_maps(compute: Resource, project_id: str) -> List[Dict]:
         else:
             raise
 
+@timeit
+def transform_global_url_maps(url_maps: List[Dict], project_id: str) -> List[Dict]:
+    global_url_maps = []
+    for url_map in url_maps:
+        url_map['region'] = 'global'
+        url_map['type'] = 'global'
+        url_map['consolelink'] = gcp_console_link.get_console_link(project_id=project_id, resource_name='cdn_console')
+        url_map['id'] = f"projects/{project_id}/global/urlmaps/{url_map['name']}"
+        global_url_maps.append(url_map)
+
+    return global_url_maps
 
 @timeit
 def load_url_maps(session: neo4j.Session, url_maps: List[Dict], project_id: str, update_tag: int) -> None:
@@ -363,6 +370,7 @@ def load_url_maps_tx(
         map.lastupdated = {gcp_update_tag},
         map.region = mp.region,
         map.type = mp.type,
+        map.consolelink = mp.consolelink,
         map.uniqueId = mp.id,
         map.name = mp.name,
         map.defaultService = mp.defaultService
@@ -393,7 +401,8 @@ def sync_global_url_maps(
     gcp_update_tag: int, common_job_parameters: Dict,
 ) -> None:
 
-    global_maps = get_global_url_maps(compute, project_id)
+    maps = get_global_url_maps(compute, project_id)
+    global_maps = transform_global_url_maps(maps, project_id)
 
     if common_job_parameters.get('pagination', {}).get('compute', None):
         pageNo = common_job_parameters.get("pagination", {}).get("compute", None)["pageNo"]
@@ -423,21 +432,15 @@ def sync_global_url_maps(
 
 
 @timeit
-def get_regional_url_maps(compute: Resource, project_id: str, regions: list) -> List[Dict]:
+def get_regional_url_maps(compute: Resource, project_id: str, region: Dict) -> List[Dict]:
     regional_url_maps = []
     try:
-        if regions:
-            for region in regions:
-                req = compute.regionUrlMaps().list(project=project_id, region=region)
-                while req is not None:
-                    res = req.execute()
-                    if res.get('items'):
-                        for url_map in res('items'):
-                            url_map['region'] = region
-                            url_map['type'] = 'regional'
-                            url_map['id'] = f"projects/{project_id}/regions/{region}/urlmaps/{url_map['name']}"
-                            regional_url_maps.append(url_map)
-                    req = compute.regionUrlMaps().list_next(previous_request=req, previous_response=res)
+        req = compute.regionUrlMaps().list(project=project_id, region=region['name'])
+        while req is not None:
+            res = req.execute()
+            if res.get('items'):
+                regional_url_maps.extend(res.get('items', []))
+            req = compute.regionUrlMaps().list_next(previous_request=req, previous_response=res)
 
         return regional_url_maps
     except HttpError as e:
@@ -452,6 +455,18 @@ def get_regional_url_maps(compute: Resource, project_id: str, regions: list) -> 
         else:
             raise
 
+@timeit
+def transform_regional_url_maps(url_maps: List[Dict], region: Dict, project_id: str) -> List[Dict]:
+    regional_url_maps = []
+    for url_map in url_maps:
+        url_map['region'] = region
+        url_map['type'] = 'regional'
+        url_map['consolelink'] = gcp_console_link.get_console_link(project_id=project_id, resource_name='cdn_console')
+        url_map['id'] = f"projects/{project_id}/regions/{region['name']}/urlmaps/{url_map['name']}"
+        regional_url_maps.append(url_map)
+
+    return regional_url_maps
+
 
 @timeit
 def load_url_maps(session: neo4j.Session, regional_maps: List[Dict], project_id: str, update_tag: int) -> None:
@@ -463,8 +478,12 @@ def sync_regional_url_maps(
     neo4j_session: neo4j.Session, compute: Resource, project_id: str, regions: list,
     gcp_update_tag: int, common_job_parameters: Dict,
 ) -> None:
-
-    regional_maps = get_regional_url_maps(compute, project_id, regions)
+    
+    regional_maps = []
+    for region in regions:
+        maps = get_regional_url_maps(compute, project_id, region)
+        regional_maps_list = transform_regional_url_maps(maps, region, project_id)
+        regional_maps.extend(regional_maps_list)
 
     if common_job_parameters.get('pagination', {}).get('compute', None):
         pageNo = common_job_parameters.get("pagination", {}).get("compute", None)["pageNo"]

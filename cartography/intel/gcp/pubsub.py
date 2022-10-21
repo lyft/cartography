@@ -7,13 +7,14 @@ from typing import List
 import neo4j
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
+from cloudconsolelink.clouds.gcp import GCPLinker
 
 from . import label
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
-
+gcp_console_link = GCPLinker()
 
 @timeit
 def get_pubsub_subscriptions(pubsub: Resource, project_id: str, regions: list, common_job_parameters) -> List[Dict]:
@@ -23,12 +24,7 @@ def get_pubsub_subscriptions(pubsub: Resource, project_id: str, regions: list, c
         while req is not None:
             res = req.execute()
             if res.get('subscriptions'):
-                for subscription in res['subscriptions']:
-                    subscription['project_id'] = project_id
-                    subscription['region'] = 'global'
-                    subscription['id'] = subscription['name']
-                    subscription['subscription_name'] = subscription.get('name').split('/')[-1]
-                    subscriptions.append(subscription)
+                subscriptions.extend(res.get('subscriptions', []))
             req = pubsub.projects().subscriptions().list_next(previous_request=req, previous_response=res)
 
         return subscriptions
@@ -44,6 +40,18 @@ def get_pubsub_subscriptions(pubsub: Resource, project_id: str, regions: list, c
         else:
             raise
 
+@timeit
+def transform_subscriptions(subscriptions: List[Dict], project_id: str) -> List[Dict]:
+    subscriptions = []
+    for subscription in subscriptions:
+        subscription['project_id'] = project_id
+        subscription['region'] = 'global'
+        subscription['subscription_name'] = subscription['id'].split('/')[-1]
+        subscription['consolelink'] = gcp_console_link.get_console_link(project_id=project_id, \
+                                subscription_name=subscription['subscription_name'], resource_name='cloud_pubsub_subscription')
+        subscriptions.append(subscription)
+
+    return subscriptions
 
 @timeit
 def load_pubsub_subscriptions(session: neo4j.Session, data_list: List[Dict], project_id: str, update_tag: int) -> None:
@@ -66,6 +74,7 @@ def load_pubsub_subscriptions_tx(
         subscription.region = record.region,
         subscription.name = record.subscription_name,
         subscription.topic = record.topic,
+        subscription.consolelink = record.consolelink,
         subscription.ack_deadline_seconds = record.ackDeadlineSeconds,
         subscription.retain_acked_messages = record.retainAckedMessages,
         subscription.enable_message_ordering = record.enableMessageOrdering,
@@ -109,12 +118,7 @@ def get_pubsub_topics(pubsub: Resource, project_id: str, regions: list, common_j
         while req is not None:
             res = req.execute()
             if res.get('topics'):
-                for topic in res['topics']:
-                    topic['project_id'] = project_id
-                    topic['region'] = 'global'
-                    topic['id'] = topic['name']
-                    topic['topic_name'] = topic.get('name').split('/')[-1]
-                    topics.append(topic)
+                topics.extend(res.get('topics', []))
             req = pubsub.projects().topics().list_next(previous_request=req, previous_response=res)
 
         if common_job_parameters.get('pagination', {}).get('pubsub', None):
@@ -152,6 +156,17 @@ def get_pubsub_topics(pubsub: Resource, project_id: str, regions: list, common_j
         else:
             raise
 
+@timeit
+def transform_topics(topics: List[Dict], project_id: str) -> List[Dict]:
+    topics = []
+    for topic in topics:
+        topic['project_id'] = project_id
+        topic['region'] = 'global'
+        topic['topic_name'] = topic['id'].split('/')[-1]
+        topic['consolelink'] = gcp_console_link.get_console_link(project_id=project_id, topic_id=topic['topic_name'], resource_name='cloud_pubsub_topic')
+        topics.append(topic)
+
+    return topics
 
 @timeit
 def load_pubsub_topics(session: neo4j.Session, data_list: List[Dict], project_id: str, update_tag: int) -> None:
@@ -173,6 +188,7 @@ def load_pubsub_topics_tx(
         topic.lastupdated = {gcp_update_tag},
         topic.region = record.region,
         topic.name = record.topic_name,
+        topic.consolelink = record.consolelink,
         topic.kms_key_name = record.kmsKeyName,
         topic.satisfies_pzs = record.satisfiesPzs,
         topic.message_retention_duration = record.messageRetentionDuration
@@ -205,7 +221,8 @@ def sync(
     tic = time.perf_counter()
     logger.info("Syncing Pubsub for project '%s', at %s.", project_id, tic)
 
-    topics = get_pubsub_topics(pubsub, project_id, regions, common_job_parameters)
+    tops = get_pubsub_topics(pubsub, project_id, regions, common_job_parameters)
+    topics = transform_topics(tops, project_id)
     load_pubsub_topics(neo4j_session, topics, project_id, gcp_update_tag)
 
     label.sync_labels(
@@ -215,7 +232,8 @@ def sync(
 
     if common_job_parameters.get('pagination', {}).get('pubsub', None):
         if not common_job_parameters.get('pagination', {}).get('pubsub', {}).get('hasNextPage', False):
-            subscriptions = get_pubsub_subscriptions(pubsub, project_id, regions, common_job_parameters)
+            subs = get_pubsub_subscriptions(pubsub, project_id, regions, common_job_parameters)
+            subscriptions  = transform_subscriptions(subs, project_id)
             load_pubsub_subscriptions(neo4j_session, subscriptions, project_id, gcp_update_tag)
 
             cleanup_pubsub_subscriptions(neo4j_session, common_job_parameters)
@@ -225,7 +243,8 @@ def sync(
             )
 
     else:
-        subscriptions = get_pubsub_subscriptions(pubsub, project_id, regions, common_job_parameters)
+        subs = get_pubsub_subscriptions(pubsub, project_id, regions, common_job_parameters)
+        subscriptions = transform_subscriptions(subs, project_id)
         load_pubsub_subscriptions(neo4j_session, subscriptions, project_id, gcp_update_tag)
 
         cleanup_pubsub_subscriptions(neo4j_session, common_job_parameters)

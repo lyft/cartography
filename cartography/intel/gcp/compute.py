@@ -40,6 +40,8 @@ def get_compute_disks(compute: Resource, project_id: str, zones: list, common_jo
                 res = req.execute()
                 if res.get('items'):
                     for disk in res['items']:
+                        disk['consolelink'] = gcp_console_link.get_console_link(project_id=project_id,\
+                                     zone=zone['name'], disk_name=disk['name'], resource_name="compute_instance_disk")
                         disk['project_id'] = project_id
                         disk['id'] = f"projects/{project_id}/disks/{disk['name']}"
                         x = zone['name'].split('-')
@@ -118,6 +120,7 @@ def load_compute_disks_tx(
         disk.physical_block_size_bytes = record.physicalBlockSizeBytes,
         disk.source_disk = record.sourceDisk,
         disk.source_disk_id = record.sourceDiskId,
+        disk.consolelink = record.consolelink,
         disk.source_image_id = record.sourceImageId
     WITH disk
     MATCH (owner:GCPProject{id:{ProjectId}})
@@ -200,6 +203,7 @@ def get_https_proxies(compute: Resource, project_id: str, common_job_parameters)
 def transform_https_proxies(proxies: List, project_id: str) -> List[Resource]:
     list_proxies = []
     for proxy in proxies:
+        proxy['consolelink'] = gcp_console_link.get_console_link(project_id=project_id, resource_name='vpc_console')
         proxy['id'] = f"projects/{project_id}/global/targetHttpsProxies/{proxy['name']}"
         proxy['type'] = 'https'
         list_proxies.append(proxy)
@@ -256,6 +260,7 @@ def get_ssl_proxies(compute: Resource, project_id: str, common_job_parameters) -
 def transform_ssl_proxies(proxies: List, project_id: str) -> List[Resource]:
     list_proxies = []
     for proxy in proxies:
+        proxy['consolelink'] = gcp_console_link.get_console_link(project_id=project_id, resource_name='vpc_console')
         proxy['id'] = f"projects/{project_id}/global/targetSslProxies/{proxy['name']}"
         proxy['type'] = 'ssl'
         list_proxies.append(proxy)
@@ -282,6 +287,7 @@ def load_proxies_tx(
     SET
         proxy.lastupdated = {gcp_update_tag},
         proxy.uniqueId = p.id,
+        proxy.consolelink = p.consolelink,
         proxy.type = p.type,
         proxy.name = p.name,
         proxy.certificateMap = p.certificateMap,
@@ -566,7 +572,11 @@ def transform_gcp_instances(response_objects: List[Dict], compute: Resource) -> 
         for nic in res.get('networkInterfaces', []):
             nic['subnet_partial_uri'] = _parse_compute_full_uri_to_partial_uri(nic['subnetwork'])
             nic['vpc_partial_uri'] = _parse_compute_full_uri_to_partial_uri(nic['network'])
+            nic['consolelink'] = gcp_console_link.get_console_link(project_id=prefix_fields.project_id, \
+                                network_name=nic['network'], resource_name='compute_instance_vpc_network')
             for accessconfig in nic.get('accessConfigs', []):
+                accessconfig['consolelink'] = gcp_console_link.get_console_link(project_id=prefix_fields.project_id, \
+                                network_name=nic['network'], resource_name='compute_instance_vpc_network')
                 if not res.get('natIP', None):
                     res['natIP'] = accessconfig.get('natIP', None)
                 else:
@@ -1271,6 +1281,7 @@ def _attach_gcp_nics(neo4j_session: neo4j.Session, instance: Resource, gcp_updat
     nic.nic_id = {NicId}
     SET nic.private_ip = {NetworkIP},
     nic.name = {NicName},
+    nic.consolelink = {ConsoleLink},
     nic.lastupdated = {gcp_update_tag}
 
     MERGE (i)-[r:NETWORK_INTERFACE]->(nic)
@@ -1295,6 +1306,7 @@ def _attach_gcp_nics(neo4j_session: neo4j.Session, instance: Resource, gcp_updat
             NicId=nic_id,
             NetworkIP=nic.get('networkIP'),
             NicName=nic['name'],
+            ConsoleLink = nic.get('consolelink'),
             gcp_update_tag=gcp_update_tag,
             SubnetPartialUri=nic['subnet_partial_uri'],
         )
@@ -1319,6 +1331,7 @@ def _attach_gcp_nic_access_configs(
     ac.access_config_id = {AccessConfigId}
     SET ac.type={Type},
     ac.name = {Name},
+    ac.consolelink = {Consolelink},
     ac.public_ip = {NatIP},
     ac.set_public_ptr = {SetPublicPtr},
     ac.public_ptr_domain_name = {PublicPtrDomainName},
@@ -1338,6 +1351,7 @@ def _attach_gcp_nic_access_configs(
             AccessConfigId=access_config_id,
             Type=ac['type'],
             Name=ac['name'],
+            ConsoleLink = ac['consolelink'],
             NatIP=ac.get('natIP', None),
             SetPublicPtr=ac.get('setPublicPtr', None),
             PublicPtrDomainName=ac.get('publicPtrDomainName', None),
