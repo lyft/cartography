@@ -47,19 +47,19 @@ def load_event_buses(session: neo4j.Session, event_buses: List[Dict], current_aw
 @timeit
 def _load_event_buses_tx(tx: neo4j.Transaction, event_buses: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
     query: str = """
-    UNWIND {Records} as record
+    UNWIND $Records as record
     MERGE (bus:AWSEventBridgeEventBus{id: record.Arn})
     ON CREATE SET bus.firstseen = timestamp(),
         bus.arn = record.Arn
-    SET bus.lastupdated = {aws_update_tag},
+    SET bus.lastupdated = $aws_update_tag,
         bus.name = record.Name,
         bus.region = record.region,
         bus.policy = record.Policy
     WITH bus
-    MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID}})
     MERGE (owner)-[r:RESOURCE]->(bus)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
 
     tx.run(
@@ -102,11 +102,11 @@ def load_event_rules(session: neo4j.Session, event_buses: List[Dict], current_aw
 @timeit
 def _load_event_rules_tx(tx: neo4j.Transaction, event_buses: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
     query: str = """
-    UNWIND {Records} as record
+    UNWIND $Records as record
     MERGE (rule:AWSEventBridgeRule{id: record.Arn})
     ON CREATE SET rule.firstseen = timestamp(),
         rule.arn = record.Arn
-    SET rule.lastupdated = {aws_update_tag},
+    SET rule.lastupdated = $aws_update_tag,
         rule.name = record.Name,
         rule.region = record.region,
         rule.event_bus_name = record.EventBusName,
@@ -120,12 +120,12 @@ def _load_event_rules_tx(tx: neo4j.Transaction, event_buses: List[Dict], current
     MERGE (bus)-[rt:HAS]->(rule)
     ON CREATE SET
         rt.firstseen = timestamp()
-    SET rt.lastupdated = {aws_update_tag}
+    SET rt.lastupdated = $aws_update_tag
     WITH rule
-    MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (owner)-[r:RESOURCE]->(rule)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
 
     tx.run(
@@ -174,11 +174,11 @@ def load_log_groups(session: neo4j.Session, log_groups: List[Dict], current_aws_
 @timeit
 def _load_log_groups_tx(tx: neo4j.Transaction, log_groups: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
     query: str = """
-    UNWIND {Records} as record
+    UNWIND $Records as record
     MERGE (gr:AWSCloudWatchLogGroup{id: record.arn})
     ON CREATE SET gr.firstseen = timestamp(),
         gr.arn = record.arn
-    SET gr.lastupdated = {aws_update_tag},
+    SET gr.lastupdated = $aws_update_tag,
         gr.name = record.logGroupName,
         gr.region = record.region,
         gr.stored_bytes = record.storedBytes,
@@ -192,10 +192,10 @@ def _load_log_groups_tx(tx: neo4j.Transaction, log_groups: List[Dict], current_a
         gr.Key_state = record.kms.KeyState,
         gr.Key_manager = record.kms.KeyManager
     WITH gr
-    MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (owner)-[r:RESOURCE]->(gr)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
 
     tx.run(
@@ -239,19 +239,19 @@ def load_metrics(session: neo4j.Session, metrics: List[Dict], current_aws_accoun
 @timeit
 def _load_metrics_tx(tx: neo4j.Transaction, metrics: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
     query: str = """
-    UNWIND {Records} as record
+    UNWIND $Records as record
     MERGE (metric:AWSCloudWatchMetric{id: record.MetricName})
     ON CREATE SET metric.firstseen = timestamp(),
         metric.arn = record.arn
-    SET metric.lastupdated = {aws_update_tag},
+    SET metric.lastupdated = $aws_update_tag,
         metric.name = record.MetricName,
         metric.region = record.region,
         metric.namespace = record.Namespace
     WITH metric
-    MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (owner)-[r:RESOURCE]->(metric)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
 
     tx.run(
@@ -295,11 +295,11 @@ def load_cloudwatch_alarm(session: neo4j.Session, alarms: List[Dict], current_aw
 @timeit
 def _load_cloudwatch_alarm_tx(tx: neo4j.Transaction, alarms: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
     query: str = """
-    UNWIND {Records} as record
+    UNWIND $Records as record
     MERGE (alarm:AWSCloudWatchAlarm{id: record.AlarmArn})
     ON CREATE SET alarm.firstseen = timestamp(),
         alarm.arn = record.AlarmArn
-    SET alarm.lastupdated = {aws_update_tag},
+    SET alarm.lastupdated = $aws_update_tag,
         alarm.name = record.AlarmName,
         alarm.region = record.region,
         alarm.alarm_actions = record.AlarmActions,
@@ -310,10 +310,10 @@ def _load_cloudwatch_alarm_tx(tx: neo4j.Transaction, alarms: List[Dict], current
         alarm.actions_enabled = record.ActionsEnabled,
         alarm.metric_name = record.MetricName
     WITH alarm
-    MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (owner)-[r:RESOURCE]->(alarm)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = aws_update_tag
     """
 
     tx.run(
@@ -359,11 +359,11 @@ def load_cloudwatch_flowlogs(session: neo4j.Session, flowlogs: List[Dict], curre
 @timeit
 def _load_cloudwatch_flowlogs_tx(tx: neo4j.Transaction, flowlogs: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
     query: str = """
-    UNWIND {Records} as record
+    UNWIND $Records as record
     MERGE (log:AWSCloudWatchFlowLog{id: record.arn})
     ON CREATE SET log.firstseen = timestamp(),
         log.arn = record.arn
-    SET log.lastupdated = {aws_update_tag},
+    SET log.lastupdated = $aws_update_tag,
         log.name = record.FlowLogId,
         log.region = record.region,
         log.creation_time = record.CreationTime,
@@ -374,10 +374,10 @@ def _load_cloudwatch_flowlogs_tx(tx: neo4j.Transaction, flowlogs: List[Dict], cu
         log.resource_id = record.ResourceId,
         log.log_destination_type = record.LogDestinationType
     WITH log
-    MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (owner)-[r:RESOURCE]->(log)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
 
     tx.run(

@@ -59,21 +59,21 @@ def load_emr_clusters(
     aws_update_tag: int,
 ) -> None:
     query = """
-    UNWIND {Clusters} as emr_cluster
+    UNWIND $Clusters as emr_cluster
         MERGE (cluster:EMRCluster{id: emr_cluster.Name})
         ON CREATE SET cluster.firstseen = timestamp(),
             cluster.arn                 = emr_cluster.ClusterArn,
             cluster.id                  = emr_cluster.Id,
             cluster.name                = emr_cluster.Name,
             cluster.servicerole         = emr_cluster.ServiceRole,
-            cluster.region              = {Region}
-        SET cluster.lastupdated         = {aws_update_tag}
+            cluster.region              = $Region
+        SET cluster.lastupdated         = $aws_update_tag
         WITH cluster
 
-        MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
+        MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
         MERGE (owner)-[r:RESOURCE]->(cluster)
         ON CREATE SET r.firstseen       = timestamp()
-        SET r.lastupdated               = {aws_update_tag}
+        SET r.lastupdated               = $aws_update_tag
     """
 
     logger.info("Loading EMR %d clusters for region '%s' into graph.", len(cluster_data), region)
