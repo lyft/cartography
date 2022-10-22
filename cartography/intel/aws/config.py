@@ -102,7 +102,7 @@ def load_delivery_channels(
             n.s3_kms_key_arn = channel.s3KmsKeyArn,
             n.sns_topic_arn = channel.snsTopicARN,
             n.config_snapshot_delivery_properties_delivery_frequency = channel.configSnapshotDeliveryProperties.deliveryFrequency,
-            n.region = $Region, n.lastupdated = aws_update_tag
+            n.region = $Region, n.lastupdated = $aws_update_tag
         WITH n
         MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
         MERGE (owner)-[r:RESOURCE]->(n)

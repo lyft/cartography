@@ -56,7 +56,7 @@ def _load_event_buses_tx(tx: neo4j.Transaction, event_buses: List[Dict], current
         bus.region = record.region,
         bus.policy = record.Policy
     WITH bus
-    MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID}})
+    MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (owner)-[r:RESOURCE]->(bus)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $aws_update_tag
@@ -313,7 +313,7 @@ def _load_cloudwatch_alarm_tx(tx: neo4j.Transaction, alarms: List[Dict], current
     MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (owner)-[r:RESOURCE]->(alarm)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = aws_update_tag
+    SET r.lastupdated = $aws_update_tag
     """
 
     tx.run(
