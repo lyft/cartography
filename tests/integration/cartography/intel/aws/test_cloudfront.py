@@ -16,8 +16,8 @@ def test_load_repository_associations(neo4j_session):
     )
 
     expected_nodes = {
-        "arn:aws:cloudfront::123456789:distribution/test1",
-        "arn:aws:cloudfront::123456789:distribution/test2",
+        "arn:aws:cloudfront::000000000000:distribution/test1",
+        "arn:aws:cloudfront::000000000000:distribution/test2",
     }
 
     nodes = neo4j_session.run(

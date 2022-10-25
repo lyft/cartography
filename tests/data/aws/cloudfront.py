@@ -4,7 +4,7 @@ from dateutil.tz import tzutc
 
 GET_LIST_DISTRIBUTION = [
     {
-        'ARN': 'arn:aws:cloudfront::123456789:distribution/test1',
+        'ARN': 'arn:aws:cloudfront::000000000000:distribution/test1',
         'Aliases': {'Quantity': 0},
         'CacheBehaviors': {'Quantity': 0},
         'Comment': 'The Distribution for the Sample Projects',
@@ -31,7 +31,7 @@ GET_LIST_DISTRIBUTION = [
             'FunctionAssociations': {
                 'Items': [{
                     'EventType': 'viewer-response',
-                    'FunctionARN': 'arn:aws:cloudfront::123456789:function/HSTS-FUNCTION-123DSDASDV',
+                    'FunctionARN': 'arn:aws:cloudfront::000000000000:function/HTS-FUNCTION-ABCD',
                 }],
                 'Quantity': 1,
             },
@@ -50,7 +50,7 @@ GET_LIST_DISTRIBUTION = [
         'DomainName': 'testDomain.cloudfront.net',
         'Enabled': True,
         'HttpVersion': 'HTTP2',
-        'Id': 'E13BRLRGQ5Z88',
+        'Id': 'ABCD1234',
         'IsIPV6Enabled': True,
         'LastModifiedTime': datetime.datetime(2022, 5, 24, 23, 48, 38, 342000, tzinfo=tzutc()),
         'OriginGroups': {'Quantity': 0},
@@ -64,7 +64,7 @@ GET_LIST_DISTRIBUTION = [
                 'OriginAccessControlId': '',
                 'OriginPath': '',
                 'OriginShield': {'Enabled': False},
-                'S3OriginConfig': {'OriginAccessIdentity': 'origin-access-identity/cloudfront/dfasdfzxcsgdf'},
+                'S3OriginConfig': {'OriginAccessIdentity': 'origin-access-identity/cloudfront/000000000ABC'},
             }],
             'Quantity': 1,
         },
@@ -85,7 +85,7 @@ GET_LIST_DISTRIBUTION = [
         'WebACLId': '',
     },
     {
-        'ARN': 'arn:aws:cloudfront::123456789:distribution/test2',
+        'ARN': 'arn:aws:cloudfront::000000000000:distribution/test2',
         'Aliases': {'Quantity': 0},
         'CacheBehaviors': {'Quantity': 0},
         'Comment': 'The Distribution for the Sample Projects',
@@ -108,7 +108,7 @@ GET_LIST_DISTRIBUTION = [
             'FunctionAssociations': {
                 'Items': [{
                     'EventType': 'viewer-response',
-                    'FunctionARN': 'arn:aws:cloudfront::123456789:function/HSTS-FUNCTION-123DSDASDV',
+                    'FunctionARN': 'arn:aws:cloudfront::000000000000:function/HSTS-FUNCTION-000000000ABC',
                 }],
                 'Quantity': 1,
             },
@@ -127,7 +127,7 @@ GET_LIST_DISTRIBUTION = [
         'DomainName': 'testDomain2.cloudfront.net',
         'Enabled': True,
         'HttpVersion': 'HTTP2',
-        'Id': 'E13BRLRGQ5Z88',
+        'Id': 'ABCD1234',
         'IsIPV6Enabled': True,
         'LastModifiedTime': datetime.datetime(2022, 5, 24, 23, 48, 38, 342000, tzinfo=tzutc()),
         'OriginGroups': {'Quantity': 0},
@@ -141,7 +141,7 @@ GET_LIST_DISTRIBUTION = [
                 'OriginAccessControlId': '',
                 'OriginPath': '',
                 'OriginShield': {'Enabled': False},
-                'S3OriginConfig': {'OriginAccessIdentity': 'origin-access-identity/cloudfront/dfasdfzxcsgd2'},
+                'S3OriginConfig': {'OriginAccessIdentity': 'origin-access-identity/cloudfront/000000000ABC'},
             }],
             'Quantity': 1,
         },
