@@ -1244,6 +1244,70 @@ Representation of an AWS EC2 [Subnet](https://docs.aws.amazon.com/AWSEC2/latest/
          (AWSAccount)-[RESOURCE]->(AWSInternetGateway)
          ```
 
+### AWS CloudFront Distribution
+Representation of an AWS Cloudfront Distribution
+
+ | Field | Description |
+ |--------|-----------|
+ | **id** | Same as ARN |
+ | arn | The ARN of the Distribution |
+ | comment | The comment originally specified when this distribution was created |
+ | status | The current status of the distribution |
+ | enabled | Whether the distribution is enabled to accept user requests for content |
+ | last_modified_time | The date and time the distribution was last modified |
+ | domain_name | The domain name that corresponds to the distribution |
+ | aliases_quantity | The number of CNAME aliases |
+ | aliases_items | A list that contains the CNAME aliases |
+ | origins_quantity | The number of origins connected to distribution |
+ | origin_groups | A complex type that contains information about origin groups for this distribution |
+ | default_cache_behavior | A complex type that describes the default cache behavior |
+ | cache_behaviors | A complex type that describes zero or more CacheBehavior elements |
+ | custom_error_responses | A complex type that describes zero or more CustomErrorResponses elements |
+ | viewer_certificate | A complex type that determines the distribution’s SSL/TLS configuration for communicating with viewers |
+ | web_acl_id | The Web ACL Id (if any) associated with the distribution |
+ | http_version | Specify the maximum HTTP version that you want viewers to use to communicate with CloudFront |
+ | is_epv6_enabled | Whether CloudFront responds to IPv6 DNS requests with an IPv6 address for your distribution |
+ | geo_restriction_type | The method that you want to use to restrict distribution of your content by country |
+ | geo_restriction_quantity | When geo restriction is enabled, this is the number of countries in your whitelist or blacklist. Otherwise, when it is not enabled, it is 0 |
+ | geo_restriction_items | A list that contains Location for each country in which you want CloudFront either to distribute your content (whitelist) or not distribute your content (blacklist) |
+
+#### Relationships
+
+- An CloudFrontDistribution contains CloudFrontDistributionOrigin:
+    ```
+    (:CloudFrontDistribution)-[:HAS_ORIGIN]->(:CloudFrontDistributionOrigin)
+    ```
+- AWS Cloudfront Distribution belong to AWS Accounts
+   ```
+   (AWSAccount)-[RESOURCE]->(CloudFrontDistribution)
+   ```
+
+### AWS CloudFront Distribution Origin
+Representation of an AWS Cloudfront Distribution Origin
+
+ | Field | Description |
+ |--------|-----------|
+ | **id** | ID of the distribution Origin |
+ | domain_name | The domain name for the origin |
+ | origin_path | An optional path that CloudFront appends to the origin domain name when CloudFront requests content from the origin |
+ | custom_headers | A complex type that contains HeaderName and HeaderValue elements |
+ | connection_attempts | The number of times that CloudFront attempts to connect to the origin |
+ | connection_timeout | The number of seconds that CloudFront waits when trying to establish a connection to the origin |
+ | origin_access_control_id | The unique identifier of an origin access control for this origin |
+ | originshield_enabled | A flag that specifies whether Origin Shield is enabled |
+ | originshield_region | The Amazon Web Services Region for Origin Shield |
+ | s3_origin_enabled | It specifies if it is a S3 Origin |
+ | custom_origin_enabled | It specifies if it is a Custom Origin |
+ | s3_origin_config | It contains configuration of S3 Origin |
+ | custom_origin_config | It contains configuration of Custom Origin |
+
+#### Relationships
+
+- An CloudFrontDistributionOrigin belongs to CloudFrontDistribution:
+    ```
+    (:CloudFrontDistribution)-[:HAS_ORIGIN]->(:CloudFrontDistributionOrigin)
+    ```
+
 ### ECRRepository
 
 Representation of an AWS Elastic Container Registry [Repository](https://docs.aws.amazon.com/AmazonECR/latest/APIReference/API_Repository.html).
