@@ -139,7 +139,7 @@ def _load_function_apps_tx(
     update_tag: int,
 ) -> None:
     ingest_function_apps = """
-    UNWIND {function_apps_list} AS function_app
+    UNWIND $function_apps_list AS function_app
     MERGE (f:AzureFunctionApp{id: function_app.id})
     ON CREATE SET f.firstseen = timestamp(),
     f.type = function_app.type,
@@ -148,7 +148,7 @@ def _load_function_apps_tx(
     f.consolelink = function_app.consolelink,
     f.hostNamesDisabled = function_app.hostNamesDisabled,
     f.resourcegroup = function_app.resource_group
-    SET f.lastupdated = {update_tag},
+    SET f.lastupdated = $update_tag,
     f.name = function_app.name,
     f.container_size = function_app.container_size,
     f.default_host_name=function_app.default_host_name,
@@ -159,10 +159,10 @@ def _load_function_apps_tx(
     f.availability_state=function_app.availability_state,
     f.usage_state=function_app.usage_state
     WITH f
-    MATCH (owner:AzureSubscription{id: {SUBSCRIPTION_ID}})
+    MATCH (owner:AzureSubscription{id: $SUBSCRIPTION_ID})
     MERGE (owner)-[r:RESOURCE]->(f)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {update_tag}
+    SET r.lastupdated = $update_tag
     """
 
     tx.run(
@@ -291,12 +291,12 @@ def _load_function_apps_configurations_tx(
     update_tag: int,
 ) -> None:
     ingest_function_apps_conf = """
-    UNWIND {function_apps_conf_list} as function_conf
+    UNWIND $function_apps_conf_list as function_conf
     MERGE (fc:AzureFunctionAppConfiguration{id: function_conf.id})
     ON CREATE SET fc.firstseen = timestamp(),
     fc.type = function_conf.type
     SET fc.name = function_conf.name,
-    fc.lastupdated = {azure_update_tag},
+    fc.lastupdated = $azure_update_tag,
     fc.resource_group_name=function_conf.resource_group,
     fc.number_of_workers=function_conf.number_of_workers,
     fc.net_framework_version=function_conf.net_framework_version,
@@ -323,7 +323,7 @@ def _load_function_apps_configurations_tx(
     MATCH (s:AzureFunctionApp{id: function_conf.function_app_id})
     MERGE (s)-[r:CONTAIN]->(fc)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {azure_update_tag}
+    SET r.lastupdated = $azure_update_tag
     """
 
     tx.run(
@@ -401,12 +401,12 @@ def _load_function_apps_functions_tx(
     update_tag: int,
 ) -> None:
     ingest_function = """
-    UNWIND {function_apps_function_list} as function
+    UNWIND $function_apps_function_list as function
     MERGE (f:AzureFunctionAppFunction{id: function.id})
     ON CREATE SET f.firstseen = timestamp(),
     f.type = function.type
     SET f.name = function.name,
-    f.lastupdated = {azure_update_tag},
+    f.lastupdated = $azure_update_tag,
     f.location = function.location,
     f.region = function.location,
     f.resource_group_name=function.resource_group,
@@ -418,7 +418,7 @@ def _load_function_apps_functions_tx(
     MATCH (s:AzureFunctionApp{id: function.function_app_id})
     MERGE (s)-[r:CONTAIN]->(f)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {azure_update_tag}
+    SET r.lastupdated = $azure_update_tag
     """
 
     tx.run(
@@ -498,12 +498,12 @@ def _load_function_apps_deployments_tx(
     update_tag: int,
 ) -> None:
     ingest_function_apps_deploy = """
-    UNWIND {function_apps_deployments_list} as function_deploy
+    UNWIND $function_apps_deployments_list as function_deploy
     MERGE (f:AzureFunctionAppDeployment{id: function_deploy.id})
     ON CREATE SET f.firstseen = timestamp(),
     f.type = function_deploy.type
     SET f.name = function_deploy.name,
-    f.lastupdated = {azure_update_tag},
+    f.lastupdated = $azure_update_tag,
     f.consolelink = function_deploy.consolelink,
     f.location = function_deploy.location,
     f.region = function_deploy.location,
@@ -512,7 +512,7 @@ def _load_function_apps_deployments_tx(
     MATCH (s:AzureFunctionApp{id: function_deploy.function_app_id})
     MERGE (s)-[r:CONTAIN]->(f)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {azure_update_tag}
+    SET r.lastupdated = $azure_update_tag
     """
 
     tx.run(
@@ -593,7 +593,7 @@ def _load_function_apps_backups_tx(
     update_tag: int,
 ) -> None:
     ingest_function_apps_backup = """
-    UNWIND {function_apps_backups_list} as function_backup
+    UNWIND $function_apps_backups_list as function_backup
     MERGE (f:AzureFunctionAppBackup{id: function_backup.id})
     ON CREATE SET f.firstseen = timestamp(),
     f.location = function_backup.location,
@@ -601,13 +601,13 @@ def _load_function_apps_backups_tx(
     f.type = function_backup.type
     SET f.name = function_backup.name,
     f.consolelink = function_backup.consolelink,
-    f.lastupdated = {azure_update_tag},
+    f.lastupdated = $azure_update_tag,
     f.resource_group_name=function_backup.resource_group
     WITH f, function_backup
     MATCH (s:AzureFunctionApp{id: function_backup.function_app_id})
     MERGE (s)-[r:CONTAIN]->(f)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {azure_update_tag}
+    SET r.lastupdated = $azure_update_tag
     """
 
     tx.run(
@@ -691,7 +691,7 @@ def _load_function_apps_processes_tx(
     update_tag: int,
 ) -> None:
     ingest_function_apps_process = """
-    UNWIND {function_apps_processes_list} as function_process
+    UNWIND $function_apps_processes_list as function_process
     MERGE (f:AzureFunctionAppProcess{id: function_process.id})
     ON CREATE SET f.firstseen = timestamp(),
     f.location = function_process.location,
@@ -699,13 +699,13 @@ def _load_function_apps_processes_tx(
     f.type = function_process.type
     SET f.name = function_process.name,
     f.consolelink = function_process.consolelink,
-    f.lastupdated = {azure_update_tag},
+    f.lastupdated = $azure_update_tag,
     f.resource_group_name=function_process.resource_group
     WITH f, function_process
     MATCH (s:AzureFunctionApp{id: function_process.function_app_id})
     MERGE (s)-[r:CONTAIN]->(f)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {azure_update_tag}
+    SET r.lastupdated = $azure_update_tag
     """
 
     tx.run(
@@ -787,7 +787,7 @@ def _load_function_apps_snapshots_tx(
     update_tag: int,
 ) -> None:
     ingest_function_apps_snapshot = """
-    UNWIND {function_apps_snapshots_list} as function_snapshot
+    UNWIND $function_apps_snapshots_list as function_snapshot
     MERGE (f:AzureFunctionAppSnapshot{id: function_snapshot.id})
     ON CREATE SET f.firstseen = timestamp(),
     f.location = function_snapshot.location,
@@ -795,13 +795,13 @@ def _load_function_apps_snapshots_tx(
     f.type = function_snapshot.type
     SET f.name = function_snapshot.name,
     f.consolelink = function.consolelink,
-    f.lastupdated = {azure_update_tag},
+    f.lastupdated = $azure_update_tag,
     f.resource_group_name=function_snapshot.resource_group
     WITH f, function_snapshot
     MATCH (s:AzureFunctionApp{id: function_snapshot.function_app_id})
     MERGE (s)-[r:CONTAIN]->(f)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {azure_update_tag}
+    SET r.lastupdated = $azure_update_tag
     """
 
     tx.run(
@@ -881,7 +881,7 @@ def _load_function_apps_webjobs_tx(
     update_tag: int,
 ) -> None:
     ingest_function_apps_webjob = """
-    UNWIND {function_apps_webjobs_list} as function_webjob
+    UNWIND $function_apps_webjobs_list as function_webjob
     MERGE (f:AzureFunctionAppWebjob{id: function_webjob.id})
     ON CREATE SET f.firstseen = timestamp(),
     f.location = function_webjob.location,
@@ -889,13 +889,13 @@ def _load_function_apps_webjobs_tx(
     f.type = function_webjob.type
     SET f.name = function_webjob.name,
     f.consolelink = function_webjob.consolelink,
-    f.lastupdated = {azure_update_tag},
+    f.lastupdated = $azure_update_tag,
     f.resource_group_name=function_webjob.resource_group
     WITH f, function_webjob
     MATCH (s:AzureFunctionApp{id: function_webjob.function_app_id})
     MERGE (s)-[r:CONTAIN]->(f)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {azure_update_tag}
+    SET r.lastupdated = $azure_update_tag
     """
 
     tx.run(

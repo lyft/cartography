@@ -79,7 +79,7 @@ def _load_key_vaults_tx(
     tx: neo4j.Transaction, subscription_id: str, key_vaults_list: List[Dict], update_tag: int,
 ) -> None:
     ingest_vault = """
-    UNWIND {key_vaults_list} AS vault
+    UNWIND $key_vaults_list AS vault
     MERGE (k:AzureKeyVault{id: vault.id})
     ON CREATE SET k.firstseen = timestamp(),
     k.type = vault.type,
@@ -88,13 +88,13 @@ def _load_key_vaults_tx(
     k.uri = vault.properties.vault_uri,
     k.consolelink = vault.consolelink,
     k.resourcegroup = vault.resource_group
-    SET k.lastupdated = {update_tag},
+    SET k.lastupdated = $update_tag,
     k.name = vault.name
     WITH k
-    MATCH (owner:AzureSubscription{id: {SUBSCRIPTION_ID}})
+    MATCH (owner:AzureSubscription{id: $SUBSCRIPTION_ID})
     MERGE (owner)-[r:RESOURCE]->(k)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {update_tag}
+    SET r.lastupdated = $update_tag
     """
 
     tx.run(
@@ -130,18 +130,18 @@ def _load_key_vaults_keys_tx(
 ) -> None:
 
     ingest_keys = """
-    UNWIND {KEYS} as key
+    UNWIND $KEYS as key
     MERGE (k:AzureKeyVaultKey{id: key.kid})
     ON CREATE SET k.firstssen = timestamp(),
     k.kid = key.kid,
     k.consolelink = key.consolelink,
     k.managed = key.managed
-    SET k.lastupdated = {update_tag}
+    SET k.lastupdated = $update_tag
     WITH k, key
     MATCH (keyvault:AzureKeyVault{id: key.vault_id})
     MERGE (keyvault)-[r:HAS_KEY]->(k)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {update_tag}
+    SET r.lastupdated = $update_tag
     """
 
     tx.run(
@@ -178,19 +178,19 @@ def _load_key_vault_secrets_tx(
 ) -> None:
 
     ingest_secrets = """
-    UNWIND {SECRETS} as sec
+    UNWIND $SECRETS as sec
     MERGE (s:AzureKeyVaultSecret{id: sec.id})
     ON CREATE SET s.firstseen = timestamp(),
     s.id = sec.id,
     s.consolelink = sec.consolelink,
     s.contentType = sec.content_type,
     s.managed = s.managed
-    SET s.lasupdated = {update_tag}
+    SET s.lasupdated = $update_tag
     WITH s, sec
     MATCH (keyvault:AzureKeyVault{id: sec.vault_id})
     MERGE (keyvault)-[r:HAS_SECRET]->(s)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {update_tag}
+    SET r.lastupdated = $update_tag
     """
 
     tx.run(
@@ -227,7 +227,7 @@ def _load_key_vault_certificates_tx(
 ) -> None:
 
     ingest_certificates = """
-    UNWIND {CERTS} as cert
+    UNWIND $CERTS as cert
     MERGE (c:AzureKeyVaultCertificate{id: cert.id})
     ON CREATE SET c.firstseen = timestamp(),
     c.id = cert.id,
@@ -235,12 +235,12 @@ def _load_key_vault_certificates_tx(
     c.consolelink = cert.consolelink,
     c.keyId = cert.kid,
     c.secretId = cert.sid
-    SET c.lasupdated = {update_tag}
+    SET c.lasupdated = $update_tag
     WITH c, cert
     MATCH (keyvault:AzureKeyVault{id: cert.vault_id})
     MERGE (keyvault)-[r:HAS_CERTIFICATE]->(c)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {update_tag}
+    SET r.lastupdated = $update_tag
     """
     tx.run(
         ingest_certificates,

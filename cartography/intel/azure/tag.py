@@ -74,7 +74,7 @@ def _load_resource_groups_tx(
     tx: neo4j.Transaction, subscription_id: str, resource_groups_list: List[Dict], update_tag: int,
 ) -> None:
     ingest_group = """
-    UNWIND {resource_groups_list} AS group
+    UNWIND $resource_groups_list AS group
     MERGE (t:AzureResourceGroup{id: group.id})
     ON CREATE SET t.firstseen = timestamp(),
     t.type = group.type,
@@ -82,13 +82,13 @@ def _load_resource_groups_tx(
     t.consolelink = group.consolelink,
     t.region = group.location,
     t.managedBy = group.managedBy
-    SET t.lastupdated = {update_tag},
+    SET t.lastupdated = $update_tag,
     t.name = group.name
     WITH t
-    MATCH (owner:AzureSubscription{id: {SUBSCRIPTION_ID}})
+    MATCH (owner:AzureSubscription{id: $SUBSCRIPTION_ID})
     MERGE (owner)-[r:RESOURCE]->(t)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {update_tag}
+    SET r.lastupdated = $update_tag
     """
 
     tx.run(
@@ -123,10 +123,10 @@ def concurrent_execution(config: Config, client: ResourceManagementClient, resou
             }]
     for resource in client.resources.list_by_resource_group(resource_group_name=resource_group['name']):
         query = """
-        MATCH (:CloudanixWorkspace{id: {WORKSPACE_ID}})-[:OWNER]->
-        (:AzureTenant{id: {AZURE_TENANT_ID}})-[:RESOURCE]->
-        (:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}})-[*]->(n)
-        WHERE n.id={resource_id} return count(*)
+        MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->
+        (:AzureTenant{id: $AZURE_TENANT_ID})-[:RESOURCE]->
+        (:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})-[*]->(n)
+        WHERE n.id=$resource_id return count(*)
         """
         if neo4j_driver.session().run(query, resource_id=resource.id, WORKSPACE_ID=common_job_parameters['WORKSPACE_ID'], AZURE_TENANT_ID=common_job_parameters['AZURE_TENANT_ID'], AZURE_SUBSCRIPTION_ID=common_job_parameters['AZURE_SUBSCRIPTION_ID']).single().value() == 1:
             if resource.tags:
@@ -166,23 +166,23 @@ def get_tags_list(
 
 def _load_tags_tx(tx: neo4j.Transaction, tags_list: List[Dict], update_tag: int, common_job_parameters: Dict) -> None:
     ingest_tag = """
-    UNWIND {tags_list} AS tag
+    UNWIND $tags_list AS tag
     MERGE (t:AzureTag{id: tag.id})
     ON CREATE SET t.firstseen = timestamp(),
     t.type = tag.type,
-    t.region = {region},
+    t.region = $region,
     t.resource_group = tag.resource_group
-    SET t.lastupdated = {update_tag},
+    SET t.lastupdated = $update_tag,
     t.value = tag.value,
     t.key = tag.key
     WITH t,tag
-    MATCH (:CloudanixWorkspace{id: {WORKSPACE_ID}})-[:OWNER]->
-    (:AzureTenant{id: {AZURE_TENANT_ID}})-[:RESOURCE]->
-    (:AzureSubscription{id: {AZURE_SUBSCRIPTION_ID}})-[*]->(l)
+    MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->
+    (:AzureTenant{id: $AZURE_TENANT_ID})-[:RESOURCE]->
+    (:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})-[*]->(l)
     where l.id = tag.resource_id
     MERGE (l)-[r:TAGGED]->(t)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {update_tag}
+    SET r.lastupdated = $update_tag
     """
 
     tx.run(
