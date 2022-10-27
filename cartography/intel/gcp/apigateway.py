@@ -427,7 +427,7 @@ def load_apigateway_locations_tx(
         :return: Nothing
     """
     ingest_project_locations = """
-    UNWIND {locations} as loc
+    UNWIND $locations as loc
     MERGE (location:GCPLocation{id:loc.id})
     ON CREATE SET
         location.firstseen = timestamp()
@@ -437,13 +437,13 @@ def load_apigateway_locations_tx(
         location.locationId = loc.locationId,
         location.displayName = loc.displayName,
         location.region = loc.locationId,
-        location.lastupdated = {gcp_update_tag}
+        location.lastupdated = $gcp_update_tag
     WITH location
-    MATCH (owner:GCPProject{id:{ProjectId}})
+    MATCH (owner:GCPProject{id: $ProjectId})
     MERGE (owner)-[r:RESOURCE]->(location)
     ON CREATE SET
         r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """
     tx.run(
         ingest_project_locations,
@@ -496,7 +496,7 @@ def load_apis_tx(tx: neo4j.Transaction, apis: List[Dict], project_id: str, gcp_u
         :return: Nothing
     """
     ingest_apis = """
-    UNWIND {apis} as ap
+    UNWIND $apis as ap
     MERGE (api:GCPAPI{id:ap.id})
     ON CREATE SET
         api.firstseen = timestamp()
@@ -510,13 +510,13 @@ def load_apis_tx(tx: neo4j.Transaction, apis: List[Dict], project_id: str, gcp_u
         api.displayName = ap.displayName,
         api.managedService = ap.managedService,
         api.consolelink = ap.consolelink,
-        api.lastupdated = {gcp_update_tag}
+        api.lastupdated = $gcp_update_tag
     WITH api
-    MATCH (owner:GCPProject{id:{ProjectId}})
+    MATCH (owner:GCPProject{id: $ProjectId})
     MERGE (owner)-[r:HAS_API_ENABLED]->(api)
     ON CREATE SET
         r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """
     tx.run(
         ingest_apis,
@@ -567,13 +567,13 @@ def load_apis_entity_relation_tx(tx: neo4j.Transaction, api: Dict, gcp_update_ta
         :return: Nothing
     """
     ingest_entities = """
-    UNWIND {entities} AS entity
+    UNWIND $entities AS entity
     MATCH (principal:GCPPrincipal{email:entity.email})
     WITH principal
-    MATCH (api:GCPAPI{id: {api_id}})
+    MATCH (api:GCPAPI{id: $api_id})
     MERGE (principal)-[r:USES]->(api)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}    """
+    SET r.lastupdated = $gcp_update_tag    """
     tx.run(
         ingest_entities,
         api_id=api.get('id', None),
@@ -606,13 +606,13 @@ def load_gateway_entity_relation_tx(tx: neo4j.Transaction, gateway: Dict, gcp_up
         :return: Nothing
     """
     ingest_entities = """
-    UNWIND {entities} AS entity
+    UNWIND $entities AS entity
     MATCH (principal:GCPPrincipal{email:entity.email})
     WITH principal
-    MATCH (gateway:GCPAPIGateway{id: {gateway_id}})
+    MATCH (gateway:GCPAPIGateway{id: $gateway_id})
     MERGE (principal)-[r:USES]->(gateway)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}    """
+    SET r.lastupdated = $gcp_update_tag    """
     tx.run(
         ingest_entities,
         gateway_id=gateway.get('id', None),
@@ -647,7 +647,7 @@ def load_api_configs_tx(tx: neo4j.Transaction, configs: List[Dict], project_id: 
         :return: Nothing
     """
     ingest_api_configs = """
-    UNWIND {configs} as conf
+    UNWIND $configs as conf
     MERGE (config:GCPAPIConfig{id:conf.id})
     ON CREATE SET
         config.firstseen = timestamp()
@@ -662,13 +662,13 @@ def load_api_configs_tx(tx: neo4j.Transaction, configs: List[Dict], project_id: 
         config.serviceConfigId = conf.serviceConfigId,
         config.state = conf.state,
         config.consolelink = conf.consolelink,
-        config.lastupdated = {gcp_update_tag}
+        config.lastupdated = $gcp_update_tag
     WITH config,conf
     MATCH (api:GCPAPI{id:conf.api_id})
     MERGE (api)-[r:HAS_CONFIG]->(config)
     ON CREATE SET
         r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """
     tx.run(
         ingest_api_configs,
@@ -721,7 +721,7 @@ def load_gateways_tx(tx: neo4j.Transaction, gateways: List[Dict], project_id: st
         :return: Nothing
     """
     ingest_gateways = """
-    UNWIND {gateways} as g
+    UNWIND $gateways as g
     MERGE (gateway:GCPAPIGateway{id:g.id})
     ON CREATE SET
         gateway.firstseen = timestamp()
@@ -737,13 +737,13 @@ def load_gateways_tx(tx: neo4j.Transaction, gateways: List[Dict], project_id: st
         gateway.state = g.state,
         gateway.defaultHostname = g.defaultHostname,
         gateway.consolelink = g.consolelink,
-        gateway.lastupdated = {gcp_update_tag}
+        gateway.lastupdated = $gcp_update_tag
     WITH gateway,g
     MATCH (apiconfig:GCPAPIConfig{id:g.apiConfig})
     MERGE (apiconfig)-[r:HAS_GATEWAY]->(gateway)
     ON CREATE SET
         r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """
     tx.run(
         ingest_gateways,

@@ -16,6 +16,7 @@ from cartography.util import timeit
 logger = logging.getLogger(__name__)
 gcp_console_link = GCPLinker()
 
+
 @timeit
 def get_monitoring_alertpolicies(monitoring: Resource, project_id: str) -> List[Dict]:
     policies = []
@@ -29,8 +30,8 @@ def get_monitoring_alertpolicies(monitoring: Resource, project_id: str) -> List[
                     policy['id'] = policy['name']
                     policy['policy_name'] = policy.get('name').split('/')[-1]
                     policy['labels'] = policy.get('userLabels', {})
-                    policy['consolelink'] = gcp_console_link.get_console_link(project_id=project_id,\
-                        alert_policy_name=policy['name'], resource_name='cloud_monitoring_alert_policy')
+                    policy['consolelink'] = gcp_console_link.get_console_link(project_id=project_id,
+                                                                              alert_policy_name=policy['name'], resource_name='cloud_monitoring_alert_policy')
                     policies.append(policy)
             req = monitoring.projects().alertPolicies().list_next(previous_request=req, previous_response=res)
 
@@ -60,23 +61,23 @@ def load_monitoring_alertpolicies_tx(
 ) -> None:
 
     query = """
-    UNWIND {Records} as record
+    UNWIND $Records as record
     MERGE (policy:GCPMonitoringAlertPolicy{id:record.id})
     ON CREATE SET
         policy.firstseen = timestamp()
     SET
-        policy.lastupdated = {gcp_update_tag},
+        policy.lastupdated = $gcp_update_tag,
         policy.region = record.region,
         policy.name = record.policy_name,
         policy.display_name = record.displayName,
         policy.consolelink = record.consolelink,
         policy.enabled = record.enabled
     WITH policy
-    MATCH (owner:GCPProject{id:{ProjectId}})
+    MATCH (owner:GCPProject{id: $ProjectId})
     MERGE (owner)-[r:RESOURCE]->(policy)
     ON CREATE SET
         r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """
     tx.run(
         query,
@@ -110,7 +111,7 @@ def sync_monitoring_alertpolicies(
             logger.info(f'pages process for monitoring alertpolicies {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (
             common_job_parameters.get('pagination', {}).get('monitoring', None)[
-            'pageNo'
+                'pageNo'
             ] - 1
         ) * common_job_parameters.get('pagination', {}).get('monitoring', None)['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('monitoring', None)['pageSize']
@@ -169,12 +170,12 @@ def load_monitoring_metric_descriptors_tx(
 ) -> None:
 
     query = """
-    UNWIND {Records} as record
+    UNWIND $Records as record
     MERGE (descriptor:GCPMonitoringMetricDescriptor{id:record.id})
     ON CREATE SET
         descriptor.firstseen = timestamp()
     SET
-        descriptor.lastupdated = {gcp_update_tag},
+        descriptor.lastupdated = $gcp_update_tag,
         descriptor.region = record.region,
         descriptor.name = record.name,
         descriptor.display_name = record.displayName,
@@ -182,11 +183,11 @@ def load_monitoring_metric_descriptors_tx(
         descriptor.description = record.description,
         descriptor.type = record.type
     WITH descriptor
-    MATCH (owner:GCPProject{id:{ProjectId}})
+    MATCH (owner:GCPProject{id: $ProjectId})
     MERGE (owner)-[r:RESOURCE]->(descriptor)
     ON CREATE SET
         r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """
     tx.run(
         query,
@@ -220,7 +221,7 @@ def sync_monitoring_metric_descriptors(
             logger.info(f'pages process for monitoring metric descriptors {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (
             common_job_parameters.get('pagination', {}).get('monitoring', None)[
-            'pageNo'
+                'pageNo'
             ] - 1
         ) * common_job_parameters.get('pagination', {}).get('monitoring', None)['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('monitoring', None)['pageSize']
@@ -277,12 +278,12 @@ def load_monitoring_notification_channels_tx(
 ) -> None:
 
     query = """
-    UNWIND {Records} as record
+    UNWIND $Records as record
     MERGE (channel:GCPMonitoringNotificationChannel{id:record.id})
     ON CREATE SET
         channel.firstseen = timestamp()
     SET
-        channel.lastupdated = {gcp_update_tag},
+        channel.lastupdated = $gcp_update_tag,
         channel.region = record.region,
         channel.name = record.channel_name,
         channel.display_name = record.displayName,
@@ -291,11 +292,11 @@ def load_monitoring_notification_channels_tx(
         channel.description = record.description,
         channel.type = record.type
     WITH channel
-    MATCH (owner:GCPProject{id:{ProjectId}})
+    MATCH (owner:GCPProject{id: $ProjectId})
     MERGE (owner)-[r:RESOURCE]->(channel)
     ON CREATE SET
         r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """
     tx.run(
         query,
@@ -329,7 +330,7 @@ def sync_monitoring_notification_channels(
             logger.info(f'pages process for monitoring notification channels {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (
             common_job_parameters.get('pagination', {}).get('monitoring', None)[
-            'pageNo'
+                'pageNo'
             ] - 1
         ) * common_job_parameters.get('pagination', {}).get('monitoring', None)['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('monitoring', None)['pageSize']
@@ -361,8 +362,8 @@ def get_monitoring_uptimecheckconfigs(monitoring: Resource, project_id: str) -> 
                     config['id'] = config['name']
                     config['config_name'] = config.get('name').split('/')[-1]
                     config['labels'] = config.get('userLabels', {})
-                    config['consolelink'] = gcp_console_link.get_console_link(project_id=project_id,\
-                        uptimecheck_config_name=config['name'], resource_name='cloud_monitoring_uptime_check_config')
+                    config['consolelink'] = gcp_console_link.get_console_link(project_id=project_id,
+                                                                              uptimecheck_config_name=config['name'], resource_name='cloud_monitoring_uptime_check_config')
                     configs.append(config)
             req = monitoring.projects().uptimeCheckConfigs().list_next(previous_request=req, previous_response=res)
 
@@ -392,12 +393,12 @@ def load_monitoring_uptimecheckconfigs_tx(
 ) -> None:
 
     query = """
-    UNWIND {Records} as record
+    UNWIND $Records as record
     MERGE (config:GCPMonitoringUptimeCheckConfig{id:record.id})
     ON CREATE SET
         config.firstseen = timestamp()
     SET
-        config.lastupdated = {gcp_update_tag},
+        config.lastupdated = $gcp_update_tag,
         config.region = record.region,
         config.name = record.config_name,
         config.display_name = record.displayName,
@@ -406,11 +407,11 @@ def load_monitoring_uptimecheckconfigs_tx(
         config.consolelink = record.consolelink,
         config.period = record.period
     WITH config
-    MATCH (owner:GCPProject{id:{ProjectId}})
+    MATCH (owner:GCPProject{id: $ProjectId})
     MERGE (owner)-[r:RESOURCE]->(config)
     ON CREATE SET
         r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """
     tx.run(
         query,
@@ -444,7 +445,7 @@ def sync_monitoring_uptimecheckconfigs(
             logger.info(f'pages process for monitoring uptimecheckconfigs {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (
             common_job_parameters.get('pagination', {}).get('monitoring', None)[
-            'pageNo'
+                'pageNo'
             ] - 1
         ) * common_job_parameters.get('pagination', {}).get('monitoring', None)['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('monitoring', None)['pageSize']

@@ -411,21 +411,21 @@ def _load_cloudrun_authorized_domains_tx(
         :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
     """
     ingest_cloudrun_authorized_domains = """
-    UNWIND{authorized_domains} as ad
+    UNWIND $authorized_domains as ad
     MERGE (authorized_domain:GCPCloudRunAuthorizedDomain{id:ad.id})
     ON CREATE SET
         authorized_domain.firstseen = timestamp()
     SET
         authorized_domain.id = ad.id,
         authorized_domain.name = ad.name,
-        authorized_domain.region = {region},
-        authorized_domain.lastupdated = {gcp_update_tag}
+        authorized_domain.region = $region,
+        authorized_domain.lastupdated = $gcp_update_tag
     WITH authorized_domain
-    MATCH (owner:GCPProject{id:{ProjectId}})
+    MATCH (owner:GCPProject{id: $ProjectId})
     MERGE (owner)-[r:RESOURCE]->(authorized_domain)
     ON CREATE SET
         r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """
     tx.run(
         ingest_cloudrun_authorized_domains,
@@ -463,7 +463,7 @@ def _load_cloudrun_configurations_tx(
         :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
     """
     ingest_cloudrun_configurations = """
-    UNWIND{configurations} as config
+    UNWIND $configurations as config
     MERGE (configuration:GCPCloudRunConfiguration{id:config.id})
     ON CREATE SET
         configuration.firstseen = timestamp()
@@ -472,7 +472,7 @@ def _load_cloudrun_configurations_tx(
         configuration.namspace = config.metadata.namespace,
         configuration.selfLink = config.metadata.selfLink,
         configuration.uid = config.metadata.uid,
-        configuration.region = {region},
+        configuration.region = $region,
         configuration.resourceVersion = config.metadata.resourceVersion,
         configuration.creationTimestamp = config.metadata.creationTimestamp,
         configuration.deletionTimestamp = config.metadata.deletionTimestamp,
@@ -480,13 +480,13 @@ def _load_cloudrun_configurations_tx(
         configuration.observedGeneration = config.spec.observedGeneration,
         configuration.latestCreatedRevisionName = config.spec.latestCreatedRevisionName,
         configuration.latestReadyRevisionName = config.spec.latestReadyRevisionName,
-        configuration.lastupdated = {gcp_update_tag}
+        configuration.lastupdated = $gcp_update_tag
     WITH configuration
-    MATCH (owner:GCPProject{id:{ProjectId}})
+    MATCH (owner:GCPProject{id: $ProjectId})
     MERGE (owner)-[r:RESOURCE]->(configuration)
     ON CREATE SET
         r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """
     tx.run(
         ingest_cloudrun_configurations,
@@ -524,7 +524,7 @@ def _load_cloudrun_domainmappings_tx(
         :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
     """
     ingest_cloudrun_domainmappings = """
-    UNWIND{domainmappings} as domainmap
+    UNWIND $domainmappings as domainmap
     MERGE (domainmapping:GCPCloudRunDomainMap{id:domainmap.id})
     ON CREATE SET
         domainmapping.firstseen = timestamp()
@@ -533,20 +533,20 @@ def _load_cloudrun_domainmappings_tx(
         domainmapping.namspace = domainmap.metadata.namespace,
         domainmapping.selfLink = domainmap.metadata.selfLink,
         domainmapping.uid = domainmap.metadata.uid,
-        domainmapping.region = {region},
+        domainmapping.region = $region,
         domainmapping.resourceVersion = domainmap.metadata.resourceVersion,
         domainmapping.creationTimestamp = domainmap.metadata.creationTimestamp,
         domainmapping.deletionTimestamp = domainmap.metadata.deletionTimestamp,
         domainmapping.routeName = domainmap.spec.routeName,
         domainmapping.certificateMode = domainmap.spec.certificateMode,
         domainmapping.forceOverride = domainmap.spec.forceOveride,
-        domainmapping.lastupdated = {gcp_update_tag}
+        domainmapping.lastupdated = $gcp_update_tag
     WITH domainmapping
-    MATCH (owner:GCPProject{id:{ProjectId}})
+    MATCH (owner:GCPProject{id: $ProjectId})
     MERGE (owner)-[r:RESOURCE]->(domainmapping)
     ON CREATE SET
         r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """
     tx.run(
         ingest_cloudrun_domainmappings,
@@ -581,7 +581,7 @@ def _load_cloudrun_revisions_tx(
         :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
     """
     ingest_cloudrun_revisions = """
-    UNWIND{revisions} as rev
+    UNWIND $revisions as rev
     MERGE (revision:GCPCloudRunRevision{id:rev.id})
     ON CREATE SET
         revision.firstseen = timestamp()
@@ -590,19 +590,19 @@ def _load_cloudrun_revisions_tx(
         revision.namspace = rev.metadata.namespace,
         revision.selfLink = rev.metadata.selfLink,
         revision.uid = rev.metadata.uid,
-        revision.region = {region},
+        revision.region = $region,
         revision.resourceVersion = rev.metadata.resourceVersion,
         revision.creationTimestamp = rev.metadata.creationTimestamp,
         revision.deletionTimestamp = rev.metadata.deletionTimestamp,
         revision.containerConcurrency = rev.specs.containerConcurrency,
         revision.timeoutSeconds = rev.specs.timeoutSeconds,
-        revision.lastupdated = {gcp_update_tag}
+        revision.lastupdated = $gcp_update_tag
     WITH revision
-    MATCH (owner:GCPProject{id:{ProjectId}})
+    MATCH (owner:GCPProject{id: $ProjectId})
     MERGE (owner)-[r:RESOURCE]->(revision)
     ON CREATE SET
         r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """
     tx.run(
         ingest_cloudrun_revisions,
@@ -637,7 +637,7 @@ def _load_cloudrun_routes_tx(
         :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
     """
     ingest_cloudrun_routes = """
-    UNWIND{routes} as rt
+    UNWIND $routes as rt
     MERGE (route:GCPCloudRunRoute{id:rt.id})
     ON CREATE SET
         route.firstseen = timestamp()
@@ -646,19 +646,19 @@ def _load_cloudrun_routes_tx(
         route.namspace = rt.metadata.namespace,
         route.selfLink = rt.metadata.selfLink,
         route.uid = rt.metadata.uid,
-        route.region = {region},
+        route.region = $region,
         route.resourceVersion = rt.metadata.resourceVersion,
         route.creationTimestamp = rt.metadata.creationTimestamp,
         route.deletionTimestamp = rt.metadata.deletionTimestamp,
         route.observedGeneration = rt.status.observedGeneration,
         route.url = rt.status.url,
-        route.lastupdated = {gcp_update_tag}
+        route.lastupdated = $gcp_update_tag
     WITH route
-    MATCH (owner:GCPProject{id:{ProjectId}})
+    MATCH (owner:GCPProject{id: $ProjectId})
     MERGE (owner)-[r:RESOURCE]->(route)
     ON CREATE SET
         r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """
     tx.run(
         ingest_cloudrun_routes,
@@ -693,7 +693,7 @@ def _load_cloudrun_services_tx(
         :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
     """
     ingest_cloudrun_services = """
-    UNWIND{services} as svc
+    UNWIND $services as svc
     MERGE (service:GCPCloudRunService{id:svc.id})
     ON CREATE SET
         service.firstseen = timestamp()
@@ -702,20 +702,20 @@ def _load_cloudrun_services_tx(
         service.namspace = svc.metadata.namespace,
         service.selfLink = svc.metadata.selfLink,
         service.uid = svc.metadata.uid,
-        service.region = {region},
+        service.region = $region,
         service.resourceVersion = svc.metadata.resourceVersion,
         service.creationTimestamp = svc.metadata.creationTimestamp,
         service.deletionTimestamp = svc.metadata.deletionTimestamp,
         service.observedGeneration = svc.status.observedGeneration,
         service.latestReadyRevisionName = svc.status.latestReadyRevisionName,
         service.latestCreatedRevisionName = svc.status.latestCreatedRevisionName,
-        service.lastupdated = {gcp_update_tag}
+        service.lastupdated = $gcp_update_tag
     WITH service
-    MATCH (owner:GCPProject{id:{ProjectId}})
+    MATCH (owner:GCPProject{id: $ProjectId})
     MERGE (owner)-[r:RESOURCE]->(service)
     ON CREATE SET
         r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """
     tx.run(
         ingest_cloudrun_services,

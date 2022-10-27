@@ -287,7 +287,7 @@ def load_dns_zones(neo4j_session: neo4j.Session, dns_zones: List[Dict], project_
     """
 
     ingest_records = """
-    UNWIND {records} as record
+    UNWIND $records as record
     MERGE (zone:GCPDNSZone{id:record.id})
     ON CREATE SET
         zone.firstseen = timestamp(),
@@ -295,19 +295,19 @@ def load_dns_zones(neo4j_session: neo4j.Session, dns_zones: List[Dict], project_
     SET
         zone.name = record.name,
         zone.dns_name = record.dnsName,
-        zone.region = {region},
+        zone.region = $region,
         zone.description = record.description,
         zone.visibility = record.visibility,
         zone.kind = record.kind,
         zone.nameservers = record.nameServers,
         zone.consolelink = record.consolelink,
-        zone.lastupdated = {gcp_update_tag}
+        zone.lastupdated = $gcp_update_tag
     WITH zone
-    MATCH (owner:GCPProject{id:{ProjectId}})
+    MATCH (owner:GCPProject{id: $ProjectId})
     MERGE (owner)-[r:RESOURCE]->(zone)
     ON CREATE SET
         r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """
     neo4j_session.run(
         ingest_records,
@@ -340,24 +340,24 @@ def load_rrs(neo4j_session: neo4j.Session, dns_rrs: List[Resource], project_id: 
     """
 
     ingest_records = """
-    UNWIND {records} as record
+    UNWIND $records as record
     MERGE (rrs:GCPRecordSet{id:record.id})
     ON CREATE SET
         rrs.firstseen = timestamp()
     SET
         rrs.name = record.name,
         rrs.type = record.type,
-        rrs.region = {region},
+        rrs.region = $region,
         rrs.ttl = record.ttl,
         rrs.data = record.rrdatas,
         rrs.consolelink = record.consolelink,
-        rrs.lastupdated = {gcp_update_tag}
+        rrs.lastupdated = $gcp_update_tag
     WITH rrs, record
     MATCH (zone:GCPDNSZone{id:record.zone})
     MERGE (zone)-[r:HAS_RECORD]->(rrs)
     ON CREATE SET
         r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """
     neo4j_session.run(
         ingest_records,
@@ -388,23 +388,23 @@ def load_dns_polices(neo4j_session: neo4j.Session, policies: List[Dict], project
     :return: Nothing
     """
     ingest_policies = """
-    UNWIND {DNSPolicies} as policy
+    UNWIND $DNSPolicies as policy
     MERGE (pol:GCPDNSPolicy{id:policy.id})
     ON CREATE SET
         pol.firstseen = timestamp()
     SET
         pol.uniqueId = policy.id,
         pol.name = policy.name,
-        pol.region = {region},
+        pol.region = $region,
         pol.enableInboundForwarding = policy.enableInboundForwarding,
         pol.enableLogging = policy.enableLogging,
-        pol.lastupdated = {gcp_update_tag}
+        pol.lastupdated = $gcp_update_tag
     WITH pol
-    MATCH (owner:GCPProject{id:{ProjectId}})
+    MATCH (owner:GCPProject{id: $ProjectId})
     MERGE (owner)-[r:RESOURCE]->(pol)
     ON CREATE SET
         r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """
     neo4j_session.run(
         ingest_policies,
@@ -436,23 +436,23 @@ def load_dns_keys(neo4j_session: neo4j.Session, dns_keys: List[Dict], project_id
     :return: Nothing
     """
     ingest_keys = """
-    UNWIND {DNSKeys} as key
+    UNWIND $DNSKeys as key
     MERGE (ky:GCPDNSKey{id:key.id})
     ON CREATE SET
         ky.firstseen = timestamp()
     SET
         ky.uniqueId = key.id,
-        ky.region = {region},
+        ky.region = $region,
         ky.algorithm = key.algorithm,
         ky.keyLength = key.keyLength,
         ky.isActive = key.isActive,
-        ky.lastupdated = {gcp_update_tag}
+        ky.lastupdated = $gcp_update_tag
     WITH ky, key
     MATCH (zone:GCPDNSZone{id:key.zone})
     MERGE (zone)-[r:HAS_KEY]->(ky)
     ON CREATE SET
         r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """
     neo4j_session.run(
         ingest_keys,
