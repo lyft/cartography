@@ -37,6 +37,8 @@ def get_client_certificates(boto3_session: boto3.session.Session, region: str, c
             certificates.extend(page['items'])
         for certificate in certificates:
             certificate['region'] = region
+            console_arn = f"arn:aws:apigateway:{region}::certificate/{certificate['apiId']}"
+            certificate['consolelink'] = aws_console_link.get_console_link(arn=console_arn)
             certificate['arn'] = f"arn:aws:apigateway:{region}:{current_aws_account_id}:clientcertificates/{certificate['clientCertificateId']}"
 
         return certificates
