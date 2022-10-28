@@ -19,7 +19,7 @@ aws_console_link = AWSLinker()
 
 
 @timeit
-def get_domains(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
+def get_domains(boto3_session: boto3.session.Session, region: str, account_id: str) -> List[Dict]:
     domains = []
     try:
         client = boto3_session.client('route53domains', region_name=region)
@@ -31,6 +31,8 @@ def get_domains(boto3_session: boto3.session.Session, region: str) -> List[Dict]
 
         for domain in domains:
             domain['arn'] = domain['DomainName']
+            console_arn = f"arn:aws:route53:{region}:{account_id}:domains/{domain['DomainName']}"
+            domain['consolelink'] = aws_console_link.get_console_link(arn=console_arn)
             domain['region'] = region
             domain['details'] = client.get_domain_detail(DomainName=domain['DomainName'])
 
@@ -58,6 +60,7 @@ def _load_domains_tx(tx: neo4j.Transaction, domains: List[Dict], current_aws_acc
         domain.auto_renew = record.AutoRenew,
         domain.transfer_lock = record.TransferLock,
         domain.expiry = record.Expiry,
+        domain.consolelink = record.consolelink,
         domain.admin_privacy = record.details.AdminPrivacy,
         domain.registrant_privacy = record.details.RegistrantPrivacy,
         domain.tech_privacy = record.details.TechPrivacy,
@@ -74,7 +77,6 @@ def _load_domains_tx(tx: neo4j.Transaction, domains: List[Dict], current_aws_acc
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = {aws_update_tag}
     """
-
     tx.run(
         query,
         Records=domains,
@@ -229,12 +231,13 @@ def load_zone(neo4j_session: neo4j.Session, zone: Dict, current_aws_id: str, upd
 
 
 @timeit
-def load_ns_records(neo4j_session: neo4j.Session, records: List[Dict], zone_name: str, update_tag: int) -> None:
+def load_ns_records(neo4j_session: neo4j.Session, records: List[Dict], zone_name: str, update_tag: int, consolelink: str) -> None:
     ingest_records = """
     UNWIND {records} as record
     MERGE (a:DNSRecord:AWSDNSRecord{id: record.id})
     ON CREATE SET a.firstseen = timestamp(), a.name = record.name,
     a.region = record.Region,
+    a.consolelink = {consolelink},
     a.type = record.type
     SET a.lastupdated = {update_tag}, a.value = record.name
     WITH a,record
@@ -245,7 +248,7 @@ def load_ns_records(neo4j_session: neo4j.Session, records: List[Dict], zone_name
     WITH a,record
     UNWIND record.servers as server
     MERGE (ns:NameServer{id:server})
-    ON CREATE SET ns.firstseen = timestamp()
+    ON CREATE SET ns.firstseen = timestamp(), ns.consolelink = {consolelink}
     SET ns.lastupdated = {update_tag}, ns.name = server
     MERGE (a)-[pt:DNS_POINTS_TO]->(ns)
     SET pt.lastupdated = {update_tag}
@@ -254,6 +257,7 @@ def load_ns_records(neo4j_session: neo4j.Session, records: List[Dict], zone_name
     neo4j_session.run(
         ingest_records,
         records=records,
+        consolelink = consolelink,
         update_tag=update_tag,
     )
 
@@ -438,7 +442,7 @@ def load_dns_details(
         if zone_cname_records:
             load_cname_records(neo4j_session, zone_cname_records, update_tag)
         if zone_ns_records:
-            load_ns_records(neo4j_session, zone_ns_records, parsed_zone['name'][:-1], update_tag)
+            load_ns_records(neo4j_session, zone_ns_records, parsed_zone['name'][:-1], update_tag, zone['consolelink'])
     link_aws_resources(neo4j_session, update_tag)
 
 
@@ -529,7 +533,7 @@ def sync(
     for region in regions:
         logger.info("Syncing Route53 Domains for region '%s' in account '%s'.", region, current_aws_account_id)
 
-        domains.extend(get_domains(boto3_session, region))
+        domains.extend(get_domains(boto3_session, region, current_aws_account_id))
 
     logger.info(f"Total Route Domains: {len(domains)}")
 

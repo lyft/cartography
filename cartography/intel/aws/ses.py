@@ -11,9 +11,10 @@ import neo4j
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
+from cloudconsolelink.clouds.aws import AWSLinker
 
 logger = logging.getLogger(__name__)
-
+aws_console_link = AWSLinker()
 
 @timeit
 @aws_handle_regions
@@ -40,6 +41,7 @@ def get_ses_identity(boto3_session: boto3.session.Session, region: str, current_
 
         for identity in identities:
             identity['arn'] = f"arn:aws:ses:{region}:{current_aws_account_id}:identity/{identity['name']}"
+            identity['consolelink'] = aws_console_link.get_console_link(arn=identity['arn'])
             identity['region'] = region
             identity['dkim'] = dkim_attributes.get(identity['name'], {})
             identity['verification'] = identity_verifications.get(identity['name'], {})
@@ -67,6 +69,7 @@ def _load_ses_identity_tx(tx: neo4j.Transaction, identities: List[Dict], current
     SET identity.lastupdated = {aws_update_tag},
         identity.name = record.name,
         identity.region = record.region,
+        identity.consolelink = record.consolelink,
         identity.dkim_enabled = record.dkim.DkimEnabled,
         identity.dkim_verification_status = record.dkim.DkimVerificationStatus,
         identity.verification_status = record.verification.VerificationStatus

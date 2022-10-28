@@ -13,9 +13,10 @@ from cartography.util import dict_date_to_epoch
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 from botocore.exceptions import ClientError
+from cloudconsolelink.clouds.aws import AWSLinker
 
 logger = logging.getLogger(__name__)
-
+aws_console_link = AWSLinker()
 
 @timeit
 @aws_handle_regions
@@ -295,6 +296,7 @@ def load_ecs_task_definitions(
             d.task_role_arn = def.taskRoleArn,
             d.execution_role_arn = def.executionRoleArn,
             d.network_mode = def.networkMode,
+            d.consolelink = def.consolelink,
             d.revision = def.revision,
             d.status = def.status,
             d.compatibilities = def.compatibilities,
@@ -323,6 +325,7 @@ def load_ecs_task_definitions(
     for task_definition in data:
         task_definition['registeredAt'] = dict_date_to_epoch(task_definition, 'registeredAt')
         task_definition['deregisteredAt'] = dict_date_to_epoch(task_definition, 'deregisteredAt')
+        task_definition['consolelink'] = aws_console_link.get_console_link(arn=task_definition['taskDefinitionArn'])
         for container in task_definition.get("containerDefinitions", []):
             container["_taskDefinitionArn"] = task_definition["taskDefinitionArn"]
             container_definitions.append(container)

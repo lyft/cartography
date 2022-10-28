@@ -10,9 +10,10 @@ from botocore.exceptions import ClientError
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
+from cloudconsolelink.clouds.aws import AWSLinker
 
 logger = logging.getLogger(__name__)
-
+aws_console_link = AWSLinker()
 
 @timeit
 @aws_handle_regions
@@ -50,7 +51,7 @@ def load_snapshots(
     MERGE (s:EBSSnapshot{id: snapshot.SnapshotId})
     ON CREATE SET s.firstseen = timestamp()
     SET s.lastupdated = {update_tag}, s.description = snapshot.Description, s.encrypted = snapshot.Encrypted,
-    s.progress = snapshot.Progress, s.starttime = snapshot.StartTime, s.state = snapshot.State,
+    s.progress = snapshot.Progress, s.starttime = snapshot.StartTime, s.state = snapshot.State, s.consolelink = snapshot.consolelink,
     s.statemessage = snapshot.StateMessage, s.volumeid = snapshot.VolumeId, s.volumesize = snapshot.VolumeSize,
     s.outpostarn = snapshot.OutpostArn, s.dataencryptionkeyid = snapshot.DataEncryptionKeyId,
     s.kmskeyid = snapshot.KmsKeyId, s.region = snapshot.region, s.arn = snapshot.Arn
@@ -67,6 +68,7 @@ def load_snapshots(
         region = snapshot.get('region', '')
         snapshot['StartTime'] = str(snapshot['StartTime'])
         snapshot['Arn'] = f"arn:aws:ec2:{region}:{current_aws_account_id}:snapshot/{snapshot['SnapshotId']}"
+        snapshot['consolelink'] = aws_console_link.get_console_link(arn=snapshot['Arn'])
 
     neo4j_session.run(
         ingest_snapshots,

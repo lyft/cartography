@@ -9,6 +9,7 @@ import botocore.config
 import neo4j
 from policyuniverse.policy import Policy
 from botocore.exceptions import ClientError
+from cloudconsolelink.clouds.aws import AWSLinker
 
 from cartography.intel.dns import ingest_dns_record_by_fqdn
 from cartography.util import aws_handle_regions
@@ -16,6 +17,7 @@ from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+aws_console_link = AWSLinker()
 
 # TODO get this programmatically
 # https://docs.aws.amazon.com/general/latest/gr/rande.html#elasticsearch-service-regions
@@ -50,7 +52,7 @@ def _get_botocore_config() -> botocore.config.Config:
 
 @timeit
 @aws_handle_regions
-def _get_es_domains(client: botocore.client.BaseClient, region: str) -> List[Dict]:
+def _get_es_domains(client: botocore.client.BaseClient, region: str, account_id: str) -> List[Dict]:
     """
     Get ES domains.
 
@@ -66,6 +68,8 @@ def _get_es_domains(client: botocore.client.BaseClient, region: str) -> List[Dic
         chunk_data = client.describe_elasticsearch_domains(DomainNames=domain_name_chunk)
         domains.extend(chunk_data['DomainStatusList'])
     for domain in domains:
+        domain['arn'] = f"arn:aws:es:{region if region else ''}:{account_id if account_id else ''}:domain/{domain['DomainName']}"
+        domain['consolelink'] = aws_console_link.get_console_link(arn=domain['arn'])
         domain['region'] = region
         domain['isPublicFacing'] = False
         if not domain.get('VPCOptions', {}).get('VpcId'):
@@ -100,6 +104,7 @@ def _load_es_domains(
     es.ebs_options_volumetype = record.EBSOptions.VolumeType,
     es.ebs_options_volumesize = record.EBSOptions.VolumeSize,
     es.region = record.region,
+    es.consolelink = record.consolelink,
     es.isPublicFacing = record.isPublicFacing,
     es.ebs_options_iops = record.EBSOptions.Iops,
     es.encryption_at_rest_options_enabled = record.EncryptionAtRestOptions.Enabled,
@@ -317,7 +322,7 @@ def sync(
     reserved_instances = []
     for region in es_regions:
         client = boto3_session.client('es', region_name=region, config=_get_botocore_config())
-        data.extend(_get_es_domains(client, region))
+        data.extend(_get_es_domains(client, region, current_aws_account_id))
         reserved_instances.extend(get_elasticsearch_reserved_instances(client, region, current_aws_account_id))
 
     logger.info(f"Total ElasticSearch Domains: {len(data)}")

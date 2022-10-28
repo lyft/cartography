@@ -11,9 +11,10 @@ from .util import get_botocore_config
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
+from cloudconsolelink.clouds.aws import AWSLinker
 
 logger = logging.getLogger(__name__)
-
+aws_console_link = AWSLinker()
 
 def get_images_in_use(neo4j_session: neo4j.Session, region: str, current_aws_account_id: str) -> List[str]:
     # We use OPTIONAL here to allow query chaining with queries that may not match.
@@ -38,8 +39,8 @@ def get_images_in_use(neo4j_session: neo4j.Session, region: str, current_aws_acc
 
 @timeit
 @aws_handle_regions
-def get_images(boto3_session: boto3.session.Session, region: str, image_ids: List[str]) -> List[Dict]:
-    client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
+def get_images(boto3_session: boto3.session.Session, region: str, image_ids: List[str], account_id: str) -> List[Dict]:
+    client = boto3_session.client('ec2', region_name=region, config=get_botocore_config(),)
     images = []
     try:
         self_images = client.describe_images(Owners=['self'])['Images']
@@ -55,6 +56,8 @@ def get_images(boto3_session: boto3.session.Session, region: str, image_ids: Lis
             _ids = [image["ImageId"] for image in images]
             for image in images_in_use:
                 if image["ImageId"] not in _ids:
+                    console_arn = f"arn:aws:ec2:{region}:{account_id}:image/{image['ImageId']}"
+                    image['consolelink'] = aws_console_link.get_console_link(arn=console_arn)
                     image['region'] = region
                     images.append(image)
     except ClientError as e:
@@ -77,6 +80,7 @@ def load_images(
     i.platform_details = image.PlatformDetails, i.usageoperation = image.UsageOperation,
     i.state = image.State, i.description = image.Description, i.enasupport = image.EnaSupport,
     i.hypervisor = image.Hypervisor, i.rootdevicename = image.RootDeviceName,
+    i.consolelink = image.consolelink,
     i.rootdevicetype = image.RootDeviceType, i.virtualizationtype = image.VirtualizationType,
     i.sriov_net_support = image.SriovNetSupport,
     i.bootmode = image.BootMode, i.owner = image.OwnerId, i.image_owner_alias = image.ImageOwnerAlias,
@@ -124,7 +128,7 @@ def sync_ec2_images(
     for region in regions:
         logger.info("Syncing images for region '%s' in account '%s'.", region, current_aws_account_id)
         images_in_use = get_images_in_use(neo4j_session, region, current_aws_account_id)
-        data.extend(get_images(boto3_session, region, images_in_use))
+        data.extend(get_images(boto3_session, region, images_in_use, current_aws_account_id))
 
     logger.info(f"Total EC2 Images: {len(data)}")
 

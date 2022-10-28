@@ -10,9 +10,10 @@ import neo4j
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
+from cloudconsolelink.clouds.aws import AWSLinker
 
 logger = logging.getLogger(__name__)
-
+aws_console_link = AWSLinker()
 
 @timeit
 @aws_handle_regions
@@ -27,6 +28,8 @@ def get_cloudfront_distributions(boto3_session: boto3.session.Session) -> List[D
             distributions.extend(page.get('DistributionList', {}).get('Items', []))
         for distribution in distributions:
             distribution['region'] = 'global'
+            distribution['arn'] = distribution['ARN']
+            distribution['consolelink'] = aws_console_link.get_console_link(arn=distribution['arn'])
 
         return distributions
 
@@ -50,6 +53,7 @@ def _load_cloudfront_distributions_tx(tx: neo4j.Transaction, distributions: List
         distribution.name = record.Id,
         distribution.region = record.region,
         distribution.status = record.Status,
+        distribution.consolelink = record.consolelink,
         distribution.domain_name = record.DomainName,
         distribution.comment = record.Comment,
         distribution.price_class = record.PriceClass,

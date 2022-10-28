@@ -81,13 +81,14 @@ def load_dynamodb_tables(
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag,
         )
-        load_gsi(neo4j_session, table, region, current_aws_account_id, aws_update_tag)
+        consolelink = aws_console_link.get_console_link(arn=f"arn:aws:dynamodb::{current_aws_account_id}:secondary_indexes/{table['Table']['TableName']}")
+        load_gsi(neo4j_session, table, region, current_aws_account_id, aws_update_tag, consolelink)
 
 
 @timeit
 def load_gsi(
     neo4j_session: neo4j.Session, table: Dict, region: str, current_aws_account_id: str,
-    aws_update_tag: str,
+    aws_update_tag: str, consolelink: str,
 ) -> None:
     ingest_gsi = """
     MERGE (gsi:DynamoDBGlobalSecondaryIndex{id: {Arn}})
@@ -95,6 +96,7 @@ def load_gsi(
     gsi.region = {Region}
     SET gsi.lastupdated = {aws_update_tag},
     gsi.provisioned_throughput_read_capacity_units = {ProvisionedThroughputReadCapacityUnits},
+    gsi.consolelink = {consolelink},
     gsi.provisioned_throughput_write_capacity_units = {ProvisionedThroughputWriteCapacityUnits}
     WITH gsi
     MATCH (table:DynamoDBTable{arn: {TableArn}})
@@ -107,6 +109,7 @@ def load_gsi(
         neo4j_session.run(
             ingest_gsi,
             TableArn=table['Table']['TableArn'],
+            consolelink = consolelink,
             Arn=gsi['IndexArn'],
             Region=region,
             ProvisionedThroughputReadCapacityUnits=gsi['ProvisionedThroughput']['ReadCapacityUnits'],

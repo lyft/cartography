@@ -10,9 +10,10 @@ import neo4j
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
+from cloudconsolelink.clouds.aws import AWSLinker
 
 logger = logging.getLogger(__name__)
-
+aws_console_link = AWSLinker()
 
 @timeit
 @aws_handle_regions
@@ -27,6 +28,8 @@ def get_cloudformation_stack(boto3_session: boto3.session.Session, region: str) 
             stacks.extend(page['Stacks'])
         for stack in stacks:
             stack['region'] = region
+            stack['arn'] = stack['StackId']
+            stack['consolelink'] = aws_console_link.get_console_link(arn=stack['arn'])
 
         return stacks
 
@@ -51,6 +54,7 @@ def _load_cloudformation_stack_tx(tx: neo4j.Transaction, stacks: List[Dict], cur
         stack.region = record.region,
         stack.change_set_id = record.ChangeSetId,
         stack.description = record.Description,
+        stack.consolelink = record.consolelink,
         stack.creation_time = record.CreationTime,
         stack.deletion_time = record.DeletionTime,
         stack.stack_status = record.StackStatus,

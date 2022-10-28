@@ -14,12 +14,14 @@ import neo4j
 from botocore.config import Config
 from botocore.exceptions import ClientError
 from policyuniverse.policy import Policy
+from cloudconsolelink.clouds.aws import AWSLinker
 
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+aws_console_link = AWSLinker()
 
 
 @timeit
@@ -58,6 +60,7 @@ def _load_client_certificates_tx(tx: neo4j.Transaction, certificates: List[Dict]
     SET certificate.lastupdated = {aws_update_tag},
         certificate.name = record.clientCertificateId,
         certificate.region = record.region,
+        certificate.consolelink = record.consolelink,
         certificate.pem_encoded_certificate = record.pemEncodedCertificate,
         certificate.expiration_date = record.expirationDate,
         certificate.description = record.description,
@@ -166,8 +169,11 @@ def get_rest_api_details(
         )
         client = boto3_session.client('apigateway', config=config)
         stages = get_rest_api_stages(api, client)
-        certificate = get_rest_api_client_certificate(stages, client)  # clientcertificate id is given by the api stage
+        certificate = get_rest_api_client_certificate(stages, client, api['id'], api['region'])  # clientcertificate id is given by the api stage
         resources = get_rest_api_resources(api, client)
+        for resource in resources:
+            console_arn = f"arn:aws:apigateway:{api['region']}::/{api['id']}"
+            resource['consolelink'] = aws_console_link.get_console_link(arn=console_arn)
         policy = get_rest_api_policy(api, client)
         yield api['id'], stages, certificate, resources, policy, api['region']
 
@@ -187,7 +193,7 @@ def get_rest_api_stages(api: Dict, client: botocore.client.BaseClient) -> List[A
 
 
 @timeit
-def get_rest_api_client_certificate(stages: Dict, client: botocore.client.BaseClient) -> Optional[Any]:
+def get_rest_api_client_certificate(stages: Dict, client: botocore.client.BaseClient, api_id: str, api_region: str) -> Optional[Any]:
     """
     Gets the current ClientCertificate resource if present, else returns None.
     """
@@ -197,6 +203,8 @@ def get_rest_api_client_certificate(stages: Dict, client: botocore.client.BaseCl
             try:
                 response = client.get_client_certificate(clientCertificateId=stage['clientCertificateId'])
                 response['stageName'] = stage['stageName']
+                console_arn = f"arn:aws:apigateway:{api_region}::certificate/{api_id}"
+                response['consolelink'] = aws_console_link.get_console_link(arn=console_arn)
             except ClientError as e:
                 logger.warning(f"Failed to retrive Client Certificate for Stage {stage['stageName']} - {e}")
                 raise
@@ -248,6 +256,7 @@ def load_apigateway_rest_apis(
     rest_api.disableexecuteapiendpoint = r.disableExecuteApiEndpoint,
     rest_api.lastupdated = {aws_update_tag},
     rest_api.region = r.region,
+    restApi.consolelink = r.consolelink,
     rest_api.arn = r.Arn
     WITH rest_api
     MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
@@ -262,6 +271,7 @@ def load_apigateway_rest_apis(
         region = api['region']
         api['createdDate'] = str(api['createdDate']) if 'createdDate' in api else None
         api['Arn'] = f"arn:aws:apigateway:{region}::restapis/{api['id']}"
+        api['consolelink'] = aws_console_link.get_console_link(arn=api['arn'])
 
     neo4j_session.run(
         ingest_rest_apis,
@@ -321,6 +331,7 @@ def _load_apigateway_stages(
     SET s.deploymentid = stage.deploymentId,
     s.clientcertificateid = stage.clientCertificateId,
     s.region=stage.region,
+    s.consolelink = stage.consolelink,
     s.cacheclusterenabled = stage.cacheClusterEnabled,
     s.cacheclusterstatus = stage.cacheClusterStatus,
     s.tracingenabled = stage.tracingEnabled,
@@ -339,6 +350,7 @@ def _load_apigateway_stages(
     for stage in stages:
         stage['createdDate'] = str(stage['createdDate'])
         stage['arn'] = f"arn:aws:apigateway:{stage['region']}::restapis/{stage['apiId']}/stages/{stage['stageName']}"
+        stage['consolelink'] = aws_console_link.get_console_link(arn=stage['arn'])
 
     neo4j_session.run(
         ingest_stages,
@@ -360,6 +372,7 @@ def _load_apigateway_certificates(
     ON CREATE SET c.firstseen = timestamp(), c.createddate = certificate.createdDate
     SET c.lastupdated = {UpdateTag}, c.expirationdate = certificate.expirationDate,
     c.region = certificate.region,
+    c.consolelink = certificate.consolelink,
     c.client_certificate_id = certificate.clientCertificateId,
     c.arn = certificate.arn
     WITH c, certificate
@@ -396,6 +409,7 @@ def _load_apigateway_resources(
     SET s.path = res.path,
     s.pathpart = res.pathPart,
     s.parentid = res.parentId,
+    s.consolelink = res.consolelink,
     s.region=res.region,
     s.lastupdated ={UpdateTag},
     s.arn = res.arn

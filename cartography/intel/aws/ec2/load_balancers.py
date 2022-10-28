@@ -10,8 +10,10 @@ from .util import get_botocore_config
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
+from cloudconsolelink.clouds.aws import AWSLinker
 
 logger = logging.getLogger(__name__)
+aws_console_link = AWSLinker()
 
 
 @timeit
@@ -35,7 +37,7 @@ def get_loadbalancer_data(boto3_session: boto3.session.Session, region: str) -> 
 @timeit
 def load_load_balancer_listeners(
     neo4j_session: neo4j.Session, load_balancer_id: str, listener_data: List[Dict],
-    update_tag: int,
+    update_tag: int, consolelink: str,
 ) -> None:
     ingest_listener = """
     MATCH (elb:LoadBalancer{id: {LoadBalancerId}})
@@ -43,7 +45,7 @@ def load_load_balancer_listeners(
     UNWIND {Listeners} as data
         MERGE (l:Endpoint:ELBListener{id: elb.id + toString(data.Listener.LoadBalancerPort) +
                 toString(data.Listener.Protocol)})
-        ON CREATE SET l.port = data.Listener.LoadBalancerPort, l.protocol = data.Listener.Protocol,
+        ON CREATE SET l.port = data.Listener.LoadBalancerPort, l.protocol = data.Listener.Protocol, l.consolelink = {consolelink},
         l.firstseen = timestamp()
         SET l.instance_port = data.Listener.InstancePort, l.instance_protocol = data.Listener.InstanceProtocol,
         l.policy_names = data.PolicyNames,
@@ -57,6 +59,7 @@ def load_load_balancer_listeners(
     neo4j_session.run(
         ingest_listener,
         LoadBalancerId=load_balancer_id,
+        consolelink = consolelink,
         Listeners=listener_data,
         update_tag=update_tag,
     )
@@ -93,7 +96,7 @@ def load_load_balancers(
     ON CREATE SET elb.firstseen = timestamp(), elb.createdtime = {CREATED_TIME}
     SET elb.lastupdated = {update_tag}, elb.name = {NAME}, elb.dnsname = {DNS_NAME},
     elb.canonicalhostedzonename = {HOSTED_ZONE_NAME}, elb.canonicalhostedzonenameid = {HOSTED_ZONE_NAME_ID},
-    elb.scheme = {SCHEME}, elb.region = {Region}, elb.arn = {Arn}
+    elb.scheme = {SCHEME}, elb.region = {Region}, elb.consolelink = {consolelink}, elb.arn = {Arn}
     WITH elb
     MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
     MERGE (aa)-[r:RESOURCE]->(elb)
@@ -133,6 +136,8 @@ def load_load_balancers(
         region = lb.get('region', '')
         load_balancer_id = lb["DNSName"]
         load_balancer_arn = f"arn:aws:elasticloadbalancing:{region}:{current_aws_account_id}:loadbalancer/{load_balancer_id}"
+        console_arn = f"arn:aws:elasticloadbalancing:{region}:{current_aws_account_id}:loadbalancer/{lb['LoadBalancerName']}"
+        consolelink = aws_console_link.get_console_link(arn=console_arn)
 
         neo4j_session.run(
             ingest_load_balancer,
@@ -145,6 +150,7 @@ def load_load_balancers(
             SCHEME=lb.get("Scheme", ""),
             AWS_ACCOUNT_ID=current_aws_account_id,
             Region=region,
+            consolelink = consolelink,
             Arn=load_balancer_arn,
             update_tag=update_tag,
         )
@@ -181,7 +187,7 @@ def load_load_balancers(
                 )
 
         if lb["ListenerDescriptions"]:
-            load_load_balancer_listeners(neo4j_session, load_balancer_id, lb["ListenerDescriptions"], update_tag)
+            load_load_balancer_listeners(neo4j_session, load_balancer_id, lb["ListenerDescriptions"], update_tag, consolelink)
 
 
 @timeit
