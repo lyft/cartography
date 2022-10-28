@@ -123,3 +123,4 @@ def sync(
 ) -> None:
     load_azure_tenant(neo4j_session, tenant_obj, current_user, update_tag, common_job_parameters)
     cleanup(neo4j_session, tenant_obj, common_job_parameters)
+    common_job_parameters['Object_ID'] = current_user['id']

@@ -87,6 +87,7 @@ class Config:
         azure_subscription_id=None,
         azure_refresh_token=None,
         azure_graph_scope=None,
+        azure_vault_scope=None,
         azure_azure_scope=None,
         aws_requested_syncs=None,
         azure_requested_syncs=None,
@@ -127,6 +128,7 @@ class Config:
         self.azure_subscription_id = azure_subscription_id
         self.azure_refresh_token = azure_refresh_token
         self.azure_graph_scope = azure_graph_scope
+        self.azure_vault_scope = azure_vault_scope
         self.azure_azure_scope = azure_azure_scope
         self.aws_requested_syncs = aws_requested_syncs
         self.azure_requested_syncs = azure_requested_syncs
