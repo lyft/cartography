@@ -215,10 +215,10 @@ def configure_get_state_neo4j(config):
     if config.neo4j_user:
         config.neo4j_password = None
         if config.neo4j_password_prompt:
-            logger.info("Reading password for Neo4j user '%s' interactively.", config.neo4j_user)
+            logger.info("Reading password for Neo4j user '%s' interactively.", config.neo4j_user)  # nosemgrep
             config.neo4j_password = getpass.getpass()
         elif config.neo4j_password_env_var:
-            logger.debug(
+            logger.debug(  # nosemgrep
                 "Reading password for Neo4j user '%s' from environment variable '%s'.",
                 config.neo4j_user,
                 config.neo4j_password_env_var,
