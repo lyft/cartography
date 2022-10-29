@@ -169,7 +169,7 @@ def extract_rapid7_history_firstseen(history):
 
 
 # pylint: disable=too-many-arguments,too-many-locals
-def Rapid7Hosts(
+def rapid7_hosts(
     authorization: tuple[str, str, str, bool],
     limit: int = 10000,
     page: int = 0,
@@ -245,8 +245,6 @@ def Rapid7Hosts(
             return result_array
 
         try:
-            # logger.debug("GetAssets count %s", len(data['resources']))
-
             result_array = result_array + data["resources"]
 
             page += 1
@@ -257,7 +255,7 @@ def Rapid7Hosts(
             logger.exception("GetAssets3 - Incomplete data: %s", exc)
             return result_array
 
-    # logger.debug("result_array %s", (result_array))
+    logger.debug("GetAssets final count %s", len(result_array))
 
     logger.info("Flattening data")
     df_rapid7_tmp = pandas.json_normalize(result_array, sep="_", max_level=3)
@@ -284,20 +282,3 @@ def Rapid7Hosts(
     logger.debug("Example: %s", flatten_data[0])
 
     return flatten_data
-
-
-# pylint: disable=unused-argument
-def Rapid7VulnerabilitiesByHost(
-    authorization: tuple[str, str, str, bool],
-    machine_id,
-) -> array:
-    """
-    Get Rapid7 vulnerabilities
-
-    https://help.rapid7.com/insightvm/en-us/api/index.html#operation/getVulnerabilities
-    Vulnerabilities per host are returned with hosts
-    """
-
-    # TBD
-
-    return ["TBD"]

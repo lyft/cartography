@@ -12,9 +12,6 @@
 
 Placeholder representation of a single [Rapid7 Host or asset](https://help.rapid7.com/insightvm/en-us/api/index.html#operation/getAssets). This node is the minimal data necessary to map an asset.
 
-Warning! Work In Progress.
-
-
 | Field | Description |
 |-------|--------------|
 | firstseen| Timestamp of when a sync job first discovered this node  |
@@ -42,18 +39,24 @@ Warning! Work In Progress.
 | r7_software | software |
 | r7_usergroups | userGroups |
 | r7_users | users |
-| r7_vulnerabilities | vulnerabilities |
+| r7_architecture | osFingerprint_architecture |
+| r7_os_product | osFingerprint_product |
+| r7_os_version | osFingerprint_version |
+| r7_vulnerabilities_critical | vulnerabilities_critical |
+| r7_vulnerabilities_exploits | vulnerabilities_exploits |
+| r7_vulnerabilities_malwareKits | vulnerabilities_malwareKits |
+| r7_vulnerabilities_moderate | vulnerabilities_moderate |
+| r7_vulnerabilities_severe | vulnerabilities_severe |
+| r7_vulnerabilities_total | vulnerabilities_total |
+| cloud_provider | cloud_provider |
+| instance_id | instance_id |
+| subscription_id | subscription_id |
+| resource_id | resource_id |
+| resource_group | resource_group |
 
 ### Relationships
 
-TBD
-* Azure Tenant contains one or more Rapid7 Hosts.
+* Azure Virtual Machine is one single Rapid7 Host, based on resource_id if available.
 ```
-(AzureTenant)-[RESOURCE]->(Rapid7Host)
+(AzureVirtualMachine-[PRESENT_IN]->(Rapid7Host)
 ```
-* Azure Subscription contains one or more Rapid7 Hosts.
-```
-(AzureSubscription)-[RESOURCE]->(Rapid7Host)
-```
-* Azure Virtual Machine is one single Rapid7 Host.
-* Similarly for other cloud providers and Onpremises.
