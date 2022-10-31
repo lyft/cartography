@@ -63,7 +63,7 @@ def load_ec2_instance_network_interfaces_tx(
         update_tag: int,
 ) -> None:
     query = """
-        UNWIND {NetworkInterfaces} as interface
+        UNWIND $NetworkInterfaces as interface
             MERGE (nic:NetworkInterface{id: interface.NetworkInterfaceId})
             ON CREATE SET nic.firstseen = timestamp()
             SET nic.status = interface.Status,
@@ -73,30 +73,30 @@ def load_ec2_instance_network_interfaces_tx(
             nic.private_dns_name = interface.PrivateDnsName,
             nic.private_ip_address = interface.PrivateIpAddress,
             nic.arn = interface.Arn,
-            nic.lastupdated = {update_tag}
+            nic.lastupdated = $update_tag
             
             WITH nic, interface
             MERGE (instance:EC2Instance{instanceid: interface.InstanceId})-[r:NETWORK_INTERFACE]->(nic)
             ON CREATE SET r.firstseen = timestamp()
-            SET r.lastupdated = {update_tag}
+            SET r.lastupdated = $update_tag
 
             WITH nic, interface
             WHERE interface.SubnetId IS NOT NULL
             MERGE (subnet:EC2Subnet{subnetid: interface.SubnetId})
             ON CREATE SET subnet.firstseen = timestamp()
-            SET subnet.lastupdated = {update_tag}
+            SET subnet.lastupdated = $update_tag
 
             WITH nic, interface
             MERGE (nic)-[r:PART_OF_SUBNET]->(subnet)
             ON CREATE SET r.firstseen = timestamp()
-            SET r.lastupdated = {update_tag}
+            SET r.lastupdated = $update_tag
 
             WITH nic, interface
             UNWIND interface.Groups as group
                 MATCH (ec2group:EC2SecurityGroup{groupid: group.GroupId})
                 MERGE (nic)-[r:MEMBER_OF_EC2_SECURITY_GROUP]->(ec2group)
                 ON CREATE SET r.firstseen = timestamp()
-                SET r.lastupdated = {update_tag}
+                SET r.lastupdated = $update_tag
     """
 
     tx.run(
@@ -128,18 +128,18 @@ def _load_ec2_reservation_tx(
         update_tag: int,
 ) -> None:
     query = """
-        UNWIND {Reservations} as reservation
+        UNWIND $Reservations as reservation
             MERGE (rsv:EC2Reservation{reservationid: reservation.ReservationId})
             ON CREATE SET rsv.firstseen = timestamp()
             SET rsv.ownerid = reservation.OwnerId,
                 rsv.requesterid = reservation.RequesterId,
                 rsv.region = reservation.region,
-                rsv.lastupdated = {update_tag}
+                rsv.lastupdated = $update_tag
             WITH rsv
-            MATCH (awsAccount:AWSAccount{id: {AWS_ACCOUNT_ID}})
+            MATCH (awsAccount:AWSAccount{id: $AWS_ACCOUNT_ID})
             MERGE (awsAccount)-[r:RESOURCE]->(rsv)
             ON CREATE SET r.firstseen = timestamp()
-            SET r.lastupdated = {update_tag}
+            SET r.lastupdated = $update_tag
     """
     tx.run(
         query,
@@ -190,7 +190,7 @@ def _load_ec2_instances_tx(
         update_tag: str,
 ) -> None:
     query = """
-        UNWIND {Instances} as inst
+        UNWIND $Instances as inst
             MERGE (instance:Instance:EC2Instance{id: inst.InstanceId})
             ON CREATE SET instance.firstseen = timestamp()
             SET instance.instanceid = inst.InstanceId,
@@ -205,7 +205,7 @@ def _load_ec2_instances_tx(
                 instance.launchtime = inst.LaunchTime,
                 instance.launchtimeunix = inst.LaunchTimeUnix,
                 instance.region = inst.region,
-                instance.lastupdated = {update_tag},
+                instance.lastupdated = $update_tag,
                 instance.iaminstanceprofile = inst.IamInstanceProfile.Arn,
                 instance.availabilityzone = inst.Placement.AvailabilityZone,
                 instance.tenancy = inst.Placement.Tenancy,
@@ -222,12 +222,12 @@ def _load_ec2_instances_tx(
             MATCH (rez:EC2Reservation{reservationid: inst.ReservationId})
             MERGE (instance)-[r:MEMBER_OF_EC2_RESERVATION]->(rez)
             ON CREATE SET r.firstseen = timestamp()
-            SET r.lastupdated = {update_tag}
+            SET r.lastupdated = $update_tag
             WITH instance
-            MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+            MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
             MERGE (aa)-[r:RESOURCE]->(instance)
             ON CREATE SET r.firstseen = timestamp()
-            SET r.lastupdated = {update_tag}
+            SET r.lastupdated = $update_tag
     """
     tx.run(
         query,
@@ -239,14 +239,14 @@ def _load_ec2_instances_tx(
 
 def _load_ec2_subnet_tx(tx: neo4j.Transaction, instanceid: str, subnet_id: str, region: str, update_tag: str) -> None:
     query = """
-        MATCH (instance:EC2Instance{id: {InstanceId}})
-        MERGE (subnet:EC2Subnet{subnetid: {SubnetId}})
+        MATCH (instance:EC2Instance{id: $InstanceId})
+        MERGE (subnet:EC2Subnet{subnetid: $SubnetId})
         ON CREATE SET subnet.firstseen = timestamp()
-        SET subnet.region = {Region},
-        subnet.lastupdated = {update_tag}
+        SET subnet.region = $Region,
+        subnet.lastupdated = $update_tag
         MERGE (instance)-[r:PART_OF_SUBNET]->(subnet)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {update_tag}
+        SET r.lastupdated = $update_tag
     """
     tx.run(
         query,
@@ -278,20 +278,20 @@ def _load_ec2_key_pairs_tx(
         update_tag: str,
 ) -> None:
     query = """
-        UNWIND {KeyPairs} as key_pair
+        UNWIND $KeyPairs as key_pair
             MERGE (keypair:KeyPair:EC2KeyPair{arn: key_pair.KeyARN, id: key_pair.KeyARN})
             ON CREATE SET keypair.firstseen = timestamp()
             SET keypair.keyname = key_pair.KeyName, keypair.region = key_pair.Region, keypair.lastupdated = {update_tag}
             WITH keypair, key_pair
-            MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+            MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
             MERGE (aa)-[r:RESOURCE]->(keypair)
             ON CREATE SET r.firstseen = timestamp()
-            SET r.lastupdated = {update_tag}
+            SET r.lastupdated = $update_tag
             with keypair, key_pair
             MATCH (instance:EC2Instance{instanceid: key_pair.InstanceId})
             MERGE (instance)<-[r:SSH_LOGIN_TO]-(keypair)
             ON CREATE SET r.firstseen = timestamp()
-            SET r.lastupdated = {update_tag}
+            SET r.lastupdated = $update_tag
     """
     tx.run(
         query,
@@ -322,20 +322,20 @@ def _load_ec2_security_groups_tx(
         update_tag: str,
 ) -> None:
     query = """
-        UNWIND {SecurityGroups} as sg
+        UNWIND $SecurityGroups as sg
             MERGE (group:EC2SecurityGroup{id: sg.GroupId})
             ON CREATE SET group.firstseen = timestamp(), group.groupid = sg.GroupId
-            SET group.name = sg.GroupName, group.region = sg.Region, group.lastupdated = {update_tag}
+            SET group.name = sg.GroupName, group.region = sg.Region, group.lastupdated = $update_tag
             WITH group, sg
-            MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+            MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
             MERGE (aa)-[r:RESOURCE]->(group)
             ON CREATE SET r.firstseen = timestamp()
-            SET r.lastupdated = {update_tag}
+            SET r.lastupdated = $update_tag
             WITH group, sg
             MATCH (instance:EC2Instance{instanceid: sg.InstanceId})
             MERGE (instance)-[r:MEMBER_OF_EC2_SECURITY_GROUP]->(group)
             ON CREATE SET r.firstseen = timestamp()
-            SET r.lastupdated = {update_tag}
+            SET r.lastupdated = $update_tag
     """
     tx.run(
         query,

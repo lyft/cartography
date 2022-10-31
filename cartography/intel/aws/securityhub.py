@@ -43,19 +43,19 @@ def load_hub(
     aws_update_tag: int,
 ) -> None:
     ingest_hub = """
-    WITH {Hub} AS hub
+    WITH $Hub AS hub
     MERGE (n:SecurityHub{id: hub.HubArn})
     ON CREATE SET n.firstseen = timestamp()
     SET n.subscribed_at = hub.SubscribedAt,
-    n.region = {region},
+    n.region = $region,
     n.auto_enable_controls = hub.AutoEnableControls,
-    n.lastupdated = {aws_update_tag},
+    n.lastupdated = $aws_update_tag,
     n.arn = hub.HubArn
     WITH n
-    MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (owner)-[r:RESOURCE]->(n)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
     neo4j_session.run(
         ingest_hub,

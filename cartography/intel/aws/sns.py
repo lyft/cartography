@@ -73,11 +73,11 @@ def load_sns_topic(session: neo4j.Session, topics: List[Dict], current_aws_accou
 @timeit
 def _load_sns_topic_tx(tx: neo4j.Transaction, topics: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
     query: str = """
-    UNWIND {Records} as record
+    UNWIND $Records as record
     MERGE (topic:AWSSNSTopic{id: record.TopicArn})
     ON CREATE SET topic.firstseen = timestamp(),
         topic.arn = record.TopicArn
-    SET topic.lastupdated = {aws_update_tag},
+    SET topic.lastupdated = $aws_update_tag,
         topic.name = record.name,
         topic.region = record.region,
         topic.subscriptions_confirmed = record.attributes.SubscriptionsConfirmed,
@@ -87,10 +87,10 @@ def _load_sns_topic_tx(tx: neo4j.Transaction, topics: List[Dict], current_aws_ac
         topic.subscriptions_pending = record.attributes.SubscriptionsPending,
         topic.kms_master_key_id = record.attributes.KmsMasterKeyId
     WITH topic
-    MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (owner)-[r:RESOURCE]->(topic)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
 
     tx.run(
@@ -114,21 +114,21 @@ def load_sns_subscription_topic(session: neo4j.Session, subscriptions: List[Dict
 @timeit
 def _load_sns_topic_subscription_tx(tx: neo4j.Transaction, subscriptions: List[Dict], topic_arn: str, aws_update_tag: int) -> None:
     query: str = """
-    UNWIND {Records} as record
+    UNWIND $Records as record
     MERGE (sub:AWSSNSTopicSubscription{id: record.SubscriptionArn})
     ON CREATE SET sub.firstseen = timestamp(),
         sub.arn = record.SubscriptionArn
-    SET sub.lastupdated = {aws_update_tag},
+    SET sub.lastupdated = $aws_update_tag,
         sub.name = record.name,
         sub.region = record.region,
         sub.Endpoint = record.Endpoint,
         sub.Protocol = record.Protocol,
         sub.owner = record.Owner
     WITH sub
-    MATCH (owner:AWSSNSTopic{id: {Topic_ARN}})
+    MATCH (owner:AWSSNSTopic{id: $Topic_ARN})
     MERGE (owner)-[r:RESOURCE]->(sub)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
 
     tx.run(

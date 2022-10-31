@@ -168,7 +168,7 @@ def _load_functions_tx(tx: neo4j.Transaction, functions: List[Resource], project
         :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
     """
     ingest_functions = """
-    UNWIND {functions} as func
+    UNWIND $functions as func
     MERGE (function:GCPFunction{id:func.id})
     ON CREATE SET
         function.firstseen = timestamp()
@@ -197,13 +197,13 @@ def _load_functions_tx(tx: neo4j.Transaction, functions: List[Resource], project
         function.sourceToken = func.sourceToken,
         function.sourceArchiveUrl = func.sourceArchiveUrl,
         function.consolelink = func.consolelink,
-        function.lastupdated = {gcp_update_tag}
+        function.lastupdated = $gcp_update_tag
     WITH function
-    MATCH (owner:GCPProject{id:{ProjectId}})
+    MATCH (owner:GCPProject{id: $ProjectId})
     MERGE (owner)-[r:RESOURCE]->(function)
     ON CREATE SET
         r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """
     tx.run(
         ingest_functions,
@@ -237,13 +237,13 @@ def load_function_entity_relation_tx(tx: neo4j.Transaction, function: Dict, gcp_
         :return: Nothing
     """
     ingest_entities = """
-    UNWIND {entities} AS entity
+    UNWIND $entities AS entity
     MATCH (principal:GCPPrincipal{email:entity.email})
     WITH principal
-    MATCH (function:GCPFunction{id: {function_id}})
+    MATCH (function:GCPFunction{id: $function_id})
     MERGE (principal)-[r:USES]->(function)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}    """
+    SET r.lastupdated = $gcp_update_tag    """
     tx.run(
         ingest_entities,
         function_id=function.get('id', None),

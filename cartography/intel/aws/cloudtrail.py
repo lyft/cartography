@@ -35,11 +35,11 @@ def transform_trails(trails: List[Dict]) -> List[Dict]:
 @timeit
 def load_trails(neo4j_session: neo4j.Session, trails: Dict, current_aws_account_id: str, aws_update_tag: int) -> None:
     query: str = """
-    UNWIND {Records} as record
+    UNWIND $Records as record
     MERGE (trail:AWSCloudTrailTrail{id: record.TrailARN})
     ON CREATE SET trail.firstseen = timestamp(),
         trail.arn = record.TrailARN
-    SET trail.lastupdated = {aws_update_tag},
+    SET trail.lastupdated = $aws_update_tag,
         trail.name = record.Name,
         trail.arn = record.TrailARN,
         trail.region = record.HomeRegion,
@@ -51,10 +51,10 @@ def load_trails(neo4j_session: neo4j.Session, trails: Dict, current_aws_account_
         trail.has_custom_event_selectors = record.HasCustomEventSelectors,
         trail.has_insight_selectors = record.HasInsightSelectors
     WITH trail
-    MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (owner)-[r:RESOURCE]->(trail)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
 
     neo4j_session.run(

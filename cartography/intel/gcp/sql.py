@@ -162,7 +162,7 @@ def _load_sql_instances_tx(tx: neo4j.Transaction, instances: List[Dict], project
         :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
     """
     ingest_sql_instances = """
-    UNWIND {instances} as instance
+    UNWIND $instances as instance
     MERGE (i:GCPSQLInstance{id:instance.id})
     ON CREATE SET
         i.firstseen = timestamp()
@@ -182,13 +182,13 @@ def _load_sql_instances_tx(tx: neo4j.Transaction, instances: List[Dict], project
         i.satisfiesPzs = instance.satisfiesPzs,
         i.createTime = instance.createTime,
         i.consolelink = instance.consolelink,
-        i.lastupdated = {gcp_update_tag}
+        i.lastupdated = $gcp_update_tag
     WITH i
-    MATCH (owner:GCPProject{id:{ProjectId}})
+    MATCH (owner:GCPProject{id: $ProjectId})
     MERGE (owner)-[r:RESOURCE]->(i)
     ON CREATE SET
         r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """
     tx.run(
         ingest_sql_instances,
@@ -219,7 +219,7 @@ def _load_sql_users_tx(tx: neo4j.Transaction, sql_users: List[Dict], project_id:
         :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
     """
     ingest_sql_users = """
-    UNWIND {sql_users} as user
+    UNWIND $sql_users as user
     MERGE (u:GCPSQLUser{id:user.id})
     ON CREATE SET
         u.firstseen = timestamp()
@@ -227,17 +227,17 @@ def _load_sql_users_tx(tx: neo4j.Transaction, sql_users: List[Dict], project_id:
         u.name = user.name,
         u.host = user.host,
         u.instance = user.instance,
-        u.region = {region},
+        u.region = $region,
         u.project = user.project,
         u.type = user.type,
         u.consolelink = user.consolelink,
-        u.lastupdated = {gcp_update_tag}
+        u.lastupdated = $gcp_update_tag
     WITH u,user
     MATCH (i:GCPSQLInstance{id:user.instance_id})
     MERGE (i)-[r:USED_BY]->(u)
     ON CREATE SET
         r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """
     tx.run(
         ingest_sql_users,

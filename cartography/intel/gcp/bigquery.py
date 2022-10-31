@@ -16,6 +16,7 @@ from cartography.util import timeit
 logger = logging.getLogger(__name__)
 gcp_console_link = GCPLinker()
 
+
 @timeit
 def get_bigquery_dataset(bigquery: Resource, project_id: str, common_job_parameters) -> List[Resource]:
     """
@@ -86,6 +87,7 @@ def transform_bigquey_dataset(bigquery: Resource, datasets: List[Dict], project_
 
     return list_dataset
 
+
 @timeit
 def get_dataset_info(bigquery, dataset_id, project_id):
     response = {}
@@ -105,6 +107,7 @@ def get_dataset_info(bigquery, dataset_id, project_id):
             raise
 
     return response
+
 
 @timeit
 def get_bigquery_tables(bigquery: Resource, dataset: Dict, project_id: str, common_job_parameters) -> List[Resource]:
@@ -140,11 +143,12 @@ def get_bigquery_tables(bigquery: Resource, dataset: Dict, project_id: str, comm
             return []
         else:
             raise
-       
+
+
 @timeit
 def transform_bigquery_tables(bigquery: Resource, dataset: Dict, tables: List, project_id: str) -> List[Resource]:
     list_tables = []
-    for  table in tables:
+    for table in tables:
         table['id'] = table.get('tableReference', {}).get('tableId', '')
         table['datasetId'] = dataset['id']
         table['uniqueId'] = f"projects/{project_id}/datasets/{dataset['id']}/tables/{table['id']}"
@@ -153,6 +157,7 @@ def transform_bigquery_tables(bigquery: Resource, dataset: Dict, tables: List, p
         list_tables.append(table)
 
     return list_tables
+
 
 @timeit
 def get_table_info(bigquery, project_id, dataset_id, table_id):
@@ -174,9 +179,11 @@ def get_table_info(bigquery, project_id, dataset_id, table_id):
 
     return response
 
+
 @timeit
 def load_bigquery_datasets(session: neo4j.Session, datasets: List[Dict], project_id: str, update_tag: int) -> None:
     session.write_transaction(load_bigquery_datasets_tx, datasets, project_id, update_tag)
+
 
 @timeit
 def load_bigquery_datasets_tx(
@@ -184,12 +191,12 @@ def load_bigquery_datasets_tx(
     project_id: str, gcp_update_tag: int,
 ) -> None:
     query = """
-    UNWIND {Datasets} as d
+    UNWIND $Datasets as d
     MERGE (dataset:GCPBigqueryDataset{id:d.id})
     ON CREATE SET
         dataset.firstseen = timestamp()
     SET
-        dataset.lastseen = {gcp_update_tag},
+        dataset.lastseen = $gcp_update_tag,
         dataset.name = d.id,
         dataset.uniqueId = d.uniqueId,
         dataset.consolelink = d.consolelink,
@@ -200,11 +207,11 @@ def load_bigquery_datasets_tx(
         dataset.defaultCollation= d.details.defaultCollation,
         dataset.maxTimeTravelHours = d.details.maxTimeTravelHours
     WITH dataset
-    MATCH (owner:GCPProject{id:{ProjectId}})
+    MATCH (owner:GCPProject{id: $ProjectId})
     MERGE (owner)-[r:RESOURCE]->(dataset)
     ON CREATE SET
         r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """
     tx.run(
         query,
@@ -213,9 +220,11 @@ def load_bigquery_datasets_tx(
         gcp_update_tag=gcp_update_tag,
     )
 
+
 @timeit
 def load_bigquery_tables(session: neo4j.Session, tables: List[Dict], project_id: str, update_tag: int) -> None:
     session.write_transaction(load_bigquery_tables_tx, tables, project_id, update_tag)
+
 
 @timeit
 def load_bigquery_tables_tx(
@@ -223,12 +232,12 @@ def load_bigquery_tables_tx(
     project_id: str, gcp_update_tag: int,
 ) -> None:
     query = """
-    UNWIND {Tables} as t
+    UNWIND $Tables as t
     MERGE (table:GCPBigqueryTable{id:t.id})
     ON CREATE SET
         table.firstseen = timestamp()
     SET
-        table.lastseen = {gcp_update_tag},
+        table.lastseen = $gcp_update_tag,
         table.name = t.id,
         table.uniqueId = t.uniqueId,
         table.consolelink = t.consolelink,
@@ -242,7 +251,7 @@ def load_bigquery_tables_tx(
     MERGE (dataset)-[r:HAS_TABLE]->(table)
     ON CREATE SET
         r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """
     tx.run(
         query,
@@ -250,6 +259,7 @@ def load_bigquery_tables_tx(
         ProjectId=project_id,
         gcp_update_tag=gcp_update_tag,
     )
+
 
 @timeit
 def cleanup_gcp_bigquery(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
@@ -266,6 +276,7 @@ def cleanup_gcp_bigquery(neo4j_session: neo4j.Session, common_job_parameters: Di
     :return: Nothing
     """
     run_cleanup_job('gcp_bigquery_cleanup.json', neo4j_session, common_job_parameters)
+
 
 @timeit
 def sync(
