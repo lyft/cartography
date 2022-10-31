@@ -322,6 +322,7 @@ def transform_api_keys(apikeys: List, project_id: str) -> List[Dict]:
     list_keys = []
 
     for key in apikeys:
+        key['consolelink'] = gcp_console_link.get_console_link(project_id = project_id, api_key_id=key['uid'], resource_name='api_key')
         key['id'] = key['name']
         list_keys.append(key)
 
@@ -342,6 +343,7 @@ def load_api_keys(
     SET
         apikey.lastupdated = $gcp_update_tag,
         apikey.uniqueId = key.name,
+        apikey.consolelink = key.consolelink,
         apikey.region = key.region,
         apikey.updateTime = key.updateTime,
         apikey.deleteTime = key.deleteTime
@@ -421,7 +423,9 @@ def load_service_account_keys(
     u.keytype = sa.keyType, u.origin = sa.keyOrigin,
     u.consolelink = sa.consolelink,
     u.algorithm = sa.keyAlgorithm, u.validbeforetime = sa.validBeforeTime,
-    u.validaftertime = sa.validAfterTime, u.lastupdated = $gcp_update_tag
+
+    u.validaftertime = sa.validAfterTime, u.lastupdated = $gcp_update_tag,
+    u.disabled = sa.disabled
     WITH u, sa
     MATCH (d:GCPServiceAccount{id: $serviceaccount})
     MERGE (d)-[r:HAS_KEY]->(u)
@@ -497,6 +501,7 @@ def load_bindings(neo4j_session: neo4j.Session, bindings: List[Dict], project_id
                     "name": usr.split("@")[0],
                     "parent": binding['parent'],
                     "parent_id": binding['parent_id'],
+                    "consolelink": gcp_console_link.get_console_link(project_id=project_id, resource_name='iam_user'),
 
                 }
                 attach_role_to_user(
@@ -526,6 +531,7 @@ def load_bindings(neo4j_session: neo4j.Session, bindings: List[Dict], project_id
                     "name": grp.split('@')[0],
                     "parent": binding['parent'],
                     "parent_id": binding['parent_id'],
+                    "consolelink": gcp_console_link.get_console_link(project_id=project_id, resource_name='iam_group'),
                 }
                 attach_role_to_group(
                     neo4j_session, role_id,
@@ -541,6 +547,7 @@ def load_bindings(neo4j_session: neo4j.Session, bindings: List[Dict], project_id
                     "name": dmn,
                     "parent": binding['parent'],
                     "parent_id": binding['parent_id'],
+                    "consolelink": gcp_console_link.get_console_link(project_id=project_id, resource_name='iam_domain')
                 }
                 attach_role_to_domain(
                     neo4j_session, role_id,
@@ -628,11 +635,13 @@ def attach_role_to_user(
     user:GCPPrincipal,
     user.firstseen = timestamp()
     SET
+
     user.email = $UserEmail,
     user.name = $UserName,
     user.create_date = $createDate,
     user.lastupdated = $gcp_update_tag,
     user.isDeleted = $isDeleted
+    user.consolelink = $ConsoleLink
     WITH user
     MATCH (role:GCPRole{id: $RoleId})
     MERGE (user)-[r:ASSUME_ROLE]->(role)
@@ -662,6 +671,7 @@ def attach_role_to_user(
         UserId=user['id'],
         UserEmail=user['email'],
         UserName=user['name'],
+        ConsoleLink = user['consolelink'],
         createDate=datetime.utcnow(),
         Parent=user['parent'],
         ParentId=user['parent_id'],
@@ -722,6 +732,7 @@ def attach_role_to_group(
     group.email = $GroupEmail,
     group.name = $GroupName,
     group.create_date = $createDate,
+    group.consolelink = $ConsoleLink,
     group.lastupdated = $gcp_update_tag,
     group.isDeleted = $isDeleted
     WITH group
@@ -754,6 +765,7 @@ def attach_role_to_group(
         GroupName=group['name'],
         createDate=datetime.utcnow(),
         GroupEmail=group['email'],
+        ConsoleLink = group['consolelink'],
         Parent=group['parent'],
         ParentId=group['parent_id'],
         isDeleted=group.get('is_deleted', False),
@@ -776,6 +788,7 @@ def attach_role_to_domain(
     domain.email = $DomainEmail,
     domain.name = $DomainName,
     domain.create_date = $createDate,
+    domain.consolelink = $ConsoleLink,
     domain.lastupdated = $gcp_update_tag,
     domain.isDeleted = $isDeleted
     WITH domain
@@ -809,6 +822,7 @@ def attach_role_to_domain(
         createDate=datetime.utcnow(),
         ParentId=domain['parent_id'],
         DomainEmail=domain['email'],
+        ConsoleLink = domain['consolelink'],
         DomainName=domain['name'],
         isDeleted=domain.get('is_deleted', False),
         gcp_update_tag=gcp_update_tag,

@@ -138,10 +138,7 @@ def get_monitoring_metric_descriptors(monitoring: Resource, project_id: str) -> 
         while req is not None:
             res = req.execute()
             if res.get('metricDescriptors'):
-                for metric in res['metricDescriptors']:
-                    metric['region'] = 'global'
-                    metric['id'] = f"projects/{project_id}/metricDescriptors/{metric['name']}"
-                    metric_descriptors.append(metric)
+                metric_descriptors.extend(res.get('metricDescriptors', []))
             req = monitoring.projects().metricDescriptors().list_next(previous_request=req, previous_response=res)
 
         return metric_descriptors
@@ -157,6 +154,16 @@ def get_monitoring_metric_descriptors(monitoring: Resource, project_id: str) -> 
         else:
             raise
 
+@timeit
+def transform_metric_descriptors(metric_descriptors: List[Dict], project_id: str) -> List[Dict]:
+    metric_descriptors = []
+    for metric in metric_descriptors:
+        metric['region'] = 'global'
+        metric['id'] = f"projects/{project_id}/metricDescriptors/{metric['name']}"
+        metric['consolelink'] = gcp_console_link.get_console_link(project_id=project_id, resource_name='cloud_logging_metric')
+        metric_descriptors.append(metric)
+    
+    return metric_descriptors
 
 @timeit
 def load_monitoring_metric_descriptors(session: neo4j.Session, data_list: List[Dict], project_id: str, update_tag: int) -> None:
@@ -178,6 +185,7 @@ def load_monitoring_metric_descriptors_tx(
         descriptor.lastupdated = $gcp_update_tag,
         descriptor.region = record.region,
         descriptor.name = record.name,
+        descriptor.consolelink = record.consolelink,
         descriptor.display_name = record.displayName,
         descriptor.unit = record.unit,
         descriptor.description = record.description,
@@ -208,7 +216,8 @@ def sync_monitoring_metric_descriptors(
     gcp_update_tag: int, common_job_parameters: Dict,
 ) -> None:
 
-    metric_descriptors = get_monitoring_metric_descriptors(monitoring, project_id)
+    metric_des = get_monitoring_metric_descriptors(monitoring, project_id)
+    metric_descriptors = transform_metric_descriptors(metric_des, project_id)
 
     if common_job_parameters.get('pagination', {}).get('monitoring', None):
         pageNo = common_job_parameters.get("pagination", {}).get("monitoring", None)["pageNo"]

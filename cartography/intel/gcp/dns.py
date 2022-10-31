@@ -191,6 +191,7 @@ def transform_dns_keys(dnsKeys: List, project_id: str, zone: Dict):
 
     for key in dnsKeys:
         key['zone'] = zone['id']
+        key['consolelink'] = gcp_console_link.get_console_link(project_id=project_id, resource_name='dns_console')
         key['id'] = f"projects/{project_id}/managedZones/{zone['name']}/dnsKeys/{key['id']}"
         list_keys.append(key)
 
@@ -260,6 +261,8 @@ def transform_dns_policies(policies: List[Dict], project_id: str) -> List[Dict]:
 
     for policy in policies:
         policy['id'] = f"projects/{project_id}/policies/{policy['name']}"
+        policy['consolelink'] = gcp_console_link.get_console_link(project_id=project_id,\
+                     dns_policy_name=policy['name'], resource_name='dns_policy')
         list_policies.append(policy)
 
     return list_policies
@@ -396,6 +399,7 @@ def load_dns_polices(neo4j_session: neo4j.Session, policies: List[Dict], project
         pol.uniqueId = policy.id,
         pol.name = policy.name,
         pol.region = $region,
+        pol.consolelink = policy.consolelink,
         pol.enableInboundForwarding = policy.enableInboundForwarding,
         pol.enableLogging = policy.enableLogging,
         pol.lastupdated = $gcp_update_tag
@@ -445,6 +449,7 @@ def load_dns_keys(neo4j_session: neo4j.Session, dns_keys: List[Dict], project_id
         ky.region = $region,
         ky.algorithm = key.algorithm,
         ky.keyLength = key.keyLength,
+        ky.consolelink = key.consolelink,
         ky.isActive = key.isActive,
         ky.lastupdated = $gcp_update_tag
     WITH ky, key

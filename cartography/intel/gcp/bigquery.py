@@ -82,7 +82,7 @@ def transform_bigquey_dataset(bigquery: Resource, datasets: List[Dict], project_
         dataset['id'] = dataset.get('datasetReference', {}).get('datasetId', '')
         dataset['uniqueId'] = f"projects/{project_id}/datasets/{dataset['id']}"
         dataset['details'] = get_dataset_info(bigquery, dataset['id'])
-        # Console Link to be implemented
+        dataset['consolelink'] = gcp_console_link.get_console_link(project_id=project_id, resource_name='bigquery_console')
         list_dataset.append(dataset)
 
     return list_dataset
@@ -153,7 +153,7 @@ def transform_bigquery_tables(bigquery: Resource, dataset: Dict, tables: List, p
         table['datasetId'] = dataset['id']
         table['uniqueId'] = f"projects/{project_id}/datasets/{dataset['id']}/tables/{table['id']}"
         table['details'] = get_table_info(bigquery, project_id, dataset['id'], table['id'])
-        # Console Link to be implemented
+        table['consolelink'] = gcp_console_link.get_console_link(project_id=project_id, resource_name='bigquery_console')
         list_tables.append(table)
 
     return list_tables
@@ -199,6 +199,7 @@ def load_bigquery_datasets_tx(
         dataset.lastseen = $gcp_update_tag,
         dataset.name = d.id,
         dataset.uniqueId = d.uniqueId,
+        dataset.consolelink = d.consolelink,
         dataset.friendlyName = d.details.friendlyName,
         dataset.defaultTableExpirationMs = d.details.defaultTableExpirationMs,
         dataset.defaultPartitionExpirationMs = d.details.defaultPartitionExpirationMs,
@@ -239,6 +240,7 @@ def load_bigquery_tables_tx(
         table.lastseen = $gcp_update_tag,
         table.name = t.id,
         table.uniqueId = t.uniqueId,
+        table.consolelink = t.consolelink,
         table.friendlyName = t.details.friendlyName,
         table.requirePartitionFilter = t.details.requirePartitionFilter,
         table.numBytes = t.details.numBytes,
