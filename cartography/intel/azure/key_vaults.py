@@ -54,6 +54,40 @@ def get_key_vaults_list(client: KeyVaultManagementClient) -> List[Dict]:
         return []
 
 
+def update_access_policies(vault: Dict, common_job_parameters: Dict, client: KeyVaultManagementClient):
+    List_Certificate_Permissions = False
+    for policy in vault.get('properties', {}).get('access_policies', []):
+        if policy.get('object_id') == common_job_parameters['Object_ID'] and 'List' in policy.get('permissions', {}).get('certificates') or 'list' in policy.get('permissions', {}).get('certificates'):
+            List_Certificate_Permissions = True
+            break
+    if not List_Certificate_Permissions:
+        parameters = {
+            "properties": {
+                "access_policies": [
+                    {
+                        "tenant_id": common_job_parameters['AZURE_TENANT_ID'],
+                        "object_id": common_job_parameters['Object_ID'],
+                        "permissions": {
+                            "keys": [
+                                "List",
+                                "Get"
+                            ],
+                            "secrets": [
+                                "List",
+                                "Get"
+                            ],
+                            "certificates": [
+                                "List",
+                                "Get"
+                            ]
+                        }
+                    }
+                ]
+            }
+        }
+        client.vaults.update_access_policy(resource_group_name=vault['resource_group'], vault_name=vault['name'], operation_kind='add', parameters=parameters)
+
+
 @timeit
 def transform_key_vaults(client: KeyVaultManagementClient, key_vaults: List[Dict], regions: List, common_job_parameters: Dict) -> List[Dict]:
     key_vaults_data = []
@@ -62,37 +96,7 @@ def transform_key_vaults(client: KeyVaultManagementClient, key_vaults: List[Dict
         vault['resource_group'] = x[x.index('resourceGroups') + 1]
         vault['consolelink'] = azure_console_link.get_console_link(
             id=vault['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
-        List_Certificate_Permissions = False
-        for policy in vault.get('properties', {}).get('access_policies', []):
-            if policy.get('object_id') == common_job_parameters['Object_ID'] and 'List' in policy.get('permissions', {}).get('certificates') or 'list' in policy.get('permissions', {}).get('certificates'):
-                List_Certificate_Permissions = True
-                break
-        if not List_Certificate_Permissions:
-            parameters = {
-                "properties": {
-                    "access_policies": [
-                        {
-                            "tenant_id": common_job_parameters['AZURE_TENANT_ID'],
-                            "object_id": common_job_parameters['Object_ID'],
-                            "permissions": {
-                                "keys": [
-                                    "List",
-                                    "Get"
-                                ],
-                                "secrets": [
-                                    "List",
-                                    "Get"
-                                ],
-                                "certificates": [
-                                    "List",
-                                    "Get"
-                                ]
-                            }
-                        }
-                    ]
-                }
-            }
-            client.vaults.update_access_policy(resource_group_name=vault['resource_group'], vault_name=vault['name'], operation_kind='add', parameters=parameters)
+        update_access_policies(vault, common_job_parameters, client)
         if regions is None:
             key_vaults_data.append(vault)
         else:
@@ -265,7 +269,7 @@ def get_key_vault_certificates(client: CertificateClient, vault: Dict) -> List[D
             certificate_data['version'] = certificate.version
             certificates_list.append(certificate_data)
         return certificates_list
-    except Exception as e:
+    except HttpResponseError as e:
         logger.warning(f"Error while retrieving certificates list  - {e}")
         return []
 
