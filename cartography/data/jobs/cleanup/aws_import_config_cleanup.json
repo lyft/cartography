@@ -1,32 +1,32 @@
 {
   "statements": [
     {
-      "query": "MATCH (:CloudanixWorkspace{id: {WORKSPACE_ID}})-[:OWNER]->(:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(n:AWSConfigurationRecorder) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+      "query": "MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->(:AWSAccount{id: $AWS_ID})-[:RESOURCE]->(n:AWSConfigurationRecorder) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n) return COUNT(*) as TotalCompleted",
       "iterative": true,
       "iterationsize": 100
     },
     {
-      "query": "MATCH (:CloudanixWorkspace{id: {WORKSPACE_ID}})-[:OWNER]->(:AWSAccount{id: {AWS_ID}})-[r:RESOURCE]->(:AWSConfigurationRecorder) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+      "query": "MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->(:AWSAccount{id: $AWS_ID})-[r:RESOURCE]->(:AWSConfigurationRecorder) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r) return COUNT(*) as TotalCompleted",
       "iterative": true,
       "iterationsize": 100
     },
     {
-      "query": "MATCH (:CloudanixWorkspace{id: {WORKSPACE_ID}})-[:OWNER]->(:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(n:AWSConfigDeliveryChannel) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+      "query": "MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->(:AWSAccount{id: $AWS_ID})-[:RESOURCE]->(n:AWSConfigDeliveryChannel) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n) return COUNT(*) as TotalCompleted",
       "iterative": true,
       "iterationsize": 100
     },
     {
-      "query": "MATCH (:CloudanixWorkspace{id: {WORKSPACE_ID}})-[:OWNER]->(:AWSAccount{id: {AWS_ID}})-[r:RESOURCE]->(:AWSConfigDeliveryChannel) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+      "query": "MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->(:AWSAccount{id: $AWS_ID})-[r:RESOURCE]->(:AWSConfigDeliveryChannel) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r) return COUNT(*) as TotalCompleted",
       "iterative": true,
       "iterationsize": 100
     },
     {
-      "query": "MATCH (:CloudanixWorkspace{id: {WORKSPACE_ID}})-[:OWNER]->(:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(n:AWSConfigRule) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+      "query": "MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->(:AWSAccount{id: $AWS_ID})-[:RESOURCE]->(n:AWSConfigRule) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n) return COUNT(*) as TotalCompleted",
       "iterative": true,
       "iterationsize": 100
     },
     {
-      "query": "MATCH (:CloudanixWorkspace{id: {WORKSPACE_ID}})-[:OWNER]->(:AWSAccount{id: {AWS_ID}})-[r:RESOURCE]->(:AWSConfigRule) WHERE r.lastupdated <> {UPDATE_TAG} WITH r LIMIT {LIMIT_SIZE} DELETE (r) return COUNT(*) as TotalCompleted",
+      "query": "MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->(:AWSAccount{id: $AWS_ID})-[r:RESOURCE]->(:AWSConfigRule) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r) return COUNT(*) as TotalCompleted",
       "iterative": true,
       "iterationsize": 100
     }

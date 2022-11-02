@@ -45,16 +45,16 @@ def load_ec2_key_pairs(
     update_tag: int,
 ) -> None:
     ingest_key_pair = """
-    MERGE (keypair:KeyPair:EC2KeyPair{arn: {ARN}, id: {ARN}})
+    MERGE (keypair:KeyPair:EC2KeyPair{arn: $ARN, id: $ARN})
     ON CREATE SET keypair.firstseen = timestamp()
-    SET keypair.keyname = {KeyName}, keypair.keyfingerprint = {KeyFingerprint}, keypair.region = {Region},
-    keypair.consolelink = {consolelink},
-    keypair.lastupdated = {update_tag}
+    SET keypair.keyname = $KeyName, keypair.keyfingerprint = $KeyFingerprint, keypair.region = $Region,
+    keypair.consolelink = $consolelink,
+    keypair.lastupdated = $update_tag
     WITH keypair
-    MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (aa)-[r:RESOURCE]->(keypair)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {update_tag}
+    SET r.lastupdated = $update_tag
     """
 
     for key_pair in data:

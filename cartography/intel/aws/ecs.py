@@ -131,7 +131,7 @@ def load_ecs_clusters(
     aws_update_tag: int,
 ) -> None:
     ingest_clusters = """
-    UNWIND {Clusters} AS cluster
+    UNWIND $Clusters AS cluster
         MERGE (c:ECSCluster{id: cluster.clusterArn})
         ON CREATE SET c.firstseen = timestamp()
         SET c.name = cluster.clusterName, c.region = cluster.region,
@@ -147,12 +147,12 @@ def load_ecs_clusters(
             c.settings_container_insights = cluster.settings_container_insights,
             c.capacity_providers = cluster.capacityProviders,
             c.attachments_status = cluster.attachmentsStatus,
-            c.lastupdated = {aws_update_tag}
+            c.lastupdated = $aws_update_tag
         WITH c
-        MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
+        MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
         MERGE (owner)-[r:RESOURCE]->(c)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {aws_update_tag}
+        SET r.lastupdated = $aws_update_tag
     """  # noqa:E501
     clusters: List[Dict[str, Any]] = []
     for cluster in data:
@@ -179,10 +179,10 @@ def load_ecs_container_instances(
     aws_update_tag: int,
 ) -> None:
     ingest_instances = """
-    UNWIND {Instances} AS instance
+    UNWIND $Instances AS instance
         MERGE (i:ECSContainerInstance{id: instance.containerInstanceArn})
         ON CREATE SET i.firstseen = timestamp()
-        SET i.ec2_instance_id = instance.ec2InstanceId, i.region = {Region},
+        SET i.ec2_instance_id = instance.ec2InstanceId, i.region = $Region,
             i.arn = instance.containerInstanceArn,
             i.capacity_provider_name = instance.capacityProviderName,
             i.version = instance.version,
@@ -194,12 +194,12 @@ def load_ecs_container_instances(
             i.agent_connected = instance.agentConnected,
             i.agent_update_status = instance.agentUpdateStatus,
             i.registered_at = instance.registeredAt,
-            i.lastupdated = {aws_update_tag}
+            i.lastupdated = $aws_update_tag
         WITH i
-        MATCH (c:ECSCluster{id: {ClusterARN}})
+        MATCH (c:ECSCluster{id: $ClusterARN})
         MERGE (c)-[r:HAS_CONTAINER_INSTANCE]->(i)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {aws_update_tag}
+        SET r.lastupdated = $aws_update_tag
     """
     instances: List[Dict[str, Any]] = []
     for instance in data:
@@ -226,10 +226,10 @@ def load_ecs_services(
     aws_update_tag: int,
 ) -> None:
     ingest_services = """
-    UNWIND {Services} AS service
+    UNWIND $Services AS service
         MERGE (s:ECSService{id: service.serviceArn})
         ON CREATE SET s.firstseen = timestamp()
-        SET s.name = service.serviceName, s.region = {Region},
+        SET s.name = service.serviceName, s.region = $Region,
             s.arn = service.serviceArn,
             s.cluster_arn = service.clusterArn,
             s.status = service.status,
@@ -251,17 +251,17 @@ def load_ecs_services(
             s.enable_ecs_managed_tags = service.enableECSManagedTags,
             s.propagate_tags = service.propagateTags,
             s.enable_execute_command = service.enableExecuteCommand,
-            s.lastupdated = {aws_update_tag}
+            s.lastupdated = $aws_update_tag
         WITH s
-        MATCH (c:ECSCluster{id: {ClusterARN}})
+        MATCH (c:ECSCluster{id: $ClusterARN})
         MERGE (c)-[r:HAS_SERVICE]->(s)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {aws_update_tag}
+        SET r.lastupdated = $aws_update_tag
         WITH s
         MATCH (d:ECSTaskDefinition{id: s.task_definition})
         MERGE (s)-[r2:HAS_TASK_DEFINITION]->(d)
         ON CREATE SET r2.firstseen = timestamp()
-        SET r2.lastupdated = {aws_update_tag}
+        SET r2.lastupdated = $aws_update_tag
     """  # noqa:E501
     services: List[Dict[str, Any]] = []
     for service in data:
@@ -287,10 +287,10 @@ def load_ecs_task_definitions(
     aws_update_tag: int,
 ) -> None:
     ingest_task_definitions = """
-    UNWIND {Definitions} AS def
+    UNWIND $Definitions AS def
         MERGE (d:ECSTaskDefinition{id: def.taskDefinitionArn})
         ON CREATE SET d.firstseen = timestamp()
-        SET d.arn = def.taskDefinitionArn, d.region = {Region},
+        SET d.arn = def.taskDefinitionArn, d.region = $Region,
             d.family = def.family,
             d.task_role_arn = def.taskRoleArn,
             d.execution_role_arn = def.executionRoleArn,
@@ -311,12 +311,12 @@ def load_ecs_task_definitions(
             d.deregistered_at = def.deregisteredAt,
             d.registered_by = def.registeredBy,
             d.ephemeral_storage_size_in_gib = def.ephemeralStorage.sizeInGiB,
-            d.lastupdated = {aws_update_tag}
+            d.lastupdated = $aws_update_tag
         WITH d
-        MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
+        MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
         MERGE (owner)-[r:RESOURCE]->(d)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {aws_update_tag}
+        SET r.lastupdated = $aws_update_tag
     """
     container_definitions: List[Dict[str, Any]] = []
     task_definitions: List[Dict[str, Any]] = []
@@ -355,10 +355,10 @@ def load_ecs_tasks(
     aws_update_tag: int,
 ) -> None:
     ingest_tasks = """
-    UNWIND {Tasks} AS task
+    UNWIND $Tasks AS task
         MERGE (t:ECSTask{id: task.taskArn})
         ON CREATE SET t.firstseen = timestamp()
-        SET t.arn = task.taskArn, t.region = {Region},
+        SET t.arn = task.taskArn, t.region = $Region,
             t.availability_zone = task.availabilityZone,
             t.capacity_provider_name = task.capacityProviderName,
             t.cluster_arn = task.clusterArn,
@@ -388,22 +388,22 @@ def load_ecs_tasks(
             t.task_definition_arn = task.taskDefinitionArn,
             t.version = task.version,
             t.ephemeral_storage_size_in_gib = task.ephemeralStorage.sizeInGiB,
-            t.lastupdated = {aws_update_tag}
+            t.lastupdated = $aws_update_tag
         WITH t
-        MATCH (c:ECSCluster{id: {ClusterARN}})
+        MATCH (c:ECSCluster{id: $ClusterARN})
         MERGE (c)-[r:HAS_TASK]->(t)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {aws_update_tag}
+        SET r.lastupdated = $aws_update_tag
         WITH t
         MATCH (td:ECSTaskDefinition{id: t.task_definition_arn})
         MERGE (t)-[r2:HAS_TASK_DEFINITION]->(td)
         ON CREATE SET r2.firstseen = timestamp()
-        SET r2.lastupdated = {aws_update_tag}
+        SET r2.lastupdated = $aws_update_tag
         WITH t
         MATCH (ci:ECSContainerInstance{id: t.container_instance_arn})
         MERGE (ci)-[r3:HAS_TASK]->(t)
         ON CREATE SET r3.firstseen = timestamp()
-        SET r3.lastupdated = {aws_update_tag}
+        SET r3.lastupdated = $aws_update_tag
     """
     containers: List[Dict[str, Any]] = []
     tasks: List[Dict[str, Any]] = []
@@ -446,10 +446,10 @@ def load_ecs_container_definitions(
     aws_update_tag: int,
 ) -> None:
     ingest_definitions = """
-    UNWIND {Definitions} AS def
+    UNWIND $Definitions AS def
         MERGE (d:ECSContainerDefinition{id: def._taskDefinitionArn + "-" + def.name})
         ON CREATE SET d.firstseen = timestamp()
-        SET d.task_definition_arn = def._taskDefinitionArn, d.region = {Region},
+        SET d.task_definition_arn = def._taskDefinitionArn, d.region = $Region,
             d.name = def.name,
             d.image = def.image,
             d.cpu = def.cpu,
@@ -472,12 +472,12 @@ def load_ecs_container_definitions(
             d.docker_security_options = def.dockerSecurityOptions,
             d.interactive = def.interactive,
             d.pseudo_terminal = def.pseudoTerminal,
-            d.lastupdated = {aws_update_tag}
+            d.lastupdated = $aws_update_tag
         WITH d
         MATCH (td:ECSTaskDefinition{id: d.task_definition_arn})
         MERGE (td)-[r:HAS_CONTAINER_DEFINITION]->(d)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {aws_update_tag}
+        SET r.lastupdated = $aws_update_tag
     """
     neo4j_session.run(
         ingest_definitions,
@@ -497,10 +497,10 @@ def load_ecs_containers(
     aws_update_tag: int,
 ) -> None:
     ingest_containers = """
-    UNWIND {Containers} AS container
+    UNWIND $Containers AS container
         MERGE (c:ECSContainer{id: container.containerArn})
         ON CREATE SET c.firstseen = timestamp()
-        SET c.arn = container.containerArn, c.region = {Region},
+        SET c.arn = container.containerArn, c.region = $Region,
             c.task_arn = container.taskArn,
             c.name = container.name,
             c.image = container.image,
@@ -514,12 +514,12 @@ def load_ecs_containers(
             c.memory = container.memory,
             c.memory_reservation = container.memoryReservation,
             c.gpu_ids = container.gpuIds,
-            c.lastupdated = {aws_update_tag}
+            c.lastupdated = $aws_update_tag
         WITH c
         MATCH (t:ECSTask{id: c.task_arn})
         MERGE (t)-[r:HAS_CONTAINER]->(c)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {aws_update_tag}
+        SET r.lastupdated = $aws_update_tag
     """
     neo4j_session.run(
         ingest_containers,

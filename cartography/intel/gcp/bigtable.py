@@ -282,7 +282,7 @@ def _load_bigtable_instances_tx(
         :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
     """
     ingest_bigtable_instances = """
-    UNWIND {bigtable_instances} as instance
+    UNWIND $bigtable_instances as instance
     MERGE (i:GCPBigtableInstance{id:instance.id})
     ON CREATE SET
         i.firstseen = timestamp()
@@ -291,17 +291,17 @@ def _load_bigtable_instances_tx(
         i.instance_name = instance.instance_name,
         i.displayName = instance.displayName,
         i.state = instance.state,
-        i.region = {region},
+        i.region = $region,
         i.type = instance.type,
         i.createTime = instance.createTime,
         i.consolelink = instance.consolelink,
-        i.lastupdated = {gcp_update_tag}
+        i.lastupdated = $gcp_update_tag
     WITH instance, i
-    MATCH (owner:GCPProject{id:{ProjectId}})
+    MATCH (owner:GCPProject{id: $ProjectId})
     MERGE (owner)-[r:RESOURCE]->(i)
     ON CREATE SET
         r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """
     tx.run(
         ingest_bigtable_instances,
@@ -336,7 +336,7 @@ def _load_bigtable_clusters_tx(
         :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
     """
     ingest_bigtable_clusters = """
-    UNWIND {bigtable_clusters} as cluster
+    UNWIND $bigtable_clusters as cluster
     MERGE (c:GCPBigtableCluster{id:cluster.id})
     ON CREATE SET
         c.firstseen = timestamp()
@@ -349,13 +349,13 @@ def _load_bigtable_clusters_tx(
         c.serveNodes = cluster.serveNodes,
         c.consolelink = cluster.consolelink,
         c.defaultStorageType = cluster.defaultStorageType,
-        c.lastupdated = {gcp_update_tag}
+        c.lastupdated = $gcp_update_tag
     WITH c,cluster
     MATCH (i:GCPBigtableInstance{id:cluster.instance_id})
     MERGE (i)-[r:HAS_CLUSTER]->(c)
     ON CREATE SET
         r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """
     tx.run(
         ingest_bigtable_clusters,
@@ -392,7 +392,7 @@ def _load_bigtable_cluster_backups_tx(
         :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
     """
     ingest_bigtable_cluster_backups = """
-    UNWIND {bigtable_cluster_backups} as backup
+    UNWIND $bigtable_cluster_backups as backup
     MERGE (b:GCPBigtableClusterBackup{id:backup.id})
     ON CREATE SET
         b.firstseen = timestamp()
@@ -407,13 +407,13 @@ def _load_bigtable_cluster_backups_tx(
         b.sizeBytes = backup.sizeBytes,
         b.state = backup.state,
         b.consolelink = backup.consolelink,
-        b.lastupdated = {gcp_update_tag}
+        b.lastupdated = $gcp_update_tag
     WITH b,backup
     MATCH (c:GCPBigtableCluster{id:backup.cluster_id})
     MERGE (c)-[r:HAS_BACKUP]->(b)
     ON CREATE SET
         r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """
     tx.run(
         ingest_bigtable_cluster_backups,
@@ -447,7 +447,7 @@ def _load_bigtable_tables_tx(
         :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
     """
     ingest_bigtable_tables = """
-    UNWIND {bigtable_tables} as table
+    UNWIND $bigtable_tables as table
     MERGE (t:GCPBigtableTable{id:table.id})
     ON CREATE SET
         t.firstseen = timestamp()
@@ -459,13 +459,13 @@ def _load_bigtable_tables_tx(
         t.region =table.region,
         t.consolelink = table.consolelink,
         t.sourceType = table.restoreInfo.sourceType,
-        t.lastupdated = {gcp_update_tag}
+        t.lastupdated = $gcp_update_tag
     WITH table, t
     MATCH (i:GCPBigtableInstance{id:table.instance_id})
     MERGE (i)-[r:HAS_TABLE]->(t)
     ON CREATE SET
         r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """
     tx.run(
         ingest_bigtable_tables,

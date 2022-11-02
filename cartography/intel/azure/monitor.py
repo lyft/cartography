@@ -17,18 +17,21 @@ from cartography.util import timeit
 logger = logging.getLogger(__name__)
 azure_console_link = AzureLinker()
 
+
 def load_monitor_log_profiles(session: neo4j.Session, subscription_id: str, data_list: List[Dict], update_tag: int) -> None:
     session.write_transaction(_load_monitor_log_profiles_tx, subscription_id, data_list, update_tag)
+
 
 @timeit
 def get_monitoring_client(credentials: Credentials, subscription_id: str) -> MonitorManagementClient:
     client = MonitorManagementClient(credentials, subscription_id)
     return client
 
+
 @timeit
 def get_log_profiles_list(client: MonitorManagementClient, regions: List, common_job_parameters: Dict) -> List[Dict]:
-    try:    
-        list_logs_profiles=list(map(lambda x: x.as_dict(),client.log_profiles.list()))
+    try:
+        list_logs_profiles = list(map(lambda x: x.as_dict(), client.log_profiles.list()))
         return list_logs_profiles
     except ClientAuthenticationError as e:
         logger.warning(f"Client Authentication Error while  logs profiles - {e}")
@@ -39,6 +42,7 @@ def get_log_profiles_list(client: MonitorManagementClient, regions: List, common
     except HttpResponseError as e:
         logger.warning(f"Error while  logs profiles - {e}")
         return []
+
 
 @timeit
 def transform_log_profiles(log_profiles: List[Dict], regions: List, common_job_parameters: str):
@@ -55,13 +59,14 @@ def transform_log_profiles(log_profiles: List[Dict], regions: List, common_job_p
                 log_profiles_data.append(log)
     return log_profiles_data
 
+
 @timeit
 def _load_monitor_log_profiles_tx(
     tx: neo4j.Transaction, subscription_id: str, log_profiles_list: List[Dict], update_tag: int,
 ) -> None:
 
     query = """
-    UNWIND {LOGS} as l
+    UNWIND $LOGS as l
     MERGE (log:AzureMonitorLogProfile{id: l.id})
     ON CREATE SET log.firstseen = timestamp(),
     log.type = l.type,
@@ -71,13 +76,13 @@ def _load_monitor_log_profiles_tx(
     log.location = l.location,
     log.service_bus_rule_id = l.service_bus_rule_id,
     log.storage_account_id = l.storage_account_id
-    SET log.lastupdated = {update_tag},
+    SET log.lastupdated = $update_tag,
     log.name = l.name
     WITH log
-    MATCH (owner:AzureSubscription{id: {SUBSCRIPTION_ID}})
+    MATCH (owner:AzureSubscription{id: $SUBSCRIPTION_ID})
     MERGE (owner)-[r:RESOURCE]->(log)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {update_tag}
+    SET r.lastupdated = $update_tag
     """
     tx.run(
         query,
@@ -86,15 +91,17 @@ def _load_monitor_log_profiles_tx(
         update_tag=update_tag,
     )
 
+
 def cleanup_monitor_log_profiles(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('azure_import_monitor_log_profiles_cleanup.json', neo4j_session, common_job_parameters)
+
 
 def sync_monitor_log_profiles(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
     common_job_parameters: Dict, regions: list
 ) -> None:
     client = get_monitoring_client(credentials, subscription_id)
-    log_profiles = get_log_profiles_list(client, regions, common_job_parameters )
+    log_profiles = get_log_profiles_list(client, regions, common_job_parameters)
     log_profiles_list = transform_log_profiles(log_profiles, regions, common_job_parameters)
 
     if common_job_parameters.get('pagination', {}).get('log_profiles', None):
@@ -118,6 +125,7 @@ def sync_monitor_log_profiles(
 
     load_monitor_log_profiles(neo4j_session, subscription_id, log_profiles_list, update_tag)
     cleanup_monitor_log_profiles(neo4j_session, common_job_parameters)
+
 
 @timeit
 def sync(

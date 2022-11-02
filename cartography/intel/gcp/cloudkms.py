@@ -246,7 +246,7 @@ def _load_kms_locations_tx(
         :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
     """
     ingest_kms_locations = """
-    UNWIND{locations} as loc
+    UNWIND $locations as loc
     MERGE (location:GCPLocation{id:loc.id})
     ON CREATE SET
         location.firstseen = timestamp()
@@ -256,13 +256,13 @@ def _load_kms_locations_tx(
         location.locationId = loc.locationId,
         location.displayName = loc.displayName,
         location.region = loc.locationId,
-        location.lastupdated = {gcp_update_tag}
+        location.lastupdated = $gcp_update_tag
     WITH location, loc
-    MATCH (owner:GCPProject{id:{ProjectId}})
+    MATCH (owner:GCPProject{id: $ProjectId})
     MERGE (owner)-[r:RESOURCE]->(location)
     ON CREATE SET
         r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """
     tx.run(
         ingest_kms_locations,
@@ -294,7 +294,7 @@ def _load_kms_key_rings_tx(
         :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
     """
     ingest_kms_key_rings = """
-    UNWIND{key_rings} as keyr
+    UNWIND $key_rings as keyr
     MERGE (keyring:GCPKMSKeyRing{id:keyr.id})
     ON CREATE SET
         keyring.firstseen = timestamp()
@@ -305,13 +305,13 @@ def _load_kms_key_rings_tx(
         keyring.public_access = keyr.public_access,
         keyring.createTime = keyr.createTime,
         keyring.consolelink = keyr.consolelink,
-        keyring.lastupdated = {gcp_update_tag}
+        keyring.lastupdated = $gcp_update_tag
     WITH keyring, keyr
     MATCH (location:GCPLocation{id:keyr.loc_id})
     MERGE (location)-[r:RESOURCE]->(keyring)
     ON CREATE SET
         r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """
     tx.run(
         ingest_kms_key_rings,
@@ -345,13 +345,13 @@ def load_keyring_entity_relation_tx(tx: neo4j.Transaction, keyring: Dict, gcp_up
         :return: Nothing
     """
     ingest_entities = """
-    UNWIND {entities} AS entity
+    UNWIND $entities AS entity
     MATCH (principal:GCPPrincipal{email:entity.email})
     WITH principal
-    MATCH (keyring:GCPKMSKeyRing{id: {keyring_id}})
+    MATCH (keyring:GCPKMSKeyRing{id: $keyring_id})
     MERGE (principal)-[r:USES]->(keyring)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}    """
+    SET r.lastupdated = $gcp_update_tag    """
     tx.run(
         ingest_entities,
         keyring_id=keyring.get('id', None),
@@ -384,7 +384,7 @@ def _load_kms_crypto_keys_tx(
         :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
     """
     ingest_crypto_keys = """
-    UNWIND{crypto_keys} as ck
+    UNWIND $crypto_keys as ck
     MERGE (crypto_key:GCPKMSCryptoKey{id:ck.id})
     ON CREATE SET
         crypto_key.firstseen = timestamp()
@@ -397,13 +397,13 @@ def _load_kms_crypto_keys_tx(
         crypto_key.nextRotationTime = ck.nextRotationTime,
         crypto_key.rotationPeriod = ck.rotationPeriod,
         crypto_key.consolelink = ck.consolelink,
-        crypto_key.lastupdated = {gcp_update_tag}
+        crypto_key.lastupdated = $gcp_update_tag
     WITH crypto_key, ck
     MATCH (key_ring:GCPKMSKeyRing{id:ck.keyring_id})
     MERGE (key_ring)-[r:RESOURCE]->(crypto_key)
     ON CREATE SET
         r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """
     tx.run(
         ingest_crypto_keys,

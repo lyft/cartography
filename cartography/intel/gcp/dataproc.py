@@ -61,23 +61,23 @@ def load_dataproc_clusters_tx(
 ) -> None:
 
     query = """
-    UNWIND {Records} as record
+    UNWIND $Records as record
     MERGE (cluster:GCPDataprocCluster{id:record.id})
     ON CREATE SET
         cluster.firstseen = timestamp()
     SET
-        cluster.lastupdated = {gcp_update_tag},
+        cluster.lastupdated = $gcp_update_tag,
         cluster.region = record.region,
         cluster.name = record.clusterName,
         cluster.state = record.status.state,
         cluster.consolelink = record.consolelink,
         cluster.cluster_uuid = record.clusterUuid
     WITH cluster
-    MATCH (owner:GCPProject{id:{ProjectId}})
+    MATCH (owner:GCPProject{id: $ProjectId})
     MERGE (owner)-[r:RESOURCE]->(cluster)
     ON CREATE SET
         r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """
     tx.run(
         query,

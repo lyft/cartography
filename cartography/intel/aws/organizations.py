@@ -92,25 +92,25 @@ def load_aws_accounts(
     common_job_parameters: Dict,
 ) -> None:
     query = """
-    MERGE (w:CloudanixWorkspace{id: {WORKSPACE_ID}})
-    SET w.lastupdated = {UPDATE_TAG}
+    MERGE (w:CloudanixWorkspace{id: $WORKSPACE_ID})
+    SET w.lastupdated = $UPDATE_TAG
     WITH w
-    MERGE (aa:AWSAccount{id: {ACCOUNT_ID}})
+    MERGE (aa:AWSAccount{id: $ACCOUNT_ID})
     ON CREATE SET aa.firstseen = timestamp()
-    SET aa.lastupdated = {UPDATE_TAG},
-    aa.region = {region},
-    aa.name = {ACCOUNT_NAME}
+    SET aa.lastupdated = $UPDATE_TAG,
+    aa.region = $region,
+    aa.name = $ACCOUNT_NAME
     WITH w, aa
     MERGE (w)-[o:OWNER]->(aa)
     ON CREATE SET o.firstseen = timestamp()
-    SET o.lastupdated = {UPDATE_TAG}
-    MERGE (root:AWSPrincipal{arn: {RootArn}})
+    SET o.lastupdated = $UPDATE_TAG
+    MERGE (root:AWSPrincipal{arn: $RootArn})
     ON CREATE SET root.firstseen = timestamp(), root.type = 'AWS'
-    SET root.lastupdated = {UPDATE_TAG}
+    SET root.lastupdated = $UPDATE_TAG
     WITH aa, root
     MERGE (aa)-[r:RESOURCE]->(root)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {UPDATE_TAG};
+    SET r.lastupdated = $UPDATE_TAG;
     """
     for account_name, account_id in aws_accounts.items():
         root_arn = f'arn:aws:iam::{account_id}:root'

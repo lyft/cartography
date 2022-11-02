@@ -223,18 +223,18 @@ def load_users(
     neo4j_session: neo4j.Session, users: List[Dict], current_aws_account_id: str, aws_update_tag: int,
 ) -> None:
     ingest_user = """
-    MERGE (unode:AWSUser{arn: {ARN}})
-    ON CREATE SET unode:AWSPrincipal, unode.userid = {USERID}, unode.firstseen = timestamp(),
-    unode.consolelink = {consolelink},
-    unode.createdate = {CREATE_DATE}
-    SET unode.name = {USERNAME}, unode.path = {PATH}, unode.passwordlastused = {PASSWORD_LASTUSED},
-    unode.region = {region},
-    unode.lastupdated = {aws_update_tag}
+    MERGE (unode:AWSUser{arn: $ARN})
+    ON CREATE SET unode:AWSPrincipal, unode.userid = $USERID, unode.firstseen = timestamp(),
+    unode.consolelink = $consolelink,
+    unode.createdate = $CREATE_DATE
+    SET unode.name = $USERNAME, unode.path = $PATH, unode.passwordlastused = $PASSWORD_LASTUSED,
+    unode.region = $region,
+    unode.lastupdated = $aws_update_tag
     WITH unode
-    MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (aa)-[r:RESOURCE]->(unode)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
     logger.info(f"Loading {len(users)} IAM users.")
     for user in users:
@@ -258,17 +258,17 @@ def load_groups(
     neo4j_session: neo4j.Session, groups: List[Dict], current_aws_account_id: str, aws_update_tag: int,
 ) -> None:
     ingest_group = """
-    MERGE (gnode:AWSGroup{arn: {ARN}})
-    ON CREATE SET gnode.groupid = {GROUP_ID}, gnode.firstseen = timestamp(), gnode.createdate = {CREATE_DATE}
-    SET gnode:AWSPrincipal, gnode.name = {GROUP_NAME}, gnode.path = {PATH},
-    gnode.region = {region},
-    gnode.consolelink = {consolelink},
-    gnode.lastupdated = {aws_update_tag}
+    MERGE (gnode:AWSGroup{arn: $ARN})
+    ON CREATE SET gnode.groupid = $GROUP_ID, gnode.firstseen = timestamp(), gnode.createdate = $CREATE_DATE
+    SET gnode:AWSPrincipal, gnode.name = $GROUP_NAME, gnode.path = $PATH,
+    gnode.region = $region,
+    gnode.consolelink = $consolelink,
+    gnode.lastupdated = $aws_update_tag
     WITH gnode
-    MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (aa)-[r:RESOURCE]->(gnode)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
     logger.info(f"Loading {len(groups)} IAM groups to the graph.")
     for group in groups:
@@ -306,30 +306,30 @@ def load_roles(
     neo4j_session: neo4j.Session, roles: List[Dict], current_aws_account_id: str, aws_update_tag: int,
 ) -> None:
     ingest_role = """
-    MERGE (rnode:AWSRole{arn: {Arn}})
-    ON CREATE SET rnode:AWSPrincipal, rnode.roleid = {RoleId}, rnode.firstseen = timestamp(),
-    rnode.region = {region},
-    rnode.consolelink = {consolelink},
-    rnode.createdate = {CreateDate}
-    ON MATCH SET rnode.name = {RoleName}, rnode.path = {Path},
-    rnode.lastuseddate = {LastUsedDate}, rnode.lastusedregion = {LastUsedRegion}
-    SET rnode.lastupdated = {aws_update_tag}
+    MERGE (rnode:AWSRole{arn: $Arn})
+    ON CREATE SET rnode:AWSPrincipal, rnode.roleid = $RoleId, rnode.firstseen = timestamp(),
+    rnode.region = $region,
+    rnode.consolelink = $consolelink,
+    rnode.createdate = $CreateDate
+    ON MATCH SET rnode.name = $RoleName, rnode.path = $Path,
+    rnode.lastuseddate = $LastUsedDate, rnode.lastusedregion = $LastUsedRegion
+    SET rnode.lastupdated = $aws_update_tag
     WITH rnode
-    MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (aa)-[r:RESOURCE]->(rnode)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
 
     ingest_policy_statement = """
-    MERGE (spnnode:AWSPrincipal{arn: {SpnArn}})
+    MERGE (spnnode:AWSPrincipal{arn: $SpnArn})
     ON CREATE SET spnnode.firstseen = timestamp()
-    SET spnnode.lastupdated = {aws_update_tag}, spnnode.type = {SpnType}
+    SET spnnode.lastupdated = $aws_update_tag, spnnode.type = $SpnType
     WITH spnnode
-    MATCH (role:AWSRole{arn: {RoleArn}})
+    MATCH (role:AWSRole{arn: $RoleArn})
     MERGE (role)-[r:TRUSTS_AWS_PRINCIPAL]->(spnnode)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
 
     # TODO support conditions
@@ -365,16 +365,16 @@ def load_roles(
 @timeit
 def load_group_memberships(neo4j_session: neo4j.Session, group_memberships: Dict, aws_update_tag: int) -> None:
     ingest_membership = """
-    MATCH (group:AWSGroup{arn: {GroupArn}})
+    MATCH (group:AWSGroup{arn: $GroupArn})
     WITH group
-    MATCH (user:AWSUser{arn: {PrincipalArn}})
+    MATCH (user:AWSUser{arn: $PrincipalArn})
     MERGE (user)-[r:MEMBER_AWS_GROUP]->(group)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     WITH user, group
     MATCH (group)-[:POLICY]->(policy:AWSPolicy)
     MERGE (user)-[r2:POLICY]->(policy)
-    SET r2.lastupdated = {aws_update_tag}
+    SET r2.lastupdated = $aws_update_tag
     """
 
     for group_arn, membership_data in group_memberships.items():
@@ -392,7 +392,7 @@ def load_group_memberships(neo4j_session: neo4j.Session, group_memberships: Dict
 def get_policies_for_principal(neo4j_session: neo4j.Session, principal_arn: str) -> Dict:
     get_policy_query = """
     MATCH
-    (principal:AWSPrincipal{arn:{Arn}})-[:POLICY]->
+    (principal:AWSPrincipal{arn:$Arn})-[:POLICY]->
     (policy:AWSPolicy)-[:STATEMENT]->
     (statements:AWSPolicyStatement)
     RETURN
@@ -416,7 +416,7 @@ def sync_assumerole_relationships(
     # Computes and syncs the STS_ASSUME_ROLE allow relationship
     logger.info("Syncing assume role mappings for account '%s'.", current_aws_account_id)
     query_potential_matches = """
-    MATCH (:AWSAccount{id:{AccountId}})-[:RESOURCE]->(target:AWSRole)-[:TRUSTS_AWS_PRINCIPAL]->(source:AWSPrincipal)
+    MATCH (:AWSAccount{id:$AccountId})-[:RESOURCE]->(target:AWSRole)-[:TRUSTS_AWS_PRINCIPAL]->(source:AWSPrincipal)
     WHERE NOT source.arn ENDS WITH 'root'
     AND NOT source.type = 'Service'
     AND NOT source.type = 'Federated'
@@ -425,13 +425,13 @@ def sync_assumerole_relationships(
     """
 
     ingest_policies_assume_role = """
-    MATCH (source:AWSPrincipal{arn: {SourceArn}})
+    MATCH (source:AWSPrincipal{arn: $SourceArn})
     WITH source
-    MATCH (role:AWSRole{arn: {TargetArn}})
+    MATCH (role:AWSRole{arn: $TargetArn})
     WITH role, source
     MERGE (source)-[r:STS_ASSUMEROLE_ALLOW]->(role)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
 
     results = neo4j_session.run(
@@ -459,17 +459,17 @@ def sync_assumerole_relationships(
 def load_user_access_keys(neo4j_session: neo4j.Session, user_access_keys: Dict, aws_update_tag: int) -> None:
     # TODO change the node label to reflect that this is a user access key, not an account access key
     ingest_account_key = """
-    MATCH (user:AWSUser{name: {UserName}})
+    MATCH (user:AWSUser{name: $UserName})
     WITH user
-    MERGE (key:AccountAccessKey{accesskeyid: {AccessKeyId}})
+    MERGE (key:AccountAccessKey{accesskeyid: $AccessKeyId})
     ON CREATE SET key.firstseen = timestamp(),
-    key.region = {region},
-    key.createdate = {CreateDate}
-    SET key.status = {Status}, key.lastupdated = {aws_update_tag}
+    key.region = $region,
+    key.createdate = $CreateDate
+    SET key.status = $Status, key.lastupdated = $aws_update_tag
     WITH user,key
     MERGE (user)-[r:AWS_ACCESS_KEY]->(key)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
 
     for username, access_keys in user_access_keys.items():
@@ -535,19 +535,19 @@ def _load_policy_tx(
     current_aws_account_id: str, aws_update_tag: int,
 ) -> None:
     ingest_policy = """
-    MERGE (policy:AWSPolicy{id: {PolicyId}})
+    MERGE (policy:AWSPolicy{id: $PolicyId})
     ON CREATE SET
     policy.firstseen = timestamp(),
-    policy.type = {PolicyType},
-    policy.region = {region},
-    policy.name = {PolicyName},
-    policy.arn = {PolicyArn},
-    policy.consolelink = {consolelink}
-    SET policy.lastupdated = {aws_update_tag}
+    policy.type = $PolicyType,
+    policy.region = $region,
+    policy.name = $PolicyName,
+    policy.arn = $PolicyArn,
+    policy.consolelink = $consolelink
+    SET policy.lastupdated = $aws_update_tag
     WITH policy
-    MATCH (principal:AWSPrincipal{arn: {PrincipalArn}})
+    MATCH (principal:AWSPrincipal{arn: $PrincipalArn})
     MERGE (policy) <-[r:POLICY]-(principal)
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
 
     policy_arn = f"arn:aws:iam::{current_aws_account_id}:policy/{policy_name}"
@@ -582,23 +582,23 @@ def load_policy_statements(
     aws_update_tag: int,
 ) -> None:
     ingest_policy_statement = """
-        MATCH (policy:AWSPolicy{id: {PolicyId}})
+        MATCH (policy:AWSPolicy{id: $PolicyId})
         WITH policy
-        UNWIND {Statements} as statement_data
+        UNWIND $Statements as statement_data
         MERGE (statement:AWSPolicyStatement{id: statement_data.id})
         SET
         statement.effect = statement_data.Effect,
         statement.action = statement_data.Action,
-        statement.region = {region},
+        statement.region = $region,
         statement.notaction = statement_data.NotAction,
         statement.resource = statement_data.Resource,
         statement.notresource = statement_data.NotResource,
         statement.condition = statement_data.Condition,
         statement.sid = statement_data.Sid,
-        statement.lastupdated = {aws_update_tag}
+        statement.lastupdated = $aws_update_tag
         MERGE (policy)-[r:STATEMENT]->(statement)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {aws_update_tag}
+        SET r.lastupdated = $aws_update_tag
         """
     neo4j_session.run(
         ingest_policy_statement,
@@ -770,44 +770,44 @@ def sync_service_access_data(neo4j_session, access_data, principal_arn, principa
 
     if principal_type == PrincipalType.user.value:
         ingest_service_usage = """
-        MERGE (su:AWSServiceUsage{id: {ID}})
-        ON CREATE SET su.service = {SERVICE}, su.namespace= {SERVICE_NAMESPACE}, su.firstseen = timestamp()
-        SET su.lastauthenticateddate = {LAST_AUTHENTICATED_DATE}, su.lastauthenticatedentity = {LAST_AUTHENTICATED_ENTITY},
-        su.lastauthenticatedretion = {LAST_AUTHENTICATED_REGION}, su.totalauthenticatedentities = {TOTAL_AUTHENTICATED_ENTITIES},
-        su.lastupdated = {aws_update_tag}
+        MERGE (su:AWSServiceUsage{id: $ID})
+        ON CREATE SET su.service = $SERVICE, su.namespace= $SERVICE_NAMESPACE, su.firstseen = timestamp()
+        SET su.lastauthenticateddate = $LAST_AUTHENTICATED_DATE, su.lastauthenticatedentity = $LAST_AUTHENTICATED_ENTITY,
+        su.lastauthenticatedretion = $LAST_AUTHENTICATED_REGION, su.totalauthenticatedentities = $TOTAL_AUTHENTICATED_ENTITIES,
+        su.lastupdated = $aws_update_tag
         WITH su
-        MATCH (ap:AWSUser{arn: {PRINCIPAL_ARN}})
+        MATCH (ap:AWSUser{arn: $PRINCIPAL_ARN})
         MERGE (ap)-[r:HAS_ACCESSED]->(su)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {aws_update_tag}
+        SET r.lastupdated = $aws_update_tag
         """
 
     elif principal_type == PrincipalType.group.value:
         ingest_service_usage = """
-        MERGE (su:AWSServiceUsage{id: {ID}})
-        ON CREATE SET su.service = {SERVICE}, su.namespace= {SERVICE_NAMESPACE}, su.firstseen = timestamp()
-        SET su.lastauthenticateddate = {LAST_AUTHENTICATED_DATE}, su.lastauthenticatedentity = {LAST_AUTHENTICATED_ENTITY},
-        su.lastauthenticatedretion = {LAST_AUTHENTICATED_REGION}, su.totalauthenticatedentities = {TOTAL_AUTHENTICATED_ENTITIES},
-        su.lastupdated = {aws_update_tag}
+        MERGE (su:AWSServiceUsage{id: $ID})
+        ON CREATE SET su.service = $SERVICE, su.namespace= $SERVICE_NAMESPACE, su.firstseen = timestamp()
+        SET su.lastauthenticateddate = $LAST_AUTHENTICATED_DATE, su.lastauthenticatedentity = $LAST_AUTHENTICATED_ENTITY,
+        su.lastauthenticatedretion = $LAST_AUTHENTICATED_REGION, su.totalauthenticatedentities = $TOTAL_AUTHENTICATED_ENTITIES,
+        su.lastupdated = $aws_update_tag
         WITH su
-        MATCH (ap:AWSGroup{arn: {PRINCIPAL_ARN}})
+        MATCH (ap:AWSGroup{arn: $PRINCIPAL_ARN})
         MERGE (ap)-[r:HAS_ACCESSED]->(su)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {aws_update_tag}
+        SET r.lastupdated = $aws_update_tag
         """
 
     elif principal_type == PrincipalType.role.value:
         ingest_service_usage = """
-        MERGE (su:AWSServiceUsage{id: {ID}})
-        ON CREATE SET su.service = {SERVICE}, su.namespace= {SERVICE_NAMESPACE}, su.firstseen = timestamp()
-        SET su.lastauthenticateddate = {LAST_AUTHENTICATED_DATE}, su.lastauthenticatedentity = {LAST_AUTHENTICATED_ENTITY},
-        su.lastauthenticatedretion = {LAST_AUTHENTICATED_REGION}, su.totalauthenticatedentities = {TOTAL_AUTHENTICATED_ENTITIES},
-        su.lastupdated = {aws_update_tag}
+        MERGE (su:AWSServiceUsage{id: $ID})
+        ON CREATE SET su.service = $SERVICE, su.namespace= $SERVICE_NAMESPACE, su.firstseen = timestamp()
+        SET su.lastauthenticateddate = $LAST_AUTHENTICATED_DATE, su.lastauthenticatedentity = $LAST_AUTHENTICATED_ENTITY,
+        su.lastauthenticatedretion = $LAST_AUTHENTICATED_REGION, su.totalauthenticatedentities = $TOTAL_AUTHENTICATED_ENTITIES,
+        su.lastupdated = $aws_update_tag
         WITH su
-        MATCH (ap:AWSRole{arn: {PRINCIPAL_ARN}})
+        MATCH (ap:AWSRole{arn: $PRINCIPAL_ARN})
         MERGE (ap)-[r:HAS_ACCESSED]->(su)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {aws_update_tag}
+        SET r.lastupdated = $aws_update_tag
         """
 
     for access in access_data:

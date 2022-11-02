@@ -164,40 +164,40 @@ def load_gcp_buckets(neo4j_session: neo4j.Session, buckets: List[Dict], gcp_upda
     '''
 
     query = """
-    MERGE (p:GCPProject{id:{ProjectNumber}})
+    MERGE (p:GCPProject{id: $ProjectNumber})
     ON CREATE SET p.firstseen = timestamp()
-    SET p.lastupdated = {gcp_update_tag}
+    SET p.lastupdated = $gcp_update_tag
 
-    MERGE (bucket:GCPBucket{id:{BucketId}})
+    MERGE (bucket:GCPBucket{id:  $BucketId})
     ON CREATE SET bucket.firstseen = timestamp(),
-    bucket.bucket_id = {BucketId}
-    SET bucket.self_link = {SelfLink},
-    bucket.project_number = {ProjectNumber},
-    bucket.kind = {Kind},
-    bucket.name = {name},
-    bucket.location = {Location},
-    bucket.region = {region},
-    bucket.location_type = {LocationType},
-    bucket.meta_generation = {MetaGeneration},
-    bucket.storage_class = {StorageClass},
-    bucket.time_created = {TimeCreated},
-    bucket.entity = {Entity},
-    bucket.defaultentity = {DefaultEntity},
-    bucket.uniform_bucket_level_access = {UniformBucketLevelAccess},
-    bucket.retention_period = {RetentionPeriod},
-    bucket.iam_config_bucket_policy_only = {IamConfigBucketPolicyOnly},
-    bucket.owner_entity = {OwnerEntity},
-    bucket.owner_entity_id = {OwnerEntityId},
-    bucket.versioning_enabled = {VersioningEnabled},
-    bucket.log_bucket = {LogBucket},
-    bucket.requester_pays = {RequesterPays},
-    bucket.default_kms_key_name = {DefaultKmsKeyName},
-    bucket.consolelink = {consolelink},
-    bucket.lastupdated = {gcp_update_tag}
+    bucket.bucket_id = $BucketId
+    SET bucket.self_link = $SelfLink,
+    bucket.project_number = $ProjectNumber,
+    bucket.kind = $Kind,
+    bucket.name = $name,
+    bucket.location = $Location,
+    bucket.region = $region,
+    bucket.location_type = $LocationType,
+    bucket.meta_generation = $MetaGeneration,
+    bucket.storage_class = $StorageClass,
+    bucket.time_created = $TimeCreated,
+    bucket.entity = $Entity,
+    bucket.defaultentity = $DefaultEntity,
+    bucket.uniform_bucket_level_access = $UniformBucketLevelAccess,
+    bucket.retention_period = $RetentionPeriod,
+    bucket.iam_config_bucket_policy_only = $IamConfigBucketPolicyOnly,
+    bucket.owner_entity = $OwnerEntity,
+    bucket.owner_entity_id = $OwnerEntityId,
+    bucket.versioning_enabled = $VersioningEnabled,
+    bucket.log_bucket = $LogBucket,
+    bucket.requester_pays = $RequesterPays,
+    bucket.default_kms_key_name = $DefaultKmsKeyName,
+    bucket.consolelink = $consolelink,
+    bucket.lastupdated = $gcp_update_tag
 
     MERGE (p)-[r:RESOURCE]->(bucket)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """
     for bucket in buckets:
         neo4j_session.run(
