@@ -19,7 +19,7 @@ aws_console_link = AWSLinker()
 
 
 @timeit
-def get_domains(boto3_session: boto3.session.Session, region: str, account_id: str) -> List[Dict]:
+def get_domains(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
     domains = []
     try:
         client = boto3_session.client('route53domains', region_name=region)
@@ -29,19 +29,28 @@ def get_domains(boto3_session: boto3.session.Session, region: str, account_id: s
         for page in page_iterator:
             domains.extend(page.get('Domains', []))
 
-        for domain in domains:
-            domain['arn'] = domain['DomainName']
-            console_arn = f"arn:aws:route53:{region}:{account_id}:domains/{domain['DomainName']}"
-            domain['consolelink'] = aws_console_link.get_console_link(arn=console_arn)
-            domain['region'] = region
-            domain['details'] = client.get_domain_detail(DomainName=domain['DomainName'])
-
         return domains
 
     except ClientError as e:
         logger.error(f'Failed to call Route53Domains list_domains: {region} - {e}')
         return domains
 
+@timeit
+def transform_domains(boto3_session: boto3.session.Session, dms: List[Dict], region: str, account_id: str) -> List[Dict]:
+    domains = []
+    try:
+        client = boto3_session.client('route53domains', region_name=region)
+        for domain in dms:
+            domain['arn'] = domain['DomainName']
+            console_arn = f"arn:aws:route53:{region}:{account_id}:domains/{domain['DomainName']}"
+            domain['consolelink'] = aws_console_link.get_console_link(arn=console_arn)
+            domain['region'] = region
+            domain['details'] = client.get_domain_detail(DomainName=domain['DomainName'])
+            domains.append(domain)
+    except ClientError as e:
+        logger.error(f'Failed to call Route53Domains list_domains: {region} - {e}')
+
+    return domains
 
 def load_domains(session: neo4j.Session, domains: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
     session.write_transaction(_load_domains_tx, domains, current_aws_account_id, aws_update_tag)
@@ -457,20 +466,22 @@ def get_zone_record_sets(client: botocore.client.BaseClient, zone_id: str) -> Li
 
 
 @timeit
-def get_zones(client: botocore.client.BaseClient) -> List[Tuple[Dict, List[Dict]]]:
+def get_zones(client: botocore.client.BaseClient) -> List[Dict]:
     paginator = client.get_paginator('list_hosted_zones')
     hosted_zones: List[Dict] = []
     for page in paginator.paginate():
         hosted_zones.extend(page['HostedZones'])
+    return hosted_zones
 
+@timeit
+def transform_zones(client: botocore, zns: List[Dict]) -> List[Tuple[Dict, List[Dict]]]:
     results: List[Tuple[Dict, List[Dict]]] = []
-    for hosted_zone in hosted_zones:
+    for hosted_zone in zns:
         hosted_zone['arn'] = f"arn:aws:route53:::hostedzone/{hosted_zone['Id']}"
         hosted_zone['consolelink'] = aws_console_link.get_console_link(arn=hosted_zone['arn'])
         record_sets = get_zone_record_sets(client, hosted_zone['Id'])
         results.append((hosted_zone, record_sets))
     return results
-
 
 def _create_dns_record_id(zoneid: str, name: str, record_type: str) -> str:
     return "/".join([zoneid, name, record_type])
@@ -498,7 +509,8 @@ def sync(
 
     logger.info("Syncing Route53 for account '%s', at %s.", current_aws_account_id, tic)
     client = boto3_session.client('route53')
-    zones = get_zones(client)
+    zns = get_zones(client)
+    zones = transform_zones(client, zns)
 
     logger.info(f"Total Route53 Zones: {len(zones)}")
 
@@ -533,7 +545,8 @@ def sync(
     for region in regions:
         logger.info("Syncing Route53 Domains for region '%s' in account '%s'.", region, current_aws_account_id)
 
-        domains.extend(get_domains(boto3_session, region, current_aws_account_id))
+        dms = get_domains(boto3_session, region)
+        domains = transform_domains(boto3_session, dms, region, current_aws_account_id)
 
     logger.info(f"Total Route Domains: {len(domains)}")
 

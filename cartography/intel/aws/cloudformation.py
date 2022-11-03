@@ -26,10 +26,6 @@ def get_cloudformation_stack(boto3_session: boto3.session.Session, region: str) 
         page_iterator = paginator.paginate()
         for page in page_iterator:
             stacks.extend(page['Stacks'])
-        for stack in stacks:
-            stack['region'] = region
-            stack['arn'] = stack['StackId']
-            stack['consolelink'] = aws_console_link.get_console_link(arn=stack['arn'])
 
         return stacks
 
@@ -37,6 +33,16 @@ def get_cloudformation_stack(boto3_session: boto3.session.Session, region: str) 
         logger.error(f'Failed to call cloudformation describe_stacks: {region} - {e}')
         return stacks
 
+@timeit
+def transform_stack(sts: List[Dict], region: str) -> List[Dict]:
+    stacks = []
+    for stack in sts:
+        stack['region'] = region
+        stack['arn'] = stack['StackId']
+        stack['consolelink'] = aws_console_link.get_console_link(arn=stack['arn'])
+        stacks.append(stack)
+
+    return stacks
 
 def load_cloudformation_stack(session: neo4j.Session, stacks: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
     session.write_transaction(_load_cloudformation_stack_tx, stacks, current_aws_account_id, aws_update_tag)
@@ -97,7 +103,9 @@ def sync(
     for region in regions:
         logger.info("Syncing Cloudformation for region '%s' in account '%s'.", region, current_aws_account_id)
 
-        stacks.extend(get_cloudformation_stack(boto3_session, region))
+        sts = get_cloudformation_stack(boto3_session, region)
+
+        stacks = transform_stack(sts, region)
 
     logger.info(f"Total Cloudformation Stacks: {len(stacks)}")
 

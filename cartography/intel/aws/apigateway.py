@@ -26,7 +26,7 @@ aws_console_link = AWSLinker()
 
 @timeit
 @aws_handle_regions
-def get_client_certificates(boto3_session: boto3.session.Session, region: str, current_aws_account_id: str) -> List[Dict]:
+def get_client_certificates(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
     certificates = []
     try:
         client = boto3_session.client('apigateway', region_name=region)
@@ -35,17 +35,23 @@ def get_client_certificates(boto3_session: boto3.session.Session, region: str, c
         page_iterator = paginator.paginate()
         for page in page_iterator:
             certificates.extend(page['items'])
-        for certificate in certificates:
-            certificate['region'] = region
-            console_arn = f"arn:aws:apigateway:{region}::certificate/{certificate['apiId']}"
-            certificate['consolelink'] = aws_console_link.get_console_link(arn=console_arn)
-            certificate['arn'] = f"arn:aws:apigateway:{region}:{current_aws_account_id}:clientcertificates/{certificate['clientCertificateId']}"
-
         return certificates
 
     except ClientError as e:
         logger.error(f'Failed to call Apigateway get_client_certificates: {region} - {e}')
         return certificates
+
+@timeit
+def transform_client_certificates(certs: List[Dict], region: str, account_id: str) -> List[Dict]:
+    certificates = []
+    for certificate in certs:
+        certificate['region'] = region
+        console_arn = f"arn:aws:apigateway:{region}::certificate/{certificate['apiId']}"
+        certificate['consolelink'] = aws_console_link.get_console_link(arn=console_arn)
+        certificate['arn'] = f"arn:aws:apigateway:{region}:{account_id}:clientcertificates/{certificate['clientCertificateId']}"
+        certificates.append(certificate)
+
+    return certificates
 
 
 def load_client_certificates(session: neo4j.Session, certificates: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
@@ -94,7 +100,8 @@ def sync_client_certificates(
 ) -> None:
     data = []
     for region in regions:
-        data.extend(get_client_certificates(boto3_session, region, current_aws_account_id))
+        certs = get_client_certificates(boto3_session, region, current_aws_account_id)
+        data = transform_client_certificates(certs, region, current_aws_account_id)
 
     logger.info(f"Total API Gateway Certificates: {len(data)}")
 
@@ -171,7 +178,8 @@ def get_rest_api_details(
         )
         client = boto3_session.client('apigateway', config=config)
         stages = get_rest_api_stages(api, client)
-        certificate = get_rest_api_client_certificate(stages, client, api['id'], api['region'])  # clientcertificate id is given by the api stage
+        cert = get_rest_api_client_certificate(stages, client)  # clientcertificate id is given by the api stage
+        certificate = transform_rest_api_client_certificate(cert, api['id'], api['region'])
         resources = get_rest_api_resources(api, client)
         for resource in resources:
             console_arn = f"arn:aws:apigateway:{api['region']}::/{api['id']}"
@@ -195,18 +203,18 @@ def get_rest_api_stages(api: Dict, client: botocore.client.BaseClient) -> List[A
 
 
 @timeit
-def get_rest_api_client_certificate(stages: Dict, client: botocore.client.BaseClient, api_id: str, api_region: str) -> Optional[Any]:
+def get_rest_api_client_certificate(stages: Dict, client: botocore.client.BaseClient) -> Optional[Any]:
     """
     Gets the current ClientCertificate resource if present, else returns None.
     """
     response = None
+    certificates = []
     for stage in stages:
         if 'clientCertificateId' in stage:
             try:
                 response = client.get_client_certificate(clientCertificateId=stage['clientCertificateId'])
                 response['stageName'] = stage['stageName']
-                console_arn = f"arn:aws:apigateway:{api_region}::certificate/{api_id}"
-                response['consolelink'] = aws_console_link.get_console_link(arn=console_arn)
+                certificates.extend(response)
             except ClientError as e:
                 logger.warning(f"Failed to retrive Client Certificate for Stage {stage['stageName']} - {e}")
                 raise
@@ -215,7 +223,16 @@ def get_rest_api_client_certificate(stages: Dict, client: botocore.client.BaseCl
 
     return response
 
+@timeit
+def transform_rest_api_client_certificate(certs: List[Dict], api_id: str, api_region: str) -> List[Dict]:
+    certificates = []
+    for certificate in certs:
+        console_arn = f"arn:aws:apigateway:{api_region}::certificate/{api_id}"
+        certificate['consolelink'] = aws_console_link.get_console_link(arn=console_arn)
+        certificates.append(certificate)
 
+    return certificates
+    
 @timeit
 def get_rest_api_resources(api: Dict, client: botocore.client.BaseClient) -> List[Any]:
     """

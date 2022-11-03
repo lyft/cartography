@@ -52,7 +52,7 @@ def _get_botocore_config() -> botocore.config.Config:
 
 @timeit
 @aws_handle_regions
-def _get_es_domains(client: botocore.client.BaseClient, region: str, account_id: str) -> List[Dict]:
+def _get_es_domains(client: botocore.client.BaseClient) -> List[Dict]:
     """
     Get ES domains.
 
@@ -67,15 +67,21 @@ def _get_es_domains(client: botocore.client.BaseClient, region: str, account_id:
     for domain_name_chunk in domain_name_chunks:
         chunk_data = client.describe_elasticsearch_domains(DomainNames=domain_name_chunk)
         domains.extend(chunk_data['DomainStatusList'])
-    for domain in domains:
+    return domains
+
+@timeit
+def transfrom_es_domains(dms: List[Dict], region: str, account_id: str) -> List[Dict]:
+    domains= []
+    for domain in dms:
         domain['arn'] = f"arn:aws:es:{region if region else ''}:{account_id if account_id else ''}:domain/{domain['DomainName']}"
         domain['consolelink'] = aws_console_link.get_console_link(arn=domain['arn'])
         domain['region'] = region
         domain['isPublicFacing'] = False
         if not domain.get('VPCOptions', {}).get('VpcId'):
             domain['isPublicFacing'] = True
-    return domains
+        domains.append(domain)
 
+    return domains
 
 @timeit
 def _load_es_domains(
@@ -322,7 +328,8 @@ def sync(
     reserved_instances = []
     for region in es_regions:
         client = boto3_session.client('es', region_name=region, config=_get_botocore_config())
-        data.extend(_get_es_domains(client, region, current_aws_account_id))
+        domains = _get_es_domains(client)
+        data = transfrom_es_domains(domains, region, current_aws_account_id)
         reserved_instances.extend(get_elasticsearch_reserved_instances(client, region, current_aws_account_id))
 
     logger.info(f"Total ElasticSearch Domains: {len(data)}")

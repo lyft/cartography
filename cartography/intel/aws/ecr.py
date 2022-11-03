@@ -24,9 +24,16 @@ def get_ecr_repositories(boto3_session: boto3.session.Session, region: str) -> L
     ecr_repositories: List[Dict] = []
     for page in paginator.paginate():
         ecr_repositories.extend(page['repositories'])
-    for repo in ecr_repositories:
+    return ecr_repositories
+
+@timeit
+def transform_repositories(repositories: List[Dict], region: str) -> List[Dict]:
+    ecr_repositories = []
+    for repo in repositories:
         repo['region'] = region
         repo['consolelink'] = aws_console_link.get_console_link(arn=repo['repositoryArn'])
+        ecr_repositories.append(repo)
+
     return ecr_repositories
 
 
@@ -156,7 +163,8 @@ def sync(
     repositories = []
     for region in regions:
         logger.info("Syncing ECR for region '%s' in account '%s'.", region, current_aws_account_id)
-        repositories.extend(get_ecr_repositories(boto3_session, region))
+        repos = get_ecr_repositories(boto3_session, region)
+        repositories = transform_repositories(repos, region)
 
     logger.info(f"Total ECR Repositories: {len(repositories)}")
 

@@ -39,21 +39,25 @@ def get_images_in_use(neo4j_session: neo4j.Session, region: str, current_aws_acc
 
 @timeit
 @aws_handle_regions
-def get_images(boto3_session: boto3.session.Session, region: str, image_ids: List[str], account_id: str) -> List[Dict]:
+def get_images(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
     client = boto3_session.client('ec2', region_name=region, config=get_botocore_config(),)
     images = []
     try:
         self_images = client.describe_images(Owners=['self'])['Images']
-        for image in self_images:
-            image['region'] = region
         images.extend(self_images)
     except ClientError as e:
         logger.warning(f"Failed retrieve images for region - {region}. Error - {e}")
+    return images
+
+@timeit
+def transform_images(boto3_session: boto3.session.Session, imags: List[Dict], image_ids: List[str], region: str, account_id: str) -> List[Dict]:
+    images = []
+    client = boto3_session.client('ec2', region_name=region, config=get_botocore_config(),)
     try:
         if image_ids:
             images_in_use = client.describe_images(ImageIds=image_ids)['Images']
             # Ensure we're not adding duplicates
-            _ids = [image["ImageId"] for image in images]
+            _ids = [image["ImageId"] for image in imags]
             for image in images_in_use:
                 if image["ImageId"] not in _ids:
                     console_arn = f"arn:aws:ec2:{region}:{account_id}:image/{image['ImageId']}"
@@ -63,7 +67,6 @@ def get_images(boto3_session: boto3.session.Session, region: str, image_ids: Lis
     except ClientError as e:
         logger.warning(f"Failed retrieve images for region - {region}. Error - {e}")
     return images
-
 
 @timeit
 def load_images(
@@ -128,7 +131,8 @@ def sync_ec2_images(
     for region in regions:
         logger.info("Syncing images for region '%s' in account '%s'.", region, current_aws_account_id)
         images_in_use = get_images_in_use(neo4j_session, region, current_aws_account_id)
-        data.extend(get_images(boto3_session, region, images_in_use, current_aws_account_id))
+        imgs = get_images(boto3_session, region)
+        data = transform_images(boto3_session, imgs, images_in_use, region, current_aws_account_id)
 
     logger.info(f"Total EC2 Images: {len(data)}")
 

@@ -31,12 +31,18 @@ def list_subscriptions(boto3_session: boto3.session.Session, region):
     except ClientError as e:
         logger.error(f'Failed to call SNS list_subscriptions: {region} - {e}')
 
-    for subscription in subscriptions:
+    return subscriptions
+
+@timeit
+def transfrom_subscriptions(subs: List[Dict], region: str) -> List[Dict]:
+    subscriptions = []
+    for subscription in subs:
         # subscription arn - arn:aws:sns:<region>:<account_id>:<topic_name>:<subscription_id>
         subscription['arn'] = subscription['SubscriptionArn']
         subscription['consolelink'] = aws_console_link.get_console_link(arn=subscription['arn'])
         subscription['region'] = region
         subscription['name'] = subscription['SubscriptionArn'].split(':')[-1]
+        subscriptions.append(subscription)
 
     return subscriptions
 
@@ -53,17 +59,28 @@ def get_sns_topic(boto3_session: boto3.session.Session, region: str) -> List[Dic
         for page in page_iterator:
             topics.extend(page.get('Topics', []))
 
-        subscriptions = list_subscriptions(boto3_session, region)
+        return topics
 
-        for topic in topics:
+    except ClientError as e:
+        logger.error(f'Failed to call SNS list_topics: {region} - {e}')
+        return topics
+
+@timeit
+def transform_topics(boto3_session: boto3.session.Session, tps: List[Dict], region: str) -> List[Dict]:
+    topics = []
+    try:
+        client = boto3_session.client('sns', region_name=region)
+        subs = list_subscriptions(boto3_session, region)
+        subscriptions = transfrom_subscriptions(subs, region)
+        for topic in tps:
             topic['region'] = region
             topic['name'] = topic['TopicArn'].split(':')[-1]
             topic['consolelink'] = aws_console_link.get_console_link(arn=topic['arn'])
             topic['attributes'] = client.get_topic_attributes(TopicArn=topic['TopicArn']).get('Attributes', {})
             topic['subscriptions'] = list(filter(lambda s: s['TopicArn'] == topic['TopicArn'], subscriptions))
+            topics.append(topic)
 
         return topics
-
     except ClientError as e:
         logger.error(f'Failed to call SNS list_topics: {region} - {e}')
         return topics
@@ -162,7 +179,8 @@ def sync(
     for region in regions:
         logger.info("Syncing SNS for region '%s' in account '%s'.", region, current_aws_account_id)
 
-        topics.extend(get_sns_topic(boto3_session, region))
+        tps = get_sns_topic(boto3_session, region)
+        topics = transform_topics(boto3_session, tps, region)
 
     logger.info(f"Total SNS Topics: {len(topics)}")
 
