@@ -51,11 +51,11 @@ def load_cloudfront_distributions(session: neo4j.Session, distributions: List[Di
 @timeit
 def _load_cloudfront_distributions_tx(tx: neo4j.Transaction, distributions: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
     query: str = """
-    UNWIND {Records} as record
+    UNWIND $Records as record
     MERGE (distribution:AWSCloudfrontDistribution{id: record.ARN})
     ON CREATE SET distribution.firstseen = timestamp(),
         distribution.arn = record.ARN
-    SET distribution.lastupdated = {aws_update_tag},
+    SET distribution.lastupdated = $aws_update_tag,
         distribution.name = record.Id,
         distribution.region = record.region,
         distribution.status = record.Status,
@@ -68,10 +68,10 @@ def _load_cloudfront_distributions_tx(tx: neo4j.Transaction, distributions: List
         distribution.is_ipv6_enabled = record.IsIPV6Enabled,
         distribution.http_version = record.HttpVersion
     WITH distribution
-    MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (owner)-[r:RESOURCE]->(distribution)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
 
     tx.run(

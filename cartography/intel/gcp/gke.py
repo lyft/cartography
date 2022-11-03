@@ -97,46 +97,46 @@ def load_gke_clusters(neo4j_session: neo4j.Session, cluster_resp: Dict, project_
     """
 
     query = """
-    MERGE (cluster:GKECluster{id:{ClusterId}})
+    MERGE (cluster:GKECluster{id: $ClusterId})
     ON CREATE SET
         cluster.firstseen = timestamp(),
-        cluster.created_at = {ClusterCreateTime}
+        cluster.created_at = $ClusterCreateTime
     SET
-        cluster.name = {ClusterName},
-        cluster.self_link = {ClusterSelfLink},
-        cluster.description = {ClusterDescription},
-        cluster.logging_service = {ClusterLoggingService},
-        cluster.monitoring_service = {ClusterMonitoringService},
-        cluster.network = {ClusterNetwork},
-        cluster.subnetwork = {ClusterSubnetwork},
-        cluster.cluster_ipv4cidr = {ClusterIPv4Cidr},
-        cluster.zone = {ClusterZone},
-        cluster.region = {ClusterRegion},
-        cluster.location = {ClusterLocation},
-        cluster.endpoint = {ClusterEndpoint},
-        cluster.initial_version = {ClusterInitialVersion},
-        cluster.current_master_version = {ClusterMasterVersion},
-        cluster.status = {ClusterStatus},
-        cluster.services_ipv4cidr = {ClusterServicesIPv4Cidr},
-        cluster.database_encryption = {ClusterDatabaseEncryption},
-        cluster.network_policy = {ClusterNetworkPolicy},
-        cluster.master_authorized_networks = {ClusterMasterAuthorizedNetworks},
-        cluster.masterGlobalAccessConfig = {ClusterMasterGlobalAccessConfig},
-        cluster.legacy_abac = {ClusterAbac},
-        cluster.shielded_nodes = {ClusterShieldedNodes},
-        cluster.private_nodes = {ClusterPrivateNodes},
-        cluster.private_endpoint_enabled = {ClusterPrivateEndpointEnabled},
-        cluster.private_endpoint = {ClusterPrivateEndpoint},
-        cluster.public_endpoint = {ClusterPublicEndpoint},
-        cluster.masterauth_username = {ClusterMasterUsername},
-        cluster.consolelink = {consolelink},
-        cluster.masterauth_password = {ClusterMasterPassword},
-        cluster.lastupdated = {gcp_update_tag}
+        cluster.name = $ClusterName,
+        cluster.self_link = $ClusterSelfLink,
+        cluster.description = $ClusterDescription,
+        cluster.logging_service = $ClusterLoggingService,
+        cluster.monitoring_service = $ClusterMonitoringService,
+        cluster.network = $ClusterNetwork,
+        cluster.subnetwork = $ClusterSubnetwork,
+        cluster.cluster_ipv4cidr = $ClusterIPv4Cidr,
+        cluster.zone = $ClusterZone,
+        cluster.region = $ClusterRegion,
+        cluster.location = $ClusterLocation,
+        cluster.endpoint = $ClusterEndpoint,
+        cluster.initial_version = $ClusterInitialVersion,
+        cluster.current_master_version = $ClusterMasterVersion,
+        cluster.status = $ClusterStatus,
+        cluster.services_ipv4cidr = $ClusterServicesIPv4Cidr,
+        cluster.database_encryption = $ClusterDatabaseEncryption,
+        cluster.network_policy = $ClusterNetworkPolicy,
+        cluster.master_authorized_networks = $ClusterMasterAuthorizedNetworks,
+        cluster.masterGlobalAccessConfig = $ClusterMasterGlobalAccessConfig,
+        cluster.legacy_abac = $ClusterAbac,
+        cluster.shielded_nodes = $ClusterShieldedNodes,
+        cluster.private_nodes = $ClusterPrivateNodes,
+        cluster.private_endpoint_enabled = $ClusterPrivateEndpointEnabled,
+        cluster.private_endpoint = $ClusterPrivateEndpoint,
+        cluster.public_endpoint = $ClusterPublicEndpoint,
+        cluster.masterauth_username = $ClusterMasterUsername,
+        cluster.consolelink = $consolelink,
+        cluster.masterauth_password = $ClusterMasterPassword,
+        cluster.lastupdated = $gcp_update_tag
     WITH cluster
-    MATCH (owner:GCPProject{id:{ProjectId}})
+    MATCH (owner:GCPProject{id: $ProjectId})
     MERGE (owner)-[r:RESOURCE]->(cluster)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """
     for cluster in cluster_resp:
         cluster['region'] = cluster.get('zone')[:-2]

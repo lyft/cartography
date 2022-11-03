@@ -70,11 +70,11 @@ def load_ses_identity(session: neo4j.Session, identities: List[Dict], current_aw
 @timeit
 def _load_ses_identity_tx(tx: neo4j.Transaction, identities: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
     query: str = """
-    UNWIND {Records} as record
+    UNWIND $Records as record
     MERGE (identity:AWSSESIdentity{id: record.arn})
     ON CREATE SET identity.firstseen = timestamp(),
         identity.arn = record.arn
-    SET identity.lastupdated = {aws_update_tag},
+    SET identity.lastupdated = $aws_update_tag,
         identity.name = record.name,
         identity.region = record.region,
         identity.consolelink = record.consolelink,
@@ -82,10 +82,10 @@ def _load_ses_identity_tx(tx: neo4j.Transaction, identities: List[Dict], current
         identity.dkim_verification_status = record.dkim.DkimVerificationStatus,
         identity.verification_status = record.verification.VerificationStatus
     WITH identity
-    MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (owner)-[r:RESOURCE]->(identity)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
 
     tx.run(

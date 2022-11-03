@@ -51,11 +51,11 @@ def load_cloudformation_stack(session: neo4j.Session, stacks: List[Dict], curren
 @timeit
 def _load_cloudformation_stack_tx(tx: neo4j.Transaction, stacks: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
     query: str = """
-    UNWIND {Records} as record
+    UNWIND $Records as record
     MERGE (stack:AWSCloudformationStack{id: record.StackId})
     ON CREATE SET stack.firstseen = timestamp(),
         stack.arn = record.StackId
-    SET stack.lastupdated = {aws_update_tag},
+    SET stack.lastupdated = $aws_update_tag,
         stack.name = record.StackName,
         stack.region = record.region,
         stack.change_set_id = record.ChangeSetId,
@@ -71,10 +71,10 @@ def _load_cloudformation_stack_tx(tx: neo4j.Transaction, stacks: List[Dict], cur
         stack.root_id = record.RootId,
         stack.parent_id = record.ParentId
     WITH stack
-    MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (owner)-[r:RESOURCE]->(stack)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
 
     tx.run(

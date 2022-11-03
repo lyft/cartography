@@ -16,6 +16,7 @@ from cartography.util import timeit
 logger = logging.getLogger(__name__)
 gcp_console_link = GCPLinker()
 
+
 @timeit
 def get_logging_metrics(logging: Resource, project_id: str) -> List[Dict]:
     metrics = []
@@ -58,12 +59,12 @@ def load_logging_metrics_tx(
 ) -> None:
 
     query = """
-    UNWIND {Records} as record
+    UNWIND $Records as record
     MERGE (metric:GCPLoggingMetric{id:record.id})
     ON CREATE SET
         metric.firstseen = timestamp()
     SET
-        metric.lastupdated = {gcp_update_tag},
+        metric.lastupdated = $gcp_update_tag,
         metric.region = record.region,
         metric.name = record.metric_name,
         metric.description = record.description,
@@ -75,11 +76,11 @@ def load_logging_metrics_tx(
         metric.create_time = record.createTime,
         metric.update_time = record.updateTime
     WITH metric
-    MATCH (owner:GCPProject{id:{ProjectId}})
+    MATCH (owner:GCPProject{id: $ProjectId})
     MERGE (owner)-[r:RESOURCE]->(metric)
     ON CREATE SET
         r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """
     tx.run(
         query,
@@ -113,7 +114,7 @@ def sync_logging_metrics(
             logger.info(f'pages process for logging metrics {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (
             common_job_parameters.get('pagination', {}).get('cloud_logging', None)[
-            'pageNo'
+                'pageNo'
             ] - 1
         ) * common_job_parameters.get('pagination', {}).get('cloud_logging', None)['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('cloud_logging', None)['pageSize']
@@ -169,12 +170,12 @@ def load_logging_sinks_tx(
 ) -> None:
 
     query = """
-    UNWIND {Records} as record
+    UNWIND $Records as record
     MERGE (sink:GCPLoggingSink{id:record.id})
     ON CREATE SET
         sink.firstseen = timestamp()
     SET
-        sink.lastupdated = {gcp_update_tag},
+        sink.lastupdated = $gcp_update_tag,
         sink.region = record.region,
         sink.name = record.name,
         sink.description = record.description,
@@ -186,11 +187,11 @@ def load_logging_sinks_tx(
         sink.create_time = record.createTime,
         sink.update_time = record.updateTime
     WITH sink
-    MATCH (owner:GCPProject{id:{ProjectId}})
+    MATCH (owner:GCPProject{id: $ProjectId})
     MERGE (owner)-[r:RESOURCE]->(sink)
     ON CREATE SET
         r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """
     tx.run(
         query,
@@ -224,7 +225,7 @@ def sync_logging_sinks(
             logger.info(f'pages process for logging sinks {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (
             common_job_parameters.get('pagination', {}).get('cloud_logging', None)[
-            'pageNo'
+                'pageNo'
             ] - 1
         ) * common_job_parameters.get('pagination', {}).get('cloud_logging', None)['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('cloud_logging', None)['pageSize']

@@ -65,12 +65,12 @@ def load_pubsub_subscriptions_tx(
 ) -> None:
 
     query = """
-    UNWIND {Records} as record
+    UNWIND $Records as record
     MERGE (subscription:GCPPubsubSubscription{id:record.id})
     ON CREATE SET
         subscription.firstseen = timestamp()
     SET
-        subscription.lastupdated = {gcp_update_tag},
+        subscription.lastupdated = $gcp_update_tag,
         subscription.region = record.region,
         subscription.name = record.subscription_name,
         subscription.topic = record.topic,
@@ -89,13 +89,13 @@ def load_pubsub_subscriptions_tx(
     MERGE (topic)-[rt:HAS]->(subscription)
     ON CREATE SET
         rt.firstseen = timestamp()
-    SET rt.lastupdated = {gcp_update_tag}
+    SET rt.lastupdated = $gcp_update_tag
     WITH subscription
-    MATCH (owner:GCPProject{id:{ProjectId}})
+    MATCH (owner:GCPProject{id: $ProjectId})
     MERGE (owner)-[r:RESOURCE]->(subscription)
     ON CREATE SET
         r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """
     tx.run(
         query,
@@ -180,12 +180,12 @@ def load_pubsub_topics_tx(
 ) -> None:
 
     query = """
-    UNWIND {Records} as record
+    UNWIND $Records as record
     MERGE (topic:GCPPubsubTopic{id:record.id})
     ON CREATE SET
         topic.firstseen = timestamp()
     SET
-        topic.lastupdated = {gcp_update_tag},
+        topic.lastupdated = $gcp_update_tag,
         topic.region = record.region,
         topic.name = record.topic_name,
         topic.consolelink = record.consolelink,
@@ -193,11 +193,11 @@ def load_pubsub_topics_tx(
         topic.satisfies_pzs = record.satisfiesPzs,
         topic.message_retention_duration = record.messageRetentionDuration
     WITH topic
-    MATCH (owner:GCPProject{id:{ProjectId}})
+    MATCH (owner:GCPProject{id: $ProjectId})
     MERGE (owner)-[r:RESOURCE]->(topic)
     ON CREATE SET
         r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """
     tx.run(
         query,

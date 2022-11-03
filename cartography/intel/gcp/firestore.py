@@ -178,7 +178,7 @@ def _load_firestore_databases_tx(
         :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
     """
     ingest_firestore_databases = """
-    UNWIND {firestore_databases} as database
+    UNWIND $firestore_databases as database
     MERGE (d:GCPFirestoreDatabase{id:database.id})
     ON CREATE SET
         d.firstseen = timestamp()
@@ -190,13 +190,13 @@ def _load_firestore_databases_tx(
         d.region = database.locationId,
         d.concurrencyMode = database.concurrencyMode,
         d.consolelink = database.consolelink,
-        d.lastupdated = {gcp_update_tag}
+        d.lastupdated = $gcp_update_tag
     WITH d
-    MATCH (owner:GCPProject{id:{ProjectId}})
+    MATCH (owner:GCPProject{id: $ProjectId})
     MERGE (owner)-[r:RESOURCE]->(d)
     ON CREATE SET
         r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """
     tx.run(
         ingest_firestore_databases,
@@ -230,7 +230,7 @@ def _load_firestore_indexes_tx(
         :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
     """
     ingest_firestore_indexes = """
-    UNWIND {firestore_indexes} as index
+    UNWIND $firestore_indexes as index
     MERGE (ix:GCPFirestoreIndex{id:index.id})
     ON CREATE SET
         ix.firstseen = timestamp()
@@ -240,14 +240,15 @@ def _load_firestore_indexes_tx(
         ix.queryScope = index.queryScope,
         ix.region = index.region,
         ix.state = index.state,
-        ix.consolelink = index.consolelink,
-        ix.lastupdated = {gcp_update_tag}
+        ix.lastupdated = $gcp_update_tag
+        ix.consolelink = index.consolelink
+        
     WITH ix,index
     MATCH (d:GCPFirestoreDatabase{id:index.database_id})
     MERGE (d)-[r:HAS_INDEX]->(ix)
     ON CREATE SET
         r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """
     tx.run(
         ingest_firestore_indexes,

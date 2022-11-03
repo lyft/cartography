@@ -312,6 +312,7 @@ def get_apikeys_keys(apikey: Resource, project_id: str) -> List[Resource]:
                     "Could not retrieve api keys on project %s due to permissions issue. Code: %s, Message: %s"
                 ), project_id, err['code'], err['message'],
             )
+            return []
         else:
             raise
 
@@ -335,22 +336,22 @@ def load_api_keys(
 ) -> None:
 
     query = """
-    UNWIND {ApiKeys} as key
+    UNWIND $ApiKeys as key
     MERGE (apikey:GCPApiKey{id: key.id})
     ON CREATE SET
         apikey.firstseen = timestamp()
     SET
-        apikey.lastupdated = {gcp_update_tag},
+        apikey.lastupdated = $gcp_update_tag,
         apikey.uniqueId = key.name,
         apikey.consolelink = key.consolelink,
         apikey.region = key.region,
         apikey.updateTime = key.updateTime,
         apikey.deleteTime = key.deleteTime
     WITH apikey
-    MATCH (p:GCPProject{id:{project_id}})
+    MATCH (p:GCPProject{id: $project_id})
     MERGE (p)-[r:RESOURCE]->(apikey)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """
     neo4j_session.run(
         query,
@@ -374,22 +375,22 @@ def load_service_accounts(
 
 ) -> None:
     ingest_service_accounts = """
-    UNWIND {service_accounts_list} AS sa
+    UNWIND $service_accounts_list AS sa
     MERGE (u:GCPServiceAccount{id: sa.id})
     ON CREATE SET u:GCPPrincipal, u.firstseen = timestamp()
     SET u.name = sa.name, u.displayname = sa.displayName,
     u.service_account_name = sa.service_account_name,
-    u.create_date = {createDate},
+    u.create_date = $createDate,
     u.email = sa.email,
     u.consolelink = sa.consolelink,
-    u.region = {region},
+    u.region = $region,
     u.disabled = sa.disabled, u.serviceaccountid = sa.uniqueId,
-    u.lastupdated = {gcp_update_tag}
+    u.lastupdated = $gcp_update_tag
     WITH u
-    MATCH (p:GCPProject{id: {project_id}})
+    MATCH (p:GCPProject{id: $project_id})
     MERGE (p)-[r:RESOURCE]->(u)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """
 
     neo4j_session.run(
@@ -413,21 +414,23 @@ def load_service_account_keys(
     service_account: str, gcp_update_tag: int,
 ) -> None:
     ingest_service_accounts = """
-    UNWIND {service_account_keys_list} AS sa
+    UNWIND $service_account_keys_list AS sa
     MERGE (u:GCPServiceAccountKey{id: sa.id})
     ON CREATE SET u.firstseen = timestamp()
-    SET u.name=sa.name, u.serviceaccountid={serviceaccount},
-    u.region = {region},
-    u.create_date = {createDate},
+    SET u.name=sa.name, u.serviceaccountid= $serviceaccount,
+    u.region = $region,
+    u.create_date = $createDate,
     u.keytype = sa.keyType, u.origin = sa.keyOrigin,
     u.consolelink = sa.consolelink,
     u.algorithm = sa.keyAlgorithm, u.validbeforetime = sa.validBeforeTime,
-    u.validaftertime = sa.validAfterTime, u.lastupdated = {gcp_update_tag}
+
+    u.validaftertime = sa.validAfterTime, u.lastupdated = $gcp_update_tag,
+    u.disabled = sa.disabled
     WITH u, sa
-    MATCH (d:GCPServiceAccount{id: {serviceaccount}})
+    MATCH (d:GCPServiceAccount{id: $serviceaccount})
     MERGE (d)-[r:HAS_KEY]->(u)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """
 
     neo4j_session.run(
@@ -448,25 +451,25 @@ def cleanup_service_account_keys(neo4j_session: neo4j.Session, common_job_parame
 @timeit
 def load_roles(neo4j_session: neo4j.Session, roles: List[Dict], project_id: str, gcp_update_tag: int) -> None:
     ingest_roles = """
-    UNWIND {roles_list} AS d
+    UNWIND $roles_list AS d
     MERGE (u:GCPRole{id: d.id})
     ON CREATE SET u.firstseen = timestamp()
     SET u.name = d.name,
     u.title = d.title,
-    u.region = {region},
-    u.create_date = {createDate},
+    u.region = $region,
+    u.create_date = $createDate,
     u.description = d.description,
     u.deleted = d.deleted,
     u.consolelink = d.consolelink,
     u.type = d.type,
     u.permissions = d.includedPermissions,
     u.roleid = d.id,
-    u.lastupdated = {gcp_update_tag}
+    u.lastupdated = $gcp_update_tag
     WITH u
-    MATCH (p:GCPProject{id: {project_id}})
+    MATCH (p:GCPProject{id: $project_id})
     MERGE (p)-[r:RESOURCE]->(u)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """
 
     neo4j_session.run(
@@ -627,34 +630,39 @@ def attach_role_to_user(
     project_id: str, gcp_update_tag: int,
 ) -> None:
     ingest_script = """
-    MERGE (user:GCPUser{id:{UserId}})
+    MERGE (user:GCPUser{id: $UserId})
     ON CREATE SET
     user:GCPPrincipal,
     user.firstseen = timestamp()
     SET
-    user.email = {UserEmail},
-    user.consolelink = {ConsoleLink},
-    user.name = {UserName},
-    user.create_date = {createDate},
-    user.lastupdated = {gcp_update_tag},
-    user.isDeleted = {isDeleted}
+
+    user.email = $UserEmail,
+    user.name = $UserName,
+    user.create_date = $createDate,
+    user.lastupdated = $gcp_update_tag,
+    user.isDeleted = $isDeleted
+    user.consolelink = $ConsoleLink
     WITH user
-    MATCH (role:GCPRole{id:{RoleId}})
+    MATCH (role:GCPRole{id: $RoleId})
     MERGE (user)-[r:ASSUME_ROLE]->(role)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
-    WITH user
-    MATCH (p:GCPProject{id: {project_id}})
+    SET r.lastupdated = $gcp_update_tag
+    WITH user,role
+    MATCH (p:GCPProject{id: $project_id})
     MERGE (p)-[pr:RESOURCE]->(user)
     ON CREATE SET
     pr.firstseen = timestamp()
-    SET pr.lastupdated = {gcp_update_tag}
+    SET pr.lastupdated = $gcp_update_tag
+    WITH user,role
+    SET
+    role.parent = $Parent,
+    role.parent_id = $ParentId
     WITH user
     WHERE (NOT EXISTS(user.parent)) OR
     NOT user.parent IN ['organization', 'folder']
     SET
-    user.parent = {Parent},
-    user.parent_id = {ParentId}
+    user.parent = $Parent,
+    user.parent_id = $ParentId
     """
 
     neo4j_session.run(
@@ -679,20 +687,24 @@ def attach_role_to_service_account(
     serviceAccount: Dict, project_id: str, gcp_update_tag: int,
 ) -> None:
     ingest_script = """
-    MATCH (sa:GCPServiceAccount{id:{saId}})
+    MATCH (sa:GCPServiceAccount{id: $saId})
     SET
-    sa.isDeleted = {isDeleted}
+    sa.isDeleted = $isDeleted
     WITH sa
-    MATCH (role:GCPRole{id:{RoleId}})
+    MATCH (role:GCPRole{id: $RoleId})
     MERGE (sa)-[r:ASSUME_ROLE]->(role)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
+    WITH sa,role
+    SET
+    role.parent = $Parent,
+    role.parent_id = $ParentId
     WITH sa
     WHERE (NOT EXISTS(sa.parent)) OR
     NOT sa.parent IN ['organization', 'folder']
     SET
-    sa.parent = {Parent},
-    sa.parent_id = {ParentId}
+    sa.parent = $Parent,
+    sa.parent_id = $ParentId
     """
 
     neo4j_session.run(
@@ -705,22 +717,6 @@ def attach_role_to_service_account(
         gcp_update_tag=gcp_update_tag,
     )
 
-    ingest_script = """
-    MATCH (sa:GCPServiceAccount{id:{saId}})
-    WITH sa
-    WHERE (NOT EXISTS(sa.parent)) OR
-    NOT sa.parent IN ['organization', 'folder']
-    SET
-    sa.parent = {Parent},
-    sa.parent_id = {ParentId}
-    """
-    neo4j_session.run(
-        ingest_script,
-        Parent=serviceAccount['parent'],
-        ParentId=serviceAccount['parent_id'],
-        saId=serviceAccount['id']
-    )
-
 
 @timeit
 def attach_role_to_group(
@@ -728,34 +724,38 @@ def attach_role_to_group(
     project_id: str, gcp_update_tag: int,
 ) -> None:
     ingest_script = """
-    MERGE (group:GCPGroup{id:{GroupId}})
+    MERGE (group:GCPGroup{id: $GroupId})
     ON CREATE SET
     group:GCPPrincipal,
     group.firstseen = timestamp()
     SET
-    group.email = {GroupEmail},
-    group.name = {GroupName},
-    group.consolelink = {ConsoleLink},
-    group.create_date = {createDate},
-    group.lastupdated = {gcp_update_tag},
-    group.isDeleted = {isDeleted}
+    group.email = $GroupEmail,
+    group.name = $GroupName,
+    group.create_date = $createDate,
+    group.consolelink = $ConsoleLink,
+    group.lastupdated = $gcp_update_tag,
+    group.isDeleted = $isDeleted
     WITH group
-    MATCH (role:GCPRole{id:{RoleId}})
+    MATCH (role:GCPRole{id: $RoleId})
     MERGE (group)-[r:ASSUME_ROLE]->(role)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
-    WITH group
-    MATCH (p:GCPProject{id: {project_id}})
+    SET r.lastupdated = $gcp_update_tag
+    WITH group,role
+    MATCH (p:GCPProject{id: $project_id})
     MERGE (p)-[pr:RESOURCE]->(group)
     ON CREATE SET
     pr.firstseen = timestamp()
-    SET pr.lastupdated = {gcp_update_tag}
+    SET pr.lastupdated = $gcp_update_tag
+    WITH group,role
+    SET
+    role.parent = $Parent,
+    role.parent_id = $ParentId
     WITH group
     WHERE (NOT EXISTS(group.parent)) OR
     NOT group.parent IN ['organization', 'folder']
     SET
-    group.parent = {Parent},
-    group.parent_id = {ParentId}
+    group.parent = $Parent,
+    group.parent_id = $ParentId
     """
 
     neo4j_session.run(
@@ -780,34 +780,38 @@ def attach_role_to_domain(
     project_id: str, gcp_update_tag: int,
 ) -> None:
     ingest_script = """
-    MERGE (domain:GCPDomain{id:{DomainId}})
+    MERGE (domain:GCPDomain{id: $DomainId})
     ON CREATE SET
     domain:GCPPrincipal,
     domain.firstseen = timestamp()
     SET
-    domain.email = {DomainEmail},
-    domain.name = {DomainName},
-    domain.consolelink = {ConsoleLink},
-    domain.create_date = {createDate},
-    domain.lastupdated = {gcp_update_tag},
-    domain.isDeleted = {isDeleted}
+    domain.email = $DomainEmail,
+    domain.name = $DomainName,
+    domain.create_date = $createDate,
+    domain.consolelink = $ConsoleLink,
+    domain.lastupdated = $gcp_update_tag,
+    domain.isDeleted = $isDeleted
     WITH domain
-    MATCH (role:GCPRole{id:{RoleId}})
+    MATCH (role:GCPRole{id: $RoleId})
     MERGE (domain)-[r:ASSUME_ROLE]->(role)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
-    WITH domain
-    MATCH (p:GCPProject{id: {project_id}})
+    SET r.lastupdated = $gcp_update_tag
+    WITH domain,role
+    MATCH (p:GCPProject{id: $project_id})
     MERGE (p)-[pr:RESOURCE]->(domain)
     ON CREATE SET
     pr.firstseen = timestamp()
-    SET pr.lastupdated = {gcp_update_tag}
+    SET pr.lastupdated = $gcp_update_tag
+    WITH domain,role
+    SET
+    role.parent = $Parent,
+    role.parent_id = $ParentId
     WITH domain
     WHERE (NOT EXISTS(domain.parent)) OR
     NOT domain.parent IN ['organization', 'folder']
     SET
-    domain.parent = {Parent},
-    domain.parent_id = {ParentId}
+    domain.parent = $Parent,
+    domain.parent_id = $ParentId
     """
 
     neo4j_session.run(
@@ -830,10 +834,10 @@ def _set_used_state_tx(
     tx: neo4j.Transaction, project_id: str, common_job_parameters: Dict, update_tag: int,
 ) -> None:
     ingest_role_used = """
-    MATCH (:CloudanixWorkspace{id: {WORKSPACE_ID}})-[:OWNER]->
-    (:GCPProject{id: {GCP_PROJECT_ID}})-[:RESOURCE]->(n:GCPRole)
-    WHERE (n)<-[:ASSUME_ROLE]-() AND n.lastupdated = {update_tag}
-    SET n.isUsed = {isUsed}
+    MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->
+    (:GCPProject{id: $GCP_PROJECT_ID})-[:RESOURCE]->(n:GCPRole)
+    WHERE (n)<-[:ASSUME_ROLE]-() AND n.lastupdated = $update_tag
+    SET n.isUsed = $isUsed
     """
 
     tx.run(
@@ -845,10 +849,10 @@ def _set_used_state_tx(
     )
 
     ingest_entity_used = """
-    MATCH (:CloudanixWorkspace{id: {WORKSPACE_ID}})-[:OWNER]->
-    (:GCPProject{id: {GCP_PROJECT_ID}})-[:RESOURCE]->(n:GCPPrincipal)
-    WHERE ()<-[:ASSUME_ROLE]-(n) AND n.lastupdated = {update_tag}
-    SET n.isUsed = {isUsed}
+    MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->
+    (:GCPProject{id: $GCP_PROJECT_ID})-[:RESOURCE]->(n:GCPPrincipal)
+    WHERE ()<-[:ASSUME_ROLE]-(n) AND n.lastupdated = $update_tag
+    SET n.isUsed = $isUsed
     """
 
     tx.run(
@@ -860,10 +864,10 @@ def _set_used_state_tx(
     )
 
     ingest_entity_unused = """
-    MATCH (:CloudanixWorkspace{id: {WORKSPACE_ID}})-[:OWNER]->
-    (:GCPProject{id: {GCP_PROJECT_ID}})-[:RESOURCE]->(n:GCPPrincipal)
-    WHERE NOT EXISTS(n.isUsed) AND n.lastupdated = {update_tag}
-    SET n.isUsed = {isUsed}
+    MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->
+    (:GCPProject{id: $GCP_PROJECT_ID})-[:RESOURCE]->(n:GCPPrincipal)
+    WHERE NOT EXISTS(n.isUsed) AND n.lastupdated = $update_tag
+    SET n.isUsed = $isUsed
     """
 
     tx.run(

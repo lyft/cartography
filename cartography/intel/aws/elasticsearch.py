@@ -95,10 +95,10 @@ def _load_es_domains(
     :param domains: Domain list to ingest
     """
     ingest_records = """
-    UNWIND {Records} as record
+    UNWIND $Records as record
     MERGE (es:ESDomain{id: record.DomainId})
     ON CREATE SET es.firstseen = timestamp(), es.arn = record.ARN, es.domainid = record.DomainId
-    SET es.lastupdated = {aws_update_tag}, es.deleted = record.Deleted, es.created = record.created,
+    SET es.lastupdated = $aws_update_tag, es.deleted = record.Deleted, es.created = record.created,
     es.endpoint = record.Endpoint, es.elasticsearch_version = record.ElasticsearchVersion,
     es.elasticsearch_cluster_config_instancetype = record.ElasticsearchClusterConfig.InstanceType,
     es.elasticsearch_cluster_config_instancecount = record.ElasticsearchClusterConfig.InstanceCount,
@@ -118,10 +118,10 @@ def _load_es_domains(
     es.log_publishing_options_cloudwatch_log_group_arn = record.LogPublishingOptions.CloudWatchLogsLogGroupArn,
     es.log_publishing_options_enabled = record.LogPublishingOptions.Enabled
     WITH es
-    MATCH (account:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MATCH (account:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (account)-[r:RESOURCE]->(es)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
 
     # TODO this is a hacky workaround -- neo4j doesn't accept datetime objects and this section of the object
@@ -176,23 +176,23 @@ def _link_es_domain_vpc(neo4j_session: neo4j.Session, domain_id: str, domain_dat
     :param domain_data: domain data
     """
     ingest_subnet = """
-    MATCH (es:ESDomain{id: {DomainId}})
+    MATCH (es:ESDomain{id: $DomainId})
     WITH es
-    UNWIND {SubnetList} as subnet_id
+    UNWIND $SubnetList as subnet_id
         MATCH (subnet_node:EC2Subnet{id: subnet_id})
         MERGE (es)-[r:PART_OF_SUBNET]->(subnet_node)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {aws_update_tag}
+        SET r.lastupdated = $aws_update_tag
     """
 
     ingest_sec_groups = """
-    MATCH (es:ESDomain{id: {DomainId}})
+    MATCH (es:ESDomain{id: $DomainId})
     WITH es
-    UNWIND {SecGroupList} as ecsecgroup_id
+    UNWIND $SecGroupList as ecsecgroup_id
         MATCH (group_node:EC2SecurityGroup{id: ecsecgroup_id})
         MERGE (es)-[r:MEMBER_OF_EC2_SECURITY_GROUP]->(group_node)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = {aws_update_tag}
+        SET r.lastupdated = $aws_update_tag
     """
     # TODO we really shouldn't be sending full objects to Neo4j
     if domain_data.get("VPCOptions"):
@@ -277,11 +277,11 @@ def load_elasticsearch_reserved_instances(session: neo4j.Session, reserved_insta
 @timeit
 def _load_elasticsearch_reserved_instances_tx(tx: neo4j.Transaction, reserved_instances: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
     query: str = """
-    UNWIND {Records} as record
+    UNWIND $Records as record
     MERGE (instance:AWSESReservedInstance{id: record.arn})
     ON CREATE SET instance.firstseen = timestamp(),
         instance.arn = record.arn
-    SET instance.lastupdated = {aws_update_tag},
+    SET instance.lastupdated = $aws_update_tag,
         instance.name = record.ReservedElasticsearchInstanceId,
         instance.region = record.region,
         instance.fixed_price = record.FixedPrice,
@@ -296,10 +296,10 @@ def _load_elasticsearch_reserved_instances_tx(tx: neo4j.Transaction, reserved_in
         instance.elasticsearch_instance_type = record.ElasticsearchInstanceType,
         instance.currency_code = record.CurrencyCode
     WITH instance
-    MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (owner)-[r:RESOURCE]->(instance)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
 
     tx.run(

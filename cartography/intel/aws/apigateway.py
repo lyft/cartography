@@ -61,11 +61,11 @@ def load_client_certificates(session: neo4j.Session, certificates: List[Dict], c
 @timeit
 def _load_client_certificates_tx(tx: neo4j.Transaction, certificates: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
     query: str = """
-    UNWIND {Records} as record
+    UNWIND $Records as record
     MERGE (certificate:APIGatewayClientCertificate{id: record.arn})
     ON CREATE SET certificate.firstseen = timestamp(),
         certificate.arn = record.arn
-    SET certificate.lastupdated = {aws_update_tag},
+    SET certificate.lastupdated = $aws_update_tag,
         certificate.name = record.clientCertificateId,
         certificate.region = record.region,
         certificate.consolelink = record.consolelink,
@@ -74,10 +74,10 @@ def _load_client_certificates_tx(tx: neo4j.Transaction, certificates: List[Dict]
         certificate.description = record.description,
         certificate.created_date = record.createdDate
     WITH certificate
-    MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (owner)-[r:RESOURCE]->(certificate)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
 
     tx.run(
@@ -265,7 +265,7 @@ def load_apigateway_rest_apis(
     Ingest the details of API Gateway REST APIs into neo4j.
     """
     ingest_rest_apis = """
-    UNWIND {rest_apis_list} AS r
+    UNWIND $rest_apis_list AS r
     MERGE (rest_api:APIGatewayRestAPI{id:r.id})
     ON CREATE SET rest_api.firstseen = timestamp(),
     rest_api.createddate = r.createdDate
@@ -273,15 +273,15 @@ def load_apigateway_rest_apis(
     rest_api.minimumcompressionsize = r.minimumCompressionSize,
     rest_api.name = r.name,
     rest_api.disableexecuteapiendpoint = r.disableExecuteApiEndpoint,
-    rest_api.lastupdated = {aws_update_tag},
+    rest_api.lastupdated = $aws_update_tag,
     rest_api.region = r.region,
     restApi.consolelink = r.consolelink,
     rest_api.arn = r.Arn
     WITH rest_api
-    MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (aa)-[r:RESOURCE]->(rest_api)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
 
     # neo4j does not accept datetime objects and values. This loop is used to convert
@@ -308,11 +308,11 @@ def _load_apigateway_policies(
     Ingest API Gateway REST API policy results into neo4j.
     """
     ingest_policies = """
-    UNWIND {policies} as policy
+    UNWIND $policies as policy
     MATCH (r:APIGatewayRestAPI) where r.name = policy.api_id
     SET r.anonymous_access = (coalesce(r.anonymous_access, false) OR policy.internet_accessible),
     r.anonymous_actions = coalesce(r.anonymous_actions, []) + policy.accessible_actions,
-    r.lastupdated = {UpdateTag}
+    r.lastupdated = $UpdateTag
     """
 
     neo4j_session.run(
@@ -324,7 +324,7 @@ def _load_apigateway_policies(
 
 def _set_default_values(neo4j_session: neo4j.Session, aws_account_id: str) -> None:
     set_defaults = """
-    MATCH (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(restApi:APIGatewayRestAPI)
+    MATCH (:AWSAccount{id: $AWS_ID})-[:RESOURCE]->(restApi:APIGatewayRestAPI)
     where NOT EXISTS(restApi.anonymous_actions)
     SET restApi.anonymous_access = false, restApi.anonymous_actions = []
     """
@@ -343,7 +343,7 @@ def _load_apigateway_stages(
     Ingest the Stage resource details into neo4j.
     """
     ingest_stages = """
-    UNWIND {stages_list} AS stage
+    UNWIND $stages_list AS stage
     MERGE (s:APIGatewayStage{id: stage.arn})
     ON CREATE SET s.firstseen = timestamp(), s.stagename = stage.stageName,
     s.createddate = stage.createdDate
@@ -355,13 +355,13 @@ def _load_apigateway_stages(
     s.cacheclusterstatus = stage.cacheClusterStatus,
     s.tracingenabled = stage.tracingEnabled,
     s.webaclarn = stage.webAclArn,
-    s.lastupdated = {UpdateTag},
+    s.lastupdated = $UpdateTag,
     s.arn = stage.arn
     WITH s, stage
     MATCH (rest_api:APIGatewayRestAPI{id: stage.apiId})
     MERGE (rest_api)-[r:ASSOCIATED_WITH]->(s)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {UpdateTag}
+    SET r.lastupdated = $UpdateTag
     """
 
     # neo4j does not accept datetime objects and values. This loop is used to convert
@@ -386,10 +386,10 @@ def _load_apigateway_certificates(
     Ingest the API Gateway Client Certificate details into neo4j.
     """
     ingest_certificates = """
-    UNWIND {certificates_list} as certificate
+    UNWIND $certificates_list as certificate
     MERGE (c:APIGatewayClientCertificate{id: certificate.arn})
     ON CREATE SET c.firstseen = timestamp(), c.createddate = certificate.createdDate
-    SET c.lastupdated = {UpdateTag}, c.expirationdate = certificate.expirationDate,
+    SET c.lastupdated = $UpdateTag, c.expirationdate = certificate.expirationDate,
     c.region = certificate.region,
     c.consolelink = certificate.consolelink,
     c.client_certificate_id = certificate.clientCertificateId,
@@ -398,7 +398,7 @@ def _load_apigateway_certificates(
     MATCH (stage:APIGatewayStage{clientcertificateid: certificate.clientCertificateId})
     MERGE (stage)-[r:HAS_CERTIFICATE]->(c)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {UpdateTag}
+    SET r.lastupdated = $UpdateTag
     """
 
     # neo4j does not accept datetime objects and values. This loop is used to convert
@@ -422,7 +422,7 @@ def _load_apigateway_resources(
     Ingest the API Gateway Resource details into neo4j.
     """
     ingest_resources = """
-    UNWIND {resources_list} AS res
+    UNWIND $resources_list AS res
     MERGE (s:APIGatewayResource{id: res.id})
     ON CREATE SET s.firstseen = timestamp()
     SET s.path = res.path,
@@ -430,13 +430,13 @@ def _load_apigateway_resources(
     s.parentid = res.parentId,
     s.consolelink = res.consolelink,
     s.region=res.region,
-    s.lastupdated ={UpdateTag},
+    s.lastupdated =$UpdateTag,
     s.arn = res.arn
     WITH s, res
     MATCH (rest_api:APIGatewayRestAPI{id: res.apiId})
     MERGE (rest_api)-[r:RESOURCE]->(s)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {UpdateTag}
+    SET r.lastupdated = $UpdateTag
     """
 
     for resource in resources:

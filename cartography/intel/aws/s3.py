@@ -249,17 +249,17 @@ def _load_s3_acls(neo4j_session: neo4j.Session, acls: Dict, aws_account_id: str,
     Ingest S3 ACL into neo4j.
     """
     ingest_acls = """
-    UNWIND {acls} AS acl
+    UNWIND $acls AS acl
     MERGE (a:S3Acl{id: acl.id})
     ON CREATE SET a.firstseen = timestamp(), a.owner = acl.owner,
     a.region = acl.Region,
     a.ownerid = acl.ownerid, a.type = acl.type,
     a.displayname = acl.displayname, a.granteeid = acl.granteeid, a.uri = acl.uri, a.permission = acl.permission
-    SET a.lastupdated = {UpdateTag}
+    SET a.lastupdated = $UpdateTag
     WITH a,acl MATCH (s3:S3Bucket{id: acl.bucket})
     MERGE (a)-[r:APPLIES_TO]->(s3)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {UpdateTag}
+    SET r.lastupdated = $UpdateTag
     """
 
     neo4j_session.run(
@@ -284,11 +284,11 @@ def _load_s3_policies(neo4j_session: neo4j.Session, policies: List[Dict], update
     """
     # NOTE we use the coalesce function so appending works when the value is null initially
     ingest_policies = """
-    UNWIND {policies} AS policy
+    UNWIND $policies AS policy
     MATCH (s:S3Bucket) where s.name = policy.bucket
     SET s.anonymous_access = (coalesce(s.anonymous_access, false) OR policy.internet_accessible),
     s.anonymous_actions = coalesce(s.anonymous_actions, []) + policy.accessible_actions,
-    s.lastupdated = {UpdateTag}
+    s.lastupdated = $UpdateTag
     """
 
     neo4j_session.run(
@@ -305,12 +305,12 @@ def _load_s3_encryption(neo4j_session: neo4j.Session, encryption_configs: List[D
     """
     # NOTE we use the coalesce function so appending works when the value is null initially
     ingest_encryption = """
-    UNWIND {encryption_configs} AS encryption
+    UNWIND $encryption_configs AS encryption
     MATCH (s:S3Bucket) where s.name = encryption.bucket
     SET s.default_encryption = (coalesce(s.default_encryption, false) OR encryption.default_encryption),
     s.encryption_algorithm = encryption.encryption_algorithm,
     s.encryption_key_id = encryption.encryption_key_id, s.bucket_key_enabled = encryption.bucket_key_enabled,
-    s.lastupdated = {UpdateTag}
+    s.lastupdated = $UpdateTag
     """
 
     neo4j_session.run(
@@ -326,11 +326,11 @@ def _load_s3_versioning(neo4j_session: neo4j.Session, versioning_configs: List[D
     Ingest S3 versioning results into neo4j.
     """
     ingest_versioning = """
-    UNWIND {versioning_configs} AS versioning
+    UNWIND $versioning_configs AS versioning
     MATCH (s:S3Bucket) where s.name = versioning.bucket
     SET s.versioning_status = versioning.status,
         s.mfa_delete = versioning.mfa_delete,
-        s.lastupdated = {UpdateTag}
+        s.lastupdated = $UpdateTag
     """
 
     neo4j_session.run(
@@ -350,12 +350,12 @@ def _load_s3_public_access_block(
     Ingest S3 public access block results into neo4j.
     """
     ingest_public_access_block = """
-    UNWIND {public_access_block_configs} AS public_access_block
+    UNWIND $public_access_block_configs AS public_access_block
     MATCH (s:S3Bucket) where s.name = public_access_block.bucket
     SET s.block_public_acls = public_access_block.block_public_acls,
         s.ignore_public_acls = public_access_block.ignore_public_acls,
         s.restrict_public_buckets = public_access_block.restrict_public_buckets,
-        s.lastupdated = {UpdateTag}
+        s.lastupdated = $UpdateTag
     """
 
     neo4j_session.run(
@@ -367,7 +367,7 @@ def _load_s3_public_access_block(
 
 def _set_default_values(neo4j_session: neo4j.Session, aws_account_id: str) -> None:
     set_defaults = """
-    MATCH (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(s:S3Bucket) where NOT EXISTS(s.anonymous_actions)
+    MATCH (:AWSAccount{id: $AWS_ID})-[:RESOURCE]->(s:S3Bucket) where NOT EXISTS(s.anonymous_actions)
     SET s.anonymous_access = false, s.anonymous_actions = []
     """
     neo4j_session.run(
@@ -376,7 +376,7 @@ def _set_default_values(neo4j_session: neo4j.Session, aws_account_id: str) -> No
     )
 
     set_encryption_defaults = """
-    MATCH (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(s:S3Bucket) where NOT EXISTS(s.default_encryption)
+    MATCH (:AWSAccount{id: $AWS_ID})-[:RESOURCE]->(s:S3Bucket) where NOT EXISTS(s.default_encryption)
     SET s.default_encryption = false
     """
     neo4j_session.run(
@@ -639,16 +639,16 @@ def parse_public_access_block(bucket: str, public_access_block: Optional[Dict]) 
 @timeit
 def load_s3_buckets(neo4j_session: neo4j.Session, data: Dict, current_aws_account_id: str, aws_update_tag: int) -> None:
     ingest_bucket = """
-    MERGE (bucket:S3Bucket{id:{BucketName}})
-    ON CREATE SET bucket.firstseen = timestamp(), bucket.creationdate = {CreationDate}
-    SET bucket.name = {BucketName}, bucket.region = {BucketRegion}, bucket.arn = {Arn},
-    bucket.consolelink = {consolelink},
-    bucket.lastupdated = {aws_update_tag}
+    MERGE (bucket:S3Bucket{id:$BucketName})
+    ON CREATE SET bucket.firstseen = timestamp(), bucket.creationdate = $CreationDate
+    SET bucket.name = $BucketName, bucket.region = $BucketRegion, bucket.arn = $Arn,
+    bucket.consolelink = $consolelink,
+    bucket.lastupdated = $aws_update_tag
     WITH bucket
-    MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
+    MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (owner)-[r:RESOURCE]->(bucket)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {aws_update_tag}
+    SET r.lastupdated = $aws_update_tag
     """
 
     # The owner data returned by the API maps to the aws account nickname and not the IAM user
