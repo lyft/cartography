@@ -10,9 +10,10 @@ import neo4j
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
+from cloudconsolelink.clouds.aws import AWSLinker
 
 logger = logging.getLogger(__name__)
-
+aws_console_link = AWSLinker()
 
 @aws_handle_regions
 @timeit
@@ -30,11 +31,18 @@ def list_subscriptions(boto3_session: boto3.session.Session, region):
     except ClientError as e:
         logger.error(f'Failed to call SNS list_subscriptions: {region} - {e}')
 
-    for subscription in subscriptions:
+    return subscriptions
+
+@timeit
+def transfrom_subscriptions(subs: List[Dict], region: str) -> List[Dict]:
+    subscriptions = []
+    for subscription in subs:
         # subscription arn - arn:aws:sns:<region>:<account_id>:<topic_name>:<subscription_id>
         subscription['arn'] = subscription['SubscriptionArn']
+        subscription['consolelink'] = aws_console_link.get_console_link(arn=subscription['arn'])
         subscription['region'] = region
         subscription['name'] = subscription['SubscriptionArn'].split(':')[-1]
+        subscriptions.append(subscription)
 
     return subscriptions
 
@@ -51,16 +59,28 @@ def get_sns_topic(boto3_session: boto3.session.Session, region: str) -> List[Dic
         for page in page_iterator:
             topics.extend(page.get('Topics', []))
 
-        subscriptions = list_subscriptions(boto3_session, region)
-
-        for topic in topics:
-            topic['region'] = region
-            topic['name'] = topic['TopicArn'].split(':')[-1]
-            topic['attributes'] = client.get_topic_attributes(TopicArn=topic['TopicArn']).get('Attributes', {})
-            topic['subscriptions'] = list(filter(lambda s: s['TopicArn'] == topic['TopicArn'], subscriptions))
-
         return topics
 
+    except ClientError as e:
+        logger.error(f'Failed to call SNS list_topics: {region} - {e}')
+        return topics
+
+@timeit
+def transform_topics(boto3_session: boto3.session.Session, tps: List[Dict], region: str) -> List[Dict]:
+    topics = []
+    try:
+        client = boto3_session.client('sns', region_name=region)
+        subs = list_subscriptions(boto3_session, region)
+        subscriptions = transfrom_subscriptions(subs, region)
+        for topic in tps:
+            topic['region'] = region
+            topic['name'] = topic['TopicArn'].split(':')[-1]
+            topic['consolelink'] = aws_console_link.get_console_link(arn=topic['arn'])
+            topic['attributes'] = client.get_topic_attributes(TopicArn=topic['TopicArn']).get('Attributes', {})
+            topic['subscriptions'] = list(filter(lambda s: s['TopicArn'] == topic['TopicArn'], subscriptions))
+            topics.append(topic)
+
+        return topics
     except ClientError as e:
         logger.error(f'Failed to call SNS list_topics: {region} - {e}')
         return topics
@@ -79,6 +99,7 @@ def _load_sns_topic_tx(tx: neo4j.Transaction, topics: List[Dict], current_aws_ac
         topic.arn = record.TopicArn
     SET topic.lastupdated = $aws_update_tag,
         topic.name = record.name,
+        topic.consolelink = record.consolelink,
         topic.region = record.region,
         topic.subscriptions_confirmed = record.attributes.SubscriptionsConfirmed,
         topic.display_name = record.attributes.DisplayName,
@@ -121,6 +142,7 @@ def _load_sns_topic_subscription_tx(tx: neo4j.Transaction, subscriptions: List[D
     SET sub.lastupdated = $aws_update_tag,
         sub.name = record.name,
         sub.region = record.region,
+        sub.consolelink = record.consolelink,
         sub.Endpoint = record.Endpoint,
         sub.Protocol = record.Protocol,
         sub.owner = record.Owner
@@ -157,7 +179,8 @@ def sync(
     for region in regions:
         logger.info("Syncing SNS for region '%s' in account '%s'.", region, current_aws_account_id)
 
-        topics.extend(get_sns_topic(boto3_session, region))
+        tps = get_sns_topic(boto3_session, region)
+        topics = transform_topics(boto3_session, tps, region)
 
     logger.info(f"Total SNS Topics: {len(topics)}")
 

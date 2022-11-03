@@ -133,10 +133,19 @@ def get_rds_security_groups(boto3_session: boto3.session.Session, region: str) -
     secgroups: List[Any] = []
     for page in paginator.paginate():
         secgroups.extend(page['DBSecurityGroups'])
-    for secgroup in secgroups:
-        secgroup['region'] = region
     return secgroups
 
+@timeit
+def transfrom_rds_sgs(secgs: List[Dict], region: str, account_id:str) -> List[Dict]:
+    secgroups = []
+    for secgroup in secgs:
+        secgroup['GroupId'] = secgroup.get('EC2SecurityGroups', {}).get('EC2SecurityGroupId', '')
+        group_arn = f"arn:aws:ec2:{region}:{account_id}:security-group/{secgroup['GroupId']}"
+        secgroup['consolelink'] = aws_console_link.get_console_link(arn=group_arn)
+        secgroup['region'] = region
+        secgroups.append(secgroup)
+    
+    return secgroups
 
 def load_rds_security_groups(session: neo4j.Session, secgroups: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
     session.write_transaction(_load_rds_security_groups_tx, secgroups, current_aws_account_id, aws_update_tag)
@@ -154,6 +163,7 @@ def _load_rds_security_groups_tx(
             secgroup.arn = rds_secgroup.DBSecurityGroupArn
         SET secgroup.db_security_group_description = rds_secgroup.DBSecurityGroupDescription,
             secgroup.name = rds_secgroup.DBSecurityGroupName,
+            secgroup.consolelink = rds_secgroup.consolelink,
             secgroup.owner_id = rds_secgroup.OwnerId,
             secgroup.vpc_id = rds_secgroup.VpcId,
             secgroup.lastupdated = $aws_update_tag
@@ -204,7 +214,8 @@ def sync_rds_security_groups(
     data = []
     for region in regions:
         logger.info("Syncing RDS security groups for region '%s' in account '%s'.", region, current_aws_account_id)
-        data.extend(get_rds_security_groups(boto3_session, region))
+        sgs = get_rds_security_groups(boto3_session, region)
+        data = transfrom_rds_sgs(sgs, region, current_aws_account_id)
 
     logger.info(f"Total RDS Security Groups: {len(data)}")
 
@@ -242,11 +253,19 @@ def get_rds_snapshots(boto3_session: boto3.session.Session, region: str) -> List
     snapshots: List[Any] = []
     for page in paginator.paginate():
         snapshots.extend(page['DBSnapshots'])
-    for snapshot in snapshots:
-        snapshot['region'] = region
-        snapshot['name'] = snapshot.get('DBSnapshotArn').split(':')[-1]
     return snapshots
 
+@timeit
+def transform_snapshots(snps: List[Dict], region: str) -> List[Dict]:
+    snapshots = []
+    for snapshot in snps:
+        snapshot['arn'] = snapshot['DBSnapshotArn']
+        snapshot['region'] = region
+        snapshot['consolelink'] = aws_console_link.get_console_link(arn=snapshot['arn'])
+        snapshot['name'] = snapshot.get('DBSnapshotArn').split(':')[-1]
+        snapshots.append(snapshot)
+
+    return snapshots
 
 def load_rds_snapshots(session: neo4j.Session, snapshots: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
     session.write_transaction(_load_rds_snapshots_tx, snapshots, current_aws_account_id, aws_update_tag)
@@ -267,6 +286,7 @@ def _load_rds_snapshots_tx(
             snap.db_instance_identifier = rds_snapshot.DBInstanceIdentifier,
             snap.snapshot_create_time = rds_snapshot.SnapshotCreateTime,
             snap.engine = rds_snapshot.Engine,
+            snap.consolelink = rds_snapshot.consolelink,
             snap.allocated_storage = rds_snapshot.AllocatedStorage,
             snap.status = rds_snapshot.Status,
             snap.port = rds_snapshot.Port,
@@ -311,7 +331,8 @@ def sync_rds_snapshots(
     data = []
     for region in regions:
         logger.info("Syncing RDS snapshots for region '%s' in account '%s'.", region, current_aws_account_id)
-        data.extend(get_rds_snapshots(boto3_session, region))
+        snps = get_rds_snapshots(boto3_session, region)
+        data = transform_snapshots(snps, region)
 
     logger.info(f"Total RDS Snapshots: {len(data)}")
 
@@ -349,11 +370,18 @@ def get_rds_cluster_data(boto3_session: boto3.session.Session, region: str) -> L
     clusters: List[Any] = []
     for page in paginator.paginate():
         clusters.extend(page['DBClusters'])
-    for cluster in clusters:
-        cluster['region'] = region
-        cluster['name'] = cluster['DBClusterArn'].split(':')[-1]
     return clusters
 
+@timeit
+def transform_clusters(cls: List[Dict], region: str) -> List[Dict]:
+    clusters = []
+    for cluster in cls:
+        cluster['region'] = region
+        cluster['name'] = cluster['DBClusterArn'].split(':')[-1]
+        cluster['consolelink'] = aws_console_link.get_console_link(arn=cluster['DBClusterArn'])
+        clusters.append(cluster)
+
+    return clusters
 
 @timeit
 def load_rds_clusters(
@@ -391,6 +419,7 @@ def load_rds_clusters(
             cluster.hosted_zone_id = rds_cluster.HostedZoneId,
             cluster.storage_encrypted = rds_cluster.StorageEncrypted,
             cluster.kms_key_id = rds_cluster.KmsKeyId,
+            cluster.consolelink = rds_cluster.consolelink,
             cluster.db_cluster_resource_id = rds_cluster.DbClusterResourceId,
             cluster.clone_group_id = rds_cluster.CloneGroupId,
             cluster.cluster_create_time = rds_cluster.ClusterCreateTime,
@@ -467,6 +496,7 @@ def load_rds_instances(
             rds.engine = rds_instance.Engine,
             rds.master_username = rds_instance.MasterUsername,
             rds.db_name = rds_instance.DBName,
+            rds.consolelink = rds_instance.consolelink,
             rds.instance_create_time = rds_instance.InstanceCreateTime,
             rds.availability_zone = rds_instance.AvailabilityZone,
             rds.multi_az = rds_instance.MultiAZ,
@@ -527,7 +557,7 @@ def load_rds_instances(
         rds['EndpointAddress'] = ep.get('Address')
         rds['EndpointHostedZoneId'] = ep.get('HostedZoneId')
         rds['EndpointPort'] = ep.get('Port')
-        # rds['consolelink'] = aws_console_link.get_console_link(arn=rds['DBInstanceArn'])
+        rds['consolelink'] = aws_console_link.get_console_link(arn=rds['DBInstanceArn'])
     neo4j_session.run(
         ingest_rds_instance,
         Instances=data,
@@ -738,7 +768,8 @@ def sync_rds_clusters(
     data = []
     for region in regions:
         logger.info("Syncing RDS for region '%s' in account '%s'.", region, current_aws_account_id)
-        data.extend(get_rds_cluster_data(boto3_session, region))
+        cls = get_rds_cluster_data(boto3_session, region)
+        data = transform_clusters(cls, region)
 
     logger.info(f"Total RDS Clusters: {len(data)}")
 

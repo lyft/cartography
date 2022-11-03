@@ -10,9 +10,10 @@ import neo4j
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
+from cloudconsolelink.clouds.aws import AWSLinker
 
 logger = logging.getLogger(__name__)
-
+aws_console_link = AWSLinker()
 
 @timeit
 @aws_handle_regions
@@ -25,8 +26,6 @@ def get_cloudformation_stack(boto3_session: boto3.session.Session, region: str) 
         page_iterator = paginator.paginate()
         for page in page_iterator:
             stacks.extend(page['Stacks'])
-        for stack in stacks:
-            stack['region'] = region
 
         return stacks
 
@@ -34,6 +33,16 @@ def get_cloudformation_stack(boto3_session: boto3.session.Session, region: str) 
         logger.error(f'Failed to call cloudformation describe_stacks: {region} - {e}')
         return stacks
 
+@timeit
+def transform_stack(sts: List[Dict], region: str) -> List[Dict]:
+    stacks = []
+    for stack in sts:
+        stack['region'] = region
+        stack['arn'] = stack['StackId']
+        stack['consolelink'] = aws_console_link.get_console_link(arn=stack['arn'])
+        stacks.append(stack)
+
+    return stacks
 
 def load_cloudformation_stack(session: neo4j.Session, stacks: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
     session.write_transaction(_load_cloudformation_stack_tx, stacks, current_aws_account_id, aws_update_tag)
@@ -51,6 +60,7 @@ def _load_cloudformation_stack_tx(tx: neo4j.Transaction, stacks: List[Dict], cur
         stack.region = record.region,
         stack.change_set_id = record.ChangeSetId,
         stack.description = record.Description,
+        stack.consolelink = record.consolelink,
         stack.creation_time = record.CreationTime,
         stack.deletion_time = record.DeletionTime,
         stack.stack_status = record.StackStatus,
@@ -93,7 +103,9 @@ def sync(
     for region in regions:
         logger.info("Syncing Cloudformation for region '%s' in account '%s'.", region, current_aws_account_id)
 
-        stacks.extend(get_cloudformation_stack(boto3_session, region))
+        sts = get_cloudformation_stack(boto3_session, region)
+
+        stacks = transform_stack(sts, region)
 
     logger.info(f"Total Cloudformation Stacks: {len(stacks)}")
 

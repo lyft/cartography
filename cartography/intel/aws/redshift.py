@@ -18,22 +18,29 @@ aws_console_link = AWSLinker()
 
 @timeit
 @aws_handle_regions
-def get_redshift_reserved_node(boto3_session: boto3.session.Session, region: str, current_aws_account_id: str) -> List[Dict]:
+def get_redshift_reserved_node(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
     try:
         client = boto3_session.client('redshift', region_name=region)
         paginator = client.get_paginator('describe_reserved_nodes')
         reserved_nodes: List = []
         for page in paginator.paginate():
             reserved_nodes.extend(page['ReservedNodes'])
-        for reserved_node in reserved_nodes:
-            reserved_node['region'] = region
-            reserved_node['arn'] = f"arn:aws:redshift:{region}:{current_aws_account_id}:reserved-node/{reserved_node['ReservedNodeId']}"
         return reserved_nodes
 
     except ClientError as e:
         logger.error(f'Failed to call redshift describe_reserved_nodes: {region} - {e}')
         return reserved_nodes
 
+@timeit
+def transform_reserved_nodes(nds: List[Dict], region: str, current_aws_account_id: str) -> List[Dict]:
+    reserved_nodes = []
+    for reserved_node in nds:
+        reserved_node['region'] = region
+        reserved_node['arn'] = f"arn:aws:redshift:{region}:{current_aws_account_id}:reserved-node/{reserved_node['ReservedNodeId']}"
+        reserved_node['consolelink'] = aws_console_link.get_console_link(arn=reserved_node['arn'])
+        reserved_nodes.append(reserved_node)
+
+    return reserved_nodes
 
 def load_redshift_reserved_node(session: neo4j.Session, reserved_nodes: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
     session.write_transaction(_load_redshift_reserved_node_tx, reserved_nodes, current_aws_account_id, aws_update_tag)
@@ -90,7 +97,8 @@ def sync_redshift_reserved_node(
     data = []
     for region in regions:
         logger.info("Syncing redshift_reserved_node for region '%s' in account '%s'.", region, current_aws_account_id)
-        data.extend(get_redshift_reserved_node(boto3_session, region, current_aws_account_id))
+        rnodes = get_redshift_reserved_node(boto3_session, region)
+        data = transform_reserved_nodes(rnodes, region, current_aws_account_id)
 
     logger.info(f"Total Redshift Reserved Nodes: {len(data)}")
 
@@ -199,24 +207,30 @@ def load_redshift_cluster_data(
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag,
         )
-        _attach_ec2_security_groups(neo4j_session, cluster, aws_update_tag)
+        _attach_ec2_security_groups(neo4j_session, cluster, aws_update_tag, current_aws_account_id)
         _attach_iam_roles(neo4j_session, cluster, aws_update_tag)
         _attach_aws_vpc(neo4j_session, cluster, aws_update_tag)
 
 
 @timeit
-def _attach_ec2_security_groups(neo4j_session: neo4j.Session, cluster: Dict, aws_update_tag: int) -> None:
+def _attach_ec2_security_groups(neo4j_session: neo4j.Session, cluster: Dict, aws_update_tag: int, account_id: str) -> None:
     attach_cluster_to_group = """
     MATCH (c:RedshiftCluster{id:$ClusterArn})
     MERGE (sg:EC2SecurityGroup{id:$GroupId})
+    SET sg.consolelink = $consolelink
     MERGE (c)-[m:MEMBER_OF_EC2_SECURITY_GROUP]->(sg)
     ON CREATE SET m.firstseen = timestamp()
     SET m.lastupdated = $aws_update_tag
     """
     for group in cluster.get('VpcSecurityGroups', []):
+        region = group.get('region', '')
+        group_id = group["GroupId"]
+        group_arn = f"arn:aws:ec2:{region}:{account_id}:security-group/{group_id}"
+        consolelink = aws_console_link.get_console_link(arn=group_arn)
         neo4j_session.run(
             attach_cluster_to_group,
             ClusterArn=cluster['arn'],
+            consolelink = consolelink,
             GroupId=group['VpcSecurityGroupId'],
             aws_update_tag=aws_update_tag,
         )

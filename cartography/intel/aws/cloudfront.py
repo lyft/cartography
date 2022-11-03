@@ -10,9 +10,10 @@ import neo4j
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
+from cloudconsolelink.clouds.aws import AWSLinker
 
 logger = logging.getLogger(__name__)
-
+aws_console_link = AWSLinker()
 
 @timeit
 @aws_handle_regions
@@ -25,8 +26,6 @@ def get_cloudfront_distributions(boto3_session: boto3.session.Session) -> List[D
         page_iterator = paginator.paginate()
         for page in page_iterator:
             distributions.extend(page.get('DistributionList', {}).get('Items', []))
-        for distribution in distributions:
-            distribution['region'] = 'global'
 
         return distributions
 
@@ -34,6 +33,16 @@ def get_cloudfront_distributions(boto3_session: boto3.session.Session) -> List[D
         logger.error(f'Failed to call CloudFront list_distributions: {e}')
         return distributions
 
+@timeit
+def trtansform_distribution(dists: List[Dict]) -> List[Dict]:
+    distributions = []
+    for distribution in dists:
+        distribution['region'] = 'global'
+        distribution['arn'] = distribution['ARN']
+        distribution['consolelink'] = aws_console_link.get_console_link(arn=distribution['arn'])
+        distributions.append(distribution)
+
+    return distributions
 
 def load_cloudfront_distributions(session: neo4j.Session, distributions: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
     session.write_transaction(_load_cloudfront_distributions_tx, distributions, current_aws_account_id, aws_update_tag)
@@ -50,6 +59,7 @@ def _load_cloudfront_distributions_tx(tx: neo4j.Transaction, distributions: List
         distribution.name = record.Id,
         distribution.region = record.region,
         distribution.status = record.Status,
+        distribution.consolelink = record.consolelink,
         distribution.domain_name = record.DomainName,
         distribution.comment = record.Comment,
         distribution.price_class = record.PriceClass,
@@ -86,7 +96,8 @@ def sync(
 
     logger.info("Syncing Cloudfront for account '%s', at %s.", current_aws_account_id, tic)
 
-    distributions = get_cloudfront_distributions(boto3_session)
+    dists = get_cloudfront_distributions(boto3_session)
+    distributions = trtansform_distribution(dists)
 
     logger.info(f"Total Cloudfront Distributions: {len(distributions)}")
 

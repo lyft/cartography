@@ -456,7 +456,7 @@ def sync_assumerole_relationships(
 
 
 @timeit
-def load_user_access_keys(neo4j_session: neo4j.Session, user_access_keys: Dict, aws_update_tag: int) -> None:
+def load_user_access_keys(neo4j_session: neo4j.Session, user_access_keys: Dict, aws_update_tag: int, consolelink: str) -> None:
     # TODO change the node label to reflect that this is a user access key, not an account access key
     ingest_account_key = """
     MATCH (user:AWSUser{name: $UserName})
@@ -464,7 +464,8 @@ def load_user_access_keys(neo4j_session: neo4j.Session, user_access_keys: Dict, 
     MERGE (key:AccountAccessKey{accesskeyid: $AccessKeyId})
     ON CREATE SET key.firstseen = timestamp(),
     key.region = $region,
-    key.createdate = $CreateDate
+    key.createdate = $CreateDate,
+    key.consolelink = $consolelink
     SET key.status = $Status, key.lastupdated = $aws_update_tag
     WITH user,key
     MERGE (user)-[r:AWS_ACCESS_KEY]->(key)
@@ -477,6 +478,7 @@ def load_user_access_keys(neo4j_session: neo4j.Session, user_access_keys: Dict, 
             if key.get('AccessKeyId'):
                 neo4j_session.run(
                     ingest_account_key,
+                    consolelink = consolelink,
                     UserName=username,
                     AccessKeyId=key['AccessKeyId'],
                     CreateDate=str(key['CreateDate']),
@@ -579,7 +581,7 @@ def load_policy(
 @timeit
 def load_policy_statements(
     neo4j_session: neo4j.Session, policy_id: str, policy_name: str, statements: Any,
-    aws_update_tag: int,
+    aws_update_tag: int, consolelink: str,
 ) -> None:
     ingest_policy_statement = """
         MATCH (policy:AWSPolicy{id: $PolicyId})
@@ -590,6 +592,7 @@ def load_policy_statements(
         statement.effect = statement_data.Effect,
         statement.action = statement_data.Action,
         statement.region = $region,
+        statement.consolelink = $consolelink,
         statement.notaction = statement_data.NotAction,
         statement.resource = statement_data.Resource,
         statement.notresource = statement_data.NotResource,
@@ -603,6 +606,7 @@ def load_policy_statements(
     neo4j_session.run(
         ingest_policy_statement,
         PolicyId=policy_id,
+        consolelink = consolelink,
         PolicyName=policy_name,
         Statements=statements,
         region="global",
@@ -617,11 +621,12 @@ def load_policy_data(
     for principal_arn, policy_list in policy_map.items():
         logger.debug(f"Syncing IAM inline policies for principal {principal_arn}")
         for policy_name, statements in policy_list.items():
+            consolelink = aws_console_link.get_console_link(arn=f"arn:aws:iam::{current_aws_account_id}:policy_statement/{policy_name}")
             policy_id = transform_policy_id(principal_arn, policy_type, policy_name)
             load_policy(
                 neo4j_session, policy_id, policy_name, policy_type, principal_arn, current_aws_account_id, aws_update_tag
             )
-            load_policy_statements(neo4j_session, policy_id, policy_name, statements, aws_update_tag)
+            load_policy_statements(neo4j_session, policy_id, policy_name, statements, aws_update_tag, consolelink)
 
 
 @timeit
@@ -774,7 +779,7 @@ def sync_service_access_data(neo4j_session, access_data, principal_arn, principa
         ON CREATE SET su.service = $SERVICE, su.namespace= $SERVICE_NAMESPACE, su.firstseen = timestamp()
         SET su.lastauthenticateddate = $LAST_AUTHENTICATED_DATE, su.lastauthenticatedentity = $LAST_AUTHENTICATED_ENTITY,
         su.lastauthenticatedretion = $LAST_AUTHENTICATED_REGION, su.totalauthenticatedentities = $TOTAL_AUTHENTICATED_ENTITIES,
-        su.lastupdated = $aws_update_tag
+        su.consolelink = $CONSOLE_LINK, su.lastupdated = $aws_update_tag
         WITH su
         MATCH (ap:AWSUser{arn: $PRINCIPAL_ARN})
         MERGE (ap)-[r:HAS_ACCESSED]->(su)
@@ -788,7 +793,7 @@ def sync_service_access_data(neo4j_session, access_data, principal_arn, principa
         ON CREATE SET su.service = $SERVICE, su.namespace= $SERVICE_NAMESPACE, su.firstseen = timestamp()
         SET su.lastauthenticateddate = $LAST_AUTHENTICATED_DATE, su.lastauthenticatedentity = $LAST_AUTHENTICATED_ENTITY,
         su.lastauthenticatedretion = $LAST_AUTHENTICATED_REGION, su.totalauthenticatedentities = $TOTAL_AUTHENTICATED_ENTITIES,
-        su.lastupdated = $aws_update_tag
+        su.consolelink = $CONSOLE_LINK, su.lastupdated = $aws_update_tag
         WITH su
         MATCH (ap:AWSGroup{arn: $PRINCIPAL_ARN})
         MERGE (ap)-[r:HAS_ACCESSED]->(su)
@@ -802,7 +807,7 @@ def sync_service_access_data(neo4j_session, access_data, principal_arn, principa
         ON CREATE SET su.service = $SERVICE, su.namespace= $SERVICE_NAMESPACE, su.firstseen = timestamp()
         SET su.lastauthenticateddate = $LAST_AUTHENTICATED_DATE, su.lastauthenticatedentity = $LAST_AUTHENTICATED_ENTITY,
         su.lastauthenticatedretion = $LAST_AUTHENTICATED_REGION, su.totalauthenticatedentities = $TOTAL_AUTHENTICATED_ENTITIES,
-        su.lastupdated = $aws_update_tag
+        su.consolelink = $CONSOLE_LINK, su.lastupdated = $aws_update_tag
         WITH su
         MATCH (ap:AWSRole{arn: $PRINCIPAL_ARN})
         MERGE (ap)-[r:HAS_ACCESSED]->(su)
@@ -815,6 +820,7 @@ def sync_service_access_data(neo4j_session, access_data, principal_arn, principa
             ingest_service_usage,
             ID=access["Id"],
             SERVICE=access["ServiceName"],
+            CONSOLE_LINK = aws_console_link.get_console_link(arn=principal_arn),
             SERVICE_NAMESPACE=access["ServiceNamespace"],
             LAST_AUTHENTICATED_DATE=access["LastAuthenticated"],
             LAST_AUTHENTICATED_ENTITY=access["LastAuthenticatedEntity"],
@@ -997,8 +1003,9 @@ def sync_user_access_keys(
     for name in usernames:
         access_keys = get_account_access_key_data(boto3_session, name)
         if access_keys:
+            consolelink = aws_console_link.get_console_link(arn=f"arn:aws:iam::{current_aws_account_id}:access_keys/{name}")
             account_access_keys = {name: access_keys}
-            load_user_access_keys(neo4j_session, account_access_keys, aws_update_tag)
+            load_user_access_keys(neo4j_session, account_access_keys, aws_update_tag, consolelink)
     run_cleanup_job(
         'aws_import_account_access_key_cleanup.json',
         neo4j_session,

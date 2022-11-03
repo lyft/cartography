@@ -11,9 +11,10 @@ from botocore.exceptions import ClientError
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
+from cloudconsolelink.clouds.aws import AWSLinker
 
 logger = logging.getLogger(__name__)
-
+aws_console_link = AWSLinker()
 
 @timeit
 @aws_handle_regions
@@ -61,6 +62,7 @@ def load_volumes(
             vol.encrypted = volume.Encrypted,
             vol.size = volume.Size,
             vol.state = volume.State,
+            vol.consolelink = volume.consolelink,
             vol.outpostarn = volume.OutpostArn,
             vol.snapshotid = volume.SnapshotId,
             vol.iops = volume.Iops,
@@ -76,6 +78,9 @@ def load_volumes(
         SET r.lastupdated = $update_tag
     """
 
+    for volume in data:
+        console_arn = f"arn:aws:ec2:{volume['region']}:{current_aws_account_id}:volume/{volume['VolumeId']}"
+        volume['consolelink'] = aws_console_link.get_console_link(arn=console_arn)
     neo4j_session.run(
         ingest_volumes,
         volumes_list=data,

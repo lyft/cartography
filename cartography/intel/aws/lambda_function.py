@@ -135,7 +135,7 @@ def get_lambda_function_details(
 @timeit
 def load_lambda_function_details(
         neo4j_session: neo4j.Session, lambda_function_details: List[Tuple[str, List[Dict], List[Dict], List[Dict]]],
-        update_tag: int,
+        update_tag: int, current_aws_account_id: str,
 ) -> None:
     lambda_aliases: List[Dict] = []
     lambda_event_source_mappings: List[Dict] = []
@@ -144,15 +144,22 @@ def load_lambda_function_details(
         if len(aliases) > 0:
             for alias in aliases:
                 alias['FunctionArn'] = function_arn
+                function_name = function_arn.split(':')[-1]
                 alias['region'] = region
+                alias['consolelink'] = aws_console_link.get_console_link(arn=f"arn:aws:lambda::{current_aws_account_id}:alias/{function_name}")
             lambda_aliases.extend(aliases)
         if len(event_source_mappings) > 0:
             for event in event_source_mappings:
+                alias['FunctionArn'] = function_arn
+                function_name = function_arn.split(':')[-1]
                 event['region'] = region
+                event['consolelink'] = aws_console_link.get_console_link(arn=f"arn:aws:lambda::{current_aws_account_id}:event-source-mapping/{function_name}")
             lambda_event_source_mappings.extend(event_source_mappings)
         if len(layers) > 0:
             for layer in layers:
                 layer['FunctionArn'] = function_arn
+                function_name = function_arn.split(':')[-1]
+                layer['consolelink'] = aws_console_link.get_console_link(arn=f"arn:aws:lambda::{current_aws_account_id}:layer/{function_name}")
                 layer['region'] = region
             lambda_layers.extend(layers)
 
@@ -171,6 +178,7 @@ def _load_lambda_function_aliases(neo4j_session: neo4j.Session, lambda_aliases: 
     a.region = alias.region,
     a.functionversion = alias.FunctionVersion,
     a.description = alias.Description,
+    a.consolelink = alias.consolelink,
     a.revisionid = alias.RevisionId,
     a.lastupdated = $aws_update_tag,
     a.arn = alias.AliasArn
@@ -204,6 +212,7 @@ def _load_lambda_event_source_mappings(
     e.maximumbatchingwindowinseconds = esm.MaximumBatchingWindowInSeconds,
     e.eventsourcearn = esm.EventSourceArn,
     e.UUID = esm.UUID,
+    e.consolelink = esm.consolelink,
     e.lastmodified = esm.LastModified,
     e.lastprocessingresult = esm.LastProcessingResult,
     e.state = esm.State,
@@ -236,6 +245,7 @@ def _load_lambda_layers(neo4j_session: neo4j.Session, lambda_layers: List[Dict],
     SET l.codesize = layer.CodeSize,
     l.region = layer.region,
     l.name = layer.LayerName,
+    l.consolelink = layer.consolelink,
     l.signingprofileversionarn  = layer.SigningProfileVersionArn,
     l.signingjobarn = layer.SigningJobArn,
     l.lastupdated = $aws_update_tag,
@@ -292,7 +302,7 @@ def sync_lambda_functions(
 
     load_lambda_functions(neo4j_session, data, current_aws_account_id, aws_update_tag)
     lambda_function_details = get_lambda_function_details(boto3_session, data)
-    load_lambda_function_details(neo4j_session, lambda_function_details, aws_update_tag)
+    load_lambda_function_details(neo4j_session, lambda_function_details, aws_update_tag, current_aws_account_id)
 
     cleanup_lambda(neo4j_session, common_job_parameters)
 

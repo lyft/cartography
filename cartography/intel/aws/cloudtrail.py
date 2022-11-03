@@ -25,9 +25,8 @@ def get_trails(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
 
 @timeit
 def transform_trails(trails: List[Dict]) -> List[Dict]:
-    # TODO: console link project does not support cloudtrail trails yet
-    # for trail in trails:
-    #     trail['consolelink'] = aws_console_link.get_console_link(arn=trail['TrailARN'])
+    for trail in trails:
+        trail['consolelink'] = aws_console_link.get_console_link(arn=trail['TrailARN'])
 
     return trails
 
@@ -42,6 +41,7 @@ def load_trails(neo4j_session: neo4j.Session, trails: Dict, current_aws_account_
     SET trail.lastupdated = $aws_update_tag,
         trail.name = record.Name,
         trail.arn = record.TrailARN,
+        trail.consolelink = record.consolelink,
         trail.region = record.HomeRegion,
         trail.is_multi_region_trail = record.IsMultiRegionTrail,
         trail.is_organization_trail = record.IsOrganizationTrail,

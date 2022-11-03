@@ -11,8 +11,10 @@ from .util import get_botocore_config
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
+from cloudconsolelink.clouds.aws import AWSLinker
 
 logger = logging.getLogger(__name__)
+aws_console_link = AWSLinker()
 
 
 @timeit
@@ -52,6 +54,7 @@ def load_network_interfaces(
         ON CREATE SET netinf.firstseen = timestamp()
         SET netinf.lastupdated = $update_tag,
             netinf.mac_address = network_interface.MacAddress,
+            netinf.consolelink = network_interface.consolelink,
             netinf.region = $region,
             netinf.description = network_interface.Description,
             netinf.private_ip_address = network_interface.PrivateIpAddress,
@@ -107,7 +110,9 @@ def load_network_interfaces(
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = $update_tag
     """
-
+    for netinf in data:
+        console_arn = f"arn:aws:ec2:{region}:{aws_account_id}:network-interface/{netinf['NetworkInterfaceId']}"
+        netinf['consolelink'] = aws_console_link.get_console_link(arn=console_arn)
     neo4j_session.run(
         ingest_network_interfaces, network_interfaces=data, update_tag=update_tag,
         region=region, aws_account_id=aws_account_id,

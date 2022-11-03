@@ -11,9 +11,10 @@ from .util import get_botocore_config
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
+from cloudconsolelink.clouds.aws import AWSLinker
 
 logger = logging.getLogger(__name__)
-
+aws_console_link = AWSLinker()
 
 @timeit
 @aws_handle_regions
@@ -39,7 +40,7 @@ def load_reserved_instances(
     MERGE (ri:EC2ReservedInstance{id: res.ReservedInstancesId})
     ON CREATE SET ri.firstseen = timestamp()
     SET ri.lastupdated = $update_tag, ri.availabilityzone = res.AvailabilityZone, ri.duration = res.Duration,
-    ri.end = res.End, ri.start = res.Start, ri.count = res.InstanceCount, ri.type = res.InstanceType,
+    ri.end = res.End, ri.start = res.Start, ri.count = res.InstanceCount, ri.type = res.InstanceType, ri.consolelink = res.consolelink,
     ri.productdescription = res.ProductDescription, ri.state = res.State, ri.currencycode = res.CurrencyCode,
     ri.instancetenancy = res.InstanceTenancy, ri.offeringclass = res.OfferingClass,
     ri.offeringtype = res.OfferingType, ri.scope = res.Scope, ri.fixedprice = res.FixedPrice, ri.region=$Region,
@@ -57,6 +58,7 @@ def load_reserved_instances(
         r_instance['Start'] = str(r_instance['Start'])
         r_instance['End'] = str(r_instance['End'])
         r_instance['Arn'] = f"arn:aws:ec2:{region}:{current_aws_account_id}:reserved-instances/{r_instance['ReservedInstancesId']}"
+        r_instance['consolelink'] = aws_console_link.get_console_link(arn=r_instance['Arn'])
 
     neo4j_session.run(
         ingest_reserved_instances,

@@ -11,9 +11,10 @@ from .util import get_botocore_config
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
+from cloudconsolelink.clouds.aws import AWSLinker
 
 logger = logging.getLogger(__name__)
-
+aws_console_link = AWSLinker()
 
 @timeit
 @aws_handle_regions
@@ -36,6 +37,7 @@ def transform_elastic_ip_addresses(elastic_ip_addresses: List[Dict], current_aws
     addresses: List[Dict] = []
     for address in elastic_ip_addresses:
         address['arn'] = f"arn:aws:ec2:{address.get('region')}:{current_aws_account_id}:elastic-ip/{address.get('AllocationId')}"
+        address['consolelink'] = aws_console_link.get_console_link(arn=address['arn'])
         if address.get('AllocationId'):
             addresses.append(address)
 
@@ -63,6 +65,7 @@ def load_elastic_ip_addresses(
         address.allocation_id = eia.AllocationId, address.association_id = eia.AssociationId,
         address.domain = eia.Domain, address.network_interface_id = eia.NetworkInterfaceId,
         address.network_interface_owner_id = eia.NetworkInterfaceOwnerId,
+        address.consolelink = eia.consolelink,
         address.private_ip_address = eia.PrivateIpAddress, address.public_ipv4_pool = eia.PublicIpv4Pool,
         address.network_border_group = eia.NetworkBorderGroup, address.customer_owned_ip = eia.CustomerOwnedIp,
         address.customer_owned_ipv4_pool = eia.CustomerOwnedIpv4Pool, address.carrier_ip = eia.CarrierIp,

@@ -24,15 +24,22 @@ def get_ecr_repositories(boto3_session: boto3.session.Session, region: str) -> L
     ecr_repositories: List[Dict] = []
     for page in paginator.paginate():
         ecr_repositories.extend(page['repositories'])
-    for repo in ecr_repositories:
+    return ecr_repositories
+
+@timeit
+def transform_repositories(repositories: List[Dict], region: str) -> List[Dict]:
+    ecr_repositories = []
+    for repo in repositories:
         repo['region'] = region
-        # repo['consolelink'] = aws_console_link.get_console_link(arn=repo['repositoryArn'])
+        repo['consolelink'] = aws_console_link.get_console_link(arn=repo['repositoryArn'])
+        ecr_repositories.append(repo)
+
     return ecr_repositories
 
 
 @timeit
 @aws_handle_regions
-def get_ecr_repository_images(boto3_session: boto3.session.Session, region: str, repository_name: str) -> List[Dict]:
+def get_ecr_repository_images(boto3_session: boto3.session.Session, region: str, repository_name: str, current_aws_account_id: str) -> List[Dict]:
     logger.debug("Getting ECR images in repository '%s' for region '%s'.", repository_name, region)
     client = boto3_session.client('ecr', region_name=region)
     paginator = client.get_paginator('list_images')
@@ -41,6 +48,7 @@ def get_ecr_repository_images(boto3_session: boto3.session.Session, region: str,
         ecr_repository_images.extend(page['imageIds'])
     for image in ecr_repository_images:
         image['region'] = region
+        image['consolelink'] = aws_console_link.get_console_link(arn=f"arn:aws:ecr::{current_aws_account_id}:image/{repository_name}")
     return ecr_repository_images
 
 
@@ -113,6 +121,7 @@ def _load_ecr_repo_img_tx(
             img.digest = repo_img.imageDigest
         SET img.lastupdated = $aws_update_tag,
             img.region = repo_img.region
+            img.consolelink = repo_img.consolelink
         WITH ri, img, repo_img
 
         MERGE (ri)-[r1:IMAGE]->(img)
@@ -154,7 +163,8 @@ def sync(
     repositories = []
     for region in regions:
         logger.info("Syncing ECR for region '%s' in account '%s'.", region, current_aws_account_id)
-        repositories.extend(get_ecr_repositories(boto3_session, region))
+        repos = get_ecr_repositories(boto3_session, region)
+        repositories = transform_repositories(repos, region)
 
     logger.info(f"Total ECR Repositories: {len(repositories)}")
 
@@ -181,7 +191,7 @@ def sync(
 
     image_data = {}
     for repo in repositories:
-        repo_image_obj = get_ecr_repository_images(boto3_session, repo['region'], repo['repositoryName'])
+        repo_image_obj = get_ecr_repository_images(boto3_session, repo['region'], repo['repositoryName'], current_aws_account_id)
         image_data[repo['repositoryUri']] = repo_image_obj
 
     repo_images_list = transform_ecr_repository_images(image_data)
