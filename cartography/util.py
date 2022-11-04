@@ -151,7 +151,7 @@ def aws_paginate(
     for i, page in enumerate(paginator.paginate(**kwargs), start=1):
         if i % 100 == 0:
             logger.info(f'fetching page number {i}')
-        items.extend(page[object_name])
+        items.extend(page.get(object_name, []))
     return items
 
 
