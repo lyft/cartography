@@ -5,7 +5,8 @@ cartography/intel/rapid7/util
 import json
 import logging
 import re
-from array import array
+from typing import Any
+from typing import List
 
 import pandas
 import requests
@@ -19,15 +20,17 @@ def extract_sub_from_resourceid(resourceid: str) -> str:
     """
     if isinstance(resourceid, str):
         try:
-            sub = re.search(
+            match = re.search(
                 "/subscriptions/([0-9a-f-].*?)/resourceGroups/",
                 resourceid,
                 flags=re.IGNORECASE,
-            ).group(1)
-            return sub
+            )
+            if match:
+                sub = match.group(1)
+                return sub
         except AttributeError as exception:
             logging.exception("exception: %s", exception)
-    return None
+    return ""
 
 
 def extract_rg_from_resourceid(resourceid: str) -> str:
@@ -36,16 +39,20 @@ def extract_rg_from_resourceid(resourceid: str) -> str:
     """
     if isinstance(resourceid, str):
         try:
-            rg = re.search(
-                "/resourceGroups/(.*?)/providers/", resourceid, flags=re.IGNORECASE,
-            ).group(1)
-            return rg
+            match = re.search(
+                "/resourceGroups/(.*?)/providers/",
+                resourceid,
+                flags=re.IGNORECASE,
+            )
+            if match:
+                rg = match.group(1)
+                return rg
         except AttributeError as exception:
             logging.exception("exception: %s", exception)
-    return None
+    return ""
 
 
-def extract_rapid7_configurations_subscriptionid(configurations):
+def extract_rapid7_configurations_subscriptionid(configurations: Any[str, list]) -> str:
     """
     Extract from json, specific keyvalue pair: azure subscription id
 
@@ -53,9 +60,9 @@ def extract_rapid7_configurations_subscriptionid(configurations):
     """
 
     if configurations is None or not isinstance(configurations, list):
-        return None
+        return ""
 
-    subscription_id = None
+    subscription_id = ""
     for line in configurations:
         if line["name"] == "azure":
             logger.warning("line: %s", line)
@@ -74,7 +81,7 @@ def extract_rapid7_configurations_subscriptionid(configurations):
     return subscription_id
 
 
-def extract_rapid7_configurations_resourcegroup(configurations):
+def extract_rapid7_configurations_resourcegroup(configurations: Any[str, list]) -> str:
     """
     Extract from json, specific keyvalue pair: azure resource group
 
@@ -82,9 +89,9 @@ def extract_rapid7_configurations_resourcegroup(configurations):
     """
 
     if configurations is None or not isinstance(configurations, list):
-        return None
+        return ""
 
-    rg = None
+    rg = ""
     for line in configurations:
         if line["name"] == "azure":
             logger.warning("line: %s", line)
@@ -98,7 +105,7 @@ def extract_rapid7_configurations_resourcegroup(configurations):
     return rg
 
 
-def extract_rapid7_configurations_resourceid(configurations):
+def extract_rapid7_configurations_resourceid(configurations: Any[str, list]) -> str:
     """
     Extract from json, specific keyvalue pair: azure resource id
 
@@ -106,9 +113,9 @@ def extract_rapid7_configurations_resourceid(configurations):
     """
 
     if configurations is None or not isinstance(configurations, list):
-        return None
+        return ""
 
-    resource_id = None
+    resource_id = ""
     for line in configurations:
         if line["name"] == "azure":
             logger.warning("line: %s", line)
@@ -122,7 +129,7 @@ def extract_rapid7_configurations_resourceid(configurations):
     return resource_id
 
 
-def extract_rapid7_configurations_instanceid(configurations):
+def extract_rapid7_configurations_instanceid(configurations: Any[str, list]) -> str:
     """
     Extract from json, specific keyvalue pair: azure instance id
 
@@ -130,9 +137,9 @@ def extract_rapid7_configurations_instanceid(configurations):
     """
 
     if configurations is None or not isinstance(configurations, list):
-        return None
+        return ""
 
-    instance_id = None
+    instance_id = ""
     for line in configurations:
         if line["name"] == "azure":
             logger.warning("line: %s", line)
@@ -146,7 +153,7 @@ def extract_rapid7_configurations_instanceid(configurations):
     return instance_id
 
 
-def extract_rapid7_history_lastseen(history):
+def extract_rapid7_history_lastseen(history: list) -> str:
     """
     Extract from rapid7 history, last seen/scan time
     """
@@ -157,7 +164,7 @@ def extract_rapid7_history_lastseen(history):
     return lastseen
 
 
-def extract_rapid7_history_firstseen(history):
+def extract_rapid7_history_firstseen(history: list) -> str:
     """
     Extract from rapid7 history, first seen/scan time
     """
@@ -175,7 +182,7 @@ def rapid7_hosts(
     page: int = 0,
     sort: str = "",
     nexpose_timeout: int = 5,
-) -> array:
+) -> List:
     """
     Get Nexpose inventory full data to array
     https://help.rapid7.com/insightvm/en-us/api/index.html#operation/getAssets
@@ -203,7 +210,7 @@ def rapid7_hosts(
 
     count = total_resources = 0
     size_interval = 500
-    result_array = []
+    result_array: List[Any] = []
     while count < limit:
         logger.info(
             "count %s, page %s, total_resources %s",
@@ -219,7 +226,7 @@ def rapid7_hosts(
                 headers=headers,
                 auth=(nexpose_user, nexpose_password),
                 verify=nexpose_verify_cert,
-                params=params,
+                params=params,  # type: ignore[arg-type]
                 timeout=nexpose_timeout,
             )
             resp.raise_for_status()

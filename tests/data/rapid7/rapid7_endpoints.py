@@ -14,7 +14,7 @@ GET_HOSTS = [
                 "name": "azure",
                 "value": {
                     "instanceId": "c56b2c59-4e9b-4b89-85e2-13f8146eb071",
-                    "resourceId": "/subscriptions/SUB/resourceGroups/RG/providers/Microsoft.Compute/virtualMachines/HOST",
+                    "resourceId": "/subscriptions/SUB/resourceGroups/RG/providers/Microsoft.Compute/virtualMachines/HOST",  # noqa: E501
                 },
             },
         ],
