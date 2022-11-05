@@ -7,6 +7,7 @@ import logging
 import re
 from typing import Any
 from typing import List
+from typing import Tuple
 
 import pandas
 import requests
@@ -177,7 +178,7 @@ def extract_rapid7_history_firstseen(history: list) -> str:
 
 # pylint: disable=too-many-arguments,too-many-locals
 def rapid7_hosts(
-    authorization: tuple[str, str, str, bool],
+    authorization: Tuple[str, str, str, bool],
     limit: int = 10000,
     page: int = 0,
     sort: str = "",

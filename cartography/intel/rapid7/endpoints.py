@@ -5,6 +5,7 @@ cartography/intel/rapid7/endpoints
 import logging
 from typing import Dict
 from typing import List
+from typing import Tuple
 
 import neo4j
 
@@ -18,7 +19,7 @@ logger = logging.getLogger(__name__)
 def sync_hosts(
     neo4j_session: neo4j.Session,
     update_tag: int,
-    authorization: tuple[str, str, str, bool],
+    authorization: Tuple[str, str, str, bool],
 ) -> None:
     r7_hosts = rapid7_hosts(authorization)
     for host_data in r7_hosts:
