@@ -165,7 +165,7 @@ def _load_findings_tx(
             finding.arn = new_finding.arn,
             finding.region = $Region,
             finding.awsaccount = new_finding.awsaccount
-        SET finding.lastupdated = $UpdateTag
+        SET finding.lastupdated = $UpdateTag,
             finding.name = new_finding.title,
             finding.instanceid = new_finding.instanceid,
             finding.ecrimageid = new_finding.ecrimageid,
@@ -249,7 +249,7 @@ def _load_packages_tx(
             package.region = $Region,
             package.awsaccount = new_package.awsaccount,
             package.findingarn = new_package.findingarn
-        SET package.lastupdated = $UpdateTag
+        SET package.lastupdated = $UpdateTag,
             package.name = new_package.name,
             package.arch = new_package.arch,
             package.version = new_package.version,
