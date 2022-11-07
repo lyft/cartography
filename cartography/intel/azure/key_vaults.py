@@ -89,14 +89,13 @@ def update_access_policies(vault: Dict, common_job_parameters: Dict, client: Key
 
 
 @timeit
-def transform_key_vaults(client: KeyVaultManagementClient, key_vaults: List[Dict], regions: List, common_job_parameters: Dict) -> List[Dict]:
+def transform_key_vaults(key_vaults: List[Dict], regions: List, common_job_parameters: Dict) -> List[Dict]:
     key_vaults_data = []
     for vault in key_vaults:
         x = vault['id'].split('/')
         vault['resource_group'] = x[x.index('resourceGroups') + 1]
         vault['consolelink'] = azure_console_link.get_console_link(
             id=vault['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
-        update_access_policies(vault, common_job_parameters, client)
         if regions is None:
             key_vaults_data.append(vault)
         else:
@@ -364,10 +363,14 @@ def sync_key_vaults(
         load_key_vaults_secrets(neo4j_session, subscription_id, secrets_list, update_tag)
 
         # KEY VAULT CERTIFICATES
-        certificate_client = get_key_vault_certificates_client(credentials.vault_credentials, key_vault.get('properties', {}).get('vault_uri', None))
-        certificates = get_key_vault_certificates(certificate_client, key_vault)
-        certificates_list = transform_key_vault_certificates(certificates, key_vault.get('id', None), common_job_parameters)
-        load_key_vaults_certificates(neo4j_session, subscription_id, certificates_list, update_tag)
+        try:
+            update_access_policies(key_vault, common_job_parameters, client)
+            certificate_client = get_key_vault_certificates_client(credentials.vault_credentials, key_vault.get('properties', {}).get('vault_uri', None))
+            certificates = get_key_vault_certificates(certificate_client, key_vault)
+            certificates_list = transform_key_vault_certificates(certificates, key_vault.get('id', None), common_job_parameters)
+            load_key_vaults_certificates(neo4j_session, subscription_id, certificates_list, update_tag)
+        except HttpResponseError as e:
+            logger.warning(f"Error while updating access policies of vault - {e}")
 
     cleanup_key_vaults(neo4j_session, common_job_parameters)
 
