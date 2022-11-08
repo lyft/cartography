@@ -563,6 +563,7 @@ def run_azure(request):
         azure_redirect_uri=request['azure']['redirect_uri'],
         azure_subscription_id=request['azure']['subscription_id'],
         azure_refresh_token=request['azure']['refresh_token'],
+        azure_vault_scope=request['azure']['vault_scope'],
         azure_graph_scope=request['azure']['graph_scope'],
         azure_azure_scope=request['azure']['azure_scope'],
         params=request['params'],

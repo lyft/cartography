@@ -41,6 +41,9 @@ def concurrent_execution(
     )
     if service == 'iam':
         service_func(neo4j_driver.session(), credentials, credentials.tenant_id, update_tag, common_job_parameters)
+    elif service == 'key_vaults':
+        service_func(neo4j_driver.session(), credentials,
+                     subscription_id, update_tag, common_job_parameters, regions)
     else:
         service_func(neo4j_driver.session(), credentials.arm_credentials,
                      subscription_id, update_tag, common_job_parameters, regions)
@@ -183,6 +186,7 @@ def start_azure_ingestion(
             config.azure_refresh_token,
             config.azure_graph_scope,
             config.azure_azure_scope,
+            config.azure_vault_scope,
             config.azure_subscription_id,
         )
 
@@ -208,6 +212,7 @@ def start_azure_ingestion(
         requested_syncs = parse_and_validate_azure_requested_syncs(azure_requested_syncs_string[:-1])
 
     tenant_obj = tenant.get_active_tenant(credentials)
+    common_job_parameters['Azure_Primary_AD_Domain_Name'] = tenant_obj['defaultDomain']
 
     _sync_tenant(
         neo4j_session,
