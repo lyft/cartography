@@ -16,7 +16,7 @@ import cartography.intel.azure
 # from cartography.scoped_stats_client import ScopedStatsClient
 # import cartography.intel.crxcavator.crxcavator
 # import cartography.intel.digitalocean
-# import cartography.intel.gcp
+import cartography.intel.gcp
 # import cartography.intel.github
 # import cartography.intel.gsuite
 # import cartography.intel.okta

@@ -171,6 +171,11 @@ def transform_roles(roles_list: List[Dict], project_id: str, type: str) -> List[
     for role in roles_list:
         role['id'] = get_role_id(role['name'], project_id)
         role['type'] = type
+        role['parent'] = 'project'
+        role['parent_id'] = f"projects/{project_id}"
+        if role['name'].startswith('organizations/'):
+            role['parent'] = 'organization'
+            role['parent_id'] = f"organizations/{role['name'].split('/')[1]}"
         role['consolelink'] = gcp_console_link.get_console_link(
             resource_name='iam_role', project_id=project_id, role_id=role['name'],
         )
@@ -322,7 +327,7 @@ def transform_api_keys(apikeys: List, project_id: str) -> List[Dict]:
     list_keys = []
 
     for key in apikeys:
-        key['consolelink'] = gcp_console_link.get_console_link(project_id = project_id, api_key_id=key['uid'], resource_name='api_key')
+        key['consolelink'] = gcp_console_link.get_console_link(project_id=project_id, api_key_id=key['uid'], resource_name='api_key')
         key['id'] = key['name']
         list_keys.append(key)
 
@@ -383,6 +388,8 @@ def load_service_accounts(
     u.create_date = $createDate,
     u.email = sa.email,
     u.consolelink = sa.consolelink,
+    u.parent = $parent,
+    u.parent_id = $parentId,
     u.region = $region,
     u.disabled = sa.disabled, u.serviceaccountid = sa.uniqueId,
     u.lastupdated = $gcp_update_tag
@@ -396,6 +403,8 @@ def load_service_accounts(
     neo4j_session.run(
         ingest_service_accounts,
         service_accounts_list=service_accounts,
+        parent='project',
+        parentId=f'projects/{project_id}',
         project_id=project_id,
         createDate=datetime.utcnow(),
         region="global",
@@ -462,6 +471,8 @@ def load_roles(neo4j_session: neo4j.Session, roles: List[Dict], project_id: str,
     u.deleted = d.deleted,
     u.consolelink = d.consolelink,
     u.type = d.type,
+    u.parent = d.parent,
+    u.parent_id = d.parent_id,
     u.permissions = d.includedPermissions,
     u.roleid = d.id,
     u.lastupdated = $gcp_update_tag
@@ -640,7 +651,7 @@ def attach_role_to_user(
     user.name = $UserName,
     user.create_date = $createDate,
     user.lastupdated = $gcp_update_tag,
-    user.isDeleted = $isDeleted
+    user.isDeleted = $isDeleted,
     user.consolelink = $ConsoleLink
     WITH user
     MATCH (role:GCPRole{id: $RoleId})
@@ -671,7 +682,7 @@ def attach_role_to_user(
         UserId=user['id'],
         UserEmail=user['email'],
         UserName=user['name'],
-        ConsoleLink = user['consolelink'],
+        ConsoleLink=user['consolelink'],
         createDate=datetime.utcnow(),
         Parent=user['parent'],
         ParentId=user['parent_id'],
@@ -765,7 +776,7 @@ def attach_role_to_group(
         GroupName=group['name'],
         createDate=datetime.utcnow(),
         GroupEmail=group['email'],
-        ConsoleLink = group['consolelink'],
+        ConsoleLink=group['consolelink'],
         Parent=group['parent'],
         ParentId=group['parent_id'],
         isDeleted=group.get('is_deleted', False),
@@ -822,7 +833,7 @@ def attach_role_to_domain(
         createDate=datetime.utcnow(),
         ParentId=domain['parent_id'],
         DomainEmail=domain['email'],
-        ConsoleLink = domain['consolelink'],
+        ConsoleLink=domain['consolelink'],
         DomainName=domain['name'],
         isDeleted=domain.get('is_deleted', False),
         gcp_update_tag=gcp_update_tag,
