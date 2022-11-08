@@ -584,7 +584,7 @@ def run_gcp(request):
     logging.getLogger('botocore').setLevel(logging.WARNING)
     logging.getLogger('neo4j').setLevel(logging.WARNING)
 
-    default_sync = cartography.sync.build_gcp_sync()
+    default_sync = cartography.sync.build_gcp_sync(request.get('config', {}).get('initIndexes', False))
 
     # TODO: Define config and pass it forward
     config = Config(
@@ -594,6 +594,7 @@ def run_gcp(request):
         neo4j_max_connection_lifetime=request['neo4j']['connection_lifetime'],
         credentials=request['credentials'],
         params=request['params'],
+        gcp_requested_syncs=request.get('services', None),
     )
 
     if request['logging']['mode'] == "verbose":

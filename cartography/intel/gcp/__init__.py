@@ -194,7 +194,6 @@ def _get_serviceusage_resource(credentials: GoogleCredentials) -> Resource:
     return googleapiclient.discovery.build('serviceusage', 'v1', credentials=credentials, cache_discovery=False)
 
 
-
 def _get_cloudfunction_resource(credentials: GoogleCredentials) -> Resource:
     """
     Instantiates a cloud function resource object.
@@ -203,7 +202,6 @@ def _get_cloudfunction_resource(credentials: GoogleCredentials) -> Resource:
     :return: A serviceusage resource object
     """
     return googleapiclient.discovery.build('cloudfunctions', 'v1', credentials=credentials, cache_discovery=False)
-
 
 
 def _get_cloudkms_resource(credentials: GoogleCredentials) -> Resource:
@@ -336,7 +334,6 @@ def _initialize_resources(credentials: GoogleCredentials) -> Resource:
         loadbalancer=_get_compute_resource(credentials),
         apikey=_get_apikey_resource(credentials),
         bigquery=_get_bigquery_resource(credentials),
-        admin=_get_admin_resource(credentials),
 
     )
 
@@ -559,4 +556,3 @@ def start_gcp_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
     del common_job_parameters['service_labels']
 
     return common_job_parameters
-
