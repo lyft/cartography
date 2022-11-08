@@ -388,6 +388,8 @@ def load_service_accounts(
     u.create_date = $createDate,
     u.email = sa.email,
     u.consolelink = sa.consolelink,
+    u.parent = $parent,
+    u.parent_id = $parentId,
     u.region = $region,
     u.disabled = sa.disabled, u.serviceaccountid = sa.uniqueId,
     u.lastupdated = $gcp_update_tag
@@ -401,6 +403,8 @@ def load_service_accounts(
     neo4j_session.run(
         ingest_service_accounts,
         service_accounts_list=service_accounts,
+        parent='project',
+        parentId=f'projects/{project_id}',
         project_id=project_id,
         createDate=datetime.utcnow(),
         region="global",
