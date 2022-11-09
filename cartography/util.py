@@ -158,7 +158,6 @@ def aws_paginate(
                 f'''aws_paginate: Key "{object_name}" is not present, check if this is a typo.
 If not, then the AWS datatype somehow does not have this key.''',
             )
-            items.extend([])
     return items
 
 
