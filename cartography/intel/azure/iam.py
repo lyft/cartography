@@ -21,8 +21,8 @@ def load_tenant_users(session: neo4j.Session, tenant_id: str, data_list: List[Di
     session.write_transaction(_load_tenant_users_tx, tenant_id, data_list, update_tag)
 
 
-def load_roles(session: neo4j.Session, tenant_id: str, data_list: List[Dict], update_tag: int) -> None:
-    session.write_transaction(_load_roles_tx, tenant_id, data_list, update_tag)
+def load_roles(session: neo4j.Session, tenant_id: str, data_list: List[Dict], update_tag: int, SUBSCRIPTION_ID: str) -> None:
+    session.write_transaction(_load_roles_tx, tenant_id, data_list, update_tag, SUBSCRIPTION_ID)
 
 
 def load_tenant_groups(session: neo4j.Session, tenant_id: str, data_list: List[Dict], update_tag: int) -> None:
@@ -81,7 +81,7 @@ def _load_tenant_users_tx(
     tx: neo4j.Transaction, tenant_id: str, tenant_users_list: List[Dict], update_tag: int,
 ) -> None:
     ingest_user = """
-    UNWIND $tenant_users_listAS user
+    UNWIND $tenant_users_list AS user
     MERGE (i:AzureUser{id: user.id})
     ON CREATE SET i:AzurePrincipal,
     i.firstseen = timestamp(),
@@ -518,7 +518,7 @@ def get_roles_list(client: AuthorizationManagementClient, common_job_parameters:
 
 
 def _load_roles_tx(
-    tx: neo4j.Transaction, tenant_id: str, roles_list: List[Dict], update_tag: int,
+    tx: neo4j.Transaction, tenant_id: str, roles_list: List[Dict], update_tag: int, SUBSCRIPTION_ID: str
 ) -> None:
     ingest_role = """
     UNWIND $roles_list AS role
@@ -542,6 +542,11 @@ def _load_roles_tx(
     MERGE (t)-[tr:RESOURCE]->(i)
     ON CREATE SET tr.firstseen = timestamp()
     SET tr.lastupdated = $update_tag
+    WITH i
+    MATCH (sub:AzureSubscription{id: $SUBSCRIPTION_ID})
+    MERGE (sub)<-[sr:HAS_ACCESS]-(i)
+    ON CREATE SET sr.firstseen = timestamp()
+    SET sr.lastupdated = $update_tag
     """
 
     tx.run(
@@ -551,6 +556,7 @@ def _load_roles_tx(
         update_tag=update_tag,
         createDate=datetime.utcnow(),
         tenant_id=tenant_id,
+        SUBSCRIPTION_ID=SUBSCRIPTION_ID,
     )
 
 
@@ -564,7 +570,7 @@ def sync_roles(
 ) -> None:
     client = get_authorization_client(credentials.arm_credentials, credentials.subscription_id)
     roles_list = get_roles_list(client, common_job_parameters)
-    load_roles(neo4j_session, tenant_id, roles_list, update_tag)
+    load_roles(neo4j_session, tenant_id, roles_list, update_tag, credentials.subscription_id)
     cleanup_roles(neo4j_session, common_job_parameters)
 
 
