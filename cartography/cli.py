@@ -393,15 +393,6 @@ class CLI:
                 'The crowdstrike URL, if using self-hosted. Defaults to the public crowdstrike API URL otherwise.'
             ),
         )
-        parser.add_argument(
-            '--experimental-neo4j-4x-support',
-            default=False,
-            action='store_true',
-            help=(
-                'enable the experimental suppor for neo4j 4.x. Can also be enabled by environment variable. '
-                'See cartography.__init__.py'
-            ),
-        )
         return parser
 
     def main(self, argv: str) -> int:
@@ -530,12 +521,6 @@ class CLI:
             config.crowdstrike_client_secret = os.environ.get(config.crowdstrike_client_secret_env_var)
         else:
             config.crowdstrike_client_secret = None
-
-        if config.experimental_neo4j_4x_support:
-            logger.warning(
-                'EXPERIMENTAL_NEO4J_4X_SUPPORT is now enabled by default,'
-                ' and this option will be removed when code hard-coded syntax upgrades are completed',
-            )
 
         # Run cartography
         try:
