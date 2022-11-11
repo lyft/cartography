@@ -320,6 +320,8 @@ def _initialize_resources(credentials: GoogleCredentials) -> Resource:
         cloudcdn=_get_compute_resource(credentials),
         loadbalancer=_get_compute_resource(credentials),
         apikey=_get_apikey_resource(credentials),
+        bigquery=_get_bigquery_resource(credentials),
+
     )
 
 

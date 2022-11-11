@@ -15,6 +15,7 @@ from cartography.stats import set_stats_client
 # import cartography.intel.azure
 # import cartography.intel.crxcavator.crxcavator
 # import cartography.intel.digitalocean
+import cartography.intel.gcp
 # import cartography.intel.github
 # import cartography.intel.gsuite
 # import cartography.intel.kubernetes
