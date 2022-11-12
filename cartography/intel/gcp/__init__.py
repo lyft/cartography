@@ -281,6 +281,16 @@ def _get_firestore_resource(credentials: GoogleCredentials) -> Resource:
     return googleapiclient.discovery.build('firestore', 'v1', credentials=credentials, cache_discovery=False)
 
 
+def _get_bigquery_resource(credentials: GoogleCredentials) -> Resource:
+    """
+    Instantiates a bigquery resource object.
+    See: https://cloud.google.com/bigquery/docs/reference/rest
+    :param credentials: The GoogleCredentials object
+    :return: A serviceusage resource object
+    """
+    return googleapiclient.discovery.build('bigquery', 'v2', credentials=credentials, cache_discovery=False)
+
+
 def _get_apikey_resource(credentials: GoogleCredentials) -> Resource:
     """
     Instantiates a cloud api key resource object.
