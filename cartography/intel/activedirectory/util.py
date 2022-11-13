@@ -7,6 +7,7 @@ import logging
 import os
 from typing import Dict
 from typing import List
+from typing import Tuple
 
 import pandas
 
@@ -14,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 def activedirectory_hosts(
-    authorization: tuple[str, str],
+    authorization: Tuple[str, str],
 ) -> List[Dict]:
     """
     Get ActiveDirectory (Logging) coverage inventory
@@ -27,6 +28,7 @@ def activedirectory_hosts(
         activedirectory_domain,
     ) = authorization
     activedirectory_filename = os.path.join(activedirectory_dirpath, "computers.json")
+
     if not (
         os.path.isdir(activedirectory_dirpath) and
         os.path.exists(activedirectory_filename)
@@ -35,7 +37,7 @@ def activedirectory_hosts(
             "Directory %s or matching computers.json don't exist",
             activedirectory_dirpath,
         )
-        return {}
+        return []
 
     with open(
         activedirectory_filename,
@@ -95,4 +97,4 @@ def activedirectory_hosts(
         return flatten_data
 
     logger.warning("No data returned")
-    return {}
+    return []
