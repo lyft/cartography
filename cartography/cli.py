@@ -414,7 +414,8 @@ class CLI:
             type=str,
             default=None,
             help=(
-                'The url of the target Sumologic API instance - https://help.sumologic.com/docs/api/getting-started/#sumo-logic-endpoints-by-deployment-and-firewall-security.'
+                'The url of the target Sumologic API instance - https://help.sumologic.com/'
+                'docs/api/getting-started/#sumo-logic-endpoints-by-deployment-and-firewall-security.'
             ),
         )
         return parser
