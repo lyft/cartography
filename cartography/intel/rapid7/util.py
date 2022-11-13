@@ -166,10 +166,11 @@ def rapid7_hosts(
     https://help.rapid7.com/insightvm/en-us/api/index.html#operation/downloadReport
     """
 
-    logger.info("nexpose_verify_cert: %s", authorization[3])
-    if authorization[3] is not True:
-        authorization[3] = False
-        logger.warning("Requested to not verify certificate (%s)", authorization[3])
+    nexpose_verify_cert = authorization[3]
+    logger.info("nexpose_verify_cert: %s", nexpose_verify_cert)
+    if nexpose_verify_cert is not True:
+        nexpose_verify_cert = False
+        logger.warning("Requested to not verify certificate (%s)", nexpose_verify_cert)
 
     count = total_resources = 0
     size_interval = 500
@@ -190,7 +191,7 @@ def rapid7_hosts(
                     "Accept": "application/json",
                 },
                 auth=(authorization[0], authorization[1]),
-                verify=authorization[3],
+                verify=nexpose_verify_cert,
                 params={  # type: ignore[arg-type]
                     "page": page,
                     "size": size_interval,
