@@ -76,7 +76,9 @@ def load_host_data(
     )
 
 
-def get_host_ids(client: Hosts, crowdstrikeapi_filter: str = '', crowdstrikeapi_limit: int = 5000) -> List[List[str]]:
+def get_host_ids(client: Hosts, crowdstrikeapi_limit: int = 5000, crowdstrikeapi_filter: Optional[str] = None) -> List[List[str]]:
+    if not crowdstrikeapi_filter:
+        crowdstrikeapi_filter = ''
     ids = []
     parameters = {"filter": crowdstrikeapi_filter, "limit": crowdstrikeapi_limit}
     response = client.QueryDevicesByFilter(parameters=parameters)
