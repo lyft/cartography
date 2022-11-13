@@ -5,6 +5,7 @@ cartography/intel/mde/endpoints
 import logging
 from typing import Dict
 from typing import List
+from typing import Tuple
 
 import neo4j
 
@@ -18,7 +19,7 @@ logger = logging.getLogger(__name__)
 def sync_hosts(
     neo4j_session: neo4j.Session,
     update_tag: int,
-    authorization: tuple[str, str, bool],
+    authorization: Tuple[str, str, bool],
 ) -> None:
     bmchelix_hosts_list = bmchelix_hosts(authorization)
     for host_data in bmchelix_hosts_list:
