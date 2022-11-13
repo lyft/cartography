@@ -50,7 +50,9 @@ def get_authorization(
     try:
         # App registration token
         logger.info(
-            "ClientSecretCredential: tenant %s, client %s", tenant_id, client_id,
+            "ClientSecretCredential: tenant %s, client %s",
+            tenant_id,
+            client_id,
         )
         azure_token = ClientSecretCredential(tenant_id, client_id, client_secret)
         logger.warning("Using App registration identity: %s", azure_token)
@@ -60,7 +62,9 @@ def get_authorization(
 
     try:
         credential_chain = ChainedTokenCredential(
-            managed_identity, azure_token, azure_cli,
+            managed_identity,
+            azure_token,
+            azure_cli,
         )
         # credential_chain = ChainedTokenCredential(managed_identity, azure_cli)
         logger.warning("Using ChainedTokenCredential identity: %s", credential_chain)
@@ -94,7 +98,8 @@ def azureresourcegraph_hosts(
     https://docs.microsoft.com/en-us/azure/governance/resource-graph/first-query-python
     """
 
-    vm_query = r"""resources
+    vm_query = (
+        r"""resources
 | where type =~ 'Microsoft.Compute/virtualMachines'
 | join kind=inner (resourcecontainers
     | where type == 'microsoft.resources/subscriptions'
@@ -122,8 +127,12 @@ def azureresourcegraph_hosts(
     | extend nsgId = tostring(properties.networkSecurityGroup.id)
     | project publicIpName,publicIPAllocationMethod,ipAddress,vmId,nsgId
     ) on $left.id == $right.vmId
-| project resourceid,instance_id,subscriptionId,subscriptionName, resourceGroup, name, type, osname, ostype, vmStatus, tags.environment, tags.costcenter, tags.contact, tags.businessproduct, tags.businesscontact, tags.engproduct, tags.engcontact, tags.lob, tags.compliance, tags.ticket, subproperties,publicIpName,publicIPAllocationMethod,ipAddress,nsgId
-"""
+| project resourceid,instance_id,subscriptionId,subscriptionName, resourceGroup, name, type, """
+        "osname, ostype, vmStatus, tags.environment, tags.costcenter, tags.contact, "
+        "tags.businessproduct, tags.businesscontact, tags.engproduct, tags.engcontact, "
+        "tags.lob, tags.compliance, tags.ticket, subproperties,publicIpName,"
+        "publicIPAllocationMethod,ipAddress,nsgId"
+    )
 
     subsClient = SubscriptionClient(authorization)
     subsRaw = []
@@ -142,7 +151,9 @@ def azureresourcegraph_hosts(
 
     # Create query
     argQuery = arg.models.QueryRequest(
-        subscriptions=subsList, query=vm_query, options=argQueryOptions,
+        subscriptions=subsList,
+        query=vm_query,
+        options=argQueryOptions,
     )
 
     # Run query
@@ -166,7 +177,9 @@ def azureresourcegraph_hosts(
             skip=df_resourcegraph.shape[0],
         )
         argQuery2 = arg.models.QueryRequest(
-            subscriptions=subsList, query=vm_query, options=argQueryOptions2,
+            subscriptions=subsList,
+            query=vm_query,
+            options=argQueryOptions2,
         )
         argResults2 = argClient.resources(argQuery2)
         df_resourcegraph_tmp = pandas.DataFrame(
@@ -177,14 +190,19 @@ def azureresourcegraph_hosts(
             df_resourcegraph = pandas.concat([df_resourcegraph, df_resourcegraph_tmp])
 
     logger.info(
-        "ARG Final count %s/%s", df_resourcegraph.shape[0], argResults.total_records,
+        "ARG Final count %s/%s",
+        df_resourcegraph.shape[0],
+        argResults.total_records,
     )
     logger.warning(
-        "ARG Final count %s/%s", df_resourcegraph.shape[0], argResults.total_records,
+        "ARG Final count %s/%s",
+        df_resourcegraph.shape[0],
+        argResults.total_records,
     )
 
     df_resourcegraph["short_hostname"] = df_resourcegraph.apply(
-        get_short_hostname, axis=1,
+        get_short_hostname,
+        axis=1,
     )
 
     flatten_data = json.loads(df_resourcegraph.to_json(orient="records"))
