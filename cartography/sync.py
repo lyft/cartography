@@ -11,6 +11,7 @@ import neo4j.exceptions
 from neo4j import GraphDatabase
 from statsd import StatsClient
 
+import cartography.intel.activedirectory
 import cartography.intel.analysis
 import cartography.intel.aws
 import cartography.intel.azure
@@ -173,6 +174,7 @@ def build_default_sync() -> Sync:
     sync = Sync()
     sync.add_stages([
         ('create-indexes', cartography.intel.create_indexes.run),
+        ('activedirectory', cartography.intel.activedirectory.start_activedirectory_ingestion),
         ('aws', cartography.intel.aws.start_aws_ingestion),
         ('azure', cartography.intel.azure.start_azure_ingestion),
         ('crowdstrike', cartography.intel.crowdstrike.start_crowdstrike_ingestion),

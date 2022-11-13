@@ -394,6 +394,22 @@ class CLI:
             ),
         )
         parser.add_argument(
+            '--activedirectory-name',
+            type=str,
+            default=None,
+            help=(
+                'Name of used Active Directory name for labelling.'
+            ),
+        )
+        parser.add_argument(
+            '--activedirectory-dirpath',
+            type=str,
+            default=None,
+            help=(
+                'Directory path where to find ActiveDirectory data from BloodHound and similar tools.'
+            ),
+        )
+        parser.add_argument(
             '--experimental-neo4j-4x-support',
             default=False,
             action='store_true',
