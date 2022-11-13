@@ -14,6 +14,7 @@ from . import elasticache
 from . import elasticsearch
 from . import emr
 from . import iam
+from . import inspector
 from . import kms
 from . import lambda_function
 from . import permission_relationships
@@ -59,6 +60,8 @@ RESOURCE_FUNCTIONS: Dict = {
     'eks': eks.sync,
     'ec2:launch_templates': sync_ec2_launch_templates,
     'ec2:autoscalinggroup': sync_ec2_auto_scaling_groups,
+    # `ec2:instance` must be included before `ssm` and `ec2:images`,
+    # they rely on EC2Instance data provided by this module.
     'ec2:instance': sync_ec2_instances,
     'ec2:images': sync_ec2_images,
     'ec2:keypair': sync_ec2_key_pairs,

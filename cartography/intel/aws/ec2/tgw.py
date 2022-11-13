@@ -74,23 +74,23 @@ def load_transit_gateways(
     update_tag: int,
 ) -> None:
     ingest_transit_gateway = """
-    MERGE (ownerAccount:AWSAccount {id: {OwnerId}})
-    ON CREATE SET ownerAccount.firstseen = timestamp(), ownerAccount.foreign = true
-    SET ownerAccount.lastupdated = {update_tag}
+    MERGE (ownerAccount:AWSAccount {id: $OwnerId})
+    ON CREATE SET ownerAccount.firstseen = timestamp()
+    SET ownerAccount.lastupdated = $update_tag
 
-    MERGE (tgw:AWSTransitGateway {id: {ARN}})
-    ON CREATE SET tgw.firstseen = timestamp(), tgw.arn = {ARN}
-    SET tgw.tgw_id = {TgwId},
-    tgw.ownerid = {OwnerId},
-    tgw.state = {State},
-    tgw.description = {Description},
-    tgw.region = {Region},
-    tgw.lastupdated = {update_tag}
+    MERGE (tgw:AWSTransitGateway {id: $ARN})
+    ON CREATE SET tgw.firstseen = timestamp(), tgw.arn = $ARN
+    SET tgw.tgw_id = $TgwId,
+    tgw.ownerid = $OwnerId,
+    tgw.state = $State,
+    tgw.description = $Description,
+    tgw.region = $Region,
+    tgw.lastupdated = $update_tag
 
     WITH tgw
     MERGE (ownerAccount)-[r:RESOURCE]->(tgw)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {update_tag}
+    SET r.lastupdated = $update_tag
     """
 
     for tgw in data:

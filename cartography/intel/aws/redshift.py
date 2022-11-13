@@ -31,6 +31,7 @@ def get_redshift_reserved_node(boto3_session: boto3.session.Session, region: str
         logger.error(f'Failed to call redshift describe_reserved_nodes: {region} - {e}')
         return reserved_nodes
 
+
 @timeit
 def transform_reserved_nodes(nds: List[Dict], region: str, current_aws_account_id: str) -> List[Dict]:
     reserved_nodes = []
@@ -41,6 +42,7 @@ def transform_reserved_nodes(nds: List[Dict], region: str, current_aws_account_i
         reserved_nodes.append(reserved_node)
 
     return reserved_nodes
+
 
 def load_redshift_reserved_node(session: neo4j.Session, reserved_nodes: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
     session.write_transaction(_load_redshift_reserved_node_tx, reserved_nodes, current_aws_account_id, aws_update_tag)
@@ -230,7 +232,7 @@ def _attach_ec2_security_groups(neo4j_session: neo4j.Session, cluster: Dict, aws
         neo4j_session.run(
             attach_cluster_to_group,
             ClusterArn=cluster['arn'],
-            consolelink = consolelink,
+            consolelink=consolelink,
             GroupId=group['VpcSecurityGroupId'],
             aws_update_tag=aws_update_tag,
         )

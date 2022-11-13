@@ -7,6 +7,9 @@ on:
     branches:
       - master
 
+# Explicitly grant the `secrets.GITHUB_TOKEN` no permissions.
+permissions: {}
+
 jobs:
   linter:
     runs-on: ubuntu-latest
@@ -27,7 +30,7 @@ jobs:
       - name: Neo4j setup
         run: |
           wget -O - https://debian.neo4j.com/neotechnology.gpg.key | sudo apt-key add -
-          echo 'deb https://debian.neo4j.com stable 3.5' | sudo tee /etc/apt/sources.list.d/neo4j.list
+          echo 'deb https://debian.neo4j.com stable 4.4' | sudo tee /etc/apt/sources.list.d/neo4j.list
           sudo apt-get update
       - name: Install Neo4j
         run: sudo apt-get install neo4j
@@ -51,3 +54,25 @@ jobs:
         run: make test_unit
       - name: make test_integration
         run: make test_integration
+
+  build-dist-docker-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ghcr.io/${{ github.repository }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build
+        uses: docker/build-push-action@v3
+        with:
+          file: dist.Dockerfile
+          push: false # only build the image, don't push it anywhere
+          context: .
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}

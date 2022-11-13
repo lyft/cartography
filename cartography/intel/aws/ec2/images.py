@@ -16,6 +16,7 @@ from cloudconsolelink.clouds.aws import AWSLinker
 logger = logging.getLogger(__name__)
 aws_console_link = AWSLinker()
 
+
 def get_images_in_use(neo4j_session: neo4j.Session, region: str, current_aws_account_id: str) -> List[str]:
     # We use OPTIONAL here to allow query chaining with queries that may not match.
     get_images_query = """
@@ -49,6 +50,7 @@ def get_images(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
         logger.warning(f"Failed retrieve images for region - {region}. Error - {e}")
     return images
 
+
 @timeit
 def transform_images(boto3_session: boto3.session.Session, imags: List[Dict], image_ids: List[str], region: str, account_id: str) -> List[Dict]:
     images = []
@@ -67,6 +69,7 @@ def transform_images(boto3_session: boto3.session.Session, imags: List[Dict], im
     except ClientError as e:
         logger.warning(f"Failed retrieve images for region - {region}. Error - {e}")
     return images
+
 
 @timeit
 def load_images(

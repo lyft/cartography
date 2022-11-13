@@ -7,7 +7,7 @@ TEST_UPDATE_TAG = 123456789
 
 
 def test_load_clusters(neo4j_session):
-    neo4j_session.run("MERGE(a:AWSAccount{id:{account}});", account=TEST_ACCOUNT_ID)
+    neo4j_session.run("MERGE(a:AWSAccount{id:$account});", account=TEST_ACCOUNT_ID)
     elasticache_data = tests.data.aws.elasticache.DESCRIBE_CACHE_CLUSTERS
     clusters = elasticache_data['CacheClusters']
     cartography.intel.aws.elasticache.load_elasticache_clusters(

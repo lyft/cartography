@@ -18,3 +18,4 @@ build/
 generated
 env.dev.json
 env.prod.json
+dist/

@@ -268,7 +268,7 @@ def load_network_interface_items(neo4j_session: neo4j.Session, data: List[Dict],
                 'netinf_id': network_interface['NetworkInterfaceId'],
                 'instance_id': network_interface['Attachment']['InstanceId'],
             })
-    load_network_interfaces(neo4j_session, data, region, aws_account_id, update_tag)
+    load_network_interfaces(neo4j_session, data, region, aws_account_id, update_tag)  # type: ignore
     load_network_interface_instance_relations(
         neo4j_session, instance_associations, region, aws_account_id, update_tag,
     )

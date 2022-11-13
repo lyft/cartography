@@ -1,4 +1,6 @@
+import datetime
 import logging
+import traceback
 from typing import Any
 from typing import Dict
 from typing import Iterable
@@ -16,10 +18,13 @@ from . import organizations
 from .resources import RESOURCE_FUNCTIONS
 from cartography.config import Config
 from cartography.intel.aws.util.common import parse_and_validate_aws_requested_syncs
+from cartography.stats import get_stats_client
+from cartography.util import merge_module_sync_metadata
 from cartography.util import run_analysis_job
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
+stat_handler = get_stats_client(__name__)
 logger = logging.getLogger(__name__)
 
 
@@ -110,9 +115,6 @@ def _sync_one_account(
         for future in as_completed(futures):
             logger.info(f'Result from Future - Service Processing: {future.result()}')
 
-    # NOTE clean up all DNS records, regardless of which job created them
-    run_cleanup_job('aws_account_dns_cleanup.json', neo4j_session, common_job_parameters)
-
     # MAP IAM permissions
     if 'permission_relationships' in aws_requested_syncs:
         RESOURCE_FUNCTIONS['permission_relationships'](**sync_args)
@@ -131,6 +133,15 @@ def _sync_one_account(
         'aws_lambda_ecr.json',
         neo4j_session,
         common_job_parameters,
+    )
+
+    merge_module_sync_metadata(
+        neo4j_session,
+        group_type='AWSAccount',
+        group_id=current_aws_account_id,
+        synced_type='AWSAccount',
+        update_tag=update_tag,
+        stat_handler=stat_handler,
     )
 
 
@@ -180,10 +191,14 @@ def _sync_multiple_accounts(
     accounts: Dict[str, str],
     config: Config,
     common_job_parameters: Dict[str, Any],
+    aws_best_effort_mode: bool,
     aws_requested_syncs: List[str] = [],
-) -> None:
+) -> bool:
     logger.info("Syncing AWS accounts: %s", ', '.join(accounts.values()))
     organizations.sync(neo4j_session, accounts, config.update_tag, common_job_parameters)
+
+    failed_account_ids = []
+    exception_tracebacks = []
 
     for profile_name, account_id in accounts.items():
         logger.info("Syncing AWS account with ID '%s' using configured profile '%s'.", account_id, profile_name)
@@ -300,25 +315,27 @@ def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
                 common_job_parameters['pagination'][service.get('name', None)] = pagination
         requested_syncs = parse_and_validate_aws_requested_syncs(aws_requested_syncs_string[:-1])
 
-    _sync_multiple_accounts(
+    sync_successful = _sync_multiple_accounts(
         neo4j_session,
         aws_accounts,
         config,
         common_job_parameters,
+        config.aws_best_effort_mode,
         requested_syncs,
     )
 
-    run_analysis_job(
-        'aws_ec2_asset_exposure.json',
-        neo4j_session,
-        common_job_parameters,
-    )
+    if sync_successful:
+        run_analysis_job(
+            'aws_ec2_asset_exposure.json',
+            neo4j_session,
+            common_job_parameters,
+        )
 
-    run_analysis_job(
-        'aws_ec2_keypair_analysis.json',
-        neo4j_session,
-        common_job_parameters,
-    )
+        run_analysis_job(
+            'aws_ec2_keypair_analysis.json',
+            neo4j_session,
+            common_job_parameters,
+        )
 
     run_analysis_job(
         'aws_eks_asset_exposure.json',

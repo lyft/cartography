@@ -25,7 +25,7 @@ def get_load_balancer_v2_listeners(client: botocore.client.BaseClient, load_bala
             listeners.extend(page['Listeners'])
 
     except Exception as e:
-        logger.warning(f"Failed retrieve load balancer listeners for region - {region}. Error - {e}")
+        logger.warning(f"Failed retrieve load balancer listeners for region - . Error - {e}")
 
     return listeners
 

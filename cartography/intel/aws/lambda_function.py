@@ -2,7 +2,6 @@ import time
 import logging
 from typing import Any
 from typing import Dict
-from typing import Generator
 from typing import List
 from typing import Tuple
 
@@ -45,47 +44,43 @@ def load_lambda_functions(
 ) -> None:
     ingest_lambda_functions = """
     UNWIND $lambda_functions_list AS lf
-    MERGE (lambda:AWSLambda{id: lf.FunctionArn})
-    ON CREATE SET lambda.firstseen = timestamp()
-    SET lambda.name = lf.FunctionName,
-    lambda.arn = lf.FunctionArn,
-    lambda.region = lf.region,
-    lambda.modifieddate = lf.LastModified,
-    lambda.runtime = lf.Runtime,
-    lambda.isPublicFacing = lf.isPublicFacing,
-    lambda.consolelink = lf.consolelink,
-    lambda.description = lf.Description,
-    lambda.timeout = lf.Timeout,
-    lambda.memory = lf.MemorySize,
-    lambda.codesize = lf.CodeSize,
-    lambda.handler = lf.Handler,
-    lambda.version = lf.Version,
-    lambda.tracingconfigmode = lf.TracingConfig.Mode,
-    lambda.revisionid = lf.RevisionId,
-    lambda.state = lf.State,
-    lambda.statereason = lf.StateReason,
-    lambda.statereasoncode = lf.StateReasonCode,
-    lambda.lastupdatestatus = lf.LastUpdateStatus,
-    lambda.lastupdatestatusreason = lf.LastUpdateStatusReason,
-    lambda.lastupdatestatusreasoncode = lf.LastUpdateStatusReasonCode,
-    lambda.packagetype = lf.PackageType,
-    lambda.signingprofileversionarn = lf.SigningProfileVersionArn,
-    lambda.signingjobarn = lf.SigningJobArn,
-    lambda.codesha256 = lf.CodeSha256,
-    lambda.architectures = lf.Architectures,
-    lambda.masterarn = lf.MasterArn,
-    lambda.kmskeyarn = lf.KMSKeyArn,
-    lambda.lastupdated = $aws_update_tag
-    WITH lambda, lf
-    MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
-    MERGE (owner)-[r:RESOURCE]->(lambda)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = $aws_update_tag
-    WITH lambda, lf
-    MATCH (role:AWSPrincipal{arn: lf.Role})
-    MERGE (lambda)-[r:STS_ASSUME_ROLE_ALLOW]->(role)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = $aws_update_tag
+        MERGE (lambda:AWSLambda{id: lf.FunctionArn})
+        ON CREATE SET lambda.firstseen = timestamp()
+        SET lambda.name = lf.FunctionName,
+        lambda.modifieddate = lf.LastModified,
+        lambda.runtime = lf.Runtime,
+        lambda.description = lf.Description,
+        lambda.timeout = lf.Timeout,
+        lambda.memory = lf.MemorySize,
+        lambda.codesize = lf.CodeSize,
+        lambda.handler = lf.Handler,
+        lambda.version = lf.Version,
+        lambda.tracingconfigmode = lf.TracingConfig.Mode,
+        lambda.revisionid = lf.RevisionId,
+        lambda.state = lf.State,
+        lambda.statereason = lf.StateReason,
+        lambda.statereasoncode = lf.StateReasonCode,
+        lambda.lastupdatestatus = lf.LastUpdateStatus,
+        lambda.lastupdatestatusreason = lf.LastUpdateStatusReason,
+        lambda.lastupdatestatusreasoncode = lf.LastUpdateStatusReasonCode,
+        lambda.packagetype = lf.PackageType,
+        lambda.signingprofileversionarn = lf.SigningProfileVersionArn,
+        lambda.signingjobarn = lf.SigningJobArn,
+        lambda.codesha256 = lf.CodeSha256,
+        lambda.architectures = lf.Architectures,
+        lambda.masterarn = lf.MasterArn,
+        lambda.kmskeyarn = lf.KMSKeyArn,
+        lambda.lastupdated = $aws_update_tag
+        WITH lambda, lf
+        MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
+        MERGE (owner)-[r:RESOURCE]->(lambda)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = $aws_update_tag
+        WITH lambda, lf
+        MATCH (role:AWSPrincipal{arn: lf.Role})
+        MERGE (lambda)-[r:STS_ASSUME_ROLE_ALLOW]->(role)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = $aws_update_tag
     """
 
     neo4j_session.run(

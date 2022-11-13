@@ -170,6 +170,7 @@ Representation of an [Okta Application](https://developer.okta.com/docs/referenc
     ```
     (ReplyUri)-[REPLYURI]->(OktaApplication)
     ```
+
 ### OktaUserFactor
 
 Representation of Okta User authentication [Factors](https://developer.okta.com/docs/reference/api/factors/#factor-object).

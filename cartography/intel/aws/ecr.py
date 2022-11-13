@@ -7,6 +7,7 @@ import boto3
 import neo4j
 
 from cartography.util import aws_handle_regions
+from cartography.util import batch
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 from cloudconsolelink.clouds.aws import AWSLinker
@@ -25,6 +26,7 @@ def get_ecr_repositories(boto3_session: boto3.session.Session, region: str) -> L
     for page in paginator.paginate():
         ecr_repositories.extend(page['repositories'])
     return ecr_repositories
+
 
 @timeit
 def transform_repositories(repositories: List[Dict], region: str) -> List[Dict]:

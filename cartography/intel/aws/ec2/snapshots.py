@@ -5,6 +5,7 @@ from typing import List
 
 import boto3
 import neo4j
+from botocore.exceptions import ClientError
 
 from botocore.exceptions import ClientError
 from cartography.util import aws_handle_regions
@@ -15,9 +16,21 @@ from cloudconsolelink.clouds.aws import AWSLinker
 logger = logging.getLogger(__name__)
 aws_console_link = AWSLinker()
 
+
+@timeit
+def get_snapshots_in_use(neo4j_session: neo4j.Session, region: str, current_aws_account_id: str) -> List[str]:
+    query = """
+    MATCH (:AWSAccount{id: $AWS_ACCOUNT_ID})-[:RESOURCE]->(v:EBSVolume)
+    WHERE v.region = $Region
+    RETURN v.snapshotid as snapshot
+    """
+    results = neo4j_session.run(query, AWS_ACCOUNT_ID=current_aws_account_id, Region=region)
+    return [r['snapshot'] for r in results if r['snapshot']]
+
+
 @timeit
 @aws_handle_regions
-def get_snapshots(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
+def get_snapshots(boto3_session: boto3.session.Session, region: str, in_use_snapshot_ids: List[str]) -> List[Dict]:
     client = boto3_session.client('ec2', region_name=region)
     snapshots = []
     try:

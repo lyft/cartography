@@ -18,7 +18,7 @@ def test_load_okta_group_members(neo4j_session):
     TEST_UPDATE_TAG = 000000
     neo4j_session.run(
         '''
-        MERGE (o:OktaOrganization{id: {ORG_ID}})-[:RESOURCE]->(g:OktaGroup{id: {GROUP_ID}, lastupdated: {UPDATE_TAG}})
+        MERGE (o:OktaOrganization{id: $ORG_ID})-[:RESOURCE]->(g:OktaGroup{id: $GROUP_ID, lastupdated: $UPDATE_TAG})
         ''',
         ORG_ID=TEST_ORG_ID,
         GROUP_ID=TEST_GROUP_ID,
@@ -30,8 +30,8 @@ def test_load_okta_group_members(neo4j_session):
     load_okta_group_members(neo4j_session, TEST_GROUP_ID, transformed_members, TEST_UPDATE_TAG)
 
     # Assert: members are attached to group 123
-    result: neo4j.BoltStatementResult = neo4j_session.run(
-        'MATCH (o:OktaGroup{id: {GROUP_ID}})<-[:MEMBER_OF_OKTA_GROUP]-(u:OktaUser) RETURN u.last_name',
+    result: neo4j.Result = neo4j_session.run(
+        'MATCH (o:OktaGroup{id: $GROUP_ID})<-[:MEMBER_OF_OKTA_GROUP]-(u:OktaUser) RETURN u.last_name',
         GROUP_ID=TEST_GROUP_ID,
     )
     actual_nodes = {n['u.last_name'] for n in result}
@@ -49,7 +49,7 @@ def test_cleanup_okta_groups(neo4j_session):
     UPDATE_TAG_T1 = 111111
     UPDATE_TAG_T2 = 222222
     neo4j_session.run(
-        'MERGE (:OktaOrganization{id: {ORG_ID}})-[:RESOURCE]->(:OktaGroup{id: {GROUP_ID}, lastupdated: {UPDATE_TAG}})',
+        'MERGE (:OktaOrganization{id: $ORG_ID})-[:RESOURCE]->(:OktaGroup{id: $GROUP_ID, lastupdated: $UPDATE_TAG})',
         ORG_ID=TEST_ORG_ID,
         GROUP_ID=TEST_GROUP_ID,
         UPDATE_TAG=UPDATE_TAG_T1,
@@ -58,7 +58,7 @@ def test_cleanup_okta_groups(neo4j_session):
     # Assert 1: MY_GROUP_456 exists
     expected_nodes = {(TEST_GROUP_ID)}
     nodes = neo4j_session.run(
-        "MATCH (g:OktaGroup{id: {GROUP_ID}}) RETURN g.id",
+        "MATCH (g:OktaGroup{id: $GROUP_ID}) RETURN g.id",
         GROUP_ID=TEST_GROUP_ID,
     )
     actual_nodes = {(n['g.id']) for n in nodes}
@@ -86,11 +86,11 @@ def test_cleanup_okta_group_memberships(neo4j_session):
     UPDATE_TAG_T2 = 222222
     neo4j_session.run(
         '''
-        MERGE (:OktaOrganization{id: {ORG_ID}})-[:RESOURCE]->(g:OktaGroup{id: {GROUP_ID}, lastupdated: {UPDATE_TAG_T2}})
-        MERGE (g)<-[m:MEMBER_OF_OKTA_GROUP]-(u:OktaUser {id: 'testuser', lastupdated: {UPDATE_TAG_T1}})
-        MERGE (g)<-[m2:MEMBER_OF_OKTA_GROUP]-(u2:OktaUser {id: 'testuser2', lastupdated: {UPDATE_TAG_T1}})
-        SET m.lastupdated = {UPDATE_TAG_T1},
-            m2.lastupdated = {UPDATE_TAG_T2}
+        MERGE (:OktaOrganization{id: $ORG_ID})-[:RESOURCE]->(g:OktaGroup{id: $GROUP_ID, lastupdated: $UPDATE_TAG_T2})
+        MERGE (g)<-[m:MEMBER_OF_OKTA_GROUP]-(u:OktaUser {id: 'testuser', lastupdated: $UPDATE_TAG_T1})
+        MERGE (g)<-[m2:MEMBER_OF_OKTA_GROUP]-(u2:OktaUser {id: 'testuser2', lastupdated: $UPDATE_TAG_T1})
+        SET m.lastupdated = $UPDATE_TAG_T1,
+            m2.lastupdated = $UPDATE_TAG_T2
         ''',
         ORG_ID=TEST_ORG_ID,
         GROUP_ID=TEST_GROUP_ID,
@@ -100,7 +100,7 @@ def test_cleanup_okta_group_memberships(neo4j_session):
 
     # Assert 1: testuser and testuser2 exist and are both attached to group 456
     nodes = neo4j_session.run(
-        "MATCH (g:OktaGroup{id: {GROUP_ID}})<-[:MEMBER_OF_OKTA_GROUP]-(u:OktaUser) RETURN g.id, u.id",
+        "MATCH (g:OktaGroup{id: $GROUP_ID})<-[:MEMBER_OF_OKTA_GROUP]-(u:OktaUser) RETURN g.id, u.id",
         GROUP_ID=TEST_GROUP_ID,
     )
     actual_nodes = {(n['g.id'], n['u.id']) for n in nodes}
@@ -119,7 +119,7 @@ def test_cleanup_okta_group_memberships(neo4j_session):
 
     # Assert 2: cleanup job has run; testuser is no longer attached to group 456 but testuser2 still is
     nodes = neo4j_session.run(
-        "MATCH (g:OktaGroup{id: {GROUP_ID}})<-[:MEMBER_OF_OKTA_GROUP]-(u:OktaUser) RETURN g.id, u.id",
+        "MATCH (g:OktaGroup{id: $GROUP_ID})<-[:MEMBER_OF_OKTA_GROUP]-(u:OktaUser) RETURN g.id, u.id",
         GROUP_ID=TEST_GROUP_ID,
     )
     actual_nodes = {(n['g.id'], n['u.id']) for n in nodes}

@@ -6,13 +6,16 @@ import boto3
 import neo4j
 
 import time
+from cartography.stats import get_stats_client
 from cartography.util import aws_handle_regions
+from cartography.util import merge_module_sync_metadata
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 from cloudconsolelink.clouds.aws import AWSLinker
 
 logger = logging.getLogger(__name__)
 aws_console_link = AWSLinker()
+stat_handler = get_stats_client(__name__)
 
 
 @timeit
@@ -50,7 +53,7 @@ def get_dynamodb_tables(boto3_session: boto3.session.Session, region: str, commo
 @timeit
 def load_dynamodb_tables(
     neo4j_session: neo4j.Session, data: List[Dict], region: str, current_aws_account_id: str,
-    aws_update_tag: str,
+    aws_update_tag: int,
 ) -> None:
     ingest_table = """
     MERGE (table:DynamoDBTable{id: $Arn})
@@ -108,7 +111,7 @@ def load_gsi(
         neo4j_session.run(
             ingest_gsi,
             TableArn=table['Table']['TableArn'],
-            consolelink = consolelink,
+            consolelink=consolelink,
             Arn=gsi['IndexArn'],
             Region=region,
             ProvisionedThroughputReadCapacityUnits=gsi['ProvisionedThroughput']['ReadCapacityUnits'],

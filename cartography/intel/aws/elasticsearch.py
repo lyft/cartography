@@ -69,9 +69,10 @@ def _get_es_domains(client: botocore.client.BaseClient) -> List[Dict]:
         domains.extend(chunk_data['DomainStatusList'])
     return domains
 
+
 @timeit
 def transfrom_es_domains(dms: List[Dict], region: str, account_id: str) -> List[Dict]:
-    domains= []
+    domains = []
     for domain in dms:
         domain['arn'] = f"arn:aws:es:{region if region else ''}:{account_id if account_id else ''}:domain/{domain['DomainName']}"
         domain['consolelink'] = aws_console_link.get_console_link(arn=domain['arn'])
@@ -82,6 +83,7 @@ def transfrom_es_domains(dms: List[Dict], region: str, account_id: str) -> List[
         domains.append(domain)
 
     return domains
+
 
 @timeit
 def _load_es_domains(
@@ -227,7 +229,7 @@ def _process_access_policy(neo4j_session: neo4j.Session, domain_id: str, domain_
     :param domain_id: ES domain id
     :param domain_data: domain data
     """
-    tag_es = "MATCH (es:ESDomain{id: {DomainId}}) SET es.exposed_internet = {InternetExposed}"
+    tag_es = "MATCH (es:ESDomain{id: $DomainId}) SET es.exposed_internet = $InternetExposed"
 
     exposed_internet = False
 

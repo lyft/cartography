@@ -1,8 +1,11 @@
 import json
 import logging
 from pathlib import Path
+from typing import Any
 from typing import Dict
 from typing import List
+from typing import Optional
+from typing import Union
 
 import neo4j
 
@@ -18,7 +21,7 @@ class GraphJobJSONEncoder(json.JSONEncoder):
     Support JSON serialization for GraphJob instances.
     """
 
-    def default(self, obj):
+    def default(self, obj: Any) -> Any:
         if isinstance(obj, GraphJob):
             return obj.as_dict()
         else:
@@ -31,7 +34,7 @@ class GraphJob:
     A job that will run against the cartography graph. A job is a sequence of statements which execute sequentially.
     """
 
-    def __init__(self, name: str, statements: List[GraphStatement], short_name: str = None):
+    def __init__(self, name: str, statements: List[GraphStatement], short_name: Optional[str] = None):
         # E.g. "Okta intel module cleanup"
         self.name = name
         self.statements: List[GraphStatement] = statements
@@ -45,7 +48,7 @@ class GraphJob:
         for s in self.statements:
             s.merge_parameters(parameters)
 
-    def run(self, neo4j_session: neo4j.Session):
+    def run(self, neo4j_session: neo4j.Session) -> None:
         """
         Run the job. This will execute all statements sequentially.
         """
@@ -87,7 +90,7 @@ class GraphJob:
         return cls(name, statements, short_name)
 
     @classmethod
-    def from_json_file(cls, file_path: Path):
+    def from_json_file(cls, file_path: Union[str, Path]) -> 'GraphJob':
         """
         Create a job from a JSON file.
         """
@@ -101,7 +104,7 @@ class GraphJob:
 
     @classmethod
     def run_from_json(
-        cls, neo4j_session: neo4j.Session, blob: str, parameters: Dict = None, short_name: str = None,
+        cls, neo4j_session: neo4j.Session, blob: str, parameters: Dict, short_name: Optional[str] = None,
     ) -> None:
         """
         Run a job from a JSON blob. This will deserialize the job and execute all statements sequentially.
@@ -114,7 +117,7 @@ class GraphJob:
         job.run(neo4j_session)
 
     @classmethod
-    def run_from_json_file(cls, file_path: Path, neo4j_session: neo4j.Session, parameters: Dict = None) -> None:
+    def run_from_json_file(cls, file_path: Union[str, Path], neo4j_session: neo4j.Session, parameters: Dict) -> None:
         """
         Run a job from a JSON file. This will deserialize the job and execute all statements sequentially.
         """
@@ -127,7 +130,7 @@ class GraphJob:
         job.run(neo4j_session)
 
 
-def _get_statements_from_json(blob: Dict, short_job_name: str = None) -> List[GraphStatement]:
+def _get_statements_from_json(blob: Dict, short_job_name: Optional[str] = None) -> List[GraphStatement]:
     """
     Deserialize all statements from the JSON blob.
     """

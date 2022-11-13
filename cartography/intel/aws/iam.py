@@ -18,8 +18,11 @@ from cloudconsolelink.clouds.aws import AWSLinker
 
 from cartography.intel.aws.permission_relationships import parse_statement_node
 from cartography.intel.aws.permission_relationships import principal_allowed_on_resource
+from cartography.stats import get_stats_client
+from cartography.util import merge_module_sync_metadata
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
+
 logger = logging.getLogger(__name__)
 aws_console_link = AWSLinker()
 
@@ -360,6 +363,14 @@ def load_roles(
                     RoleArn=role['Arn'],
                     aws_update_tag=aws_update_tag,
                 )
+                spn_arn = get_account_from_arn(principal_value)
+                if spn_arn:
+                    neo4j_session.run(
+                        ingest_spnmap_statement,
+                        SpnArn=principal_value,
+                        SpnAccountId=get_account_from_arn(principal_value),
+                        aws_update_tag=aws_update_tag,
+                    )
 
 
 @timeit
@@ -409,7 +420,7 @@ def get_policies_for_principal(neo4j_session: neo4j.Session, principal_arn: str)
 
 @timeit
 def sync_assumerole_relationships(
-    neo4j_session: neo4j.Session, current_aws_account_id: str, aws_update_tag: str,
+    neo4j_session: neo4j.Session, current_aws_account_id: str, aws_update_tag: int,
     common_job_parameters: Dict,
 ) -> None:
     # Must be called after load_role
@@ -473,7 +484,7 @@ def load_user_access_keys(neo4j_session: neo4j.Session, user_access_keys: Dict, 
     SET r.lastupdated = $aws_update_tag
     """
 
-    for username, access_keys in user_access_keys.items():
+    for arn, access_keys in user_access_keys.items():
         for key in access_keys["AccessKeyMetadata"]:
             if key.get('AccessKeyId'):
                 neo4j_session.run(
@@ -979,7 +990,7 @@ def sync_group_memberships(
     current_aws_account_id: str, aws_update_tag: int, common_job_parameters: Dict,
 ) -> None:
     logger.info("Syncing IAM group membership for account '%s'.", current_aws_account_id)
-    query = "MATCH (group:AWSGroup)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ACCOUNT_ID}}) " \
+    query = "MATCH (group:AWSGroup)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ACCOUNT_ID}) " \
             "return group.name as name, group.arn as arn;"
     groups = neo4j_session.run(query, AWS_ACCOUNT_ID=current_aws_account_id)
     groups_membership = {group["arn"]: get_group_membership_data(boto3_session, group["name"]) for group in groups}
@@ -997,11 +1008,10 @@ def sync_user_access_keys(
     current_aws_account_id: str, aws_update_tag: int, common_job_parameters: Dict,
 ) -> None:
     logger.info("Syncing IAM user access keys for account '%s'.", current_aws_account_id)
-    query = "MATCH (user:AWSUser)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ACCOUNT_ID}}) return user.name as name"
-    result = neo4j_session.run(query, AWS_ACCOUNT_ID=current_aws_account_id)
-    usernames = [r['name'] for r in result]
-    for name in usernames:
-        access_keys = get_account_access_key_data(boto3_session, name)
+    query = "MATCH (user:AWSUser)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ACCOUNT_ID}) " \
+            "RETURN user.name as name, user.arn as arn"
+    for user in neo4j_session.run(query, AWS_ACCOUNT_ID=current_aws_account_id):
+        access_keys = get_account_access_key_data(boto3_session, user["name"])
         if access_keys:
             consolelink = aws_console_link.get_console_link(arn=f"arn:aws:iam::{current_aws_account_id}:access_keys/{name}")
             account_access_keys = {name: access_keys}
@@ -1093,15 +1103,27 @@ def sync(
         set_used_state(neo4j_session, current_aws_account_id, common_job_parameters, update_tag)
 
     run_cleanup_job('aws_import_principals_cleanup.json', neo4j_session, common_job_parameters)
+    merge_module_sync_metadata(
+        neo4j_session,
+        group_type='AWSAccount',
+        group_id=current_aws_account_id,
+        synced_type='AWSPrincipal',
+        update_tag=update_tag,
+        stat_handler=stat_handler,
+    )
 
-    toc = time.perf_counter()
-    logger.info(f"Time to process IAM: {toc - tic:0.4f} seconds")
 
-# https://docs.aws.amazon.com/cli/latest/reference/iam/generate-service-last-accessed-details.html
-#
-#
-# Steps to get access details:
-# 1.generate service last accessed details by ARN (or overall?)
-# 2.
-#
-#
+@timeit
+def get_account_from_arn(arn: str) -> str:
+    # ARN documentation
+    # https://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html
+
+    if not arn.startswith("arn:"):
+        # must be a service principal arn, such as ec2.amazonaws.com
+        return ""
+
+    parts = arn.split(":")
+    if len(parts) < 4:
+        return ""
+    else:
+        return parts[4]

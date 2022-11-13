@@ -14,19 +14,17 @@ import neo4j
 from botocore.config import Config
 from botocore.exceptions import ClientError
 from policyuniverse.policy import Policy
-from cloudconsolelink.clouds.aws import AWSLinker
 
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
-aws_console_link = AWSLinker()
 
 
 @timeit
 @aws_handle_regions
-def get_client_certificates(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
+def get_client_certificates(boto3_session: boto3.session.Session, region: str, current_aws_account_id: str) -> List[Dict]:
     certificates = []
     try:
         client = boto3_session.client('apigateway', region_name=region)
@@ -35,23 +33,15 @@ def get_client_certificates(boto3_session: boto3.session.Session, region: str) -
         page_iterator = paginator.paginate()
         for page in page_iterator:
             certificates.extend(page['items'])
+        for certificate in certificates:
+            certificate['region'] = region
+            certificate['arn'] = f"arn:aws:apigateway:{region}:{current_aws_account_id}:clientcertificates/{certificate['clientCertificateId']}"
+
         return certificates
 
     except ClientError as e:
         logger.error(f'Failed to call Apigateway get_client_certificates: {region} - {e}')
         return certificates
-
-@timeit
-def transform_client_certificates(certs: List[Dict], region: str, account_id: str) -> List[Dict]:
-    certificates = []
-    for certificate in certs:
-        certificate['region'] = region
-        console_arn = f"arn:aws:apigateway:{region}::certificate/{certificate['apiId']}"
-        certificate['consolelink'] = aws_console_link.get_console_link(arn=console_arn)
-        certificate['arn'] = f"arn:aws:apigateway:{region}:{account_id}:clientcertificates/{certificate['clientCertificateId']}"
-        certificates.append(certificate)
-
-    return certificates
 
 
 def load_client_certificates(session: neo4j.Session, certificates: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
@@ -61,23 +51,22 @@ def load_client_certificates(session: neo4j.Session, certificates: List[Dict], c
 @timeit
 def _load_client_certificates_tx(tx: neo4j.Transaction, certificates: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
     query: str = """
-    UNWIND $Records as record
+    UNWIND {Records} as record
     MERGE (certificate:APIGatewayClientCertificate{id: record.arn})
     ON CREATE SET certificate.firstseen = timestamp(),
         certificate.arn = record.arn
-    SET certificate.lastupdated = $aws_update_tag,
+    SET certificate.lastupdated = {aws_update_tag},
         certificate.name = record.clientCertificateId,
         certificate.region = record.region,
-        certificate.consolelink = record.consolelink,
         certificate.pem_encoded_certificate = record.pemEncodedCertificate,
         certificate.expiration_date = record.expirationDate,
         certificate.description = record.description,
         certificate.created_date = record.createdDate
     WITH certificate
-    MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
+    MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
     MERGE (owner)-[r:RESOURCE]->(certificate)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = $aws_update_tag
+    SET r.lastupdated = {aws_update_tag}
     """
 
     tx.run(
@@ -100,8 +89,7 @@ def sync_client_certificates(
 ) -> None:
     data = []
     for region in regions:
-        certs = get_client_certificates(boto3_session, region, current_aws_account_id)
-        data = transform_client_certificates(certs, region, current_aws_account_id)
+        data.extend(get_client_certificates(boto3_session, region, current_aws_account_id))
 
     logger.info(f"Total API Gateway Certificates: {len(data)}")
 
@@ -178,12 +166,8 @@ def get_rest_api_details(
         )
         client = boto3_session.client('apigateway', config=config)
         stages = get_rest_api_stages(api, client)
-        cert = get_rest_api_client_certificate(stages, client)  # clientcertificate id is given by the api stage
-        certificate = transform_rest_api_client_certificate(cert, api['id'], api['region'])
+        certificate = get_rest_api_client_certificate(stages, client)  # clientcertificate id is given by the api stage
         resources = get_rest_api_resources(api, client)
-        for resource in resources:
-            console_arn = f"arn:aws:apigateway:{api['region']}::/{api['id']}"
-            resource['consolelink'] = aws_console_link.get_console_link(arn=console_arn)
         policy = get_rest_api_policy(api, client)
         yield api['id'], stages, certificate, resources, policy, api['region']
 
@@ -208,13 +192,11 @@ def get_rest_api_client_certificate(stages: Dict, client: botocore.client.BaseCl
     Gets the current ClientCertificate resource if present, else returns None.
     """
     response = None
-    certificates = []
     for stage in stages:
         if 'clientCertificateId' in stage:
             try:
                 response = client.get_client_certificate(clientCertificateId=stage['clientCertificateId'])
                 response['stageName'] = stage['stageName']
-                certificates.extend(response)
             except ClientError as e:
                 logger.warning(f"Failed to retrive Client Certificate for Stage {stage['stageName']} - {e}")
                 raise
@@ -223,16 +205,7 @@ def get_rest_api_client_certificate(stages: Dict, client: botocore.client.BaseCl
 
     return response
 
-@timeit
-def transform_rest_api_client_certificate(certs: List[Dict], api_id: str, api_region: str) -> List[Dict]:
-    certificates = []
-    for certificate in certs:
-        console_arn = f"arn:aws:apigateway:{api_region}::certificate/{api_id}"
-        certificate['consolelink'] = aws_console_link.get_console_link(arn=console_arn)
-        certificates.append(certificate)
 
-    return certificates
-    
 @timeit
 def get_rest_api_resources(api: Dict, client: botocore.client.BaseClient) -> List[Any]:
     """
@@ -265,7 +238,7 @@ def load_apigateway_rest_apis(
     Ingest the details of API Gateway REST APIs into neo4j.
     """
     ingest_rest_apis = """
-    UNWIND $rest_apis_list AS r
+    UNWIND {rest_apis_list} AS r
     MERGE (rest_api:APIGatewayRestAPI{id:r.id})
     ON CREATE SET rest_api.firstseen = timestamp(),
     rest_api.createddate = r.createdDate
@@ -273,15 +246,14 @@ def load_apigateway_rest_apis(
     rest_api.minimumcompressionsize = r.minimumCompressionSize,
     rest_api.name = r.name,
     rest_api.disableexecuteapiendpoint = r.disableExecuteApiEndpoint,
-    rest_api.lastupdated = $aws_update_tag,
+    rest_api.lastupdated = {aws_update_tag},
     rest_api.region = r.region,
-    restApi.consolelink = r.consolelink,
     rest_api.arn = r.Arn
     WITH rest_api
-    MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
+    MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
     MERGE (aa)-[r:RESOURCE]->(rest_api)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = $aws_update_tag
+    SET r.lastupdated = {aws_update_tag}
     """
 
     # neo4j does not accept datetime objects and values. This loop is used to convert
@@ -290,7 +262,6 @@ def load_apigateway_rest_apis(
         region = api['region']
         api['createdDate'] = str(api['createdDate']) if 'createdDate' in api else None
         api['Arn'] = f"arn:aws:apigateway:{region}::restapis/{api['id']}"
-        api['consolelink'] = aws_console_link.get_console_link(arn=api['arn'])
 
     neo4j_session.run(
         ingest_rest_apis,
@@ -308,11 +279,11 @@ def _load_apigateway_policies(
     Ingest API Gateway REST API policy results into neo4j.
     """
     ingest_policies = """
-    UNWIND $policies as policy
+    UNWIND {policies} as policy
     MATCH (r:APIGatewayRestAPI) where r.name = policy.api_id
     SET r.anonymous_access = (coalesce(r.anonymous_access, false) OR policy.internet_accessible),
     r.anonymous_actions = coalesce(r.anonymous_actions, []) + policy.accessible_actions,
-    r.lastupdated = $UpdateTag
+    r.lastupdated = {UpdateTag}
     """
 
     neo4j_session.run(
@@ -324,7 +295,7 @@ def _load_apigateway_policies(
 
 def _set_default_values(neo4j_session: neo4j.Session, aws_account_id: str) -> None:
     set_defaults = """
-    MATCH (:AWSAccount{id: $AWS_ID})-[:RESOURCE]->(restApi:APIGatewayRestAPI)
+    MATCH (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(restApi:APIGatewayRestAPI)
     where NOT EXISTS(restApi.anonymous_actions)
     SET restApi.anonymous_access = false, restApi.anonymous_actions = []
     """
@@ -343,25 +314,24 @@ def _load_apigateway_stages(
     Ingest the Stage resource details into neo4j.
     """
     ingest_stages = """
-    UNWIND $stages_list AS stage
+    UNWIND {stages_list} AS stage
     MERGE (s:APIGatewayStage{id: stage.arn})
     ON CREATE SET s.firstseen = timestamp(), s.stagename = stage.stageName,
     s.createddate = stage.createdDate
     SET s.deploymentid = stage.deploymentId,
     s.clientcertificateid = stage.clientCertificateId,
     s.region=stage.region,
-    s.consolelink = stage.consolelink,
     s.cacheclusterenabled = stage.cacheClusterEnabled,
     s.cacheclusterstatus = stage.cacheClusterStatus,
     s.tracingenabled = stage.tracingEnabled,
     s.webaclarn = stage.webAclArn,
-    s.lastupdated = $UpdateTag,
+    s.lastupdated = {UpdateTag},
     s.arn = stage.arn
     WITH s, stage
     MATCH (rest_api:APIGatewayRestAPI{id: stage.apiId})
     MERGE (rest_api)-[r:ASSOCIATED_WITH]->(s)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = $UpdateTag
+    SET r.lastupdated = {UpdateTag}
     """
 
     # neo4j does not accept datetime objects and values. This loop is used to convert
@@ -369,7 +339,6 @@ def _load_apigateway_stages(
     for stage in stages:
         stage['createdDate'] = str(stage['createdDate'])
         stage['arn'] = f"arn:aws:apigateway:{stage['region']}::restapis/{stage['apiId']}/stages/{stage['stageName']}"
-        stage['consolelink'] = aws_console_link.get_console_link(arn=stage['arn'])
 
     neo4j_session.run(
         ingest_stages,
@@ -386,19 +355,18 @@ def _load_apigateway_certificates(
     Ingest the API Gateway Client Certificate details into neo4j.
     """
     ingest_certificates = """
-    UNWIND $certificates_list as certificate
+    UNWIND {certificates_list} as certificate
     MERGE (c:APIGatewayClientCertificate{id: certificate.arn})
     ON CREATE SET c.firstseen = timestamp(), c.createddate = certificate.createdDate
-    SET c.lastupdated = $UpdateTag, c.expirationdate = certificate.expirationDate,
+    SET c.lastupdated = {UpdateTag}, c.expirationdate = certificate.expirationDate,
     c.region = certificate.region,
-    c.consolelink = certificate.consolelink,
     c.client_certificate_id = certificate.clientCertificateId,
     c.arn = certificate.arn
     WITH c, certificate
     MATCH (stage:APIGatewayStage{clientcertificateid: certificate.clientCertificateId})
     MERGE (stage)-[r:HAS_CERTIFICATE]->(c)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = $UpdateTag
+    SET r.lastupdated = {UpdateTag}
     """
 
     # neo4j does not accept datetime objects and values. This loop is used to convert
@@ -422,21 +390,20 @@ def _load_apigateway_resources(
     Ingest the API Gateway Resource details into neo4j.
     """
     ingest_resources = """
-    UNWIND $resources_list AS res
+    UNWIND {resources_list} AS res
     MERGE (s:APIGatewayResource{id: res.id})
     ON CREATE SET s.firstseen = timestamp()
     SET s.path = res.path,
     s.pathpart = res.pathPart,
     s.parentid = res.parentId,
-    s.consolelink = res.consolelink,
     s.region=res.region,
-    s.lastupdated =$UpdateTag,
+    s.lastupdated ={UpdateTag},
     s.arn = res.arn
     WITH s, res
     MATCH (rest_api:APIGatewayRestAPI{id: res.apiId})
     MERGE (rest_api)-[r:RESOURCE]->(s)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = $UpdateTag
+    SET r.lastupdated = {UpdateTag}
     """
 
     for resource in resources:

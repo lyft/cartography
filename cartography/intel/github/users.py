@@ -6,10 +6,13 @@ from typing import Tuple
 import neo4j
 
 from cartography.intel.github.util import fetch_all
+from cartography.stats import get_stats_client
+from cartography.util import merge_module_sync_metadata
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+stat_handler = get_stats_client(__name__)
 
 
 GITHUB_ORG_USERS_PAGINATED_GRAPHQL = """
@@ -103,3 +106,11 @@ def sync(
     user_data, org_data = get(github_api_key, github_url, organization)
     load_organization_users(neo4j_session, user_data, org_data, common_job_parameters['UPDATE_TAG'])
     run_cleanup_job('github_users_cleanup.json', neo4j_session, common_job_parameters)
+    merge_module_sync_metadata(
+        neo4j_session,
+        group_type='GitHubOrganization',
+        group_id=org_data['url'],
+        synced_type='GitHubOrganization',
+        update_tag=common_job_parameters['UPDATE_TAG'],
+        stat_handler=stat_handler,
+    )

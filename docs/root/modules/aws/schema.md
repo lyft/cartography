@@ -10,6 +10,8 @@ Representation of an AWS Account.
 |-------|-------------|
 |firstseen| Timestamp of when a sync job discovered this node|
 |name| The name of the account|
+|inscope| Indicates that the account is part of the sync scope (true or false).
+|foreign| Indicates if the account is not part of the sync scope (true or false). One such example is an account that is trusted as part of cross-account AWSRole trust not in scope for sync.
 |lastupdated| Timestamp of the last time the node was updated|
 |**id**| The AWS Account ID number|
 
@@ -19,6 +21,8 @@ Representation of an AWS Account.
         ```
         (AWSAccount)-[RESOURCE]->(AWSDNSZone,
                               AWSGroup,
+                              AWSInspectorFinding,
+                              AWSInspectorPackage,
                               AWSLambda,
                               AWSPrincipal,
                               AWSUser,
@@ -43,7 +47,9 @@ Representation of an AWS Account.
                               RDSInstance,
                               SecretsManagerSecret,
                               SecurityHub,
-                              SQSQueue)
+                              SQSQueue
+                              SSMInstanceInformation,
+                              SSMInstancePatch)
         ```
 
 - An `AWSPolicy` node is defined for an `AWSAccount`.
@@ -130,6 +136,102 @@ Representation of AWS [IAM Groups](https://docs.aws.amazon.com/IAM/latest/APIRef
 
         ```
         (AWSAccount)-[RESOURCE]->(AWSGroup)
+        ```
+
+### AWSInspectorFinding
+
+Representation of an AWS [Inspector Finding](https://docs.aws.amazon.com/inspector/v2/APIReference/API_Finding.html)
+
+| Field | Description | Required|
+|-------|-------------|------|---|
+|arn|The AWS ARN|yes
+|id|Reuses the AWS ARN since it's unique|yes
+|region|AWS region the finding is from|yes
+|awsaccount|AWS account the finding is from|yes
+|name|The finding name|
+|instanceid|The instance ID of the EC2 instance with the issue|
+|ecrimageid|The image ID of the ECR image with the issue|
+|ecrrepositoryid|The repository ID of the ECR repository with the issue|
+|severity|The finding severity|
+|firstobservedat|Date the finding was first identified|
+|updatedat|Date the finding was last updated|
+|description|The finding description|
+|type|The finding type|
+|cvssscore|CVSS score of the finding|
+|protocol|Network protocol for network findings|
+|portrange|Port range affected for network findings|
+|portrangebegin|Beginning of the port range affected for network findings|
+|portrangeend|End of the port range affected for network findings|
+|vulnerabilityid|Vulnerability ID associdated with the finding for package findings|
+|referenceurls|Reference URLs for the found vulnerabilities|
+|relatedvulnerabilities|A list of any related vulnerabilities|
+|source|Source for the vulnerability|
+|sourceurl|URL for the vulnerability source|
+|vendorcreatedat|Date the vulnerability notice was created by the vendor|
+|vendorseverity|Vendor chosen issue severity|
+|vendorupdatedat|Date the vendor information was last updated|
+|vulnerablepackageids|IDs for any related packages|
+
+#### Relationships
+
+- AWSInspectorFinding may affect EC2 Instances
+
+    ```
+    (AWSInspectorFinding)-[:AFFECTS]->(EC2Instance)
+    ```
+
+- AWSInspectorFinding may affect ECR Repositories
+
+    ```
+    (AWSInspectorFinding)-[:AFFECTS]->(ECRRepository)
+    ```
+
+- AWSInspectorFinding may affect ECR Images
+
+    ```
+    (AWSInspectorFinding)-[:AFFECTS]->(ECRImage)
+    ```
+
+- AWSInspectorFindings belong to AWSAccounts.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(AWSInspectorFinding)
+        ```
+
+### AWSInspectorPackage
+
+Representation of an AWS [Inspector Finding Package](https://docs.aws.amazon.com/inspector/v2/APIReference/API_Finding.html)
+
+| Field | Description | Required|
+|-------|-------------|------|---|
+|**arn**|The AWS ARN|yes
+|id|Uses the format of `name|arch|version|release|epoch` to uniqulely identify packages|yes
+|region|AWS region the finding is from|yes
+|awsaccount|AWS account the finding is from|yes
+|findingarn|The AWS ARN for a related finding|yes
+|name|The finding name|
+|arch|Architecture for the package|
+|version|Version of the package|
+|release|Release of the package
+|epoch|Package epoch|
+|manager|Related package manager|
+|filepath|Path to the file or package|
+|fixedinversion|Version the related finding was fixed in|
+|sourcelayerhash|Source layer hash for container images|
+
+
+#### Relationships
+
+- AWSInspectorFindings have AWSInspectorPackages.
+
+        ```
+        (AWSInspectorFindings)-[HAS]->(AWSInspectorPackages)
+        ```
+
+- AWSInspectorPackages belong to AWSAccounts.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(AWSInspectorPackages)
         ```
 
 ### AWSLambda
@@ -686,7 +788,7 @@ Representation of an AWS DNS [ResourceRecordSet](https://docs.aws.amazon.com/Rou
 |lastupdated| Timestamp of the last time the node was updated|
 |**id**| The zoneid for the record, the value of the record, and the type concatenated together|
 |type| The record type of the DNS record|
-|value| The IP address that the DNSRecord points to|
+|value| If it is an A, ALIAS, or CNAME record, this is the IP address that the DNSRecord points to. If it is an NS record, the `name` is used here.|
 
 #### Relationships
 - DNSRecords/AWSDNSRecords can point to each other.
@@ -879,6 +981,17 @@ Our representation of an AWS [EC2 Instance](https://docs.aws.amazon.com/AWSEC2/l
         (EC2Instance)-[STS_ASSUMEROLE_ALLOW]->(AWSRole)
         ```
 
+- EC2Instances can have SSMInstanceInformation
+
+        ```
+        (EC2Instance)-[HAS_INFORMATION]->(SSMInstanceInformation)
+        ```
+
+- EC2Instances can have SSMInstancePatches
+
+        ```
+        (EC2Instance)-[HAS_PATCH]->(SSMInstancePatch)
+        ```
 
 ### EC2KeyPair
 
@@ -915,6 +1028,7 @@ Representation of an AWS [EC2 Key Pair](https://docs.aws.amazon.com/AWSEC2/lates
         ```
         (EC2KeyPair)-[MATCHING_FINGERPRINT]->(EC2KeyPair)
         ```
+
 ### EC2PrivateIp
 Representation of an AWS EC2 [InstancePrivateIpAddress](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_InstancePrivateIpAddress.html)
 
@@ -1100,6 +1214,10 @@ Representation of an AWS EC2 [Subnet](https://docs.aws.amazon.com/AWSEC2/latest/
         (AWSAccount)-[RESOURCE]->(EC2Subnet)
         ```
 
+-  EC2PrivateIps are connected with NetworkInterfaces.
+
+        (NetworkInterface)-[PRIVATE_IP_ADDRESS]->(EC2PrivateIp)
+
 
 ### AWSInternetGateway
 
@@ -1112,7 +1230,7 @@ Representation of an AWS EC2 [Subnet](https://docs.aws.amazon.com/AWSEC2/latest/
  | region | The region of the gateway |
 
 
- ### Relationships
+#### Relationships
 
  -  Internet Gateways are attached to a VPC.
 
@@ -1247,24 +1365,23 @@ Representation of a scan finding from AWS ECR. This is the result output of [`ec
 
 Representation of an AWS [EKS Cluster](https://docs.aws.amazon.com/eks/latest/APIReference/API_Cluster.html).
 
-| Field            | Description                                                                                                 |
-| ---------------- | ----------------------------------------------------------------------------------------------------------- |
-| firstseen        | Timestamp of when a sync job first discovered this node                                                     |
-| lastupdated      | Timestamp of the last time the node was updated                                                             |
-| created_at       | The date and time the cluster was created                                                                   |
-| region           | The AWS region                                                                                              |
-| **arn**          | AWS-unique identifier for this object                                                                       |
-| id               | same as `arn`                                                                                               |
-| name             | Name of the EKS Cluster                                                                                     |
-| endpoint         | The endpoint for the Kubernetes API server.                                                                 |
-| endpoint_public_access | Indicates whether the Amazon EKS public API server endpoint is enabled                                |
-| exposed_internet | Set to True if the EKS Cluster public API server endpoint is enabled                                        |
-| rolearn          | The ARN of the IAM role that provides permissions for the Kubernetes control plane to make calls to AWS API |
-| version          | Kubernetes version running                                                                                  |
-| platform_version | Version of EKS                                                                                              |
-| status           | Status of the cluster. Valid Values: creating, active, deleting, failed, updating                           |
-| audit_logging    | Whether audit logging is enabled                                                                            |
-
+| Field | Description |
+|-------|-------------|
+| firstseen | Timestamp of when a sync job first discovered this node |
+| lastupdated | Timestamp of the last time the node was updated |
+| created_at | The date and time the cluster was created |
+| region | The AWS region |
+| **arn** | AWS-unique identifier for this object |
+| id | same as `arn` |
+| name | Name of the EKS Cluster |
+| endpoint | The endpoint for the Kubernetes API server. |
+| endpoint_public_access | Indicates whether the Amazon EKS public API server endpoint is enabled |
+| exposed_internet | Set to True if the EKS Cluster public API server endpoint is enabled |
+| rolearn | The ARN of the IAM role that provides permissions for the Kubernetes control plane to make calls to AWS API |
+| version | Kubernetes version running |
+| platform_version | Version of EKS |
+| status | Status of the cluster. Valid Values: creating, active, deleting, failed, updating |
+| audit_logging | Whether audit logging is enabled |
 
 #### Relationships
 
@@ -1273,20 +1390,34 @@ Representation of an AWS [EKS Cluster](https://docs.aws.amazon.com/eks/latest/AP
       (AWSAccount)-[RESOURCE]->(EKSCluster)
       ```
 
-
-
 ### EMRCluster
 
 Representation of an AWS [EMR Cluster](https://docs.aws.amazon.com/emr/latest/APIReference/API_Cluster.html).
 
-| Field            | Description                                                                                                 |
-| ---------------- | ----------------------------------------------------------------------------------------------------------- |
-| firstseen        | Timestamp of when a sync job first discovered this node                                                     |
-| lastupdated      | Timestamp of the last time the node was updated                                                             |
-| region           | The AWS region                                                                                              |
-| **arn**          | AWS-unique identifier for this object                                                                       |
-| id               | The Id of the EMR Cluster.                                                                                  |
-| servicerole      | Service Role of the EMR Cluster                                                                             |
+| Field | Description |
+|-------|-------------|
+| firstseen | Timestamp of when a sync job first discovered this node |
+| lastupdated | Timestamp of the last time the node was updated |
+| region | The AWS region |
+| **arn** | AWS-unique identifier for this object |
+| id | The Id of the EMR Cluster. |
+| instance\_collection\_type | The instance group configuration of the cluster. A value of INSTANCE\_GROUP indicates a uniform instance group configuration. A value of INSTANCE\_FLEET indicates an instance fleets configuration. |
+| log\_encryption\_kms\_key\_id | The KMS key used for encrypting log files. |
+| requested\_ami\_version | The AMI version requested for this cluster. |
+| running\_ami\_version | The AMI version running on this cluster. |
+| release\_label | The Amazon EMR release label, which determines the version of open-source application packages installed on the cluster. |
+| auto\_terminate | Specifies whether the cluster should terminate after completing all steps. |
+| termination\_protected | Indicates whether Amazon EMR will lock the cluster to prevent the EC2 instances from being terminated by an API call or user intervention, or in the event of a cluster error. |
+| visible\_to\_all\_users | Indicates whether the cluster is visible to IAM principals in the Amazon Web Services account associated with the cluster. |
+| master\_public\_dns\_name | The DNS name of the master node. If the cluster is on a private subnet, this is the private DNS name. On a public subnet, this is the public DNS name. |
+| security\_configuration | The name of the security configuration applied to the cluster. |
+| autoscaling\_role | An IAM role for automatic scaling policies. |
+| scale\_down\_behavior | The way that individual Amazon EC2 instances terminate when an automatic scale-in activity occurs or an instance group is resized. |
+| custom\_ami\_id | The ID of a custom Amazon EBS-backed Linux AMI if the cluster uses a custom AMI. |
+| repo\_upgrade\_on\_boot | Specifies the type of updates that are applied from the Amazon Linux AMI package repositories when an instance boots using the AMI. |
+| outpost\_arn | The Amazon Resource Name (ARN) of the Outpost where the cluster is launched. |
+| log\_uri | The path to the Amazon S3 location where logs for this cluster are stored. |
+| servicerole | Service Role of the EMR Cluster |
 
 
 #### Relationships
@@ -1546,7 +1677,7 @@ Represents an AWS Elastic Load Balancer.  See [spec for details](https://docs.aw
 
 ### LoadBalancerV2
 
-Represents an Elastic Load Balancer V2 ([Application Load Balancer](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/introduction.html) or [Network Load Balancer](https://docs.aws.amazon.com/elasticloadbalancing/latest/network/introduction.html).)
+Represents an Elastic Load Balancer V2 ([Application Load Balancer](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/introduction.html) or [Network Load Balancer](https://docs.aws.amazon.com/elasticloadbalancing/latest/network/introduction.html).) API reference [here](https://docs.aws.amazon.com/elasticloadbalancing/latest/APIReference/API_LoadBalancer.html).
 
 | Field | Description |
 |-------|-------------|
@@ -1572,7 +1703,7 @@ Represents an Elastic Load Balancer V2 ([Application Load Balancer](https://docs
         (LoadBalancerV2)-[EXPOSE]->(EC2Instance)
         ```
 
-- LoadBalancerV2's can be part of EC2SecurityGroups.
+- LoadBalancerV2's can be part of EC2SecurityGroups but only if their `type` = "application". NLBs don't have SGs.
 
         ```
         (LoadBalancerV2)-[MEMBER_OF_EC2_SECURITY_GROUP]->(EC2SecurityGroup)
@@ -1595,6 +1726,7 @@ Represents an Elastic Load Balancer V2 ([Application Load Balancer](https://docs
         ```
         (LoadBalancerV2)-[ELBV2_LISTENER]->(ELBV2Listener)
         ```
+
 ### Nameserver
 
 Represents a DNS nameserver.
@@ -1698,6 +1830,8 @@ Representation of an AWS [PeeringConnection](https://docs.aws.amazon.com/vpc/lat
 | status_code | The status of the VPC peering connection. |
 | status_message | A message that provides more information about the status, if applicable. |
 
+#### Relationships
+
 - `AWSVpc` is an accepter or requester vpc.
   ```
   (AWSVpc)<-[REQUESTER_VPC]-(AWSPeeringConnection)
@@ -1709,7 +1843,6 @@ Representation of an AWS [PeeringConnection](https://docs.aws.amazon.com/vpc/lat
   (AWSCidrBlock)<-[REQUESTER_CIDR]-(AWSPeeringConnection)
   (AWSCidrBlock)<-[ACCEPTER_CIDR]-(AWSPeeringConnection)
   ```
-
 
 ### RedshiftCluster
 
@@ -1963,6 +2096,32 @@ Representation of an AWS S3 [Bucket](https://docs.aws.amazon.com/AmazonS3/latest
         ```
         (S3Bucket)-[TAGGED]->(AWSTag)
         ```
+
+### S3PolicyStatement
+
+Representation of an AWS S3 [Bucket Policy Statements](https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucket-policies.html) for controlling ownership of objects and ACLs of the bucket.
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| policy_id | Optional string "Id" for the bucket's policy |
+| policy_version| Version of the bucket's policy |
+| **id** | The unique identifier for a bucket policy statement. <br>If the statement has an Sid the id will be calculated as _S3Bucket.id_/policy_statement/_index of statement in statement_/_Sid_. <br>If the statement has no Sid the id will be calculated as  _S3Bucket.id_/policy_statement/_index of statement in statement_/  |
+| effect | Specifies "Deny" or "Allow" for the policy statement |
+| action | Specifies permissions that policy statement applies to, as defined [here](https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-with-s3-actions.html) |
+| resource | Specifies the resource the bucket policy statement is based on |
+| condition | Specifies conditions where permissions are granted: [examples](https://docs.aws.amazon.com/AmazonS3/latest/userguide/amazon-s3-policy-keys.html) |
+| sid | Optional string to label the specific bucket policy statement |
+
+#### Relationships
+
+- S3PolicyStatements define the policy for S3 Buckets.
+
+        ```
+        (:S3Bucket)-[:POLICY_STATEMENT]->(:S3PolicyStatement)
+        ```
+
 
 ### KMSKey
 
@@ -2648,7 +2807,7 @@ Representation of an AWS EC2 [Elastic IP address](https://docs.aws.amazon.com/AW
 |-------|-------------|
 | firstseen| Timestamp of when a sync job first discovered this node  |
 | lastupdated |  Timestamp of the last time the node was updated |
-| **id** | The Allocation ID of the elastic IP address |
+| **id** | The Elastic IP address |
 | instance\_id | The ID of the instance that the address is associated with (if any). |
 | public\_ip | The Elastic IP address. |
 | allocation\_id | The ID representing the allocation of the address for use with EC2-VPC. |
@@ -2971,4 +3130,82 @@ Representation of an AWS ECS [Container](https://docs.aws.amazon.com/AmazonECS/l
 
         ```
         (ECSTask)-[HAS_CONTAINER]->(ECSContainer)
+        ```
+
+### SSMInstanceInformation
+
+Representation of an AWS SSM [InstanceInformation](https://docs.aws.amazon.com/systems-manager/latest/APIReference/API_InstanceInformation.html)
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The ARN of the instance information |
+| region | The region of the instance information. |
+| instance\_id | The managed node ID. |
+| ping\_status | Connection status of SSM Agent. |
+| last\_ping\_date\_time | The date and time when the agent last pinged the Systems Manager service. |
+| agent\_version | The version of SSM Agent running on your Linux managed node. |
+| is\_latest\_version | Indicates whether the latest version of SSM Agent is running on your Linux managed node. This field doesn't indicate whether or not the latest version is installed on Windows managed nodes, because some older versions of Windows Server use the EC2Config service to process Systems Manager requests. |
+| platform\_type | The operating system platform type. |
+| platform\_name | The name of the operating system platform running on your managed node. |
+| platform\_version | The version of the OS platform running on your managed node. |
+| activation\_id | The activation ID created by AWS Systems Manager when the server or virtual machine (VM) was registered. |
+| iam\_role | The AWS Identity and Access Management (IAM) role assigned to the on-premises Systems Manager managed node. This call doesn't return the IAM role for Amazon Elastic Compute Cloud (Amazon EC2) instances. |
+| registration\_date | The date the server or VM was registered with AWS as a managed node. |
+| resource\_type | The type of instance. Instances are either EC2 instances or managed instances. |
+| name | The name assigned to an on-premises server, edge device, or virtual machine (VM) when it is activated as a Systems Manager managed node. The name is specified as the DefaultInstanceName property using the CreateActivation command. |
+| ip\_address | The IP address of the managed node. |
+| computer\_name | The fully qualified host name of the managed node. |
+| association\_status | The status of the association. |
+| last\_association\_execution\_date | The date the association was last run. |
+| last\_successful\_association\_execution\_date | The last date the association was successfully run. |
+| source\_id | The ID of the source resource. For AWS IoT Greengrass devices, SourceId is the Thing name. |
+| source\_type | The type of the source resource. For AWS IoT Greengrass devices, SourceType is AWS::IoT::Thing. |
+
+#### Relationships
+
+- SSMInstanceInformation is a resource under the AWS Account.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(SSMInstanceInformation)
+        ```
+
+- SSMInstanceInformation is a resource of an EC2Instance
+
+        ```
+        (EC2Instance)-[HAS_INFORMATION]->(SSMInstanceInformation)
+        ```
+
+### SSMInstancePatch
+
+Representation of an AWS SSM [PatchComplianceData](https://docs.aws.amazon.com/systems-manager/latest/APIReference/API_PatchComplianceData.html)
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The ARN of the instance patch |
+| region | The region of the instance patch. |
+| instance\_id | The managed node ID. |
+| title | The title of the patch. |
+| kb\_id | The operating system-specific ID of the patch. |
+| classification | The classification of the patch, such as SecurityUpdates, Updates, and CriticalUpdates. |
+| severity | The severity of the patch such as Critical, Important, and Moderate. |
+| state | The state of the patch on the managed node, such as INSTALLED or FAILED. |
+| installed\_time | The date/time the patch was installed on the managed node. Not all operating systems provide this level of information. |
+| cve\_ids | The IDs of one or more Common Vulnerabilities and Exposure (CVE) issues that are resolved by the patch. |
+
+#### Relationships
+
+- SSMInstancePatch is a resource under the AWS Account.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(SSMInstancePatch)
+        ```
+
+- EC2Instances have SSMInstancePatches
+
+        ```
+        (EC2Instance)-[HAS_INFORMATION]->(SSMInstancePatch)
         ```

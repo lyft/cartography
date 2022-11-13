@@ -20,6 +20,9 @@ class Config:
     :type aws_sync_all_profiles: bool
     :param aws_sync_all_profiles: If True, AWS sync will run for all non-default profiles in the AWS_CONFIG_FILE. If
         False (default), AWS sync will run using the default credentials only. Optional.
+    :type aws_best_effort_mode: bool
+    :param aws_best_effort_mode: If True, AWS sync will not raise any exceptions, just log. If False (default),
+        exceptions will be raised.
     :type azure_sync_all_subscriptions: bool
     :param azure_sync_all_subscriptions: If True, Azure sync will run for all profiles in azureProfile.json. If
         False (default), Azure sync will run using current user session via CLI credentials. Optional.
@@ -40,6 +43,8 @@ class Config:
     :param crxcavator_api_key: Auth key for CRXcavator API. Optional.
     :type analysis_job_directory: str
     :param analysis_job_directory: Path to a directory tree containing analysis jobs to run. Optional.
+    :type oci_sync_all_profiles: bool
+    :param oci_sync_all_profiles: whether OCI will sync non-default profiles in OCI_CONFIG_FILE. Optional.
     :type okta_org_id: str
     :param okta_org_id: Okta organization id. Optional.
     :type okta_api_key: str
@@ -68,6 +73,10 @@ class Config:
     :param k8s_kubeconfig: Path to kubeconfig file for kubernetes cluster(s). Optional
     :type: pagerduty_api_key: str
     :param pagerduty_api_key: API authentication key for pagerduty. Optional.
+    :type: pagerduty_request_timeout: int
+    :param pagerduty_request_timeout: Seconds to timeout for pagerduty session requests. Optional
+    :type: nist_cve_url: str
+    :param nist_cve_url: NIST CVE data provider base URI, e.g. https://nvd.nist.gov/feeds/json/cve/1.1. Optional.
     """
 
     def __init__(
@@ -78,6 +87,7 @@ class Config:
         neo4j_max_connection_lifetime=None,
         update_tag=None,
         aws_sync_all_profiles=False,
+        aws_best_effort_mode=False,
         azure_sync_all_subscriptions=False,
         azure_sp_auth=None,
         azure_tenant_id=None,
@@ -95,6 +105,7 @@ class Config:
         analysis_job_directory=None,
         crxcavator_api_base_uri=None,
         crxcavator_api_key=None,
+        oci_sync_all_profiles=None,
         okta_org_id=None,
         okta_api_key=None,
         okta_saml_role_regex=None,
@@ -112,6 +123,12 @@ class Config:
         credentials=None,
         params=None,
         pagerduty_api_key=None,
+        pagerduty_request_timeout=None,
+        nist_cve_url=None,
+        cve_enabled=False,
+        crowdstrike_client_id=None,
+        crowdstrike_client_secret=None,
+        crowdstrike_api_url=None,
     ):
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user
@@ -119,6 +136,7 @@ class Config:
         self.neo4j_max_connection_lifetime = neo4j_max_connection_lifetime
         self.update_tag = update_tag
         self.aws_sync_all_profiles = aws_sync_all_profiles
+        self.aws_best_effort_mode = aws_best_effort_mode
         self.azure_sync_all_subscriptions = azure_sync_all_subscriptions
         self.azure_sp_auth = azure_sp_auth
         self.azure_tenant_id = azure_tenant_id
@@ -136,6 +154,7 @@ class Config:
         self.analysis_job_directory = analysis_job_directory
         self.crxcavator_api_base_uri = crxcavator_api_base_uri
         self.crxcavator_api_key = crxcavator_api_key
+        self.oci_sync_all_profiles = oci_sync_all_profiles
         self.okta_org_id = okta_org_id
         self.okta_api_key = okta_api_key
         self.okta_saml_role_regex = okta_saml_role_regex
@@ -153,3 +172,9 @@ class Config:
         self.credentials = credentials
         self.params = params
         self.pagerduty_api_key = pagerduty_api_key
+        self.pagerduty_request_timeout = pagerduty_request_timeout
+        self.nist_cve_url = nist_cve_url
+        self.cve_enabled = cve_enabled
+        self.crowdstrike_client_id = crowdstrike_client_id
+        self.crowdstrike_client_secret = crowdstrike_client_secret
+        self.crowdstrike_api_url = crowdstrike_api_url
