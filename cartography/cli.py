@@ -570,7 +570,6 @@ class CLI:
                 ' and this option will be removed when code hard-coded syntax upgrades are completed',
             )
 
-        # Rapid7 config
         if config.rapid7_password_env_var:
             logger.debug(
                 f"Reading password for rapid7 from environment variable {config.rapid7_password_env_var}",

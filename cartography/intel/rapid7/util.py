@@ -1,7 +1,6 @@
 """
 cartography/intel/rapid7/util
 """
-# pylint: disable=invalid-name,broad-except
 import json
 import logging
 import re
@@ -20,17 +19,14 @@ def extract_sub_from_resourceid(resourceid: str) -> str:
     Get Azure subscription from Azure resource id
     """
     if isinstance(resourceid, str):
-        try:
-            match = re.search(
-                "/subscriptions/([0-9a-f-].*?)/resourceGroups/",
-                resourceid,
-                flags=re.IGNORECASE,
-            )
-            if match:
-                sub = match.group(1)
-                return sub
-        except AttributeError as exception:
-            logging.exception("exception: %s", exception)
+        match = re.search(
+            "/subscriptions/([0-9a-f-].*?)/resourceGroups/",
+            resourceid,
+            flags=re.IGNORECASE,
+        )
+        if match:
+            sub = match.group(1)
+            return sub
     return ""
 
 
@@ -39,17 +35,14 @@ def extract_rg_from_resourceid(resourceid: str) -> str:
     Get Azure subscription from Azure resource id
     """
     if isinstance(resourceid, str):
-        try:
-            match = re.search(
-                "/resourceGroups/(.*?)/providers/",
-                resourceid,
-                flags=re.IGNORECASE,
-            )
-            if match:
-                rg = match.group(1)
-                return rg
-        except AttributeError as exception:
-            logging.exception("exception: %s", exception)
+        match = re.search(
+            "/resourceGroups/(.*?)/providers/",
+            resourceid,
+            flags=re.IGNORECASE,
+        )
+        if match:
+            resource_group = match.group(1)
+            return resource_group
     return ""
 
 
@@ -92,18 +85,18 @@ def extract_rapid7_configurations_resourcegroup(configurations: Any[str, list]) 
     if configurations is None or not isinstance(configurations, list):
         return ""
 
-    rg = ""
+    resource_group = ""
     for line in configurations:
         if line["name"] == "azure":
-            logger.warning("line: %s", line)
+            logger.debug("line: %s", line)
             if isinstance(line["value"], str):
                 azure = json.loads(line["value"])
             else:
                 azure = line["value"]
-            rg = extract_rg_from_resourceid(azure["resourceId"])
+            resource_group = extract_rg_from_resourceid(azure["resourceId"])
 
-    logger.warning("extract_rapid7_configurations_resourcegroup: %s", rg)
-    return rg
+    logger.warning("extract_rapid7_configurations_resourcegroup: %s", resource_group)
+    return resource_group
 
 
 def extract_rapid7_configurations_resourceid(configurations: Any[str, list]) -> str:
@@ -154,29 +147,6 @@ def extract_rapid7_configurations_instanceid(configurations: Any[str, list]) -> 
     return instance_id
 
 
-def extract_rapid7_history_lastseen(history: list) -> str:
-    """
-    Extract from rapid7 history, last seen/scan time
-    """
-    lastseen = history[0]["date"]
-    for entry in history:
-        if lastseen < entry["date"]:
-            lastseen = entry["date"]
-    return lastseen
-
-
-def extract_rapid7_history_firstseen(history: list) -> str:
-    """
-    Extract from rapid7 history, first seen/scan time
-    """
-    firstseen = history[0]["date"]
-    for entry in history:
-        if firstseen > entry["date"]:
-            firstseen = entry["date"]
-    return firstseen
-
-
-# pylint: disable=too-many-arguments,too-many-locals
 def rapid7_hosts(
     authorization: Tuple[str, str, str, bool],
     limit: int = 10000,
@@ -195,19 +165,11 @@ def rapid7_hosts(
     Possible option: have the server generate a report and just retrieve it.
     https://help.rapid7.com/insightvm/en-us/api/index.html#operation/downloadReport
     """
-    (
-        nexpose_user,
-        nexpose_password,
-        nexpose_server_url,
-        nexpose_verify_cert,
-    ) = authorization
-    url = nexpose_server_url + "/api/3/assets"
-    headers = {"Content-type": "application/json", "Accept": "application/json"}
 
-    logger.info("nexpose_verify_cert: %s", nexpose_verify_cert)
-    if nexpose_verify_cert is not True:
-        nexpose_verify_cert = False
-        logger.warning("Requested to not verify certificate (%s)", nexpose_verify_cert)
+    logger.info("nexpose_verify_cert: %s", authorization[3])
+    if authorization[3] is not True:
+        authorization[3] = False
+        logger.warning("Requested to not verify certificate (%s)", authorization[3])
 
     count = total_resources = 0
     size_interval = 500
@@ -215,53 +177,44 @@ def rapid7_hosts(
     while count < limit:
         logger.info(
             "count %s, page %s, total_resources %s",
-            count,
+            size_interval * page,
             page,
             total_resources,
         )
-        params = {"page": page, "size": size_interval, "sort": sort}
         # logger.debug("GetAssets params %s", params)
         try:
             resp = requests.get(
-                url,
-                headers=headers,
-                auth=(nexpose_user, nexpose_password),
-                verify=nexpose_verify_cert,
-                params=params,  # type: ignore[arg-type]
+                f"{authorization[2]}/api/3/assets",
+                headers={
+                    "Content-type": "application/json",
+                    "Accept": "application/json",
+                },
+                auth=(authorization[0], authorization[1]),
+                verify=authorization[3],
+                params={  # type: ignore[arg-type]
+                    "page": page,
+                    "size": size_interval,
+                    "sort": sort,
+                },
                 timeout=nexpose_timeout,
             )
             resp.raise_for_status()
 
             data = resp.json()
 
-            total_resources = data["page"]["totalResources"]
-            if total_resources < limit:
-                limit = total_resources
+            if data["page"]["totalResources"] < limit:
+                limit = data["page"]["totalResources"]
 
         except requests.HTTPError as exception:
             logger.warning("GetAssets0: %s", resp.content)
             logger.exception("GetAssets0: %s", exception)
             return result_array
 
-        try:
-            if "resources" not in data:
-                logger.warning("data without resources: %s", data)
+        if "resources" not in data:
+            logger.warning("data without resources: %s", data)
 
-        except Exception as exception:
-            logger.warning("GetAssets1: %s", resp.content)
-            logger.exception("GetAssets1 - Incomplete data: %s", exception)
-            return result_array
-
-        try:
-            result_array = result_array + data["resources"]
-
-            page += 1
-            count += size_interval
-
-        except Exception as exc:
-            logger.warning("GetAssets3: %s", resp.content)
-            logger.exception("GetAssets3 - Incomplete data: %s", exc)
-            return result_array
+        result_array = result_array + data["resources"]
+        page += 1
 
     logger.debug("GetAssets final count %s", len(result_array))
 
@@ -280,10 +233,10 @@ def rapid7_hosts(
         extract_rapid7_configurations_instanceid,
     )
     df_rapid7_tmp["tool_last_seen"] = df_rapid7_tmp["history"].apply(
-        extract_rapid7_history_lastseen,
+        lambda x: min(entry["date"] for entry in x),
     )
     df_rapid7_tmp["tool_first_seen"] = df_rapid7_tmp["history"].apply(
-        extract_rapid7_history_firstseen,
+        lambda x: max(entry["date"] for entry in x),
     )
     logger.debug("Example df_rapid7_tmp: %s", df_rapid7_tmp.head(1))
     flatten_data = json.loads(df_rapid7_tmp.to_json(orient="records"))
