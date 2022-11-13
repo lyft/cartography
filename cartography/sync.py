@@ -14,6 +14,7 @@ from statsd import StatsClient
 import cartography.intel.analysis
 import cartography.intel.aws
 import cartography.intel.azure
+import cartography.intel.azureresourcegraph
 import cartography.intel.create_indexes
 import cartography.intel.crowdstrike
 import cartography.intel.crxcavator.crxcavator
@@ -175,6 +176,7 @@ def build_default_sync() -> Sync:
         ('create-indexes', cartography.intel.create_indexes.run),
         ('aws', cartography.intel.aws.start_aws_ingestion),
         ('azure', cartography.intel.azure.start_azure_ingestion),
+        ('azureresourcegraph', cartography.intel.azureresourcegraph.start_azureresourcegraph_ingestion),
         ('crowdstrike', cartography.intel.crowdstrike.start_crowdstrike_ingestion),
         ('gcp', cartography.intel.gcp.start_gcp_ingestion),
         ('gsuite', cartography.intel.gsuite.start_gsuite_ingestion),

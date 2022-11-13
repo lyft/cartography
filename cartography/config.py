@@ -124,6 +124,10 @@ class Config:
         crowdstrike_client_id=None,
         crowdstrike_client_secret=None,
         crowdstrike_api_url=None,
+        azureresourcegraph_tenant_id=None,
+        azureresourcegraph_client_id=None,
+        azureresourcegraph_client_secret=None,
+        azureresourcegraph_use_managedidentity=None,
     ):
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user
@@ -164,3 +168,7 @@ class Config:
         self.crowdstrike_client_id = crowdstrike_client_id
         self.crowdstrike_client_secret = crowdstrike_client_secret
         self.crowdstrike_api_url = crowdstrike_api_url
+        self.azureresourcegraph_tenant_id = azureresourcegraph_tenant_id
+        self.azureresourcegraph_client_id = azureresourcegraph_client_id
+        self.azureresourcegraph_client_secret = azureresourcegraph_client_secret
+        self.azureresourcegraph_use_managedidentity = azureresourcegraph_use_managedidentity
