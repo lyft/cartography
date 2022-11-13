@@ -6,6 +6,7 @@ import datetime
 import json
 import logging
 from array import array
+from typing import Tuple
 
 from msticpy.data.data_providers import QueryProvider
 
@@ -13,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 def sumologic_hosts(
-    authorization: tuple[str, str, str],
+    authorization: Tuple[str, str, str],
     timeout_max: int = 600,
 ) -> array:
     """
