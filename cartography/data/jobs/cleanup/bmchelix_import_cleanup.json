@@ -1,0 +1,10 @@
+{
+  "statements": [
+    {
+      "query": "WITH datetime()-duration('P7D') AS threshold MATCH (h:BmcHelixHost) WHERE h.lastupdated < threshold WITH h LIMIT $LIMIT_SIZE DETACH DELETE (h)",
+      "iterative": true,
+      "iterationsize": 100
+    }
+  ],
+  "name": "cleanup bmchelix"
+}

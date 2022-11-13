@@ -195,6 +195,30 @@ class CLI:
             ),
         )
         parser.add_argument(
+            '--bmchelix-token-env-var',
+            type=str,
+            default=None,
+            help=(
+                'The name of environment variable containing the bmc helix bearer token for authentication.'
+            ),
+        )
+        parser.add_argument(
+            '--bmchelix-api-url',
+            type=str,
+            default=None,
+            help=(
+                'The url of the target BMC Helix instance usually https://INSTANCE.onbmc.com/api/v1.8'
+            ),
+        )
+        parser.add_argument(
+            '--bmchelix-verify-cert',
+            type=bool,
+            default=True,
+            help=(
+                'Validate https certificate of BMC Helix server.'
+            ),
+        )
+        parser.add_argument(
             '--crxcavator-api-base-uri',
             type=str,
             default='https://api.crxcavator.io/v1',
@@ -444,6 +468,15 @@ class CLI:
             config.azure_client_secret = os.environ.get(config.azure_client_secret_env_var)
         else:
             config.azure_client_secret = None
+
+        # BMC Helix config
+        if config.bmchelix_token_env_var:
+            logger.debug(
+                f"Reading token for BMC Helix from environment variable {config.bmchelix_token_env_var}",
+            )
+            config.bmchelix_token = os.environ.get(config.bmchelix_token_env_var)
+        else:
+            config.bmchelix_token = None
 
         # Okta config
         if config.okta_org_id and config.okta_api_key_env_var:
