@@ -29,7 +29,38 @@ def bmchelix_hosts(
         # This likely needs customization depending on context.
         # Note: no first seen (discovery access history seems limited to last 25)
         # pylint: disable=line-too-long
-        "query": "search Host show name, os, vendor, virtual, partition, cloud, #InferredElement:Inference:Associate:DiscoveryAccess.endpoint as 'Scanned via', key as 'key', #ContainedHost:HostContainment:HostContainer:VirtualMachine.name as 'Name', #ContainedHost:HostContainment:HostContainer:VirtualMachine.key as 'VM_key', #ContainedHost:HostContainment:HostContainer:VirtualMachine.type as 'Type', #ContainedHost:HostContainment:HostContainer:VirtualMachine.short_name as 'short_hostname', #ContainedHost:HostContainment:HostContainer:VirtualMachine.custom_attributes as 'Custom Attributes', #ContainedHost:HostContainment:HostContainer:VirtualMachine.tags as 'Tags', #ContainedHost:HostContainment:HostContainer:VirtualMachine.state as 'vm_power_state', #ContainedHost:HostContainment:HostContainer:VirtualMachine.vm_management_ip as 'VM Management IP', #ContainedHost:HostContainment:HostContainer:VirtualMachine.private_ip_addr as 'Private IP Address', #ContainedHost:HostContainment:HostContainer:VirtualMachine.public_ip_addrs as 'Public IP Addresses', #ContainedHost:HostContainment:HostContainer:VirtualMachine.os as 'vm_os', #ContainedHost:HostContainment:HostContainer:VirtualMachine.os_build as 'vm_os_build', #ContainedHost:HostContainment:HostContainer:VirtualMachine.os_type as 'vm_os_type', #ContainedHost:HostContainment:HostContainer:VirtualMachine.os_vendor as 'vm_os_vendor', #ContainedHost:HostContainment:HostContainer:VirtualMachine.os_version as 'vm_os_version', #ContainedHost:HostContainment:HostContainer:VirtualMachine.last_update_success as 'Last Update Success', last_access_response as 'Last Access Response', last_cmdb_sync_success as 'Last successful CMDB sync', #ContainedHost:HostContainment:HostContainer:VirtualMachine.subscription_id as 'Subscription Id', #ContainedHost:HostContainment:HostContainer:VirtualMachine.vm_uuid as 'VM UUID', uuid as 'UUID', azure_vm_id as 'Azure VM ID', #InferredElement:Inference:Associate:DiscoveryAccess.discovery_starttime as 'Discovery Start Time', #InferredElement:Inference:Associate:DiscoveryAccess.discovery_endtime as 'Discovery End Time', #InferredElement:Inference:Associate:DiscoveryAccess.kind as 'Kind', #InferredElement:Inference:Associate:DiscoveryAccess.result as 'Result', #InferredElement:Inference:Associate:DiscoveryAccess.scan_kind as 'Scan Kind'",
+        "query": "search Host show name, os, vendor, virtual, partition, cloud, "
+                 "#InferredElement:Inference:Associate:DiscoveryAccess.endpoint as 'Scanned via', "
+                 "key as 'key', "
+                 "#ContainedHost:HostContainment:HostContainer:VirtualMachine.name as 'Name', "
+                 "#ContainedHost:HostContainment:HostContainer:VirtualMachine.key as 'VM_key', "
+                 "#ContainedHost:HostContainment:HostContainer:VirtualMachine.type as 'Type', "
+                 "#ContainedHost:HostContainment:HostContainer:VirtualMachine.short_name as 'short_hostname', "
+                 "#ContainedHost:HostContainment:HostContainer:VirtualMachine.custom_attributes as "
+                 "'Custom Attributes', "
+                 "#ContainedHost:HostContainment:HostContainer:VirtualMachine.tags as 'Tags', "
+                 "#ContainedHost:HostContainment:HostContainer:VirtualMachine.state as 'vm_power_state', "
+                 "#ContainedHost:HostContainment:HostContainer:VirtualMachine.vm_management_ip as 'VM Management IP', "
+                 "#ContainedHost:HostContainment:HostContainer:VirtualMachine.private_ip_addr as 'Private IP Address', "
+                 "#ContainedHost:HostContainment:HostContainer:VirtualMachine.public_ip_addrs as "
+                 "'Public IP Addresses', "
+                 "#ContainedHost:HostContainment:HostContainer:VirtualMachine.os as 'vm_os', "
+                 "#ContainedHost:HostContainment:HostContainer:VirtualMachine.os_build as 'vm_os_build', "
+                 "#ContainedHost:HostContainment:HostContainer:VirtualMachine.os_type as 'vm_os_type', "
+                 "#ContainedHost:HostContainment:HostContainer:VirtualMachine.os_vendor as 'vm_os_vendor', "
+                 "#ContainedHost:HostContainment:HostContainer:VirtualMachine.os_version as 'vm_os_version', "
+                 "#ContainedHost:HostContainment:HostContainer:VirtualMachine.last_update_success as "
+                 "'Last Update Success', "
+                 "last_access_response as 'Last Access Response', last_cmdb_sync_success as "
+                 "'Last successful CMDB sync', "
+                 "#ContainedHost:HostContainment:HostContainer:VirtualMachine.subscription_id as 'Subscription Id', "
+                 "#ContainedHost:HostContainment:HostContainer:VirtualMachine.vm_uuid as 'VM UUID', "
+                 "uuid as 'UUID', azure_vm_id as 'Azure VM ID', "
+                 "#InferredElement:Inference:Associate:DiscoveryAccess.discovery_starttime as 'Discovery Start Time', "
+                 "#InferredElement:Inference:Associate:DiscoveryAccess.discovery_endtime as 'Discovery End Time', "
+                 "#InferredElement:Inference:Associate:DiscoveryAccess.kind as 'Kind', "
+                 "#InferredElement:Inference:Associate:DiscoveryAccess.result as 'Result', "
+                 "#InferredElement:Inference:Associate:DiscoveryAccess.scan_kind as 'Scan Kind'",
     }
 
     resp = requests.post(
