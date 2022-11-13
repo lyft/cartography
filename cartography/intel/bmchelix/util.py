@@ -4,6 +4,7 @@ cartography/intel/bmchelix/util
 import json
 import logging
 from array import array
+from typing import Tuple
 
 import pandas
 import requests
@@ -12,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 def bmchelix_hosts(
-    authorization: tuple[str, str, bool],
+    authorization: Tuple[str, str, bool],
     limit: int = 1000,
     bmchelix_timeout: int = 60,
 ) -> array:
