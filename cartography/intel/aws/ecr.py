@@ -122,7 +122,7 @@ def _load_ecr_repo_img_tx(
         ON CREATE SET img.firstseen = timestamp(),
             img.digest = repo_img.imageDigest
         SET img.lastupdated = $aws_update_tag,
-            img.region = repo_img.region
+            img.region = repo_img.region,
             img.consolelink = repo_img.consolelink
         WITH ri, img, repo_img
 

@@ -214,7 +214,7 @@ def load_cname_records(neo4j_session: neo4j.Session, records: List[Dict], update
 @timeit
 def load_zone(neo4j_session: neo4j.Session, zone: Dict, current_aws_id: str, update_tag: int) -> None:
     ingest_z = """
-    MERGE (zone:DNSZone:AWSDNSZone{zoneid:{ZoneId}})
+    MERGE (zone:DNSZone:AWSDNSZone{zoneid: $ZoneId})
     ON CREATE SET zone.firstseen = timestamp(),
     zone.region = $region,
     zone.name = $ZoneName
@@ -276,7 +276,7 @@ def load_ns_records(neo4j_session: neo4j.Session, records: List[Dict], zone_name
     map_ns_records = """
     UNWIND $servers as server
     MATCH (ns:NameServer{id:server})
-    MATCH (zone:AWSDNSZone{zoneid:{zoneid}})
+    MATCH (zone:AWSDNSZone{zoneid: $zoneid})
     MERGE (ns)<-[r:NAMESERVER]-(zone)
     SET r.lastupdated = $update_tag
     """

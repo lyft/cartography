@@ -471,6 +471,7 @@ def test_load_cosmosdb_virtual_network_rules(neo4j_session):
             neo4j_session,
             database_account,
             TEST_UPDATE_TAG,
+            common_job_parameters={'Azure_Primary_AD_Domain_Name': 'cdx'}
         )
 
     expected_nodes = {
@@ -503,6 +504,7 @@ def test_load_cosmosdb_virtual_network_rules_relationships(neo4j_session):
             neo4j_session,
             database_account,
             TEST_UPDATE_TAG,
+            common_job_parameters={'Azure_Primary_AD_Domain_Name': None}
         )
 
     expected = {

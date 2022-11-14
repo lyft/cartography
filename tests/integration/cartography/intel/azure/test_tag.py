@@ -31,9 +31,9 @@ def test_load_resource_groups(neo4j_session):
 def test_load_resource_group_relationships(neo4j_session):
     neo4j_session.run(
         """
-        MERGE (as:AzureSubscription{id: {subscription_id}})
+        MERGE (as:AzureSubscription{id: $subscription_id})
         ON CREATE SET as.firstseen = timestamp()
-        SET as.lastupdated = {update_tag}
+        SET as.lastupdated = $update_tag
         """,
         subscription_id=TEST_SUBSCRIPTION_ID,
         update_tag=TEST_UPDATE_TAG,
@@ -72,6 +72,7 @@ def test_load_tags(neo4j_session):
         neo4j_session,
         DESCRIBE_TAGS,
         TEST_UPDATE_TAG,
+        common_job_parameters={'WORKSPACE_ID': '', 'AZURE_TENANT_ID': '', 'AZURE_SUBSCRIPTION_ID': ''}
     )
 
     expected_nodes = {
@@ -91,9 +92,9 @@ def test_load_tags(neo4j_session):
 def test_load_tags_relationships(neo4j_session):
     neo4j_session.run(
         """
-        MERGE (as:AzureSubscription{id: {subscription_id}})
+        MERGE (as:AzureSubscription{id: $subscription_id})
         ON CREATE SET as.firstseen = timestamp()
-        SET as.lastupdated = {update_tag}
+        SET as.lastupdated = $update_tag
         """,
         subscription_id=TEST_SUBSCRIPTION_ID,
         update_tag=TEST_UPDATE_TAG,
@@ -129,5 +130,4 @@ def test_load_tags_relationships(neo4j_session):
         """, )
 
     actual = {(r['n1.id'], r['n2.id']) for r in result}
-
     assert actual == expected

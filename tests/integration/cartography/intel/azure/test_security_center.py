@@ -5,6 +5,7 @@ TEST_SUBSCRIPTION_ID = '00-00-00-00'
 TEST_RESOURCE_GROUP = 'TestRG'
 TEST_UPDATE_TAG = 123456789
 
+
 def test_load_security_contacts(neo4j_session):
     securitycenter.load_security_contacts(
         neo4j_session,
@@ -26,12 +27,13 @@ def test_load_security_contacts(neo4j_session):
 
     assert actual_nodes == expected_nodes
 
+
 def test_load_key_vaults_relationships(neo4j_session):
     neo4j_session.run(
         """
-        MERGE (as:AzureSubscription{id: {subscription_id}})
+        MERGE (as:AzureSubscription{id: $subscription_id})
         ON CREATE SET as.firstseen = timestamp()
-        SET as.lastupdated = {update_tag}
+        SET as.lastupdated = $update_tag
         """,
         subscription_id=TEST_SUBSCRIPTION_ID,
         update_tag=TEST_UPDATE_TAG,

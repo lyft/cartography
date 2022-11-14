@@ -334,6 +334,16 @@ def load_roles(
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $aws_update_tag
     """
+    ingest_spnmap_statement = """
+    MERGE (aa:AWSAccount{id: $SpnAccountId})
+    ON CREATE SET aa.firstseen = timestamp()
+    SET aa.lastupdated = $aws_update_tag
+    WITH aa
+    MATCH (spnnode:AWSPrincipal{arn: $SpnArn})
+    WITH spnnode, aa
+    MERGE (aa)-[r:RESOURCE]->(spnnode)
+    ON CREATE SET r.firstseen = timestamp()
+    """
 
     # TODO support conditions
     logger.info(f"Loading {len(roles)} IAM roles to the graph.")

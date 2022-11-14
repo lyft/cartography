@@ -31,9 +31,9 @@ def test_load_key_vaults(neo4j_session):
 def test_load_key_vaults_relationships(neo4j_session):
     neo4j_session.run(
         """
-        MERGE (as:AzureSubscription{id: {subscription_id}})
+        MERGE (as:AzureSubscription{id: $subscription_id})
         ON CREATE SET as.firstseen = timestamp()
-        SET as.lastupdated = {update_tag}
+        SET as.lastupdated = $update_tag
         """,
         subscription_id=TEST_SUBSCRIPTION_ID,
         update_tag=TEST_UPDATE_TAG,
@@ -66,6 +66,7 @@ def test_load_key_vaults_relationships(neo4j_session):
 
     assert actual == expected
 
+
 def test_load_key_vault_keys(neo4j_session):
     key_vaults.load_key_vaults_keys(
         neo4j_session,
@@ -74,11 +75,7 @@ def test_load_key_vault_keys(neo4j_session):
         TEST_UPDATE_TAG,
     )
 
-    expected_nodes = {
-        "https://vault1.vault.azure.net/keys/key1",
-        "https://vault2.vault.azure.net/keys/key2",
-    }
-
+    expected_nodes = {'/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.KeyVault/vaults/vault2'}
     nodes = neo4j_session.run(
         """
         MATCH (r:AzureKeyVaultKey) RETURN r.id;
@@ -86,6 +83,7 @@ def test_load_key_vault_keys(neo4j_session):
     actual_nodes = {n['r.id'] for n in nodes}
 
     assert actual_nodes == expected_nodes
+
 
 def test_load_key_vauly_key_relationship(neo4j_session):
     key_vaults.load_key_vaults(
@@ -102,10 +100,10 @@ def test_load_key_vauly_key_relationship(neo4j_session):
         TEST_UPDATE_TAG,
     )
 
-    expected_nodes ={
-        ("/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.KeyVault/vaults/vault1", "https://vault1.vault.azure.net/keys/key1",),
-        ("/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.KeyVault/vaults/vault2", "https://vault2.vault.azure.net/keys/key2",),
-    }
+    expected_nodes = {('/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.KeyVault/vaults/vault1',
+                       '/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.KeyVault/vaults/vault2'),
+                      ('/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.KeyVault/vaults/vault2',
+                       '/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.KeyVault/vaults/vault2')}
 
     result = neo4j_session.run(
         """
@@ -115,6 +113,7 @@ def test_load_key_vauly_key_relationship(neo4j_session):
     actual_nodes = {(r['n1.id'], r['n2.id']) for r in result}
 
     assert actual_nodes == expected_nodes
+
 
 def test_load_key_vault_secrets(neo4j_session):
     key_vaults.load_key_vaults_secrets(
@@ -137,6 +136,7 @@ def test_load_key_vault_secrets(neo4j_session):
 
     assert actual_nodes == expected_nodes
 
+
 def test_key_vault_secrets_relationship(neo4j_session):
     key_vaults.load_key_vaults(
         neo4j_session,
@@ -152,7 +152,7 @@ def test_key_vault_secrets_relationship(neo4j_session):
         TEST_UPDATE_TAG,
     )
 
-    expected_nodes ={
+    expected_nodes = {
         ("/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.KeyVault/vaults/vault1", "https://vault1.vault.azure.net/secrets/secret1/abcdefg",),
         ("/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.KeyVault/vaults/vault2", "https://vault1.vault.azure.net/secrets/secret2/hijklm",),
     }
@@ -165,6 +165,7 @@ def test_key_vault_secrets_relationship(neo4j_session):
     actual_nodes = {(r['n1.id'], r['n2.id']) for r in result}
 
     assert actual_nodes == expected_nodes
+
 
 def test_load_key_vault_certificates(neo4j_session):
     key_vaults.load_key_vaults_certificates(
@@ -187,6 +188,7 @@ def test_load_key_vault_certificates(neo4j_session):
 
     assert actual_nodes == expected_nodes
 
+
 def test_key_vault_certificates_relationship(neo4j_session):
     key_vaults.load_key_vaults(
         neo4j_session,
@@ -202,7 +204,7 @@ def test_key_vault_certificates_relationship(neo4j_session):
         TEST_UPDATE_TAG,
     )
 
-    expected_nodes ={
+    expected_nodes = {
         ("/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.KeyVault/vaults/vault1", "https://vault1.vault.azure.net/certificates/selfSignedCert01/012abc",),
         ("/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.KeyVault/vaults/vault2", "https://vault1.vault.azure.net/certificates/selfSignedCert02/123ghj",),
     }

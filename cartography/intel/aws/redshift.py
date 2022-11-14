@@ -226,7 +226,7 @@ def _attach_ec2_security_groups(neo4j_session: neo4j.Session, cluster: Dict, aws
     """
     for group in cluster.get('VpcSecurityGroups', []):
         region = group.get('region', '')
-        group_id = group["GroupId"]
+        group_id = group.get("GroupId")
         group_arn = f"arn:aws:ec2:{region}:{account_id}:security-group/{group_id}"
         consolelink = aws_console_link.get_console_link(arn=group_arn)
         neo4j_session.run(

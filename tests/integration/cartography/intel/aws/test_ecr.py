@@ -68,7 +68,6 @@ def test_cleanup_repositories(neo4j_session):
     cartography.intel.aws.ecr.load_ecr_repositories(
         neo4j_session,
         repo_data['repositories'],
-        TEST_REGION,
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG,
     )
@@ -78,7 +77,7 @@ def test_cleanup_repositories(neo4j_session):
     }
     nodes = neo4j_session.run(
         f"""
-        MATCH (a:AWSAccount{{id:'{TEST_ACCOUNT_ID}'}})--(repo:ECRRepository)
+        MATCH (a:AWSAccount{{id: {TEST_ACCOUNT_ID}}})--(repo:ECRRepository)
         RETURN count(repo)
         """,
     )
@@ -109,7 +108,6 @@ def test_cleanup_repositories(neo4j_session):
     cartography.intel.aws.ecr.load_ecr_repositories(
         neo4j_session,
         additional_repo_data['repositories'],
-        TEST_REGION,
         TEST_ACCOUNT_ID,
         additional_update_tag,
     )
@@ -117,7 +115,7 @@ def test_cleanup_repositories(neo4j_session):
     cartography.intel.aws.ecr.cleanup(neo4j_session, common_job_params)
     nodes = neo4j_session.run(
         f"""
-        MATCH (a:AWSAccount{{id:'{TEST_ACCOUNT_ID}'}})--(repo:ECRRepository)
+        MATCH (a:AWSAccount{{id: $TEST_ACCOUNT_ID}})--(repo:ECRRepository)
         RETURN repo.arn, repo.lastupdated
         """,
     )

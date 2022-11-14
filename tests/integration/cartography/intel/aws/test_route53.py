@@ -1,4 +1,5 @@
 import cartography.intel.aws.route53
+import cartography.intel.aws.ec2.load_balancer_v2s
 import cartography.util
 import tests.data.aws.route53
 import tests.data.aws.ec2.load_balancers
@@ -49,7 +50,7 @@ def test_transform_and_load_ns(neo4j_session):
     data = tests.data.aws.route53.NS_RECORD
     parsed_data = cartography.intel.aws.route53.transform_ns_record_set(data, TEST_ZONE_ID)
     assert "ns-856.awsdns-43.net" in parsed_data["servers"]
-    cartography.intel.aws.route53.load_ns_records(neo4j_session, [parsed_data], TEST_ZONE_NAME, TEST_UPDATE_TAG)
+    cartography.intel.aws.route53.load_ns_records(neo4j_session, [parsed_data], TEST_ZONE_NAME, TEST_UPDATE_TAG, 'www.democonsolelink.com')
 
 
 def test_transform_and_load_zones(neo4j_session):
@@ -81,10 +82,10 @@ def test_transform_and_load_ns_records(neo4j_session):
     # Test that NS records are correctly transformed and loaded
     data = tests.data.aws.route53.NS_RECORD
     first_data = [cartography.intel.aws.route53.transform_ns_record_set(data, TEST_ZONE_ID)]
-    cartography.intel.aws.route53.load_ns_records(neo4j_session, first_data, TEST_ZONE_NAME, TEST_UPDATE_TAG)
+    cartography.intel.aws.route53.load_ns_records(neo4j_session, first_data, TEST_ZONE_NAME, TEST_UPDATE_TAG, 'www.democonsolelink.com')
 
     second_data = [cartography.intel.aws.route53.transform_ns_record_set(data, TEST_ZONE_ID + "2")]
-    cartography.intel.aws.route53.load_ns_records(neo4j_session, second_data, TEST_ZONE_NAME, TEST_UPDATE_TAG)
+    cartography.intel.aws.route53.load_ns_records(neo4j_session, second_data, TEST_ZONE_NAME, TEST_UPDATE_TAG, 'www.democonsolelink.com')
     result = neo4j_session.run("MATCH (n:AWSDNSRecord{name:'testdomain.net'}) return count(n) as recordcount")
     for r in result:
         assert r["recordcount"] == 2

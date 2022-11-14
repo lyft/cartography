@@ -281,7 +281,7 @@ def _load_ec2_key_pairs_tx(
         UNWIND $KeyPairs as key_pair
             MERGE (keypair:KeyPair:EC2KeyPair{arn: key_pair.KeyARN, id: key_pair.KeyARN})
             ON CREATE SET keypair.firstseen = timestamp()
-            SET keypair.keyname = key_pair.KeyName, keypair.region = key_pair.Region, keypair.lastupdated = {update_tag}
+            SET keypair.keyname = key_pair.KeyName, keypair.region = key_pair.Region, keypair.lastupdated = $update_tag
             WITH keypair, key_pair
             MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
             MERGE (aa)-[r:RESOURCE]->(keypair)

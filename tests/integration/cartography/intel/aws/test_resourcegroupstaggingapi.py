@@ -3,6 +3,7 @@ import copy
 import cartography.intel.aws.ec2
 import cartography.intel.aws.resourcegroupstaggingapi as rgta
 import tests.data.aws.ec2.instances
+import cartography.intel.aws.ec2.instances
 import tests.data.aws.resourcegroupstaggingapi
 from tests.integration.cartography.intel.aws.common import create_test_account
 
