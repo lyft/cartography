@@ -27,8 +27,7 @@ from cartography.util import timeit
 logger = logging.getLogger(__name__)
 Resources = namedtuple(
     'Resources', 'compute gke cloudfunction crm_v1 crm_v2 dns storage serviceusage \
-        iam apigateway cloudkms cloudrun sql bigtable firestore pubsub dataproc cloudmonitoring cloud_logging \
-        cloudcdn loadbalancer apikey',
+        iam apigateway cloudkms cloudrun sql bigtable firestore pubsub dataproc cloudmonitoring cloud_logging cloudcdn loadbalancer apikey bigquery',
 )
 
 # Mapping of service short names to their full names as in docs. See https://developers.google.com/apis-explorer,
@@ -330,8 +329,7 @@ def _initialize_resources(credentials: GoogleCredentials) -> Resource:
         cloudcdn=_get_compute_resource(credentials),
         loadbalancer=_get_compute_resource(credentials),
         apikey=_get_apikey_resource(credentials),
-        bigquery=_get_bigquery_resource(credentials),
-
+        # bigquery=_get_bigquery_resource(credentials),
     )
 
 
