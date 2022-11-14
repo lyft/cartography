@@ -350,7 +350,8 @@ def load_api_keys(
         apikey.uniqueId = key.name,
         apikey.region = key.region,
         apikey.updateTime = key.updateTime,
-        apikey.deleteTime = key.deleteTime
+        apikey.deleteTime = key.deleteTime,
+        apikey.consolelink = key.consolelink
     WITH apikey
     MATCH (p:GCPProject{id:{project_id}})
     MERGE (p)-[r:RESOURCE]->(apikey)
@@ -375,8 +376,6 @@ def cleanup_api_keys(neo4j_session: neo4j.Session, common_job_parameters: Dict) 
 def load_service_accounts(
     neo4j_session: neo4j.Session,
     service_accounts: List[Dict], project_id: str, gcp_update_tag: int,
-
-
 ) -> None:
     ingest_service_accounts = """
     UNWIND {service_accounts_list} AS sa
@@ -515,7 +514,6 @@ def load_bindings(neo4j_session: neo4j.Session, bindings: List[Dict], project_id
 
             elif member.startswith('serviceAccount:'):
                 serviceAccount = {
-
                     'id': member[len('serviceAccount:'):],
                     "parent": binding['parent'],
                     "parent_id": binding['parent_id'],
@@ -642,7 +640,6 @@ def attach_role_to_user(
     user.create_date = {createDate},
     user.lastupdated = {gcp_update_tag},
     user.isDeleted = {isDeleted}
-    user.consolelink = {ConsoleLink}
     WITH user
     MATCH (role:GCPRole{id:{RoleId}})
     MERGE (user)-[r:ASSUME_ROLE]->(role)
@@ -672,7 +669,6 @@ def attach_role_to_user(
         UserId=user['id'],
         UserEmail=user['email'],
         UserName=user['name'],
-        ConsoleLink=user['consolelink'],
         createDate=datetime.utcnow(),
         Parent=user['parent'],
         ParentId=user['parent_id'],
@@ -765,7 +761,6 @@ def attach_role_to_group(
         GroupName=group['name'],
         createDate=datetime.utcnow(),
         GroupEmail=group['email'],
-        ConsoleLink=group['consolelink'],
         Parent=group['parent'],
         ParentId=group['parent_id'],
         isDeleted=group.get('is_deleted', False),
@@ -821,7 +816,6 @@ def attach_role_to_domain(
         createDate=datetime.utcnow(),
         ParentId=domain['parent_id'],
         DomainEmail=domain['email'],
-        ConsoleLink=domain['consolelink'],
         DomainName=domain['name'],
         isDeleted=domain.get('is_deleted', False),
         gcp_update_tag=gcp_update_tag,
