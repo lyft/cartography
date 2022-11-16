@@ -76,10 +76,10 @@ def test_cleanup_repositories(neo4j_session):
         'UPDATE_TAG': TEST_UPDATE_TAG,
     }
     nodes = neo4j_session.run(
-        f"""
-        MATCH (a:AWSAccount{{id: {TEST_ACCOUNT_ID}}})--(repo:ECRRepository)
+        """
+        MATCH (a:AWSAccount{id: $TEST_ACCOUNT_ID})-[r:RESOURCE]->(repo:ECRRepository)
         RETURN count(repo)
-        """,
+        """, TEST_ACCOUNT_ID=TEST_ACCOUNT_ID
     )
     # there should be 103 nodes
     expected_nodes = {
@@ -103,6 +103,20 @@ def test_cleanup_repositories(neo4j_session):
     }
     additional_update_tag = 2
     common_job_params['UPDATE_TAG'] = additional_update_tag
+    common_job_params['WORKSPACE_ID'] = 'workpace_id-123'
+    neo4j_session.run(
+        """ MERGE (w:CloudanixWorkspace{id: $WORKSPACE_ID})
+        SET w.lastupdated = $UPDATE_TAG
+        WITH w
+        MERGE (aa:AWSAccount{id: $ACCOUNT_ID})
+        ON CREATE SET aa.firstseen = timestamp()
+        SET aa.lastupdated = $UPDATE_TAG
+        WITH w,aa
+        MERGE (w)-[o:OWNER]->(aa)
+        ON CREATE SET o.firstseen = timestamp()
+        SET o.lastupdated = $UPDATE_TAG""", WORKSPACE_ID=common_job_params['WORKSPACE_ID'], ACCOUNT_ID=TEST_ACCOUNT_ID, UPDATE_TAG=common_job_params['UPDATE_TAG']
+    )
+
     # Act
     # load an additional node with a different update_tag
     cartography.intel.aws.ecr.load_ecr_repositories(
@@ -114,11 +128,12 @@ def test_cleanup_repositories(neo4j_session):
     # run the cleanup job
     cartography.intel.aws.ecr.cleanup(neo4j_session, common_job_params)
     nodes = neo4j_session.run(
-        f"""
-        MATCH (a:AWSAccount{{id: $TEST_ACCOUNT_ID}})--(repo:ECRRepository)
+        """
+        MATCH (a:AWSAccount{id: $TEST_ACCOUNT_ID})-[r:RESOURCE]->(repo:ECRRepository)
         RETURN repo.arn, repo.lastupdated
-        """,
+        """, TEST_ACCOUNT_ID=TEST_ACCOUNT_ID
     )
+
     actual_nodes = {(n['repo.arn'], n['repo.lastupdated']) for n in nodes}
     # there should be just one remaining node with the new update_tag
     expected_nodes = {
@@ -127,7 +142,6 @@ def test_cleanup_repositories(neo4j_session):
             additional_update_tag,
         ),
     }
-
     # Assert
     assert expected_nodes == actual_nodes
 

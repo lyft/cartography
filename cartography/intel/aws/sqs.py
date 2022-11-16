@@ -99,7 +99,7 @@ def load_sqs_queues(
     """
     dead_letter_queues: List[Dict] = []
     queues: List[Dict] = []
-    for url, queue in data:
+    for url, queue in data.items():
         queue['url'] = url
         queue['name'] = queue['QueueArn'].split(':')[-1]
         queue['CreatedTimestamp'] = int(queue['CreatedTimestamp'])

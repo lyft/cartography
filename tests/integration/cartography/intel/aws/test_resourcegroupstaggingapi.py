@@ -68,7 +68,7 @@ def test_transform_and_load_ec2_tags(neo4j_session):
     neo4j_session.run('MATCH (i:EC2Instance) DETACH DELETE (i) RETURN COUNT(*) as TotalCompleted')
     rgta.cleanup(neo4j_session, {'AWS_ID': TEST_ACCOUNT_ID, 'UPDATE_TAG': new_update_tag})
     expected = {
-        ('TestKeyUpdated:TestValueUpdated'),
+        'TestKeyUpdated:TestValueUpdated', 'TestKey:TestValue'
     }
     result = neo4j_session.run('MATCH (t:AWSTag) RETURN t.id')
     print(result)

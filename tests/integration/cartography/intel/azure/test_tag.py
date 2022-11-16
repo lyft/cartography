@@ -111,6 +111,7 @@ def test_load_tags_relationships(neo4j_session):
         neo4j_session,
         DESCRIBE_TAGS,
         TEST_UPDATE_TAG,
+        common_job_parameters={'WORKSPACE_ID': '123', 'AZURE_TENANT_ID': '543', 'AZURE_SUBSCRIPTION_ID': '987'}
     )
 
     expected = {
@@ -127,7 +128,8 @@ def test_load_tags_relationships(neo4j_session):
     result = neo4j_session.run(
         """
         MATCH (n1:AzureResourceGroup)-[:TAGGED]->(n2:AzureTag) RETURN n1.id, n2.id;
-        """, )
+        """)
 
     actual = {(r['n1.id'], r['n2.id']) for r in result}
+    print(actual)
     assert actual == expected
