@@ -48,7 +48,7 @@ def _get_es_domains(client: botocore.client.BaseClient) -> List[Dict]:
 
 @timeit
 def _load_es_domains(
-    neo4j_session: neo4j.Session, domain_list: List[Dict], aws_account_id: str, aws_update_tag: int,
+    neo4j_session: neo4j.Session, domain_list: List[Dict], aws_account_id: str, aws_update_tag: int, region: str
 ) -> None:
     """
     Ingest Elastic Search domains
@@ -78,6 +78,7 @@ def _load_es_domains(
     es.encryption_at_rest_options_kms_key_id = record.EncryptionAtRestOptions.KmsKeyId,
     es.log_publishing_options_cloudwatch_log_group_arn = record.LogPublishingOptions.CloudWatchLogsLogGroupArn,
     es.log_publishing_options_enabled = record.LogPublishingOptions.Enabled
+    es.region = {Region}
     WITH es
     MATCH (account:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (account)-[r:RESOURCE]->(es)
@@ -93,6 +94,7 @@ def _load_es_domains(
     neo4j_session.run(
         ingest_records,
         Records=domain_list,
+        Region=region,
         AWS_ACCOUNT_ID=aws_account_id,
         aws_update_tag=aws_update_tag,
         es_borneo_id=str(uuid.uuid4())
@@ -219,6 +221,6 @@ def sync(
         logger.info("Syncing Elasticsearch Service for region '%s' in account '%s'.", region, current_aws_account_id)
         client = boto3_session.client('es', region_name=region, config=_get_botocore_config())
         data = _get_es_domains(client)
-        _load_es_domains(neo4j_session, data, current_aws_account_id, update_tag)
+        _load_es_domains(neo4j_session, data, current_aws_account_id, update_tag, region)
 
     cleanup(neo4j_session, update_tag, current_aws_account_id)  # type: ignore
